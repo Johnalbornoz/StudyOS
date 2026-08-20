@@ -1,3 +1,4 @@
+<<<<<<< HEAD 1.0
 # StudyOS AI - Adaptive Learning Operating System
 
 **Provisional Name:** StudyOS AI  
@@ -134,3 +135,7 @@ All documentation saved to:
 ```
 
 Open any file to start exploring the architecture.
+=======
+# StudyOS
+StudyOS App
+>>>>>>> 656fab458baae50f93d6411240166299f644eebe
