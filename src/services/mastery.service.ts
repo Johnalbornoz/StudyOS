@@ -138,7 +138,7 @@ export async function updateMastery(
     subjectId
   );
 
-  const oldMastery = masteryRecord.mastery_score;
+  const oldMastery = Number(masteryRecord.mastery_score);
 
   // Step 2: Calculate new mastery using algorithm
   const newMastery = algorithmUpdateMastery(oldMastery, evidence);
