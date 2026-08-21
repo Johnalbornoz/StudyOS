@@ -42,7 +42,7 @@ export default function UploadPanel({
       const uploadBody = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(uploadBody.error || t['common.error']);
 
-      const text = await file.text();
+      const text = uploadBody.extractedText;
 
       setStatus(t['subjectDetail.statusProcessing']);
       const processRes = await fetch('/api/content/process', {
