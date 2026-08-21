@@ -90,7 +90,7 @@ export async function getQuiz(quizId: string): Promise<GeneratedQuestion[] | nul
       return null;
     }
 
-    return JSON.parse(row.questions);
+    return row.questions;
   } catch (error) {
     console.error('Error retrieving quiz:', error);
     return null;
@@ -144,7 +144,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       studentId: row.student_id,
       conceptId: row.concept_id,
       subjectId: row.subject_id,
-      questions: JSON.parse(row.questions),
+      questions: row.questions,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
       status: row.status,
@@ -178,7 +178,7 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
       studentId: row.student_id,
       conceptId: row.concept_id,
       subjectId: row.subject_id,
-      questions: JSON.parse(row.questions),
+      questions: row.questions,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
       status: row.status,
