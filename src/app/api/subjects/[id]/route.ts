@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { db, query } from '@/lib/db';
 import { isLocale } from '@/lib/i18n/messages';
 import { z } from 'zod';
 
@@ -94,14 +94,33 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
+  const conceptCount = await query(`SELECT COUNT(*) FROM concepts WHERE subject_id = $1`, [id]);
+  if (Number(conceptCount.rows[0].count) > 0) {
+    return NextResponse.json({ error: 'HAS_CONCEPTS' }, { status: 409 });
+  }
+
+  // No concepts -- any uploaded content produced no study data, so it's
+  // safe to clean up as part of the same delete rather than counting
+  // as "history" on its own.
+  const client = await db.connect();
   try {
-    await query(`DELETE FROM subjects WHERE id = $1`, [id]);
+    await client.query('BEGIN');
+    await client.query(
+      `DELETE FROM content_chunks WHERE source_id IN (SELECT id FROM content_sources WHERE subject_id = $1)`,
+      [id]
+    );
+    await client.query(`DELETE FROM content_sources WHERE subject_id = $1`, [id]);
+    await client.query(`DELETE FROM subjects WHERE id = $1`, [id]);
+    await client.query('COMMIT');
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    await client.query('ROLLBACK');
     if (error.code === '23503') {
       return NextResponse.json({ error: 'HAS_HISTORY' }, { status: 409 });
     }
     console.error('Delete subject error:', error);
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

@@ -419,3 +419,45 @@ export async function getStudentMastery(
   const result = await db.query(query, params);
   return result.rows;
 }
+
+/**
+ * Delete a concept. A mastery_records row always exists alongside a
+ * concept (created together at extraction time), so it's removed as
+ * part of the same operation rather than counting as "history" on its
+ * own. Real activity -- mastery_events, quiz_sessions, errors,
+ * learning_debt, study_session_items -- still blocks the delete via
+ * the DB's own foreign keys (all NO ACTION), surfaced here as
+ * HAS_HISTORY so the caller can suggest archiving instead.
+ */
+export async function deleteConcept(
+  studentId: string,
+  conceptId: string
+): Promise<{ success: boolean; error?: 'NOT_FOUND' | 'HAS_HISTORY' }> {
+  const client = await db.connect();
+  try {
+    const ownership = await client.query(
+      `SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE c.id = $1 AND s.student_id = $2`,
+      [conceptId, studentId]
+    );
+    if (ownership.rowCount === 0) {
+      return { success: false, error: 'NOT_FOUND' };
+    }
+
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM mastery_records WHERE concept_id = $1 AND student_id = $2`, [
+      conceptId,
+      studentId,
+    ]);
+    await client.query(`DELETE FROM concepts WHERE id = $1`, [conceptId]);
+    await client.query('COMMIT');
+    return { success: true };
+  } catch (error: any) {
+    await client.query('ROLLBACK');
+    if (error.code === '23503') {
+      return { success: false, error: 'HAS_HISTORY' };
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}

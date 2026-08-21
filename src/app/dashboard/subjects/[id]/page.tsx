@@ -10,12 +10,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
-
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
+import ConceptList from './ConceptList';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -94,29 +89,16 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           {t['subjectDetail.noConceptsBody']}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {concepts.map((c: any) => (
-            <div key={c.concept_id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)' }}>
-              <span style={{ flex: '0 0 190px', fontWeight: 600, fontSize: 14 }}>{c.label || c.canonical_id}</span>
-              <div className="mastery-row" style={{ flex: 1 }}>
-                <div className="mastery-bar">
-                  <span className={masteryFillClass(c.mastery_score)} style={{ width: `${c.mastery_score}%` }} />
-                </div>
-                <span className="mastery-pct tabular">{Math.round(c.mastery_score)}%</span>
-              </div>
-              <Link
-                href={`/dashboard/quiz?subjectId=${id}&conceptId=${c.concept_id}&mode=quick_check`}
-                className="btn btn-ghost"
-                style={{ fontSize: 13 }}
-              >
-                {t['quiz.modeQuickCheck']}
-              </Link>
-              <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${c.concept_id}`} className="btn btn-ghost">
-                {t['subjectDetail.practice']}
-              </Link>
-            </div>
-          ))}
-        </div>
+        <ConceptList
+          subjectId={id}
+          studentId={studentId}
+          locale={locale}
+          concepts={concepts.map((c: any) => ({
+            conceptId: c.concept_id,
+            label: c.label || c.canonical_id,
+            masteryScore: Number(c.mastery_score),
+          }))}
+        />
       )}
 
       <UploadPanel subjectId={id} subjectName={subject.name} locale={locale} />
@@ -129,6 +111,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         initialStatus={subject.status}
         initialTargetLanguage={subject.target_language}
         initialQuizLanguageMode={subject.quiz_language_mode}
+        conceptCount={concepts.length}
         contentSources={contentSources.map((s: any) => ({
           id: s.id,
           fileName: s.storage_path?.split('/').pop() || s.storage_path,

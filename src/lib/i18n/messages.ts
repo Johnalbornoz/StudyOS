@@ -42,6 +42,8 @@ type MessageKey =
   | 'subjectDetail.settingsTitle' | 'subjectDetail.archivedNotice'
   | 'subjectDetail.contentTitle' | 'subjectDetail.contentEmpty' | 'subjectDetail.contentDeleteConfirm'
   | 'subjectDetail.contentDeleteAction' | 'subjectDetail.contentUploadedOn'
+  | 'subjects.hasConceptsNotice'
+  | 'subjectDetail.deleteConceptConfirm' | 'subjectDetail.deleteConceptHasHistory'
   | 'subjectNew.title' | 'subjectNew.subtitle' | 'subjectNew.nameLabel'
   | 'subjectNew.namePlaceholder' | 'subjectNew.isLanguageLabel'
   | 'subjectNew.isLanguageHelp' | 'subjectNew.targetLanguageLabel'
@@ -169,6 +171,9 @@ const es: Messages = {
   'subjectDetail.contentDeleteConfirm': '¿Eliminar este archivo? Se eliminará el contenido y los fragmentos extraídos de él.',
   'subjectDetail.contentDeleteAction': 'Eliminar',
   'subjectDetail.contentUploadedOn': 'Subido el',
+  'subjects.hasConceptsNotice': 'Solo puedes eliminar una materia sin conceptos. Elimina los conceptos primero, o archívala en su lugar.',
+  'subjectDetail.deleteConceptConfirm': '¿Eliminar este concepto? Se perderá su registro de dominio.',
+  'subjectDetail.deleteConceptHasHistory': 'No se puede eliminar: tiene historial de práctica (quizzes, errores o brechas de aprendizaje).',
   'subjectNew.title': 'Crear materia',
   'subjectNew.subtitle': 'Dale un nombre a tu nueva materia — luego podrás subir contenido y practicar.',
   'subjectNew.nameLabel': 'Nombre de la materia',
@@ -440,6 +445,9 @@ const en: Messages = {
   'subjectDetail.contentDeleteConfirm': 'Delete this file? Its extracted content and chunks will be removed.',
   'subjectDetail.contentDeleteAction': 'Delete',
   'subjectDetail.contentUploadedOn': 'Uploaded on',
+  'subjects.hasConceptsNotice': "You can only delete a subject with no concepts. Delete the concepts first, or archive it instead.",
+  'subjectDetail.deleteConceptConfirm': 'Delete this concept? Its mastery record will be lost.',
+  'subjectDetail.deleteConceptHasHistory': "Can't delete: it has practice history (quizzes, errors, or learning debt).",
   'subjectNew.title': 'Create subject',
   'subjectNew.subtitle': 'Give your new subject a name — you can upload content and practice right after.',
   'subjectNew.nameLabel': 'Subject name',
@@ -711,6 +719,9 @@ const de: Messages = {
   'subjectDetail.contentDeleteConfirm': 'Diese Datei löschen? Der extrahierte Inhalt und die Abschnitte werden entfernt.',
   'subjectDetail.contentDeleteAction': 'Löschen',
   'subjectDetail.contentUploadedOn': 'Hochgeladen am',
+  'subjects.hasConceptsNotice': 'Du kannst nur ein Fach ohne Konzepte löschen. Lösche zuerst die Konzepte oder archiviere es stattdessen.',
+  'subjectDetail.deleteConceptConfirm': 'Dieses Konzept löschen? Sein Meisterschaftseintrag geht verloren.',
+  'subjectDetail.deleteConceptHasHistory': 'Kann nicht gelöscht werden: Es gibt Übungsverlauf (Quiz, Fehler oder Lernrückstände).',
   'subjectNew.title': 'Fach erstellen',
   'subjectNew.subtitle': 'Gib deinem neuen Fach einen Namen — danach kannst du Inhalte hochladen und üben.',
   'subjectNew.nameLabel': 'Name des Fachs',
@@ -982,6 +993,9 @@ const fr: Messages = {
   'subjectDetail.contentDeleteConfirm': 'Supprimer ce fichier ? Le contenu et les fragments extraits seront supprimés.',
   'subjectDetail.contentDeleteAction': 'Supprimer',
   'subjectDetail.contentUploadedOn': 'Téléversé le',
+  'subjects.hasConceptsNotice': "Vous ne pouvez supprimer qu'une matière sans concepts. Supprimez d'abord les concepts, ou archivez-la à la place.",
+  'subjectDetail.deleteConceptConfirm': 'Supprimer ce concept ? Son historique de maîtrise sera perdu.',
+  'subjectDetail.deleteConceptHasHistory': "Impossible de supprimer : il a un historique de pratique (quiz, erreurs ou dettes d'apprentissage).",
   'subjectNew.title': 'Créer une matière',
   'subjectNew.subtitle': 'Donnez un nom à votre nouvelle matière — vous pourrez ensuite importer du contenu et vous entraîner.',
   'subjectNew.nameLabel': 'Nom de la matière',
@@ -1253,6 +1267,9 @@ const pt: Messages = {
   'subjectDetail.contentDeleteConfirm': 'Excluir este arquivo? O conteúdo e os fragmentos extraídos dele serão removidos.',
   'subjectDetail.contentDeleteAction': 'Excluir',
   'subjectDetail.contentUploadedOn': 'Enviado em',
+  'subjects.hasConceptsNotice': 'Você só pode excluir uma matéria sem conceitos. Exclua os conceitos primeiro, ou arquive-a em vez disso.',
+  'subjectDetail.deleteConceptConfirm': 'Excluir este conceito? Seu registro de domínio será perdido.',
+  'subjectDetail.deleteConceptHasHistory': 'Não é possível excluir: há histórico de prática (quizzes, erros ou dívidas de aprendizado).',
   'subjectNew.title': 'Criar matéria',
   'subjectNew.subtitle': 'Dê um nome à sua nova matéria — depois você poderá enviar conteúdo e praticar.',
   'subjectNew.nameLabel': 'Nome da matéria',

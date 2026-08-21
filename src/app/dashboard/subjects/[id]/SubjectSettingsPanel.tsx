@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
+import StatusToggle from '../StatusToggle';
 
 interface ContentSourceRow {
   id: string;
@@ -20,6 +21,7 @@ export default function SubjectSettingsPanel({
   initialTargetLanguage,
   initialQuizLanguageMode,
   contentSources,
+  conceptCount,
 }: {
   subjectId: string;
   studentId: string;
@@ -29,6 +31,7 @@ export default function SubjectSettingsPanel({
   initialTargetLanguage: string | null;
   initialQuizLanguageMode: string;
   contentSources: ContentSourceRow[];
+  conceptCount: number;
 }) {
   const t = getMessages(locale);
   const router = useRouter();
@@ -100,6 +103,8 @@ export default function SubjectSettingsPanel({
         const body = await res.json().catch(() => ({}));
         if (body.error === 'HAS_HISTORY') {
           setDeleteError(t['subjects.deleteHasHistory']);
+        } else if (body.error === 'HAS_CONCEPTS') {
+          setDeleteError(t['subjects.hasConceptsNotice']);
         } else {
           setDeleteError(t['common.error']);
         }
@@ -200,11 +205,15 @@ export default function SubjectSettingsPanel({
         </div>
       </form>
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-default)' }}>
-        <button type="button" className="btn btn-secondary" disabled={archiveBusy} onClick={toggleArchive}>
-          {archived ? t['subjects.unarchiveAction'] : t['subjects.archiveAction']}
-        </button>
-        {!showDeleteConfirm && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-default)' }}>
+        <StatusToggle
+          active={!archived}
+          busy={archiveBusy}
+          onToggle={toggleArchive}
+          labelActive={t['subjects.statusActive']}
+          labelInactive={t['subjects.statusArchived']}
+        />
+        {!showDeleteConfirm && conceptCount === 0 && (
           <button
             type="button"
             className="btn btn-ghost"
@@ -215,6 +224,12 @@ export default function SubjectSettingsPanel({
           </button>
         )}
       </div>
+
+      {conceptCount > 0 && (
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 'var(--space-3)' }}>
+          {t['subjects.hasConceptsNotice']}
+        </p>
+      )}
 
       {showDeleteConfirm && (
         <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', border: '1px solid var(--error)', borderRadius: 'var(--radius-sm)' }}>
