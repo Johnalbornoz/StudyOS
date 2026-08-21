@@ -17,7 +17,7 @@ export async function extractConceptsFromText(
 ): Promise<ConceptExtractionResult> {
   try {
     const message = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-5',
       max_tokens: 2048,
       messages: [
         {
@@ -63,7 +63,7 @@ export async function generateQuestion(
 ): Promise<string> {
   try {
     const message = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-5',
       max_tokens: 1024,
       messages: [
         {
