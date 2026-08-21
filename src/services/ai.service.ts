@@ -58,6 +58,50 @@ Only return valid JSON, no other text.`,
   }
 }
 
+/**
+ * Transcribe/describe an image (a photo of notes, a textbook page, a
+ * diagram, a corrected exam, etc.) into study-ready text using Claude's
+ * vision. The result feeds into the same chunking/concept-extraction
+ * pipeline used for PDFs and plain text, so image uploads become
+ * regular study material without any separate handling downstream.
+ */
+export async function extractTextFromImage(
+  base64Data: string,
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
+): Promise<string> {
+  const message = await client.messages.create({
+    model: 'claude-sonnet-5',
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64Data },
+          },
+          {
+            type: 'text',
+            text: `Transcribe this image into study material text. Include:
+- Any text visible in the image, transcribed exactly.
+- For diagrams, charts, graphs, or figures: a clear written description of what they show (axes, labels, relationships, values).
+- For handwritten notes: your best-effort transcription.
+- For math: transcribe formulas and equations as plain text/LaTeX-like notation.
+
+Output only the transcription/description, no commentary about the image itself.`,
+          },
+        ],
+      },
+    ],
+  });
+
+  const content = message.content.find((block) => block.type === 'text');
+  if (!content) {
+    throw new Error('No text response found');
+  }
+  return content.text;
+}
+
 export async function generateQuestion(
   concept: string,
   difficulty: number = 3

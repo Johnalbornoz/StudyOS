@@ -88,7 +88,7 @@ export default function UploadPanel({
       <form onSubmit={handleUpload} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
         <input
           type="file"
-          accept=".pdf,.txt,.docx"
+          accept=".pdf,.txt,.docx,.jpg,.jpeg,.png,.webp,.gif"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           style={{ flex: 1, fontSize: 13.5 }}
         />
