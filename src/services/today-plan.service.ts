@@ -1,8 +1,8 @@
 /**
  * "Today" study plan -- answers the brief's central question, "what
  * should I study today?". Built entirely from data already tracked:
- * mastery_records, learning_debt, the real exam calendar, and (now)
- * each concept's spaced-repetition review interval.
+ * mastery_records, learning_debt, the real exam calendar, and each
+ * concept's spaced-repetition review interval.
  *
  * A concept earns a spot on today's list for exactly one of four
  * reasons, checked in priority order:
@@ -17,6 +17,10 @@
  *                       becoming low_mastery later.
  * 4. low_mastery     -- mastery is below LOW_MASTERY_THRESHOLD but not
  *                       otherwise flagged.
+ *
+ * Every item is also tagged with an urgencyTier (critical / this_week /
+ * can_wait) so the UI can group by what genuinely needs attention today
+ * vs. what can be scheduled later, instead of one undifferentiated list.
  */
 
 import { db } from '@/lib/db';
@@ -24,6 +28,7 @@ import { getUpcomingForStudent } from './assessment.service';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 
 export type TodayReason = 'exam_soon' | 'learning_debt' | 'forgetting_risk' | 'low_mastery';
+export type UrgencyTier = 'critical' | 'this_week' | 'can_wait';
 
 export interface TodayItem {
   conceptId: string;
@@ -32,20 +37,41 @@ export interface TodayItem {
   label: string;
   masteryScore: number;
   reason: TodayReason;
+  urgencyTier: UrgencyTier;
   daysUntilExam?: number;
+  examDate?: string;
   debtSeverity?: number;
+  debtSince?: string; // ISO date the debt was created, for traceability
   forgettingRisk?: number;
+  daysSincePractice?: number;
 }
 
 const EXAM_SOON_WINDOW_DAYS = 7;
+const EXAM_CRITICAL_DAYS = 2;
+const DEBT_CRITICAL_SEVERITY = 4;
 const LOW_MASTERY_THRESHOLD = 60;
 const FORGETTING_RISK_THRESHOLD = 50;
-const MAX_ITEMS = 12;
+
+function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverity'>): UrgencyTier {
+  if (item.reason === 'exam_soon') {
+    return (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS ? 'critical' : 'this_week';
+  }
+  if (item.reason === 'learning_debt') {
+    return (item.debtSeverity ?? 0) >= DEBT_CRITICAL_SEVERITY ? 'critical' : 'this_week';
+  }
+  if (item.reason === 'forgetting_risk') return 'this_week';
+  return 'can_wait';
+}
 
 export async function getTodayPlan(
   studentId: string,
   preferredLanguage: string = 'en'
-): Promise<{ items: TodayItem[]; totalConcepts: number }> {
+): Promise<{
+  critical: TodayItem[];
+  thisWeek: TodayItem[];
+  canWait: TodayItem[];
+  totalConcepts: number;
+}> {
   const conceptsResult = await db.query(
     `
     SELECT
@@ -58,7 +84,8 @@ export async function getTodayPlan(
       mr.confidence_score,
       mr.last_practiced,
       ld.severity AS debt_severity,
-      ld.status AS debt_status
+      ld.status AS debt_status,
+      ld.created_at AS debt_created_at
     FROM mastery_records mr
     JOIN concepts c ON mr.concept_id = c.id
     JOIN subjects s ON c.subject_id = s.id
@@ -91,8 +118,9 @@ export async function getTodayPlan(
     );
 
     let forgettingRisk: number | undefined;
+    let daysSincePractice: number | undefined;
     if (row.last_practiced) {
-      const daysSincePractice = Math.floor(
+      daysSincePractice = Math.floor(
         (Date.now() - new Date(row.last_practiced).getTime()) / (1000 * 60 * 60 * 24)
       );
       const intervalDays = calculateReviewIntervalDays(masteryScore, Number(row.confidence_score) || 50);
@@ -108,6 +136,9 @@ export async function getTodayPlan(
 
     if (!reason) continue;
 
+    const daysUntilExam = inExamWindow ? occurrence!.daysUntil : undefined;
+    const debtSeverity = row.debt_severity !== null ? Number(row.debt_severity) : undefined;
+
     items.push({
       conceptId: row.concept_id,
       subjectId: row.subject_id,
@@ -115,9 +146,13 @@ export async function getTodayPlan(
       label: row.label || row.canonical_id,
       masteryScore,
       reason,
-      daysUntilExam: inExamWindow ? occurrence!.daysUntil : undefined,
-      debtSeverity: row.debt_severity !== null ? Number(row.debt_severity) : undefined,
+      urgencyTier: tierFor({ reason, daysUntilExam, debtSeverity }),
+      daysUntilExam,
+      examDate: inExamWindow ? occurrence!.scheduledDate : undefined,
+      debtSeverity,
+      debtSince: row.debt_created_at ? new Date(row.debt_created_at).toISOString().slice(0, 10) : undefined,
       forgettingRisk: reason === 'forgetting_risk' ? forgettingRisk : undefined,
+      daysSincePractice,
     });
   }
 
@@ -131,7 +166,9 @@ export async function getTodayPlan(
   items.sort((a, b) => priority(b) - priority(a));
 
   return {
-    items: items.slice(0, MAX_ITEMS),
+    critical: items.filter((i) => i.urgencyTier === 'critical'),
+    thisWeek: items.filter((i) => i.urgencyTier === 'this_week').slice(0, 10),
+    canWait: items.filter((i) => i.urgencyTier === 'can_wait').slice(0, 8),
     totalConcepts: conceptsResult.rows.length,
   };
 }
