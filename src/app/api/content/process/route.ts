@@ -69,15 +69,13 @@ export async function POST(request: NextRequest) {
         body.sourceLanguage || 'en'
       );
 
-    // Step 2: Generate embeddings and store chunks
-    const storedChunks = [];
-
-    for (const chunk of chunks) {
-      try {
-        // Generate embedding for this chunk
+    // Step 2: Generate embeddings and store chunks -- in parallel, since
+    // each chunk's embedding is an independent OpenAI call with no
+    // ordering dependency on the others (processing them one at a time
+    // multiplied total latency by the chunk count for no benefit).
+    const chunkOutcomes = await Promise.allSettled(
+      chunks.map(async (chunk) => {
         const embedding = await generateEmbedding(chunk.content);
-
-        // Store chunk with embedding
         const stored = await storeChunkWithEmbedding(
           body.contentSourceId,
           chunk.content,
@@ -85,18 +83,25 @@ export async function POST(request: NextRequest) {
           embedding,
           [] // concept_mappings will be filled by extraction service
         );
-
-        storedChunks.push({
+        return {
           id: stored.chunkId,
           text: chunk.content,
           sequenceOrder: chunk.metadata.sequenceOrder,
           tokensEstimate: Math.ceil(chunk.content.length / 4),
-        });
-      } catch (error) {
-        console.error(`Error processing chunk ${chunk.metadata.sequenceOrder}:`, error);
-        // Continue with other chunks even if one fails
+        };
+      })
+    );
+
+    const storedChunks = [];
+    for (let i = 0; i < chunkOutcomes.length; i++) {
+      const outcome = chunkOutcomes[i];
+      if (outcome.status === 'fulfilled') {
+        storedChunks.push(outcome.value);
+      } else {
+        console.error(`Error processing chunk ${chunks[i].metadata.sequenceOrder}:`, outcome.reason);
       }
     }
+    storedChunks.sort((a, b) => a.sequenceOrder - b.sequenceOrder);
 
     // Step 3: Record processing status in metadata
     await db.query(

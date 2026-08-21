@@ -223,23 +223,28 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     const cachedQuestions = quizSession.questions;
     const language = quizSession.language;
 
-    // Grade all answers
+    // Grade all answers in parallel -- each answer is graded by an
+    // independent AI call, so grading 5 questions sequentially was
+    // taking 5x as long as it needed to.
+    const gradedAnswers = await Promise.all(
+      validated.answers.map(async (answer) => {
+        const question = cachedQuestions[answer.questionIndex];
+        if (!question) return null;
+        const gradeResult = await gradeAnswer(question, answer.answer, language);
+        return { questionIndex: answer.questionIndex, gradeResult };
+      })
+    );
+
     let correctCount = 0;
     let incorrectCount = 0;
     const gradings: any[] = [];
 
-    for (const answer of validated.answers) {
-      const question = cachedQuestions[answer.questionIndex];
-      if (!question) continue;
-
-      const gradeResult = await gradeAnswer(
-        question,
-        answer.answer,
-        language
-      );
+    for (const graded of gradedAnswers) {
+      if (!graded) continue;
+      const { questionIndex, gradeResult } = graded;
 
       gradings.push({
-        questionIndex: answer.questionIndex,
+        questionIndex,
         correct: gradeResult.correct,
         score: gradeResult.score,
         feedback: gradeResult.feedback,

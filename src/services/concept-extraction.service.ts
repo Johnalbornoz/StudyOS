@@ -172,50 +172,38 @@ export async function extractConceptsFromSource(
     let conceptsCreated = 0;
     let mappingsCreated = 0;
 
-    for (const chunk of chunks) {
-      // Extract concepts from chunk
-      const concepts = await extractConceptsFromChunk(
-        chunk.chunk_text,
-        subjectName,
-        sourceLanguage
-      );
+    // Extract concepts from every chunk in parallel -- this is the slow
+    // part (one AI call per chunk), and each call is fully independent,
+    // so there's no reason to wait for chunk 1 before starting chunk 2.
+    const chunkResults = await Promise.all(
+      chunks.map(async (chunk) => ({
+        chunk,
+        concepts: await extractConceptsFromChunk(chunk.chunk_text, subjectName, sourceLanguage),
+      }))
+    );
 
+    for (const { chunk, concepts } of chunkResults) {
       if (concepts.length === 0) continue;
 
       const chunkConceptIds: string[] = [];
 
       // Create concepts in database
       for (const concept of concepts) {
-        let conceptId: string;
-
-        // Check if concept already exists
-        const existsResult = await db.query(
+        // Upsert: creates the concept if new or returns the existing id
+        // otherwise. Atomic (single round trip, no separate exists
+        // check), and safe now that chunks are processed in parallel
+        // and may reference the same concept.
+        const upsertResult = await db.query(
           `
-          SELECT id FROM concepts
-          WHERE subject_id = $1 AND canonical_id = $2
-          LIMIT 1
+          INSERT INTO concepts (subject_id, canonical_id)
+          VALUES ($1, $2)
+          ON CONFLICT (subject_id, canonical_id) DO UPDATE SET canonical_id = EXCLUDED.canonical_id
+          RETURNING id, (xmax = 0) AS inserted
           `,
           [subjectId, concept.canonicalId]
         );
-
-        if (existsResult.rows.length > 0) {
-          conceptId = existsResult.rows[0].id;
-        } else {
-          // Create new concept
-          const createResult = await db.query(
-            `
-            INSERT INTO concepts (
-              subject_id,
-              canonical_id
-            ) VALUES ($1, $2)
-            RETURNING id
-            `,
-            [subjectId, concept.canonicalId]
-          );
-
-          conceptId = createResult.rows[0].id;
-          conceptsCreated++;
-        }
+        const conceptId = upsertResult.rows[0].id;
+        if (upsertResult.rows[0].inserted) conceptsCreated++;
 
         // Create localization (if not exists)
         await db.query(
