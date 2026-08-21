@@ -67,6 +67,7 @@ export default async function DashboardLayout({
           <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />
           <NavLink href="/dashboard/notifications" label={t['nav.notifications']} badge={notifCount} />
           <NavLink href="/dashboard/study-plan" label={t['nav.studyPlan']} />
+          <NavLink href="/dashboard/tutor" label={t['nav.tutor']} />
           <NavLink href="/dashboard/parent" label={t['nav.parent']} />
         </nav>
 

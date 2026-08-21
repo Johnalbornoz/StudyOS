@@ -91,7 +91,10 @@ type MessageKey =
   | 'nav.studyPlan'
   | 'home.tagline' | 'home.signIn' | 'home.signUp'
   | 'lang.switcherLabel'
-  | 'streak.label' | 'streak.days' | 'streak.dashboardTitle' | 'streak.dashboardSubtitle' | 'streak.dashboardEmpty';
+  | 'streak.label' | 'streak.days' | 'streak.dashboardTitle' | 'streak.dashboardSubtitle' | 'streak.dashboardEmpty'
+  | 'nav.tutor'
+  | 'tutor.title' | 'tutor.subtitle' | 'tutor.newConversation' | 'tutor.noSubject' | 'tutor.noConversations'
+  | 'tutor.emptyState' | 'tutor.inputPlaceholder' | 'tutor.send' | 'tutor.thinking';
 
 type Messages = Record<MessageKey, string>;
 
@@ -332,6 +335,16 @@ const es: Messages = {
   'streak.dashboardTitle': 'Racha actual',
   'streak.dashboardSubtitle': 'días seguidos estudiando',
   'streak.dashboardEmpty': 'practica hoy para empezar',
+  'nav.tutor': 'Tutor IA',
+  'tutor.title': 'Tutor IA',
+  'tutor.subtitle': 'Pregunta lo que quieras sobre tu material de estudio',
+  'tutor.newConversation': 'Nueva conversación',
+  'tutor.noSubject': 'Sin materia específica',
+  'tutor.noConversations': 'Todavía no tienes conversaciones',
+  'tutor.emptyState': 'Elige una conversación o crea una nueva para empezar a chatear con tu tutor',
+  'tutor.inputPlaceholder': 'Escribe tu pregunta…',
+  'tutor.send': 'Enviar',
+  'tutor.thinking': 'El tutor está escribiendo…',
 };
 
 const en: Messages = {
@@ -571,6 +584,16 @@ const en: Messages = {
   'streak.dashboardTitle': 'Current streak',
   'streak.dashboardSubtitle': 'days studying in a row',
   'streak.dashboardEmpty': 'practice today to start one',
+  'nav.tutor': 'AI Tutor',
+  'tutor.title': 'AI Tutor',
+  'tutor.subtitle': 'Ask anything about your study material',
+  'tutor.newConversation': 'New conversation',
+  'tutor.noSubject': 'No specific subject',
+  'tutor.noConversations': "You don't have any conversations yet",
+  'tutor.emptyState': 'Pick a conversation or start a new one to chat with your tutor',
+  'tutor.inputPlaceholder': 'Type your question…',
+  'tutor.send': 'Send',
+  'tutor.thinking': 'The tutor is typing…',
 };
 
 const de: Messages = {
@@ -810,6 +833,16 @@ const de: Messages = {
   'streak.dashboardTitle': 'Aktuelle Serie',
   'streak.dashboardSubtitle': 'Tage in Folge gelernt',
   'streak.dashboardEmpty': 'übe heute, um eine zu starten',
+  'nav.tutor': 'KI-Tutor',
+  'tutor.title': 'KI-Tutor',
+  'tutor.subtitle': 'Frag alles zu deinem Lernmaterial',
+  'tutor.newConversation': 'Neue Unterhaltung',
+  'tutor.noSubject': 'Kein bestimmtes Fach',
+  'tutor.noConversations': 'Du hast noch keine Unterhaltungen',
+  'tutor.emptyState': 'Wähle eine Unterhaltung oder starte eine neue, um mit deinem Tutor zu chatten',
+  'tutor.inputPlaceholder': 'Schreib deine Frage…',
+  'tutor.send': 'Senden',
+  'tutor.thinking': 'Der Tutor schreibt…',
 };
 
 const fr: Messages = {
@@ -1049,6 +1082,16 @@ const fr: Messages = {
   'streak.dashboardTitle': 'Série actuelle',
   'streak.dashboardSubtitle': "jours d'affilée",
   'streak.dashboardEmpty': "pratiquez aujourd'hui pour en démarrer une",
+  'nav.tutor': 'Tuteur IA',
+  'tutor.title': 'Tuteur IA',
+  'tutor.subtitle': 'Pose toutes tes questions sur ton matériel d\'étude',
+  'tutor.newConversation': 'Nouvelle conversation',
+  'tutor.noSubject': 'Aucune matière spécifique',
+  'tutor.noConversations': "Tu n'as pas encore de conversations",
+  'tutor.emptyState': 'Choisis une conversation ou commences-en une nouvelle pour discuter avec ton tuteur',
+  'tutor.inputPlaceholder': 'Écris ta question…',
+  'tutor.send': 'Envoyer',
+  'tutor.thinking': 'Le tuteur est en train d\'écrire…',
 };
 
 const pt: Messages = {
@@ -1288,6 +1331,16 @@ const pt: Messages = {
   'streak.dashboardTitle': 'Sequência atual',
   'streak.dashboardSubtitle': 'dias seguidos estudando',
   'streak.dashboardEmpty': 'pratique hoje para começar uma',
+  'nav.tutor': 'Tutor de IA',
+  'tutor.title': 'Tutor de IA',
+  'tutor.subtitle': 'Pergunte o que quiser sobre seu material de estudo',
+  'tutor.newConversation': 'Nova conversa',
+  'tutor.noSubject': 'Sem matéria específica',
+  'tutor.noConversations': 'Você ainda não tem conversas',
+  'tutor.emptyState': 'Escolha uma conversa ou crie uma nova para conversar com seu tutor',
+  'tutor.inputPlaceholder': 'Digite sua pergunta…',
+  'tutor.send': 'Enviar',
+  'tutor.thinking': 'O tutor está digitando…',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };
