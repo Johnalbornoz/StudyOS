@@ -1,16 +1,18 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getOrCreateStudentId } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   // Development: Use test UUID, production: require auth
   let userId = '550e8400-e29b-41d4-a716-446655440000'; // UUID v4 test
   if (process.env.NODE_ENV === 'production') {
     const auth_result = await auth();
-    userId = auth_result.userId || '';
-    if (!userId) {
+    const clerkUserId = auth_result.userId;
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    userId = await getOrCreateStudentId(clerkUserId);
   }
 
   try {

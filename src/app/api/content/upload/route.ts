@@ -1,14 +1,16 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { createContentSource } from '@/services/content.service';
+import { getOrCreateStudentId } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    const studentId = await getOrCreateStudentId(clerkUserId);
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const subjectId = formData.get('subjectId') as string;
@@ -19,10 +21,10 @@ export async function POST(req: NextRequest) {
 
     // For MVP, just store filename
     // TODO: Upload to Cloudinary
-    const storagePath = `${userId}/${subjectId}/${file.name}`;
+    const storagePath = `${studentId}/${subjectId}/${file.name}`;
 
     const source = await createContentSource(
-      userId,
+      studentId,
       subjectId,
       file.type,
       'en', // TODO: Detect language

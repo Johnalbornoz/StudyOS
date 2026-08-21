@@ -7,7 +7,7 @@
  * 3. Multi-tenancy is respected (students can't access other students' data)
  */
 
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
 export type UserRole = 'student' | 'teacher' | 'admin';
@@ -73,14 +73,45 @@ export async function verifyStudentAccess(
  */
 async function isUserStudent(userId: string, studentId: string): Promise<boolean> {
   try {
-    // Link between Clerk userId and studentId needs to be in a mapping table
-    // For now, assume direct match (same ID)
-    // TODO: Create users table linking clerk userId to studentId
-    return userId === studentId;
+    const result = await db.query(
+      `SELECT 1 FROM students WHERE clerk_id = $1 AND id = $2`,
+      [userId, studentId]
+    );
+    return (result.rowCount ?? 0) > 0;
   } catch (error) {
     console.error('Error checking student ownership:', error);
     return false;
   }
+}
+
+/**
+ * Resolve a Clerk user ID to the internal students.id (UUID),
+ * creating the row on first use if it doesn't exist yet.
+ */
+export async function getOrCreateStudentId(clerkUserId: string): Promise<string> {
+  const existing = await db.query(
+    `SELECT id FROM students WHERE clerk_id = $1`,
+    [clerkUserId]
+  );
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id;
+  }
+
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ||
+    user?.emailAddresses?.[0]?.emailAddress ||
+    `${clerkUserId}@placeholder.local`;
+  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
+
+  const result = await db.query(
+    `INSERT INTO students (clerk_id, email, name)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email
+     RETURNING id`,
+    [clerkUserId, email, name]
+  );
+  return result.rows[0].id;
 }
 
 /**
