@@ -80,7 +80,7 @@ export async function generateQuestionsForConcept(
       },
       body: JSON.stringify({
         model: 'claude-opus-5',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [
           {
             role: 'user',
@@ -173,7 +173,7 @@ export async function gradeAnswer(
       },
       body: JSON.stringify({
         model: 'claude-opus-5',
-        max_tokens: 512,
+        max_tokens: 1536,
         messages: [
           {
             role: 'user',

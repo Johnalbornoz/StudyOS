@@ -19,7 +19,7 @@ export async function extractConceptsFromText(
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [
         {
           role: 'user',
@@ -65,7 +65,7 @@ export async function generateQuestion(
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',
