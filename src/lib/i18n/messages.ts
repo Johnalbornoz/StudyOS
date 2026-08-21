@@ -86,7 +86,8 @@ type MessageKey =
   | 'study.priority.CRITICAL' | 'study.priority.HIGH' | 'study.priority.MEDIUM' | 'study.priority.LOW'
   | 'nav.studyPlan'
   | 'home.tagline' | 'home.signIn' | 'home.signUp'
-  | 'lang.switcherLabel';
+  | 'lang.switcherLabel'
+  | 'streak.label' | 'streak.days' | 'streak.dashboardTitle' | 'streak.dashboardSubtitle' | 'streak.dashboardEmpty';
 
 type Messages = Record<MessageKey, string>;
 
@@ -310,6 +311,11 @@ const es: Messages = {
   'home.signIn': 'Iniciar sesión',
   'home.signUp': 'Crear cuenta',
   'lang.switcherLabel': 'Idioma',
+  'streak.label': 'racha',
+  'streak.days': 'días',
+  'streak.dashboardTitle': 'Racha actual',
+  'streak.dashboardSubtitle': 'días seguidos estudiando',
+  'streak.dashboardEmpty': 'practica hoy para empezar',
 };
 
 const en: Messages = {
@@ -532,6 +538,11 @@ const en: Messages = {
   'home.signIn': 'Sign in',
   'home.signUp': 'Create account',
   'lang.switcherLabel': 'Language',
+  'streak.label': 'streak',
+  'streak.days': 'days',
+  'streak.dashboardTitle': 'Current streak',
+  'streak.dashboardSubtitle': 'days studying in a row',
+  'streak.dashboardEmpty': 'practice today to start one',
 };
 
 const de: Messages = {
@@ -754,6 +765,11 @@ const de: Messages = {
   'home.signIn': 'Anmelden',
   'home.signUp': 'Konto erstellen',
   'lang.switcherLabel': 'Sprache',
+  'streak.label': 'Serie',
+  'streak.days': 'Tage',
+  'streak.dashboardTitle': 'Aktuelle Serie',
+  'streak.dashboardSubtitle': 'Tage in Folge gelernt',
+  'streak.dashboardEmpty': 'übe heute, um eine zu starten',
 };
 
 const fr: Messages = {
@@ -976,6 +992,11 @@ const fr: Messages = {
   'home.signIn': 'Se connecter',
   'home.signUp': 'Créer un compte',
   'lang.switcherLabel': 'Langue',
+  'streak.label': 'série',
+  'streak.days': 'jours',
+  'streak.dashboardTitle': 'Série actuelle',
+  'streak.dashboardSubtitle': "jours d'affilée",
+  'streak.dashboardEmpty': "pratiquez aujourd'hui pour en démarrer une",
 };
 
 const pt: Messages = {
@@ -1198,6 +1219,11 @@ const pt: Messages = {
   'home.signIn': 'Entrar',
   'home.signUp': 'Criar conta',
   'lang.switcherLabel': 'Idioma',
+  'streak.label': 'sequência',
+  'streak.days': 'dias',
+  'streak.dashboardTitle': 'Sequência atual',
+  'streak.dashboardSubtitle': 'dias seguidos estudando',
+  'streak.dashboardEmpty': 'pratique hoje para começar uma',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

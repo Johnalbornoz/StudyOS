@@ -5,6 +5,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getStudentMastery } from '@/services/mastery.service';
+import { getStudentStreak } from '@/services/gamification.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 
@@ -37,10 +38,11 @@ export default async function DashboardPage() {
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
 
-  const [subjectsResult, debts, notifications] = await Promise.all([
+  const [subjectsResult, debts, notifications, streak] = await Promise.all([
     query(`SELECT * FROM subjects WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]),
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getUnreadNotifications(studentId).catch(() => []),
+    getStudentStreak(studentId).catch(() => 0),
   ]);
   const subjects = subjectsResult.rows;
 
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.conceptsAtRisk']}</div>
           <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1 }}>{debts.length}</div>
@@ -82,6 +84,16 @@ export default async function DashboardPage() {
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             {overallAvg !== null ? t['dashboard.avgMasterySubtitle'] : t['dashboard.avgMasteryEmpty']}
+          </div>
+        </div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['streak.dashboardTitle']}</div>
+          <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {streak > 0 && <span aria-hidden style={{ fontSize: 22 }}>🔥</span>}
+            {streak}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+            {streak > 0 ? t['streak.dashboardSubtitle'] : t['streak.dashboardEmpty']}
           </div>
         </div>
       </div>

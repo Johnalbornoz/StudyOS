@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { currentUser } from '@clerk/nextjs/server';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
+import { getStudentStreak } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { auth } from '@clerk/nextjs/server';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -18,18 +19,21 @@ export default async function DashboardLayout({
 
   let notifCount = 0;
   let debtCount = 0;
+  let streak = 0;
   let locale: Awaited<ReturnType<typeof getInterfaceLanguage>> = 'es';
 
   if (clerkUserId) {
     const studentId = await getOrCreateStudentId(clerkUserId);
-    const [notifications, debts, lang] = await Promise.all([
+    const [notifications, debts, lang, streakCount] = await Promise.all([
       getUnreadNotifications(studentId).catch(() => []),
       getActiveDebts(studentId).catch(() => []),
       getInterfaceLanguage(studentId).catch(() => 'es' as const),
+      getStudentStreak(studentId).catch(() => 0),
     ]);
     notifCount = notifications.length;
     debtCount = debts.length;
     locale = lang;
+    streak = streakCount;
   }
 
   const t = getMessages(locale);
@@ -85,7 +89,23 @@ export default async function DashboardLayout({
             >
               {initials}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{displayName}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {displayName}
+              </div>
+            </div>
+            {streak > 0 && (
+              <div
+                title={`${streak} ${t['streak.days']} ${t['streak.label']}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+                  fontSize: 12.5, fontWeight: 700, color: 'var(--warning)',
+                }}
+              >
+                <span aria-hidden>🔥</span>
+                <span className="tabular">{streak}</span>
+              </div>
+            )}
           </div>
         </div>
       </aside>
