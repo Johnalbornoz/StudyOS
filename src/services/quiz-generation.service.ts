@@ -13,6 +13,7 @@
 
 import { retrieveContext } from './rag.service';
 import { db } from '@/lib/db';
+import { parseAIJson } from '@/lib/ai-json';
 
 export type QuestionType = 'multiple_choice' | 'short_answer' | 'calculation' | 'essay';
 
@@ -113,7 +114,7 @@ Output JSON array (no markdown):
     // Step 4: Parse and validate
     let questions: any[] = [];
     try {
-      questions = JSON.parse(responseText);
+      questions = parseAIJson(responseText);
     } catch (e) {
       console.error('Failed to parse Claude response:', responseText);
       return [];
@@ -210,7 +211,7 @@ Be fair but rigorous. Confidence = how sure you are in the grade.`,
     const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
 
     try {
-      const gradeResult = JSON.parse(responseText);
+      const gradeResult = parseAIJson(responseText);
       return {
         correct: gradeResult.correct,
         score: Math.max(0, Math.min(1, gradeResult.score || 0)),

@@ -8,6 +8,7 @@
 
 import { db } from '@/lib/db';
 import { updateChunkConceptMappings } from './embedding.service';
+import { parseAIJson } from '@/lib/ai-json';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -111,7 +112,7 @@ Return JSON array of concepts:
     // Parse JSON response
     let concepts: ExtractedConcept[];
     try {
-      concepts = JSON.parse(responseText);
+      concepts = parseAIJson(responseText);
     } catch (e) {
       console.error('Failed to parse Claude response:', responseText);
       return []; // Return empty if parsing fails

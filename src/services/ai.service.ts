@@ -1,4 +1,5 @@
 import { Anthropic } from '@anthropic-ai/sdk';
+import { parseAIJson } from '@/lib/ai-json';
 
 const client = new Anthropic();
 
@@ -50,7 +51,7 @@ Only return valid JSON, no other text.`,
       throw new Error('No text response found');
     }
 
-    return JSON.parse(content.text);
+    return parseAIJson(content.text);
   } catch (error) {
     console.error('Error extracting concepts:', error);
     throw error;
