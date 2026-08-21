@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getMessages, Locale } from '@/lib/i18n/messages';
 
 interface Question {
   index: number;
@@ -12,11 +13,18 @@ interface Question {
   difficulty: number;
 }
 
+const RESULT_MESSAGE_KEY: Record<string, 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'> = {
+  excellent: 'quiz.msgExcellent',
+  good: 'quiz.msgGood',
+  keep_going: 'quiz.msgKeepGoing',
+};
+
 export default function QuizPage() {
   const searchParams = useSearchParams();
   const subjectId = searchParams.get('subjectId');
   const conceptId = searchParams.get('conceptId');
 
+  const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -28,17 +36,21 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
 
+  const t = getMessages(locale);
+
   useEffect(() => {
     async function init() {
       if (!subjectId || !conceptId) {
-        setError('Falta subjectId o conceptId en la URL');
+        setError('Missing subjectId or conceptId in the URL');
         setLoading(false);
         return;
       }
       try {
-        const meRes = await fetch('/api/me');
+        const [meRes, langRes] = await Promise.all([fetch('/api/me'), fetch('/api/language')]);
         const me = await meRes.json();
-        if (!me.studentId) throw new Error('No se pudo identificar al estudiante');
+        const lang = await langRes.json();
+        if (lang.locale) setLocale(lang.locale);
+        if (!me.studentId) throw new Error('Could not identify the student');
         setStudentId(me.studentId);
 
         const genRes = await fetch('/api/quizzes/generate-and-take', {
@@ -47,7 +59,7 @@ export default function QuizPage() {
           body: JSON.stringify({ studentId: me.studentId, subjectId, conceptId }),
         });
         const genBody = await genRes.json();
-        if (!genRes.ok) throw new Error(genBody.message || 'No se pudo generar el quiz');
+        if (!genRes.ok) throw new Error(genBody.message || 'Could not generate the quiz');
 
         setQuizId(genBody.data.quizId);
         setQuestions(genBody.data.quiz.questions);
@@ -90,7 +102,7 @@ export default function QuizPage() {
         body: JSON.stringify({ studentId, quizId, answers: answerList }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.message || 'No se pudo calificar el quiz');
+      if (!res.ok) throw new Error(body.message || t['common.error']);
       setResults(body.data);
     } catch (err: any) {
       setError(err.message);
@@ -100,47 +112,48 @@ export default function QuizPage() {
   }
 
   if (loading) {
-    return <div className="card empty-state">Generando preguntas con IA…</div>;
+    return <div className="card empty-state">{t['quiz.generating']}</div>;
   }
 
   if (error) {
     return (
       <div>
         <div className="card empty-state" style={{ color: 'var(--error)' }}>
-          <strong>No se pudo cargar el quiz</strong>
+          <strong>{t['quiz.loadError']}</strong>
           {error}
         </div>
         <Link href="/dashboard" className="btn btn-secondary" style={{ marginTop: 'var(--space-4)' }}>
-          Volver al panel
+          {t['quiz.backToDashboard']}
         </Link>
       </div>
     );
   }
 
   if (results) {
+    const messageText = t[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
     return (
       <div style={{ maxWidth: 620 }}>
-        <h1>Resultados</h1>
+        <h1>{t['quiz.results']}</h1>
         <div className="card" style={{ marginTop: 'var(--space-6)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>Puntaje</div>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['quiz.score']}</div>
           <div className="tabular" style={{ fontSize: 40, fontWeight: 650, margin: '4px 0' }}>
             {results.results.score}%
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-            {results.results.correctCount} de {results.results.totalQuestions} correctas
+            {results.results.correctCount} / {results.results.totalQuestions} {t['quiz.correctOf']}
           </p>
           {results.mastery && (
             <p style={{ fontSize: 14, marginTop: 'var(--space-3)' }}>
-              Dominio del concepto: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
+              {t['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
               <span style={{ color: results.mastery.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
                 ({results.mastery.delta >= 0 ? '+' : ''}{results.mastery.delta})
               </span>
             </p>
           )}
-          <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{results.message}</p>
+          <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>
         </div>
         <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-6)' }}>
-          Volver a la materia
+          {t['quiz.backToSubject']}
         </Link>
       </div>
     );
@@ -152,7 +165,7 @@ export default function QuizPage() {
   return (
     <div style={{ maxWidth: 620 }}>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 'var(--space-2)', display: 'flex', gap: 6 }}>
-        <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>Materia</Link> / Quiz
+        <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.breadcrumbQuiz']}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
@@ -207,7 +220,7 @@ export default function QuizPage() {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
           <button onClick={nextQuestion} disabled={!selected || submitting} className="btn btn-primary">
-            {submitting ? 'Enviando…' : current + 1 < questions.length ? 'Siguiente pregunta' : 'Ver resultados'}
+            {submitting ? t['quiz.submitting'] : current + 1 < questions.length ? t['quiz.next'] : t['quiz.viewResults']}
           </button>
         </div>
       </div>

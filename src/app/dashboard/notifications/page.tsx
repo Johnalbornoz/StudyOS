@@ -2,34 +2,38 @@ import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getUnreadNotifications } from '@/services/notifications.service';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages } from '@/lib/i18n/messages';
 
 export default async function NotificationsPage() {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return (
       <div>
-        <h1>No autenticado</h1>
-        <Link href="/sign-in">Iniciar sesión</Link>
+        <h1>Not authenticated</h1>
+        <Link href="/sign-in">Sign in</Link>
       </div>
     );
   }
 
   const studentId = await getOrCreateStudentId(clerkUserId);
+  const locale = await getInterfaceLanguage(studentId);
+  const t = getMessages(locale);
   const notifications = await getUnreadNotifications(studentId).catch(() => []);
 
   return (
     <div>
       <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1>Notificaciones</h1>
+        <h1>{t['notifications.title']}</h1>
         <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
-          Actividad reciente de tu aprendizaje.
+          {t['notifications.subtitle']}
         </p>
       </div>
 
       {notifications.length === 0 ? (
         <div className="card empty-state">
-          <strong>Sin notificaciones nuevas</strong>
-          Aquí verás avisos sobre repasos pendientes y progreso reciente.
+          <strong>{t['notifications.emptyTitle']}</strong>
+          {t['notifications.emptyBody']}
         </div>
       ) : (
         <div className="card list-card">

@@ -2,8 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getMessages, Locale } from '@/lib/i18n/messages';
 
-export default function UploadPanel({ subjectId, subjectName }: { subjectId: string; subjectName: string }) {
+export default function UploadPanel({
+  subjectId,
+  subjectName,
+  locale,
+}: {
+  subjectId: string;
+  subjectName: string;
+  locale: Locale;
+}) {
+  const t = getMessages(locale);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -22,28 +32,28 @@ export default function UploadPanel({ subjectId, subjectName }: { subjectId: str
     try {
       const meRes = await fetch('/api/me');
       const me = await meRes.json();
-      if (!me.studentId) throw new Error('No se pudo identificar al estudiante');
+      if (!me.studentId) throw new Error(t['common.error']);
 
-      setStatus('Subiendo archivo…');
+      setStatus(t['subjectDetail.statusUploading']);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('subjectId', subjectId);
       const uploadRes = await fetch('/api/content/upload', { method: 'POST', body: formData });
       const uploadBody = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadBody.error || 'No se pudo subir el archivo');
+      if (!uploadRes.ok) throw new Error(uploadBody.error || t['common.error']);
 
       const text = await file.text();
 
-      setStatus('Procesando contenido (chunking + embeddings)…');
+      setStatus(t['subjectDetail.statusProcessing']);
       const processRes = await fetch('/api/content/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentSourceId: uploadBody.sourceId, text, sourceLanguage: 'es' }),
+        body: JSON.stringify({ contentSourceId: uploadBody.sourceId, text, sourceLanguage: locale }),
       });
       const processBody = await processRes.json();
-      if (!processRes.ok) throw new Error(processBody.error || 'No se pudo procesar el contenido');
+      if (!processRes.ok) throw new Error(processBody.error || t['common.error']);
 
-      setStatus('Extrayendo conceptos con IA…');
+      setStatus(t['subjectDetail.statusExtracting']);
       const extractRes = await fetch('/api/content/extract-concepts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,16 +62,16 @@ export default function UploadPanel({ subjectId, subjectName }: { subjectId: str
           studentId: me.studentId,
           subjectId,
           subjectName,
-          sourceLanguage: 'es',
+          sourceLanguage: locale,
         }),
       });
       const extractBody = await extractRes.json();
-      if (!extractRes.ok) throw new Error(extractBody.error || 'No se pudieron extraer conceptos');
+      if (!extractRes.ok) throw new Error(extractBody.error || t['common.error']);
 
       setExtractedCount(extractBody.data.conceptsCreated);
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error');
+      setError(err.message || t['common.error']);
     } finally {
       setLoading(false);
       setStatus(null);
@@ -71,9 +81,9 @@ export default function UploadPanel({ subjectId, subjectName }: { subjectId: str
 
   return (
     <div className="card" style={{ marginTop: 'var(--space-8)' }}>
-      <h3 style={{ marginBottom: 4 }}>Sube material de estudio</h3>
+      <h3 style={{ marginBottom: 4 }}>{t['subjectDetail.uploadTitle']}</h3>
       <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: '0 0 var(--space-4)' }}>
-        Sube un PDF o texto — extraemos los conceptos automáticamente con IA.
+        {t['subjectDetail.uploadBody']}
       </p>
       <form onSubmit={handleUpload} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
         <input
@@ -83,13 +93,13 @@ export default function UploadPanel({ subjectId, subjectName }: { subjectId: str
           style={{ flex: 1, fontSize: 13.5 }}
         />
         <button type="submit" disabled={!file || loading} className="btn btn-primary">
-          {loading ? 'Procesando…' : 'Subir y extraer'}
+          {loading ? t['subjectDetail.uploading'] : t['subjectDetail.uploadSubmit']}
         </button>
       </form>
       {status && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-muted)' }}>{status}</p>}
       {extractedCount !== null && (
         <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--success)' }}>
-          Se extrajeron {extractedCount} conceptos nuevos, vinculados a tu contenido.
+          {extractedCount} {t['subjectDetail.extractedOk']}
         </p>
       )}
       {error && (

@@ -4,6 +4,9 @@ import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { auth } from '@clerk/nextjs/server';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages } from '@/lib/i18n/messages';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default async function DashboardLayout({
   children,
@@ -15,21 +18,26 @@ export default async function DashboardLayout({
 
   let notifCount = 0;
   let debtCount = 0;
+  let locale: Awaited<ReturnType<typeof getInterfaceLanguage>> = 'es';
 
   if (clerkUserId) {
     const studentId = await getOrCreateStudentId(clerkUserId);
-    const [notifications, debts] = await Promise.all([
+    const [notifications, debts, lang] = await Promise.all([
       getUnreadNotifications(studentId).catch(() => []),
       getActiveDebts(studentId).catch(() => []),
+      getInterfaceLanguage(studentId).catch(() => 'es' as const),
     ]);
     notifCount = notifications.length;
     debtCount = debts.length;
+    locale = lang;
   }
+
+  const t = getMessages(locale);
 
   const initials = user
     ? `${(user.firstName || '?')[0]}${(user.lastName || '')[0] || ''}`.toUpperCase()
     : '?';
-  const displayName = user?.firstName || 'Estudiante';
+  const displayName = user?.firstName || 'Student';
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh' }}>
@@ -58,29 +66,33 @@ export default async function DashboardLayout({
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <NavLink href="/dashboard" label="Panel" />
-          <NavLink href="/dashboard/subjects" label="Materias" />
-          <NavLink href="/dashboard/learning-debt" label="Repaso pendiente" badge={debtCount} />
-          <NavLink href="/dashboard/notifications" label="Notificaciones" badge={notifCount} />
+          <NavLink href="/dashboard" label={t['nav.dashboard']} />
+          <NavLink href="/dashboard/subjects" label={t['nav.subjects']} />
+          <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />
+          <NavLink href="/dashboard/notifications" label={t['nav.notifications']} badge={notifCount} />
         </nav>
 
-        <div
-          style={{
-            marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-            padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-default)',
-          }}
-        >
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />
+
           <div
             style={{
-              width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-subtle)',
-              border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
             }}
           >
-            {initials}
+            <div
+              style={{
+                width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', flexShrink: 0,
+              }}
+            >
+              {initials}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{displayName}</div>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>{displayName}</div>
         </div>
       </aside>
 

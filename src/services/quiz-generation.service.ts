@@ -14,6 +14,7 @@
 import { retrieveContext } from './rag.service';
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
+import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 
 export type QuestionType = 'multiple_choice' | 'short_answer' | 'calculation' | 'essay';
 
@@ -199,7 +200,8 @@ Respond with JSON (no markdown):
 - For calculation: check work and result
 - For essay: evaluate understanding shown
 
-Be fair but rigorous. Confidence = how sure you are in the grade.`,
+Be fair but rigorous. Confidence = how sure you are in the grade.
+Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`,
       }),
     });
 
@@ -281,7 +283,13 @@ function buildQuestionGenerationPrompt(
     difficultyDesc = 'advanced, requires application and synthesis';
   else difficultyDesc = 'expert, requires deep understanding and integration';
 
+  const languageName = LOCALE_FULL_NAME[language] || language;
+
   return `You are an expert educator creating assessment questions.
+
+LANGUAGE: Write EVERYTHING in ${languageName} -- the question text, every
+answer option, and the explanation. Do not mix in any other language,
+even if the source material below is in a different language.
 
 CONTEXT (student's actual materials):
 ${chunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n\n')}
@@ -291,7 +299,7 @@ REQUIREMENTS:
 2. Difficulty level (${difficulty}/5): ${difficultyDesc}
 3. Use ONLY the provided context above
 4. Do NOT add information outside the material
-5. Language: ${language}
+5. Every field in your JSON output must be written in ${languageName}
 6. Questions should test understanding, not just recall
 
 IMPORTANT: Do not invent content. Every question must be answerable from the provided material.`;

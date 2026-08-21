@@ -32,19 +32,31 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { db } from '@/lib/db';
 import {
   generateQuestionsForConcept,
   gradeAnswer,
 } from '@/services/quiz-generation.service';
 import {
   storeQuiz,
-  getQuiz,
   getQuizSession,
   completeQuiz,
 } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { resolveQuizLanguage } from '@/lib/i18n/language';
 import type { LearningEvidence } from '@/lib/algorithms/mastery';
 import { z } from 'zod';
+
+async function resolveLanguageForSubject(subjectId: string, studentId: string) {
+  const result = await db.query(
+    `SELECT target_language, quiz_language_mode FROM subjects WHERE id = $1`,
+    [subjectId]
+  );
+  const subject = result.rows[0] || {};
+  const interfaceLanguage = await getInterfaceLanguage(studentId);
+  return resolveQuizLanguage(subject, interfaceLanguage);
+}
 
 const GenerateQuizSchema = z.object({
   studentId: z.string().uuid(),
@@ -113,6 +125,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
       );
     }
 
+    // Resolve the right language: the subject's own language if it IS a
+    // language course (e.g. German class -> always German), otherwise the
+    // student's interface language or a fixed language per their preference.
+    const language = await resolveLanguageForSubject(validated.subjectId, validated.studentId);
+
     // Generate questions using RAG
     const questions = await generateQuestionsForConcept(
       validated.conceptId,
@@ -121,7 +138,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
       {
         count: 5,
         difficulty: validated.difficulty || 3,
-        language: validated.language || 'en',
+        language,
       }
     );
 
@@ -185,9 +202,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
       );
     }
 
-    // Retrieve quiz from database
-    const cachedQuestions = await getQuiz(validated.quizId);
-    if (!cachedQuestions) {
+    // Retrieve quiz session from database (questions + conceptId/subjectId)
+    const quizSession = await getQuizSession(validated.quizId);
+    if (!quizSession) {
       return NextResponse.json(
         {
           error: 'QUIZ_NOT_FOUND',
@@ -196,6 +213,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
         { status: 400 }
       );
     }
+    const cachedQuestions = quizSession.questions;
+
+    const language = await resolveLanguageForSubject(quizSession.subjectId, validated.studentId);
 
     // Grade all answers
     let correctCount = 0;
@@ -209,7 +229,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
       const gradeResult = await gradeAnswer(
         question,
         answer.answer,
-        validated.language || 'en'
+        language
       );
 
       gradings.push({
@@ -229,15 +249,6 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
 
     const totalQuestions = validated.answers.length;
     const score = Math.round((correctCount / totalQuestions) * 100);
-
-    // Get quiz metadata (conceptId, subjectId) for the mastery update
-    const quizSession = await getQuizSession(validated.quizId);
-    if (!quizSession) {
-      return NextResponse.json(
-        { error: 'QUIZ_METADATA_ERROR', message: 'Cannot retrieve quiz metadata' },
-        { status: 500 }
-      );
-    }
 
     // Update mastery based on quiz result
     const evidence: LearningEvidence = {
@@ -274,12 +285,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
           current: masteryResult.newMastery,
           delta: masteryResult.delta,
         },
-        message:
-          score >= 80
-            ? 'Excellent! Great progress.'
-            : score >= 50
-              ? 'Good effort. Keep practicing.'
-              : 'Keep working on this concept.',
+        messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',
       },
     });
   } catch (error: any) {

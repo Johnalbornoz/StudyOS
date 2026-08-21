@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
+import { isLocale } from '@/lib/i18n/messages';
 
 export async function POST(req: NextRequest) {
   // Development: Use test UUID, production: require auth
@@ -16,17 +17,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name } = await req.json();
+    const { name, targetLanguage, quizLanguageMode } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: 'Missing name' }, { status: 400 });
     }
 
+    const resolvedTargetLanguage = isLocale(targetLanguage) ? targetLanguage : null;
+    const resolvedQuizMode = quizLanguageMode === 'fixed_english' ? 'fixed_english' : 'match_interface';
+
     const result = await query(
-      `INSERT INTO subjects (student_id, name, status)
-       VALUES ($1, $2, 'active')
+      `INSERT INTO subjects (student_id, name, status, target_language, quiz_language_mode)
+       VALUES ($1, $2, 'active', $3, $4)
        RETURNING id`,
-      [userId, name]
+      [userId, name, resolvedTargetLanguage, resolvedQuizMode]
     );
 
     return NextResponse.json({ success: true, subjectId: result.rows[0].id });

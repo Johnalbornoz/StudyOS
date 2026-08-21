@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getStudentMastery } from '@/services/mastery.service';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 
 function masteryFillClass(score: number) {
@@ -18,13 +20,15 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   if (!clerkUserId) {
     return (
       <div>
-        <h1>No autenticado</h1>
-        <Link href="/sign-in">Iniciar sesión</Link>
+        <h1>Not authenticated</h1>
+        <Link href="/sign-in">Sign in</Link>
       </div>
     );
   }
 
   const studentId = await getOrCreateStudentId(clerkUserId);
+  const locale = await getInterfaceLanguage(studentId);
+  const t = getMessages(locale);
 
   const subjectResult = await query(
     `SELECT * FROM subjects WHERE id = $1 AND student_id = $2`,
@@ -33,7 +37,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  const concepts = await getStudentMastery(studentId, id, 'es').catch(() => []);
+  const concepts = await getStudentMastery(studentId, id, locale).catch(() => []);
   const avgMastery = concepts.length
     ? Math.round(concepts.reduce((sum: number, c: any) => sum + Number(c.mastery_score), 0) / concepts.length)
     : null;
@@ -42,26 +46,26 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   return (
     <div>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', gap: 6 }}>
-        <Link href="/dashboard" style={{ color: 'var(--text-muted)' }}>Panel</Link> / {subject.name}
+        <Link href="/dashboard" style={{ color: 'var(--text-muted)' }}>{t['nav.dashboard']}</Link> / {subject.name}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         <div>
           <h1>{subject.name}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
-            {concepts.length} conceptos{avgMastery !== null ? ` · dominio promedio ${avgMastery}%` : ''}
+            {concepts.length} {t['subjectDetail.conceptCount']}{avgMastery !== null ? ` · ${t['subjectDetail.avgMastery']} ${avgMastery}%` : ''}
           </p>
         </div>
         {weakest && (
           <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${weakest.concept_id}`} className="btn btn-primary">
-            Practicar concepto débil
+            {t['subjectDetail.practiceWeak']}
           </Link>
         )}
       </div>
 
       {concepts.length === 0 ? (
         <div className="card empty-state">
-          <strong>Aún no hay conceptos aquí</strong>
-          Sube material de estudio abajo para que la IA extraiga los conceptos automáticamente.
+          <strong>{t['subjectDetail.noConceptsTitle']}</strong>
+          {t['subjectDetail.noConceptsBody']}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -75,14 +79,14 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
                 <span className="mastery-pct tabular">{Math.round(c.mastery_score)}%</span>
               </div>
               <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${c.concept_id}`} className="btn btn-ghost">
-                Practicar
+                {t['subjectDetail.practice']}
               </Link>
             </div>
           ))}
         </div>
       )}
 
-      <UploadPanel subjectId={id} subjectName={subject.name} />
+      <UploadPanel subjectId={id} subjectName={subject.name} locale={locale} />
     </div>
   );
 }
