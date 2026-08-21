@@ -39,6 +39,7 @@ import {
 import {
   storeQuiz,
   getQuiz,
+  getQuizSession,
   completeQuiz,
 } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
@@ -229,8 +230,8 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     const totalQuestions = validated.answers.length;
     const score = Math.round((correctCount / totalQuestions) * 100);
 
-    // Get quiz metadata to find conceptId (for mastery update)
-    const quizSession = await getQuiz(validated.quizId);
+    // Get quiz metadata (conceptId, subjectId) for the mastery update
+    const quizSession = await getQuizSession(validated.quizId);
     if (!quizSession) {
       return NextResponse.json(
         { error: 'QUIZ_METADATA_ERROR', message: 'Cannot retrieve quiz metadata' },
@@ -242,14 +243,17 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     const evidence: LearningEvidence = {
       result:
         score >= 70 ? 'correct' : score >= 50 ? 'partial' : 'incorrect',
-      difficulty: 3, // Could retrieve from quiz
+      difficulty: 3,
       sourceType: 'PRACTICE_QUIZ',
       confidenceWeight: 0.9,
     };
 
-    // Note: We'll need to retrieve conceptId from quiz metadata
-    // For now, we can't without expanding quiz storage
-    // This is a limitation of the current design
+    const masteryResult = await updateMastery({
+      studentId: validated.studentId,
+      conceptId: quizSession.conceptId,
+      subjectId: quizSession.subjectId,
+      evidence,
+    });
 
     // Mark quiz as completed
     await completeQuiz(validated.quizId);
@@ -264,6 +268,11 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
           incorrectCount,
           totalQuestions,
           gradings,
+        },
+        mastery: {
+          previous: masteryResult.oldMastery,
+          current: masteryResult.newMastery,
+          delta: masteryResult.delta,
         },
         message:
           score >= 80
