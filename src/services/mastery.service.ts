@@ -138,10 +138,13 @@ export async function updateMastery(
     subjectId
   );
 
-  const oldMastery = Number(masteryRecord.mastery_score);
+  const oldMastery = Number.isFinite(Number(masteryRecord.mastery_score))
+    ? Number(masteryRecord.mastery_score)
+    : 0;
 
   // Step 2: Calculate new mastery using algorithm
-  const newMastery = algorithmUpdateMastery(oldMastery, evidence);
+  const rawNewMastery = algorithmUpdateMastery(oldMastery, evidence);
+  const newMastery = Number.isFinite(rawNewMastery) ? rawNewMastery : oldMastery;
   const delta = newMastery - oldMastery;
 
   // Step 3: Update attempt counters
