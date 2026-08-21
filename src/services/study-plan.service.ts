@@ -67,6 +67,7 @@ export async function generateStudyPlan(
     daysAhead?: number; // How many days to plan (default 7)
     dailyMinutes?: number; // Daily study time budget (default 90)
     startDate?: Date;
+    preferredLanguage?: string;
   } = {}
 ): Promise<StudyPlan> {
   try {
@@ -75,7 +76,9 @@ export async function generateStudyPlan(
     const startDate = options.startDate || new Date();
 
     // Step 1: Get priorities
-    const priorities = await getStudentStudyPriorities(studentId);
+    const priorities = await getStudentStudyPriorities(studentId, {
+      preferredLanguage: options.preferredLanguage,
+    });
 
     if (priorities.length === 0) {
       throw new Error('No concepts with priority data found for student');
@@ -217,104 +220,172 @@ export async function generateStudyPlan(
 }
 
 /**
- * Store study plan in database
+ * Store study plan against the real normalized schema:
+ * study_plans (one row) -> study_sessions (one row per day) ->
+ * study_session_items (one row per concept in that day). There's no
+ * column for total_minutes/subject_breakdown/etc. on the plan or
+ * session rows -- those are recomputed on read from the items, which
+ * is also what keeps them from ever going stale.
  */
+function toDateString(d: Date): string {
+  // Local calendar-date components, not toISOString() -- that converts
+  // to UTC first, which can shift the date by a day depending on the
+  // server's timezone offset relative to the intended local date.
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export async function storeStudyPlan(plan: StudyPlan): Promise<string> {
+  const client = await db.connect();
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const planResult = await client.query(
       `
-      INSERT INTO study_plans (
-        student_id, start_date, end_date, total_minutes,
-        subjects_in_plan, critical_concepts_count, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO study_plans (id, student_id, period_start, period_end, generated_at, status)
+      VALUES (gen_random_uuid(), $1, $2, $3, NOW(), 'active')
       RETURNING id
       `,
-      [
-        plan.studentId,
-        plan.startDate,
-        plan.endDate,
-        plan.totalStudyMinutes,
-        JSON.stringify(plan.subjectsInPlan),
-        plan.criticalConceptsCount,
-      ]
+      [plan.studentId, toDateString(plan.startDate), toDateString(plan.endDate)]
     );
+    const planId = planResult.rows[0].id;
 
-    const planId = result.rows[0].id;
-
-    // Store sessions
     for (const session of plan.sessions) {
-      await db.query(
+      const sessionResult = await client.query(
         `
-        INSERT INTO study_sessions (
-          study_plan_id, student_id, session_date,
-          total_minutes, subject_breakdown, items, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        INSERT INTO study_sessions (id, plan_id, scheduled_date, estimated_duration_minutes, completion_status)
+        VALUES (gen_random_uuid(), $1, $2, $3, 'pending')
+        RETURNING id
         `,
-        [
-          planId,
-          session.studentId,
-          session.date,
-          session.totalMinutes,
-          JSON.stringify(session.subjectBreakdown),
-          JSON.stringify(session.items),
-        ]
+        [planId, toDateString(session.date), session.totalMinutes]
       );
+      const sessionId = sessionResult.rows[0].id;
+
+      let sequence = 0;
+      for (const item of session.items) {
+        await client.query(
+          `
+          INSERT INTO study_session_items (id, session_id, concept_id, item_type, reason, sequence, duration_estimate_minutes)
+          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
+          `,
+          [sessionId, item.conceptId, item.activityType, item.priority, sequence++, item.estimatedMinutes]
+        );
+      }
     }
 
+    await client.query('COMMIT');
     return planId;
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error storing study plan:', error);
     throw error;
+  } finally {
+    client.release();
   }
 }
 
 /**
- * Get active study plan for student
+ * Get active study plan for student, rebuilt from study_sessions +
+ * study_session_items (joined back to concepts/subjects for display).
  */
-export async function getActiveStudyPlan(studentId: string): Promise<StudyPlan | null> {
+export async function getActiveStudyPlan(
+  studentId: string,
+  preferredLanguage: string = 'en'
+): Promise<StudyPlan | null> {
   try {
-    const result = await db.query(
+    const planResult = await db.query(
       `
-      SELECT * FROM study_plans
-      WHERE student_id = $1 AND end_date >= TODAY()
-      ORDER BY created_at DESC
+      SELECT id, student_id, period_start, period_end
+      FROM study_plans
+      WHERE student_id = $1 AND period_end >= CURRENT_DATE AND status = 'active'
+      ORDER BY generated_at DESC
       LIMIT 1
       `,
       [studentId]
     );
+    if (planResult.rows.length === 0) return null;
+    const plan = planResult.rows[0];
 
-    if (result.rows.length === 0) return null;
-
-    const plan = result.rows[0];
-
-    // Get sessions
     const sessionsResult = await db.query(
-      `
-      SELECT * FROM study_sessions
-      WHERE study_plan_id = $1
-      ORDER BY session_date ASC
-      `,
+      `SELECT id, scheduled_date, estimated_duration_minutes FROM study_sessions WHERE plan_id = $1 ORDER BY scheduled_date ASC`,
       [plan.id]
     );
 
-    const sessions: StudySession[] = sessionsResult.rows.map(row => ({
-      id: row.id,
-      studentId: row.student_id,
-      date: new Date(row.session_date),
-      totalMinutes: row.total_minutes,
-      items: JSON.parse(row.items),
-      subjectBreakdown: JSON.parse(row.subject_breakdown),
-      notes: row.notes,
-    }));
+    const sessions: StudySession[] = await Promise.all(
+      sessionsResult.rows.map(async (row) => {
+        const itemsResult = await db.query(
+          `
+          SELECT
+            si.concept_id, si.item_type, si.reason, si.duration_estimate_minutes,
+            c.canonical_id, c.subject_id, s.name AS subject_name, cl.label
+          FROM study_session_items si
+          JOIN concepts c ON c.id = si.concept_id
+          JOIN subjects s ON s.id = c.subject_id
+          LEFT JOIN LATERAL (
+            SELECT label FROM concept_localizations
+            WHERE concept_id = c.id
+            ORDER BY (language = $2) DESC
+            LIMIT 1
+          ) cl ON true
+          WHERE si.session_id = $1
+          ORDER BY si.sequence ASC
+          `,
+          [row.id, preferredLanguage]
+        );
+
+        const items: StudySessionItem[] = itemsResult.rows.map((it) => ({
+          conceptId: it.concept_id,
+          canonicalId: it.canonical_id,
+          label: it.label || it.canonical_id,
+          activityType: it.item_type,
+          estimatedMinutes: it.duration_estimate_minutes || 0,
+          priority: it.reason,
+          resources: {},
+        }));
+
+        const subjectMinutes = new Map<string, { subjectName: string; minutes: number; conceptCount: number }>();
+        for (let i = 0; i < items.length; i++) {
+          const it = itemsResult.rows[i];
+          const entry = subjectMinutes.get(it.subject_id) || { subjectName: it.subject_name, minutes: 0, conceptCount: 0 };
+          entry.minutes += items[i].estimatedMinutes;
+          entry.conceptCount += 1;
+          subjectMinutes.set(it.subject_id, entry);
+        }
+
+        return {
+          id: row.id,
+          studentId,
+          date: new Date(row.scheduled_date + 'T00:00:00'),
+          totalMinutes: row.estimated_duration_minutes,
+          items,
+          subjectBreakdown: Array.from(subjectMinutes.entries()).map(([subjectId, v]) => ({
+            subjectId,
+            subjectName: v.subjectName,
+            minutes: v.minutes,
+            conceptCount: v.conceptCount,
+          })),
+        };
+      })
+    );
+
+    const criticalConceptsCount = sessions.reduce(
+      (sum, s) => sum + s.items.filter((i) => i.priority === 'CRITICAL').length,
+      0
+    );
+    const subjectsInPlan = Array.from(
+      new Set(sessions.flatMap((s) => s.subjectBreakdown.map((b) => b.subjectName)))
+    );
 
     return {
       studentId: plan.student_id,
-      startDate: new Date(plan.start_date),
-      endDate: new Date(plan.end_date),
+      startDate: new Date(plan.period_start + 'T00:00:00'),
+      endDate: new Date(plan.period_end + 'T00:00:00'),
       sessions,
-      totalStudyMinutes: plan.total_minutes,
-      subjectsInPlan: JSON.parse(plan.subjects_in_plan),
-      criticalConceptsCount: plan.critical_concepts_count,
+      totalStudyMinutes: sessions.reduce((sum, s) => sum + s.totalMinutes, 0),
+      subjectsInPlan,
+      criticalConceptsCount,
     };
   } catch (error) {
     console.error('Error getting study plan:', error);
@@ -325,9 +396,12 @@ export async function getActiveStudyPlan(studentId: string): Promise<StudyPlan |
 /**
  * Get today's study session recommendations
  */
-export async function getTodayStudyPlan(studentId: string): Promise<StudySession | null> {
+export async function getTodayStudyPlan(
+  studentId: string,
+  preferredLanguage: string = 'en'
+): Promise<StudySession | null> {
   try {
-    const plan = await getActiveStudyPlan(studentId);
+    const plan = await getActiveStudyPlan(studentId, preferredLanguage);
     if (!plan) return null;
 
     const today = new Date();
@@ -351,7 +425,7 @@ export async function getTodayStudyPlan(studentId: string): Promise<StudySession
  */
 export async function calculateEstimatedCompletionDate(
   studentId: string,
-  targetMastery: number = 0.85
+  targetMastery: number = 85 // mastery_score is 0-100, not 0-1
 ): Promise<Date> {
   try {
     // Get current mastery stats

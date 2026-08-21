@@ -51,18 +51,9 @@ export default async function DashboardLayout({
           gap: 'var(--space-8)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-2)' }}>
-          <div
-            style={{
-              width: 28, height: 28, borderRadius: 'var(--radius-sm)',
-              background: 'var(--brand)', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: 14, flexShrink: 0,
-            }}
-          >
-            S
-          </div>
-          <div style={{ fontWeight: 650, fontSize: 15, letterSpacing: '-0.01em' }}>StudyOS</div>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--space-2)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="StudyUS" style={{ height: 30, width: 'auto' }} />
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -71,6 +62,7 @@ export default async function DashboardLayout({
           <NavLink href="/dashboard/subjects" label={t['nav.subjects']} />
           <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />
           <NavLink href="/dashboard/notifications" label={t['nav.notifications']} badge={notifCount} />
+          <NavLink href="/dashboard/study-plan" label={t['nav.studyPlan']} />
           <NavLink href="/dashboard/parent" label={t['nav.parent']} />
         </nav>
 

@@ -46,7 +46,9 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import {
   generateStudyPlan,
   storeStudyPlan,
+  getActiveStudyPlan,
 } from '@/services/study-plan.service';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { z } from 'zod';
 
 const GenerateStudyPlanSchema = z.object({
@@ -57,6 +59,58 @@ const GenerateStudyPlanSchema = z.object({
 });
 
 type GenerateStudyPlanRequest = z.infer<typeof GenerateStudyPlanSchema>;
+
+/** GET the currently active plan, without generating a new one. */
+export async function GET(request: NextRequest) {
+  const authContext = await verifyAuth();
+  if (!authContext) {
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const studentId = searchParams.get('studentId');
+  if (!studentId) {
+    return NextResponse.json({ error: 'INVALID_INPUT', message: 'Missing studentId' }, { status: 400 });
+  }
+
+  const canAccess = await verifyStudentAccess(authContext.userId, studentId, authContext.role);
+  if (!canAccess) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  const preferredLanguage = await getInterfaceLanguage(studentId);
+  const plan = await getActiveStudyPlan(studentId, preferredLanguage);
+
+  if (!plan) {
+    return NextResponse.json({ success: true, data: { plan: null } });
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      plan: {
+        startDate: plan.startDate.toISOString(),
+        endDate: plan.endDate.toISOString(),
+        sessions: plan.sessions.map((s) => ({
+          date: s.date.toISOString(),
+          totalMinutes: s.totalMinutes,
+          items: s.items.map((item) => ({
+            conceptId: item.conceptId,
+            canonicalId: item.canonicalId,
+            label: item.label,
+            activityType: item.activityType,
+            estimatedMinutes: item.estimatedMinutes,
+            priority: item.priority,
+          })),
+          subjectBreakdown: s.subjectBreakdown,
+        })),
+        totalStudyMinutes: plan.totalStudyMinutes,
+        subjectsInPlan: plan.subjectsInPlan,
+        criticalConceptsCount: plan.criticalConceptsCount,
+      },
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,12 +157,14 @@ export async function POST(request: NextRequest) {
     }
 
     const startDate = validated.startDate ? new Date(validated.startDate) : new Date();
+    const preferredLanguage = await getInterfaceLanguage(validated.studentId);
 
     // Generate plan
     const plan = await generateStudyPlan(validated.studentId, {
       daysAhead: validated.daysAhead || 7,
       dailyMinutes: validated.dailyMinutes || 90,
       startDate,
+      preferredLanguage,
     });
 
     // Store plan

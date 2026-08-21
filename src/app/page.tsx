@@ -25,8 +25,9 @@ export default async function Home() {
       }}
     >
       <div>
-        <h1>StudyOS</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="StudyUS" style={{ height: 56, width: 'auto', margin: '0 auto' }} />
+        <p style={{ color: 'var(--text-secondary)', margin: '16px 0 0', fontSize: 15 }}>
           {t['home.tagline']}
         </p>
       </div>
