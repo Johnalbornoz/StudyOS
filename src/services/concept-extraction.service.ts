@@ -206,13 +206,11 @@ export async function extractConceptsFromSource(
             `
             INSERT INTO concepts (
               subject_id,
-              canonical_id,
-              hierarchy_level,
-              source_language
-            ) VALUES ($1, $2, 1, $3)
+              canonical_id
+            ) VALUES ($1, $2)
             RETURNING id
             `,
-            [subjectId, concept.canonicalId, sourceLanguage]
+            [subjectId, concept.canonicalId]
           );
 
           conceptId = createResult.rows[0].id;
@@ -225,13 +223,12 @@ export async function extractConceptsFromSource(
           INSERT INTO concept_localizations (
             concept_id,
             language,
-            label,
-            description
-          ) VALUES ($1, $2, $3, $4)
+            label
+          ) VALUES ($1, $2, $3)
           ON CONFLICT (concept_id, language) DO UPDATE
-          SET label = EXCLUDED.label, description = EXCLUDED.description
+          SET label = EXCLUDED.label
           `,
-          [conceptId, sourceLanguage, concept.label, concept.description || '']
+          [conceptId, sourceLanguage, concept.label]
         );
 
         chunkConceptIds.push(conceptId);
@@ -247,9 +244,8 @@ export async function extractConceptsFromSource(
             confidence_score,
             attempt_count,
             correct_count,
-            incorrect_count,
-            forgetting_risk
-          ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0, 0)
+            incorrect_count
+          ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0)
           ON CONFLICT (student_id, concept_id) DO NOTHING
           `,
           [studentId, conceptId, subjectId]
@@ -267,7 +263,7 @@ export async function extractConceptsFromSource(
     await db.query(
       `
       UPDATE content_sources
-      SET extracted_concepts = $1
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('conceptsCreated', $1::int)
       WHERE id = $2
       `,
       [conceptsCreated, sourceId]
@@ -297,13 +293,11 @@ export async function getSubjectConcepts(
       SELECT
         c.id,
         c.canonical_id,
-        cl.label,
-        cl.description,
-        c.hierarchy_level
+        cl.label
       FROM concepts c
       LEFT JOIN concept_localizations cl ON c.id = cl.concept_id AND cl.language = $2
       WHERE c.subject_id = $1
-      ORDER BY c.hierarchy_level ASC, cl.label ASC
+      ORDER BY cl.label ASC
       `,
       [subjectId, language]
     );
@@ -312,8 +306,6 @@ export async function getSubjectConcepts(
       id: row.id,
       canonicalId: row.canonical_id,
       label: row.label,
-      description: row.description,
-      hierarchyLevel: row.hierarchy_level,
     }));
   } catch (error) {
     console.error('Error fetching subject concepts:', error);
