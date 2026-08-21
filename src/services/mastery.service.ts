@@ -51,9 +51,7 @@ export async function getMasteryRecord(
         correct_count,
         incorrect_count,
         last_practiced,
-        last_assessed,
-        forgetting_risk,
-        next_review_date
+        last_assessed
       FROM mastery_records
       WHERE student_id = $1 AND concept_id = $2
       LIMIT 1
@@ -94,9 +92,8 @@ export async function getOrCreateMasteryRecord(
         confidence_score,
         attempt_count,
         correct_count,
-        incorrect_count,
-        forgetting_risk
-      ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0, 0)
+        incorrect_count
+      ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0)
       RETURNING
         id,
         mastery_score,
@@ -105,9 +102,7 @@ export async function getOrCreateMasteryRecord(
         correct_count,
         incorrect_count,
         last_practiced,
-        last_assessed,
-        forgetting_risk,
-        next_review_date
+        last_assessed
       `,
       [studentId, conceptId, subjectId]
     );
@@ -209,9 +204,8 @@ export async function updateMastery(
       old_score,
       new_score,
       delta_reason,
-      evidence_source,
       created_at
-    ) VALUES ($1, $2, $3, $4, $5, NOW())
+    ) VALUES ($1, $2, $3, $4, NOW())
     RETURNING id
     `,
     [
@@ -219,7 +213,6 @@ export async function updateMastery(
       oldMastery,
       newMastery,
       `Result: ${evidence.result}, Difficulty: ${evidence.difficulty}/5, Type: ${evidence.sourceType}`,
-      evidence.sourceType,
     ]
   );
 
@@ -278,20 +271,10 @@ export async function updateMastery(
       source_type,
       result,
       difficulty,
-      confidence_weight,
-      error_classification,
       timestamp
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    ) VALUES ($1, $2, $3, $4, $5, NOW())
     `,
-    [
-      studentId,
-      conceptId,
-      evidence.sourceType,
-      evidence.result,
-      evidence.difficulty,
-      evidence.confidenceWeight || 1.0,
-      errorClassification,
-    ]
+    [studentId, conceptId, evidence.sourceType, evidence.result, evidence.difficulty]
   );
 
   return {
@@ -354,8 +337,7 @@ export async function getMasteryHistory(
       created_at as timestamp,
       old_score,
       new_score,
-      delta_reason,
-      evidence_source
+      delta_reason
     FROM mastery_events
     WHERE mastery_id IN (
       SELECT id FROM mastery_records

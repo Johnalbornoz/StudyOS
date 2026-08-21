@@ -248,27 +248,13 @@ async function createInAppNotification(
       `
       INSERT INTO notifications (
         student_id,
-        event_type,
+        notification_type,
         title,
         message,
-        action_url,
-        action_label,
-        priority,
-        context,
-        read,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, NOW())
+        delivered_at
+      ) VALUES ($1, $2, $3, $4, NOW())
       `,
-      [
-        studentId,
-        event,
-        template.title,
-        template.message,
-        template.actionUrl,
-        template.actionLabel,
-        template.priority,
-        JSON.stringify(context),
-      ]
+      [studentId, event, template.title, template.message]
     );
   } catch (error) {
     console.error('Error creating in-app notification:', error);
@@ -284,17 +270,13 @@ export async function getUnreadNotifications(studentId: string) {
       `
       SELECT
         id,
-        event_type,
+        notification_type,
         title,
         message,
-        action_url,
-        action_label,
-        priority,
-        context,
-        created_at
+        delivered_at
       FROM notifications
-      WHERE student_id = $1 AND read = false
-      ORDER BY created_at DESC
+      WHERE student_id = $1 AND read_at IS NULL
+      ORDER BY delivered_at DESC
       LIMIT 20
       `,
       [studentId]
@@ -302,14 +284,10 @@ export async function getUnreadNotifications(studentId: string) {
 
     return result.rows.map(row => ({
       id: row.id,
-      eventType: row.event_type,
+      eventType: row.notification_type,
       title: row.title,
       message: row.message,
-      actionUrl: row.action_url,
-      actionLabel: row.action_label,
-      priority: row.priority,
-      context: JSON.parse(row.context || '{}'),
-      createdAt: new Date(row.created_at),
+      createdAt: new Date(row.delivered_at),
     }));
   } catch (error) {
     console.error('Error getting notifications:', error);

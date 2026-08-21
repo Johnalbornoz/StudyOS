@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       const avg = records.length
         ? Math.round(records.reduce((sum: number, r: any) => sum + Number(r.mastery_score), 0) / records.length)
         : null;
-      const pending = debts.filter((d: any) => d.subject_id === s.id).length;
+      const pending = debts.filter((d: any) => d.subjectId === s.id).length;
       return { ...s, avgMastery: avg, conceptCount: records.length, pending };
     })
   );
@@ -137,8 +137,8 @@ export default async function DashboardPage() {
                     }}
                   />
                   <div className="row-main">
-                    <div className="row-title">{d.label || d.canonical_id}</div>
-                    <div className="row-sub">Dominio actual: {Math.round(d.mastery_score)}%</div>
+                    <div className="row-title">{d.concept?.label || d.concept?.canonicalId}</div>
+                    <div className="row-sub">Dominio actual: {Math.round(d.mastery ?? 0)}%</div>
                   </div>
                 </div>
               ))

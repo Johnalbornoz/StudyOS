@@ -42,12 +42,12 @@ export default async function LearningDebtPage() {
                 }}
               />
               <div className="row-main">
-                <div className="row-title">{d.label || d.canonical_id}</div>
+                <div className="row-title">{d.concept?.label || d.concept?.canonicalId}</div>
                 <div className="row-sub">
-                  Dominio actual: {Math.round(d.mastery_score)}% · severidad {d.severity}
+                  Dominio actual: {Math.round(d.mastery ?? 0)}% · severidad {d.severity}
                 </div>
               </div>
-              <Link href={`/dashboard/quiz?subjectId=${d.subject_id}&conceptId=${d.concept_id}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+              <Link href={`/dashboard/quiz?subjectId=${d.subjectId}&conceptId=${d.conceptId}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
                 Repasar
               </Link>
             </div>
