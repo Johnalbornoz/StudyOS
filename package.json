@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@clerk/nextjs": "^7.7.9",
     "@supabase/supabase-js": "^2.112.3",
     "axios": "^1.19.0",
