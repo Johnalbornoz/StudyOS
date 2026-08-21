@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { db } from '@/lib/db';
+import { upsertStudentFromWebhook } from '@/lib/auth';
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -38,12 +38,7 @@ export async function POST(req: Request) {
     const email = email_addresses?.[0]?.email_address || `${clerkUserId}@placeholder.local`;
     const fullName = `${first_name || ''} ${last_name || ''}`.trim() || null;
 
-    await db.query(
-      `INSERT INTO students (clerk_id, email, name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name`,
-      [clerkUserId, email, fullName]
-    );
+    await upsertStudentFromWebhook(clerkUserId, email, fullName);
   }
 
   return new Response('OK', { status: 200 });

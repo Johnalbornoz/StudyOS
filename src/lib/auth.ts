@@ -85,8 +85,69 @@ async function isUserStudent(userId: string, studentId: string): Promise<boolean
 }
 
 /**
- * Resolve a Clerk user ID to the internal students.id (UUID),
- * creating the row on first use if it doesn't exist yet.
+ * Create/update the student identity across both subsystems that share
+ * this database: the original StudyOS profiles/student_profiles tables
+ * (subjects.student_id references profiles.id) and IC-Engine's students
+ * table (mastery/learning-debt/quizzes/content reference students.id).
+ * Both rows are written with the SAME uuid so either FK resolves.
+ */
+async function ensureProfileRows(studentId: string, name: string | null): Promise<void> {
+  await db.query(
+    `INSERT INTO profiles (id, user_type, full_name)
+     VALUES ($1, 'student', $2)
+     ON CONFLICT (id) DO NOTHING`,
+    [studentId, name]
+  );
+  await db.query(
+    `INSERT INTO student_profiles (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
+    [studentId]
+  );
+}
+
+async function upsertStudentRecord(
+  clerkUserId: string,
+  email: string,
+  name: string | null
+): Promise<string> {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    const inserted = await client.query(
+      `INSERT INTO students (clerk_id, email, name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name
+       RETURNING id`,
+      [clerkUserId, email, name]
+    );
+    const studentId = inserted.rows[0].id;
+
+    await client.query(
+      `INSERT INTO profiles (id, user_type, full_name)
+       VALUES ($1, 'student', $2)
+       ON CONFLICT (id) DO NOTHING`,
+      [studentId, name]
+    );
+    await client.query(
+      `INSERT INTO student_profiles (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
+      [studentId]
+    );
+
+    await client.query('COMMIT');
+    return studentId;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Resolve a Clerk user ID to the internal student UUID (shared by
+ * profiles.id and students.id), creating the rows on first use. Also
+ * repairs the case where a students row exists without its matching
+ * profiles/student_profiles rows (e.g. from before this fix landed).
  */
 export async function getOrCreateStudentId(clerkUserId: string): Promise<string> {
   const existing = await db.query(
@@ -94,7 +155,9 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
     [clerkUserId]
   );
   if (existing.rows.length > 0) {
-    return existing.rows[0].id;
+    const studentId = existing.rows[0].id;
+    await ensureProfileRows(studentId, null);
+    return studentId;
   }
 
   const user = await currentUser();
@@ -104,14 +167,20 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
     `${clerkUserId}@placeholder.local`;
   const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
 
-  const result = await db.query(
-    `INSERT INTO students (clerk_id, email, name)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email
-     RETURNING id`,
-    [clerkUserId, email, name]
-  );
-  return result.rows[0].id;
+  return upsertStudentRecord(clerkUserId, email, name);
+}
+
+/**
+ * Same as getOrCreateStudentId but for use from the Clerk webhook, where
+ * email/name are already available in the event payload (avoids an
+ * extra Clerk API call via currentUser()).
+ */
+export async function upsertStudentFromWebhook(
+  clerkUserId: string,
+  email: string,
+  name: string | null
+): Promise<string> {
+  return upsertStudentRecord(clerkUserId, email, name);
 }
 
 /**
