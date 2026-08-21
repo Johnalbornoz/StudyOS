@@ -8,6 +8,7 @@ interface Occurrence {
   scheduledDate: string;
   daysUntil: number;
   status: string;
+  isRecurring: boolean;
 }
 
 export default function AssessmentPanel({
@@ -25,6 +26,7 @@ export default function AssessmentPanel({
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [dateInput, setDateInput] = useState('');
+  const [recurring, setRecurring] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -69,11 +71,17 @@ export default function AssessmentPanel({
         await fetch('/api/assessments/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId, subjectId, scheduledDate: dateInput }),
+          body: JSON.stringify({
+            studentId,
+            subjectId,
+            scheduledDate: dateInput,
+            ...(recurring ? { occurrencePattern: 'Weekly', intervalDays: 7 } : {}),
+          }),
         });
       }
       setEditing(false);
       setDateInput('');
+      setRecurring(false);
       await load();
     } finally {
       setSaving(false);
@@ -100,29 +108,47 @@ export default function AssessmentPanel({
       </div>
 
       {editing ? (
-        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-4)' }}>
-          <label className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.dateLabel']}</label>
-          <input
-            type="date"
-            value={dateInput}
-            onChange={(e) => setDateInput(e.target.value)}
-            style={{
-              height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
-              padding: '0 var(--space-3)', fontFamily: 'inherit', fontSize: 14,
-            }}
-          />
-          <button className="btn btn-primary" disabled={!dateInput || saving} onClick={save}>
-            {t['exam.save']}
-          </button>
-          <button className="btn btn-ghost" onClick={() => setEditing(false)}>
-            {t['exam.cancel']}
-          </button>
+        <div style={{ marginTop: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <label className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.dateLabel']}</label>
+            <input
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+              style={{
+                height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
+                padding: '0 var(--space-3)', fontFamily: 'inherit', fontSize: 14,
+              }}
+            />
+            <button className="btn btn-primary" disabled={!dateInput || saving} onClick={save}>
+              {t['exam.save']}
+            </button>
+            <button className="btn btn-ghost" onClick={() => setEditing(false)}>
+              {t['exam.cancel']}
+            </button>
+          </div>
+          {!occurrence && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-secondary)' }}>
+              <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
+              {t['exam.recurring']}
+            </label>
+          )}
         </div>
       ) : occurrence ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', marginTop: 'var(--space-3)' }}>
           <div>
             <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.dateLabel']}</div>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{occurrence.scheduledDate}</div>
+            <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              {occurrence.scheduledDate}
+              {occurrence.isRecurring && (
+                <span style={{
+                  fontSize: 11, fontWeight: 600, color: 'var(--brand-ink)', background: 'var(--brand-subtle)',
+                  borderRadius: 'var(--radius-full)', padding: '2px 8px',
+                }}>
+                  {t['exam.recurringBadge']}
+                </span>
+              )}
+            </div>
           </div>
           <div>
             <div className="label" style={{ color: 'var(--text-muted)' }}>&nbsp;</div>

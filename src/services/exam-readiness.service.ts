@@ -32,19 +32,28 @@ export interface ExamReadinessScore {
 export async function calculateExamReadiness(
   studentId: string,
   subjectId: string,
-  daysUntilExam: number
+  daysUntilExam: number,
+  preferredLanguage: string = 'en'
 ): Promise<ExamReadinessScore> {
   try {
-    // Get all concepts for subject
+    // Get all concepts for subject. LATERAL join picks the label in
+    // preferredLanguage when available, falling back to any other
+    // language rather than null (concepts are usually localized in
+    // whatever language the student uploaded/extracted content in).
     const conceptsResult = await db.query(
       `
       SELECT mr.concept_id, c.canonical_id, cl.label, mr.mastery_score
       FROM mastery_records mr
       JOIN concepts c ON mr.concept_id = c.id
-      LEFT JOIN concept_localizations cl ON c.id = cl.concept_id AND cl.language = 'en'
+      LEFT JOIN LATERAL (
+        SELECT label FROM concept_localizations
+        WHERE concept_id = c.id
+        ORDER BY (language = $3) DESC
+        LIMIT 1
+      ) cl ON true
       WHERE mr.student_id = $1 AND c.subject_id = $2
       `,
-      [studentId, subjectId]
+      [studentId, subjectId, preferredLanguage]
     );
 
     if (conceptsResult.rows.length === 0) {
@@ -277,7 +286,8 @@ async function calculateErrorScore(studentId: string, subjectId: string): Promis
  */
 export async function getMultiSubjectReadiness(
   studentId: string,
-  daysUntilExam: number
+  daysUntilExam: number,
+  preferredLanguage: string = 'en'
 ): Promise<
   Array<ExamReadinessScore & { subjectId: string; subjectName: string }>
 > {
@@ -300,7 +310,7 @@ export async function getMultiSubjectReadiness(
     const readinessScores: any[] = [];
 
     for (const subject of subjects) {
-      const readiness = await calculateExamReadiness(studentId, subject.id, daysUntilExam);
+      const readiness = await calculateExamReadiness(studentId, subject.id, daysUntilExam, preferredLanguage);
       readinessScores.push({
         ...readiness,
         subjectId: subject.id,
@@ -323,14 +333,15 @@ export async function getMultiSubjectReadiness(
  */
 export async function getOverallExamReadiness(
   studentId: string,
-  daysUntilExam: number
+  daysUntilExam: number,
+  preferredLanguage: string = 'en'
 ): Promise<{
   overallReadiness: ExamReadinessScore;
   bySubject: Array<ExamReadinessScore & { subjectId: string; subjectName: string }>;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }> {
   try {
-    const bySubject = await getMultiSubjectReadiness(studentId, daysUntilExam);
+    const bySubject = await getMultiSubjectReadiness(studentId, daysUntilExam, preferredLanguage);
 
     if (bySubject.length === 0) {
       throw new Error('No readiness data available');

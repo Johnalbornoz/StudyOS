@@ -45,6 +45,7 @@ type MessageKey =
   | 'exam.title' | 'exam.noneScheduled' | 'exam.schedule' | 'exam.dateLabel'
   | 'exam.reschedule' | 'exam.daysUntil' | 'exam.readiness' | 'exam.readinessLoading'
   | 'exam.save' | 'exam.cancel'
+  | 'exam.recurring' | 'exam.recurringBadge'
   | 'debt.title' | 'debt.subtitle' | 'debt.allCaughtUpTitle' | 'debt.allCaughtUpBody'
   | 'debt.currentMastery' | 'debt.severity' | 'debt.review'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
@@ -131,6 +132,8 @@ const es: Messages = {
   'exam.readinessLoading': 'Calculando preparación…',
   'exam.save': 'Guardar',
   'exam.cancel': 'Cancelar',
+  'exam.recurring': 'Se repite cada semana (mismo día)',
+  'exam.recurringBadge': 'Recurrente',
   'debt.title': 'Repaso pendiente',
   'debt.subtitle': 'Conceptos con riesgo de olvido, ordenados por severidad.',
   'debt.allCaughtUpTitle': 'Todo al día',
@@ -238,6 +241,8 @@ const en: Messages = {
   'exam.readinessLoading': 'Calculating readiness…',
   'exam.save': 'Save',
   'exam.cancel': 'Cancel',
+  'exam.recurring': 'Repeats every week (same day)',
+  'exam.recurringBadge': 'Recurring',
   'debt.title': 'Review queue',
   'debt.subtitle': 'Concepts at risk of being forgotten, ordered by severity.',
   'debt.allCaughtUpTitle': 'All caught up',
@@ -345,6 +350,8 @@ const de: Messages = {
   'exam.readinessLoading': 'Bereitschaft wird berechnet…',
   'exam.save': 'Speichern',
   'exam.cancel': 'Abbrechen',
+  'exam.recurring': 'Wiederholt sich jede Woche (gleicher Tag)',
+  'exam.recurringBadge': 'Wiederkehrend',
   'debt.title': 'Zu wiederholen',
   'debt.subtitle': 'Konzepte mit Vergessensrisiko, nach Dringlichkeit sortiert.',
   'debt.allCaughtUpTitle': 'Alles auf dem neuesten Stand',
@@ -452,6 +459,8 @@ const fr: Messages = {
   'exam.readinessLoading': 'Calcul de la préparation…',
   'exam.save': 'Enregistrer',
   'exam.cancel': 'Annuler',
+  'exam.recurring': 'Se répète chaque semaine (même jour)',
+  'exam.recurringBadge': 'Récurrent',
   'debt.title': 'À réviser',
   'debt.subtitle': "Concepts à risque d'oubli, classés par gravité.",
   'debt.allCaughtUpTitle': 'Tout est à jour',

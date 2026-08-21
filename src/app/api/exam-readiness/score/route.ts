@@ -36,6 +36,7 @@ import {
   getOverallExamReadiness,
 } from '@/services/exam-readiness.service';
 import { getNextOccurrence, cacheReadinessScore } from '@/services/assessment.service';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { z } from 'zod';
 
 const ExamReadinessSchema = z.object({
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
       ? parseInt(validated.daysUntilExam)
       : validated.daysUntilExam;
     const subjectId = validated.subjectId;
+    const preferredLanguage = await getInterfaceLanguage(validated.studentId);
 
     if (subjectId) {
       // No explicit daysUntilExam -- derive it from the subject's real
@@ -129,7 +131,8 @@ export async function GET(request: NextRequest) {
       const readiness = await calculateExamReadiness(
         validated.studentId,
         subjectId,
-        daysUntilExam
+        daysUntilExam,
+        preferredLanguage
       );
 
       if (occurrence) {
@@ -174,7 +177,7 @@ export async function GET(request: NextRequest) {
         overallReadiness,
         bySubject,
         riskLevel,
-      } = await getOverallExamReadiness(validated.studentId, daysUntilExam);
+      } = await getOverallExamReadiness(validated.studentId, daysUntilExam, preferredLanguage);
 
       return NextResponse.json({
         success: true,

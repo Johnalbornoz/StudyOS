@@ -1,4 +1,11 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
+
+// Postgres DATE columns (OID 1082) are parsed by node-pg into JS Date
+// objects at local midnight by default, which then serialize/compare
+// unpredictably depending on the server's timezone offset. Since our
+// schema only ever stores calendar dates (no time component), keep
+// them as plain 'YYYY-MM-DD' strings instead -- unambiguous either way.
+types.setTypeParser(1082, (val) => val);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

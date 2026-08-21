@@ -23,6 +23,7 @@ export type OccurrenceStatus =
 export interface AssessmentOccurrence {
   id: string;
   ruleId: string | null;
+  isRecurring: boolean;
   subjectId: string;
   subjectName?: string;
   scheduledDate: string; // YYYY-MM-DD
@@ -41,6 +42,7 @@ function toOccurrence(row: any): AssessmentOccurrence {
   return {
     id: row.id,
     ruleId: row.rule_id,
+    isRecurring: Boolean(row.interval_days),
     subjectId: row.subject_id,
     subjectName: row.subject_name,
     scheduledDate: row.scheduled_date,
@@ -54,26 +56,28 @@ function toOccurrence(row: any): AssessmentOccurrence {
 /**
  * Schedule a one-off assessment occurrence for a subject. Pass
  * `occurrencePattern` to also create (or reuse) a recurring rule this
- * occurrence belongs to.
+ * occurrence belongs to. `intervalDays` (e.g. 7 for "every Friday") makes
+ * the rule structured, so future occurrences auto-generate as this one's
+ * date passes -- see `ensureRecurringOccurrence` below.
  */
 export async function scheduleAssessment(
   subjectId: string,
   scheduledDate: string,
-  options: { topics?: string[]; occurrencePattern?: string } = {}
+  options: { topics?: string[]; occurrencePattern?: string; intervalDays?: number } = {}
 ): Promise<AssessmentOccurrence> {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
 
     let ruleId: string | null = null;
-    if (options.occurrencePattern) {
+    if (options.occurrencePattern || options.intervalDays) {
       const ruleResult = await client.query(
         `
-        INSERT INTO assessment_schedule_rules (subject_id, occurrence_pattern, next_scheduled_date)
-        VALUES ($1, $2, $3)
+        INSERT INTO assessment_schedule_rules (subject_id, occurrence_pattern, next_scheduled_date, interval_days)
+        VALUES ($1, $2, $3, $4)
         RETURNING id
         `,
-        [subjectId, options.occurrencePattern, scheduledDate]
+        [subjectId, options.occurrencePattern || null, scheduledDate, options.intervalDays || null]
       );
       ruleId = ruleResult.rows[0].id;
     }
@@ -88,7 +92,7 @@ export async function scheduleAssessment(
     );
 
     await client.query('COMMIT');
-    return toOccurrence(occResult.rows[0]);
+    return toOccurrence({ ...occResult.rows[0], interval_days: options.intervalDays || null });
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -115,7 +119,18 @@ export async function rescheduleAssessment(
     `,
     [newDate, occurrenceId]
   );
-  return result.rows[0] ? toOccurrence(result.rows[0]) : null;
+  const row = result.rows[0];
+  if (!row) return null;
+
+  let intervalDays = null;
+  if (row.rule_id) {
+    const ruleResult = await db.query(
+      `SELECT interval_days FROM assessment_schedule_rules WHERE id = $1`,
+      [row.rule_id]
+    );
+    intervalDays = ruleResult.rows[0]?.interval_days ?? null;
+  }
+  return toOccurrence({ ...row, interval_days: intervalDays });
 }
 
 export async function cancelAssessment(occurrenceId: string): Promise<void> {
@@ -124,16 +139,90 @@ export async function cancelAssessment(occurrenceId: string): Promise<void> {
   ]);
 }
 
+/**
+ * If this subject has a recurring rule (interval_days set) whose most
+ * recent occurrence has already passed, generate the next one -- rolled
+ * forward in interval_days steps until it lands in the future -- and
+ * update the rule's next_scheduled_date. A no-op for one-off or
+ * non-recurring subjects. Never throws: called opportunistically before
+ * reads, so a failure here should never break the read itself.
+ */
+async function ensureRecurringOccurrence(subjectId: string): Promise<void> {
+  const client = await db.connect();
+  try {
+    const ruleResult = await client.query(
+      `
+      SELECT id, interval_days FROM assessment_schedule_rules
+      WHERE subject_id = $1 AND interval_days IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [subjectId]
+    );
+    const rule = ruleResult.rows[0];
+    if (!rule) return;
+
+    const lastOccResult = await client.query(
+      `
+      SELECT scheduled_date FROM assessment_occurrences
+      WHERE rule_id = $1 AND status != 'cancelled'
+      ORDER BY scheduled_date DESC
+      LIMIT 1
+      `,
+      [rule.id]
+    );
+    const lastDate = lastOccResult.rows[0]?.scheduled_date;
+    if (!lastDate) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let cursor = new Date(lastDate + 'T00:00:00');
+    let rolledForward = false;
+    let guard = 0;
+    while (cursor.getTime() < today.getTime() && guard < 104) {
+      cursor = new Date(cursor.getTime() + rule.interval_days * 24 * 60 * 60 * 1000);
+      rolledForward = true;
+      guard++;
+    }
+    if (!rolledForward) return;
+
+    const nextDateStr = cursor.toISOString().slice(0, 10);
+
+    await client.query('BEGIN');
+    await client.query(
+      `
+      INSERT INTO assessment_occurrences (rule_id, subject_id, scheduled_date, status, topics)
+      VALUES ($1, $2, $3, 'expected', '{}')
+      ON CONFLICT DO NOTHING
+      `,
+      [rule.id, subjectId, nextDateStr]
+    );
+    await client.query(
+      `UPDATE assessment_schedule_rules SET next_scheduled_date = $1 WHERE id = $2`,
+      [nextDateStr, rule.id]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+  } finally {
+    client.release();
+  }
+}
+
 /** The next upcoming (not cancelled/completed) occurrence for a subject. */
 export async function getNextOccurrence(subjectId: string): Promise<AssessmentOccurrence | null> {
+  await ensureRecurringOccurrence(subjectId).catch(() => {});
   const result = await db.query(
     `
-    SELECT id, rule_id, subject_id, scheduled_date, status, topics, exam_readiness
-    FROM assessment_occurrences
-    WHERE subject_id = $1
-      AND status NOT IN ('cancelled', 'completed', 'result_recorded')
-      AND scheduled_date >= CURRENT_DATE
-    ORDER BY scheduled_date ASC
+    SELECT ao.id, ao.rule_id, ao.subject_id, ao.scheduled_date, ao.status, ao.topics, ao.exam_readiness,
+      r.interval_days
+    FROM assessment_occurrences ao
+    LEFT JOIN assessment_schedule_rules r ON r.id = ao.rule_id
+    WHERE ao.subject_id = $1
+      AND ao.status NOT IN ('cancelled', 'completed', 'result_recorded')
+      AND ao.scheduled_date >= CURRENT_DATE
+    ORDER BY ao.scheduled_date ASC
     LIMIT 1
     `,
     [subjectId]
@@ -143,13 +232,27 @@ export async function getNextOccurrence(subjectId: string): Promise<AssessmentOc
 
 /** Next upcoming occurrence per subject, across all of a student's subjects. */
 export async function getUpcomingForStudent(studentId: string): Promise<AssessmentOccurrence[]> {
+  const recurringSubjects = await db.query(
+    `
+    SELECT DISTINCT r.subject_id
+    FROM assessment_schedule_rules r
+    JOIN subjects s ON s.id = r.subject_id
+    WHERE s.student_id = $1 AND r.interval_days IS NOT NULL
+    `,
+    [studentId]
+  );
+  await Promise.all(
+    recurringSubjects.rows.map((row) => ensureRecurringOccurrence(row.subject_id).catch(() => {}))
+  );
+
   const result = await db.query(
     `
     SELECT DISTINCT ON (ao.subject_id)
       ao.id, ao.rule_id, ao.subject_id, ao.scheduled_date, ao.status, ao.topics, ao.exam_readiness,
-      s.name AS subject_name
+      s.name AS subject_name, r.interval_days
     FROM assessment_occurrences ao
     JOIN subjects s ON s.id = ao.subject_id
+    LEFT JOIN assessment_schedule_rules r ON r.id = ao.rule_id
     WHERE s.student_id = $1
       AND ao.status NOT IN ('cancelled', 'completed', 'result_recorded')
       AND ao.scheduled_date >= CURRENT_DATE

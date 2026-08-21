@@ -10,6 +10,7 @@ const CreateAssessmentSchema = z.object({
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'scheduledDate must be YYYY-MM-DD'),
   topics: z.array(z.string()).optional(),
   occurrencePattern: z.string().optional(),
+  intervalDays: z.number().int().min(1).max(365).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const occurrence = await scheduleAssessment(validated.subjectId, validated.scheduledDate, {
       topics: validated.topics,
       occurrencePattern: validated.occurrencePattern,
+      intervalDays: validated.intervalDays,
     });
 
     return NextResponse.json({ success: true, data: occurrence });
