@@ -82,7 +82,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      <UploadPanel subjectId={id} />
+      <UploadPanel subjectId={id} subjectName={subject.name} />
     </div>
   );
 }

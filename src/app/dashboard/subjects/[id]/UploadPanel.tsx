@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function UploadPanel({ subjectId }: { subjectId: string }) {
+export default function UploadPanel({ subjectId, subjectName }: { subjectId: string; subjectName: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
   const [extractedCount, setExtractedCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -16,35 +17,54 @@ export default function UploadPanel({ subjectId }: { subjectId: string }) {
 
     setLoading(true);
     setError(null);
+    setExtractedCount(null);
+
     try {
+      const meRes = await fetch('/api/me');
+      const me = await meRes.json();
+      if (!me.studentId) throw new Error('No se pudo identificar al estudiante');
+
+      setStatus('Subiendo archivo…');
       const formData = new FormData();
       formData.append('file', file);
       formData.append('subjectId', subjectId);
-
-      const res = await fetch('/api/content/upload', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'No se pudo subir el archivo');
-      }
+      const uploadRes = await fetch('/api/content/upload', { method: 'POST', body: formData });
+      const uploadBody = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadBody.error || 'No se pudo subir el archivo');
 
       const text = await file.text();
-      const extractRes = await fetch('/api/concepts/extract', {
+
+      setStatus('Procesando contenido (chunking + embeddings)…');
+      const processRes = await fetch('/api/content/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, subjectId }),
+        body: JSON.stringify({ contentSourceId: uploadBody.sourceId, text, sourceLanguage: 'es' }),
       });
+      const processBody = await processRes.json();
+      if (!processRes.ok) throw new Error(processBody.error || 'No se pudo procesar el contenido');
 
-      if (extractRes.ok) {
-        const extracted = await extractRes.json();
-        setExtractedCount(extracted.concepts?.length || 0);
-        router.refresh();
-      } else {
-        throw new Error('El archivo se subió, pero no se pudieron extraer conceptos');
-      }
+      setStatus('Extrayendo conceptos con IA…');
+      const extractRes = await fetch('/api/content/extract-concepts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceId: uploadBody.sourceId,
+          studentId: me.studentId,
+          subjectId,
+          subjectName,
+          sourceLanguage: 'es',
+        }),
+      });
+      const extractBody = await extractRes.json();
+      if (!extractRes.ok) throw new Error(extractBody.error || 'No se pudieron extraer conceptos');
+
+      setExtractedCount(extractBody.data.conceptsCreated);
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error');
     } finally {
       setLoading(false);
+      setStatus(null);
       setFile(null);
     }
   };
@@ -66,9 +86,10 @@ export default function UploadPanel({ subjectId }: { subjectId: string }) {
           {loading ? 'Procesando…' : 'Subir y extraer'}
         </button>
       </form>
+      {status && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-muted)' }}>{status}</p>}
       {extractedCount !== null && (
         <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--success)' }}>
-          Se extrajeron {extractedCount} conceptos nuevos.
+          Se extrajeron {extractedCount} conceptos nuevos, vinculados a tu contenido.
         </p>
       )}
       {error && (
