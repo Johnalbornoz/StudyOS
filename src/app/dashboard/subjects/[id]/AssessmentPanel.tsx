@@ -60,7 +60,8 @@ export default function AssessmentPanel({
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [dateInput, setDateInput] = useState('');
-  const [recurring, setRecurring] = useState(false);
+  const [recurrenceOption, setRecurrenceOption] = useState<'none' | 'weekly' | 'biweekly' | 'monthly' | 'custom'>('none');
+  const [customDays, setCustomDays] = useState('14');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -113,6 +114,23 @@ export default function AssessmentPanel({
     );
   }
 
+  function recurrenceParams(): { occurrencePattern?: string; intervalDays?: number } {
+    switch (recurrenceOption) {
+      case 'weekly':
+        return { occurrencePattern: 'Weekly', intervalDays: 7 };
+      case 'biweekly':
+        return { occurrencePattern: 'Biweekly', intervalDays: 14 };
+      case 'monthly':
+        return { occurrencePattern: 'Monthly', intervalDays: 30 };
+      case 'custom': {
+        const days = Math.max(1, Number(customDays) || 0);
+        return { occurrencePattern: `Custom (${days}d)`, intervalDays: days };
+      }
+      default:
+        return {};
+    }
+  }
+
   async function save() {
     if (!dateInput) return;
     setSaving(true);
@@ -137,13 +155,13 @@ export default function AssessmentPanel({
             subjectId,
             scheduledDate: dateInput,
             topics: selectedTopics,
-            ...(recurring ? { occurrencePattern: 'Weekly', intervalDays: 7 } : {}),
+            ...recurrenceParams(),
           }),
         });
       }
       setEditing(false);
       setDateInput('');
-      setRecurring(false);
+      setRecurrenceOption('none');
       setSelectedTopics([]);
       await load();
     } finally {
@@ -220,10 +238,40 @@ export default function AssessmentPanel({
           </div>
 
           {!occurrence && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-secondary)' }}>
-              <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
-              {t['exam.recurring']}
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <label className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.recurrenceLabel']}</label>
+              <select
+                value={recurrenceOption}
+                onChange={(e) => setRecurrenceOption(e.target.value as typeof recurrenceOption)}
+                style={{
+                  height: 34, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
+                  padding: '0 var(--space-3)', fontFamily: 'inherit', fontSize: 13.5, background: 'var(--bg-base)',
+                }}
+              >
+                <option value="none">{t['exam.recurrenceNone']}</option>
+                <option value="weekly">{t['exam.recurrenceWeekly']}</option>
+                <option value="biweekly">{t['exam.recurrenceBiweekly']}</option>
+                <option value="monthly">{t['exam.recurrenceMonthly']}</option>
+                <option value="custom">{t['exam.recurrenceCustom']}</option>
+              </select>
+              {recurrenceOption === 'custom' && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 13.5, color: 'var(--text-secondary)' }}>
+                  {t['exam.recurrenceCustomDaysLabel'].split('___')[0]}
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    style={{
+                      width: 60, height: 34, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
+                      padding: '0 8px', fontFamily: 'inherit', fontSize: 13.5,
+                    }}
+                  />
+                  {t['exam.recurrenceCustomDaysLabel'].split('___')[1]}
+                </span>
+              )}
+            </div>
           )}
 
           {concepts.length > 0 && (
