@@ -24,10 +24,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "jest": "^30.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

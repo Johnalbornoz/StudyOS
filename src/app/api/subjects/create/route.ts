@@ -3,9 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Development: Use test UUID, production: require auth
+  let userId = '550e8400-e29b-41d4-a716-446655440000'; // UUID v4 test
+  if (process.env.NODE_ENV === 'production') {
+    const auth_result = await auth();
+    userId = auth_result.userId || '';
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
   }
 
   try {
