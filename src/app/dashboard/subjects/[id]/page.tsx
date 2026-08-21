@@ -63,6 +63,17 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
+      {concepts.length > 0 && (
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+          <Link href={`/dashboard/quiz?subjectId=${id}&mode=cumulative_assessment`} className="btn btn-secondary">
+            {t['quiz.modeCumulative']}
+          </Link>
+          <Link href={`/dashboard/quiz?subjectId=${id}&mode=exam_simulation`} className="btn btn-secondary">
+            {t['quiz.modeExamSim']}
+          </Link>
+        </div>
+      )}
+
       <AssessmentPanel
         subjectId={id}
         studentId={studentId}
@@ -90,6 +101,13 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
                 </div>
                 <span className="mastery-pct tabular">{Math.round(c.mastery_score)}%</span>
               </div>
+              <Link
+                href={`/dashboard/quiz?subjectId=${id}&conceptId=${c.concept_id}&mode=quick_check`}
+                className="btn btn-ghost"
+                style={{ fontSize: 13 }}
+              >
+                {t['quiz.modeQuickCheck']}
+              </Link>
               <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${c.concept_id}`} className="btn btn-ghost">
                 {t['subjectDetail.practice']}
               </Link>

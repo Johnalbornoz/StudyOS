@@ -9,11 +9,15 @@
 import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 
+export type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation';
+
 export interface QuizSession {
   id: string;
   studentId: string;
-  conceptId: string;
+  conceptId: string | null;
   subjectId: string;
+  conceptIds: string[];
+  quizMode: QuizMode;
   questions: GeneratedQuestion[];
   language: string;
   createdAt: Date;
@@ -22,26 +26,33 @@ export interface QuizSession {
 }
 
 /**
- * Store generated quiz in database
+ * Store generated quiz in database. `conceptId` is the single concept
+ * for topic_practice/quick_check quizzes, or null for quizzes spanning
+ * multiple concepts (cumulative_assessment/exam_simulation) -- those
+ * pass the full set via `conceptIds` instead. Individual questions
+ * always carry their own conceptId regardless.
  */
 export async function storeQuiz(
   studentId: string,
-  conceptId: string,
+  conceptId: string | null,
   subjectId: string,
   questions: GeneratedQuestion[],
-  language: string = 'en'
+  language: string = 'en',
+  quizMode: QuizMode = 'topic_practice',
+  conceptIds: string[] = []
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000); // Expire after 30 minutes
+    const expiresAt = new Date(now.getTime() + 45 * 60 * 1000); // Expire after 45 minutes
 
     await db.query(
       `
       INSERT INTO quiz_sessions (
         id, student_id, concept_id, subject_id,
-        questions, language, status, created_at, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        questions, language, status, created_at, expires_at,
+        quiz_mode, concept_ids
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `,
       [
         quizId,
@@ -53,6 +64,8 @@ export async function storeQuiz(
         'active',
         now,
         expiresAt,
+        quizMode,
+        conceptIds.length > 0 ? conceptIds : questions.map((q) => q.conceptId),
       ]
     );
 
@@ -129,7 +142,8 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, language, status, created_at, expires_at
+             questions, language, status, created_at, expires_at,
+             quiz_mode, concept_ids
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -147,6 +161,8 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       studentId: row.student_id,
       conceptId: row.concept_id,
       subjectId: row.subject_id,
+      conceptIds: row.concept_ids || [],
+      quizMode: row.quiz_mode || 'topic_practice',
       questions: row.questions,
       language: row.language,
       createdAt: new Date(row.created_at),
@@ -167,7 +183,7 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, status, created_at, expires_at
+             questions, status, created_at, expires_at, quiz_mode, concept_ids
       FROM quiz_sessions
       WHERE student_id = $1
       AND status = 'active'
@@ -182,6 +198,8 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
       studentId: row.student_id,
       conceptId: row.concept_id,
       subjectId: row.subject_id,
+      conceptIds: row.concept_ids || [],
+      quizMode: row.quiz_mode || 'topic_practice',
       questions: row.questions,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
