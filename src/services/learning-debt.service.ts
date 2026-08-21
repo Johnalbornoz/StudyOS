@@ -174,8 +174,7 @@ export async function updateDebtSeverity(
         status = CASE
           WHEN severity > $1 THEN 'monitoring'
           ELSE status
-        END,
-        updated_at = NOW()
+        END
       WHERE student_id = $2 AND concept_id = $3
       RETURNING
         id,
@@ -280,8 +279,7 @@ export async function checkAndResolveDebt(
       UPDATE learning_debt
       SET
         status = 'resolved',
-        resolved_at = NOW(),
-        updated_at = NOW()
+        resolved_at = NOW()
       WHERE student_id = $1 AND concept_id = $2
       RETURNING
         id,

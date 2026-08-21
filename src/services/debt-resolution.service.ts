@@ -56,7 +56,7 @@ export async function autoResolveDebt(
     // Get mastery
     const masteryResult = await db.query(
       `
-      SELECT mastery_score, last_studied_at
+      SELECT mastery_score, last_practiced
       FROM mastery_records
       WHERE student_id = $1 AND concept_id = $2
       `,
@@ -82,11 +82,12 @@ export async function autoResolveDebt(
     }
 
     const masteryRecord = masteryResult.rows[0];
-    const mastery = (masteryRecord.mastery_score || 0) * 100;
+    // mastery_score is already 0-100 in the database.
+    const mastery = Number(masteryRecord.mastery_score) || 0;
 
     // Calculate days since last success
-    const lastStudiedAt = masteryRecord.last_studied_at
-      ? new Date(masteryRecord.last_studied_at)
+    const lastStudiedAt = masteryRecord.last_practiced
+      ? new Date(masteryRecord.last_practiced)
       : new Date();
     const daysSinceLastSuccess = Math.floor(
       (Date.now() - lastStudiedAt.getTime()) / (1000 * 60 * 60 * 24)
@@ -133,8 +134,7 @@ export async function autoResolveDebt(
         UPDATE learning_debt
         SET
           status = 'resolved',
-          resolved_at = NOW(),
-          updated_at = NOW()
+          resolved_at = NOW()
         WHERE student_id = $1 AND concept_id = $2
         RETURNING id
         `,

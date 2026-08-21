@@ -53,10 +53,11 @@ export async function calculateExamReadiness(
 
     const concepts = conceptsResult.rows;
 
-    // Calculate mastery score (average mastery)
-    const masteryScores = concepts.map(c => c.mastery_score || 0);
+    // Calculate mastery score (average mastery). mastery_score is
+    // already on a 0-100 scale in the database.
+    const masteryScores = concepts.map(c => Number(c.mastery_score) || 0);
     const masteryScore = Math.round(
-      (masteryScores.reduce((a, b) => a + b, 0) / masteryScores.length) * 100
+      masteryScores.reduce((a, b) => a + b, 0) / masteryScores.length
     );
 
     // Calculate retention score
@@ -87,14 +88,14 @@ export async function calculateExamReadiness(
     if (retentionScore < 50)
       areasOfConcern.push('Concepts have not been reviewed recently');
 
-    // Get concepts with low mastery
+    // Get concepts with low mastery (mastery_score is 0-100)
     const lowMasteryConcepts = concepts
-      .filter(c => c.mastery_score < 0.6)
-      .sort((a, b) => a.mastery_score - b.mastery_score)
+      .filter(c => Number(c.mastery_score) < 60)
+      .sort((a, b) => Number(a.mastery_score) - Number(b.mastery_score))
       .slice(0, 3);
 
     for (const concept of lowMasteryConcepts) {
-      areasOfConcern.push(`Low mastery in ${concept.label} (${Math.round(concept.mastery_score * 100)}%)`);
+      areasOfConcern.push(`Low mastery in ${concept.label} (${Math.round(Number(concept.mastery_score))}%)`);
     }
 
     // Get active debt
@@ -183,7 +184,7 @@ async function calculateRetentionScore(studentId: string, subjectId: string): Pr
     const result = await db.query(
       `
       SELECT
-        AVG(EXTRACT(DAY FROM (NOW() - last_studied_at))) as avg_days_since_review
+        AVG(EXTRACT(DAY FROM (NOW() - last_practiced))) as avg_days_since_review
       FROM mastery_records
       WHERE student_id = $1 AND concept_id IN (
         SELECT id FROM concepts WHERE subject_id = $2
