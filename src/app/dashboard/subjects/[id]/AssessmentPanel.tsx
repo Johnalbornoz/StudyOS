@@ -18,6 +18,30 @@ interface ConceptOption {
   masteryScore: number;
 }
 
+interface ConceptRecalibration {
+  conceptId: string;
+  label: string;
+  previousMastery: number;
+  newMastery: number;
+  delta: number;
+  debtResolved: boolean;
+}
+
+interface ExamResultOutcome {
+  percentage: number;
+  predictedReadiness: number | null;
+  readinessDelta: number | null;
+  recalibrated: ConceptRecalibration[];
+}
+
+interface ExamResultHistoryItem {
+  id: string;
+  scheduledDate: string;
+  percentage: number;
+  score: number;
+  maxScore: number;
+}
+
 export default function AssessmentPanel({
   subjectId,
   studentId,
@@ -32,6 +56,7 @@ export default function AssessmentPanel({
   const t = getMessages(locale);
   const [occurrence, setOccurrence] = useState<Occurrence | null>(null);
   const [readiness, setReadiness] = useState<number | null>(null);
+  const [history, setHistory] = useState<ExamResultHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [dateInput, setDateInput] = useState('');
@@ -39,16 +64,28 @@ export default function AssessmentPanel({
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const [recordingResult, setRecordingResult] = useState(false);
+  const [scoreInput, setScoreInput] = useState('');
+  const [maxScoreInput, setMaxScoreInput] = useState('100');
+  const [submittingResult, setSubmittingResult] = useState(false);
+  const [lastOutcome, setLastOutcome] = useState<ExamResultOutcome | null>(null);
+
   const labelFor = (conceptId: string) =>
     concepts.find((c) => c.conceptId === conceptId)?.label || conceptId;
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/assessments/upcoming?studentId=${studentId}&subjectId=${subjectId}`);
-      const body = await res.json();
-      const occ = body.data?.occurrence || null;
+      const [upcomingRes, historyRes] = await Promise.all([
+        fetch(`/api/assessments/upcoming?studentId=${studentId}&subjectId=${subjectId}`),
+        fetch(`/api/assessments/results?studentId=${studentId}&subjectId=${subjectId}`),
+      ]);
+      const upcomingBody = await upcomingRes.json();
+      const historyBody = await historyRes.json();
+
+      const occ = upcomingBody.data?.occurrence || null;
       setOccurrence(occ);
+      setHistory(historyBody.data?.results || []);
       setReadiness(null);
 
       if (occ) {
@@ -111,6 +148,33 @@ export default function AssessmentPanel({
       await load();
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function submitResult() {
+    if (!occurrence || !scoreInput || !maxScoreInput) return;
+    setSubmittingResult(true);
+    try {
+      const res = await fetch('/api/assessments/record-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId,
+          occurrenceId: occurrence.id,
+          score: Number(scoreInput),
+          maxScore: Number(maxScoreInput),
+        }),
+      });
+      const body = await res.json();
+      if (body.data) {
+        setLastOutcome(body.data);
+      }
+      setRecordingResult(false);
+      setScoreInput('');
+      setMaxScoreInput('100');
+      await load();
+    } finally {
+      setSubmittingResult(false);
     }
   }
 
@@ -271,11 +335,114 @@ export default function AssessmentPanel({
               </p>
             )}
           </div>
+
+          {occurrence.daysUntil <= 0 && (
+            <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-default)' }}>
+              {recordingResult ? (
+                <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['exam.scoreLabel']}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={scoreInput}
+                    onChange={(e) => setScoreInput(e.target.value)}
+                    style={{ width: 70, height: 34, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', padding: '0 8px', fontSize: 14 }}
+                  />
+                  <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['exam.outOfLabel']}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={maxScoreInput}
+                    onChange={(e) => setMaxScoreInput(e.target.value)}
+                    style={{ width: 70, height: 34, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', padding: '0 8px', fontSize: 14 }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    disabled={!scoreInput || !maxScoreInput || submittingResult}
+                    onClick={submitResult}
+                  >
+                    {t['exam.submitResult']}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setRecordingResult(false)}>
+                    {t['exam.cancel']}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 13.5, margin: 0 }}>{t['exam.recordResultPrompt']}</p>
+                  <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => setRecordingResult(true)}>
+                    {t['exam.recordResult']}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <p style={{ color: 'var(--text-muted)', fontSize: 13.5, marginTop: 'var(--space-3)' }}>
           {t['exam.noneScheduled']}
         </p>
+      )}
+
+      {lastOutcome && (
+        <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-default)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+            <strong style={{ fontSize: 14 }}>{t['exam.resultSaved']}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>
+            {lastOutcome.predictedReadiness !== null && (
+              <div>
+                <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.predicted']}</div>
+                <div className="tabular" style={{ fontWeight: 600, fontSize: 15 }}>{Math.round(lastOutcome.predictedReadiness)}%</div>
+              </div>
+            )}
+            <div>
+              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.actual']}</div>
+              <div className="tabular" style={{ fontWeight: 600, fontSize: 15 }}>{lastOutcome.percentage}%</div>
+            </div>
+          </div>
+          {lastOutcome.recalibrated.length > 0 && (
+            <>
+              <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 6px' }}>{t['exam.recalibrated']}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {lastOutcome.recalibrated.map((c) => (
+                  <div key={c.conceptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                    <span>{c.label}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="tabular" style={{ color: 'var(--text-muted)' }}>
+                        {Math.round(c.previousMastery)}% → {Math.round(c.newMastery)}%
+                      </span>
+                      {c.debtResolved && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'var(--success-subtle)',
+                          borderRadius: 'var(--radius-full)', padding: '2px 8px',
+                        }}>
+                          {t['exam.debtResolvedBadge']}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-default)' }}>
+          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 8px' }}>{t['exam.history']}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.map((h) => (
+              <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>{h.scheduledDate}</span>
+                <span className="tabular" style={{ fontWeight: 600 }}>
+                  {h.score}/{h.maxScore} · {h.percentage}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
