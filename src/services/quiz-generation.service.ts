@@ -108,7 +108,7 @@ Output JSON array (no markdown):
     }
 
     const data = await response.json();
-    const responseText = data.content[0].text;
+    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
 
     // Step 4: Parse and validate
     let questions: any[] = [];
@@ -207,7 +207,7 @@ Be fair but rigorous. Confidence = how sure you are in the grade.`,
     }
 
     const data = await response.json();
-    const responseText = data.content[0].text;
+    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
 
     try {
       const gradeResult = JSON.parse(responseText);

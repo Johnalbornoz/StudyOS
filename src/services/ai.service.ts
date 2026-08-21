@@ -45,9 +45,9 @@ Only return valid JSON, no other text.`,
       ],
     });
 
-    const content = message.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type');
+    const content = message.content.find((block) => block.type === 'text');
+    if (!content) {
+      throw new Error('No text response found');
     }
 
     return JSON.parse(content.text);
@@ -81,9 +81,9 @@ Return JSON:
       ],
     });
 
-    const content = message.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type');
+    const content = message.content.find((block) => block.type === 'text');
+    if (!content) {
+      throw new Error('No text response found');
     }
 
     return content.text;

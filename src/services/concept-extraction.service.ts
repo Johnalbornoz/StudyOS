@@ -106,7 +106,7 @@ Return JSON array of concepts:
     }
 
     const data = await response.json();
-    const responseText = data.content[0].text;
+    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
 
     // Parse JSON response
     let concepts: ExtractedConcept[];
