@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { rescheduleAssessment, cancelAssessment } from '@/services/assessment.service';
+import { updateOccurrence, cancelAssessment } from '@/services/assessment.service';
 import { z } from 'zod';
 
 const RescheduleSchema = z.object({
   studentId: z.string().uuid(),
   occurrenceId: z.string().uuid(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  topics: z.array(z.string()).optional(),
   cancel: z.boolean().optional(),
 });
 
@@ -53,11 +54,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: { cancelled: true } });
     }
 
-    if (!validated.scheduledDate) {
-      return NextResponse.json({ error: 'INVALID_INPUT', message: 'scheduledDate or cancel required' }, { status: 400 });
+    if (!validated.scheduledDate && !validated.topics) {
+      return NextResponse.json({ error: 'INVALID_INPUT', message: 'scheduledDate, topics, or cancel required' }, { status: 400 });
     }
 
-    const occurrence = await rescheduleAssessment(validated.occurrenceId, validated.scheduledDate);
+    const occurrence = await updateOccurrence(validated.occurrenceId, {
+      scheduledDate: validated.scheduledDate,
+      topics: validated.topics,
+    });
     return NextResponse.json({ success: true, data: occurrence });
   } catch (error) {
     console.error('Error rescheduling assessment:', error);

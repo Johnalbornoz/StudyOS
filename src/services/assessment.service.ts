@@ -102,22 +102,53 @@ export async function scheduleAssessment(
 }
 
 /**
- * Move an occurrence to a new date. This is the "school moved the exam"
- * case -- only this occurrence changes; the recurring rule and every
- * other occurrence stay exactly as they were.
+ * Edit an existing occurrence -- its date, its topics, or both. This is
+ * the "school moved the exam" / "this week also covers chapter 5" case:
+ * only this one occurrence changes; the recurring rule and every other
+ * occurrence stay exactly as they were. Status only flips to
+ * 'rescheduled' when the date actually moves, so editing topics alone on
+ * an untouched occurrence doesn't misreport it as moved.
  */
-export async function rescheduleAssessment(
+export async function updateOccurrence(
   occurrenceId: string,
-  newDate: string
+  updates: { scheduledDate?: string; topics?: string[] }
 ): Promise<AssessmentOccurrence | null> {
+  const current = await db.query(
+    `SELECT scheduled_date FROM assessment_occurrences WHERE id = $1`,
+    [occurrenceId]
+  );
+  if (!current.rows[0]) return null;
+
+  const sets: string[] = [];
+  const params: any[] = [];
+  let i = 1;
+
+  if (updates.scheduledDate && updates.scheduledDate !== current.rows[0].scheduled_date) {
+    sets.push(`scheduled_date = $${i++}`);
+    params.push(updates.scheduledDate);
+    sets.push(`status = 'rescheduled'`);
+  }
+  if (updates.topics) {
+    sets.push(`topics = $${i++}`);
+    params.push(updates.topics);
+  }
+  if (sets.length === 0) {
+    const row = await db.query(
+      `SELECT id, rule_id, subject_id, scheduled_date, status, topics, exam_readiness FROM assessment_occurrences WHERE id = $1`,
+      [occurrenceId]
+    );
+    return row.rows[0] ? toOccurrence(row.rows[0]) : null;
+  }
+
+  params.push(occurrenceId);
   const result = await db.query(
     `
     UPDATE assessment_occurrences
-    SET scheduled_date = $1, status = 'rescheduled'
-    WHERE id = $2
+    SET ${sets.join(', ')}
+    WHERE id = $${i}
     RETURNING id, rule_id, subject_id, scheduled_date, status, topics, exam_readiness
     `,
-    [newDate, occurrenceId]
+    params
   );
   const row = result.rows[0];
   if (!row) return null;
@@ -146,6 +177,12 @@ export async function cancelAssessment(occurrenceId: string): Promise<void> {
  * update the rule's next_scheduled_date. A no-op for one-off or
  * non-recurring subjects. Never throws: called opportunistically before
  * reads, so a failure here should never break the read itself.
+ *
+ * The new occurrence starts with the same topics as the one it follows
+ * -- this is the incremental-learning default the product asks for
+ * ("last week's topics keep being covered unless someone edits them").
+ * Editing that occurrence afterwards (updateOccurrence) only ever
+ * touches this one instance, same as any other edit.
  */
 async function ensureRecurringOccurrence(subjectId: string): Promise<void> {
   const client = await db.connect();
@@ -164,7 +201,7 @@ async function ensureRecurringOccurrence(subjectId: string): Promise<void> {
 
     const lastOccResult = await client.query(
       `
-      SELECT scheduled_date FROM assessment_occurrences
+      SELECT scheduled_date, topics FROM assessment_occurrences
       WHERE rule_id = $1 AND status != 'cancelled'
       ORDER BY scheduled_date DESC
       LIMIT 1
@@ -173,6 +210,7 @@ async function ensureRecurringOccurrence(subjectId: string): Promise<void> {
     );
     const lastDate = lastOccResult.rows[0]?.scheduled_date;
     if (!lastDate) return;
+    const lastTopics: string[] = lastOccResult.rows[0]?.topics || [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -193,10 +231,10 @@ async function ensureRecurringOccurrence(subjectId: string): Promise<void> {
     await client.query(
       `
       INSERT INTO assessment_occurrences (rule_id, subject_id, scheduled_date, status, topics)
-      VALUES ($1, $2, $3, 'expected', '{}')
+      VALUES ($1, $2, $3, 'expected', $4)
       ON CONFLICT DO NOTHING
       `,
-      [rule.id, subjectId, nextDateStr]
+      [rule.id, subjectId, nextDateStr, lastTopics]
     );
     await client.query(
       `UPDATE assessment_schedule_rules SET next_scheduled_date = $1 WHERE id = $2`,

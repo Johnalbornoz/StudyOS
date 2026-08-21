@@ -63,7 +63,16 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
-      <AssessmentPanel subjectId={id} studentId={studentId} locale={locale} />
+      <AssessmentPanel
+        subjectId={id}
+        studentId={studentId}
+        locale={locale}
+        concepts={concepts.map((c: any) => ({
+          conceptId: c.concept_id,
+          label: c.label || c.canonical_id,
+          masteryScore: Number(c.mastery_score),
+        }))}
+      />
 
       {concepts.length === 0 ? (
         <div className="card empty-state">

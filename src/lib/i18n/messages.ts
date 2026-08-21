@@ -46,6 +46,8 @@ type MessageKey =
   | 'exam.reschedule' | 'exam.daysUntil' | 'exam.readiness' | 'exam.readinessLoading'
   | 'exam.save' | 'exam.cancel'
   | 'exam.recurring' | 'exam.recurringBadge'
+  | 'exam.topicsTitle' | 'exam.topicsNone' | 'exam.topicsSelectAll' | 'exam.topicsSelectNone'
+  | 'exam.topicsHint' | 'exam.editTopics'
   | 'debt.title' | 'debt.subtitle' | 'debt.allCaughtUpTitle' | 'debt.allCaughtUpBody'
   | 'debt.currentMastery' | 'debt.severity' | 'debt.review'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
@@ -134,6 +136,12 @@ const es: Messages = {
   'exam.cancel': 'Cancelar',
   'exam.recurring': 'Se repite cada semana (mismo día)',
   'exam.recurringBadge': 'Recurrente',
+  'exam.topicsTitle': 'Temas del examen',
+  'exam.topicsNone': 'No se seleccionaron temas específicos',
+  'exam.topicsSelectAll': 'Seleccionar todos',
+  'exam.topicsSelectNone': 'Ninguno',
+  'exam.topicsHint': 'Los temas de la semana anterior se mantienen automáticamente para un aprendizaje incremental. Agrega los nuevos que quieras sumar.',
+  'exam.editTopics': 'Editar temas',
   'debt.title': 'Repaso pendiente',
   'debt.subtitle': 'Conceptos con riesgo de olvido, ordenados por severidad.',
   'debt.allCaughtUpTitle': 'Todo al día',
@@ -243,6 +251,12 @@ const en: Messages = {
   'exam.cancel': 'Cancel',
   'exam.recurring': 'Repeats every week (same day)',
   'exam.recurringBadge': 'Recurring',
+  'exam.topicsTitle': 'Exam topics',
+  'exam.topicsNone': 'No specific topics selected',
+  'exam.topicsSelectAll': 'Select all',
+  'exam.topicsSelectNone': 'None',
+  'exam.topicsHint': "Last week's topics carry over automatically for incremental learning. Add any new ones you want to include.",
+  'exam.editTopics': 'Edit topics',
   'debt.title': 'Review queue',
   'debt.subtitle': 'Concepts at risk of being forgotten, ordered by severity.',
   'debt.allCaughtUpTitle': 'All caught up',
@@ -352,6 +366,12 @@ const de: Messages = {
   'exam.cancel': 'Abbrechen',
   'exam.recurring': 'Wiederholt sich jede Woche (gleicher Tag)',
   'exam.recurringBadge': 'Wiederkehrend',
+  'exam.topicsTitle': 'Prüfungsthemen',
+  'exam.topicsNone': 'Keine bestimmten Themen ausgewählt',
+  'exam.topicsSelectAll': 'Alle auswählen',
+  'exam.topicsSelectNone': 'Keine',
+  'exam.topicsHint': 'Die Themen der letzten Woche werden für inkrementelles Lernen automatisch übernommen. Füge neue hinzu, die du einschließen möchtest.',
+  'exam.editTopics': 'Themen bearbeiten',
   'debt.title': 'Zu wiederholen',
   'debt.subtitle': 'Konzepte mit Vergessensrisiko, nach Dringlichkeit sortiert.',
   'debt.allCaughtUpTitle': 'Alles auf dem neuesten Stand',
@@ -461,6 +481,12 @@ const fr: Messages = {
   'exam.cancel': 'Annuler',
   'exam.recurring': 'Se répète chaque semaine (même jour)',
   'exam.recurringBadge': 'Récurrent',
+  'exam.topicsTitle': "Sujets de l'examen",
+  'exam.topicsNone': 'Aucun sujet spécifique sélectionné',
+  'exam.topicsSelectAll': 'Tout sélectionner',
+  'exam.topicsSelectNone': 'Aucun',
+  'exam.topicsHint': "Les sujets de la semaine précédente sont conservés automatiquement pour un apprentissage incrémental. Ajoutez ceux que vous souhaitez inclure.",
+  'exam.editTopics': 'Modifier les sujets',
   'debt.title': 'À réviser',
   'debt.subtitle': "Concepts à risque d'oubli, classés par gravité.",
   'debt.allCaughtUpTitle': 'Tout est à jour',
