@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       {
         error: 'INTERNAL_ERROR',
         message: 'Failed to process quiz',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined,
+        details: String(error) + ' | stack: ' + (error instanceof Error ? error.stack : ''),
       },
       { status: 500 }
     );
