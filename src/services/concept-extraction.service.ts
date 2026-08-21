@@ -9,6 +9,7 @@
 import { db } from '@/lib/db';
 import { updateChunkConceptMappings } from './embedding.service';
 import { parseAIJson } from '@/lib/ai-json';
+import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -45,6 +46,8 @@ export async function extractConceptsFromChunk(
       throw new Error('ANTHROPIC_API_KEY not set');
     }
 
+    const languageName = LOCALE_FULL_NAME[language] || language;
+
     const systemPrompt = `You are an educational content analyzer for ${subjectName}.
 
 Your task: Extract core learning concepts from educational text.
@@ -54,11 +57,13 @@ For each concept, provide:
    Format: SUBJECT_CATEGORY_CONCEPT
    Example: MATH_ALG_LINEAR_EQUATIONS
 
-2. Label (human-readable in ${language})
+2. Label (human-readable, written in ${languageName})
 3. Type: definition|procedure|formula|fact|skill
 4. Difficulty: 1-5 (1=basic, 5=advanced)
-5. Description (optional)
+5. Description (optional, written in ${languageName})
 6. Prerequisites (canonical IDs of required prior knowledge)
+
+IMPORTANT: The source text below may be written in a different language than ${languageName}. Regardless of what language the source text is in, the "label" and "description" fields MUST be written in ${languageName} -- translate them if the source text is in another language. Only the canonicalId stays in uppercase English-style identifiers, since it is language-independent.
 
 Output ONLY valid JSON array, no markdown.`;
 
@@ -68,14 +73,14 @@ Output ONLY valid JSON array, no markdown.`;
 ${chunkText}
 </text>
 
-Return JSON array of concepts:
+Return JSON array of concepts, with "label" and "description" written in ${languageName} even if the text above is in a different language:
 [
   {
     "canonicalId": "MATH_ALG_LINEAR_EQ",
-    "label": "Linear Equations",
+    "label": "<concept name, in ${languageName}>",
     "type": "definition",
     "difficulty": 2,
-    "description": "Equations with variables of degree 1",
+    "description": "<short description, in ${languageName}>",
     "prerequisites": ["MATH_ALG_VARIABLES", "MATH_ARITH_OPERATIONS"]
   }
 ]`;
