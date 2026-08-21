@@ -33,6 +33,10 @@ export default function ConceptList({
   const [items, setItems] = useState(concepts);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explainLoadingId, setExplainLoadingId] = useState<string | null>(null);
+  const [explainErrorId, setExplainErrorId] = useState<string | null>(null);
 
   async function handleDelete(conceptId: string) {
     if (!confirm(t['subjectDetail.deleteConceptConfirm'])) return;
@@ -51,6 +55,31 @@ export default function ConceptList({
     }
   }
 
+  async function handleLearnMore(conceptId: string) {
+    if (expandedId === conceptId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(conceptId);
+    if (explanations[conceptId]) return;
+
+    setExplainLoadingId(conceptId);
+    setExplainErrorId(null);
+    try {
+      const res = await fetch(`/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`);
+      const body = await res.json();
+      if (res.ok) {
+        setExplanations((prev) => ({ ...prev, [conceptId]: body.data.explanation }));
+      } else {
+        setExplainErrorId(conceptId);
+      }
+    } catch {
+      setExplainErrorId(conceptId);
+    } finally {
+      setExplainLoadingId(null);
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
       {items.map((c) => (
@@ -63,6 +92,14 @@ export default function ConceptList({
               </div>
               <span className="mastery-pct tabular">{Math.round(c.masteryScore)}%</span>
             </div>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ fontSize: 13, flexShrink: 0 }}
+              onClick={() => handleLearnMore(c.conceptId)}
+            >
+              {expandedId === c.conceptId ? t['subjectDetail.learnMoreCollapse'] : t['subjectDetail.learnMoreAction']}
+            </button>
             <Link
               href={`/dashboard/quiz?subjectId=${subjectId}&conceptId=${c.conceptId}&mode=quick_check`}
               className="btn btn-ghost"
@@ -87,6 +124,25 @@ export default function ConceptList({
             <p style={{ color: 'var(--error)', fontSize: 12.5, marginTop: 4 }}>
               {t['subjectDetail.deleteConceptHasHistory']}
             </p>
+          )}
+          {expandedId === c.conceptId && (
+            <div
+              className="card"
+              style={{
+                marginTop: 4, padding: 'var(--space-4)', background: 'var(--bg-subtle)',
+                fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+              }}
+            >
+              {explainLoadingId === c.conceptId ? (
+                <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  {t['subjectDetail.learnMoreLoading']}
+                </span>
+              ) : explainErrorId === c.conceptId ? (
+                <span style={{ color: 'var(--error)' }}>{t['subjectDetail.learnMoreError']}</span>
+              ) : (
+                explanations[c.conceptId]
+              )}
+            </div>
           )}
         </div>
       ))}

@@ -421,10 +421,10 @@ export async function getStudentMastery(
 }
 
 /**
- * Delete a concept. A mastery_records row and a concept_localizations
- * row always exist alongside a concept (both created together with it
- * at extraction time), so they're removed as part of the same
- * operation rather than counting as "history" on their own. Real
+ * Delete a concept. A mastery_records row, a concept_localizations
+ * row, and (if generated) a concept_explanations row are all
+ * structural -- created alongside the concept rather than being
+ * "history" -- so they're removed as part of the same operation. Real
  * activity -- mastery_events, quiz_sessions, errors, learning_debt,
  * study_session_items, learning_evidence -- still blocks the delete
  * via the DB's own foreign keys (all NO ACTION), surfaced here as
@@ -446,6 +446,7 @@ export async function deleteConcept(
 
     await client.query('BEGIN');
     await client.query(`DELETE FROM concept_localizations WHERE concept_id = $1`, [conceptId]);
+    await client.query(`DELETE FROM concept_explanations WHERE concept_id = $1`, [conceptId]);
     await client.query(`DELETE FROM mastery_records WHERE concept_id = $1 AND student_id = $2`, [
       conceptId,
       studentId,

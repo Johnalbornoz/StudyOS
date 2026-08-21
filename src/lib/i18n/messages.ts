@@ -44,6 +44,8 @@ type MessageKey =
   | 'subjectDetail.contentDeleteAction' | 'subjectDetail.contentUploadedOn'
   | 'subjects.hasConceptsNotice'
   | 'subjectDetail.deleteConceptConfirm' | 'subjectDetail.deleteConceptHasHistory'
+  | 'subjectDetail.learnMoreAction' | 'subjectDetail.learnMoreCollapse'
+  | 'subjectDetail.learnMoreLoading' | 'subjectDetail.learnMoreError'
   | 'subjectNew.title' | 'subjectNew.subtitle' | 'subjectNew.nameLabel'
   | 'subjectNew.namePlaceholder' | 'subjectNew.isLanguageLabel'
   | 'subjectNew.isLanguageHelp' | 'subjectNew.targetLanguageLabel'
@@ -174,6 +176,10 @@ const es: Messages = {
   'subjects.hasConceptsNotice': 'Solo puedes eliminar una materia sin conceptos. Elimina los conceptos primero, o archívala en su lugar.',
   'subjectDetail.deleteConceptConfirm': '¿Eliminar este concepto? Se perderá su registro de dominio.',
   'subjectDetail.deleteConceptHasHistory': 'No se puede eliminar: tiene historial de práctica (quizzes, errores o brechas de aprendizaje).',
+  'subjectDetail.learnMoreAction': 'Aprender más',
+  'subjectDetail.learnMoreCollapse': 'Ocultar',
+  'subjectDetail.learnMoreLoading': 'Generando explicación con IA…',
+  'subjectDetail.learnMoreError': 'No se pudo generar la explicación. Intenta de nuevo.',
   'subjectNew.title': 'Crear materia',
   'subjectNew.subtitle': 'Dale un nombre a tu nueva materia — luego podrás subir contenido y practicar.',
   'subjectNew.nameLabel': 'Nombre de la materia',
@@ -448,6 +454,10 @@ const en: Messages = {
   'subjects.hasConceptsNotice': "You can only delete a subject with no concepts. Delete the concepts first, or archive it instead.",
   'subjectDetail.deleteConceptConfirm': 'Delete this concept? Its mastery record will be lost.',
   'subjectDetail.deleteConceptHasHistory': "Can't delete: it has practice history (quizzes, errors, or learning debt).",
+  'subjectDetail.learnMoreAction': 'Learn more',
+  'subjectDetail.learnMoreCollapse': 'Hide',
+  'subjectDetail.learnMoreLoading': 'Generating explanation with AI…',
+  'subjectDetail.learnMoreError': "Couldn't generate the explanation. Try again.",
   'subjectNew.title': 'Create subject',
   'subjectNew.subtitle': 'Give your new subject a name — you can upload content and practice right after.',
   'subjectNew.nameLabel': 'Subject name',
@@ -722,6 +732,10 @@ const de: Messages = {
   'subjects.hasConceptsNotice': 'Du kannst nur ein Fach ohne Konzepte löschen. Lösche zuerst die Konzepte oder archiviere es stattdessen.',
   'subjectDetail.deleteConceptConfirm': 'Dieses Konzept löschen? Sein Meisterschaftseintrag geht verloren.',
   'subjectDetail.deleteConceptHasHistory': 'Kann nicht gelöscht werden: Es gibt Übungsverlauf (Quiz, Fehler oder Lernrückstände).',
+  'subjectDetail.learnMoreAction': 'Mehr erfahren',
+  'subjectDetail.learnMoreCollapse': 'Ausblenden',
+  'subjectDetail.learnMoreLoading': 'Erklärung wird mit KI erstellt…',
+  'subjectDetail.learnMoreError': 'Die Erklärung konnte nicht erstellt werden. Versuche es erneut.',
   'subjectNew.title': 'Fach erstellen',
   'subjectNew.subtitle': 'Gib deinem neuen Fach einen Namen — danach kannst du Inhalte hochladen und üben.',
   'subjectNew.nameLabel': 'Name des Fachs',
@@ -996,6 +1010,10 @@ const fr: Messages = {
   'subjects.hasConceptsNotice': "Vous ne pouvez supprimer qu'une matière sans concepts. Supprimez d'abord les concepts, ou archivez-la à la place.",
   'subjectDetail.deleteConceptConfirm': 'Supprimer ce concept ? Son historique de maîtrise sera perdu.',
   'subjectDetail.deleteConceptHasHistory': "Impossible de supprimer : il a un historique de pratique (quiz, erreurs ou dettes d'apprentissage).",
+  'subjectDetail.learnMoreAction': 'En savoir plus',
+  'subjectDetail.learnMoreCollapse': 'Masquer',
+  'subjectDetail.learnMoreLoading': "Génération de l'explication par l'IA…",
+  'subjectDetail.learnMoreError': "Impossible de générer l'explication. Réessayez.",
   'subjectNew.title': 'Créer une matière',
   'subjectNew.subtitle': 'Donnez un nom à votre nouvelle matière — vous pourrez ensuite importer du contenu et vous entraîner.',
   'subjectNew.nameLabel': 'Nom de la matière',
@@ -1270,6 +1288,10 @@ const pt: Messages = {
   'subjects.hasConceptsNotice': 'Você só pode excluir uma matéria sem conceitos. Exclua os conceitos primeiro, ou arquive-a em vez disso.',
   'subjectDetail.deleteConceptConfirm': 'Excluir este conceito? Seu registro de domínio será perdido.',
   'subjectDetail.deleteConceptHasHistory': 'Não é possível excluir: há histórico de prática (quizzes, erros ou dívidas de aprendizado).',
+  'subjectDetail.learnMoreAction': 'Aprender mais',
+  'subjectDetail.learnMoreCollapse': 'Ocultar',
+  'subjectDetail.learnMoreLoading': 'Gerando explicação com IA…',
+  'subjectDetail.learnMoreError': 'Não foi possível gerar a explicação. Tente novamente.',
   'subjectNew.title': 'Criar matéria',
   'subjectNew.subtitle': 'Dê um nome à sua nova matéria — depois você poderá enviar conteúdo e praticar.',
   'subjectNew.nameLabel': 'Nome da matéria',
