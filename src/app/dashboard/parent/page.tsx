@@ -38,7 +38,7 @@ export default function ParentPage() {
   const [childEmail, setChildEmail] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [children, setChildren] = useState<{ studentId: string; name: string; email: string }[]>([]);
+  const [children, setChildren] = useState<{ studentId: string; name: string; email: string; status: 'pending' | 'accepted' | 'declined' }[]>([]);
   const [overviews, setOverviews] = useState<Record<string, ChildOverview>>({});
   const [loading, setLoading] = useState(true);
 
@@ -56,11 +56,13 @@ export default function ParentPage() {
     setChildren(list);
 
     const entries = await Promise.all(
-      list.map(async (c: any) => {
-        const res = await fetch(`/api/parent/child-overview?studentId=${c.studentId}`);
-        const overviewBody = await res.json();
-        return [c.studentId, overviewBody.data] as const;
-      })
+      list
+        .filter((c: any) => c.status === 'accepted')
+        .map(async (c: any) => {
+          const res = await fetch(`/api/parent/child-overview?studentId=${c.studentId}`);
+          const overviewBody = await res.json();
+          return [c.studentId, overviewBody.data] as const;
+        })
     );
     setOverviews(Object.fromEntries(entries));
     setLoading(false);
@@ -145,11 +147,25 @@ export default function ParentPage() {
         return (
           <div key={child.studentId} className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-              <h2 style={{ margin: 0 }}>{child.name}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <h2 style={{ margin: 0 }}>{child.name}</h2>
+                {child.status === 'pending' && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 650, color: 'var(--warning)', background: 'var(--warning-subtle)',
+                    borderRadius: 'var(--radius-full)', padding: '2px 9px',
+                  }}>
+                    {t['parent.statusPending']}
+                  </span>
+                )}
+              </div>
               <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => unlink(child.studentId)}>
                 {t['parent.unlink']}
               </button>
             </div>
+
+            {child.status === 'pending' && (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13.5, margin: 0 }}>{t['parent.statusPendingBody']}</p>
+            )}
 
             {overview && (
               <>

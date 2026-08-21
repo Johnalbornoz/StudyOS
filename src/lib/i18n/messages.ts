@@ -64,6 +64,8 @@ type MessageKey =
   | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
   | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
   | 'parent.readiness' | 'parent.avgMastery' | 'parent.concepts'
+  | 'parent.statusPending' | 'parent.statusPendingBody' | 'parent.requestsTitle' | 'parent.requestBody'
+  | 'parent.accept' | 'parent.decline'
   | 'exam.recordResult' | 'exam.recordResultPrompt' | 'exam.scoreLabel' | 'exam.outOfLabel'
   | 'exam.submitResult' | 'exam.resultSaved' | 'exam.predicted' | 'exam.actual'
   | 'exam.recalibrated' | 'exam.debtResolvedBadge' | 'exam.history' | 'exam.historyEmpty'
@@ -225,6 +227,12 @@ const es: Messages = {
   'parent.readiness': 'Preparación',
   'parent.avgMastery': 'Dominio promedio',
   'parent.concepts': 'conceptos',
+  'parent.statusPending': 'Pendiente',
+  'parent.statusPendingBody': 'Esperando que acepte tu solicitud de vinculación.',
+  'parent.requestsTitle': 'Solicitudes de acceso',
+  'parent.requestBody': 'Quiere ver tu progreso en StudyOS.',
+  'parent.accept': 'Aceptar',
+  'parent.decline': 'Rechazar',
   'exam.recordResult': 'Registrar resultado',
   'exam.recordResultPrompt': '¿Ya presentaste este examen? Registra tu resultado real para recalibrar tu dominio.',
   'exam.scoreLabel': 'Obtuviste',
@@ -458,6 +466,12 @@ const en: Messages = {
   'parent.readiness': 'Readiness',
   'parent.avgMastery': 'Average mastery',
   'parent.concepts': 'concepts',
+  'parent.statusPending': 'Pending',
+  'parent.statusPendingBody': 'Waiting for them to accept your link request.',
+  'parent.requestsTitle': 'Access requests',
+  'parent.requestBody': 'Wants to see your progress on StudyOS.',
+  'parent.accept': 'Accept',
+  'parent.decline': 'Decline',
   'exam.recordResult': 'Record result',
   'exam.recordResultPrompt': 'Already took this exam? Record your real result to recalibrate your mastery.',
   'exam.scoreLabel': 'You scored',
@@ -691,6 +705,12 @@ const de: Messages = {
   'parent.readiness': 'Bereitschaft',
   'parent.avgMastery': 'Durchschnittliche Beherrschung',
   'parent.concepts': 'Konzepte',
+  'parent.statusPending': 'Ausstehend',
+  'parent.statusPendingBody': 'Warten darauf, dass sie deine Verknüpfungsanfrage annehmen.',
+  'parent.requestsTitle': 'Zugriffsanfragen',
+  'parent.requestBody': 'Möchte deinen Fortschritt auf StudyOS sehen.',
+  'parent.accept': 'Annehmen',
+  'parent.decline': 'Ablehnen',
   'exam.recordResult': 'Ergebnis eintragen',
   'exam.recordResultPrompt': 'Hast du diese Prüfung schon geschrieben? Trage dein echtes Ergebnis ein, um deine Beherrschung neu zu kalibrieren.',
   'exam.scoreLabel': 'Du hast erreicht',
@@ -924,6 +944,12 @@ const fr: Messages = {
   'parent.readiness': 'Préparation',
   'parent.avgMastery': 'Maîtrise moyenne',
   'parent.concepts': 'concepts',
+  'parent.statusPending': 'En attente',
+  'parent.statusPendingBody': "En attente qu'il ou elle accepte votre demande de liaison.",
+  'parent.requestsTitle': "Demandes d'accès",
+  'parent.requestBody': 'Souhaite voir vos progrès sur StudyOS.',
+  'parent.accept': 'Accepter',
+  'parent.decline': 'Refuser',
   'exam.recordResult': 'Enregistrer le résultat',
   'exam.recordResultPrompt': 'Avez-vous déjà passé cet examen ? Enregistrez votre résultat réel pour recalibrer votre maîtrise.',
   'exam.scoreLabel': 'Vous avez obtenu',
@@ -1157,6 +1183,12 @@ const pt: Messages = {
   'parent.readiness': 'Preparação',
   'parent.avgMastery': 'Domínio médio',
   'parent.concepts': 'conceitos',
+  'parent.statusPending': 'Pendente',
+  'parent.statusPendingBody': 'Aguardando que ele(a) aceite sua solicitação de vínculo.',
+  'parent.requestsTitle': 'Solicitações de acesso',
+  'parent.requestBody': 'Quer ver seu progresso no StudyOS.',
+  'parent.accept': 'Aceitar',
+  'parent.decline': 'Recusar',
   'exam.recordResult': 'Registrar resultado',
   'exam.recordResultPrompt': 'Você já fez esta prova? Registre seu resultado real para recalibrar seu domínio.',
   'exam.scoreLabel': 'Você obteve',

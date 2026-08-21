@@ -4,6 +4,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import ParentRequestsPanel from './ParentRequestsPanel';
 
 export default async function NotificationsPage() {
   const { userId: clerkUserId } = await auth();
@@ -29,6 +30,8 @@ export default async function NotificationsPage() {
           {t['notifications.subtitle']}
         </p>
       </div>
+
+      <ParentRequestsPanel locale={locale} />
 
       {notifications.length === 0 ? (
         <div className="card empty-state">
