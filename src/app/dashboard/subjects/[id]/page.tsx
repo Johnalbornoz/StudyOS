@@ -33,7 +33,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  const concepts = await getStudentMastery(studentId, id).catch(() => []);
+  const concepts = await getStudentMastery(studentId, id, 'es').catch(() => []);
   const avgMastery = concepts.length
     ? Math.round(concepts.reduce((sum: number, c: any) => sum + Number(c.mastery_score), 0) / concepts.length)
     : null;

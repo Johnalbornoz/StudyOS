@@ -42,7 +42,7 @@ export default async function DashboardPage() {
 
   const subjectsWithMastery = await Promise.all(
     subjects.map(async (s: any) => {
-      const records = await getStudentMastery(studentId, s.id).catch(() => []);
+      const records = await getStudentMastery(studentId, s.id, 'es').catch(() => []);
       const avg = records.length
         ? Math.round(records.reduce((sum: number, r: any) => sum + Number(r.mastery_score), 0) / records.length)
         : null;

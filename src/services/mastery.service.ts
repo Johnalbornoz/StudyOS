@@ -360,7 +360,8 @@ export async function getMasteryHistory(
  */
 export async function getStudentMastery(
   studentId: string,
-  subjectId?: string
+  subjectId?: string,
+  preferredLanguage: string = 'en'
 ) {
   let query = `
     SELECT
@@ -375,15 +376,20 @@ export async function getStudentMastery(
       ld.status as learning_debt_status
     FROM mastery_records mr
     JOIN concepts c ON mr.concept_id = c.id
-    LEFT JOIN concept_localizations cl ON c.id = cl.concept_id AND cl.language = 'en'
+    LEFT JOIN LATERAL (
+      SELECT label FROM concept_localizations
+      WHERE concept_id = c.id
+      ORDER BY (language = $2) DESC
+      LIMIT 1
+    ) cl ON true
     LEFT JOIN learning_debt ld ON mr.student_id = ld.student_id AND mr.concept_id = ld.concept_id AND ld.status = 'active'
     WHERE mr.student_id = $1
   `;
 
-  const params: any[] = [studentId];
+  const params: any[] = [studentId, preferredLanguage];
 
   if (subjectId) {
-    query += ` AND mr.subject_id = $2`;
+    query += ` AND mr.subject_id = $3`;
     params.push(subjectId);
   }
 
