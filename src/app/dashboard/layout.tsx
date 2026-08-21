@@ -66,6 +66,7 @@ export default async function DashboardLayout({
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <NavLink href="/dashboard/today" label={t['nav.today']} />
           <NavLink href="/dashboard" label={t['nav.dashboard']} />
           <NavLink href="/dashboard/subjects" label={t['nav.subjects']} />
           <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />

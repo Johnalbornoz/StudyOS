@@ -19,7 +19,7 @@ export default async function LearningDebtPage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
-  const debts = await getActiveDebts(studentId).catch(() => []);
+  const debts = await getActiveDebts(studentId, undefined, locale).catch(() => []);
 
   return (
     <div>

@@ -20,7 +20,7 @@ export const LOCALE_FULL_NAME: Record<string, string> = {
 };
 
 type MessageKey =
-  | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications'
+  | 'nav.today' | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications'
   | 'common.notAuthenticated' | 'common.signIn' | 'common.back' | 'common.create'
   | 'common.creating' | 'common.loading' | 'common.error'
   | 'dashboard.eyebrow' | 'dashboard.greeting' | 'dashboard.subtitle'
@@ -48,6 +48,10 @@ type MessageKey =
   | 'exam.recurring' | 'exam.recurringBadge'
   | 'exam.topicsTitle' | 'exam.topicsNone' | 'exam.topicsSelectAll' | 'exam.topicsSelectNone'
   | 'exam.topicsHint' | 'exam.editTopics'
+  | 'today.title' | 'today.subtitle' | 'today.empty' | 'today.emptyBody'
+  | 'today.reasonExamSoon' | 'today.reasonDebt' | 'today.reasonLowMastery'
+  | 'today.daysUntilExam' | 'today.severity' | 'today.mastery' | 'today.practice'
+  | 'today.trackedCount'
   | 'debt.title' | 'debt.subtitle' | 'debt.allCaughtUpTitle' | 'debt.allCaughtUpBody'
   | 'debt.currentMastery' | 'debt.severity' | 'debt.review'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
@@ -61,6 +65,7 @@ type MessageKey =
 type Messages = Record<MessageKey, string>;
 
 const es: Messages = {
+  'nav.today': 'Hoy',
   'nav.dashboard': 'Panel',
   'nav.subjects': 'Materias',
   'nav.debt': 'Repaso pendiente',
@@ -142,6 +147,18 @@ const es: Messages = {
   'exam.topicsSelectNone': 'Ninguno',
   'exam.topicsHint': 'Los temas de la semana anterior se mantienen automáticamente para un aprendizaje incremental. Agrega los nuevos que quieras sumar.',
   'exam.editTopics': 'Editar temas',
+  'today.title': 'Hoy',
+  'today.subtitle': 'Lo más importante que deberías estudiar ahora mismo, según tus exámenes próximos, tu deuda de aprendizaje y tu dominio actual.',
+  'today.empty': 'Estás al día',
+  'today.emptyBody': 'No hay nada urgente para hoy. Puedes practicar cualquier materia libremente o descansar.',
+  'today.reasonExamSoon': 'Examen próximo',
+  'today.reasonDebt': 'Deuda de aprendizaje',
+  'today.reasonLowMastery': 'Dominio bajo',
+  'today.daysUntilExam': 'días para el examen',
+  'today.severity': 'severidad',
+  'today.mastery': 'dominio',
+  'today.practice': 'Practicar',
+  'today.trackedCount': 'conceptos en seguimiento',
   'debt.title': 'Repaso pendiente',
   'debt.subtitle': 'Conceptos con riesgo de olvido, ordenados por severidad.',
   'debt.allCaughtUpTitle': 'Todo al día',
@@ -176,6 +193,7 @@ const es: Messages = {
 };
 
 const en: Messages = {
+  'nav.today': 'Today',
   'nav.dashboard': 'Dashboard',
   'nav.subjects': 'Subjects',
   'nav.debt': 'Review queue',
@@ -257,6 +275,18 @@ const en: Messages = {
   'exam.topicsSelectNone': 'None',
   'exam.topicsHint': "Last week's topics carry over automatically for incremental learning. Add any new ones you want to include.",
   'exam.editTopics': 'Edit topics',
+  'today.title': 'Today',
+  'today.subtitle': "The most important things to study right now, based on your upcoming exams, learning debt, and current mastery.",
+  'today.empty': "You're all caught up",
+  'today.emptyBody': 'Nothing urgent for today. Feel free to practice any subject, or take a break.',
+  'today.reasonExamSoon': 'Exam coming up',
+  'today.reasonDebt': 'Learning debt',
+  'today.reasonLowMastery': 'Low mastery',
+  'today.daysUntilExam': 'days until exam',
+  'today.severity': 'severity',
+  'today.mastery': 'mastery',
+  'today.practice': 'Practice',
+  'today.trackedCount': 'concepts tracked',
   'debt.title': 'Review queue',
   'debt.subtitle': 'Concepts at risk of being forgotten, ordered by severity.',
   'debt.allCaughtUpTitle': 'All caught up',
@@ -291,6 +321,7 @@ const en: Messages = {
 };
 
 const de: Messages = {
+  'nav.today': 'Heute',
   'nav.dashboard': 'Übersicht',
   'nav.subjects': 'Fächer',
   'nav.debt': 'Zu wiederholen',
@@ -372,6 +403,18 @@ const de: Messages = {
   'exam.topicsSelectNone': 'Keine',
   'exam.topicsHint': 'Die Themen der letzten Woche werden für inkrementelles Lernen automatisch übernommen. Füge neue hinzu, die du einschließen möchtest.',
   'exam.editTopics': 'Themen bearbeiten',
+  'today.title': 'Heute',
+  'today.subtitle': 'Das Wichtigste, was du jetzt lernen solltest, basierend auf anstehenden Prüfungen, Lernrückstand und aktueller Beherrschung.',
+  'today.empty': 'Du bist auf dem neuesten Stand',
+  'today.emptyBody': 'Nichts Dringendes für heute. Übe gerne ein beliebiges Fach oder mach eine Pause.',
+  'today.reasonExamSoon': 'Prüfung steht an',
+  'today.reasonDebt': 'Lernrückstand',
+  'today.reasonLowMastery': 'Geringe Beherrschung',
+  'today.daysUntilExam': 'Tage bis zur Prüfung',
+  'today.severity': 'Schweregrad',
+  'today.mastery': 'Beherrschung',
+  'today.practice': 'Üben',
+  'today.trackedCount': 'erfasste Konzepte',
   'debt.title': 'Zu wiederholen',
   'debt.subtitle': 'Konzepte mit Vergessensrisiko, nach Dringlichkeit sortiert.',
   'debt.allCaughtUpTitle': 'Alles auf dem neuesten Stand',
@@ -406,6 +449,7 @@ const de: Messages = {
 };
 
 const fr: Messages = {
+  'nav.today': "Aujourd'hui",
   'nav.dashboard': 'Tableau de bord',
   'nav.subjects': 'Matières',
   'nav.debt': 'À réviser',
@@ -487,6 +531,18 @@ const fr: Messages = {
   'exam.topicsSelectNone': 'Aucun',
   'exam.topicsHint': "Les sujets de la semaine précédente sont conservés automatiquement pour un apprentissage incrémental. Ajoutez ceux que vous souhaitez inclure.",
   'exam.editTopics': 'Modifier les sujets',
+  'today.title': "Aujourd'hui",
+  'today.subtitle': "L'essentiel à étudier maintenant, basé sur vos examens à venir, votre dette d'apprentissage et votre maîtrise actuelle.",
+  'today.empty': 'Vous êtes à jour',
+  'today.emptyBody': "Rien d'urgent pour aujourd'hui. Vous pouvez pratiquer une matière librement ou faire une pause.",
+  'today.reasonExamSoon': 'Examen à venir',
+  'today.reasonDebt': "Dette d'apprentissage",
+  'today.reasonLowMastery': 'Maîtrise faible',
+  'today.daysUntilExam': "jours avant l'examen",
+  'today.severity': 'sévérité',
+  'today.mastery': 'maîtrise',
+  'today.practice': "S'entraîner",
+  'today.trackedCount': 'concepts suivis',
   'debt.title': 'À réviser',
   'debt.subtitle': "Concepts à risque d'oubli, classés par gravité.",
   'debt.allCaughtUpTitle': 'Tout est à jour',

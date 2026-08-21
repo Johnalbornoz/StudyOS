@@ -363,7 +363,8 @@ async function getRecentAssessmentScores(
  */
 export async function getActiveDebts(
   studentId: string,
-  subjectId?: string
+  subjectId?: string,
+  preferredLanguage: string = 'en'
 ) {
   try {
     let query = `
@@ -382,15 +383,20 @@ export async function getActiveDebts(
         mr.attempt_count
       FROM learning_debt ld
       JOIN concepts c ON ld.concept_id = c.id
-      LEFT JOIN concept_localizations cl ON c.id = cl.concept_id AND cl.language = 'en'
+      LEFT JOIN LATERAL (
+        SELECT label FROM concept_localizations
+        WHERE concept_id = c.id
+        ORDER BY (language = $2) DESC
+        LIMIT 1
+      ) cl ON true
       LEFT JOIN mastery_records mr ON ld.student_id = mr.student_id AND ld.concept_id = mr.concept_id
       WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring')
     `;
 
-    const params: any[] = [studentId];
+    const params: any[] = [studentId, preferredLanguage];
 
     if (subjectId) {
-      query += ` AND ld.subject_id = $2`;
+      query += ` AND ld.subject_id = $3`;
       params.push(subjectId);
     }
 
