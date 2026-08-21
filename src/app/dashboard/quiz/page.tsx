@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getMessages, Locale } from '@/lib/i18n/messages';
+import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 
 interface Question {
   index: number;
@@ -27,16 +27,44 @@ export default function QuizPage() {
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
   const [quizId, setQuizId] = useState<string | null>(null);
+  const [quizLanguage, setQuizLanguage] = useState<Locale>('en');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [switchingLanguage, setSwitchingLanguage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
 
   const t = getMessages(locale);
+
+  const generateQuiz = useCallback(
+    async (sid: string, languageOverride?: Locale) => {
+      const genRes = await fetch('/api/quizzes/generate-and-take', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: sid,
+          subjectId,
+          conceptId,
+          ...(languageOverride ? { language: languageOverride } : {}),
+        }),
+      });
+      const genBody = await genRes.json();
+      if (!genRes.ok) throw new Error(genBody.message || 'Could not generate the quiz');
+
+      setQuizId(genBody.data.quizId);
+      setQuizLanguage(genBody.data.language);
+      setQuestions(genBody.data.quiz.questions);
+      setCurrent(0);
+      setAnswers({});
+      setSelected(null);
+      setResults(null);
+    },
+    [subjectId, conceptId]
+  );
 
   useEffect(() => {
     async function init() {
@@ -53,16 +81,7 @@ export default function QuizPage() {
         if (!me.studentId) throw new Error('Could not identify the student');
         setStudentId(me.studentId);
 
-        const genRes = await fetch('/api/quizzes/generate-and-take', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: me.studentId, subjectId, conceptId }),
-        });
-        const genBody = await genRes.json();
-        if (!genRes.ok) throw new Error(genBody.message || 'Could not generate the quiz');
-
-        setQuizId(genBody.data.quizId);
-        setQuestions(genBody.data.quiz.questions);
+        await generateQuiz(me.studentId);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -70,7 +89,21 @@ export default function QuizPage() {
       }
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, conceptId]);
+
+  async function changeQuizLanguage(next: Locale) {
+    if (!studentId || next === quizLanguage) return;
+    setSwitchingLanguage(true);
+    setError(null);
+    try {
+      await generateQuiz(studentId, next);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSwitchingLanguage(false);
+    }
+  }
 
   function selectOption(opt: string) {
     if (selected) return;
@@ -164,8 +197,26 @@ export default function QuizPage() {
 
   return (
     <div style={{ maxWidth: 620 }}>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 'var(--space-2)', display: 'flex', gap: 6 }}>
-        <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.breadcrumbQuiz']}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
+          <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.breadcrumbQuiz']}
+        </div>
+
+        <select
+          value={quizLanguage}
+          disabled={switchingLanguage}
+          onChange={(e) => changeQuizLanguage(e.target.value as Locale)}
+          title={t['quiz.languagePickerLabel']}
+          style={{
+            height: 30, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
+            background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'inherit',
+            padding: '0 8px',
+          }}
+        >
+          {LOCALES.map((l) => (
+            <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
+          ))}
+        </select>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
@@ -183,7 +234,7 @@ export default function QuizPage() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 'var(--space-8)' }}>
+      <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
         <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-6)', lineHeight: '28px' }}>{q.question}</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -194,7 +245,7 @@ export default function QuizPage() {
               <button
                 key={i}
                 onClick={() => selectOption(opt)}
-                disabled={!!selected}
+                disabled={!!selected || switchingLanguage}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-3)', textAlign: 'left',
                   padding: '13px var(--space-4)', border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
@@ -219,7 +270,7 @@ export default function QuizPage() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
-          <button onClick={nextQuestion} disabled={!selected || submitting} className="btn btn-primary">
+          <button onClick={nextQuestion} disabled={!selected || submitting || switchingLanguage} className="btn btn-primary">
             {submitting ? t['quiz.submitting'] : current + 1 < questions.length ? t['quiz.next'] : t['quiz.viewResults']}
           </button>
         </div>

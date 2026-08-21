@@ -47,7 +47,7 @@ type MessageKey =
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
-  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz'
+  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
   | 'home.tagline' | 'home.signIn' | 'home.signUp'
   | 'lang.switcherLabel';
@@ -141,6 +141,7 @@ const es: Messages = {
   'quiz.viewResults': 'Ver resultados',
   'quiz.submitting': 'Enviando…',
   'quiz.breadcrumbQuiz': 'Quiz',
+  'quiz.languagePickerLabel': 'Idioma de las preguntas',
   'quiz.msgExcellent': '¡Excelente! Gran progreso.',
   'quiz.msgGood': 'Buen esfuerzo. Sigue practicando.',
   'quiz.msgKeepGoing': 'Sigue trabajando en este concepto.',
@@ -237,6 +238,7 @@ const en: Messages = {
   'quiz.viewResults': 'View results',
   'quiz.submitting': 'Submitting…',
   'quiz.breadcrumbQuiz': 'Quiz',
+  'quiz.languagePickerLabel': 'Question language',
   'quiz.msgExcellent': 'Excellent! Great progress.',
   'quiz.msgGood': 'Good effort. Keep practicing.',
   'quiz.msgKeepGoing': 'Keep working on this concept.',
@@ -333,6 +335,7 @@ const de: Messages = {
   'quiz.viewResults': 'Ergebnisse ansehen',
   'quiz.submitting': 'Wird gesendet…',
   'quiz.breadcrumbQuiz': 'Quiz',
+  'quiz.languagePickerLabel': 'Sprache der Fragen',
   'quiz.msgExcellent': 'Ausgezeichnet! Großer Fortschritt.',
   'quiz.msgGood': 'Gute Leistung. Übe weiter.',
   'quiz.msgKeepGoing': 'Arbeite weiter an diesem Konzept.',
@@ -429,6 +432,7 @@ const fr: Messages = {
   'quiz.viewResults': 'Voir les résultats',
   'quiz.submitting': 'Envoi…',
   'quiz.breadcrumbQuiz': 'Quiz',
+  'quiz.languagePickerLabel': 'Langue des questions',
   'quiz.msgExcellent': 'Excellent ! Bon progrès.',
   'quiz.msgGood': 'Bon effort. Continuez à vous entraîner.',
   'quiz.msgKeepGoing': 'Continuez à travailler ce concept.',

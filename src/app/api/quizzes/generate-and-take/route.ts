@@ -45,6 +45,7 @@ import {
 import { updateMastery } from '@/services/mastery.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { resolveQuizLanguage } from '@/lib/i18n/language';
+import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence } from '@/lib/algorithms/mastery';
 import { z } from 'zod';
 
@@ -125,10 +126,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
       );
     }
 
-    // Resolve the right language: the subject's own language if it IS a
-    // language course (e.g. German class -> always German), otherwise the
-    // student's interface language or a fixed language per their preference.
-    const language = await resolveLanguageForSubject(validated.subjectId, validated.studentId);
+    // Resolve the right language. The student can explicitly override it
+    // (a language picker on the quiz screen) -- otherwise fall back to the
+    // smart default: the subject's own language if it IS a language course
+    // (e.g. German class -> always German), else the student's interface
+    // language or a fixed language per their subject preference.
+    const language = isLocale(validated.language)
+      ? validated.language
+      : await resolveLanguageForSubject(validated.subjectId, validated.studentId);
 
     // Generate questions using RAG
     const questions = await generateQuestionsForConcept(
@@ -157,13 +162,15 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
       validated.studentId,
       validated.conceptId,
       validated.subjectId,
-      questions
+      questions,
+      language
     );
 
     return NextResponse.json({
       success: true,
       data: {
         quizId,
+        language,
         quiz: {
           conceptId: validated.conceptId,
           questions: questions.map((q, i) => ({
@@ -214,8 +221,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
       );
     }
     const cachedQuestions = quizSession.questions;
-
-    const language = await resolveLanguageForSubject(quizSession.subjectId, validated.studentId);
+    const language = quizSession.language;
 
     // Grade all answers
     let correctCount = 0;

@@ -15,6 +15,7 @@ export interface QuizSession {
   conceptId: string;
   subjectId: string;
   questions: GeneratedQuestion[];
+  language: string;
   createdAt: Date;
   expiresAt: Date;
   status: 'active' | 'completed' | 'expired';
@@ -27,7 +28,8 @@ export async function storeQuiz(
   studentId: string,
   conceptId: string,
   subjectId: string,
-  questions: GeneratedQuestion[]
+  questions: GeneratedQuestion[],
+  language: string = 'en'
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -38,8 +40,8 @@ export async function storeQuiz(
       `
       INSERT INTO quiz_sessions (
         id, student_id, concept_id, subject_id,
-        questions, status, created_at, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        questions, language, status, created_at, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `,
       [
         quizId,
@@ -47,6 +49,7 @@ export async function storeQuiz(
         conceptId,
         subjectId,
         JSON.stringify(questions),
+        language,
         'active',
         now,
         expiresAt,
@@ -126,7 +129,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, status, created_at, expires_at
+             questions, language, status, created_at, expires_at
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -145,6 +148,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       conceptId: row.concept_id,
       subjectId: row.subject_id,
       questions: row.questions,
+      language: row.language,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
       status: row.status,
