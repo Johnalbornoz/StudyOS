@@ -1,23 +1,29 @@
 /**
  * "Today" study plan -- answers the brief's central question, "what
- * should I study today?", without needing a spaced-repetition schema
- * that doesn't exist yet. Built entirely from data already tracked:
- * mastery_records, learning_debt, and the real exam calendar.
+ * should I study today?". Built entirely from data already tracked:
+ * mastery_records, learning_debt, the real exam calendar, and (now)
+ * each concept's spaced-repetition review interval.
  *
- * A concept earns a spot on today's list for exactly one of three
+ * A concept earns a spot on today's list for exactly one of four
  * reasons, checked in priority order:
- * 1. exam_soon      -- its subject has an exam within EXAM_SOON_WINDOW_DAYS
- *                      and the concept is one of that exam's topics
- *                      (or the exam has no specific topics, meaning "all").
- * 2. learning_debt  -- it has an active learning-debt record.
- * 3. low_mastery     -- mastery is below LOW_MASTERY_THRESHOLD but not
- *                      otherwise flagged.
+ * 1. exam_soon       -- its subject has an exam within EXAM_SOON_WINDOW_DAYS
+ *                       and the concept is one of that exam's topics
+ *                       (or the exam has no specific topics, meaning "all").
+ * 2. learning_debt   -- it has an active learning-debt record.
+ * 3. forgetting_risk -- mastery is otherwise solid, but it hasn't been
+ *                       reviewed in a while relative to its spaced-
+ *                       repetition interval (see spaced-repetition.ts)
+ *                       -- reviewing it now is what prevents it from
+ *                       becoming low_mastery later.
+ * 4. low_mastery     -- mastery is below LOW_MASTERY_THRESHOLD but not
+ *                       otherwise flagged.
  */
 
 import { db } from '@/lib/db';
 import { getUpcomingForStudent } from './assessment.service';
+import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 
-export type TodayReason = 'exam_soon' | 'learning_debt' | 'low_mastery';
+export type TodayReason = 'exam_soon' | 'learning_debt' | 'forgetting_risk' | 'low_mastery';
 
 export interface TodayItem {
   conceptId: string;
@@ -28,10 +34,12 @@ export interface TodayItem {
   reason: TodayReason;
   daysUntilExam?: number;
   debtSeverity?: number;
+  forgettingRisk?: number;
 }
 
 const EXAM_SOON_WINDOW_DAYS = 7;
 const LOW_MASTERY_THRESHOLD = 60;
+const FORGETTING_RISK_THRESHOLD = 50;
 const MAX_ITEMS = 12;
 
 export async function getTodayPlan(
@@ -47,6 +55,8 @@ export async function getTodayPlan(
       s.name AS subject_name,
       cl.label,
       mr.mastery_score,
+      mr.confidence_score,
+      mr.last_practiced,
       ld.severity AS debt_severity,
       ld.status AS debt_status
     FROM mastery_records mr
@@ -80,10 +90,21 @@ export async function getTodayPlan(
         (occurrence.topics.length === 0 || occurrence.topics.includes(row.concept_id))
     );
 
+    let forgettingRisk: number | undefined;
+    if (row.last_practiced) {
+      const daysSincePractice = Math.floor(
+        (Date.now() - new Date(row.last_practiced).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const intervalDays = calculateReviewIntervalDays(masteryScore, Number(row.confidence_score) || 50);
+      forgettingRisk = calculateForgettingRisk(daysSincePractice, intervalDays);
+    }
+
     let reason: TodayReason | null = null;
     if (inExamWindow) reason = 'exam_soon';
     else if (row.debt_status === 'active') reason = 'learning_debt';
-    else if (masteryScore < LOW_MASTERY_THRESHOLD) reason = 'low_mastery';
+    else if (masteryScore >= LOW_MASTERY_THRESHOLD && (forgettingRisk ?? 0) >= FORGETTING_RISK_THRESHOLD) {
+      reason = 'forgetting_risk';
+    } else if (masteryScore < LOW_MASTERY_THRESHOLD) reason = 'low_mastery';
 
     if (!reason) continue;
 
@@ -96,12 +117,14 @@ export async function getTodayPlan(
       reason,
       daysUntilExam: inExamWindow ? occurrence!.daysUntil : undefined,
       debtSeverity: row.debt_severity !== null ? Number(row.debt_severity) : undefined,
+      forgettingRisk: reason === 'forgetting_risk' ? forgettingRisk : undefined,
     });
   }
 
   const priority = (item: TodayItem): number => {
     if (item.reason === 'exam_soon') return 1000 - (item.daysUntilExam ?? 0) * 10;
     if (item.reason === 'learning_debt') return 500 + (item.debtSeverity ?? 0) * 10;
+    if (item.reason === 'forgetting_risk') return 200 + (item.forgettingRisk ?? 0);
     return 100 + (LOW_MASTERY_THRESHOLD - item.masteryScore);
   };
 

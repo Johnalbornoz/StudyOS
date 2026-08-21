@@ -1,374 +1,119 @@
 /**
- * Error Intelligence Service - Detects patterns in student mistakes
+ * Error intelligence: turns individual classified mistakes (see the
+ * `errors` table, written from mastery.service.ts and quiz grading)
+ * into patterns a student can act on -- "you keep making procedural
+ * errors in Algebra" is more useful than a bare wrong/right count.
  *
- * When student makes same error repeatedly (3+ times), system:
- * 1. Creates ErrorPattern (audit + visibility)
- * 2. Escalates LearningDebt
- * 3. Adds to study plan for targeted practice
- * 4. Signals need for intervention
+ * Patterns are always a GROUP BY over `errors`, not a separately
+ * maintained table -- there's nothing to keep in sync, and the numbers
+ * are always current.
  */
 
 import { db } from '@/lib/db';
 
-export type ErrorType =
-  | 'CONCEPTUAL'
-  | 'PROCEDURAL'
-  | 'CALCULATION'
-  | 'MISINTERPRETATION'
-  | 'PREREQUISITE_GAP'
-  | 'CARELESSNESS'
-  | 'INCOMPLETE_KNOWLEDGE';
+export type ErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
 
-export interface ErrorRecord {
-  id: string;
+export interface RecordErrorInput {
   studentId: string;
   conceptId: string;
-  errorType: ErrorType;
-  timestamp: string;
-  context: any; // { question, studentAnswer, correctAnswer, difficulty }
+  subjectId: string;
+  errorType: string;
+  sourceType: string;
+}
+
+export async function recordError(input: RecordErrorInput): Promise<void> {
+  await db.query(
+    `INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type) VALUES ($1, $2, $3, $4, $5)`,
+    [input.studentId, input.conceptId, input.subjectId, input.errorType, input.sourceType]
+  );
 }
 
 export interface ErrorPattern {
-  id: string;
-  conceptId: string;
-  errorType: ErrorType;
-  recurrenceCount: number;
-  lastOccurred: string;
-  needsAttention: boolean;
+  errorType: string;
+  count: number;
+  subjectId: string;
+  subjectName: string;
+  topConceptId: string;
+  topConceptLabel: string;
+  topConceptCount: number;
+  lastOccurredAt: string;
 }
 
 /**
- * Record an error occurrence
- *
- * Called after every wrong answer. If this is the 3rd occurrence of same
- * error type on same concept, creates ErrorPattern automatically.
+ * Recurring error types for a student (optionally scoped to one
+ * subject), most frequent first. Only returns a type once it has
+ * recurred at least MIN_OCCURRENCES times within the last
+ * RECENCY_WINDOW_DAYS -- a single mistake isn't a pattern, and an old
+ * one the student has since fixed shouldn't haunt them forever.
  */
-export async function recordError(
+export async function getErrorPatterns(
   studentId: string,
-  conceptId: string,
-  errorType: ErrorType,
-  context: {
-    question: string;
-    studentAnswer: string;
-    correctAnswer: string;
-    difficulty: number;
-    confidence?: number;
+  subjectId?: string,
+  preferredLanguage: string = 'en'
+): Promise<ErrorPattern[]> {
+  const MIN_OCCURRENCES = 2;
+  const RECENCY_WINDOW_DAYS = 30;
+
+  let sql = `
+    SELECT
+      e.error_type,
+      e.subject_id,
+      s.name AS subject_name,
+      COUNT(*) AS total_count,
+      MAX(e.created_at) AS last_occurred_at
+    FROM errors e
+    JOIN subjects s ON s.id = e.subject_id
+    WHERE e.student_id = $1 AND e.created_at > NOW() - INTERVAL '${RECENCY_WINDOW_DAYS} days'
+  `;
+  const params: any[] = [studentId];
+  if (subjectId) {
+    sql += ` AND e.subject_id = $2`;
+    params.push(subjectId);
   }
-): Promise<{
-  errorId: string;
-  patternCreated: boolean;
-  pattern?: ErrorPattern;
-}> {
-  try {
-    // Step 1: Insert error record
-    const errorResult = await db.query(
-      `
-      INSERT INTO errors (
-        student_id,
-        concept_id,
-        error_type,
-        timestamp,
-        context
-      ) VALUES ($1, $2, $3, NOW(), $4)
-      RETURNING id
-      `,
-      [
-        studentId,
-        conceptId,
-        errorType,
-        JSON.stringify(context),
-      ]
-    );
+  sql += `
+    GROUP BY e.error_type, e.subject_id, s.name
+    HAVING COUNT(*) >= ${MIN_OCCURRENCES}
+    ORDER BY total_count DESC
+    LIMIT 8
+  `;
 
-    const errorId = errorResult.rows[0].id;
+  const grouped = await db.query(sql, params);
 
-    // Step 2: Count errors of same type for this concept
-    const countResult = await db.query(
-      `
-      SELECT COUNT(*) as count
-      FROM errors
-      WHERE student_id = $1 AND concept_id = $2 AND error_type = $3
-      AND timestamp > NOW() - INTERVAL '30 days'
-      `,
-      [studentId, conceptId, errorType]
-    );
-
-    const errorCount = parseInt(countResult.rows[0].count);
-
-    // Step 3: If 3+ errors of same type, create pattern
-    if (errorCount >= 3) {
-      const pattern = await createOrUpdatePattern(
-        conceptId,
-        errorType,
-        errorCount
+  const patterns: ErrorPattern[] = await Promise.all(
+    grouped.rows.map(async (row) => {
+      const topConceptResult = await db.query(
+        `
+        SELECT e.concept_id, cl.label, c.canonical_id, COUNT(*) AS concept_count
+        FROM errors e
+        JOIN concepts c ON c.id = e.concept_id
+        LEFT JOIN LATERAL (
+          SELECT label FROM concept_localizations
+          WHERE concept_id = c.id
+          ORDER BY (language = $3) DESC
+          LIMIT 1
+        ) cl ON true
+        WHERE e.student_id = $1 AND e.subject_id = $2 AND e.error_type = $4
+          AND e.created_at > NOW() - INTERVAL '${RECENCY_WINDOW_DAYS} days'
+        GROUP BY e.concept_id, cl.label, c.canonical_id
+        ORDER BY concept_count DESC
+        LIMIT 1
+        `,
+        [studentId, row.subject_id, preferredLanguage, row.error_type]
       );
+      const top = topConceptResult.rows[0];
 
       return {
-        errorId,
-        patternCreated: true,
-        pattern,
-      };
-    }
-
-    return {
-      errorId,
-      patternCreated: false,
-    };
-  } catch (error) {
-    console.error('Error recording error:', error);
-    throw error;
-  }
-}
-
-/**
- * Create or update error pattern when detected (3+ occurrences)
- */
-async function createOrUpdatePattern(
-  conceptId: string,
-  errorType: ErrorType,
-  recurrenceCount: number
-): Promise<ErrorPattern> {
-  try {
-    // Try to update existing pattern
-    const updateResult = await db.query(
-      `
-      UPDATE error_patterns
-      SET
-        recurrence_count = $1,
-        last_occurred = NOW(),
-        needs_attention = true
-      WHERE concept_id = $2 AND error_type = $3
-      RETURNING
-        id,
-        concept_id,
-        error_type,
-        recurrence_count,
-        last_occurred,
-        needs_attention
-      `,
-      [recurrenceCount, conceptId, errorType]
-    );
-
-    if (updateResult.rows.length > 0) {
-      const row = updateResult.rows[0];
-      return {
-        id: row.id,
-        conceptId: row.concept_id,
         errorType: row.error_type,
-        recurrenceCount: row.recurrence_count,
-        lastOccurred: row.last_occurred,
-        needsAttention: row.needs_attention,
+        count: Number(row.total_count),
+        subjectId: row.subject_id,
+        subjectName: row.subject_name,
+        topConceptId: top?.concept_id ?? '',
+        topConceptLabel: top?.label || top?.canonical_id || '',
+        topConceptCount: top ? Number(top.concept_count) : 0,
+        lastOccurredAt: row.last_occurred_at,
       };
-    }
+    })
+  );
 
-    // Insert if doesn't exist
-    const insertResult = await db.query(
-      `
-      INSERT INTO error_patterns (
-        concept_id,
-        error_type,
-        recurrence_count,
-        last_occurred,
-        needs_attention
-      ) VALUES ($1, $2, $3, NOW(), true)
-      RETURNING
-        id,
-        concept_id,
-        error_type,
-        recurrence_count,
-        last_occurred,
-        needs_attention
-      `,
-      [conceptId, errorType, recurrenceCount]
-    );
-
-    const row = insertResult.rows[0];
-    return {
-      id: row.id,
-      conceptId: row.concept_id,
-      errorType: row.error_type,
-      recurrenceCount: row.recurrence_count,
-      lastOccurred: row.last_occurred,
-      needsAttention: row.needs_attention,
-    };
-  } catch (error) {
-    console.error('Error creating/updating pattern:', error);
-    throw error;
-  }
-}
-
-/**
- * Get active error patterns for a student (for dashboard)
- */
-export async function getStudentErrorPatterns(
-  studentId: string,
-  subjectId?: string
-) {
-  try {
-    let query = `
-      SELECT DISTINCT
-        ep.id,
-        ep.concept_id,
-        ep.error_type,
-        ep.recurrence_count,
-        ep.last_occurred,
-        ep.needs_attention,
-        c.canonical_id,
-        cl.label,
-        COUNT(DISTINCT e.id) as recent_error_count
-      FROM error_patterns ep
-      JOIN concepts c ON ep.concept_id = c.id
-      LEFT JOIN concept_localizations cl ON c.id = cl.concept_id AND cl.language = 'en'
-      LEFT JOIN errors e ON ep.concept_id = e.concept_id
-        AND e.student_id = $1
-        AND e.error_type = ep.error_type
-        AND e.timestamp > NOW() - INTERVAL '30 days'
-      WHERE e.student_id = $1 AND ep.needs_attention = true
-    `;
-
-    const params: any[] = [studentId];
-
-    if (subjectId) {
-      query += ` AND c.subject_id = $2`;
-      params.push(subjectId);
-    }
-
-    query += `
-      GROUP BY ep.id, c.id, cl.label
-      ORDER BY ep.recurrence_count DESC, ep.last_occurred DESC
-    `;
-
-    const result = await db.query(query, params);
-
-    return result.rows.map(row => ({
-      id: row.id,
-      conceptId: row.concept_id,
-      errorType: row.error_type,
-      recurrenceCount: row.recurrence_count,
-      lastOccurred: row.last_occurred,
-      needsAttention: row.needs_attention,
-      concept: {
-        id: row.concept_id,
-        canonicalId: row.canonical_id,
-        label: row.label,
-      },
-      recentErrorCount: parseInt(row.recent_error_count),
-    }));
-  } catch (error) {
-    console.error('Error fetching error patterns:', error);
-    throw error;
-  }
-}
-
-/**
- * Get error history for a concept
- */
-export async function getConceptErrorHistory(
-  studentId: string,
-  conceptId: string,
-  limit: number = 10
-) {
-  try {
-    const result = await db.query(
-      `
-      SELECT
-        id,
-        student_id,
-        concept_id,
-        error_type,
-        timestamp,
-        context
-      FROM errors
-      WHERE student_id = $1 AND concept_id = $2
-      ORDER BY timestamp DESC
-      LIMIT $3
-      `,
-      [studentId, conceptId, limit]
-    );
-
-    return result.rows.map(row => ({
-      id: row.id,
-      studentId: row.student_id,
-      conceptId: row.concept_id,
-      errorType: row.error_type,
-      timestamp: row.timestamp,
-      context: row.context,
-    }));
-  } catch (error) {
-    console.error('Error fetching error history:', error);
-    throw error;
-  }
-}
-
-/**
- * Get error statistics by type (for analytics)
- */
-export async function getErrorStatistics(studentId: string) {
-  try {
-    const result = await db.query(
-      `
-      SELECT
-        error_type,
-        COUNT(*) as count,
-        MAX(timestamp) as last_occurred
-      FROM errors
-      WHERE student_id = $1 AND timestamp > NOW() - INTERVAL '30 days'
-      GROUP BY error_type
-      ORDER BY count DESC
-      `,
-      [studentId]
-    );
-
-    return result.rows.map(row => ({
-      errorType: row.error_type,
-      count: parseInt(row.count),
-      lastOccurred: row.last_occurred,
-    }));
-  } catch (error) {
-    console.error('Error fetching error statistics:', error);
-    throw error;
-  }
-}
-
-/**
- * Mark pattern as resolved (no longer needs attention)
- */
-export async function resolveErrorPattern(
-  conceptId: string,
-  errorType: ErrorType
-) {
-  try {
-    const result = await db.query(
-      `
-      UPDATE error_patterns
-      SET needs_attention = false
-      WHERE concept_id = $1 AND error_type = $2
-      RETURNING
-        id,
-        concept_id,
-        error_type,
-        recurrence_count,
-        last_occurred,
-        needs_attention
-      `,
-      [conceptId, errorType]
-    );
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      conceptId: row.concept_id,
-      errorType: row.error_type,
-      recurrenceCount: row.recurrence_count,
-      lastOccurred: row.last_occurred,
-      needsAttention: row.needs_attention,
-    };
-  } catch (error) {
-    console.error('Error resolving pattern:', error);
-    throw error;
-  }
+  return patterns;
 }

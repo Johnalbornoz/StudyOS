@@ -14,6 +14,7 @@ import {
   updateMastery as algorithmUpdateMastery,
   type LearningEvidence,
 } from '@/lib/algorithms/mastery';
+import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 
 export interface MasteryUpdateInput {
   studentId: string;
@@ -171,6 +172,11 @@ export async function updateMastery(
 
   const confidenceScore = calculateConfidence(confidenceInput);
 
+  // Next time this concept is due for review -- interval scales with
+  // the mastery/confidence just calculated, so well-known concepts get
+  // spaced out further than ones just past the "solid" threshold.
+  const nextReviewDate = calculateNextReviewDate(newMastery, confidenceScore);
+
   // Step 5: Update mastery_records
   const updateResult = await db.query(
     `
@@ -182,6 +188,7 @@ export async function updateMastery(
       correct_count = $4,
       incorrect_count = $5,
       last_practiced = NOW(),
+      next_review_date = $8,
       updated_at = NOW()
     WHERE student_id = $6 AND concept_id = $7
     RETURNING id
@@ -194,6 +201,7 @@ export async function updateMastery(
       incorrectCount,
       studentId,
       conceptId,
+      nextReviewDate,
     ]
   );
 
@@ -279,6 +287,19 @@ export async function updateMastery(
     `,
     [studentId, conceptId, evidence.sourceType, evidence.result, evidence.difficulty]
   );
+
+  // Step 9: Log a classified error, if this was a wrong/partial answer
+  // and the caller classified why -- feeds error-intelligence.service.ts's
+  // pattern detection (e.g. "keeps making procedural errors in Algebra").
+  if (errorClassification && evidence.result !== 'correct') {
+    await db.query(
+      `
+      INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
+      [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
+    );
+  }
 
   return {
     oldMastery,

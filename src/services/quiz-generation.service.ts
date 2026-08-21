@@ -154,6 +154,8 @@ Output JSON array (no markdown):
  *
  * Uses Claude for semantic understanding (not just string matching)
  */
+export type GradingErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
+
 export async function gradeAnswer(
   question: GeneratedQuestion,
   studentAnswer: string,
@@ -163,6 +165,7 @@ export async function gradeAnswer(
   score: number; // 0-1 (0 = wrong, 1 = perfect, 0.5 = partial)
   feedback: string;
   confidence: number; // 0-1 (how confident in grading)
+  errorType: GradingErrorType | null; // null when correct
 }> {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -190,7 +193,8 @@ Respond with JSON (no markdown):
   "correct": true/false,
   "score": 0.0-1.0,
   "feedback": "...",
-  "confidence": 0.0-1.0
+  "confidence": 0.0-1.0,
+  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | null
 }`,
           },
         ],
@@ -201,6 +205,15 @@ Respond with JSON (no markdown):
 - For essay: evaluate understanding shown
 
 Be fair but rigorous. Confidence = how sure you are in the grade.
+
+When the answer is not fully correct, classify why into exactly one errorType:
+- CONCEPTUAL: misunderstood the underlying idea, not just the execution
+- PROCEDURAL: understood the concept but made a mistake applying the method/steps
+- CARELESS: a minor slip (sign error, typo, misread a number) on otherwise correct work
+- INCOMPLETE: correct as far as it goes, but didn't finish the reasoning/answer
+- MISREADING: answered a different question than the one asked
+Set errorType to null when correct is true.
+
 Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`,
       }),
     });
@@ -219,21 +232,19 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
         score: Math.max(0, Math.min(1, gradeResult.score || 0)),
         feedback: gradeResult.feedback || '',
         confidence: Math.max(0, Math.min(1, gradeResult.confidence || 0.7)),
+        errorType: gradeResult.correct ? null : gradeResult.errorType || null,
       };
     } catch (e) {
       console.error('Failed to parse grading response:', responseText);
       // Fallback: simple string matching
+      const matched =
+        studentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
       return {
-        correct:
-          studentAnswer.toLowerCase() ===
-          question.correctAnswer.toLowerCase(),
-        score:
-          studentAnswer.toLowerCase() ===
-          question.correctAnswer.toLowerCase()
-            ? 1
-            : 0,
+        correct: matched,
+        score: matched ? 1 : 0,
         feedback: 'Please review the explanation above.',
         confidence: 0.5,
+        errorType: matched ? null : null,
       };
     }
   } catch (error) {
@@ -243,6 +254,7 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
       score: 0,
       feedback: 'Error grading answer. Please try again.',
       confidence: 0,
+      errorType: null,
     };
   }
 }

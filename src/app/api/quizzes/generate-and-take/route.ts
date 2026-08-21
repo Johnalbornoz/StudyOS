@@ -43,6 +43,7 @@ import {
   completeQuiz,
 } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
+import { recordError } from '@/services/error-intelligence.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
@@ -257,6 +258,23 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
         incorrectCount++;
       }
     }
+
+    // Log each classified mistake for error-pattern detection -- one
+    // row per wrong/partial answer, independent of the single
+    // aggregate mastery update below.
+    await Promise.all(
+      gradedAnswers
+        .filter((g): g is NonNullable<typeof g> => g !== null && !g.gradeResult.correct && !!g.gradeResult.errorType)
+        .map((g) =>
+          recordError({
+            studentId: validated.studentId,
+            conceptId: quizSession.conceptId,
+            subjectId: quizSession.subjectId,
+            errorType: g.gradeResult.errorType!,
+            sourceType: 'PRACTICE_QUIZ',
+          }).catch(() => {})
+        )
+    );
 
     const totalQuestions = validated.answers.length;
     const score = Math.round((correctCount / totalQuestions) * 100);

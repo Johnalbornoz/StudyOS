@@ -51,12 +51,14 @@ type MessageKey =
   | 'today.title' | 'today.subtitle' | 'today.empty' | 'today.emptyBody'
   | 'today.reasonExamSoon' | 'today.reasonDebt' | 'today.reasonLowMastery'
   | 'today.daysUntilExam' | 'today.severity' | 'today.mastery' | 'today.practice'
-  | 'today.trackedCount'
+  | 'today.trackedCount' | 'today.reasonForgetting' | 'today.forgettingRisk'
   | 'exam.recordResult' | 'exam.recordResultPrompt' | 'exam.scoreLabel' | 'exam.outOfLabel'
   | 'exam.submitResult' | 'exam.resultSaved' | 'exam.predicted' | 'exam.actual'
   | 'exam.recalibrated' | 'exam.debtResolvedBadge' | 'exam.history' | 'exam.historyEmpty'
   | 'debt.title' | 'debt.subtitle' | 'debt.allCaughtUpTitle' | 'debt.allCaughtUpBody'
   | 'debt.currentMastery' | 'debt.severity' | 'debt.review'
+  | 'debt.errorPatternsTitle' | 'debt.errorPatternsSubtitle' | 'debt.errorOccurrences' | 'debt.errorTopConcept'
+  | 'errorType.CONCEPTUAL' | 'errorType.PROCEDURAL' | 'errorType.CARELESS' | 'errorType.INCOMPLETE' | 'errorType.MISREADING'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
@@ -162,6 +164,8 @@ const es: Messages = {
   'today.mastery': 'dominio',
   'today.practice': 'Practicar',
   'today.trackedCount': 'conceptos en seguimiento',
+  'today.reasonForgetting': 'Riesgo de olvido',
+  'today.forgettingRisk': 'riesgo de olvido',
   'exam.recordResult': 'Registrar resultado',
   'exam.recordResultPrompt': '¿Ya presentaste este examen? Registra tu resultado real para recalibrar tu dominio.',
   'exam.scoreLabel': 'Obtuviste',
@@ -181,6 +185,15 @@ const es: Messages = {
   'debt.currentMastery': 'Dominio actual',
   'debt.severity': 'severidad',
   'debt.review': 'Repasar',
+  'debt.errorPatternsTitle': 'Patrones de error',
+  'debt.errorPatternsSubtitle': 'Tipos de error que se repiten en tus respuestas — identificarlos ayuda a corregir la causa, no solo el síntoma.',
+  'debt.errorOccurrences': 'veces',
+  'debt.errorTopConcept': 'más frecuente en',
+  'errorType.CONCEPTUAL': 'Conceptual',
+  'errorType.PROCEDURAL': 'Procedimental',
+  'errorType.CARELESS': 'Descuido',
+  'errorType.INCOMPLETE': 'Incompleto',
+  'errorType.MISREADING': 'Mala lectura del enunciado',
   'notifications.title': 'Notificaciones',
   'notifications.subtitle': 'Actividad reciente de tu aprendizaje.',
   'notifications.emptyTitle': 'Sin notificaciones nuevas',
@@ -302,6 +315,8 @@ const en: Messages = {
   'today.mastery': 'mastery',
   'today.practice': 'Practice',
   'today.trackedCount': 'concepts tracked',
+  'today.reasonForgetting': 'At risk of forgetting',
+  'today.forgettingRisk': 'forgetting risk',
   'exam.recordResult': 'Record result',
   'exam.recordResultPrompt': 'Already took this exam? Record your real result to recalibrate your mastery.',
   'exam.scoreLabel': 'You scored',
@@ -321,6 +336,15 @@ const en: Messages = {
   'debt.currentMastery': 'Current mastery',
   'debt.severity': 'severity',
   'debt.review': 'Review',
+  'debt.errorPatternsTitle': 'Error patterns',
+  'debt.errorPatternsSubtitle': "Types of mistakes that keep recurring in your answers — spotting them helps fix the cause, not just the symptom.",
+  'debt.errorOccurrences': 'times',
+  'debt.errorTopConcept': 'most common in',
+  'errorType.CONCEPTUAL': 'Conceptual',
+  'errorType.PROCEDURAL': 'Procedural',
+  'errorType.CARELESS': 'Careless',
+  'errorType.INCOMPLETE': 'Incomplete',
+  'errorType.MISREADING': 'Misreading the question',
   'notifications.title': 'Notifications',
   'notifications.subtitle': 'Recent activity from your learning.',
   'notifications.emptyTitle': 'No new notifications',
@@ -442,6 +466,8 @@ const de: Messages = {
   'today.mastery': 'Beherrschung',
   'today.practice': 'Üben',
   'today.trackedCount': 'erfasste Konzepte',
+  'today.reasonForgetting': 'Vergessensrisiko',
+  'today.forgettingRisk': 'Vergessensrisiko',
   'exam.recordResult': 'Ergebnis eintragen',
   'exam.recordResultPrompt': 'Hast du diese Prüfung schon geschrieben? Trage dein echtes Ergebnis ein, um deine Beherrschung neu zu kalibrieren.',
   'exam.scoreLabel': 'Du hast erreicht',
@@ -461,6 +487,15 @@ const de: Messages = {
   'debt.currentMastery': 'Aktuelle Beherrschung',
   'debt.severity': 'Schweregrad',
   'debt.review': 'Wiederholen',
+  'debt.errorPatternsTitle': 'Fehlermuster',
+  'debt.errorPatternsSubtitle': 'Fehlertypen, die sich in deinen Antworten wiederholen — sie zu erkennen hilft, die Ursache statt nur das Symptom zu beheben.',
+  'debt.errorOccurrences': 'Mal',
+  'debt.errorTopConcept': 'am häufigsten bei',
+  'errorType.CONCEPTUAL': 'Konzeptionell',
+  'errorType.PROCEDURAL': 'Prozedural',
+  'errorType.CARELESS': 'Flüchtigkeitsfehler',
+  'errorType.INCOMPLETE': 'Unvollständig',
+  'errorType.MISREADING': 'Aufgabe falsch verstanden',
   'notifications.title': 'Benachrichtigungen',
   'notifications.subtitle': 'Letzte Aktivität deines Lernens.',
   'notifications.emptyTitle': 'Keine neuen Benachrichtigungen',
@@ -582,6 +617,8 @@ const fr: Messages = {
   'today.mastery': 'maîtrise',
   'today.practice': "S'entraîner",
   'today.trackedCount': 'concepts suivis',
+  'today.reasonForgetting': "Risque d'oubli",
+  'today.forgettingRisk': "risque d'oubli",
   'exam.recordResult': 'Enregistrer le résultat',
   'exam.recordResultPrompt': 'Avez-vous déjà passé cet examen ? Enregistrez votre résultat réel pour recalibrer votre maîtrise.',
   'exam.scoreLabel': 'Vous avez obtenu',
@@ -601,6 +638,15 @@ const fr: Messages = {
   'debt.currentMastery': 'Maîtrise actuelle',
   'debt.severity': 'gravité',
   'debt.review': 'Réviser',
+  'debt.errorPatternsTitle': "Schémas d'erreur",
+  'debt.errorPatternsSubtitle': "Types d'erreurs qui se répètent dans vos réponses — les repérer aide à corriger la cause, pas seulement le symptôme.",
+  'debt.errorOccurrences': 'fois',
+  'debt.errorTopConcept': 'le plus fréquent dans',
+  'errorType.CONCEPTUAL': 'Conceptuelle',
+  'errorType.PROCEDURAL': 'Procédurale',
+  'errorType.CARELESS': 'Étourderie',
+  'errorType.INCOMPLETE': 'Incomplète',
+  'errorType.MISREADING': "Mauvaise lecture de l'énoncé",
   'notifications.title': 'Notifications',
   'notifications.subtitle': 'Activité récente de votre apprentissage.',
   'notifications.emptyTitle': 'Aucune nouvelle notification',

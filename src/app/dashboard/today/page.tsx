@@ -8,6 +8,7 @@ import { getMessages } from '@/lib/i18n/messages';
 function reasonDot(reason: TodayItem['reason']) {
   if (reason === 'exam_soon') return 'var(--error)';
   if (reason === 'learning_debt') return 'var(--warning)';
+  if (reason === 'forgetting_risk') return 'var(--brand)';
   return 'var(--text-muted)';
 }
 
@@ -31,16 +32,17 @@ export default async function TodayPage() {
     totalConcepts: 0,
   }));
 
-  const reasonLabel = (reason: TodayItem['reason']) =>
-    reason === 'exam_soon'
-      ? t['today.reasonExamSoon']
-      : reason === 'learning_debt'
-      ? t['today.reasonDebt']
-      : t['today.reasonLowMastery'];
+  const reasonLabel = (reason: TodayItem['reason']) => {
+    if (reason === 'exam_soon') return t['today.reasonExamSoon'];
+    if (reason === 'learning_debt') return t['today.reasonDebt'];
+    if (reason === 'forgetting_risk') return t['today.reasonForgetting'];
+    return t['today.reasonLowMastery'];
+  };
 
   const reasonDetail = (item: TodayItem) => {
     if (item.reason === 'exam_soon') return `${item.daysUntilExam} ${t['today.daysUntilExam']}`;
     if (item.reason === 'learning_debt') return `${t['today.severity']} ${item.debtSeverity}`;
+    if (item.reason === 'forgetting_risk') return `${item.forgettingRisk}% ${t['today.forgettingRisk']}`;
     return `${Math.round(item.masteryScore)}% ${t['today.mastery']}`;
   };
 
