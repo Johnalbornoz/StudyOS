@@ -1,11 +1,12 @@
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { getOrCreateStudentId } from '@/lib/auth';
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const { userId: clerkUserId } = await auth();
 
-  if (!userId) {
+  if (!clerkUserId) {
     return (
       <div style={{ padding: '2rem' }}>
         <h1>Not authenticated</h1>
@@ -14,10 +15,12 @@ export default async function DashboardPage() {
     );
   }
 
+  const studentId = await getOrCreateStudentId(clerkUserId);
+
   // Get student subjects
   const result = await query(
     `SELECT * FROM subjects WHERE student_id = $1 ORDER BY created_at DESC`,
-    [userId]
+    [studentId]
   );
   const subjects = result.rows;
 
