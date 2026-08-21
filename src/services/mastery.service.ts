@@ -212,7 +212,7 @@ export async function updateMastery(
       masteryRecordId,
       oldMastery,
       newMastery,
-      `Result: ${evidence.result}, Difficulty: ${evidence.difficulty}/5, Type: ${evidence.sourceType}`,
+      `${evidence.sourceType}:${evidence.result}`.slice(0, 50),
     ]
   );
 
