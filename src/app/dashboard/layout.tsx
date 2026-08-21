@@ -71,6 +71,7 @@ export default async function DashboardLayout({
           <NavLink href="/dashboard/subjects" label={t['nav.subjects']} />
           <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />
           <NavLink href="/dashboard/notifications" label={t['nav.notifications']} badge={notifCount} />
+          <NavLink href="/dashboard/parent" label={t['nav.parent']} />
         </nav>
 
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>

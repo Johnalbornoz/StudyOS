@@ -20,7 +20,7 @@ export const LOCALE_FULL_NAME: Record<string, string> = {
 };
 
 type MessageKey =
-  | 'nav.today' | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications'
+  | 'nav.today' | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications' | 'nav.parent'
   | 'common.notAuthenticated' | 'common.signIn' | 'common.back' | 'common.create'
   | 'common.creating' | 'common.loading' | 'common.error'
   | 'dashboard.eyebrow' | 'dashboard.greeting' | 'dashboard.subtitle'
@@ -56,6 +56,10 @@ type MessageKey =
   | 'today.criticalSubtitle' | 'today.thisWeekSubtitle' | 'today.canWaitSubtitle'
   | 'today.examLabel' | 'today.debtSinceLabel' | 'today.lastPracticedLabel'
   | 'today.todayWord' | 'today.tomorrowWord' | 'common.days'
+  | 'parent.title' | 'parent.subtitle' | 'parent.linkLabel' | 'parent.linkPlaceholder' | 'parent.linkButton'
+  | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
+  | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
+  | 'parent.readiness' | 'parent.avgMastery' | 'parent.concepts'
   | 'exam.recordResult' | 'exam.recordResultPrompt' | 'exam.scoreLabel' | 'exam.outOfLabel'
   | 'exam.submitResult' | 'exam.resultSaved' | 'exam.predicted' | 'exam.actual'
   | 'exam.recalibrated' | 'exam.debtResolvedBadge' | 'exam.history' | 'exam.historyEmpty'
@@ -85,6 +89,7 @@ const es: Messages = {
   'nav.subjects': 'Materias',
   'nav.debt': 'Repaso pendiente',
   'nav.notifications': 'Notificaciones',
+  'nav.parent': 'Modo padre',
   'common.notAuthenticated': 'No autenticado',
   'common.signIn': 'Iniciar sesión',
   'common.back': 'Volver',
@@ -188,6 +193,22 @@ const es: Messages = {
   'today.todayWord': 'hoy',
   'today.tomorrowWord': 'mañana',
   'common.days': 'días',
+  'parent.title': 'Modo padre',
+  'parent.subtitle': 'Vincula la cuenta de tu hijo o hija por su correo para ver su progreso, exámenes y deuda de aprendizaje. Es solo de lectura — no puedes modificar su información.',
+  'parent.linkLabel': 'Correo del estudiante',
+  'parent.linkPlaceholder': 'correo@ejemplo.com',
+  'parent.linkButton': 'Vincular',
+  'parent.linkErrorNotFound': 'No existe ninguna cuenta de estudiante con ese correo.',
+  'parent.noChildren': 'Aún no has vinculado a nadie',
+  'parent.noChildrenBody': 'Ingresa el correo de la cuenta de tu hijo o hija para empezar a ver su progreso.',
+  'parent.unlink': 'Desvincular',
+  'parent.subjects': 'Materias',
+  'parent.activeDebt': 'Conceptos con deuda activa',
+  'parent.upcomingExam': 'Próximo examen',
+  'parent.noUpcomingExam': 'Sin examen agendado',
+  'parent.readiness': 'Preparación',
+  'parent.avgMastery': 'Dominio promedio',
+  'parent.concepts': 'conceptos',
   'exam.recordResult': 'Registrar resultado',
   'exam.recordResultPrompt': '¿Ya presentaste este examen? Registra tu resultado real para recalibrar tu dominio.',
   'exam.scoreLabel': 'Obtuviste',
@@ -272,6 +293,7 @@ const en: Messages = {
   'nav.subjects': 'Subjects',
   'nav.debt': 'Review queue',
   'nav.notifications': 'Notifications',
+  'nav.parent': 'Parent mode',
   'common.notAuthenticated': 'Not authenticated',
   'common.signIn': 'Sign in',
   'common.back': 'Back',
@@ -375,6 +397,22 @@ const en: Messages = {
   'today.todayWord': 'today',
   'today.tomorrowWord': 'tomorrow',
   'common.days': 'days',
+  'parent.title': 'Parent mode',
+  'parent.subtitle': "Link your child's account by email to see their progress, exams, and learning debt. Read-only — you can't modify their information.",
+  'parent.linkLabel': "Student's email",
+  'parent.linkPlaceholder': 'email@example.com',
+  'parent.linkButton': 'Link',
+  'parent.linkErrorNotFound': 'No student account exists with that email.',
+  'parent.noChildren': "You haven't linked anyone yet",
+  'parent.noChildrenBody': "Enter your child's account email to start seeing their progress.",
+  'parent.unlink': 'Unlink',
+  'parent.subjects': 'Subjects',
+  'parent.activeDebt': 'Concepts with active debt',
+  'parent.upcomingExam': 'Upcoming exam',
+  'parent.noUpcomingExam': 'No exam scheduled',
+  'parent.readiness': 'Readiness',
+  'parent.avgMastery': 'Average mastery',
+  'parent.concepts': 'concepts',
   'exam.recordResult': 'Record result',
   'exam.recordResultPrompt': 'Already took this exam? Record your real result to recalibrate your mastery.',
   'exam.scoreLabel': 'You scored',
@@ -459,6 +497,7 @@ const de: Messages = {
   'nav.subjects': 'Fächer',
   'nav.debt': 'Zu wiederholen',
   'nav.notifications': 'Benachrichtigungen',
+  'nav.parent': 'Elternmodus',
   'common.notAuthenticated': 'Nicht angemeldet',
   'common.signIn': 'Anmelden',
   'common.back': 'Zurück',
@@ -562,6 +601,22 @@ const de: Messages = {
   'today.todayWord': 'heute',
   'today.tomorrowWord': 'morgen',
   'common.days': 'Tage',
+  'parent.title': 'Elternmodus',
+  'parent.subtitle': 'Verknüpfe das Konto deines Kindes über dessen E-Mail, um Fortschritt, Prüfungen und Lernrückstand zu sehen. Nur Lesezugriff — du kannst nichts ändern.',
+  'parent.linkLabel': 'E-Mail des Kindes',
+  'parent.linkPlaceholder': 'email@beispiel.com',
+  'parent.linkButton': 'Verknüpfen',
+  'parent.linkErrorNotFound': 'Es existiert kein Schülerkonto mit dieser E-Mail.',
+  'parent.noChildren': 'Du hast noch niemanden verknüpft',
+  'parent.noChildrenBody': 'Gib die E-Mail des Kontos deines Kindes ein, um dessen Fortschritt zu sehen.',
+  'parent.unlink': 'Trennen',
+  'parent.subjects': 'Fächer',
+  'parent.activeDebt': 'Konzepte mit aktivem Rückstand',
+  'parent.upcomingExam': 'Nächste Prüfung',
+  'parent.noUpcomingExam': 'Keine Prüfung geplant',
+  'parent.readiness': 'Bereitschaft',
+  'parent.avgMastery': 'Durchschnittliche Beherrschung',
+  'parent.concepts': 'Konzepte',
   'exam.recordResult': 'Ergebnis eintragen',
   'exam.recordResultPrompt': 'Hast du diese Prüfung schon geschrieben? Trage dein echtes Ergebnis ein, um deine Beherrschung neu zu kalibrieren.',
   'exam.scoreLabel': 'Du hast erreicht',
@@ -646,6 +701,7 @@ const fr: Messages = {
   'nav.subjects': 'Matières',
   'nav.debt': 'À réviser',
   'nav.notifications': 'Notifications',
+  'nav.parent': 'Mode parent',
   'common.notAuthenticated': 'Non authentifié',
   'common.signIn': 'Se connecter',
   'common.back': 'Retour',
@@ -749,6 +805,22 @@ const fr: Messages = {
   'today.todayWord': "aujourd'hui",
   'today.tomorrowWord': 'demain',
   'common.days': 'jours',
+  'parent.title': 'Mode parent',
+  'parent.subtitle': "Reliez le compte de votre enfant par son e-mail pour voir ses progrès, examens et dette d'apprentissage. Lecture seule — vous ne pouvez pas modifier ses informations.",
+  'parent.linkLabel': "E-mail de l'étudiant",
+  'parent.linkPlaceholder': 'email@exemple.com',
+  'parent.linkButton': 'Relier',
+  'parent.linkErrorNotFound': "Aucun compte étudiant n'existe avec cet e-mail.",
+  'parent.noChildren': "Vous n'avez encore relié personne",
+  'parent.noChildrenBody': "Entrez l'e-mail du compte de votre enfant pour voir ses progrès.",
+  'parent.unlink': 'Délier',
+  'parent.subjects': 'Matières',
+  'parent.activeDebt': "Concepts avec dette active",
+  'parent.upcomingExam': 'Prochain examen',
+  'parent.noUpcomingExam': 'Aucun examen prévu',
+  'parent.readiness': 'Préparation',
+  'parent.avgMastery': 'Maîtrise moyenne',
+  'parent.concepts': 'concepts',
   'exam.recordResult': 'Enregistrer le résultat',
   'exam.recordResultPrompt': 'Avez-vous déjà passé cet examen ? Enregistrez votre résultat réel pour recalibrer votre maîtrise.',
   'exam.scoreLabel': 'Vous avez obtenu',

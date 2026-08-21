@@ -184,6 +184,28 @@ export async function upsertStudentFromWebhook(
 }
 
 /**
+ * Resolve a Clerk user ID to a parent's profile UUID, creating the
+ * profiles row (user_type='parent') on first use. Separate from
+ * getOrCreateStudentId: parents have no legacy `students` table entry,
+ * so identity resolution goes through profiles.clerk_id instead.
+ */
+export async function getOrCreateParentId(clerkUserId: string): Promise<string> {
+  const existing = await db.query(`SELECT id FROM profiles WHERE clerk_id = $1`, [clerkUserId]);
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id;
+  }
+
+  const user = await currentUser();
+  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
+
+  const inserted = await db.query(
+    `INSERT INTO profiles (id, user_type, full_name, clerk_id) VALUES (gen_random_uuid(), 'parent', $1, $2) RETURNING id`,
+    [name, clerkUserId]
+  );
+  return inserted.rows[0].id;
+}
+
+/**
  * Check if teacher can access student
  */
 async function canTeacherAccessStudent(
