@@ -98,13 +98,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Step 3: Update content source status
+    // Step 3: Record processing status in metadata
     await db.query(
       `
       UPDATE content_sources
-      SET
-        extracted_concepts = $1,
-        updated_at = NOW()
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('chunkCount', $1::int, 'processedAt', NOW())
       WHERE id = $2
       `,
       [storedChunks.length, body.contentSourceId]
