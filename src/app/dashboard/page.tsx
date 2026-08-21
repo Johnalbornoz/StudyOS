@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   const t = getMessages(locale);
 
   const [subjectsResult, debts, notifications, streak] = await Promise.all([
-    query(`SELECT * FROM subjects WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]),
+    query(`SELECT * FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getUnreadNotifications(studentId).catch(() => []),
     getStudentStreak(studentId).catch(() => 0),

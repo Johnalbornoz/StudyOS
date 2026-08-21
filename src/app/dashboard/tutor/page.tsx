@@ -23,7 +23,7 @@ export default async function TutorPage() {
   const t = getMessages(locale);
 
   const subjectsResult = await query(
-    `SELECT id, name FROM subjects WHERE student_id = $1 ORDER BY name ASC`,
+    `SELECT id, name FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY name ASC`,
     [studentId]
   );
   const subjects = subjectsResult.rows.map((s: any) => ({ id: s.id, name: s.name }));

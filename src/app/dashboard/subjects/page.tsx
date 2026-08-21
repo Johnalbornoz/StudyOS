@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import SubjectCard from './SubjectCard';
 
 export default async function SubjectsPage() {
   const { userId: clerkUserId } = await auth();
@@ -25,6 +26,8 @@ export default async function SubjectsPage() {
     [studentId]
   );
   const subjects = result.rows;
+  const activeSubjects = subjects.filter((s: any) => s.status !== 'archived');
+  const archivedSubjects = subjects.filter((s: any) => s.status === 'archived');
 
   return (
     <div>
@@ -42,14 +45,26 @@ export default async function SubjectsPage() {
           {t['subjects.noSubjectsBody']}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-          {subjects.map((s: any) => (
-            <Link key={s.id} href={`/dashboard/subjects/${s.id}`} className="card" style={{ display: 'block' }}>
-              <h3>{s.name}</h3>
-              <span className="chip chip-good" style={{ marginTop: 10 }}>{s.status}</span>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+            {activeSubjects.map((s: any) => (
+              <SubjectCard key={s.id} id={s.id} name={s.name} status={s.status} studentId={studentId} locale={locale} />
+            ))}
+          </div>
+
+          {archivedSubjects.length > 0 && (
+            <div style={{ marginTop: 'var(--space-8)' }}>
+              <h2 style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+                {t['subjects.archivedSectionTitle']}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+                {archivedSubjects.map((s: any) => (
+                  <SubjectCard key={s.id} id={s.id} name={s.name} status={s.status} studentId={studentId} locale={locale} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -24,7 +24,7 @@ export async function createContentSource(
 export async function getContentSources(studentId: string, subjectId: string) {
   try {
     const result = await query(
-      `SELECT * FROM content_sources 
+      `SELECT * FROM content_sources
        WHERE student_id = $1 AND subject_id = $2
        ORDER BY uploaded_at DESC`,
       [studentId, subjectId]
@@ -34,4 +34,16 @@ export async function getContentSources(studentId: string, subjectId: string) {
     console.error('Error getting content sources:', error);
     return [];
   }
+}
+
+export async function deleteContentSource(studentId: string, sourceId: string): Promise<boolean> {
+  const existing = await query(`SELECT id FROM content_sources WHERE id = $1 AND student_id = $2`, [
+    sourceId,
+    studentId,
+  ]);
+  if (existing.rowCount === 0) return false;
+
+  await query(`DELETE FROM content_chunks WHERE source_id = $1`, [sourceId]);
+  await query(`DELETE FROM content_sources WHERE id = $1`, [sourceId]);
+  return true;
 }

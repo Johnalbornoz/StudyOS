@@ -4,10 +4,12 @@ import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getStudentMastery } from '@/services/mastery.service';
+import { getContentSources } from '@/services/content.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
+import SubjectSettingsPanel from './SubjectSettingsPanel';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -39,6 +41,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   if (!subject) notFound();
 
   const concepts = await getStudentMastery(studentId, id, locale).catch(() => []);
+  const contentSources = await getContentSources(studentId, id).catch(() => []);
   const avgMastery = concepts.length
     ? Math.round(concepts.reduce((sum: number, c: any) => sum + Number(c.mastery_score), 0) / concepts.length)
     : null;
@@ -117,6 +120,22 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
       )}
 
       <UploadPanel subjectId={id} subjectName={subject.name} locale={locale} />
+
+      <SubjectSettingsPanel
+        subjectId={id}
+        studentId={studentId}
+        locale={locale}
+        initialName={subject.name}
+        initialStatus={subject.status}
+        initialTargetLanguage={subject.target_language}
+        initialQuizLanguageMode={subject.quiz_language_mode}
+        contentSources={contentSources.map((s: any) => ({
+          id: s.id,
+          fileName: s.storage_path?.split('/').pop() || s.storage_path,
+          sourceType: s.source_type,
+          uploadedAt: s.uploaded_at,
+        }))}
+      />
     </div>
   );
 }

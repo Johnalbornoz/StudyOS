@@ -180,7 +180,7 @@ export async function getChildOverview(
   preferredLanguage: string = 'en'
 ): Promise<ChildOverview> {
   const [subjectsResult, debts, upcoming] = await Promise.all([
-    db.query(`SELECT id, name FROM subjects WHERE student_id = $1 ORDER BY name`, [studentId]),
+    db.query(`SELECT id, name FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY name`, [studentId]),
     getActiveDebts(studentId, undefined, preferredLanguage).catch(() => []),
     getUpcomingForStudent(studentId).catch(() => []),
   ]);
