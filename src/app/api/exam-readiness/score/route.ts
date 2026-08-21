@@ -35,6 +35,7 @@ import {
   calculateExamReadiness,
   getOverallExamReadiness,
 } from '@/services/exam-readiness.service';
+import { getNextOccurrence, cacheReadinessScore } from '@/services/assessment.service';
 import { z } from 'zod';
 
 const ExamReadinessSchema = z.object({
@@ -43,7 +44,8 @@ const ExamReadinessSchema = z.object({
     .string()
     .transform(Number)
     .pipe(z.number().int().min(0).max(365))
-    .or(z.number().int().min(0).max(365)),
+    .or(z.number().int().min(0).max(365))
+    .optional(),
   subjectId: z.string().uuid('Invalid subjectId').optional(),
 });
 
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
     try {
       const raw = {
         studentId: searchParams.get('studentId'),
-        daysUntilExam: searchParams.get('daysUntilExam'),
+        daysUntilExam: searchParams.get('daysUntilExam') || undefined,
         subjectId: searchParams.get('subjectId') || undefined,
       };
 
@@ -99,12 +101,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const daysUntilExam = typeof validated.daysUntilExam === 'string'
+    let daysUntilExam = typeof validated.daysUntilExam === 'string'
       ? parseInt(validated.daysUntilExam)
       : validated.daysUntilExam;
     const subjectId = validated.subjectId;
 
     if (subjectId) {
+      // No explicit daysUntilExam -- derive it from the subject's real
+      // exam calendar instead of requiring the caller to know/guess it.
+      let occurrence = null;
+      if (daysUntilExam === undefined) {
+        occurrence = await getNextOccurrence(subjectId);
+        if (!occurrence) {
+          return NextResponse.json({
+            success: true,
+            data: {
+              scope: 'single_subject',
+              hasUpcomingExam: false,
+              message: 'No upcoming exam scheduled for this subject.',
+            },
+          });
+        }
+        daysUntilExam = Math.max(0, occurrence.daysUntil);
+      }
+
       // Single subject readiness
       const readiness = await calculateExamReadiness(
         validated.studentId,
@@ -112,10 +132,17 @@ export async function GET(request: NextRequest) {
         daysUntilExam
       );
 
+      if (occurrence) {
+        await cacheReadinessScore(occurrence.id, readiness.overallScore).catch(() => {});
+      }
+
       return NextResponse.json({
         success: true,
         data: {
           scope: 'single_subject',
+          hasUpcomingExam: true,
+          examDate: occurrence?.scheduledDate,
+          occurrenceId: occurrence?.id,
           overall: {
             score: readiness.overallScore,
             predicted: readiness.predictedExamScore,
@@ -133,6 +160,15 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
+      if (daysUntilExam === undefined) {
+        return NextResponse.json(
+          {
+            error: 'INVALID_INPUT',
+            message: 'daysUntilExam is required when subjectId is omitted (each subject may have a different exam date)',
+          },
+          { status: 400 }
+        );
+      }
       // Overall readiness across all subjects
       const {
         overallReadiness,

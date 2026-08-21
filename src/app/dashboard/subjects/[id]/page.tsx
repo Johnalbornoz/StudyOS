@@ -7,6 +7,7 @@ import { getStudentMastery } from '@/services/mastery.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
+import AssessmentPanel from './AssessmentPanel';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -61,6 +62,8 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </Link>
         )}
       </div>
+
+      <AssessmentPanel subjectId={id} studentId={studentId} locale={locale} />
 
       {concepts.length === 0 ? (
         <div className="card empty-state">
