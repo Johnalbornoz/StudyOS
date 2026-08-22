@@ -475,6 +475,22 @@ export default function QuizPage() {
             {results.results.correctCount} / {results.results.totalQuestions} {t['quiz.correctOf']}
           </p>
 
+          {results.ibEstimate && (
+            <div
+              style={{
+                marginTop: 'var(--space-3)', display: 'inline-flex', flexDirection: 'column', gap: 2,
+                padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--brand-subtle)',
+              }}
+            >
+              <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--brand-ink)' }}>
+                {results.ibEstimate.programme === 'DP'
+                  ? `${t['ib.estimatedGrade']}: ${results.ibEstimate.grade}/7`
+                  : `${t['ib.estimatedBand']}: ${results.ibEstimate.band}/8`}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t['ib.disclaimer']}</span>
+            </div>
+          )}
+
           {perConcept.length === 1 && results.mastery && (
             <p style={{ fontSize: 14, marginTop: 'var(--space-3)' }}>
               {t['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}

@@ -111,6 +111,9 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         initialStatus={subject.status}
         initialTargetLanguage={subject.target_language}
         initialQuizLanguageMode={subject.quiz_language_mode}
+        initialIbProgramme={subject.ib_programme}
+        initialIbSubjectGroup={subject.ib_subject_group}
+        initialIbLevel={subject.ib_level}
         conceptCount={concepts.length}
         contentSources={contentSources.map((s: any) => ({
           id: s.id,

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name, targetLanguage, quizLanguageMode } = await req.json();
+    const { name, targetLanguage, quizLanguageMode, ibProgramme, ibSubjectGroup, ibLevel } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: 'Missing name' }, { status: 400 });
@@ -25,12 +25,15 @@ export async function POST(req: NextRequest) {
 
     const resolvedTargetLanguage = isLocale(targetLanguage) ? targetLanguage : null;
     const resolvedQuizMode = quizLanguageMode === 'fixed_english' ? 'fixed_english' : 'match_interface';
+    const resolvedIbProgramme = ['MYP', 'DP'].includes(ibProgramme) ? ibProgramme : 'none';
+    const resolvedIbSubjectGroup = resolvedIbProgramme !== 'none' && typeof ibSubjectGroup === 'string' ? ibSubjectGroup : null;
+    const resolvedIbLevel = resolvedIbProgramme === 'DP' && ['SL', 'HL'].includes(ibLevel) ? ibLevel : null;
 
     const result = await query(
-      `INSERT INTO subjects (student_id, name, status, target_language, quiz_language_mode)
-       VALUES ($1, $2, 'active', $3, $4)
+      `INSERT INTO subjects (student_id, name, status, target_language, quiz_language_mode, ib_programme, ib_subject_group, ib_level)
+       VALUES ($1, $2, 'active', $3, $4, $5, $6, $7)
        RETURNING id`,
-      [userId, name, resolvedTargetLanguage, resolvedQuizMode]
+      [userId, name, resolvedTargetLanguage, resolvedQuizMode, resolvedIbProgramme, resolvedIbSubjectGroup, resolvedIbLevel]
     );
 
     return NextResponse.json({ success: true, subjectId: result.rows[0].id });

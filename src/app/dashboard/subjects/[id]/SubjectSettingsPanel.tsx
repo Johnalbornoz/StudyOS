@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import StatusToggle from '../StatusToggle';
+import { IBFields } from '../IBFields';
 
 interface ContentSourceRow {
   id: string;
@@ -22,6 +23,9 @@ export default function SubjectSettingsPanel({
   initialQuizLanguageMode,
   contentSources,
   conceptCount,
+  initialIbProgramme,
+  initialIbSubjectGroup,
+  initialIbLevel,
 }: {
   subjectId: string;
   studentId: string;
@@ -32,6 +36,9 @@ export default function SubjectSettingsPanel({
   initialQuizLanguageMode: string;
   contentSources: ContentSourceRow[];
   conceptCount: number;
+  initialIbProgramme: 'none' | 'MYP' | 'DP';
+  initialIbSubjectGroup: string | null;
+  initialIbLevel: 'SL' | 'HL' | null;
 }) {
   const t = getMessages(locale);
   const router = useRouter();
@@ -39,6 +46,9 @@ export default function SubjectSettingsPanel({
   const [name, setName] = useState(initialName);
   const [targetLanguage, setTargetLanguage] = useState<Locale | ''>((initialTargetLanguage as Locale) || '');
   const [quizLanguageMode, setQuizLanguageMode] = useState(initialQuizLanguageMode);
+  const [ibProgramme, setIbProgramme] = useState<'none' | 'MYP' | 'DP'>(initialIbProgramme);
+  const [ibSubjectGroup, setIbSubjectGroup] = useState(initialIbSubjectGroup || '');
+  const [ibLevel, setIbLevel] = useState<'SL' | 'HL'>(initialIbLevel || 'SL');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
@@ -64,6 +74,9 @@ export default function SubjectSettingsPanel({
           name,
           targetLanguage: targetLanguage || null,
           quizLanguageMode,
+          ibProgramme,
+          ibSubjectGroup: ibProgramme !== 'none' ? ibSubjectGroup || null : null,
+          ibLevel: ibProgramme === 'DP' ? ibLevel : null,
         }),
       });
       setSaved(true);
@@ -196,6 +209,16 @@ export default function SubjectSettingsPanel({
             <option value="fixed_english">{t['subjectNew.quizLanguageFixed']}</option>
           </select>
         </div>
+
+        <IBFields
+          locale={locale}
+          programme={ibProgramme}
+          setProgramme={setIbProgramme}
+          subjectGroup={ibSubjectGroup}
+          setSubjectGroup={setIbSubjectGroup}
+          level={ibLevel}
+          setLevel={setIbLevel}
+        />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <button type="submit" disabled={saving || !name} className="btn btn-primary">

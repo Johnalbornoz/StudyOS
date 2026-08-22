@@ -49,6 +49,7 @@ import {
   gradeStructuredAnswer,
   GeneratedQuestion,
   ALL_QUESTION_TYPES,
+  IBContext,
 } from '@/services/quiz-generation.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
@@ -59,6 +60,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
+import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { z } from 'zod';
 
 async function resolveLanguageForSubject(subjectId: string, studentId: string) {
@@ -69,6 +71,16 @@ async function resolveLanguageForSubject(subjectId: string, studentId: string) {
   const subject = result.rows[0] || {};
   const interfaceLanguage = await getInterfaceLanguage(studentId);
   return resolveQuizLanguage(subject, interfaceLanguage);
+}
+
+async function getSubjectIBContext(subjectId: string): Promise<IBContext | null> {
+  const result = await db.query(
+    `SELECT ib_programme, ib_subject_group, ib_level FROM subjects WHERE id = $1`,
+    [subjectId]
+  );
+  const row = result.rows[0];
+  if (!row || row.ib_programme === 'none') return null;
+  return { programme: row.ib_programme, subjectGroup: row.ib_subject_group, level: row.ib_level };
 }
 
 /**
@@ -228,6 +240,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
     const language = isLocale(validated.language)
       ? validated.language
       : await resolveLanguageForSubject(validated.subjectId, validated.studentId);
+    const ibContext = await getSubjectIBContext(validated.subjectId);
 
     const config = QUIZ_MODE_CONFIG[validated.quizMode];
     const maxQuestions = Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
@@ -269,6 +282,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
           guidance: config.guidance,
           language,
           visualAidRate: config.visualAidRate,
+          ibContext,
         })
       )
     );
@@ -299,6 +313,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
         language,
         quizMode: validated.quizMode,
         maxQuestions,
+        ibProgramme: ibContext?.programme || 'none',
         quiz: {
           questions: questions.map(toClientQuestion),
           count: questions.length,
@@ -513,6 +528,13 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
       ? perConceptResults.find((r) => r.conceptId === quizSession.conceptId)
       : null;
 
+    const ibContext = await getSubjectIBContext(quizSession.subjectId);
+    const ibEstimate = ibContext
+      ? ibContext.programme === 'DP'
+        ? { programme: 'DP', grade: estimateDPGrade(score) }
+        : { programme: 'MYP', band: estimateMYPBand(score) }
+      : null;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -524,6 +546,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
         perConceptResults,
         review,
         messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',
+        ibEstimate,
       },
     });
   } catch (error: any) {

@@ -10,6 +10,9 @@ const UpdateSchema = z.object({
   targetLanguage: z.string().nullable().optional(),
   quizLanguageMode: z.enum(['match_interface', 'fixed_english']).optional(),
   status: z.enum(['active', 'archived']).optional(),
+  ibProgramme: z.enum(['none', 'MYP', 'DP']).optional(),
+  ibSubjectGroup: z.string().nullable().optional(),
+  ibLevel: z.enum(['SL', 'HL']).nullable().optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +62,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (validated.status !== undefined) {
     sets.push(`status = $${i++}`);
     values.push(validated.status);
+  }
+  if (validated.ibProgramme !== undefined) {
+    sets.push(`ib_programme = $${i++}`);
+    values.push(validated.ibProgramme);
+    if (validated.ibProgramme === 'none') {
+      sets.push(`ib_subject_group = NULL`, `ib_level = NULL`);
+    }
+  }
+  if (validated.ibSubjectGroup !== undefined && validated.ibProgramme !== 'none') {
+    sets.push(`ib_subject_group = $${i++}`);
+    values.push(validated.ibSubjectGroup);
+  }
+  if (validated.ibLevel !== undefined && validated.ibProgramme !== 'none') {
+    sets.push(`ib_level = $${i++}`);
+    values.push(validated.ibLevel);
   }
 
   if (sets.length === 0) {

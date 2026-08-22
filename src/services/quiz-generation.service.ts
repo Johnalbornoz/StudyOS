@@ -12,8 +12,16 @@
  */
 
 import { retrieveContext } from './rag.service';
+import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
+
+export interface IBContext {
+  programme: 'MYP' | 'DP';
+  subjectGroup: string | null;
+  level: 'SL' | 'HL' | null;
+}
 
 /**
  * The 18 question models the product supports. "Pregunta con imagen"
@@ -207,6 +215,7 @@ export async function generateQuestionsForConcept(
     guidance?: string;
     language?: string;
     visualAidRate?: number;
+    ibContext?: IBContext | null;
   } = {}
 ): Promise<GeneratedQuestion[]> {
   const count = Math.max(1, Math.min(20, options.count || 20));
@@ -215,6 +224,7 @@ export async function generateQuestionsForConcept(
   const guidance = options.guidance || 'Choose whichever question types genuinely fit this specific material best.';
   const language = options.language || 'en';
   const visualAidRate = options.visualAidRate ?? 0;
+  const ibContext = options.ibContext ?? null;
 
   try {
     const context = await retrieveContext(studentId, subjectId, {
@@ -222,12 +232,42 @@ export async function generateQuestionsForConcept(
       limit: 5,
     });
 
+    let conceptContext: { label: string; subjectName: string } | null = null;
     if (context.chunks.length === 0) {
-      console.warn(`No context found for concept ${conceptId}`);
-      return [];
+      // No uploaded material backs this concept -- e.g. one added via
+      // "Escribir un concepto" rather than extracted from a document.
+      // Generating grounded-only questions would return nothing at all
+      // (a silently empty quiz), so fall back to general subject
+      // knowledge instead, same as concept-explanation.service.ts and
+      // interactive-formula.service.ts already do for this case.
+      const conceptRow = await db.query(
+        `
+        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        FROM concepts c
+        JOIN subjects s ON s.id = c.subject_id
+        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
+        WHERE c.id = $1
+        `,
+        [conceptId, language]
+      );
+      const row = conceptRow.rows[0];
+      if (!row) {
+        console.warn(`Concept ${conceptId} not found`);
+        return [];
+      }
+      conceptContext = { label: row.label, subjectName: row.subject_name };
     }
 
-    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, context.chunks, visualAidRate, guidance);
+    const systemPrompt = buildQuestionGenerationPrompt(
+      types,
+      difficulty,
+      language,
+      context.chunks,
+      visualAidRate,
+      guidance,
+      ibContext,
+      conceptContext
+    );
 
     const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
 
@@ -562,7 +602,9 @@ function buildQuestionGenerationPrompt(
   language: string,
   chunks: Array<{ text: string }>,
   visualAidRate: number,
-  guidance: string
+  guidance: string,
+  ibContext?: IBContext | null,
+  conceptContext?: { label: string; subjectName: string } | null
 ): string {
   const typeInstructions = types.map((t) => `- ${typeInstruction(t)}`).join('\n');
 
@@ -582,29 +624,59 @@ function buildQuestionGenerationPrompt(
 Only add a visualAid when it makes the question clearer, not on every question.`
       : '';
 
+  const ibInstruction = ibContext
+    ? (() => {
+        const terms = commandTermsForDifficulty(difficulty);
+        const groupLabel = IB_SUBJECT_GROUPS.find((g) => g.value === ibContext.subjectGroup)?.label;
+        const criteria = ibContext.programme === 'MYP' && ibContext.subjectGroup ? MYP_CRITERIA[ibContext.subjectGroup] : null;
+        return `
+
+IB ALIGNMENT: This subject is tagged as IB ${ibContext.programme}${ibContext.level ? ` ${ibContext.level}` : ''}${groupLabel ? ` (${groupLabel})` : ''}. Phrase each question stem using authentic IB command-term style for this difficulty level -- lead with one of: ${terms.join(', ')}. Use these terms the way the IB does: "${terms[0]}" expects a brief, direct response; a term like "Discuss"/"Evaluate"/"To what extent" (when in the list) expects a reasoned, balanced response, not a one-word answer.${
+          criteria
+            ? ` Where natural, favor question angles that map to these MYP criteria for this subject group: ${criteria.map((c) => `${c.code} (${c.label})`).join('; ')} -- vary which criterion a question leans toward across the set rather than testing only one.`
+            : ''
+        } This is a practice aid aligned to IB's general conventions, not a reproduction of any official subject guide's exact wording.`;
+      })()
+    : '';
+
+  const usingGeneralKnowledge = chunks.length === 0 && !!conceptContext;
+
+  const contextBlock = usingGeneralKnowledge
+    ? `CONCEPT (no uploaded material found for it -- use accurate general knowledge instead):
+"${conceptContext!.label}", in the subject "${conceptContext!.subjectName}".`
+    : `CONTEXT (student's actual materials):
+${chunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n\n')}`;
+
+  const groundingRequirement = usingGeneralKnowledge
+    ? `2. No student material was found for this concept -- use accurate, well-established general knowledge of it instead. Do not fabricate facts that aren't genuinely true of this concept.`
+    : `2. Use ONLY the provided context above -- do not invent facts outside it`;
+
+  const closingNote = usingGeneralKnowledge
+    ? `IMPORTANT: Every question must be genuinely answerable from correct general knowledge of "${conceptContext!.label}" -- do not invent details, statistics, or claims that aren't actually true of it.`
+    : `IMPORTANT: Do not invent content. Every question must be answerable from the provided material.`;
+
   return `You are an expert educator creating assessment questions.
 
 LANGUAGE: Write EVERYTHING in ${languageName} -- the question text, every
 option/pair/item, and the explanation. Do not mix in any other language,
 even if the source material below is in a different language.
 
-CONTEXT (student's actual materials):
-${chunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n\n')}
+${contextBlock}
 
 QUESTION TYPES AVAILABLE -- for EACH question, choose whichever type genuinely fits that specific piece of content best. Don't force every question into the same type, and don't use a type just because it's on the list if it doesn't suit what you're testing here:
 ${typeInstructions}
 
 QUIZ PURPOSE: ${guidance}
-${visualInstruction}
+${visualInstruction}${ibInstruction}
 
 REQUIREMENTS:
 1. Difficulty level (${difficulty}/5): ${difficultyDesc}
-2. Use ONLY the provided context above -- do not invent facts outside it
+${groundingRequirement}
 3. Every field in your JSON output must be written in ${languageName}
 4. Questions should test understanding, not just recall
 5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
 
-IMPORTANT: Do not invent content. Every question must be answerable from the provided material.`;
+${closingNote}`;
 }
 
 /**

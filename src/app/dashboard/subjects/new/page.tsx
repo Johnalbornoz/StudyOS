@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
+import { IBFields } from '../IBFields';
 
 export default function NewSubjectPage() {
   const [name, setName] = useState('');
   const [isLanguageSubject, setIsLanguageSubject] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<Locale>('de');
   const [quizLanguageMode, setQuizLanguageMode] = useState<'match_interface' | 'fixed_english'>('match_interface');
+  const [ibProgramme, setIbProgramme] = useState<'none' | 'MYP' | 'DP'>('none');
+  const [ibSubjectGroup, setIbSubjectGroup] = useState('');
+  const [ibLevel, setIbLevel] = useState<'SL' | 'HL'>('SL');
   const [locale, setLocale] = useState<Locale>('es');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,9 @@ export default function NewSubjectPage() {
           name,
           targetLanguage: isLanguageSubject ? targetLanguage : null,
           quizLanguageMode,
+          ibProgramme,
+          ibSubjectGroup: ibSubjectGroup || null,
+          ibLevel: ibProgramme === 'DP' ? ibLevel : null,
         }),
       });
 
@@ -136,6 +143,16 @@ export default function NewSubjectPage() {
             </select>
           </div>
         )}
+
+        <IBFields
+          locale={locale}
+          programme={ibProgramme}
+          setProgramme={setIbProgramme}
+          subjectGroup={ibSubjectGroup}
+          setSubjectGroup={setIbSubjectGroup}
+          level={ibLevel}
+          setLevel={setIbLevel}
+        />
 
         <button type="submit" disabled={loading || !name} className="btn btn-primary">
           {loading ? t['common.creating'] : t['subjectNew.submit']}
