@@ -636,35 +636,49 @@ export default function QuizPage() {
       <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
           <span
-            title={`${t['quiz.difficultyLabel']}: ${q.difficulty}/5`}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
+              display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
               color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)',
               border: '1px solid var(--border-default)',
             }}
           >
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span
-                key={i}
-                aria-hidden
-                style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: i < q.difficulty ? 'var(--brand)' : 'var(--border-default)',
-                }}
-              />
-            ))}
+            {t['quiz.difficultyLabel']}
+            <span style={{ display: 'inline-flex', gap: 3 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span
+                  key={i}
+                  aria-hidden
+                  style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: i < q.difficulty ? 'var(--brand)' : 'var(--border-default)',
+                  }}
+                />
+              ))}
+            </span>
           </span>
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
+              title={q.calculatorAllowed ? t['quiz.calculatorAllowed'] : t['quiz.calculatorNotAllowed']}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
-                padding: '2px 8px', borderRadius: 'var(--radius-full)',
-                color: q.calculatorAllowed ? 'var(--text-muted)' : 'var(--error)',
+                position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 26, height: 26, borderRadius: 'var(--radius-full)',
                 border: `1px solid ${q.calculatorAllowed ? 'var(--border-default)' : 'var(--error)'}`,
+                fontSize: 14,
               }}
             >
               <span aria-hidden>🧮</span>
-              {q.calculatorAllowed ? t['quiz.calculatorAllowed'] : t['quiz.calculatorNotAllowed']}
+              {!q.calculatorAllowed && (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 26 26"
+                  width={26}
+                  height={26}
+                  style={{ position: 'absolute', inset: 0 }}
+                >
+                  <circle cx="13" cy="13" r="11" fill="none" stroke="var(--error)" strokeWidth="2" />
+                  <line x1="5" y1="21" x2="21" y2="5" stroke="var(--error)" strokeWidth="2" />
+                </svg>
+              )}
             </span>
           )}
         </div>
