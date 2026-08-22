@@ -99,7 +99,10 @@ function AccordionHeader({
 function Collapse({ open, children }: { open: boolean; children: React.ReactNode }) {
   return (
     <div className="accordion-collapse" style={{ gridTemplateRows: open ? '1fr' : '0fr' }}>
-      <div>{children}</div>
+      {/* `inert` (not just CSS height) keeps collapsed content out of
+          tab order and the accessibility tree, while still letting the
+          height transition animate instead of an abrupt display:none. */}
+      <div inert={!open || undefined}>{children}</div>
     </div>
   );
 }
