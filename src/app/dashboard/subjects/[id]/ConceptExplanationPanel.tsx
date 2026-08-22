@@ -17,11 +17,13 @@ export function ConceptExplanationPanel({
   loading,
   error,
   data,
+  headerLabel,
 }: {
   locale: Locale;
   loading: boolean;
   error: boolean;
   data?: ConceptExplanationData;
+  headerLabel?: string;
 }) {
   const t = getMessages(locale);
 
@@ -57,7 +59,7 @@ export function ConceptExplanationPanel({
             color: 'var(--brand-ink)',
           }}
         >
-          {t['subjectDetail.aiExplanationLabel']}
+          {headerLabel || t['subjectDetail.aiExplanationLabel']}
         </span>
       </div>
 

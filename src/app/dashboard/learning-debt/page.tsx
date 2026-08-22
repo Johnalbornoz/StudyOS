@@ -5,6 +5,7 @@ import { getActiveDebts } from '@/services/learning-debt.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import ErrorPatternList from './ErrorPatternList';
 
 export default async function LearningDebtPage() {
   const { userId: clerkUserId } = await auth();
@@ -69,27 +70,7 @@ export default async function LearningDebtPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
             {t['debt.errorPatternsSubtitle']}
           </p>
-          <div className="card list-card">
-            {errorPatterns.map((p) => (
-              <div key={`${p.subjectId}-${p.errorType}`} className="list-row">
-                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--brand)' }} />
-                <div className="row-main">
-                  <div className="row-title">
-                    {t[`errorType.${p.errorType}` as keyof typeof t] || p.errorType} · {p.subjectName}
-                  </div>
-                  <div className="row-sub">
-                    {p.count} {t['debt.errorOccurrences']}
-                    {p.topConceptLabel && ` · ${t['debt.errorTopConcept']} "${p.topConceptLabel}"`}
-                  </div>
-                </div>
-                {p.topConceptId && (
-                  <Link href={`/dashboard/quiz?subjectId=${p.subjectId}&conceptId=${p.topConceptId}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
-                    {t['debt.review']}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
+          <ErrorPatternList studentId={studentId} locale={locale} patterns={errorPatterns} />
         </div>
       )}
     </div>

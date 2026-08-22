@@ -91,6 +91,7 @@ type MessageKey =
   | 'debt.title' | 'debt.subtitle' | 'debt.allCaughtUpTitle' | 'debt.allCaughtUpBody'
   | 'debt.currentMastery' | 'debt.severity' | 'debt.review'
   | 'debt.errorPatternsTitle' | 'debt.errorPatternsSubtitle' | 'debt.errorOccurrences' | 'debt.errorTopConcept'
+  | 'debt.understandPattern' | 'debt.hideGuidance' | 'debt.guidanceLabel' | 'debt.practiceOptional'
   | 'errorType.CONCEPTUAL' | 'errorType.PROCEDURAL' | 'errorType.CARELESS' | 'errorType.INCOMPLETE' | 'errorType.MISREADING'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
@@ -318,6 +319,10 @@ const es: Messages = {
   'debt.review': 'Repasar',
   'debt.errorPatternsTitle': 'Patrones de error',
   'debt.errorPatternsSubtitle': 'Tipos de error que se repiten en tus respuestas — identificarlos ayuda a corregir la causa, no solo el síntoma.',
+  'debt.understandPattern': 'Entender este patrón',
+  'debt.hideGuidance': 'Ocultar guía',
+  'debt.guidanceLabel': 'Guía para este patrón',
+  'debt.practiceOptional': 'Practicar este concepto (opcional)',
   'debt.errorOccurrences': 'veces',
   'debt.errorTopConcept': 'más frecuente en',
   'errorType.CONCEPTUAL': 'Conceptual',
@@ -612,6 +617,10 @@ const en: Messages = {
   'debt.review': 'Review',
   'debt.errorPatternsTitle': 'Error patterns',
   'debt.errorPatternsSubtitle': "Types of mistakes that keep recurring in your answers — spotting them helps fix the cause, not just the symptom.",
+  'debt.understandPattern': 'Understand this pattern',
+  'debt.hideGuidance': 'Hide guidance',
+  'debt.guidanceLabel': 'Guidance for this pattern',
+  'debt.practiceOptional': 'Practice this concept (optional)',
   'debt.errorOccurrences': 'times',
   'debt.errorTopConcept': 'most common in',
   'errorType.CONCEPTUAL': 'Conceptual',
@@ -906,6 +915,10 @@ const de: Messages = {
   'debt.review': 'Wiederholen',
   'debt.errorPatternsTitle': 'Fehlermuster',
   'debt.errorPatternsSubtitle': 'Fehlertypen, die sich in deinen Antworten wiederholen — sie zu erkennen hilft, die Ursache statt nur das Symptom zu beheben.',
+  'debt.understandPattern': 'Dieses Muster verstehen',
+  'debt.hideGuidance': 'Anleitung ausblenden',
+  'debt.guidanceLabel': 'Anleitung zu diesem Muster',
+  'debt.practiceOptional': 'Dieses Konzept üben (optional)',
   'debt.errorOccurrences': 'Mal',
   'debt.errorTopConcept': 'am häufigsten bei',
   'errorType.CONCEPTUAL': 'Konzeptionell',
@@ -1200,6 +1213,10 @@ const fr: Messages = {
   'debt.review': 'Réviser',
   'debt.errorPatternsTitle': "Schémas d'erreur",
   'debt.errorPatternsSubtitle': "Types d'erreurs qui se répètent dans vos réponses — les repérer aide à corriger la cause, pas seulement le symptôme.",
+  'debt.understandPattern': 'Comprendre ce schéma',
+  'debt.hideGuidance': 'Masquer le guide',
+  'debt.guidanceLabel': 'Guide pour ce schéma',
+  'debt.practiceOptional': 'Pratiquer ce concept (optionnel)',
   'debt.errorOccurrences': 'fois',
   'debt.errorTopConcept': 'le plus fréquent dans',
   'errorType.CONCEPTUAL': 'Conceptuelle',
@@ -1494,6 +1511,10 @@ const pt: Messages = {
   'debt.review': 'Revisar',
   'debt.errorPatternsTitle': 'Padrões de erro',
   'debt.errorPatternsSubtitle': 'Tipos de erro que se repetem nas suas respostas — identificá-los ajuda a corrigir a causa, não apenas o sintoma.',
+  'debt.understandPattern': 'Entender este padrão',
+  'debt.hideGuidance': 'Ocultar orientação',
+  'debt.guidanceLabel': 'Orientação para este padrão',
+  'debt.practiceOptional': 'Praticar este conceito (opcional)',
   'debt.errorOccurrences': 'vezes',
   'debt.errorTopConcept': 'mais frequente em',
   'errorType.CONCEPTUAL': 'Conceitual',
