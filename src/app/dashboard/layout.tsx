@@ -1,4 +1,6 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
 import { getUnreadNotifications } from '@/services/notifications.service';
@@ -9,6 +11,13 @@ import { auth } from '@clerk/nextjs/server';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import LanguageSwitcher from './LanguageSwitcher';
+
+// The whole authenticated app is student-specific and must never be
+// indexed -- see also the matching Disallow in src/app/robots.ts.
+export const metadata: Metadata = {
+  title: { absolute: 'StudyUS' },
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardLayout({
   children,
@@ -54,8 +63,7 @@ export default async function DashboardLayout({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--space-2)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="StudyUS" style={{ height: 30, width: 'auto' }} />
+          <Image src="/logo.png" alt="StudyUS" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
