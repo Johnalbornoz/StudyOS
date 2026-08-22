@@ -3,9 +3,20 @@
 import { useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import ConceptList from './ConceptList';
-import { SubjectHierarchy } from '@/services/topic-hierarchy.service';
+import { SubjectHierarchy, HierarchyConcept } from '@/services/topic-hierarchy.service';
 
 const UNASSIGNED_KEY = '__unassigned__';
+
+function averageMastery(concepts: HierarchyConcept[]): number | null {
+  const scores = concepts.flatMap((c) => (c.masteryScore !== undefined ? [c.masteryScore] : []));
+  return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+}
+
+function masteryFillClass(score: number) {
+  if (score >= 75) return 'fill-good';
+  if (score >= 50) return 'fill-warn';
+  return 'fill-critical';
+}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -14,10 +25,22 @@ function Chevron({ open }: { open: boolean }) {
       height="14"
       viewBox="0 0 16 16"
       fill="none"
-      style={{ flexShrink: 0, color: 'var(--text-muted)', transition: 'transform 150ms ease', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+      style={{ flexShrink: 0, color: 'var(--text-muted)', transition: 'transform 180ms ease', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
     >
       <path d="M5 3l6 5-6 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function MiniMastery({ score, width = 72 }: { score: number | null; width?: number }) {
+  if (score === null) return <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>—</span>;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <div className="mastery-bar" style={{ width, flex: 'none' }}>
+        <span className={masteryFillClass(score)} style={{ width: `${score}%` }} />
+      </div>
+      <span className="mastery-pct tabular" style={{ width: 30 }}>{score}%</span>
+    </div>
   );
 }
 
@@ -27,6 +50,7 @@ function AccordionHeader({
   label,
   count,
   countLabel,
+  masteryScore,
   size = 'lg',
 }: {
   open: boolean;
@@ -34,15 +58,19 @@ function AccordionHeader({
   label: string;
   count: number;
   countLabel: string;
+  masteryScore: number | null;
   size?: 'lg' | 'sm';
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-expanded={open}
+      className="accordion-header"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
+        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: size === 'lg' ? 'var(--space-3) var(--space-3)' : 'var(--space-2) var(--space-3)',
         color: 'var(--text-primary)',
       }}
     >
@@ -51,17 +79,28 @@ function AccordionHeader({
         <span
           style={
             size === 'lg'
-              ? { fontSize: 17, fontWeight: 650 }
+              ? { fontSize: 16, fontWeight: 650 }
               : { fontSize: 13, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }
           }
         >
           {label}
         </span>
       </span>
-      <span style={{ fontSize: size === 'lg' ? 13 : 12.5, color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
-        {count} {countLabel}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
+        <MiniMastery score={masteryScore} width={size === 'lg' ? 80 : 60} />
+        <span style={{ fontSize: size === 'lg' ? 13 : 12.5, color: 'var(--text-muted)', minWidth: 76, textAlign: 'right' }}>
+          {count} {countLabel}
+        </span>
       </span>
     </button>
+  );
+}
+
+function Collapse({ open, children }: { open: boolean; children: React.ReactNode }) {
+  return (
+    <div className="accordion-collapse" style={{ gridTemplateRows: open ? '1fr' : '0fr' }}>
+      <div>{children}</div>
+    </div>
   );
 }
 
@@ -100,41 +139,46 @@ export default function HierarchicalConceptList({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       {hierarchy.topics.map((topic) => {
         const topicOpen = openTopics.has(topic.id);
-        const topicConceptCount = topic.subtopics.reduce((sum, s) => sum + s.concepts.length, 0);
-        return (
-          <div key={topic.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
-              <AccordionHeader
-                open={topicOpen}
-                onClick={() => toggleTopic(topic.id)}
-                label={topic.name}
-                count={topicConceptCount}
-                countLabel={t['subjectDetail.conceptCount']}
-              />
-            </div>
+        const topicConcepts = topic.subtopics.flatMap((s) => s.concepts);
+        const topicConceptCount = topicConcepts.length;
+        const topicMastery = averageMastery(topicConcepts);
 
-            {topicOpen && (
+        return (
+          <div key={topic.id} className="card" style={{ padding: 'var(--space-2)' }}>
+            <AccordionHeader
+              open={topicOpen}
+              onClick={() => toggleTopic(topic.id)}
+              label={topic.name}
+              count={topicConceptCount}
+              countLabel={t['subjectDetail.conceptCount']}
+              masteryScore={topicMastery}
+            />
+
+            <Collapse open={topicOpen}>
               <div
                 style={{
-                  padding: '0 var(--space-5) var(--space-5)', borderTop: '1px solid var(--border-default)',
-                  display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
+                  padding: 'var(--space-1) var(--space-3) var(--space-3) var(--space-6)', marginTop: 4,
+                  borderLeft: '2px solid var(--border-default)', marginLeft: 'var(--space-4)',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
                 }}
               >
                 {topic.subtopics.map((subtopic) => {
                   const subtopicOpen = openSubtopics.has(subtopic.id);
+                  const subtopicMastery = averageMastery(subtopic.concepts);
                   return (
-                    <div key={subtopic.id} style={{ paddingTop: 'var(--space-4)' }}>
+                    <div key={subtopic.id}>
                       <AccordionHeader
                         open={subtopicOpen}
                         onClick={() => toggleSubtopic(subtopic.id)}
                         label={subtopic.name}
                         count={subtopic.concepts.length}
                         countLabel={t['subjectDetail.conceptCount']}
+                        masteryScore={subtopicMastery}
                         size="sm"
                       />
 
-                      {subtopicOpen && (
-                        <div style={{ marginTop: 'var(--space-3)' }}>
+                      <Collapse open={subtopicOpen}>
+                        <div style={{ marginTop: 'var(--space-3)', paddingLeft: 'var(--space-2)' }}>
                           <ConceptList
                             subjectId={subjectId}
                             studentId={studentId}
@@ -146,44 +190,41 @@ export default function HierarchicalConceptList({
                             }))}
                           />
                         </div>
-                      )}
+                      </Collapse>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </Collapse>
           </div>
         );
       })}
 
       {hierarchy.unassigned.length > 0 && (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
-            <AccordionHeader
-              open={openTopics.has(UNASSIGNED_KEY)}
-              onClick={() => toggleTopic(UNASSIGNED_KEY)}
-              label={t['hierarchy.unassigned']}
-              count={hierarchy.unassigned.length}
-              countLabel={t['subjectDetail.conceptCount']}
-            />
-          </div>
+        <div className="card" style={{ padding: 'var(--space-2)' }}>
+          <AccordionHeader
+            open={openTopics.has(UNASSIGNED_KEY)}
+            onClick={() => toggleTopic(UNASSIGNED_KEY)}
+            label={t['hierarchy.unassigned']}
+            count={hierarchy.unassigned.length}
+            countLabel={t['subjectDetail.conceptCount']}
+            masteryScore={averageMastery(hierarchy.unassigned)}
+          />
 
-          {openTopics.has(UNASSIGNED_KEY) && (
-            <div style={{ padding: '0 var(--space-5) var(--space-5)', borderTop: '1px solid var(--border-default)' }}>
-              <div style={{ marginTop: 'var(--space-4)' }}>
-                <ConceptList
-                  subjectId={subjectId}
-                  studentId={studentId}
-                  locale={locale}
-                  concepts={hierarchy.unassigned.map((c) => ({
-                    conceptId: c.id,
-                    label: c.label,
-                    masteryScore: c.masteryScore ?? 0,
-                  }))}
-                />
-              </div>
+          <Collapse open={openTopics.has(UNASSIGNED_KEY)}>
+            <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-1)' }}>
+              <ConceptList
+                subjectId={subjectId}
+                studentId={studentId}
+                locale={locale}
+                concepts={hierarchy.unassigned.map((c) => ({
+                  conceptId: c.id,
+                  label: c.label,
+                  masteryScore: c.masteryScore ?? 0,
+                }))}
+              />
             </div>
-          )}
+          </Collapse>
         </div>
       )}
     </div>
