@@ -45,6 +45,7 @@ type MessageKey =
   | 'subjects.hasConceptsNotice'
   | 'subjectDetail.deleteConceptConfirm' | 'subjectDetail.deleteConceptHasHistory'
   | 'subjectDetail.learnMoreAction' | 'subjectDetail.learnMoreCollapse'
+  | 'subjectDetail.aiExplanationLabel' | 'subjectDetail.aiExplanationExamplesLabel'
   | 'subjectDetail.learnMoreLoading' | 'subjectDetail.learnMoreError'
   | 'subjectDetail.uploadTabFile' | 'subjectDetail.uploadTabText'
   | 'subjectDetail.addConceptLabel' | 'subjectDetail.addConceptPlaceholder'
@@ -186,6 +187,8 @@ const es: Messages = {
   'subjectDetail.learnMoreCollapse': 'Ocultar',
   'subjectDetail.learnMoreLoading': 'Generando explicación con IA…',
   'subjectDetail.learnMoreError': 'No se pudo generar la explicación. Intenta de nuevo.',
+  'subjectDetail.aiExplanationLabel': 'Explicación generada por IA',
+  'subjectDetail.aiExplanationExamplesLabel': 'Ejemplos',
   'subjectDetail.uploadTabFile': 'Subir archivo',
   'subjectDetail.uploadTabText': 'Escribir un concepto',
   'subjectDetail.addConceptLabel': 'Nombre del concepto',
@@ -477,6 +480,8 @@ const en: Messages = {
   'subjectDetail.learnMoreCollapse': 'Hide',
   'subjectDetail.learnMoreLoading': 'Generating explanation with AI…',
   'subjectDetail.learnMoreError': "Couldn't generate the explanation. Try again.",
+  'subjectDetail.aiExplanationLabel': 'AI-generated explanation',
+  'subjectDetail.aiExplanationExamplesLabel': 'Examples',
   'subjectDetail.uploadTabFile': 'Upload file',
   'subjectDetail.uploadTabText': 'Write a concept',
   'subjectDetail.addConceptLabel': 'Concept name',
@@ -768,6 +773,8 @@ const de: Messages = {
   'subjectDetail.learnMoreCollapse': 'Ausblenden',
   'subjectDetail.learnMoreLoading': 'Erklärung wird mit KI erstellt…',
   'subjectDetail.learnMoreError': 'Die Erklärung konnte nicht erstellt werden. Versuche es erneut.',
+  'subjectDetail.aiExplanationLabel': 'Von KI erstellte Erklärung',
+  'subjectDetail.aiExplanationExamplesLabel': 'Beispiele',
   'subjectDetail.uploadTabFile': 'Datei hochladen',
   'subjectDetail.uploadTabText': 'Konzept schreiben',
   'subjectDetail.addConceptLabel': 'Name des Konzepts',
@@ -1059,6 +1066,8 @@ const fr: Messages = {
   'subjectDetail.learnMoreCollapse': 'Masquer',
   'subjectDetail.learnMoreLoading': "Génération de l'explication par l'IA…",
   'subjectDetail.learnMoreError': "Impossible de générer l'explication. Réessayez.",
+  'subjectDetail.aiExplanationLabel': "Explication générée par l'IA",
+  'subjectDetail.aiExplanationExamplesLabel': 'Exemples',
   'subjectDetail.uploadTabFile': 'Téléverser un fichier',
   'subjectDetail.uploadTabText': 'Écrire un concept',
   'subjectDetail.addConceptLabel': 'Nom du concept',
@@ -1350,6 +1359,8 @@ const pt: Messages = {
   'subjectDetail.learnMoreCollapse': 'Ocultar',
   'subjectDetail.learnMoreLoading': 'Gerando explicação com IA…',
   'subjectDetail.learnMoreError': 'Não foi possível gerar a explicação. Tente novamente.',
+  'subjectDetail.aiExplanationLabel': 'Explicação gerada por IA',
+  'subjectDetail.aiExplanationExamplesLabel': 'Exemplos',
   'subjectDetail.uploadTabFile': 'Enviar arquivo',
   'subjectDetail.uploadTabText': 'Escrever um conceito',
   'subjectDetail.addConceptLabel': 'Nome do conceito',

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplanationPanel';
 
 export default function AddConceptTab({
   subjectId,
@@ -21,7 +22,7 @@ export default function AddConceptTab({
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ label: string; explanation: string } | null>(null);
+  const [result, setResult] = useState<{ label: string; explanation: ConceptExplanationData } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -149,12 +150,9 @@ export default function AddConceptTab({
       {error && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--error)' }}>{error}</p>}
 
       {result && (
-        <div
-          className="card"
-          style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-subtle)' }}
-        >
-          <h4 style={{ marginBottom: 8, fontSize: 14 }}>{result.label}</h4>
-          <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{result.explanation}</div>
+        <div style={{ marginTop: 'var(--space-4)' }}>
+          <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>{result.label}</h4>
+          <ConceptExplanationPanel locale={locale} loading={false} error={false} data={result.explanation} />
         </div>
       )}
     </div>

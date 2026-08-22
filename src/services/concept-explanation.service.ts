@@ -1,12 +1,38 @@
 import { query } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { parseAIJson } from '@/lib/ai-json';
+
+export interface ConceptExplanation {
+  summary: string;
+  sections: { heading: string; body: string }[];
+  examples: string[];
+}
+
+function coerceExplanation(raw: string): ConceptExplanation {
+  try {
+    const parsed = parseAIJson(raw);
+    if (parsed && typeof parsed === 'object' && typeof parsed.summary === 'string' && Array.isArray(parsed.sections)) {
+      return {
+        summary: parsed.summary,
+        sections: parsed.sections
+          .filter((s: any) => s && typeof s.heading === 'string' && typeof s.body === 'string')
+          .map((s: any) => ({ heading: s.heading, body: s.body })),
+        examples: Array.isArray(parsed.examples) ? parsed.examples.filter((e: any) => typeof e === 'string') : [],
+      };
+    }
+  } catch {
+    // Falls through to the plain-text shim below -- covers explanations
+    // cached before this structured format existed.
+  }
+  return { summary: raw, sections: [], examples: [] };
+}
 
 export async function getConceptExplanation(
   studentId: string,
   conceptId: string,
   language: string = 'en'
-): Promise<string> {
+): Promise<ConceptExplanation> {
   const conceptResult = await query(
     `SELECT c.subject_id, s.student_id, s.name AS subject_name, cl.label
      FROM concepts c
@@ -28,7 +54,7 @@ export async function getConceptExplanation(
     [conceptId, language]
   );
   if ((cached.rowCount ?? 0) > 0) {
-    return cached.rows[0].content;
+    return coerceExplanation(cached.rows[0].content);
   }
 
   const conceptLabel = concept.label || 'this concept';
@@ -52,12 +78,16 @@ ${
     : `No specific study material was found for this concept -- explain it using your general knowledge.`
 }
 
-Structure your response in ${languageName} as:
-1. A short one or two sentence summary.
-2. A clear, thorough explanation of the concept -- what it is, why it matters, and how it works.
-3. One or two concrete examples.
+Write everything in ${languageName}. Output ONLY a JSON object, no markdown fences, no other text, with this exact shape:
+{
+  "summary": "one or two sentences capturing the core idea",
+  "sections": [
+    { "heading": "short heading for this part", "body": "a clear paragraph -- what it is, why it matters, or how it works" }
+  ],
+  "examples": ["one concrete example", "a second concrete example if it helps"]
+}
 
-Keep it focused on this concept only, written to prepare the student to answer quiz questions about it.`;
+Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. definition, why it matters, how it's applied, a common point of confusion) -- whichever genuinely fits this concept, not a fixed template. Keep each section body to 2-4 sentences. Keep it focused on this concept only.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -68,7 +98,7 @@ Keep it focused on this concept only, written to prepare the student to answer q
     },
     body: JSON.stringify({
       model: 'claude-opus-5',
-      max_tokens: 1024,
+      max_tokens: 1400,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Explain "${conceptLabel}" to me.` }],
     }),
@@ -80,13 +110,14 @@ Keep it focused on this concept only, written to prepare the student to answer q
   }
 
   const data = await response.json();
-  const explanationText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
+  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
+  const explanation = coerceExplanation(rawText);
 
   await query(
     `INSERT INTO concept_explanations (concept_id, language, content) VALUES ($1, $2, $3)
      ON CONFLICT (concept_id, language) DO UPDATE SET content = EXCLUDED.content, created_at = NOW()`,
-    [conceptId, language, explanationText]
+    [conceptId, language, JSON.stringify(explanation)]
   );
 
-  return explanationText;
+  return explanation;
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplanationPanel';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -34,7 +35,7 @@ export default function ConceptList({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explanations, setExplanations] = useState<Record<string, ConceptExplanationData>>({});
   const [explainLoadingId, setExplainLoadingId] = useState<string | null>(null);
   const [explainErrorId, setExplainErrorId] = useState<string | null>(null);
 
@@ -126,23 +127,12 @@ export default function ConceptList({
             </p>
           )}
           {expandedId === c.conceptId && (
-            <div
-              className="card"
-              style={{
-                marginTop: 4, padding: 'var(--space-4)', background: 'var(--bg-subtle)',
-                fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap',
-              }}
-            >
-              {explainLoadingId === c.conceptId ? (
-                <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                  {t['subjectDetail.learnMoreLoading']}
-                </span>
-              ) : explainErrorId === c.conceptId ? (
-                <span style={{ color: 'var(--error)' }}>{t['subjectDetail.learnMoreError']}</span>
-              ) : (
-                explanations[c.conceptId]
-              )}
-            </div>
+            <ConceptExplanationPanel
+              locale={locale}
+              loading={explainLoadingId === c.conceptId}
+              error={explainErrorId === c.conceptId}
+              data={explanations[c.conceptId]}
+            />
           )}
         </div>
       ))}
