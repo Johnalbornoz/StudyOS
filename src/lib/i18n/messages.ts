@@ -26,7 +26,7 @@ type MessageKey =
   | 'admin.title' | 'admin.subtitle' | 'admin.colStudent' | 'admin.colEmail'
   | 'admin.colRegistered' | 'admin.colSubjects' | 'admin.colConcepts' | 'admin.viewDetail'
   | 'admin.backToList' | 'admin.noStudents' | 'admin.detailSubjects' | 'admin.detailActiveDebt'
-  | 'admin.detailUpcomingExam' | 'admin.detailNoUpcomingExam' | 'admin.detailConcepts'
+  | 'admin.detailUpcomingExam' | 'admin.detailNoUpcomingExam' | 'admin.detailConcepts' | 'admin.deleteSubjectConfirm'
   | 'common.notAuthenticated' | 'common.signIn' | 'common.back' | 'common.create'
   | 'common.creating' | 'common.loading' | 'common.error'
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
@@ -171,6 +171,7 @@ const es: Messages = {
   'admin.detailUpcomingExam': 'Próximo examen',
   'admin.detailNoUpcomingExam': 'Sin examen programado',
   'admin.detailConcepts': 'conceptos',
+  'admin.deleteSubjectConfirm': '¿Eliminar permanentemente "{name}" y TODO su contenido (conceptos, historial de práctica, dominio)? Esta acción no se puede deshacer.',
   'common.notAuthenticated': 'No autenticado',
   'common.signIn': 'Iniciar sesión',
   'common.back': 'Volver',
@@ -552,6 +553,7 @@ const en: Messages = {
   'admin.detailUpcomingExam': 'Next exam',
   'admin.detailNoUpcomingExam': 'No exam scheduled',
   'admin.detailConcepts': 'concepts',
+  'admin.deleteSubjectConfirm': 'Permanently delete "{name}" and ALL its content (concepts, practice history, mastery data)? This cannot be undone.',
   'common.notAuthenticated': 'Not authenticated',
   'common.signIn': 'Sign in',
   'common.back': 'Back',
@@ -933,6 +935,7 @@ const de: Messages = {
   'admin.detailUpcomingExam': 'Nächste Prüfung',
   'admin.detailNoUpcomingExam': 'Keine Prüfung geplant',
   'admin.detailConcepts': 'Konzepte',
+  'admin.deleteSubjectConfirm': '"{name}" und ALLE zugehörigen Inhalte (Konzepte, Übungsverlauf, Lernstand) endgültig löschen? Dies kann nicht rückgängig gemacht werden.',
   'common.notAuthenticated': 'Nicht angemeldet',
   'common.signIn': 'Anmelden',
   'common.back': 'Zurück',
@@ -1314,6 +1317,7 @@ const fr: Messages = {
   'admin.detailUpcomingExam': 'Prochain examen',
   'admin.detailNoUpcomingExam': 'Aucun examen programmé',
   'admin.detailConcepts': 'concepts',
+  'admin.deleteSubjectConfirm': 'Supprimer définitivement "{name}" et TOUT son contenu (concepts, historique de pratique, maîtrise) ? Cette action est irréversible.',
   'common.notAuthenticated': 'Non authentifié',
   'common.signIn': 'Se connecter',
   'common.back': 'Retour',
@@ -1695,6 +1699,7 @@ const pt: Messages = {
   'admin.detailUpcomingExam': 'Próxima prova',
   'admin.detailNoUpcomingExam': 'Nenhuma prova agendada',
   'admin.detailConcepts': 'conceitos',
+  'admin.deleteSubjectConfirm': 'Excluir permanentemente "{name}" e TODO o seu conteúdo (conceitos, histórico de prática, domínio)? Esta ação não pode ser desfeita.',
   'common.notAuthenticated': 'Não autenticado',
   'common.signIn': 'Entrar',
   'common.back': 'Voltar',

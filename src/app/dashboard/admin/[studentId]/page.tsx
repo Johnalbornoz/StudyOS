@@ -6,12 +6,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { isAdminEmail, getStudentById } from '@/services/admin.service';
 import { getChildOverview } from '@/services/parent.service';
-
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
+import AdminSubjectRow from './AdminSubjectRow';
 
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
@@ -65,20 +60,15 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
           <h2 style={{ marginBottom: 'var(--space-4)' }}>{t['admin.detailSubjects']}</h2>
           <div className="card list-card">
             {overview.subjects.map((s) => (
-              <div key={s.subjectId} className="list-row">
-                <div className="row-main">
-                  <div className="row-title">{s.name}</div>
-                </div>
-                <div className="mastery-row" style={{ flex: '0 0 160px' }}>
-                  <div className="mastery-bar">
-                    <span className={masteryFillClass(s.avgMastery ?? 0)} style={{ width: `${s.avgMastery ?? 0}%` }} />
-                  </div>
-                  <span className="mastery-pct tabular">{s.avgMastery !== null ? `${s.avgMastery}%` : '—'}</span>
-                </div>
-                <span style={{ fontSize: 12.5, color: 'var(--text-muted)', flexShrink: 0, width: 90, textAlign: 'right' }}>
-                  {s.conceptCount} {t['admin.detailConcepts']}
-                </span>
-              </div>
+              <AdminSubjectRow
+                key={s.subjectId}
+                subjectId={s.subjectId}
+                name={s.name}
+                avgMastery={s.avgMastery}
+                conceptCount={s.conceptCount}
+                confirmLabel={t['admin.deleteSubjectConfirm'].replace('{name}', s.name)}
+                deleteLabel={t['common.delete']}
+              />
             ))}
           </div>
         </>
