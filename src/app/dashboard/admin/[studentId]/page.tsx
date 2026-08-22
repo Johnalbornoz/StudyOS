@@ -6,7 +6,9 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { isAdminEmail, getStudentById } from '@/services/admin.service';
 import { getChildOverview } from '@/services/parent.service';
+import { getSubscriptionStatus } from '@/services/payment.service';
 import AdminSubjectRow from './AdminSubjectRow';
+import PaymentStatusEditor from './PaymentStatusEditor';
 
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
@@ -24,6 +26,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
   if (!student) notFound();
 
   const overview = await getChildOverview(studentId, locale).catch(() => null);
+  const subscription = await getSubscriptionStatus(studentId);
 
   return (
     <div>
@@ -32,6 +35,21 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
       <div style={{ margin: 'var(--space-4) 0 var(--space-8)' }}>
         <h1>{student.name || student.email}</h1>
         <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{student.email}</p>
+      </div>
+
+      <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
+        <div className="label" style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-3)' }}>{t['admin.paymentSection']}</div>
+        <PaymentStatusEditor
+          studentId={studentId}
+          currentStatus={subscription.status}
+          statusLabels={{
+            unpaid: t['payment.status.unpaid'],
+            active: t['payment.status.active'],
+            past_due: t['payment.status.past_due'],
+            canceled: t['payment.status.canceled'],
+          }}
+          saveLabel={t['admin.paymentSave']}
+        />
       </div>
 
       {overview && (

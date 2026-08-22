@@ -16,6 +16,7 @@ export interface StudentSummary {
   createdAt: string;
   subjectCount: number;
   conceptCount: number;
+  subscriptionStatus: 'unpaid' | 'active' | 'past_due' | 'canceled';
 }
 
 export async function getAllStudents(): Promise<StudentSummary[]> {
@@ -23,8 +24,10 @@ export async function getAllStudents(): Promise<StudentSummary[]> {
     SELECT
       s.id, s.name, s.email, s.created_at,
       (SELECT COUNT(*) FROM subjects sub WHERE sub.student_id = s.id AND sub.status = 'active') AS subject_count,
-      (SELECT COUNT(*) FROM concepts c JOIN subjects sub2 ON c.subject_id = sub2.id WHERE sub2.student_id = s.id) AS concept_count
+      (SELECT COUNT(*) FROM concepts c JOIN subjects sub2 ON c.subject_id = sub2.id WHERE sub2.student_id = s.id) AS concept_count,
+      COALESCE(sc.status, 'unpaid') AS subscription_status
     FROM students s
+    LEFT JOIN subscriptions sc ON sc.student_id = s.id
     ORDER BY s.created_at DESC
   `);
   return result.rows.map((r) => ({
@@ -34,6 +37,7 @@ export async function getAllStudents(): Promise<StudentSummary[]> {
     createdAt: r.created_at,
     subjectCount: Number(r.subject_count),
     conceptCount: Number(r.concept_count),
+    subscriptionStatus: r.subscription_status,
   }));
 }
 

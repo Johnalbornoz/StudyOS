@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
-import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck } from 'lucide-react';
+import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck, CreditCard } from 'lucide-react';
 import { isAdminEmail } from '@/services/admin.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
@@ -80,6 +80,7 @@ export default async function DashboardLayout({
             { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: <ListChecks size={16} strokeWidth={2} aria-hidden /> },
             { href: '/dashboard/tutor', label: t['nav.tutor'], icon: <MessageCircle size={16} strokeWidth={2} aria-hidden /> },
             { href: '/dashboard/parent', label: t['nav.parent'], icon: <Users size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard/billing', label: t['billing.title'], icon: <CreditCard size={16} strokeWidth={2} aria-hidden /> },
             ...(isAdmin ? [{ href: '/dashboard/admin', label: t['nav.admin'], icon: <ShieldCheck size={16} strokeWidth={2} aria-hidden /> }] : []),
           ]}
         />

@@ -6,6 +6,12 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { isAdminEmail, getAllStudents } from '@/services/admin.service';
 
+function paymentChipClass(status: string) {
+  if (status === 'active') return 'chip-good';
+  if (status === 'unpaid') return 'chip-warn';
+  return 'chip-critical';
+}
+
 export default async function AdminPage() {
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
@@ -34,7 +40,7 @@ export default async function AdminPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                  {[t['admin.colStudent'], t['admin.colEmail'], t['admin.colRegistered'], t['admin.colSubjects'], t['admin.colConcepts'], ''].map((h) => (
+                  {[t['admin.colStudent'], t['admin.colEmail'], t['admin.colRegistered'], t['admin.colSubjects'], t['admin.colConcepts'], t['admin.colPayment'], ''].map((h) => (
                     <th key={h} style={{ textAlign: 'left', padding: 'var(--space-3) var(--space-4)', color: 'var(--text-muted)', fontSize: 12.5, fontWeight: 650, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                       {h}
                     </th>
@@ -51,6 +57,9 @@ export default async function AdminPage() {
                     </td>
                     <td className="tabular" style={{ padding: 'var(--space-3) var(--space-4)' }}>{s.subjectCount}</td>
                     <td className="tabular" style={{ padding: 'var(--space-3) var(--space-4)' }}>{s.conceptCount}</td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                      <span className={`chip ${paymentChipClass(s.subscriptionStatus)}`}>{t[`payment.status.${s.subscriptionStatus}`]}</span>
+                    </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
                       <Link href={`/dashboard/admin/${s.id}`} className="btn btn-ghost" style={{ fontSize: 13 }}>
                         {t['admin.viewDetail']}
