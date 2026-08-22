@@ -11,7 +11,15 @@ export interface ConceptExplanation {
   interactiveFormula?: InteractiveFormula;
 }
 
-function coerceExplanation(raw: string): ConceptExplanation {
+/**
+ * Returns the parsed explanation, or null if `raw` isn't valid
+ * structured JSON -- e.g. a response truncated by max_tokens before
+ * it finished, or content cached before this structured format
+ * existed. Callers must not fall back to displaying `raw` directly:
+ * it's either mid-sentence garbage or an unrelated legacy format,
+ * never something a student should see rendered as prose.
+ */
+function tryParseExplanation(raw: string): ConceptExplanation | null {
   try {
     const parsed = parseAIJson(raw);
     if (parsed && typeof parsed === 'object' && typeof parsed.summary === 'string' && Array.isArray(parsed.sections)) {
@@ -25,10 +33,9 @@ function coerceExplanation(raw: string): ConceptExplanation {
       };
     }
   } catch {
-    // Falls through to the plain-text shim below -- covers explanations
-    // cached before this structured format existed.
+    // handled below
   }
-  return { summary: raw, sections: [], examples: [] };
+  return null;
 }
 
 export async function getConceptExplanation(
@@ -57,7 +64,14 @@ export async function getConceptExplanation(
     [conceptId, language]
   );
   if ((cached.rowCount ?? 0) > 0) {
-    return coerceExplanation(cached.rows[0].content);
+    const parsedCached = tryParseExplanation(cached.rows[0].content);
+    if (parsedCached) {
+      return parsedCached;
+    }
+    // Corrupt or pre-restructure cache (e.g. a response truncated by
+    // max_tokens before this fix) -- delete it and regenerate below
+    // rather than serving broken content forever.
+    await query(`DELETE FROM concept_explanations WHERE concept_id = $1 AND language = $2`, [conceptId, language]);
   }
 
   const conceptLabel = concept.label || 'this concept';
@@ -103,7 +117,12 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
     },
     body: JSON.stringify({
       model: 'claude-opus-5',
-      max_tokens: 1400,
+      // Generous headroom: 4 sections + examples in a denser language
+      // (Spanish/German prose runs longer than English for the same
+      // content) previously got truncated mid-string at 1400, which
+      // broke the JSON and surfaced as raw, unparsed text to the
+      // student -- see tryParseExplanation's cache-eviction comment.
+      max_tokens: 3000,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Explain "${conceptLabel}" to me.` }],
     }),
@@ -116,7 +135,11 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
 
   const data = await response.json();
   const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const explanation = coerceExplanation(rawText);
+  const explanation = tryParseExplanation(rawText);
+
+  if (!explanation) {
+    throw new Error('EXPLANATION_PARSE_FAILED');
+  }
 
   let hasFormula = false;
   let formulaHint = '';
