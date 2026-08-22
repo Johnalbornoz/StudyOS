@@ -74,7 +74,7 @@ export async function getErrorPatterns(
       MAX(e.created_at) AS last_occurred_at
     FROM errors e
     JOIN subjects s ON s.id = e.subject_id
-    WHERE e.student_id = $1 AND e.created_at > NOW() - INTERVAL '${RECENCY_WINDOW_DAYS} days'
+    WHERE e.student_id = $1 AND e.created_at > NOW() - INTERVAL '${RECENCY_WINDOW_DAYS} days' AND s.status = 'active'
   `;
   const params: any[] = [studentId];
   if (subjectId) {

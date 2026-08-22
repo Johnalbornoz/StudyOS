@@ -369,8 +369,8 @@ export async function getActiveDebts(
 ) {
   try {
     const debtConceptIdsQuery = subjectId
-      ? `SELECT concept_id FROM learning_debt WHERE student_id = $1 AND status IN ('active', 'monitoring') AND subject_id = $2`
-      : `SELECT concept_id FROM learning_debt WHERE student_id = $1 AND status IN ('active', 'monitoring')`;
+      ? `SELECT ld.concept_id FROM learning_debt ld JOIN subjects s ON s.id = ld.subject_id WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring') AND s.status = 'active' AND ld.subject_id = $2`
+      : `SELECT ld.concept_id FROM learning_debt ld JOIN subjects s ON s.id = ld.subject_id WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring') AND s.status = 'active'`;
     const debtConceptIdsParams = subjectId ? [studentId, subjectId] : [studentId];
     const debtConceptIds = await db.query(debtConceptIdsQuery, debtConceptIdsParams);
     ensureConceptLocalizations(debtConceptIds.rows.map((r) => r.concept_id), preferredLanguage).catch((err) =>
@@ -393,9 +393,10 @@ export async function getActiveDebts(
         mr.attempt_count
       FROM learning_debt ld
       JOIN concepts c ON ld.concept_id = c.id
+      JOIN subjects s ON s.id = ld.subject_id
       LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
       LEFT JOIN mastery_records mr ON ld.student_id = mr.student_id AND ld.concept_id = mr.concept_id
-      WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring')
+      WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring') AND s.status = 'active'
     `;
 
     const params: any[] = [studentId, preferredLanguage];
