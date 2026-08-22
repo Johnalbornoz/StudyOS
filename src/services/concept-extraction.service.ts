@@ -343,3 +343,103 @@ export async function getConceptWithMastery(
     throw error;
   }
 }
+
+function slugifyCanonicalId(label: string): string {
+  const base = label
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+  const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `${base || 'CONCEPT'}_${suffix}`;
+}
+
+/**
+ * Manually create a single concept from a typed name, bypassing the
+ * document upload pipeline entirely -- for when a student wants to add
+ * a concept without having a source document for it. Mirrors the same
+ * concepts/concept_localizations/mastery_records triple that
+ * extractConceptsFromSource creates per concept, so it behaves
+ * identically everywhere else in the app (delete, "Learn more", etc).
+ */
+export async function createConceptManually(
+  studentId: string,
+  subjectId: string,
+  label: string,
+  language: string = 'en'
+): Promise<{ conceptId: string; label: string }> {
+  const canonicalId = slugifyCanonicalId(label);
+
+  const conceptResult = await db.query(
+    `INSERT INTO concepts (subject_id, canonical_id) VALUES ($1, $2) RETURNING id`,
+    [subjectId, canonicalId]
+  );
+  const conceptId = conceptResult.rows[0].id;
+
+  await db.query(
+    `INSERT INTO concept_localizations (concept_id, language, label) VALUES ($1, $2, $3)`,
+    [conceptId, language, label]
+  );
+
+  await db.query(
+    `INSERT INTO mastery_records (
+      student_id, concept_id, subject_id, mastery_score, confidence_score, attempt_count, correct_count, incorrect_count
+    ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0)`,
+    [studentId, conceptId, subjectId]
+  );
+
+  return { conceptId, label };
+}
+
+/**
+ * Suggest concept/topic names as the student types, matching the
+ * subject they're adding to. Kept deliberately cheap (small
+ * max_tokens, no RAG) since this fires on a debounced keystroke, not
+ * a deliberate user action.
+ */
+export async function suggestConceptNames(
+  subjectName: string,
+  partialText: string,
+  language: string = 'en'
+): Promise<string[]> {
+  if (!partialText || partialText.trim().length < 2) {
+    return [];
+  }
+
+  const languageName = LOCALE_FULL_NAME[language] || language;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-5',
+        max_tokens: 300,
+        system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY a JSON array of strings, no markdown, no explanation.`,
+        messages: [
+          {
+            role: 'user',
+            content: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON array of strings.`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const text = data.content.find((b: any) => b.type === 'text')?.text ?? '[]';
+    const parsed = parseAIJson(text);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => typeof s === 'string').slice(0, 5);
+  } catch (error) {
+    console.error('Error suggesting concept names:', error);
+    return [];
+  }
+}

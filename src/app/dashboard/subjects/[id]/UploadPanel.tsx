@@ -3,17 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import AddConceptTab from './AddConceptTab';
 
 export default function UploadPanel({
   subjectId,
   subjectName,
+  studentId,
   locale,
 }: {
   subjectId: string;
   subjectName: string;
+  studentId: string;
   locale: Locale;
 }) {
   const t = getMessages(locale);
+  const [tab, setTab] = useState<'file' | 'text'>('file');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -82,28 +86,54 @@ export default function UploadPanel({
   return (
     <div className="card" style={{ marginTop: 'var(--space-8)' }}>
       <h3 style={{ marginBottom: 4 }}>{t['subjectDetail.uploadTitle']}</h3>
-      <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: '0 0 var(--space-4)' }}>
-        {t['subjectDetail.uploadBody']}
-      </p>
-      <form onSubmit={handleUpload} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-        <input
-          type="file"
-          accept=".pdf,.txt,.docx,.jpg,.jpeg,.png,.webp,.gif"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          style={{ flex: 1, fontSize: 13.5 }}
-        />
-        <button type="submit" disabled={!file || loading} className="btn btn-primary">
-          {loading ? t['subjectDetail.uploading'] : t['subjectDetail.uploadSubmit']}
+
+      <div style={{ display: 'flex', gap: 'var(--space-2)', margin: 'var(--space-3) 0 var(--space-4)' }}>
+        <button
+          type="button"
+          onClick={() => setTab('file')}
+          className={tab === 'file' ? 'btn btn-secondary' : 'btn btn-ghost'}
+          style={{ fontSize: 13 }}
+        >
+          {t['subjectDetail.uploadTabFile']}
         </button>
-      </form>
-      {status && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-muted)' }}>{status}</p>}
-      {extractedCount !== null && (
-        <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--success)' }}>
-          {extractedCount} {t['subjectDetail.extractedOk']}
-        </p>
-      )}
-      {error && (
-        <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--error)' }}>{error}</p>
+        <button
+          type="button"
+          onClick={() => setTab('text')}
+          className={tab === 'text' ? 'btn btn-secondary' : 'btn btn-ghost'}
+          style={{ fontSize: 13 }}
+        >
+          {t['subjectDetail.uploadTabText']}
+        </button>
+      </div>
+
+      {tab === 'file' ? (
+        <>
+          <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: '0 0 var(--space-4)' }}>
+            {t['subjectDetail.uploadBody']}
+          </p>
+          <form onSubmit={handleUpload} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <input
+              type="file"
+              accept=".pdf,.txt,.docx,.jpg,.jpeg,.png,.webp,.gif"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              style={{ flex: 1, fontSize: 13.5 }}
+            />
+            <button type="submit" disabled={!file || loading} className="btn btn-primary">
+              {loading ? t['subjectDetail.uploading'] : t['subjectDetail.uploadSubmit']}
+            </button>
+          </form>
+          {status && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--text-muted)' }}>{status}</p>}
+          {extractedCount !== null && (
+            <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--success)' }}>
+              {extractedCount} {t['subjectDetail.extractedOk']}
+            </p>
+          )}
+          {error && (
+            <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--error)' }}>{error}</p>
+          )}
+        </>
+      ) : (
+        <AddConceptTab subjectId={subjectId} studentId={studentId} locale={locale} />
       )}
     </div>
   );

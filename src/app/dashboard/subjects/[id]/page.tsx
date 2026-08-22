@@ -101,7 +101,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         />
       )}
 
-      <UploadPanel subjectId={id} subjectName={subject.name} locale={locale} />
+      <UploadPanel subjectId={id} subjectName={subject.name} studentId={studentId} locale={locale} />
 
       <SubjectSettingsPanel
         subjectId={id}
