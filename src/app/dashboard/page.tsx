@@ -1,10 +1,13 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import { BookOpen, CheckCircle2, BellOff } from 'lucide-react';
 import { query } from '@/lib/db';
+import { getSubjectAccentColor } from '@/lib/subject-color';
+import MiniSparkline from './MiniSparkline';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
-import { getStudentMastery } from '@/services/mastery.service';
+import { getStudentMastery, recordDailyMasterySnapshot, getMasteryTrend } from '@/services/mastery.service';
 import { getStudentStreak } from '@/services/gamification.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -58,7 +61,13 @@ export default async function DashboardPage() {
         ? Math.round(records.reduce((sum: number, r: any) => sum + Number(r.mastery_score), 0) / records.length)
         : null;
       const pending = debts.filter((d: any) => d.subjectId === s.id).length;
-      return { ...s, avgMastery: avg, conceptCount: records.length, pending };
+      const trend = await getMasteryTrend(s.id).catch(() => []);
+      if (avg !== null) {
+        recordDailyMasterySnapshot(studentId, s.id, avg).catch((err) =>
+          console.error('Error recording mastery snapshot:', err)
+        );
+      }
+      return { ...s, avgMastery: avg, conceptCount: records.length, pending, trend };
     })
   );
 
@@ -141,6 +150,7 @@ export default async function DashboardPage() {
 
       {subjects.length === 0 ? (
         <div className="card empty-state">
+          <BookOpen size={32} strokeWidth={1.5} color="var(--brand)" aria-hidden style={{ marginBottom: 'var(--space-3)' }} />
           <strong>{t['dashboard.noSubjectsTitle']}</strong>
           {t['dashboard.noSubjectsBody']}
           <div style={{ marginTop: 'var(--space-4)' }}>
@@ -151,8 +161,14 @@ export default async function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
           {subjectsWithMastery.map((s) => {
             const chip = subjectChip(s.avgMastery, s.pending, t);
+            const accent = getSubjectAccentColor(s.id);
             return (
-              <Link key={s.id} href={`/dashboard/subjects/${s.id}`} className="card" style={{ cursor: 'pointer', display: 'block' }}>
+              <Link
+                key={s.id}
+                href={`/dashboard/subjects/${s.id}`}
+                className="card card-link subject-accent"
+                style={{ '--accent': accent } as React.CSSProperties}
+              >
                 <h3 style={{ marginBottom: 10 }}>{s.name}</h3>
                 <div className="mastery-row" style={{ marginTop: 6 }}>
                   <div className="mastery-bar">
@@ -164,6 +180,12 @@ export default async function DashboardPage() {
                   <span className={`chip ${chip.cls}`}>{chip.label}</span>
                   <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{s.conceptCount} {t['dashboard.concepts']}</span>
                 </div>
+                {s.trend.length >= 2 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 10 }}>
+                    <MiniSparkline values={s.trend} color={accent} />
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{t['dashboard.trendLabel']}</span>
+                  </div>
+                )}
               </Link>
             );
           })}
@@ -178,7 +200,10 @@ export default async function DashboardPage() {
           </div>
           <div className="card list-card">
             {debts.length === 0 ? (
-              <div className="empty-state">{t['dashboard.noDebt']}</div>
+              <div className="empty-state">
+                <CheckCircle2 size={28} strokeWidth={1.5} color="var(--success)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
+                <div>{t['dashboard.noDebt']}</div>
+              </div>
             ) : (
               debts.slice(0, 3).map((d: any) => (
                 <div key={d.id} className="list-row">
@@ -205,7 +230,10 @@ export default async function DashboardPage() {
           </div>
           <div className="card list-card">
             {notifications.length === 0 ? (
-              <div className="empty-state">{t['dashboard.noNotifications']}</div>
+              <div className="empty-state">
+                <BellOff size={28} strokeWidth={1.5} color="var(--text-muted)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
+                <div>{t['dashboard.noNotifications']}</div>
+              </div>
             ) : (
               notifications.slice(0, 4).map((n: any) => (
                 <div key={n.id} className="list-row">

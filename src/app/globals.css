@@ -30,6 +30,28 @@
   --space-16: 64px;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #F2F1ED;
+    --text-secondary: #C4C2BB;
+    --text-muted: #8D8B84;
+    --bg-base: #221F1C;
+    --bg-subtle: #171512;
+    --border-default: #38352F;
+    --brand: #4C9484;
+    --brand-subtle: #1C3830;
+    --brand-ink: #8FD4BE;
+    --success: #4CAF63;
+    --success-subtle: #1B3320;
+    --warning: #E0A94A;
+    --warning-subtle: #3A2E14;
+    --error: #E5675C;
+    --error-subtle: #3B1A17;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -112,6 +134,34 @@ a { color: inherit; text-decoration: none; }
   padding: var(--space-6);
 }
 
+/* Clickable cards (subject cards, etc.) -- a subtle lift on hover so
+   the whole card reads as a single interactive unit, not just text. */
+.card-link {
+  display: block;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+.card-link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* A full-bleed accent strip keyed to a subject's color, set via
+   --accent on the card (see src/lib/subject-color.ts). Needs the card
+   to be position:relative + overflow:hidden. */
+.subject-accent {
+  position: relative;
+  overflow: hidden;
+}
+.subject-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent, var(--brand));
+}
+
 /* ---------- Chips / status ---------- */
 .chip {
   display: inline-flex;
@@ -157,6 +207,19 @@ a { color: inherit; text-decoration: none; }
 }
 .accordion-collapse > div {
   overflow: hidden;
+}
+
+/* ---------- Nav ---------- */
+.nav-link {
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.nav-link:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+.nav-link.active {
+  background: var(--brand-subtle);
+  color: var(--brand-ink);
 }
 
 /* ---------- List rows ---------- */

@@ -33,7 +33,7 @@ type MessageKey =
   | 'dashboard.noSubjectsBody' | 'dashboard.pendingReview' | 'dashboard.viewAll'
   | 'dashboard.noDebt' | 'dashboard.notifications' | 'dashboard.newCount'
   | 'dashboard.noNotifications' | 'dashboard.upToDate' | 'dashboard.pending'
-  | 'dashboard.overdue' | 'dashboard.noData' | 'dashboard.concepts'
+  | 'dashboard.overdue' | 'dashboard.noData' | 'dashboard.concepts' | 'dashboard.trendLabel'
   | 'subjects.title' | 'subjects.subtitle' | 'subjects.noSubjectsBody'
   | 'subjects.statusActive' | 'subjects.statusArchived' | 'subjects.archivedSectionTitle'
   | 'subjects.archiveAction' | 'subjects.unarchiveAction' | 'subjects.deleteAction'
@@ -186,6 +186,7 @@ const es: Messages = {
   'dashboard.overdue': 'Atrasada',
   'dashboard.noData': 'Sin datos aún',
   'dashboard.concepts': 'conceptos',
+  'dashboard.trendLabel': 'últimos 14 días',
   'subjects.title': 'Materias',
   'subjects.subtitle': 'Todas tus materias activas.',
   'subjects.noSubjectsBody': 'Crea tu primera materia para empezar.',
@@ -550,6 +551,7 @@ const en: Messages = {
   'dashboard.overdue': 'Overdue',
   'dashboard.noData': 'No data yet',
   'dashboard.concepts': 'concepts',
+  'dashboard.trendLabel': 'last 14 days',
   'subjects.title': 'Subjects',
   'subjects.subtitle': 'All your active subjects.',
   'subjects.noSubjectsBody': 'Create your first subject to get started.',
@@ -914,6 +916,7 @@ const de: Messages = {
   'dashboard.overdue': 'Überfällig',
   'dashboard.noData': 'Noch keine Daten',
   'dashboard.concepts': 'Konzepte',
+  'dashboard.trendLabel': 'letzte 14 Tage',
   'subjects.title': 'Fächer',
   'subjects.subtitle': 'Alle deine aktiven Fächer.',
   'subjects.noSubjectsBody': 'Erstelle dein erstes Fach, um loszulegen.',
@@ -1278,6 +1281,7 @@ const fr: Messages = {
   'dashboard.overdue': 'En retard',
   'dashboard.noData': 'Pas encore de données',
   'dashboard.concepts': 'concepts',
+  'dashboard.trendLabel': 'derniers 14 jours',
   'subjects.title': 'Matières',
   'subjects.subtitle': 'Toutes vos matières actives.',
   'subjects.noSubjectsBody': 'Créez votre première matière pour commencer.',
@@ -1642,6 +1646,7 @@ const pt: Messages = {
   'dashboard.overdue': 'Atrasada',
   'dashboard.noData': 'Sem dados ainda',
   'dashboard.concepts': 'conceitos',
+  'dashboard.trendLabel': 'últimos 14 dias',
   'subjects.title': 'Matérias',
   'subjects.subtitle': 'Todas as suas matérias ativas.',
   'subjects.noSubjectsBody': 'Crie sua primeira matéria para começar.',

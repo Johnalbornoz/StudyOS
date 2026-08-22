@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
+import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame } from 'lucide-react';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getStudentStreak } from '@/services/gamification.service';
@@ -11,6 +11,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import LanguageSwitcher from './LanguageSwitcher';
+import SidebarNav from './SidebarNav';
 
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
@@ -66,16 +67,18 @@ export default async function DashboardLayout({
           <Image src="/logo.png" alt="StudyUS" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <NavLink href="/dashboard/today" label={t['nav.today']} />
-          <NavLink href="/dashboard" label={t['nav.dashboard']} />
-          <NavLink href="/dashboard/subjects" label={t['nav.subjects']} />
-          <NavLink href="/dashboard/learning-debt" label={t['nav.debt']} badge={debtCount} />
-          <NavLink href="/dashboard/notifications" label={t['nav.notifications']} badge={notifCount} />
-          <NavLink href="/dashboard/study-plan" label={t['nav.studyPlan']} />
-          <NavLink href="/dashboard/tutor" label={t['nav.tutor']} />
-          <NavLink href="/dashboard/parent" label={t['nav.parent']} />
-        </nav>
+        <SidebarNav
+          items={[
+            { href: '/dashboard/today', label: t['nav.today'], icon: CalendarDays },
+            { href: '/dashboard', label: t['nav.dashboard'], icon: LayoutDashboard },
+            { href: '/dashboard/subjects', label: t['nav.subjects'], icon: BookOpen },
+            { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: RotateCcw, badge: debtCount },
+            { href: '/dashboard/notifications', label: t['nav.notifications'], icon: Bell, badge: notifCount },
+            { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: ListChecks },
+            { href: '/dashboard/tutor', label: t['nav.tutor'], icon: MessageCircle },
+            { href: '/dashboard/parent', label: t['nav.parent'], icon: Users },
+          ]}
+        />
 
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />
@@ -101,7 +104,7 @@ export default async function DashboardLayout({
                   fontSize: 12.5, fontWeight: 700, color: 'var(--warning)',
                 }}
               >
-                <span aria-hidden>🔥</span>
+                <Flame size={14} strokeWidth={2.2} aria-hidden fill="currentColor" />
                 <span className="tabular">{streak}</span>
               </div>
             )}
@@ -113,30 +116,5 @@ export default async function DashboardLayout({
         {children}
       </main>
     </div>
-  );
-}
-
-function NavLink({ href, label, badge }: { href: string; label: string; badge?: number }) {
-  return (
-    <Link
-      href={href}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)',
-        padding: '8px var(--space-3)', borderRadius: 'var(--radius-sm)',
-        color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500,
-      }}
-    >
-      <span>{label}</span>
-      {!!badge && (
-        <span
-          style={{
-            fontSize: 11, fontWeight: 650, background: 'var(--error-subtle)', color: 'var(--error)',
-            padding: '1px 7px', borderRadius: 'var(--radius-full)',
-          }}
-        >
-          {badge}
-        </span>
-      )}
-    </Link>
   );
 }

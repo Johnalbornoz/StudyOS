@@ -12,6 +12,7 @@ import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
 import HierarchicalConceptList from './HierarchicalConceptList';
+import { getSubjectAccentColor } from '@/lib/subject-color';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -51,7 +52,13 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         <div>
-          <h1>{subject.name}</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <span
+              aria-hidden
+              style={{ width: 12, height: 12, borderRadius: '50%', background: getSubjectAccentColor(id), flexShrink: 0 }}
+            />
+            {subject.name}
+          </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
             {concepts.length} {t['subjectDetail.conceptCount']}{avgMastery !== null ? ` · ${t['subjectDetail.avgMastery']} ${avgMastery}%` : ''}
           </p>

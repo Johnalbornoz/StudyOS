@@ -474,3 +474,41 @@ export async function deleteConcept(
     client.release();
   }
 }
+
+/**
+ * Upserts today's average-mastery snapshot for a subject. Cheap and
+ * idempotent (one row per subject per day) -- safe to call on every
+ * dashboard load without awaiting it.
+ */
+export async function recordDailyMasterySnapshot(
+  studentId: string,
+  subjectId: string,
+  avgMasteryScore: number
+): Promise<void> {
+  await db.query(
+    `
+    INSERT INTO subject_mastery_snapshots (student_id, subject_id, snapshot_date, avg_mastery_score)
+    VALUES ($1, $2, CURRENT_DATE, $3)
+    ON CONFLICT (subject_id, snapshot_date) DO UPDATE SET avg_mastery_score = EXCLUDED.avg_mastery_score
+    `,
+    [studentId, subjectId, Math.round(avgMasteryScore)]
+  );
+}
+
+/**
+ * Recent daily mastery trend for a subject, oldest first. Returns
+ * however many snapshots exist within the window (0 to `days`) --
+ * callers should treat fewer than 2 points as "not enough history yet"
+ * rather than rendering a misleading single-point line.
+ */
+export async function getMasteryTrend(subjectId: string, days: number = 14): Promise<number[]> {
+  const result = await db.query(
+    `
+    SELECT avg_mastery_score FROM subject_mastery_snapshots
+    WHERE subject_id = $1 AND snapshot_date >= CURRENT_DATE - $2::int
+    ORDER BY snapshot_date ASC
+    `,
+    [subjectId, days]
+  );
+  return result.rows.map((r) => Number(r.avg_mastery_score));
+}
