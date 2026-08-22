@@ -47,7 +47,7 @@ async function callClaudeForHierarchy(systemPrompt: string, userPrompt: string, 
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-5',
+      model: 'claude-sonnet-5',
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],

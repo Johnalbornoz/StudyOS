@@ -95,7 +95,7 @@ Return JSON array of concepts, with "label" and "description" written in ${langu
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-sonnet-5',
         max_tokens: 4096,
         messages: [
           {
@@ -436,7 +436,7 @@ export async function suggestConceptNames(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-sonnet-5',
         max_tokens: 300,
         system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY a JSON array of strings, no markdown, no explanation.`,
         messages: [

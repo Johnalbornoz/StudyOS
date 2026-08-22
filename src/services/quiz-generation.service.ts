@@ -283,7 +283,7 @@ export async function generateQuestionsForConcept(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-sonnet-5',
         // Scales with how many questions were asked for -- some of the
         // 18 question models (case_study, step_by_step, scenario...)
         // produce long correctAnswer/explanation text, and a fixed
@@ -516,7 +516,7 @@ export async function gradeAnswer(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-sonnet-5',
         max_tokens: 1536,
         messages: [
           {
@@ -731,7 +731,7 @@ Give 2-3 hints following the rules above.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-sonnet-5',
         max_tokens: 400,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],

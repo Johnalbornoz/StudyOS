@@ -211,7 +211,7 @@ Use 2 to 3 "sections" covering, in this spirit: (1) what is likely going wrong c
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-5',
+      model: 'claude-sonnet-5',
       max_tokens: 1200,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Help me understand this pattern of mistakes.` }],

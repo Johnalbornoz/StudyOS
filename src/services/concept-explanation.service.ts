@@ -116,7 +116,7 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-5',
+      model: 'claude-sonnet-5',
       // Generous headroom: 4 sections + examples in a denser language
       // (Spanish/German prose runs longer than English for the same
       // content) previously got truncated mid-string at 1400, which

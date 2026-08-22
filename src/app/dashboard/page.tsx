@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -37,6 +37,8 @@ export default async function DashboardPage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
+  const user = await currentUser();
+  const firstName = user?.firstName;
 
   const [subjectsResult, debts, notifications, streak] = await Promise.all([
     query(`SELECT * FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
@@ -65,7 +67,7 @@ export default async function DashboardPage() {
       <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         <div>
           <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 4px' }}>{t['dashboard.eyebrow']}</p>
-          <h1>{t['dashboard.greeting']}</h1>
+          <h1>{t['dashboard.greeting']}{firstName ? `, ${firstName}` : ''}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['dashboard.subtitle']}</p>
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
