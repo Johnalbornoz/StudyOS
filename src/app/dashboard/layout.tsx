@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { currentUser } from '@clerk/nextjs/server';
+import { UserButton } from '@clerk/nextjs';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getStudentStreak } from '@/services/gamification.service';
@@ -38,9 +39,6 @@ export default async function DashboardLayout({
 
   const t = getMessages(locale);
 
-  const initials = user
-    ? `${(user.firstName || '?')[0]}${(user.lastName || '')[0] || ''}`.toUpperCase()
-    : '?';
   const displayName = user?.firstName || 'Student';
 
   return (
@@ -81,15 +79,7 @@ export default async function DashboardLayout({
               border: '1px solid var(--border-default)',
             }}
           >
-            <div
-              style={{
-                width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', flexShrink: 0,
-              }}
-            >
-              {initials}
-            </div>
+            <UserButton appearance={{ elements: { avatarBox: { width: 30, height: 30 } } }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {displayName}
