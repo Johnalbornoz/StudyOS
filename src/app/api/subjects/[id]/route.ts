@@ -128,6 +128,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       [id]
     );
     await client.query(`DELETE FROM content_sources WHERE subject_id = $1`, [id]);
+    // With 0 concepts, any topics/subtopics for this subject are
+    // necessarily orphaned (nothing left assigned to them) -- purely
+    // organizational rows, safe to clear here too.
+    await client.query(
+      `DELETE FROM subtopics WHERE topic_id IN (SELECT id FROM topics WHERE subject_id = $1)`,
+      [id]
+    );
+    await client.query(`DELETE FROM topics WHERE subject_id = $1`, [id]);
     await client.query(`DELETE FROM subjects WHERE id = $1`, [id]);
     await client.query('COMMIT');
     return NextResponse.json({ success: true });

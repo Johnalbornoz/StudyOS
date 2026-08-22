@@ -5,12 +5,13 @@ import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getContentSources } from '@/services/content.service';
+import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
-import ConceptList from './ConceptList';
+import HierarchicalConceptList from './HierarchicalConceptList';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,6 +38,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
 
   const concepts = await getStudentMastery(studentId, id, locale).catch(() => []);
   const contentSources = await getContentSources(studentId, id).catch(() => []);
+  const hierarchy = await getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] }));
   const avgMastery = concepts.length
     ? Math.round(concepts.reduce((sum: number, c: any) => sum + Number(c.mastery_score), 0) / concepts.length)
     : null;
@@ -89,16 +91,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           {t['subjectDetail.noConceptsBody']}
         </div>
       ) : (
-        <ConceptList
-          subjectId={id}
-          studentId={studentId}
-          locale={locale}
-          concepts={concepts.map((c: any) => ({
-            conceptId: c.concept_id,
-            label: c.label || c.canonical_id,
-            masteryScore: Number(c.mastery_score),
-          }))}
-        />
+        <HierarchicalConceptList subjectId={id} studentId={studentId} locale={locale} hierarchy={hierarchy} />
       )}
 
       <UploadPanel subjectId={id} subjectName={subject.name} studentId={studentId} locale={locale} />

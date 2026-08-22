@@ -51,6 +51,7 @@ type MessageKey =
   | 'ib.subjectGroupLabel' | 'ib.levelLabel' | 'ib.estimatedBand' | 'ib.estimatedGrade' | 'ib.disclaimer'
   | 'quiz.selectTopicsLabel' | 'quiz.selectTopicsHint' | 'quiz.selectTopicsCount'
   | 'quiz.difficultyLabel' | 'quiz.calculatorAllowed' | 'quiz.calculatorNotAllowed'
+  | 'hierarchy.unassigned'
   | 'subjectDetail.learnMoreLoading' | 'subjectDetail.learnMoreError'
   | 'subjectDetail.uploadTabFile' | 'subjectDetail.uploadTabText'
   | 'subjectDetail.addConceptLabel' | 'subjectDetail.addConceptPlaceholder'
@@ -212,6 +213,7 @@ const es: Messages = {
   'quiz.difficultyLabel': 'Dificultad',
   'quiz.calculatorAllowed': 'Calculadora permitida',
   'quiz.calculatorNotAllowed': 'Sin calculadora',
+  'hierarchy.unassigned': 'Sin clasificar',
   'subjectDetail.uploadTabFile': 'Subir archivo',
   'subjectDetail.uploadTabText': 'Escribir un concepto',
   'subjectDetail.addConceptLabel': 'Nombre del concepto',
@@ -526,6 +528,7 @@ const en: Messages = {
   'quiz.difficultyLabel': 'Difficulty',
   'quiz.calculatorAllowed': 'Calculator allowed',
   'quiz.calculatorNotAllowed': 'No calculator',
+  'hierarchy.unassigned': 'Unsorted',
   'subjectDetail.uploadTabFile': 'Upload file',
   'subjectDetail.uploadTabText': 'Write a concept',
   'subjectDetail.addConceptLabel': 'Concept name',
@@ -840,6 +843,7 @@ const de: Messages = {
   'quiz.difficultyLabel': 'Schwierigkeit',
   'quiz.calculatorAllowed': 'Taschenrechner erlaubt',
   'quiz.calculatorNotAllowed': 'Kein Taschenrechner',
+  'hierarchy.unassigned': 'Unsortiert',
   'subjectDetail.uploadTabFile': 'Datei hochladen',
   'subjectDetail.uploadTabText': 'Konzept schreiben',
   'subjectDetail.addConceptLabel': 'Name des Konzepts',
@@ -1154,6 +1158,7 @@ const fr: Messages = {
   'quiz.difficultyLabel': 'Difficulté',
   'quiz.calculatorAllowed': 'Calculatrice autorisée',
   'quiz.calculatorNotAllowed': 'Sans calculatrice',
+  'hierarchy.unassigned': 'Non classé',
   'subjectDetail.uploadTabFile': 'Téléverser un fichier',
   'subjectDetail.uploadTabText': 'Écrire un concept',
   'subjectDetail.addConceptLabel': 'Nom du concept',
@@ -1468,6 +1473,7 @@ const pt: Messages = {
   'quiz.difficultyLabel': 'Dificuldade',
   'quiz.calculatorAllowed': 'Calculadora permitida',
   'quiz.calculatorNotAllowed': 'Sem calculadora',
+  'hierarchy.unassigned': 'Sem classificação',
   'subjectDetail.uploadTabFile': 'Enviar arquivo',
   'subjectDetail.uploadTabText': 'Escrever um conceito',
   'subjectDetail.addConceptLabel': 'Nome do conceito',

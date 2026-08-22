@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { updateChunkConceptMappings } from './embedding.service';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { classifySubjectHierarchy, classifySingleConcept } from './topic-hierarchy.service';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -262,6 +263,15 @@ export async function extractConceptsFromSource(
       [conceptsCreated, sourceId]
     );
 
+    // Re-organize the subject's full concept list into the topic/subtopic
+    // outline -- purely for navigation, so a failure here shouldn't
+    // fail the extraction the student is waiting on.
+    if (conceptsCreated > 0) {
+      await classifySubjectHierarchy(subjectId, sourceLanguage).catch((err) =>
+        console.error('Error classifying subject hierarchy after extraction:', err)
+      );
+    }
+
     return {
       conceptsCreated,
       chunksProcessed: chunks.length,
@@ -388,6 +398,13 @@ export async function createConceptManually(
       student_id, concept_id, subject_id, mastery_score, confidence_score, attempt_count, correct_count, incorrect_count
     ) VALUES ($1, $2, $3, 0, 0, 0, 0, 0)`,
     [studentId, conceptId, subjectId]
+  );
+
+  // Fire-and-forget: fitting the new concept into the topic/subtopic
+  // outline is purely organizational, not something the student should
+  // wait on alongside concept creation + explanation generation.
+  classifySingleConcept(subjectId, conceptId, label, language).catch((err) =>
+    console.error('Error classifying manually-created concept into hierarchy:', err)
   );
 
   return { conceptId, label };
