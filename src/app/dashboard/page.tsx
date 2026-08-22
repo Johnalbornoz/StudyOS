@@ -8,6 +8,7 @@ import { getStudentMastery } from '@/services/mastery.service';
 import { getStudentStreak } from '@/services/gamification.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import OnboardingChecklist from './OnboardingChecklist';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -40,13 +41,15 @@ export default async function DashboardPage() {
   const user = await currentUser();
   const firstName = user?.firstName;
 
-  const [subjectsResult, debts, notifications, streak] = await Promise.all([
+  const [subjectsResult, debts, notifications, streak, quizSessionsResult] = await Promise.all([
     query(`SELECT * FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getUnreadNotifications(studentId).catch(() => []),
     getStudentStreak(studentId).catch(() => 0),
+    query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] })),
   ]);
   const subjects = subjectsResult.rows;
+  const hasPracticed = quizSessionsResult.rows.length > 0;
 
   const subjectsWithMastery = await Promise.all(
     subjects.map(async (s: any) => {
@@ -62,6 +65,33 @@ export default async function DashboardPage() {
   const allScores = subjectsWithMastery.flatMap((s) => (s.avgMastery !== null ? [s.avgMastery] : []));
   const overallAvg = allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : null;
 
+  const hasSubject = subjects.length > 0;
+  const hasContent = subjectsWithMastery.some((s) => s.conceptCount > 0);
+  const onboardingSteps = [
+    {
+      done: hasSubject,
+      title: t['onboarding.step1Title'],
+      body: t['onboarding.step1Body'],
+      cta: t['onboarding.step1Cta'],
+      href: '/dashboard/subjects/new',
+    },
+    {
+      done: hasContent,
+      title: t['onboarding.step2Title'],
+      body: t['onboarding.step2Body'],
+      cta: t['onboarding.step2Cta'],
+      href: hasSubject ? `/dashboard/subjects/${subjects[0].id}` : '/dashboard/subjects/new',
+    },
+    {
+      done: hasPracticed,
+      title: t['onboarding.step3Title'],
+      body: t['onboarding.step3Body'],
+      cta: t['onboarding.step3Cta'],
+      href: hasSubject ? `/dashboard/subjects/${subjects[0].id}` : '/dashboard/subjects/new',
+    },
+  ];
+  const showOnboarding = onboardingSteps.some((s) => !s.done);
+
   return (
     <div>
       <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
@@ -72,6 +102,10 @@ export default async function DashboardPage() {
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>
+
+      {showOnboarding && (
+        <OnboardingChecklist title={t['onboarding.title']} steps={onboardingSteps} dismissLabel={t['onboarding.dismiss']} />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
