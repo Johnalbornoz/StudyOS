@@ -1,6 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, BellOff } from 'lucide-react';
+import { BookOpen, CheckCircle2, BellOff, Flame } from 'lucide-react';
 import { query } from '@/lib/db';
 import { getSubjectAccentColor } from '@/lib/subject-color';
 import MiniSparkline from './MiniSparkline';
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['streak.dashboardTitle']}</div>
           <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {streak > 0 && <span aria-hidden style={{ fontSize: 22 }}>🔥</span>}
+            {streak > 0 && <Flame size={22} strokeWidth={2} aria-hidden fill="var(--warning)" color="var(--warning)" />}
             {streak}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
