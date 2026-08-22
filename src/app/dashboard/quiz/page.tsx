@@ -153,6 +153,11 @@ export default function QuizPage() {
   const [results, setResults] = useState<any>(null);
   const [reviewing, setReviewing] = useState(false);
 
+  const [hints, setHints] = useState<Record<number, string[]>>({});
+  const [hintsVisible, setHintsVisible] = useState(false);
+  const [hintLoading, setHintLoading] = useState(false);
+  const [hintError, setHintError] = useState(false);
+
   const t = getMessages(locale);
 
   useEffect(() => {
@@ -222,8 +227,36 @@ export default function QuizPage() {
     setMatchingAnswer({});
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
+    setHintsVisible(false);
+    setHintError(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, questions.length]);
+
+  async function toggleHints() {
+    if (hintsVisible) {
+      setHintsVisible(false);
+      return;
+    }
+    setHintsVisible(true);
+    if ((hints[current] && hints[current].length > 0) || !studentId || !quizId) return;
+
+    setHintLoading(true);
+    setHintError(false);
+    try {
+      const res = await fetch('/api/quizzes/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, quizId, questionIndex: current, language: quizLanguage }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error();
+      setHints((prev) => ({ ...prev, [current]: body.data.hints }));
+    } catch {
+      setHintError(true);
+    } finally {
+      setHintLoading(false);
+    }
+  }
 
   async function changeQuizLanguage(next: Locale) {
     if (!studentId || next === quizLanguage) return;
@@ -521,7 +554,41 @@ export default function QuizPage() {
       </div>
 
       <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
-        <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px' }}>{q.question}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+          <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>{q.question}</p>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ fontSize: 13, flexShrink: 0 }}
+            onClick={toggleHints}
+          >
+            {hintsVisible ? t['quiz.hintButtonHide'] : t['quiz.hintButton']}
+          </button>
+        </div>
+
+        {hintsVisible && (
+          <div
+            style={{
+              marginBottom: 'var(--space-5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-subtle)', border: '1px solid var(--border-default)',
+            }}
+          >
+            {hintLoading ? (
+              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
+                {t['quiz.hintLoading']}
+              </p>
+            ) : hintError || (hints[current] && hints[current].length === 0) ? (
+              <p style={{ fontSize: 13.5, color: 'var(--error)', margin: 0 }}>{t['quiz.hintError']}</p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                {(hints[current] || []).map((h, i) => (
+                  <li key={i}>{h}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {q.visualAid && <VisualAidView aid={q.visualAid} />}
 
         {(q.answerFormat === 'single_choice') && (

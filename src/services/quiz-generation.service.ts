@@ -606,3 +606,72 @@ REQUIREMENTS:
 
 IMPORTANT: Do not invent content. Every question must be answerable from the provided material.`;
 }
+
+/**
+ * Generate a short list of non-revealing hints for one quiz question.
+ * Deliberately excludes matchingPairs/orderingItems/classificationItems
+ * from the prompt (those fields encode the correct structure directly)
+ * -- only the question text and, for choice questions, the option
+ * texts (which don't by themselves reveal which one is correct) are
+ * passed in.
+ */
+export async function generateQuestionHint(
+  question: GeneratedQuestion,
+  language: string = 'en'
+): Promise<string[]> {
+  const languageName = LOCALE_FULL_NAME[language] || language;
+
+  const optionsBlock =
+    question.options && question.options.length > 0
+      ? `\n\nAnswer options shown to the student:\n${question.options.map((o) => `- ${o.text}`).join('\n')}`
+      : '';
+
+  const systemPrompt = `You are a supportive tutor giving a HINT for a quiz question the student is actively trying to answer themselves.
+
+CRITICAL RULES -- never break these:
+- NEVER state or imply the correct answer, even partially.
+- NEVER give a step-by-step procedure, formula application, or worked solution.
+- NEVER do any part of the reasoning or calculation for them.
+- NEVER say which option (if any) is correct or can be eliminated.
+
+Instead, give 2-3 short hints that redirect their THINKING -- e.g. what concept, definition, or relationship is relevant here, what detail in the question to pay closer attention to, or a question they should ask themselves before answering. Each hint must be one short sentence.
+
+Write the hints in ${languageName}.
+
+Output ONLY a JSON array of strings, no markdown, no explanation. Example shape: ["hint one", "hint two"]`;
+
+  const userPrompt = `Question: "${question.question}"${optionsBlock}
+
+Give 2-3 hints following the rules above.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-5',
+        max_tokens: 400,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Claude API error: ${response.status} - ${errText}`);
+    }
+
+    const data = await response.json();
+    const text = data.content.find((b: any) => b.type === 'text')?.text ?? '[]';
+    const parsed = parseAIJson(text);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((s) => typeof s === 'string').slice(0, 3);
+  } catch (error) {
+    console.error('Error generating question hint:', error);
+    throw error;
+  }
+}

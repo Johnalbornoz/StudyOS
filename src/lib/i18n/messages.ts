@@ -94,6 +94,7 @@ type MessageKey =
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
   | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel'
+  | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
   | 'quiz.modeQuickCheck' | 'quiz.modeTopicPractice' | 'quiz.modeCumulative' | 'quiz.modeExamSim'
   | 'quiz.modeQuickCheckDesc' | 'quiz.modeTopicPracticeDesc' | 'quiz.modeCumulativeDesc' | 'quiz.modeExamSimDesc'
@@ -331,6 +332,10 @@ const es: Messages = {
   'quiz.score': 'Puntaje',
   'quiz.correctOf': 'correctas',
   'quiz.masteryLabel': 'Dominio del concepto',
+  'quiz.hintButton': '💡 Ayuda',
+  'quiz.hintButtonHide': 'Ocultar pistas',
+  'quiz.hintLoading': 'Generando pistas…',
+  'quiz.hintError': 'No se pudieron generar pistas. Intenta de nuevo.',
   'quiz.next': 'Siguiente pregunta',
   'quiz.viewResults': 'Ver resultados',
   'quiz.submitting': 'Enviando…',
@@ -618,6 +623,10 @@ const en: Messages = {
   'quiz.score': 'Score',
   'quiz.correctOf': 'correct',
   'quiz.masteryLabel': 'Concept mastery',
+  'quiz.hintButton': '💡 Help',
+  'quiz.hintButtonHide': 'Hide hints',
+  'quiz.hintLoading': 'Generating hints…',
+  'quiz.hintError': "Couldn't generate hints. Try again.",
   'quiz.next': 'Next question',
   'quiz.viewResults': 'View results',
   'quiz.submitting': 'Submitting…',
@@ -905,6 +914,10 @@ const de: Messages = {
   'quiz.score': 'Punktzahl',
   'quiz.correctOf': 'richtig',
   'quiz.masteryLabel': 'Konzeptbeherrschung',
+  'quiz.hintButton': '💡 Hilfe',
+  'quiz.hintButtonHide': 'Hinweise ausblenden',
+  'quiz.hintLoading': 'Hinweise werden erstellt…',
+  'quiz.hintError': 'Hinweise konnten nicht erstellt werden. Versuche es erneut.',
   'quiz.next': 'Nächste Frage',
   'quiz.viewResults': 'Ergebnisse ansehen',
   'quiz.submitting': 'Wird gesendet…',
@@ -1192,6 +1205,10 @@ const fr: Messages = {
   'quiz.score': 'Score',
   'quiz.correctOf': 'correctes',
   'quiz.masteryLabel': 'Maîtrise du concept',
+  'quiz.hintButton': '💡 Aide',
+  'quiz.hintButtonHide': 'Masquer les indices',
+  'quiz.hintLoading': 'Génération des indices…',
+  'quiz.hintError': 'Impossible de générer des indices. Réessayez.',
   'quiz.next': 'Question suivante',
   'quiz.viewResults': 'Voir les résultats',
   'quiz.submitting': 'Envoi…',
@@ -1479,6 +1496,10 @@ const pt: Messages = {
   'quiz.score': 'Pontuação',
   'quiz.correctOf': 'corretas',
   'quiz.masteryLabel': 'Domínio do conceito',
+  'quiz.hintButton': '💡 Ajuda',
+  'quiz.hintButtonHide': 'Ocultar dicas',
+  'quiz.hintLoading': 'Gerando dicas…',
+  'quiz.hintError': 'Não foi possível gerar dicas. Tente novamente.',
   'quiz.next': 'Próxima pergunta',
   'quiz.viewResults': 'Ver resultados',
   'quiz.submitting': 'Enviando…',
