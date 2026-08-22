@@ -35,6 +35,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
+  if (quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation') {
+    return NextResponse.json({ error: 'HINTS_DISABLED_FOR_MODE' }, { status: 403 });
+  }
+
   const question = quizSession.questions[validated.questionIndex];
   if (!question) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });

@@ -29,6 +29,13 @@ interface Question {
   classificationCategories?: string[];
   visualAid?: VisualAid;
   difficulty: number;
+  calculatorAllowed?: boolean;
+}
+
+interface SubjectConcept {
+  id: string;
+  label: string;
+  canonicalId: string;
 }
 
 interface ReviewItem {
@@ -132,6 +139,9 @@ export default function QuizPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [quizMode] = useState<QuizMode>(modeParam);
   const [maxQuestions, setMaxQuestions] = useState<number>(MODE_DEFAULT_MAX[modeParam]);
+  const allowsTopicSelection = quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation';
+  const [subjectConcepts, setSubjectConcepts] = useState<SubjectConcept[]>([]);
+  const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>([]);
 
   const [quizId, setQuizId] = useState<string | null>(null);
   const [quizLanguage, setQuizLanguage] = useState<Locale>('en');
@@ -174,6 +184,14 @@ export default function QuizPage() {
         if (lang.locale) setLocale(lang.locale);
         if (!me.studentId) throw new Error('Could not identify the student');
         setStudentId(me.studentId);
+
+        if (allowsTopicSelection) {
+          const conceptsRes = await fetch(
+            `/api/subjects/${subjectId}/concepts?studentId=${me.studentId}&language=${lang.locale || 'en'}`
+          );
+          const conceptsBody = await conceptsRes.json();
+          if (conceptsRes.ok) setSubjectConcepts(conceptsBody.data.concepts || []);
+        }
       } catch (err: any) {
         setError(err.message);
         setPhase('error');
@@ -194,6 +212,7 @@ export default function QuizPage() {
             studentId: sid,
             subjectId,
             conceptId: conceptId || undefined,
+            conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
             quizMode,
             maxQuestions,
             ...(languageOverride ? { language: languageOverride } : {}),
@@ -215,7 +234,7 @@ export default function QuizPage() {
         setPhase('error');
       }
     },
-    [subjectId, conceptId, quizMode, maxQuestions]
+    [subjectId, conceptId, quizMode, maxQuestions, selectedConceptIds]
   );
 
   useEffect(() => {
@@ -389,6 +408,51 @@ export default function QuizPage() {
             style={{ width: '100%' }}
           />
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t['quiz.maxQuestionsHint']}</p>
+
+          {allowsTopicSelection && subjectConcepts.length > 0 && (
+            <div style={{ marginTop: 'var(--space-6)' }}>
+              <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+                {t['quiz.selectTopicsLabel']}
+              </label>
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 10px' }}>{t['quiz.selectTopicsHint']}</p>
+              <div
+                style={{
+                  maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)',
+                }}
+              >
+                {subjectConcepts.map((c) => {
+                  const checked = selectedConceptIds.includes(c.id);
+                  return (
+                    <label
+                      key={c.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+                        fontSize: 13.5, cursor: 'pointer', borderRadius: 'var(--radius-sm)',
+                        background: checked ? 'var(--brand-subtle)' : 'transparent',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setSelectedConceptIds((prev) =>
+                            checked ? prev.filter((id) => id !== c.id) : [...prev, c.id]
+                          )
+                        }
+                      />
+                      {c.label}
+                    </label>
+                  );
+                })}
+              </div>
+              {selectedConceptIds.length > 0 && (
+                <p style={{ fontSize: 12.5, color: 'var(--brand-ink)', margin: '8px 0 0' }}>
+                  {selectedConceptIds.length} {t['quiz.selectTopicsCount']}
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             className="btn btn-primary"
@@ -570,16 +634,53 @@ export default function QuizPage() {
       </div>
 
       <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <span
+            title={`${t['quiz.difficultyLabel']}: ${q.difficulty}/5`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
+              color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span
+                key={i}
+                aria-hidden
+                style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: i < q.difficulty ? 'var(--brand)' : 'var(--border-default)',
+                }}
+              />
+            ))}
+          </span>
+          {typeof q.calculatorAllowed === 'boolean' && (
+            <span
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
+                padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                color: q.calculatorAllowed ? 'var(--text-muted)' : 'var(--error)',
+                border: `1px solid ${q.calculatorAllowed ? 'var(--border-default)' : 'var(--error)'}`,
+              }}
+            >
+              <span aria-hidden>🧮</span>
+              {q.calculatorAllowed ? t['quiz.calculatorAllowed'] : t['quiz.calculatorNotAllowed']}
+            </span>
+          )}
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
           <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>{q.question}</p>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ fontSize: 13, flexShrink: 0 }}
-            onClick={toggleHints}
-          >
-            {hintsVisible ? t['quiz.hintButtonHide'] : t['quiz.hintButton']}
-          </button>
+          {quizMode !== 'cumulative_assessment' && quizMode !== 'exam_simulation' && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ fontSize: 13, flexShrink: 0 }}
+              onClick={toggleHints}
+            >
+              {hintsVisible ? t['quiz.hintButtonHide'] : t['quiz.hintButton']}
+            </button>
+          )}
         </div>
 
         {hintsVisible && (

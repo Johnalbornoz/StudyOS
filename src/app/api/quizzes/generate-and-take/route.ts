@@ -127,6 +127,7 @@ const GenerateQuizSchema = z.object({
   studentId: z.string().uuid(),
   subjectId: z.string().uuid(),
   conceptId: z.string().uuid().optional(),
+  conceptIds: z.array(z.string().uuid()).optional(), // manual topic selection for cumulative_assessment/exam_simulation
   quizMode: z.enum(['topic_practice', 'quick_check', 'cumulative_assessment', 'exam_simulation']).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
@@ -189,6 +190,7 @@ function toClientQuestion(q: GeneratedQuestion, index: number) {
     answerFormat: q.answerFormat,
     question: q.question,
     difficulty: q.difficulty,
+    calculatorAllowed: q.calculatorAllowed,
     options: q.options ? shuffleArray(q.options) : undefined,
     matchingLeft: q.matchingPairs?.map((p) => p.left),
     matchingRightShuffled: q.matchingPairs ? shuffleArray(q.matchingPairs.map((p) => p.right)) : undefined,
@@ -251,6 +253,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
     if (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check') {
       conceptIds = [validated.conceptId!];
       primaryConceptId = validated.conceptId!;
+    } else if (validated.conceptIds && validated.conceptIds.length > 0) {
+      // Student picked specific topics instead of the automatic
+      // weakest-first/scheduled-exam selection below.
+      conceptIds = validated.conceptIds.slice(0, maxQuestions);
+      primaryConceptId = null;
     } else {
       conceptIds = await selectConceptsForQuizMode(
         validated.quizMode,

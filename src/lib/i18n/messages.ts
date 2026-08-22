@@ -49,6 +49,8 @@ type MessageKey =
   | 'subjectDetail.interactiveFormulaLabel'
   | 'ib.programmeLabel' | 'ib.programmeNone' | 'ib.programmeMYP' | 'ib.programmeDP' | 'ib.programmeHelp'
   | 'ib.subjectGroupLabel' | 'ib.levelLabel' | 'ib.estimatedBand' | 'ib.estimatedGrade' | 'ib.disclaimer'
+  | 'quiz.selectTopicsLabel' | 'quiz.selectTopicsHint' | 'quiz.selectTopicsCount'
+  | 'quiz.difficultyLabel' | 'quiz.calculatorAllowed' | 'quiz.calculatorNotAllowed'
   | 'subjectDetail.learnMoreLoading' | 'subjectDetail.learnMoreError'
   | 'subjectDetail.uploadTabFile' | 'subjectDetail.uploadTabText'
   | 'subjectDetail.addConceptLabel' | 'subjectDetail.addConceptPlaceholder'
@@ -204,6 +206,12 @@ const es: Messages = {
   'ib.estimatedBand': 'Banda estimada',
   'ib.estimatedGrade': 'Nota estimada',
   'ib.disclaimer': 'Estimación orientativa, no una calificación oficial del IB.',
+  'quiz.selectTopicsLabel': 'Elegir temas específicos',
+  'quiz.selectTopicsHint': 'Opcional — si no eliges ninguno, se seleccionan automáticamente los temas más débiles (o los del próximo examen agendado).',
+  'quiz.selectTopicsCount': 'temas seleccionados',
+  'quiz.difficultyLabel': 'Dificultad',
+  'quiz.calculatorAllowed': 'Calculadora permitida',
+  'quiz.calculatorNotAllowed': 'Sin calculadora',
   'subjectDetail.uploadTabFile': 'Subir archivo',
   'subjectDetail.uploadTabText': 'Escribir un concepto',
   'subjectDetail.addConceptLabel': 'Nombre del concepto',
@@ -512,6 +520,12 @@ const en: Messages = {
   'ib.estimatedBand': 'Estimated band',
   'ib.estimatedGrade': 'Estimated grade',
   'ib.disclaimer': 'A rough estimate, not an official IB grade.',
+  'quiz.selectTopicsLabel': 'Choose specific topics',
+  'quiz.selectTopicsHint': "Optional — if you don't pick any, the weakest topics (or your next scheduled exam's topics) are selected automatically.",
+  'quiz.selectTopicsCount': 'topics selected',
+  'quiz.difficultyLabel': 'Difficulty',
+  'quiz.calculatorAllowed': 'Calculator allowed',
+  'quiz.calculatorNotAllowed': 'No calculator',
   'subjectDetail.uploadTabFile': 'Upload file',
   'subjectDetail.uploadTabText': 'Write a concept',
   'subjectDetail.addConceptLabel': 'Concept name',
@@ -820,6 +834,12 @@ const de: Messages = {
   'ib.estimatedBand': 'Geschätzte Bandbreite',
   'ib.estimatedGrade': 'Geschätzte Note',
   'ib.disclaimer': 'Eine grobe Schätzung, keine offizielle IB-Note.',
+  'quiz.selectTopicsLabel': 'Bestimmte Themen wählen',
+  'quiz.selectTopicsHint': 'Optional — wenn du keine auswählst, werden die schwächsten Themen (oder die deiner nächsten geplanten Prüfung) automatisch ausgewählt.',
+  'quiz.selectTopicsCount': 'Themen ausgewählt',
+  'quiz.difficultyLabel': 'Schwierigkeit',
+  'quiz.calculatorAllowed': 'Taschenrechner erlaubt',
+  'quiz.calculatorNotAllowed': 'Kein Taschenrechner',
   'subjectDetail.uploadTabFile': 'Datei hochladen',
   'subjectDetail.uploadTabText': 'Konzept schreiben',
   'subjectDetail.addConceptLabel': 'Name des Konzepts',
@@ -1128,6 +1148,12 @@ const fr: Messages = {
   'ib.estimatedBand': 'Bande estimée',
   'ib.estimatedGrade': 'Note estimée',
   'ib.disclaimer': "Une estimation approximative, pas une note officielle de l'IB.",
+  'quiz.selectTopicsLabel': 'Choisir des sujets spécifiques',
+  'quiz.selectTopicsHint': "Optionnel — si vous n'en choisissez aucun, les sujets les plus faibles (ou ceux de votre prochain examen programmé) sont sélectionnés automatiquement.",
+  'quiz.selectTopicsCount': 'sujets sélectionnés',
+  'quiz.difficultyLabel': 'Difficulté',
+  'quiz.calculatorAllowed': 'Calculatrice autorisée',
+  'quiz.calculatorNotAllowed': 'Sans calculatrice',
   'subjectDetail.uploadTabFile': 'Téléverser un fichier',
   'subjectDetail.uploadTabText': 'Écrire un concept',
   'subjectDetail.addConceptLabel': 'Nom du concept',
@@ -1436,6 +1462,12 @@ const pt: Messages = {
   'ib.estimatedBand': 'Banda estimada',
   'ib.estimatedGrade': 'Nota estimada',
   'ib.disclaimer': 'Uma estimativa aproximada, não uma nota oficial do IB.',
+  'quiz.selectTopicsLabel': 'Escolher tópicos específicos',
+  'quiz.selectTopicsHint': 'Opcional — se você não escolher nenhum, os tópicos mais fracos (ou os do seu próximo exame agendado) são selecionados automaticamente.',
+  'quiz.selectTopicsCount': 'tópicos selecionados',
+  'quiz.difficultyLabel': 'Dificuldade',
+  'quiz.calculatorAllowed': 'Calculadora permitida',
+  'quiz.calculatorNotAllowed': 'Sem calculadora',
   'subjectDetail.uploadTabFile': 'Enviar arquivo',
   'subjectDetail.uploadTabText': 'Escrever um conceito',
   'subjectDetail.addConceptLabel': 'Nome do conceito',

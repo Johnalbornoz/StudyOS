@@ -111,6 +111,7 @@ export interface GeneratedQuestion {
   correctAnswer: string; // canonical answer, format depends on answerFormat (see grading)
   explanation: string;
   difficulty: number; // 1-5
+  calculatorAllowed?: boolean; // only set when the question involves numerical calculation
   sourceReference?: string;
 }
 
@@ -183,6 +184,9 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
   if (type === 'classification') {
     base.classificationCategories = '["category A", "category B"]';
     base.classificationItems = '[{"item":"...","category":"category A"}]';
+  }
+  if (type === 'numeric_problem' || type === 'step_by_step') {
+    base.calculatorAllowed = 'true or false';
   }
   if (withVisual) {
     base.visualAid =
@@ -346,6 +350,7 @@ ${shapeExamples}
         correctAnswer: q.correctAnswer || '',
         explanation: q.explanation || '',
         difficulty: Math.max(1, Math.min(5, q.difficulty || 3)),
+        calculatorAllowed: typeof q.calculatorAllowed === 'boolean' ? q.calculatorAllowed : undefined,
         sourceReference: `Based on student's ${language} materials`,
       };
 
@@ -675,6 +680,7 @@ ${groundingRequirement}
 3. Every field in your JSON output must be written in ${languageName}
 4. Questions should test understanding, not just recall
 5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
+6. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
 
 ${closingNote}`;
 }
