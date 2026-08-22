@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 interface NavItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: ReactNode;
   badge?: number;
 }
 
@@ -16,7 +16,7 @@ export default function SidebarNav({ items }: { items: NavItem[] }) {
 
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {items.map(({ href, label, icon: Icon, badge }) => {
+      {items.map(({ href, label, icon, badge }) => {
         const isActive = href === '/dashboard' ? pathname === '/dashboard' : pathname?.startsWith(href);
         return (
           <Link
@@ -30,7 +30,7 @@ export default function SidebarNav({ items }: { items: NavItem[] }) {
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <Icon size={16} strokeWidth={2} aria-hidden />
+              {icon}
               {label}
             </span>
             {!!badge && (

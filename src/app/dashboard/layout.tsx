@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
-import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame } from 'lucide-react';
+import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck } from 'lucide-react';
+import { isAdminEmail } from '@/services/admin.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getStudentStreak } from '@/services/gamification.service';
@@ -50,6 +51,8 @@ export default async function DashboardLayout({
   const t = getMessages(locale);
 
   const displayName = user?.firstName || 'Student';
+  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+  const isAdmin = isAdminEmail(email);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh' }}>
@@ -69,14 +72,15 @@ export default async function DashboardLayout({
 
         <SidebarNav
           items={[
-            { href: '/dashboard/today', label: t['nav.today'], icon: CalendarDays },
-            { href: '/dashboard', label: t['nav.dashboard'], icon: LayoutDashboard },
-            { href: '/dashboard/subjects', label: t['nav.subjects'], icon: BookOpen },
-            { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: RotateCcw, badge: debtCount },
-            { href: '/dashboard/notifications', label: t['nav.notifications'], icon: Bell, badge: notifCount },
-            { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: ListChecks },
-            { href: '/dashboard/tutor', label: t['nav.tutor'], icon: MessageCircle },
-            { href: '/dashboard/parent', label: t['nav.parent'], icon: Users },
+            { href: '/dashboard/today', label: t['nav.today'], icon: <CalendarDays size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard', label: t['nav.dashboard'], icon: <LayoutDashboard size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard/subjects', label: t['nav.subjects'], icon: <BookOpen size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: <RotateCcw size={16} strokeWidth={2} aria-hidden />, badge: debtCount },
+            { href: '/dashboard/notifications', label: t['nav.notifications'], icon: <Bell size={16} strokeWidth={2} aria-hidden />, badge: notifCount },
+            { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: <ListChecks size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard/tutor', label: t['nav.tutor'], icon: <MessageCircle size={16} strokeWidth={2} aria-hidden /> },
+            { href: '/dashboard/parent', label: t['nav.parent'], icon: <Users size={16} strokeWidth={2} aria-hidden /> },
+            ...(isAdmin ? [{ href: '/dashboard/admin', label: t['nav.admin'], icon: <ShieldCheck size={16} strokeWidth={2} aria-hidden /> }] : []),
           ]}
         />
 
