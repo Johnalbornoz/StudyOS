@@ -1,11 +1,15 @@
 'use client';
 
+import 'katex/dist/katex.min.css';
 import { Locale, getMessages } from '@/lib/i18n/messages';
+import InteractiveFormulaWidget from './InteractiveFormulaWidget';
+import { InteractiveFormula } from '@/services/interactive-formula.service';
 
 export interface ConceptExplanationData {
   summary: string;
   sections: { heading: string; body: string }[];
   examples: string[];
+  interactiveFormula?: InteractiveFormula;
 }
 
 export function ConceptExplanationPanel({
@@ -79,8 +83,12 @@ export function ConceptExplanationPanel({
               {data.summary}
             </p>
 
+            {data.interactiveFormula && (
+              <InteractiveFormulaWidget locale={locale} data={data.interactiveFormula} />
+            )}
+
             {data.sections.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: data.interactiveFormula ? 20 : 0 }}>
                 {data.sections.map((s, i) => (
                   <div key={i}>
                     <h5

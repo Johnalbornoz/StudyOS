@@ -46,6 +46,7 @@ type MessageKey =
   | 'subjectDetail.deleteConceptConfirm' | 'subjectDetail.deleteConceptHasHistory'
   | 'subjectDetail.learnMoreAction' | 'subjectDetail.learnMoreCollapse'
   | 'subjectDetail.aiExplanationLabel' | 'subjectDetail.aiExplanationExamplesLabel'
+  | 'subjectDetail.interactiveFormulaLabel'
   | 'subjectDetail.learnMoreLoading' | 'subjectDetail.learnMoreError'
   | 'subjectDetail.uploadTabFile' | 'subjectDetail.uploadTabText'
   | 'subjectDetail.addConceptLabel' | 'subjectDetail.addConceptPlaceholder'
@@ -189,6 +190,7 @@ const es: Messages = {
   'subjectDetail.learnMoreError': 'No se pudo generar la explicación. Intenta de nuevo.',
   'subjectDetail.aiExplanationLabel': 'Explicación generada por IA',
   'subjectDetail.aiExplanationExamplesLabel': 'Ejemplos',
+  'subjectDetail.interactiveFormulaLabel': 'Fórmula interactiva',
   'subjectDetail.uploadTabFile': 'Subir archivo',
   'subjectDetail.uploadTabText': 'Escribir un concepto',
   'subjectDetail.addConceptLabel': 'Nombre del concepto',
@@ -482,6 +484,7 @@ const en: Messages = {
   'subjectDetail.learnMoreError': "Couldn't generate the explanation. Try again.",
   'subjectDetail.aiExplanationLabel': 'AI-generated explanation',
   'subjectDetail.aiExplanationExamplesLabel': 'Examples',
+  'subjectDetail.interactiveFormulaLabel': 'Interactive formula',
   'subjectDetail.uploadTabFile': 'Upload file',
   'subjectDetail.uploadTabText': 'Write a concept',
   'subjectDetail.addConceptLabel': 'Concept name',
@@ -775,6 +778,7 @@ const de: Messages = {
   'subjectDetail.learnMoreError': 'Die Erklärung konnte nicht erstellt werden. Versuche es erneut.',
   'subjectDetail.aiExplanationLabel': 'Von KI erstellte Erklärung',
   'subjectDetail.aiExplanationExamplesLabel': 'Beispiele',
+  'subjectDetail.interactiveFormulaLabel': 'Interaktive Formel',
   'subjectDetail.uploadTabFile': 'Datei hochladen',
   'subjectDetail.uploadTabText': 'Konzept schreiben',
   'subjectDetail.addConceptLabel': 'Name des Konzepts',
@@ -1068,6 +1072,7 @@ const fr: Messages = {
   'subjectDetail.learnMoreError': "Impossible de générer l'explication. Réessayez.",
   'subjectDetail.aiExplanationLabel': "Explication générée par l'IA",
   'subjectDetail.aiExplanationExamplesLabel': 'Exemples',
+  'subjectDetail.interactiveFormulaLabel': 'Formule interactive',
   'subjectDetail.uploadTabFile': 'Téléverser un fichier',
   'subjectDetail.uploadTabText': 'Écrire un concept',
   'subjectDetail.addConceptLabel': 'Nom du concept',
@@ -1361,6 +1366,7 @@ const pt: Messages = {
   'subjectDetail.learnMoreError': 'Não foi possível gerar a explicação. Tente novamente.',
   'subjectDetail.aiExplanationLabel': 'Explicação gerada por IA',
   'subjectDetail.aiExplanationExamplesLabel': 'Exemplos',
+  'subjectDetail.interactiveFormulaLabel': 'Fórmula interativa',
   'subjectDetail.uploadTabFile': 'Enviar arquivo',
   'subjectDetail.uploadTabText': 'Escrever um conceito',
   'subjectDetail.addConceptLabel': 'Nome do conceito',
