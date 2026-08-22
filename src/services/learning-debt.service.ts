@@ -12,6 +12,7 @@
 
 import { db } from '@/lib/db';
 import { calculateDebtSeverity } from '@/lib/algorithms/mastery';
+import { ensureConceptLocalizations } from './localization.service';
 
 export interface LearningDebtRecord {
   id: string;
@@ -367,6 +368,15 @@ export async function getActiveDebts(
   preferredLanguage: string = 'en'
 ) {
   try {
+    const debtConceptIdsQuery = subjectId
+      ? `SELECT concept_id FROM learning_debt WHERE student_id = $1 AND status IN ('active', 'monitoring') AND subject_id = $2`
+      : `SELECT concept_id FROM learning_debt WHERE student_id = $1 AND status IN ('active', 'monitoring')`;
+    const debtConceptIdsParams = subjectId ? [studentId, subjectId] : [studentId];
+    const debtConceptIds = await db.query(debtConceptIdsQuery, debtConceptIdsParams);
+    ensureConceptLocalizations(debtConceptIds.rows.map((r) => r.concept_id), preferredLanguage).catch((err) =>
+      console.error('Background concept localization failed:', err)
+    );
+
     let query = `
       SELECT
         ld.id,
@@ -378,17 +388,12 @@ export async function getActiveDebts(
         ld.created_at,
         ld.resolved_at,
         c.canonical_id,
-        cl.label,
+        COALESCE(cl.label, c.canonical_id) AS label,
         mr.mastery_score,
         mr.attempt_count
       FROM learning_debt ld
       JOIN concepts c ON ld.concept_id = c.id
-      LEFT JOIN LATERAL (
-        SELECT label FROM concept_localizations
-        WHERE concept_id = c.id
-        ORDER BY (language = $2) DESC
-        LIMIT 1
-      ) cl ON true
+      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
       LEFT JOIN mastery_records mr ON ld.student_id = mr.student_id AND ld.concept_id = mr.concept_id
       WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring')
     `;

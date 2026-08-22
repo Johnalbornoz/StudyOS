@@ -36,7 +36,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  const concepts = await getStudentMastery(studentId, id, locale).catch(() => []);
+  const concepts = await getStudentMastery(studentId, id, locale, true).catch(() => []);
   const contentSources = await getContentSources(studentId, id).catch(() => []);
   const hierarchy = await getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] }));
   const avgMastery = concepts.length

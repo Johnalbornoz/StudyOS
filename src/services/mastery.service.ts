@@ -6,6 +6,7 @@
  */
 
 import { db } from '@/lib/db';
+import { ensureConceptLocalizations } from './localization.service';
 import {
   calculateMasteryDelta,
   calculateConfidence,
@@ -382,13 +383,27 @@ export async function getMasteryHistory(
 export async function getStudentMastery(
   studentId: string,
   subjectId?: string,
-  preferredLanguage: string = 'en'
+  preferredLanguage: string = 'en',
+  ensureLabels: boolean = false
 ) {
+  if (ensureLabels) {
+    const idsQuery = subjectId
+      ? `SELECT c.id FROM mastery_records mr JOIN concepts c ON mr.concept_id = c.id WHERE mr.student_id = $1 AND mr.subject_id = $2`
+      : `SELECT c.id FROM mastery_records mr JOIN concepts c ON mr.concept_id = c.id WHERE mr.student_id = $1`;
+    const idsParams = subjectId ? [studentId, subjectId] : [studentId];
+    const idsResult = await db.query(idsQuery, idsParams);
+    // Non-blocking: a large subject could take a while to translate on
+    // first view. Concepts fall back to canonical_id until it completes.
+    ensureConceptLocalizations(idsResult.rows.map((r) => r.id), preferredLanguage).catch((err) =>
+      console.error('Background concept localization failed:', err)
+    );
+  }
+
   let query = `
     SELECT
       c.id as concept_id,
       c.canonical_id,
-      cl.label,
+      COALESCE(cl.label, c.canonical_id) as label,
       mr.mastery_score,
       mr.confidence_score,
       mr.attempt_count,
@@ -397,12 +412,7 @@ export async function getStudentMastery(
       ld.status as learning_debt_status
     FROM mastery_records mr
     JOIN concepts c ON mr.concept_id = c.id
-    LEFT JOIN LATERAL (
-      SELECT label FROM concept_localizations
-      WHERE concept_id = c.id
-      ORDER BY (language = $2) DESC
-      LIMIT 1
-    ) cl ON true
+    LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
     LEFT JOIN learning_debt ld ON mr.student_id = ld.student_id AND mr.concept_id = ld.concept_id AND ld.status = 'active'
     WHERE mr.student_id = $1
   `;

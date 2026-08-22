@@ -14,6 +14,7 @@
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
 
 export interface HierarchyConcept {
   id: string;
@@ -236,16 +237,32 @@ ${outline}`;
 }
 
 export async function getSubjectHierarchy(subjectId: string, studentId: string, language: string = 'en'): Promise<SubjectHierarchy> {
+  const conceptIdsResult = await db.query(`SELECT id FROM concepts WHERE subject_id = $1`, [subjectId]);
+  const conceptIds = conceptIdsResult.rows.map((r) => r.id);
+
+  // Topic/subtopic translation is small (a handful of names) and fast,
+  // so it's worth blocking on to get the accordion headers right on
+  // first render. Concept-label translation can be large (100+ items
+  // in a big subject) and slow -- run it in the background instead so
+  // a language switch never hangs the page; concepts fall back to
+  // canonical_id until the next load once it completes.
+  ensureConceptLocalizations(conceptIds, language).catch((err) =>
+    console.error('Background concept localization failed:', err)
+  );
+  await ensureTopicHierarchyLocalizations(subjectId, language);
+
   const rows = await db.query(
     `
     SELECT
-      t.id AS topic_id, t.name AS topic_name, t.display_order AS topic_order,
-      st.id AS subtopic_id, st.name AS subtopic_name, st.display_order AS subtopic_order,
+      t.id AS topic_id, COALESCE(tl.name, t.name) AS topic_name, t.display_order AS topic_order,
+      st.id AS subtopic_id, COALESCE(sl.name, st.name) AS subtopic_name, st.display_order AS subtopic_order,
       c.id AS concept_id, COALESCE(cl.label, c.canonical_id) AS concept_label,
       mr.mastery_score
     FROM concepts c
     JOIN subtopics st ON st.id = c.subtopic_id
     JOIN topics t ON t.id = st.topic_id
+    LEFT JOIN topic_localizations tl ON tl.topic_id = t.id AND tl.language = $3
+    LEFT JOIN subtopic_localizations sl ON sl.subtopic_id = st.id AND sl.language = $3
     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
     LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $2
     WHERE c.subject_id = $1
