@@ -16,6 +16,7 @@ import { db } from '@/lib/db';
 import type { EvidenceResult, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { getTransferScore } from './transfer.service';
 import { getMisconceptionCountsForConcept } from './misconception.service';
+import { evaluateValidationLifecycle } from './validation-cycle.service';
 import { track } from '@/lib/analytics';
 
 export type MasteryState =
@@ -377,8 +378,7 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   };
   const sufficiency = evaluateEvidenceSufficiency(rows, policy);
   const validationReadiness = determineValidationReadiness(scores, misconceptions, sufficiency, policy);
-  const masteryState = determineMasteryState(scores, misconceptions, sufficiency, policy);
-  const stateReason = buildStateReason(scores, misconceptions, sufficiency, policy, masteryState, validationReadiness);
+  const baseMasteryState = determineMasteryState(scores, misconceptions, sufficiency, policy);
 
   const sortedAsc = [...rows].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const firstEvidenceAt = sortedAsc[0]?.timestamp ?? null;
@@ -389,6 +389,24 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
     [studentId, conceptId]
   );
   const previousState: MasteryState | null = previousStateResult.rows[0]?.mastery_state ?? null;
+
+  // Phase 2.2B: overlays the time dimension on top of 2.2A's pure
+  // dimension-based state -- opens/closes Validation Cycles, detects
+  // decay from a previously-validated concept, and is the only source
+  // of AT_RISK/INTERVENTION_REQUIRED.
+  const masteryState = await evaluateValidationLifecycle({
+    studentId,
+    conceptId,
+    subjectId,
+    previousState,
+    baseState: baseMasteryState,
+    scores,
+    misconceptions,
+    policy,
+    knowledgeStateSnapshot: { scores, evidenceCount: sufficiency.evidenceCount },
+  });
+
+  const stateReason = buildStateReason(scores, misconceptions, sufficiency, policy, masteryState, validationReadiness);
 
   const upserted = await db.query(
     `INSERT INTO concept_knowledge_state (
