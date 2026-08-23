@@ -1,9 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getTodayPlan, TodayItem, UrgencyTier } from '@/services/today-plan.service';
+import { getTodayPlan, buildBestNextAction, TodayItem, UrgencyTier } from '@/services/today-plan.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import WhyThis from '../WhyThis';
 
 const TIER_COLOR: Record<UrgencyTier, { accent: string; subtle: string; ink: string }> = {
   critical: { accent: 'var(--error)', subtle: 'var(--error-subtle)', ink: 'var(--error)' },
@@ -48,6 +49,14 @@ function reasonBadge(item: TodayItem, tier: UrgencyTier, t: ReturnType<typeof ge
       </div>
     );
   }
+  if (item.reason === 'independence_gap' && item.unassistedAccuracy !== undefined) {
+    return (
+      <div style={badgeStyle}>
+        <span className="tabular" style={{ fontSize: 18, fontWeight: 700 }}>{item.unassistedAccuracy}%</span>
+        <span style={{ fontSize: 8.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['today.unassistedAccuracy']}</span>
+      </div>
+    );
+  }
   return (
     <div style={badgeStyle}>
       <span className="tabular" style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(item.masteryScore)}%</span>
@@ -74,6 +83,9 @@ function detailLine(item: TodayItem, t: ReturnType<typeof getMessages>) {
   }
   if (item.reason === 'forgetting_risk') {
     return `${item.subjectName} · ${t['today.lastPracticedLabel']} ${item.daysSincePractice} ${t['common.days']} · ${item.forgettingRisk}% ${t['today.forgettingRisk']}`;
+  }
+  if (item.reason === 'independence_gap') {
+    return `${item.subjectName} · ${t['today.reasonIndependenceGap']}`;
   }
   return `${item.subjectName} · ${t['today.mastery']}: ${Math.round(item.masteryScore)}%`;
 }
@@ -163,6 +175,7 @@ export default async function TodayPage() {
   });
 
   const totalPending = critical.length + thisWeek.length + canWait.length;
+  const bestNextAction = buildBestNextAction(critical, thisWeek, canWait);
 
   return (
     <div>
@@ -175,6 +188,41 @@ export default async function TodayPage() {
           {t['today.subtitle']}
         </p>
       </div>
+
+      {bestNextAction && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 'var(--space-8)', borderColor: 'var(--brand)', borderWidth: 2,
+            display: 'flex', alignItems: 'center', gap: 'var(--space-5)',
+          }}
+        >
+          <div
+            aria-hidden
+            style={{
+              flexShrink: 0, width: 44, height: 44, borderRadius: '50%', background: 'var(--brand)',
+              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+            }}
+          >
+            ★
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 4 }}>{t['bestNextAction.title']}</div>
+            <div style={{ fontSize: 17, fontWeight: 650 }}>{bestNextAction.item.label}</div>
+            <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>
+              {bestNextAction.item.subjectName} · {t['bestNextAction.minutes'].replace('{min}', String(bestNextAction.estimatedMinutes))}
+            </div>
+            <WhyThis facts={bestNextAction.facts} t={t} />
+          </div>
+          <Link
+            href={`/dashboard/quiz?subjectId=${bestNextAction.item.subjectId}&conceptId=${bestNextAction.item.conceptId}`}
+            className="btn btn-primary"
+            style={{ flexShrink: 0 }}
+          >
+            {t['bestNextAction.start']}
+          </Link>
+        </div>
+      )}
 
       {totalPending > 0 && (
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-8)', flexWrap: 'wrap' }}>

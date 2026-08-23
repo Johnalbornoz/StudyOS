@@ -1,33 +1,44 @@
 /**
  * "Today" study plan -- answers the brief's central question, "what
  * should I study today?". Built entirely from data already tracked:
- * mastery_records, learning_debt, the real exam calendar, and each
- * concept's spaced-repetition review interval.
+ * mastery_records, learning_debt, the real exam calendar, each
+ * concept's spaced-repetition review interval, and (new) the
+ * assisted-vs-unassisted split in learning_evidence.
  *
- * A concept earns a spot on today's list for exactly one of four
+ * A concept earns a spot on today's list for exactly one of five
  * reasons, checked in priority order:
- * 1. exam_soon       -- its subject has an exam within EXAM_SOON_WINDOW_DAYS
- *                       and the concept is one of that exam's topics
- *                       (or the exam has no specific topics, meaning "all").
- * 2. learning_debt   -- it has an active learning-debt record.
- * 3. forgetting_risk -- mastery is otherwise solid, but it hasn't been
- *                       reviewed in a while relative to its spaced-
- *                       repetition interval (see spaced-repetition.ts)
- *                       -- reviewing it now is what prevents it from
- *                       becoming low_mastery later.
- * 4. low_mastery     -- mastery is below LOW_MASTERY_THRESHOLD but not
- *                       otherwise flagged.
+ * 1. exam_soon         -- its subject has an exam within EXAM_SOON_WINDOW_DAYS
+ *                         and the concept is one of that exam's topics
+ *                         (or the exam has no specific topics, meaning "all").
+ * 2. learning_debt     -- it has an active learning-debt record.
+ * 3. forgetting_risk   -- mastery is otherwise solid, but it hasn't been
+ *                         reviewed in a while relative to its spaced-
+ *                         repetition interval (see spaced-repetition.ts)
+ *                         -- reviewing it now is what prevents it from
+ *                         becoming low_mastery later.
+ * 4. independence_gap  -- mastery looks solid, but that's mostly with
+ *                         hints/help; recent unassisted attempts are
+ *                         notably weaker -- Next Best Action's use of
+ *                         the Learner Model's Independent Mastery
+ *                         dimension (learner-model.service.ts).
+ * 5. low_mastery        -- mastery is below LOW_MASTERY_THRESHOLD but not
+ *                         otherwise flagged.
  *
  * Every item is also tagged with an urgencyTier (critical / this_week /
  * can_wait) so the UI can group by what genuinely needs attention today
  * vs. what can be scheduled later, instead of one undifferentiated list.
+ *
+ * getBestNextAction() is Next Best Action v1: the single highest-
+ * priority item across the whole list, with the structured facts a
+ * "Why this?" component renders into a sentence -- composed from real
+ * numbers, never an LLM-invented reason.
  */
 
 import { db } from '@/lib/db';
 import { getUpcomingForStudent } from './assessment.service';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 
-export type TodayReason = 'exam_soon' | 'learning_debt' | 'forgetting_risk' | 'low_mastery';
+export type TodayReason = 'exam_soon' | 'learning_debt' | 'forgetting_risk' | 'independence_gap' | 'low_mastery';
 export type UrgencyTier = 'critical' | 'this_week' | 'can_wait';
 
 export interface TodayItem {
@@ -44,6 +55,7 @@ export interface TodayItem {
   debtSince?: string; // ISO date the debt was created, for traceability
   forgettingRisk?: number;
   daysSincePractice?: number;
+  unassistedAccuracy?: number; // 0-100, only set when reason === 'independence_gap'
 }
 
 const EXAM_SOON_WINDOW_DAYS = 7;
@@ -51,6 +63,8 @@ const EXAM_CRITICAL_DAYS = 2;
 const DEBT_CRITICAL_SEVERITY = 4;
 const LOW_MASTERY_THRESHOLD = 60;
 const FORGETTING_RISK_THRESHOLD = 50;
+const INDEPENDENCE_GAP_MIN_SAMPLES = 2;
+const INDEPENDENCE_GAP_ACCURACY_THRESHOLD = 60;
 
 function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverity'>): UrgencyTier {
   if (item.reason === 'exam_soon') {
@@ -59,7 +73,7 @@ function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverit
   if (item.reason === 'learning_debt') {
     return (item.debtSeverity ?? 0) >= DEBT_CRITICAL_SEVERITY ? 'critical' : 'this_week';
   }
-  if (item.reason === 'forgetting_risk') return 'this_week';
+  if (item.reason === 'forgetting_risk' || item.reason === 'independence_gap') return 'this_week';
   return 'can_wait';
 }
 
@@ -85,7 +99,9 @@ export async function getTodayPlan(
       mr.last_practiced,
       ld.severity AS debt_severity,
       ld.status AS debt_status,
-      ld.created_at AS debt_created_at
+      ld.created_at AS debt_created_at,
+      evid.unassisted_count,
+      evid.unassisted_correct
     FROM mastery_records mr
     JOIN concepts c ON mr.concept_id = c.id
     JOIN subjects s ON c.subject_id = s.id
@@ -97,6 +113,13 @@ export async function getTodayPlan(
     ) cl ON true
     LEFT JOIN learning_debt ld
       ON ld.student_id = mr.student_id AND ld.concept_id = mr.concept_id AND ld.status = 'active'
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE') AS unassisted_count,
+        COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE' AND result = 'correct') AS unassisted_correct
+      FROM learning_evidence le
+      WHERE le.student_id = mr.student_id AND le.concept_id = mr.concept_id
+    ) evid ON true
     WHERE mr.student_id = $1 AND s.student_id = $1
     `,
     [studentId, preferredLanguage]
@@ -127,11 +150,23 @@ export async function getTodayPlan(
       forgettingRisk = calculateForgettingRisk(daysSincePractice, intervalDays);
     }
 
+    const unassistedCount = Number(row.unassisted_count) || 0;
+    const unassistedAccuracy =
+      unassistedCount >= INDEPENDENCE_GAP_MIN_SAMPLES
+        ? Math.round((Number(row.unassisted_correct) / unassistedCount) * 100)
+        : undefined;
+
     let reason: TodayReason | null = null;
     if (inExamWindow) reason = 'exam_soon';
     else if (row.debt_status === 'active') reason = 'learning_debt';
     else if (masteryScore >= LOW_MASTERY_THRESHOLD && (forgettingRisk ?? 0) >= FORGETTING_RISK_THRESHOLD) {
       reason = 'forgetting_risk';
+    } else if (
+      masteryScore >= LOW_MASTERY_THRESHOLD &&
+      unassistedAccuracy !== undefined &&
+      unassistedAccuracy < INDEPENDENCE_GAP_ACCURACY_THRESHOLD
+    ) {
+      reason = 'independence_gap';
     } else if (masteryScore < LOW_MASTERY_THRESHOLD) reason = 'low_mastery';
 
     if (!reason) continue;
@@ -153,6 +188,7 @@ export async function getTodayPlan(
       debtSince: row.debt_created_at ? new Date(row.debt_created_at).toISOString().slice(0, 10) : undefined,
       forgettingRisk: reason === 'forgetting_risk' ? forgettingRisk : undefined,
       daysSincePractice,
+      unassistedAccuracy: reason === 'independence_gap' ? unassistedAccuracy : undefined,
     });
   }
 
@@ -160,6 +196,7 @@ export async function getTodayPlan(
     if (item.reason === 'exam_soon') return 1000 - (item.daysUntilExam ?? 0) * 10;
     if (item.reason === 'learning_debt') return 500 + (item.debtSeverity ?? 0) * 10;
     if (item.reason === 'forgetting_risk') return 200 + (item.forgettingRisk ?? 0);
+    if (item.reason === 'independence_gap') return 150 + (100 - (item.unassistedAccuracy ?? 100));
     return 100 + (LOW_MASTERY_THRESHOLD - item.masteryScore);
   };
 
@@ -171,4 +208,69 @@ export async function getTodayPlan(
     canWait: items.filter((i) => i.urgencyTier === 'can_wait').slice(0, 8),
     totalConcepts: conceptsResult.rows.length,
   };
+}
+
+export interface WhyThisFact {
+  kind: 'examSoon' | 'learningDebt' | 'forgettingRisk' | 'independenceGap' | 'lowMastery';
+  daysUntilExam?: number;
+  debtSeverity?: number;
+  forgettingRisk?: number;
+  daysSincePractice?: number;
+  unassistedAccuracy?: number;
+  masteryScore?: number;
+}
+
+export interface BestNextAction {
+  item: TodayItem;
+  estimatedMinutes: number;
+  facts: WhyThisFact[];
+}
+
+function estimateMinutes(item: TodayItem): number {
+  if (item.reason === 'exam_soon' || item.reason === 'learning_debt') return 15;
+  return 10;
+}
+
+/**
+ * Next Best Action v1, pure version: picks the single highest-priority
+ * item from already-fetched Today lists (no DB call) and builds its
+ * structured "why" facts. Split out so callers that already fetched
+ * getTodayPlan (e.g. the Today page itself) don't run the query twice
+ * just to also show a "best next action" banner.
+ */
+export function buildBestNextAction(
+  critical: TodayItem[],
+  thisWeek: TodayItem[],
+  canWait: TodayItem[]
+): BestNextAction | null {
+  const top = critical[0] ?? thisWeek[0] ?? canWait[0];
+  if (!top) return null;
+
+  const facts: WhyThisFact[] = [];
+  if (top.reason === 'exam_soon') facts.push({ kind: 'examSoon', daysUntilExam: top.daysUntilExam });
+  if (top.reason === 'learning_debt') facts.push({ kind: 'learningDebt', debtSeverity: top.debtSeverity });
+  if (top.reason === 'forgetting_risk') {
+    facts.push({ kind: 'forgettingRisk', forgettingRisk: top.forgettingRisk, daysSincePractice: top.daysSincePractice });
+  }
+  if (top.reason === 'independence_gap') {
+    facts.push({ kind: 'independenceGap', unassistedAccuracy: top.unassistedAccuracy, masteryScore: top.masteryScore });
+  }
+  if (top.reason === 'low_mastery') facts.push({ kind: 'lowMastery', masteryScore: top.masteryScore });
+
+  return { item: top, estimatedMinutes: estimateMinutes(top), facts };
+}
+
+/**
+ * Next Best Action v1: the single highest-priority item a student
+ * should do right now, across every subject -- not a list, one
+ * recommendation. Facts are structured data, not prose; the caller
+ * composes the actual "why this?" sentence per-locale from them (see
+ * WhyThis.tsx) so nothing here is ever an invented reason.
+ *
+ * Fetches getTodayPlan itself -- use buildBestNextAction directly if
+ * the caller already has that data (e.g. the Today page).
+ */
+export async function getBestNextAction(studentId: string, preferredLanguage: string = 'en'): Promise<BestNextAction | null> {
+  const { critical, thisWeek, canWait } = await getTodayPlan(studentId, preferredLanguage);
+  return buildBestNextAction(critical, thisWeek, canWait);
 }
