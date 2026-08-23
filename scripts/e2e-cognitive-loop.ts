@@ -21,6 +21,7 @@
 import { db } from '@/lib/db';
 import { updateMastery } from '@/services/mastery.service';
 import { getLearnerConceptState } from '@/services/learner-model.service';
+import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import {
   detectCognitiveIssue,
   generateRootCauseHypotheses,
@@ -287,6 +288,30 @@ async function scenarioConfirm() {
   assert(
     finalItems.some((i) => i.reason === 'recurring_misconception' && i.conceptId === targetId),
     'Today/NBA v2 surfaces the recurring misconception on the target concept as the final state'
+  );
+
+  // Phase 2.2A: Knowledge State was projected automatically by every
+  // updateMastery call above (LEARN/GUIDED_PRACTICE/SOLO_VERIFY/EXPLANATION/
+  // TRANSFER evidence) -- confirm it actually persisted, not just that the
+  // wiring compiles.
+  const candidateKnowledgeState = await getConceptKnowledgeState(studentId, candidateId);
+  assert(candidateKnowledgeState !== null, 'Phase 2.2A: concept_knowledge_state has a real row for the remediated candidate concept');
+  assert(
+    candidateKnowledgeState !== null && candidateKnowledgeState.evidenceCount > 0,
+    `Phase 2.2A: evidenceCount is a real positive number, not fabricated (got ${candidateKnowledgeState?.evidenceCount})`
+  );
+  assert(
+    candidateKnowledgeState !== null && candidateKnowledgeState.masteryState !== 'UNKNOWN',
+    `Phase 2.2A: mastery_state reflects real evidence, not the empty-evidence default (got ${candidateKnowledgeState?.masteryState})`
+  );
+  assert(
+    candidateKnowledgeState !== null && candidateKnowledgeState.stateReason !== null,
+    'Phase 2.2A: state_reason is persisted and explainable, not null'
+  );
+  const targetKnowledgeState = await getConceptKnowledgeState(studentId, targetId);
+  assert(
+    targetKnowledgeState !== null && targetKnowledgeState.transferScore !== null,
+    'Phase 2.2A: transferScore on the target concept is a real reused value from Phase 2 Transfer evidence, not null/fabricated'
   );
 
   return { studentId, subjectId };
