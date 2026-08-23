@@ -120,7 +120,7 @@ type MessageKey =
   | 'subjectDetail.historyToggle' | 'subjectDetail.historyEmpty' | 'subjectDetail.sourceGuidedExercise'
   | 'subjectDetail.sourceTopicAssessment' | 'subjectDetail.sourceRealExam' | 'subjectDetail.resultCorrect'
   | 'subjectDetail.resultPartial' | 'subjectDetail.resultIncorrect' | 'subjectDetail.modeSolo'
-  | 'subjectDetail.modeCoach' | 'subjectDetail.hintsShort'
+  | 'subjectDetail.modeCoach' | 'subjectDetail.hintsShort' | 'subjectDetail.viewConceptDetail'
   | 'dashboard.confidenceCalibration'
   | 'conceptDetail.yourLearning' | 'conceptDetail.mastery' | 'conceptDetail.confidence' | 'conceptDetail.evidenceStrength'
   | 'conceptDetail.evidenceStrengthLow' | 'conceptDetail.evidenceStrengthMedium' | 'conceptDetail.evidenceStrengthHigh'
@@ -311,6 +311,7 @@ const es: Messages = {
   'subjectDetail.modeSolo': 'Solo',
   'subjectDetail.modeCoach': 'Con ayuda',
   'subjectDetail.hintsShort': '{count} pista(s)',
+  'subjectDetail.viewConceptDetail': 'Haz clic para ver el detalle del concepto',
   'dashboard.confidenceCalibration': 'Calibración de confianza',
   'conceptDetail.yourLearning': 'Tu aprendizaje',
   'conceptDetail.mastery': 'Dominio',
@@ -816,6 +817,7 @@ const en: Messages = {
   'subjectDetail.modeSolo': 'Solo',
   'subjectDetail.modeCoach': 'With help',
   'subjectDetail.hintsShort': '{count} hint(s)',
+  'subjectDetail.viewConceptDetail': 'Click to view concept detail',
   'dashboard.confidenceCalibration': 'Confidence calibration',
   'conceptDetail.yourLearning': 'Your learning',
   'conceptDetail.mastery': 'Mastery',
@@ -1321,6 +1323,7 @@ const de: Messages = {
   'subjectDetail.modeSolo': 'Allein',
   'subjectDetail.modeCoach': 'Mit Hilfe',
   'subjectDetail.hintsShort': '{count} Hinweis(e)',
+  'subjectDetail.viewConceptDetail': 'Klicken, um das Konzeptdetail zu sehen',
   'dashboard.confidenceCalibration': 'Selbsteinschätzung',
   'conceptDetail.yourLearning': 'Dein Lernstand',
   'conceptDetail.mastery': 'Beherrschung',
@@ -1826,6 +1829,7 @@ const fr: Messages = {
   'subjectDetail.modeSolo': 'Seul(e)',
   'subjectDetail.modeCoach': 'Avec aide',
   'subjectDetail.hintsShort': '{count} indice(s)',
+  'subjectDetail.viewConceptDetail': 'Cliquer pour voir le détail du concept',
   'dashboard.confidenceCalibration': 'Calibration de la confiance',
   'conceptDetail.yourLearning': 'Ton apprentissage',
   'conceptDetail.mastery': 'Maîtrise',
@@ -2331,6 +2335,7 @@ const pt: Messages = {
   'subjectDetail.modeSolo': 'Sozinho',
   'subjectDetail.modeCoach': 'Com ajuda',
   'subjectDetail.hintsShort': '{count} dica(s)',
+  'subjectDetail.viewConceptDetail': 'Clique para ver o detalhe do conceito',
   'dashboard.confidenceCalibration': 'Calibração de confiança',
   'conceptDetail.yourLearning': 'Seu aprendizado',
   'conceptDetail.mastery': 'Domínio',

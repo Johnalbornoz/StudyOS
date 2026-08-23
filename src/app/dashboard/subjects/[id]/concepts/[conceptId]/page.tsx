@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getLearnerConceptState, getConceptEvidenceSummary } from '@/services/learner-model.service';
+import { getLearnerConceptState, getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import { sourceLabel, resultLabel, resultColor } from '@/lib/concept-evidence-labels';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -67,7 +68,7 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [state, evidence, masteryRow, activeDebt] = await Promise.all([
+  const [state, evidence, masteryRow, activeDebt, history] = await Promise.all([
     getLearnerConceptState(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -78,6 +79,7 @@ export default async function ConceptDetailPage({
       `SELECT id FROM learning_debt WHERE student_id = $1 AND concept_id = $2 AND status IN ('active', 'monitoring')`,
       [studentId, conceptId]
     ),
+    getConceptEvidenceHistory(studentId, conceptId, 20),
   ]);
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
@@ -276,7 +278,7 @@ export default async function ConceptDetailPage({
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginBottom: 'var(--space-6)' }}>
         <Link href={ctaConfig[primaryCTA].href} className="btn btn-primary">
           {ctaConfig[primaryCTA].label}
         </Link>
@@ -286,6 +288,36 @@ export default async function ConceptDetailPage({
           </Link>
         ))}
       </div>
+
+      <h2 style={{ fontSize: 16, marginBottom: 'var(--space-3)' }}>{t['subjectDetail.historyToggle']}</h2>
+      {history.length === 0 ? (
+        <p style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{t['subjectDetail.historyEmpty']}</p>
+      ) : (
+        <div className="card" style={{ padding: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {history.map((h, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13.5, flexWrap: 'wrap' }}>
+                <span className="tabular" style={{ color: 'var(--text-muted)', flexShrink: 0, width: 90 }}>
+                  {new Date(h.timestamp).toLocaleDateString()}
+                </span>
+                <span style={{ flexShrink: 0, minWidth: 150 }}>{sourceLabel(h.sourceType, t)}</span>
+                <span style={{ color: resultColor(h.result), fontWeight: 600, flexShrink: 0, minWidth: 90 }}>
+                  {resultLabel(h.result, t)}
+                  {h.scorePercent !== null ? ` (${Math.round(h.scorePercent)}%)` : ''}
+                </span>
+                {h.learningMode && (
+                  <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+                    {h.learningMode === 'SOLO' ? t['subjectDetail.modeSolo'] : h.learningMode === 'COACH' ? t['subjectDetail.modeCoach'] : h.learningMode}
+                  </span>
+                )}
+                {h.hintsUsed > 0 && (
+                  <span style={{ color: 'var(--text-muted)' }}>{t['subjectDetail.hintsShort'].replace('{count}', String(h.hintsUsed))}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
