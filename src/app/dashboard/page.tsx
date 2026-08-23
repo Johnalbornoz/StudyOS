@@ -53,7 +53,7 @@ export default async function DashboardPage() {
     getUnreadNotifications(studentId).catch(() => []),
     getStudentStreak(studentId).catch(() => 0),
     query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] })),
-    getLearnerModelSummary(studentId).catch(() => ({ avgRetention: null, avgIndependentMastery: null, conceptsWithRetention: 0, conceptsWithIndependentMastery: 0 })),
+    getLearnerModelSummary(studentId).catch(() => ({ avgRetention: null, avgIndependentMastery: null, conceptsWithRetention: 0, conceptsWithIndependentMastery: 0, evidenceCoverage: null })),
   ]);
   const subjects = subjectsResult.rows;
   const hasPracticed = quizSessionsResult.rows.length > 0;
@@ -159,10 +159,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {(learnerSummary.avgRetention !== null || learnerSummary.avgIndependentMastery !== null) && (
+      {(learnerSummary.avgRetention !== null || learnerSummary.avgIndependentMastery !== null || learnerSummary.evidenceCoverage !== null) && (
         <div style={{ marginBottom: 'var(--space-8)' }}>
           <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['dashboard.yourLearning']}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.retention']}</div>
               <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
@@ -174,6 +174,19 @@ export default async function DashboardPage() {
               <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
                 {learnerSummary.avgIndependentMastery !== null ? `${learnerSummary.avgIndependentMastery}%` : t['dashboard.notEnoughEvidence']}
               </div>
+            </div>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.evidenceCoverage']}</div>
+              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
+                {learnerSummary.evidenceCoverage !== null
+                  ? `${learnerSummary.evidenceCoverage.percent}%`
+                  : t['dashboard.notEnoughEvidence']}
+              </div>
+              {learnerSummary.evidenceCoverage !== null && (
+                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                  {learnerSummary.evidenceCoverage.evidencedConcepts}/{learnerSummary.evidenceCoverage.totalConcepts}
+                </div>
+              )}
             </div>
           </div>
         </div>

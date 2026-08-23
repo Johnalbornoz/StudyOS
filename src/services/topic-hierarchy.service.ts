@@ -15,11 +15,13 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
+import { getRetention } from './learner-model.service';
 
 export interface HierarchyConcept {
   id: string;
   label: string;
   masteryScore?: number;
+  retention?: number;
 }
 
 export interface HierarchySubtopic {
@@ -257,7 +259,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       t.id AS topic_id, COALESCE(tl.name, t.name) AS topic_name, t.display_order AS topic_order,
       st.id AS subtopic_id, COALESCE(sl.name, st.name) AS subtopic_name, st.display_order AS subtopic_order,
       c.id AS concept_id, COALESCE(cl.label, c.canonical_id) AS concept_label,
-      mr.mastery_score
+      mr.mastery_score, mr.confidence_score, mr.last_practiced
     FROM concepts c
     JOIN subtopics st ON st.id = c.subtopic_id
     JOIN topics t ON t.id = st.topic_id
@@ -287,12 +289,16 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       id: row.concept_id,
       label: row.concept_label,
       masteryScore: row.mastery_score !== null ? Number(row.mastery_score) : undefined,
+      retention:
+        row.mastery_score !== null
+          ? getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced) ?? undefined
+          : undefined,
     });
   }
 
   const unassignedResult = await db.query(
     `
-    SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, mr.mastery_score
+    SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, mr.mastery_score, mr.confidence_score, mr.last_practiced
     FROM concepts c
     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
     LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $2
@@ -308,6 +314,10 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       id: r.id,
       label: r.label,
       masteryScore: r.mastery_score !== null ? Number(r.mastery_score) : undefined,
+      retention:
+        r.mastery_score !== null
+          ? getRetention(Number(r.mastery_score), Number(r.confidence_score), r.last_practiced) ?? undefined
+          : undefined,
     })),
   };
 }

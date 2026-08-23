@@ -122,11 +122,109 @@ export interface LearnerConceptState {
   evidenceStrength: EvidenceStrength | null;
 }
 
+export interface EvidenceCoverage {
+  totalConcepts: number;
+  evidencedConcepts: number;
+  percent: number;
+}
+
 export interface LearnerModelSummary {
   avgRetention: number | null;
   avgIndependentMastery: number | null;
   conceptsWithRetention: number;
   conceptsWithIndependentMastery: number;
+  evidenceCoverage: EvidenceCoverage | null;
+}
+
+export interface SubjectLearnerModel {
+  avgMastery: number | null;
+  avgRetention: number | null;
+  avgIndependentMastery: number | null;
+  evidenceCoverage: EvidenceCoverage | null;
+  activeLearningDebtCount: number;
+}
+
+/**
+ * What fraction of a subject's (or, with no subjectId, every active
+ * subject's) concepts have ever been attempted at all -- distinct from
+ * Mastery, which only describes the concepts that already have
+ * evidence. Null when the scope has zero concepts (nothing to cover
+ * yet, not 0% coverage).
+ */
+export async function getEvidenceCoverage(studentId: string, subjectId?: string): Promise<EvidenceCoverage | null> {
+  const totalResult = await db.query(
+    subjectId
+      ? `SELECT COUNT(*)::int AS count FROM concepts WHERE subject_id = $1`
+      : `SELECT COUNT(*)::int AS count FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE s.student_id = $1 AND s.status = 'active'`,
+    subjectId ? [subjectId] : [studentId]
+  );
+  const totalConcepts = Number(totalResult.rows[0].count);
+  if (totalConcepts === 0) return null;
+
+  const evidencedResult = await db.query(
+    subjectId
+      ? `SELECT COUNT(*)::int AS count FROM mastery_records WHERE student_id = $1 AND subject_id = $2`
+      : `SELECT COUNT(*)::int AS count FROM mastery_records mr JOIN subjects s ON s.id = mr.subject_id WHERE mr.student_id = $1 AND s.status = 'active'`,
+    subjectId ? [studentId, subjectId] : [studentId]
+  );
+  const evidencedConcepts = Number(evidencedResult.rows[0].count);
+
+  return { totalConcepts, evidencedConcepts, percent: Math.round((evidencedConcepts / totalConcepts) * 100) };
+}
+
+/**
+ * Bundles Mastery, Retention, Independent Mastery, Evidence Coverage
+ * and active Learning Debt into one object for a single subject --
+ * the "Subject Intelligence" view. Same null-safety rules as the
+ * per-concept functions: a dimension is null when there isn't enough
+ * evidence for it yet, never 0.
+ */
+export async function getSubjectLearnerModel(studentId: string, subjectId: string): Promise<SubjectLearnerModel> {
+  const masteryRows = await db.query(
+    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND subject_id = $2`,
+    [studentId, subjectId]
+  );
+  const masteryScores: number[] = [];
+  const retentions: number[] = [];
+  for (const row of masteryRows.rows) {
+    masteryScores.push(Number(row.mastery_score));
+    const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
+    if (r !== null) retentions.push(r);
+  }
+
+  const evidenceRows = await db.query(
+    `
+    SELECT
+      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE') AS unassisted_count,
+      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE' AND result = 'correct') AS unassisted_correct
+    FROM learning_evidence
+    WHERE student_id = $1 AND subject_id = $2
+    GROUP BY concept_id
+    `,
+    [studentId, subjectId]
+  );
+  const independentScores: number[] = [];
+  for (const row of evidenceRows.rows) {
+    const count = Number(row.unassisted_count);
+    if (count >= 2) independentScores.push((Number(row.unassisted_correct) / count) * 100);
+  }
+
+  const debtResult = await db.query(
+    `SELECT COUNT(*)::int AS count FROM learning_debt WHERE student_id = $1 AND subject_id = $2 AND status IN ('active', 'monitoring')`,
+    [studentId, subjectId]
+  );
+
+  const evidenceCoverage = await getEvidenceCoverage(studentId, subjectId);
+
+  return {
+    avgMastery: masteryScores.length ? Math.round(masteryScores.reduce((a, b) => a + b, 0) / masteryScores.length) : null,
+    avgRetention: retentions.length ? Math.round(retentions.reduce((a, b) => a + b, 0) / retentions.length) : null,
+    avgIndependentMastery: independentScores.length
+      ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)
+      : null,
+    evidenceCoverage,
+    activeLearningDebtCount: Number(debtResult.rows[0].count),
+  };
 }
 
 /**
@@ -172,6 +270,7 @@ export async function getLearnerModelSummary(studentId: string): Promise<Learner
       : null,
     conceptsWithRetention: retentions.length,
     conceptsWithIndependentMastery: independentScores.length,
+    evidenceCoverage: await getEvidenceCoverage(studentId),
   };
 }
 

@@ -72,17 +72,36 @@ export default async function DashboardLayout({
         </div>
 
         <SidebarNav
-          items={[
-            { href: '/dashboard/today', label: t['nav.today'], icon: <CalendarDays size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard', label: t['nav.dashboard'], icon: <LayoutDashboard size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard/subjects', label: t['nav.subjects'], icon: <BookOpen size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: <RotateCcw size={16} strokeWidth={2} aria-hidden />, badge: debtCount },
-            { href: '/dashboard/notifications', label: t['nav.notifications'], icon: <Bell size={16} strokeWidth={2} aria-hidden />, badge: notifCount },
-            { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: <ListChecks size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard/tutor', label: t['nav.tutor'], icon: <MessageCircle size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard/parent', label: t['nav.parent'], icon: <Users size={16} strokeWidth={2} aria-hidden /> },
-            { href: '/dashboard/billing', label: t['billing.title'], icon: <CreditCard size={16} strokeWidth={2} aria-hidden /> },
-            ...(isAdmin ? [{ href: '/dashboard/admin', label: t['nav.admin'], icon: <ShieldCheck size={16} strokeWidth={2} aria-hidden /> }] : []),
+          groups={[
+            {
+              title: t['nav.groupLearning'],
+              items: [
+                { href: '/dashboard/today', label: t['nav.today'], icon: <CalendarDays size={16} strokeWidth={2} aria-hidden /> },
+                { href: '/dashboard/subjects', label: t['nav.subjects'], icon: <BookOpen size={16} strokeWidth={2} aria-hidden /> },
+                { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: <RotateCcw size={16} strokeWidth={2} aria-hidden />, badge: debtCount },
+                { href: '/dashboard', label: t['nav.dashboard'], icon: <LayoutDashboard size={16} strokeWidth={2} aria-hidden /> },
+                { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: <ListChecks size={16} strokeWidth={2} aria-hidden /> },
+                { href: '/dashboard/tutor', label: t['nav.tutor'], icon: <MessageCircle size={16} strokeWidth={2} aria-hidden /> },
+              ],
+            },
+            {
+              title: t['nav.groupAccount'],
+              items: [
+                { href: '/dashboard/notifications', label: t['nav.notifications'], icon: <Bell size={16} strokeWidth={2} aria-hidden />, badge: notifCount },
+                { href: '/dashboard/parent', label: t['nav.parent'], icon: <Users size={16} strokeWidth={2} aria-hidden /> },
+                { href: '/dashboard/billing', label: t['billing.title'], icon: <CreditCard size={16} strokeWidth={2} aria-hidden /> },
+              ],
+            },
+            ...(isAdmin
+              ? [
+                  {
+                    title: t['nav.groupSystem'],
+                    items: [
+                      { href: '/dashboard/admin', label: t['nav.admin'], icon: <ShieldCheck size={16} strokeWidth={2} aria-hidden /> },
+                    ],
+                  },
+                ]
+              : []),
           ]}
         />
 

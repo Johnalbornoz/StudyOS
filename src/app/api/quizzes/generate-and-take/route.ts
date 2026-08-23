@@ -41,7 +41,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   generateQuestionsForConcept,
@@ -223,7 +223,7 @@ async function selectConceptsForQuizMode(
     .slice(0, maxConcepts);
 }
 
-async function handleGenerateQuiz(body: any, userId: string, role: string) {
+async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   try {
     const validated = GenerateQuizSchema.parse(body);
 
@@ -330,7 +330,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: string) {
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors[0]?.message }, { status: 400 });
+      return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues[0]?.message }, { status: 400 });
     }
     throw error;
   }
@@ -402,7 +402,7 @@ async function getConceptLabels(conceptIds: string[], language: string): Promise
   return new Map(result.rows.map((r) => [r.id, r.label || r.canonical_id]));
 }
 
-async function handleSubmitQuiz(body: any, userId: string, role: string) {
+async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
   try {
     const validated = SubmitQuizSchema.parse(body);
 
@@ -576,7 +576,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors[0]?.message }, { status: 400 });
+      return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues[0]?.message }, { status: 400 });
     }
     throw error;
   }

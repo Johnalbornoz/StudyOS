@@ -6,6 +6,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getContentSources } from '@/services/content.service';
 import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
+import { getSubjectLearnerModel } from '@/services/learner-model.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
@@ -40,9 +41,9 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const concepts = await getStudentMastery(studentId, id, locale, true).catch(() => []);
   const contentSources = await getContentSources(studentId, id).catch(() => []);
   const hierarchy = await getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] }));
-  const avgMastery = concepts.length
-    ? Math.round(concepts.reduce((sum: number, c: any) => sum + Number(c.mastery_score), 0) / concepts.length)
-    : null;
+  const learnerModel = await getSubjectLearnerModel(studentId, id).catch(() => ({
+    avgMastery: null, avgRetention: null, avgIndependentMastery: null, evidenceCoverage: null, activeLearningDebtCount: 0,
+  }));
   const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
 
   return (
@@ -60,8 +61,30 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             {subject.name}
           </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
-            {concepts.length} {t['subjectDetail.conceptCount']}{avgMastery !== null ? ` · ${t['subjectDetail.avgMastery']} ${avgMastery}%` : ''}
+            {concepts.length} {t['subjectDetail.conceptCount']}
+            {learnerModel.avgMastery !== null ? ` · ${t['subjectDetail.avgMastery']} ${learnerModel.avgMastery}%` : ''}
           </p>
+          {(learnerModel.avgRetention !== null ||
+            learnerModel.avgIndependentMastery !== null ||
+            learnerModel.evidenceCoverage !== null ||
+            learnerModel.activeLearningDebtCount > 0) && (
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>
+              {[
+                learnerModel.avgRetention !== null ? `${t['subjectDetail.retention']} ${learnerModel.avgRetention}%` : null,
+                learnerModel.avgIndependentMastery !== null
+                  ? `${t['subjectDetail.independentMastery']} ${learnerModel.avgIndependentMastery}%`
+                  : null,
+                learnerModel.evidenceCoverage !== null
+                  ? `${t['subjectDetail.evidenceCoverage']} ${learnerModel.evidenceCoverage.evidencedConcepts}/${learnerModel.evidenceCoverage.totalConcepts} (${learnerModel.evidenceCoverage.percent}%)`
+                  : null,
+                learnerModel.activeLearningDebtCount > 0
+                  ? `${learnerModel.activeLearningDebtCount} ${t['subjectDetail.activeLearningDebt']}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
         </div>
         {weakest && (
           <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${weakest.concept_id}`} className="btn btn-primary">

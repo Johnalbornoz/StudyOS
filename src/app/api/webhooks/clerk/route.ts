@@ -20,13 +20,13 @@ export async function POST(req: Request) {
   const body = await req.text();
   const wh = new Webhook(WEBHOOK_SECRET);
 
-  let evt;
+  let evt: { type: string; data: any };
   try {
     evt = wh.verify(body, {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
-    });
+    }) as { type: string; data: any };
   } catch (err) {
     return new Response('Verification failed', { status: 400 });
   }

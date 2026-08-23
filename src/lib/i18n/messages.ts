@@ -23,6 +23,7 @@ export const LOCALE_FULL_NAME: Record<string, string> = {
 
 type MessageKey =
   | 'nav.today' | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications' | 'nav.parent' | 'nav.admin'
+  | 'nav.groupLearning' | 'nav.groupAccount' | 'nav.groupSystem'
   | 'admin.title' | 'admin.subtitle' | 'admin.colStudent' | 'admin.colEmail'
   | 'admin.colRegistered' | 'admin.colSubjects' | 'admin.colConcepts' | 'admin.viewDetail'
   | 'admin.backToList' | 'admin.noStudents' | 'admin.detailSubjects' | 'admin.detailActiveDebt'
@@ -110,6 +111,8 @@ type MessageKey =
   | 'whyThis.forgettingRisk' | 'whyThis.independenceGap' | 'whyThis.lowMastery'
   | 'debt.sectionNeedsAttention' | 'debt.sectionAtRisk' | 'debt.atRiskSubtitle'
   | 'dashboard.yourLearning' | 'dashboard.retention' | 'dashboard.independentMastery' | 'dashboard.notEnoughEvidence'
+  | 'dashboard.evidenceCoverage' | 'subjectDetail.evidenceCoverage' | 'subjectDetail.retention' | 'subjectDetail.independentMastery'
+  | 'subjectDetail.activeLearningDebt'
   | 'parent.title' | 'parent.subtitle' | 'parent.linkLabel' | 'parent.linkPlaceholder' | 'parent.linkButton'
   | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
   | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
@@ -171,6 +174,9 @@ type MessageKey =
 type Messages = Record<MessageKey, string>;
 
 const es: Messages = {
+  'nav.groupLearning': 'Aprendizaje',
+  'nav.groupAccount': 'Cuenta',
+  'nav.groupSystem': 'Sistema',
   'nav.today': 'Hoy',
   'nav.dashboard': 'Progreso',
   'nav.subjects': 'Materias',
@@ -261,6 +267,11 @@ const es: Messages = {
   'dashboard.retention': 'Retención',
   'dashboard.independentMastery': 'Dominio independiente',
   'dashboard.notEnoughEvidence': 'Aún no hay suficiente evidencia',
+  'dashboard.evidenceCoverage': 'Evidencia verificada',
+  'subjectDetail.evidenceCoverage': 'evidencia verificada',
+  'subjectDetail.retention': 'retención',
+  'subjectDetail.independentMastery': 'dominio independiente',
+  'subjectDetail.activeLearningDebt': 'en deuda de aprendizaje',
   'dashboard.avgMastery': 'Dominio promedio',
   'dashboard.avgMasterySubtitle': 'en todas tus materias',
   'dashboard.avgMasteryEmpty': 'sube contenido para empezar',
@@ -618,6 +629,9 @@ const es: Messages = {
 };
 
 const en: Messages = {
+  'nav.groupLearning': 'Learning',
+  'nav.groupAccount': 'Account',
+  'nav.groupSystem': 'System',
   'nav.today': 'Today',
   'nav.dashboard': 'Progress',
   'nav.subjects': 'Subjects',
@@ -708,6 +722,11 @@ const en: Messages = {
   'dashboard.retention': 'Retention',
   'dashboard.independentMastery': 'Independent mastery',
   'dashboard.notEnoughEvidence': 'Not enough evidence yet',
+  'dashboard.evidenceCoverage': 'Evidence coverage',
+  'subjectDetail.evidenceCoverage': 'evidence coverage',
+  'subjectDetail.retention': 'retention',
+  'subjectDetail.independentMastery': 'independent mastery',
+  'subjectDetail.activeLearningDebt': 'in learning debt',
   'dashboard.avgMastery': 'Average mastery',
   'dashboard.avgMasterySubtitle': 'across all subjects',
   'dashboard.avgMasteryEmpty': 'upload content to get started',
@@ -1065,6 +1084,9 @@ const en: Messages = {
 };
 
 const de: Messages = {
+  'nav.groupLearning': 'Lernen',
+  'nav.groupAccount': 'Konto',
+  'nav.groupSystem': 'System',
   'nav.today': 'Heute',
   'nav.dashboard': 'Fortschritt',
   'nav.subjects': 'Fächer',
@@ -1155,6 +1177,11 @@ const de: Messages = {
   'dashboard.retention': 'Behalten',
   'dashboard.independentMastery': 'Eigenständiges Verständnis',
   'dashboard.notEnoughEvidence': 'Noch nicht genug Daten',
+  'dashboard.evidenceCoverage': 'Nachgewiesene Abdeckung',
+  'subjectDetail.evidenceCoverage': 'nachgewiesene Abdeckung',
+  'subjectDetail.retention': 'Behalten',
+  'subjectDetail.independentMastery': 'eigenständiges Verständnis',
+  'subjectDetail.activeLearningDebt': 'mit Lernrückstand',
   'dashboard.avgMastery': 'Durchschnittliche Beherrschung',
   'dashboard.avgMasterySubtitle': 'in allen Fächern',
   'dashboard.avgMasteryEmpty': 'Lade Inhalte hoch, um zu starten',
@@ -1512,6 +1539,9 @@ const de: Messages = {
 };
 
 const fr: Messages = {
+  'nav.groupLearning': 'Apprentissage',
+  'nav.groupAccount': 'Compte',
+  'nav.groupSystem': 'Système',
   'nav.today': "Aujourd'hui",
   'nav.dashboard': 'Progrès',
   'nav.subjects': 'Matières',
@@ -1602,6 +1632,11 @@ const fr: Messages = {
   'dashboard.retention': 'Rétention',
   'dashboard.independentMastery': 'Maîtrise autonome',
   'dashboard.notEnoughEvidence': "Pas encore assez de données",
+  'dashboard.evidenceCoverage': 'Couverture des preuves',
+  'subjectDetail.evidenceCoverage': 'couverture des preuves',
+  'subjectDetail.retention': 'rétention',
+  'subjectDetail.independentMastery': 'maîtrise autonome',
+  'subjectDetail.activeLearningDebt': 'en dette d’apprentissage',
   'dashboard.avgMastery': 'Maîtrise moyenne',
   'dashboard.avgMasterySubtitle': 'toutes matières confondues',
   'dashboard.avgMasteryEmpty': 'importez du contenu pour commencer',
@@ -1959,6 +1994,9 @@ const fr: Messages = {
 };
 
 const pt: Messages = {
+  'nav.groupLearning': 'Aprendizado',
+  'nav.groupAccount': 'Conta',
+  'nav.groupSystem': 'Sistema',
   'nav.today': 'Hoje',
   'nav.dashboard': 'Progresso',
   'nav.subjects': 'Matérias',
@@ -2049,6 +2087,11 @@ const pt: Messages = {
   'dashboard.retention': 'Retenção',
   'dashboard.independentMastery': 'Domínio independente',
   'dashboard.notEnoughEvidence': 'Ainda não há evidência suficiente',
+  'dashboard.evidenceCoverage': 'Cobertura de evidência',
+  'subjectDetail.evidenceCoverage': 'cobertura de evidência',
+  'subjectDetail.retention': 'retenção',
+  'subjectDetail.independentMastery': 'domínio independente',
+  'subjectDetail.activeLearningDebt': 'em dívida de aprendizagem',
   'dashboard.avgMastery': 'Domínio médio',
   'dashboard.avgMasterySubtitle': 'em todas as suas matérias',
   'dashboard.avgMasteryEmpty': 'envie conteúdo para começar',
