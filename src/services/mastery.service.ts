@@ -16,6 +16,7 @@ import {
   type LearningEvidence,
 } from '@/lib/algorithms/mastery';
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
+import { recalculateConceptKnowledgeState } from './knowledge-state.service';
 
 export type AIAssistanceType =
   | 'NONE' | 'HINT' | 'MULTIPLE_HINTS' | 'TUTOR_GUIDANCE' | 'TUTOR_EXPLANATION' | 'WORKED_EXAMPLE' | 'OTHER';
@@ -337,6 +338,16 @@ export async function updateMastery(
       [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
     );
   }
+
+  // Step 10: Phase 2.2A -- recompute Concept Knowledge State from the
+  // evidence just written. Knowledge State is a projection, never a
+  // second source of truth; this keeps it immediately current with
+  // every evidence-writing action, the same way mastery_records itself
+  // updates synchronously above. Never allowed to fail the actual quiz
+  // submission this evidence came from.
+  await recalculateConceptKnowledgeState(studentId, conceptId).catch((err) =>
+    console.error('Knowledge State recalculation failed:', err)
+  );
 
   return {
     oldMastery,

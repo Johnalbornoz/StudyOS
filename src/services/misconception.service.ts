@@ -16,6 +16,7 @@ export interface MisconceptionSignature {
   misconceptionCode: string;
   description: string;
   canonicalExplanation: string | null;
+  isCritical: boolean;
 }
 
 export interface RecurringMisconception {
@@ -33,7 +34,7 @@ export interface RecurringMisconception {
 /** Every existing signature for a concept -- passed to the classifier so it prefers matching one of these over minting a new code. */
 export async function getSignaturesForConcept(conceptId: string): Promise<MisconceptionSignature[]> {
   const result = await db.query(
-    `SELECT id, concept_id, misconception_code, description, canonical_explanation
+    `SELECT id, concept_id, misconception_code, description, canonical_explanation, is_critical
      FROM misconception_signatures WHERE concept_id = $1`,
     [conceptId]
   );
@@ -43,6 +44,7 @@ export async function getSignaturesForConcept(conceptId: string): Promise<Miscon
     misconceptionCode: r.misconception_code,
     description: r.description,
     canonicalExplanation: r.canonical_explanation,
+    isCritical: r.is_critical,
   }));
 }
 
@@ -51,14 +53,15 @@ export async function getOrCreateSignature(
   conceptId: string,
   misconceptionCode: string,
   description: string,
-  canonicalExplanation?: string
+  canonicalExplanation?: string,
+  isCritical: boolean = false
 ): Promise<MisconceptionSignature> {
   const upserted = await db.query(
-    `INSERT INTO misconception_signatures (concept_id, misconception_code, description, canonical_explanation)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO misconception_signatures (concept_id, misconception_code, description, canonical_explanation, is_critical)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (concept_id, misconception_code) DO UPDATE SET description = EXCLUDED.description
-     RETURNING id, concept_id, misconception_code, description, canonical_explanation`,
-    [conceptId, misconceptionCode, description, canonicalExplanation ?? null]
+     RETURNING id, concept_id, misconception_code, description, canonical_explanation, is_critical`,
+    [conceptId, misconceptionCode, description, canonicalExplanation ?? null, isCritical]
   );
   const row = upserted.rows[0];
   return {
@@ -67,6 +70,7 @@ export async function getOrCreateSignature(
     misconceptionCode: row.misconception_code,
     description: row.description,
     canonicalExplanation: row.canonical_explanation,
+    isCritical: row.is_critical,
   };
 }
 
@@ -116,6 +120,36 @@ export async function getRecurringMisconceptions(studentId: string): Promise<Rec
   }));
 }
 
+export interface MisconceptionCounts {
+  activeCount: number;
+  criticalCount: number;
+  recurringCount: number;
+}
+
+/**
+ * Misconception counts for a single (student, concept) -- feeds the
+ * Knowledge Projector (Phase 2.2A). "Active" is every misconception
+ * ever recorded for this student on this concept (student_misconceptions
+ * has no resolution/expiry concept yet, so every row is currently
+ * active by construction); "critical" and "recurring" narrow that set.
+ */
+export async function getMisconceptionCountsForConcept(studentId: string, conceptId: string): Promise<MisconceptionCounts> {
+  const result = await db.query(
+    `SELECT sm.occurrence_count, ms.is_critical
+     FROM student_misconceptions sm
+     JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
+     WHERE sm.student_id = $1 AND ms.concept_id = $2`,
+    [studentId, conceptId]
+  );
+  let criticalCount = 0;
+  let recurringCount = 0;
+  for (const row of result.rows) {
+    if (row.is_critical) criticalCount++;
+    if (Number(row.occurrence_count) >= 2) recurringCount++;
+  }
+  return { activeCount: result.rows.length, criticalCount, recurringCount };
+}
+
 /**
  * AI-assisted classification of an incorrect answer into a
  * misconception signature -- structured output, and explicitly
@@ -147,7 +181,9 @@ Existing known misconceptions for this concept (prefer matching one of these ove
 ${existing.length > 0 ? existing.map((s) => `- code=${s.misconceptionCode}: ${s.description}`).join('\n') : '(none yet)'}
 
 If the student's answer reflects a genuine, specific, describable misconception (not just a careless slip or unrelated error), output ONLY this JSON, no markdown fences, no other text:
-{"misconceptionCode": "SCREAMING_SNAKE_CASE_ID", "description": "one sentence in ${languageName} describing the misconception generally (not tied to this specific question's numbers)", "matchedExisting": true|false}
+{"misconceptionCode": "SCREAMING_SNAKE_CASE_ID", "description": "one sentence in ${languageName} describing the misconception generally (not tied to this specific question's numbers)", "matchedExisting": true|false, "isCritical": true|false}
+
+isCritical means this misconception is foundational -- it would systematically produce wrong reasoning across many problems on this concept (not just this one question), and blocks real mastery until resolved. A minor surface slip or a misconception that only affects edge cases is NOT critical.
 
 If there's no clear, specific misconception (e.g. it looks like a careless slip, or the answer is too vague to classify), output exactly: {"misconceptionCode": null}`;
 
@@ -174,7 +210,7 @@ If there's no clear, specific misconception (e.g. it looks like a careless slip,
   const data = await response.json();
   const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{"misconceptionCode": null}';
 
-  let parsed: { misconceptionCode: string | null; description?: string; matchedExisting?: boolean };
+  let parsed: { misconceptionCode: string | null; description?: string; matchedExisting?: boolean; isCritical?: boolean };
   try {
     parsed = parseAIJson(rawText);
   } catch {
@@ -186,6 +222,12 @@ If there's no clear, specific misconception (e.g. it looks like a careless slip,
   const matched = existing.find((s) => s.misconceptionCode === parsed.misconceptionCode);
   if (matched) return { signature: matched, isNew: false };
 
-  const created = await getOrCreateSignature(conceptId, parsed.misconceptionCode, parsed.description || parsed.misconceptionCode);
+  const created = await getOrCreateSignature(
+    conceptId,
+    parsed.misconceptionCode,
+    parsed.description || parsed.misconceptionCode,
+    undefined,
+    parsed.isCritical === true
+  );
   return { signature: created, isNew: true };
 }
