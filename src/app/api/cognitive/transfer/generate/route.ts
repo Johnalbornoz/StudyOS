@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { generateTransferActivity, type TransferDistance } from '@/services/transfer.service';
+import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
       validated.distance as TransferDistance,
       validated.language || 'en'
     );
+    track(validated.studentId, 'transfer_started', { conceptId: validated.conceptId, distance: validated.distance });
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {

@@ -9,6 +9,7 @@
 import { db } from '@/lib/db';
 import { getLearnerConceptState, type LearnerConceptState } from './learner-model.service';
 import { getDiagnosis } from './cognitive-diagnosis.service';
+import { track } from '@/lib/analytics';
 
 export type RemediationStepType = 'LEARN' | 'GUIDED_PRACTICE' | 'RETRIEVAL' | 'EXPLAIN' | 'TRANSFER' | 'SOLO_VERIFY';
 export type RemediationPathState = 'DETECTED' | 'DIAGNOSING' | 'CONFIRMED' | 'REPAIRING' | 'VERIFYING' | 'RESOLVED' | 'REJECTED';
@@ -131,6 +132,8 @@ export async function startRemediation(diagnosisId: string): Promise<Remediation
     );
   }
 
+  track(diagnosis.studentId, 'remediation_started', { diagnosisId, pathId, pattern, rootCauseConceptId: diagnosis.candidateConceptId });
+
   return (await loadPath(pathId))!;
 }
 
@@ -158,6 +161,11 @@ export async function completeRemediationStep(
   const isLastStep = !nextStep;
   const succeeded = result.success !== false;
 
+  track(path.studentId, 'remediation_step_completed', { pathId: path.id, stepId, stepType: step.step_type, succeeded });
+  if (step.step_type === 'SOLO_VERIFY') {
+    track(path.studentId, 'solo_verification_completed', { pathId: path.id, stepId, succeeded });
+  }
+
   if (isLastStep) {
     const newState: RemediationPathState = succeeded ? 'RESOLVED' : 'REPAIRING';
     await db.query(
@@ -168,6 +176,8 @@ export async function completeRemediationStep(
       // Verification failed -- reopen the SOLO_VERIFY step itself for
       // a retry rather than silently declaring victory.
       await db.query(`UPDATE remediation_steps SET status = 'active', completed_at = NULL WHERE id = $1`, [stepId]);
+    } else {
+      track(path.studentId, 'remediation_completed', { pathId: path.id, rootCauseConceptId: path.rootCauseConceptId });
     }
   } else {
     await db.query(`UPDATE remediation_steps SET status = 'active' WHERE id = $1`, [nextStep.id]);

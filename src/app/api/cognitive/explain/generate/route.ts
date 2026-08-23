@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { generateExplainPrompt, type ExplainActivityType } from '@/services/explain-defend.service';
+import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       validated.activityType as ExplainActivityType,
       validated.language || 'en'
     );
+    track(validated.studentId, 'explain_defend_started', { conceptId: validated.conceptId, activityType: validated.activityType });
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {

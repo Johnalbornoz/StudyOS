@@ -19,6 +19,7 @@ import {
   type ConceptRelationship,
 } from './concept-graph.service';
 import type { ErrorType } from './error-intelligence.service';
+import { track } from '@/lib/analytics';
 
 export type DiagnosisState = 'SUSPECTED' | 'LIKELY' | 'DIAGNOSIS_REQUIRED' | 'CONFIRMED' | 'REJECTED';
 export type DiagnosticCheckOutcome = 'CONFIRMED' | 'REJECTED' | 'INCONCLUSIVE';
@@ -184,7 +185,11 @@ export async function detectCognitiveIssue(studentId: string, conceptId: string)
   }
   if (state && state.confidenceCalibration.label === 'OVERCONFIDENT') reasons.push('overconfident');
 
-  return { justified: reasons.length > 0, reasons, dominantErrorType: dominantType, recurrenceCount: count };
+  const signal = { justified: reasons.length > 0, reasons, dominantErrorType: dominantType, recurrenceCount: count };
+  if (signal.justified) {
+    track(studentId, 'cognitive_issue_detected', { conceptId, reasons, recurrenceCount: count });
+  }
+  return signal;
 }
 
 /**
@@ -320,6 +325,13 @@ export async function resolveDiagnosticCheck(
      WHERE id = $1`,
     [diagnosisId, newState, JSON.stringify({ diagnosticCheck: { correctCount, totalCount, outcome } })]
   );
+  track(diagnosis.studentId, outcome === 'CONFIRMED' ? 'root_cause_confirmed' : 'root_cause_rejected', {
+    diagnosisId,
+    candidateConceptId: diagnosis.candidateConceptId,
+    targetConceptId: diagnosis.targetConceptId,
+    correctCount,
+    totalCount,
+  });
 
   return { diagnosis: { ...diagnosis, state: newState }, outcome };
 }

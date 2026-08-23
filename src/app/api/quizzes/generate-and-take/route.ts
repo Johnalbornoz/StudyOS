@@ -64,6 +64,7 @@ import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mast
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
 import { completeRemediationStep } from '@/services/remediation.service';
+import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
 async function resolveLanguageForSubject(subjectId: string, studentId: string) {
@@ -399,6 +400,10 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       conceptIds
     );
 
+    if (validated.quizMode === 'diagnostic_check') {
+      track(validated.studentId, 'diagnostic_check_started', { quizId, conceptId: primaryConceptId });
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -666,7 +671,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       const bucket = byConcept.get(quizSession.conceptId || '');
       if (bucket) {
         const resolved = await resolveDiagnosticCheck(validated.diagnosisId, bucket.correct, bucket.total).catch(() => null);
-        if (resolved) diagnosticOutcome = { state: resolved.diagnosis.state, outcome: resolved.outcome };
+        if (resolved) {
+          diagnosticOutcome = { state: resolved.diagnosis.state, outcome: resolved.outcome };
+          track(validated.studentId, 'diagnostic_check_completed', {
+            diagnosisId: validated.diagnosisId,
+            outcome: resolved.outcome,
+            correctCount: bucket.correct,
+            totalCount: bucket.total,
+          });
+        }
       }
     }
 

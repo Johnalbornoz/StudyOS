@@ -8,6 +8,7 @@
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { track } from '@/lib/analytics';
 
 export interface MisconceptionSignature {
   id: string;
@@ -83,6 +84,7 @@ export async function recordStudentMisconception(
        evidence = COALESCE(student_misconceptions.evidence, '[]'::jsonb) || $3::jsonb`,
     [studentId, signatureId, JSON.stringify(evidenceRef ? [evidenceRef] : [])]
   );
+  track(studentId, 'misconception_detected', { signatureId });
 }
 
 /** occurrence_count >= 2: a misconception seen only once isn't a "recurring" pattern yet. Feeds Improve v2 and the diagnosis/NBA v2 signals. */

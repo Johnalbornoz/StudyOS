@@ -4,6 +4,7 @@ import { evaluateExplanation, rubricScorePercent } from '@/services/explain-defe
 import { updateMastery } from '@/services/mastery.service';
 import { classifyMisconception, recordStudentMisconception } from '@/services/misconception.service';
 import { completeRemediationStep } from '@/services/remediation.service';
+import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -68,6 +69,8 @@ export async function POST(request: NextRequest) {
         console.error('Failed to complete remediation step:', err)
       );
     }
+
+    track(validated.studentId, 'explain_defend_completed', { conceptId: validated.conceptId, scorePercent, misconceptionDetected: rubric.misconceptionDetected });
 
     return NextResponse.json({
       success: true,
