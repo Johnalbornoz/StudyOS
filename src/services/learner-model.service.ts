@@ -477,6 +477,44 @@ export async function getLearnerConceptState(studentId: string, conceptId: strin
   };
 }
 
+export interface ConceptEvidenceHistoryItem {
+  timestamp: string;
+  sourceType: string;
+  result: 'correct' | 'partial' | 'incorrect';
+  scorePercent: number | null;
+  learningMode: 'SOLO' | 'COACH' | 'AI_NATIVE' | null;
+  hintsUsed: number;
+}
+
+/**
+ * Every individual quiz/exam attempt recorded for a concept, most
+ * recent first -- the raw event log behind the aggregate counts in
+ * "Why StudyUS thinks this". Distinct from that summary: this is for
+ * a student who wants to see each attempt, not just a total.
+ */
+export async function getConceptEvidenceHistory(
+  studentId: string,
+  conceptId: string,
+  limit: number = 20
+): Promise<ConceptEvidenceHistoryItem[]> {
+  const rows = await db.query(
+    `SELECT timestamp, source_type, result, score_percent, learning_mode, hints_used
+     FROM learning_evidence
+     WHERE student_id = $1 AND concept_id = $2
+     ORDER BY timestamp DESC
+     LIMIT $3`,
+    [studentId, conceptId, limit]
+  );
+  return rows.rows.map((r) => ({
+    timestamp: r.timestamp,
+    sourceType: r.source_type,
+    result: r.result,
+    scorePercent: r.score_percent !== null ? Number(r.score_percent) : null,
+    learningMode: r.learning_mode,
+    hintsUsed: Number(r.hints_used || 0),
+  }));
+}
+
 export interface ConceptEvidenceSummary {
   totalAttempts: number;
   correctAttempts: number;
