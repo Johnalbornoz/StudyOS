@@ -12,6 +12,8 @@ import { getStudentStreak } from '@/services/gamification.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import OnboardingChecklist from './OnboardingChecklist';
+import AcademicProfileCTA from './AcademicProfileCTA';
+import { getAcademicProfile } from '@/services/academic-profile.service';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -101,6 +103,9 @@ export default async function DashboardPage() {
   ];
   const showOnboarding = onboardingSteps.some((s) => !s.done);
 
+  const academicProfile = await getAcademicProfile(studentId).catch(() => null);
+  const showAcademicProfileCTA = !academicProfile?.profileCompleted;
+
   return (
     <div>
       <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
@@ -114,6 +119,15 @@ export default async function DashboardPage() {
 
       {showOnboarding && (
         <OnboardingChecklist title={t['onboarding.title']} steps={onboardingSteps} dismissLabel={t['onboarding.dismiss']} />
+      )}
+
+      {showAcademicProfileCTA && (
+        <AcademicProfileCTA
+          title={t['profile.ctaTitle']}
+          body={t['profile.ctaBody']}
+          buttonLabel={t['profile.ctaButton']}
+          dismissLabel={t['profile.ctaDismiss']}
+        />
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>

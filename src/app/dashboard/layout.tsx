@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
-import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck, CreditCard } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck, CreditCard, GraduationCap } from 'lucide-react';
 import { isAdminEmail } from '@/services/admin.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
@@ -86,6 +87,19 @@ export default async function DashboardLayout({
         />
 
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <Link
+            href="/dashboard/profile"
+            className="nav-link"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              padding: '8px var(--space-3)', borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-secondary)', fontSize: 13.5, fontWeight: 500,
+            }}
+          >
+            <GraduationCap size={16} strokeWidth={2} aria-hidden />
+            {t['profile.navLabel']}
+          </Link>
+
           <LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />
 
           <div
