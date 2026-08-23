@@ -22,11 +22,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const subject = await query(`SELECT id FROM subjects WHERE id = $1 AND student_id = $2`, [id, studentId]);
+  const subject = await query(`SELECT id, name FROM subjects WHERE id = $1 AND student_id = $2`, [id, studentId]);
   if (subject.rowCount === 0) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
   const concepts = await getSubjectConcepts(id, language);
-  return NextResponse.json({ success: true, data: { concepts } });
+  return NextResponse.json({ success: true, data: { concepts, subjectName: subject.rows[0].name } });
 }

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
+import MathAnswerEditor from '@/components/MathAnswerEditor';
+import MathText from '@/components/MathText';
 
 type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
@@ -147,6 +149,7 @@ export default function QuizPage() {
   const [maxQuestions, setMaxQuestions] = useState<number>(MODE_DEFAULT_MAX[modeParam]);
   const allowsTopicSelection = quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation';
   const [subjectConcepts, setSubjectConcepts] = useState<SubjectConcept[]>([]);
+  const [subjectName, setSubjectName] = useState('');
   // A SOLO-mode "Solo Check" on one concept (from Concept Detail) is just
   // cumulative_assessment/exam_simulation pre-scoped to a single concept --
   // no new quiz mode needed, reuses the existing manual-selection path.
@@ -198,12 +201,13 @@ export default function QuizPage() {
         if (!me.studentId) throw new Error('Could not identify the student');
         setStudentId(me.studentId);
 
-        if (allowsTopicSelection) {
-          const conceptsRes = await fetch(
-            `/api/subjects/${subjectId}/concepts?studentId=${me.studentId}&language=${lang.locale || 'en'}`
-          );
-          const conceptsBody = await conceptsRes.json();
-          if (conceptsRes.ok) setSubjectConcepts(conceptsBody.data.concepts || []);
+        const conceptsRes = await fetch(
+          `/api/subjects/${subjectId}/concepts?studentId=${me.studentId}&language=${lang.locale || 'en'}`
+        );
+        const conceptsBody = await conceptsRes.json();
+        if (conceptsRes.ok) {
+          if (allowsTopicSelection) setSubjectConcepts(conceptsBody.data.concepts || []);
+          setSubjectName(conceptsBody.data.subjectName || '');
         }
       } catch (err: any) {
         setError(err.message);
@@ -535,11 +539,11 @@ export default function QuizPage() {
                 <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>{r.question}</p>
                 {r.visualAid && <VisualAidView aid={r.visualAid} />}
                 <div style={{ fontSize: 14, marginBottom: 4 }}>
-                  <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer || '—'}
+                  <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
                 </div>
                 {!r.correct && (
                   <div style={{ fontSize: 14, marginBottom: 4, color: 'var(--success)' }}>
-                    <strong>{t['quiz.correctAnswerLabel']}:</strong> {r.correctAnswer}
+                    <strong>{t['quiz.correctAnswerLabel']}:</strong> <MathText text={r.correctAnswer} />
                   </div>
                 )}
                 <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 8 }}>
@@ -857,15 +861,13 @@ export default function QuizPage() {
         )}
 
         {q.answerFormat === 'text' && (
-          <textarea
+          <MathAnswerEditor
             value={textAnswer}
-            onChange={(e) => setTextAnswer(e.target.value)}
+            onChange={setTextAnswer}
             placeholder={t['quiz.typeAnswer']}
-            rows={4}
-            style={{
-              width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
-              padding: 'var(--space-3)', fontFamily: 'inherit', fontSize: 14, resize: 'vertical',
-            }}
+            subjectName={subjectName}
+            studentId={studentId}
+            locale={locale}
           />
         )}
 
