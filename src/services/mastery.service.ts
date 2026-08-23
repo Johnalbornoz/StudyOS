@@ -17,12 +17,22 @@ import {
 } from '@/lib/algorithms/mastery';
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 
+export type AIAssistanceType =
+  | 'NONE' | 'HINT' | 'MULTIPLE_HINTS' | 'TUTOR_GUIDANCE' | 'TUTOR_EXPLANATION' | 'WORKED_EXAMPLE' | 'OTHER';
+export type LearningMode = 'SOLO' | 'COACH' | 'AI_NATIVE';
+
 export interface MasteryUpdateInput {
   studentId: string;
   conceptId: string;
   subjectId: string;
   evidence: LearningEvidence;
   errorClassification?: string; // Optional: CONCEPTUAL, PROCEDURAL, etc.
+  telemetry?: {
+    activityType?: string; // e.g. 'quiz'
+    learningMode?: LearningMode;
+    hintsUsed?: number;
+    aiAssistanceType?: AIAssistanceType;
+  };
 }
 
 export interface MasteryUpdateResult {
@@ -131,7 +141,7 @@ export async function getOrCreateMasteryRecord(
 export async function updateMastery(
   input: MasteryUpdateInput
 ): Promise<MasteryUpdateResult> {
-  const { studentId, conceptId, subjectId, evidence, errorClassification } = input;
+  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry } = input;
 
   // Step 1: Get or create mastery record
   const masteryRecord = await getOrCreateMasteryRecord(
@@ -274,7 +284,10 @@ export async function updateMastery(
     learningDebtSeverity = severity;
   }
 
-  // Step 8: Store learning evidence (for history + error analysis)
+  // Step 8: Store learning evidence (for history + error analysis, and
+  // for the Learner Model's AI-assistance telemetry -- hints_used/
+  // ai_assistance_type/learning_mode feed Independent Mastery,
+  // Evidence Strength, and Confidence Calibration).
   await db.query(
     `
     INSERT INTO learning_evidence (
@@ -283,10 +296,26 @@ export async function updateMastery(
       source_type,
       result,
       difficulty,
-      timestamp
-    ) VALUES ($1, $2, $3, $4, $5, NOW())
+      timestamp,
+      subject_id,
+      activity_type,
+      learning_mode,
+      hints_used,
+      ai_assistance_type
+    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10)
     `,
-    [studentId, conceptId, evidence.sourceType, evidence.result, evidence.difficulty]
+    [
+      studentId,
+      conceptId,
+      evidence.sourceType,
+      evidence.result,
+      evidence.difficulty,
+      subjectId,
+      telemetry?.activityType ?? null,
+      telemetry?.learningMode ?? null,
+      telemetry?.hintsUsed ?? 0,
+      telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
+    ]
   );
 
   // Step 9: Log a classified error, if this was a wrong/partial answer

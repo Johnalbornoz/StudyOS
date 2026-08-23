@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
-import { getQuizSession } from '@/services/quiz-persistence.service';
+import { getQuizSession, recordHintUsed } from '@/services/quiz-persistence.service';
 import { generateQuestionHint } from '@/services/quiz-generation.service';
 import { z } from 'zod';
 
@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const hints = await generateQuestionHint(question, validated.language);
+    recordHintUsed(validated.quizId, validated.questionIndex).catch((err) =>
+      console.error('Error recording hint usage:', err)
+    );
     return NextResponse.json({ success: true, data: { hints } });
   } catch (error) {
     console.error('Error generating hint:', error);

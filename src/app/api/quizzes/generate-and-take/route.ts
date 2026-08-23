@@ -447,7 +447,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     let correctCount = 0;
     let incorrectCount = 0;
     const review: any[] = [];
-    const byConcept = new Map<string, { correct: number; total: number }>();
+    const byConcept = new Map<string, { correct: number; total: number; questionIndexes: number[] }>();
 
     for (const g of graded) {
       if (!g) continue;
@@ -456,9 +456,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
       if (gradeResult.score >= 0.5) correctCount++;
       else incorrectCount++;
 
-      const bucket = byConcept.get(question.conceptId) || { correct: 0, total: 0 };
+      const bucket = byConcept.get(question.conceptId) || { correct: 0, total: 0, questionIndexes: [] };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
+      bucket.questionIndexes.push(questionIndex);
       byConcept.set(question.conceptId, bucket);
 
       review.push({
@@ -503,6 +504,17 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
     // becomes its evidence, tagged with the quiz mode's real source
     // type (quick_check/topic_practice/cumulative/exam_simulation
     // already carry different weights in the mastery algorithm).
+    // SOLO vs. COACH: cumulative_assessment/exam_simulation already
+    // disable hints entirely (see /api/quizzes/hint), so they're always
+    // an unassisted, "prove what you know" mode; the other two modes
+    // allow help, so they're COACH. AI_NATIVE has no quiz mode mapped
+    // to it yet -- no quiz mode today treats AI as part of the task
+    // itself, so there's nothing to map.
+    const learningMode: 'SOLO' | 'COACH' =
+      quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation'
+        ? 'SOLO'
+        : 'COACH';
+
     const perConceptResults = await Promise.all(
       Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
         const conceptScore = Math.round((bucket.correct / bucket.total) * 100);
@@ -512,11 +524,17 @@ async function handleSubmitQuiz(body: any, userId: string, role: string) {
           sourceType: config.evidenceSource,
           confidenceWeight: 0.9,
         };
+        const hintsUsed = bucket.questionIndexes.filter((i) => quizSession.hintsUsedQuestions.includes(i)).length;
         const masteryResult = await updateMastery({
           studentId: validated.studentId,
           conceptId,
           subjectId: quizSession.subjectId,
           evidence,
+          telemetry: {
+            activityType: 'quiz',
+            learningMode,
+            hintsUsed,
+          },
         });
         return {
           conceptId,

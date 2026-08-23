@@ -23,6 +23,7 @@ export interface QuizSession {
   createdAt: Date;
   expiresAt: Date;
   status: 'active' | 'completed' | 'expired';
+  hintsUsedQuestions: number[];
 }
 
 /**
@@ -135,6 +136,25 @@ export async function completeQuiz(quizId: string): Promise<boolean> {
 }
 
 /**
+ * Records that a hint was requested for a specific question, so
+ * submission-time telemetry (learning_evidence.hints_used) knows which
+ * concepts got assisted. Idempotent -- requesting a hint twice for the
+ * same question doesn't double-count.
+ */
+export async function recordHintUsed(quizId: string, questionIndex: number): Promise<void> {
+  await db.query(
+    `
+    UPDATE quiz_sessions
+    SET hints_used_questions = (
+      SELECT ARRAY(SELECT DISTINCT unnest(hints_used_questions || $2::int[]))
+    )
+    WHERE id = $1
+    `,
+    [quizId, [questionIndex]]
+  );
+}
+
+/**
  * Get quiz session metadata
  */
 export async function getQuizSession(quizId: string): Promise<QuizSession | null> {
@@ -143,7 +163,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       `
       SELECT id, student_id, concept_id, subject_id,
              questions, language, status, created_at, expires_at,
-             quiz_mode, concept_ids
+             quiz_mode, concept_ids, hints_used_questions
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -168,6 +188,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
       status: row.status,
+      hintsUsedQuestions: row.hints_used_questions || [],
     };
   } catch (error) {
     console.error('Error getting quiz session:', error);
