@@ -35,6 +35,8 @@ import { generateTransferActivity, evaluateTransferResponse, getTransferScore } 
 import { getOrCreateSignature, recordStudentMisconception, getRecurringMisconceptions } from '@/services/misconception.service';
 import { getTodayPlan, getBestNextAction } from '@/services/today-plan.service';
 import { getActiveValidationCycle, getKVR14, getTimeToMastery } from '@/services/validation-cycle.service';
+import { recordExamResult } from '@/services/exam-result.service';
+import { mapAssessmentConceptCoverage, detectCalibrationConflict, getCalibrationConflicts } from '@/services/external-assessment.service';
 
 let passCount = 0;
 let failCount = 0;
@@ -514,6 +516,70 @@ async function scenarioValidationFailure() {
 }
 
 /**
+ * SCENARIO E -- the mandatory Phase 2.2C External Validation flow: a
+ * concept with strong internal Understanding (from real Explain &
+ * Defend evidence) disagrees with a genuinely poor real school exam
+ * result. Uses the existing exam-result.service.ts (Phase 1) to record
+ * the exam -- real reuse, not a parallel external-assessment path --
+ * then confirms the calibration conflict this creates never touches
+ * Knowledge State itself, either before or after being detected.
+ */
+async function scenarioExternalValidation() {
+  section('SCENARIO E: Phase 2.2C external validation (calibration conflict)');
+  const studentId = await makeScratchStudent('external_validation');
+  const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, external validation)');
+  const conceptId = await makeScratchConcept(subjectId, `centripetal_force_ext_${RUN_ID}`, 'Centripetal Force');
+
+  // Strong internal Understanding, established via real Explain & Defend evidence
+  // (Understanding prioritizes EXPLANATION evidence over general quiz evidence,
+  // so this stays high regardless of whatever the exam recalibration below does).
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 92, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 90, 'NONE');
+
+  const beforeExam = await getConceptKnowledgeState(studentId, conceptId);
+  assert(!!beforeExam && beforeExam.understandingScore !== null && beforeExam.understandingScore >= 80, `internal Understanding is strong before any external evidence exists (got ${beforeExam?.understandingScore})`);
+
+  // A real, poor school exam result -- reusing the existing (Phase 1)
+  // exam-result.service.ts rather than a parallel external-assessment path.
+  // Note: recordExamResult itself recalibrates Knowledge State via its own
+  // pre-existing updateMastery call (documented, known Phase 1 behavior --
+  // see the commit introducing this module) -- that expected write is why
+  // the "no write" check below is taken right before/after
+  // detectCalibrationConflict specifically, not around recordExamResult.
+  const occurrence = await db.query(
+    `INSERT INTO assessment_occurrences (subject_id, scheduled_date, status, topics) VALUES ($1, CURRENT_DATE, 'expected', $2) RETURNING id`,
+    [subjectId, [conceptId]]
+  );
+  const occurrenceId = occurrence.rows[0].id;
+  await recordExamResult({ occurrenceId, studentId, score: 40, maxScore: 100 });
+
+  // Explicit concept coverage mapping -- never auto-inferred from the topics array.
+  await mapAssessmentConceptCoverage(occurrenceId, [{ conceptId, weight: 1.0, mappingConfidence: 0.9 }]);
+
+  const beforeConflictCheck = await getConceptKnowledgeState(studentId, conceptId);
+  const conflict = await detectCalibrationConflict(studentId, conceptId);
+  assert(conflict !== null, 'a genuine internal/external disagreement produces a real calibration conflict');
+  assert(!!conflict && conflict.externalScore === 40, `external score matches the real recorded exam percentage (got ${conflict?.externalScore})`);
+  assert(!!conflict && conflict.conflictMagnitude >= 20, `conflict magnitude reflects a genuine disagreement (got ${conflict?.conflictMagnitude})`);
+  assert(!!conflict && conflict.possibleInterpretations.includes('INTERNAL_OVERESTIMATION'), `tagged with a real interpretation (got ${conflict?.possibleInterpretations})`);
+
+  const afterConflictCheck = await getConceptKnowledgeState(studentId, conceptId);
+  assert(
+    !!beforeConflictCheck && !!afterConflictCheck && afterConflictCheck.understandingScore === beforeConflictCheck.understandingScore,
+    `detecting the conflict never changed the concept's internal Understanding score (before ${beforeConflictCheck?.understandingScore}, after ${afterConflictCheck?.understandingScore})`
+  );
+  assert(
+    !!beforeConflictCheck && !!afterConflictCheck && new Date(afterConflictCheck.updatedAt).getTime() === new Date(beforeConflictCheck.updatedAt).getTime(),
+    'Knowledge State\'s own updated_at is untouched -- detectCalibrationConflict truly never writes to it'
+  );
+
+  const conflicts = await getCalibrationConflicts(studentId);
+  assert(conflicts.some((c) => c.conceptId === conceptId), 'the conflict is readable back via getCalibrationConflicts');
+
+  return { studentId, subjectId, occurrenceId };
+}
+
+/**
  * SCENARIO B -- the mandatory REJECTION variant: the first hypothesis
  * is diagnostically tested and REJECTED, so the engine must move to
  * the next-ranked hypothesis instead of stopping.
@@ -561,6 +627,8 @@ async function cleanup(studentIds: string[]) {
   section('CLEANUP');
   for (const studentId of studentIds) {
     await db.query(`DELETE FROM analytics_events WHERE student_id = $1`, [studentId]);
+    await db.query(`DELETE FROM calibration_conflicts WHERE student_id = $1`, [studentId]);
+    await db.query(`DELETE FROM assessment_results WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM validation_events WHERE validation_cycle_id IN (SELECT id FROM validation_cycles WHERE student_id = $1)`, [studentId]);
     await db.query(`DELETE FROM validation_cycles WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM concept_knowledge_state WHERE student_id = $1`, [studentId]);
@@ -582,6 +650,8 @@ async function cleanup(studentIds: string[]) {
         [subjectId]
       );
       await db.query(`DELETE FROM concept_localizations WHERE concept_id IN (SELECT id FROM concepts WHERE subject_id = $1)`, [subjectId]);
+      await db.query(`DELETE FROM assessment_concept_coverage WHERE concept_id IN (SELECT id FROM concepts WHERE subject_id = $1)`, [subjectId]);
+      await db.query(`DELETE FROM assessment_occurrences WHERE subject_id = $1`, [subjectId]);
       await db.query(`DELETE FROM concepts WHERE subject_id = $1`, [subjectId]);
     }
     await db.query(`DELETE FROM subjects WHERE student_id = $1`, [studentId]);
@@ -606,6 +676,8 @@ async function main() {
     createdStudentIds.push(c.studentId);
     const d = await scenarioValidationFailure();
     createdStudentIds.push(d.studentId);
+    const e = await scenarioExternalValidation();
+    createdStudentIds.push(e.studentId);
   } finally {
     await cleanup(createdStudentIds);
   }
