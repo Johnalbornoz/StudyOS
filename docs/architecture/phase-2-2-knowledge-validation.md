@@ -1,15 +1,14 @@
-# Phase 2.2 — Knowledge Validation Architecture (Technical Design)
+# Phase 2.2 — Knowledge Validation Architecture (Technical Design & Final Architecture)
 
-**Status:** Design for 2.2A/B/C. 2.2A is implemented against this design; 2.2B/C are designed but not yet implemented (gated — see §0).
-**Written before implementation**, per this phase's own rule ("do not start implementation before the technical design exists"). Section 2.2A describes what was actually built; 2.2B/C describe what is planned and will be revised if reality diverges when they're implemented.
+**Status:** Frozen — Phase 2.2 (A, B, and C) is implemented, tested, and closed. This document was originally written before implementation began, per this phase's own governance rule; §17/§18 (2.2B/2.2C) have since been rewritten to describe the actual shipped code, per "documentation must describe actual code, not intended code."
 
 ## 0. Gate structure
 
-Phase 2.2 ships in three internally-gated stages. Each requires the previous to pass before starting:
+Phase 2.2 shipped in three internally-gated stages, each requiring the previous to pass before starting — all three passed:
 
-1. **2.2A — Knowledge Truth**: what does the evidence say right now? (implemented this pass)
-2. **2.2B — Knowledge Validation Over Time**: does it still hold after time passes? (designed here, not yet built)
-3. **2.2C — External Validation**: do school assessments agree? (designed here, not yet built)
+1. **2.2A — Knowledge Truth**: what does the evidence say right now? (implemented)
+2. **2.2B — Knowledge Validation Over Time**: does it still hold after time passes? (implemented)
+3. **2.2C — External Validation**: do school assessments agree? (implemented)
 
 ## 1. Repository audit (real schema, not assumed)
 
@@ -352,30 +351,36 @@ getSubjectKnowledgeState(studentId, subjectId): Promise<ConceptKnowledgeState[]>
 
 `getStudentKnowledgeState`, `getValidationReadiness` (as a standalone call — 2.2A exposes it as a field on `ConceptKnowledgeState` rather than a separate endpoint, since it's always computed alongside mastery state in the same pass), and everything validation-cycle/KVR/TTM/external-assessment-shaped (§70 of the governing spec) are **2.2B/2.2C service contracts**, specified in §18-19 below for forward reference but not implemented yet.
 
-## 17. 2.2B design (for when 2.2A gates pass — not implemented this pass)
+## 17. 2.2B as built — Validation Cycles, Retention, Decay, KVR-14, Time to Mastery
 
-- `validation_cycles` table, one row per (student, concept) learning-gap episode, `status IN ('OPEN','VALIDATED','DEVELOPING','INTERVENTION_REQUIRED')`, unique **partial** index enforcing at most one row with `status = 'OPEN'` per (student, concept) — the DB-level idempotency guard the spec requires (§35), mirroring the pattern already used for `startRemediation`'s application-level guard (Phase 2 closure gate) but enforced at the schema level too since cycles are the KVR-14 unit of record.
-- Triggers (`triggerType`) reuse existing Phase 2 signals directly: `CONFIRMED_MISCONCEPTION` (a `cognitive_diagnoses` row reaching `CONFIRMED`), `REPEATED_CONCEPTUAL_ERROR` (existing `errors` table recurrence), `APPLICATION_FAILURE`/`TRANSFER_FAILURE` (2.2A's own Application/Transfer scores falling below policy), `KNOWLEDGE_DECAY` (2.2B-only, once decay detection exists). No new trigger-detection engine — these are reads over data 2.2A/Phase 2 already produce.
-- `validation_events` table logs every state transition inside a cycle (mirrors `mastery_events`' existing append-only pattern).
-- KVR-14: `COUNT(cycles WHERE finalOutcome='VALIDATED_MASTERY' AND validatedAt <= validationDeadline) / COUNT(eligible cycles) * 100`. "Eligible" excludes cycles created by scratch/test data (the same `__SCRATCH_*` convention already used for E2E isolation) and requires the cycle to have reached a terminal outcome or its deadline to have passed (an OPEN cycle mid-window is not yet countable in either direction).
-- TTM: `validatedAt - startedAt`, only for cycles with `finalOutcome = 'VALIDATED_MASTERY'`; stored as an interval on the cycle row, aggregable by student/subject/concept via a view, not a separate materialized table initially.
-- Knowledge Decay: evidence-informed only (failed delayed retrieval, rising assistance, returning misconception, failed transfer) — never a scheduled percentage decrement. Detected as part of the projector's regular recalculation once a `VALIDATED_MASTERY` concept's newest evidence would otherwise recompute it below policy.
+`migrations/026_validation_cycles.sql` creates `validation_cycles` (one row per (student, concept) learning-gap episode) and `validation_events` (an append-only transition log, mirroring the existing `mastery_events` pattern). `status IN ('OPEN', 'CLOSED')` is intentionally simpler than the original three-way sketch — the *outcome* (`final_outcome IN ('VALIDATED_MASTERY', 'DEVELOPING', 'INTERVENTION_REQUIRED')`) is a separate column, only populated once a cycle closes. A **partial unique index** (`WHERE status = 'OPEN'`) enforces at most one active cycle per (student, concept) at the database level, not just in application code.
 
-## 18. 2.2C design (for when 2.2B gates pass — not implemented this pass)
+All of this lives in `src/services/validation-cycle.service.ts`:
 
-Reuses **existing** `assessment_results`/`assessment_occurrences` rather than a new `external_assessments` table (§1) — `assessment_occurrences.topics` (`text[]`) is today's only "coverage" signal and has no weight/confidence. 2.2C adds:
+- **`isMeaningfulGap(state)`**: `true` for every `MasteryState` except `UNKNOWN` (mere exposure, nothing to validate yet) and `VALIDATED_MASTERY` (already proven) — including `PROVISIONAL_MASTERY`, which by definition still needs Retention/Transfer proven.
+- **`determineTriggerType(scores, misconceptions, policy)`**: priority-ordered from the real dimension scores the 2.2A projector just computed — a critical misconception first, then a failing Transfer, then a failing Application, then a failing Retention, and `LOW_BASELINE` as the fallback when the gap is simply "not enough evidence yet" (e.g. Independence still needs more samples). `DIAGNOSTIC_FAILURE`/`REPEATED_CONCEPTUAL_ERROR` are valid enum values reserved for a caller with that specific Phase 2 context; this classifier doesn't produce them itself. **A cycle's `trigger_type` is fixed at the moment it opens and is never rewritten** as later evidence changes which dimension is actually failing — a real, observed property confirmed live in the E2E run, not a bug.
+- **`evaluateValidationLifecycle(...)`**: the orchestration step the Knowledge Projector calls after computing its base (2.2A-only) Mastery State. This is the **only** place `AT_RISK` or `INTERVENTION_REQUIRED` ever gets assigned:
+  - A previously-`VALIDATED_MASTERY` concept whose fresh evidence no longer clears policy is **Knowledge Decay** — a new cycle opens (`triggerType: 'KNOWLEDGE_DECAY'`), linked via `reopenedFromCycleId` to the concept's own last validated cycle (found via `getLastValidatedCycle`) **without ever rewriting that old cycle's row** — and the state returned is `AT_RISK`, not a silent `DEVELOPING`.
+  - Reaching `VALIDATED_MASTERY` closes any open cycle for that concept with that outcome.
+  - Any other meaningful gap with no open cycle yet opens one, classified via `determineTriggerType`.
+  - **Nothing here is time-based** — the only thing that ever opens/closes/reopens a cycle is a *change in the evidence-computed base state*; a concept that stays `VALIDATED_MASTERY` forever never gets touched, no matter how much wall-clock time passes.
+- **`resolveIfExpired` / `getActiveValidationCycle` / `getActiveValidationCycles`**: lazy resolve-on-read for a cycle whose `validation_deadline` has already passed — the same pattern this codebase already uses for `learning_debt`. An expired cycle **always** resolves to a real `determineExpiredCycleOutcome(priorFailedCycleCount, hadEvidence)`: `INTERVENTION_REQUIRED` once 2+ prior cycles on that same concept already failed (persistent difficulty, not a single missed window), otherwise `DEVELOPING` — with the reason distinguishing `INSUFFICIENT_VALIDATION_EVIDENCE` from `NOT_YET_VALIDATED`, never a fabricated low score either way. Known, accepted limitation: this only runs when something *reads* the cycle (a fresh projector run, or a direct query) — a concept the student never revisits again sits `OPEN` past its deadline until read, exactly like `learning_debt`'s existing resolve-on-read behavior. No scheduler/cron was introduced; Phase 3 owns the student's actual daily engagement.
+- **`getKVR14(studentId)`**: `COUNT(status='CLOSED' AND final_outcome='VALIDATED_MASTERY' AND validated_at <= validation_deadline) / COUNT(status='CLOSED') * 100`. `validated_at` is only ever set inside the success path (never inside the expiry path), so "late validation" structurally cannot enter the numerator. `null` (not `0`) with zero eligible cycles.
+- **`getTimeToMastery(studentId)`**: average of `validated_at - started_at` across every `VALIDATED_MASTERY` cycle only; `null` with none yet.
+- **`getConceptsAtRisk` / `getInterventionRequiredConcepts` / `getValidationDeadlines`**: thin reads over `concept_knowledge_state`/`validation_cycles`, exposed for Phase 3's future decision context.
 
-```sql
-CREATE TABLE IF NOT EXISTS assessment_concept_coverage (
-  assessment_occurrence_id UUID NOT NULL REFERENCES assessment_occurrences(id),
-  concept_id UUID NOT NULL REFERENCES concepts(id),
-  weight NUMERIC NOT NULL DEFAULT 1.0,
-  mapping_confidence NUMERIC NOT NULL DEFAULT 0.5,
-  PRIMARY KEY (assessment_occurrence_id, concept_id)
-);
-```
+## 18. 2.2C as built — External Validation (Calibration Conflicts)
 
-External evidence never overwrites `concept_knowledge_state` directly. A significant gap between internal Knowledge State and a high-confidence, well-covered external result produces a `calibration_conflicts` row (student, concept, internal score, external score, mapping confidence, possible-interpretation tags) — Phase 2.2C records the conflict; deciding what to do about it is explicitly Phase 3's job (§77 of the governing spec).
+`migrations/027_external_validation.sql` reuses the **existing** `assessment_results`/`assessment_occurrences` tables (confirmed via direct schema audit before writing any code) rather than a new `external_assessments` table, and adds `assessment_concept_coverage` (explicit weight + mapping confidence per concept — `assessment_occurrences.topics`, a flat `text[]`, isn't precise enough to trust unattended, so this is never auto-inferred from it) and `calibration_conflicts`.
+
+`src/services/external-assessment.service.ts`:
+
+- **`mapAssessmentConceptCoverage(occurrenceId, mappings)`**: persists exact, caller-supplied weight/confidence per concept.
+- **`getExternalScoreForConcept(studentId, conceptId)`**: the most recent mapped assessment result for a concept; `null` with no mapping, never a fabricated score.
+- **`detectCalibrationConflict(studentId, conceptId)`**: compares the concept's current internal **Understanding** (2.2A's own dimension — never re-derived here) against its weighted external score. Records a `calibration_conflicts` row only when they disagree by more than a threshold (20 points); agreement is not logged. **Never writes to `concept_knowledge_state` or `mastery_records`, either way** — confirmed live in the E2E run by snapshotting Knowledge State immediately before/after the call and asserting it is byte-for-byte unchanged.
+- **`interpretCalibrationConflict(...)`**: deterministic tags, data-quality caveats always checked first (`LOW_MAPPING_CONFIDENCE`, `COVERAGE_MISMATCH`) before any directional read (`INTERNAL_OVERESTIMATION` + `POSSIBLE_TRANSFER_WEAKNESS` only when real Transfer evidence actually supports that read, vs. `EXTERNAL_STRONGER_THAN_INTERNAL`).
+
+**Real finding from the pre-implementation audit, documented rather than silently carried forward:** `src/services/exam-result.service.ts` (pre-existing, Phase 1) already applies one overall exam percentage **uniformly** to every concept an exam covers, via its own call to `updateMastery` — precisely the "blind score overwrite" pattern this phase's own governing spec warns against, and (since 2.2A's projector hook fires on every `updateMastery` call) that uniform score does flow into each concept's Knowledge State too. This is **existing Phase 1 behavior that predates Phase 2.2 entirely**, not something 2.2C introduces — and redesigning it is explicitly out of scope ("do not redesign Phase 1"). 2.2C adds a separate, additive, opt-in analysis layer (coverage weighting + calibration conflict detection) alongside it; it does not change what `recordExamResult` does today. Flagged here as known technical debt for whenever Phase 1's exam recalibration itself is revisited — not a 2.2C blocker.
 
 ## 19. Migration / backfill strategy
 
@@ -387,4 +392,11 @@ External evidence never overwrites `concept_knowledge_state` directly. A signifi
 
 ## 21. Phase 3 boundary
 
-Phase 2.2 (once 2.2A/B/C all land) exposes a normalized decision context — `mastery_state`, the five dimension scores, misconception counts, `validation_readiness`, `next_review_at`/`next_validation_at` — via `getConceptKnowledgeState`. Phase 3 (not started, not designed here) is what turns that into a schedule, a priority, a daily plan. 2.2A/B/C never orchestrate the student's calendar, never balance workload across subjects, never promise a grade.
+Phase 2.2, now that 2.2A/B/C have all landed, exposes a normalized decision context via `getConceptKnowledgeState` (`mastery_state`, the five dimension scores, misconception counts, `validation_readiness`) plus `validation-cycle.service.ts`'s `getActiveValidationCycles`/`getConceptsAtRisk`/`getInterventionRequiredConcepts`/`getValidationDeadlines`/`getKVR14`/`getTimeToMastery` and `external-assessment.service.ts`'s `getCalibrationConflicts`. Phase 3 (not started, not designed here) is what turns all of that into a schedule, a priority, a daily plan, and a response to a calibration conflict. Phase 2.2 never orchestrates the student's calendar, never balances workload across subjects, never promises a grade, and never decides what to do about a recorded conflict.
+
+## 22. Final verification (as run)
+
+- 219 unit tests (Vitest) across 16 files — every pure classification/lifecycle/calibration function covered directly, including the exact "no compensating average" and "critical misconception blocks validation" cases from the governing spec.
+- 83 live E2E assertions (`npm run test:e2e`, `scripts/e2e-cognitive-loop.ts`) against the real database: the original Phase 2 confirm/rejection flows (unaffected), the 2.2A Knowledge State checks, the 2.2B success golden path (Validated Mastery, KVR-14, Time to Mastery all real, non-fabricated numbers) and failure golden path (genuine Retention/Transfer failure, an explicit deadline resolution to `DEVELOPING`), and the 2.2C external-validation golden path (a real calibration conflict that provably never touches Knowledge State). Self-verifying zero scratch-data residue on every run.
+- `tsc --noEmit`, `next build`: clean. i18n parity: 604 keys × 5 locales, 0 missing/extra.
+- Two real, non-obvious bugs were found and fixed by these tests during this pass, both documented in their commit messages: a test that mistook a cycle's fixed-at-open `triggerType` for a live re-evaluation, and a `Date` reference-equality comparison (`===` on two distinct `Date` objects representing the same instant) that made a "nothing changed" assertion fail even though nothing had.
