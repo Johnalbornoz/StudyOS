@@ -1,6 +1,6 @@
 # Exam Readiness Scoring
 
-**Phase 6 of StudyOS** — Predict exam performance and identify preparation gaps.
+**Phase 6 of StudyUS** — Predict exam performance and identify preparation gaps.
 
 ## Overview
 

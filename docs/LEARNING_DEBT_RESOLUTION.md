@@ -1,6 +1,6 @@
 # Learning Debt Resolution - Phase 4
 
-**Phase 4 of StudyOS** — Automatically resolve learning debt when students master concepts.
+**Phase 4 of StudyUS** — Automatically resolve learning debt when students master concepts.
 
 ## Overview
 

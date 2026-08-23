@@ -18,7 +18,7 @@ Unlike traditional "you failed, retry" systems, Learning Debt is **persistent** 
 Students forget previously-learned material. Without tracking, they arrive at exams with knowledge gaps they thought they fixed weeks ago.
 
 ### The Solution
-StudyOS detects knowledge gaps early and forces reinforcement into study plans until proven stable.
+StudyUS detects knowledge gaps early and forces reinforcement into study plans until proven stable.
 
 ---
 

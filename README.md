@@ -1,10 +1,9 @@
-<<<<<<< HEAD 1.0
-# StudyOS AI - Adaptive Learning Operating System
+# StudyUS - Adaptive Learning Operating System
 
-**Provisional Name:** StudyOS AI  
-**Status:** Phase 1 - Architecture Complete  
-**Last Updated:** 2026-08-20  
+**Status:** Phase 1 - Architecture Complete
+**Last Updated:** 2026-08-20
 **Demo Student:** Sofia
+**Formerly known as:** StudyOS AI (original working name during early architecture)
 
 ---
 
@@ -19,7 +18,7 @@
 - Content Intelligence Pipeline
 - All Major Algorithms
 
-📍 **Location:** `/Users/jalbornoz/PROYECTOS/StudyOS AI/docs/`
+📍 **Location:** `docs/`
 
 **Files:**
 - `PHASE_1_ARCHITECTURE.md` — Complete 100KB architecture document (2,975 lines)
@@ -87,24 +86,24 @@ Used for end-to-end testing throughout development:
 - **Initial State:** Some weak concepts, upcoming exams
 
 Sofia's complete flow tests:
-✓ Content upload → Concept extraction  
-✓ Study plan generation → Daily sessions  
-✓ Quiz completion → Mastery update  
-✓ Exam rescheduling → Automatic replanning  
-✓ Real exam result → Analysis & adaptation  
-✓ Language switching → Knowledge preserved  
+✓ Content upload → Concept extraction
+✓ Study plan generation → Daily sessions
+✓ Quiz completion → Mastery update
+✓ Exam rescheduling → Automatic replanning
+✓ Real exam result → Analysis & adaptation
+✓ Language switching → Knowledge preserved
 
 ---
 
 ## Stack Overview
 
-**Frontend:** Next.js 14 + React 18 + TypeScript + Tailwind  
-**Backend:** Next.js Server Actions  
-**Database:** Supabase (PostgreSQL + pgvector)  
-**Auth:** Supabase Auth (JWT)  
-**Storage:** Supabase Storage  
-**AI:** Claude (primary) + OpenAI (fallback)  
-**Deployment:** Vercel + Supabase  
+**Frontend:** Next.js 14 + React 18 + TypeScript + Tailwind
+**Backend:** Next.js Server Actions
+**Database:** Supabase (PostgreSQL + pgvector)
+**Auth:** Supabase Auth (JWT)
+**Storage:** Supabase Storage
+**AI:** Claude (primary) + OpenAI (fallback)
+**Deployment:** Vercel + Supabase
 
 ---
 
@@ -126,16 +125,10 @@ See `PROJECT_PLAN.md` for detailed phase breakdown.
 
 All documentation saved to:
 ```
-~/PROYECTOS/StudyOS AI/
-├── docs/
-│   ├── PHASE_1_ARCHITECTURE.md    (100 KB, complete system design)
-│   ├── PROJECT_PLAN.md            (50+ KB, 20-week roadmap)
-│   └── ALGORITHMS.md              (40+ KB, algorithm specs)
-└── README.md                      (this file)
+docs/
+├── PHASE_1_ARCHITECTURE.md    (100 KB, complete system design)
+├── PROJECT_PLAN.md            (50+ KB, 20-week roadmap)
+└── ALGORITHMS.md              (40+ KB, algorithm specs)
 ```
 
 Open any file to start exploring the architecture.
-=======
-# StudyOS
-StudyOS App
->>>>>>> 656fab458baae50f93d6411240166299f644eebe

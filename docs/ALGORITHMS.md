@@ -1,4 +1,4 @@
-# StudyOS AI - Algorithm Specifications
+# StudyUS - Algorithm Specifications
 
 This document provides detailed specifications for all core deterministic algorithms. These are NOT LLM-dependent; they use data-driven formulas.
 
@@ -1030,5 +1030,5 @@ For each algorithm:
 
 **All algorithms are deterministic, testable, and transparent.**
 
-They form the core intelligence of StudyOS without requiring LLM-based decision making.
+They form the core intelligence of StudyUS without requiring LLM-based decision making.
 

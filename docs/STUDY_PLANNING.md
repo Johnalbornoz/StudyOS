@@ -1,6 +1,6 @@
 # Study Planning & Adaptive Scheduling
 
-**Phase 6 of StudyOS** — Generate personalized daily study plans optimized for mastery and exam readiness.
+**Phase 6 of StudyUS** — Generate personalized daily study plans optimized for mastery and exam readiness.
 
 ## Overview
 

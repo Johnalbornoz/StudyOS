@@ -1,4 +1,4 @@
-# StudyOS AI - Project Plan & Implementation Roadmap
+# StudyUS - Project Plan & Implementation Roadmap
 
 **Project Duration:** 20 weeks (estimated)  
 **Team Size:** 1 engineer (as specified)  
@@ -9,7 +9,7 @@
 
 ## Overview
 
-This document breaks down the 10-phase, 20-week implementation roadmap for StudyOS AI MVP.
+This document breaks down the 10-phase, 20-week implementation roadmap for StudyUS MVP.
 
 Each phase includes:
 - Duration

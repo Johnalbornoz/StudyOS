@@ -1,10 +1,10 @@
-# StudyOS AI: Phase 1 – Product & System Architecture
+# StudyUS: Phase 1 – Product & System Architecture
 
 ## A. Product Architecture
 
 ### Core System Overview
 
-StudyOS AI is an **Adaptive Learning Operating System** that functions as an intelligent academic coach with persistent memory of each student's complete learning history. The system continuously manages a feedback loop:
+StudyUS is an **Adaptive Learning Operating System** that functions as an intelligent academic coach with persistent memory of each student's complete learning history. The system continuously manages a feedback loop:
 
 ```
 School Content → Knowledge Extraction → Knowledge Model → Upcoming Exam Detection
@@ -34,7 +34,7 @@ School Content → Knowledge Extraction → Knowledge Model → Upcoming Exam De
 
 ### Key Differentiator
 
-Unlike tutoring platforms that reset knowledge weekly, StudyOS treats academic learning as a **continuous, interconnected process**. The system remembers:
+Unlike tutoring platforms that reset knowledge weekly, StudyUS treats academic learning as a **continuous, interconnected process**. The system remembers:
 - Every concept mastered and when
 - Every mistake made and what caused it
 - Every weakness that needs reinforcement
@@ -1887,7 +1887,7 @@ When RAG retrieves specific material:
   "Explanation based on your class notes from Sept 5"
 
 When AI generates (not from source):
-  "This explanation is provided by StudyOS
+  "This explanation is provided by StudyUS
    (not directly from your textbook)"
 
 Never silently invent sources.

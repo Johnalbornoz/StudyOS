@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Mastery Engine is a **deterministic algorithm** that calculates how well a student knows a concept. It is the foundation of StudyOS - all other systems (study planning, learning debt, exam readiness) depend on accurate mastery scores.
+The Mastery Engine is a **deterministic algorithm** that calculates how well a student knows a concept. It is the foundation of StudyUS - all other systems (study planning, learning debt, exam readiness) depend on accurate mastery scores.
 
 **Key Principle:** Mastery is NEVER calculated by AI prompts. Always by algorithm, from evidence.
 

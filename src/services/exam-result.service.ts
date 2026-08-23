@@ -2,7 +2,7 @@
  * Real exam result cycle.
  *
  * The brief calls this one of the most important interactions in the
- * product: closing the loop between what StudyOS predicted
+ * product: closing the loop between what StudyUS predicted
  * (exam_readiness, cached on the occurrence) and what actually
  * happened at school. It's also the highest-confidence evidence the
  * mastery engine ever sees -- REAL_SCHOOL_EXAM carries full 1.0 weight
