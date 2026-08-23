@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getLearnerConceptState, getConceptEvidenceSummary } from '@/services/learner-model.service';
+import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 
@@ -66,14 +67,19 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [state, evidence, masteryRow] = await Promise.all([
+  const [state, evidence, masteryRow, activeDebt] = await Promise.all([
     getLearnerConceptState(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
       `SELECT last_practiced, next_review_date FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
       [studentId, conceptId]
     ),
+    query(
+      `SELECT id FROM learning_debt WHERE student_id = $1 AND concept_id = $2 AND status IN ('active', 'monitoring')`,
+      [studentId, conceptId]
+    ),
   ]);
+  const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
   if (!state) {
     return (
@@ -222,6 +228,50 @@ export default async function ConceptDetailPage({
             {whyFacts.map((f, i) => (
               <li key={i}>{f}</li>
             ))}
+          </ul>
+        </div>
+      )}
+
+      {debtCriteria && (
+        <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)' }}>
+          <h2 style={{ fontSize: 14, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.debtProgressTitle']}</h2>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+              <span aria-hidden style={{ color: debtCriteria.masteryAbove85.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                {debtCriteria.masteryAbove85.met ? '✓' : '○'}
+              </span>
+              {t['conceptDetail.criterionMastery']} — <span className="tabular">{Math.round(debtCriteria.masteryAbove85.current)}%</span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+              <span aria-hidden style={{ color: debtCriteria.recentScoresAbove80.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                {debtCriteria.recentScoresAbove80.met ? '✓' : '○'}
+              </span>
+              {t['conceptDetail.criterionRecentScores']} —{' '}
+              {debtCriteria.recentScoresAbove80.current !== null ? (
+                <span className="tabular">{Math.round(debtCriteria.recentScoresAbove80.current)}%</span>
+              ) : (
+                <span>
+                  {debtCriteria.recentScoresAbove80.sampleCount}/{debtCriteria.recentScoresAbove80.requiredSamples} —{' '}
+                  {t['conceptDetail.criterionNotEnoughSamples']}
+                </span>
+              )}
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+              <span aria-hidden style={{ color: debtCriteria.retentionProof.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                {debtCriteria.retentionProof.met ? '✓' : '○'}
+              </span>
+              {t['conceptDetail.criterionRetentionProof']} —{' '}
+              <span className="tabular">
+                {Number.isFinite(debtCriteria.retentionProof.daysSinceLastSuccess) ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
+                {t['conceptDetail.criterionDaysUnit']}
+              </span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+              <span aria-hidden style={{ color: debtCriteria.lowForgettingRisk.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                {debtCriteria.lowForgettingRisk.met ? '✓' : '○'}
+              </span>
+              {t['conceptDetail.criterionForgettingRisk']} — <span className="tabular">{Math.round(debtCriteria.lowForgettingRisk.current)}%</span>
+            </li>
           </ul>
         </div>
       )}

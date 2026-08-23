@@ -100,6 +100,15 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
+      {learnerModel.activeLearningDebtCount > 0 && (
+        <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--bg-subtle)' }}>
+          <strong style={{ fontSize: 14 }}>{t['subjectDetail.debtCriteriaTitle']}</strong>
+          <p style={{ margin: '6px 0 0', fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            {t['subjectDetail.debtCriteriaBody']}
+          </p>
+        </div>
+      )}
+
       {concepts.length > 0 && (
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
           <Link href={`/dashboard/quiz?subjectId=${id}&mode=cumulative_assessment`} className="btn btn-secondary">

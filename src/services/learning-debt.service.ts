@@ -13,6 +13,7 @@
 import { db } from '@/lib/db';
 import { calculateDebtSeverity } from '@/lib/algorithms/mastery';
 import { ensureConceptLocalizations } from './localization.service';
+import { getRetention } from './learner-model.service';
 
 export interface LearningDebtRecord {
   id: string;
@@ -227,12 +228,68 @@ export async function updateDebtSeverity(
 /**
  * Check if debt should be resolved
  *
- * Criteria:
+ * Criteria (see computeDebtResolutionCriteria for the shared, testable
+ * version of this same logic, also used to show live progress in the UI):
  * 1. Mastery > 85%
  * 2. Last 3 assessments average > 80%
  * 3. 14+ days since last successful attempt (retention proof)
  * 4. Forgetting risk < 20%
  */
+export interface LearningDebtCriteriaProgress {
+  masteryAbove85: { current: number; threshold: 85; met: boolean };
+  recentScoresAbove80: { current: number | null; threshold: 80; sampleCount: number; requiredSamples: 3; met: boolean };
+  retentionProof: { daysSinceLastSuccess: number; threshold: 14; met: boolean };
+  lowForgettingRisk: { current: number; threshold: 20; met: boolean };
+  allMet: boolean;
+}
+
+export function computeDebtResolutionCriteria(
+  currentMastery: number,
+  recentScores: number[],
+  daysSinceLastSuccess: number,
+  forgettingRisk: number
+): LearningDebtCriteriaProgress {
+  const recentAvg = recentScores.length >= 3 ? recentScores.slice(0, 3).reduce((a, b) => a + b, 0) / 3 : null;
+  const masteryAbove85 = currentMastery > 85;
+  const recentScoresAbove80 = recentAvg !== null && recentAvg > 80;
+  const retentionProof = daysSinceLastSuccess > 14;
+  const lowForgettingRisk = forgettingRisk < 20;
+  return {
+    masteryAbove85: { current: currentMastery, threshold: 85, met: masteryAbove85 },
+    recentScoresAbove80: { current: recentAvg, threshold: 80, sampleCount: recentScores.length, requiredSamples: 3, met: recentScoresAbove80 },
+    retentionProof: { daysSinceLastSuccess, threshold: 14, met: retentionProof },
+    lowForgettingRisk: { current: forgettingRisk, threshold: 20, met: lowForgettingRisk },
+    allMet: masteryAbove85 && recentScoresAbove80 && retentionProof && lowForgettingRisk,
+  };
+}
+
+/**
+ * Live progress toward resolving a specific concept's debt, for
+ * display (Concept Detail's "what's needed to clear this" section).
+ * Null when there's no mastery record yet -- nothing to show.
+ */
+export async function getLearningDebtCriteriaProgress(
+  studentId: string,
+  conceptId: string
+): Promise<LearningDebtCriteriaProgress | null> {
+  const masteryRow = await db.query(
+    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
+    [studentId, conceptId]
+  );
+  const record = masteryRow.rows[0];
+  if (!record) return null;
+
+  const mastery = Number(record.mastery_score);
+  const daysSinceLastSuccess = record.last_practiced
+    ? Math.floor((Date.now() - new Date(record.last_practiced).getTime()) / (1000 * 60 * 60 * 24))
+    : Infinity;
+  const retention = getRetention(mastery, Number(record.confidence_score), record.last_practiced);
+  const forgettingRisk = retention !== null ? 100 - retention : 100;
+
+  const recentScores = await getRecentAssessmentScores(studentId, conceptId, 3);
+  return computeDebtResolutionCriteria(mastery, recentScores, daysSinceLastSuccess, forgettingRisk);
+}
+
 export async function checkAndResolveDebt(
   studentId: string,
   conceptId: string,
@@ -254,23 +311,9 @@ export async function checkAndResolveDebt(
       3
     );
 
-    // Check resolution criteria
-    const criteria = {
-      masteryAbove85: currentMastery > 85,
-      recentScoresAbove80:
-        recentScores.length >= 3 &&
-        recentScores.slice(0, 3).reduce((a, b) => a + b, 0) / 3 > 80,
-      retentionProof: daysSinceLastSuccess > 14,
-      lowForgettingRisk: forgettingRisk < 20,
-    };
+    const criteria = computeDebtResolutionCriteria(currentMastery, recentScores, daysSinceLastSuccess, forgettingRisk);
 
-    const shouldResolve =
-      criteria.masteryAbove85 &&
-      criteria.recentScoresAbove80 &&
-      criteria.retentionProof &&
-      criteria.lowForgettingRisk;
-
-    if (!shouldResolve) {
+    if (!criteria.allMet) {
       return null;
     }
 
@@ -332,7 +375,14 @@ export async function checkAndResolveDebt(
 }
 
 /**
- * Get recent assessment scores for a concept
+ * Get recent assessment scores for a concept -- the most recent
+ * `limit` scores across both real recorded school exams
+ * (assessment_results, the strongest signal) and meaningful in-app
+ * assessments (learning_evidence.score_percent for
+ * cumulative/exam-simulation/topic-assessment quiz attempts, not
+ * casual practice questions). Previously this only looked at real
+ * exams, which meant a student could ace comprehensive in-app quizzes
+ * indefinitely without ever satisfying this resolution criterion.
  */
 async function getRecentAssessmentScores(
   studentId: string,
@@ -342,17 +392,25 @@ async function getRecentAssessmentScores(
   try {
     const result = await db.query(
       `
-      SELECT percentage
-      FROM assessment_results ar
-      JOIN assessment_occurrences ao ON ar.occurrence_id = ao.id
-      WHERE ar.student_id = $1 AND $2 = ANY(ao.topics)
-      ORDER BY ar.created_at DESC
+      SELECT percentage AS score, created_at AS at FROM (
+        SELECT ar.percentage, ar.created_at
+        FROM assessment_results ar
+        JOIN assessment_occurrences ao ON ar.occurrence_id = ao.id
+        WHERE ar.student_id = $1 AND $2::text = ANY(ao.topics)
+        UNION ALL
+        SELECT le.score_percent AS percentage, le.timestamp AS created_at
+        FROM learning_evidence le
+        WHERE le.student_id = $1 AND le.concept_id = $2::uuid
+          AND le.score_percent IS NOT NULL
+          AND le.source_type IN ('CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT', 'REAL_SCHOOL_EXAM')
+      ) combined
+      ORDER BY at DESC
       LIMIT $3
       `,
       [studentId, conceptId, limit]
     );
 
-    return result.rows.map(r => parseFloat(r.percentage));
+    return result.rows.map(r => parseFloat(r.score));
   } catch (error) {
     console.error('Error fetching recent assessment scores:', error);
     return [];
@@ -390,7 +448,9 @@ export async function getActiveDebts(
         c.canonical_id,
         COALESCE(cl.label, c.canonical_id) AS label,
         mr.mastery_score,
-        mr.attempt_count
+        mr.attempt_count,
+        mr.confidence_score,
+        mr.last_practiced
       FROM learning_debt ld
       JOIN concepts c ON ld.concept_id = c.id
       JOIN subjects s ON s.id = ld.subject_id
@@ -410,7 +470,32 @@ export async function getActiveDebts(
 
     const result = await db.query(query, params);
 
-    return result.rows.map(row => ({
+    // Lazily re-check resolution on every read, the same way
+    // forgetting_risk/retention are always computed fresh rather than
+    // relying on something to have written a new value in the past --
+    // a debt whose evidence quietly cleared all four criteria since
+    // the last time anyone looked gets resolved right now instead of
+    // never (this endpoint was previously the only way to trigger a
+    // resolution check, and nothing in the app ever called it).
+    const stillActive = await Promise.all(
+      result.rows.map(async (row) => {
+        if (row.mastery_score === null) return row; // no mastery record yet, nothing to re-check
+        const mastery = Number(row.mastery_score);
+        const daysSinceLastSuccess = row.last_practiced
+          ? Math.floor((Date.now() - new Date(row.last_practiced).getTime()) / (1000 * 60 * 60 * 24))
+          : Infinity;
+        const retention = getRetention(mastery, Number(row.confidence_score), row.last_practiced);
+        const forgettingRisk = retention !== null ? 100 - retention : 100;
+        const resolved = await checkAndResolveDebt(studentId, row.concept_id, mastery, daysSinceLastSuccess, forgettingRisk).catch(
+          () => null
+        );
+        return resolved ? null : row;
+      })
+    );
+
+    return stillActive
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .map(row => ({
       id: row.id,
       studentId: row.student_id,
       conceptId: row.concept_id,

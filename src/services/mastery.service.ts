@@ -305,8 +305,9 @@ export async function updateMastery(
       learning_mode,
       hints_used,
       ai_assistance_type,
-      confidence_before_answer
-    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11)
+      confidence_before_answer,
+      score_percent
+    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12)
     `,
     [
       studentId,
@@ -320,6 +321,7 @@ export async function updateMastery(
       telemetry?.hintsUsed ?? 0,
       telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
       telemetry?.confidenceBeforeAnswer ?? null,
+      evidence.scorePercent ?? null,
     ]
   );
 

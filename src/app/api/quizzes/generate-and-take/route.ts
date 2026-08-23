@@ -591,6 +591,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           difficulty: 3,
           sourceType: config.evidenceSource,
           confidenceWeight: 0.9,
+          // The real score and how many questions backed it -- a 15/15
+          // (100%) result moves mastery further than a single correct
+          // answer would, instead of both collapsing into the same
+          // "correct" bucket.
+          scorePercent: conceptScore,
+          sampleSize: bucket.total,
         };
         const hintsUsed = bucket.questionIndexes.filter((i) => quizSession.hintsUsedQuestions.includes(i)).length;
         const masteryResult = await updateMastery({

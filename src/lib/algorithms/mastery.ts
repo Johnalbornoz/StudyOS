@@ -21,6 +21,8 @@ export interface LearningEvidence {
   difficulty: number; // 1-5
   sourceType: EvidenceSourceType;
   confidenceWeight?: number; // 0-1, default 1.0
+  scorePercent?: number; // 0-100, the actual raw score behind this evidence (e.g. 100 for "15/15 correct"). Falls back to a value derived from `result` when omitted, so existing callers are unaffected.
+  sampleSize?: number; // how many individual questions/items this evidence event represents. Defaults to 1.
 }
 
 /**
@@ -41,20 +43,31 @@ const EVIDENCE_WEIGHTS: Record<EvidenceSourceType, number> = {
  * Calculate the change in mastery score based on evidence
  *
  * Algorithm:
- * 1. Base impact: +1 for correct, 0 for partial, -1 for incorrect
+ * 1. Base impact: signed, proportional to the actual score (100% -> +1,
+ *    50% -> 0, 0% -> -1), not just a flat "correct/partial/incorrect"
+ *    bucket -- a 100% result carries more weight than a 70% one that
+ *    both happened to clear the "correct" threshold.
  * 2. Multiply by source weight (real exam more influential)
- * 3. Apply difficulty modifier (harder problems matter more)
- * 4. Apply smoothing factor (don't swing wildly)
- * 5. Return delta (change to add to current mastery)
+ * 3. Multiply by a sample-size factor (evidence backed by more
+ *    questions is more trustworthy, so it's allowed to move mastery
+ *    further -- diminishing returns, capped)
+ * 4. Apply difficulty modifier (harder problems matter more)
+ * 5. Apply smoothing factor (don't swing wildly)
+ * 6. Return delta (change to add to current mastery)
  *
- * Example:
- *   Current: 75%, Evidence: PRACTICE_QUIZ, Result: incorrect, Difficulty: 3/5
- *   BaseImpact = -1 × 0.3 (PRACTICE_QUIZ weight) = -0.3
- *   DifficultyMod = (3/5) × 2 = 1.2
- *   Impact = -0.3 × 1.2 = -0.36
- *   Smoothing = 0.85
- *   Delta = -0.36 × 0.85 × 3 = -0.918
- *   NewMastery = 75 - 0.918 ≈ 74
+ * `scorePercent`/`sampleSize` are optional: a caller that only ever
+ * had a coarse result (e.g. one manually-recorded answer) gets exactly
+ * the old behavior (scorePercent derived from `result`, sampleSize 1,
+ * multiplier 1 -- no change at all in that case).
+ *
+ * Example: Current 75%, EXAM_SIMULATION, 15/15 correct (100%), difficulty 3/5
+ *   BaseImpact = (100-50)/50 = 1.0
+ *   SourceWeight (EXAM_SIMULATION) = 0.8 -> 0.8
+ *   SampleSizeFactor = min(5, 1+log2(15)) ≈ 4.9 -> 3.92
+ *   DifficultyMod = (3/5)×2 = 1.2 -> 4.70
+ *   Smoothing ×0.85 -> 4.00
+ *   Confidence (default 1.0) -> 4.00
+ *   NewMastery ≈ 75 + 4.0 = 79 (capped at maxDelta = 3×3.92 ≈ 11.8, not hit here)
  */
 export function calculateMasteryDelta(
   evidence: LearningEvidence,
@@ -66,34 +79,39 @@ export function calculateMasteryDelta(
   // Confidence weight (how confident are we in this grading?)
   const confidence = evidence.confidenceWeight ?? 1.0;
 
-  // 1. Base impact: -1 (incorrect) | 0 (partial) | +1 (correct)
-  let baseImpact: number;
-  if (evidence.result === 'correct') {
-    baseImpact = 1;
-  } else if (evidence.result === 'partial') {
-    baseImpact = 0;
-  } else {
-    baseImpact = -1;
-  }
+  // 1. Base impact, signed and proportional to the actual score.
+  // Falls back to the old flat mapping when no raw score is given, so
+  // this is exactly the previous behavior for any caller that doesn't
+  // pass scorePercent.
+  const scorePercent =
+    evidence.scorePercent ?? (evidence.result === 'correct' ? 100 : evidence.result === 'partial' ? 50 : 0);
+  let baseImpact = (scorePercent - 50) / 50; // 0% -> -1, 50% -> 0, 100% -> +1
 
   // 2. Apply source type weight (real exams more influential)
   const sourceWeight = EVIDENCE_WEIGHTS[evidence.sourceType] ?? 0.5;
   baseImpact *= sourceWeight;
 
-  // 3. Apply difficulty modifier (harder problems matter more)
+  // 3. Apply a sample-size factor: more questions behind this one
+  // evidence event = more trustworthy signal, so it's allowed a bigger
+  // (still bounded) impact. sampleSize 1 -> factor 1 (no change from
+  // before); grows logarithmically, capped at 5x.
+  const sampleSize = Math.max(1, evidence.sampleSize ?? 1);
+  const sampleSizeFactor = Math.min(5, 1 + Math.log2(sampleSize));
+  baseImpact *= sampleSizeFactor;
+
+  // 4. Apply difficulty modifier (harder problems matter more)
   // Difficulty 1 = 0.4× impact, Difficulty 5 = 2.0× impact
   const difficultyModifier = (difficulty / 5) * 2; // 0.4 to 2.0
   let impact = baseImpact * difficultyModifier;
 
-  // 4. Apply smoothing factor (don't swing mastery wildly)
-  // Prevents single answer from changing score >5%
+  // 5. Apply smoothing factor (don't swing mastery wildly)
   const smoothingFactor = 0.85;
   impact *= smoothingFactor;
 
-  // 5. Scale by confidence (low confidence = smaller change)
+  // 6. Scale by confidence (low confidence = smaller change)
   impact *= confidence;
 
-  // 6. Scale by proximity to boundaries
+  // 7. Scale by proximity to boundaries
   // Approaching 100% should increase more slowly
   // Approaching 0% should decrease more slowly
   if (impact > 0 && currentMastery > 80) {
@@ -104,8 +122,10 @@ export function calculateMasteryDelta(
     impact *= 0.7;
   }
 
-  // Final cap: single piece of evidence shouldn't change mastery >3%
-  const maxDelta = 3;
+  // Final cap: scales with the sample-size factor, so a single-question
+  // event keeps the original ±3 cap while a large, strong multi-question
+  // assessment is allowed a proportionally bigger (still bounded) swing.
+  const maxDelta = 3 * sampleSizeFactor;
   return Math.max(-maxDelta, Math.min(maxDelta, impact));
 }
 
