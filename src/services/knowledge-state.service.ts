@@ -121,6 +121,21 @@ export function classifyUnderstanding(rows: EvidenceRow[]): number | null {
 }
 
 /**
+ * Independence: direct reuse of the existing Phase 1 semantics
+ * (getIndependentMastery in learner-model.service.ts) -- average result
+ * over unassisted (ai_assistance_type = 'NONE') evidence only, null
+ * with fewer than 2 samples. Exposed here as a pure function over
+ * already-filtered rows so it's independently testable; the
+ * orchestration below still queries ai_assistance_type = 'NONE'
+ * directly rather than importing the Phase 1 function, to avoid a
+ * second DB round trip for the same rows already loaded.
+ */
+export function classifyIndependence(unassistedRows: EvidenceRow[]): number | null {
+  if (unassistedRows.length < 2) return null;
+  return average(unassistedRows);
+}
+
+/**
  * Application: evidence from quiz modes whose own design intent is
  * testing connections/application across ideas (cumulative_assessment,
  * exam_simulation, topic_assessment), never single-concept practice
@@ -341,28 +356,15 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   }));
 
   const policy = await getActiveMasteryPolicy();
-  const [independentMasteryRows, transferScore, misconceptionCounts] = await Promise.all([
-    db.query(
-      `SELECT result, score_percent FROM learning_evidence
-       WHERE student_id = $1 AND concept_id = $2 AND ai_assistance_type = 'NONE'
-       ORDER BY timestamp DESC LIMIT 10`,
-      [studentId, conceptId]
-    ),
+  const [transferScore, misconceptionCounts] = await Promise.all([
     getTransferScore(studentId, conceptId),
     getMisconceptionCountsForConcept(studentId, conceptId),
   ]);
 
+  const unassistedRows = rows.filter((r) => r.aiAssistanceType === 'NONE');
   const scores: DimensionScores = {
     understanding: classifyUnderstanding(rows),
-    independence:
-      independentMasteryRows.rows.length >= 2
-        ? Math.round(
-            independentMasteryRows.rows.reduce(
-              (sum: number, r: any) => sum + scoreOf({ result: r.result, scorePercent: r.score_percent !== null ? Number(r.score_percent) : null }),
-              0
-            ) / independentMasteryRows.rows.length
-          )
-        : null,
+    independence: classifyIndependence(unassistedRows),
     application: classifyApplication(rows),
     retention: classifyRetention(rows, policy.retentionMinGapDays),
     transfer: transferScore,
