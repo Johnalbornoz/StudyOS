@@ -85,7 +85,9 @@ export default function TransferPage() {
   if (phase === 'loading' || phase === 'error') {
     return (
       <div style={{ maxWidth: 560 }}>
-        <p style={{ color: 'var(--text-muted)' }}>{phase === 'loading' ? t['cognitive.generating'] : t['common.error']}</p>
+        <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>
+          {phase === 'loading' ? t['cognitive.generating'] : t['common.error']}
+        </p>
       </div>
     );
   }
@@ -106,10 +108,13 @@ export default function TransferPage() {
       )}
 
       <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>
+        <p id="transfer-prompt" style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>
         {phase !== 'done' ? (
           <>
+            <label htmlFor="transfer-response" className="sr-only">{t['cognitive.transferTitle']}</label>
             <textarea
+              id="transfer-response"
+              aria-labelledby="transfer-prompt"
               value={response}
               onChange={(e) => setResponse(e.target.value)}
               rows={6}
@@ -125,12 +130,12 @@ export default function TransferPage() {
               disabled={!response.trim() || phase === 'submitting'}
               onClick={submit}
             >
-              {t['cognitive.submitAnswer']}
+              {phase === 'submitting' ? t['cognitive.generating'] : t['cognitive.submitAnswer']}
             </button>
           </>
         ) : (
           result && (
-            <div style={{ marginTop: 'var(--space-2)' }}>
+            <div role="status" aria-live="polite" style={{ marginTop: 'var(--space-2)' }}>
               <div style={{ fontSize: 20, fontWeight: 650, marginBottom: 4, color: resultColor }}>{resultLabel}</div>
               <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{result.feedback}</p>
               <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>

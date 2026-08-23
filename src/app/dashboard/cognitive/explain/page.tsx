@@ -82,7 +82,9 @@ export default function ExplainDefendPage() {
   if (phase === 'loading' || phase === 'error') {
     return (
       <div style={{ maxWidth: 560 }}>
-        <p style={{ color: 'var(--text-muted)' }}>{phase === 'loading' ? t['cognitive.generating'] : t['common.error']}</p>
+        <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>
+          {phase === 'loading' ? t['cognitive.generating'] : t['common.error']}
+        </p>
       </div>
     );
   }
@@ -95,10 +97,13 @@ export default function ExplainDefendPage() {
       <h1 style={{ marginBottom: 'var(--space-6)' }}>{t['cognitive.explainTitle']}</h1>
 
       <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>
+        <p id="explain-prompt" style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>
         {phase !== 'done' ? (
           <>
+            <label htmlFor="explain-response" className="sr-only">{t['cognitive.explainTitle']}</label>
             <textarea
+              id="explain-response"
+              aria-labelledby="explain-prompt"
               value={response}
               onChange={(e) => setResponse(e.target.value)}
               placeholder={t['cognitive.explainPlaceholder']}
@@ -115,12 +120,12 @@ export default function ExplainDefendPage() {
               disabled={!response.trim() || phase === 'submitting'}
               onClick={submit}
             >
-              {t['cognitive.submitAnswer']}
+              {phase === 'submitting' ? t['cognitive.generating'] : t['cognitive.submitAnswer']}
             </button>
           </>
         ) : (
           feedback && (
-            <div style={{ marginTop: 'var(--space-2)' }}>
+            <div role="status" aria-live="polite" style={{ marginTop: 'var(--space-2)' }}>
               <div className="tabular" style={{ fontSize: 28, fontWeight: 650, marginBottom: 4 }}>{feedback.scorePercent}%</div>
               <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{t['cognitive.feedbackTitle']}</p>
               <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{feedback.feedback}</p>
