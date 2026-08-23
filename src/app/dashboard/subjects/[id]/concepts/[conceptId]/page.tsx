@@ -5,6 +5,7 @@ import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getLearnerConceptState, getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
+import { getTransferScore } from '@/services/transfer.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { sourceLabel, resultLabel, resultColor } from '@/lib/concept-evidence-labels';
@@ -68,7 +69,7 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [state, evidence, masteryRow, activeDebt, history] = await Promise.all([
+  const [state, evidence, masteryRow, activeDebt, history, transferScore] = await Promise.all([
     getLearnerConceptState(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -80,6 +81,7 @@ export default async function ConceptDetailPage({
       [studentId, conceptId]
     ),
     getConceptEvidenceHistory(studentId, conceptId, 20),
+    getTransferScore(studentId, conceptId),
   ]);
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
@@ -209,6 +211,12 @@ export default async function ConceptDetailPage({
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.evidenceStrength']}</div>
           <div style={{ fontSize: 20, fontWeight: 650, lineHeight: 1.4 }}>{evidenceStrengthLabel}</div>
+        </div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.transfer']}</div>
+          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
+            {transferScore !== null ? `${Math.round(transferScore)}%` : t['dashboard.notEnoughEvidence']}
+          </div>
         </div>
       </div>
 

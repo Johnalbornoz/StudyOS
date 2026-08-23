@@ -4,9 +4,14 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
 import { getTodayPlan, factsForItem } from '@/services/today-plan.service';
+import { getActiveDiagnoses } from '@/services/cognitive-diagnosis.service';
+import { getRecurringMisconceptions } from '@/services/misconception.service';
+import { getActiveRemediationsWithLabels, remediationStepHref } from '@/services/remediation.service';
+import { getBlockedConceptLabels } from '@/services/concept-graph.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import ErrorPatternList from './ErrorPatternList';
+import StartRemediationButton from './StartRemediationButton';
 import WhyThis from '../WhyThis';
 
 export default async function LearningDebtPage() {
@@ -23,13 +28,22 @@ export default async function LearningDebtPage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
-  const [debts, errorPatterns, todayPlan] = await Promise.all([
+  const [debts, errorPatterns, todayPlan, activeDiagnoses, recurringMisconceptions, activeRemediations] = await Promise.all([
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getErrorPatterns(studentId, undefined, locale).catch(() => []),
     getTodayPlan(studentId, locale).catch(() => ({ critical: [], thisWeek: [], canWait: [], totalConcepts: 0 })),
+    getActiveDiagnoses(studentId).catch(() => []),
+    getRecurringMisconceptions(studentId).catch(() => []),
+    getActiveRemediationsWithLabels(studentId).catch(() => []),
   ]);
   const atRisk = [...todayPlan.critical, ...todayPlan.thisWeek, ...todayPlan.canWait].filter(
     (i) => i.reason === 'forgetting_risk'
+  );
+
+  const remediatedDiagnosisIds = new Set(activeRemediations.map((p) => p.diagnosisId).filter((id): id is string => !!id));
+  const foundationalGaps = activeDiagnoses.filter((d) => d.state === 'CONFIRMED' && !remediatedDiagnosisIds.has(d.id));
+  const foundationalGapsWithAffects = await Promise.all(
+    foundationalGaps.map(async (d) => ({ ...d, affects: await getBlockedConceptLabels(d.candidateConceptId).catch(() => []) }))
   );
 
   return (
@@ -69,6 +83,88 @@ export default async function LearningDebtPage() {
               </Link>
             </div>
           ))}
+        </div>
+      )}
+
+      {foundationalGapsWithAffects.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <h2 style={{ marginBottom: 4 }}>{t['debt.sectionFoundationalGaps']}</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
+            {t['debt.foundationalGapsSubtitle']}
+          </p>
+          <div className="card list-card">
+            {foundationalGapsWithAffects.map((d) => (
+              <div key={d.id} className="list-row">
+                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--error)' }} />
+                <div className="row-main">
+                  <div className="row-title">{d.candidateLabel}</div>
+                  {d.affects.length > 0 && (
+                    <div className="row-sub">
+                      {t['debt.affectsLabel']}: {d.affects.join(', ')}
+                    </div>
+                  )}
+                </div>
+                <StartRemediationButton diagnosisId={d.id} label={t['debt.fixFoundation']} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeRemediations.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <h2 style={{ marginBottom: 4 }}>{t['debt.sectionActiveRepairs']}</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
+            {t['debt.activeRepairsSubtitle']}
+          </p>
+          <div className="card list-card">
+            {activeRemediations.map((p) => {
+              const activeStep = p.steps.find((s) => s.status === 'active');
+              const completedCount = p.steps.filter((s) => s.status === 'completed').length;
+              const href = activeStep ? remediationStepHref(activeStep, { id: p.id, subjectId: p.subjectId }) : null;
+              return (
+                <div key={p.id} className="list-row">
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
+                  <div className="row-main">
+                    <div className="row-title">{p.rootCauseLabel}</div>
+                    <div className="row-sub">
+                      {p.subjectName} · {t['debt.stepOf'].replace('{current}', String(completedCount + 1)).replace('{total}', String(p.steps.length))}
+                    </div>
+                  </div>
+                  {href && (
+                    <Link href={href} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+                      {t['debt.continueRepair']}
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {recurringMisconceptions.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <h2 style={{ marginBottom: 4 }}>{t['debt.sectionRecurringMisconceptions']}</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
+            {t['debt.recurringMisconceptionsSubtitle']}
+          </p>
+          <div className="card list-card">
+            {recurringMisconceptions.map((m) => (
+              <div key={m.signatureId} className="list-row">
+                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
+                <div className="row-main">
+                  <div className="row-title">{m.conceptLabel} · {m.subjectName}</div>
+                  <div className="row-sub">
+                    {m.description} · {m.occurrenceCount} {t['debt.occurrences']}
+                  </div>
+                </div>
+                <Link href={`/dashboard/quiz?subjectId=${m.subjectId}&conceptId=${m.conceptId}&mode=topic_practice`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+                  {t['debt.review']}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

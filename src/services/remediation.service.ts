@@ -191,3 +191,66 @@ export async function getActiveRemediations(studentId: string): Promise<Remediat
 export async function getRemediationPath(pathId: string): Promise<RemediationPath | null> {
   return loadPath(pathId);
 }
+
+export interface RemediationPathWithLabels extends RemediationPath {
+  rootCauseLabel: string;
+  targetLabel: string;
+  subjectId: string;
+  subjectName: string;
+}
+
+/** Adds display labels/subject to each active path -- used only by the Improve page's "Active repairs" section. */
+export async function getActiveRemediationsWithLabels(studentId: string): Promise<RemediationPathWithLabels[]> {
+  const paths = await getActiveRemediations(studentId);
+  if (paths.length === 0) return [];
+  const conceptIds = [...new Set(paths.flatMap((p) => [p.rootCauseConceptId, p.targetConceptId]))];
+  const result = await db.query(
+    `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, c.subject_id, s.name AS subject_name
+     FROM concepts c JOIN subjects s ON s.id = c.subject_id
+     LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id LIMIT 1) cl ON true
+     WHERE c.id = ANY($1)`,
+    [conceptIds]
+  );
+  const rows = new Map(result.rows.map((r) => [r.id, r]));
+  return paths
+    .map((p) => {
+      const rootCause = rows.get(p.rootCauseConceptId);
+      const target = rows.get(p.targetConceptId);
+      if (!rootCause || !target) return null;
+      return {
+        ...p,
+        rootCauseLabel: rootCause.label,
+        targetLabel: target.label,
+        subjectId: rootCause.subject_id,
+        subjectName: rootCause.subject_name,
+      };
+    })
+    .filter((p): p is RemediationPathWithLabels => p !== null);
+}
+
+/**
+ * Where a remediation step's "continue" CTA points -- pure so it stays
+ * in one place instead of duplicated per page. LEARN/GUIDED_PRACTICE
+ * reuse the quiz engine's topic_practice mode, RETRIEVAL reuses
+ * quick_check, SOLO_VERIFY reuses cumulative_assessment scoped to the
+ * one concept; EXPLAIN/TRANSFER go to their own lightweight pages.
+ */
+export function remediationStepHref(
+  step: RemediationStep,
+  path: { id: string; subjectId: string }
+): string {
+  const base = `remediationStepId=${step.id}`;
+  switch (step.stepType) {
+    case 'LEARN':
+    case 'GUIDED_PRACTICE':
+      return `/dashboard/quiz?subjectId=${path.subjectId}&conceptId=${step.conceptId}&mode=topic_practice&${base}`;
+    case 'RETRIEVAL':
+      return `/dashboard/quiz?subjectId=${path.subjectId}&conceptId=${step.conceptId}&mode=quick_check&${base}`;
+    case 'SOLO_VERIFY':
+      return `/dashboard/quiz?subjectId=${path.subjectId}&conceptId=${step.conceptId}&mode=cumulative_assessment&${base}`;
+    case 'EXPLAIN':
+      return `/dashboard/cognitive/explain?conceptId=${step.conceptId}&${base}`;
+    case 'TRANSFER':
+      return `/dashboard/cognitive/transfer?conceptId=${step.conceptId}&${base}`;
+  }
+}

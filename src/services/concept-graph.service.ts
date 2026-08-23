@@ -205,6 +205,25 @@ export async function getLearningUnlockValue(conceptId: string): Promise<Learnin
   return { score: Math.round(blockedCount * 10 * avgConfidence), blockedCount };
 }
 
+/**
+ * Labels for the concepts this concept unlocks -- used only to render
+ * "Affects: X, Y, Z" on the Improve page. Never shown as graph/node
+ * language, just a plain list of concept names.
+ */
+export async function getBlockedConceptLabels(conceptId: string): Promise<string[]> {
+  const unlocked = await getConceptsUnlockedBy(conceptId);
+  if (unlocked.length === 0) return [];
+  const result = await db.query(
+    `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+     FROM concepts c
+     LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id LIMIT 1) cl ON true
+     WHERE c.id = ANY($1)`,
+    [unlocked.map((r) => r.targetConceptId)]
+  );
+  const labels = new Map(result.rows.map((r) => [r.id, r.label]));
+  return unlocked.map((r) => labels.get(r.targetConceptId)).filter((l): l is string => !!l);
+}
+
 interface CandidateConcept {
   id: string;
   label: string;
