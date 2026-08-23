@@ -34,6 +34,7 @@ import { generateExplainPrompt, evaluateExplanation, rubricScorePercent } from '
 import { generateTransferActivity, evaluateTransferResponse, getTransferScore } from '@/services/transfer.service';
 import { getOrCreateSignature, recordStudentMisconception, getRecurringMisconceptions } from '@/services/misconception.service';
 import { getTodayPlan, getBestNextAction } from '@/services/today-plan.service';
+import { getActiveValidationCycle, getKVR14, getTimeToMastery } from '@/services/validation-cycle.service';
 
 let passCount = 0;
 let failCount = 0;
@@ -106,6 +107,52 @@ async function giveWeakEvidence(studentId: string, conceptId: string, subjectId:
       telemetry: { activityType: 'quiz', learningMode: 'COACH', hintsUsed: 0 },
     });
   }
+}
+
+async function giveEvidence(
+  studentId: string,
+  conceptId: string,
+  subjectId: string,
+  sourceType: string,
+  scorePercent: number,
+  aiAssistanceType: 'NONE' | 'HINT' = 'NONE'
+) {
+  await updateMastery({
+    studentId,
+    conceptId,
+    subjectId,
+    evidence: {
+      result: scorePercent >= 70 ? 'correct' : scorePercent >= 50 ? 'partial' : 'incorrect',
+      difficulty: 3,
+      sourceType: sourceType as any,
+      confidenceWeight: 0.9,
+      scorePercent,
+      sampleSize: 4,
+    },
+    telemetry: { activityType: 'quiz', learningMode: aiAssistanceType === 'NONE' ? 'SOLO' : 'COACH', hintsUsed: aiAssistanceType === 'NONE' ? 0 : 1, aiAssistanceType },
+  });
+}
+
+/**
+ * Inserts one evidence row directly with a backdated timestamp -- not
+ * through updateMastery (which always stamps NOW()) -- so a concept's
+ * `first_evidence_at` is genuinely in the past. This lets the rest of
+ * the scenario write "today's" evidence and have it immediately count
+ * toward Retention (real time separation from first exposure), without
+ * the E2E script needing to actually wait days.
+ */
+async function backdateFirstEvidence(
+  studentId: string,
+  conceptId: string,
+  subjectId: string,
+  scorePercent: number,
+  daysAgo: number
+) {
+  await db.query(
+    `INSERT INTO learning_evidence (student_id, concept_id, subject_id, source_type, result, difficulty, score_percent, ai_assistance_type, timestamp)
+     VALUES ($1, $2, $3, 'PRACTICE_QUIZ', $4, 3, $5, 'HINT', NOW() - ($6 || ' days')::interval)`,
+    [studentId, conceptId, subjectId, scorePercent >= 70 ? 'correct' : scorePercent >= 50 ? 'partial' : 'incorrect', scorePercent, daysAgo]
+  );
 }
 
 async function seedErrors(studentId: string, conceptId: string, subjectId: string, count: number) {
@@ -318,6 +365,155 @@ async function scenarioConfirm() {
 }
 
 /**
+ * SCENARIO C -- the mandatory Phase 2.2B success golden path: a
+ * concept whose evidence genuinely earns Validated Mastery. A backdated
+ * baseline establishes real time separation from "today's" evidence, so
+ * later evidence counts as real Retention without the script needing to
+ * wait actual days. Understanding/Independence/Application all clear
+ * policy, Retention (pooled from all time-separated evidence) and
+ * Transfer both come in strong, and there are zero critical
+ * misconceptions -- exactly the brief's "everything lines up" case.
+ */
+async function scenarioValidationSuccess() {
+  section('SCENARIO C: Phase 2.2B success golden path (Validated Mastery)');
+  const studentId = await makeScratchStudent('validation_success');
+  const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, validation)');
+  const conceptId = await makeScratchConcept(subjectId, `centripetal_force_v_${RUN_ID}`, 'Centripetal Force');
+
+  // Baseline, 10 days ago -- weak, and HINT-assisted so it never pollutes Independence.
+  await backdateFirstEvidence(studentId, conceptId, subjectId, 42, 10);
+
+  const cycleAfterBaseline = await getActiveValidationCycle(studentId, conceptId);
+  assert(cycleAfterBaseline === null, 'no Validation Cycle exists yet -- the backdated baseline was written directly, never through the projector');
+
+  // "Today": strong Understanding (Explain & Defend evidence), Independence, and Application.
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 88, 'NONE');
+  const cycleAfterFirstReal = await getActiveValidationCycle(studentId, conceptId);
+  assert(cycleAfterFirstReal !== null, 'a Validation Cycle opens as soon as real evidence produces a meaningful gap (Understanding alone is not enough for Provisional)');
+  assert(cycleAfterFirstReal?.triggerType !== undefined, 'the opened cycle carries a real trigger type');
+
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 88, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 86, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 86, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE');
+
+  // Transfer, reusing Phase 2's real Transfer evidence path (same metadata stamp the real submit route uses).
+  await giveEvidence(studentId, conceptId, subjectId, 'TRANSFER', 78, 'NONE');
+  await db.query(
+    `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || '{"transferDistance":"NEAR","assisted":false}'::jsonb
+     WHERE id = (SELECT id FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER' ORDER BY timestamp DESC LIMIT 1)`,
+    [studentId, conceptId]
+  );
+  // Re-run the projector now that Transfer evidence (and its metadata) is in place.
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 84, 'NONE');
+
+  const finalState = await getConceptKnowledgeState(studentId, conceptId);
+  assert(finalState !== null, 'Concept Knowledge State exists after the full evidence sequence');
+  assert(!!finalState && finalState.understandingScore !== null && finalState.understandingScore >= 80, `Understanding passes policy (got ${finalState?.understandingScore})`);
+  assert(!!finalState && finalState.independenceScore !== null && finalState.independenceScore >= 80, `Independence passes policy (got ${finalState?.independenceScore})`);
+  assert(!!finalState && finalState.applicationScore !== null && finalState.applicationScore >= 75, `Application passes policy (got ${finalState?.applicationScore})`);
+  assert(!!finalState && finalState.retentionScore !== null, `Retention is a real (non-null) value, not "waiting" forever, thanks to the backdated baseline (got ${finalState?.retentionScore})`);
+  assert(!!finalState && finalState.transferScore !== null, `Transfer is a real reused value from Phase 2 (got ${finalState?.transferScore})`);
+  assert(finalState?.criticalMisconceptionCount === 0, 'zero critical misconceptions');
+  assert(finalState?.masteryState === 'VALIDATED_MASTERY', `final Mastery State is VALIDATED_MASTERY (got ${finalState?.masteryState})`);
+  assert(finalState?.validationReadiness === 'READY', `Validation Readiness is READY (got ${finalState?.validationReadiness})`);
+
+  const cycleAfterValidation = await getActiveValidationCycle(studentId, conceptId);
+  assert(cycleAfterValidation === null, 'the Validation Cycle is no longer active -- it closed when Validated Mastery was reached');
+
+  const kvr = await getKVR14(studentId);
+  assert(kvr.eligibleCount >= 1, `KVR-14: at least one eligible (CLOSED) cycle exists (got ${kvr.eligibleCount})`);
+  assert(kvr.validatedCount >= 1, `KVR-14: at least one cycle validated within its deadline (got ${kvr.validatedCount})`);
+  assert(kvr.value === 100, `KVR-14 is 100% for this student (only cycle, and it validated) (got ${kvr.value})`);
+
+  const ttm = await getTimeToMastery(studentId);
+  assert(ttm.count >= 1, 'Time to Mastery has at least one real, validated cycle to average');
+  assert(ttm.averageDays !== null && ttm.averageDays >= 0, `Time to Mastery is a real, non-negative number of days (got ${ttm.averageDays})`);
+
+  return { studentId, subjectId };
+}
+
+/**
+ * SCENARIO D -- the mandatory Phase 2.2B failure golden path: strong
+ * Understanding/Independence/Application, but Retention and Transfer
+ * both genuinely fail policy. The concept must never be silently
+ * declared validated, decay must never be reported for a concept that
+ * was never validated in the first place (that's specifically for a
+ * *regression* from Validated Mastery -- see Scenario C's counterpart
+ * in the unit tests), and once its Validation Cycle's deadline passes
+ * without clearing policy, it must resolve to an explicit DEVELOPING
+ * outcome -- never left as an implicit UNKNOWN.
+ */
+async function scenarioValidationFailure() {
+  section('SCENARIO D: Phase 2.2B failure golden path (never validated, deadline resolves explicitly)');
+  const studentId = await makeScratchStudent('validation_failure');
+  const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, validation failure)');
+  const conceptId = await makeScratchConcept(subjectId, `centripetal_force_f_${RUN_ID}`, 'Centripetal Force');
+
+  await backdateFirstEvidence(studentId, conceptId, subjectId, 42, 10);
+
+  // Strong Understanding, Independence, Application...
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 90, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 90, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 90, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 90, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 85, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 85, 'NONE');
+  // ...but a cluster of weak, HINT-assisted attempts (excluded from Independence, but Retention
+  // pools ALL time-separated evidence regardless of source) drags the real Retention picture down.
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
+  // A poor, assisted Transfer attempt, reusing Phase 2's real Transfer evidence path
+  // (HINT-assisted here so it's excluded from Independence's own pool, same as the
+  // weak PRACTICE_QUESTION cluster above -- only Retention pools every evidence type).
+  await giveEvidence(studentId, conceptId, subjectId, 'TRANSFER', 20, 'HINT');
+  await db.query(
+    `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || '{"transferDistance":"NEAR","assisted":true}'::jsonb
+     WHERE id = (SELECT id FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER' ORDER BY timestamp DESC LIMIT 1)`,
+    [studentId, conceptId]
+  );
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 84, 'NONE');
+
+  const state = await getConceptKnowledgeState(studentId, conceptId);
+  assert(!!state && state.understandingScore !== null && state.understandingScore >= 80, `Understanding still passes (got ${state?.understandingScore})`);
+  assert(!!state && state.independenceScore !== null && state.independenceScore >= 80, `Independence still passes (got ${state?.independenceScore})`);
+  assert(!!state && state.applicationScore !== null && state.applicationScore >= 75, `Application still passes (got ${state?.applicationScore})`);
+  assert(!!state && state.retentionScore !== null && state.retentionScore < 75, `Retention is real but genuinely fails policy (got ${state?.retentionScore})`);
+  assert(!!state && state.transferScore !== null && state.transferScore < 70, `Transfer is real but genuinely fails policy (got ${state?.transferScore})`);
+  assert(state?.masteryState !== 'VALIDATED_MASTERY', `not validated despite strong Understanding/Independence/Application (got ${state?.masteryState})`);
+  assert(state?.masteryState === 'PROVISIONAL_MASTERY', `stays at Provisional Mastery -- it can currently perform, it just hasn't proven Retention/Transfer (got ${state?.masteryState})`);
+
+  const openCycle = await getActiveValidationCycle(studentId, conceptId);
+  assert(openCycle !== null, 'a Validation Cycle is open, tracking this real gap');
+  // The trigger reflects whichever dimension was already failing/insufficient
+  // at the exact moment the cycle first opened (early in this evidence
+  // sequence, before Retention/Transfer evidence existed at all) -- it is
+  // fixed at open time, not retroactively updated as later evidence arrives.
+  // What matters here is that it's a real, valid trigger, not which specific
+  // one -- the current per-dimension picture is what state_reason is for.
+  const validTriggers = ['LOW_BASELINE', 'CONFIRMED_MISCONCEPTION', 'DIAGNOSTIC_FAILURE', 'REPEATED_CONCEPTUAL_ERROR', 'APPLICATION_FAILURE', 'TRANSFER_FAILURE', 'RETENTION_FAILURE', 'KNOWLEDGE_DECAY', 'EXTERNAL_ASSESSMENT_CONFLICT'];
+  assert(!!openCycle && validTriggers.includes(openCycle.triggerType), `trigger type is a real, valid TriggerType (got ${openCycle?.triggerType})`);
+
+  // Simulate the validation window elapsing without the student ever clearing policy --
+  // a direct, honest time-jump (this scratch cycle's own deadline, not a global clock),
+  // not a real multi-day wait.
+  await db.query(`UPDATE validation_cycles SET validation_deadline = NOW() - INTERVAL '1 day' WHERE id = $1`, [openCycle!.id]);
+
+  const afterDeadline = await getActiveValidationCycle(studentId, conceptId);
+  assert(afterDeadline === null, 'the expired cycle is no longer active -- it resolved explicitly, it did not just keep sitting open');
+
+  const closedCycle = await db.query(`SELECT status, final_outcome, outcome_reason FROM validation_cycles WHERE id = $1`, [openCycle!.id]);
+  const row = closedCycle.rows[0];
+  assert(row.status === 'CLOSED', `the cycle's own status is explicitly CLOSED, never left implicitly open/unknown (got ${row.status})`);
+  assert(row.final_outcome === 'DEVELOPING', `first failed attempt at this concept resolves to DEVELOPING, not yet Intervention Required (got ${row.final_outcome})`);
+  assert(!!row.outcome_reason, 'the outcome carries a real, honest reason code, not a silent/fabricated one');
+
+  return { studentId, subjectId };
+}
+
+/**
  * SCENARIO B -- the mandatory REJECTION variant: the first hypothesis
  * is diagnostically tested and REJECTED, so the engine must move to
  * the next-ranked hypothesis instead of stopping.
@@ -365,6 +561,8 @@ async function cleanup(studentIds: string[]) {
   section('CLEANUP');
   for (const studentId of studentIds) {
     await db.query(`DELETE FROM analytics_events WHERE student_id = $1`, [studentId]);
+    await db.query(`DELETE FROM validation_events WHERE validation_cycle_id IN (SELECT id FROM validation_cycles WHERE student_id = $1)`, [studentId]);
+    await db.query(`DELETE FROM validation_cycles WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM concept_knowledge_state WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM student_misconceptions WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM remediation_steps WHERE remediation_path_id IN (SELECT id FROM remediation_paths WHERE student_id = $1)`, [studentId]);
@@ -404,6 +602,10 @@ async function main() {
     createdStudentIds.push(a.studentId);
     const b = await scenarioRejection();
     createdStudentIds.push(b.studentId);
+    const c = await scenarioValidationSuccess();
+    createdStudentIds.push(c.studentId);
+    const d = await scenarioValidationFailure();
+    createdStudentIds.push(d.studentId);
   } finally {
     await cleanup(createdStudentIds);
   }
