@@ -6,9 +6,11 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getLearnerConceptState, getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
 import { getTransferScore } from '@/services/transfer.service';
+import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
+import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -69,7 +71,7 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [state, evidence, masteryRow, activeDebt, history, transferScore] = await Promise.all([
+  const [state, evidence, masteryRow, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
     getLearnerConceptState(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -82,6 +84,7 @@ export default async function ConceptDetailPage({
     ),
     getConceptEvidenceHistory(studentId, conceptId, 20),
     getTransferScore(studentId, conceptId),
+    getConceptKnowledgeState(studentId, conceptId),
   ]);
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
@@ -235,6 +238,32 @@ export default async function ConceptDetailPage({
           <div>{futureDay(nextReviewDate, t)}</div>
         </div>
       </div>
+
+      {knowledgeState && (
+        <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+            <h2 style={{ fontSize: 14, margin: 0 }}>{t['knowledgeState.sectionTitle']}</h2>
+            <span
+              style={{
+                fontSize: 12.5, fontWeight: 650, color: masteryStateColor(knowledgeState.masteryState),
+                border: `1px solid ${masteryStateColor(knowledgeState.masteryState)}`, borderRadius: 999, padding: '2px 10px',
+              }}
+            >
+              {masteryStateLabel(knowledgeState.masteryState, t)}
+            </span>
+          </div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {knowledgeKpis(knowledgeState).map((kpi) => (
+              <li key={kpi.labelKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>{t[kpi.labelKey]}</span>
+                <span className="tabular" style={{ fontWeight: 650, color: kpi.score === null ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                  {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {whyFacts.length > 0 && (
         <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)' }}>
