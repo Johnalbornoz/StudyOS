@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 
-type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation';
+type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
 interface VisualAid {
@@ -61,6 +61,7 @@ const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   topic_practice: 20,
   cumulative_assessment: 20,
   exam_simulation: 20,
+  diagnostic_check: 3,
 };
 
 const RESULT_MESSAGE_KEY: Record<string, 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'> = {
@@ -136,6 +137,8 @@ export default function QuizPage() {
   const searchParams = useSearchParams();
   const subjectId = searchParams.get('subjectId');
   const conceptId = searchParams.get('conceptId');
+  const diagnosisId = searchParams.get('diagnosisId'); // only used for mode=diagnostic_check
+  const remediationStepId = searchParams.get('remediationStepId'); // only used when launched from a Repair Path step
   const modeParam = (searchParams.get('mode') as QuizMode | null) || (conceptId ? 'topic_practice' : 'cumulative_assessment');
 
   const [locale, setLocale] = useState<Locale>('es');
@@ -372,7 +375,13 @@ export default function QuizPage() {
       const res = await fetch('/api/quizzes/generate-and-take', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, quizId, answers: answerList }),
+        body: JSON.stringify({
+          studentId,
+          quizId,
+          answers: answerList,
+          diagnosisId: diagnosisId || undefined,
+          remediationStepId: remediationStepId || undefined,
+        }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message || t['common.error']);
@@ -391,6 +400,8 @@ export default function QuizPage() {
       ? t['quiz.modeCumulative']
       : mode === 'exam_simulation'
       ? t['quiz.modeExamSim']
+      : mode === 'diagnostic_check'
+      ? t['quiz.modeDiagnosticCheck']
       : t['quiz.modeTopicPractice'];
 
   const modeDesc = (mode: QuizMode) =>
@@ -400,6 +411,8 @@ export default function QuizPage() {
       ? t['quiz.modeCumulativeDesc']
       : mode === 'exam_simulation'
       ? t['quiz.modeExamSimDesc']
+      : mode === 'diagnostic_check'
+      ? t['quiz.modeDiagnosticCheckDesc']
       : t['quiz.modeTopicPracticeDesc'];
 
   if (phase === 'setup') {
@@ -554,6 +567,23 @@ export default function QuizPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
             {results.results.correctCount} / {results.results.totalQuestions} {t['quiz.correctOf']}
           </p>
+
+          {results.diagnosticOutcome && (
+            <div
+              style={{
+                marginTop: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-sm)',
+                background: results.diagnosticOutcome.outcome === 'CONFIRMED' ? 'var(--warning-subtle)' : 'var(--brand-subtle)',
+              }}
+            >
+              <strong style={{ fontSize: 13.5 }}>
+                {results.diagnosticOutcome.outcome === 'CONFIRMED'
+                  ? t['quiz.diagnosticConfirmed']
+                  : results.diagnosticOutcome.outcome === 'REJECTED'
+                  ? t['quiz.diagnosticRejected']
+                  : t['quiz.diagnosticInconclusive']}
+              </strong>
+            </div>
+          )}
 
           {results.ibEstimate && (
             <div

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
-  if (quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation') {
+  if (quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation' || quizSession.quizMode === 'diagnostic_check') {
     return NextResponse.json({ error: 'HINTS_DISABLED_FOR_MODE' }, { status: 403 });
   }
 

@@ -57,6 +57,35 @@ function reasonBadge(item: TodayItem, tier: UrgencyTier, t: ReturnType<typeof ge
       </div>
     );
   }
+  if (item.reason === 'active_remediation') {
+    return (
+      <div style={badgeStyle}>
+        <span style={{ fontSize: 22 }} aria-hidden>🔧</span>
+      </div>
+    );
+  }
+  if (item.reason === 'prerequisite_gap') {
+    return (
+      <div style={badgeStyle}>
+        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>{item.blockedConceptCount ?? 0}</span>
+        <span style={{ fontSize: 8.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['today.badgeAffects']}</span>
+      </div>
+    );
+  }
+  if (item.reason === 'diagnosis_required') {
+    return (
+      <div style={badgeStyle}>
+        <span style={{ fontSize: 24, fontWeight: 700 }}>?</span>
+      </div>
+    );
+  }
+  if (item.reason === 'recurring_misconception') {
+    return (
+      <div style={badgeStyle}>
+        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>×{item.occurrenceCount ?? 0}</span>
+      </div>
+    );
+  }
   return (
     <div style={badgeStyle}>
       <span className="tabular" style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(item.masteryScore)}%</span>
@@ -86,6 +115,18 @@ function detailLine(item: TodayItem, t: ReturnType<typeof getMessages>) {
   }
   if (item.reason === 'independence_gap') {
     return `${item.subjectName} · ${t['today.reasonIndependenceGap']}`;
+  }
+  if (item.reason === 'active_remediation') {
+    return `${item.subjectName} · ${t['today.reasonActiveRemediation']}`;
+  }
+  if (item.reason === 'prerequisite_gap') {
+    return `${item.subjectName} · ${t['today.reasonPrerequisiteGap'].replace('{count}', String(item.blockedConceptCount ?? 0))}`;
+  }
+  if (item.reason === 'diagnosis_required') {
+    return `${item.subjectName} · ${t['today.reasonDiagnosisRequired']}`;
+  }
+  if (item.reason === 'recurring_misconception') {
+    return `${item.subjectName} · ${t['today.reasonRecurringMisconception'].replace('{count}', String(item.occurrenceCount ?? 0))}`;
   }
   return `${item.subjectName} · ${t['today.mastery']}: ${Math.round(item.masteryScore)}%`;
 }

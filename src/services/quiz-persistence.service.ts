@@ -9,7 +9,7 @@
 import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 
-export type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation';
+export type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 
 export interface QuizSession {
   id: string;

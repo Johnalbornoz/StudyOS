@@ -125,7 +125,7 @@ export default async function ConceptDetailPage({
       label: t['conceptDetail.ctaSoloCheck'],
       href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}&mode=cumulative_assessment`,
     },
-    tutor: { label: t['conceptDetail.ctaAskTutor'], href: `/dashboard/tutor?subjectId=${subjectId}` },
+    tutor: { label: t['conceptDetail.ctaAskTutor'], href: `/dashboard/tutor?subjectId=${subjectId}&conceptId=${conceptId}` },
   };
   const secondaryCTAs = (Object.keys(ctaConfig) as CTA[]).filter((k) => k !== primaryCTA);
 

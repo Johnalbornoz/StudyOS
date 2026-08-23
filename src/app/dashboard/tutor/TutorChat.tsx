@@ -27,10 +27,12 @@ export default function TutorChat({
   studentId,
   locale,
   subjects,
+  conceptId,
 }: {
   studentId: string;
   locale: Locale;
   subjects: SubjectOption[];
+  conceptId?: string;
 }) {
   const t = getMessages(locale);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -102,7 +104,7 @@ export default function TutorChat({
       const res = await fetch('/api/tutor/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, conversationId: activeId, message: userText }),
+        body: JSON.stringify({ studentId, conversationId: activeId, message: userText, conceptId }),
       });
       const body = await res.json();
       if (body.data?.reply) {

@@ -8,6 +8,7 @@ const SendSchema = z.object({
   studentId: z.string().uuid(),
   conversationId: z.string().uuid(),
   message: z.string().min(1).max(4000),
+  conceptId: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const preferredLanguage = await getInterfaceLanguage(validated.studentId);
-    const reply = await sendMessage(validated.conversationId, validated.studentId, validated.message, preferredLanguage);
+    const reply = await sendMessage(validated.conversationId, validated.studentId, validated.message, preferredLanguage, validated.conceptId);
     return NextResponse.json({ success: true, data: { reply } });
   } catch (error) {
     console.error('Error sending tutor message:', error);

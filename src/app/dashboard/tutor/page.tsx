@@ -6,7 +6,12 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import TutorChat from './TutorChat';
 
-export default async function TutorPage() {
+export default async function TutorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conceptId?: string }>;
+}) {
+  const { conceptId } = await searchParams;
   const { userId: clerkUserId } = await auth();
 
   if (!clerkUserId) {
@@ -34,7 +39,7 @@ export default async function TutorPage() {
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>{t['tutor.title']}</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>{t['tutor.subtitle']}</p>
       </div>
-      <TutorChat studentId={studentId} locale={locale} subjects={subjects} />
+      <TutorChat studentId={studentId} locale={locale} subjects={subjects} conceptId={conceptId} />
     </div>
   );
 }

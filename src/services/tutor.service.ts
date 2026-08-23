@@ -13,6 +13,7 @@
 import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { buildCompactTutorContext } from './tutor-strategy.service';
 
 export interface TutorMessage {
   id: string;
@@ -80,7 +81,8 @@ export async function sendMessage(
   conversationId: string,
   studentId: string,
   userMessage: string,
-  language: string = 'en'
+  language: string = 'en',
+  conceptId?: string
 ): Promise<TutorMessage> {
   const convResult = await db.query(
     `SELECT subject_id, title FROM tutor_conversations WHERE id = $1`,
@@ -110,6 +112,14 @@ export async function sendMessage(
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 
+  // Learner-Aware Tutor (Phase 2): a compact, deterministic strategy
+  // pick based on this concept's state -- never the whole Learner
+  // Model, and the strategy itself is chosen by code, not the LLM.
+  // Only applies when the caller actually knows which concept this
+  // message is about; a general conversation behaves exactly as
+  // before Phase 2.
+  const cognitiveContext = conceptId ? await buildCompactTutorContext(studentId, conceptId).catch(() => null) : null;
+
   const systemPrompt = `You are a patient, encouraging tutor helping a student understand their own study material.
 
 ${
@@ -118,6 +128,12 @@ ${
         .map((c, i) => `[${i + 1}] ${c}`)
         .join('\n\n')}\n\nGround your explanation in this material when it's relevant to the question. If the question goes beyond it, you may still help using general knowledge, but say so.`
     : `No specific study material was found for this question -- answer using your general knowledge, and mention that uploading related material would let you ground future answers in it.`
+}
+
+${
+  cognitiveContext
+    ? `This question is about a concept the student has a track record on (${cognitiveContext.summary}). Pedagogical approach for this message: ${cognitiveContext.instruction}`
+    : ''
 }
 
 Teaching style:

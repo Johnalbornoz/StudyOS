@@ -62,6 +62,8 @@ import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
+import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
+import { completeRemediationStep } from '@/services/remediation.service';
 import { z } from 'zod';
 
 async function resolveLanguageForSubject(subjectId: string, studentId: string) {
@@ -122,6 +124,13 @@ const QUIZ_MODE_CONFIG: Record<
     visualAidRate: 0.2,
     evidenceSource: 'EXAM_SIMULATION',
   },
+  diagnostic_check: {
+    guidance:
+      'This is a short DIAGNOSTIC check, not a teaching moment -- its only job is to reveal whether the student genuinely understands this concept independently. Prefer types that can\'t be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess. Keep each question tightly focused on the core idea of this concept, not tangential details.',
+    defaultMax: 3,
+    visualAidRate: 0,
+    evidenceSource: 'DIAGNOSTIC',
+  },
 };
 
 const GenerateQuizSchema = z.object({
@@ -129,7 +138,7 @@ const GenerateQuizSchema = z.object({
   subjectId: z.string().uuid(),
   conceptId: z.string().uuid().optional(),
   conceptIds: z.array(z.string().uuid()).optional(), // manual topic selection for cumulative_assessment/exam_simulation
-  quizMode: z.enum(['topic_practice', 'quick_check', 'cumulative_assessment', 'exam_simulation']).default('topic_practice'),
+  quizMode: z.enum(['topic_practice', 'quick_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check']).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
@@ -138,6 +147,15 @@ const GenerateQuizSchema = z.object({
 const SubmitQuizSchema = z.object({
   studentId: z.string().uuid(),
   quizId: z.string(),
+  // Only meaningful when this quiz's mode is diagnostic_check -- tells
+  // the submit handler which cognitive_diagnoses row to resolve based
+  // on this attempt's result. The diagnosis id isn't persisted on
+  // quiz_sessions itself (no migration needed); the caller already
+  // knows it from when it started the check.
+  diagnosisId: z.string().uuid().optional(),
+  // When this quiz was launched as a remediation step (GUIDED_PRACTICE,
+  // RETRIEVAL, or SOLO_VERIFY), completing it also advances that step.
+  remediationStepId: z.string().uuid().optional(),
   answers: z.array(
     z.object({
       questionIndex: z.number().int().min(0),
@@ -219,8 +237,13 @@ function toClientQuestion(q: GeneratedQuestion, index: number) {
 async function computeAskConfidenceFlags(
   studentId: string,
   conceptIds: string[],
-  quizMode: 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation'
+  quizMode: QuizMode
 ): Promise<Map<string, boolean>> {
+  // A Diagnostic Check is a deliberately minimal, single-purpose
+  // interaction (see quiz-generation guidance) -- it's testing the
+  // candidate concept, not a moment to also calibrate confidence.
+  if (quizMode === 'diagnostic_check') return new Map(conceptIds.map((id) => [id, false]));
+
   const masteryRows = await db.query(
     `SELECT concept_id, mastery_score, attempt_count FROM mastery_records WHERE student_id = $1 AND concept_id = ANY($2)`,
     [studentId, conceptIds]
@@ -276,7 +299,10 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this student' }, { status: 403 });
     }
 
-    if ((validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check') && !validated.conceptId) {
+    if (
+      (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check' || validated.quizMode === 'diagnostic_check') &&
+      !validated.conceptId
+    ) {
       return NextResponse.json(
         { error: 'INVALID_INPUT', message: 'conceptId is required for this quiz mode' },
         { status: 400 }
@@ -289,12 +315,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const ibContext = await getSubjectIBContext(validated.subjectId);
 
     const config = QUIZ_MODE_CONFIG[validated.quizMode];
-    const maxQuestions = Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
+    // Diagnostic Check is always short (2-4 questions) regardless of what was requested -- it's a targeted check, not a full quiz.
+    const maxQuestions =
+      validated.quizMode === 'diagnostic_check'
+        ? Math.max(2, Math.min(4, validated.maxQuestions ?? config.defaultMax))
+        : Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
 
     let conceptIds: string[];
     let primaryConceptId: string | null;
 
-    if (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check') {
+    if (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check' || validated.quizMode === 'diagnostic_check') {
       conceptIds = [validated.conceptId!];
       primaryConceptId = validated.conceptId!;
     } else if (validated.conceptIds && validated.conceptIds.length > 0) {
@@ -579,7 +609,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // to it yet -- no quiz mode today treats AI as part of the task
     // itself, so there's nothing to map.
     const learningMode: 'SOLO' | 'COACH' =
-      quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation'
+      quizSession.quizMode === 'cumulative_assessment' ||
+      quizSession.quizMode === 'exam_simulation' ||
+      quizSession.quizMode === 'diagnostic_check'
         ? 'SOLO'
         : 'COACH';
 
@@ -624,6 +656,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
 
     await completeQuiz(validated.quizId);
 
+    // Diagnostic Check resolution: the diagnosis is resolved from this
+    // attempt's raw correct/total, not from the mastery-adjusted score,
+    // since the diagnosis question is specifically "was the candidate
+    // concept demonstrably weak right now", independent of how this
+    // nudges the longer-running Mastery number.
+    let diagnosticOutcome: { state: string; outcome: string } | null = null;
+    if (quizSession.quizMode === 'diagnostic_check' && validated.diagnosisId) {
+      const bucket = byConcept.get(quizSession.conceptId || '');
+      if (bucket) {
+        const resolved = await resolveDiagnosticCheck(validated.diagnosisId, bucket.correct, bucket.total).catch(() => null);
+        if (resolved) diagnosticOutcome = { state: resolved.diagnosis.state, outcome: resolved.outcome };
+      }
+    }
+
+    if (validated.remediationStepId) {
+      await completeRemediationStep(validated.remediationStepId, { success: score >= 70, score }).catch((err) =>
+        console.error('Failed to complete remediation step:', err)
+      );
+    }
+
     const primaryMastery = quizSession.conceptId
       ? perConceptResults.find((r) => r.conceptId === quizSession.conceptId)
       : null;
@@ -647,6 +699,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         review,
         messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',
         ibEstimate,
+        diagnosticOutcome,
       },
     });
   } catch (error: any) {

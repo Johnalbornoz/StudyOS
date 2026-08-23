@@ -23,6 +23,14 @@ function factSentence(fact: WhyThisFact, t: ReturnType<typeof getMessages>): str
       return t['whyThis.independenceGap'].replace('{accuracy}', String(fact.unassistedAccuracy ?? '-'));
     case 'lowMastery':
       return t['whyThis.lowMastery'].replace('{mastery}', String(Math.round(fact.masteryScore ?? 0)));
+    case 'activeRemediation':
+      return t['whyThis.activeRemediation'];
+    case 'prerequisiteGap':
+      return t['whyThis.prerequisiteGap'].replace('{count}', String(fact.blockedConceptCount ?? 0));
+    case 'diagnosisRequired':
+      return t['whyThis.diagnosisRequired'];
+    case 'recurringMisconception':
+      return t['whyThis.recurringMisconception'].replace('{count}', String(fact.occurrenceCount ?? 0));
     default:
       return '';
   }

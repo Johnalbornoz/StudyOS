@@ -14,7 +14,13 @@ export type EvidenceSourceType =
   | 'TOPIC_ASSESSMENT'
   | 'CUMULATIVE_ASSESSMENT'
   | 'EXAM_SIMULATION'
-  | 'REAL_SCHOOL_EXAM';
+  | 'REAL_SCHOOL_EXAM'
+  // Phase 2 (Cognitive Learning Engine) evidence sources
+  | 'DIAGNOSTIC'
+  | 'REMEDIATION'
+  | 'EXPLANATION'
+  | 'TRANSFER'
+  | 'SOLO_VERIFICATION';
 
 export interface LearningEvidence {
   result: EvidenceResult;
@@ -31,11 +37,16 @@ export interface LearningEvidence {
  */
 const EVIDENCE_WEIGHTS: Record<EvidenceSourceType, number> = {
   REAL_SCHOOL_EXAM: 1.0,      // 100% weight
+  SOLO_VERIFICATION: 0.9,      // 90% -- the deliberate "prove it independently" check at the end of a repair
   EXAM_SIMULATION: 0.8,        // 80% weight
   TOPIC_ASSESSMENT: 0.6,       // 60% weight
+  DIAGNOSTIC: 0.6,              // 60% -- targeted and discriminative, but short (2-4 questions)
   CUMULATIVE_ASSESSMENT: 0.5,  // 50% weight
+  TRANSFER: 0.5,                // 50% -- application evidence, not the same claim as raw correctness
+  EXPLANATION: 0.4,              // 40% -- rubric-scored reasoning, weighted like a moderately strong assessment
   PRACTICE_QUIZ: 0.3,          // 30% weight
   PRACTICE_QUESTION: 0.2,      // 20% weight
+  REMEDIATION: 0.2,              // 20% -- this is teaching/practice during repair, not proof of mastery yet
   GUIDED_EXERCISE: 0.1,        // 10% weight
 };
 

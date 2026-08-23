@@ -37,8 +37,22 @@
 import { db } from '@/lib/db';
 import { getUpcomingForStudent } from './assessment.service';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
+import { getLearningUnlockValue } from './concept-graph.service';
+import { getActiveDiagnoses } from './cognitive-diagnosis.service';
+import { getActiveRemediations } from './remediation.service';
+import { getRecurringMisconceptions } from './misconception.service';
 
-export type TodayReason = 'exam_soon' | 'learning_debt' | 'forgetting_risk' | 'independence_gap' | 'low_mastery';
+export type TodayReason =
+  | 'exam_soon'
+  | 'learning_debt'
+  | 'forgetting_risk'
+  | 'independence_gap'
+  | 'low_mastery'
+  // Phase 2 (Cognitive Learning Engine) reasons
+  | 'active_remediation'
+  | 'prerequisite_gap'
+  | 'diagnosis_required'
+  | 'recurring_misconception';
 export type UrgencyTier = 'critical' | 'this_week' | 'can_wait';
 
 export interface TodayItem {
@@ -56,6 +70,13 @@ export interface TodayItem {
   forgettingRisk?: number;
   daysSincePractice?: number;
   unassistedAccuracy?: number; // 0-100, only set when reason === 'independence_gap'
+  // Phase 2 fields
+  unlockValue?: number; // internal only, never shown to the student directly
+  blockedConceptCount?: number; // only set when reason === 'prerequisite_gap'
+  remediationPathId?: string; // only set when reason === 'active_remediation'
+  diagnosisId?: string; // only set when reason === 'prerequisite_gap' | 'diagnosis_required'
+  misconceptionCode?: string; // only set when reason === 'recurring_misconception'
+  occurrenceCount?: number; // only set when reason === 'recurring_misconception'
 }
 
 const EXAM_SOON_WINDOW_DAYS = 7;
@@ -67,14 +88,134 @@ const INDEPENDENCE_GAP_MIN_SAMPLES = 2;
 const INDEPENDENCE_GAP_ACCURACY_THRESHOLD = 60;
 
 function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverity'>): UrgencyTier {
+  if (item.reason === 'active_remediation' || item.reason === 'prerequisite_gap') return 'critical';
   if (item.reason === 'exam_soon') {
     return (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS ? 'critical' : 'this_week';
   }
   if (item.reason === 'learning_debt') {
     return (item.debtSeverity ?? 0) >= DEBT_CRITICAL_SEVERITY ? 'critical' : 'this_week';
   }
-  if (item.reason === 'forgetting_risk' || item.reason === 'independence_gap') return 'this_week';
+  if (
+    item.reason === 'forgetting_risk' ||
+    item.reason === 'independence_gap' ||
+    item.reason === 'diagnosis_required' ||
+    item.reason === 'recurring_misconception'
+  ) {
+    return 'this_week';
+  }
   return 'can_wait';
+}
+
+/**
+ * Every currently-relevant Phase 2 (Cognitive Learning Engine) signal
+ * for a student, shaped as TodayItems so they merge into the same
+ * priority/tier machinery as Phase 1's five reasons -- see
+ * getLearningUnlockValue for why a confirmed prerequisite gap can
+ * outrank a merely-low-mastery symptom (brief's "NBA v2 principle").
+ */
+async function getPhase2TodayItems(studentId: string, preferredLanguage: string): Promise<TodayItem[]> {
+  const [activeRemediations, activeDiagnoses, recurringMisconceptions] = await Promise.all([
+    getActiveRemediations(studentId).catch(() => []),
+    getActiveDiagnoses(studentId).catch(() => []),
+    getRecurringMisconceptions(studentId).catch(() => []),
+  ]);
+
+  const conceptIds = [
+    ...activeRemediations.map((p) => p.rootCauseConceptId),
+    ...activeDiagnoses.filter((d) => d.state === 'CONFIRMED' || d.state === 'DIAGNOSIS_REQUIRED').map((d) => d.candidateConceptId),
+  ];
+  const labelRows =
+    conceptIds.length > 0
+      ? await db.query(
+          `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, c.subject_id, s.name AS subject_name, mr.mastery_score
+           FROM concepts c JOIN subjects s ON s.id = c.subject_id
+           LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id AND language = $2 ORDER BY (language = $2) DESC LIMIT 1) cl ON true
+           LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $3
+           WHERE c.id = ANY($1) AND s.status = 'active'`,
+          [conceptIds, preferredLanguage, studentId]
+        )
+      : { rows: [] };
+  const labels = new Map(labelRows.rows.map((r) => [r.id, r]));
+
+  const items: TodayItem[] = [];
+  const remediatedDiagnosisIds = new Set(activeRemediations.map((p) => p.diagnosisId).filter((id): id is string => !!id));
+
+  for (const path of activeRemediations) {
+    const row = labels.get(path.rootCauseConceptId);
+    if (!row) continue;
+    items.push({
+      conceptId: path.rootCauseConceptId,
+      subjectId: row.subject_id,
+      subjectName: row.subject_name,
+      label: row.label,
+      masteryScore: row.mastery_score !== null ? Number(row.mastery_score) : 0,
+      reason: 'active_remediation',
+      urgencyTier: tierFor({ reason: 'active_remediation' }),
+      remediationPathId: path.id,
+    });
+  }
+
+  for (const d of activeDiagnoses) {
+    if (d.state === 'CONFIRMED' && !remediatedDiagnosisIds.has(d.id)) {
+      const row = labels.get(d.candidateConceptId);
+      if (!row) continue;
+      const unlock = await getLearningUnlockValue(d.candidateConceptId);
+      items.push({
+        conceptId: d.candidateConceptId,
+        subjectId: row.subject_id,
+        subjectName: row.subject_name,
+        label: row.label,
+        masteryScore: row.mastery_score !== null ? Number(row.mastery_score) : 0,
+        reason: 'prerequisite_gap',
+        urgencyTier: tierFor({ reason: 'prerequisite_gap' }),
+        diagnosisId: d.id,
+        unlockValue: unlock.score,
+        blockedConceptCount: unlock.blockedCount,
+      });
+    } else if (d.state === 'DIAGNOSIS_REQUIRED') {
+      const row = labels.get(d.candidateConceptId);
+      if (!row) continue;
+      items.push({
+        conceptId: d.candidateConceptId,
+        subjectId: row.subject_id,
+        subjectName: row.subject_name,
+        label: row.label,
+        masteryScore: row.mastery_score !== null ? Number(row.mastery_score) : 0,
+        reason: 'diagnosis_required',
+        urgencyTier: tierFor({ reason: 'diagnosis_required' }),
+        diagnosisId: d.id,
+      });
+    }
+  }
+
+  const misconceptionConceptIds = recurringMisconceptions.slice(0, 3).map((m) => m.conceptId);
+  const misconceptionMasteryRows =
+    misconceptionConceptIds.length > 0
+      ? await db.query(
+          `SELECT concept_id, mastery_score FROM mastery_records WHERE concept_id = ANY($1) AND student_id = $2`,
+          [misconceptionConceptIds, studentId]
+        )
+      : { rows: [] };
+  const misconceptionMastery = new Map(
+    misconceptionMasteryRows.rows.map((r) => [r.concept_id, r.mastery_score])
+  );
+
+  for (const m of recurringMisconceptions.slice(0, 3)) {
+    const masteryScore = misconceptionMastery.get(m.conceptId);
+    items.push({
+      conceptId: m.conceptId,
+      subjectId: m.subjectId,
+      subjectName: m.subjectName,
+      label: m.conceptLabel,
+      masteryScore: masteryScore !== undefined && masteryScore !== null ? Number(masteryScore) : 0,
+      reason: 'recurring_misconception',
+      urgencyTier: tierFor({ reason: 'recurring_misconception' }),
+      misconceptionCode: m.misconceptionCode,
+      occurrenceCount: m.occurrenceCount,
+    });
+  }
+
+  return items;
 }
 
 export async function getTodayPlan(
@@ -192,32 +333,57 @@ export async function getTodayPlan(
     });
   }
 
+  const phase2Items = await getPhase2TodayItems(studentId, preferredLanguage).catch(() => []);
+  const allItems = [...items, ...phase2Items];
+
   const priority = (item: TodayItem): number => {
+    // Continuing an already-active repair beats starting anything new;
+    // an imminent exam is the one thing allowed to override it (brief's
+    // NBA v2 priority rule).
+    if (item.reason === 'active_remediation') return 2000;
+    if (item.reason === 'exam_soon' && (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS) return 1900;
+    // A confirmed foundational gap outranks the symptom it's causing --
+    // scaled by Learning Unlock Value (how much repairing it unblocks),
+    // not just "which concept has the worst mastery".
+    if (item.reason === 'prerequisite_gap') return 1000 + (item.unlockValue ?? 0);
     if (item.reason === 'exam_soon') return 1000 - (item.daysUntilExam ?? 0) * 10;
     if (item.reason === 'learning_debt') return 500 + (item.debtSeverity ?? 0) * 10;
+    if (item.reason === 'diagnosis_required') return 350;
+    if (item.reason === 'recurring_misconception') return 300 + (item.occurrenceCount ?? 0) * 10;
     if (item.reason === 'forgetting_risk') return 200 + (item.forgettingRisk ?? 0);
     if (item.reason === 'independence_gap') return 150 + (100 - (item.unassistedAccuracy ?? 100));
     return 100 + (LOW_MASTERY_THRESHOLD - item.masteryScore);
   };
 
-  items.sort((a, b) => priority(b) - priority(a));
+  allItems.sort((a, b) => priority(b) - priority(a));
 
   return {
-    critical: items.filter((i) => i.urgencyTier === 'critical'),
-    thisWeek: items.filter((i) => i.urgencyTier === 'this_week').slice(0, 10),
-    canWait: items.filter((i) => i.urgencyTier === 'can_wait').slice(0, 8),
+    critical: allItems.filter((i) => i.urgencyTier === 'critical'),
+    thisWeek: allItems.filter((i) => i.urgencyTier === 'this_week').slice(0, 10),
+    canWait: allItems.filter((i) => i.urgencyTier === 'can_wait').slice(0, 8),
     totalConcepts: conceptsResult.rows.length,
   };
 }
 
 export interface WhyThisFact {
-  kind: 'examSoon' | 'learningDebt' | 'forgettingRisk' | 'independenceGap' | 'lowMastery';
+  kind:
+    | 'examSoon'
+    | 'learningDebt'
+    | 'forgettingRisk'
+    | 'independenceGap'
+    | 'lowMastery'
+    | 'activeRemediation'
+    | 'prerequisiteGap'
+    | 'diagnosisRequired'
+    | 'recurringMisconception';
   daysUntilExam?: number;
   debtSeverity?: number;
   forgettingRisk?: number;
   daysSincePractice?: number;
   unassistedAccuracy?: number;
   masteryScore?: number;
+  blockedConceptCount?: number;
+  occurrenceCount?: number;
 }
 
 export interface BestNextAction {
@@ -228,6 +394,9 @@ export interface BestNextAction {
 
 function estimateMinutes(item: TodayItem): number {
   if (item.reason === 'exam_soon' || item.reason === 'learning_debt') return 15;
+  if (item.reason === 'active_remediation') return 8; // Minimum Effective Intervention -- the whole point of a Repair Path
+  if (item.reason === 'prerequisite_gap') return 8;
+  if (item.reason === 'diagnosis_required') return 3; // just the Diagnostic Check itself
   return 10;
 }
 
@@ -257,6 +426,10 @@ export function factsForItem(item: TodayItem): WhyThisFact[] {
     facts.push({ kind: 'independenceGap', unassistedAccuracy: item.unassistedAccuracy, masteryScore: item.masteryScore });
   }
   if (item.reason === 'low_mastery') facts.push({ kind: 'lowMastery', masteryScore: item.masteryScore });
+  if (item.reason === 'active_remediation') facts.push({ kind: 'activeRemediation' });
+  if (item.reason === 'prerequisite_gap') facts.push({ kind: 'prerequisiteGap', blockedConceptCount: item.blockedConceptCount });
+  if (item.reason === 'diagnosis_required') facts.push({ kind: 'diagnosisRequired' });
+  if (item.reason === 'recurring_misconception') facts.push({ kind: 'recurringMisconception', occurrenceCount: item.occurrenceCount });
   return facts;
 }
 
