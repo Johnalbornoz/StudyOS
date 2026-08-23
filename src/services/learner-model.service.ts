@@ -122,6 +122,59 @@ export interface LearnerConceptState {
   evidenceStrength: EvidenceStrength | null;
 }
 
+export interface LearnerModelSummary {
+  avgRetention: number | null;
+  avgIndependentMastery: number | null;
+  conceptsWithRetention: number;
+  conceptsWithIndependentMastery: number;
+}
+
+/**
+ * Student-wide averages for Progress's "Your Learning" section. Two
+ * queries total no matter how many concepts the student has (one for
+ * mastery_records, one grouped over learning_evidence) -- averaging
+ * happens in memory, not per-concept round trips. Returns null
+ * averages when there isn't enough evidence anywhere yet, rather than
+ * a misleading 0.
+ */
+export async function getLearnerModelSummary(studentId: string): Promise<LearnerModelSummary> {
+  const masteryRows = await db.query(
+    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1`,
+    [studentId]
+  );
+  const retentions: number[] = [];
+  for (const row of masteryRows.rows) {
+    const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
+    if (r !== null) retentions.push(r);
+  }
+
+  const evidenceRows = await db.query(
+    `
+    SELECT
+      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE') AS unassisted_count,
+      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE' AND result = 'correct') AS unassisted_correct
+    FROM learning_evidence
+    WHERE student_id = $1
+    GROUP BY concept_id
+    `,
+    [studentId]
+  );
+  const independentScores: number[] = [];
+  for (const row of evidenceRows.rows) {
+    const count = Number(row.unassisted_count);
+    if (count >= 2) independentScores.push((Number(row.unassisted_correct) / count) * 100);
+  }
+
+  return {
+    avgRetention: retentions.length ? Math.round(retentions.reduce((a, b) => a + b, 0) / retentions.length) : null,
+    avgIndependentMastery: independentScores.length
+      ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)
+      : null,
+    conceptsWithRetention: retentions.length,
+    conceptsWithIndependentMastery: independentScores.length,
+  };
+}
+
 /** Combines all Learner Model dimensions for one student+concept in a single call. */
 export async function getLearnerConceptState(studentId: string, conceptId: string): Promise<LearnerConceptState | null> {
   const masteryRow = await db.query(

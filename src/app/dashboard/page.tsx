@@ -14,6 +14,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import OnboardingChecklist from './OnboardingChecklist';
 import AcademicProfileCTA from './AcademicProfileCTA';
 import { getAcademicProfile } from '@/services/academic-profile.service';
+import { getLearnerModelSummary } from '@/services/learner-model.service';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -46,12 +47,13 @@ export default async function DashboardPage() {
   const user = await currentUser();
   const firstName = user?.firstName;
 
-  const [subjectsResult, debts, notifications, streak, quizSessionsResult] = await Promise.all([
+  const [subjectsResult, debts, notifications, streak, quizSessionsResult, learnerSummary] = await Promise.all([
     query(`SELECT * FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getUnreadNotifications(studentId).catch(() => []),
     getStudentStreak(studentId).catch(() => 0),
     query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] })),
+    getLearnerModelSummary(studentId).catch(() => ({ avgRetention: null, avgIndependentMastery: null, conceptsWithRetention: 0, conceptsWithIndependentMastery: 0 })),
   ]);
   const subjects = subjectsResult.rows;
   const hasPracticed = quizSessionsResult.rows.length > 0;
@@ -156,6 +158,26 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {(learnerSummary.avgRetention !== null || learnerSummary.avgIndependentMastery !== null) && (
+        <div style={{ marginBottom: 'var(--space-8)' }}>
+          <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['dashboard.yourLearning']}</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-4)' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.retention']}</div>
+              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
+                {learnerSummary.avgRetention !== null ? `${learnerSummary.avgRetention}%` : t['dashboard.notEnoughEvidence']}
+              </div>
+            </div>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.independentMastery']}</div>
+              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
+                {learnerSummary.avgIndependentMastery !== null ? `${learnerSummary.avgIndependentMastery}%` : t['dashboard.notEnoughEvidence']}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
         <h2>{t['dashboard.yourSubjects']}</h2>

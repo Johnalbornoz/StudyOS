@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
+import { getTodayPlan } from '@/services/today-plan.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import ErrorPatternList from './ErrorPatternList';
@@ -21,10 +22,14 @@ export default async function LearningDebtPage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
-  const [debts, errorPatterns] = await Promise.all([
+  const [debts, errorPatterns, todayPlan] = await Promise.all([
     getActiveDebts(studentId, undefined, locale).catch(() => []),
     getErrorPatterns(studentId, undefined, locale).catch(() => []),
+    getTodayPlan(studentId, locale).catch(() => ({ critical: [], thisWeek: [], canWait: [], totalConcepts: 0 })),
   ]);
+  const atRisk = [...todayPlan.critical, ...todayPlan.thisWeek, ...todayPlan.canWait].filter(
+    (i) => i.reason === 'forgetting_risk'
+  );
 
   return (
     <div>
@@ -35,6 +40,7 @@ export default async function LearningDebtPage() {
         </p>
       </div>
 
+      <h2 style={{ marginBottom: 4 }}>{t['debt.sectionNeedsAttention']}</h2>
       {debts.length === 0 ? (
         <div className="card empty-state">
           <strong>{t['debt.allCaughtUpTitle']}</strong>
@@ -61,6 +67,31 @@ export default async function LearningDebtPage() {
               </Link>
             </div>
           ))}
+        </div>
+      )}
+
+      {atRisk.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <h2 style={{ marginBottom: 4 }}>{t['debt.sectionAtRisk']}</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
+            {t['debt.atRiskSubtitle']}
+          </p>
+          <div className="card list-card">
+            {atRisk.map((item) => (
+              <div key={item.conceptId} className="list-row">
+                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
+                <div className="row-main">
+                  <div className="row-title">{item.label}</div>
+                  <div className="row-sub">
+                    {item.subjectName} · {t['today.mastery']}: {Math.round(item.masteryScore)}% · {item.forgettingRisk}% {t['today.forgettingRisk']}
+                  </div>
+                </div>
+                <Link href={`/dashboard/quiz?subjectId=${item.subjectId}&conceptId=${item.conceptId}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+                  {t['debt.review']}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
