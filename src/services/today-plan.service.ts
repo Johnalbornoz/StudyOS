@@ -107,6 +107,27 @@ function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverit
 }
 
 /**
+ * NBA v2 priority ranking: continuing an already-active repair beats
+ * starting anything new; an imminent exam (<=EXAM_CRITICAL_DAYS) is the
+ * one thing allowed to override it. A confirmed foundational gap
+ * outranks the symptom it's causing, scaled by Learning Unlock Value
+ * (how much repairing it unblocks) rather than just raw mastery. Pure
+ * and exported so it's directly unit-testable without a DB.
+ */
+export function nbaPriority(item: TodayItem): number {
+  if (item.reason === 'exam_soon' && (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS) return 2100;
+  if (item.reason === 'active_remediation') return 2000;
+  if (item.reason === 'prerequisite_gap') return 1000 + (item.unlockValue ?? 0);
+  if (item.reason === 'exam_soon') return 1000 - (item.daysUntilExam ?? 0) * 10;
+  if (item.reason === 'learning_debt') return 500 + (item.debtSeverity ?? 0) * 10;
+  if (item.reason === 'diagnosis_required') return 350;
+  if (item.reason === 'recurring_misconception') return 300 + (item.occurrenceCount ?? 0) * 10;
+  if (item.reason === 'forgetting_risk') return 200 + (item.forgettingRisk ?? 0);
+  if (item.reason === 'independence_gap') return 150 + (100 - (item.unassistedAccuracy ?? 100));
+  return 100 + (LOW_MASTERY_THRESHOLD - item.masteryScore);
+}
+
+/**
  * Every currently-relevant Phase 2 (Cognitive Learning Engine) signal
  * for a student, shaped as TodayItems so they merge into the same
  * priority/tier machinery as Phase 1's five reasons -- see
@@ -336,26 +357,7 @@ export async function getTodayPlan(
   const phase2Items = await getPhase2TodayItems(studentId, preferredLanguage).catch(() => []);
   const allItems = [...items, ...phase2Items];
 
-  const priority = (item: TodayItem): number => {
-    // Continuing an already-active repair beats starting anything new;
-    // an imminent exam is the one thing allowed to override it (brief's
-    // NBA v2 priority rule).
-    if (item.reason === 'active_remediation') return 2000;
-    if (item.reason === 'exam_soon' && (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS) return 1900;
-    // A confirmed foundational gap outranks the symptom it's causing --
-    // scaled by Learning Unlock Value (how much repairing it unblocks),
-    // not just "which concept has the worst mastery".
-    if (item.reason === 'prerequisite_gap') return 1000 + (item.unlockValue ?? 0);
-    if (item.reason === 'exam_soon') return 1000 - (item.daysUntilExam ?? 0) * 10;
-    if (item.reason === 'learning_debt') return 500 + (item.debtSeverity ?? 0) * 10;
-    if (item.reason === 'diagnosis_required') return 350;
-    if (item.reason === 'recurring_misconception') return 300 + (item.occurrenceCount ?? 0) * 10;
-    if (item.reason === 'forgetting_risk') return 200 + (item.forgettingRisk ?? 0);
-    if (item.reason === 'independence_gap') return 150 + (100 - (item.unassistedAccuracy ?? 100));
-    return 100 + (LOW_MASTERY_THRESHOLD - item.masteryScore);
-  };
-
-  allItems.sort((a, b) => priority(b) - priority(a));
+  allItems.sort((a, b) => nbaPriority(b) - nbaPriority(a));
 
   return {
     critical: allItems.filter((i) => i.urgencyTier === 'critical'),
