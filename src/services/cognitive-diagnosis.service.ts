@@ -340,6 +340,7 @@ export async function getActiveDiagnoses(studentId: string): Promise<
      LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = tc.id LIMIT 1) tcl ON true
      LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = cc.id LIMIT 1) ccl ON true
      WHERE cd.student_id = $1 AND cd.state IN ('LIKELY', 'DIAGNOSIS_REQUIRED', 'CONFIRMED') AND s.status = 'active'
+       AND NOT EXISTS (SELECT 1 FROM remediation_paths rp WHERE rp.diagnosis_id = cd.id AND rp.state = 'RESOLVED')
      ORDER BY cd.updated_at DESC`,
     [studentId]
   );
