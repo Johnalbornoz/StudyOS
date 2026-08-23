@@ -340,6 +340,7 @@ async function cleanup(studentIds: string[]) {
   section('CLEANUP');
   for (const studentId of studentIds) {
     await db.query(`DELETE FROM analytics_events WHERE student_id = $1`, [studentId]);
+    await db.query(`DELETE FROM concept_knowledge_state WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM student_misconceptions WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM remediation_steps WHERE remediation_path_id IN (SELECT id FROM remediation_paths WHERE student_id = $1)`, [studentId]);
     await db.query(`DELETE FROM remediation_paths WHERE student_id = $1`, [studentId]);
