@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import WhyThis from '../WhyThis';
+import type { WhyThisFact } from '@/services/today-plan.service';
 
 interface PlanItem {
   conceptId: string;
@@ -10,6 +12,7 @@ interface PlanItem {
   activityType: 'review' | 'practice' | 'quiz' | 'deep_dive';
   estimatedMinutes: number;
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  facts?: WhyThisFact[];
 }
 
 interface PlanSession {
@@ -145,23 +148,26 @@ export default function StudyPlanPage() {
                       <div
                         key={`${item.conceptId}-${i}`}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                          display: 'flex', flexDirection: 'column', gap: 2,
                           padding: '8px 0', borderLeft: `3px solid ${PRIORITY_COLOR[item.priority]}`, paddingLeft: 10,
                         }}
                       >
-                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{item.label}</span>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activityLabel(item.activityType)}</span>
-                        <span
-                          style={{
-                            fontSize: 11, fontWeight: 650, color: PRIORITY_COLOR[item.priority],
-                            textTransform: 'uppercase', letterSpacing: '0.03em',
-                          }}
-                        >
-                          {priorityLabel(item.priority)}
-                        </span>
-                        <span className="tabular" style={{ fontSize: 12.5, color: 'var(--text-muted)', width: 44, textAlign: 'right' }}>
-                          {item.estimatedMinutes}m
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                          <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{item.label}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activityLabel(item.activityType)}</span>
+                          <span
+                            style={{
+                              fontSize: 11, fontWeight: 650, color: PRIORITY_COLOR[item.priority],
+                              textTransform: 'uppercase', letterSpacing: '0.03em',
+                            }}
+                          >
+                            {priorityLabel(item.priority)}
+                          </span>
+                          <span className="tabular" style={{ fontSize: 12.5, color: 'var(--text-muted)', width: 44, textAlign: 'right' }}>
+                            {item.estimatedMinutes}m
+                          </span>
+                        </div>
+                        {item.facts && item.facts.length > 0 && <WhyThis facts={item.facts} t={t} />}
                       </div>
                     ))}
                   </div>

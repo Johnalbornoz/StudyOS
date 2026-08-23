@@ -10,6 +10,7 @@
 
 import { db } from '@/lib/db';
 import { getUpcomingForStudent } from './assessment.service';
+import type { WhyThisFact } from './today-plan.service';
 
 export interface ConceptPriority {
   conceptId: string;
@@ -17,7 +18,8 @@ export interface ConceptPriority {
   label: string;
   mastery: number;
   priority: number; // 0-100 (higher = more urgent)
-  reason: string; // Why this is high priority
+  reason: string; // Why this is high priority (legacy plain-English label, unused by the UI)
+  facts: WhyThisFact[]; // structured "Why This?" facts -- same type Today/Improve use, for Plan (Gap 5)
   estimatedStudyTime: number; // Minutes
   urgencyLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 }
@@ -27,7 +29,13 @@ function scorePriority(
   debtSeverity: number,
   errorCount: number,
   daysUntilExam?: number
-): { priority: number; urgencyLevel: ConceptPriority['urgencyLevel']; reason: string; estimatedStudyTime: number } {
+): {
+  priority: number;
+  urgencyLevel: ConceptPriority['urgencyLevel'];
+  reason: string;
+  facts: WhyThisFact[];
+  estimatedStudyTime: number;
+} {
   const masteryComponent = (100 - mastery) * 0.4; // 0-40 points
   const debtComponent = debtSeverity * 10; // 0-50 points (severity 1-5)
   const errorComponent = Math.min(errorCount * 5, 20); // 0-20 points (capped)
@@ -49,9 +57,25 @@ function scorePriority(
   if (daysUntilExam !== undefined && daysUntilExam <= 3) reason += 'Exam very soon. ';
   if (!reason) reason = 'Regular maintenance study.';
 
+  // Same structured facts Today/Improve use (Gap 5's reusable "Why
+  // This?" layer) -- built from the exact inputs already computed
+  // above, not a second parallel judgment. errorCount has no matching
+  // WhyThisFact kind yet, so it stays out of `facts` (still reflected
+  // in `reason` above) rather than overloading an existing kind.
+  const facts: WhyThisFact[] = [];
+  if (daysUntilExam !== undefined && daysUntilExam <= 3) facts.push({ kind: 'examSoon', daysUntilExam });
+  if (debtSeverity >= 3) facts.push({ kind: 'learningDebt', debtSeverity });
+  if (mastery < 60) facts.push({ kind: 'lowMastery', masteryScore: mastery });
+
   const estimatedStudyTime = Math.max(15, Math.min(60, priority / 2));
 
-  return { priority: Math.round(priority * 100) / 100, urgencyLevel, reason: reason.trim(), estimatedStudyTime: Math.round(estimatedStudyTime) };
+  return {
+    priority: Math.round(priority * 100) / 100,
+    urgencyLevel,
+    reason: reason.trim(),
+    facts,
+    estimatedStudyTime: Math.round(estimatedStudyTime),
+  };
 }
 
 /**

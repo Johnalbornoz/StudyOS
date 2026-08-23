@@ -86,7 +86,12 @@ export default function ConceptList({
       {items.map((c) => (
         <div key={c.conceptId}>
           <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)' }}>
-            <span style={{ flex: '0 0 190px', fontWeight: 600, fontSize: 14 }}>{c.label}</span>
+            <Link
+              href={`/dashboard/subjects/${subjectId}/concepts/${c.conceptId}`}
+              style={{ flex: '0 0 190px', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}
+            >
+              {c.label}
+            </Link>
             <div className="mastery-row" style={{ flex: 1 }}>
               <div className="mastery-bar">
                 <span className={masteryFillClass(c.masteryScore)} style={{ width: `${c.masteryScore}%` }} />

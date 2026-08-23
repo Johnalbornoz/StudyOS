@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
-import { getTodayPlan } from '@/services/today-plan.service';
+import { getTodayPlan, factsForItem } from '@/services/today-plan.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import ErrorPatternList from './ErrorPatternList';
+import WhyThis from '../WhyThis';
 
 export default async function LearningDebtPage() {
   const { userId: clerkUserId } = await auth();
@@ -61,6 +62,7 @@ export default async function LearningDebtPage() {
                 <div className="row-sub">
                   {t['debt.currentMastery']}: {Math.round(d.mastery ?? 0)}% · {t['debt.severity']} {d.severity}
                 </div>
+                <WhyThis facts={[{ kind: 'learningDebt', debtSeverity: d.severity }]} t={t} />
               </div>
               <Link href={`/dashboard/quiz?subjectId=${d.subjectId}&conceptId=${d.conceptId}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
                 {t['debt.review']}
@@ -85,6 +87,7 @@ export default async function LearningDebtPage() {
                   <div className="row-sub">
                     {item.subjectName} · {t['today.mastery']}: {Math.round(item.masteryScore)}% · {item.forgettingRisk}% {t['today.forgettingRisk']}
                   </div>
+                  <WhyThis facts={factsForItem(item)} t={t} />
                 </div>
                 <Link href={`/dashboard/quiz?subjectId=${item.subjectId}&conceptId=${item.conceptId}`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
                   {t['debt.review']}

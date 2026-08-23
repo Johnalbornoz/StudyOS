@@ -54,6 +54,7 @@ import {
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
+import { getIndependentMastery, shouldAskConfidence, type ConfidenceLevel } from '@/services/learner-model.service';
 import { getNextOccurrence } from '@/services/assessment.service';
 import { recordError } from '@/services/error-intelligence.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -141,6 +142,10 @@ const SubmitQuizSchema = z.object({
     z.object({
       questionIndex: z.number().int().min(0),
       answer: z.string(),
+      // Self-reported, captured client-side before the student saw
+      // whether they were right -- only present on questions the
+      // generate step flagged with askConfidence.
+      confidence: z.enum(['NOT_SURE', 'SOMEWHAT_SURE', 'VERY_SURE']).optional(),
     })
   ),
 });
@@ -198,7 +203,46 @@ function toClientQuestion(q: GeneratedQuestion, index: number) {
     classificationItems: q.classificationItems?.map((it) => it.item),
     classificationCategories: q.classificationCategories,
     visualAid: q.visualAid,
+    askConfidence: q.askConfidence || undefined,
   };
+}
+
+/**
+ * Decides, per concept, whether the first question about it in this
+ * quiz should ask the student to self-report confidence first (see
+ * shouldAskConfidence in learner-model.service.ts for the rule and
+ * why). One DB round trip for mastery_records regardless of concept
+ * count, plus one getIndependentMastery call per concept (bounded by
+ * maxQuestions, same pattern already used for question generation
+ * itself just above this function's call site).
+ */
+async function computeAskConfidenceFlags(
+  studentId: string,
+  conceptIds: string[],
+  quizMode: 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation'
+): Promise<Map<string, boolean>> {
+  const masteryRows = await db.query(
+    `SELECT concept_id, mastery_score, attempt_count FROM mastery_records WHERE student_id = $1 AND concept_id = ANY($2)`,
+    [studentId, conceptIds]
+  );
+  const masteryByConcept = new Map(masteryRows.rows.map((r) => [r.concept_id as string, r]));
+  const independentMasteries = await Promise.all(conceptIds.map((cId) => getIndependentMastery(studentId, cId)));
+
+  const flags = new Map<string, boolean>();
+  conceptIds.forEach((cId, i) => {
+    const row = masteryByConcept.get(cId);
+    flags.set(
+      cId,
+      shouldAskConfidence({
+        quizMode,
+        hasExistingMasteryRecord: !!row,
+        masteryScore: row ? Number(row.mastery_score) : null,
+        independentMastery: independentMasteries[i],
+        attemptCount: row ? Number(row.attempt_count) : 0,
+      })
+    );
+  });
+  return flags;
 }
 
 /** Select which concepts a multi-concept quiz (cumulative/exam sim) covers. */
@@ -280,19 +324,31 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
 
     const perConceptCap = Math.max(1, Math.ceil(maxQuestions / conceptIds.length));
 
-    const questionArrays = await Promise.all(
-      conceptIds.map((cId) =>
-        generateQuestionsForConcept(cId, validated.studentId, validated.subjectId, {
-          count: perConceptCap,
-          difficulty: validated.difficulty || 3,
-          types: ALL_QUESTION_TYPES,
-          guidance: config.guidance,
-          language,
-          visualAidRate: config.visualAidRate,
-          ibContext,
-        })
-      )
-    );
+    const [questionArrays, askConfidenceFlags] = await Promise.all([
+      Promise.all(
+        conceptIds.map((cId) =>
+          generateQuestionsForConcept(cId, validated.studentId, validated.subjectId, {
+            count: perConceptCap,
+            difficulty: validated.difficulty || 3,
+            types: ALL_QUESTION_TYPES,
+            guidance: config.guidance,
+            language,
+            visualAidRate: config.visualAidRate,
+            ibContext,
+          })
+        )
+      ),
+      computeAskConfidenceFlags(validated.studentId, conceptIds, validated.quizMode),
+    ]);
+
+    // Ask confidence at most once per concept per quiz (its first
+    // question), never on every question -- avoids fatigue while still
+    // capturing a fresh read whenever shouldAskConfidence() triggers.
+    questionArrays.forEach((arr, i) => {
+      if (arr.length > 0 && askConfidenceFlags.get(conceptIds[i])) {
+        arr[0].askConfidence = true;
+      }
+    });
 
     const questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
 
@@ -432,7 +488,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
 
         if (question.answerFormat === 'text') {
           const gradeResult = await gradeAnswer(question, answer.answer, language);
-          return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult };
+          return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult, reportedConfidence: answer.confidence };
         }
         const structured = gradeStructuredAnswer(question, answer.answer);
         return {
@@ -440,6 +496,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           question,
           rawAnswer: answer.answer,
           gradeResult: { ...structured, confidence: 1, errorType: null as null },
+          reportedConfidence: answer.confidence,
         };
       })
     );
@@ -447,19 +504,30 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     let correctCount = 0;
     let incorrectCount = 0;
     const review: any[] = [];
-    const byConcept = new Map<string, { correct: number; total: number; questionIndexes: number[] }>();
+    const byConcept = new Map<
+      string,
+      { correct: number; total: number; questionIndexes: number[]; confidenceBeforeAnswer?: ConfidenceLevel }
+    >();
 
     for (const g of graded) {
       if (!g) continue;
-      const { questionIndex, question, rawAnswer, gradeResult } = g;
+      const { questionIndex, question, rawAnswer, gradeResult, reportedConfidence } = g;
 
       if (gradeResult.score >= 0.5) correctCount++;
       else incorrectCount++;
 
-      const bucket = byConcept.get(question.conceptId) || { correct: 0, total: 0, questionIndexes: [] };
+      const bucket = byConcept.get(question.conceptId) || {
+        correct: 0,
+        total: 0,
+        questionIndexes: [],
+      };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
       bucket.questionIndexes.push(questionIndex);
+      // Only one question per concept is ever flagged askConfidence, so
+      // at most one answer in this bucket carries a reported confidence --
+      // whichever one does becomes this concept's evidence-level reading.
+      if (reportedConfidence && !bucket.confidenceBeforeAnswer) bucket.confidenceBeforeAnswer = reportedConfidence;
       byConcept.set(question.conceptId, bucket);
 
       review.push({
@@ -534,6 +602,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             activityType: 'quiz',
             learningMode,
             hintsUsed,
+            confidenceBeforeAnswer: bucket.confidenceBeforeAnswer,
           },
         });
         return {

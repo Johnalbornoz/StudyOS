@@ -20,6 +20,8 @@ import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 export type AIAssistanceType =
   | 'NONE' | 'HINT' | 'MULTIPLE_HINTS' | 'TUTOR_GUIDANCE' | 'TUTOR_EXPLANATION' | 'WORKED_EXAMPLE' | 'OTHER';
 export type LearningMode = 'SOLO' | 'COACH' | 'AI_NATIVE';
+// Matches learning_evidence's existing CHECK constraint (migration 021).
+export type ConfidenceLevel = 'NOT_SURE' | 'SOMEWHAT_SURE' | 'VERY_SURE';
 
 export interface MasteryUpdateInput {
   studentId: string;
@@ -32,6 +34,7 @@ export interface MasteryUpdateInput {
     learningMode?: LearningMode;
     hintsUsed?: number;
     aiAssistanceType?: AIAssistanceType;
+    confidenceBeforeAnswer?: ConfidenceLevel; // self-reported, captured before the student saw the result
   };
 }
 
@@ -301,8 +304,9 @@ export async function updateMastery(
       activity_type,
       learning_mode,
       hints_used,
-      ai_assistance_type
-    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10)
+      ai_assistance_type,
+      confidence_before_answer
+    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11)
     `,
     [
       studentId,
@@ -315,6 +319,7 @@ export async function updateMastery(
       telemetry?.learningMode ?? null,
       telemetry?.hintsUsed ?? 0,
       telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
+      telemetry?.confidenceBeforeAnswer ?? null,
     ]
   );
 

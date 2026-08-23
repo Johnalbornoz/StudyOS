@@ -238,6 +238,28 @@ function estimateMinutes(item: TodayItem): number {
  * getTodayPlan (e.g. the Today page itself) don't run the query twice
  * just to also show a "best next action" banner.
  */
+/**
+ * The reusable "Why This?" fact layer (Phase 1 Gap 5): turns any
+ * TodayItem's reason into structured facts, regardless of which
+ * surface is asking (Today's Best Next Action, Improve's debt/at-risk
+ * rows, Plan's scheduled reviews). One item can carry more than one
+ * fact if it qualifies for more than one reason at once -- callers
+ * decide how many to render.
+ */
+export function factsForItem(item: TodayItem): WhyThisFact[] {
+  const facts: WhyThisFact[] = [];
+  if (item.reason === 'exam_soon') facts.push({ kind: 'examSoon', daysUntilExam: item.daysUntilExam });
+  if (item.reason === 'learning_debt') facts.push({ kind: 'learningDebt', debtSeverity: item.debtSeverity });
+  if (item.reason === 'forgetting_risk') {
+    facts.push({ kind: 'forgettingRisk', forgettingRisk: item.forgettingRisk, daysSincePractice: item.daysSincePractice });
+  }
+  if (item.reason === 'independence_gap') {
+    facts.push({ kind: 'independenceGap', unassistedAccuracy: item.unassistedAccuracy, masteryScore: item.masteryScore });
+  }
+  if (item.reason === 'low_mastery') facts.push({ kind: 'lowMastery', masteryScore: item.masteryScore });
+  return facts;
+}
+
 export function buildBestNextAction(
   critical: TodayItem[],
   thisWeek: TodayItem[],
@@ -246,18 +268,7 @@ export function buildBestNextAction(
   const top = critical[0] ?? thisWeek[0] ?? canWait[0];
   if (!top) return null;
 
-  const facts: WhyThisFact[] = [];
-  if (top.reason === 'exam_soon') facts.push({ kind: 'examSoon', daysUntilExam: top.daysUntilExam });
-  if (top.reason === 'learning_debt') facts.push({ kind: 'learningDebt', debtSeverity: top.debtSeverity });
-  if (top.reason === 'forgetting_risk') {
-    facts.push({ kind: 'forgettingRisk', forgettingRisk: top.forgettingRisk, daysSincePractice: top.daysSincePractice });
-  }
-  if (top.reason === 'independence_gap') {
-    facts.push({ kind: 'independenceGap', unassistedAccuracy: top.unassistedAccuracy, masteryScore: top.masteryScore });
-  }
-  if (top.reason === 'low_mastery') facts.push({ kind: 'lowMastery', masteryScore: top.masteryScore });
-
-  return { item: top, estimatedMinutes: estimateMinutes(top), facts };
+  return { item: top, estimatedMinutes: estimateMinutes(top), facts: factsForItem(top) };
 }
 
 /**

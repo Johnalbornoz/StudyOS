@@ -30,7 +30,10 @@ interface Question {
   visualAid?: VisualAid;
   difficulty: number;
   calculatorAllowed?: boolean;
+  askConfidence?: boolean;
 }
+
+type ConfidenceLevel = 'NOT_SURE' | 'SOMEWHAT_SURE' | 'VERY_SURE';
 
 interface SubjectConcept {
   id: string;
@@ -141,7 +144,12 @@ export default function QuizPage() {
   const [maxQuestions, setMaxQuestions] = useState<number>(MODE_DEFAULT_MAX[modeParam]);
   const allowsTopicSelection = quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation';
   const [subjectConcepts, setSubjectConcepts] = useState<SubjectConcept[]>([]);
-  const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>([]);
+  // A SOLO-mode "Solo Check" on one concept (from Concept Detail) is just
+  // cumulative_assessment/exam_simulation pre-scoped to a single concept --
+  // no new quiz mode needed, reuses the existing manual-selection path.
+  const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>(
+    quizMode === 'cumulative_assessment' && conceptId ? [conceptId] : []
+  );
 
   const [quizId, setQuizId] = useState<string | null>(null);
   const [quizLanguage, setQuizLanguage] = useState<Locale>('en');
@@ -155,6 +163,8 @@ export default function QuizPage() {
   const [matchingAnswer, setMatchingAnswer] = useState<Record<string, string>>({});
   const [orderingAnswer, setOrderingAnswer] = useState<string[]>([]);
   const [classificationAnswer, setClassificationAnswer] = useState<Record<string, string>>({});
+  const [confidences, setConfidences] = useState<Record<number, ConfidenceLevel>>({});
+  const [confidenceSelected, setConfidenceSelected] = useState<ConfidenceLevel | null>(null);
 
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
@@ -246,6 +256,7 @@ export default function QuizPage() {
     setMatchingAnswer({});
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
+    setConfidenceSelected(null);
     setHintsVisible(false);
     setHintError(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -305,6 +316,7 @@ export default function QuizPage() {
   }
 
   function canProceed(q: Question): boolean {
+    if (q.askConfidence && !confidenceSelected) return false;
     switch (q.answerFormat) {
       case 'single_choice':
         return !!singleChoice;
@@ -327,10 +339,13 @@ export default function QuizPage() {
     const updatedAnswers = { ...answers, [current]: encoded };
     setAnswers(updatedAnswers);
 
+    const updatedConfidences = confidenceSelected ? { ...confidences, [current]: confidenceSelected } : confidences;
+    if (confidenceSelected) setConfidences(updatedConfidences);
+
     if (current + 1 < questions.length) {
       setCurrent(current + 1);
     } else {
-      submitQuiz(updatedAnswers);
+      submitQuiz(updatedAnswers, updatedConfidences);
     }
   }
 
@@ -344,7 +359,7 @@ export default function QuizPage() {
     });
   }
 
-  async function submitQuiz(finalAnswers: Record<number, string>) {
+  async function submitQuiz(finalAnswers: Record<number, string>, finalConfidences: Record<number, ConfidenceLevel> = confidences) {
     if (!studentId || !quizId) return;
     setSubmitting(true);
     setError(null);
@@ -352,6 +367,7 @@ export default function QuizPage() {
       const answerList = Object.entries(finalAnswers).map(([idx, ans]) => ({
         questionIndex: Number(idx),
         answer: ans,
+        confidence: finalConfidences[Number(idx)],
       }));
       const res = await fetch('/api/quizzes/generate-and-take', {
         method: 'POST',
@@ -717,6 +733,34 @@ export default function QuizPage() {
                 ))}
               </ul>
             )}
+          </div>
+        )}
+
+        {q.askConfidence && (
+          <div
+            role="radiogroup"
+            aria-label={t['quiz.confidenceQuestion']}
+            style={{
+              marginBottom: 'var(--space-5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-subtle)', border: '1px solid var(--border-default)',
+            }}
+          >
+            <p style={{ margin: '0 0 var(--space-3)', fontSize: 14, fontWeight: 600 }}>{t['quiz.confidenceQuestion']}</p>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              {(['NOT_SURE', 'SOMEWHAT_SURE', 'VERY_SURE'] as ConfidenceLevel[]).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  role="radio"
+                  aria-checked={confidenceSelected === level}
+                  onClick={() => setConfidenceSelected(level)}
+                  className={`btn ${confidenceSelected === level ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: 13.5, flex: '1 1 auto', minWidth: 100 }}
+                >
+                  {level === 'NOT_SURE' ? t['quiz.confidenceLow'] : level === 'SOMEWHAT_SURE' ? t['quiz.confidenceMedium'] : t['quiz.confidenceHigh']}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

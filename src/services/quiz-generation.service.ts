@@ -113,6 +113,7 @@ export interface GeneratedQuestion {
   difficulty: number; // 1-5
   calculatorAllowed?: boolean; // only set when the question involves numerical calculation
   sourceReference?: string;
+  askConfidence?: boolean; // set by the route after generation, per shouldAskConfidence() -- not decided here
 }
 
 export const ALL_QUESTION_TYPES: QuestionType[] = [

@@ -11,6 +11,7 @@
 
 import { db } from '@/lib/db';
 import { ConceptPriority, getStudentStudyPriorities } from './priority-engine.service';
+import type { WhyThisFact } from './today-plan.service';
 
 export interface StudySessionItem {
   conceptId: string;
@@ -19,6 +20,7 @@ export interface StudySessionItem {
   activityType: 'review' | 'practice' | 'quiz' | 'deep_dive';
   estimatedMinutes: number;
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  facts: WhyThisFact[]; // "Why This?" facts, straight from the priority engine (Gap 5)
   resources: {
     contentChunks?: string[]; // chunk IDs
     relatedConcepts?: string[]; // prerequisite or related concepts
@@ -156,6 +158,7 @@ export async function generateStudyPlan(
             activityType,
             estimatedMinutes: itemMinutes,
             priority: urgency,
+            facts: priority.facts,
             resources: {
               contentChunks: [], // Would populate from RAG
               relatedConcepts: [],
@@ -335,6 +338,11 @@ export async function getActiveStudyPlan(
           [row.id, preferredLanguage]
         );
 
+        // study_session_items doesn't persist structured facts (only
+        // the urgency label) -- a stored/reloaded plan shows no Why
+        // This until the student regenerates it. Not worth a migration
+        // for a secondary display detail; facts: [] just means WhyThis
+        // renders nothing for these rows instead of a wrong reason.
         const items: StudySessionItem[] = itemsResult.rows.map((it) => ({
           conceptId: it.concept_id,
           canonicalId: it.canonical_id,
@@ -342,6 +350,7 @@ export async function getActiveStudyPlan(
           activityType: it.item_type,
           estimatedMinutes: it.duration_estimate_minutes || 0,
           priority: it.reason,
+          facts: [],
           resources: {},
         }));
 

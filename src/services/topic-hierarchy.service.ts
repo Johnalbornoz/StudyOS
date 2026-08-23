@@ -15,13 +15,16 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
-import { getRetention } from './learner-model.service';
+import { getRetention, getConceptIntelligenceBatch } from './learner-model.service';
 
 export interface HierarchyConcept {
   id: string;
   label: string;
   masteryScore?: number;
   retention?: number;
+  independentMastery?: number;
+  confidenceCalibration?: number;
+  hasEvidence: boolean; // for Evidence Coverage at Topic/Subtopic level -- distinct from masteryScore being 0
 }
 
 export interface HierarchySubtopic {
@@ -253,6 +256,11 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
   );
   await ensureTopicHierarchyLocalizations(subjectId, language);
 
+  // One batched query for Independent Mastery + Confidence Calibration
+  // across every concept in the subject, instead of a per-concept call
+  // per accordion row.
+  const intelligence = await getConceptIntelligenceBatch(studentId, conceptIds);
+
   const rows = await db.query(
     `
     SELECT
@@ -285,6 +293,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       subtopic = { id: row.subtopic_id, name: row.subtopic_name, concepts: [] };
       topic.subtopics.push(subtopic);
     }
+    const conceptIntel = intelligence.get(row.concept_id);
     subtopic.concepts.push({
       id: row.concept_id,
       label: row.concept_label,
@@ -293,6 +302,9 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
         row.mastery_score !== null
           ? getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced) ?? undefined
           : undefined,
+      independentMastery: conceptIntel?.independentMastery ?? undefined,
+      confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
+      hasEvidence: row.mastery_score !== null,
     });
   }
 
@@ -310,14 +322,20 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
 
   return {
     topics: Array.from(topicMap.values()),
-    unassigned: unassignedResult.rows.map((r) => ({
-      id: r.id,
-      label: r.label,
-      masteryScore: r.mastery_score !== null ? Number(r.mastery_score) : undefined,
-      retention:
-        r.mastery_score !== null
-          ? getRetention(Number(r.mastery_score), Number(r.confidence_score), r.last_practiced) ?? undefined
-          : undefined,
-    })),
+    unassigned: unassignedResult.rows.map((r) => {
+      const conceptIntel = intelligence.get(r.id);
+      return {
+        id: r.id,
+        label: r.label,
+        masteryScore: r.mastery_score !== null ? Number(r.mastery_score) : undefined,
+        retention:
+          r.mastery_score !== null
+            ? getRetention(Number(r.mastery_score), Number(r.confidence_score), r.last_practiced) ?? undefined
+            : undefined,
+        independentMastery: conceptIntel?.independentMastery ?? undefined,
+        confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
+        hasEvidence: r.mastery_score !== null,
+      };
+    }),
   };
 }

@@ -17,6 +17,39 @@ function averageRetention(concepts: HierarchyConcept[]): number | null {
   return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
 }
 
+function averageIndependentMastery(concepts: HierarchyConcept[]): number | null {
+  const scores = concepts.flatMap((c) => (c.independentMastery !== undefined ? [c.independentMastery] : []));
+  return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+}
+
+function averageConfidenceCalibration(concepts: HierarchyConcept[]): number | null {
+  const scores = concepts.flatMap((c) => (c.confidenceCalibration !== undefined ? [c.confidenceCalibration] : []));
+  return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+}
+
+function evidenceCoveragePercent(concepts: HierarchyConcept[]): number | null {
+  if (concepts.length === 0) return null;
+  const evidenced = concepts.filter((c) => c.hasEvidence).length;
+  return Math.round((evidenced / concepts.length) * 100);
+}
+
+function buildSecondaryLine(concepts: HierarchyConcept[], t: ReturnType<typeof getMessages>): string | null {
+  const retention = averageRetention(concepts);
+  const independentMastery = averageIndependentMastery(concepts);
+  const confidenceCalibration = averageConfidenceCalibration(concepts);
+  const coverage = evidenceCoveragePercent(concepts);
+  return (
+    [
+      retention !== null ? `${t['subjectDetail.retention']} ${retention}%` : null,
+      independentMastery !== null ? `${t['subjectDetail.independentMastery']} ${independentMastery}%` : null,
+      confidenceCalibration !== null ? `${t['subjectDetail.confidenceCalibration']} ${confidenceCalibration}%` : null,
+      coverage !== null ? `${t['subjectDetail.evidenceCoverage']} ${coverage}%` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || null
+  );
+}
+
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
   if (score >= 50) return 'fill-warn';
@@ -56,7 +89,7 @@ function AccordionHeader({
   count,
   countLabel,
   masteryScore,
-  retentionLabel,
+  secondaryLine,
   size = 'lg',
 }: {
   open: boolean;
@@ -65,7 +98,7 @@ function AccordionHeader({
   count: number;
   countLabel: string;
   masteryScore: number | null;
-  retentionLabel?: string | null;
+  secondaryLine?: string | null;
   size?: 'lg' | 'sm';
 }) {
   return (
@@ -75,35 +108,37 @@ function AccordionHeader({
       aria-expanded={open}
       className="accordion-header"
       style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+        display: 'flex', flexDirection: 'column', gap: 4, width: '100%',
         background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
         padding: size === 'lg' ? 'var(--space-3) var(--space-3)' : 'var(--space-2) var(--space-3)',
         color: 'var(--text-primary)',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: size === 'lg' ? 'var(--space-3)' : 'var(--space-2)', minWidth: 0 }}>
-        <Chevron open={open} />
-        <span
-          style={
-            size === 'lg'
-              ? { fontSize: 16, fontWeight: 650 }
-              : { fontSize: 13, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }
-          }
-        >
-          {label}
-        </span>
-      </span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
-        <MiniMastery score={masteryScore} width={size === 'lg' ? 80 : 60} />
-        {retentionLabel && (
-          <span style={{ fontSize: size === 'lg' ? 12.5 : 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            {retentionLabel}
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: size === 'lg' ? 'var(--space-3)' : 'var(--space-2)', minWidth: 0 }}>
+          <Chevron open={open} />
+          <span
+            style={
+              size === 'lg'
+                ? { fontSize: 16, fontWeight: 650 }
+                : { fontSize: 13, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }
+            }
+          >
+            {label}
           </span>
-        )}
-        <span style={{ fontSize: size === 'lg' ? 13 : 12.5, color: 'var(--text-muted)', minWidth: 76, textAlign: 'right' }}>
-          {count} {countLabel}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
+          <MiniMastery score={masteryScore} width={size === 'lg' ? 80 : 60} />
+          <span style={{ fontSize: size === 'lg' ? 13 : 12.5, color: 'var(--text-muted)', minWidth: 76, textAlign: 'right' }}>
+            {count} {countLabel}
+          </span>
         </span>
       </span>
+      {secondaryLine && (
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: size === 'lg' ? 26 : 20 }}>
+          {secondaryLine}
+        </span>
+      )}
     </button>
   );
 }
@@ -157,7 +192,6 @@ export default function HierarchicalConceptList({
         const topicConcepts = topic.subtopics.flatMap((s) => s.concepts);
         const topicConceptCount = topicConcepts.length;
         const topicMastery = averageMastery(topicConcepts);
-        const topicRetention = averageRetention(topicConcepts);
 
         return (
           <div key={topic.id} className="card" style={{ padding: 'var(--space-2)' }}>
@@ -168,7 +202,7 @@ export default function HierarchicalConceptList({
               count={topicConceptCount}
               countLabel={t['subjectDetail.conceptCount']}
               masteryScore={topicMastery}
-              retentionLabel={topicRetention !== null ? `${t['subjectDetail.retention']} ${topicRetention}%` : null}
+              secondaryLine={buildSecondaryLine(topicConcepts, t)}
             />
 
             <Collapse open={topicOpen}>
@@ -182,7 +216,6 @@ export default function HierarchicalConceptList({
                 {topic.subtopics.map((subtopic) => {
                   const subtopicOpen = openSubtopics.has(subtopic.id);
                   const subtopicMastery = averageMastery(subtopic.concepts);
-                  const subtopicRetention = averageRetention(subtopic.concepts);
                   return (
                     <div key={subtopic.id}>
                       <AccordionHeader
@@ -192,7 +225,7 @@ export default function HierarchicalConceptList({
                         count={subtopic.concepts.length}
                         countLabel={t['subjectDetail.conceptCount']}
                         masteryScore={subtopicMastery}
-                        retentionLabel={subtopicRetention !== null ? `${t['subjectDetail.retention']} ${subtopicRetention}%` : null}
+                        secondaryLine={buildSecondaryLine(subtopic.concepts, t)}
                         size="sm"
                       />
 
@@ -228,11 +261,7 @@ export default function HierarchicalConceptList({
             count={hierarchy.unassigned.length}
             countLabel={t['subjectDetail.conceptCount']}
             masteryScore={averageMastery(hierarchy.unassigned)}
-            retentionLabel={
-              averageRetention(hierarchy.unassigned) !== null
-                ? `${t['subjectDetail.retention']} ${averageRetention(hierarchy.unassigned)}%`
-                : null
-            }
+            secondaryLine={buildSecondaryLine(hierarchy.unassigned, t)}
           />
 
           <Collapse open={openTopics.has(UNASSIGNED_KEY)}>

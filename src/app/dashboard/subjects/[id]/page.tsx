@@ -42,7 +42,8 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const contentSources = await getContentSources(studentId, id).catch(() => []);
   const hierarchy = await getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] }));
   const learnerModel = await getSubjectLearnerModel(studentId, id).catch(() => ({
-    avgMastery: null, avgRetention: null, avgIndependentMastery: null, evidenceCoverage: null, activeLearningDebtCount: 0,
+    avgMastery: null, avgRetention: null, avgIndependentMastery: null, avgConfidenceCalibration: null,
+    evidenceCoverage: null, activeLearningDebtCount: 0, atRiskCount: 0,
   }));
   const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
 
@@ -66,13 +67,18 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </p>
           {(learnerModel.avgRetention !== null ||
             learnerModel.avgIndependentMastery !== null ||
+            learnerModel.avgConfidenceCalibration !== null ||
             learnerModel.evidenceCoverage !== null ||
-            learnerModel.activeLearningDebtCount > 0) && (
+            learnerModel.activeLearningDebtCount > 0 ||
+            learnerModel.atRiskCount > 0) && (
             <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>
               {[
                 learnerModel.avgRetention !== null ? `${t['subjectDetail.retention']} ${learnerModel.avgRetention}%` : null,
                 learnerModel.avgIndependentMastery !== null
                   ? `${t['subjectDetail.independentMastery']} ${learnerModel.avgIndependentMastery}%`
+                  : null,
+                learnerModel.avgConfidenceCalibration !== null
+                  ? `${t['subjectDetail.confidenceCalibration']} ${learnerModel.avgConfidenceCalibration}%`
                   : null,
                 learnerModel.evidenceCoverage !== null
                   ? `${t['subjectDetail.evidenceCoverage']} ${learnerModel.evidenceCoverage.evidencedConcepts}/${learnerModel.evidenceCoverage.totalConcepts} (${learnerModel.evidenceCoverage.percent}%)`
@@ -80,6 +86,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
                 learnerModel.activeLearningDebtCount > 0
                   ? `${learnerModel.activeLearningDebtCount} ${t['subjectDetail.activeLearningDebt']}`
                   : null,
+                learnerModel.atRiskCount > 0 ? `${learnerModel.atRiskCount} ${t['subjectDetail.atRisk']}` : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}

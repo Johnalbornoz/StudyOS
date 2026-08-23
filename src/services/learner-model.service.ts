@@ -1,8 +1,9 @@
 /**
  * Learner Model (Phase 1): the new dimensions the brief asks for --
- * Retention, Independent Mastery, Evidence Strength -- computed on
- * demand from data that already exists (mastery_records,
- * learning_evidence), not stored/cached anywhere yet.
+ * Retention, Independent Mastery, Evidence Strength, Confidence,
+ * Confidence Calibration, Evidence Coverage -- computed on demand from
+ * data that already exists (mastery_records, learning_evidence), not
+ * stored/cached anywhere yet.
  *
  * Deliberately not persisted, same reasoning the codebase already
  * applies to forgetting_risk: a stored value decays out of date
@@ -20,6 +21,105 @@ import { db } from '@/lib/db';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 
 export type EvidenceStrength = 'LOW' | 'MEDIUM' | 'HIGH';
+// Matches the DB CHECK constraint on learning_evidence.confidence_before_answer
+// (migration 021) exactly -- NOT_SURE/SOMEWHAT_SURE/VERY_SURE, not a generic
+// LOW/MEDIUM/HIGH scale, since that schema already existed before this dimension
+// was wired up and the brief calls for reusing it rather than adding a new one.
+export type ConfidenceLevel = 'NOT_SURE' | 'SOMEWHAT_SURE' | 'VERY_SURE';
+export type CalibrationLabel = 'OVERCONFIDENT' | 'WELL_CALIBRATED' | 'UNDERCONFIDENT' | 'INSUFFICIENT_EVIDENCE';
+
+/** How each self-reported confidence level maps onto a 0-1 scale for calibration math. */
+const CONFIDENCE_NUMERIC: Record<ConfidenceLevel, number> = { NOT_SURE: 0.33, SOMEWHAT_SURE: 0.66, VERY_SURE: 1.0 };
+/** How each graded result maps onto the same 0-1 scale. */
+const RESULT_NUMERIC: Record<string, number> = { correct: 1, partial: 0.5, incorrect: 0 };
+
+/** Fewer than this many confidence+result pairs isn't enough to call a concept over/under/well-calibrated. */
+const CALIBRATION_MIN_SAMPLES = 3;
+/** abs(avg signed diff) below this counts as "well calibrated" rather than over/underconfident. */
+const CALIBRATION_NEUTRAL_BAND = 0.2;
+
+export interface ConfidenceCalibration {
+  score: number | null; // 0-100, higher = confidence tracks performance more closely
+  label: CalibrationLabel;
+  samples: number;
+}
+
+/**
+ * Confidence Calibration: how closely a student's self-reported
+ * confidence tracks their actual performance, over confidence+result
+ * pairs where confidence was actually captured (see Confidence Capture
+ * below -- most evidence has no confidence attached, and only the
+ * subset that does counts here).
+ *
+ * signedDiff = confidenceNumeric - resultNumeric, averaged:
+ *   > +0.2  -> OVERCONFIDENT   (reports more certainty than performance shows)
+ *   < -0.2  -> UNDERCONFIDENT  (reports less certainty than performance shows)
+ *   else    -> WELL_CALIBRATED
+ * score = 100 - avg(abs(signedDiff)) * 100 -- a single 0-100 number for
+ * display, independent of the directional label.
+ *
+ * Requires >= 3 samples; returns { score: null, label: INSUFFICIENT_EVIDENCE }
+ * otherwise -- one bad guess is not a diagnosis.
+ */
+export function computeConfidenceCalibration(
+  pairs: { confidence: ConfidenceLevel; result: string }[]
+): ConfidenceCalibration {
+  if (pairs.length < CALIBRATION_MIN_SAMPLES) {
+    return { score: null, label: 'INSUFFICIENT_EVIDENCE', samples: pairs.length };
+  }
+  const diffs = pairs.map((p) => CONFIDENCE_NUMERIC[p.confidence] - (RESULT_NUMERIC[p.result] ?? 0));
+  const avgSignedDiff = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  const avgAbsDiff = diffs.reduce((a, b) => a + Math.abs(b), 0) / diffs.length;
+  const label: CalibrationLabel =
+    avgSignedDiff > CALIBRATION_NEUTRAL_BAND
+      ? 'OVERCONFIDENT'
+      : avgSignedDiff < -CALIBRATION_NEUTRAL_BAND
+      ? 'UNDERCONFIDENT'
+      : 'WELL_CALIBRATED';
+  return { score: Math.max(0, Math.round((1 - avgAbsDiff) * 100)), label, samples: pairs.length };
+}
+
+/** Average self-reported confidence (0-100). Null with zero captured samples -- not 0%. */
+export function computeAverageConfidence(levels: ConfidenceLevel[]): number | null {
+  if (levels.length === 0) return null;
+  return Math.round((levels.reduce((sum, l) => sum + CONFIDENCE_NUMERIC[l], 0) / levels.length) * 100);
+}
+
+/**
+ * Deterministic sampling rule for when to ask "how confident are you?"
+ * before a question, instead of every question (fatigue). Any one
+ * condition triggers it:
+ *   - first evidence ever for this concept (no mastery_records row yet)
+ *   - a SOLO-mode quiz (cumulative_assessment/exam_simulation) -- these
+ *     are exactly the attempts Independent Mastery draws on, so pairing
+ *     them with a confidence read is the highest-value moment for
+ *     calibration
+ *   - mastery and independent mastery disagree by >= 20 points -- the
+ *     concept where "looks fine overall but shaky alone" (or vice
+ *     versa) is exactly where confidence is most informative
+ *   - periodic resampling every 5th attempt on a concept, so
+ *     calibration keeps getting fresh data even on concepts that never
+ *     trigger the other rules
+ */
+export function shouldAskConfidence(input: {
+  quizMode: 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation';
+  hasExistingMasteryRecord: boolean;
+  masteryScore: number | null;
+  independentMastery: number | null;
+  attemptCount: number;
+}): boolean {
+  if (!input.hasExistingMasteryRecord) return true;
+  if (input.quizMode === 'cumulative_assessment' || input.quizMode === 'exam_simulation') return true;
+  if (
+    input.masteryScore !== null &&
+    input.independentMastery !== null &&
+    Math.abs(input.masteryScore - input.independentMastery) >= 20
+  ) {
+    return true;
+  }
+  if (input.attemptCount > 0 && input.attemptCount % 5 === 0) return true;
+  return false;
+}
 
 /**
  * Retention (0-100): how likely the student is to still retrieve this
@@ -115,11 +215,39 @@ export async function getEvidenceStrength(studentId: string, conceptId: string):
   return 'LOW';
 }
 
+/**
+ * Confidence (0-100): average self-reported confidence across every
+ * captured sample for this concept (see Confidence Capture -- only a
+ * subset of evidence has this at all). Null with zero captured samples.
+ */
+export async function getConfidence(studentId: string, conceptId: string): Promise<number | null> {
+  const rows = await db.query(
+    `SELECT confidence_before_answer FROM learning_evidence
+     WHERE student_id = $1 AND concept_id = $2 AND confidence_before_answer IS NOT NULL`,
+    [studentId, conceptId]
+  );
+  return computeAverageConfidence(rows.rows.map((r) => r.confidence_before_answer as ConfidenceLevel));
+}
+
+/** Confidence Calibration for a single concept -- see computeConfidenceCalibration for the math. */
+export async function getConfidenceCalibration(studentId: string, conceptId: string): Promise<ConfidenceCalibration> {
+  const rows = await db.query(
+    `SELECT confidence_before_answer, result FROM learning_evidence
+     WHERE student_id = $1 AND concept_id = $2 AND confidence_before_answer IS NOT NULL`,
+    [studentId, conceptId]
+  );
+  return computeConfidenceCalibration(
+    rows.rows.map((r) => ({ confidence: r.confidence_before_answer as ConfidenceLevel, result: r.result as string }))
+  );
+}
+
 export interface LearnerConceptState {
   masteryScore: number;
   retention: number | null;
   independentMastery: number | null;
   evidenceStrength: EvidenceStrength | null;
+  confidence: number | null;
+  confidenceCalibration: ConfidenceCalibration;
 }
 
 export interface EvidenceCoverage {
@@ -131,6 +259,7 @@ export interface EvidenceCoverage {
 export interface LearnerModelSummary {
   avgRetention: number | null;
   avgIndependentMastery: number | null;
+  avgConfidenceCalibration: number | null;
   conceptsWithRetention: number;
   conceptsWithIndependentMastery: number;
   evidenceCoverage: EvidenceCoverage | null;
@@ -140,8 +269,16 @@ export interface SubjectLearnerModel {
   avgMastery: number | null;
   avgRetention: number | null;
   avgIndependentMastery: number | null;
+  avgConfidenceCalibration: number | null;
   evidenceCoverage: EvidenceCoverage | null;
   activeLearningDebtCount: number;
+  atRiskCount: number;
+}
+
+/** Per-concept intelligence bundle used to aggregate Topic/Subtopic views without N+1 queries. */
+export interface ConceptIntelligenceLite {
+  independentMastery: number | null;
+  confidenceCalibration: number | null;
 }
 
 /**
@@ -173,41 +310,85 @@ export async function getEvidenceCoverage(studentId: string, subjectId?: string)
 }
 
 /**
- * Bundles Mastery, Retention, Independent Mastery, Evidence Coverage
- * and active Learning Debt into one object for a single subject --
- * the "Subject Intelligence" view. Same null-safety rules as the
- * per-concept functions: a dimension is null when there isn't enough
- * evidence for it yet, never 0.
+ * Batched Independent Mastery + Confidence Calibration for a list of
+ * concept IDs (a subject's concepts, typically) -- one raw query over
+ * learning_evidence grouped in memory by concept_id, instead of N
+ * per-concept round trips. Used by Topic/Subtopic aggregation.
+ */
+export async function getConceptIntelligenceBatch(
+  studentId: string,
+  conceptIds: string[]
+): Promise<Map<string, ConceptIntelligenceLite>> {
+  const result = new Map<string, ConceptIntelligenceLite>();
+  if (conceptIds.length === 0) return result;
+
+  const rows = await db.query(
+    `SELECT concept_id, ai_assistance_type, result, confidence_before_answer
+     FROM learning_evidence
+     WHERE student_id = $1 AND concept_id = ANY($2)
+     ORDER BY timestamp DESC`,
+    [studentId, conceptIds]
+  );
+
+  const byConcept = new Map<string, typeof rows.rows>();
+  for (const row of rows.rows) {
+    const list = byConcept.get(row.concept_id) || [];
+    list.push(row);
+    byConcept.set(row.concept_id, list);
+  }
+
+  for (const conceptId of conceptIds) {
+    const rowsForConcept = byConcept.get(conceptId) || [];
+
+    const unassisted = rowsForConcept.filter((r) => r.ai_assistance_type === 'NONE').slice(0, 10);
+    const independentMastery =
+      unassisted.length >= 2
+        ? Math.round(
+            unassisted.reduce((sum, r) => sum + (r.result === 'correct' ? 100 : r.result === 'partial' ? 50 : 0), 0) /
+              unassisted.length
+          )
+        : null;
+
+    const withConfidence = rowsForConcept.filter((r) => r.confidence_before_answer !== null);
+    const calibration = computeConfidenceCalibration(
+      withConfidence.map((r) => ({ confidence: r.confidence_before_answer as ConfidenceLevel, result: r.result as string }))
+    );
+
+    result.set(conceptId, { independentMastery, confidenceCalibration: calibration.score });
+  }
+
+  return result;
+}
+
+/**
+ * Bundles Mastery, Retention, Independent Mastery, Confidence
+ * Calibration, Evidence Coverage, active Learning Debt and At-Risk
+ * count into one object for a single subject -- the "Subject
+ * Intelligence" view. Same null-safety rules as the per-concept
+ * functions: a dimension is null when there isn't enough evidence for
+ * it yet, never 0.
  */
 export async function getSubjectLearnerModel(studentId: string, subjectId: string): Promise<SubjectLearnerModel> {
   const masteryRows = await db.query(
-    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND subject_id = $2`,
+    `SELECT concept_id, mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND subject_id = $2`,
     [studentId, subjectId]
   );
   const masteryScores: number[] = [];
   const retentions: number[] = [];
+  let atRiskCount = 0;
   for (const row of masteryRows.rows) {
     masteryScores.push(Number(row.mastery_score));
     const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
-    if (r !== null) retentions.push(r);
+    if (r !== null) {
+      retentions.push(r);
+      if (r < 50) atRiskCount++;
+    }
   }
 
-  const evidenceRows = await db.query(
-    `
-    SELECT
-      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE') AS unassisted_count,
-      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE' AND result = 'correct') AS unassisted_correct
-    FROM learning_evidence
-    WHERE student_id = $1 AND subject_id = $2
-    GROUP BY concept_id
-    `,
-    [studentId, subjectId]
-  );
-  const independentScores: number[] = [];
-  for (const row of evidenceRows.rows) {
-    const count = Number(row.unassisted_count);
-    if (count >= 2) independentScores.push((Number(row.unassisted_correct) / count) * 100);
-  }
+  const conceptIds = masteryRows.rows.map((r) => r.concept_id as string);
+  const intelligence = await getConceptIntelligenceBatch(studentId, conceptIds);
+  const independentScores = [...intelligence.values()].flatMap((v) => (v.independentMastery !== null ? [v.independentMastery] : []));
+  const calibrationScores = [...intelligence.values()].flatMap((v) => (v.confidenceCalibration !== null ? [v.confidenceCalibration] : []));
 
   const debtResult = await db.query(
     `SELECT COUNT(*)::int AS count FROM learning_debt WHERE student_id = $1 AND subject_id = $2 AND status IN ('active', 'monitoring')`,
@@ -222,22 +403,27 @@ export async function getSubjectLearnerModel(studentId: string, subjectId: strin
     avgIndependentMastery: independentScores.length
       ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)
       : null,
+    avgConfidenceCalibration: calibrationScores.length
+      ? Math.round(calibrationScores.reduce((a, b) => a + b, 0) / calibrationScores.length)
+      : null,
     evidenceCoverage,
     activeLearningDebtCount: Number(debtResult.rows[0].count),
+    atRiskCount,
   };
 }
 
 /**
- * Student-wide averages for Progress's "Your Learning" section. Two
- * queries total no matter how many concepts the student has (one for
- * mastery_records, one grouped over learning_evidence) -- averaging
- * happens in memory, not per-concept round trips. Returns null
- * averages when there isn't enough evidence anywhere yet, rather than
- * a misleading 0.
+ * Student-wide averages for Progress's "Your Learning" section.
+ * Bounded number of queries no matter how many concepts the student
+ * has -- averaging happens in memory, not per-concept round trips.
+ * Returns null averages when there isn't enough evidence anywhere yet,
+ * rather than a misleading 0.
  */
 export async function getLearnerModelSummary(studentId: string): Promise<LearnerModelSummary> {
   const masteryRows = await db.query(
-    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1`,
+    `SELECT mr.concept_id, mr.mastery_score, mr.confidence_score, mr.last_practiced
+     FROM mastery_records mr JOIN subjects s ON s.id = mr.subject_id
+     WHERE mr.student_id = $1 AND s.status = 'active'`,
     [studentId]
   );
   const retentions: number[] = [];
@@ -246,27 +432,18 @@ export async function getLearnerModelSummary(studentId: string): Promise<Learner
     if (r !== null) retentions.push(r);
   }
 
-  const evidenceRows = await db.query(
-    `
-    SELECT
-      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE') AS unassisted_count,
-      COUNT(*) FILTER (WHERE ai_assistance_type = 'NONE' AND result = 'correct') AS unassisted_correct
-    FROM learning_evidence
-    WHERE student_id = $1
-    GROUP BY concept_id
-    `,
-    [studentId]
-  );
-  const independentScores: number[] = [];
-  for (const row of evidenceRows.rows) {
-    const count = Number(row.unassisted_count);
-    if (count >= 2) independentScores.push((Number(row.unassisted_correct) / count) * 100);
-  }
+  const conceptIds = masteryRows.rows.map((r) => r.concept_id as string);
+  const intelligence = await getConceptIntelligenceBatch(studentId, conceptIds);
+  const independentScores = [...intelligence.values()].flatMap((v) => (v.independentMastery !== null ? [v.independentMastery] : []));
+  const calibrationScores = [...intelligence.values()].flatMap((v) => (v.confidenceCalibration !== null ? [v.confidenceCalibration] : []));
 
   return {
     avgRetention: retentions.length ? Math.round(retentions.reduce((a, b) => a + b, 0) / retentions.length) : null,
     avgIndependentMastery: independentScores.length
       ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)
+      : null,
+    avgConfidenceCalibration: calibrationScores.length
+      ? Math.round(calibrationScores.reduce((a, b) => a + b, 0) / calibrationScores.length)
       : null,
     conceptsWithRetention: retentions.length,
     conceptsWithIndependentMastery: independentScores.length,
@@ -283,9 +460,11 @@ export async function getLearnerConceptState(studentId: string, conceptId: strin
   const record = masteryRow.rows[0];
   if (!record) return null;
 
-  const [independentMastery, evidenceStrength] = await Promise.all([
+  const [independentMastery, evidenceStrength, confidence, confidenceCalibration] = await Promise.all([
     getIndependentMastery(studentId, conceptId),
     getEvidenceStrength(studentId, conceptId),
+    getConfidence(studentId, conceptId),
+    getConfidenceCalibration(studentId, conceptId),
   ]);
 
   return {
@@ -293,5 +472,52 @@ export async function getLearnerConceptState(studentId: string, conceptId: strin
     retention: getRetention(Number(record.mastery_score), Number(record.confidence_score), record.last_practiced),
     independentMastery,
     evidenceStrength,
+    confidence,
+    confidenceCalibration,
+  };
+}
+
+export interface ConceptEvidenceSummary {
+  totalAttempts: number;
+  correctAttempts: number;
+  soloAttempts: number;
+  soloCorrect: number;
+  hintsUsedTotal: number;
+  realExamCount: number;
+  realExamAvgScore: number | null;
+  lastEvidenceDate: Date | string | null;
+  lastIndependentEvidenceDate: Date | string | null;
+}
+
+/**
+ * The evidence behind a concept's numbers, summarized for "Why
+ * StudyUS thinks this" on Concept Detail -- never raw-event-log, but
+ * every number here is a direct count/aggregate over real
+ * learning_evidence rows, not an LLM's characterization of them.
+ */
+export async function getConceptEvidenceSummary(studentId: string, conceptId: string): Promise<ConceptEvidenceSummary> {
+  const rows = await db.query(
+    `SELECT source_type, result, ai_assistance_type, hints_used, timestamp
+     FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC`,
+    [studentId, conceptId]
+  );
+
+  const realExamRows = rows.rows.filter((r) => r.source_type === 'REAL_SCHOOL_EXAM');
+  const independentRows = rows.rows.filter((r) => r.ai_assistance_type === 'NONE');
+
+  return {
+    totalAttempts: rows.rows.length,
+    correctAttempts: rows.rows.filter((r) => r.result === 'correct').length,
+    soloAttempts: independentRows.length,
+    soloCorrect: independentRows.filter((r) => r.result === 'correct').length,
+    hintsUsedTotal: rows.rows.reduce((sum, r) => sum + Number(r.hints_used || 0), 0),
+    realExamCount: realExamRows.length,
+    realExamAvgScore: realExamRows.length
+      ? Math.round(
+          (realExamRows.reduce((sum, r) => sum + (RESULT_NUMERIC[r.result] ?? 0), 0) / realExamRows.length) * 100
+        )
+      : null,
+    lastEvidenceDate: rows.rows[0]?.timestamp ?? null,
+    lastIndependentEvidenceDate: independentRows[0]?.timestamp ?? null,
   };
 }
