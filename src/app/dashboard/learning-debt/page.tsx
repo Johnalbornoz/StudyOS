@@ -92,10 +92,10 @@ export default async function LearningDebtPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
             {t['debt.foundationalGapsSubtitle']}
           </p>
-          <div className="card list-card">
+          <ul className="card list-card">
             {foundationalGapsWithAffects.map((d) => (
-              <div key={d.id} className="list-row">
-                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--error)' }} />
+              <li key={d.id} className="list-row">
+                <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--error)' }} />
                 <div className="row-main">
                   <div className="row-title">{d.candidateLabel}</div>
                   {d.affects.length > 0 && (
@@ -104,10 +104,15 @@ export default async function LearningDebtPage() {
                     </div>
                   )}
                 </div>
-                <StartRemediationButton diagnosisId={d.id} label={t['debt.fixFoundation']} />
-              </div>
+                <StartRemediationButton
+                  diagnosisId={d.id}
+                  label={t['debt.fixFoundation']}
+                  accessibleLabel={`${t['debt.fixFoundation']}: ${d.candidateLabel}`}
+                  errorLabel={t['common.error']}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -117,29 +122,35 @@ export default async function LearningDebtPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
             {t['debt.activeRepairsSubtitle']}
           </p>
-          <div className="card list-card">
+          <ul className="card list-card">
             {activeRemediations.map((p) => {
               const activeStep = p.steps.find((s) => s.status === 'active');
               const completedCount = p.steps.filter((s) => s.status === 'completed').length;
               const href = activeStep ? remediationStepHref(activeStep, { id: p.id, subjectId: p.subjectId }) : null;
+              const stepLabel = t['debt.stepOf'].replace('{current}', String(completedCount + 1)).replace('{total}', String(p.steps.length));
               return (
-                <div key={p.id} className="list-row">
-                  <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
+                <li key={p.id} className="list-row">
+                  <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
                   <div className="row-main">
                     <div className="row-title">{p.rootCauseLabel}</div>
                     <div className="row-sub">
-                      {p.subjectName} · {t['debt.stepOf'].replace('{current}', String(completedCount + 1)).replace('{total}', String(p.steps.length))}
+                      {p.subjectName} · {stepLabel}
                     </div>
                   </div>
                   {href && (
-                    <Link href={href} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+                    <Link
+                      href={href}
+                      className="btn btn-secondary"
+                      style={{ height: 32, fontSize: 13 }}
+                      aria-label={`${t['debt.continueRepair']}: ${p.rootCauseLabel} — ${stepLabel}`}
+                    >
                       {t['debt.continueRepair']}
                     </Link>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -149,22 +160,27 @@ export default async function LearningDebtPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '0 0 16px', maxWidth: '62ch' }}>
             {t['debt.recurringMisconceptionsSubtitle']}
           </p>
-          <div className="card list-card">
+          <ul className="card list-card">
             {recurringMisconceptions.map((m) => (
-              <div key={m.signatureId} className="list-row">
-                <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
+              <li key={m.signatureId} className="list-row">
+                <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: 'var(--warning)' }} />
                 <div className="row-main">
                   <div className="row-title">{m.conceptLabel} · {m.subjectName}</div>
                   <div className="row-sub">
                     {m.description} · {m.occurrenceCount} {t['debt.occurrences']}
                   </div>
                 </div>
-                <Link href={`/dashboard/quiz?subjectId=${m.subjectId}&conceptId=${m.conceptId}&mode=topic_practice`} className="btn btn-secondary" style={{ height: 32, fontSize: 13 }}>
+                <Link
+                  href={`/dashboard/quiz?subjectId=${m.subjectId}&conceptId=${m.conceptId}&mode=topic_practice`}
+                  className="btn btn-secondary"
+                  style={{ height: 32, fontSize: 13 }}
+                  aria-label={`${t['debt.review']}: ${m.conceptLabel}`}
+                >
                   {t['debt.review']}
                 </Link>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 

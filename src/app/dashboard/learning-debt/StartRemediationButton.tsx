@@ -3,7 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function StartRemediationButton({ diagnosisId, label }: { diagnosisId: string; label: string }) {
+export default function StartRemediationButton({
+  diagnosisId,
+  label,
+  accessibleLabel,
+  errorLabel,
+}: {
+  diagnosisId: string;
+  label: string;
+  accessibleLabel?: string;
+  errorLabel?: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -38,10 +48,16 @@ export default function StartRemediationButton({ diagnosisId, label }: { diagnos
         style={{ height: 32, fontSize: 13, flexShrink: 0 }}
         onClick={start}
         disabled={loading}
+        aria-label={accessibleLabel ?? label}
+        aria-busy={loading}
       >
-        {loading ? '…' : label}
+        {loading ? <span aria-hidden="true">…</span> : label}
       </button>
-      {error && <span style={{ fontSize: 12, color: 'var(--error)' }}>{'!'}</span>}
+      {error && (
+        <span role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>
+          {errorLabel ?? 'Something went wrong'}
+        </span>
+      )}
     </div>
   );
 }

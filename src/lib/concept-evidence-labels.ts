@@ -31,3 +31,13 @@ export function resultLabel(result: EvidenceResult, t: ReturnType<typeof getMess
 export function resultColor(result: EvidenceResult): string {
   return result === 'correct' ? 'var(--brand)' : result === 'partial' ? 'var(--warning)' : 'var(--error)';
 }
+
+/**
+ * Accessible text for a debt-resolution criterion's pass/fail state --
+ * the visual ✓/○ glyph is aria-hidden (decorative, color-dependent), so
+ * this is the only thing a screen reader announces for "is this
+ * criterion met", and it must never silently disappear.
+ */
+export function criterionStatusLabel(met: boolean, t: ReturnType<typeof getMessages>): string {
+  return met ? t['conceptDetail.criterionMet'] : t['conceptDetail.criterionNotMet'];
+}

@@ -8,7 +8,7 @@ import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.servic
 import { getTransferScore } from '@/services/transfer.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { sourceLabel, resultLabel, resultColor } from '@/lib/concept-evidence-labels';
+import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -212,9 +212,14 @@ export default async function ConceptDetailPage({
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.evidenceStrength']}</div>
           <div style={{ fontSize: 20, fontWeight: 650, lineHeight: 1.4 }}>{evidenceStrengthLabel}</div>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.transfer']}</div>
-          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
+        <div
+          className="card"
+          role="group"
+          aria-label={`${t['conceptDetail.transfer']}: ${transferScore !== null ? `${Math.round(transferScore)}%` : t['dashboard.notEnoughEvidence']}`}
+          style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}
+        >
+          <div className="label" style={{ color: 'var(--text-muted)' }} aria-hidden="true">{t['conceptDetail.transfer']}</div>
+          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }} aria-hidden="true">
             {transferScore !== null ? `${Math.round(transferScore)}%` : t['dashboard.notEnoughEvidence']}
           </div>
         </div>
@@ -247,15 +252,17 @@ export default async function ConceptDetailPage({
           <h2 style={{ fontSize: 14, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.debtProgressTitle']}</h2>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-              <span aria-hidden style={{ color: debtCriteria.masteryAbove85.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+              <span aria-hidden="true" style={{ color: debtCriteria.masteryAbove85.met ? 'var(--brand)' : 'var(--text-muted)' }}>
                 {debtCriteria.masteryAbove85.met ? '✓' : '○'}
               </span>
+              <span className="sr-only">{criterionStatusLabel(debtCriteria.masteryAbove85.met, t)}: </span>
               {t['conceptDetail.criterionMastery']} — <span className="tabular">{Math.round(debtCriteria.masteryAbove85.current)}%</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-              <span aria-hidden style={{ color: debtCriteria.recentScoresAbove80.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+              <span aria-hidden="true" style={{ color: debtCriteria.recentScoresAbove80.met ? 'var(--brand)' : 'var(--text-muted)' }}>
                 {debtCriteria.recentScoresAbove80.met ? '✓' : '○'}
               </span>
+              <span className="sr-only">{criterionStatusLabel(debtCriteria.recentScoresAbove80.met, t)}: </span>
               {t['conceptDetail.criterionRecentScores']} —{' '}
               {debtCriteria.recentScoresAbove80.current !== null ? (
                 <span className="tabular">{Math.round(debtCriteria.recentScoresAbove80.current)}%</span>
@@ -267,9 +274,10 @@ export default async function ConceptDetailPage({
               )}
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-              <span aria-hidden style={{ color: debtCriteria.retentionProof.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+              <span aria-hidden="true" style={{ color: debtCriteria.retentionProof.met ? 'var(--brand)' : 'var(--text-muted)' }}>
                 {debtCriteria.retentionProof.met ? '✓' : '○'}
               </span>
+              <span className="sr-only">{criterionStatusLabel(debtCriteria.retentionProof.met, t)}: </span>
               {t['conceptDetail.criterionRetentionProof']} —{' '}
               <span className="tabular">
                 {Number.isFinite(debtCriteria.retentionProof.daysSinceLastSuccess) ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
@@ -277,9 +285,10 @@ export default async function ConceptDetailPage({
               </span>
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-              <span aria-hidden style={{ color: debtCriteria.lowForgettingRisk.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+              <span aria-hidden="true" style={{ color: debtCriteria.lowForgettingRisk.met ? 'var(--brand)' : 'var(--text-muted)' }}>
                 {debtCriteria.lowForgettingRisk.met ? '✓' : '○'}
               </span>
+              <span className="sr-only">{criterionStatusLabel(debtCriteria.lowForgettingRisk.met, t)}: </span>
               {t['conceptDetail.criterionForgettingRisk']} — <span className="tabular">{Math.round(debtCriteria.lowForgettingRisk.current)}%</span>
             </li>
           </ul>

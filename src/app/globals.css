@@ -233,7 +233,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---------- List rows ---------- */
-.list-card { padding: var(--space-1); }
+.list-card { padding: var(--space-1); list-style: none; margin: 0; }
 .list-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-default); }
 .list-row:last-child { border-bottom: none; }
 .list-row .row-main { flex: 1; min-width: 0; }

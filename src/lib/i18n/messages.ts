@@ -119,6 +119,7 @@ type MessageKey =
   | 'subjectDetail.debtCriteriaTitle' | 'subjectDetail.debtCriteriaBody'
   | 'conceptDetail.debtProgressTitle' | 'conceptDetail.criterionMastery' | 'conceptDetail.criterionRecentScores'
   | 'conceptDetail.criterionRetentionProof' | 'conceptDetail.criterionForgettingRisk'
+  | 'conceptDetail.criterionMet' | 'conceptDetail.criterionNotMet'
   | 'conceptDetail.criterionNotEnoughSamples' | 'conceptDetail.criterionDaysUnit'
   | 'subjectDetail.historyToggle' | 'subjectDetail.historyEmpty' | 'subjectDetail.sourceGuidedExercise'
   | 'subjectDetail.sourceTopicAssessment' | 'subjectDetail.sourceRealExam' | 'subjectDetail.resultCorrect'
@@ -310,6 +311,8 @@ const es: Messages = {
   'conceptDetail.criterionRecentScores': 'Promedio de últimas 3 evaluaciones > 80%',
   'conceptDetail.criterionRetentionProof': 'Días desde tu último acierto > 14',
   'conceptDetail.criterionForgettingRisk': 'Riesgo de olvido < 20%',
+  'conceptDetail.criterionMet': 'Cumplido',
+  'conceptDetail.criterionNotMet': 'Aún no',
   'conceptDetail.criterionNotEnoughSamples': 'faltan evaluaciones',
   'conceptDetail.criterionDaysUnit': 'días',
   'subjectDetail.historyToggle': 'Historial',
@@ -853,6 +856,8 @@ const en: Messages = {
   'conceptDetail.criterionRecentScores': 'Average of last 3 assessments > 80%',
   'conceptDetail.criterionRetentionProof': 'Days since your last success > 14',
   'conceptDetail.criterionForgettingRisk': 'Forgetting risk < 20%',
+  'conceptDetail.criterionMet': 'Met',
+  'conceptDetail.criterionNotMet': 'Not yet',
   'conceptDetail.criterionNotEnoughSamples': 'not enough assessments yet',
   'conceptDetail.criterionDaysUnit': 'days',
   'subjectDetail.historyToggle': 'History',
@@ -1396,6 +1401,8 @@ const de: Messages = {
   'conceptDetail.criterionRecentScores': 'Durchschnitt der letzten 3 Bewertungen > 80%',
   'conceptDetail.criterionRetentionProof': 'Tage seit deinem letzten Erfolg > 14',
   'conceptDetail.criterionForgettingRisk': 'Vergessensrisiko < 20%',
+  'conceptDetail.criterionMet': 'Erfüllt',
+  'conceptDetail.criterionNotMet': 'Noch nicht',
   'conceptDetail.criterionNotEnoughSamples': 'noch nicht genug Bewertungen',
   'conceptDetail.criterionDaysUnit': 'Tage',
   'subjectDetail.historyToggle': 'Verlauf',
@@ -1939,6 +1946,8 @@ const fr: Messages = {
   'conceptDetail.criterionRecentScores': 'Moyenne des 3 dernières évaluations > 80%',
   'conceptDetail.criterionRetentionProof': 'Jours depuis ta dernière réussite > 14',
   'conceptDetail.criterionForgettingRisk': 'Risque d\'oubli < 20%',
+  'conceptDetail.criterionMet': 'Atteint',
+  'conceptDetail.criterionNotMet': 'Pas encore',
   'conceptDetail.criterionNotEnoughSamples': 'pas encore assez d\'évaluations',
   'conceptDetail.criterionDaysUnit': 'jours',
   'subjectDetail.historyToggle': 'Historique',
@@ -2482,6 +2491,8 @@ const pt: Messages = {
   'conceptDetail.criterionRecentScores': 'Média das últimas 3 avaliações > 80%',
   'conceptDetail.criterionRetentionProof': 'Dias desde seu último acerto > 14',
   'conceptDetail.criterionForgettingRisk': 'Risco de esquecimento < 20%',
+  'conceptDetail.criterionMet': 'Atingido',
+  'conceptDetail.criterionNotMet': 'Ainda não',
   'conceptDetail.criterionNotEnoughSamples': 'ainda não há avaliações suficientes',
   'conceptDetail.criterionDaysUnit': 'dias',
   'subjectDetail.historyToggle': 'Histórico',
