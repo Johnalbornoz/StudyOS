@@ -38,6 +38,18 @@ describe('nbaPriority (NBA v2)', () => {
     expect(nbaPriority(activeRemediation)).toBeGreaterThan(nbaPriority(examSoon));
   });
 
+  it('an abandoned remediation (started weeks ago, never resumed) scores exactly the same 2000 as one started today -- Phase 2 has no time-based decay, by design', () => {
+    // TodayItem carries no "started/opened at" field for active_remediation,
+    // so there is nothing for nbaPriority to read that would let an old,
+    // abandoned repair silently rank differently from a fresh one -- this
+    // pins that invariant explicitly rather than leaving it implicit.
+    const fresh = item({ reason: 'active_remediation', remediationPathId: 'path-fresh' });
+    const abandoned = item({ reason: 'active_remediation', remediationPathId: 'path-abandoned' });
+    expect(nbaPriority(fresh)).toBe(2000);
+    expect(nbaPriority(abandoned)).toBe(2000);
+    expect(nbaPriority(fresh)).toBe(nbaPriority(abandoned));
+  });
+
   it('an imminent exam (<=2 days) is the one thing that outranks active remediation', () => {
     const activeRemediation = item({ reason: 'active_remediation' });
     const imminentExam = item({ reason: 'exam_soon', daysUntilExam: 1 });

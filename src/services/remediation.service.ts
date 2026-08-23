@@ -102,16 +102,37 @@ async function loadPath(pathId: string): Promise<RemediationPath | null> {
 }
 
 /**
- * Creates the path + its steps from a CONFIRMED diagnosis. Only
- * callable once per diagnosis in practice (the caller checks
- * getActiveRemediationForDiagnosis first); doesn't enforce uniqueness
- * itself since a student could conceivably need a second attempt at
- * the same root cause later.
+ * The already-open (not yet RESOLVED/REJECTED) remediation path for
+ * this diagnosis, if one exists -- an abandoned path left sitting in
+ * REPAIRING/VERIFYING still counts as "already open" here on purpose
+ * (see startRemediation), since Phase 2 has no time-based expiry.
+ */
+async function getActiveRemediationForDiagnosis(diagnosisId: string): Promise<RemediationPath | null> {
+  const result = await db.query(
+    `SELECT id FROM remediation_paths WHERE diagnosis_id = $1 AND state IN ('CONFIRMED', 'REPAIRING', 'VERIFYING') LIMIT 1`,
+    [diagnosisId]
+  );
+  const row = result.rows[0];
+  return row ? loadPath(row.id) : null;
+}
+
+/**
+ * Creates the path + its steps from a CONFIRMED diagnosis. Idempotent
+ * per diagnosis: if a remediation path for this diagnosis is already
+ * open (including one abandoned mid-REPAIRING/VERIFYING -- Phase 2 has
+ * no time-based expiry, see docs/architecture/phase-2-cognitive-
+ * learning-engine.md), this returns that same path instead of creating
+ * a duplicate, so calling it twice (a double-click, two tabs, a retry)
+ * is always deterministic. A brand-new path is only ever created once
+ * the previous one has reached a terminal state (RESOLVED/REJECTED).
  */
 export async function startRemediation(diagnosisId: string): Promise<RemediationPath> {
   const diagnosis = await getDiagnosis(diagnosisId);
   if (!diagnosis) throw new Error('DIAGNOSIS_NOT_FOUND');
   if (diagnosis.state !== 'CONFIRMED') throw new Error('DIAGNOSIS_NOT_CONFIRMED');
+
+  const existing = await getActiveRemediationForDiagnosis(diagnosisId);
+  if (existing) return existing;
 
   const candidateState = await getLearnerConceptState(diagnosis.studentId, diagnosis.candidateConceptId);
   const pattern = determineRemediationPattern(candidateState);
