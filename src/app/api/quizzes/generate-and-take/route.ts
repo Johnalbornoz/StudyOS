@@ -45,6 +45,7 @@ import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   generateQuestionsForConcept,
+  generateQuestionVariant,
   gradeAnswer,
   gradeStructuredAnswer,
   GeneratedQuestion,
@@ -783,25 +784,45 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             evidenceQualifications[conceptId] = qualifyEvidence(decision.assessmentConfidenceBeforeVerification);
             if (!decision.required) return;
 
-            const [verificationQuestion] = await generateQuestionsForConcept(conceptId, validated.studentId, quizSession.subjectId, {
-              count: 1,
-              difficulty: 3,
-              guidance:
-                'Verification question: test the SAME concept the student was just asked about, from a different angle (a conceptual consequence, alternative application, or common misconception) -- never simply repeat the same calculation with different numbers.',
-              language,
-              visualAidRate: 0,
-            });
-            if (!verificationQuestion) return;
-
             // Target the specific question/evidence item that actually
             // caused the trigger -- the bucket's lowest-confidence
             // (most ambiguous) graded question, tie-broken
             // deterministically -- never an arbitrary "first question."
+            // Selected FIRST, before generation, so the variant request
+            // below is always built from the real ambiguous question.
             const { questionIndex: originalQuestionIndex, gradingConfidence: originalGradingConfidence } = selectMostAmbiguousQuestion(
               bucket.questionIndexes,
               bucket.gradingConfidences
             );
             const originalQuestion = cachedQuestions[originalQuestionIndex];
+            if (!originalQuestion) return; // defensive -- nothing to verify against
+
+            // generateQuestionVariant is the single generation +
+            // equivalence authority (quiz-generation.service.ts) -- never
+            // call generateQuestionsForConcept directly for a verification
+            // question, which would bypass the equivalence contract
+            // entirely (the bug this fixes).
+            const variantResult = await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language);
+
+            let verificationQuestion: GeneratedQuestion;
+            let variantEquivalenceConfidence: number | null;
+            if (variantResult) {
+              verificationQuestion = variantResult.variant;
+              variantEquivalenceConfidence = variantResult.contract.equivalenceConfidence;
+            } else {
+              // generateQuestionVariant's own documented contract: on any
+              // failure (generation error, empty result, or the raw
+              // candidate failing the equivalence gate) callers fall back
+              // to reusing the original source question -- never a
+              // silently non-equivalent substitute. variantEquivalenceConfidence
+              // is documented (assessment-confidence.ts, verification-triggers.ts)
+              // as "only set when a generated variant was used" -- reusing
+              // the original question means no variant was generated and no
+              // equivalence evaluation ran, so there is nothing to record
+              // here. null, never a fabricated 1.0.
+              verificationQuestion = originalQuestion;
+              variantEquivalenceConfidence = null;
+            }
 
             await createPendingVerificationAttempt({
               quizSessionId: validated.quizId,
@@ -813,6 +834,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               verificationQuestion,
               triggerIds: decision.triggers.map((t) => t.triggerId),
               gradingConfidence: originalGradingConfidence,
+              variantEquivalenceConfidence,
               assessmentConfidenceBefore: decision.assessmentConfidenceBeforeVerification,
             });
 
