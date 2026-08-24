@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getQuizSession, recordHintUsed } from '@/services/quiz-persistence.service';
 import { generateQuestionHint } from '@/services/quiz-generation.service';
+import { canUseAI } from '@/lib/ai-permission-policy';
 import { z } from 'zod';
 
 const HintSchema = z.object({
@@ -35,7 +36,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
-  if (quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation' || quizSession.quizMode === 'diagnostic_check') {
+  // Phase 3A: server-side authoritative check -- frontend state (which
+  // hint button is even rendered) can never be trusted to enforce this
+  // on its own. Denies HINT in every mode except PRACTICE, regardless
+  // of which quiz mode the client claims.
+  if (!canUseAI({ evidenceMode: quizSession.evidenceMode, feature: 'HINT' })) {
     return NextResponse.json({ error: 'HINTS_DISABLED_FOR_MODE' }, { status: 403 });
   }
 

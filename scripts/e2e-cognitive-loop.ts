@@ -39,6 +39,8 @@ import { recordExamResult, getConceptAttribution } from '@/services/exam-result.
 import { mapAssessmentConceptCoverage, detectCalibrationConflict, getCalibrationConflicts } from '@/services/external-assessment.service';
 import { runKnowledgeStateBackfill } from '@/services/knowledge-state-backfill.service';
 import { getDueItems } from '@/services/learning-scheduler.service';
+import { storeQuiz, getQuizSession, completeQuiz } from '@/services/quiz-persistence.service';
+import { canUseAI } from '@/lib/ai-permission-policy';
 
 let passCount = 0;
 let failCount = 0;
@@ -723,10 +725,126 @@ async function scenarioPreflight() {
   return { studentId, subjectId, backfillRunIds: [firstRun.runId, secondRun.runId] };
 }
 
+/**
+ * SCENARIO G -- Phase 3A Evidence Mode Engine: Activity Type/Evidence
+ * Mode are stamped immutably at attempt creation and actually change
+ * what the resulting evidence counts as -- Solo Check produces real
+ * Independent evidence, Review (assisted) produces Practice evidence,
+ * Retention Review produces Independent evidence, and the server-side
+ * canUseAI policy denies HINT for every attempt whose persisted
+ * Evidence Mode isn't PRACTICE, regardless of which quiz mode a
+ * client might claim.
+ */
+async function scenarioEvidenceModeEngine() {
+  section('SCENARIO G: Phase 3A Evidence Mode Engine (Solo Check, Review, Retention Check)');
+  const studentId = await makeScratchStudent('evidence_mode');
+  const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, evidence mode)');
+  const conceptId = await makeScratchConcept(subjectId, `momentum_conservation_${RUN_ID}`, 'Conservation of Momentum');
+
+  const quizIds: string[] = [];
+
+  // --- Solo Check (quick_check) -- the fixed legacy bug: this must be
+  // SOLO_CHECK/INDEPENDENT, never CUMULATIVE_ASSESSMENT/ASSESSMENT.
+  const soloCheckQuizId = await storeQuiz(studentId, conceptId, subjectId, [{ conceptId } as any], 'en', 'quick_check');
+  quizIds.push(soloCheckQuizId);
+  const soloCheckSession = await getQuizSession(soloCheckQuizId);
+  assert(soloCheckSession?.activityType === 'SOLO_CHECK', `Solo Check attempt has Activity Type SOLO_CHECK (got ${soloCheckSession?.activityType})`);
+  assert(soloCheckSession?.evidenceMode === 'INDEPENDENT', `Solo Check attempt has Evidence Mode INDEPENDENT (got ${soloCheckSession?.evidenceMode})`);
+  assert(!canUseAI({ evidenceMode: soloCheckSession!.evidenceMode, feature: 'HINT' }), 'canUseAI denies HINT for the real, persisted Solo Check attempt');
+  assert(canUseAI({ evidenceMode: soloCheckSession!.evidenceMode, feature: 'MATH_TOOLBAR' }), 'canUseAI still allows the Math Toolbar during Solo Check (input assistance, not answer assistance)');
+
+  const soloLearningMode: 'SOLO' | 'COACH' = soloCheckSession!.evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO';
+  await updateMastery({
+    studentId,
+    conceptId,
+    subjectId,
+    evidence: { result: 'correct', difficulty: 3, sourceType: 'PRACTICE_QUESTION', confidenceWeight: 0.9, scorePercent: 90, sampleSize: 4 },
+    telemetry: { activityType: 'quiz', learningMode: soloLearningMode, hintsUsed: 0 },
+    metadata: { activityType: soloCheckSession!.activityType, evidenceMode: soloCheckSession!.evidenceMode },
+  });
+  await completeQuiz(soloCheckQuizId);
+
+  const afterSoloCheck = await db.query(
+    `SELECT ai_assistance_type, metadata FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT 1`,
+    [studentId, conceptId]
+  );
+  assert(afterSoloCheck.rows[0]?.ai_assistance_type === 'NONE', `Solo Check evidence is unassisted (ai_assistance_type=NONE, got ${afterSoloCheck.rows[0]?.ai_assistance_type})`);
+  assert(afterSoloCheck.rows[0]?.metadata?.evidenceMode === 'INDEPENDENT', 'Solo Check evidence records its real Evidence Mode in metadata');
+
+  // --- Review (assisted reinforcement) -- REVIEW/PRACTICE, AI may help.
+  const reviewQuizId = await storeQuiz(studentId, conceptId, subjectId, [{ conceptId } as any], 'en', 'review');
+  quizIds.push(reviewQuizId);
+  const reviewSession = await getQuizSession(reviewQuizId);
+  assert(reviewSession?.activityType === 'REVIEW' && reviewSession?.evidenceMode === 'PRACTICE', `Review attempt is REVIEW/PRACTICE (got ${reviewSession?.activityType}/${reviewSession?.evidenceMode})`);
+  assert(canUseAI({ evidenceMode: reviewSession!.evidenceMode, feature: 'HINT' }), 'canUseAI allows HINT during Review (reinforcement, AI may assist)');
+
+  const reviewLearningMode: 'SOLO' | 'COACH' = reviewSession!.evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO';
+  await updateMastery({
+    studentId,
+    conceptId,
+    subjectId,
+    evidence: { result: 'correct', difficulty: 3, sourceType: 'PRACTICE_QUIZ', confidenceWeight: 0.9, scorePercent: 85, sampleSize: 4 },
+    telemetry: { activityType: 'quiz', learningMode: reviewLearningMode, hintsUsed: 1, aiAssistanceType: 'HINT' },
+    metadata: { activityType: reviewSession!.activityType, evidenceMode: reviewSession!.evidenceMode },
+  });
+  await completeQuiz(reviewQuizId);
+
+  const afterReview = await db.query(
+    `SELECT ai_assistance_type, metadata FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT 1`,
+    [studentId, conceptId]
+  );
+  assert(afterReview.rows[0]?.ai_assistance_type === 'HINT', `Review evidence records real assistance used (ai_assistance_type=HINT, got ${afterReview.rows[0]?.ai_assistance_type})`);
+  assert(afterReview.rows[0]?.metadata?.evidenceMode === 'PRACTICE', 'Review evidence records Evidence Mode PRACTICE in metadata');
+
+  // --- Retention Review (unassisted) -- RETENTION_CHECK/INDEPENDENT.
+  const retentionQuizId = await storeQuiz(studentId, conceptId, subjectId, [{ conceptId } as any], 'en', 'retention_check');
+  quizIds.push(retentionQuizId);
+  const retentionSession = await getQuizSession(retentionQuizId);
+  assert(retentionSession?.activityType === 'RETENTION_CHECK' && retentionSession?.evidenceMode === 'INDEPENDENT', `Retention Review attempt is RETENTION_CHECK/INDEPENDENT (got ${retentionSession?.activityType}/${retentionSession?.evidenceMode})`);
+  assert(!canUseAI({ evidenceMode: retentionSession!.evidenceMode, feature: 'HINT' }), 'canUseAI denies HINT during Retention Review');
+
+  const retentionLearningMode: 'SOLO' | 'COACH' = retentionSession!.evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO';
+  await updateMastery({
+    studentId,
+    conceptId,
+    subjectId,
+    evidence: { result: 'correct', difficulty: 3, sourceType: 'PRACTICE_QUESTION', confidenceWeight: 0.9, scorePercent: 88, sampleSize: 4 },
+    telemetry: { activityType: 'quiz', learningMode: retentionLearningMode, hintsUsed: 0 },
+    metadata: { activityType: retentionSession!.activityType, evidenceMode: retentionSession!.evidenceMode },
+  });
+  await completeQuiz(retentionQuizId);
+
+  const afterRetention = await db.query(
+    `SELECT ai_assistance_type, metadata FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT 1`,
+    [studentId, conceptId]
+  );
+  assert(afterRetention.rows[0]?.ai_assistance_type === 'NONE', `Retention Review evidence is unassisted (got ${afterRetention.rows[0]?.ai_assistance_type})`);
+  assert(afterRetention.rows[0]?.metadata?.activityType === 'RETENTION_CHECK', 'Retention Review evidence records Activity Type RETENTION_CHECK in metadata');
+
+  // --- Attempt Mode Immutability: each mode change created a brand-new
+  // quizId; nothing ever rewrote an existing attempt's mode.
+  assert(new Set(quizIds).size === quizIds.length, 'Practice/Independent/Assessment transitions each required a brand-new attempt, never an in-place mode change');
+  const modesOfRecord = await db.query(`SELECT id, quiz_mode, activity_type, evidence_mode FROM quiz_sessions WHERE id = ANY($1)`, [quizIds]);
+  assert(modesOfRecord.rows.every((r) => r.activity_type && r.evidence_mode), 'every attempt has its Activity Type/Evidence Mode permanently stamped in quiz_sessions');
+
+  // --- Backward compatibility: an existing cumulative_assessment
+  // attempt (Assessment Mode, pre-Phase-3A semantics) still resolves
+  // correctly and still denies HINT, exactly as before.
+  const cumulativeQuizId = await storeQuiz(studentId, null, subjectId, [{ conceptId } as any], 'en', 'cumulative_assessment', [conceptId]);
+  quizIds.push(cumulativeQuizId);
+  const cumulativeSession = await getQuizSession(cumulativeQuizId);
+  assert(cumulativeSession?.activityType === 'CUMULATIVE_ASSESSMENT' && cumulativeSession?.evidenceMode === 'ASSESSMENT', 'pre-existing Cumulative Assessment mode is unaffected by the Solo Check fix');
+  assert(!canUseAI({ evidenceMode: cumulativeSession!.evidenceMode, feature: 'HINT' }), 'Cumulative Assessment still denies HINT (regression check)');
+  await completeQuiz(cumulativeQuizId);
+
+  return { studentId, subjectId, quizIds };
+}
+
 async function cleanup(studentIds: string[], backfillRunIds: string[] = []) {
   section('CLEANUP');
   for (const studentId of studentIds) {
     await db.query(`DELETE FROM analytics_events WHERE student_id = $1`, [studentId]);
+    await db.query(`DELETE FROM quiz_sessions WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM calibration_conflicts WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM assessment_results WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM validation_events WHERE validation_cycle_id IN (SELECT id FROM validation_cycles WHERE student_id = $1)`, [studentId]);
@@ -790,6 +908,8 @@ async function main() {
     const f = await scenarioPreflight();
     createdStudentIds.push(f.studentId);
     backfillRunIds = f.backfillRunIds;
+    const g = await scenarioEvidenceModeEngine();
+    createdStudentIds.push(g.studentId);
   } finally {
     await cleanup(createdStudentIds, backfillRunIds);
   }

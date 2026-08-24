@@ -8,8 +8,44 @@
 
 import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
+import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 
-export type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
+export type QuizMode =
+  | 'topic_practice'
+  | 'review'
+  | 'quick_check'
+  | 'retention_check'
+  | 'cumulative_assessment'
+  | 'exam_simulation'
+  | 'diagnostic_check';
+
+/**
+ * Phase 3A: the Quiz/Activity Engine's own Activity Type per quiz
+ * mode -- fixed at attempt creation (see storeQuiz) and never changed
+ * afterward. `quick_check` is deliberately SOLO_CHECK, not
+ * CUMULATIVE_ASSESSMENT -- Solo Check must never be represented
+ * internally as Cumulative Assessment just because an earlier route
+ * happened to reuse that mode for a "prove it alone" moment
+ * (Concept Detail's soloCheck CTA did exactly that; it's fixed
+ * alongside this).
+ */
+export const ACTIVITY_TYPE_BY_QUIZ_MODE: Record<QuizMode, ActivityType> = {
+  topic_practice: 'PRACTICE',
+  review: 'REVIEW',
+  quick_check: 'SOLO_CHECK',
+  retention_check: 'RETENTION_CHECK',
+  cumulative_assessment: 'CUMULATIVE_ASSESSMENT',
+  exam_simulation: 'MOCK_EXAM',
+  diagnostic_check: 'DIAGNOSTIC_CHECK',
+};
+
+export function activityTypeForQuizMode(quizMode: QuizMode): ActivityType {
+  return ACTIVITY_TYPE_BY_QUIZ_MODE[quizMode] ?? 'PRACTICE';
+}
+
+export function evidenceModeForQuizMode(quizMode: QuizMode): EvidenceMode {
+  return evidenceModeForActivity(activityTypeForQuizMode(quizMode));
+}
 
 export interface QuizSession {
   id: string;
@@ -18,6 +54,8 @@ export interface QuizSession {
   subjectId: string;
   conceptIds: string[];
   quizMode: QuizMode;
+  activityType: ActivityType;
+  evidenceMode: EvidenceMode;
   questions: GeneratedQuestion[];
   language: string;
   createdAt: Date;
@@ -47,13 +85,20 @@ export async function storeQuiz(
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 45 * 60 * 1000); // Expire after 45 minutes
 
+    // Phase 3A: Activity Type/Evidence Mode are derived once, here, at
+    // attempt creation, and stamped onto the row -- never recomputed or
+    // rewritten afterward. That's what makes them immutable per attempt:
+    // there is no UPDATE path in this file that touches either column.
+    const activityType = activityTypeForQuizMode(quizMode);
+    const evidenceMode = evidenceModeForActivity(activityType);
+
     await db.query(
       `
       INSERT INTO quiz_sessions (
         id, student_id, concept_id, subject_id,
         questions, language, status, created_at, expires_at,
-        quiz_mode, concept_ids
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        quiz_mode, concept_ids, activity_type, evidence_mode
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       `,
       [
         quizId,
@@ -67,6 +112,8 @@ export async function storeQuiz(
         expiresAt,
         quizMode,
         conceptIds.length > 0 ? conceptIds : questions.map((q) => q.conceptId),
+        activityType,
+        evidenceMode,
       ]
     );
 
@@ -163,7 +210,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       `
       SELECT id, student_id, concept_id, subject_id,
              questions, language, status, created_at, expires_at,
-             quiz_mode, concept_ids, hints_used_questions
+             quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -175,6 +222,13 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     }
 
     const row = result.rows[0];
+    const quizMode: QuizMode = row.quiz_mode || 'topic_practice';
+    // Backward compatibility: a row created before this migration has
+    // NULL activity_type/evidence_mode -- derive them from its
+    // (unchanged) quiz_mode via the same mapping, rather than treating
+    // historical attempts as mode-less.
+    const activityType: ActivityType = row.activity_type || activityTypeForQuizMode(quizMode);
+    const evidenceMode: EvidenceMode = row.evidence_mode || evidenceModeForActivity(activityType);
 
     return {
       id: row.id,
@@ -182,7 +236,9 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       conceptId: row.concept_id,
       subjectId: row.subject_id,
       conceptIds: row.concept_ids || [],
-      quizMode: row.quiz_mode || 'topic_practice',
+      quizMode,
+      activityType,
+      evidenceMode,
       questions: row.questions,
       language: row.language,
       createdAt: new Date(row.created_at),
@@ -204,7 +260,7 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, status, created_at, expires_at, quiz_mode, concept_ids
+             questions, status, created_at, expires_at, quiz_mode, concept_ids, activity_type, evidence_mode
       FROM quiz_sessions
       WHERE student_id = $1
       AND status = 'active'
@@ -214,18 +270,26 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
       [studentId]
     );
 
-    return result.rows.map(row => ({
-      id: row.id,
-      studentId: row.student_id,
-      conceptId: row.concept_id,
-      subjectId: row.subject_id,
-      conceptIds: row.concept_ids || [],
-      quizMode: row.quiz_mode || 'topic_practice',
-      questions: row.questions,
-      createdAt: new Date(row.created_at),
-      expiresAt: new Date(row.expires_at),
-      status: row.status,
-    }));
+    return result.rows.map((row) => {
+      const quizMode: QuizMode = row.quiz_mode || 'topic_practice';
+      const activityType: ActivityType = row.activity_type || activityTypeForQuizMode(quizMode);
+      const evidenceMode: EvidenceMode = row.evidence_mode || evidenceModeForActivity(activityType);
+      return {
+        id: row.id,
+        studentId: row.student_id,
+        conceptId: row.concept_id,
+        subjectId: row.subject_id,
+        conceptIds: row.concept_ids || [],
+        quizMode,
+        activityType,
+        evidenceMode,
+        questions: row.questions,
+        createdAt: new Date(row.created_at),
+        expiresAt: new Date(row.expires_at),
+        status: row.status,
+        hintsUsedQuestions: [],
+      };
+    });
   } catch (error) {
     console.error('Error getting student quizzes:', error);
     return [];

@@ -102,7 +102,7 @@ export function computeAverageConfidence(levels: ConfidenceLevel[]): number | nu
  *     trigger the other rules
  */
 export function shouldAskConfidence(input: {
-  quizMode: 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation';
+  quizMode: 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation';
   hasExistingMasteryRecord: boolean;
   masteryScore: number | null;
   independentMastery: number | null;

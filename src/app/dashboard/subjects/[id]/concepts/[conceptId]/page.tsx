@@ -123,12 +123,18 @@ export default async function ConceptDetailPage({
       ? 'review'
       : 'tutor';
 
+  // Phase 3A: Solo Check is its own Activity Type (SOLO_CHECK, Evidence
+  // Mode INDEPENDENT -- no AI hints) -- it must never be represented as
+  // Cumulative Assessment just because an earlier version of this page
+  // reused that mode for a single-concept "prove it alone" moment.
+  // Review links to its own mode too, rather than silently reusing
+  // topic_practice with just a different button label.
   const ctaConfig: Record<CTA, { label: string; href: string }> = {
     practice: { label: t['conceptDetail.ctaPractice'], href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}` },
-    review: { label: t['conceptDetail.ctaReview'], href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}` },
+    review: { label: t['conceptDetail.ctaReview'], href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}&mode=review` },
     soloCheck: {
       label: t['conceptDetail.ctaSoloCheck'],
-      href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}&mode=cumulative_assessment`,
+      href: `/dashboard/quiz?subjectId=${subjectId}&conceptId=${conceptId}&mode=quick_check`,
     },
     tutor: { label: t['conceptDetail.ctaAskTutor'], href: `/dashboard/tutor?subjectId=${subjectId}&conceptId=${conceptId}` },
   };

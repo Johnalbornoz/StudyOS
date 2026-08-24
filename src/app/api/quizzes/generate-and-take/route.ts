@@ -67,6 +67,14 @@ import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
+// Phase 3A: single-concept quiz modes -- every other mode spans several
+// concepts and is selected via selectConceptsForQuizMode/conceptIds instead.
+type SingleConceptQuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'diagnostic_check';
+const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = ['topic_practice', 'review', 'quick_check', 'retention_check', 'diagnostic_check'];
+function isSingleConceptMode(mode: QuizMode): mode is SingleConceptQuizMode {
+  return (SINGLE_CONCEPT_MODES as readonly QuizMode[]).includes(mode);
+}
+
 async function resolveLanguageForSubject(subjectId: string, studentId: string) {
   const result = await db.query(
     `SELECT target_language, quiz_language_mode FROM subjects WHERE id = $1`,
@@ -111,6 +119,27 @@ const QUIZ_MODE_CONFIG: Record<
     visualAidRate: 0.1,
     evidenceSource: 'PRACTICE_QUIZ',
   },
+  review: {
+    // Reinforcement Review (Activity Type REVIEW, Evidence Mode
+    // PRACTICE) -- same cognitive shape as topic_practice, AI may
+    // assist. Distinct from retention_check below, which is the other,
+    // unassisted, "prove you still remember" flavor of Review.
+    guidance: 'Everyday practice on this concept. Use a natural mix of types that fit the material -- don\'t default to only multiple_choice.',
+    defaultMax: 20,
+    visualAidRate: 0.1,
+    evidenceSource: 'PRACTICE_QUIZ',
+  },
+  retention_check: {
+    // Retention Review (Activity Type RETENTION_CHECK, Evidence Mode
+    // INDEPENDENT) -- StudyUS needs unassisted proof the student still
+    // remembers, so this is short and low-friction like quick_check,
+    // just tagged with a different Activity Type/Evidence Mode.
+    guidance:
+      'A fast, low-friction confidence check. Prefer quick-to-answer types (multiple_choice, true_false, yes_no, short_answer) -- avoid long multi-step or open-ended types here.',
+    defaultMax: 6,
+    visualAidRate: 0,
+    evidenceSource: 'PRACTICE_QUESTION',
+  },
   cumulative_assessment: {
     guidance:
       'A broader check spanning several concepts. Favor types that test connections and application across ideas (comparison, classification, matching, case_study) alongside standard types, whatever each concept\'s content actually supports.',
@@ -139,7 +168,7 @@ const GenerateQuizSchema = z.object({
   subjectId: z.string().uuid(),
   conceptId: z.string().uuid().optional(),
   conceptIds: z.array(z.string().uuid()).optional(), // manual topic selection for cumulative_assessment/exam_simulation
-  quizMode: z.enum(['topic_practice', 'quick_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check']).default('topic_practice'),
+  quizMode: z.enum(['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check']).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
@@ -300,10 +329,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this student' }, { status: 403 });
     }
 
-    if (
-      (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check' || validated.quizMode === 'diagnostic_check') &&
-      !validated.conceptId
-    ) {
+    if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {
       return NextResponse.json(
         { error: 'INVALID_INPUT', message: 'conceptId is required for this quiz mode' },
         { status: 400 }
@@ -325,7 +351,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     let conceptIds: string[];
     let primaryConceptId: string | null;
 
-    if (validated.quizMode === 'topic_practice' || validated.quizMode === 'quick_check' || validated.quizMode === 'diagnostic_check') {
+    if (isSingleConceptMode(validated.quizMode)) {
       conceptIds = [validated.conceptId!];
       primaryConceptId = validated.conceptId!;
     } else if (validated.conceptIds && validated.conceptIds.length > 0) {
@@ -541,7 +567,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     const review: any[] = [];
     const byConcept = new Map<
       string,
-      { correct: number; total: number; questionIndexes: number[]; confidenceBeforeAnswer?: ConfidenceLevel }
+      {
+        correct: number;
+        total: number;
+        questionIndexes: number[];
+        confidenceBeforeAnswer?: ConfidenceLevel;
+        questionSemantics: Array<{
+          questionIntent?: string;
+          evidenceDimensions?: string[];
+          cognitiveLevel?: string;
+          expectedReasoningType?: string;
+          learningObjectiveId?: string;
+        }>;
+      }
     >();
 
     for (const g of graded) {
@@ -555,6 +593,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         correct: 0,
         total: 0,
         questionIndexes: [],
+        questionSemantics: [],
       };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
@@ -563,6 +602,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       // at most one answer in this bucket carries a reported confidence --
       // whichever one does becomes this concept's evidence-level reading.
       if (reportedConfidence && !bucket.confidenceBeforeAnswer) bucket.confidenceBeforeAnswer = reportedConfidence;
+      // Phase 3 Pre-flight: carry any question-evidence semantics through
+      // to the concept's aggregated evidence row. Nothing generates these
+      // yet, so this is normally an empty/no-op collection -- see the
+      // GeneratedQuestion type docs in quiz-generation.service.ts.
+      if (question.questionIntent || question.evidenceDimensions || question.cognitiveLevel || question.expectedReasoningType || question.learningObjectiveId) {
+        bucket.questionSemantics.push({
+          questionIntent: question.questionIntent,
+          evidenceDimensions: question.evidenceDimensions,
+          cognitiveLevel: question.cognitiveLevel,
+          expectedReasoningType: question.expectedReasoningType,
+          learningObjectiveId: question.learningObjectiveId,
+        });
+      }
       byConcept.set(question.conceptId, bucket);
 
       review.push({
@@ -605,20 +657,14 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
 
     // Update mastery per concept -- each concept's own local score
     // becomes its evidence, tagged with the quiz mode's real source
-    // type (quick_check/topic_practice/cumulative/exam_simulation
-    // already carry different weights in the mastery algorithm).
-    // SOLO vs. COACH: cumulative_assessment/exam_simulation already
-    // disable hints entirely (see /api/quizzes/hint), so they're always
-    // an unassisted, "prove what you know" mode; the other two modes
-    // allow help, so they're COACH. AI_NATIVE has no quiz mode mapped
-    // to it yet -- no quiz mode today treats AI as part of the task
-    // itself, so there's nothing to map.
-    const learningMode: 'SOLO' | 'COACH' =
-      quizSession.quizMode === 'cumulative_assessment' ||
-      quizSession.quizMode === 'exam_simulation' ||
-      quizSession.quizMode === 'diagnostic_check'
-        ? 'SOLO'
-        : 'COACH';
+    // type. SOLO vs. COACH now derives from Phase 3A's Evidence Mode
+    // (the same value the hint route's canUseAI check enforces),
+    // rather than a separate hardcoded quizMode list -- PRACTICE is
+    // COACH (AI may assist), INDEPENDENT/ASSESSMENT are both SOLO (no
+    // assistance, higher-confidence evidence). AI_NATIVE has no quiz
+    // mode mapped to it yet -- no quiz mode today treats AI as part of
+    // the task itself, so there's nothing to map.
+    const learningMode: 'SOLO' | 'COACH' = quizSession.evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO';
 
     const perConceptResults = await Promise.all(
       Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
@@ -646,6 +692,14 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             learningMode,
             hintsUsed,
             confidenceBeforeAnswer: bucket.confidenceBeforeAnswer,
+          },
+          // Phase 3A: every evidence event records which Activity Type/
+          // Evidence Mode produced it -- the attempt-level values fixed
+          // at storeQuiz time, never re-derived from anything mutable.
+          metadata: {
+            activityType: quizSession.activityType,
+            evidenceMode: quizSession.evidenceMode,
+            ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
           },
         });
         return {

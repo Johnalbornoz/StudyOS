@@ -7,7 +7,15 @@ import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages'
 import MathAnswerEditor from '@/components/MathAnswerEditor';
 import MathText from '@/components/MathText';
 
-type QuizMode = 'topic_practice' | 'quick_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
+type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
+// Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
+// vs. INDEPENDENT/ASSESSMENT (no AI assistance) -- mirrors
+// src/lib/activity-taxonomy.ts's fixed Activity Type -> Evidence Mode
+// mapping. Duplicated here (not imported) because this is a client
+// component and that module is server-only; the source of truth for
+// enforcement is still the server (see /api/quizzes/hint), this only
+// controls whether the Hint button even renders.
+const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review'];
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
 interface VisualAid {
@@ -60,7 +68,9 @@ interface ReviewItem {
 
 const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   quick_check: 6,
+  retention_check: 6,
   topic_practice: 20,
+  review: 20,
   cumulative_assessment: 20,
   exam_simulation: 20,
   diagnostic_check: 3,
@@ -150,9 +160,9 @@ export default function QuizPage() {
   const allowsTopicSelection = quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation';
   const [subjectConcepts, setSubjectConcepts] = useState<SubjectConcept[]>([]);
   const [subjectName, setSubjectName] = useState('');
-  // A SOLO-mode "Solo Check" on one concept (from Concept Detail) is just
-  // cumulative_assessment/exam_simulation pre-scoped to a single concept --
-  // no new quiz mode needed, reuses the existing manual-selection path.
+  // A concept passed alongside cumulative_assessment (e.g. an older
+  // link) still pre-selects it -- Solo Check itself is its own quiz
+  // mode now (quick_check) and never needs this path.
   const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>(
     quizMode === 'cumulative_assessment' && conceptId ? [conceptId] : []
   );
@@ -400,6 +410,10 @@ export default function QuizPage() {
   const modeLabel = (mode: QuizMode) =>
     mode === 'quick_check'
       ? t['quiz.modeQuickCheck']
+      : mode === 'retention_check'
+      ? t['quiz.modeRetentionCheck']
+      : mode === 'review'
+      ? t['quiz.modeReview']
       : mode === 'cumulative_assessment'
       ? t['quiz.modeCumulative']
       : mode === 'exam_simulation'
@@ -411,6 +425,10 @@ export default function QuizPage() {
   const modeDesc = (mode: QuizMode) =>
     mode === 'quick_check'
       ? t['quiz.modeQuickCheckDesc']
+      : mode === 'retention_check'
+      ? t['quiz.modeRetentionCheckDesc']
+      : mode === 'review'
+      ? t['quiz.modeReviewDesc']
       : mode === 'cumulative_assessment'
       ? t['quiz.modeCumulativeDesc']
       : mode === 'exam_simulation'
@@ -735,7 +753,7 @@ export default function QuizPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
           <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>{q.question}</p>
-          {quizMode !== 'cumulative_assessment' && quizMode !== 'exam_simulation' && (
+          {PRACTICE_EVIDENCE_MODES.includes(quizMode) && (
             <button
               type="button"
               className="btn btn-ghost"
