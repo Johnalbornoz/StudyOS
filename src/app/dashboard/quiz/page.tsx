@@ -598,7 +598,9 @@ export default function QuizPage() {
                     {r.correct ? t['quiz.correctBadge'] : t['quiz.incorrectBadge']}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>{r.question}</p>
+                <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>
+                  <MathText text={r.question} />
+                </p>
                 {r.visualAid && <VisualAidView aid={r.visualAid} />}
                 <div style={{ fontSize: 14, marginBottom: 4 }}>
                   <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
@@ -609,7 +611,7 @@ export default function QuizPage() {
                   </div>
                 )}
                 <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 8 }}>
-                  <strong>{t['quiz.explanationLabel']}:</strong> {r.explanation}
+                  <strong>{t['quiz.explanationLabel']}:</strong> <MathText text={r.explanation} />
                 </p>
               </div>
             ))}
@@ -895,7 +897,9 @@ export default function QuizPage() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-          <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>{q.question}</p>
+          <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>
+            <MathText text={q.question} />
+          </p>
           {PRACTICE_EVIDENCE_MODES.includes(quizMode) && (
             <button
               type="button"

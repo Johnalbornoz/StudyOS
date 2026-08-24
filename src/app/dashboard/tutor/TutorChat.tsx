@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import ChatMessage from '@/components/ChatMessage';
 
 interface SubjectOption {
   id: string;
@@ -184,10 +185,9 @@ export default function TutorChat({
                       padding: '10px 14px',
                       fontSize: 14,
                       lineHeight: 1.5,
-                      whiteSpace: 'pre-wrap',
                     }}
                   >
-                    {m.content}
+                    <ChatMessage content={m.content} />
                   </div>
                 ))
               )}
