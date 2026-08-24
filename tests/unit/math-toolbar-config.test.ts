@@ -14,17 +14,10 @@ describe('MATH_BUTTONS', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('every literal button has non-empty insertText', () => {
+  it('every button has non-empty, plain insertText -- never LaTeX', () => {
     for (const b of MATH_BUTTONS) {
-      if (b.kind === 'literal') expect(b.insertText.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('every structure button uses MathLive\'s own \\placeholder{} command for its editable slots (except fixed x^2)', () => {
-    for (const b of MATH_BUTTONS) {
-      if (b.kind === 'structure' && b.id !== 'square') {
-        expect(b.latex).toContain('\\placeholder{}');
-      }
+      expect(b.insertText.length, b.id).toBeGreaterThan(0);
+      expect(b.insertText, b.id).not.toMatch(/\\|\$|\{|\}/);
     }
   });
 

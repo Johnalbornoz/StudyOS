@@ -1,22 +1,19 @@
 /**
  * Math input toolbar configuration for Quiz open-answer fields.
  *
- * Two kinds of button:
+ * Every button is the same, simple thing: clicking it inserts plain
+ * Unicode text at the cursor, exactly like Word's "Insert Symbol" --
+ * never LaTeX, never a popup editor, never a special format. An answer
+ * built entirely from these buttons is still just an ordinary string
+ * (e.g. "F_c = mv²/r"), so it looks like normal text everywhere it's
+ * shown -- the textarea itself, Review, Results -- with nothing extra
+ * to render.
  *
- * - `literal`: a single symbol/operator (π, Δ, →, parentheses, ...).
- *   Inserted as a plain Unicode character directly into the answer's
- *   existing plain-text field at the cursor -- no LaTeX involved, so
- *   an answer using only these stays a perfectly ordinary string,
- *   exactly like every historical answer already is.
- * - `structure`: something with real editable slots (a fraction's
- *   numerator/denominator, a variable exponent, a root). These open a
- *   small MathLive builder pre-seeded with the button's LaTeX template
- *   (MathLive's own `\placeholder{}` command marks each slot, and
- *   Tab/arrow-key navigation between them is native MathLive behavior,
- *   not custom code here); on confirm, the built LaTeX is inserted into
- *   the plain-text field wrapped as `$...$` (see math-text.ts), so only
- *   the actual formula becomes LaTeX -- the surrounding prose the
- *   student is writing never does.
+ * A few buttons (exponent/subscript/root) insert a caret/underscore/
+ * radical and let the student keep typing normally right after it
+ * (`x^2`, `x_n`, `√x`) rather than trying to fake a real superscript --
+ * that's the same plain-text convention students already use when
+ * typing math by hand, not a compromise.
  *
  * `labelKey` points into the i18n message table so every tooltip/
  * aria-label is translated, never hardcoded.
@@ -24,8 +21,7 @@
 
 export type MathButtonCategory = 'basic' | 'structures' | 'greek' | 'physics' | 'more';
 
-export interface LiteralMathButton {
-  kind: 'literal';
+export interface MathButton {
   id: string;
   display: string;
   insertText: string;
@@ -34,75 +30,62 @@ export interface LiteralMathButton {
   category: MathButtonCategory;
 }
 
-export interface StructureMathButton {
-  kind: 'structure';
-  id: string;
-  display: string;
-  latex: string;
-  labelKey: string;
-  category: MathButtonCategory;
-}
-
-export type MathButton = LiteralMathButton | StructureMathButton;
-
-function literal(id: string, display: string, insertText: string, labelKey: string, category: MathButtonCategory, cursorOffset?: number): LiteralMathButton {
-  return { kind: 'literal', id, display, insertText, labelKey, category, cursorOffset };
-}
-function structure(id: string, display: string, latex: string, labelKey: string, category: MathButtonCategory): StructureMathButton {
-  return { kind: 'structure', id, display, latex, labelKey, category };
+function button(id: string, display: string, insertText: string, labelKey: string, category: MathButtonCategory, cursorOffset?: number): MathButton {
+  return { id, display, insertText, labelKey, category, cursorOffset };
 }
 
 export const MATH_BUTTONS: MathButton[] = [
-  // Basic operators -- literal Unicode, no LaTeX
-  literal('plus', '+', '+', 'mathToolbar.plus', 'basic'),
-  literal('minus', '−', '−', 'mathToolbar.minus', 'basic'),
-  literal('times', '×', '×', 'mathToolbar.times', 'basic'),
-  literal('divide', '÷', '÷', 'mathToolbar.divide', 'basic'),
-  literal('equals', '=', '=', 'mathToolbar.equals', 'basic'),
-  literal('neq', '≠', '≠', 'mathToolbar.notEquals', 'basic'),
-  literal('pm', '±', '±', 'mathToolbar.plusMinus', 'basic'),
-  literal('approx', '≈', '≈', 'mathToolbar.approx', 'basic'),
-  literal('lt', '<', '<', 'mathToolbar.lessThan', 'basic'),
-  literal('gt', '>', '>', 'mathToolbar.greaterThan', 'basic'),
-  literal('leq', '≤', '≤', 'mathToolbar.lessOrEqual', 'basic'),
-  literal('geq', '≥', '≥', 'mathToolbar.greaterOrEqual', 'basic'),
+  // Basic operators
+  button('plus', '+', '+', 'mathToolbar.plus', 'basic'),
+  button('minus', '−', '−', 'mathToolbar.minus', 'basic'),
+  button('times', '×', '×', 'mathToolbar.times', 'basic'),
+  button('divide', '÷', '÷', 'mathToolbar.divide', 'basic'),
+  button('equals', '=', '=', 'mathToolbar.equals', 'basic'),
+  button('neq', '≠', '≠', 'mathToolbar.notEquals', 'basic'),
+  button('pm', '±', '±', 'mathToolbar.plusMinus', 'basic'),
+  button('approx', '≈', '≈', 'mathToolbar.approx', 'basic'),
+  button('lt', '<', '<', 'mathToolbar.lessThan', 'basic'),
+  button('gt', '>', '>', 'mathToolbar.greaterThan', 'basic'),
+  button('leq', '≤', '≤', 'mathToolbar.lessOrEqual', 'basic'),
+  button('geq', '≥', '≥', 'mathToolbar.greaterOrEqual', 'basic'),
 
-  // Math structures -- these get the MathLive placeholder-navigable builder
-  structure('square', 'x²', '^2', 'mathToolbar.square', 'structures'),
-  structure('exponent', 'xⁿ', '^{\\placeholder{}}', 'mathToolbar.exponent', 'structures'),
-  structure('subscript', 'xₙ', '_{\\placeholder{}}', 'mathToolbar.subscript', 'structures'),
-  structure('fraction', 'a/b', '\\frac{\\placeholder{}}{\\placeholder{}}', 'mathToolbar.fraction', 'structures'),
-  structure('sqrt', '√', '\\sqrt{\\placeholder{}}', 'mathToolbar.squareRoot', 'structures'),
-  structure('nthroot', 'ⁿ√', '\\sqrt[\\placeholder{}]{\\placeholder{}}', 'mathToolbar.nthRoot', 'structures'),
-  literal('parens', '( )', '()', 'mathToolbar.parentheses', 'structures', -1),
-  literal('abs', '| |', '||', 'mathToolbar.absoluteValue', 'structures', -1),
+  // Math structures -- plain-text convention, keep typing right after
+  button('square', 'x²', '²', 'mathToolbar.square', 'structures'),
+  button('exponent', 'xⁿ', '^', 'mathToolbar.exponent', 'structures'),
+  button('subscript', 'xₙ', '_', 'mathToolbar.subscript', 'structures'),
+  button('fraction', 'a/b', '/', 'mathToolbar.fraction', 'structures'),
+  button('sqrt', '√', '√', 'mathToolbar.squareRoot', 'structures'),
+  button('nthroot', 'ⁿ√', 'ⁿ√', 'mathToolbar.nthRoot', 'structures'),
+  button('parens', '( )', '()', 'mathToolbar.parentheses', 'structures', -1),
+  button('abs', '| |', '||', 'mathToolbar.absoluteValue', 'structures', -1),
 
-  // Greek letters -- literal Unicode
-  literal('pi', 'π', 'π', 'mathToolbar.pi', 'greek'),
-  literal('theta', 'θ', 'θ', 'mathToolbar.theta', 'greek'),
-  literal('alpha', 'α', 'α', 'mathToolbar.alpha', 'greek'),
-  literal('beta', 'β', 'β', 'mathToolbar.beta', 'greek'),
-  literal('gamma', 'γ', 'γ', 'mathToolbar.gamma', 'greek'),
-  literal('lambda', 'λ', 'λ', 'mathToolbar.lambda', 'greek'),
-  literal('mu', 'μ', 'μ', 'mathToolbar.mu', 'greek'),
-  literal('rho', 'ρ', 'ρ', 'mathToolbar.rho', 'greek'),
-  literal('sigma', 'σ', 'σ', 'mathToolbar.sigma', 'greek'),
-  literal('phi', 'φ', 'φ', 'mathToolbar.phi', 'greek'),
-  literal('omega', 'ω', 'ω', 'mathToolbar.omega', 'greek'),
-  literal('Omega', 'Ω', 'Ω', 'mathToolbar.bigOmega', 'greek'),
-  literal('Delta', 'Δ', 'Δ', 'mathToolbar.delta', 'greek'),
+  // Greek letters
+  button('pi', 'π', 'π', 'mathToolbar.pi', 'greek'),
+  button('theta', 'θ', 'θ', 'mathToolbar.theta', 'greek'),
+  button('alpha', 'α', 'α', 'mathToolbar.alpha', 'greek'),
+  button('beta', 'β', 'β', 'mathToolbar.beta', 'greek'),
+  button('gamma', 'γ', 'γ', 'mathToolbar.gamma', 'greek'),
+  button('lambda', 'λ', 'λ', 'mathToolbar.lambda', 'greek'),
+  button('mu', 'μ', 'μ', 'mathToolbar.mu', 'greek'),
+  button('rho', 'ρ', 'ρ', 'mathToolbar.rho', 'greek'),
+  button('sigma', 'σ', 'σ', 'mathToolbar.sigma', 'greek'),
+  button('phi', 'φ', 'φ', 'mathToolbar.phi', 'greek'),
+  button('omega', 'ω', 'ω', 'mathToolbar.omega', 'greek'),
+  button('Omega', 'Ω', 'Ω', 'mathToolbar.bigOmega', 'greek'),
+  button('Delta', 'Δ', 'Δ', 'mathToolbar.delta', 'greek'),
 
-  // Physics-flavored -- literal Unicode; vector needs a slot (what's under the arrow), so it's a structure
-  structure('vector', 'v⃗', '\\vec{\\placeholder{}}', 'mathToolbar.vector', 'physics'),
-  literal('arrow', '→', '→', 'mathToolbar.arrow', 'physics'),
-  literal('degree', '°', '°', 'mathToolbar.degree', 'physics'),
-  literal('cdot', '·', '·', 'mathToolbar.dotProduct', 'physics'),
+  // Physics-flavored -- vector combines with whatever letter was just typed
+  // (U+20D7 combines with the preceding character, e.g. "v" + this -> "v⃗")
+  button('vector', 'v⃗', '⃗', 'mathToolbar.vector', 'physics'),
+  button('arrow', '→', '→', 'mathToolbar.arrow', 'physics'),
+  button('degree', '°', '°', 'mathToolbar.degree', 'physics'),
+  button('cdot', '·', '·', 'mathToolbar.dotProduct', 'physics'),
 
   // Advanced / less frequent
-  structure('sum', '∑', '\\sum_{\\placeholder{}}^{\\placeholder{}}\\placeholder{}', 'mathToolbar.sum', 'more'),
-  structure('integral', '∫', '\\int_{\\placeholder{}}^{\\placeholder{}}\\placeholder{}', 'mathToolbar.integral', 'more'),
-  literal('infinity', '∞', '∞', 'mathToolbar.infinity', 'more'),
-  literal('partial', '∂', '∂', 'mathToolbar.partial', 'more'),
+  button('sum', '∑', '∑', 'mathToolbar.sum', 'more'),
+  button('integral', '∫', '∫', 'mathToolbar.integral', 'more'),
+  button('infinity', '∞', '∞', 'mathToolbar.infinity', 'more'),
+  button('partial', '∂', '∂', 'mathToolbar.partial', 'more'),
 ];
 
 /**
