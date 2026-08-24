@@ -387,6 +387,214 @@ ${shapeExamples}
   }
 }
 
+/**
+ * Phase 3B: a variant question preserves everything that makes it a fair
+ * substitute for the source question -- same concept, same learning
+ * objective/cognitive level/reasoning type where known, same required
+ * knowledge, same scoring/evidence intent -- with different surface
+ * details (numbers, wording, context). This is a structured record of
+ * that equivalence, evaluated dimension by dimension, not just "asked AI
+ * to change the numbers and hoped for the best."
+ */
+export interface EquivalenceCheckResult {
+  passed: boolean;
+  reason: string;
+}
+
+export interface VariantEquivalenceChecks {
+  concept: EquivalenceCheckResult;
+  learningObjective: EquivalenceCheckResult;
+  cognitiveLevel: EquivalenceCheckResult;
+  reasoningType: EquivalenceCheckResult;
+  /** Proxied by question type + difficulty band -- no standalone "required knowledge" field exists on GeneratedQuestion yet. */
+  requiredKnowledge: EquivalenceCheckResult;
+  /** Answer format (how it's scored) plus questionIntent/evidenceDimensions (what it's evidence for), when set. */
+  scoringIntent: EquivalenceCheckResult;
+}
+
+export interface VariantEquivalenceEvaluation {
+  equivalent: boolean;
+  confidence: number; // 0-1, fraction of checks that passed
+  checks: VariantEquivalenceChecks;
+}
+
+export interface VariantEquivalenceContract {
+  sourceQuestionId: string;
+  variantQuestionId: string;
+  conceptId: string;
+  learningObjectiveId?: string;
+  cognitiveLevel?: CognitiveLevel;
+  difficultyBand: 'easy' | 'medium' | 'hard';
+  reasoningPattern?: ExpectedReasoningType;
+  expectedSteps?: number;
+  equivalenceConfidence: number; // 0-1, same value as evaluation.confidence
+  equivalent: boolean;
+  checks: VariantEquivalenceChecks;
+}
+
+function difficultyBand(difficulty: number): 'easy' | 'medium' | 'hard' {
+  return difficulty <= 2 ? 'easy' : difficulty <= 3 ? 'medium' : 'hard';
+}
+
+/**
+ * A dimension that's unset on the source question has nothing to
+ * violate -- passes automatically (this is what keeps the check
+ * backward-compatible with the many questions that don't carry these
+ * optional Pre-flight semantic tags yet). A dimension that IS set on
+ * the source but can't be confirmed equal on the candidate fails
+ * closed -- "we don't know" is never treated as "close enough."
+ */
+function checkOptionalMatch<T>(sourceValue: T | undefined, candidateValue: T | undefined, label: string): EquivalenceCheckResult {
+  if (sourceValue === undefined) {
+    return { passed: true, reason: `No ${label} set on the source question -- nothing to violate.` };
+  }
+  if (candidateValue === sourceValue) {
+    return { passed: true, reason: `${label} matches (${String(sourceValue)}).` };
+  }
+  return {
+    passed: false,
+    reason: `${label} could not be confirmed to match the source (source: ${String(sourceValue)}, candidate: ${candidateValue === undefined ? 'unset' : String(candidateValue)}) -- failing closed rather than assuming equivalence.`,
+  };
+}
+
+function evidenceDimensionsMatch(source?: string[], candidate?: string[]): boolean {
+  if (!source) return true; // nothing to violate
+  if (!candidate) return false;
+  if (source.length !== candidate.length) return false;
+  const sortedSource = [...source].sort();
+  const sortedCandidate = [...candidate].sort();
+  return sortedSource.every((v, i) => v === sortedCandidate[i]);
+}
+
+/**
+ * Evaluates a candidate question against a source question's
+ * equivalence contract, dimension by dimension. Pure and independently
+ * testable -- doesn't care how the candidate was produced, so this is
+ * the single source of truth generateQuestionVariant validates against,
+ * and it's exactly what a caller who already has two questions in hand
+ * (e.g. picking between two already-generated questions) could use
+ * directly without going through generation at all.
+ */
+export function evaluateVariantEquivalence(source: GeneratedQuestion, candidate: GeneratedQuestion): VariantEquivalenceEvaluation {
+  const concept: EquivalenceCheckResult =
+    candidate.conceptId === source.conceptId
+      ? { passed: true, reason: 'Same concept.' }
+      : { passed: false, reason: `Concept mismatch: source targets ${source.conceptId}, candidate targets ${candidate.conceptId}.` };
+
+  const learningObjective = checkOptionalMatch(source.learningObjectiveId, candidate.learningObjectiveId, 'learning objective');
+  const cognitiveLevel = checkOptionalMatch(source.cognitiveLevel, candidate.cognitiveLevel, 'cognitive level');
+  const reasoningType = checkOptionalMatch(source.expectedReasoningType, candidate.expectedReasoningType, 'expected reasoning type');
+
+  const requiredKnowledge: EquivalenceCheckResult = (() => {
+    if (candidate.type !== source.type) {
+      return { passed: false, reason: `Question type changed (${source.type} -> ${candidate.type}), so required knowledge can't be assumed equivalent.` };
+    }
+    const diff = Math.abs(candidate.difficulty - source.difficulty);
+    if (diff > 1) {
+      return { passed: false, reason: `Difficulty drifted by ${diff} points (source ${source.difficulty}, candidate ${candidate.difficulty}).` };
+    }
+    return { passed: true, reason: diff === 0 ? 'Same type and difficulty.' : 'Same type, difficulty within 1 point.' };
+  })();
+
+  const scoringIntent: EquivalenceCheckResult = (() => {
+    if (candidate.answerFormat !== source.answerFormat) {
+      return { passed: false, reason: `Answer format changed (${source.answerFormat} -> ${candidate.answerFormat}), so how this would be scored is no longer equivalent.` };
+    }
+    const intentCheck = checkOptionalMatch(source.questionIntent, candidate.questionIntent, 'question intent');
+    if (!intentCheck.passed) return intentCheck;
+    if (!evidenceDimensionsMatch(source.evidenceDimensions, candidate.evidenceDimensions)) {
+      return { passed: false, reason: 'Evidence dimensions could not be confirmed to match the source.' };
+    }
+    return { passed: true, reason: 'Same answer format and evidence intent.' };
+  })();
+
+  const checks: VariantEquivalenceChecks = { concept, learningObjective, cognitiveLevel, reasoningType, requiredKnowledge, scoringIntent };
+  const values = Object.values(checks);
+  const equivalent = values.every((c) => c.passed);
+  const confidence = values.filter((c) => c.passed).length / values.length;
+
+  return { equivalent, confidence, checks };
+}
+
+/**
+ * Generates one equivalent variant of `source`, reusing
+ * generateQuestionsForConcept (RAG-grounded, same infra as every other
+ * question) rather than a parallel generator -- internal use only
+ * (VARIANT_GENERATION is an internal/system AI feature per the Phase 3A
+ * permission policy, never student-facing).
+ *
+ * Validates every dimension via evaluateVariantEquivalence before
+ * accepting -- concept, learning objective, cognitive level, reasoning
+ * type, required knowledge (type+difficulty), and scoring/evidence
+ * intent. Returns null -- never a silently non-equivalent question --
+ * when generation fails, returns nothing, or ANY required dimension
+ * fails closed; callers must fall back to reusing the original source
+ * question in that case, so an assessment is never blocked because
+ * variant generation didn't work.
+ *
+ * Once accepted, the variant inherits the source's own optional
+ * semantic tags (learningObjectiveId/cognitiveLevel/expectedReasoningType/
+ * questionIntent/evidenceDimensions) -- these describe the QUESTION
+ * DESIGN being varied, not something the AI re-derives fresh per
+ * variant, so a validated variant of a CHECK_APPLICATION question is
+ * still a CHECK_APPLICATION question. The equivalence gate runs BEFORE
+ * this inheritance, against the AI's raw, unmodified output, so it's a
+ * real check against actual drift, not a check against data we just
+ * copied in ourselves.
+ */
+export async function generateQuestionVariant(
+  source: GeneratedQuestion,
+  studentId: string,
+  subjectId: string,
+  language: string = 'en'
+): Promise<{ variant: GeneratedQuestion; contract: VariantEquivalenceContract } | null> {
+  let candidates: GeneratedQuestion[];
+  try {
+    candidates = await generateQuestionsForConcept(source.conceptId, studentId, subjectId, {
+      count: 1,
+      difficulty: source.difficulty,
+      types: [source.type],
+      guidance: `Produce ONE equivalent variant of this exact question, testing the same concept with the same reasoning and the same difficulty, but with different surface details (different numbers/context/wording) so it is not simply a repeat: "${source.question}"`,
+      language,
+      visualAidRate: 0,
+    });
+  } catch (error) {
+    console.error('Error generating question variant:', error);
+    return null;
+  }
+
+  const rawVariant = candidates[0];
+  if (!rawVariant) return null;
+
+  const evaluation = evaluateVariantEquivalence(source, rawVariant);
+  if (!evaluation.equivalent) return null; // fails the equivalence contract -- fall back, never accept silently
+
+  const variant: GeneratedQuestion = {
+    ...rawVariant,
+    learningObjectiveId: source.learningObjectiveId,
+    cognitiveLevel: source.cognitiveLevel,
+    expectedReasoningType: source.expectedReasoningType,
+    questionIntent: source.questionIntent,
+    evidenceDimensions: source.evidenceDimensions,
+  };
+
+  return {
+    variant,
+    contract: {
+      sourceQuestionId: source.id,
+      variantQuestionId: variant.id,
+      conceptId: source.conceptId,
+      learningObjectiveId: source.learningObjectiveId,
+      cognitiveLevel: source.cognitiveLevel,
+      difficultyBand: difficultyBand(source.difficulty),
+      reasoningPattern: source.expectedReasoningType,
+      equivalenceConfidence: evaluation.confidence,
+      equivalent: evaluation.equivalent,
+      checks: evaluation.checks,
+    },
+  };
+}
+
 /** Recover the leading complete objects from a JSON array cut off mid-stream. */
 function salvageJsonArray(text: string): any[] {
   const stripped = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
@@ -517,7 +725,12 @@ export function gradeStructuredAnswer(
  * justification, comparison, prediction) using Claude for semantic
  * understanding -- these can't be compared as strings.
  */
-export type GradingErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
+// Phase 3B: ARITHMETIC/UNIT are additive to the original five -- a wrong
+// final answer from an otherwise correct method (a sign slip, or forgetting
+// to convert units) is a materially different signal than a genuine
+// CONCEPTUAL misunderstanding, and structured math/science reasoning
+// analysis (see reasoningValid below) needs a way to say so.
+export type GradingErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING' | 'ARITHMETIC' | 'UNIT';
 
 export async function gradeAnswer(
   question: GeneratedQuestion,
@@ -529,6 +742,15 @@ export async function gradeAnswer(
   feedback: string;
   confidence: number; // 0-1 (how confident in grading)
   errorType: GradingErrorType | null; // null when correct
+  // Phase 3B: distinct from `correct` -- a correct final answer reached
+  // through invalid/lucky reasoning is weaker evidence than one reached
+  // through valid reasoning, and a wrong final answer with valid method
+  // (ARITHMETIC/UNIT/CARELESS) is stronger evidence of understanding than
+  // one reached through invalid reasoning (CONCEPTUAL/MISREADING). Only
+  // meaningful where the question actually has visible reasoning/work to
+  // evaluate (numeric_problem, step_by_step, and similar); defaults to
+  // true (matching `correct`) when there's no separate reasoning to judge.
+  reasoningValid: boolean;
 }> {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -557,7 +779,8 @@ Respond with JSON (no markdown):
   "score": 0.0-1.0,
   "feedback": "...",
   "confidence": 0.0-1.0,
-  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | null
+  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | "ARITHMETIC" | "UNIT" | null,
+  "reasoningValid": true/false
 }`,
           },
         ],
@@ -576,7 +799,11 @@ When the answer is not fully correct, classify why into exactly one errorType:
 - CARELESS: a minor slip (sign error, typo, misread a number) on otherwise correct work
 - INCOMPLETE: correct as far as it goes, but didn't finish the reasoning/answer
 - MISREADING: answered a different question than the one asked
+- ARITHMETIC: the method/formula/setup was correct but a calculation step was wrong (only for numeric_problem/step_by_step-style work)
+- UNIT: the method and calculation were correct but units were wrong, missing, or mis-converted (only for numeric_problem/step_by_step-style work)
 Set errorType to null when correct is true.
+
+For numeric_problem/step_by_step and any answer that shows work: also set "reasoningValid" -- true if the underlying method/reasoning was sound (even if the final number is wrong, e.g. ARITHMETIC/UNIT/CARELESS errors), false if the reasoning itself was flawed (e.g. CONCEPTUAL/PROCEDURAL/MISREADING errors, or a correct final answer reached by a method that doesn't actually follow). For question types with no visible reasoning/work to judge, set reasoningValid equal to "correct".
 
 Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`,
       }),
@@ -597,6 +824,7 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
         feedback: gradeResult.feedback || '',
         confidence: Math.max(0, Math.min(1, gradeResult.confidence || 0.7)),
         errorType: gradeResult.correct ? null : gradeResult.errorType || null,
+        reasoningValid: typeof gradeResult.reasoningValid === 'boolean' ? gradeResult.reasoningValid : !!gradeResult.correct,
       };
     } catch (e) {
       console.error('Failed to parse grading response:', responseText);
@@ -607,6 +835,7 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
         feedback: 'Please review the explanation above.',
         confidence: 0.5,
         errorType: matched ? null : null,
+        reasoningValid: matched,
       };
     }
   } catch (error) {
@@ -617,6 +846,7 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
       feedback: 'Error grading answer. Please try again.',
       confidence: 0,
       errorType: null,
+      reasoningValid: false,
     };
   }
 }

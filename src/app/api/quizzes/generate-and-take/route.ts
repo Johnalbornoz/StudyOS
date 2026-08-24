@@ -65,6 +65,17 @@ import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
 import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
+import {
+  evaluateAssessmentEvidence,
+  createPendingVerificationAttempt,
+  calculateExamReadinessCalibration,
+  qualifyEvidence,
+  computeConceptCoverageBreadth,
+  deriveConceptMappingConfidence,
+  selectMostAmbiguousQuestion,
+} from '@/services/assessment-verification.service';
+import { calculateExamReadiness } from '@/services/exam-readiness.service';
+import { getConceptAttribution } from '@/services/exam-result.service';
 import { z } from 'zod';
 
 // Phase 3A: single-concept quiz modes -- every other mode spans several
@@ -579,6 +590,8 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           expectedReasoningType?: string;
           learningObjectiveId?: string;
         }>;
+        gradingConfidences: number[];
+        questionTypes: string[];
       }
     >();
 
@@ -594,10 +607,14 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         total: 0,
         questionIndexes: [],
         questionSemantics: [],
+        gradingConfidences: [],
+        questionTypes: [],
       };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
       bucket.questionIndexes.push(questionIndex);
+      bucket.gradingConfidences.push(gradeResult.confidence);
+      bucket.questionTypes.push(question.type);
       // Only one question per concept is ever flagged askConfidence, so
       // at most one answer in this bucket carries a reported confidence --
       // whichever one does becomes this concept's evidence-level reading.
@@ -713,6 +730,105 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       })
     );
 
+    // Phase 3B: Assessment Verification -- only for Cumulative
+    // Assessment/Mock Exam attempts. Evaluates the deterministic
+    // trigger engine per concept and, when triggered, generates and
+    // persists ONE verification question (evidence disambiguation, not
+    // extra questions on every answer). Best-effort and isolated from
+    // the main result: a failure here (e.g. AI generation unavailable)
+    // never blocks the student from seeing their real result --
+    // "graceful AI failure" per the Phase 3B brief.
+    const verificationNeeded: Array<{ conceptId: string; conceptLabel: string; question: ReturnType<typeof toClientQuestion>; reason: string }> = [];
+    // Evidence strength per concept -- never a mastery label. "HIGH"/
+    // "MEDIUM"/"LOW"/"CONTRADICTED" describes how trustworthy THIS
+    // attempt's evidence is, not whether the concept is mastered; that
+    // still comes exclusively from Phase 2.2's Knowledge State.
+    const evidenceQualifications: Record<string, ReturnType<typeof qualifyEvidence>> = {};
+    if (quizSession.activityType === 'CUMULATIVE_ASSESSMENT' || quizSession.activityType === 'MOCK_EXAM') {
+      // Concept mapping confidence: only Mock Exam has a real signal to
+      // derive this from -- its concepts are pulled from a real
+      // scheduled assessment_occurrences row, so the SAME attribution
+      // granularity Phase 3 Pre-flight already computes for real exams
+      // (CONCEPT_MAPPED/TOPICS_LIST/SUBJECT_WIDE) applies here too,
+      // fetched once and reused across every concept in this attempt.
+      // Cumulative Assessment's concepts are picked by the app itself
+      // (not tied to any scheduled occurrence), so there's no equivalent
+      // real signal -- conceptMappingConfidence stays genuinely
+      // undefined for it, never a fabricated number.
+      let examConceptAttributions: Array<{ conceptId: string; confidenceWeight: number }> = [];
+      if (quizSession.activityType === 'MOCK_EXAM') {
+        try {
+          const occurrence = await getNextOccurrence(quizSession.subjectId).catch(() => null);
+          if (occurrence) {
+            examConceptAttributions = await getConceptAttribution(occurrence.id, quizSession.subjectId, occurrence.topics);
+          }
+        } catch (error) {
+          console.error('Concept mapping confidence lookup failed:', error);
+        }
+      }
+
+      await Promise.all(
+        Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
+          try {
+            const conceptScore = Math.round((bucket.correct / bucket.total) * 100);
+            const priorResult = perConceptResults.find((r) => r.conceptId === conceptId);
+            const decision = evaluateAssessmentEvidence({
+              activityType: quizSession.activityType as 'CUMULATIVE_ASSESSMENT' | 'MOCK_EXAM',
+              gradingConfidences: bucket.gradingConfidences,
+              currentScorePercent: conceptScore,
+              priorConceptScorePercent: priorResult ? priorResult.previousMastery : null,
+              conceptMappingConfidence: deriveConceptMappingConfidence(examConceptAttributions, conceptId),
+              conceptCoverageBreadth: computeConceptCoverageBreadth(bucket.questionTypes),
+            });
+            evidenceQualifications[conceptId] = qualifyEvidence(decision.assessmentConfidenceBeforeVerification);
+            if (!decision.required) return;
+
+            const [verificationQuestion] = await generateQuestionsForConcept(conceptId, validated.studentId, quizSession.subjectId, {
+              count: 1,
+              difficulty: 3,
+              guidance:
+                'Verification question: test the SAME concept the student was just asked about, from a different angle (a conceptual consequence, alternative application, or common misconception) -- never simply repeat the same calculation with different numbers.',
+              language,
+              visualAidRate: 0,
+            });
+            if (!verificationQuestion) return;
+
+            // Target the specific question/evidence item that actually
+            // caused the trigger -- the bucket's lowest-confidence
+            // (most ambiguous) graded question, tie-broken
+            // deterministically -- never an arbitrary "first question."
+            const { questionIndex: originalQuestionIndex, gradingConfidence: originalGradingConfidence } = selectMostAmbiguousQuestion(
+              bucket.questionIndexes,
+              bucket.gradingConfidences
+            );
+            const originalQuestion = cachedQuestions[originalQuestionIndex];
+
+            await createPendingVerificationAttempt({
+              quizSessionId: validated.quizId,
+              studentId: validated.studentId,
+              conceptId,
+              originalQuestionIndex,
+              originalQuestion,
+              originalScorePercent: conceptScore,
+              verificationQuestion,
+              triggerIds: decision.triggers.map((t) => t.triggerId),
+              gradingConfidence: originalGradingConfidence,
+              assessmentConfidenceBefore: decision.assessmentConfidenceBeforeVerification,
+            });
+
+            verificationNeeded.push({
+              conceptId,
+              conceptLabel: conceptLabels.get(conceptId) || conceptId,
+              question: toClientQuestion(verificationQuestion, originalQuestionIndex),
+              reason: decision.triggers[0]?.reason ?? 'Additional evidence would help confirm this result.',
+            });
+          } catch (error) {
+            console.error(`Verification trigger evaluation failed for concept ${conceptId}:`, error);
+          }
+        })
+      );
+    }
+
     await completeQuiz(validated.quizId);
 
     // Diagnostic Check resolution: the diagnosis is resolved from this
@@ -747,12 +863,38 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       ? perConceptResults.find((r) => r.conceptId === quizSession.conceptId)
       : null;
 
+    // Attach evidence-strength labeling where it was computed (ASSESSMENT
+    // mode only) -- undefined for Practice/Independent/Diagnostic results,
+    // where Assessment Confidence was never calculated because it isn't
+    // the relevant concept for those Evidence Modes.
+    const perConceptResultsWithEvidence = perConceptResults.map((r) => ({
+      ...r,
+      evidenceQualification: evidenceQualifications[r.conceptId] ?? undefined,
+    }));
+
     const ibContext = await getSubjectIBContext(quizSession.subjectId);
     const ibEstimate = ibContext
       ? ibContext.programme === 'DP'
         ? { programme: 'DP', grade: estimateDPGrade(score) }
         : { programme: 'MYP', band: estimateMYPBand(score) }
       : null;
+
+    // Phase 3B: Mock Exam only -- compares this attempt's actual score
+    // against the existing, already-built exam-readiness.service.ts
+    // prediction. Pure calibration information (never mutates mastery
+    // or Knowledge State); best-effort, since a missing/failed
+    // prediction should never block the student from seeing their
+    // real result.
+    let examReadinessCalibration: ReturnType<typeof calculateExamReadinessCalibration> | null = null;
+    if (quizSession.activityType === 'MOCK_EXAM') {
+      try {
+        const occurrence = await getNextOccurrence(quizSession.subjectId).catch(() => null);
+        const predicted = await calculateExamReadiness(validated.studentId, quizSession.subjectId, occurrence?.daysUntil ?? 14, language);
+        examReadinessCalibration = calculateExamReadinessCalibration(predicted.overallScore, score);
+      } catch (error) {
+        console.error('Exam Readiness calibration failed:', error);
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -762,11 +904,18 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         mastery: primaryMastery
           ? { previous: primaryMastery.previousMastery, current: primaryMastery.newMastery, delta: primaryMastery.delta }
           : undefined,
-        perConceptResults,
+        perConceptResults: perConceptResultsWithEvidence,
         review,
         messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',
         ibEstimate,
         diagnosticOutcome,
+        // Phase 3B: present only for Cumulative Assessment/Mock Exam
+        // concepts whose evidence was ambiguous enough to warrant one
+        // more disambiguating question -- empty for every Practice/
+        // Independent/Diagnostic attempt and for any Assessment attempt
+        // whose evidence was already strong.
+        verificationNeeded,
+        examReadinessCalibration,
       },
     });
   } catch (error: any) {

@@ -194,6 +194,15 @@ export default function QuizPage() {
   const [hintLoading, setHintLoading] = useState(false);
   const [hintError, setHintError] = useState(false);
 
+  // Phase 3B: student verification flow -- one additional confirming
+  // question per concept whose evidence was ambiguous, never shown for
+  // strong evidence. Keyed by conceptId since a Cumulative/Mock attempt
+  // can surface more than one at once.
+  const [verificationAnswers, setVerificationAnswers] = useState<Record<string, string>>({});
+  const [verificationSubmitting, setVerificationSubmitting] = useState<Record<string, boolean>>({});
+  const [verificationResults, setVerificationResults] = useState<Record<string, { outcome: string; evidenceQualification?: { strength: string } }>>({});
+  const [verificationError, setVerificationError] = useState<Record<string, boolean>>({});
+
   const t = getMessages(locale);
 
   useEffect(() => {
@@ -406,6 +415,41 @@ export default function QuizPage() {
       setSubmitting(false);
     }
   }
+
+  // Submits the student's answer to a triggered verification question.
+  // The server (never this client) computes the outcome and evidence
+  // qualification -- this only displays whatever it returns.
+  async function submitVerification(conceptId: string) {
+    if (!studentId || !quizId) return;
+    setVerificationSubmitting((prev) => ({ ...prev, [conceptId]: true }));
+    setVerificationError((prev) => ({ ...prev, [conceptId]: false }));
+    try {
+      const res = await fetch('/api/quizzes/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, quizId, conceptId, answer: verificationAnswers[conceptId] || '', language: quizLanguage }),
+      });
+      const body = await res.json();
+      if (!res.ok || !body.success) throw new Error(body.message || t['common.error']);
+      setVerificationResults((prev) => ({ ...prev, [conceptId]: body.data }));
+    } catch {
+      setVerificationError((prev) => ({ ...prev, [conceptId]: true }));
+    } finally {
+      setVerificationSubmitting((prev) => ({ ...prev, [conceptId]: false }));
+    }
+  }
+
+  // Evidence-strength labels only -- never "Mastered"/"Not mastered".
+  // Mastery, wherever it's shown anywhere in the product, comes
+  // exclusively from Phase 2.2 Knowledge State, never from this number.
+  const evidenceStrengthLabel = (strength: string) =>
+    strength === 'HIGH'
+      ? t['quiz.evidenceStrengthHigh']
+      : strength === 'MEDIUM'
+      ? t['quiz.evidenceStrengthMedium']
+      : strength === 'CONTRADICTED'
+      ? t['quiz.evidenceStrengthContradicted']
+      : t['quiz.evidenceStrengthLow'];
 
   const modeLabel = (mode: QuizMode) =>
     mode === 'quick_check'
@@ -636,8 +680,19 @@ export default function QuizPage() {
             <div style={{ marginTop: 'var(--space-4)' }}>
               <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{t['quiz.masteryLabel']}</p>
               {perConcept.map((p: any) => (
-                <div key={p.conceptId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, marginBottom: 4 }}>
-                  <span>{p.conceptLabel}</span>
+                <div key={p.conceptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5, marginBottom: 4, gap: 8 }}>
+                  <span>
+                    {p.conceptLabel}
+                    {p.evidenceQualification && (
+                      <span
+                        className="chip"
+                        style={{ marginLeft: 6, fontSize: 11 }}
+                        title={t['quiz.evidenceStrengthExplain']}
+                      >
+                        {evidenceStrengthLabel(p.evidenceQualification.strength)}
+                      </span>
+                    )}
+                  </span>
                   <span className="tabular">
                     {p.previousMastery}% → {p.newMastery}%{' '}
                     <span style={{ color: p.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
@@ -649,8 +704,96 @@ export default function QuizPage() {
             </div>
           )}
 
+          {results.examReadinessCalibration && (
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
+              {t['quiz.examReadinessCalibrationLabel']}: {results.examReadinessCalibration.predictedReadiness}% → {results.examReadinessCalibration.actualPerformance}%
+            </p>
+          )}
+
           <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>
         </div>
+
+        {(results.verificationNeeded || []).length > 0 && (
+          <div className="card" style={{ marginTop: 'var(--space-4)' }}>
+            <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{t['quiz.verificationTitle']}</p>
+            {(results.verificationNeeded || []).map((v: any) => {
+              const resolved = verificationResults[v.conceptId];
+              if (resolved) {
+                return (
+                  <div key={v.conceptId} style={{ padding: 'var(--space-3) 0', borderTop: '1px solid var(--border-default)' }}>
+                    <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>{v.conceptLabel}</p>
+                    <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
+                      {resolved.outcome === 'CONFIRMED'
+                        ? t['quiz.verificationConfirmed']
+                        : resolved.outcome === 'CONTRADICTED'
+                        ? t['quiz.verificationContradicted']
+                        : t['quiz.verificationInconclusive']}
+                    </p>
+                    {resolved.evidenceQualification && (
+                      <span className="chip" style={{ fontSize: 11, marginTop: 4, display: 'inline-block' }}>
+                        {evidenceStrengthLabel(resolved.evidenceQualification.strength)}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <div key={v.conceptId} style={{ padding: 'var(--space-4) 0', borderTop: '1px solid var(--border-default)' }}>
+                  <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>{v.conceptLabel}</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t['quiz.verificationExplain']}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, margin: '8px 0' }}>
+                    <MathText text={v.question.question} />
+                  </p>
+                  {v.question.visualAid && <VisualAidView aid={v.question.visualAid} />}
+                  {v.question.answerFormat === 'single_choice' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(v.question.options || []).map((opt: any) => {
+                        const isSelected = verificationAnswers[v.conceptId] === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: opt.id }))}
+                            style={{
+                              textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+                              border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
+                              background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
+                              cursor: 'pointer', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--text-primary)',
+                            }}
+                          >
+                            {opt.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <MathAnswerEditor
+                      value={verificationAnswers[v.conceptId] || ''}
+                      onChange={(val) => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: val }))}
+                      placeholder={t['quiz.typeAnswer']}
+                      subjectName={subjectName}
+                      studentId={studentId}
+                      locale={locale}
+                    />
+                  )}
+                  {verificationError[v.conceptId] && (
+                    <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{t['common.error']}</p>
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    style={{ marginTop: 8 }}
+                    disabled={!verificationAnswers[v.conceptId] || !!verificationSubmitting[v.conceptId]}
+                    aria-busy={!!verificationSubmitting[v.conceptId]}
+                    onClick={() => submitVerification(v.conceptId)}
+                  >
+                    {verificationSubmitting[v.conceptId] ? t['quiz.submitting'] : t['quiz.verificationSubmit']}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
           <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{t['quiz.reviewButton']}</button>
           <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary">{t['quiz.backToSubject']}</Link>
