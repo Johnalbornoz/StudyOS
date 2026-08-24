@@ -116,6 +116,14 @@ function tierFor(item: Pick<TodayItem, 'reason' | 'daysUntilExam' | 'debtSeverit
  * outranks the symptom it's causing, scaled by Learning Unlock Value
  * (how much repairing it unblocks) rather than just raw mastery. Pure
  * and exported so it's directly unit-testable without a DB.
+ *
+ * @deprecated Legacy NBA v2. Phase 3C's adaptive-learning-policy.ts is
+ * the current pedagogical priority authority (getLearningDecisions/
+ * getBestLearningDecision). This function has zero production callers
+ * outside getTodayPlan itself as of Phase 3D -- kept only until the
+ * Today page migration (not yet done) removes its last caller, and to
+ * keep its own NBA v2 invariant tests (tests/unit/nba-priority.test.ts)
+ * exercising real code during the transition. Do not add new callers.
  */
 export function nbaPriority(item: TodayItem): number {
   if (item.reason === 'exam_soon' && (item.daysUntilExam ?? 99) <= EXAM_CRITICAL_DAYS) return 2100;
@@ -458,6 +466,12 @@ export function buildBestNextAction(
  *
  * Fetches getTodayPlan itself -- use buildBestNextAction directly if
  * the caller already has that data (e.g. the Today page).
+ *
+ * @deprecated Legacy NBA v1/v2. Superseded by Phase 3D's
+ * getNextBestActionV3 (next-best-action-v3.service.ts), which is
+ * sourced from Phase 3C's getLearningDecisions rather than
+ * today-plan.service.ts's own scalarized TodayReason. Has zero
+ * production callers as of Phase 3D. Do not add new callers.
  */
 export async function getBestNextAction(studentId: string, preferredLanguage: string = 'en'): Promise<BestNextAction | null> {
   const { critical, thisWeek, canWait } = await getTodayPlan(studentId, preferredLanguage);

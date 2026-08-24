@@ -83,6 +83,12 @@ function scorePriority(
  * getStudentStudyPriorities for a whole student -- it's a single
  * aggregate query instead of the several per-concept round trips this
  * makes.
+ *
+ * @deprecated Legacy, pre-Phase-3C additive-weighted scorer, structurally
+ * distinct from both NBA v2's banded nbaPriority and Phase 3C's
+ * lexicographic policy. Has zero production callers outside this file's
+ * own getRankedConceptsByPriority as of Phase 3D. Do not add new callers
+ * -- use Phase 3C's getLearningDecisions/getBestLearningDecision.
  */
 export async function calculateConceptPriority(
   studentId: string,
@@ -225,6 +231,9 @@ export async function getStudentStudyPriorities(
  * Priority-ranked concepts within a single subject. Kept for API
  * completeness; getStudentStudyPriorities is the one actually used to
  * build a whole-student study plan.
+ *
+ * @deprecated Legacy. Has zero production callers as of Phase 3D. Do
+ * not add new callers -- use Phase 3C's getLearningDecisions.
  */
 export async function getRankedConceptsByPriority(
   studentId: string,

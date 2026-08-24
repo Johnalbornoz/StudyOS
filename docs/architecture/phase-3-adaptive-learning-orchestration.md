@@ -1,6 +1,6 @@
 # Phase 3 — Adaptive Learning Orchestration (Technical Design & Architecture)
 
-**Status:** Describes actual implemented code, not aspirational design. Covers Phase 3 Pre-flight, Phase 3A (Evidence Mode Engine), Phase 3B (Assessment Verification Engine), and Phase 3C (Adaptive Learning Orchestrator) as they exist in this repository today. Phase 3D (Scheduler + NBA v3 + Session Engine) is **not implemented** — nothing in this document should be read as describing it, and Phase 3C does not replace any production Today/Study Plan surface (see §5.9).
+**Status:** Describes actual implemented code, not aspirational design. Covers Phase 3 Pre-flight, Phase 3A (Evidence Mode Engine), Phase 3B (Assessment Verification Engine), Phase 3C (Adaptive Learning Orchestrator), and Phase 3D (Execution Scheduler + NBA v3 + Session Engine) as they exist in this repository today. Phase 3D is additive: **UI/page consumers: 0** — Today, Learning Debt, and Study Plan still run entirely on their pre-existing legacy paths (§6.9), nothing here should be read as claiming those product surfaces were migrated. But it is not otherwise untouched — **authenticated API entrypoints: 3** (`GET /api/learning/next-action`, `GET /api/learning/daily-plan`, `POST /api/learning/session/start`), real and callable today, simply with no student-facing page wired to them yet.
 
 ## 0. The critical architectural boundary
 
@@ -79,7 +79,7 @@ Assessment attempt
 
 `qualifyEvidence(assessmentConfidence, verificationOutcome)` produces a display-only `HIGH`/`MEDIUM`/`LOW`/`CONTRADICTED` label — never a Phase 2.2 `MasteryState` value, and a `CONTRADICTED` verification always wins regardless of the numeric score.
 
-Verification attempt persistence (`verification_attempts`, migration `030_assessment_verification.sql`, **not yet executed against Neon**) links the original answer, the verification question, the deterministic trigger(s), and both the before/after Assessment Confidence. `getPendingVerificationAttempt` is what makes `/api/quizzes/verify` server-authoritative — it never trusts a client-supplied confidence value, only the persisted "before" state and a freshly-server-graded "after" score.
+Verification attempt persistence (`verification_attempts`, migration `030_assessment_verification.sql`) links the original answer, the verification question, the deterministic trigger(s), and both the before/after Assessment Confidence. `getPendingVerificationAttempt` is what makes `/api/quizzes/verify` server-authoritative — it never trusts a client-supplied confidence value, only the persisted "before" state and a freshly-server-graded "after" score.
 
 ### 3.7 API (`src/app/api/quizzes/verify/route.ts`)
 
@@ -206,3 +206,112 @@ Every `LearningDecision` is computed fresh from current state on every call — 
 - `assessment.service.ts`'s `getUpcomingForStudent` (reused for `EXAM_APPROACHING`) can perform swallowed recurring-occurrence-sync writes as a side effect of a "read" — same pre-existing pattern, same scope decision.
 - `EXAM_APPROACHING` signals are only generated for concepts that already have a `concept_knowledge_state` row (i.e., some prior evidence exists) — a concept covered by an upcoming exam that the student has never been evaluated on at all is out of scope for Phase 3C today; Phase 3D may widen this if a concrete need arises.
 - Two independent, non-unified priority mechanisms now exist in the codebase (NBA v2's `nbaPriority` banding and `priority-engine.service.ts`'s separate additive `scorePriority`, alongside Phase 3C's own lexicographic bands) — reconciling them is explicitly Phase 3D's job, not this phase's.
+
+## 6. Phase 3D — Learning Execution Layer
+
+**Core rule, enforced structurally throughout: Phase 3C decides, Phase 3D executes.** Every Phase 3D file consumes `getLearningDecisions`/`getDailyLearningPlan` and re-exposes their fields verbatim — none of them contain a priority band, a dominant-signal rule, or a concept-selection heuristic of their own (verified by the source-grep tests in `tests/unit/phase-3d-legacy-authority.test.ts`).
+
+```
+Signals -> Phase 3C (getLearningDecisions) -> LearningDecision[]
+        -> Phase 3D Execution Scheduler (getDailyLearningPlan) -> DailyLearningPlan
+        -> Phase 3D NBA v3 (getNextBestActionV3) -> NextBestActionV3 | null
+        -> Phase 3D Session Engine (startLearningSession) -> LearningSession (launchTarget)
+        -> existing quiz/remediation/transfer flows -> Learning Evidence -> Knowledge State
+        -> Phase 3C again, recomputed fresh
+```
+
+Three new files, all read-only (no migration):
+- `src/lib/learning-execution-policy.ts` — **pure**: duration estimation, `buildDailyLearningPlan`, `selectExecutableNextAction`. No DB/fetch/LLM; `now` is always an explicit input, never `Date.now()` buried in policy.
+- `src/services/learning-execution-scheduler.service.ts` — **IO**: loads `getLearningDecisions`, hands them to the pure policy. Exposes `getDailyLearningPlan(studentId, options?)`.
+- `src/services/learning-session-engine.service.ts` — **IO**: resolves one `LearningDecision` into a `LearningSession` (launch target) using the real existing execution flows.
+- `src/services/next-best-action-v3.service.ts` — **IO**: composes the scheduler + session engine into `getNextBestActionV3(studentId, options?)`.
+
+Plus three additive API routes (`GET /api/learning/next-action`, `GET /api/learning/daily-plan`, `POST /api/learning/session/start`), all following the repo's existing `verifyAuth`/`verifyStudentAccess`/zod convention.
+
+### 6.1 Execution Scheduler
+
+`buildDailyLearningPlan` first re-applies Phase 3C's own `rankLearningDecisions` (never a copy of it — the actual imported function) so the walk below is always in true Phase 3C order regardless of what order the caller passed decisions in, then does a single top-down walk: each decision is checked against the *current* remaining time budget independently. If it fits, it's scheduled (`FITS_IN_ORDER` if nothing above it was skipped, `FILLS_REMAINING_TIME` if something was) and the budget shrinks; if not, it's deferred with `INSUFFICIENT_TIME` and the walk continues to the next (lower-ranked) decision. An item is never partially scheduled — it either takes its full estimated time or is fully deferred, so indivisibility is structural, not a special case. A deferred higher-priority decision's own `priorityScore` is never touched, so a smaller lower-ranked item that fills leftover time never "becomes" the higher priority (`tests/unit/learning-execution-policy.test.ts`, requirement 4).
+
+**Duration policy** (`estimateActivityMinutes`, one fixed value per `ActivityType`, no LLM, no adaptive prediction): `DIAGNOSTIC_CHECK=4` (matches `generate-and-take`'s own 2-4 question default), `REMEDIATION=8` (matches `today-plan.service.ts`'s existing "Minimum Effective Intervention" estimate), `SOLO_CHECK=6`, `RETENTION_CHECK=6`, `TRANSFER=6`, `REVIEW=8`, `PRACTICE=10`, `SOLO_VERIFY=10`, `CUMULATIVE_ASSESSMENT=20`, `MOCK_EXAM=30`.
+
+**Determinism**: same decisions + same `availableMinutes` + same `now` → byte-identical plan (no `Date.now()`, no randomness, no reliance on input array order — proven independent of order since `rankLearningDecisions` re-establishes canonical order every call).
+
+`getDailyLearningPlan` is computed fresh on every call — no persisted "today's plan" row. `DEFAULT_AVAILABLE_MINUTES = 30` is a documented product default (one practice-style session), overridable per call; no real time-budget preference source exists yet.
+
+### 6.2 NBA v3
+
+**Not another priority engine** — a thin product-facing projection. `getNextBestActionV3` calls `getDailyLearningPlan`, takes `selectExecutableNextAction(plan)` (the plan's own first item — no independent scoring), calls the Session Engine for that exact decision, and assembles `NextBestActionV3`: `activityType`/`targetDimension`/`pedagogicalPriority`/`temporalUrgency`/`signals`/`primarySignal`/`facts`/provenance IDs are all copied verbatim from the `LearningDecision`; `estimatedMinutes` comes from the scheduler's own item, never re-derived. `facts` stay structured `LearningFact` objects (`{kind, ...realNumbers}`) — no LLM-generated rationale anywhere in the chain; a caller's i18n layer renders them into prose later, mirroring `today-plan.service.ts`'s existing `WhyThisFact` pattern rather than inventing a second one. Returns `null` cleanly (no error, no fabricated action) when nothing is currently planned.
+
+**UI/page consumers: 0. Authenticated API entrypoints: 1** (`GET /api/learning/next-action`, following the repo's standard `verifyAuth`/`verifyStudentAccess` convention) — real, tested, and callable today, but not wired into any page in this phase (see §6.9). The corresponding statement holds across all three Phase 3D routes: 0 UI consumers, 3 API entrypoints total (`next-action`, `daily-plan`, `session/start`).
+
+### 6.3 Session Engine
+
+Resolves a `LearningDecision` into a `LearningSession` carrying a navigable `launchTarget` — it never creates a session record itself. The actual `quiz_sessions`/`remediation_steps`/`learning_evidence` row is created by whichever existing route the student's browser lands on when it follows `launchTarget`; this is why no new persistence/migration was needed (§6.6) and why session completion is entirely owned by those existing flows, never a second evidence pipeline (§6.7).
+
+**Routing table** (every launch reuses a real existing production flow; none is invented):
+
+| ActivityType | Launch | Reachable from Phase 3C today? |
+|---|---|---|
+| PRACTICE | `/dashboard/quiz?subjectId=&conceptId=&mode=topic_practice` | Yes |
+| REVIEW | same, `mode=review` | Yes |
+| SOLO_CHECK | same, `mode=quick_check` | Yes |
+| RETENTION_CHECK | same, `mode=retention_check` | Yes |
+| DIAGNOSTIC_CHECK | same, `mode=diagnostic_check&diagnosisId=` (fails explicitly if `diagnosisId` is absent) | Yes |
+| CUMULATIVE_ASSESSMENT | `/dashboard/quiz?subjectId=&mode=cumulative_assessment` (subject-scoped, no `conceptId`) | No — Phase 3C's `selectActivityType` never selects it |
+| MOCK_EXAM | same, `mode=exam_simulation` | No — never selected by Phase 3C |
+| SOLO_VERIFY | `/dashboard/quiz?subjectId=&conceptId=&mode=cumulative_assessment` (same single-concept convention `remediationStepHref` already uses for a `SOLO_VERIFY` remediation step) | No — never selected by Phase 3C |
+| REMEDIATION | resolves the path's current *active* step via `remediation.service.ts`'s own `remediationStepHref`; fails explicitly if `remediationPathId` is missing, the path isn't found, or no step is `active` | Yes |
+| TRANSFER | `/dashboard/cognitive/transfer?subjectId=&conceptId=&conceptLabel=` (label resolved via a small concept lookup) | Yes |
+
+EvidenceMode is always `evidenceModeForActivity(decision.activityType)` — one call, never a hand-written mapping; `ActivityType` is copied verbatim onto `LearningSession.activityType` and never reassigned anywhere in the routing table.
+
+**Ownership invariants (P0-3D.1/P0-3D.2), enforced read-only before any `READY` is returned:** the Session Engine is a reusable execution boundary and never trusts that a `LearningDecision`'s `actionConceptId`/`subjectId`/`remediationPathId` genuinely belong to the supplied `studentId` just because the decision says so — the one existing API route already re-derives decisions server-side, but the Session Engine defends this on its own too. `verifyConceptOwnership(conceptId, subjectId, studentId)` gates every `ActivityType`, universally, before the per-activity switch even runs: a concept that doesn't belong to that subject for that student fails closed to `UNAVAILABLE`, never a different concept or activity. For `REMEDIATION` specifically, three further invariants are checked before launching (each failing closed, never mutating the path, starting a new one, or re-running diagnosis): `path.studentId === studentId`, `path.rootCauseConceptId === decision.actionConceptId`, and `activeStep.conceptId === path.rootCauseConceptId` — together these make it structurally impossible for `LearningSession.actionConceptId` and the concept actually encoded in `launchTarget` to diverge (`tests/unit/learning-session-engine.test.ts`, "P0-3D.1"/"P0-3D.2", 11 new tests). The ownership query doubles as `TRANSFER`'s concept-label lookup (no redundant second query); if a required label genuinely can't be resolved, `TRANSFER` returns `UNAVAILABLE` rather than a `READY` launch silently missing `conceptLabel`.
+
+**REMEDIATION / root-cause behavior**: the Session Engine never starts a new path, never re-runs diagnosis, and never substitutes a concept — it fetches the *existing* path by `decision.remediationPathId` (the same path Phase 3C's `REMEDIATION_ACTIVE` signal already pointed at, itself built from `path.rootCauseConceptId`), finds the step with `status === 'active'`, and resolves where that step already sends the student.
+
+**Known pre-existing gap, worked around, not fixed at the source**: `remediationStepHref`'s `TRANSFER`/`EXPLAIN` cases omit `subjectId`/`conceptLabel`, which those destination pages require — a live bug predating Phase 3D. Editing `remediation.service.ts` was judged out of this phase's scope (a different, already-shared production function), so the Session Engine builds its own corrected URL for those two step types instead (resolving the concept label itself) rather than calling the shared, buggy helper. `TRANSFER` as a *freestanding* top-level Phase 3C decision (not a remediation step) had no launch URL at all before this phase — Session Engine is the first thing to wire it correctly.
+
+**Unimplemented/unknown ActivityType**: returns `launchStatus: 'UNAVAILABLE'` with an explicit `unavailableReason`, never a fallback to a different activity (`tests/unit/learning-session-engine.test.ts`, requirement 34).
+
+### 6.4 Closed loop
+
+`getDailyLearningPlan`/`getNextBestActionV3` recompute from `getLearningDecisions` on every call — no cache, no persisted "daily recommendation." `tests/unit/phase-3d-closed-loop.test.ts` proves this end-to-end with only `@/lib/db` mocked (real orchestrator → real scheduler → real NBA v3 → real Session Engine): a concept with real below-policy Understanding produces a real, launchable action; once `concept_knowledge_state` is advanced (representing the existing, untouched evidence/projector flow having run), the exact same call chain produces a genuinely different result, proving nothing is cached or stale anywhere in the loop.
+
+### 6.5 Exam coverage audit (required)
+
+**Result: A — Phase 3C's behavior is sufficient for current product semantics.** Phase 3D has no independent signal-discovery mechanism of its own (`PHASE 3C DECIDES`) — it can only ever act on concepts Phase 3C already surfaced a `LearningDecision` for. A concept with zero prior evidence has no `concept_knowledge_state` row and, independent of the exam-coverage limitation specifically, no other Phase 3C signal would exist for it either (nothing to practice, review, or execute). Widening exam coverage to never-seen concepts is therefore a Phase 3C-level signal-generation question, not something Phase 3D can or should work around — consistent with the instruction not to silently fix this here.
+
+### 6.6 Side-effecting-read audit (required)
+
+`getActiveDebts`/`getUpcomingForStudent` (both pre-existing, reused by Phase 3C's signal loader, not introduced by Phase 3D) can perform side-effecting writes on what looks like a read. Phase 3D's Scheduler/NBA v3 call `getLearningDecisions` on every invocation, so any UI wiring that polls NBA v3 frequently (e.g. a live-refreshing dashboard) would re-trigger these checks proportionally more often than today's occasional page-load calls. **Not a hard blocker** for the infrastructure built in this phase (no such polling UI exists yet), but a **targeted prerequisite**: before wiring NBA v3 into any high-frequency/live-polling surface, add a debounce/cache layer in front of `getLearningDecisions` rather than calling it on every tick. Not redesigned here, per instruction.
+
+### 6.7 Session completion
+
+No new completion API and no second evidence pipeline, by design: because `launchTarget` always points at an existing flow (quiz submission, remediation step completion, transfer submission), completion is entirely owned by whatever that flow already does. The Session Engine's job ends at producing a correct, navigable launch target.
+
+### 6.8 Persistence decision
+
+**No migration.** Confirmed by direct schema/service audit before writing any code: `quiz_sessions` already covers 8 of 10 `ActivityType`s end-to-end (including `REMEDIATION`'s `LEARN`/`GUIDED_PRACTICE`/`RETRIEVAL`/`SOLO_VERIFY` steps, which reuse the quiz engine); `TRANSFER`/`EXPLAIN` write only to `learning_evidence` with no session-table row today, which is fine under this design since the Session Engine never creates a session record of its own regardless of ActivityType — it only resolves where to send the student. There is no "launched from Phase 3C decision X" provenance column on `quiz_sessions`, and none was added — that provenance is transient (a URL param at launch time), matching the existing precedent of `remediationStepId`/`diagnosisId` also being transient submit-time params, never persisted columns.
+
+### 6.9 Legacy migration status
+
+| Legacy authority | Callers before Phase 3D | Callers after Phase 3D | Status |
+|---|---|---|---|
+| `nbaPriority` | none outside `getTodayPlan` itself | unchanged | `@deprecated`, zero external callers, not yet removed (tests preserved) |
+| `getBestNextAction` | none | unchanged | `@deprecated`, dead code, not yet removed |
+| `calculateConceptPriority` | none outside `getRankedConceptsByPriority` itself | unchanged | `@deprecated`, zero external callers, not yet removed |
+| `getRankedConceptsByPriority` | none | unchanged | `@deprecated`, dead code, not yet removed |
+| `getTodayPlan` | `dashboard/today/page.tsx`, `dashboard/learning-debt/page.tsx` | **unchanged** | **Not migrated** (deliberate — see below) |
+| `getStudentStudyPriorities` | `study-plan.service.ts`'s `generateStudyPlan` | **unchanged** | **Not migrated** (deliberate) |
+
+**Today page: deliberately not migrated in this phase.** Today currently renders a single "Best Next Action" card *and* a three-tier (critical/this_week/can_wait) list, both sourced from `getTodayPlan`. NBA v3 only produces a single best action; fully replacing the tiered list would require rewriting `ItemRow`'s reason-badge/detail-line logic (currently keyed off the old `TodayReason` enum) against Phase 3C's entirely different signal taxonomy — a real, non-trivial UI logic change, not just a data-source swap. Migrating only the top card while leaving the tiered list on the old source was rejected as unsafe: it would show the student two potentially *contradictory* recommendations on one page. Per "preserve current production behavior until replacement surfaces are validated" and "do not redesign the whole page," this phase ships NBA v3/the Scheduler/the Session Engine as complete, tested, additive infrastructure and defers the actual Today UI swap to a focused follow-up.
+
+**Study Plan: deliberately not migrated in this phase.** `study-plan.service.ts` is a genuinely different kind of system from Phase 3D's daily scheduler — a multi-day (`daysAhead`, default 7) weekly allocator that distributes `dailyMinutes` across urgency tiers and subjects with a load-balance cap, persisted to `study_plans`/`study_sessions`/`study_session_items`. The preferred target architecture (WHAT-to-study ordering from Phase 3C, WHEN/how-long distribution from Phase 3D) is documented here as the recommended direction, but implementing it is a bigger, riskier restructuring than this phase's budget allows responsibly. `getStudentStudyPriorities` remains its sole priority source, unchanged.
+
+**Learning Debt page: deliberately not migrated in this phase.** Its "At Risk" section currently reuses `getTodayPlan`'s combined critical/thisWeek/canWait list filtered to `reason === 'forgetting_risk'` — a real (if narrow) dependency on the legacy scalarized reason taxonomy. Left untouched for the same reason as Today: swapping only this one section's data source without touching the rest of the page was judged not obviously safer than leaving it consistent with Today's still-legacy state, and is deferred alongside the Today migration.
+
+**No third scorer**: production code now has exactly one pedagogical-priority authority (Phase 3C's `adaptive-learning-policy.ts`) and one execution/scheduling authority (Phase 3D's `learning-execution-policy.ts`) — confirmed by the caller map above and the structural tests in `tests/unit/phase-3d-legacy-authority.test.ts`. The four zero-caller legacy functions are marked `@deprecated` (not deleted, per instruction) so their own invariant tests keep exercising real code during the transition.
+
+### 6.10 Deliberately not built
+
+Exact study-session composition beyond a single time-fitted daily list, daily calendar allocation, notification timing, multi-session scheduling, any new UI, Today/Learning-Debt/Study-Plan product migration (see §6.9), and no hidden priority logic anywhere in Phase 3D (verified structurally, not just by convention).
