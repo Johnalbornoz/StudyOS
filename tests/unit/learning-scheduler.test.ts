@@ -88,3 +88,59 @@ describe('Phase 3 Pre-flight -- Learning Scheduling Clock', () => {
     expect(remediationCall?.[1][0]).toBe('only-this-student');
   });
 });
+
+// --- P0-B: REMEDIATION_UNFINISHED must point at the actionable
+// (root-cause) concept, never the symptom/target concept, while
+// preserving both -- see remediation.service.ts's RemediationPath:
+// targetConceptId = where the problem manifested, rootCauseConceptId =
+// what the diagnosis identified as needing actual repair.
+describe('P0-B. REMEDIATION_UNFINISHED points at the root-cause concept, not the target', () => {
+  function mockRemediationRow(overrides: Partial<Record<string, any>> = {}) {
+    queryMock.mockImplementation(async (sql: string) => {
+      if (/remediation_paths/i.test(sql)) {
+        return { rows: [{ id: 'rp-1', target_concept_id: 'target-A', root_cause_concept_id: 'root-B', ...overrides }] };
+      }
+      return { rows: [] };
+    });
+  }
+
+  it('an unfinished remediation path produces a DueItem with conceptId/rootCauseConceptId = root-B, targetConceptId = target-A', async () => {
+    mockRemediationRow();
+    const items = await getDueItems('s1');
+    const remediationItem = items.find((i) => i.type === 'REMEDIATION_UNFINISHED');
+    expect(remediationItem).toEqual({
+      type: 'REMEDIATION_UNFINISHED',
+      conceptId: 'root-B',
+      targetConceptId: 'target-A',
+      rootCauseConceptId: 'root-B',
+      remediationPathId: 'rp-1',
+      dueAt: null,
+      urgency: 'MEDIUM',
+    });
+  });
+
+  it('never exposes the target concept as the actionable conceptId', async () => {
+    mockRemediationRow();
+    const items = await getDueItems('s1');
+    const remediationItem = items.find((i) => i.type === 'REMEDIATION_UNFINISHED');
+    expect(remediationItem?.conceptId).not.toBe('target-A');
+    expect(remediationItem?.conceptId).toBe('root-B');
+  });
+
+  it('student isolation remains unchanged for this signal', async () => {
+    mockRemediationRow();
+    await getDueItems('only-this-student');
+    const remediationCall = queryMock.mock.calls.find(([sql]) => /remediation_paths/i.test(sql));
+    expect(remediationCall?.[1][0]).toBe('only-this-student');
+  });
+
+  it('the Scheduler invariant holds: multiple independent DueItems for the same concept are preserved, never ranked or collapsed (REMEDIATION_UNFINISHED alongside AT_RISK for the same root-cause concept)', async () => {
+    mockRemediationRow();
+    getConceptsAtRiskMock.mockResolvedValue([{ conceptId: 'root-B', subjectId: 'subj1' }]);
+
+    const items = await getDueItems('s1');
+    const forRootB = items.filter((i) => i.conceptId === 'root-B');
+    expect(forRootB.length).toBe(2);
+    expect(new Set(forRootB.map((i) => i.type))).toEqual(new Set(['AT_RISK_CONCEPT', 'REMEDIATION_UNFINISHED']));
+  });
+});

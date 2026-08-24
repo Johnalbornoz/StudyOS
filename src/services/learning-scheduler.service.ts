@@ -46,6 +46,16 @@ export interface DueItem {
   subjectId?: string;
   occurrenceId?: string;
   remediationPathId?: string;
+  // REMEDIATION_UNFINISHED only: the two RemediationPath concepts are
+  // deliberately kept distinct, never collapsed into one. targetConceptId
+  // is where the problem manifested (provenance/context); rootCauseConceptId
+  // is what the diagnosis actually identified as needing repair -- the
+  // remediation steps themselves operate on the root cause, not the
+  // target. `conceptId` above is set to rootCauseConceptId for this item
+  // type specifically, since `conceptId` on every DueItem means "the
+  // actionable concept" -- what a learning action should operate on.
+  targetConceptId?: string;
+  rootCauseConceptId?: string;
   dueAt: string | null; // ISO date/time this became (or becomes) actionable; null = no specific date, already true now
   urgency: DueUrgency; // derived purely from time proximity, never from priority/importance
 }
@@ -116,7 +126,15 @@ export async function getDueItems(studentId: string, options: DueItemsOptions = 
   }
 
   for (const r of unfinishedRemediation) {
-    items.push({ type: 'REMEDIATION_UNFINISHED', conceptId: r.targetConceptId, remediationPathId: r.id, dueAt: null, urgency: 'MEDIUM' });
+    items.push({
+      type: 'REMEDIATION_UNFINISHED',
+      conceptId: r.rootCauseConceptId, // the actionable concept -- remediation steps operate on the root cause, not the symptom
+      targetConceptId: r.targetConceptId,
+      rootCauseConceptId: r.rootCauseConceptId,
+      remediationPathId: r.id,
+      dueAt: null,
+      urgency: 'MEDIUM',
+    });
   }
 
   return items;
@@ -137,11 +155,11 @@ async function getRetentionDue(
   return result.rows.map((r) => ({ conceptId: r.concept_id, subjectId: r.subject_id, nextReviewDate: r.next_review_date }));
 }
 
-async function getUnfinishedRemediation(studentId: string): Promise<{ id: string; targetConceptId: string }[]> {
+async function getUnfinishedRemediation(studentId: string): Promise<{ id: string; targetConceptId: string; rootCauseConceptId: string }[]> {
   const result = await db.query(
-    `SELECT id, target_concept_id FROM remediation_paths
+    `SELECT id, target_concept_id, root_cause_concept_id FROM remediation_paths
      WHERE student_id = $1 AND state NOT IN ('RESOLVED', 'REJECTED')`,
     [studentId]
   );
-  return result.rows.map((r) => ({ id: r.id, targetConceptId: r.target_concept_id }));
+  return result.rows.map((r) => ({ id: r.id, targetConceptId: r.target_concept_id, rootCauseConceptId: r.root_cause_concept_id }));
 }

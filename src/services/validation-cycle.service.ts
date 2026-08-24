@@ -212,15 +212,36 @@ async function resolveIfExpired(cycle: ValidationCycle, hadEvidence: boolean): P
   return closeCycle(cycle, outcome, reason, null);
 }
 
-/** The OPEN cycle for this concept, if any -- lazily resolves it first if its deadline already passed (same resolve-on-read pattern already used for learning_debt). */
-export async function getActiveValidationCycle(studentId: string, conceptId: string, hadRecentEvidence: boolean = true): Promise<ValidationCycle | null> {
+/**
+ * Internal: looks up the OPEN cycle for this concept and, via the same
+ * lazy resolve-on-read as before, resolves it if its deadline already
+ * passed. Unlike the public getActiveValidationCycle (which only ever
+ * hands back "still OPEN or null" -- that contract is unchanged), this
+ * also surfaces the cycle that was JUST closed in THIS call, so a
+ * caller in the same pass can still see what it resolved to before
+ * that information is lost. At most one of the two fields is non-null:
+ * either the cycle is still open, or it was just resolved CLOSED.
+ */
+interface ActiveCycleResolution {
+  openCycle: ValidationCycle | null;
+  justResolved: ValidationCycle | null;
+}
+
+async function resolveActiveCycle(studentId: string, conceptId: string, hadRecentEvidence: boolean = true): Promise<ActiveCycleResolution> {
   const result = await db.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'`, [
     studentId,
     conceptId,
   ]);
-  if (!result.rows[0]) return null;
-  const cycle = await resolveIfExpired(rowToCycle(result.rows[0]), hadRecentEvidence);
-  return cycle.status === 'OPEN' ? cycle : null;
+  if (!result.rows[0]) return { openCycle: null, justResolved: null };
+  const resolved = await resolveIfExpired(rowToCycle(result.rows[0]), hadRecentEvidence);
+  if (resolved.status === 'OPEN') return { openCycle: resolved, justResolved: null };
+  return { openCycle: null, justResolved: resolved };
+}
+
+/** The OPEN cycle for this concept, if any -- lazily resolves it first if its deadline already passed (same resolve-on-read pattern already used for learning_debt). Contract unchanged: never returns a cycle that isn't currently OPEN. */
+export async function getActiveValidationCycle(studentId: string, conceptId: string, hadRecentEvidence: boolean = true): Promise<ValidationCycle | null> {
+  const { openCycle } = await resolveActiveCycle(studentId, conceptId, hadRecentEvidence);
+  return openCycle;
 }
 
 /** Every OPEN cycle for a student -- lazily resolves any that have expired before returning. */
@@ -253,7 +274,19 @@ export async function evaluateValidationLifecycle(params: {
 }): Promise<MasteryState> {
   const { studentId, conceptId, subjectId, previousState, baseState, scores, misconceptions, policy, knowledgeStateSnapshot } = params;
 
-  const existingOpen = await getActiveValidationCycle(studentId, conceptId);
+  const { openCycle: existingOpen, justResolved } = await resolveActiveCycle(studentId, conceptId);
+
+  // Terminal escalation: if the OPEN cycle we just found had already
+  // expired and was resolved THIS pass to INTERVENTION_REQUIRED (two or
+  // more prior failed cycles -- persistent difficulty, not a single
+  // missed window), that outcome must win immediately. It must never be
+  // lost by falling through to decay detection, AT_RISK, opening a
+  // replacement cycle, or baseState -- getActiveValidationCycle only
+  // ever returns OPEN cycles, so without capturing this here the
+  // escalation vanishes the instant the cycle closes.
+  if (justResolved?.finalOutcome === 'INTERVENTION_REQUIRED') {
+    return 'INTERVENTION_REQUIRED';
+  }
 
   // Decay: a previously-validated concept whose fresh evidence no
   // longer clears policy is not "still developing" -- it's a real
@@ -281,6 +314,25 @@ export async function evaluateValidationLifecycle(params: {
       await closeCycle(existingOpen, 'VALIDATED_MASTERY', 'VALIDATED', new Date());
     }
     return 'VALIDATED_MASTERY';
+  }
+
+  // Durability: INTERVENTION_REQUIRED marks persistent difficulty, not a
+  // one-pass event -- per the state machine (docs/architecture/phase-2-2-
+  // knowledge-validation.md §10), it has no drawn edge back down to
+  // DEVELOPING/LEARNING. Only reaching VALIDATED_MASTERY above escapes it.
+  // Without this, the very next projector pass after the cycle that
+  // earned INTERVENTION_REQUIRED closes would fall through to baseState
+  // and silently erase the escalation the instant new (still-failing)
+  // evidence arrives -- defeating the point of the signal. A replacement
+  // cycle still opens (if none is open) so the concept keeps being
+  // tracked toward genuine resolution; the returned state just doesn't
+  // regress in the meantime.
+  if (previousState === 'INTERVENTION_REQUIRED') {
+    if (isMeaningfulGap(baseState) && !existingOpen) {
+      const triggerType = determineTriggerType(scores, misconceptions, policy);
+      await openValidationCycle(studentId, conceptId, subjectId, triggerType, policy, knowledgeStateSnapshot);
+    }
+    return 'INTERVENTION_REQUIRED';
   }
 
   if (isMeaningfulGap(baseState) && !existingOpen) {
@@ -354,7 +406,24 @@ export async function getInterventionRequiredConcepts(studentId: string): Promis
   return result.rows.map((r) => ({ conceptId: r.concept_id, subjectId: r.subject_id }));
 }
 
+/**
+ * Deadlines of every currently DB-OPEN Validation Cycle for a student --
+ * including ones whose deadline has already passed. Deliberately a
+ * direct, read-only SELECT rather than going through
+ * getActiveValidationCycles: that function's resolve-on-read behavior
+ * (via resolveIfExpired) would close an expired cycle as a side effect
+ * of merely asking what's due, which can silently resolve a cycle to
+ * INTERVENTION_REQUIRED outside evaluateValidationLifecycle -- losing
+ * the terminal state before the Knowledge Projector ever sees it -- and
+ * would also filter overdue cycles out before the Scheduler can surface
+ * VALIDATION_DEADLINE_OVERDUE. Only evaluateValidationLifecycle is
+ * allowed to transition a cycle's status; observing what's due must
+ * never do that.
+ */
 export async function getValidationDeadlines(studentId: string): Promise<{ conceptId: string; validationDeadline: string }[]> {
-  const cycles = await getActiveValidationCycles(studentId);
-  return cycles.map((c) => ({ conceptId: c.conceptId, validationDeadline: c.validationDeadline }));
+  const result = await db.query(
+    `SELECT concept_id, validation_deadline FROM validation_cycles WHERE student_id = $1 AND status = 'OPEN'`,
+    [studentId]
+  );
+  return result.rows.map((r) => ({ conceptId: r.concept_id, validationDeadline: r.validation_deadline }));
 }

@@ -11,7 +11,9 @@ import {
   computeTimeToMastery,
   evaluateValidationLifecycle,
   getKVR14,
+  getActiveValidationCycle,
   getActiveValidationCycles,
+  getValidationDeadlines,
   openValidationCycle,
   type TriggerType,
 } from '@/services/validation-cycle.service';
@@ -388,5 +390,202 @@ describe('25. Time-zone/date handling is deterministic', () => {
     ];
     // Only 2 real hours apart (crosses a calendar-day boundary in UTC) -- must NOT count as a 3-day-gapped retrieval.
     expect(classifyRetention(rows, 3)).toBeNull();
+  });
+});
+
+// --- P0-A: INTERVENTION_REQUIRED terminal escalation must survive the ------
+// same-pass resolve-on-read that closes the cycle (getActiveValidationCycle
+// only ever returns OPEN cycles, so this information was previously lost
+// the instant the expired cycle closed).
+describe('P0-A. Persistent-difficulty escalation to INTERVENTION_REQUIRED is not lost', () => {
+  it('an expired OPEN cycle with 2+ prior failed cycles: closes as INTERVENTION_REQUIRED, evaluateValidationLifecycle returns INTERVENTION_REQUIRED, and no replacement cycle is opened in the same pass', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'OPEN', validation_deadline: '2020-01-01T00:00:00Z' })] }); // resolveActiveCycle: SELECT open cycle (expired)
+    queryMock.mockResolvedValueOnce({ rows: [{ n: 2 }] }); // countFailedCyclesForConcept
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_DEADLINE_REACHED
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'CLOSED', final_outcome: 'INTERVENTION_REQUIRED', outcome_reason: 'PERSISTENT_DIFFICULTY' })] }); // closeCycle UPDATE ... RETURNING *
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_CYCLE_CLOSED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent INTERVENTION_REQUIRED
+
+    const result = await evaluateValidationLifecycle({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      previousState: 'DEVELOPING', baseState: 'DEVELOPING',
+      scores: scores({ application: 40 }), misconceptions: noMisconceptions(), policy: POLICY,
+      knowledgeStateSnapshot: {},
+    });
+
+    expect(result).toBe('INTERVENTION_REQUIRED');
+    // No replacement cycle opened -- the only INSERT INTO validation_cycles
+    // that could appear is none at all; every query after the closing
+    // UPDATE is a logEvent, never a new cycle INSERT.
+    expect(queryMock.mock.calls.some((c) => String(c[0]).includes('INSERT INTO validation_cycles'))).toBe(false);
+    // Exactly the 6 expected queries ran -- nothing extra (like a decay
+    // check or a fresh openValidationCycle existence check) happened.
+    expect(queryMock).toHaveBeenCalledTimes(6);
+  });
+
+  it('public contract preserved: once the expired cycle resolves CLOSED, getActiveValidationCycle still returns null', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'OPEN', validation_deadline: '2020-01-01T00:00:00Z' })] });
+    queryMock.mockResolvedValueOnce({ rows: [{ n: 2 }] }); // countFailedCyclesForConcept
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_DEADLINE_REACHED
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'CLOSED', final_outcome: 'INTERVENTION_REQUIRED' })] });
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_CYCLE_CLOSED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent INTERVENTION_REQUIRED
+
+    const active = await getActiveValidationCycle('s1', 'c1');
+    expect(active).toBeNull();
+  });
+
+  it('regression: AT_RISK/KNOWLEDGE_DECAY behavior is unchanged (still opens a decay cycle and returns AT_RISK when no existing cycle is open)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }); // resolveActiveCycle: none open, none to resolve
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ id: 'last-validated', final_outcome: 'VALIDATED_MASTERY' })] }); // getLastValidatedCycle
+    queryMock.mockResolvedValueOnce({ rows: [] }); // openValidationCycle existence check
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ id: 'new-cycle', trigger_type: 'KNOWLEDGE_DECAY' })] }); // INSERT
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_CYCLE_REOPENED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent KNOWLEDGE_DECAY_DETECTED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent CONCEPT_AT_RISK
+
+    const result = await evaluateValidationLifecycle({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      previousState: 'VALIDATED_MASTERY', baseState: 'PROVISIONAL_MASTERY',
+      scores: scores({ retention: 40 }), misconceptions: noMisconceptions(), policy: POLICY,
+      knowledgeStateSnapshot: {},
+    });
+
+    expect(result).toBe('AT_RISK');
+    const insertCall = queryMock.mock.calls.find((c) => String(c[0]).includes('INSERT INTO validation_cycles'));
+    expect(insertCall?.[1]).toContain('KNOWLEDGE_DECAY');
+  });
+
+  it('projector propagation: recalculateConceptKnowledgeState persists INTERVENTION_REQUIRED through its existing UPSERT -- no second writer', async () => {
+    const { recalculateConceptKnowledgeState } = await import('@/services/knowledge-state.service');
+
+    queryMock.mockResolvedValueOnce({ rows: [{ subject_id: 'subj1' }] }); // concept lookup
+    queryMock.mockResolvedValueOnce({ rows: [] }); // learning_evidence rows
+    queryMock.mockResolvedValueOnce({
+      rows: [{
+        version: 1, minimum_understanding: 80, minimum_independence: 80, minimum_application: 75,
+        minimum_retention: 75, minimum_transfer: 70, requires_transfer: true, maximum_critical_misconceptions: 0,
+        minimum_evidence_count: 0, minimum_independent_evidence_count: 0, retention_min_gap_days: 3, validation_window_days: 14,
+      }],
+    }); // getActiveMasteryPolicy
+    queryMock.mockResolvedValueOnce({ rows: [] }); // getTransferScore (transfer.service) -- reads learning_evidence
+    queryMock.mockResolvedValueOnce({ rows: [] }); // getMisconceptionCountsForConcept
+    queryMock.mockResolvedValueOnce({ rows: [{ mastery_state: 'DEVELOPING' }] }); // previous state lookup
+    // evaluateValidationLifecycle's own resolve-on-read + terminal escalation:
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'OPEN', validation_deadline: '2020-01-01T00:00:00Z' })] });
+    queryMock.mockResolvedValueOnce({ rows: [{ n: 2 }] });
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_DEADLINE_REACHED
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'CLOSED', final_outcome: 'INTERVENTION_REQUIRED' })] });
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_CYCLE_CLOSED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent INTERVENTION_REQUIRED
+    queryMock.mockResolvedValueOnce({ rows: [{ mastery_state: 'INTERVENTION_REQUIRED' }] }); // the UPSERT ... RETURNING *
+
+    const state = await recalculateConceptKnowledgeState('s1', 'c1');
+
+    expect(state?.masteryState).toBe('INTERVENTION_REQUIRED');
+    const upsertCall = queryMock.mock.calls.find((c) => String(c[0]).includes('INSERT INTO concept_knowledge_state'));
+    expect(upsertCall?.[1]).toContain('INTERVENTION_REQUIRED');
+  });
+});
+
+// --- P0-A.1: getValidationDeadlines must observe what's due without ------
+// resolving/closing anything -- it used to go through
+// getActiveValidationCycles, whose resolve-on-read behavior could close an
+// expired cycle (possibly to INTERVENTION_REQUIRED, outside the Knowledge
+// Projector) as a side effect of merely being asked what's overdue, and
+// would filter overdue cycles out before the Scheduler ever saw them.
+describe('P0-A.1. getValidationDeadlines is a read-only observation of DB-OPEN cycles, including overdue ones', () => {
+  it('returns an OPEN cycle deadline even when it is already in the past', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ concept_id: 'c1', validation_deadline: '2020-01-01T00:00:00Z' }] });
+
+    const deadlines = await getValidationDeadlines('s1');
+
+    expect(deadlines).toEqual([{ conceptId: 'c1', validationDeadline: '2020-01-01T00:00:00Z' }]);
+  });
+
+  it('never resolves/closes a cycle as a side effect -- exactly one read-only SELECT runs, never an UPDATE', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ concept_id: 'c1', validation_deadline: '2020-01-01T00:00:00Z' }] });
+
+    await getValidationDeadlines('s1');
+
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(String(queryMock.mock.calls[0][0])).toMatch(/^\s*SELECT/i);
+    expect(queryMock.mock.calls.some((c) => /UPDATE validation_cycles/i.test(String(c[0])))).toBe(false);
+  });
+
+  it('scopes strictly to OPEN cycles for the given student, studentId-isolated', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    await getValidationDeadlines('student-A');
+
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(String(sql)).toContain(`status = 'OPEN'`);
+    expect(params).toEqual(['student-A']);
+  });
+
+  it('a Scheduler-style deadline read cannot itself consume an INTERVENTION_REQUIRED escalation before the Knowledge Projector sees it: an OPEN-but-expired cycle that WOULD resolve to INTERVENTION_REQUIRED is still returned as-is, with no closing UPDATE and no INTERVENTION_REQUIRED log event -- only evaluateValidationLifecycle (the Projector path, covered by the P0-A tests above) is allowed to actually transition it', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ concept_id: 'c1', validation_deadline: '2020-01-01T00:00:00Z' }] });
+
+    const deadlines = await getValidationDeadlines('s1');
+
+    expect(deadlines).toEqual([{ conceptId: 'c1', validationDeadline: '2020-01-01T00:00:00Z' }]);
+    expect(queryMock).toHaveBeenCalledTimes(1); // no countFailedCyclesForConcept, no closeCycle, no logEvent -- resolveIfExpired never ran
+  });
+});
+
+// --- P0-A.1 durability: INTERVENTION_REQUIRED marks persistent difficulty,
+// not a one-pass event (docs/architecture/phase-2-2-knowledge-validation.md
+// §10's state diagram draws no edge from it back down to DEVELOPING/
+// LEARNING). It must hold across subsequent projector passes while the
+// underlying difficulty remains unresolved, and only actually reaching
+// VALIDATED_MASTERY escapes it.
+describe('P0-A.1 durability. A persisted INTERVENTION_REQUIRED is not silently erased on the next projector pass', () => {
+  it('continued failing evidence with no open cycle: result stays INTERVENTION_REQUIRED, never falls through to baseState, and a fresh tracking cycle opens', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }); // resolveActiveCycle: no open cycle (the prior one already closed)
+    queryMock.mockResolvedValueOnce({ rows: [] }); // openValidationCycle existence check
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ id: 'tracking-cycle' })] }); // INSERT
+
+    const result = await evaluateValidationLifecycle({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      previousState: 'INTERVENTION_REQUIRED', baseState: 'DEVELOPING',
+      scores: scores({ application: 40 }), misconceptions: noMisconceptions(), policy: POLICY,
+      knowledgeStateSnapshot: {},
+    });
+
+    expect(result).toBe('INTERVENTION_REQUIRED');
+    expect(queryMock.mock.calls.some((c) => String(c[0]).includes('INSERT INTO validation_cycles'))).toBe(true);
+  });
+
+  it('never opens a duplicate tracking cycle when one is already open', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'OPEN', validation_deadline: '2099-01-01T00:00:00Z' })] });
+
+    const result = await evaluateValidationLifecycle({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      previousState: 'INTERVENTION_REQUIRED', baseState: 'DEVELOPING',
+      scores: scores({ application: 40 }), misconceptions: noMisconceptions(), policy: POLICY,
+      knowledgeStateSnapshot: {},
+    });
+
+    expect(result).toBe('INTERVENTION_REQUIRED');
+    expect(queryMock.mock.calls.some((c) => String(c[0]).includes('INSERT INTO validation_cycles'))).toBe(false);
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not a permanent trap: genuinely reaching VALIDATED_MASTERY still escapes INTERVENTION_REQUIRED and closes the open cycle', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'OPEN', validation_deadline: '2099-01-01T00:00:00Z' })] }); // resolveActiveCycle
+    queryMock.mockResolvedValueOnce({ rows: [cycleRow({ status: 'CLOSED', final_outcome: 'VALIDATED_MASTERY' })] }); // closeCycle UPDATE ... RETURNING *
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATION_CYCLE_CLOSED
+    queryMock.mockResolvedValueOnce({ rows: [] }); // logEvent VALIDATED_MASTERY_REACHED
+
+    const result = await evaluateValidationLifecycle({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      previousState: 'INTERVENTION_REQUIRED', baseState: 'VALIDATED_MASTERY',
+      scores: scores(), misconceptions: noMisconceptions(), policy: POLICY,
+      knowledgeStateSnapshot: {},
+    });
+
+    expect(result).toBe('VALIDATED_MASTERY');
+    const updateCall = queryMock.mock.calls.find((c) => String(c[0]).includes('UPDATE validation_cycles'));
+    expect(updateCall?.[1]).toContain('VALIDATED_MASTERY');
   });
 });
