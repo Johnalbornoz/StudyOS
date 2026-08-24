@@ -1,30 +1,90 @@
 /**
  * Study Plan Service - Generate adaptive daily study plans
  *
+ * Phase 3E: WHAT to study comes exclusively from Phase 3C
+ * (getLearningDecisions) -- this file no longer scores or ranks
+ * concepts itself. WHEN/how much stays this file's job: multi-day
+ * distribution, urgency-tier time allocation, and per-subject load
+ * balancing are execution concerns, not a second pedagogical priority.
+ *
  * Process:
- * 1. Get prioritized concepts from priority engine
- * 2. Group by urgency level and subject
+ * 1. Get Phase 3C's ranked LearningDecision[] as candidates (WHAT)
+ * 2. Group by urgency level (== decision.pedagogicalPriority) and subject
  * 3. Balance study load across subjects
  * 4. Create daily sessions with study items
- * 5. Allocate study time based on priority
+ * 5. Allocate study time based on urgency band (WHEN/how much)
  */
 
 import { db } from '@/lib/db';
-import { ConceptPriority, getStudentStudyPriorities } from './priority-engine.service';
-import type { WhyThisFact } from './today-plan.service';
+import { getLearningDecisions } from './adaptive-learning-orchestrator.service';
+import { loadConceptLabels } from './learning-os-snapshot.service';
+import { estimateActivityMinutes } from '@/lib/learning-execution-policy';
+import type { LearningDecision, LearningFact, PedagogicalPriority } from '@/lib/adaptive-learning-policy';
+import type { ActivityType } from '@/lib/activity-taxonomy';
 
 export interface StudySessionItem {
   conceptId: string;
   canonicalId: string;
   label: string;
-  activityType: 'review' | 'practice' | 'quiz' | 'deep_dive';
+  /** The real Phase 3C/3A ActivityType -- never re-derived from urgency. Reloaded plans (`getActiveStudyPlan`) type this the same way from the persisted `item_type` column. */
+  activityType: ActivityType;
   estimatedMinutes: number;
-  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  facts: WhyThisFact[]; // "Why This?" facts, straight from the priority engine (Gap 5)
+  priority: PedagogicalPriority;
+  facts: LearningFact[]; // "Why This?" facts, straight from the Phase 3C LearningDecision
   resources: {
     contentChunks?: string[]; // chunk IDs
     relatedConcepts?: string[]; // prerequisite or related concepts
   };
+}
+
+/**
+ * A Phase 3C LearningDecision, adapted with the presentation fields the
+ * existing weekly allocator needs -- explicitly derived, never a new
+ * independently-calculated score. `estimatedMinutes` reuses Phase 3D's
+ * own estimateActivityMinutes (no second duration table); `urgencyLevel`
+ * is decision.pedagogicalPriority verbatim.
+ */
+export interface StudyPlanCandidate {
+  decision: LearningDecision;
+  conceptId: string;
+  canonicalId: string;
+  label: string;
+  subjectId: string;
+  subjectName: string;
+  estimatedMinutes: number;
+  urgencyLevel: PedagogicalPriority;
+  facts: LearningFact[];
+}
+
+/**
+ * Builds candidates from Phase 3C's own ranked decisions -- their
+ * relative order (as returned by getLearningDecisions) is preserved
+ * into `conceptIndex` rotation below exactly as the urgency-bucketed
+ * priorities array used to be. No rescoring, no new BAND/dominant-signal
+ * logic; the one extra query is the same batch, read-only concept-label
+ * lookup the Learning OS snapshot boundary already uses (not a second
+ * decision source).
+ */
+async function buildStudyPlanCandidates(studentId: string, preferredLanguage: string): Promise<StudyPlanCandidate[]> {
+  const decisions = await getLearningDecisions(studentId, preferredLanguage);
+  if (decisions.length === 0) return [];
+
+  const labels = await loadConceptLabels(decisions.map((d) => d.actionConceptId), preferredLanguage);
+
+  return decisions.map((decision) => {
+    const info = labels.get(decision.actionConceptId);
+    return {
+      decision,
+      conceptId: decision.actionConceptId,
+      canonicalId: info?.canonicalId ?? decision.actionConceptId,
+      label: info?.label ?? decision.actionConceptId,
+      subjectId: decision.subjectId,
+      subjectName: info?.subjectName ?? '',
+      estimatedMinutes: estimateActivityMinutes(decision.activityType),
+      urgencyLevel: decision.pedagogicalPriority,
+      facts: decision.facts,
+    };
+  });
 }
 
 export interface StudySession {
@@ -77,21 +137,20 @@ export async function generateStudyPlan(
     const dailyMinutes = options.dailyMinutes || 90;
     const startDate = options.startDate || new Date();
 
-    // Step 1: Get priorities
-    const priorities = await getStudentStudyPriorities(studentId, {
-      preferredLanguage: options.preferredLanguage,
-    });
+    // Step 1: WHAT to study -- Phase 3C's own ranked decisions, adapted
+    // (never rescored) into candidates.
+    const candidates = await buildStudyPlanCandidates(studentId, options.preferredLanguage ?? 'en');
 
-    if (priorities.length === 0) {
+    if (candidates.length === 0) {
       throw new Error('No concepts with priority data found for student');
     }
 
-    // Step 2: Group by urgency
+    // Step 2: Group by urgency (== Phase 3C's pedagogicalPriority, verbatim)
     const byUrgency = {
-      CRITICAL: priorities.filter(p => p.urgencyLevel === 'CRITICAL'),
-      HIGH: priorities.filter(p => p.urgencyLevel === 'HIGH'),
-      MEDIUM: priorities.filter(p => p.urgencyLevel === 'MEDIUM'),
-      LOW: priorities.filter(p => p.urgencyLevel === 'LOW'),
+      CRITICAL: candidates.filter(c => c.urgencyLevel === 'CRITICAL'),
+      HIGH: candidates.filter(c => c.urgencyLevel === 'HIGH'),
+      MEDIUM: candidates.filter(c => c.urgencyLevel === 'MEDIUM'),
+      LOW: candidates.filter(c => c.urgencyLevel === 'LOW'),
     };
 
     // Step 3: Allocate time
@@ -117,25 +176,25 @@ export async function generateStudyPlan(
 
       // Cycle through urgency levels
       for (const urgency of ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const) {
-        const urgencyPriorities = byUrgency[urgency];
-        if (urgencyPriorities.length === 0) continue;
+        const urgencyCandidates = byUrgency[urgency];
+        if (urgencyCandidates.length === 0) continue;
 
         const timeForUrgency = timeAllocation[urgency];
         let urgencyMinutes = 0;
 
         // Pick concepts for this urgency level, rotating through them
-        for (let i = 0; i < urgencyPriorities.length && urgencyMinutes < timeForUrgency; i++) {
-          const idx = (conceptIndex + i) % urgencyPriorities.length;
-          const priority = urgencyPriorities[idx];
+        for (let i = 0; i < urgencyCandidates.length && urgencyMinutes < timeForUrgency; i++) {
+          const idx = (conceptIndex + i) % urgencyCandidates.length;
+          const candidate = urgencyCandidates[idx];
 
           // Calculate time for this concept
           let itemMinutes = Math.min(
-            priority.estimatedStudyTime,
+            candidate.estimatedMinutes,
             timeForUrgency - urgencyMinutes
           );
 
           // Check subject load balance (max 60% of daily time)
-          const subjectId = priority.subjectId;
+          const subjectId = candidate.subjectId;
           const currentSubjectMinutes = subjectMinutes[subjectId] || 0;
           const projectedMinutes = currentSubjectMinutes + itemMinutes;
 
@@ -144,21 +203,17 @@ export async function generateStudyPlan(
             continue;
           }
 
-          // Choose activity type based on urgency
-          let activityType: StudySessionItem['activityType'] = 'review';
-          if (urgency === 'CRITICAL') activityType = 'deep_dive';
-          else if (urgency === 'HIGH') activityType = 'practice';
-          else if (urgency === 'MEDIUM') activityType = 'quiz';
-          else activityType = 'review';
-
           items.push({
-            conceptId: priority.conceptId,
-            canonicalId: priority.canonicalId,
-            label: priority.label,
-            activityType,
+            conceptId: candidate.conceptId,
+            canonicalId: candidate.canonicalId,
+            label: candidate.label,
+            // The real Phase 3C/3A ActivityType, verbatim -- never
+            // re-derived from urgency (rule: DO NOT change ActivityType
+            // downstream of Phase 3C).
+            activityType: candidate.decision.activityType,
             estimatedMinutes: itemMinutes,
             priority: urgency,
-            facts: priority.facts,
+            facts: candidate.facts,
             resources: {
               contentChunks: [], // Would populate from RAG
               relatedConcepts: [],
@@ -166,12 +221,12 @@ export async function generateStudyPlan(
           });
 
           subjectMinutes[subjectId] = projectedMinutes;
-          subjectNames[subjectId] = priority.subjectName;
+          subjectNames[subjectId] = candidate.subjectName;
           urgencyMinutes += itemMinutes;
           dayTotalMinutes += itemMinutes;
         }
 
-        conceptIndex = (conceptIndex + urgencyPriorities.length) % priorities.length;
+        conceptIndex = (conceptIndex + urgencyCandidates.length) % candidates.length;
       }
 
       // Create subject breakdown
@@ -180,7 +235,7 @@ export async function generateStudyPlan(
         subjectName: subjectNames[subjectId],
         minutes,
         conceptCount: items.filter(
-          item => priorities.find(p => p.conceptId === item.conceptId)?.subjectId === subjectId
+          item => candidates.find(c => c.conceptId === item.conceptId)?.subjectId === subjectId
         ).length,
       }));
 
@@ -201,7 +256,7 @@ export async function generateStudyPlan(
     endDate.setDate(endDate.getDate() + daysAhead - 1);
 
     const subjectsInPlan = Array.from(
-      new Set(priorities.map(p => p.subjectName))
+      new Set(candidates.map(c => c.subjectName))
     );
 
     const totalStudyMinutes = sessions.reduce((sum, s) => sum + s.totalMinutes, 0);

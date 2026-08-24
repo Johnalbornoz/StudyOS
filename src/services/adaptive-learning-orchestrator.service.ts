@@ -218,13 +218,15 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
   // re-derived). Known limitation: getActiveDebts lazily re-resolves
   // debts on read (a pre-existing pattern in learning-debt.service.ts,
   // not introduced here) -- documented in the architecture doc.
+  // `mastery` is carried as pure display provenance (Phase 3E's
+  // Learning Debt page needs it) -- never used in priority/ranking.
   for (const debt of activeDebts) {
     signals.push({
       type: 'LEARNING_DEBT',
       source: 'learning-debt.service',
       conceptId: debt.conceptId,
       subjectId: debt.subjectId,
-      metadata: { severity: debt.severity },
+      metadata: { severity: debt.severity, mastery: debt.mastery },
     });
   }
 

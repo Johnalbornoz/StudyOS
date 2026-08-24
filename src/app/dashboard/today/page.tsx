@@ -1,190 +1,86 @@
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getTodayPlan, buildBestNextAction, TodayItem, UrgencyTier } from '@/services/today-plan.service';
+import { getLearningOSSnapshot, type ConceptDisplayInfo } from '@/services/learning-os-snapshot.service';
+import { estimateActivityMinutes, type LearningPlanItem } from '@/lib/learning-execution-policy';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import WhyThis from '../WhyThis';
+import WhyThisV3 from '../WhyThisV3';
+import { activityLabel } from '../activityLabel';
+import StartSessionButton from '../StartSessionButton';
 
-const TIER_COLOR: Record<UrgencyTier, { accent: string; subtle: string; ink: string }> = {
-  critical: { accent: 'var(--error)', subtle: 'var(--error-subtle)', ink: 'var(--error)' },
-  this_week: { accent: 'var(--warning)', subtle: 'var(--warning-subtle)', ink: 'var(--warning)' },
-  can_wait: { accent: 'var(--text-muted)', subtle: 'var(--bg-subtle)', ink: 'var(--text-muted)' },
-};
+/**
+ * Today v3 -- entirely Learning-OS-backed (Phase 3C decisions + Phase
+ * 3D execution fit), in one atomic migration. No legacy
+ * getTodayPlan()/buildBestNextAction()/TodayReason logic remains on
+ * this page, so there is never a top card from one authority and a
+ * list from another.
+ */
 
-function reasonBadge(item: TodayItem, tier: UrgencyTier, t: ReturnType<typeof getMessages>) {
-  const colors = TIER_COLOR[tier];
-  const badgeStyle = {
-    width: 52, height: 52, borderRadius: 'var(--radius-md)', flexShrink: 0,
-    background: colors.subtle, color: colors.ink,
-    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center',
-    lineHeight: 1,
-  };
+function ItemRow({
+  item,
+  studentId,
+  labels,
+  t,
+  deferred,
+}: {
+  item: LearningPlanItem;
+  studentId: string;
+  labels: Map<string, ConceptDisplayInfo>;
+  t: ReturnType<typeof getMessages>;
+  deferred?: boolean;
+}) {
+  const { decision } = item;
+  const info = labels.get(decision.actionConceptId);
+  const label = info?.label ?? decision.actionConceptId;
+  const subjectName = info?.subjectName ?? '';
 
-  if (item.reason === 'exam_soon' && item.examDate) {
-    const d = new Date(item.examDate + 'T00:00:00');
-    const day = d.getDate();
-    const month = d.toLocaleDateString(undefined, { month: 'short' }).replace('.', '');
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>{day}</span>
-        <span style={{ fontSize: 10, fontWeight: 650, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{month}</span>
-      </div>
-    );
-  }
-  if (item.reason === 'learning_debt' && item.debtSince) {
-    const daysSince = Math.max(0, Math.floor((Date.now() - new Date(item.debtSince).getTime()) / 86400000));
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>{daysSince}</span>
-        <span style={{ fontSize: 9.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['common.days']}</span>
-      </div>
-    );
-  }
-  if (item.reason === 'forgetting_risk' && item.daysSincePractice !== undefined) {
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>{item.daysSincePractice}</span>
-        <span style={{ fontSize: 9.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['common.days']}</span>
-      </div>
-    );
-  }
-  if (item.reason === 'independence_gap' && item.unassistedAccuracy !== undefined) {
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 18, fontWeight: 700 }}>{item.unassistedAccuracy}%</span>
-        <span style={{ fontSize: 8.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['today.unassistedAccuracy']}</span>
-      </div>
-    );
-  }
-  if (item.reason === 'active_remediation') {
-    return (
-      <div style={badgeStyle}>
-        <span style={{ fontSize: 22 }} aria-hidden>🔧</span>
-      </div>
-    );
-  }
-  if (item.reason === 'prerequisite_gap') {
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>{item.blockedConceptCount ?? 0}</span>
-        <span style={{ fontSize: 8.5, fontWeight: 650, textTransform: 'uppercase' }}>{t['today.badgeAffects']}</span>
-      </div>
-    );
-  }
-  if (item.reason === 'diagnosis_required') {
-    return (
-      <div style={badgeStyle}>
-        <span style={{ fontSize: 24, fontWeight: 700 }}>?</span>
-      </div>
-    );
-  }
-  if (item.reason === 'recurring_misconception') {
-    return (
-      <div style={badgeStyle}>
-        <span className="tabular" style={{ fontSize: 20, fontWeight: 700 }}>×{item.occurrenceCount ?? 0}</span>
-      </div>
-    );
-  }
-  return (
-    <div style={badgeStyle}>
-      <span className="tabular" style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(item.masteryScore)}%</span>
-    </div>
-  );
-}
-
-function detailLine(item: TodayItem, t: ReturnType<typeof getMessages>) {
-  if (item.reason === 'exam_soon') {
-    const suffix =
-      item.daysUntilExam === 0 ? t['today.todayWord']
-      : item.daysUntilExam === 1 ? t['today.tomorrowWord']
-      : `${item.daysUntilExam} ${t['today.daysUntilExam']}`;
-    const dateFormatted = item.examDate
-      ? new Date(item.examDate + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
-      : '';
-    return `${item.subjectName} · ${t['today.examLabel']}: ${dateFormatted} (${suffix})`;
-  }
-  if (item.reason === 'learning_debt') {
-    const dateFormatted = item.debtSince
-      ? new Date(item.debtSince).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
-      : '';
-    return `${item.subjectName} · ${t['today.debtSinceLabel']} ${dateFormatted} · ${t['today.severity']} ${item.debtSeverity}/5`;
-  }
-  if (item.reason === 'forgetting_risk') {
-    return `${item.subjectName} · ${t['today.lastPracticedLabel']} ${item.daysSincePractice} ${t['common.days']} · ${item.forgettingRisk}% ${t['today.forgettingRisk']}`;
-  }
-  if (item.reason === 'independence_gap') {
-    return `${item.subjectName} · ${t['today.reasonIndependenceGap']}`;
-  }
-  if (item.reason === 'active_remediation') {
-    return `${item.subjectName} · ${t['today.reasonActiveRemediation']}`;
-  }
-  if (item.reason === 'prerequisite_gap') {
-    return `${item.subjectName} · ${t['today.reasonPrerequisiteGap'].replace('{count}', String(item.blockedConceptCount ?? 0))}`;
-  }
-  if (item.reason === 'diagnosis_required') {
-    return `${item.subjectName} · ${t['today.reasonDiagnosisRequired']}`;
-  }
-  if (item.reason === 'recurring_misconception') {
-    return `${item.subjectName} · ${t['today.reasonRecurringMisconception'].replace('{count}', String(item.occurrenceCount ?? 0))}`;
-  }
-  return `${item.subjectName} · ${t['today.mastery']}: ${Math.round(item.masteryScore)}%`;
-}
-
-function ItemRow({ item, tier, t }: { item: TodayItem; tier: UrgencyTier; t: ReturnType<typeof getMessages> }) {
-  const colors = TIER_COLOR[tier];
   return (
     <div
       className="card"
       style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-        padding: tier === 'can_wait' ? 'var(--space-3) var(--space-4)' : 'var(--space-4)',
-        borderLeft: `3px solid ${colors.accent}`,
+        display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)',
+        borderLeft: `3px solid ${deferred ? 'var(--text-muted)' : 'var(--brand)'}`,
       }}
     >
-      {reasonBadge(item, tier, t)}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: tier === 'can_wait' ? 14 : 15 }}>{item.label}</div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{detailLine(item, t)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>{label}</span>
+          <span
+            className="tabular"
+            style={{
+              fontSize: 11, fontWeight: 650, color: 'var(--brand-ink)', background: 'var(--brand-subtle)',
+              borderRadius: 'var(--radius-full)', padding: '2px 9px',
+            }}
+          >
+            {activityLabel(decision.activityType, t)}
+          </span>
+          <span className="tabular" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {t['bestNextAction.minutes'].replace('{min}', String(item.estimatedMinutes))}
+          </span>
+          {deferred && (
+            <span
+              style={{
+                fontSize: 10.5, fontWeight: 650, color: 'var(--warning)', background: 'var(--warning-subtle)',
+                borderRadius: 'var(--radius-full)', padding: '2px 9px', textTransform: 'uppercase', letterSpacing: '0.02em',
+              }}
+            >
+              {t['today3.deferredBadge']}
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{subjectName}</div>
+        <WhyThisV3 facts={decision.facts} t={t} />
       </div>
-      <Link
-        href={`/dashboard/quiz?subjectId=${item.subjectId}&conceptId=${item.conceptId}`}
-        className={tier === 'can_wait' ? 'btn btn-ghost' : 'btn btn-secondary'}
-        style={{ height: tier === 'can_wait' ? 30 : 34, fontSize: 13, flexShrink: 0 }}
-      >
-        {t['today.practice']}
-      </Link>
-    </div>
-  );
-}
-
-function Section({
-  tier, title, subtitle, items, t,
-}: {
-  tier: UrgencyTier; title: string; subtitle: string; items: TodayItem[]; t: ReturnType<typeof getMessages>;
-}) {
-  if (items.length === 0) return null;
-  const colors = TIER_COLOR[tier];
-  return (
-    <div style={{ marginBottom: 'var(--space-8)' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 2 }}>
-        <h2 style={{ margin: 0, fontSize: tier === 'can_wait' ? 16 : 18 }}>{title}</h2>
-        <span
-          className="tabular"
-          style={{
-            fontSize: 12, fontWeight: 650, color: colors.ink, background: colors.subtle,
-            borderRadius: 'var(--radius-full)', padding: '2px 9px',
-          }}
-        >
-          {items.length}
-        </span>
-      </div>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 var(--space-3)' }}>{subtitle}</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: tier === 'can_wait' ? 'var(--space-2)' : 'var(--space-3)' }}>
-        {items.map((item) => (
-          <ItemRow key={item.conceptId} item={item} tier={tier} t={t} />
-        ))}
-      </div>
+      <StartSessionButton
+        studentId={studentId}
+        actionConceptId={decision.actionConceptId}
+        label={t['today.practice']}
+        accessibleLabel={`${t['today.practice']}: ${label}`}
+        unavailableLabel={t['today3.unavailableBody']}
+        retryLabel={t['today3.retry']}
+        variant="secondary"
+      />
     </div>
   );
 }
@@ -204,19 +100,13 @@ export default async function TodayPage() {
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
 
-  const { critical, thisWeek, canWait, totalConcepts } = await getTodayPlan(studentId, locale).catch(() => ({
-    critical: [] as TodayItem[],
-    thisWeek: [] as TodayItem[],
-    canWait: [] as TodayItem[],
-    totalConcepts: 0,
-  }));
+  const snapshot = await getLearningOSSnapshot(studentId, { preferredLanguage: locale }).catch(() => null);
 
-  const todayFormatted = new Date().toLocaleDateString(locale, {
-    weekday: 'long', day: 'numeric', month: 'long',
-  });
+  const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
-  const totalPending = critical.length + thisWeek.length + canWait.length;
-  const bestNextAction = buildBestNextAction(critical, thisWeek, canWait);
+  const best = snapshot?.nextExecutableItem ?? null;
+  const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
+  const isEmpty = !snapshot || snapshot.decisions.length === 0;
 
   return (
     <div>
@@ -226,11 +116,11 @@ export default async function TodayPage() {
         </p>
         <h1>{t['today.title']}</h1>
         <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15, maxWidth: '58ch' }}>
-          {t['today.subtitle']}
+          {t['today3.subtitle']}
         </p>
       </div>
 
-      {bestNextAction && (
+      {best && (
         <div
           className="card"
           style={{
@@ -249,62 +139,85 @@ export default async function TodayPage() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 4 }}>{t['bestNextAction.title']}</div>
-            <div style={{ fontSize: 17, fontWeight: 650 }}>{bestNextAction.item.label}</div>
+            <div style={{ fontSize: 17, fontWeight: 650 }}>{bestLabel?.label ?? best.decision.actionConceptId}</div>
             <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>
-              {bestNextAction.item.subjectName} · {t['bestNextAction.minutes'].replace('{min}', String(bestNextAction.estimatedMinutes))}
+              {bestLabel?.subjectName} · {activityLabel(best.decision.activityType, t)} ·{' '}
+              {t['bestNextAction.minutes'].replace('{min}', String(best.estimatedMinutes))}
             </div>
-            <WhyThis facts={bestNextAction.facts} t={t} />
+            <WhyThisV3 facts={best.decision.facts} t={t} />
           </div>
-          <Link
-            href={`/dashboard/quiz?subjectId=${bestNextAction.item.subjectId}&conceptId=${bestNextAction.item.conceptId}`}
-            className="btn btn-primary"
-            style={{ flexShrink: 0 }}
-          >
-            {t['bestNextAction.start']}
-          </Link>
+          <StartSessionButton
+            studentId={studentId}
+            actionConceptId={best.decision.actionConceptId}
+            label={t['bestNextAction.start']}
+            unavailableLabel={t['today3.unavailableBody']}
+            retryLabel={t['today3.retry']}
+            variant="primary"
+          />
         </div>
       )}
 
-      {totalPending > 0 && (
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-8)', flexWrap: 'wrap' }}>
-          {(['critical', 'this_week', 'can_wait'] as UrgencyTier[]).map((tier) => {
-            const count = tier === 'critical' ? critical.length : tier === 'this_week' ? thisWeek.length : canWait.length;
-            if (count === 0) return null;
-            const colors = TIER_COLOR[tier];
-            const label = tier === 'critical' ? t['today.sectionCritical'] : tier === 'this_week' ? t['today.sectionThisWeek'] : t['today.sectionCanWait'];
-            return (
-              <div
-                key={tier}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-                  borderRadius: 'var(--radius-md)', background: colors.subtle,
-                }}
-              >
-                <span className="tabular" style={{ fontSize: 18, fontWeight: 700, color: colors.ink }}>{count}</span>
-                <span style={{ fontSize: 12.5, color: colors.ink, fontWeight: 600 }}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {totalPending === 0 ? (
+      {isEmpty ? (
         <div className="card empty-state">
-          <strong>{t['today.empty']}</strong>
-          {t['today.emptyBody']}
+          <strong>{t['today3.emptyTitle']}</strong>
+          {t['today3.emptyBody']}
         </div>
       ) : (
         <>
-          <Section tier="critical" title={t['today.sectionCritical']} subtitle={t['today.criticalSubtitle']} items={critical} t={t} />
-          <Section tier="this_week" title={t['today.sectionThisWeek']} subtitle={t['today.thisWeekSubtitle']} items={thisWeek} t={t} />
-          <Section tier="can_wait" title={t['today.sectionCanWait']} subtitle={t['today.canWaitSubtitle']} items={canWait} t={t} />
-        </>
-      )}
+          {snapshot!.dailyPlan.items.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-8)' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 2 }}>
+                <h2 style={{ margin: 0, fontSize: 18 }}>{t['today3.sessionTitle']}</h2>
+                <span
+                  className="tabular"
+                  style={{ fontSize: 12, fontWeight: 650, color: 'var(--brand-ink)', background: 'var(--brand-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}
+                >
+                  {t['today3.minutesPlanned']
+                    .replace('{planned}', String(snapshot!.dailyPlan.plannedMinutes))
+                    .replace('{available}', String(snapshot!.dailyPlan.availableMinutes))}
+                </span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 var(--space-3)' }}>{t['today3.sessionSubtitle']}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {snapshot!.dailyPlan.items.map((item) => (
+                  <ItemRow key={item.decision.actionConceptId} item={item} studentId={studentId} labels={snapshot!.conceptLabels} t={t} />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {totalConcepts > 0 && (
-        <p style={{ color: 'var(--text-muted)', fontSize: 12.5, marginTop: 'var(--space-4)' }}>
-          {totalConcepts} {t['today.trackedCount']}
-        </p>
+          {snapshot!.dailyPlan.deferred.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-8)' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 2 }}>
+                <h2 style={{ margin: 0, fontSize: 18 }}>{t['today3.deferredTitle']}</h2>
+                <span
+                  className="tabular"
+                  style={{ fontSize: 12, fontWeight: 650, color: 'var(--warning)', background: 'var(--warning-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}
+                >
+                  {snapshot!.dailyPlan.deferred.length}
+                </span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 var(--space-3)' }}>{t['today3.deferredSubtitle']}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {snapshot!.dailyPlan.deferred.map((d) => (
+                  <ItemRow
+                    key={d.decision.actionConceptId}
+                    item={{
+                      decision: d.decision,
+                      sequence: 0,
+                      estimatedMinutes: estimateActivityMinutes(d.decision.activityType),
+                      executionReason: 'FITS_IN_ORDER',
+                    }}
+                    studentId={studentId}
+                    labels={snapshot!.conceptLabels}
+                    t={t}
+                    deferred
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
