@@ -37,6 +37,14 @@ export interface MasteryUpdateInput {
     aiAssistanceType?: AIAssistanceType;
     confidenceBeforeAnswer?: ConfidenceLevel; // self-reported, captured before the student saw the result
   };
+  // Arbitrary structured context to stamp onto the learning_evidence row
+  // this call writes (e.g. exam-attribution granularity, or per-question
+  // semantic tags for a multi-question concept bucket). Optional and
+  // additive -- existing callers that omit it get exactly the previous
+  // behavior (metadata stays NULL). Some earlier callers (e.g.
+  // transfer/submit) instead stamp metadata with a follow-up UPDATE
+  // after this call returns; both are valid, this is just the direct path.
+  metadata?: Record<string, unknown>;
 }
 
 export interface MasteryUpdateResult {
@@ -145,7 +153,7 @@ export async function getOrCreateMasteryRecord(
 export async function updateMastery(
   input: MasteryUpdateInput
 ): Promise<MasteryUpdateResult> {
-  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry } = input;
+  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry, metadata } = input;
 
   // Step 1: Get or create mastery record
   const masteryRecord = await getOrCreateMasteryRecord(
@@ -307,8 +315,9 @@ export async function updateMastery(
       hints_used,
       ai_assistance_type,
       confidence_before_answer,
-      score_percent
-    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12)
+      score_percent,
+      metadata
+    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13)
     `,
     [
       studentId,
@@ -323,6 +332,7 @@ export async function updateMastery(
       telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
       telemetry?.confidenceBeforeAnswer ?? null,
       evidence.scorePercent ?? null,
+      metadata ? JSON.stringify(metadata) : null,
     ]
   );
 

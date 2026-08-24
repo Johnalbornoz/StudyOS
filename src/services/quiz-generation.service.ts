@@ -82,6 +82,21 @@ export interface QuestionOption {
   text: string;
 }
 
+/**
+ * Phase 3 Pre-flight: optional question-evidence semantics. None of
+ * these are produced by generation yet (tagging questions this way is
+ * 3A/3B's job, once the Orchestrator actually consumes them) -- they
+ * exist now so the schema/plumbing can carry them end-to-end (stored
+ * in quiz_sessions.questions jsonb, no migration needed; surfaced into
+ * learning_evidence.metadata.questionSemantics by the submission route
+ * when present) without a later breaking change. Every field is
+ * optional; a question that omits them behaves exactly as before.
+ */
+export type QuestionIntent = 'CHECK_UNDERSTANDING' | 'CHECK_APPLICATION' | 'CHECK_TRANSFER' | 'DIAGNOSTIC_PROBE' | 'VERIFICATION';
+export type EvidenceDimension = 'understanding' | 'independence' | 'application' | 'retention' | 'transfer';
+export type CognitiveLevel = 'RECALL' | 'COMPREHENSION' | 'APPLICATION' | 'ANALYSIS' | 'SYNTHESIS' | 'EVALUATION';
+export type ExpectedReasoningType = 'FACTUAL' | 'PROCEDURAL' | 'CONCEPTUAL' | 'METACOGNITIVE';
+
 export interface VisualAid {
   kind: 'diagram' | 'chart';
   svg?: string; // inline SVG markup for a diagram, sanitized before storage
@@ -114,6 +129,13 @@ export interface GeneratedQuestion {
   calculatorAllowed?: boolean; // only set when the question involves numerical calculation
   sourceReference?: string;
   askConfidence?: boolean; // set by the route after generation, per shouldAskConfidence() -- not decided here
+
+  // Phase 3 Pre-flight question evidence semantics -- see the type docs above.
+  questionIntent?: QuestionIntent;
+  evidenceDimensions?: EvidenceDimension[];
+  cognitiveLevel?: CognitiveLevel;
+  expectedReasoningType?: ExpectedReasoningType;
+  learningObjectiveId?: string;
 }
 
 export const ALL_QUESTION_TYPES: QuestionType[] = [

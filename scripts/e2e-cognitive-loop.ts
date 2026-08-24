@@ -35,8 +35,10 @@ import { generateTransferActivity, evaluateTransferResponse, getTransferScore } 
 import { getOrCreateSignature, recordStudentMisconception, getRecurringMisconceptions } from '@/services/misconception.service';
 import { getTodayPlan, getBestNextAction } from '@/services/today-plan.service';
 import { getActiveValidationCycle, getKVR14, getTimeToMastery } from '@/services/validation-cycle.service';
-import { recordExamResult } from '@/services/exam-result.service';
+import { recordExamResult, getConceptAttribution } from '@/services/exam-result.service';
 import { mapAssessmentConceptCoverage, detectCalibrationConflict, getCalibrationConflicts } from '@/services/external-assessment.service';
+import { runKnowledgeStateBackfill } from '@/services/knowledge-state-backfill.service';
+import { getDueItems } from '@/services/learning-scheduler.service';
 
 let passCount = 0;
 let failCount = 0;
@@ -623,7 +625,105 @@ async function scenarioRejection() {
   return { studentId, subjectId };
 }
 
-async function cleanup(studentIds: string[]) {
+/**
+ * SCENARIO F -- Phase 3 Pre-flight: exam attribution honesty, Knowledge
+ * State backfill idempotency, and the Learning Scheduling Clock's
+ * due-item surfacing, all against real persisted state.
+ */
+async function scenarioPreflight() {
+  section('SCENARIO F: Phase 3 Pre-flight (exam attribution, backfill, scheduler)');
+  const studentId = await makeScratchStudent('preflight');
+  const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, preflight)');
+  const mappedConcept = await makeScratchConcept(subjectId, `projectile_motion_${RUN_ID}`, 'Projectile Motion');
+  const subjectWideConcept = await makeScratchConcept(subjectId, `energy_conservation_${RUN_ID}`, 'Energy Conservation');
+
+  // --- Exam attribution: same 85% exam score, two different attribution
+  // granularities -- CONCEPT_MAPPED (explicit, high-confidence mapping)
+  // vs SUBJECT_WIDE (no topics selected at all, lowest confidence). The
+  // real bug this fixes: both used to move mastery identically (uniform
+  // 1.0 confidence). They must not anymore.
+  const mappedOccurrence = await db.query(
+    `INSERT INTO assessment_occurrences (subject_id, scheduled_date, status, topics) VALUES ($1, CURRENT_DATE, 'expected', $2) RETURNING id`,
+    [subjectId, [mappedConcept]]
+  );
+  const mappedOccurrenceId = mappedOccurrence.rows[0].id;
+  await mapAssessmentConceptCoverage(mappedOccurrenceId, [{ conceptId: mappedConcept, weight: 1.0, mappingConfidence: 0.95 }]);
+
+  const subjectWideOccurrence = await db.query(
+    `INSERT INTO assessment_occurrences (subject_id, scheduled_date, status, topics) VALUES ($1, CURRENT_DATE, 'expected', $2) RETURNING id`,
+    [subjectId, []]
+  );
+  const subjectWideOccurrenceId = subjectWideOccurrence.rows[0].id;
+
+  const mappedAttribution = await getConceptAttribution(mappedOccurrenceId, subjectId, [mappedConcept]);
+  const subjectWideAttribution = await getConceptAttribution(subjectWideOccurrenceId, subjectId, []);
+  assert(mappedAttribution[0].sourceGranularity === 'CONCEPT_MAPPED', 'explicit coverage mapping yields CONCEPT_MAPPED granularity');
+  assert(subjectWideAttribution.some((a) => a.conceptId === subjectWideConcept), 'no topics selected falls back to every concept in the subject');
+  assert(
+    subjectWideAttribution[0].confidenceWeight < mappedAttribution[0].confidenceWeight,
+    `SUBJECT_WIDE confidence (${subjectWideAttribution[0].confidenceWeight}) is strictly lower than CONCEPT_MAPPED (${mappedAttribution[0].confidenceWeight})`
+  );
+
+  const beforeMapped = await db.query(`SELECT mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [studentId, mappedConcept]);
+  const beforeSubjectWide = await db.query(`SELECT mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [studentId, subjectWideConcept]);
+
+  await recordExamResult({ occurrenceId: mappedOccurrenceId, studentId, score: 85, maxScore: 100 });
+  await recordExamResult({ occurrenceId: subjectWideOccurrenceId, studentId, score: 85, maxScore: 100 });
+
+  const afterMapped = await db.query(`SELECT mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [studentId, mappedConcept]);
+  const afterSubjectWide = await db.query(`SELECT mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [studentId, subjectWideConcept]);
+  const mappedDelta = Number(afterMapped.rows[0].mastery_score) - Number(beforeMapped.rows[0]?.mastery_score ?? 0);
+  const subjectWideDelta = Number(afterSubjectWide.rows[0].mastery_score) - Number(beforeSubjectWide.rows[0]?.mastery_score ?? 0);
+  assert(
+    subjectWideDelta < mappedDelta,
+    `the same 85% exam score moves mastery LESS under SUBJECT_WIDE attribution (${subjectWideDelta}) than CONCEPT_MAPPED (${mappedDelta}) -- no longer uniformly trusted`
+  );
+
+  const evidenceMetadata = await db.query(
+    `SELECT metadata FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND source_type = 'REAL_SCHOOL_EXAM' ORDER BY timestamp DESC LIMIT 1`,
+    [studentId, subjectWideConcept]
+  );
+  assert(
+    evidenceMetadata.rows[0]?.metadata?.examConceptAttribution?.sourceGranularity === 'SUBJECT_WIDE',
+    `the attribution granularity is persisted onto the evidence row itself (got ${JSON.stringify(evidenceMetadata.rows[0]?.metadata)})`
+  );
+
+  // --- Knowledge State backfill: simulate a gap (evidence exists, but
+  // no projected state -- e.g. recorded before the projector hook
+  // existed) by deleting the already-correct row the giveEvidence calls
+  // above triggered, then reconstructing it via the backfill service
+  // (the SAME projector, never a parallel formula).
+  await giveEvidence(studentId, mappedConcept, subjectId, 'PRACTICE_QUIZ', 80, 'NONE');
+  const liveProjectedState = await getConceptKnowledgeState(studentId, mappedConcept);
+  await db.query(`DELETE FROM concept_knowledge_state WHERE student_id = $1 AND concept_id = $2`, [studentId, mappedConcept]);
+  const gapState = await getConceptKnowledgeState(studentId, mappedConcept);
+  assert(gapState === null, 'the simulated gap really has no projected state before backfill runs');
+
+  const firstRun = await runKnowledgeStateBackfill({ studentId });
+  assert(firstRun.metrics.statesReconstructed >= 1, `backfill reconstructs the missing state (statesReconstructed=${firstRun.metrics.statesReconstructed})`);
+  const reconstructed = await getConceptKnowledgeState(studentId, mappedConcept);
+  assert(
+    !!reconstructed && !!liveProjectedState && reconstructed.masteryState === liveProjectedState.masteryState && reconstructed.understandingScore === liveProjectedState.understandingScore,
+    `the reconstructed state matches what the live projector already produced (mastery ${reconstructed?.masteryState} vs ${liveProjectedState?.masteryState})`
+  );
+
+  const secondRun = await runKnowledgeStateBackfill({ studentId });
+  assert(secondRun.metrics.conceptsWithEvidence === 0, `re-running backfill with nothing stale finds zero candidates (idempotent, got ${secondRun.metrics.conceptsWithEvidence})`);
+
+  // --- Learning Scheduling Clock: a retention review overdue by 1 day
+  // must surface as a due item, purely from time, with no priority
+  // ranking implied.
+  await db.query(`UPDATE mastery_records SET next_review_date = NOW() - INTERVAL '1 day' WHERE student_id = $1 AND concept_id = $2`, [studentId, mappedConcept]);
+  const dueItems = await getDueItems(studentId);
+  assert(
+    dueItems.some((i) => i.type === 'RETENTION_REVIEW_DUE' && i.conceptId === mappedConcept),
+    'an overdue retention review surfaces as a due item from the Learning Scheduling Clock'
+  );
+
+  return { studentId, subjectId, backfillRunIds: [firstRun.runId, secondRun.runId] };
+}
+
+async function cleanup(studentIds: string[], backfillRunIds: string[] = []) {
   section('CLEANUP');
   for (const studentId of studentIds) {
     await db.query(`DELETE FROM analytics_events WHERE student_id = $1`, [studentId]);
@@ -661,12 +761,21 @@ async function cleanup(studentIds: string[]) {
   }
   console.log(`  cleaned up ${studentIds.length} scratch student(s)`);
 
+  if (backfillRunIds.length > 0) {
+    await db.query(`DELETE FROM backfill_runs WHERE id = ANY($1::uuid[])`, [backfillRunIds]);
+  }
+
   const residue = await db.query(`SELECT count(*)::int AS n FROM students WHERE clerk_id LIKE $1`, [`${SCRATCH_PREFIX}%`]);
   assert(residue.rows[0].n === 0, `zero residual scratch data left in the database (found ${residue.rows[0].n})`);
+  if (backfillRunIds.length > 0) {
+    const backfillResidue = await db.query(`SELECT count(*)::int AS n FROM backfill_runs WHERE id = ANY($1::uuid[])`, [backfillRunIds]);
+    assert(backfillResidue.rows[0].n === 0, `zero residual backfill_runs rows left (found ${backfillResidue.rows[0].n})`);
+  }
 }
 
 async function main() {
   const createdStudentIds: string[] = [];
+  let backfillRunIds: string[] = [];
   try {
     const a = await scenarioConfirm();
     createdStudentIds.push(a.studentId);
@@ -678,8 +787,11 @@ async function main() {
     createdStudentIds.push(d.studentId);
     const e = await scenarioExternalValidation();
     createdStudentIds.push(e.studentId);
+    const f = await scenarioPreflight();
+    createdStudentIds.push(f.studentId);
+    backfillRunIds = f.backfillRunIds;
   } finally {
-    await cleanup(createdStudentIds);
+    await cleanup(createdStudentIds, backfillRunIds);
   }
 
   console.log(`\n=== RESULT: ${passCount} passed, ${failCount} failed ===`);

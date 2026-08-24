@@ -11,17 +11,101 @@
  * many practice attempts would.
  *
  * A school grade is one number for the whole exam, not a per-concept
- * breakdown, so the same evidence (derived from the overall
- * percentage) is applied to every concept the exam covered. If the
- * occurrence has no specific topics selected, that means "covers
- * everything" (same convention as today-plan.service.ts), so every
- * concept in the subject gets recalibrated.
+ * breakdown. The *score* (the percentage) is real and applies to every
+ * concept the exam covered -- that's not fabricated. What used to be
+ * fabricated was the CONFIDENCE: every concept got the same 1.0
+ * confidenceWeight regardless of how precisely we actually know the
+ * exam covered it. Phase 3 Pre-flight fixes that by attributing a
+ * source granularity per concept (see getConceptAttribution below) and
+ * scaling confidenceWeight down when the mapping is coarse, so an 82%
+ * exam doesn't move mastery as if we were certain every covered
+ * concept was tested with equal rigor.
+ *
+ * If the occurrence has no specific topics selected, that means
+ * "covers everything" (same convention as today-plan.service.ts), so
+ * every concept in the subject gets recalibrated -- just at the
+ * lowest, most honest confidence tier (SUBJECT_WIDE).
  */
 
 import { db } from '@/lib/db';
 import { updateMastery } from './mastery.service';
 import { autoResolveDebt } from './debt-resolution.service';
 import type { LearningEvidence } from '@/lib/algorithms/mastery';
+
+export type ExamConceptSourceGranularity = 'CONCEPT_MAPPED' | 'TOPICS_LIST' | 'SUBJECT_WIDE';
+
+export interface ExamConceptAttribution {
+  conceptId: string;
+  sourceGranularity: ExamConceptSourceGranularity;
+  coverageWeight: number;
+  mappingConfidence: number;
+  confidenceWeight: number; // coverageWeight * mappingConfidence, clamped to [0,1] -- what actually gets passed to updateMastery
+}
+
+const TOPICS_LIST_MAPPING_CONFIDENCE = 0.7; // explicit concept selection, but no per-concept weight/confidence was ever recorded
+const SUBJECT_WIDE_MAPPING_CONFIDENCE = 0.4; // no selection at all -- "covers everything" is the coarsest, least certain attribution available
+
+/**
+ * Determines, per concept, how confidently this exam's evidence can be
+ * attributed to it -- preferring the most precise mapping this schema
+ * can actually express today:
+ *   1. CONCEPT_MAPPED -- an explicit assessment_concept_coverage row
+ *      exists (weight + mapping_confidence set via mapAssessmentConceptCoverage).
+ *   2. TOPICS_LIST -- the occurrence names specific concepts (topics[])
+ *      but nobody weighted/confirmed them individually.
+ *   3. SUBJECT_WIDE -- no topics selected at all; every concept in the
+ *      subject is assumed covered, at the lowest confidence.
+ *
+ * Question-level and section-level granularity are intentionally not
+ * implemented: REAL_SCHOOL_EXAM occurrences are an external calendar
+ * entry with no decomposed question/section structure in this schema
+ * (unlike internally-generated quizzes). assessment_concept_coverage's
+ * source_granularity column is forward-compatible with those tiers
+ * once such structure exists, but nothing produces them yet -- that's
+ * honest, not a shortcut.
+ */
+export async function getConceptAttribution(
+  occurrenceId: string,
+  subjectId: string,
+  topics: string[]
+): Promise<ExamConceptAttribution[]> {
+  const mapped = await db.query(
+    `SELECT concept_id, weight, mapping_confidence FROM assessment_concept_coverage WHERE assessment_occurrence_id = $1`,
+    [occurrenceId]
+  );
+  if (mapped.rows.length > 0) {
+    return mapped.rows.map((r) => {
+      const coverageWeight = Number(r.weight);
+      const mappingConfidence = Number(r.mapping_confidence);
+      return {
+        conceptId: r.concept_id,
+        sourceGranularity: 'CONCEPT_MAPPED' as const,
+        coverageWeight,
+        mappingConfidence,
+        confidenceWeight: Math.max(0, Math.min(1, coverageWeight * mappingConfidence)),
+      };
+    });
+  }
+
+  if (topics.length > 0) {
+    return topics.map((conceptId) => ({
+      conceptId,
+      sourceGranularity: 'TOPICS_LIST' as const,
+      coverageWeight: 1.0,
+      mappingConfidence: TOPICS_LIST_MAPPING_CONFIDENCE,
+      confidenceWeight: TOPICS_LIST_MAPPING_CONFIDENCE,
+    }));
+  }
+
+  const allConcepts = await db.query(`SELECT id FROM concepts WHERE subject_id = $1`, [subjectId]);
+  return allConcepts.rows.map((r) => ({
+    conceptId: r.id,
+    sourceGranularity: 'SUBJECT_WIDE' as const,
+    coverageWeight: 1.0,
+    mappingConfidence: SUBJECT_WIDE_MAPPING_CONFIDENCE,
+    confidenceWeight: SUBJECT_WIDE_MAPPING_CONFIDENCE,
+  }));
+}
 
 export interface ExamResultInput {
   occurrenceId: string;
@@ -84,16 +168,11 @@ export async function recordExamResult(
     occurrenceId,
   ]);
 
-  let conceptIds: string[] = occ.topics || [];
-  if (conceptIds.length === 0) {
-    const allConcepts = await db.query(`SELECT id FROM concepts WHERE subject_id = $1`, [
-      occ.subject_id,
-    ]);
-    conceptIds = allConcepts.rows.map((r) => r.id);
-  }
+  const attributions = await getConceptAttribution(occurrenceId, occ.subject_id, occ.topics || []);
 
   let recalibrated: ConceptRecalibration[] = [];
-  if (conceptIds.length > 0) {
+  if (attributions.length > 0) {
+    const conceptIds = attributions.map((a) => a.conceptId);
     const labelsResult = await db.query(
       `
       SELECT c.id, c.canonical_id, cl.label
@@ -112,26 +191,34 @@ export async function recordExamResult(
       labelsResult.rows.map((r) => [r.id, r.label || r.canonical_id])
     );
 
-    const evidence: LearningEvidence = {
-      result: percentage >= 70 ? 'correct' : percentage >= 50 ? 'partial' : 'incorrect',
-      difficulty: 3,
-      sourceType: 'REAL_SCHOOL_EXAM',
-      confidenceWeight: 1.0,
-    };
-
     recalibrated = await Promise.all(
-      conceptIds.map(async (conceptId) => {
+      attributions.map(async (attribution) => {
+        const evidence: LearningEvidence = {
+          result: percentage >= 70 ? 'correct' : percentage >= 50 ? 'partial' : 'incorrect',
+          difficulty: 3,
+          sourceType: 'REAL_SCHOOL_EXAM',
+          confidenceWeight: attribution.confidenceWeight,
+          scorePercent: percentage,
+        };
         const masteryResult = await updateMastery({
           studentId,
-          conceptId,
+          conceptId: attribution.conceptId,
           subjectId: occ.subject_id,
           evidence,
+          metadata: {
+            examConceptAttribution: {
+              sourceGranularity: attribution.sourceGranularity,
+              coverageWeight: attribution.coverageWeight,
+              mappingConfidence: attribution.mappingConfidence,
+              occurrenceId,
+            },
+          },
         });
-        const resolution = await autoResolveDebt(studentId, conceptId).catch(() => null);
+        const resolution = await autoResolveDebt(studentId, attribution.conceptId).catch(() => null);
 
         return {
-          conceptId,
-          label: labelById.get(conceptId) || conceptId,
+          conceptId: attribution.conceptId,
+          label: labelById.get(attribution.conceptId) || attribution.conceptId,
           previousMastery: masteryResult.oldMastery,
           newMastery: masteryResult.newMastery,
           delta: masteryResult.delta,
