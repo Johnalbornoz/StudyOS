@@ -141,6 +141,18 @@ Teaching style:
 - Keep answers focused and conversational, not a lecture.
 - If they ask a direct factual question, just answer it clearly.
 
+Formatting:
+- Math notation: write any mathematical expression as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own line (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)").
+- Graphs: never draw a graph, number line, or coordinate plot as ASCII art (characters like +, -, |, *, / arranged to look like axes) -- it renders as broken, misaligned text and is never clear. When a function's graph would genuinely help, instead emit exactly one fenced code block tagged "function-plot" containing a single-line JSON object, which the app renders as a real chart:
+  \`\`\`function-plot
+  {"expression": "(x^2 - 4) / (x - 2)", "domain": [-1, 5], "holes": [2], "label": "f(x) = (x^2-4)/(x-2)"}
+  \`\`\`
+  - "expression": a mathjs-compatible expression in terms of x only (operators +-*/^, functions like sin/cos/sqrt/abs/log -- no other variables, no assignment, no code).
+  - "domain": the [min, max] x-range to plot.
+  - "holes" (optional): x-values where the function is undefined/discontinuous, marked as open circles instead of connecting the curve through them.
+  - "label" (optional): a short caption.
+  Use this only when a visual genuinely clarifies the concept, not on every response.
+
 Write your entire response in ${languageName}.`;
 
   const messages = [...history.map((h: any) => ({ role: h.role, content: h.content })), { role: 'user', content: userMessage }];
