@@ -763,7 +763,7 @@ export default function QuizPage() {
                               cursor: 'pointer', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--text-primary)',
                             }}
                           >
-                            {opt.text}
+                            <MathText text={opt.text} />
                           </button>
                         );
                       })}
@@ -989,7 +989,7 @@ export default function QuizPage() {
                   }}>
                     {letter}
                   </span>
-                  {opt.text}
+                  <MathText text={opt.text} />
                 </button>
               );
             })}
@@ -1018,7 +1018,7 @@ export default function QuizPage() {
                       setMultiChoice((prev) => (prev.includes(opt.id) ? prev.filter((id) => id !== opt.id) : [...prev, opt.id]))
                     }
                   />
-                  {opt.text}
+                  <MathText text={opt.text} />
                 </label>
               );
             })}
@@ -1042,7 +1042,7 @@ export default function QuizPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {(q.matchingLeft || []).map((left) => (
                 <div key={left} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ flex: 1, fontSize: 14 }}>{left}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={left} /></span>
                   <select
                     value={matchingAnswer[left] || ''}
                     onChange={(e) => setMatchingAnswer((prev) => ({ ...prev, [left]: e.target.value }))}
@@ -1069,7 +1069,7 @@ export default function QuizPage() {
                   border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-subtle)',
                 }}>
                   <span className="tabular" style={{ fontWeight: 650, color: 'var(--text-muted)', width: 20 }}>{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: 14 }}>{item}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={item} /></span>
                   <button className="btn btn-ghost" style={{ height: 28, width: 28, padding: 0 }} onClick={() => moveOrderingItem(i, -1)} disabled={i === 0}>↑</button>
                   <button className="btn btn-ghost" style={{ height: 28, width: 28, padding: 0 }} onClick={() => moveOrderingItem(i, 1)} disabled={i === orderingAnswer.length - 1}>↓</button>
                 </div>
@@ -1084,7 +1084,7 @@ export default function QuizPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {(q.classificationItems || []).map((item) => (
                 <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ flex: 1, fontSize: 14 }}>{item}</span>
+                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={item} /></span>
                   <select
                     value={classificationAnswer[item] || ''}
                     onChange={(e) => setClassificationAnswer((prev) => ({ ...prev, [item]: e.target.value }))}
