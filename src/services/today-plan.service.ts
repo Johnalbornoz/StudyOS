@@ -79,11 +79,14 @@ export interface TodayItem {
   occurrenceCount?: number; // only set when reason === 'recurring_misconception'
 }
 
-const EXAM_SOON_WINDOW_DAYS = 7;
+// Exported (additive, zero behavior change) so Phase 3C's signal loader
+// can reuse the exact same thresholds instead of inventing subtly
+// different ones -- see adaptive-learning-orchestrator.service.ts.
+export const EXAM_SOON_WINDOW_DAYS = 7;
 const EXAM_CRITICAL_DAYS = 2;
 const DEBT_CRITICAL_SEVERITY = 4;
 const LOW_MASTERY_THRESHOLD = 60;
-const FORGETTING_RISK_THRESHOLD = 50;
+export const FORGETTING_RISK_THRESHOLD = 50;
 const INDEPENDENCE_GAP_MIN_SAMPLES = 2;
 const INDEPENDENCE_GAP_ACCURACY_THRESHOLD = 60;
 

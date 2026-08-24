@@ -1,6 +1,6 @@
 # Phase 3 — Adaptive Learning Orchestration (Technical Design & Architecture)
 
-**Status:** Describes actual implemented code, not aspirational design. Covers Phase 3 Pre-flight, Phase 3A (Evidence Mode Engine), and Phase 3B (Assessment Verification Engine) as they exist in this repository today. Phase 3C (Adaptive Learning Orchestrator) and Phase 3D (Scheduler + NBA v3 + Session Engine) are **not implemented** — nothing in this document should be read as describing them.
+**Status:** Describes actual implemented code, not aspirational design. Covers Phase 3 Pre-flight, Phase 3A (Evidence Mode Engine), Phase 3B (Assessment Verification Engine), and Phase 3C (Adaptive Learning Orchestrator) as they exist in this repository today. Phase 3D (Scheduler + NBA v3 + Session Engine) is **not implemented** — nothing in this document should be read as describing it, and Phase 3C does not replace any production Today/Study Plan surface (see §5.9).
 
 ## 0. The critical architectural boundary
 
@@ -102,3 +102,107 @@ Every concept in an Assessment-mode result carries an `evidenceQualification` la
 ## 4. What Phase 3B explicitly does not do
 
 No AI-authorship/"87% AI generated" detector exists anywhere in this codebase. No invasive surveillance (webcam, biometrics, microphone monitoring, persistent keystroke logging) is implemented or planned. Integrity signals (`IntegritySignals` in `assessment-confidence.ts`) are a fixed, non-invasive set (response duration, edit/paste counts, focus-loss counts, etc.) that only ever discount `calculateAssessmentConfidence`'s output — never `Understanding`/`Independence`/`Application`/`Retention`/`Transfer`, never a Knowledge Score, never a `MasteryState`.
+
+## 5. Phase 3C — Adaptive Learning Orchestrator
+
+**Responsibility**: the single deterministic decision authority answering "what is the best pedagogical intervention for this student now, and why?" — nothing upstream of it (Phase 1/2/2.2/3A/3B) makes that call today; nothing downstream of it (Phase 3D) exists yet to consume it in production. Two new files, both read-only, no migration:
+
+- `src/lib/adaptive-learning-policy.ts` — the **pure** policy: signal types, consolidation, intervention (ActivityType) selection, target-dimension selection, fact-building, priority banding, and deterministic ranking. No DB import, no `fetch`, no LLM call — unit-tested directly with hand-built signals (`tests/unit/adaptive-learning-orchestrator.test.ts`).
+- `src/services/adaptive-learning-orchestrator.service.ts` — the **IO** layer: loads every existing signal source read-only, shapes each into a `LearningSignal`, and hands the list to the pure policy. Exposes `getLearningDecisions(studentId, preferredLanguage?)` and `getBestLearningDecision(studentId, preferredLanguage?)`, plus re-exports the pure functions (`consolidateSignals`, `buildLearningDecisions`, `rankLearningDecisions`, `selectActivityType`, `selectTargetDimension`, ...) for direct testing. This IO/pure split is what makes the policy testable without a database, and keeps the "what decision" logic in exactly one place.
+
+### 5.1 Input sources (all reused, none re-derived)
+
+| Signal | Source (called directly) |
+|---|---|
+| `AT_RISK`, `INTERVENTION_REQUIRED`, `VALIDATION_DEADLINE_APPROACHING`/`OVERDUE`, `RETENTION_REVIEW_DUE`, `REMEDIATION_UNFINISHED` | `learning-scheduler.service.ts`'s `getDueItems()` — consumed as-is, never re-derived |
+| `REMEDIATION_ACTIVE` | `remediation.service.ts`'s `getActiveRemediationsWithLabels()` (its own "genuinely in-progress" states — `CONFIRMED`/`REPAIRING`/`VERIFYING` — narrower than the Scheduler's broader `REMEDIATION_UNFINISHED` above, which also includes `DETECTED`/`DIAGNOSING`) |
+| `PREREQUISITE_GAP`, `DIAGNOSIS_REQUIRED` | `cognitive-diagnosis.service.ts`'s `getActiveDiagnoses()`, `concept-graph.service.ts`'s `getLearningUnlockValue()` for the gap's unlock value |
+| `RECURRING_MISCONCEPTION` | `misconception.service.ts`'s `getRecurringMisconceptions()` |
+| `CRITICAL_MISCONCEPTION`, `LOW_UNDERSTANDING`, `WAITING_FOR_RETENTION`, `TRANSFER_REQUIRED` | `knowledge-state.service.ts`'s `getSubjectKnowledgeState()` (persisted rows only, never recomputed) + `getActiveMasteryPolicy()` for the low-understanding threshold |
+| `LEARNING_DEBT` | `learning-debt.service.ts`'s `getActiveDebts()` |
+| `CALIBRATION_CONFLICT` | `external-assessment.service.ts`'s `getCalibrationConflicts()` |
+| `EXAM_APPROACHING` | `assessment.service.ts`'s `getUpcomingForStudent()`, called directly (not via the Scheduler's own `EXAM_APPROACHING` `DueItem`, which is subject-scoped with no `conceptId` — Phase 3C fans the same occurrence out to every already-known concept in that subject whose topics include it, mirroring `today-plan.service.ts`'s own `inExamWindow` check) |
+| `INDEPENDENCE_GAP` | `learner-model.service.ts`'s `getIndependentMastery()`, compared against `mastery.service.ts`'s `getStudentMastery()` using the same ≥20-point gap convention `remediation.service.ts` and `cognitive-diagnosis.service.ts` already use ad hoc — reused, not reinvented |
+| `FORGETTING_RISK` | `lib/algorithms/spaced-repetition.ts`'s `calculateReviewIntervalDays`/`calculateForgettingRisk`, reused verbatim against `getStudentMastery()`'s raw mastery/confidence/last-practiced data |
+
+Two constants (`EXAM_SOON_WINDOW_DAYS`, `FORGETTING_RISK_THRESHOLD`) were changed from private to exported in `today-plan.service.ts` so Phase 3C reuses the exact same values instead of inventing subtly different ones. This is the only change to any existing Phase 1/2/2.2/3A/3B file — zero logic changed, verified by `tests/unit/today-plan.test.ts` and `tests/unit/nba-priority.test.ts` passing unchanged.
+
+`getDueItems()` is consumed, not modified — no new ranking/priority logic was added to `learning-scheduler.service.ts`, which remains time-only.
+
+### 5.2 Multi-signal contract
+
+NBA v2's `TodayItem` carries exactly one `TodayReason`, picked by a first-match `if`/`else if` chain — real simultaneous evidence (exam + debt + forgetting on the same concept) is destroyed the moment the first branch matches. Phase 3C's `LearningSignal[]` never does this: every true signal for a concept is loaded independently and none is dropped before consolidation. A concept with an approaching exam, active debt, high forgetting risk, and a real independence gap keeps all four signals through to the final `LearningDecision.signals` array (`tests/unit/adaptive-learning-orchestrator.test.ts`, "1. Multi-signal consolidation").
+
+### 5.3 Consolidation semantics
+
+`consolidateSignals(signals, knowledgeStateByConceptId)` groups by `LearningSignal.conceptId` — which is always already the *actionable* concept (the root cause where one exists, never the raw symptom) — into one `ConceptDecisionContext` per concept. The same actionable concept arriving from the Scheduler, Knowledge State, and the Cognitive Learning Engine in the same pass still produces exactly one context, never duplicate rows. Each context additionally carries the attached (persisted, never recomputed) `ConceptKnowledgeState` when one exists, and deduplicated provenance arrays (`remediationPathIds`, `diagnosisIds`, `occurrenceIds`, `calibrationConflictIds`).
+
+### 5.4 Root-cause semantics (P0-B contract, preserved)
+
+Exactly the same contract `learning-scheduler.service.ts`'s `REMEDIATION_UNFINISHED` already established: `conceptId` (here, `ConceptDecisionContext.actionConceptId`) is always the concept remediation actually operates on; `targetConceptId` (here, `targetConceptIds[]`) is the concept(s) where the problem manifested, preserved as provenance/context only. When two different target concepts are blocked by the same root cause, both signals collapse into the same context (grouped by the shared `actionConceptId`) — one repair decision, both targets preserved, never duplicate independent recommendations.
+
+### 5.5 Intervention (ActivityType) selection — `selectActivityType`
+
+A deterministic, explicitly ordered rule chain (never a random/implicit choice), using only the existing `ActivityType` taxonomy from `src/lib/activity-taxonomy.ts` (no parallel enum):
+
+1. `REMEDIATION_ACTIVE` present → `REMEDIATION` (continue an in-progress repair before starting anything new).
+2. `DIAGNOSIS_REQUIRED` present → `DIAGNOSTIC_CHECK` (never remediate an unestablished root cause).
+3. `INTERVENTION_REQUIRED` present (no remediation/diagnosis in play) → `PRACTICE` — the deterministic corrective activity for persistent difficulty; never silently downgraded to a light `REVIEW`.
+4. A critical misconception (signal or `knowledgeState.criticalMisconceptionCount > 0`) → `PRACTICE`.
+5. `PREREQUISITE_GAP` (confirmed root cause, no remediation path started yet) → `PRACTICE` on the prerequisite itself — the smallest existing activity consistent with Cognitive Learning Engine semantics; `DIAGNOSTIC_CHECK` doesn't apply since the diagnosis is already `CONFIRMED`.
+6. Knowledge State's `validationReadiness === 'WAITING_FOR_RETENTION'` (or a `RETENTION_REVIEW_DUE`/`WAITING_FOR_RETENTION` signal) → `RETENTION_CHECK`.
+7. `validationReadiness === 'TRANSFER_REQUIRED'` (or a `TRANSFER_REQUIRED` signal) → `TRANSFER`.
+8. `INDEPENDENCE_GAP` → `SOLO_CHECK`.
+9. An **actionable** `CALIBRATION_CONFLICT` (carries a directional tag beyond the data-quality caveats) → `DIAGNOSTIC_CHECK` (seeking more evidence, per §5.7).
+10. Otherwise: `REVIEW` when real Knowledge State evidence exists and the concept is past the earliest `LEARNING` stage (something to refresh), `PRACTICE` when understanding itself is still the gap (nothing to review yet).
+
+`MOCK_EXAM`/`CUMULATIVE_ASSESSMENT` are never selected here — an approaching exam is a **priority modifier** (§5.7), not permission to ignore the student's actual cognitive state; Phase 3D owns subject-level Mock Exam session composition.
+
+`selectTargetDimension` derives the pedagogical objective (`UNDERSTANDING`/`INDEPENDENCE`/`APPLICATION`/`RETENTION`/`TRANSFER`/`MISCONCEPTION`/`PREREQUISITE`/`VALIDATION`/`EXAM_READINESS`) from the same driving reason as the ActivityType — for `REMEDIATION_ACTIVE` specifically, from the underlying `RemediationPattern` (`LOW_RETENTION`→`RETENTION`, `LOW_INDEPENDENCE`→`INDEPENDENCE`, `TRANSFER_WEAKNESS`→`TRANSFER`, `OVERCONFIDENT`→`MISCONCEPTION`, otherwise `UNDERSTANDING`). Never confused with `MasteryState` — it is a separate, smaller, Phase 3C-only type.
+
+**Evidence Mode boundary**: Phase 3C selects an `ActivityType` and stops there. It never calls or reimplements `evidenceModeForActivity` — that mapping stays exclusively Phase 3A's, applied only once an actual quiz session is created from the selected `ActivityType` (a future Phase 3D concern). `tests/unit/adaptive-learning-orchestrator.test.ts` proves the mapping itself is unchanged (`evidenceModeForActivity('RETENTION_CHECK'|'SOLO_CHECK') === 'INDEPENDENT'`) without Phase 3C ever needing to call it.
+
+### 5.6 Knowledge State as context, not another score
+
+The five dimensions (`understandingScore`/`independenceScore`/`applicationScore`/`retentionScore`/`transferScore`) are never averaged or compensated against each other here, exactly as Phase 2.2 itself requires — they're read individually to decide *what kind* of intervention fits (§5.5's rules 6-8), never combined into a second mastery-like number. `LOW_UNDERSTANDING`'s threshold is Phase 2.2's own `mastery_policies.minimum_understanding` (via `getActiveMasteryPolicy()`), not a re-invented NBA v2-style flat constant.
+
+### 5.7 Priority policy — lexicographic bands, never a naive sum
+
+`dominantSignal(context)` picks the single highest-priority signal driving a context — never a summed/averaged score across all of them, which could let a pile of low-value secondary signals accidentally outrank the deliberate imminent-exam override (`tests/unit/adaptive-learning-orchestrator.test.ts`, "21. Multiple secondary signal modifiers"). Bands, highest first: `IMMINENT_EXAM` (≤2 days) → `ACTIVE_ESCALATION` (`REMEDIATION_ACTIVE`/`INTERVENTION_REQUIRED`/`CRITICAL_MISCONCEPTION`) → `PREREQUISITE_GAP` (modified by Learning Unlock Value) → `EXAM_APPROACHING` (non-critical) → `LEARNING_DEBT` (modified by severity) → `DIAGNOSTIC_EVIDENCE` (`DIAGNOSIS_REQUIRED` or an actionable `CALIBRATION_CONFLICT`) → `MISCONCEPTION` (modified by recurrence count) → `VALIDATION` (`AT_RISK`/validation deadlines/retention-due/transfer-required) → `FORGETTING_RISK` → `INDEPENDENCE_GAP` → `LOW_UNDERSTANDING`. Within-band modifiers are clamped to `[0, 999]` before being combined into `priorityScore = band * 1000 + modifier`, so a modifier can never cross into the next band — the "must not be a naive sum" requirement is structural, not just tested behavior. `LearningDecision.priorityScore` is exposed as a downstream-consumable number, but it is *derived from* this ordering, never an independent second decision mechanism.
+
+These specific values are Phase 3C's own policy, not a port of NBA v2's numeric constants (`nbaPriority` in `today-plan.service.ts`, untouched) — only the **ordering invariants** were required to match, and are directly tested: an imminent exam outranks active remediation, active remediation outranks a non-critical exam, a confirmed prerequisite gap outranks the low-mastery symptom it causes (scaled by Learning Unlock Value), diagnosis-required ranks above forgetting-risk/independence-gap but below learning debt, recurring misconceptions scale with occurrence count, and lower understanding stays more urgent within otherwise-equivalent plain low-understanding contexts.
+
+**Tie-breaking**: never implicit DB/array row order. `rankLearningDecisions` orders by `priorityScore` desc, then soonest `dueAt`, then `subjectId`, then `actionConceptId` — a total, deterministic order proven independent of input array order.
+
+### 5.8 Temporal urgency ≠ pedagogical priority
+
+Kept as two entirely separate fields on `LearningDecision`: `temporalUrgency` (`DueUrgency`, reused verbatim from whichever Scheduling Clock signal(s) carry it — `LOW`/`MEDIUM`/`HIGH`/`CRITICAL`, the highest among a context's signals, `null` when nothing carries a deadline) answers "when is this due?"; `pedagogicalPriority` (`CRITICAL`/`HIGH`/`MEDIUM`/`LOW`, derived from the priority band) answers "what should happen first, given all evidence?" A `CRITICAL` deadline does not by itself force `CRITICAL` pedagogical priority, and a `CRITICAL` pedagogical priority (e.g. an active escalation) can exist with no deadline at all.
+
+### 5.9 Calibration conflicts (Phase 2.2C boundary, preserved)
+
+A `CalibrationConflict`'s `possibleInterpretations` is checked against `{LOW_MAPPING_CONFIDENCE, COVERAGE_MISMATCH}` — the data-quality caveat tags. A conflict is treated as `actionable` only when it carries at least one *directional* tag beyond those two; a data-quality-only conflict still survives into `ConceptDecisionContext.signals` (never dropped, so it stays visible for explainability) but never drives `dominantSignal`/priority and never selects `DIAGNOSTIC_CHECK` — it must never be promoted into a strong knowledge-gap claim. A real, high-quality (directional) conflict is treated as more evidence being needed, landing in the `DIAGNOSTIC_EVIDENCE` band alongside `DIAGNOSIS_REQUIRED` and selecting `DIAGNOSTIC_CHECK`.
+
+### 5.10 Explainability
+
+`LearningDecision.facts` is built by `buildFacts(context)` — one structured `LearningFact` per real signal (`{kind, ...realNumbers}`, e.g. `{kind: 'learningDebt', severity: 3}`), composed purely from already-loaded data. No LLM call anywhere in `adaptive-learning-policy.ts` or `adaptive-learning-orchestrator.service.ts` (verified by both a source-grep test and the absence of any AI-client import). UI/localization compose the actual prose later, exactly mirroring `today-plan.service.ts`'s existing `WhyThisFact`/`factsForItem` pattern rather than inventing a second one.
+
+### 5.11 Knowledge State boundary (read-only, verified)
+
+Phase 3C never assigns `MasteryState` and never writes `concept_knowledge_state` — `evaluateValidationLifecycle` (Phase 2.2B) remains the only place that ever happens. Verified three ways: (1) `adaptive-learning-orchestrator.service.ts` only ever calls `getSubjectKnowledgeState`/`getConceptKnowledgeState` (pure reads of already-persisted rows) and never imports `recalculateConceptKnowledgeState`; (2) a source-grep test asserts no `INSERT INTO`/`UPDATE concept_knowledge_state` string appears in either new file; (3) `adaptive-learning-policy.ts` has no DB import at all — it cannot write anything by construction, being a pure function module.
+
+### 5.12 Relationship to NBA v2 and the Phase 3D boundary
+
+- **NBA v2** (`today-plan.service.ts`'s `getTodayPlan`/`nbaPriority`, `priority-engine.service.ts`'s `calculateConceptPriority`) remains **legacy production decision behavior**, completely untouched by this phase (zero lines changed beyond the two additive `export` keywords in §5.1) and still serving `dashboard/today` and `dashboard/learning-debt` today. `priority-engine.service.ts` in particular gains no new intelligence and is not synchronized with Phase 3C's new signals — Phase 3D must eventually stop treating it as an independent decision authority, but that migration is explicitly out of scope here.
+- **Phase 3C** (this section) is the new orchestration/decision/priority/intervention **authority** — computed fresh on every call, not yet wired into any product surface.
+- **Phase 3D** (not implemented) is the future **execution** layer: session/scheduling composition, NBA v3 UI, and the Session Engine, expected to *consume* `getLearningDecisions`/`getBestLearningDecision` rather than recreate any priority logic of its own. Deliberately **not** built here: exact study-session composition, daily calendar allocation, notification timing, multi-session scheduling, any UI, and no replacement of Today/Study Plan's production behavior.
+
+### 5.13 No persistence
+
+Every `LearningDecision` is computed fresh from current state on every call — no `learning_decisions`/`priority`/`orchestrator_state` table, no migration. Nothing here needed one: Phase 2.2's `concept_knowledge_state`, the Scheduling Clock, and every other source already persist what they need to; Phase 3C only reads and ranks.
+
+### 5.14 Known limitations, carried forward rather than fixed here
+
+- `learning-debt.service.ts`'s `getActiveDebts` (reused for `LEARNING_DEBT`) lazily re-resolves debts on read as a pre-existing side effect (can flip `learning_debt.status` to `'resolved'`) — not introduced by Phase 3C, out of scope to fix here (see "do not redesign Phase 1/2/2.2").
+- `assessment.service.ts`'s `getUpcomingForStudent` (reused for `EXAM_APPROACHING`) can perform swallowed recurring-occurrence-sync writes as a side effect of a "read" — same pre-existing pattern, same scope decision.
+- `EXAM_APPROACHING` signals are only generated for concepts that already have a `concept_knowledge_state` row (i.e., some prior evidence exists) — a concept covered by an upcoming exam that the student has never been evaluated on at all is out of scope for Phase 3C today; Phase 3D may widen this if a concrete need arises.
+- Two independent, non-unified priority mechanisms now exist in the codebase (NBA v2's `nbaPriority` banding and `priority-engine.service.ts`'s separate additive `scorePriority`, alongside Phase 3C's own lexicographic bands) — reconciling them is explicitly Phase 3D's job, not this phase's.
