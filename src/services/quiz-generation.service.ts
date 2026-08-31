@@ -16,6 +16,8 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
+import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface IBContext {
   programme: 'MYP' | 'DP';
@@ -298,58 +300,56 @@ export async function generateQuestionsForConcept(
 
     const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        // Scales with how many questions were asked for -- some of the
-        // 18 question models (case_study, step_by_step, scenario...)
-        // produce long correctAnswer/explanation text, and a fixed
-        // budget truncated the JSON mid-array for larger batches.
-        max_tokens: Math.min(16000, 900 * count + 1500),
-        messages: [
+    const maxTokens = Math.min(16000, 900 * count + 1500);
+    const prompt = getPrompt('quiz.question_generation');
+    const { result: questions } = await executeAI({
+      capability: prompt.capability,
+      risk: 'HIGH_RISK', // correctAnswer feeds gradeStructuredAnswer's deterministic comparison directly
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuestionsForConcept' },
+      call: (signal) =>
+        callAnthropicMessages(
           {
-            role: 'user',
-            content: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
+            model: 'claude-sonnet-5',
+            maxTokens,
+            system: systemPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
 Output a JSON array (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
 [
 ${shapeExamples}
 ]`,
+              },
+            ],
           },
-        ],
-        system: systemPrompt,
-      }),
+          signal
+        ),
+      validate: (raw) => {
+        try {
+          const parsed = parseAIJson<any[]>(raw.text);
+          return { valid: true, value: parsed };
+        } catch {
+          // A large batch (many verbose types like case_study/step_by_step)
+          // can still hit the token budget and cut off mid-array. Salvage
+          // whichever leading questions are already complete rather than
+          // discarding a full, expensive generation call.
+          const salvaged = salvageJsonArray(raw.text);
+          if (salvaged.length === 0) {
+            console.error('Failed to parse Claude response:', raw.text);
+            return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
+          }
+          console.warn(`Salvaged ${salvaged.length} questions from a truncated response`);
+          return { valid: true, value: salvaged };
+        }
+      },
+      fallback: () => [],
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${error}`);
-    }
-
-    const data = await response.json();
-    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
-
-    let questions: any[] = [];
-    try {
-      questions = parseAIJson(responseText);
-    } catch (e) {
-      // A large batch (many verbose types like case_study/step_by_step)
-      // can still hit the token budget and cut off mid-array. Salvage
-      // whichever leading questions are already complete rather than
-      // discarding a full, expensive generation call.
-      questions = salvageJsonArray(responseText);
-      if (questions.length === 0) {
-        console.error('Failed to parse Claude response:', responseText);
-        return [];
-      }
-      console.warn(`Salvaged ${questions.length} questions from a truncated response`);
-    }
 
     const storedQuestions: GeneratedQuestion[] = [];
 
@@ -732,11 +732,7 @@ export function gradeStructuredAnswer(
 // analysis (see reasoningValid below) needs a way to say so.
 export type GradingErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING' | 'ARITHMETIC' | 'UNIT';
 
-export async function gradeAnswer(
-  question: GeneratedQuestion,
-  studentAnswer: string,
-  language: string = 'en'
-): Promise<{
+export interface GradeAnswerResult {
   correct: boolean;
   score: number; // 0-1 (0 = wrong, 1 = perfect, 0.5 = partial)
   feedback: string;
@@ -751,40 +747,34 @@ export async function gradeAnswer(
   // evaluate (numeric_problem, step_by_step, and similar); defaults to
   // true (matching `correct`) when there's no separate reasoning to judge.
   reasoningValid: boolean;
-}> {
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 1536,
-        messages: [
-          {
-            role: 'user',
-            content: `Grade this answer:
+  /**
+   * Phase 0E1 AI provenance -- which execution produced this grade
+   * (executionId/provider/model/promptId/promptVersion), including on
+   * a fallback path, so a fallback grade can still be traced back to
+   * the attempt that triggered it. Purely additive: no pre-existing
+   * caller reads this field, so its presence changes nothing.
+   */
+  aiExecution: AIProvenance;
+}
 
-Question type: ${question.type}
-Question: ${question.question}
-Model/expected answer: ${question.correctAnswer}
-Student Answer: ${studentAnswer}
-
-Respond with JSON (no markdown):
-{
-  "correct": true/false,
-  "score": 0.0-1.0,
-  "feedback": "...",
-  "confidence": 0.0-1.0,
-  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | "ARITHMETIC" | "UNIT" | null,
-  "reasoningValid": true/false
-}`,
-          },
-        ],
-        system: `You are an educational grader. Evaluate student answers on their merits, not on matching exact wording:
+/**
+ * Grade a free-text answer using Claude for semantic understanding.
+ * HIGH_RISK (Phase 0E1): this result feeds directly into
+ * mastery.service.ts's updateMastery via the caller, so the AI output
+ * must be structurally validated before any deterministic logic sees
+ * it (Step 11) -- see the `validate` step below. Grading semantics,
+ * thresholds, and both existing fallback tiers (parse-failure ->
+ * string match, total-failure -> score 0) are preserved exactly.
+ */
+export async function gradeAnswer(
+  question: GeneratedQuestion,
+  studentAnswer: string,
+  language: string = 'en',
+  /** Phase 0E2 Step 11: optional, purely additive -- enriches the persisted ai_execution_events row when the caller has it. */
+  context?: { studentId?: string; subjectId?: string }
+): Promise<GradeAnswerResult> {
+  const prompt = getPrompt('quiz.free_text_grading');
+  const systemPrompt = `You are an educational grader. Evaluate student answers on their merits, not on matching exact wording:
 - short_answer/fill_blank: accept equivalent phrasing/values, partial credit if partially right
 - numeric_problem/step_by_step: check the work and the final result, partial credit for correct method with an arithmetic slip
 - open_ended/case_study/comparison: evaluate the understanding shown against the key points in the model answer
@@ -805,50 +795,91 @@ Set errorType to null when correct is true.
 
 For numeric_problem/step_by_step and any answer that shows work: also set "reasoningValid" -- true if the underlying method/reasoning was sound (even if the final number is wrong, e.g. ARITHMETIC/UNIT/CARELESS errors), false if the reasoning itself was flawed (e.g. CONCEPTUAL/PROCEDURAL/MISREADING errors, or a correct final answer reached by a method that doesn't actually follow). For question types with no visible reasoning/work to judge, set reasoningValid equal to "correct".
 
-Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`,
-      }),
-    });
+Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`;
 
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
-
-    try {
-      const gradeResult = parseAIJson(responseText);
-      return {
-        correct: gradeResult.correct,
-        score: Math.max(0, Math.min(1, gradeResult.score || 0)),
-        feedback: gradeResult.feedback || '',
-        confidence: Math.max(0, Math.min(1, gradeResult.confidence || 0.7)),
-        errorType: gradeResult.correct ? null : gradeResult.errorType || null,
-        reasoningValid: typeof gradeResult.reasoningValid === 'boolean' ? gradeResult.reasoningValid : !!gradeResult.correct,
-      };
-    } catch (e) {
-      console.error('Failed to parse grading response:', responseText);
-      const matched = studentAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
-      return {
-        correct: matched,
-        score: matched ? 1 : 0,
-        feedback: 'Please review the explanation above.',
-        confidence: 0.5,
-        errorType: matched ? null : null,
-        reasoningValid: matched,
-      };
-    }
-  } catch (error) {
-    console.error('Error grading answer:', error);
+  const parseFailureFallback = (): Omit<GradeAnswerResult, 'aiExecution'> => {
+    console.error('Failed to parse grading response');
+    const matched = studentAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
     return {
-      correct: false,
-      score: 0,
-      feedback: 'Error grading answer. Please try again.',
-      confidence: 0,
-      errorType: null,
-      reasoningValid: false,
+      correct: matched,
+      score: matched ? 1 : 0,
+      feedback: 'Please review the explanation above.',
+      confidence: 0.5,
+      errorType: matched ? null : null,
+      reasoningValid: matched,
     };
-  }
+  };
+  const totalFailureFallback = (): Omit<GradeAnswerResult, 'aiExecution'> => ({
+    correct: false,
+    score: 0,
+    feedback: 'Error grading answer. Please try again.',
+    confidence: 0,
+    errorType: null,
+    reasoningValid: false,
+  });
+
+  const { result, provenance } = await executeAI({
+    capability: prompt.capability,
+    risk: 'HIGH_RISK',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId: question.conceptId, sourceComponent: 'quiz-generation.service.ts:gradeAnswer' },
+    call: (signal) =>
+      callAnthropicMessages(
+        {
+          model: 'claude-sonnet-5',
+          maxTokens: 1536,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: `Grade this answer:
+
+Question type: ${question.type}
+Question: ${question.question}
+Model/expected answer: ${question.correctAnswer}
+Student Answer: ${studentAnswer}
+
+Respond with JSON (no markdown):
+{
+  "correct": true/false,
+  "score": 0.0-1.0,
+  "feedback": "...",
+  "confidence": 0.0-1.0,
+  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | "ARITHMETIC" | "UNIT" | null,
+  "reasoningValid": true/false
+}`,
+            },
+          ],
+        },
+        signal
+      ),
+    validate: (raw) =>
+      validateJson(raw, (gradeResult) => {
+        if (!gradeResult || typeof gradeResult !== 'object' || Array.isArray(gradeResult)) {
+          return { value: null as any, errors: ['Grading response was not a JSON object'] };
+        }
+        const value: Omit<GradeAnswerResult, 'aiExecution'> = {
+          correct: gradeResult.correct,
+          score: clamp(Number(gradeResult.score) || 0, 0, 1),
+          feedback: gradeResult.feedback || '',
+          confidence: clamp(Number(gradeResult.confidence) || 0.7, 0, 1),
+          errorType: gradeResult.correct ? null : gradeResult.errorType || null,
+          reasoningValid: typeof gradeResult.reasoningValid === 'boolean' ? gradeResult.reasoningValid : !!gradeResult.correct,
+        };
+        return { value, errors: [] };
+      }),
+    // Covers BOTH pre-existing fallback tiers: a parse/validation failure
+    // (INVALID_RESPONSE/VALIDATION_ERROR) uses the string-match fallback
+    // exactly as before; a transport/provider/timeout failure uses the
+    // total-failure fallback exactly as before.
+    fallback: (error) =>
+      error.code === 'INVALID_RESPONSE' || error.code === 'VALIDATION_ERROR' ? parseFailureFallback() : totalFailureFallback(),
+  });
+
+  return { ...result, aiExecution: provenance };
 }
 
 /**
@@ -976,32 +1007,24 @@ Output ONLY a JSON array of strings, no markdown, no explanation. Example shape:
 
 Give 2-3 hints following the rules above.`;
 
+  const prompt = getPrompt('quiz.question_hint');
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 400,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
+    const { result } = await executeAI({
+      capability: prompt.capability,
+      risk: 'LOW_RISK',
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      call: (signal) =>
+        callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 400, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+      validate: (raw) =>
+        validateJson(raw, (parsed) => {
+          if (!Array.isArray(parsed)) return { value: [] as string[], errors: [] };
+          return { value: parsed.filter((s): s is string => typeof s === 'string').slice(0, 3), errors: [] };
+        }),
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${errText}`);
-    }
-
-    const data = await response.json();
-    const text = data.content.find((b: any) => b.type === 'text')?.text ?? '[]';
-    const parsed = parseAIJson(text);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((s) => typeof s === 'string').slice(0, 3);
+    return result;
   } catch (error) {
     console.error('Error generating question hint:', error);
     throw error;

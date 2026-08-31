@@ -11,6 +11,8 @@ import { updateChunkConceptMappings } from './embedding.service';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { classifySubjectHierarchy, classifySingleConcept } from './topic-hierarchy.service';
+import { executeAI, validateJson, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -37,16 +39,15 @@ export interface ConceptExtractionResult {
  * - Prerequisites
  * - Difficulty level
  */
+/** HIGH_RISK (Phase 0E1): creates persistent concepts + mastery_records rows (see extractConceptsFromSource below) with no human review step. */
 export async function extractConceptsFromChunk(
   chunkText: string,
   subjectName: string,
-  language: string = 'en'
+  language: string = 'en',
+  /** Phase 0E2 Step 11: optional, purely additive -- no conceptId yet, since concepts don't exist until extraction completes. */
+  context?: { studentId?: string; subjectId?: string }
 ): Promise<ExtractedConcept[]> {
   try {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not set');
-    }
-
     const languageName = LOCALE_FULL_NAME[language] || language;
 
     const systemPrompt = `You are an educational content analyzer for ${subjectName}.
@@ -86,43 +87,25 @@ Return JSON array of concepts, with "label" and "description" written in ${langu
   }
 ]`;
 
-    // Call Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 4096,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-        system: systemPrompt,
-      }),
+    // Call Claude API through the shared AI gateway (Phase 0E1)
+    const prompt = getPrompt('concept.extraction');
+    const { result: concepts } = await executeAI({
+      capability: prompt.capability,
+      risk: 'HIGH_RISK',
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      context: { ...context, sourceComponent: 'concept-extraction.service.ts:extractConceptsFromChunk' },
+      call: (signal) =>
+        callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+      validate: (raw) =>
+        validateJson<ExtractedConcept[]>(raw, (parsed) => {
+          if (!Array.isArray(parsed)) return { value: null as any, errors: ['Response was not a JSON array'] };
+          return { value: parsed, errors: [] };
+        }),
+      fallback: () => [] as ExtractedConcept[],
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${error}`);
-    }
-
-    const data = await response.json();
-    const responseText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
-
-    // Parse JSON response
-    let concepts: ExtractedConcept[];
-    try {
-      concepts = parseAIJson(responseText);
-    } catch (e) {
-      console.error('Failed to parse Claude response:', responseText);
-      return []; // Return empty if parsing fails
-    }
 
     // Validate and normalize concepts
     return concepts
@@ -184,7 +167,7 @@ export async function extractConceptsFromSource(
     const chunkResults = await Promise.all(
       chunks.map(async (chunk) => ({
         chunk,
-        concepts: await extractConceptsFromChunk(chunk.chunk_text, subjectName, sourceLanguage),
+        concepts: await extractConceptsFromChunk(chunk.chunk_text, subjectName, sourceLanguage, { studentId, subjectId }),
       }))
     );
 
@@ -428,33 +411,37 @@ export async function suggestConceptNames(
   const languageName = LOCALE_FULL_NAME[language] || language;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 300,
-        system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY a JSON array of strings, no markdown, no explanation.`,
-        messages: [
+    const prompt = getPrompt('concept.name_suggestions');
+    const { result } = await executeAI({
+      capability: prompt.capability,
+      risk: 'LOW_RISK',
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      call: (signal) =>
+        callAnthropicMessages(
           {
-            role: 'user',
-            content: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON array of strings.`,
+            model: 'claude-sonnet-5',
+            maxTokens: 300,
+            system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY a JSON array of strings, no markdown, no explanation.`,
+            messages: [
+              {
+                role: 'user',
+                content: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON array of strings.`,
+              },
+            ],
           },
-        ],
-      }),
+          signal
+        ),
+      validate: (raw) =>
+        validateJson<string[]>({ text: raw.text || '[]' }, (parsed) => {
+          if (!Array.isArray(parsed)) return { value: [], errors: [] };
+          return { value: parsed.filter((s) => typeof s === 'string').slice(0, 5), errors: [] };
+        }),
+      fallback: () => [] as string[],
     });
-
-    if (!response.ok) return [];
-
-    const data = await response.json();
-    const text = data.content.find((b: any) => b.type === 'text')?.text ?? '[]';
-    const parsed = parseAIJson(text);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((s) => typeof s === 'string').slice(0, 5);
+    return result;
   } catch (error) {
     console.error('Error suggesting concept names:', error);
     return [];

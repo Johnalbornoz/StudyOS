@@ -21,7 +21,7 @@ export const LOCALE_FULL_NAME: Record<string, string> = {
   pt: 'Portuguese',
 };
 
-type MessageKey =
+export type MessageKey =
   | 'nav.today' | 'nav.dashboard' | 'nav.subjects' | 'nav.debt' | 'nav.notifications' | 'nav.parent' | 'nav.admin'
   | 'nav.groupLearning' | 'nav.groupAccount' | 'nav.groupSystem'
   | 'admin.title' | 'admin.subtitle' | 'admin.colStudent' | 'admin.colEmail'
@@ -225,7 +225,17 @@ type MessageKey =
   | 'today3.subtitle' | 'today3.sessionTitle' | 'today3.sessionSubtitle'
   | 'today3.deferredTitle' | 'today3.deferredSubtitle' | 'today3.deferredBadge'
   | 'today3.emptyTitle' | 'today3.emptyBody'
-  | 'today3.unavailableTitle' | 'today3.unavailableBody' | 'today3.retry' | 'today3.minutesPlanned';
+  | 'today3.unavailableTitle' | 'today3.unavailableBody' | 'today3.retry' | 'today3.minutesPlanned'
+  // Progress V2 -- student-facing Progress dashboard (achievements /
+  // capabilities / subject-concept progress / needs attention),
+  // replacing the old technical scorecard. Reuses knowledgeState.* and
+  // dashboard.* keys wherever the copy is identical; these are only
+  // the genuinely new labels.
+  | 'progress.title' | 'progress.subtitle' | 'progress.overallMasteryLabel'
+  | 'progress.achievementsTitle' | 'progress.achievementValidatedMastery'
+  | 'progress.achievementRetention' | 'progress.achievementIndependent'
+  | 'progress.capabilitiesTitle' | 'progress.subjectsTitle'
+  | 'progress.needsAttentionTitle' | 'progress.needsAttentionEmpty' | 'progress.validatedLabel';
 
 type Messages = Record<MessageKey, string>;
 
@@ -604,6 +614,18 @@ const es: Messages = {
   'today3.unavailableBody': 'Algo cambió o se perdió la conexión. Inténtalo de nuevo.',
   'today3.retry': 'Reintentar',
   'today3.minutesPlanned': '{planned} de {available} min planeados',
+  'progress.title': 'Progreso',
+  'progress.subtitle': 'Lo que lograste, cómo aprendés y qué sigue.',
+  'progress.overallMasteryLabel': 'Dominio general',
+  'progress.achievementsTitle': 'Qué he logrado',
+  'progress.achievementValidatedMastery': 'conceptos con aprendizaje validado',
+  'progress.achievementRetention': 'conceptos con retención demostrada',
+  'progress.achievementIndependent': 'conceptos con evidencia independiente',
+  'progress.capabilitiesTitle': 'Tu aprendizaje',
+  'progress.subjectsTitle': 'Progreso por materia',
+  'progress.needsAttentionTitle': 'Qué necesita atención',
+  'progress.needsAttentionEmpty': 'Nada necesita atención ahora mismo.',
+  'progress.validatedLabel': 'validados',
   'common.days': 'días',
   'parent.title': 'Modo padre',
   'parent.subtitle': 'Vincula la cuenta de tu hijo o hija por su correo para ver su progreso, exámenes y deuda de aprendizaje. Es solo de lectura — no puedes modificar su información.',
@@ -1268,6 +1290,18 @@ const en: Messages = {
   'today3.unavailableBody': 'Something changed or the connection dropped. Try again.',
   'today3.retry': 'Try again',
   'today3.minutesPlanned': '{planned} of {available} min planned',
+  'progress.title': 'Progress',
+  'progress.subtitle': "What you've achieved, how you're learning, and what's next.",
+  'progress.overallMasteryLabel': 'Overall mastery',
+  'progress.achievementsTitle': "What you've achieved",
+  'progress.achievementValidatedMastery': 'concepts with validated learning',
+  'progress.achievementRetention': 'concepts with demonstrated retention',
+  'progress.achievementIndependent': 'concepts with independent evidence',
+  'progress.capabilitiesTitle': 'Your learning',
+  'progress.subjectsTitle': 'Progress by subject',
+  'progress.needsAttentionTitle': 'What needs attention',
+  'progress.needsAttentionEmpty': 'Nothing needs attention right now.',
+  'progress.validatedLabel': 'validated',
   'common.days': 'days',
   'parent.title': 'Parent mode',
   'parent.subtitle': "Link your child's account by email to see their progress, exams, and learning debt. Read-only — you can't modify their information.",
@@ -1932,6 +1966,18 @@ const de: Messages = {
   'today3.unavailableBody': 'Etwas hat sich geändert oder die Verbindung ist abgebrochen. Versuch es erneut.',
   'today3.retry': 'Erneut versuchen',
   'today3.minutesPlanned': '{planned} von {available} Min. geplant',
+  'progress.title': 'Fortschritt',
+  'progress.subtitle': 'Was du erreicht hast, wie du lernst und was als Nächstes kommt.',
+  'progress.overallMasteryLabel': 'Gesamtbeherrschung',
+  'progress.achievementsTitle': 'Was du erreicht hast',
+  'progress.achievementValidatedMastery': 'Konzepte mit bestätigtem Lernerfolg',
+  'progress.achievementRetention': 'Konzepte mit nachgewiesener Merkfähigkeit',
+  'progress.achievementIndependent': 'Konzepte mit eigenständigem Nachweis',
+  'progress.capabilitiesTitle': 'Dein Lernen',
+  'progress.subjectsTitle': 'Fortschritt nach Fach',
+  'progress.needsAttentionTitle': 'Was Aufmerksamkeit braucht',
+  'progress.needsAttentionEmpty': 'Im Moment braucht nichts Aufmerksamkeit.',
+  'progress.validatedLabel': 'bestätigt',
   'common.days': 'Tage',
   'parent.title': 'Elternmodus',
   'parent.subtitle': 'Verknüpfe das Konto deines Kindes über dessen E-Mail, um Fortschritt, Prüfungen und Lernrückstand zu sehen. Nur Lesezugriff — du kannst nichts ändern.',
@@ -2596,6 +2642,18 @@ const fr: Messages = {
   'today3.unavailableBody': 'Quelque chose a changé ou la connexion a été perdue. Réessaie.',
   'today3.retry': 'Réessayer',
   'today3.minutesPlanned': '{planned} sur {available} min prévues',
+  'progress.title': 'Progrès',
+  'progress.subtitle': "Ce que tu as accompli, comment tu apprends, et la suite.",
+  'progress.overallMasteryLabel': 'Maîtrise globale',
+  'progress.achievementsTitle': 'Ce que tu as accompli',
+  'progress.achievementValidatedMastery': 'concepts avec apprentissage validé',
+  'progress.achievementRetention': 'concepts avec rétention démontrée',
+  'progress.achievementIndependent': "concepts avec preuve d'autonomie",
+  'progress.capabilitiesTitle': 'Ton apprentissage',
+  'progress.subjectsTitle': 'Progrès par matière',
+  'progress.needsAttentionTitle': "Ce qui nécessite de l'attention",
+  'progress.needsAttentionEmpty': "Rien ne nécessite d'attention pour l'instant.",
+  'progress.validatedLabel': 'validés',
   'common.days': 'jours',
   'parent.title': 'Mode parent',
   'parent.subtitle': "Reliez le compte de votre enfant par son e-mail pour voir ses progrès, examens et dette d'apprentissage. Lecture seule — vous ne pouvez pas modifier ses informations.",
@@ -3260,6 +3318,18 @@ const pt: Messages = {
   'today3.unavailableBody': 'Algo mudou ou a conexão caiu. Tente novamente.',
   'today3.retry': 'Tentar novamente',
   'today3.minutesPlanned': '{planned} de {available} min planejados',
+  'progress.title': 'Progresso',
+  'progress.subtitle': 'O que você conquistou, como está aprendendo e o que vem a seguir.',
+  'progress.overallMasteryLabel': 'Domínio geral',
+  'progress.achievementsTitle': 'O que você conquistou',
+  'progress.achievementValidatedMastery': 'conceitos com aprendizado validado',
+  'progress.achievementRetention': 'conceitos com retenção demonstrada',
+  'progress.achievementIndependent': 'conceitos com evidência independente',
+  'progress.capabilitiesTitle': 'Seu aprendizado',
+  'progress.subjectsTitle': 'Progresso por matéria',
+  'progress.needsAttentionTitle': 'O que precisa de atenção',
+  'progress.needsAttentionEmpty': 'Nada precisa de atenção agora.',
+  'progress.validatedLabel': 'validados',
   'common.days': 'dias',
   'parent.title': 'Modo responsável',
   'parent.subtitle': 'Vincule a conta do seu filho ou filha pelo e-mail para ver seu progresso, provas e dívida de aprendizagem. É somente leitura — você não pode modificar as informações dele(a).',

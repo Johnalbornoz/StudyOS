@@ -19,6 +19,7 @@
 
 import { db } from '@/lib/db';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
+import { masteryToPercent, tryMasteryScore, averageMasteryScore, type MasteryScore } from '@/lib/mastery-format';
 
 export type EvidenceStrength = 'LOW' | 'MEDIUM' | 'HIGH';
 // Matches the DB CHECK constraint on learning_evidence.confidence_before_answer
@@ -374,10 +375,17 @@ export async function getSubjectLearnerModel(studentId: string, subjectId: strin
     [studentId, subjectId]
   );
   const masteryScores: number[] = [];
+  const validMasteryScores: MasteryScore[] = [];
   const retentions: number[] = [];
   let atRiskCount = 0;
   for (const row of masteryRows.rows) {
     masteryScores.push(Number(row.mastery_score));
+    // Validated separately from the raw masteryScores array above: getRetention
+    // below deliberately still receives the raw (unvalidated) value exactly as
+    // before -- it feeds an existing spaced-repetition calculation this hotfix
+    // is not touching. Only the display-bound average uses the validated score.
+    const score = tryMasteryScore(row.mastery_score, `learner-model subject concept ${row.concept_id}`);
+    if (score !== null) validMasteryScores.push(score);
     const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
     if (r !== null) {
       retentions.push(r);
@@ -398,7 +406,10 @@ export async function getSubjectLearnerModel(studentId: string, subjectId: strin
   const evidenceCoverage = await getEvidenceCoverage(studentId, subjectId);
 
   return {
-    avgMastery: masteryScores.length ? Math.round(masteryScores.reduce((a, b) => a + b, 0) / masteryScores.length) : null,
+    // validMasteryScores holds validated mastery_records.mastery_score
+    // values (already 0-100) -- average the raw values and round for
+    // display exactly once, here.
+    avgMastery: masteryToPercent(averageMasteryScore(validMasteryScores)),
     avgRetention: retentions.length ? Math.round(retentions.reduce((a, b) => a + b, 0) / retentions.length) : null,
     avgIndependentMastery: independentScores.length
       ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)

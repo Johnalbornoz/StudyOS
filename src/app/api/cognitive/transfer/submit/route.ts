@@ -28,7 +28,11 @@ export async function POST(request: NextRequest) {
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
     const language = validated.language || 'en';
-    const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language);
+    const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language, {
+      studentId: validated.studentId,
+      subjectId: validated.subjectId,
+      conceptId: validated.conceptId,
+    });
     const scorePercent = graded.result === 'correct' ? 100 : graded.result === 'partial' ? 50 : 0;
 
     const masteryResult = await updateMastery({
@@ -44,6 +48,10 @@ export async function POST(request: NextRequest) {
         sampleSize: 1,
       },
       telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
+      // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
+      // row to the AI evaluation that produced this evidence -- always
+      // unambiguous here (one grading call per submission).
+      aiExecutionId: graded.aiExecution.aiExecutionId,
     });
 
     // metadata isn't part of MasteryUpdateInput's telemetry shape --
@@ -57,7 +65,12 @@ export async function POST(request: NextRequest) {
          WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER'
          ORDER BY timestamp DESC LIMIT 1
        )`,
-      [validated.studentId, validated.conceptId, JSON.stringify({ transferDistance: validated.distance, assisted: false })]
+      [
+        validated.studentId,
+        validated.conceptId,
+        // Phase 0E1: AI provenance is additive here, same jsonb merge pattern already used for transferDistance/assisted.
+        JSON.stringify({ transferDistance: validated.distance, assisted: false, aiExecution: graded.aiExecution }),
+      ]
     );
 
     if (validated.remediationStepId) {

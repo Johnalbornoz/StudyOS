@@ -15,6 +15,8 @@
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { executeAI, validateJson, getPrompt, AIExecutionFailure } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export type RelationshipType =
   | 'PREREQUISITE_OF'
@@ -283,35 +285,38 @@ Output ONLY a JSON array, no markdown fences, no other text:
 
 Return an empty array [] if no candidate has a genuine relationship to the target.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Classify the relationships.' }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '[]';
-
-  let proposals: { conceptId: string; relationshipType: string; confidence: number }[];
+  type Proposal = { conceptId: string; relationshipType: string; confidence: number };
+  const registeredPrompt = getPrompt('concept.graph.prerequisite_inference');
+  let proposals: Proposal[];
   try {
-    proposals = parseAIJson(rawText);
-    if (!Array.isArray(proposals)) proposals = [];
-  } catch {
-    proposals = [];
+    const outcome = await executeAI({
+      capability: registeredPrompt.capability,
+      risk: 'MEDIUM_RISK',
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: registeredPrompt.id,
+      promptVersion: registeredPrompt.version,
+      call: (signal) =>
+        callAnthropicMessages(
+          { model: 'claude-sonnet-5', maxTokens: 1500, system: systemPrompt, messages: [{ role: 'user', content: 'Classify the relationships.' }] },
+          signal
+        ),
+      validate: (raw) =>
+        validateJson<Proposal[]>({ text: raw.text || '[]' }, (parsed) => ({
+          value: Array.isArray(parsed) ? parsed : [],
+          errors: [],
+        })),
+    });
+    proposals = outcome.result;
+  } catch (err) {
+    // Preserves the pre-existing split: a parse/validation failure
+    // resolves to "no proposals" ([]); a transport/provider failure
+    // propagates, same as the original uncaught fetch/response.ok throw.
+    if (err instanceof AIExecutionFailure && (err.code === 'INVALID_RESPONSE' || err.code === 'VALIDATION_ERROR')) {
+      proposals = [];
+    } else {
+      throw err;
+    }
   }
 
   const persisted: ConceptRelationship[] = [];

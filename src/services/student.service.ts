@@ -1,5 +1,14 @@
 import { query } from '@/lib/db';
 
+/**
+ * @deprecated DEAD CODE -- zero callers anywhere in the repository
+ * (verified Phase 0C). DO NOT wire this up. It writes the raw Clerk
+ * `userId` directly as `profiles.id`, and never creates a `students`
+ * row at all -- it would silently violate the shared-UUID identity
+ * contract documented in `src/lib/auth.ts` (students.id === profiles.id)
+ * if it were ever called. The only canonical student-provisioning path
+ * is `getOrCreateStudentId` in `src/lib/auth.ts`.
+ */
 export async function createStudent(
   userId: string,
   email: string,
@@ -30,6 +39,12 @@ export async function createStudent(
   }
 }
 
+/**
+ * @deprecated DEAD CODE -- zero callers anywhere in the repository
+ * (verified Phase 0C). Reads `profiles` directly by a caller-supplied
+ * `userId` with no relation to the canonical `getOrCreateStudentId`
+ * flow in `src/lib/auth.ts`.
+ */
 export async function getStudent(userId: string) {
   try {
     const result = await query(

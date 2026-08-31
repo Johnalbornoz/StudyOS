@@ -1,20 +1,16 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, BellOff, Flame } from 'lucide-react';
 import { query } from '@/lib/db';
+import { BookOpen, CheckCircle2, Trophy } from 'lucide-react';
 import { getSubjectAccentColor } from '@/lib/subject-color';
-import MiniSparkline from './MiniSparkline';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getActiveDebts } from '@/services/learning-debt.service';
-import { getUnreadNotifications } from '@/services/notifications.service';
-import { getStudentMastery, recordDailyMasterySnapshot, getMasteryTrend } from '@/services/mastery.service';
-import { getStudentStreak } from '@/services/gamification.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import OnboardingChecklist from './OnboardingChecklist';
 import AcademicProfileCTA from './AcademicProfileCTA';
 import { getAcademicProfile } from '@/services/academic-profile.service';
-import { getLearnerModelSummary } from '@/services/learner-model.service';
+import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
+import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -22,13 +18,15 @@ function masteryFillClass(score: number) {
   return 'fill-critical';
 }
 
-function subjectChip(avgMastery: number | null, pendingCount: number, t: ReturnType<typeof getMessages>) {
-  if (avgMastery === null) return { cls: 'chip-warn', label: t['dashboard.noData'] };
-  if (pendingCount > 0) return { cls: 'chip-warn', label: `${pendingCount} ${t['dashboard.pending']}` };
-  if (avgMastery >= 75) return { cls: 'chip-good', label: t['dashboard.upToDate'] };
-  return { cls: 'chip-critical', label: t['dashboard.overdue'] };
-}
-
+/**
+ * Progress V2 -- the student-facing "what have I achieved / what can I
+ * do / what am I working on / what needs attention" view. Every number
+ * on this page comes from mastery.service.ts (mastery_records, 0.0-1.0,
+ * converted for display via src/lib/mastery-format.ts) or the Phase 2.2
+ * Knowledge State projection (concept_knowledge_state, already 0-100)
+ * through progress-overview.service.ts -- no new score is computed
+ * here, and nothing here re-ranks what Phase 3C/3D already decided.
+ */
 export default async function DashboardPage() {
   const { userId: clerkUserId } = await auth();
 
@@ -47,39 +45,16 @@ export default async function DashboardPage() {
   const user = await currentUser();
   const firstName = user?.firstName;
 
-  const [subjectsResult, debts, notifications, streak, quizSessionsResult, learnerSummary] = await Promise.all([
-    query(`SELECT * FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
-    getActiveDebts(studentId, undefined, locale).catch(() => []),
-    getUnreadNotifications(studentId).catch(() => []),
-    getStudentStreak(studentId).catch(() => 0),
-    query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] })),
-    getLearnerModelSummary(studentId).catch(() => ({ avgRetention: null, avgIndependentMastery: null, avgConfidenceCalibration: null, conceptsWithRetention: 0, conceptsWithIndependentMastery: 0, evidenceCoverage: null })),
+  const [overview, quizSessionsResult, academicProfile] = await Promise.all([
+    getStudentProgressOverview(studentId, locale),
+    query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] })),
+    getAcademicProfile(studentId).catch(() => null),
   ]);
-  const subjects = subjectsResult.rows;
+
   const hasPracticed = quizSessionsResult.rows.length > 0;
+  const hasSubject = overview.subjects.length > 0;
+  const hasContent = overview.subjects.some((s) => s.conceptCount > 0);
 
-  const subjectsWithMastery = await Promise.all(
-    subjects.map(async (s: any) => {
-      const records = await getStudentMastery(studentId, s.id, locale).catch(() => []);
-      const avg = records.length
-        ? Math.round(records.reduce((sum: number, r: any) => sum + Number(r.mastery_score), 0) / records.length)
-        : null;
-      const pending = debts.filter((d: any) => d.subjectId === s.id).length;
-      const trend = await getMasteryTrend(s.id).catch(() => []);
-      if (avg !== null) {
-        recordDailyMasterySnapshot(studentId, s.id, avg).catch((err) =>
-          console.error('Error recording mastery snapshot:', err)
-        );
-      }
-      return { ...s, avgMastery: avg, conceptCount: records.length, pending, trend };
-    })
-  );
-
-  const allScores = subjectsWithMastery.flatMap((s) => (s.avgMastery !== null ? [s.avgMastery] : []));
-  const overallAvg = allScores.length ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : null;
-
-  const hasSubject = subjects.length > 0;
-  const hasContent = subjectsWithMastery.some((s) => s.conceptCount > 0);
   const onboardingSteps = [
     {
       done: hasSubject,
@@ -93,28 +68,51 @@ export default async function DashboardPage() {
       title: t['onboarding.step2Title'],
       body: t['onboarding.step2Body'],
       cta: t['onboarding.step2Cta'],
-      href: hasSubject ? `/dashboard/subjects/${subjects[0].id}` : '/dashboard/subjects/new',
+      href: hasSubject ? `/dashboard/subjects/${overview.subjects[0].subjectId}` : '/dashboard/subjects/new',
     },
     {
       done: hasPracticed,
       title: t['onboarding.step3Title'],
       body: t['onboarding.step3Body'],
       cta: t['onboarding.step3Cta'],
-      href: hasSubject ? `/dashboard/subjects/${subjects[0].id}` : '/dashboard/subjects/new',
+      href: hasSubject ? `/dashboard/subjects/${overview.subjects[0].subjectId}` : '/dashboard/subjects/new',
     },
   ];
   const showOnboarding = onboardingSteps.some((s) => !s.done);
-
-  const academicProfile = await getAcademicProfile(studentId).catch(() => null);
   const showAcademicProfileCTA = !academicProfile?.profileCompleted;
+
+  const achievementLines: string[] = [];
+  if (overview.achievements.validatedMasteryCount > 0) {
+    achievementLines.push(`${overview.achievements.validatedMasteryCount} ${t['progress.achievementValidatedMastery']}`);
+  }
+  if (overview.achievements.retentionDemonstratedCount > 0) {
+    achievementLines.push(`${overview.achievements.retentionDemonstratedCount} ${t['progress.achievementRetention']}`);
+  }
+  if (overview.achievements.independentEvidenceCount > 0) {
+    achievementLines.push(`${overview.achievements.independentEvidenceCount} ${t['progress.achievementIndependent']}`);
+  }
+
+  const capabilityKpis = knowledgeKpis({
+    understandingScore: overview.capabilities.understandingScore,
+    independenceScore: overview.capabilities.independenceScore,
+    applicationScore: overview.capabilities.applicationScore,
+    retentionScore: overview.capabilities.retentionScore,
+    transferScore: overview.capabilities.transferScore,
+  });
+  const hasAnyCapability = capabilityKpis.some((k) => k.score !== null);
 
   return (
     <div>
-      <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+      <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <div>
-          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 4px' }}>{t['dashboard.eyebrow']}</p>
-          <h1>{t['dashboard.greeting']}{firstName ? `, ${firstName}` : ''}</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['dashboard.subtitle']}</p>
+          <h1>{t['progress.title']}{firstName ? `, ${firstName}` : ''}</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['progress.subtitle']}</p>
+          <p style={{ color: 'var(--text-muted)', margin: '10px 0 0', fontSize: 14 }}>
+            {t['progress.overallMasteryLabel']}:{' '}
+            <strong className="tabular" style={{ color: 'var(--text-primary)' }}>
+              {overview.overallMasteryPercent !== null ? `${overview.overallMasteryPercent}%` : t['dashboard.notEnoughEvidence']}
+            </strong>
+          </p>
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>
@@ -132,83 +130,56 @@ export default async function DashboardPage() {
         />
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.conceptsAtRisk']}</div>
-          <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1 }}>{debts.length}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{t['dashboard.needReview']}</div>
-        </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.avgMastery']}</div>
-          <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1 }}>
-            {overallAvg !== null ? `${overallAvg}%` : '—'}
+      {/* 1. What I've achieved */}
+      <div style={{ marginBottom: 'var(--space-8)' }}>
+        <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['progress.achievementsTitle']}</h2>
+        {achievementLines.length === 0 ? (
+          <div className="card empty-state">
+            <Trophy size={28} strokeWidth={1.5} color="var(--text-muted)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
+            <div>{t['dashboard.notEnoughEvidence']}</div>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {overallAvg !== null ? t['dashboard.avgMasterySubtitle'] : t['dashboard.avgMasteryEmpty']}
-          </div>
-        </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['streak.dashboardTitle']}</div>
-          <div className="tabular" style={{ fontSize: 28, fontWeight: 650, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {streak > 0 && <Flame size={22} strokeWidth={2} aria-hidden fill="var(--warning)" color="var(--warning)" />}
-            {streak}
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {streak > 0 ? t['streak.dashboardSubtitle'] : t['streak.dashboardEmpty']}
-          </div>
-        </div>
-      </div>
-
-      {(learnerSummary.avgRetention !== null ||
-        learnerSummary.avgIndependentMastery !== null ||
-        learnerSummary.avgConfidenceCalibration !== null ||
-        learnerSummary.evidenceCoverage !== null) && (
-        <div style={{ marginBottom: 'var(--space-8)' }}>
-          <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['dashboard.yourLearning']}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)' }}>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.retention']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {learnerSummary.avgRetention !== null ? `${learnerSummary.avgRetention}%` : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.independentMastery']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {learnerSummary.avgIndependentMastery !== null ? `${learnerSummary.avgIndependentMastery}%` : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.confidenceCalibration']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {learnerSummary.avgConfidenceCalibration !== null
-                  ? `${learnerSummary.avgConfidenceCalibration}%`
-                  : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.evidenceCoverage']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {learnerSummary.evidenceCoverage !== null
-                  ? `${learnerSummary.evidenceCoverage.percent}%`
-                  : t['dashboard.notEnoughEvidence']}
-              </div>
-              {learnerSummary.evidenceCoverage !== null && (
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                  {learnerSummary.evidenceCoverage.evidencedConcepts}/{learnerSummary.evidenceCoverage.totalConcepts}
+        ) : (
+          <div className="card list-card">
+            {achievementLines.map((line, i) => (
+              <div key={i} className="list-row">
+                <Trophy size={16} strokeWidth={1.75} color="var(--brand)" aria-hidden style={{ flexShrink: 0 }} />
+                <div className="row-main">
+                  <div className="row-title">{line}</div>
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
-        <h2>{t['dashboard.yourSubjects']}</h2>
-        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{subjects.length} {t['dashboard.active']}</span>
+        )}
       </div>
 
-      {subjects.length === 0 ? (
+      {/* 2. My learning capabilities */}
+      <div style={{ marginBottom: 'var(--space-8)' }}>
+        <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['progress.capabilitiesTitle']}</h2>
+        {hasAnyCapability ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-4)' }}>
+            {capabilityKpis.map((kpi) => (
+              <div key={kpi.labelKey} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                <div className="label" style={{ color: 'var(--text-muted)' }}>{t[kpi.labelKey]}</div>
+                <div className="tabular" style={{ fontSize: 22, fontWeight: 650, lineHeight: 1 }}>
+                  {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="card empty-state">
+            <div>{t['dashboard.notEnoughEvidence']}</div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Progress by subject/concept */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
+        <h2>{t['progress.subjectsTitle']}</h2>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{overview.subjects.length} {t['dashboard.active']}</span>
+      </div>
+
+      {overview.subjects.length === 0 ? (
         <div className="card empty-state">
           <BookOpen size={32} strokeWidth={1.5} color="var(--brand)" aria-hidden style={{ marginBottom: 'var(--space-3)' }} />
           <strong>{t['dashboard.noSubjectsTitle']}</strong>
@@ -218,94 +189,92 @@ export default async function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {subjectsWithMastery.map((s) => {
-            const chip = subjectChip(s.avgMastery, s.pending, t);
-            const accent = getSubjectAccentColor(s.id);
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+          {overview.subjects.map((s: SubjectProgress) => {
+            const accent = getSubjectAccentColor(s.subjectId);
             return (
-              <Link
-                key={s.id}
-                href={`/dashboard/subjects/${s.id}`}
-                className="card card-link subject-accent"
-                style={{ '--accent': accent } as React.CSSProperties}
-              >
-                <h3 style={{ marginBottom: 10 }}>{s.name}</h3>
-                <div className="mastery-row" style={{ marginTop: 6 }}>
+              <div key={s.subjectId} className="card subject-accent" style={{ '--accent': accent } as React.CSSProperties}>
+                <Link href={`/dashboard/subjects/${s.subjectId}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)' }}>
+                  <h3 style={{ margin: 0 }}>{s.subjectName}</h3>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                    {s.validatedCount}/{s.conceptCount} {t['progress.validatedLabel']}
+                  </span>
+                </Link>
+                <div className="mastery-row" style={{ marginTop: 10 }}>
                   <div className="mastery-bar">
-                    <span className={masteryFillClass(s.avgMastery ?? 0)} style={{ width: `${s.avgMastery ?? 0}%` }} />
+                    <span className={masteryFillClass(s.avgMasteryPercent ?? 0)} style={{ width: `${s.avgMasteryPercent ?? 0}%` }} />
                   </div>
-                  <span className="mastery-pct tabular">{s.avgMastery !== null ? `${s.avgMastery}%` : '—'}</span>
+                  <span className="mastery-pct tabular">{s.avgMasteryPercent !== null ? `${s.avgMasteryPercent}%` : '—'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
-                  <span className={`chip ${chip.cls}`}>{chip.label}</span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{s.conceptCount} {t['dashboard.concepts']}</span>
-                </div>
-                {s.trend.length >= 2 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 10 }}>
-                    <MiniSparkline values={s.trend} color={accent} />
-                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{t['dashboard.trendLabel']}</span>
+
+                {s.concepts.length > 0 && (
+                  <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {s.concepts.map((c: ConceptProgress) => {
+                      const kpis = knowledgeKpis(c.dimensions);
+                      return (
+                        <div key={c.conceptId} style={{ borderTop: '1px solid var(--border-default)', paddingTop: 'var(--space-3)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
+                            <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label}</span>
+                            <span
+                              style={{
+                                fontSize: 12, fontWeight: 650, color: masteryStateColor(c.masteryState),
+                                border: `1px solid ${masteryStateColor(c.masteryState)}`, borderRadius: 999, padding: '2px 9px', flexShrink: 0,
+                              }}
+                            >
+                              {masteryStateLabel(c.masteryState, t)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
+                            {kpis.map((kpi) => (
+                              <span key={kpi.labelKey} className="tabular">
+                                {t[kpi.labelKey]}: {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
+                              </span>
+                            ))}
+                          </div>
+                          {c.needsAttention.length > 0 && (
+                            <div style={{ fontSize: 12.5, color: 'var(--warning)', marginTop: 6 }}>
+                              {c.needsAttention.map((n, i) => (
+                                <div key={i}>{n.description} · {n.occurrenceCount}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
-            <h2>{t['dashboard.pendingReview']}</h2>
-            <Link href="/dashboard/learning-debt" className="btn btn-ghost">{t['dashboard.viewAll']}</Link>
+      {/* 4. What needs attention */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
+        <h2>{t['progress.needsAttentionTitle']}</h2>
+        <Link href="/dashboard/learning-debt" className="btn btn-ghost">{t['dashboard.viewAll']}</Link>
+      </div>
+      <div className="card list-card" style={{ marginBottom: 'var(--space-8)' }}>
+        {overview.needsAttention.length === 0 ? (
+          <div className="empty-state">
+            <CheckCircle2 size={28} strokeWidth={1.5} color="var(--success)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
+            <div>{t['progress.needsAttentionEmpty']}</div>
           </div>
-          <div className="card list-card">
-            {debts.length === 0 ? (
-              <div className="empty-state">
-                <CheckCircle2 size={28} strokeWidth={1.5} color="var(--success)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
-                <div>{t['dashboard.noDebt']}</div>
+        ) : (
+          overview.needsAttention.slice(0, 5).map((item) => (
+            <div key={item.conceptId} className="list-row">
+              <span
+                style={{
+                  width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+                  background: item.severity >= 3 ? 'var(--error)' : 'var(--warning)',
+                }}
+              />
+              <div className="row-main">
+                <div className="row-title">{item.conceptLabel}</div>
               </div>
-            ) : (
-              debts.slice(0, 3).map((d: any) => (
-                <div key={d.id} className="list-row">
-                  <span
-                    style={{
-                      width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
-                      background: d.severity >= 3 ? 'var(--error)' : 'var(--warning)',
-                    }}
-                  />
-                  <div className="row-main">
-                    <div className="row-title">{d.concept?.label || d.concept?.canonicalId}</div>
-                    <div className="row-sub">{t['debt.currentMastery']}: {Math.round(d.mastery ?? 0)}%</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
-            <h2>{t['dashboard.notifications']}</h2>
-            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{notifications.length} {t['dashboard.newCount']}</span>
-          </div>
-          <div className="card list-card">
-            {notifications.length === 0 ? (
-              <div className="empty-state">
-                <BellOff size={28} strokeWidth={1.5} color="var(--text-muted)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
-                <div>{t['dashboard.noNotifications']}</div>
-              </div>
-            ) : (
-              notifications.slice(0, 4).map((n: any) => (
-                <div key={n.id} className="list-row">
-                  <div className="row-main">
-                    <div className="row-title">{n.title}</div>
-                    <div className="row-sub">{n.message}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

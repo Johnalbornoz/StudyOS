@@ -12,6 +12,8 @@
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { retrieveContext } from './rag.service';
+import { executeAI, validateJson, clamp, getPrompt, type AIProvenance } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export type ExplainActivityType = 'EXPLAIN' | 'JUSTIFY' | 'ERROR_ANALYSIS' | 'PREDICT' | 'COMPARE' | 'TEACH_BACK';
 
@@ -63,25 +65,23 @@ Write the question in ${languageName}. Output ONLY this JSON, no markdown fences
 
 expectedElements should have 3-5 items -- these become the grading rubric, so keep them specific and checkable, not vague ("mentions inward direction" not "understands the concept").`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 700,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Write the question.' }],
-    }),
+  const prompt = getPrompt('explain.prompt_generation');
+  const { result } = await executeAI({
+    capability: prompt.capability,
+    risk: 'MEDIUM_RISK',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) =>
+      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 700, system: systemPrompt, messages: [{ role: 'user', content: 'Write the question.' }] }, signal),
+    validate: (raw) =>
+      validateJson<{ prompt: string; expectedElements: string[] }>({ text: raw.text || '{}' }, (parsed) => ({
+        value: { prompt: parsed.prompt, expectedElements: parsed.expectedElements || [] },
+        errors: [],
+      })),
   });
-  if (!response.ok) throw new Error(`Claude API error: ${response.status} - ${await response.text()}`);
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const parsed = parseAIJson<{ prompt: string; expectedElements: string[] }>(rawText);
-  return { activityType, prompt: parsed.prompt, expectedElements: parsed.expectedElements || [] };
+  return { activityType, prompt: result.prompt, expectedElements: result.expectedElements };
 }
 
 export interface RubricResult {
@@ -104,13 +104,18 @@ export function rubricScorePercent(rubric: RubricResult): number {
  * doesn't get to declare "understood" or "not understood" as a free
  * verdict.
  */
+export type RubricResultWithProvenance = RubricResult & { aiExecution: AIProvenance };
+
+/** HIGH_RISK (Phase 0E1): feeds mastery.service.ts's updateMastery via the caller, and can trigger misconception classification -- see explain/submit/route.ts. */
 export async function evaluateExplanation(
   conceptLabel: string,
   prompt: string,
   expectedElements: string[],
   studentResponse: string,
-  language: string = 'en'
-): Promise<RubricResult> {
+  language: string = 'en',
+  /** Phase 0E2 Step 11: optional, purely additive. */
+  context?: { studentId?: string; subjectId?: string; conceptId?: string }
+): Promise<RubricResultWithProvenance> {
   const languageName = LOCALE_FULL_NAME[language] || language;
   const systemPrompt = `Grade a student's open-ended answer about "${conceptLabel}" using a structured rubric. Do not invent a holistic verdict -- score only the dimensions below.
 
@@ -129,30 +134,29 @@ Output ONLY this JSON, no markdown fences, no other text:
 }
 0 = missing/wrong, 4 = fully correct and clear, for each 0-4 dimension.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 600,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Grade this answer.' }],
-    }),
+  const registeredPrompt = getPrompt('explain.rubric_evaluation');
+  const { result, provenance } = await executeAI({
+    capability: registeredPrompt.capability,
+    risk: 'HIGH_RISK',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: registeredPrompt.id,
+    promptVersion: registeredPrompt.version,
+    context: { ...context, sourceComponent: 'explain-defend.service.ts:evaluateExplanation' },
+    call: (signal) =>
+      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 600, system: systemPrompt, messages: [{ role: 'user', content: 'Grade this answer.' }] }, signal),
+    validate: (raw) =>
+      validateJson<RubricResult>({ text: raw.text || '{}' }, (parsed) => ({
+        value: {
+          conceptAccuracy: clamp(Number(parsed.conceptAccuracy) || 0, 0, 4),
+          reasoning: clamp(Number(parsed.reasoning) || 0, 0, 4),
+          completeness: clamp(Number(parsed.completeness) || 0, 0, 4),
+          misconceptionDetected: !!parsed.misconceptionDetected,
+          misconceptionDescription: parsed.misconceptionDescription || null,
+          feedback: parsed.feedback || '',
+        },
+        errors: [],
+      })),
   });
-  if (!response.ok) throw new Error(`Claude API error: ${response.status} - ${await response.text()}`);
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const parsed = parseAIJson<any>(rawText);
-  return {
-    conceptAccuracy: Math.max(0, Math.min(4, Number(parsed.conceptAccuracy) || 0)),
-    reasoning: Math.max(0, Math.min(4, Number(parsed.reasoning) || 0)),
-    completeness: Math.max(0, Math.min(4, Number(parsed.completeness) || 0)),
-    misconceptionDetected: !!parsed.misconceptionDetected,
-    misconceptionDescription: parsed.misconceptionDescription || null,
-    feedback: parsed.feedback || '',
-  };
+  return { ...result, aiExecution: provenance };
 }

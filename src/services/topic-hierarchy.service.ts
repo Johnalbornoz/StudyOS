@@ -16,6 +16,9 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
 import { getRetention, getConceptIntelligenceBatch } from './learner-model.service';
+import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
+import { executeAI, validateJson, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface HierarchyConcept {
   id: string;
@@ -45,29 +48,18 @@ export interface SubjectHierarchy {
 }
 
 async function callClaudeForHierarchy(systemPrompt: string, userPrompt: string, maxTokens: number = 4000): Promise<any> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+  const prompt = getPrompt('topic_hierarchy.classification');
+  const { result } = await executeAI({
+    capability: prompt.capability,
+    risk: 'LOW_RISK', // purely organizational -- mastery/quiz/RAG all operate per-concept regardless of this outline
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+    validate: (raw) => validateJson({ text: raw.text || '{}' }, (parsed) => ({ value: parsed, errors: [] })),
   });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  return parseAIJson(rawText);
+  return result;
 }
 
 /**
@@ -245,16 +237,22 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
   const conceptIdsResult = await db.query(`SELECT id FROM concepts WHERE subject_id = $1`, [subjectId]);
   const conceptIds = conceptIdsResult.rows.map((r) => r.id);
 
-  // Topic/subtopic translation is small (a handful of names) and fast,
-  // so it's worth blocking on to get the accordion headers right on
-  // first render. Concept-label translation can be large (100+ items
-  // in a big subject) and slow -- run it in the background instead so
-  // a language switch never hangs the page; concepts fall back to
-  // canonical_id until the next load once it completes.
+  // Both concept-label AND topic/subtopic translation run in the
+  // background now, never blocking the page. Topic/subtopic sets are
+  // small, but "small input" doesn't mean "fast" -- it's still a real
+  // Claude call (network + model latency), and awaiting it here made
+  // the very first subject-page load after switching language feel
+  // slow (previously the single biggest contributor to reported
+  // language-switch latency). The SELECT below already falls back via
+  // COALESCE(tl.name, t.name) to the concept's current name/prior
+  // translation until this completes, exactly like concept labels
+  // already do -- next load picks up the fresh translation.
   ensureConceptLocalizations(conceptIds, language).catch((err) =>
     console.error('Background concept localization failed:', err)
   );
-  await ensureTopicHierarchyLocalizations(subjectId, language);
+  ensureTopicHierarchyLocalizations(subjectId, language).catch((err) =>
+    console.error('Background topic/subtopic localization failed:', err)
+  );
 
   // One batched query for Independent Mastery + Confidence Calibration
   // across every concept in the subject, instead of a per-concept call
@@ -297,7 +295,11 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
     subtopic.concepts.push({
       id: row.concept_id,
       label: row.concept_label,
-      masteryScore: row.mastery_score !== null ? Number(row.mastery_score) : undefined,
+      // mastery_records.mastery_score is canonically 0.0-1.0 -- convert
+      // for display. getRetention below deliberately still receives the
+      // raw 0..1 value: it feeds an existing, separate spaced-repetition
+      // calculation this hotfix is not touching (see hotfix report).
+      masteryScore: masteryToPercent(tryMasteryScore(row.mastery_score, `topic-hierarchy concept ${row.concept_id}`)) ?? undefined,
       retention:
         row.mastery_score !== null
           ? getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced) ?? undefined
@@ -327,7 +329,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       return {
         id: r.id,
         label: r.label,
-        masteryScore: r.mastery_score !== null ? Number(r.mastery_score) : undefined,
+        masteryScore: masteryToPercent(tryMasteryScore(r.mastery_score, `topic-hierarchy unassigned concept ${r.id}`)) ?? undefined,
         retention:
           r.mastery_score !== null
             ? getRetention(Number(r.mastery_score), Number(r.confidence_score), r.last_practiced) ?? undefined

@@ -5,6 +5,50 @@
  * 1. User is authenticated (via Clerk)
  * 2. User can access the requested resource
  * 3. Multi-tenancy is respected (students can't access other students' data)
+ *
+ * ---------------------------------------------------------------------
+ * Current StudyUs Student Identity Contract (Phase 0C -- compatibility
+ * contract, not the target design; a real consolidation is a separate,
+ * later migration project, not this one)
+ * ---------------------------------------------------------------------
+ *
+ *   Clerk User (authenticated account)
+ *           |
+ *           v
+ *   Shared Student UUID  <-- one value, minted once, by this file only
+ *      |            |
+ *      v            v
+ *  students.id   profiles.id  (+ student_profiles.id, same value)
+ *
+ * - Clerk identifies the authenticated account (`userId` from `auth()`).
+ * - `students.id` is the Learning OS / learning-engine identity --
+ *   mastery, learning debt, quizzes, knowledge state, verification, and
+ *   most newer (Phase 2+) tables key off this one.
+ * - `profiles.id` (+ `student_profiles.id`) is used by the original/
+ *   legacy application domains -- confirmed live: `subjects`,
+ *   `mastery_records`, `learning_evidence`, `errors`, `learning_debt`,
+ *   `tutor_conversations`, and others key off THIS one instead.
+ * - There is NO foreign key between `students.id` and `profiles.id` --
+ *   do not assume or claim one exists anywhere in code or docs. They
+ *   are two independent primary-key spaces.
+ * - For every student, both IDs MUST currently hold the exact same
+ *   UUID value. This is enforced only by application convention (this
+ *   file), never by the database.
+ * - `getOrCreateStudentId` (below) is the ONLY canonical provisioning
+ *   path. It mints the UUID once (as `students.id`, via
+ *   `upsertStudentRecord`) and immediately mirrors it into
+ *   `profiles`/`student_profiles` (via `ensureProfileRows`), including
+ *   self-repair on every call for a student who already exists.
+ * - New code MUST NOT invent another student identifier or another
+ *   provisioning path. If you need a student's ID, call
+ *   `getOrCreateStudentId` (or read `students.clerk_id`/`profiles.clerk_id`
+ *   for lookups) -- never mint a UUID or write directly to `students`/
+ *   `profiles`/`student_profiles` from anywhere else. (See
+ *   `src/services/student.service.ts` for a documented example of what
+ *   NOT to do -- a dead, pre-existing alternate path that would violate
+ *   this contract if it were ever wired up again.)
+ * - Any future consolidation of `students`/`profiles` into one table is
+ *   out of scope here and belongs to a separate migration project.
  */
 
 import { auth, currentUser } from '@clerk/nextjs/server';
@@ -223,23 +267,41 @@ async function canTeacherAccessStudent(
 }
 
 /**
- * Verify subject/concept access (multi-tenancy)
+ * Verify subject access (multi-tenancy).
  *
- * Ensures user can only access resources they're enrolled in
+ * Phase 0C fix: this previously queried a `student_subjects` junction
+ * table that does not exist in the live database (confirmed by
+ * Phase 0B's live-schema forensics) -- every call would have thrown,
+ * been caught below, and silently returned false. There was no live
+ * caller of this function at the time (verified repo-wide), so the
+ * defect was real but dormant, not an active production break.
+ *
+ * The real, live ownership model (confirmed live: `subjects.student_id
+ * NOT NULL REFERENCES profiles(id)`, and used this exact way by every
+ * other subject-scoped query in the codebase, e.g.
+ * `SELECT ... FROM subjects WHERE id = $1 AND student_id = $2`) is a
+ * direct one-subject-belongs-to-one-student relationship: no junction
+ * table, no many-to-many. `studentId` here is the shared student UUID
+ * (see the identity-contract note on getOrCreateStudentId below) --
+ * the same value already used as `subjects.student_id` by every other
+ * caller in the codebase, so no caller-side change is needed to adopt
+ * this fix.
+ *
+ * Fails closed: a missing subject, a subject owned by someone else, or
+ * any DB error all resolve to `false`, exactly as before.
  */
 export async function verifySubjectAccess(
   studentId: string,
   subjectId: string
 ): Promise<boolean> {
   try {
-    // Check if student is enrolled in subject
     const result = await db.query(
       `
-      SELECT 1 FROM student_subjects
-      WHERE student_id = $1 AND subject_id = $2
+      SELECT 1 FROM subjects
+      WHERE id = $1 AND student_id = $2
       LIMIT 1
       `,
-      [studentId, subjectId]
+      [subjectId, studentId]
     );
 
     return result.rows.length > 0;

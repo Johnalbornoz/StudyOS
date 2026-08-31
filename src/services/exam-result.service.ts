@@ -216,6 +216,10 @@ export async function recordExamResult(
         });
         const resolution = await autoResolveDebt(studentId, attribution.conceptId).catch(() => null);
 
+        // mastery_records.mastery_score (and updateMastery's old/new/delta,
+        // which read and write it) is canonically 0-100 already -- pass
+        // through as-is. Do NOT multiply by 100: forensic audit confirmed
+        // this column is already percentage points (see mastery-format.ts).
         return {
           conceptId: attribution.conceptId,
           label: labelById.get(attribution.conceptId) || attribution.conceptId,

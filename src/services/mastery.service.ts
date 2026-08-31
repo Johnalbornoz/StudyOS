@@ -17,6 +17,7 @@ import {
 } from '@/lib/algorithms/mastery';
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 import { recalculateConceptKnowledgeState } from './knowledge-state.service';
+import { recordDecisionEvent } from '@/lib/audit';
 
 export type AIAssistanceType =
   | 'NONE' | 'HINT' | 'MULTIPLE_HINTS' | 'TUTOR_GUIDANCE' | 'TUTOR_EXPLANATION' | 'WORKED_EXAMPLE' | 'OTHER';
@@ -45,6 +46,14 @@ export interface MasteryUpdateInput {
   // transfer/submit) instead stamp metadata with a follow-up UPDATE
   // after this call returns; both are valid, this is just the direct path.
   metadata?: Record<string, unknown>;
+  /**
+   * Phase 0E2: set ONLY when this evidence came from one unambiguous
+   * AI execution (see src/lib/ai/gateway.ts's AIProvenance.aiExecutionId)
+   * -- never fabricated when evidence was deterministic or aggregated
+   * multiple/zero AI calls. Links the resulting MASTERY_UPDATED
+   * decision_events row to that execution (Step 15).
+   */
+  aiExecutionId?: string | null;
 }
 
 export interface MasteryUpdateResult {
@@ -153,7 +162,7 @@ export async function getOrCreateMasteryRecord(
 export async function updateMastery(
   input: MasteryUpdateInput
 ): Promise<MasteryUpdateResult> {
-  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry, metadata } = input;
+  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry, metadata, aiExecutionId } = input;
 
   // Step 1: Get or create mastery record
   const masteryRecord = await getOrCreateMasteryRecord(
@@ -273,7 +282,7 @@ export async function updateMastery(
     );
 
     // Upsert learning debt
-    await db.query(
+    const debtResult = await db.query(
       `
       INSERT INTO learning_debt (
         student_id,
@@ -288,19 +297,39 @@ export async function updateMastery(
         severity = $4,
         status = 'active',
         resolved_at = NULL
+      RETURNING id
       `,
       [studentId, conceptId, subjectId, severity]
     );
 
     learningDebtCreated = true;
     learningDebtSeverity = severity;
+
+    // Phase 0E2 Step 19: shouldCreateLearningDebt's own boolean
+    // condition, spelled out as a machine-readable reason -- mastery
+    // below 60 AND (attempted recently in assessment/practice, or
+    // recurrence >= 2, or blocking an upcoming exam). Never a fabricated
+    // reason beyond what the algorithm actually evaluated.
+    await recordDecisionEvent({
+      decisionType: 'LEARNING_DEBT_CREATED',
+      engine: 'debt-resolution-engine',
+      engineVersion: 'v1',
+      studentId,
+      subjectId,
+      conceptId,
+      sourceEventType: 'learning_debt',
+      sourceEventId: debtResult.rows[0]?.id ?? null,
+      newState: { severity, status: 'active' },
+      reasonCode: 'LOW_MASTERY_WITH_RECENT_ATTEMPT',
+      reasonDetails: { mastery: newMastery, recurrenceCount, sourceType: evidence.sourceType },
+    });
   }
 
   // Step 8: Store learning evidence (for history + error analysis, and
   // for the Learner Model's AI-assistance telemetry -- hints_used/
   // ai_assistance_type/learning_mode feed Independent Mastery,
   // Evidence Strength, and Confidence Calibration).
-  await db.query(
+  const evidenceResult = await db.query(
     `
     INSERT INTO learning_evidence (
       student_id,
@@ -318,6 +347,7 @@ export async function updateMastery(
       score_percent,
       metadata
     ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13)
+    RETURNING id
     `,
     [
       studentId,
@@ -335,6 +365,36 @@ export async function updateMastery(
       metadata ? JSON.stringify(metadata) : null,
     ]
   );
+  const learningEvidenceId = evidenceResult.rows[0]?.id ?? null;
+
+  // Phase 0E2 Step 14: cross-engine auditability for the mastery update
+  // that just happened -- mastery_events (above) remains the domain
+  // history record; this is the uniform-shaped, cross-engine-queryable
+  // twin of it. reasonCode reuses the exact string already computed for
+  // mastery_events.delta_reason (Step 7: prefer an existing exposed
+  // reason over inventing a new one).
+  await recordDecisionEvent({
+    decisionType: 'MASTERY_UPDATED',
+    engine: 'mastery-engine',
+    engineVersion: 'v1',
+    studentId,
+    subjectId,
+    conceptId,
+    sourceEventType: 'learning_evidence',
+    sourceEventId: learningEvidenceId,
+    previousState: { masteryScore: oldMastery },
+    newState: { masteryScore: newMastery, confidenceScore },
+    reasonCode: `${evidence.sourceType}:${evidence.result}`.slice(0, 50),
+    reasonDetails: {
+      sourceType: evidence.sourceType,
+      result: evidence.result,
+      scorePercent: evidence.scorePercent ?? null,
+      sampleSize: evidence.sampleSize ?? null,
+      delta,
+    },
+    // Never fabricated -- see the MasteryUpdateInput.aiExecutionId doc comment.
+    aiExecutionId: aiExecutionId ?? null,
+  });
 
   // Step 9: Log a classified error, if this was a wrong/partial answer
   // and the caller classified why -- feeds error-intelligence.service.ts's

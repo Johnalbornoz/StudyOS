@@ -62,6 +62,8 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
+import type { AIProvenance } from '@/lib/ai';
+import { recordDecisionEvent } from '@/lib/audit';
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
 import { completeRemediationStep } from '@/services/remediation.service';
@@ -560,7 +562,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         if (!question) return null;
 
         if (question.answerFormat === 'text') {
-          const gradeResult = await gradeAnswer(question, answer.answer, language);
+          const gradeResult = await gradeAnswer(question, answer.answer, language, {
+            studentId: validated.studentId,
+            subjectId: quizSession.subjectId,
+          });
           return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult, reportedConfidence: answer.confidence };
         }
         const structured = gradeStructuredAnswer(question, answer.answer);
@@ -593,6 +598,11 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         }>;
         gradingConfidences: number[];
         questionTypes: string[];
+        // Phase 0E1: AI provenance for every free-text-graded question in
+        // this concept's bucket -- which execution/provider/model/prompt
+        // produced the grade. Empty for concepts graded only by the
+        // deterministic gradeStructuredAnswer path (no AI involved).
+        aiGrading: Array<{ questionIndex: number } & AIProvenance>;
       }
     >();
 
@@ -610,12 +620,16 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         questionSemantics: [],
         gradingConfidences: [],
         questionTypes: [],
+        aiGrading: [],
       };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
       bucket.questionIndexes.push(questionIndex);
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
+      if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
+        bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
+      }
       // Only one question per concept is ever flagged askConfidence, so
       // at most one answer in this bucket carries a reported confidence --
       // whichever one does becomes this concept's evidence-level reading.
@@ -718,8 +732,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             activityType: quizSession.activityType,
             evidenceMode: quizSession.evidenceMode,
             ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
+            // Phase 0E1: AI provenance for any free-text-graded question
+            // in this concept's evidence -- additive, doesn't change the
+            // meaning of any existing metadata field.
+            ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
           },
         });
+        // mastery_records.mastery_score (and updateMastery's old/new/delta,
+        // which read and write it) is canonically 0-100 already -- pass
+        // through as-is. Do NOT multiply by 100: forensic audit confirmed
+        // this column is already percentage points (see mastery-format.ts).
+        // priorConceptScorePercent (Phase 3B assessment verification, a
+        // few lines down) and the API response below both need this same
+        // raw 0-100 value -- neither should convert it.
         return {
           conceptId,
           conceptLabel: conceptLabels.get(conceptId) || conceptId,
@@ -782,7 +807,20 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               conceptCoverageBreadth: computeConceptCoverageBreadth(bucket.questionTypes),
             });
             evidenceQualifications[conceptId] = qualifyEvidence(decision.assessmentConfidenceBeforeVerification);
-            if (!decision.required) return;
+            if (!decision.required) {
+              await recordDecisionEvent({
+                decisionType: 'VERIFICATION_NOT_REQUIRED',
+                engine: 'verification-engine',
+                engineVersion: 'v1',
+                studentId: validated.studentId,
+                subjectId: quizSession.subjectId,
+                conceptId,
+                sourceEventType: 'assessment_attempt',
+                reasonCode: 'NO_TRIGGER_FIRED',
+                reasonDetails: { assessmentConfidenceBeforeVerification: decision.assessmentConfidenceBeforeVerification },
+              });
+              return;
+            }
 
             // Target the specific question/evidence item that actually
             // caused the trigger -- the bucket's lowest-confidence
@@ -824,7 +862,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               variantEquivalenceConfidence = null;
             }
 
-            await createPendingVerificationAttempt({
+            const verificationAttemptId = await createPendingVerificationAttempt({
               quizSessionId: validated.quizId,
               studentId: validated.studentId,
               conceptId,
@@ -836,6 +874,24 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               gradingConfidence: originalGradingConfidence,
               variantEquivalenceConfidence,
               assessmentConfidenceBefore: decision.assessmentConfidenceBeforeVerification,
+            });
+
+            // Phase 0E2 Step 17: verification_attempts (above) remains
+            // the domain transaction; this is why the system chose to
+            // require it -- the actual trigger ids that fired, never
+            // duplicated/redecided here.
+            await recordDecisionEvent({
+              decisionType: 'VERIFICATION_REQUIRED',
+              engine: 'verification-engine',
+              engineVersion: 'v1',
+              studentId: validated.studentId,
+              subjectId: quizSession.subjectId,
+              conceptId,
+              sourceEventType: 'verification_attempts',
+              sourceEventId: verificationAttemptId,
+              newState: { assessmentConfidenceBeforeVerification: decision.assessmentConfidenceBeforeVerification, severity: decision.severity },
+              reasonCode: decision.triggers.map((t) => t.triggerId).join(',') || 'NO_TRIGGER_FIRED',
+              reasonDetails: { triggers: decision.triggers, variantEquivalenceConfidence },
             });
 
             verificationNeeded.push({

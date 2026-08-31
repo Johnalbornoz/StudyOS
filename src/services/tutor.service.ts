@@ -14,6 +14,8 @@ import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { buildCompactTutorContext } from './tutor-strategy.service';
+import { executeAI, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface TutorMessage {
   id: string;
@@ -157,28 +159,18 @@ Write your entire response in ${languageName}.`;
 
   const messages = [...history.map((h: any) => ({ role: h.role, content: h.content })), { role: 'user', content: userMessage }];
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages,
-    }),
+  const prompt = getPrompt('tutor.chat_reply');
+  const { result: replyText } = await executeAI({
+    capability: prompt.capability,
+    risk: 'LOW_RISK', // conversational reply, not a graded/state-changing output
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 2048, system: systemPrompt, messages }, signal),
+    // Free text, not JSON -- the only structural contract is "the provider answered with something".
+    validate: (raw) => ({ valid: true, value: raw.text }),
   });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const replyText = data.content.find((b: any) => b.type === 'text')?.text ?? '';
 
   const stored = await db.query(
     `INSERT INTO tutor_messages (conversation_id, role, content) VALUES ($1, 'assistant', $2) RETURNING id, role, content, created_at`,

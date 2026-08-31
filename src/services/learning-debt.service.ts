@@ -14,6 +14,7 @@ import { db } from '@/lib/db';
 import { calculateDebtSeverity } from '@/lib/algorithms/mastery';
 import { ensureConceptLocalizations } from './localization.service';
 import { getRetention } from './learner-model.service';
+import { recordDecisionEvent } from '@/lib/audit';
 
 export interface LearningDebtRecord {
   id: string;
@@ -339,6 +340,7 @@ export async function checkAndResolveDebt(
     );
 
     const row = result.rows[0];
+    const resolutionReason = `RESOLVED: Mastery ${currentMastery.toFixed(1)}% | Retention ${daysSinceLastSuccess}d | Risk ${forgettingRisk.toFixed(1)}%`;
 
     // Log resolution
     await db.query(
@@ -351,12 +353,27 @@ export async function checkAndResolveDebt(
         created_at
       ) VALUES ($1, $2, 0, $3, NOW())
       `,
-      [
-        debt.id,
-        debt.severity,
-        `RESOLVED: Mastery ${currentMastery.toFixed(1)}% | Retention ${daysSinceLastSuccess}d | Risk ${forgettingRisk.toFixed(1)}%`,
-      ]
+      [debt.id, debt.severity, resolutionReason]
     );
+
+    // Phase 0E2 Step 19: computeDebtResolutionCriteria's own `allMet`
+    // check is the real reason this resolved -- reused as reasonCode,
+    // with the exact same human-readable string already computed for
+    // learning_debt_events.reason carried into reasonDetails.
+    await recordDecisionEvent({
+      decisionType: 'LEARNING_DEBT_RESOLVED',
+      engine: 'debt-resolution-engine',
+      engineVersion: 'v1',
+      studentId,
+      subjectId: row.subject_id,
+      conceptId,
+      sourceEventType: 'learning_debt',
+      sourceEventId: debt.id,
+      previousState: { severity: debt.severity, status: debt.status },
+      newState: { severity: 0, status: 'resolved' },
+      reasonCode: 'DEBT_RESOLUTION_CRITERIA_MET',
+      reasonDetails: { criteria, resolutionReason, currentMastery, daysSinceLastSuccess, forgettingRisk },
+    });
 
     return {
       id: row.id,

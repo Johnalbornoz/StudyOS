@@ -9,6 +9,8 @@
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { executeAI, validateJson, getPrompt, type AIProvenance } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export type TransferDistance = 'NEAR' | 'MID' | 'FAR';
 
@@ -47,25 +49,26 @@ Required transfer distance: ${distance} -- ${distanceGuidance[distance]}
 Output ONLY this JSON, no markdown fences, no other text:
 {"context": "a short label (3-6 words) for the new scenario, in ${languageName}", "prompt": "the actual question, in ${languageName}"}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Write the transfer question.' }],
-    }),
+  const prompt = getPrompt('transfer.activity_generation');
+  const { result } = await executeAI({
+    capability: prompt.capability,
+    risk: 'MEDIUM_RISK',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) =>
+      callAnthropicMessages(
+        { model: 'claude-sonnet-5', maxTokens: 500, system: systemPrompt, messages: [{ role: 'user', content: 'Write the transfer question.' }] },
+        signal
+      ),
+    validate: (raw) =>
+      validateJson<{ context: string; prompt: string }>({ text: raw.text || '{}' }, (parsed) => ({
+        value: { context: parsed.context, prompt: parsed.prompt },
+        errors: [],
+      })),
   });
-  if (!response.ok) throw new Error(`Claude API error: ${response.status} - ${await response.text()}`);
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const parsed = parseAIJson<{ context: string; prompt: string }>(rawText);
-  return { distance, context: parsed.context, prompt: parsed.prompt };
+  return { distance, context: result.context, prompt: result.prompt };
 }
 
 export interface TransferEvidenceRow {
@@ -102,13 +105,23 @@ export function computeTransferScore(rows: TransferEvidenceRow[]): number | null
   return Math.round(weightedSum / weightTotal);
 }
 
-/** Grades one transfer response as correct/partial/incorrect with brief feedback -- a simpler rubric than Explain & Defend since the question is "did they apply it right here", not a multi-dimension reasoning trace. */
+/**
+ * Grades one transfer response as correct/partial/incorrect with brief
+ * feedback -- a simpler rubric than Explain & Defend since the
+ * question is "did they apply it right here", not a multi-dimension
+ * reasoning trace. HIGH_RISK (Phase 0E1): `result` feeds directly into
+ * mastery.service.ts's updateMastery via the caller (see
+ * transfer/submit/route.ts) and into computeTransferScore's stored
+ * evidence (RESULT_VALUE above).
+ */
 export async function evaluateTransferResponse(
   conceptLabel: string,
   prompt: string,
   studentResponse: string,
-  language: string = 'en'
-): Promise<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string }> {
+  language: string = 'en',
+  /** Phase 0E2 Step 11: optional, purely additive. */
+  context?: { studentId?: string; subjectId?: string; conceptId?: string }
+): Promise<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string; aiExecution: AIProvenance }> {
   const languageName = LOCALE_FULL_NAME[language] || language;
   const systemPrompt = `Grade whether a student correctly applied "${conceptLabel}" to this new context.
 
@@ -118,29 +131,27 @@ Student's answer: ${studentResponse}
 Output ONLY this JSON, no markdown fences, no other text:
 {"result": "correct" | "partial" | "incorrect", "feedback": "1-2 sentences in ${languageName}"}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Grade this.' }],
-    }),
+  const registeredPrompt = getPrompt('transfer.response_evaluation');
+  const { result, provenance } = await executeAI({
+    capability: registeredPrompt.capability,
+    risk: 'HIGH_RISK',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: registeredPrompt.id,
+    promptVersion: registeredPrompt.version,
+    context: { ...context, sourceComponent: 'transfer.service.ts:evaluateTransferResponse' },
+    call: (signal) =>
+      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 300, system: systemPrompt, messages: [{ role: 'user', content: 'Grade this.' }] }, signal),
+    validate: (raw) =>
+      validateJson<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string }>({ text: raw.text || '{}' }, (parsed) => ({
+        value: {
+          result: (['correct', 'partial', 'incorrect'].includes(parsed.result) ? parsed.result : 'incorrect') as 'correct' | 'partial' | 'incorrect',
+          feedback: parsed.feedback || '',
+        },
+        errors: [],
+      })),
   });
-  if (!response.ok) throw new Error(`Claude API error: ${response.status} - ${await response.text()}`);
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const parsed = parseAIJson<{ result: string; feedback: string }>(rawText);
-  const result = (['correct', 'partial', 'incorrect'].includes(parsed.result) ? parsed.result : 'incorrect') as
-    | 'correct'
-    | 'partial'
-    | 'incorrect';
-  return { result, feedback: parsed.feedback || '' };
+  return { ...result, aiExecution: provenance };
 }
 
 /** Reads transfer evidence for a concept straight from learning_evidence's metadata (sourceType='TRANSFER'). */

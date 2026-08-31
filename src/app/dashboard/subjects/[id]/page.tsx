@@ -14,6 +14,7 @@ import AssessmentPanel from './AssessmentPanel';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
 import HierarchicalConceptList from './HierarchicalConceptList';
 import { getSubjectAccentColor } from '@/lib/subject-color';
+import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,13 +39,18 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  const concepts = await getStudentMastery(studentId, id, locale, true).catch(() => []);
-  const contentSources = await getContentSources(studentId, id).catch(() => []);
-  const hierarchy = await getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] }));
-  const learnerModel = await getSubjectLearnerModel(studentId, id).catch(() => ({
-    avgMastery: null, avgRetention: null, avgIndependentMastery: null, avgConfidenceCalibration: null,
-    evidenceCoverage: null, activeLearningDebtCount: 0, atRiskCount: 0,
-  }));
+  // Four independent reads (none depends on another's result) -- run in
+  // parallel instead of sequentially. Each keeps its own fallback, so a
+  // failure in one never blocks or breaks the others.
+  const [concepts, contentSources, hierarchy, learnerModel] = await Promise.all([
+    getStudentMastery(studentId, id, locale, true).catch(() => []),
+    getContentSources(studentId, id).catch(() => []),
+    getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] })),
+    getSubjectLearnerModel(studentId, id).catch(() => ({
+      avgMastery: null, avgRetention: null, avgIndependentMastery: null, avgConfidenceCalibration: null,
+      evidenceCoverage: null, activeLearningDebtCount: 0, atRiskCount: 0,
+    })),
+  ]);
   const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
 
   return (
@@ -127,7 +133,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         concepts={concepts.map((c: any) => ({
           conceptId: c.concept_id,
           label: c.label || c.canonical_id,
-          masteryScore: Number(c.mastery_score),
+          masteryScore: masteryToPercent(tryMasteryScore(c.mastery_score, `subject page concept ${c.concept_id}`)) ?? 0,
         }))}
       />
 

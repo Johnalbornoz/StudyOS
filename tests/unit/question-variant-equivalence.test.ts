@@ -30,6 +30,11 @@ function mockAnthropicResponse(questions: any[]) {
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
+  // Phase 0E1: the shared AI gateway now fails fast with CONFIGURATION_ERROR
+  // when ANTHROPIC_API_KEY is unset, rather than sending a request with a
+  // missing key -- this test only cares about the mocked fetch response, so
+  // stub a key too.
+  vi.stubEnv('ANTHROPIC_API_KEY', 'test-key');
 });
 
 describe('Phase 3B -- Question Variant Equivalence Contract', () => {

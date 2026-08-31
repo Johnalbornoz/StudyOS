@@ -1,4 +1,6 @@
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { executeAI, getPrompt } from '@/lib/ai';
+import { callOpenAIChat } from '@/lib/ai/adapters/openai';
 
 export interface FormulaVariable {
   symbol: string;
@@ -129,34 +131,36 @@ Rules when applicable:
 Key relationship, if any: ${formulaHint || 'unknown -- decide based on the concept itself'}
 ${contextChunks.length > 0 ? `\nContext from the student's material:\n${contextChunks.join('\n\n')}` : ''}`;
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-5.6',
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('OpenAI API error generating interactive formula:', response.status, await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content ?? '{}';
-    const parsed = JSON.parse(raw);
-    return validateFormula(parsed);
-  } catch (error) {
-    console.error('Error generating interactive formula:', error);
-    return null;
-  }
+  const prompt = getPrompt('formula.interactive_widget');
+  const { result } = await executeAI({
+    capability: prompt.capability,
+    risk: 'LOW_RISK', // returns null (falls back to a plain explanation) unless a full, internally-validated widget is produced
+    provider: 'openai',
+    model: 'gpt-5.6',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) =>
+      callOpenAIChat(
+        {
+          model: 'gpt-5.6',
+          responseFormatJson: true,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        },
+        signal
+      ),
+    validate: (raw) => {
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw.text || '{}');
+      } catch (e) {
+        return { valid: false, errors: [e instanceof Error ? e.message : String(e)] };
+      }
+      return { valid: true, value: validateFormula(parsed) };
+    },
+    fallback: () => null,
+  });
+  return result;
 }

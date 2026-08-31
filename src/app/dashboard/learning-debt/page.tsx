@@ -8,6 +8,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import ErrorPatternList from './ErrorPatternList';
 import WhyThisV3 from '../WhyThisV3';
 import StartSessionButton from '../StartSessionButton';
+import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 
 /**
  * Learning Debt v3 -- an ANALYTICAL view (severity, recurrence,
@@ -74,7 +75,9 @@ export default async function LearningDebtPage() {
           {debtItems.map((d) => {
             const debtSignal = d.signals.find((s) => s.type === 'LEARNING_DEBT');
             const severity = Number(debtSignal?.metadata.severity ?? 0);
-            const mastery = Number(debtSignal?.metadata.mastery ?? 0);
+            // debtSignal.metadata.mastery is mastery_records.mastery_score,
+            // canonically 0-100 -- see src/lib/mastery-format.ts.
+            const mastery = tryMasteryScore(debtSignal?.metadata.mastery as number | undefined, `learning-debt ${d.actionConceptId}`);
             const info = labels?.get(d.actionConceptId);
             return (
               <div key={d.actionConceptId} className="list-row">
@@ -82,7 +85,7 @@ export default async function LearningDebtPage() {
                 <div className="row-main">
                   <div className="row-title">{info?.label ?? d.actionConceptId}</div>
                   <div className="row-sub">
-                    {t['debt.currentMastery']}: {Math.round(mastery)}% · {t['debt.severity']} {severity}
+                    {t['debt.currentMastery']}: {formatMasteryPercent(mastery)} · {t['debt.severity']} {severity}
                   </div>
                   <WhyThisV3 facts={d.facts} t={t} />
                 </div>

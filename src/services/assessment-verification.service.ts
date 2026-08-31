@@ -39,6 +39,7 @@ import {
 } from '@/lib/verification-triggers';
 import { getAssessmentProfile } from '@/lib/assessment-profiles';
 import type { ActivityType, EvidenceMode } from '@/lib/activity-taxonomy';
+import type { AIProvenance } from '@/lib/ai';
 
 export type VerificationOutcome = 'CONFIRMED' | 'CONTRADICTED' | 'INCONCLUSIVE';
 export type EvidenceStrength = 'HIGH' | 'MEDIUM' | 'LOW' | 'CONTRADICTED';
@@ -261,6 +262,8 @@ export interface QualifiedEvidenceInput {
   variantEquivalenceConfidence?: number | null;
   reasoningErrorTypes?: string[];
   assessmentProfile?: string;
+  /** Phase 0E1: AI provenance for this evidence, when it was produced by an AI grading call (free-text verification questions only). */
+  aiExecution?: AIProvenance;
 }
 
 /**
@@ -306,7 +309,12 @@ export async function submitQualifiedAssessmentEvidence(input: QualifiedEvidence
       variantEquivalenceConfidence: input.variantEquivalenceConfidence ?? null,
       reasoningErrorTypes: input.reasoningErrorTypes ?? [],
       assessmentProfile: input.assessmentProfile ?? null,
+      ...(input.aiExecution ? { aiExecution: input.aiExecution } : {}),
     },
+    // Phase 0E2: links the resulting MASTERY_UPDATED decision_events row
+    // to the AI grading execution that produced this evidence, when there
+    // was one (free-text verification questions only -- see Step 15).
+    aiExecutionId: input.aiExecution?.aiExecutionId ?? null,
   });
 }
 

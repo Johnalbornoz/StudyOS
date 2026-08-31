@@ -12,6 +12,8 @@
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { executeAI, validateJson, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 interface TranslateItem {
   id: string;
@@ -33,29 +35,18 @@ Output ONLY a JSON object, no markdown fences: { "translations": [{ "id": "<id>"
   // before with under-scaled max_tokens on batch AI calls.
   const maxTokens = Math.min(16000, 1000 + items.length * 90);
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+  const prompt = getPrompt('localization.batch_translate');
+  const { result: parsed } = await executeAI({
+    capability: prompt.capability,
+    risk: 'LOW_RISK', // display text only (topic/subtopic/concept names)
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+    validate: (raw) =>
+      validateJson<{ translations: { id: string; text: string }[] }>({ text: raw.text || '{}' }, (v) => ({ value: v, errors: [] })),
   });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const parsed = parseAIJson<{ translations: { id: string; text: string }[] }>(rawText);
 
   const map: Record<string, string> = {};
   for (const t of parsed?.translations ?? []) {

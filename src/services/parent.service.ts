@@ -20,6 +20,7 @@ import { db } from '@/lib/db';
 import { getStudentMastery } from './mastery.service';
 import { getActiveDebts } from './learning-debt.service';
 import { getUpcomingForStudent } from './assessment.service';
+import { masteryToPercent, tryMasteryScore, averageMasteryScore } from '@/lib/mastery-format';
 
 export type LinkStatus = 'pending' | 'accepted' | 'declined';
 
@@ -188,11 +189,15 @@ export async function getChildOverview(
   const subjects: ChildSubjectSummary[] = await Promise.all(
     subjectsResult.rows.map(async (s: any) => {
       const records = await getStudentMastery(studentId, s.id, preferredLanguage).catch(() => []);
-      const avgMastery = records.length
-        ? Math.round(
-            records.reduce((sum: number, r: any) => sum + Number(r.mastery_score), 0) / records.length
-          )
-        : null;
+      // mastery_records.mastery_score is already 0-100 -- validate each
+      // row against that domain (an out-of-range row is dropped and
+      // logged, never silently reinterpreted), average the RAW values,
+      // then round for display exactly once, here.
+      const validScores = records.flatMap((r: any) => {
+        const score = tryMasteryScore(r.mastery_score, `parent overview concept ${r.concept_id}`);
+        return score !== null ? [score] : [];
+      });
+      const avgMastery = masteryToPercent(averageMasteryScore(validScores));
       const activeDebtCount = debts.filter((d: any) => d.subjectId === s.id).length;
       return { subjectId: s.id, name: s.name, avgMastery, conceptCount: records.length, activeDebtCount };
     })

@@ -6,6 +6,8 @@
  */
 
 import { db } from '@/lib/db';
+import { executeAI, getPrompt } from '@/lib/ai';
+import { callOpenAIEmbedding } from '@/lib/ai/adapters/openai';
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_DIMENSIONS = 1536;
@@ -19,36 +21,22 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       throw new Error('Cannot embed empty text');
     }
 
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    const prompt = getPrompt('embedding.text_embedding');
+    const { result: embedding } = await executeAI({
+      capability: prompt.capability,
+      risk: 'LOW_RISK', // a vector for semantic search retrieval, not a learning-state or correctness output
+      provider: 'openai',
+      model: EMBEDDING_MODEL,
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      call: (signal) => callOpenAIEmbedding({ model: EMBEDDING_MODEL, input: text }, signal),
+      validate: (raw) => {
+        if (raw.embedding.length !== EMBEDDING_DIMENSIONS) {
+          return { valid: false, errors: [`Invalid embedding dimensions: got ${raw.embedding.length}, expected ${EMBEDDING_DIMENSIONS}`] };
+        }
+        return { valid: true, value: raw.embedding };
       },
-      body: JSON.stringify({
-        input: text,
-        model: EMBEDDING_MODEL,
-      }),
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${error}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.data || data.data.length === 0) {
-      throw new Error('No embeddings returned from OpenAI');
-    }
-
-    const embedding = data.data[0].embedding;
-
-    if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
-      throw new Error(
-        `Invalid embedding dimensions: got ${embedding.length}, expected ${EMBEDDING_DIMENSIONS}`
-      );
-    }
 
     return embedding;
   } catch (error) {

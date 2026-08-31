@@ -1,0 +1,22 @@
+# StudyUs Database Governance Rules
+
+Established Phase 0D, in response to the Phase 0A/0B finding that the previously-tracked `migrations/001-030` folder did not reliably describe the live production database. See `docs/adr/0001-schema-baseline-strategy.md` for the reasoning, and `database/README.md` for the practical directory layout.
+
+These rules apply from Phase 0D onward.
+
+1. **Live schema changes require a tracked migration.** Any change to the production database schema must exist as a file in `database/migrations/` before (or as part of) being applied — no manual, ad hoc DDL against production outside this process.
+2. **No manual production DDL without a corresponding migration file.** If a change was made directly (an emergency, a mistake, anything), the very next step is to author a migration file that documents it — the ledger and the live schema must never be allowed to silently diverge again the way `migrations/001-030` did.
+3. **Migrations are immutable once applied.** Once a migration's version appears in `schema_migrations`, its file must never be edited. `npm run db:status` and `npm run db:migrate` both detect a checksum mismatch against an applied version and refuse to proceed.
+4. **Corrective migrations are new, additive files — never edits to old ones.** If migration `20260901_1200_x.sql` turns out to be wrong, the fix is `20260905_0900_fix_x.sql`, not a rewrite of the original.
+5. **The baseline represents current schema, not historical execution history.** `database/baseline/STUDYUS_BASELINE_2026_08.sql` is a snapshot of what was actually live on the date it was captured — it makes no claim that any historical migration file reconstructs it, and it is not "corrected" to reflect what the schema *should* be.
+6. **Application code must not depend on an undocumented column or table.** If `src/` code reads or writes a column/table, that object must exist in `database/baseline/` (or a migration applied since). This phase's baseline already captures every column/table Phase 0A/0B found the application actually depends on, including ones missing from `migrations/001-030` (`profiles`, `student_profiles`, `learning_evidence`, `assessment_occurrences`, `assessment_results`, `subjects.student_id`, `subjects.status`, and others) — going forward, a newly-added dependency needs a newly-added migration, not silent reliance on whatever happens to be live.
+7. **Schema contract tests must pass before merge.** `tests/unit/schema-contract.test.ts` encodes the critical, documented facts about the live schema (identity, mastery scale, evidence columns, verification persistence, the errors table shape) as static assertions against the baseline file — a change that silently breaks one of these must fail CI, the same as any other test.
+8. **New migrations must be tested against an empty/test database before being applied to production**, using `scripts/db-reproducibility-test.sh` (or an equivalent ephemeral instance) — never validated for the first time against Neon.
+9. **Production migration execution is always explicit.** `npm run db:migrate` is a deliberate, human-run command. It is never invoked by `npm run build`, `npm run start`, application boot, a CI pipeline step that isn't explicitly a "run migrations" step, or any other implicit trigger.
+10. **Secrets must never appear in logs, reports, or committed files.** `DATABASE_URL`, passwords, tokens, and connection strings are never printed by any script in `scripts/db-*` or `database/`, and never appear in any audit report under `docs/audits/`. (See the Phase 0B report for the one documented exception where this was violated by mistake, disclosed immediately, and not repeated since.)
+
+## What this governance model deliberately does NOT do
+
+- It does not retroactively validate or invalidate `migrations/001-030` as a group — see the per-migration classification in `docs/audits/STUDYUS_PHASE_0D_SCHEMA_BASELINE_GOVERNANCE.md` for the actual, evidence-based status of each one.
+- It does not consolidate the `students`/`profiles` dual-identity tables, add a range CHECK to `mastery_records.mastery_score`, or fix any other documented inconsistency. Baselining is "capture reality," not "fix reality" — those remain deliberate, separate future decisions.
+- It does not introduce an ORM or change how the application connects to the database (`src/lib/db.ts`'s raw `pg.Pool` is untouched).

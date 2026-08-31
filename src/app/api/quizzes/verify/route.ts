@@ -30,6 +30,7 @@ import {
   recalculateConfidenceAfterVerification,
   submitQualifiedAssessmentEvidence,
 } from '@/services/assessment-verification.service';
+import { recordDecisionEvent } from '@/lib/audit';
 import { z } from 'zod';
 
 const VerifySchema = z.object({
@@ -82,7 +83,10 @@ export async function POST(request: NextRequest) {
   try {
     const grade =
       verificationQuestion.answerFormat === 'text'
-        ? await gradeAnswer(verificationQuestion, validated.answer, validated.language)
+        ? await gradeAnswer(verificationQuestion, validated.answer, validated.language, {
+            studentId: validated.studentId,
+            subjectId: quizSession.subjectId,
+          })
         : { ...gradeStructuredAnswer(verificationQuestion, validated.answer), confidence: 1, errorType: null, reasoningValid: true };
 
     const verificationScorePercent = Math.round(grade.score * 100);
@@ -94,6 +98,24 @@ export async function POST(request: NextRequest) {
       gradingConfidence: grade.confidence,
       outcome,
       assessmentConfidenceAfter,
+    });
+
+    // Phase 0E2 Step 17: verification_attempts (above) remains the
+    // domain transaction; this is why the system resolved it the way
+    // it did -- the actual outcome/confidence values, never redecided.
+    await recordDecisionEvent({
+      decisionType: 'VERIFICATION_RESOLVED',
+      engine: 'verification-engine',
+      engineVersion: 'v1',
+      studentId: validated.studentId,
+      subjectId: quizSession.subjectId,
+      conceptId: validated.conceptId,
+      sourceEventType: 'verification_attempts',
+      sourceEventId: pending.id,
+      previousState: { assessmentConfidenceBefore: pending.assessmentConfidenceBefore, originalScorePercent: pending.originalScorePercent },
+      newState: { outcome, assessmentConfidenceAfter, verificationScorePercent },
+      reasonCode: outcome,
+      aiExecutionId: 'aiExecution' in grade ? grade.aiExecution?.aiExecutionId ?? null : null,
     });
 
     // The verification answer is itself real evidence -- SOLO_VERIFICATION
@@ -114,6 +136,7 @@ export async function POST(request: NextRequest) {
       evidenceMode: quizSession.evidenceMode,
       assessmentConfidence: assessmentConfidenceAfter,
       verificationOutcome: outcome,
+      aiExecution: 'aiExecution' in grade ? grade.aiExecution : undefined,
     });
 
     return NextResponse.json({

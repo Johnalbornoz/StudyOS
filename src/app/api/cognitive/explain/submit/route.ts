@@ -5,6 +5,8 @@ import { updateMastery } from '@/services/mastery.service';
 import { classifyMisconception, recordStudentMisconception } from '@/services/misconception.service';
 import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
+import type { AIProvenance } from '@/lib/ai';
+import { recordDecisionEvent } from '@/lib/audit';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -29,9 +31,14 @@ export async function POST(request: NextRequest) {
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
     const language = validated.language || 'en';
-    const rubric = await evaluateExplanation(validated.conceptLabel, validated.prompt, validated.expectedElements, validated.studentResponse, language);
+    const rubric = await evaluateExplanation(validated.conceptLabel, validated.prompt, validated.expectedElements, validated.studentResponse, language, {
+      studentId: validated.studentId,
+      subjectId: validated.subjectId,
+      conceptId: validated.conceptId,
+    });
     const scorePercent = rubricScorePercent(rubric);
 
+    let misconceptionAiExecution: AIProvenance | undefined;
     if (rubric.misconceptionDetected) {
       const classified = await classifyMisconception(
         validated.conceptId,
@@ -39,12 +46,30 @@ export async function POST(request: NextRequest) {
         validated.prompt,
         validated.studentResponse,
         validated.expectedElements.join('; '),
-        language
+        language,
+        { studentId: validated.studentId, subjectId: validated.subjectId }
       ).catch(() => null);
       if (classified) {
+        misconceptionAiExecution = classified.aiExecution;
         await recordStudentMisconception(validated.studentId, classified.signature.id, {
           source: 'explain_defend',
           prompt: validated.prompt,
+        });
+        // Phase 0E2 Step 18: only recorded when classification actually
+        // resulted in a persisted occurrence -- never for a null/no-
+        // misconception classification. Links the AI execution that
+        // produced it (always unambiguous: one classification call).
+        await recordDecisionEvent({
+          decisionType: 'MISCONCEPTION_RECORDED',
+          engine: 'misconception-engine',
+          engineVersion: 'v1',
+          studentId: validated.studentId,
+          subjectId: validated.subjectId,
+          conceptId: validated.conceptId,
+          sourceEventType: 'student_misconceptions',
+          newState: { misconceptionCode: classified.signature.misconceptionCode, isNew: classified.isNew, isCritical: classified.signature.isCritical },
+          reasonCode: 'AI_MISCONCEPTION_CLASSIFIED',
+          aiExecutionId: classified.aiExecution.aiExecutionId,
         });
       }
     }
@@ -62,6 +87,17 @@ export async function POST(request: NextRequest) {
         sampleSize: 1,
       },
       telemetry: { activityType: 'explain_defend', learningMode: 'COACH' },
+      // Phase 0E1: AI provenance for the rubric evaluation, and for
+      // misconception classification when it ran -- additive metadata,
+      // doesn't change any existing evidence field's meaning.
+      metadata: {
+        aiExecution: rubric.aiExecution,
+        ...(misconceptionAiExecution ? { misconceptionAiExecution } : {}),
+      },
+      // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
+      // row to the rubric evaluation that produced this evidence --
+      // always unambiguous here (one evaluation call per submission).
+      aiExecutionId: rubric.aiExecution.aiExecutionId,
     });
 
     if (validated.remediationStepId) {

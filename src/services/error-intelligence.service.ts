@@ -13,6 +13,8 @@ import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
+import { executeAI, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export type ErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
 
@@ -203,27 +205,20 @@ Write everything in ${languageName}. Output ONLY a JSON object, no markdown fenc
 
 Use 2 to 3 "sections" covering, in this spirit: (1) what is likely going wrong conceptually/procedurally for THIS student on THIS concept -- be specific, not generic advice about the error type in the abstract; (2) what to focus on or reconsider before practicing again. Do not lecture on the whole concept as if from zero -- speak directly to the pattern. Keep it encouraging and constructive, never scolding.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 1200,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: `Help me understand this pattern of mistakes.` }],
-    }),
+  const prompt = getPrompt('error_intelligence.pattern_guidance');
+  const { result } = await executeAI({
+    capability: prompt.capability,
+    risk: 'LOW_RISK', // formative feedback text, display-only, not learning-state
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: prompt.id,
+    promptVersion: prompt.version,
+    call: (signal) =>
+      callAnthropicMessages(
+        { model: 'claude-sonnet-5', maxTokens: 1200, system: systemPrompt, messages: [{ role: 'user', content: `Help me understand this pattern of mistakes.` }] },
+        signal
+      ),
+    validate: (raw) => ({ valid: true, value: coerceGuidance(raw.text || '{}') }),
   });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  return coerceGuidance(rawText);
+  return result;
 }

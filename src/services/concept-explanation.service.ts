@@ -3,6 +3,8 @@ import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
 import { generateInteractiveFormula, InteractiveFormula } from './interactive-formula.service';
+import { executeAI, getPrompt } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface ConceptExplanation {
   summary: string;
@@ -108,38 +110,36 @@ Write everything in ${languageName}. Output ONLY a JSON object, no markdown fenc
 
 Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. definition, why it matters, how it's applied, a common point of confusion) -- whichever genuinely fits this concept, not a fixed template. Keep each section body to 2-4 sentences. Keep it focused on this concept only.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
+  const registeredPrompt = getPrompt('concept.explanation');
+  const { result } = await executeAI({
+    capability: registeredPrompt.capability,
+    risk: 'LOW_RISK', // cached, student-facing content; doesn't affect mastery/correctness
+    provider: 'anthropic',
+    model: 'claude-sonnet-5',
+    promptId: registeredPrompt.id,
+    promptVersion: registeredPrompt.version,
+    call: (signal) =>
+      callAnthropicMessages(
+        {
+          model: 'claude-sonnet-5',
+          // Generous headroom: 4 sections + examples in a denser language
+          // (Spanish/German prose runs longer than English for the same
+          // content) previously got truncated mid-string at 1400, which
+          // broke the JSON and surfaced as raw, unparsed text to the
+          // student -- see tryParseExplanation's cache-eviction comment.
+          maxTokens: 3000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: `Explain "${conceptLabel}" to me.` }],
+        },
+        signal
+      ),
+    validate: (raw) => {
+      const explanation = tryParseExplanation(raw.text);
+      if (!explanation) return { valid: false, errors: ['EXPLANATION_PARSE_FAILED'] };
+      return { valid: true, value: { explanation, rawText: raw.text } };
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      // Generous headroom: 4 sections + examples in a denser language
-      // (Spanish/German prose runs longer than English for the same
-      // content) previously got truncated mid-string at 1400, which
-      // broke the JSON and surfaced as raw, unparsed text to the
-      // student -- see tryParseExplanation's cache-eviction comment.
-      max_tokens: 3000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: `Explain "${conceptLabel}" to me.` }],
-    }),
   });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{}';
-  const explanation = tryParseExplanation(rawText);
-
-  if (!explanation) {
-    throw new Error('EXPLANATION_PARSE_FAILED');
-  }
+  const { explanation, rawText } = result;
 
   let hasFormula = false;
   let formulaHint = '';

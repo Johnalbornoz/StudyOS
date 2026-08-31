@@ -18,6 +18,7 @@ import { getTransferScore } from './transfer.service';
 import { getMisconceptionCountsForConcept } from './misconception.service';
 import { evaluateValidationLifecycle } from './validation-cycle.service';
 import { track } from '@/lib/analytics';
+import { recordDecisionEvent } from '@/lib/audit';
 
 export type MasteryState =
   | 'UNKNOWN'
@@ -463,6 +464,36 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   if (previousState !== masteryState) {
     track(studentId, 'knowledge_state_updated', { conceptId, previousState, newState: masteryState, policyVersion: policy.version });
   }
+
+  // Phase 0E2 Step 16: cross-engine auditability for this projection.
+  // Runs on every successful projection (paired 1:1 with the
+  // MASTERY_UPDATED event that triggered it, since updateMastery calls
+  // this synchronously) -- not gated on a state change, since "we
+  // recomputed and it stayed the same" is itself part of the auditable
+  // record, not noise. concept_knowledge_state remains the domain
+  // source of truth; this is its cross-engine-queryable twin.
+  await recordDecisionEvent({
+    decisionType: 'KNOWLEDGE_STATE_PROJECTED',
+    engine: 'knowledge-state-projector',
+    engineVersion: String(policy.version),
+    studentId,
+    subjectId,
+    conceptId,
+    sourceEventType: 'concept_knowledge_state',
+    sourceEventId: upserted.rows[0]?.id ?? null,
+    previousState: previousState ? { masteryState: previousState } : null,
+    newState: {
+      masteryState,
+      understanding: scores.understanding,
+      independence: scores.independence,
+      application: scores.application,
+      retention: scores.retention,
+      transfer: scores.transfer,
+      validationReadiness,
+    },
+    reasonCode: previousState !== masteryState ? 'STATE_TRANSITION' : 'STATE_UNCHANGED',
+    reasonDetails: stateReason as unknown as Record<string, unknown>,
+  });
 
   return rowToState(upserted.rows[0]);
 }

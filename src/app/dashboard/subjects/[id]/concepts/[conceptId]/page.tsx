@@ -11,6 +11,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
 import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
+import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -191,7 +192,7 @@ export default async function ConceptDetailPage({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.mastery']}</div>
-          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>{Math.round(state.masteryScore)}%</div>
+          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>{formatMasteryPercent(tryMasteryScore(state.masteryScore, `concept detail ${conceptId}`))}</div>
         </div>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.retention']}</div>

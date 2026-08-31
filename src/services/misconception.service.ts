@@ -9,6 +9,8 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { track } from '@/lib/analytics';
+import { executeAI, validateJson, getPrompt, AIExecutionFailure, type AIProvenance } from '@/lib/ai';
+import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export interface MisconceptionSignature {
   id: string;
@@ -165,8 +167,10 @@ export async function classifyMisconception(
   question: string,
   studentAnswer: string,
   correctAnswer: string,
-  language: string = 'en'
-): Promise<{ signature: MisconceptionSignature; isNew: boolean } | null> {
+  language: string = 'en',
+  /** Phase 0E2 Step 11: optional, purely additive. */
+  context?: { studentId?: string; subjectId?: string }
+): Promise<{ signature: MisconceptionSignature; isNew: boolean; aiExecution: AIProvenance } | null> {
   const existing = await getSignaturesForConcept(conceptId);
   const languageName = LOCALE_FULL_NAME[language] || language;
 
@@ -187,40 +191,43 @@ isCritical means this misconception is foundational -- it would systematically p
 
 If there's no clear, specific misconception (e.g. it looks like a careless slip, or the answer is too vague to classify), output exactly: {"misconceptionCode": null}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Classify this answer.' }],
-    }),
-  });
+  type ClassificationResult = { misconceptionCode: string | null; description?: string; matchedExisting?: boolean; isCritical?: boolean };
+  const prompt = getPrompt('misconception.classification');
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content.find((b: any) => b.type === 'text')?.text ?? '{"misconceptionCode": null}';
-
-  let parsed: { misconceptionCode: string | null; description?: string; matchedExisting?: boolean; isCritical?: boolean };
+  let parsed: ClassificationResult;
+  let aiExecution: AIProvenance;
   try {
-    parsed = parseAIJson(rawText);
-  } catch {
-    return null;
+    const outcome = await executeAI({
+      capability: prompt.capability,
+      risk: 'HIGH_RISK',
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+      promptId: prompt.id,
+      promptVersion: prompt.version,
+      context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId, sourceComponent: 'misconception.service.ts:classifyMisconception' },
+      call: (signal) =>
+        callAnthropicMessages(
+          { model: 'claude-sonnet-5', maxTokens: 500, system: systemPrompt, messages: [{ role: 'user', content: 'Classify this answer.' }] },
+          signal
+        ),
+      validate: (raw) => validateJson<ClassificationResult>({ text: raw.text || '{"misconceptionCode": null}' }, (v) => ({ value: v, errors: [] })),
+    });
+    parsed = outcome.result;
+    aiExecution = outcome.provenance;
+  } catch (err) {
+    // Preserves the pre-existing split: a parse/validation failure
+    // resolves to "no misconception detected" (null); a transport/
+    // provider failure propagates, same as the original uncaught fetch.
+    if (err instanceof AIExecutionFailure && (err.code === 'INVALID_RESPONSE' || err.code === 'VALIDATION_ERROR')) {
+      return null;
+    }
+    throw err;
   }
   if (!parsed.misconceptionCode) return null;
 
   // Prefer an exact existing code match even if the model didn't flag matchedExisting.
   const matched = existing.find((s) => s.misconceptionCode === parsed.misconceptionCode);
-  if (matched) return { signature: matched, isNew: false };
+  if (matched) return { signature: matched, isNew: false, aiExecution };
 
   const created = await getOrCreateSignature(
     conceptId,
@@ -229,5 +236,5 @@ If there's no clear, specific misconception (e.g. it looks like a careless slip,
     undefined,
     parsed.isCritical === true
   );
-  return { signature: created, isNew: true };
+  return { signature: created, isNew: true, aiExecution };
 }
