@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
@@ -22,6 +22,8 @@ export default function TransferPage() {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
   const [result, setResult] = useState<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string } | null>(null);
+  // Phase 1D: stamped once, right when the prompt becomes visible.
+  const presentedAtRef = useRef<string | null>(null);
 
   const t = getMessages(locale);
 
@@ -50,6 +52,8 @@ export default function TransferPage() {
       setContext(body.data.context);
       setPrompt(body.data.prompt);
       setPhase('answering');
+      // Phase 1D: the prompt just became visible/answerable.
+      presentedAtRef.current = new Date().toISOString();
     }
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,6 +61,8 @@ export default function TransferPage() {
 
   async function submit() {
     if (!studentId || !response.trim()) return;
+    // Phase 1D: captured before setPhase('submitting')/the fetch.
+    const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     const res = await fetch('/api/cognitive/transfer/submit', {
       method: 'POST',
@@ -71,6 +77,8 @@ export default function TransferPage() {
         studentResponse: response,
         language: locale,
         remediationStepId,
+        questionPresentedAt: presentedAtRef.current,
+        answerSubmittedAt,
       }),
     });
     const body = await res.json();

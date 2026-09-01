@@ -76,6 +76,7 @@ interface ConceptView {
   recentEvidence: EvidenceSummary[];             // bounded, default last 5
   errorPatterns: ErrorPatternSummary[];
   assessmentContext: AssessmentPressure;
+  behavior: { responseTiming: ResponseTimingSignal };  // Phase 1D: RAW OBSERVATION only, see below -- { recentObservations, validSampleCount, outlierSampleCount, invalidSampleCount, quality } (Phase 1D-R: validSampleCount is VALID-only, never inflated by outliers)
   stateHistory?: StateTransitionEvent[];         // only when options.includeHistory=true, sourced from decision_events, bounded (default 20)
   prerequisiteGaps: Capability<PrerequisiteGap[]>;  // ALWAYS { available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' } in 1C
   dataQuality: DataQualitySummary;
@@ -103,6 +104,18 @@ interface DecisionContext {
 
 **A real semantic distinction Phase 1C found and preserved, not merged**: `retention.retentionScore` (the Knowledge State "retention" *dimension* -- a backward-looking "has the student proven they still know this after a real time gap" evidence classification) and `retention.forgettingRisk` (a forward-looking spaced-repetition estimate) are two genuinely different pedagogical signals that happen to share the English word "retention" in casual conversation. The pre-existing `learner-model.service.ts::getRetention()` function (still used by 4 decision-adjacent services, unchanged) computes the *second* one (`100 - forgettingRisk`), not the Knowledge State dimension. `ConceptView`/`DecisionContext` expose both, separately and correctly labeled — see `tests/unit/learner-twin-consumer-regression.test.ts` for the proof this distinction is real, not a mock artifact.
 
+## Behavioral Evidence — Response Time (Phase 1D)
+
+**RAW OBSERVATION — Phase 1D (implemented).** `RESPONSE_TIME_MS` = the time from the first meaningful presentation of an answerable item to the explicit student answer-submission — never question generation, server/AI grading, DB write, or verification-generation latency, and never page-load before the item is actually answerable. Captured client-side (`questionPresentedAt`/`answerSubmittedAt`, plain ISO strings), normalized server-side by one pure, reusable function (`src/lib/algorithms/response-timing.ts::normalizeResponseTiming`) into `{ responseTimeMs, quality }`, where `quality` is `VALID | MISSING | INVALID | CLOCK_SKEW | OUTLIER`. Client timing is observational, not authoritative — invalid timing never blocks the underlying learning interaction, it only degrades the quality label (fails open, by construction: the function cannot throw). A generous 2-hour ceiling (`MAX_VALID_RESPONSE_TIME_MS`) marks anything beyond it `OUTLIER` rather than silently clamping it into a normal-looking value; nothing in Phase 1D uses that threshold pedagogically.
+
+Stored additively at `learning_evidence.metadata.behavior.responseTimes: ResponseTimingEntry[]` — no new table, no new column, no migration. Instrumented at 4 of the 6 canonical evidence-writing paths (structured + free-text quiz answers, Verification, Explain & Defend, Transfer) via one shared normalize→entries→merge helper (`toResponseTimingEntries`/`withBehaviorMetadata`), so every writer produces the same shape rather than five different metadata conventions. Two paths were deliberately **not** instrumented: `/api/learning/record-evidence` has no client-side caller today (no presentation point to measure from), and `exam-result.service.ts::recordExamResult` reports a real-world school exam result after the fact, not a live answerable item — fabricating a "response time" around either would misrepresent what was actually observed. See the Phase 1D report for the full per-interaction audit.
+
+The Digital Learning Twin reads this back through one new sub-reader, `readResponseTimingSignal` (SELECT-only, `learning_evidence.metadata`, no new table, no Twin write), exposed as `ConceptView.behavior.responseTiming: ResponseTimingSignal` — bounded, most-recent-first observations, a `validSampleCount`/`outlierSampleCount`/`invalidSampleCount` split (Phase 1D-R: mutually exclusive, `validSampleCount` counting `VALID` only), and `quality.sourceType: 'BEHAVIOR_OBSERVATION'`. A concept with no timing-instrumented evidence yet reads back as an *empty* signal (`NO_TIMING_DATA`), never a fabricated `0ms` or an implied "fast." `DecisionContext` deliberately gets **no** new field — Phase 1B's rule holds: raw timing never enters `DecisionContext` without a current decision consumer, and none exists yet.
+
+**DERIVED INTERPRETATION — deferred to Phase 1E.** Phase 1D captures the fact; it classifies nothing. No `FAST`/`SLOW`/`GUESS`/`FLUENT`/`STRUGGLE` label, no Learning Velocity, Help Dependency, Persistence, or Productive-Struggle score exists anywhere in this phase — those all require item complexity, question type, learner baseline, and sample size that Phase 1D does not attempt to model. `ConceptView.behavior.responseTiming` is Phase 1E's raw material, not its output.
+
+**Sample-count semantics (Phase 1D-R, closing an external-review finding).** `VALID` is the **only** timing quality included in `ResponseTimingSignal`'s default analytical sample counts (`validSampleCount`, and `quality.sampleSize`, which always equals it). `OUTLIER` is a real, preserved observation — visible in `recentObservations` for transparency, counted separately in its own `outlierSampleCount` — but excluded from `validSampleCount` by default: it must never be treated as a usable sample for a future Phase 1E minimum-sample gate or derived metric, only opted into deliberately if a specific future algorithm has a documented reason to. `INVALID`/`CLOCK_SKEW` (no usable duration at all) count in `invalidSampleCount`. All three counts are mutually exclusive — no observation is ever counted twice. See `docs/audits/STUDYUS_PHASE_1D_R_TIMING_QUALITY_CLOSURE.md` for the full before/after.
+
 ## Read architecture
 
 ```
@@ -123,6 +136,7 @@ LearnerModelService
   readMisconceptionSummary · readRecentEvidence · readConceptErrorPatterns
   readPlanningContext · readAssessmentPressure
   readStateHistory (decision_events, only when includeHistory)
+  readResponseTimingSignal (Phase 1D: learning_evidence.metadata.behavior, RAW OBSERVATION only)
 
   Re-exported, not reimplemented (called directly, same algorithms):
   getSubjectLearnerModel, getSubjectKnowledgeState, getActiveMasteryPolicy,

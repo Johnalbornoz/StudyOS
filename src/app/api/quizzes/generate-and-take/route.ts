@@ -62,6 +62,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
+import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 import type { AIProvenance } from '@/lib/ai';
 import { recordDecisionEvent } from '@/lib/audit';
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
@@ -208,6 +209,14 @@ const SubmitQuizSchema = z.object({
       // whether they were right -- only present on questions the
       // generate step flagged with askConfidence.
       confidence: z.enum(['NOT_SURE', 'SOMEWHAT_SURE', 'VERY_SURE']).optional(),
+      // Phase 1D: client-measured presentation/submission timestamps for
+      // this one question -- deliberately loose (plain optional strings,
+      // not z.string().datetime()) so a malformed/missing timestamp can
+      // never fail Zod validation and block the actual answer submission.
+      // normalizeResponseTiming (below) is what validates these, and it
+      // always degrades to a quality label rather than throwing.
+      questionPresentedAt: z.string().optional(),
+      answerSubmittedAt: z.string().optional(),
     })
   ),
 });
@@ -561,12 +570,20 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         const question = cachedQuestions[answer.questionIndex];
         if (!question) return null;
 
+        // Phase 1D: normalized once, right next to the raw client input --
+        // the client clock stops here, before any AI grading call runs
+        // below, so this never measures grading/AI latency (Step 13).
+        const timing = normalizeResponseTiming({
+          questionPresentedAt: answer.questionPresentedAt,
+          answerSubmittedAt: answer.answerSubmittedAt,
+        });
+
         if (question.answerFormat === 'text') {
           const gradeResult = await gradeAnswer(question, answer.answer, language, {
             studentId: validated.studentId,
             subjectId: quizSession.subjectId,
           });
-          return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult, reportedConfidence: answer.confidence };
+          return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult, reportedConfidence: answer.confidence, timing };
         }
         const structured = gradeStructuredAnswer(question, answer.answer);
         return {
@@ -575,6 +592,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           rawAnswer: answer.answer,
           gradeResult: { ...structured, confidence: 1, errorType: null as null },
           reportedConfidence: answer.confidence,
+          timing,
         };
       })
     );
@@ -603,12 +621,16 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // produced the grade. Empty for concepts graded only by the
         // deterministic gradeStructuredAnswer path (no AI involved).
         aiGrading: Array<{ questionIndex: number } & AIProvenance>;
+        // Phase 1D: one normalized timing sample per question in this
+        // concept's bucket -- never used for grading/mastery, purely
+        // carried through to the evidence row's behavioral metadata.
+        responseTimings: Array<{ questionIndex: number; timing: ResponseTiming }>;
       }
     >();
 
     for (const g of graded) {
       if (!g) continue;
-      const { questionIndex, question, rawAnswer, gradeResult, reportedConfidence } = g;
+      const { questionIndex, question, rawAnswer, gradeResult, reportedConfidence, timing } = g;
 
       if (gradeResult.score >= 0.5) correctCount++;
       else incorrectCount++;
@@ -621,12 +643,14 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         gradingConfidences: [],
         questionTypes: [],
         aiGrading: [],
+        responseTimings: [],
       };
       bucket.total++;
       if (gradeResult.score >= 0.5) bucket.correct++;
       bucket.questionIndexes.push(questionIndex);
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
+      bucket.responseTimings.push({ questionIndex, timing });
       if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
         bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
       }
@@ -728,15 +752,23 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           // Phase 3A: every evidence event records which Activity Type/
           // Evidence Mode produced it -- the attempt-level values fixed
           // at storeQuiz time, never re-derived from anything mutable.
-          metadata: {
-            activityType: quizSession.activityType,
-            evidenceMode: quizSession.evidenceMode,
-            ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
-            // Phase 0E1: AI provenance for any free-text-graded question
-            // in this concept's evidence -- additive, doesn't change the
-            // meaning of any existing metadata field.
-            ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
-          },
+          // Phase 1D: withBehaviorMetadata additively appends `behavior.
+          // responseTimes` (one entry per question in this concept's
+          // bucket) only when at least one question actually reported
+          // usable timing -- otherwise this object is byte-identical to
+          // the pre-Phase-1D metadata.
+          metadata: withBehaviorMetadata(
+            {
+              activityType: quizSession.activityType,
+              evidenceMode: quizSession.evidenceMode,
+              ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
+              // Phase 0E1: AI provenance for any free-text-graded question
+              // in this concept's evidence -- additive, doesn't change the
+              // meaning of any existing metadata field.
+              ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
+            },
+            toResponseTimingEntries(bucket.responseTimings)
+          ),
         });
         // mastery_records.mastery_score (and updateMastery's old/new/delta,
         // which read and write it) is canonically 0-100 already -- pass

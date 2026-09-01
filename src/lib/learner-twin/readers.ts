@@ -63,6 +63,8 @@ import type {
   SubjectAcademicContext,
   PlanningContext,
   AssessmentPressure,
+  ResponseTimingSignal,
+  ResponseTimingObservation,
 } from './types';
 
 const fact = (lastUpdatedAt: string | null = null): SignalQuality => ({ sourceType: 'SYSTEM_FACT', lastUpdatedAt });
@@ -73,6 +75,11 @@ const derived = (lastUpdatedAt: string | null, sampleSize?: number): SignalQuali
 });
 const selfReport = (lastUpdatedAt: string | null, sampleSize: number): SignalQuality => ({
   sourceType: 'STUDENT_SELF_REPORT',
+  lastUpdatedAt,
+  sampleSize,
+});
+const behaviorObservation = (lastUpdatedAt: string | null, sampleSize: number): SignalQuality => ({
+  sourceType: 'BEHAVIOR_OBSERVATION',
   lastUpdatedAt,
   sampleSize,
 });
@@ -334,6 +341,89 @@ export async function readConceptErrorPatterns(studentId: StudentId, subjectId: 
   return patterns
     .filter((p) => p.topConceptId === conceptId)
     .map((p) => ({ errorType: p.errorType, count: p.topConceptCount, lastOccurredAt: p.lastOccurredAt }));
+}
+
+/**
+ * Phase 1D: RAW OBSERVATION read of learning_evidence.metadata.behavior
+ * -- no interpretation, no FAST/SLOW/GUESS classification (that is
+ * explicitly Phase 1E). Reads only from learning_evidence (no new
+ * table), never writes. Scans a bounded window of recent rows
+ * (rowLimit, default 20 -- generous enough that a multi-question quiz
+ * bucket's evidence row, which itself can carry several observations,
+ * doesn't starve the flattened result) and returns at most
+ * `observationLimit` (default 10) individual observations, most recent
+ * first. A concept with no timing-instrumented evidence yet returns an
+ * empty `recentObservations` array -- NO_TIMING_DATA, distinct from a
+ * fabricated 0ms or "fast" (Step 19).
+ */
+export async function readResponseTimingSignal(
+  studentId: StudentId,
+  conceptId: string,
+  observationLimit = 10,
+  rowLimit = 20
+): Promise<ResponseTimingSignal> {
+  const result = await db.query(
+    `SELECT timestamp, metadata FROM learning_evidence
+     WHERE student_id = $1 AND concept_id = $2 AND metadata IS NOT NULL
+     ORDER BY timestamp DESC LIMIT $3`,
+    [studentId, conceptId, rowLimit]
+  );
+
+  const observations: ResponseTimingObservation[] = [];
+  // Phase 1D-R: three mutually exclusive categories -- see
+  // ResponseTimingSignal's doc comment in types.ts. No observation is
+  // ever counted in more than one bucket.
+  let validSampleCount = 0;
+  let outlierSampleCount = 0;
+  let invalidSampleCount = 0;
+  let lastUpdatedAt: string | null = null;
+
+  for (const row of result.rows) {
+    const entries = row.metadata?.behavior?.responseTimes;
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (lastUpdatedAt === null) lastUpdatedAt = row.timestamp;
+      const hasRealDuration =
+        (entry.timingQuality === 'VALID' || entry.timingQuality === 'OUTLIER') &&
+        typeof entry.responseTimeMs === 'number' &&
+        Number.isFinite(entry.responseTimeMs);
+
+      if (hasRealDuration) {
+        // VALID and OUTLIER both have a real duration and both remain
+        // visible in recentObservations for transparency -- but only
+        // VALID counts toward validSampleCount. OUTLIER is preserved,
+        // never silently discarded or clamped, and gets its own
+        // dedicated count instead of inflating the usable-sample count
+        // (Phase 1D-R: external review finding -- see the Phase 1D-R
+        // report for the full before/after).
+        if (entry.timingQuality === 'VALID') validSampleCount++;
+        else outlierSampleCount++;
+
+        if (observations.length < observationLimit) {
+          observations.push({
+            responseTimeMs: entry.responseTimeMs,
+            timingQuality: entry.timingQuality,
+            observedAt: row.timestamp,
+            ...(typeof entry.questionIndex === 'number' ? { questionIndex: entry.questionIndex } : {}),
+          });
+        }
+      } else if (entry.timingQuality === 'INVALID' || entry.timingQuality === 'CLOCK_SKEW') {
+        invalidSampleCount++;
+      }
+    }
+  }
+
+  return {
+    recentObservations: observations,
+    validSampleCount,
+    outlierSampleCount,
+    invalidSampleCount,
+    // sampleSize == validSampleCount, strictly -- never inflated by
+    // outliers (Phase 1D-R). A future minimum-sample gate reading
+    // quality.sampleSize gets exactly the same honest number as
+    // validSampleCount itself.
+    quality: behaviorObservation(lastUpdatedAt, validSampleCount),
+  };
 }
 
 // ---------------------------------------------------------------------

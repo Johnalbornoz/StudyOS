@@ -40,6 +40,7 @@ import {
 import { getAssessmentProfile } from '@/lib/assessment-profiles';
 import type { ActivityType, EvidenceMode } from '@/lib/activity-taxonomy';
 import type { AIProvenance } from '@/lib/ai';
+import { toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 
 export type VerificationOutcome = 'CONFIRMED' | 'CONTRADICTED' | 'INCONCLUSIVE';
 export type EvidenceStrength = 'HIGH' | 'MEDIUM' | 'LOW' | 'CONTRADICTED';
@@ -264,6 +265,8 @@ export interface QualifiedEvidenceInput {
   assessmentProfile?: string;
   /** Phase 0E1: AI provenance for this evidence, when it was produced by an AI grading call (free-text verification questions only). */
   aiExecution?: AIProvenance;
+  /** Phase 1D: already-normalized by the caller (normalizeResponseTiming) -- this function never re-derives or re-validates it, only carries it through additively into metadata.behavior. */
+  responseTiming?: ResponseTiming;
 }
 
 /**
@@ -300,17 +303,20 @@ export async function submitQualifiedAssessmentEvidence(input: QualifiedEvidence
       // own derivation (evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO').
       learningMode: 'SOLO',
     },
-    metadata: {
-      activityType: input.activityType,
-      evidenceMode: input.evidenceMode,
-      assessmentConfidence: input.assessmentConfidence,
-      verificationOutcome: input.verificationOutcome ?? null,
-      verificationTriggerIds: (input.verificationTriggers ?? []).map((t) => t.triggerId),
-      variantEquivalenceConfidence: input.variantEquivalenceConfidence ?? null,
-      reasoningErrorTypes: input.reasoningErrorTypes ?? [],
-      assessmentProfile: input.assessmentProfile ?? null,
-      ...(input.aiExecution ? { aiExecution: input.aiExecution } : {}),
-    },
+    metadata: withBehaviorMetadata(
+      {
+        activityType: input.activityType,
+        evidenceMode: input.evidenceMode,
+        assessmentConfidence: input.assessmentConfidence,
+        verificationOutcome: input.verificationOutcome ?? null,
+        verificationTriggerIds: (input.verificationTriggers ?? []).map((t) => t.triggerId),
+        variantEquivalenceConfidence: input.variantEquivalenceConfidence ?? null,
+        reasoningErrorTypes: input.reasoningErrorTypes ?? [],
+        assessmentProfile: input.assessmentProfile ?? null,
+        ...(input.aiExecution ? { aiExecution: input.aiExecution } : {}),
+      },
+      input.responseTiming ? toResponseTimingEntries([{ timing: input.responseTiming }]) : []
+    ),
     // Phase 0E2: links the resulting MASTERY_UPDATED decision_events row
     // to the AI grading execution that produced this evidence, when there
     // was one (free-text verification questions only -- see Step 15).

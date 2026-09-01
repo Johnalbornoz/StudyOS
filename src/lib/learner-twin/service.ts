@@ -192,7 +192,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
   const masteryRow = await R.readMasteryRow(studentId, conceptId);
   if (!masteryRow) return null; // no evidence yet for this concept -- matches the pre-existing getLearnerConceptState contract exactly
 
-  const [knowledgeStateSignal, independence, metacognition, transfer, misconceptions, recentEvidence, errorPatterns, assessmentContext] =
+  const [knowledgeStateSignal, independence, metacognition, transfer, misconceptions, recentEvidence, errorPatterns, assessmentContext, responseTiming] =
     await Promise.all([
       R.readKnowledgeStateSignal(studentId, conceptId),
       R.readIndependenceSignal(studentId, conceptId),
@@ -202,6 +202,8 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
       R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
       R.readConceptErrorPatterns(studentId, subjectId, conceptId),
       R.readAssessmentPressure(studentId, subjectId),
+      // Phase 1D: raw behavioral observation only -- see ResponseTimingSignal's doc comment.
+      R.readResponseTimingSignal(studentId, conceptId),
     ]);
 
   const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
@@ -232,6 +234,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     recentEvidence,
     errorPatterns,
     assessmentContext,
+    behavior: { responseTiming },
     ...(stateHistory ? { stateHistory } : {}),
     // Deferred to Phase 1E -- Phase 1B §21 defines the derivation (concept_relationships
     // + learner Knowledge State) but explicitly withheld production blockingSeverity

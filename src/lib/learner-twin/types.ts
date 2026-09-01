@@ -142,6 +142,56 @@ export interface ErrorPatternSummary {
   lastOccurredAt: string;
 }
 
+// ---------------------------------------------------------------------
+// Behavioral evidence (Phase 1D) -- RAW OBSERVATION only. This is
+// captured fact, not interpretation: no FAST/SLOW/GUESS/FLUENT/
+// STRUGGLE classification exists anywhere in this module. That
+// derivation (item complexity, question type, learner baseline, sample
+// size) is explicitly deferred to Phase 1E -- see the Phase 1D report.
+// ---------------------------------------------------------------------
+
+/** One response-time sample read back from learning_evidence.metadata.behavior. Only VALID/OUTLIER ever carry a real ms value -- see src/lib/algorithms/response-timing.ts. */
+export interface ResponseTimingObservation {
+  responseTimeMs: number;
+  timingQuality: 'VALID' | 'OUTLIER';
+  /** learning_evidence.timestamp of the row this observation came from -- NOT the client's own presentation/submission timestamps, which are not persisted (Step 10 data minimization). */
+  observedAt: string;
+  questionIndex?: number;
+}
+
+/**
+ * Phase 1D-R: three mutually exclusive, unambiguous sample categories
+ * -- no observation is ever counted in more than one.
+ *
+ *   validSampleCount   = quality === 'VALID' ONLY. The only class any
+ *                        default analytical use (a future Phase 1E
+ *                        minimum-sample gate, an average, etc.) may
+ *                        treat as a usable behavioral sample.
+ *   outlierSampleCount = quality === 'OUTLIER'. A REAL submitted
+ *                        observation beyond the accepted ceiling --
+ *                        preserved for transparency (also still present
+ *                        in recentObservations), but NOT usable by
+ *                        default. A future algorithm may deliberately
+ *                        opt into outliers; nothing today does.
+ *   invalidSampleCount = quality === 'INVALID' or 'CLOCK_SKEW'. No
+ *                        usable duration exists for these at all.
+ *
+ * MISSING samples are never stored (Step 10 data minimization) and so
+ * are not counted anywhere here -- see the Phase 1D report.
+ */
+export interface ResponseTimingSignal {
+  /** Bounded, most-recent-first. Includes VALID and OUTLIER observations (both carry a real duration) -- INVALID/CLOCK_SKEW never appear here, since they have no duration to show. Empty when the concept has no timing-instrumented evidence yet -- NO_TIMING_DATA, never fabricated as 0ms or "fast". */
+  recentObservations: ResponseTimingObservation[];
+  /** quality === 'VALID' only. Use this for any default analytical/sample-size purpose. */
+  validSampleCount: number;
+  /** quality === 'OUTLIER' only. Preserved for transparency, deliberately excluded from validSampleCount. */
+  outlierSampleCount: number;
+  /** quality === 'INVALID' or 'CLOCK_SKEW'. No usable duration; distinct from outliers, which do have one. */
+  invalidSampleCount: number;
+  /** sampleSize here always equals validSampleCount -- never inflated by outliers. */
+  quality: SignalQuality;
+}
+
 export interface StateTransitionEvent {
   decisionId: string;
   decisionType: 'MASTERY_UPDATED' | 'KNOWLEDGE_STATE_PROJECTED';
@@ -286,6 +336,8 @@ export interface ConceptView {
   recentEvidence: EvidenceSummary[];
   errorPatterns: ErrorPatternSummary[];
   assessmentContext: AssessmentPressure;
+  /** Phase 1D: RAW OBSERVATION only -- see ResponseTimingSignal's doc comment. Not present on DecisionContext: no current decision consumer exists for it (Phase 1B/1D rule -- raw timing never goes into DecisionContext without one). */
+  behavior: { responseTiming: ResponseTimingSignal };
   /** Present only when options.includeHistory is true. Sourced from decision_events -- see Phase 1C report §13. */
   stateHistory?: StateTransitionEvent[];
   /** Deferred to Phase 1E -- see Phase 1B §21. Always NOT_AVAILABLE_YET in Phase 1C. */

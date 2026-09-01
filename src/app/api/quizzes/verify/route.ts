@@ -31,6 +31,7 @@ import {
   submitQualifiedAssessmentEvidence,
 } from '@/services/assessment-verification.service';
 import { recordDecisionEvent } from '@/lib/audit';
+import { normalizeResponseTiming } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
 
 const VerifySchema = z.object({
@@ -39,6 +40,11 @@ const VerifySchema = z.object({
   conceptId: z.string().uuid(),
   answer: z.string(),
   language: z.string().default('en'),
+  // Phase 1D: loose optional strings, deliberately not z.string().datetime()
+  // -- a malformed timestamp must degrade to a quality label
+  // (normalizeResponseTiming), never fail this request.
+  questionPresentedAt: z.string().optional(),
+  answerSubmittedAt: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -137,6 +143,13 @@ export async function POST(request: NextRequest) {
       assessmentConfidence: assessmentConfidenceAfter,
       verificationOutcome: outcome,
       aiExecution: 'aiExecution' in grade ? grade.aiExecution : undefined,
+      // Phase 1D: normalized once here, next to the raw client input --
+      // the clock already stopped client-side before this request was
+      // sent, so this never measures grading/AI latency (Step 13/14).
+      responseTiming: normalizeResponseTiming({
+        questionPresentedAt: validated.questionPresentedAt,
+        answerSubmittedAt: validated.answerSubmittedAt,
+      }),
     });
 
     return NextResponse.json({

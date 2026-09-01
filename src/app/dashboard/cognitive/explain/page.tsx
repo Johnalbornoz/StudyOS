@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
@@ -19,6 +19,8 @@ export default function ExplainDefendPage() {
   const [expectedElements, setExpectedElements] = useState<string[]>([]);
   const [response, setResponse] = useState('');
   const [feedback, setFeedback] = useState<{ feedback: string; scorePercent: number } | null>(null);
+  // Phase 1D: stamped once, right when the prompt becomes visible.
+  const presentedAtRef = useRef<string | null>(null);
 
   const t = getMessages(locale);
 
@@ -47,6 +49,8 @@ export default function ExplainDefendPage() {
       setPrompt(body.data.prompt);
       setExpectedElements(body.data.expectedElements || []);
       setPhase('answering');
+      // Phase 1D: the prompt just became visible/answerable.
+      presentedAtRef.current = new Date().toISOString();
     }
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,6 +58,8 @@ export default function ExplainDefendPage() {
 
   async function submit() {
     if (!studentId || !response.trim()) return;
+    // Phase 1D: captured before setPhase('submitting')/the fetch.
+    const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     const res = await fetch('/api/cognitive/explain/submit', {
       method: 'POST',
@@ -68,6 +74,8 @@ export default function ExplainDefendPage() {
         studentResponse: response,
         language: locale,
         remediationStepId,
+        questionPresentedAt: presentedAtRef.current,
+        answerSubmittedAt,
       }),
     });
     const body = await res.json();

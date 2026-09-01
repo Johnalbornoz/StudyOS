@@ -7,6 +7,7 @@ import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
 import type { AIProvenance } from '@/lib/ai';
 import { recordDecisionEvent } from '@/lib/audit';
+import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -19,6 +20,10 @@ const Schema = z.object({
   studentResponse: z.string().min(1),
   language: z.string().optional(),
   remediationStepId: z.string().uuid().optional(),
+  // Phase 1D: loose optional strings -- a malformed value degrades to a
+  // quality label (normalizeResponseTiming), never fails this request.
+  questionPresentedAt: z.string().optional(),
+  answerSubmittedAt: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -74,6 +79,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Phase 1D: normalized once here -- the client clock stopped on
+    // submit, before evaluateExplanation's AI call above ever ran, so
+    // this never measures rubric-evaluation latency (Step 13).
+    const timing = normalizeResponseTiming({
+      questionPresentedAt: validated.questionPresentedAt,
+      answerSubmittedAt: validated.answerSubmittedAt,
+    });
+
     const masteryResult = await updateMastery({
       studentId: validated.studentId,
       conceptId: validated.conceptId,
@@ -89,11 +102,16 @@ export async function POST(request: NextRequest) {
       telemetry: { activityType: 'explain_defend', learningMode: 'COACH' },
       // Phase 0E1: AI provenance for the rubric evaluation, and for
       // misconception classification when it ran -- additive metadata,
-      // doesn't change any existing evidence field's meaning.
-      metadata: {
-        aiExecution: rubric.aiExecution,
-        ...(misconceptionAiExecution ? { misconceptionAiExecution } : {}),
-      },
+      // doesn't change any existing evidence field's meaning. Phase 1D:
+      // withBehaviorMetadata additively appends behavior.responseTimes
+      // only when timing was actually usable.
+      metadata: withBehaviorMetadata(
+        {
+          aiExecution: rubric.aiExecution,
+          ...(misconceptionAiExecution ? { misconceptionAiExecution } : {}),
+        },
+        toResponseTimingEntries([{ timing }])
+      ),
       // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
       // row to the rubric evaluation that produced this evidence --
       // always unambiguous here (one evaluation call per submission).

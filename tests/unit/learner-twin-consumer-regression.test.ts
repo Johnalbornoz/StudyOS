@@ -54,6 +54,7 @@ function sharedMock(sql: string, params: any[] = []) {
   if (s.includes('sm.occurrence_count, ms.is_critical')) return { rows: [] };
   if (s.includes('FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT')) return { rows: [] };
   if (s.includes('FROM errors')) return { rows: [] };
+  if (s.includes('SELECT timestamp, metadata FROM learning_evidence')) return { rows: [] };
   if (s.includes('FROM assessment_occurrences ao')) return { rows: [] };
   if (s.includes('FROM student_availability')) return { rows: [{ study_start_time: '16:30:00', study_end_time: '18:30:00', max_daily_minutes: 120, timezone: 'UTC', updated_at: null }] };
   if (s.includes('errors e') && s.includes('MIN_OCCURRENCES')) return { rows: [] };

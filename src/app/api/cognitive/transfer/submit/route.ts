@@ -4,6 +4,7 @@ import { evaluateTransferResponse, type TransferDistance } from '@/services/tran
 import { updateMastery } from '@/services/mastery.service';
 import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
+import { normalizeResponseTiming, toResponseTimingEntries } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -16,6 +17,10 @@ const Schema = z.object({
   studentResponse: z.string().min(1),
   language: z.string().optional(),
   remediationStepId: z.string().uuid().optional(),
+  // Phase 1D: loose optional strings -- a malformed value degrades to a
+  // quality label (normalizeResponseTiming), never fails this request.
+  questionPresentedAt: z.string().optional(),
+  answerSubmittedAt: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -54,6 +59,15 @@ export async function POST(request: NextRequest) {
       aiExecutionId: graded.aiExecution.aiExecutionId,
     });
 
+    // Phase 1D: normalized here -- the client clock stopped on submit,
+    // before evaluateTransferResponse's AI call above ran, so this never
+    // measures grading latency (Step 13).
+    const timing = normalizeResponseTiming({
+      questionPresentedAt: validated.questionPresentedAt,
+      answerSubmittedAt: validated.answerSubmittedAt,
+    });
+    const responseTimingEntries = toResponseTimingEntries([{ timing }]);
+
     // metadata isn't part of MasteryUpdateInput's telemetry shape --
     // stamp transferDistance onto the just-written evidence row
     // directly so computeTransferScore can read it back later.
@@ -68,8 +82,15 @@ export async function POST(request: NextRequest) {
       [
         validated.studentId,
         validated.conceptId,
-        // Phase 0E1: AI provenance is additive here, same jsonb merge pattern already used for transferDistance/assisted.
-        JSON.stringify({ transferDistance: validated.distance, assisted: false, aiExecution: graded.aiExecution }),
+        // Phase 0E1: AI provenance is additive here, same jsonb merge
+        // pattern already used for transferDistance/assisted. Phase 1D:
+        // behavior.responseTimes only included when timing was usable.
+        JSON.stringify({
+          transferDistance: validated.distance,
+          assisted: false,
+          aiExecution: graded.aiExecution,
+          ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
+        }),
       ]
     );
 

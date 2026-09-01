@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
@@ -182,6 +182,14 @@ export default function QuizPage() {
   const [confidences, setConfidences] = useState<Record<number, ConfidenceLevel>>({});
   const [confidenceSelected, setConfidenceSelected] = useState<ConfidenceLevel | null>(null);
 
+  // Phase 1D: response-time telemetry. Refs (not state) on purpose --
+  // recording a timestamp must never trigger a re-render, and must
+  // survive re-renders caused by hints/confidence/validation without
+  // being reset. Keyed by question index; each is stamped exactly once.
+  const questionPresentedAtRef = useRef<Record<number, string>>({});
+  const answerSubmittedAtRef = useRef<Record<number, string>>({});
+  const verificationPresentedAtRef = useRef<Record<string, string>>({});
+
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -276,6 +284,15 @@ export default function QuizPage() {
   useEffect(() => {
     const q = questions[current];
     if (!q) return;
+    // Phase 1D: stamp this question's presentation moment exactly once.
+    // This effect already fires exactly when a new question becomes the
+    // one on screen (Step 7's canonical presentation point) and nowhere
+    // else -- a hint, confidence pick, or validation error re-renders
+    // the component without changing `current`, so this branch simply
+    // doesn't run again for the same index.
+    if (!questionPresentedAtRef.current[current]) {
+      questionPresentedAtRef.current[current] = new Date().toISOString();
+    }
     setSingleChoice(null);
     setMultiChoice([]);
     setTextAnswer('');
@@ -287,6 +304,17 @@ export default function QuizPage() {
     setHintError(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, questions.length]);
+
+  useEffect(() => {
+    // Phase 1D: a verification question becomes presented the moment it
+    // renders as part of the results screen -- stamped once per
+    // conceptId, same one-shot pattern as the main quiz questions above.
+    for (const v of results?.verificationNeeded || []) {
+      if (!verificationPresentedAtRef.current[v.conceptId]) {
+        verificationPresentedAtRef.current[v.conceptId] = new Date().toISOString();
+      }
+    }
+  }, [results]);
 
   async function toggleHints() {
     if (hintsVisible) {
@@ -360,6 +388,10 @@ export default function QuizPage() {
   }
 
   function nextQuestion() {
+    // Phase 1D: the explicit-submission moment for the CURRENT question
+    // -- covers every question including the last one, since advancing
+    // past the last question is exactly what triggers submitQuiz below.
+    answerSubmittedAtRef.current[current] = new Date().toISOString();
     const q = questions[current];
     const encoded = encodeCurrentAnswer(q);
     const updatedAnswers = { ...answers, [current]: encoded };
@@ -394,6 +426,12 @@ export default function QuizPage() {
         questionIndex: Number(idx),
         answer: ans,
         confidence: finalConfidences[Number(idx)],
+        // Phase 1D: observational only -- omitted entirely (not sent as
+        // empty strings) when a timestamp was never captured for this
+        // index, so the server correctly reads that as MISSING, not as
+        // a malformed value.
+        questionPresentedAt: questionPresentedAtRef.current[Number(idx)],
+        answerSubmittedAt: answerSubmittedAtRef.current[Number(idx)],
       }));
       const res = await fetch('/api/quizzes/generate-and-take', {
         method: 'POST',
@@ -421,13 +459,24 @@ export default function QuizPage() {
   // qualification -- this only displays whatever it returns.
   async function submitVerification(conceptId: string) {
     if (!studentId || !quizId) return;
+    // Phase 1D: captured before setVerificationSubmitting/the fetch, so it
+    // measures the learner's answering time, not network/request latency.
+    const answerSubmittedAt = new Date().toISOString();
     setVerificationSubmitting((prev) => ({ ...prev, [conceptId]: true }));
     setVerificationError((prev) => ({ ...prev, [conceptId]: false }));
     try {
       const res = await fetch('/api/quizzes/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, quizId, conceptId, answer: verificationAnswers[conceptId] || '', language: quizLanguage }),
+        body: JSON.stringify({
+          studentId,
+          quizId,
+          conceptId,
+          answer: verificationAnswers[conceptId] || '',
+          language: quizLanguage,
+          questionPresentedAt: verificationPresentedAtRef.current[conceptId],
+          answerSubmittedAt,
+        }),
       });
       const body = await res.json();
       if (!res.ok || !body.success) throw new Error(body.message || t['common.error']);
