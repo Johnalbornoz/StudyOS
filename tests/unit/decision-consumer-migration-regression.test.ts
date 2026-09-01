@@ -58,9 +58,11 @@ function decisionContextFixture(overrides: {
     recentEvidence: [],
     assessmentPressure: { upcomingOccurrence: false, daysUntil: null, examReadiness: null, quality: { sourceType: 'SYSTEM_FACT', lastUpdatedAt: null } },
     availability: { dailyMinutes: 120 },
-    learningVelocity: { available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' },
-    helpDependency: { available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' },
-    prerequisiteGaps: { available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' },
+    // Phase 1E-R: not requested by default -- these fixtures never pass
+    // options.derivedMetrics, matching every real current caller.
+    learningVelocity: { requested: false },
+    helpDependency: { requested: false },
+    prerequisiteGaps: { requested: false },
     dataQuality: { generatedAt: '2026-08-31T00:00:00.000Z', sourcesUsed: ['SYSTEM_FACT'] },
   };
 }

@@ -240,6 +240,20 @@ describe('ConceptView.behavior.responseTiming (Digital Twin integration, Step 17
       if (s.includes('DISTINCT source_type FROM learning_evidence')) return { rows: [] };
       if (s.includes('confidence_before_answer FROM learning_evidence') && !s.includes('result')) return { rows: [] };
       if (s.includes('confidence_before_answer, result FROM learning_evidence')) return { rows: [] };
+      // Phase 1E: derived learner metrics -- safe, deterministic defaults.
+      if (s.includes('ai_assistance_type, hints_used, timestamp FROM learning_evidence')) return { rows: [] };
+      if (s.includes('SELECT outcome FROM verification_attempts')) return { rows: [] };
+      if (s.includes('mastery_policies')) {
+        return { rows: [{ version: 1, minimum_understanding: 70, minimum_independence: 60, minimum_application: 60, minimum_retention: 60, minimum_transfer: 50, requires_transfer: false, maximum_critical_misconceptions: 0, minimum_evidence_count: 3, minimum_independent_evidence_count: 2, retention_min_gap_days: 3, validation_window_days: 14 }] };
+      }
+      if (s.includes('MIN(timestamp) AS first_evidence_at')) return { rows: [] };
+      if (s.includes("DISTINCT ON (concept_id, new_state ->> 'masteryState')")) return { rows: [] };
+      if (s.includes('FROM concept_relationships WHERE target_concept_id')) return { rows: [] };
+      if (s.includes('SELECT concept_id, mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = ANY')) return { rows: [] };
+      if (s.includes('SELECT concept_id FROM mastery_records WHERE student_id = $1')) return { rows: [] };
+      if (s.includes('FROM study_plans WHERE student_id')) return { rows: [] };
+      if (s.includes('FROM study_sessions ss WHERE')) return { rows: [] };
+      if (s.includes('SELECT result, timestamp FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp ASC')) return { rows: [] };
       throw new Error(`Unmocked: ${s}`);
     });
     vi.doMock('@/lib/db', () => ({ db: { query } }));

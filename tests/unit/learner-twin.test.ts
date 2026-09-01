@@ -133,6 +133,22 @@ function buildMockQuery() {
     if (s.includes('COUNT(DISTINCT') && s.includes('concept_id')) return { rows: [{ count: 3 }] };
     if (s.toLowerCase().includes('count(*)')) return { rows: [{ count: 5, total: 5, evidenced: 3 }] };
 
+    // --- Phase 1E: derived learner metrics -- safe, deterministic
+    // defaults; individual tests below override where a specific
+    // value matters (e.g. mockQuery.mockImplementation(...)).
+    if (s.includes('ai_assistance_type, hints_used, timestamp FROM learning_evidence')) return { rows: [] };
+    if (s.includes('SELECT outcome FROM verification_attempts')) return { rows: [] };
+    if (s.includes('MIN(timestamp) AS first_evidence_at')) return { rows: [] };
+    if (s.includes("DISTINCT ON (concept_id, new_state ->> 'masteryState')")) return { rows: [] };
+    if (s.includes('FROM concept_knowledge_state WHERE student_id = $1 AND concept_id = ANY')) return { rows: [] };
+    if (s.includes('FROM concept_relationships WHERE target_concept_id')) return { rows: [] };
+    if (s.includes('SELECT concept_id, mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = ANY')) return { rows: [] };
+    if (s.includes('SELECT concept_id FROM mastery_records WHERE student_id = $1 AND subject_id = $2')) return { rows: [] };
+    if (s.includes('SELECT concept_id FROM mastery_records WHERE student_id = $1')) return { rows: [] };
+    if (s.includes('FROM study_plans WHERE student_id')) return { rows: [] };
+    if (s.includes('FROM study_sessions ss WHERE')) return { rows: [] };
+    if (s.includes('SELECT result, timestamp FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp ASC')) return { rows: [] };
+
     // Anything unexpected fails loudly rather than silently returning empty rows.
     throw new Error(`Unmocked query in learner-twin test fixture: ${s}`);
   });
@@ -194,10 +210,10 @@ describe('Overview / Subject / Concept / DecisionContext projections', () => {
     expect(view!.metacognition.confidenceCalibration.samples).toBe(3);
   });
 
-  it('getConceptView never fabricates a Phase 1D/1E capability -- prerequisiteGaps is always NOT_AVAILABLE_YET', async () => {
+  it('getConceptView (Phase 1E): prerequisiteGaps is genuinely computed, not fabricated -- NOT_APPLICABLE when the concept graph has no edges for this concept, never a fake gap list', async () => {
     const { getConceptView } = await import('@/lib/learner-twin/service');
     const view = await getConceptView(STUDENT_ID, CONCEPT_ID);
-    expect(view!.prerequisiteGaps).toEqual({ available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' });
+    expect(view!.prerequisiteGaps).toEqual({ available: false, reason: 'NOT_APPLICABLE', detail: 'This concept has no prerequisite relationships in the concept graph.' });
   });
 
   it('getConceptView with includeHistory=true reads bounded decision_events history; omits it by default', async () => {
@@ -208,7 +224,7 @@ describe('Overview / Subject / Concept / DecisionContext projections', () => {
     const withHistory = await getConceptView(STUDENT_ID, CONCEPT_ID, { includeHistory: true, historyLimit: 5 });
     expect(withHistory!.stateHistory).toHaveLength(1);
     expect(withHistory!.stateHistory![0].decisionType).toBe('MASTERY_UPDATED');
-    const historyCall = mockQuery.mock.calls.find(([sql]) => sql.includes('FROM decision_events'));
+    const historyCall = mockQuery.mock.calls.find(([sql]) => sql.includes("decision_type IN ('MASTERY_UPDATED', 'KNOWLEDGE_STATE_PROJECTED')"));
     expect(historyCall![1]).toEqual([STUDENT_ID, CONCEPT_ID, 5]);
   });
 
@@ -221,15 +237,28 @@ describe('Overview / Subject / Concept / DecisionContext projections', () => {
     expect(view!.concepts[0].conceptId).toBe(CONCEPT_ID);
   });
 
-  it('getDecisionContext returns only the minimal decision-relevant slice, with deferred capabilities explicit', async () => {
+  it('getDecisionContext (Phase 1E-R): by default, learningVelocity/helpDependency/prerequisiteGaps are {requested: false} -- genuinely computed elsewhere, but not eagerly loaded here', async () => {
     const { getDecisionContext } = await import('@/lib/learner-twin/service');
     const ctx = await getDecisionContext(STUDENT_ID, CONCEPT_ID);
     expect(ctx!.mastery.score).toBe(62);
-    expect(ctx!.learningVelocity).toEqual({ available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' });
-    expect(ctx!.helpDependency).toEqual({ available: false, reason: 'NOT_AVAILABLE_YET', plannedPhase: '1E' });
+    expect(ctx!.learningVelocity).toEqual({ requested: false });
+    expect(ctx!.helpDependency).toEqual({ requested: false });
+    expect(ctx!.prerequisiteGaps).toEqual({ requested: false });
     // Decision context is intentionally smaller than ConceptView -- no errorPatterns/transfer fields at all.
     expect((ctx as any).errorPatterns).toBeUndefined();
     expect((ctx as any).transfer).toBeUndefined();
+  });
+
+  it('getDecisionContext (Phase 1E-R): explicitly requesting a derived metric returns {requested: true, result: MetricResult<T>}', async () => {
+    const { getDecisionContext } = await import('@/lib/learner-twin/service');
+    const ctx = await getDecisionContext(STUDENT_ID, CONCEPT_ID, { derivedMetrics: ['helpDependency'] });
+    expect(ctx!.helpDependency.requested).toBe(true);
+    if (ctx!.helpDependency.requested) {
+      expect(ctx!.helpDependency.result).toEqual({ available: false, reason: 'INSUFFICIENT_EVIDENCE', detail: expect.any(String) });
+    }
+    // Only the requested metric was loaded -- the other two remain not-requested.
+    expect(ctx!.learningVelocity).toEqual({ requested: false });
+    expect(ctx!.prerequisiteGaps).toEqual({ requested: false });
   });
 });
 

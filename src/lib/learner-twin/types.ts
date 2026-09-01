@@ -1,6 +1,19 @@
 import type { MasteryState, ValidationReadiness, DimensionScores as KnowledgeStateDimensionScores, StateReason } from '@/services/knowledge-state.service';
 import type { ConfidenceCalibration, EvidenceStrength } from '@/services/learner-model.service';
 import type { RecurringMisconception } from '@/services/misconception.service';
+import type {
+  MetricResult,
+  MetricProjection,
+  DerivedMetricName,
+  HelpDependencyComponents,
+  LearningVelocitySummary,
+  AggregateVelocitySummary,
+  AggregateCalibrationSummary,
+  PrerequisiteGapsSummary,
+  TransferCoverageSummary,
+  StudyPlanAdherenceSummary,
+  PersistenceSummary,
+} from './metrics/types';
 
 /**
  * Logical StudyUs learner identifier (Phase 1C). Currently represented
@@ -245,14 +258,6 @@ export interface AssessmentPressure {
   quality: SignalQuality;
 }
 
-export interface PrerequisiteGap {
-  targetConceptId: string;
-  prerequisiteConceptId: string;
-  relationshipConfidence: number;
-  prerequisiteMasteryScore: number | null;
-  prerequisiteMasteryState: MasteryState | null;
-}
-
 export interface DataQualitySummary {
   generatedAt: string;
   sourcesUsed: SignalSourceType[];
@@ -282,6 +287,10 @@ export interface LearnerModel {
   derivedMetrics: {
     evidenceCoveragePercent: number | null;
   };
+  /** Phase 1E: derived learner metrics, learner-wide (pooled across all subjects). See docs/architecture/digital-learning-twin.md's "Derived Learner Metrics" section. */
+  calibration: MetricResult<AggregateCalibrationSummary>;
+  velocitySummary: MetricResult<AggregateVelocitySummary>;
+  studyPlanAdherence: MetricResult<StudyPlanAdherenceSummary>;
   dataQuality: DataQualitySummary;
 }
 
@@ -317,6 +326,10 @@ export interface SubjectView {
   };
   concepts: ConceptSummary[];
   needsAttention: NeedsAttentionItem[];
+  /** Phase 1E: derived learner metrics, scoped to this subject. */
+  aggregateCalibration: MetricResult<AggregateCalibrationSummary>;
+  aggregateVelocity: MetricResult<AggregateVelocitySummary>;
+  transferCoverage: MetricResult<TransferCoverageSummary>;
   dataQuality: DataQualitySummary;
 }
 
@@ -340,8 +353,11 @@ export interface ConceptView {
   behavior: { responseTiming: ResponseTimingSignal };
   /** Present only when options.includeHistory is true. Sourced from decision_events -- see Phase 1C report §13. */
   stateHistory?: StateTransitionEvent[];
-  /** Deferred to Phase 1E -- see Phase 1B §21. Always NOT_AVAILABLE_YET in Phase 1C. */
-  prerequisiteGaps: Capability<PrerequisiteGap[]>;
+  /** Phase 1E: implemented -- see docs/architecture/digital-learning-twin.md's "Derived Learner Metrics" section. Each is independently evidence-gated; `available: false` is a valid, honest output, never a fabricated value. */
+  prerequisiteGaps: MetricResult<PrerequisiteGapsSummary>;
+  helpDependency: MetricResult<HelpDependencyComponents>;
+  learningVelocity: MetricResult<LearningVelocitySummary>;
+  persistence: MetricResult<PersistenceSummary>;
   dataQuality: DataQualitySummary;
 }
 
@@ -359,12 +375,43 @@ export interface DecisionContext {
   recentEvidence: EvidenceSummary[];
   assessmentPressure: AssessmentPressure;
   availability: { dailyMinutes: number };
-  /** Deferred capabilities -- always NOT_AVAILABLE_YET in Phase 1C. Never fabricated. */
-  learningVelocity: Capability<unknown>;
-  helpDependency: Capability<unknown>;
-  prerequisiteGaps: Capability<PrerequisiteGap[]>;
+  /**
+   * Phase 1E: implemented, exposed ONLY as inputs for a FUTURE Learning
+   * State & Decision Engine -- Step 24's invariant: no current
+   * consumer (remediation/cognitive-diagnosis/tutor-strategy) reads
+   * these fields, and this phase does not change that.
+   *
+   * Phase 1E-R: each is a `MetricProjection<T>`, not a bare
+   * `MetricResult<T>` (and no longer wrapped in `Capability` -- that
+   * wrapping was for "not built yet," which stopped being true in
+   * Phase 1E). `getDecisionContext` computes these ONLY when the
+   * caller's `options.derivedMetrics` explicitly requests them
+   * (external review finding A: a projection must not eagerly compute
+   * expensive data its caller didn't ask for). Default (no
+   * `derivedMetrics` option): all three are `{requested: false}` and
+   * zero additional queries run for them -- proven by a release-blocking
+   * query-count regression test. A future Decision Engine passes
+   * `{derivedMetrics: ['helpDependency', ...]}` or `{derivedMetrics: 'all'}`
+   * to receive the real `MetricResult<T>` (itself still evidence-gated).
+   */
+  learningVelocity: MetricProjection<LearningVelocitySummary>;
+  helpDependency: MetricProjection<HelpDependencyComponents>;
+  prerequisiteGaps: MetricProjection<PrerequisiteGapsSummary>;
   dataQuality: DataQualitySummary;
 }
+
+/**
+ * Phase 1E-R: which of DecisionContext's future-Decision-Engine-only
+ * derived metrics (helpDependency/learningVelocity/prerequisiteGaps)
+ * to actually compute for this `getDecisionContext` call. Omitted or
+ * `undefined` -- the default -- computes NONE of them (current live
+ * consumers never need them and must not pay their query cost).
+ * `'all'` or an explicit array requests specific ones. Has no effect
+ * on `getConceptView`/`getSubjectView`/`getOverview`, which continue
+ * to compute their own derived metrics unconditionally (Finding A was
+ * specific to DecisionContext's per-candidate-loop cost).
+ */
+export type DerivedMetricSelection = 'all' | DerivedMetricName[];
 
 export interface ProjectionOptions {
   /** Bounds getSubjectView/getOverview's concept enumeration. Never all concepts by default. */
@@ -373,4 +420,6 @@ export interface ProjectionOptions {
   includeHistory?: boolean;
   /** Bounds getConceptView(...,{includeHistory:true})'s decision_events read. Default 20. */
   historyLimit?: number;
+  /** getDecisionContext only -- see DerivedMetricSelection's own doc comment. Default: none computed. */
+  derivedMetrics?: DerivedMetricSelection;
 }

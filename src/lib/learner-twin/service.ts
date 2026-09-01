@@ -26,11 +26,44 @@ import type {
   ConceptSummary,
   NeedsAttentionItem,
   DataQualitySummary,
+  DerivedMetricSelection,
 } from './types';
-import { notYetAvailable } from './types';
+import {
+  readHelpDependency,
+  readLearningVelocity,
+  readLearningVelocityForConcepts,
+  aggregateLearningVelocity,
+  readAggregateCalibration,
+  readPrerequisiteGaps,
+  readTransferCoverage,
+  readStudyPlanAdherence,
+  readPersistence,
+  metricAvailable,
+  metricUnavailable,
+  metricRequested,
+  METRIC_NOT_REQUESTED,
+  ALL_DERIVED_METRIC_NAMES,
+  type DerivedMetricName,
+  type MetricProjection,
+} from './metrics';
 
 const DEFAULT_HISTORY_LIMIT = 20;
 const DEFAULT_RECENT_EVIDENCE_LIMIT = 5;
+
+/**
+ * Phase 1E-R: which of DecisionContext's future-Decision-Engine-only
+ * derived metrics to actually compute this call. Default (undefined)
+ * -> empty set -> zero of the three reader functions are even called
+ * (not called-then-discarded -- literally skipped), so current live
+ * consumers (remediation/cognitive-diagnosis/tutor-strategy, none of
+ * which pass this option) pay zero extra query cost. See the Phase
+ * 1E-R report §5 for the external-review finding this closes.
+ */
+function resolveDerivedMetrics(selection: DerivedMetricSelection | undefined): ReadonlySet<DerivedMetricName> {
+  if (!selection) return new Set();
+  if (selection === 'all') return new Set(ALL_DERIVED_METRIC_NAMES);
+  return new Set(selection);
+}
 
 function dataQuality(sourcesUsed: DataQualitySummary['sourcesUsed'] = ['SYSTEM_FACT', 'DETERMINISTIC_DERIVATION']): DataQualitySummary {
   return { generatedAt: new Date().toISOString(), sourcesUsed };
@@ -41,13 +74,30 @@ function dataQuality(sourcesUsed: DataQualitySummary['sourcesUsed'] = ['SYSTEM_F
 // ---------------------------------------------------------------------
 
 export async function getOverview(studentId: StudentId, options: ProjectionOptions = {}): Promise<LearnerModel> {
-  const [academicContext, languageContext, subjectRows, planningContext, evidenceCoverage] = await Promise.all([
+  const [academicContext, languageContext, subjectRows, planningContext, evidenceCoverage, evidencedConceptIds] = await Promise.all([
     R.readAcademicContext(studentId),
     R.readLanguageContext(studentId),
     R.readSubjects(studentId, options.subjectIds),
     R.readPlanningContext(studentId),
     R.getEvidenceCoverage(studentId),
+    // Phase 1E: bounded to concepts the student has actually engaged
+    // with (a mastery_records row exists) -- never the full curriculum.
+    db.query<{ concept_id: string }>(`SELECT concept_id FROM mastery_records WHERE student_id = $1`, [studentId]).then((r) => r.rows.map((row) => row.concept_id)),
   ]);
+
+  // Phase 1E: learner-wide derived metrics. Calibration pools all
+  // confidence-tagged evidence in one query; velocity batches all
+  // evidenced concepts in 3 fixed-shape queries (readLearningVelocityForConcepts) --
+  // neither is one-query-per-concept (Step 28).
+  const [calibration, velocityByConcept, studyPlanAdherence] = await Promise.all([
+    readAggregateCalibration(studentId),
+    readLearningVelocityForConcepts(studentId, evidencedConceptIds),
+    readStudyPlanAdherence(studentId),
+  ]);
+  const velocitySummary =
+    evidencedConceptIds.length === 0
+      ? metricUnavailable('INSUFFICIENT_EVIDENCE', 'No evidenced concepts yet.')
+      : metricAvailable(aggregateLearningVelocity(velocityByConcept));
 
   // Bounded, cross-subject summary only -- never per-concept detail here (no mega-object, Phase 1B §23).
   const subjects = await Promise.all(
@@ -79,6 +129,9 @@ export async function getOverview(studentId: StudentId, options: ProjectionOptio
     subjects,
     planningContext,
     derivedMetrics: { evidenceCoveragePercent: evidenceCoverage?.percent ?? null },
+    calibration,
+    velocitySummary,
+    studyPlanAdherence,
     dataQuality: dataQuality(),
   };
 }
@@ -102,6 +155,18 @@ export async function getSubjectView(studentId: StudentId, subjectId: string, op
     // avgConfidenceCalibration/evidenceCoverage -- see Phase 1C report §6.
     getSubjectLearnerModel(studentId, subjectId),
   ]);
+
+  const subjectConceptIds = masteryRows.map((r) => r.concept_id);
+  // Phase 1E: subject-scoped derived metrics -- batched, not per-concept.
+  const [aggregateCalibration, aggregateVelocityByConcept, transferCoverage] = await Promise.all([
+    readAggregateCalibration(studentId, subjectConceptIds),
+    readLearningVelocityForConcepts(studentId, subjectConceptIds),
+    readTransferCoverage(studentId, subjectId),
+  ]);
+  const aggregateVelocity =
+    subjectConceptIds.length === 0
+      ? metricUnavailable('INSUFFICIENT_EVIDENCE', 'No evidenced concepts in this subject yet.')
+      : metricAvailable(aggregateLearningVelocity(aggregateVelocityByConcept));
 
   const ksByConcept = new Map(knowledgeStates.map((k) => [k.conceptId, k]));
   const misconceptionsByConcept = new Map<string, typeof recurringMisconceptions>();
@@ -170,6 +235,9 @@ export async function getSubjectView(studentId: StudentId, subjectId: string, op
     },
     concepts,
     needsAttention,
+    aggregateCalibration,
+    aggregateVelocity,
+    transferCoverage,
     dataQuality: dataQuality(),
   };
 }
@@ -192,19 +260,37 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
   const masteryRow = await R.readMasteryRow(studentId, conceptId);
   if (!masteryRow) return null; // no evidence yet for this concept -- matches the pre-existing getLearnerConceptState contract exactly
 
-  const [knowledgeStateSignal, independence, metacognition, transfer, misconceptions, recentEvidence, errorPatterns, assessmentContext, responseTiming] =
-    await Promise.all([
-      R.readKnowledgeStateSignal(studentId, conceptId),
-      R.readIndependenceSignal(studentId, conceptId),
-      R.readMetacognitionSignal(studentId, conceptId),
-      R.readTransferSignal(studentId, conceptId),
-      R.readMisconceptionSummary(studentId, conceptId),
-      R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
-      R.readConceptErrorPatterns(studentId, subjectId, conceptId),
-      R.readAssessmentPressure(studentId, subjectId),
-      // Phase 1D: raw behavioral observation only -- see ResponseTimingSignal's doc comment.
-      R.readResponseTimingSignal(studentId, conceptId),
-    ]);
+  const [
+    knowledgeStateSignal,
+    independence,
+    metacognition,
+    transfer,
+    misconceptions,
+    recentEvidence,
+    errorPatterns,
+    assessmentContext,
+    responseTiming,
+    prerequisiteGaps,
+    helpDependency,
+    learningVelocity,
+    persistence,
+  ] = await Promise.all([
+    R.readKnowledgeStateSignal(studentId, conceptId),
+    R.readIndependenceSignal(studentId, conceptId),
+    R.readMetacognitionSignal(studentId, conceptId),
+    R.readTransferSignal(studentId, conceptId),
+    R.readMisconceptionSummary(studentId, conceptId),
+    R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
+    R.readConceptErrorPatterns(studentId, subjectId, conceptId),
+    R.readAssessmentPressure(studentId, subjectId),
+    // Phase 1D: raw behavioral observation only -- see ResponseTimingSignal's doc comment.
+    R.readResponseTimingSignal(studentId, conceptId),
+    // Phase 1E: derived learner metrics -- see docs/architecture/digital-learning-twin.md.
+    readPrerequisiteGaps(studentId, conceptId),
+    readHelpDependency(studentId, conceptId),
+    readLearningVelocity(studentId, conceptId),
+    readPersistence(studentId, conceptId),
+  ]);
 
   const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
 
@@ -236,10 +322,12 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     assessmentContext,
     behavior: { responseTiming },
     ...(stateHistory ? { stateHistory } : {}),
-    // Deferred to Phase 1E -- Phase 1B §21 defines the derivation (concept_relationships
-    // + learner Knowledge State) but explicitly withheld production blockingSeverity
-    // thresholds. Never fabricated here.
-    prerequisiteGaps: notYetAvailable('1E'),
+    // Phase 1E: implemented -- see docs/architecture/digital-learning-twin.md's
+    // "Derived Learner Metrics" section for each metric's availability semantics.
+    prerequisiteGaps,
+    helpDependency,
+    learningVelocity,
+    persistence,
     dataQuality: dataQuality(),
   };
 }
@@ -256,7 +344,22 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
   const masteryRow = await R.readMasteryRow(studentId, conceptId);
   if (!masteryRow) return null;
 
-  const [knowledgeStateSignal, independence, metacognition, misconceptions, recentEvidence, assessmentPressure, planningContext] =
+  // Phase 1E-R: only the metrics the caller actually asked for are
+  // computed -- current live consumers pass no `derivedMetrics` option,
+  // so this set is empty and none of the three reader functions below
+  // are even invoked (not called-then-discarded). See resolveDerivedMetrics.
+  const requestedMetrics = resolveDerivedMetrics(options.derivedMetrics);
+  const learningVelocityPromise: Promise<MetricProjection<any>> = requestedMetrics.has('learningVelocity')
+    ? readLearningVelocity(studentId, conceptId).then(metricRequested)
+    : Promise.resolve(METRIC_NOT_REQUESTED);
+  const helpDependencyPromise: Promise<MetricProjection<any>> = requestedMetrics.has('helpDependency')
+    ? readHelpDependency(studentId, conceptId).then(metricRequested)
+    : Promise.resolve(METRIC_NOT_REQUESTED);
+  const prerequisiteGapsPromise: Promise<MetricProjection<any>> = requestedMetrics.has('prerequisiteGaps')
+    ? readPrerequisiteGaps(studentId, conceptId).then(metricRequested)
+    : Promise.resolve(METRIC_NOT_REQUESTED);
+
+  const [knowledgeStateSignal, independence, metacognition, misconceptions, recentEvidence, assessmentPressure, planningContext, learningVelocity, helpDependency, prerequisiteGaps] =
     await Promise.all([
       R.readKnowledgeStateSignal(studentId, conceptId),
       R.readIndependenceSignal(studentId, conceptId),
@@ -265,6 +368,12 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
       R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
       R.readAssessmentPressure(studentId, subjectId),
       R.readPlanningContext(studentId),
+      // Phase 1E: computed for a FUTURE Decision Engine's use only --
+      // Step 24 invariant: no current consumer reads these fields.
+      // Phase 1E-R: conditional on options.derivedMetrics (see above).
+      learningVelocityPromise,
+      helpDependencyPromise,
+      prerequisiteGapsPromise,
     ]);
 
   const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
@@ -287,10 +396,13 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     recentEvidence,
     assessmentPressure,
     availability: { dailyMinutes: planningContext.maxDailyMinutes },
-    // Deferred to Phase 1D/1E -- never fabricated as 0/null-that-looks-real (Phase 1C Step 3/13).
-    learningVelocity: notYetAvailable('1E'),
-    helpDependency: notYetAvailable('1E'),
-    prerequisiteGaps: notYetAvailable('1E'),
+    // Phase 1E: implemented, exposed only as future Decision Engine
+    // inputs. Phase 1E-R: each is `{requested: false}` by default (see
+    // resolveDerivedMetrics above) -- never fabricated as unavailable
+    // and never claiming NOT_AVAILABLE_YET (the computation exists).
+    learningVelocity,
+    helpDependency,
+    prerequisiteGaps,
     dataQuality: dataQuality(),
   };
 }

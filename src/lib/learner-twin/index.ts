@@ -38,7 +38,18 @@ export type {
   SubjectAcademicContext,
   PlanningContext,
   AssessmentPressure,
-  PrerequisiteGap,
+  ResponseTimingObservation,
+  ResponseTimingSignal,
   DataQualitySummary,
+  DerivedMetricSelection,
 } from './types';
 export { notYetAvailable, available } from './types';
+
+/**
+ * Phase 1E: canonical derived-metric layer. Re-exported here so
+ * consumers of `@/lib/learner-twin` don't need a separate import path
+ * for metric types/functions -- still CANONICAL_DERIVED_METRIC_LAYER = 1
+ * (one module, src/lib/learner-twin/metrics/), just re-exported at the
+ * Twin's own barrel for convenience.
+ */
+export * from './metrics';
