@@ -2,17 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...args: any[]) => queryMock(...args) } }));
-vi.mock('@/services/learner-model.service', () => ({ getLearnerConceptState: vi.fn() }));
+vi.mock('@/lib/learner-twin', () => ({ getDecisionContext: vi.fn() }));
 vi.mock('@/services/cognitive-diagnosis.service', () => ({ getDiagnosis: vi.fn() }));
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 
 import { determineRemediationPattern, startRemediation, getActiveRemediations } from '@/services/remediation.service';
 import { getDiagnosis } from '@/services/cognitive-diagnosis.service';
-import { getLearnerConceptState } from '@/services/learner-model.service';
+import { getDecisionContext } from '@/lib/learner-twin';
 import type { LearnerConceptState } from '@/services/learner-model.service';
 
 const mockedGetDiagnosis = vi.mocked(getDiagnosis);
-const mockedGetLearnerConceptState = vi.mocked(getLearnerConceptState);
+const mockedGetDecisionContext = vi.mocked(getDecisionContext);
 
 beforeEach(() => {
   queryMock.mockReset();
@@ -90,7 +90,7 @@ describe('startRemediation idempotency (abandonment edge case)', () => {
 
   beforeEach(() => {
     mockedGetDiagnosis.mockReset();
-    mockedGetLearnerConceptState.mockReset();
+    mockedGetDecisionContext.mockReset();
   });
 
   it('reuses an already-open (including abandoned REPAIRING/VERIFYING) path instead of creating a duplicate', async () => {
@@ -130,14 +130,14 @@ describe('startRemediation idempotency (abandonment edge case)', () => {
       expect(String(call[0])).not.toMatch(/INSERT INTO remediation_paths/i);
       expect(String(call[0])).not.toMatch(/INSERT INTO remediation_steps/i);
     }
-    // getLearnerConceptState/determineRemediationPattern are only needed to build a *new* path -- never called on the reuse path.
-    expect(mockedGetLearnerConceptState).not.toHaveBeenCalled();
+    // getDecisionContext/determineRemediationPattern are only needed to build a *new* path -- never called on the reuse path.
+    expect(mockedGetDecisionContext).not.toHaveBeenCalled();
   });
 
   it("the reuse guard's query only matches non-terminal states, so restarting after RESOLVED/REJECTED is still possible", async () => {
     mockedGetDiagnosis.mockResolvedValueOnce(diagnosisRecord());
     queryMock.mockResolvedValueOnce({ rows: [] }); // no non-terminal path exists (prior one already RESOLVED)
-    mockedGetLearnerConceptState.mockResolvedValueOnce(null); // no evidence -> LOW_MASTERY pattern
+    mockedGetDecisionContext.mockResolvedValueOnce(null); // no evidence -> LOW_MASTERY pattern
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'path-new' }] }); // INSERT INTO remediation_paths
     queryMock.mockResolvedValueOnce({ rows: [] }); // INSERT step 1 (LEARN)
     queryMock.mockResolvedValueOnce({ rows: [] }); // INSERT step 2 (GUIDED_PRACTICE)

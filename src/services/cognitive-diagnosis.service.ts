@@ -6,12 +6,14 @@
  * cause?" and trusting the answer directly.
  *
  * Consumes Phase 1 signals as-is (Mastery, Retention, Independent
- * Mastery, Evidence Strength) via learner-model.service.ts. Never
+ * Mastery, Evidence Strength) via the canonical Digital Learning Twin's
+ * `getDecisionContext` (@/lib/learner-twin, Phase 1C-R). Never
  * recomputes them, never creates a parallel Learner Model.
  */
 
 import { db } from '@/lib/db';
-import { getLearnerConceptState, type EvidenceStrength } from './learner-model.service';
+import type { EvidenceStrength } from './learner-model.service';
+import { getDecisionContext } from '@/lib/learner-twin';
 import {
   getPrerequisites,
   inferPrerequisitesForConcept,
@@ -172,18 +174,22 @@ export interface CognitiveIssueSignal {
  * engine from over-diagnosing isolated mistakes.
  */
 export async function detectCognitiveIssue(studentId: string, conceptId: string): Promise<CognitiveIssueSignal> {
-  const [{ count, dominantType }, state] = await Promise.all([
+  const [{ count, dominantType }, decisionContext] = await Promise.all([
     getRelevantErrorRecurrence(studentId, conceptId),
-    getLearnerConceptState(studentId, conceptId),
+    getDecisionContext(studentId, conceptId),
   ]);
 
   const reasons: string[] = [];
   if (count >= 2) reasons.push('repeated_conceptual_error');
-  if (state && state.masteryScore < 50) reasons.push('low_mastery');
-  if (state && state.independentMastery !== null && state.independentMastery < state.masteryScore - 20) {
+  if (decisionContext && decisionContext.mastery.score < 50) reasons.push('low_mastery');
+  if (
+    decisionContext &&
+    decisionContext.independence.independentMastery !== null &&
+    decisionContext.independence.independentMastery < decisionContext.mastery.score - 20
+  ) {
     reasons.push('independence_gap');
   }
-  if (state && state.confidenceCalibration.label === 'OVERCONFIDENT') reasons.push('overconfident');
+  if (decisionContext && decisionContext.metacognition.confidenceCalibration.label === 'OVERCONFIDENT') reasons.push('overconfident');
 
   const signal = { justified: reasons.length > 0, reasons, dominantErrorType: dominantType, recurrenceCount: count };
   if (signal.justified) {
@@ -227,10 +233,16 @@ export async function generateRootCauseHypotheses(
 
   const hypotheses: RootCauseHypothesis[] = [];
   for (const rel of prerequisites) {
-    const candidateState = await getLearnerConceptState(studentId, rel.sourceConceptId);
-    const hasCandidateEvidence = candidateState !== null;
+    const candidateDecisionContext = await getDecisionContext(studentId, rel.sourceConceptId);
+    const hasCandidateEvidence = candidateDecisionContext !== null;
+    // "retention" here MUST stay the OLD forward-looking, spaced-repetition
+    // value (100 - forgettingRisk) -- NOT DecisionContext.retention.
+    // retentionScore, a different, backward-looking Knowledge State
+    // dimension. See docs/audits/STUDYUS_PHASE_1C_R_CANONICAL_CONSUMER_CLOSURE.md §6.
+    const candidateRetention =
+      candidateDecisionContext?.retention.forgettingRisk != null ? 100 - candidateDecisionContext.retention.forgettingRisk : null;
     const gap = hasCandidateEvidence
-      ? learnerGapFactor(candidateState!.masteryScore, candidateState!.retention, candidateState!.independentMastery)
+      ? learnerGapFactor(candidateDecisionContext!.mastery.score, candidateRetention, candidateDecisionContext!.independence.independentMastery)
       : null;
 
     let score: number | null = null;
@@ -240,7 +252,7 @@ export async function generateRootCauseHypotheses(
         learnerGap: gap,
         errorRelevance: errorTypeRelevance(dominantErrorType ?? 'CONCEPTUAL'),
         recurrenceFactor: recurrenceFactor(recurrenceCount),
-        evidenceConfidence: evidenceConfidenceFactor(candidateState!.evidenceStrength),
+        evidenceConfidence: evidenceConfidenceFactor(candidateDecisionContext!.independence.evidenceStrength),
         academicRelevance: 1.0,
       });
     }

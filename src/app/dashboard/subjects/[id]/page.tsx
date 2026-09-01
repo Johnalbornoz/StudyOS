@@ -6,7 +6,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getContentSources } from '@/services/content.service';
 import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
-import { getSubjectLearnerModel } from '@/services/learner-model.service';
+import { getSubjectView } from '@/lib/learner-twin';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
@@ -42,16 +42,22 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   // Four independent reads (none depends on another's result) -- run in
   // parallel instead of sequentially. Each keeps its own fallback, so a
   // failure in one never blocks or breaks the others.
-  const [concepts, contentSources, hierarchy, learnerModel] = await Promise.all([
+  const [concepts, contentSources, hierarchy, subjectView] = await Promise.all([
     getStudentMastery(studentId, id, locale, true).catch(() => []),
     getContentSources(studentId, id).catch(() => []),
     getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] })),
-    getSubjectLearnerModel(studentId, id).catch(() => ({
-      avgMastery: null, avgRetention: null, avgIndependentMastery: null, avgConfidenceCalibration: null,
-      evidenceCoverage: null, activeLearningDebtCount: 0, atRiskCount: 0,
-    })),
+    getSubjectView(studentId, id).catch(() => null),
   ]);
   const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
+  // Digital Learning Twin (Phase 1C) cognitive summary -- same shape/values
+  // getSubjectLearnerModel always produced, now sourced from the canonical
+  // getSubjectView projection. subjectView is only null if the subject
+  // itself can't be found (already guarded by notFound() above) or on a
+  // read failure, matching the previous .catch() fallback exactly.
+  const learnerModel = subjectView?.cognitiveSummary ?? {
+    avgMasteryPercent: null, avgRetentionScore: null, avgIndependentMastery: null, avgConfidenceCalibration: null,
+    evidenceCoverage: null, activeLearningDebtCount: 0, atRiskCount: 0,
+  };
 
   return (
     <div>
@@ -69,9 +75,9 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
             {concepts.length} {t['subjectDetail.conceptCount']}
-            {learnerModel.avgMastery !== null ? ` · ${t['subjectDetail.avgMastery']} ${learnerModel.avgMastery}%` : ''}
+            {learnerModel.avgMasteryPercent !== null ? ` · ${t['subjectDetail.avgMastery']} ${learnerModel.avgMasteryPercent}%` : ''}
           </p>
-          {(learnerModel.avgRetention !== null ||
+          {(learnerModel.avgRetentionScore !== null ||
             learnerModel.avgIndependentMastery !== null ||
             learnerModel.avgConfidenceCalibration !== null ||
             learnerModel.evidenceCoverage !== null ||
@@ -79,7 +85,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             learnerModel.atRiskCount > 0) && (
             <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>
               {[
-                learnerModel.avgRetention !== null ? `${t['subjectDetail.retention']} ${learnerModel.avgRetention}%` : null,
+                learnerModel.avgRetentionScore !== null ? `${t['subjectDetail.retention']} ${learnerModel.avgRetentionScore}%` : null,
                 learnerModel.avgIndependentMastery !== null
                   ? `${t['subjectDetail.independentMastery']} ${learnerModel.avgIndependentMastery}%`
                   : null,

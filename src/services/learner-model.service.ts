@@ -257,15 +257,6 @@ export interface EvidenceCoverage {
   percent: number;
 }
 
-export interface LearnerModelSummary {
-  avgRetention: number | null;
-  avgIndependentMastery: number | null;
-  avgConfidenceCalibration: number | null;
-  conceptsWithRetention: number;
-  conceptsWithIndependentMastery: number;
-  evidenceCoverage: EvidenceCoverage | null;
-}
-
 export interface SubjectLearnerModel {
   avgMastery: number | null;
   avgRetention: number | null;
@@ -424,45 +415,30 @@ export async function getSubjectLearnerModel(studentId: string, subjectId: strin
 }
 
 /**
- * Student-wide averages for Progress's "Your Learning" section.
- * Bounded number of queries no matter how many concepts the student
- * has -- averaging happens in memory, not per-concept round trips.
- * Returns null averages when there isn't enough evidence anywhere yet,
- * rather than a misleading 0.
+ * Phase 1C: `getLearnerModelSummary` (the student-wide-averages
+ * function this comment used to document) was removed here -- Phase
+ * 1A/1C confirmed it had zero live callers anywhere in the app. Its
+ * equivalent, actively-used capability now lives in the canonical
+ * Digital Learning Twin's `getOverview` (src/lib/learner-twin), not as
+ * a parallel implementation. See docs/audits/
+ * STUDYUS_PHASE_1C_CORE_LEARNER_MODEL_IMPLEMENTATION.md for the
+ * migration record.
  */
-export async function getLearnerModelSummary(studentId: string): Promise<LearnerModelSummary> {
-  const masteryRows = await db.query(
-    `SELECT mr.concept_id, mr.mastery_score, mr.confidence_score, mr.last_practiced
-     FROM mastery_records mr JOIN subjects s ON s.id = mr.subject_id
-     WHERE mr.student_id = $1 AND s.status = 'active'`,
-    [studentId]
-  );
-  const retentions: number[] = [];
-  for (const row of masteryRows.rows) {
-    const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
-    if (r !== null) retentions.push(r);
-  }
 
-  const conceptIds = masteryRows.rows.map((r) => r.concept_id as string);
-  const intelligence = await getConceptIntelligenceBatch(studentId, conceptIds);
-  const independentScores = [...intelligence.values()].flatMap((v) => (v.independentMastery !== null ? [v.independentMastery] : []));
-  const calibrationScores = [...intelligence.values()].flatMap((v) => (v.confidenceCalibration !== null ? [v.confidenceCalibration] : []));
-
-  return {
-    avgRetention: retentions.length ? Math.round(retentions.reduce((a, b) => a + b, 0) / retentions.length) : null,
-    avgIndependentMastery: independentScores.length
-      ? Math.round(independentScores.reduce((a, b) => a + b, 0) / independentScores.length)
-      : null,
-    avgConfidenceCalibration: calibrationScores.length
-      ? Math.round(calibrationScores.reduce((a, b) => a + b, 0) / calibrationScores.length)
-      : null,
-    conceptsWithRetention: retentions.length,
-    conceptsWithIndependentMastery: independentScores.length,
-    evidenceCoverage: await getEvidenceCoverage(studentId),
-  };
-}
-
-/** Combines all Learner Model dimensions for one student+concept in a single call. */
+/**
+ * @deprecated Use `getDecisionContext`/`getConceptView` from `@/lib/learner-twin`.
+ * No new callers. Phase 1C-R migrated its last live consumers
+ * (remediation.service.ts, cognitive-diagnosis.service.ts,
+ * tutor-strategy.service.ts) onto the canonical Digital Learning Twin
+ * boundary. Retained, unmodified, ONLY because
+ * tests/unit/learner-twin-consumer-regression.test.ts and
+ * tests/unit/remediation.test.ts call it directly as a permanent
+ * before/after equivalence proof for that migration -- see
+ * docs/audits/STUDYUS_PHASE_1C_R_CANONICAL_CONSUMER_CLOSURE.md §10.
+ * A static architecture test (tests/unit/canonical-learner-model-
+ * boundary.test.ts) enforces that no other application/service file
+ * imports it.
+ */
 export async function getLearnerConceptState(studentId: string, conceptId: string): Promise<LearnerConceptState | null> {
   const masteryRow = await db.query(
     `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,

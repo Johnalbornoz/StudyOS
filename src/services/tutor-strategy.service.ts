@@ -8,7 +8,7 @@
  */
 
 import { db } from '@/lib/db';
-import { getLearnerConceptState } from './learner-model.service';
+import { getDecisionContext } from '@/lib/learner-twin';
 import { getTransferScore } from './transfer.service';
 import { getActiveDiagnoses } from './cognitive-diagnosis.service';
 import { getActiveRemediations } from './remediation.service';
@@ -84,8 +84,14 @@ export interface CompactTutorContext {
  * conversation behaves exactly as it did before Phase 2).
  */
 export async function buildCompactTutorContext(studentId: string, conceptId: string): Promise<CompactTutorContext | null> {
-  const state = await getLearnerConceptState(studentId, conceptId);
-  if (!state) return null;
+  const decisionContext = await getDecisionContext(studentId, conceptId);
+  if (!decisionContext) return null;
+
+  // "retention" here MUST stay the OLD forward-looking, spaced-repetition
+  // value (100 - forgettingRisk) -- NOT DecisionContext.retention.
+  // retentionScore, a different, backward-looking Knowledge State
+  // dimension. See docs/audits/STUDYUS_PHASE_1C_R_CANONICAL_CONSUMER_CLOSURE.md §6.
+  const retention = decisionContext.retention.forgettingRisk !== null ? 100 - decisionContext.retention.forgettingRisk : null;
 
   const [transferScore, activeDiagnoses, activeRemediations] = await Promise.all([
     getTransferScore(studentId, conceptId),
@@ -100,10 +106,10 @@ export async function buildCompactTutorContext(studentId: string, conceptId: str
   );
 
   const strategy = selectTutorStrategy({
-    masteryScore: state.masteryScore,
-    retention: state.retention,
-    independentMastery: state.independentMastery,
-    confidenceCalibrationLabel: state.confidenceCalibration.label,
+    masteryScore: decisionContext.mastery.score,
+    retention,
+    independentMastery: decisionContext.independence.independentMastery,
+    confidenceCalibrationLabel: decisionContext.metacognition.confidenceCalibration.label,
     transferScore,
     hasRecurringMisconception: (misconceptionCheck.rowCount ?? 0) > 0,
   });
@@ -112,9 +118,9 @@ export async function buildCompactTutorContext(studentId: string, conceptId: str
   const relevantRemediation = activeRemediations.find((r) => r.rootCauseConceptId === conceptId || r.targetConceptId === conceptId);
 
   const parts = [
-    `Mastery ${Math.round(state.masteryScore)}%`,
-    state.retention !== null ? `Retention ${Math.round(state.retention)}%` : null,
-    state.independentMastery !== null ? `Independent Mastery ${state.independentMastery}%` : null,
+    `Mastery ${Math.round(decisionContext.mastery.score)}%`,
+    retention !== null ? `Retention ${Math.round(retention)}%` : null,
+    decisionContext.independence.independentMastery !== null ? `Independent Mastery ${decisionContext.independence.independentMastery}%` : null,
     relevantDiagnosis ? `Confirmed prerequisite gap: this concept is a candidate root cause for another struggling concept` : null,
     relevantRemediation ? `Active repair in progress (step: ${relevantRemediation.state})` : null,
   ].filter(Boolean);

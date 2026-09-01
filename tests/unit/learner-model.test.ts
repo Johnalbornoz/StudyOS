@@ -13,7 +13,6 @@ import {
   getEvidenceCoverage,
   getConceptIntelligenceBatch,
   getSubjectLearnerModel,
-  getLearnerModelSummary,
 } from '@/services/learner-model.service';
 
 beforeEach(() => {
@@ -273,19 +272,7 @@ describe('getSubjectLearnerModel (Subject Intelligence)', () => {
   });
 });
 
-describe('getLearnerModelSummary (Overall Intelligence)', () => {
-  it('scopes to active subjects only and stays null-safe with no evidence anywhere', async () => {
-    queryMock
-      .mockResolvedValueOnce(rows([])) // mastery_records join active subjects
-      .mockResolvedValueOnce(rows([{ count: 0 }])); // evidence coverage total concepts (0 conceptIds -> batch skips query)
-
-    const result = await getLearnerModelSummary('s1');
-    expect(result.avgRetention).toBeNull();
-    expect(result.avgIndependentMastery).toBeNull();
-    expect(result.avgConfidenceCalibration).toBeNull();
-    expect(result.conceptsWithRetention).toBe(0);
-
-    const masteryQuerySql = queryMock.mock.calls[0][0] as string;
-    expect(masteryQuerySql).toContain("s.status = 'active'");
-  });
-});
+// getLearnerModelSummary was removed in Phase 1C -- confirmed zero live
+// callers (Phase 1A and re-confirmed Phase 1C). Its equivalent capability
+// now lives in the canonical Digital Learning Twin's getOverview
+// (src/lib/learner-twin), covered by tests/unit/learner-twin.test.ts.

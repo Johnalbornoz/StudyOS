@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getLearnerConceptState, getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
+import { getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
+import { getConceptView } from '@/lib/learner-twin';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
 import { getTransferScore } from '@/services/transfer.service';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
@@ -72,8 +73,8 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [state, evidence, masteryRow, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
-    getLearnerConceptState(studentId, conceptId),
+  const [conceptView, evidence, masteryRow, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
+    getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
       `SELECT last_practiced, next_review_date FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
@@ -88,6 +89,36 @@ export default async function ConceptDetailPage({
     getConceptKnowledgeState(studentId, conceptId),
   ]);
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
+
+  // Phase 1C: sourced from the canonical getConceptView projection now
+  // (was getLearnerConceptState) -- same six fields, same values, same
+  // null-safety semantics, just reshaped from ConceptView's nested
+  // signal groups. Kept as a local `state` object so every downstream
+  // reference on this page (state.masteryScore, state.retention, ...)
+  // is unchanged.
+  //
+  // IMPORTANT: "retention" here is deliberately `100 - forgettingRisk`,
+  // NOT `conceptView.retention.retentionScore`. The old
+  // getLearnerConceptState.retention field was learner-model.service.ts's
+  // getRetention() -- a forward-looking "how likely to still remember
+  // it right now" spaced-repetition estimate. ConceptView.retention.
+  // retentionScore is a DIFFERENT signal: the Knowledge State "retention"
+  // DIMENSION (a backward-looking "have they proven they still know it
+  // after a real gap" evidence classification). Using retentionScore
+  // here would have silently changed what this page displays -- see
+  // tests/unit/learner-twin-consumer-regression.test.ts for the proof
+  // these two are genuinely different numbers, and the Phase 1C report's
+  // "Retention Twin Contract" section for the full explanation.
+  const state = conceptView
+    ? {
+        masteryScore: conceptView.mastery.score,
+        independentMastery: conceptView.independence.independentMastery,
+        retention: conceptView.retention.forgettingRisk !== null ? 100 - conceptView.retention.forgettingRisk : null,
+        evidenceStrength: conceptView.independence.evidenceStrength,
+        confidence: conceptView.metacognition.confidence,
+        confidenceCalibration: conceptView.metacognition.confidenceCalibration,
+      }
+    : null;
 
   if (!state) {
     return (

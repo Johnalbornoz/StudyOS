@@ -7,9 +7,10 @@
  */
 
 import { db } from '@/lib/db';
-import { getLearnerConceptState, type LearnerConceptState } from './learner-model.service';
+import type { LearnerConceptState } from './learner-model.service';
 import { getDiagnosis } from './cognitive-diagnosis.service';
 import { track } from '@/lib/analytics';
+import { getDecisionContext, type DecisionContext } from '@/lib/learner-twin';
 
 export type RemediationStepType = 'LEARN' | 'GUIDED_PRACTICE' | 'RETRIEVAL' | 'EXPLAIN' | 'TRANSFER' | 'SOLO_VERIFY';
 export type RemediationPathState = 'DETECTED' | 'DIAGNOSING' | 'CONFIRMED' | 'REPAIRING' | 'VERIFYING' | 'RESOLVED' | 'REJECTED';
@@ -36,6 +37,32 @@ const PATTERN_STEPS: Record<RemediationPattern, RemediationStepType[]> = {
   TRANSFER_WEAKNESS: ['TRANSFER', 'SOLO_VERIFY'],
   DEFAULT: ['GUIDED_PRACTICE', 'SOLO_VERIFY'],
 };
+
+/**
+ * Phase 1C-R: adapts the canonical `DecisionContext` into the exact
+ * shape `determineRemediationPattern` already expects, so the pure,
+ * tested pattern-selection logic below needs no change at all.
+ *
+ * "retention" here MUST stay the OLD forward-looking, spaced-repetition
+ * value (100 - forgettingRisk) -- NOT `DecisionContext.retention.
+ * retentionScore`, which is a different, backward-looking Knowledge
+ * State dimension. Substituting it would silently change which
+ * candidates get classified LOW_RETENTION. This is a release-blocking
+ * semantic invariant -- see docs/audits/
+ * STUDYUS_PHASE_1C_R_CANONICAL_CONSUMER_CLOSURE.md §6 and
+ * tests/unit/decision-consumer-migration-regression.test.ts.
+ */
+export function toCandidateState(dc: DecisionContext | null): LearnerConceptState | null {
+  if (!dc) return null;
+  return {
+    masteryScore: dc.mastery.score,
+    retention: dc.retention.forgettingRisk !== null ? 100 - dc.retention.forgettingRisk : null,
+    independentMastery: dc.independence.independentMastery,
+    evidenceStrength: dc.independence.evidenceStrength,
+    confidence: null, // not read by determineRemediationPattern; DecisionContext does not carry self-reported confidence under this name
+    confidenceCalibration: dc.metacognition.confidenceCalibration,
+  };
+}
 
 /**
  * Minimum Effective Intervention: pick the smallest pattern that fits
@@ -134,7 +161,8 @@ export async function startRemediation(diagnosisId: string): Promise<Remediation
   const existing = await getActiveRemediationForDiagnosis(diagnosisId);
   if (existing) return existing;
 
-  const candidateState = await getLearnerConceptState(diagnosis.studentId, diagnosis.candidateConceptId);
+  const candidateDecisionContext = await getDecisionContext(diagnosis.studentId, diagnosis.candidateConceptId);
+  const candidateState = toCandidateState(candidateDecisionContext);
   const pattern = determineRemediationPattern(candidateState);
   const stepTypes = PATTERN_STEPS[pattern];
 
