@@ -32,6 +32,15 @@ import { updateMastery } from './mastery.service';
 import { autoResolveDebt } from './debt-resolution.service';
 import type { LearningEvidence } from '@/lib/algorithms/mastery';
 
+/** Postgres unique_violation. See database/migrations/20260901_1200_evidence_idempotency.sql. */
+const PG_UNIQUE_VIOLATION = '23505';
+const SUBMISSION_TOKEN_CONSTRAINT = 'assessment_results_submission_token_unique_idx';
+
+function isSubmissionTokenConflict(err: unknown): boolean {
+  const pgErr = err as { code?: string; constraint?: string } | undefined;
+  return pgErr?.code === PG_UNIQUE_VIOLATION && pgErr?.constraint === SUBMISSION_TOKEN_CONSTRAINT;
+}
+
 export type ExamConceptSourceGranularity = 'CONCEPT_MAPPED' | 'TOPICS_LIST' | 'SUBJECT_WIDE';
 
 export interface ExamConceptAttribution {
@@ -112,6 +121,22 @@ export interface ExamResultInput {
   studentId: string;
   score: number;
   maxScore: number;
+  /**
+   * Phase 2B: an opaque token the CLIENT mints once when the "Record
+   * Result" form is opened for a new entry, and reuses for every
+   * submit attempt of that same deliberate action -- including a
+   * network retry -- until the form is closed and reopened. This is
+   * deliberately NOT `occurrenceId` (Phase 2B Step 8's correction):
+   * the same occurrence can legitimately be corrected/re-entered later
+   * (a genuinely new, deliberate action with its own new token), so
+   * `occurrenceId` alone cannot safely mean "duplicate." Optional here
+   * -- a caller with no way to maintain a stable per-submission token
+   * keeps today's unprotected behavior (see the Phase 2B report's
+   * Evidence Writer Audit) rather than being forced into an unsafe
+   * default; the one real caller (AssessmentPanel.tsx via
+   * /api/assessments/record-result) always supplies one.
+   */
+  submissionToken?: string;
 }
 
 export interface ConceptRecalibration {
@@ -129,13 +154,15 @@ export interface ExamResultOutcome {
   predictedReadiness: number | null;
   readinessDelta: number | null;
   recalibrated: ConceptRecalibration[];
+  /** Phase 2B: true when this exact submissionToken was already recorded -- nothing new was written. */
+  duplicate: boolean;
 }
 
 export async function recordExamResult(
   input: ExamResultInput,
   preferredLanguage: string = 'en'
 ): Promise<ExamResultOutcome> {
-  const { occurrenceId, studentId, score, maxScore } = input;
+  const { occurrenceId, studentId, score, maxScore, submissionToken } = input;
   const percentage = Math.round((score / maxScore) * 100);
 
   const occResult = await db.query(
@@ -148,21 +175,42 @@ export async function recordExamResult(
   const predictedReadiness = occ.exam_readiness !== null ? Number(occ.exam_readiness) : null;
   const readinessDelta = predictedReadiness !== null ? percentage - predictedReadiness : null;
 
-  const resultInsert = await db.query(
-    `
-    INSERT INTO assessment_results (occurrence_id, student_id, score, max_score, analyzed_at, analysis_result)
-    VALUES ($1, $2, $3, $4, NOW(), $5)
-    RETURNING id, percentage
-    `,
-    [
-      occurrenceId,
-      studentId,
-      score,
-      maxScore,
-      JSON.stringify({ predictedReadiness, actualPercentage: percentage, readinessDelta }),
-    ]
-  );
-  const resultId = resultInsert.rows[0].id;
+  // Phase 2B: the atomic claim on submissionToken -- NOT occurrenceId
+  // (Phase 2B Step 8: an occurrence may legitimately be corrected/
+  // re-entered later; only a transport retry of the SAME deliberate
+  // submission should collapse). A conflict here means this exact
+  // submission already recorded a result; reuse that row's id/
+  // percentage rather than inserting a second one, and let the
+  // per-concept updateMastery calls below -- independently gated on
+  // the same token -- correctly no-op too.
+  let resultId: string;
+  let duplicate = false;
+  try {
+    const resultInsert = await db.query(
+      `
+      INSERT INTO assessment_results (occurrence_id, student_id, score, max_score, analyzed_at, analysis_result, submission_token)
+      VALUES ($1, $2, $3, $4, NOW(), $5, $6)
+      RETURNING id, percentage
+      `,
+      [
+        occurrenceId,
+        studentId,
+        score,
+        maxScore,
+        JSON.stringify({ predictedReadiness, actualPercentage: percentage, readinessDelta }),
+        submissionToken ?? null,
+      ]
+    );
+    resultId = resultInsert.rows[0].id;
+  } catch (err) {
+    if (submissionToken && isSubmissionTokenConflict(err)) {
+      duplicate = true;
+      const existing = await db.query(`SELECT id FROM assessment_results WHERE submission_token = $1`, [submissionToken]);
+      resultId = existing.rows[0]?.id ?? '';
+    } else {
+      throw err;
+    }
+  }
 
   await db.query(`UPDATE assessment_occurrences SET status = 'result_recorded' WHERE id = $1`, [
     occurrenceId,
@@ -205,6 +253,14 @@ export async function recordExamResult(
           conceptId: attribution.conceptId,
           subjectId: occ.subject_id,
           evidence,
+          // Phase 2B: only set when the caller supplied a stable
+          // per-submission token -- see ExamResultInput.submissionToken.
+          // Concept-scoped, same as every other multi-concept writer,
+          // so one concept's recalibration replaying safely never
+          // blocks another's.
+          identity: submissionToken
+            ? { operationType: 'REAL_SCHOOL_EXAM', operationId: submissionToken, conceptId: attribution.conceptId }
+            : undefined,
           metadata: {
             examConceptAttribution: {
               sourceGranularity: attribution.sourceGranularity,
@@ -214,7 +270,9 @@ export async function recordExamResult(
             },
           },
         });
-        const resolution = await autoResolveDebt(studentId, attribution.conceptId).catch(() => null);
+        const resolution = masteryResult.duplicate
+          ? null
+          : await autoResolveDebt(studentId, attribution.conceptId).catch(() => null);
 
         // mastery_records.mastery_score (and updateMastery's old/new/delta,
         // which read and write it) is canonically 0-100 already -- pass
@@ -232,7 +290,7 @@ export async function recordExamResult(
     );
   }
 
-  return { resultId, percentage, predictedReadiness, readinessDelta, recalibrated };
+  return { resultId, percentage, predictedReadiness, readinessDelta, recalibrated, duplicate };
 }
 
 /** Real exam results recorded for a student, most recent first. */

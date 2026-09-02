@@ -99,7 +99,15 @@ export async function POST(request: NextRequest) {
     const outcome = interpretVerificationOutcome(pending.originalScorePercent, verificationScorePercent);
     const assessmentConfidenceAfter = recalculateConfidenceAfterVerification(pending.assessmentConfidenceBefore, outcome);
 
-    await resolveVerificationAttempt(pending.id, {
+    // Phase 2B: defense-in-depth against the concurrent-duplicate race
+    // (two requests both reading `outcome IS NULL` before either
+    // writes) -- resolveVerificationAttempt's own WHERE clause is the
+    // atomic claim here, same principle as updateMastery's
+    // operation_key gate below. If a concurrent request already won,
+    // this one still safely produces evidence exactly once (the real
+    // guarantee), it just doesn't get to claim the verification_attempts
+    // row's own outcome/response fields too.
+    const resolvedHere = await resolveVerificationAttempt(pending.id, {
       verificationResponse: validated.answer,
       gradingConfidence: grade.confidence,
       outcome,
@@ -109,27 +117,39 @@ export async function POST(request: NextRequest) {
     // Phase 0E2 Step 17: verification_attempts (above) remains the
     // domain transaction; this is why the system resolved it the way
     // it did -- the actual outcome/confidence values, never redecided.
-    await recordDecisionEvent({
-      decisionType: 'VERIFICATION_RESOLVED',
-      engine: 'verification-engine',
-      engineVersion: 'v1',
-      studentId: validated.studentId,
-      subjectId: quizSession.subjectId,
-      conceptId: validated.conceptId,
-      sourceEventType: 'verification_attempts',
-      sourceEventId: pending.id,
-      previousState: { assessmentConfidenceBefore: pending.assessmentConfidenceBefore, originalScorePercent: pending.originalScorePercent },
-      newState: { outcome, assessmentConfidenceAfter, verificationScorePercent },
-      reasonCode: outcome,
-      aiExecutionId: 'aiExecution' in grade ? grade.aiExecution?.aiExecutionId ?? null : null,
-    });
+    // Phase 2B: only when THIS request actually won the resolution
+    // race (resolvedHere) -- a request that lost it must not record a
+    // second VERIFICATION_RESOLVED decision event for the attempt
+    // another request already resolved.
+    if (resolvedHere) {
+      await recordDecisionEvent({
+        decisionType: 'VERIFICATION_RESOLVED',
+        engine: 'verification-engine',
+        engineVersion: 'v1',
+        studentId: validated.studentId,
+        subjectId: quizSession.subjectId,
+        conceptId: validated.conceptId,
+        sourceEventType: 'verification_attempts',
+        sourceEventId: pending.id,
+        previousState: { assessmentConfidenceBefore: pending.assessmentConfidenceBefore, originalScorePercent: pending.originalScorePercent },
+        newState: { outcome, assessmentConfidenceAfter, verificationScorePercent },
+        reasonCode: outcome,
+        aiExecutionId: 'aiExecution' in grade ? grade.aiExecution?.aiExecutionId ?? null : null,
+      });
+    }
 
     // The verification answer is itself real evidence -- SOLO_VERIFICATION
     // already means exactly this ("the deliberate 'prove it independently'
     // check", 0.9 source weight) and is reused rather than inventing a
     // new source type. This is a new, append-only evidence event; the
     // original assessment evidence (submitted earlier, before
-    // verification triggered) is never rewritten.
+    // verification triggered) is never rewritten. Called unconditionally
+    // (even if this request lost the resolvedHere race above) -- the
+    // operation_key gate below (keyed on verification_attempts.id, not
+    // on which request happened to win resolveVerificationAttempt) is
+    // the actual, authoritative guarantee that this attempt's evidence
+    // is applied exactly once; a losing racer correctly gets back the
+    // real, already-applied mastery state rather than a fabricated one.
     const masteryResult = await submitQualifiedAssessmentEvidence({
       studentId: validated.studentId,
       conceptId: validated.conceptId,
@@ -143,6 +163,7 @@ export async function POST(request: NextRequest) {
       assessmentConfidence: assessmentConfidenceAfter,
       verificationOutcome: outcome,
       aiExecution: 'aiExecution' in grade ? grade.aiExecution : undefined,
+      verificationAttemptId: pending.id,
       // Phase 1D: normalized once here, next to the raw client input --
       // the clock already stopped client-side before this request was
       // sent, so this never measures grading/AI latency (Step 13/14).

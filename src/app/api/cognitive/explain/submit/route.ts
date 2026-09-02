@@ -20,6 +20,12 @@ const Schema = z.object({
   studentResponse: z.string().min(1),
   language: z.string().optional(),
   remediationStepId: z.string().uuid().optional(),
+  // Phase 2B: minted by /explain/generate, round-tripped unchanged --
+  // the stable logical identity for this ONE Explain & Defend
+  // attempt's evidence. A transport retry of this same submission
+  // reuses it; a genuinely new attempt only ever has one because
+  // /explain/generate mints a fresh one every time it's called.
+  activityId: z.string().uuid(),
   // Phase 1D: loose optional strings -- a malformed value degrades to a
   // quality label (normalizeResponseTiming), never fails this request.
   questionPresentedAt: z.string().optional(),
@@ -99,6 +105,7 @@ export async function POST(request: NextRequest) {
         scorePercent,
         sampleSize: 1,
       },
+      identity: { operationType: 'EXPLAIN_DEFEND', operationId: validated.activityId, conceptId: validated.conceptId },
       telemetry: { activityType: 'explain_defend', learningMode: 'COACH' },
       // Phase 0E1: AI provenance for the rubric evaluation, and for
       // misconception classification when it ran -- additive metadata,
@@ -118,7 +125,11 @@ export async function POST(request: NextRequest) {
       aiExecutionId: rubric.aiExecution.aiExecutionId,
     });
 
-    if (validated.remediationStepId) {
+    // Phase 2B: this is a side effect of THIS ONE logical Explain &
+    // Defend attempt, same as the evidence row -- skip it on a
+    // detected duplicate (a retry of an already-applied attempt)
+    // rather than double-complete the remediation step.
+    if (validated.remediationStepId && !masteryResult.duplicate) {
       await completeRemediationStep(validated.remediationStepId, { success: scorePercent >= 60, score: scorePercent }).catch((err) =>
         console.error('Failed to complete remediation step:', err)
       );

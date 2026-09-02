@@ -1,4 +1,4 @@
-import { Pool, types } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
 
 // Postgres DATE columns (OID 1082) are parsed by node-pg into JS Date
 // objects at local midnight by default, which then serialize/compare
@@ -31,3 +31,15 @@ export async function testDB() {
 
 // Pool connection for direct use if needed
 export { Pool };
+
+/**
+ * Phase 2B: anything that can run a `.query(text, params)` -- the pool
+ * itself (the default every existing caller already uses) or one
+ * checked-out client from `db.connect()` mid-transaction. Threading
+ * this type through a function's signature as an optional parameter
+ * (defaulting to `db`) is StudyUs's chosen "smallest transaction-aware
+ * refactor" pattern: it lets a caller opt a function into an existing
+ * transaction without duplicating its logic or changing its behavior
+ * for every other, non-transactional caller.
+ */
+export type DbExecutor = Pick<Pool | PoolClient, 'query'>;

@@ -5,7 +5,7 @@
  * can match against, not a new string each time.
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { track } from '@/lib/analytics';
@@ -135,8 +135,8 @@ export interface MisconceptionCounts {
  * has no resolution/expiry concept yet, so every row is currently
  * active by construction); "critical" and "recurring" narrow that set.
  */
-export async function getMisconceptionCountsForConcept(studentId: string, conceptId: string): Promise<MisconceptionCounts> {
-  const result = await db.query(
+export async function getMisconceptionCountsForConcept(studentId: string, conceptId: string, client: DbExecutor = db): Promise<MisconceptionCounts> {
+  const result = await client.query(
     `SELECT sm.occurrence_count, ms.is_critical
      FROM student_misconceptions sm
      JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id

@@ -17,6 +17,12 @@ const Schema = z.object({
   studentResponse: z.string().min(1),
   language: z.string().optional(),
   remediationStepId: z.string().uuid().optional(),
+  // Phase 2B: minted by /transfer/generate, round-tripped unchanged --
+  // the stable logical identity for this ONE transfer attempt's
+  // evidence. A transport retry of this same submission reuses it; a
+  // genuinely new attempt only ever has one because /transfer/generate
+  // mints a fresh one every time it's called.
+  activityId: z.string().uuid(),
   // Phase 1D: loose optional strings -- a malformed value degrades to a
   // quality label (normalizeResponseTiming), never fails this request.
   questionPresentedAt: z.string().optional(),
@@ -52,6 +58,7 @@ export async function POST(request: NextRequest) {
         scorePercent,
         sampleSize: 1,
       },
+      identity: { operationType: 'TRANSFER', operationId: validated.activityId, conceptId: validated.conceptId },
       telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
       // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
       // row to the AI evaluation that produced this evidence -- always
@@ -68,36 +75,48 @@ export async function POST(request: NextRequest) {
     });
     const responseTimingEntries = toResponseTimingEntries([{ timing }]);
 
-    // metadata isn't part of MasteryUpdateInput's telemetry shape --
-    // stamp transferDistance onto the just-written evidence row
-    // directly so computeTransferScore can read it back later.
-    const { db } = await import('@/lib/db');
-    await db.query(
-      `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
-       WHERE id = (
-         SELECT id FROM learning_evidence
-         WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER'
-         ORDER BY timestamp DESC LIMIT 1
-       )`,
-      [
-        validated.studentId,
-        validated.conceptId,
-        // Phase 0E1: AI provenance is additive here, same jsonb merge
-        // pattern already used for transferDistance/assisted. Phase 1D:
-        // behavior.responseTimes only included when timing was usable.
-        JSON.stringify({
-          transferDistance: validated.distance,
-          assisted: false,
-          aiExecution: graded.aiExecution,
-          ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
-        }),
-      ]
-    );
-
-    if (validated.remediationStepId) {
-      await completeRemediationStep(validated.remediationStepId, { success: graded.result !== 'incorrect', score: scorePercent }).catch(
-        (err) => console.error('Failed to complete remediation step:', err)
+    // Phase 2B: this metadata UPDATE and the remediation-step
+    // completion below are both side effects of THIS ONE logical
+    // Transfer attempt, same as the evidence row itself -- if
+    // updateMastery just reported a duplicate (a retry of an
+    // already-applied attempt), skip both rather than overwrite the
+    // original application's stamped metadata with THIS retry's fresh
+    // AI re-grading (grading itself is not gated by the idempotency
+    // key -- Phase 2B Step 15 -- so a retry's aiExecution is a
+    // genuinely different value that must not clobber the first
+    // application's) or double-complete a remediation step.
+    if (!masteryResult.duplicate) {
+      // metadata isn't part of MasteryUpdateInput's telemetry shape --
+      // stamp transferDistance onto the just-written evidence row
+      // directly so computeTransferScore can read it back later.
+      const { db } = await import('@/lib/db');
+      await db.query(
+        `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
+         WHERE id = (
+           SELECT id FROM learning_evidence
+           WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER'
+           ORDER BY timestamp DESC LIMIT 1
+         )`,
+        [
+          validated.studentId,
+          validated.conceptId,
+          // Phase 0E1: AI provenance is additive here, same jsonb merge
+          // pattern already used for transferDistance/assisted. Phase 1D:
+          // behavior.responseTimes only included when timing was usable.
+          JSON.stringify({
+            transferDistance: validated.distance,
+            assisted: false,
+            aiExecution: graded.aiExecution,
+            ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
+          }),
+        ]
       );
+
+      if (validated.remediationStepId) {
+        await completeRemediationStep(validated.remediationStepId, { success: graded.result !== 'incorrect', score: scorePercent }).catch(
+          (err) => console.error('Failed to complete remediation step:', err)
+        );
+      }
     }
 
     track(validated.studentId, 'transfer_completed', { conceptId: validated.conceptId, distance: validated.distance, result: graded.result });

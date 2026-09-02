@@ -12,7 +12,7 @@
  * below -- this file implements that design, it does not redecide it.
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import type { EvidenceResult, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { getTransferScore } from './transfer.service';
 import { getMisconceptionCountsForConcept } from './misconception.service';
@@ -52,8 +52,8 @@ export interface MasteryPolicy {
 }
 
 /** The highest-version row in mastery_policies -- there is always exactly one active policy at a time. */
-export async function getActiveMasteryPolicy(): Promise<MasteryPolicy> {
-  const result = await db.query(
+export async function getActiveMasteryPolicy(client: DbExecutor = db): Promise<MasteryPolicy> {
+  const result = await client.query(
     `SELECT version, minimum_understanding, minimum_independence, minimum_application, minimum_retention,
             minimum_transfer, requires_transfer, maximum_critical_misconceptions, minimum_evidence_count,
             minimum_independent_evidence_count, retention_min_gap_days, validation_window_days
@@ -339,12 +339,33 @@ function rowToState(row: any): ConceptKnowledgeState {
  * the same underlying evidence produces the same stored row every
  * time (verified directly in tests/unit/knowledge-state.test.ts).
  */
-export async function recalculateConceptKnowledgeState(studentId: string, conceptId: string): Promise<ConceptKnowledgeState | null> {
-  const conceptRow = await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [conceptId]);
+/**
+ * Phase 2B: `client` is optional and additive -- every pre-existing
+ * caller (dashboards, other engines, this file's own tests) keeps
+ * calling this with no client and gets exactly the previous behavior,
+ * running against the pool. The ONE new caller that matters is
+ * mastery.service.ts's atomic evidence-application transaction: when
+ * `client` is that transaction's own checked-out connection, this
+ * entire projection (including the Phase 2.2B validation-cycle
+ * overlay it calls into, and the KNOWLEDGE_STATE_PROJECTED decision
+ * event it records) becomes part of the SAME atomic operation as the
+ * evidence/mastery writes that triggered it -- so "the operation is
+ * applied" and "Knowledge State is internally consistent with it" can
+ * never come apart, even under a mid-operation failure (Phase 2B's
+ * corrected design; see the Phase 2B report's Transaction Semantics
+ * section). No algorithm, threshold, or query result changes -- this
+ * is purely which connection runs the same SQL.
+ */
+export async function recalculateConceptKnowledgeState(
+  studentId: string,
+  conceptId: string,
+  client: DbExecutor = db
+): Promise<ConceptKnowledgeState | null> {
+  const conceptRow = await client.query(`SELECT subject_id FROM concepts WHERE id = $1`, [conceptId]);
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) return null;
 
-  const evidenceRows = await db.query(
+  const evidenceRows = await client.query(
     `SELECT source_type, result, score_percent, ai_assistance_type, timestamp
      FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC`,
     [studentId, conceptId]
@@ -357,10 +378,10 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
     timestamp: r.timestamp,
   }));
 
-  const policy = await getActiveMasteryPolicy();
+  const policy = await getActiveMasteryPolicy(client);
   const [transferScore, misconceptionCounts] = await Promise.all([
-    getTransferScore(studentId, conceptId),
-    getMisconceptionCountsForConcept(studentId, conceptId),
+    getTransferScore(studentId, conceptId, client),
+    getMisconceptionCountsForConcept(studentId, conceptId, client),
   ]);
 
   const unassistedRows = rows.filter((r) => r.aiAssistanceType === 'NONE');
@@ -385,7 +406,7 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   const firstEvidenceAt = sortedAsc[0]?.timestamp ?? null;
   const lastEvidenceAt = rows[0]?.timestamp ?? null;
 
-  const previousStateResult = await db.query(
+  const previousStateResult = await client.query(
     `SELECT mastery_state FROM concept_knowledge_state WHERE student_id = $1 AND concept_id = $2`,
     [studentId, conceptId]
   );
@@ -394,22 +415,27 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   // Phase 2.2B: overlays the time dimension on top of 2.2A's pure
   // dimension-based state -- opens/closes Validation Cycles, detects
   // decay from a previously-validated concept, and is the only source
-  // of AT_RISK/INTERVENTION_REQUIRED.
-  const masteryState = await evaluateValidationLifecycle({
-    studentId,
-    conceptId,
-    subjectId,
-    previousState,
-    baseState: baseMasteryState,
-    scores,
-    misconceptions,
-    policy,
-    knowledgeStateSnapshot: { scores, evidenceCount: sufficiency.evidenceCount },
-  });
+  // of AT_RISK/INTERVENTION_REQUIRED. Same transactional client -- a
+  // Validation Cycle opened/closed here commits (or rolls back) with
+  // everything else in this projection.
+  const masteryState = await evaluateValidationLifecycle(
+    {
+      studentId,
+      conceptId,
+      subjectId,
+      previousState,
+      baseState: baseMasteryState,
+      scores,
+      misconceptions,
+      policy,
+      knowledgeStateSnapshot: { scores, evidenceCount: sufficiency.evidenceCount },
+    },
+    client
+  );
 
   const stateReason = buildStateReason(scores, misconceptions, sufficiency, policy, masteryState, validationReadiness);
 
-  const upserted = await db.query(
+  const upserted = await client.query(
     `INSERT INTO concept_knowledge_state (
        student_id, concept_id, subject_id, mastery_state,
        understanding_score, independence_score, application_score, retention_score, transfer_score,
@@ -472,28 +498,31 @@ export async function recalculateConceptKnowledgeState(studentId: string, concep
   // recomputed and it stayed the same" is itself part of the auditable
   // record, not noise. concept_knowledge_state remains the domain
   // source of truth; this is its cross-engine-queryable twin.
-  await recordDecisionEvent({
-    decisionType: 'KNOWLEDGE_STATE_PROJECTED',
-    engine: 'knowledge-state-projector',
-    engineVersion: String(policy.version),
-    studentId,
-    subjectId,
-    conceptId,
-    sourceEventType: 'concept_knowledge_state',
-    sourceEventId: upserted.rows[0]?.id ?? null,
-    previousState: previousState ? { masteryState: previousState } : null,
-    newState: {
-      masteryState,
-      understanding: scores.understanding,
-      independence: scores.independence,
-      application: scores.application,
-      retention: scores.retention,
-      transfer: scores.transfer,
-      validationReadiness,
+  await recordDecisionEvent(
+    {
+      decisionType: 'KNOWLEDGE_STATE_PROJECTED',
+      engine: 'knowledge-state-projector',
+      engineVersion: String(policy.version),
+      studentId,
+      subjectId,
+      conceptId,
+      sourceEventType: 'concept_knowledge_state',
+      sourceEventId: upserted.rows[0]?.id ?? null,
+      previousState: previousState ? { masteryState: previousState } : null,
+      newState: {
+        masteryState,
+        understanding: scores.understanding,
+        independence: scores.independence,
+        application: scores.application,
+        retention: scores.retention,
+        transfer: scores.transfer,
+        validationReadiness,
+      },
+      reasonCode: previousState !== masteryState ? 'STATE_TRANSITION' : 'STATE_UNCHANGED',
+      reasonDetails: stateReason as unknown as Record<string, unknown>,
     },
-    reasonCode: previousState !== masteryState ? 'STATE_TRANSITION' : 'STATE_UNCHANGED',
-    reasonDetails: stateReason as unknown as Record<string, unknown>,
-  });
+    client
+  );
 
   return rowToState(upserted.rows[0]);
 }

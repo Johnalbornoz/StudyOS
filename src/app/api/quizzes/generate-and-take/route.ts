@@ -558,6 +558,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         { status: 400 }
       );
     }
+
+    // Phase 2B Step 10: defense-in-depth only -- the real, database-
+    // enforced guarantee against a duplicate submission is
+    // updateMastery's operation_key gate below (QUIZ_SUBMISSION,
+    // scoped to this quizId+concept), which two concurrent requests
+    // that both observe status='active' still cannot defeat (a status
+    // check alone is not an idempotency guarantee -- Phase 2A's
+    // finding). This guard exists to skip needless AI re-grading (and
+    // a needless retread of diagnostic/remediation side effects that
+    // are not themselves covered by the evidence-idempotency key) for
+    // the common sequential-retry case, where a genuinely-completed
+    // quiz is resubmitted after its first response was lost in
+    // transit.
+    if (quizSession.status === 'completed') {
+      return NextResponse.json({
+        success: true,
+        alreadySubmitted: true,
+        message: 'This quiz was already submitted. Its results were not changed.',
+      });
+    }
     const cachedQuestions = quizSession.questions;
     const language = quizSession.language;
     const config = QUIZ_MODE_CONFIG[quizSession.quizMode] || QUIZ_MODE_CONFIG.topic_practice;
@@ -743,6 +763,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           conceptId,
           subjectId: quizSession.subjectId,
           evidence,
+          // Phase 2B: quiz_sessions.id is minted once at generation and
+          // never regenerated on retry -- the stable logical identity
+          // for "this quiz submission's evidence for this concept."
+          // Concept-scoped so a multi-concept quiz's other buckets
+          // remain independently retryable (Phase 2B Step 13).
+          identity: { operationType: 'QUIZ_SUBMISSION', operationId: validated.quizId, conceptId },
           telemetry: {
             activityType: 'quiz',
             learningMode,
@@ -784,6 +810,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           previousMastery: masteryResult.oldMastery,
           newMastery: masteryResult.newMastery,
           delta: masteryResult.delta,
+          // Phase 2B: true when THIS concept bucket's evidence was
+          // already applied by an earlier request for the same quizId
+          // -- lets quiz-level (not concept-scoped) side effects below
+          // (diagnostic resolution, remediation-step completion) avoid
+          // double-processing a retried submission.
+          duplicate: masteryResult.duplicate === true,
         };
       })
     );
@@ -941,13 +973,24 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
 
     await completeQuiz(validated.quizId);
 
+    // Phase 2B: diagnostic resolution and remediation-step completion
+    // are quiz-level side effects of this ONE submission, tied to the
+    // quiz's primary concept -- not themselves covered by the
+    // (concept-scoped) evidence idempotency key. Skip both when that
+    // primary concept's evidence was already applied by an earlier
+    // request for this same quizId, so a retried submission can't
+    // resolve a diagnosis or complete a remediation step twice.
+    const primaryBucketDuplicate = quizSession.conceptId
+      ? perConceptResults.find((r) => r.conceptId === quizSession.conceptId)?.duplicate === true
+      : false;
+
     // Diagnostic Check resolution: the diagnosis is resolved from this
     // attempt's raw correct/total, not from the mastery-adjusted score,
     // since the diagnosis question is specifically "was the candidate
     // concept demonstrably weak right now", independent of how this
     // nudges the longer-running Mastery number.
     let diagnosticOutcome: { state: string; outcome: string } | null = null;
-    if (quizSession.quizMode === 'diagnostic_check' && validated.diagnosisId) {
+    if (quizSession.quizMode === 'diagnostic_check' && validated.diagnosisId && !primaryBucketDuplicate) {
       const bucket = byConcept.get(quizSession.conceptId || '');
       if (bucket) {
         const resolved = await resolveDiagnosticCheck(validated.diagnosisId, bucket.correct, bucket.total).catch(() => null);
@@ -963,7 +1006,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
-    if (validated.remediationStepId) {
+    if (validated.remediationStepId && !primaryBucketDuplicate) {
       await completeRemediationStep(validated.remediationStepId, { success: score >= 70, score }).catch((err) =>
         console.error('Failed to complete remediation step:', err)
       );

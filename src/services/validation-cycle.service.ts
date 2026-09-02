@@ -10,7 +10,7 @@
  * only adds the time dimension on top of it.
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { track } from '@/lib/analytics';
 import type { MasteryState, DimensionScores, MisconceptionState, MasteryPolicy } from './knowledge-state.service';
 
@@ -64,8 +64,8 @@ function rowToCycle(row: any): ValidationCycle {
   };
 }
 
-async function logEvent(cycleId: string, eventType: string, metadata?: Record<string, unknown>): Promise<void> {
-  await db.query(`INSERT INTO validation_events (validation_cycle_id, event_type, metadata) VALUES ($1, $2, $3)`, [
+async function logEvent(cycleId: string, eventType: string, metadata?: Record<string, unknown>, client: DbExecutor = db): Promise<void> {
+  await client.query(`INSERT INTO validation_events (validation_cycle_id, event_type, metadata) VALUES ($1, $2, $3)`, [
     cycleId,
     eventType,
     metadata ? JSON.stringify(metadata) : null,
@@ -101,8 +101,8 @@ export function determineTriggerType(scores: DimensionScores, misconceptions: Mi
 }
 
 /** The most recent CLOSED cycle for this concept that ended in VALIDATED_MASTERY, if any -- used to link a decay reopen back to what it's reopening. */
-export async function getLastValidatedCycle(studentId: string, conceptId: string): Promise<ValidationCycle | null> {
-  const result = await db.query(
+export async function getLastValidatedCycle(studentId: string, conceptId: string, client: DbExecutor = db): Promise<ValidationCycle | null> {
+  const result = await client.query(
     `SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND final_outcome = 'VALIDATED_MASTERY'
      ORDER BY validated_at DESC LIMIT 1`,
     [studentId, conceptId]
@@ -111,8 +111,8 @@ export async function getLastValidatedCycle(studentId: string, conceptId: string
 }
 
 /** How many of this concept's CLOSED cycles did NOT end in VALIDATED_MASTERY -- the persistent-difficulty signal for INTERVENTION_REQUIRED. */
-export async function countFailedCyclesForConcept(studentId: string, conceptId: string): Promise<number> {
-  const result = await db.query(
+export async function countFailedCyclesForConcept(studentId: string, conceptId: string, client: DbExecutor = db): Promise<number> {
+  const result = await client.query(
     `SELECT COUNT(*)::int AS n FROM validation_cycles
      WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED' AND final_outcome != 'VALIDATED_MASTERY'`,
     [studentId, conceptId]
@@ -156,15 +156,16 @@ export async function openValidationCycle(
   triggerType: TriggerType,
   policy: MasteryPolicy,
   initialKnowledgeState: unknown,
-  reopenedFromCycleId: string | null = null
+  reopenedFromCycleId: string | null = null,
+  client: DbExecutor = db
 ): Promise<ValidationCycle> {
-  const existing = await db.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'`, [
+  const existing = await client.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'`, [
     studentId,
     conceptId,
   ]);
   if (existing.rows[0]) return rowToCycle(existing.rows[0]);
 
-  const inserted = await db.query(
+  const inserted = await client.query(
     `INSERT INTO validation_cycles (
        student_id, concept_id, subject_id, trigger_type, validation_deadline,
        mastery_policy_version, initial_knowledge_state, reopened_from_cycle_id
@@ -173,7 +174,11 @@ export async function openValidationCycle(
     [studentId, conceptId, subjectId, triggerType, policy.validationWindowDays, policy.version, JSON.stringify(initialKnowledgeState ?? null), reopenedFromCycleId]
   );
   const cycle = rowToCycle(inserted.rows[0]);
-  await logEvent(cycle.id, reopenedFromCycleId ? 'VALIDATION_CYCLE_REOPENED' : 'VALIDATION_CYCLE_STARTED', { triggerType });
+  await logEvent(cycle.id, reopenedFromCycleId ? 'VALIDATION_CYCLE_REOPENED' : 'VALIDATION_CYCLE_STARTED', { triggerType }, client);
+  // Analytics stays outside the atomic cognitive-application boundary
+  // (Phase 2B: `track` is best-effort product telemetry, not part of
+  // the exactly-once cognitive-state guarantee -- see the Phase 2B
+  // report's Transaction Semantics section).
   track(studentId, reopenedFromCycleId ? 'validation_cycle_reopened' : 'validation_cycle_started', { conceptId, triggerType });
   return cycle;
 }
@@ -182,17 +187,18 @@ async function closeCycle(
   cycle: ValidationCycle,
   finalOutcome: FinalOutcome,
   outcomeReason: string,
-  validatedAt: Date | null
+  validatedAt: Date | null,
+  client: DbExecutor = db
 ): Promise<ValidationCycle> {
-  const updated = await db.query(
+  const updated = await client.query(
     `UPDATE validation_cycles SET status = 'CLOSED', closed_at = NOW(), final_outcome = $2, outcome_reason = $3, validated_at = $4
      WHERE id = $1 RETURNING *`,
     [cycle.id, finalOutcome, outcomeReason, validatedAt]
   );
   const closed = rowToCycle(updated.rows[0]);
-  await logEvent(cycle.id, 'VALIDATION_CYCLE_CLOSED', { finalOutcome, outcomeReason });
-  if (finalOutcome === 'VALIDATED_MASTERY') await logEvent(cycle.id, 'VALIDATED_MASTERY_REACHED', {});
-  if (finalOutcome === 'INTERVENTION_REQUIRED') await logEvent(cycle.id, 'INTERVENTION_REQUIRED', {});
+  await logEvent(cycle.id, 'VALIDATION_CYCLE_CLOSED', { finalOutcome, outcomeReason }, client);
+  if (finalOutcome === 'VALIDATED_MASTERY') await logEvent(cycle.id, 'VALIDATED_MASTERY_REACHED', {}, client);
+  if (finalOutcome === 'INTERVENTION_REQUIRED') await logEvent(cycle.id, 'INTERVENTION_REQUIRED', {}, client);
   track(cycle.studentId, 'validation_cycle_closed', { conceptId: cycle.conceptId, finalOutcome, outcomeReason });
   return closed;
 }
@@ -204,12 +210,12 @@ async function closeCycle(
  * evidence arrived during the window, so the outcome reason is honest
  * about "not there yet" vs. "never got enough data to judge."
  */
-async function resolveIfExpired(cycle: ValidationCycle, hadEvidence: boolean): Promise<ValidationCycle> {
+async function resolveIfExpired(cycle: ValidationCycle, hadEvidence: boolean, client: DbExecutor = db): Promise<ValidationCycle> {
   if (cycle.status !== 'OPEN' || new Date(cycle.validationDeadline) > new Date()) return cycle;
-  const priorFailed = await countFailedCyclesForConcept(cycle.studentId, cycle.conceptId);
+  const priorFailed = await countFailedCyclesForConcept(cycle.studentId, cycle.conceptId, client);
   const { outcome, reason } = determineExpiredCycleOutcome(priorFailed, hadEvidence);
-  await logEvent(cycle.id, 'VALIDATION_DEADLINE_REACHED', { outcome, reason });
-  return closeCycle(cycle, outcome, reason, null);
+  await logEvent(cycle.id, 'VALIDATION_DEADLINE_REACHED', { outcome, reason }, client);
+  return closeCycle(cycle, outcome, reason, null, client);
 }
 
 /**
@@ -227,20 +233,30 @@ interface ActiveCycleResolution {
   justResolved: ValidationCycle | null;
 }
 
-async function resolveActiveCycle(studentId: string, conceptId: string, hadRecentEvidence: boolean = true): Promise<ActiveCycleResolution> {
-  const result = await db.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'`, [
+async function resolveActiveCycle(
+  studentId: string,
+  conceptId: string,
+  hadRecentEvidence: boolean = true,
+  client: DbExecutor = db
+): Promise<ActiveCycleResolution> {
+  const result = await client.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'`, [
     studentId,
     conceptId,
   ]);
   if (!result.rows[0]) return { openCycle: null, justResolved: null };
-  const resolved = await resolveIfExpired(rowToCycle(result.rows[0]), hadRecentEvidence);
+  const resolved = await resolveIfExpired(rowToCycle(result.rows[0]), hadRecentEvidence, client);
   if (resolved.status === 'OPEN') return { openCycle: resolved, justResolved: null };
   return { openCycle: null, justResolved: resolved };
 }
 
 /** The OPEN cycle for this concept, if any -- lazily resolves it first if its deadline already passed (same resolve-on-read pattern already used for learning_debt). Contract unchanged: never returns a cycle that isn't currently OPEN. */
-export async function getActiveValidationCycle(studentId: string, conceptId: string, hadRecentEvidence: boolean = true): Promise<ValidationCycle | null> {
-  const { openCycle } = await resolveActiveCycle(studentId, conceptId, hadRecentEvidence);
+export async function getActiveValidationCycle(
+  studentId: string,
+  conceptId: string,
+  hadRecentEvidence: boolean = true,
+  client: DbExecutor = db
+): Promise<ValidationCycle | null> {
+  const { openCycle } = await resolveActiveCycle(studentId, conceptId, hadRecentEvidence, client);
   return openCycle;
 }
 
@@ -261,20 +277,23 @@ export async function getActiveValidationCycles(studentId: string): Promise<Vali
  * INTERVENTION_REQUIRED only ever come from here, never from 2.2A's
  * pure dimension check alone.
  */
-export async function evaluateValidationLifecycle(params: {
-  studentId: string;
-  conceptId: string;
-  subjectId: string;
-  previousState: MasteryState | null;
-  baseState: MasteryState;
-  scores: DimensionScores;
-  misconceptions: MisconceptionState;
-  policy: MasteryPolicy;
-  knowledgeStateSnapshot: unknown;
-}): Promise<MasteryState> {
+export async function evaluateValidationLifecycle(
+  params: {
+    studentId: string;
+    conceptId: string;
+    subjectId: string;
+    previousState: MasteryState | null;
+    baseState: MasteryState;
+    scores: DimensionScores;
+    misconceptions: MisconceptionState;
+    policy: MasteryPolicy;
+    knowledgeStateSnapshot: unknown;
+  },
+  client: DbExecutor = db
+): Promise<MasteryState> {
   const { studentId, conceptId, subjectId, previousState, baseState, scores, misconceptions, policy, knowledgeStateSnapshot } = params;
 
-  const { openCycle: existingOpen, justResolved } = await resolveActiveCycle(studentId, conceptId);
+  const { openCycle: existingOpen, justResolved } = await resolveActiveCycle(studentId, conceptId, true, client);
 
   // Terminal escalation: if the OPEN cycle we just found had already
   // expired and was resolved THIS pass to INTERVENTION_REQUIRED (two or
@@ -293,7 +312,7 @@ export async function evaluateValidationLifecycle(params: {
   // regression, and reopens monitoring against the concept's own
   // validated history.
   if (previousState === 'VALIDATED_MASTERY' && baseState !== 'VALIDATED_MASTERY' && !existingOpen) {
-    const lastValidated = await getLastValidatedCycle(studentId, conceptId);
+    const lastValidated = await getLastValidatedCycle(studentId, conceptId, client);
     const cycle = await openValidationCycle(
       studentId,
       conceptId,
@@ -301,17 +320,18 @@ export async function evaluateValidationLifecycle(params: {
       'KNOWLEDGE_DECAY',
       policy,
       knowledgeStateSnapshot,
-      lastValidated?.id ?? null
+      lastValidated?.id ?? null,
+      client
     );
-    await logEvent(cycle.id, 'KNOWLEDGE_DECAY_DETECTED', {});
-    await logEvent(cycle.id, 'CONCEPT_AT_RISK', {});
+    await logEvent(cycle.id, 'KNOWLEDGE_DECAY_DETECTED', {}, client);
+    await logEvent(cycle.id, 'CONCEPT_AT_RISK', {}, client);
     track(studentId, 'knowledge_decay_detected', { conceptId });
     return 'AT_RISK';
   }
 
   if (baseState === 'VALIDATED_MASTERY') {
     if (existingOpen) {
-      await closeCycle(existingOpen, 'VALIDATED_MASTERY', 'VALIDATED', new Date());
+      await closeCycle(existingOpen, 'VALIDATED_MASTERY', 'VALIDATED', new Date(), client);
     }
     return 'VALIDATED_MASTERY';
   }
@@ -330,20 +350,20 @@ export async function evaluateValidationLifecycle(params: {
   if (previousState === 'INTERVENTION_REQUIRED') {
     if (isMeaningfulGap(baseState) && !existingOpen) {
       const triggerType = determineTriggerType(scores, misconceptions, policy);
-      await openValidationCycle(studentId, conceptId, subjectId, triggerType, policy, knowledgeStateSnapshot);
+      await openValidationCycle(studentId, conceptId, subjectId, triggerType, policy, knowledgeStateSnapshot, null, client);
     }
     return 'INTERVENTION_REQUIRED';
   }
 
   if (isMeaningfulGap(baseState) && !existingOpen) {
     const triggerType = determineTriggerType(scores, misconceptions, policy);
-    await openValidationCycle(studentId, conceptId, subjectId, triggerType, policy, knowledgeStateSnapshot);
+    await openValidationCycle(studentId, conceptId, subjectId, triggerType, policy, knowledgeStateSnapshot, null, client);
     if (baseState === 'PROVISIONAL_MASTERY') {
-      const reopened = await getActiveValidationCycle(studentId, conceptId);
-      if (reopened) await logEvent(reopened.id, 'PROVISIONAL_MASTERY_REACHED', {});
+      const reopened = await getActiveValidationCycle(studentId, conceptId, true, client);
+      if (reopened) await logEvent(reopened.id, 'PROVISIONAL_MASTERY_REACHED', {}, client);
     }
   } else if (existingOpen && baseState === 'PROVISIONAL_MASTERY') {
-    await logEvent(existingOpen.id, 'PROVISIONAL_MASTERY_REACHED', {});
+    await logEvent(existingOpen.id, 'PROVISIONAL_MASTERY_REACHED', {}, client);
   }
 
   return baseState;

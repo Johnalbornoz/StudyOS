@@ -104,6 +104,7 @@ describe('submitQualifiedAssessmentEvidence (assessment-verification.service.ts)
       verificationOutcome: 'CONFIRMED',
       aiExecution: { aiExecutionId: 'exec-verify-1', provider: 'anthropic', model: 'claude-x' } as any,
       responseTiming: { responseTimeMs: 12000, quality: 'VALID' },
+      verificationAttemptId: 'va-1',
     });
 
     expect(updateMasteryMock).toHaveBeenCalledTimes(1);
@@ -128,6 +129,7 @@ describe('submitQualifiedAssessmentEvidence (assessment-verification.service.ts)
       activityType: 'CUMULATIVE_ASSESSMENT',
       evidenceMode: 'ASSESSMENT',
       assessmentConfidence: 88,
+      verificationAttemptId: 'va-2',
     });
 
     const call = updateMasteryMock.mock.calls[0][0];
@@ -149,6 +151,7 @@ describe('submitQualifiedAssessmentEvidence (assessment-verification.service.ts)
       evidenceMode: 'ASSESSMENT',
       assessmentConfidence: 88,
       responseTiming: { responseTimeMs: null, quality: 'MISSING' },
+      verificationAttemptId: 'va-3',
     });
 
     const call = updateMasteryMock.mock.calls[0][0];

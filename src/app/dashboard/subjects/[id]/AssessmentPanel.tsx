@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 
 interface Occurrence {
@@ -70,6 +70,12 @@ export default function AssessmentPanel({
   const [maxScoreInput, setMaxScoreInput] = useState('100');
   const [submittingResult, setSubmittingResult] = useState(false);
   const [lastOutcome, setLastOutcome] = useState<ExamResultOutcome | null>(null);
+  // Phase 2B: minted once when the "Record Result" form is opened for
+  // a new entry, reused for every submit attempt of THAT one entry
+  // (including a network retry) -- the stable identity a duplicate
+  // submission is recognized by. Closing and reopening the form for a
+  // fresh/corrected entry gets a new token.
+  const submissionTokenRef = useRef<string | null>(null);
 
   const labelFor = (conceptId: string) =>
     concepts.find((c) => c.conceptId === conceptId)?.label || conceptId;
@@ -181,6 +187,7 @@ export default function AssessmentPanel({
           occurrenceId: occurrence.id,
           score: Number(scoreInput),
           maxScore: Number(maxScoreInput),
+          submissionToken: submissionTokenRef.current,
         }),
       });
       const body = await res.json();
@@ -418,7 +425,14 @@ export default function AssessmentPanel({
               ) : (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: 13.5, margin: 0 }}>{t['exam.recordResultPrompt']}</p>
-                  <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => setRecordingResult(true)}>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ whiteSpace: 'nowrap' }}
+                    onClick={() => {
+                      submissionTokenRef.current = crypto.randomUUID();
+                      setRecordingResult(true);
+                    }}
+                  >
                     {t['exam.recordResult']}
                   </button>
                 </div>

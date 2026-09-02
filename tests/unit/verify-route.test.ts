@@ -62,7 +62,7 @@ beforeEach(() => {
   gradeAnswerMock.mockReset();
   gradeStructuredAnswerMock.mockReset();
   getPendingVerificationAttemptMock.mockReset();
-  resolveVerificationAttemptMock.mockReset().mockResolvedValue(undefined);
+  resolveVerificationAttemptMock.mockReset().mockResolvedValue(true);
   submitQualifiedAssessmentEvidenceMock.mockReset().mockResolvedValue({ oldMastery: 50, newMastery: 55, delta: 5 });
 });
 

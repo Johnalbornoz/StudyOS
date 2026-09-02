@@ -5,7 +5,7 @@
  * Always goes through: LearningEvidence → MasteryEngine → MasteryRecord → MasteryEvent
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { ensureConceptLocalizations } from './localization.service';
 import {
   calculateMasteryDelta,
@@ -18,6 +18,16 @@ import {
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 import { recalculateConceptKnowledgeState } from './knowledge-state.service';
 import { recordDecisionEvent } from '@/lib/audit';
+import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
+
+/** Postgres unique_violation. See database/migrations/20260901_1200_evidence_idempotency.sql. */
+const PG_UNIQUE_VIOLATION = '23505';
+const OPERATION_KEY_CONSTRAINT = 'learning_evidence_operation_key_unique_idx';
+
+function isOperationKeyConflict(err: unknown): boolean {
+  const pgErr = err as { code?: string; constraint?: string } | undefined;
+  return pgErr?.code === PG_UNIQUE_VIOLATION && pgErr?.constraint === OPERATION_KEY_CONSTRAINT;
+}
 
 export type AIAssistanceType =
   | 'NONE' | 'HINT' | 'MULTIPLE_HINTS' | 'TUTOR_GUIDANCE' | 'TUTOR_EXPLANATION' | 'WORKED_EXAMPLE' | 'OTHER';
@@ -54,6 +64,19 @@ export interface MasteryUpdateInput {
    * decision_events row to that execution (Step 15).
    */
   aiExecutionId?: string | null;
+  /**
+   * Phase 2B: the stable logical-operation identity this evidence
+   * belongs to (see src/lib/algorithms/evidence-idempotency.ts). When
+   * present, this call becomes idempotent: a second call with the same
+   * identity never re-applies -- it returns the already-applied
+   * result instead (MasteryUpdateResult.duplicate === true). Omitted
+   * entirely -- not merely a caller declining to identify one specific
+   * retry -- for writers this phase deliberately did not wire up yet
+   * (see the Phase 2B report's Evidence Writer Audit); those keep
+   * today's unprotected behavior unchanged, exactly as before this
+   * field existed.
+   */
+  identity?: EvidenceApplicationIdentity;
 }
 
 export interface MasteryUpdateResult {
@@ -63,18 +86,36 @@ export interface MasteryUpdateResult {
   confidenceScore: number;
   learningDebtCreated?: boolean;
   learningDebtSeverity?: number;
+  /**
+   * Phase 2B: true when this call was a replay of an already-applied
+   * logical operation (same `identity`) -- evidence, Mastery, and
+   * Knowledge State were NOT touched a second time. oldMastery/
+   * newMastery/confidenceScore reflect the CURRENT (already-applied)
+   * state; delta is always 0. Absent (not merely false) when the
+   * caller supplied no `identity` at all, since idempotency was never
+   * evaluated in that case.
+   */
+  duplicate?: boolean;
   eventId: string;
 }
 
 /**
- * Get current mastery record for a student+concept
+ * Get current mastery record for a student+concept. `client` defaults
+ * to the pool (every pre-existing caller's exact previous behavior);
+ * `forUpdate` row-locks the record for the duration of the caller's
+ * own transaction (Phase 2B -- only the atomic updateMastery below
+ * uses this, to serialize concurrent writes to the same record rather
+ * than risk one silently overwriting the other's stale-read-based
+ * delta).
  */
 export async function getMasteryRecord(
   studentId: string,
-  conceptId: string
+  conceptId: string,
+  options?: { client?: DbExecutor; forUpdate?: boolean }
 ) {
+  const executor = options?.client ?? db;
   try {
-    const result = await db.query(
+    const result = await executor.query(
       `
       SELECT
         id,
@@ -88,6 +129,7 @@ export async function getMasteryRecord(
       FROM mastery_records
       WHERE student_id = $1 AND concept_id = $2
       LIMIT 1
+      ${options?.forUpdate ? 'FOR UPDATE' : ''}
       `,
       [studentId, conceptId]
     );
@@ -104,18 +146,39 @@ export async function getMasteryRecord(
 }
 
 /**
- * Create or get mastery record (auto-create if missing)
+ * Create or get mastery record (auto-create if missing). Same
+ * `client`/`forUpdate` additive contract as getMasteryRecord above.
+ * The forUpdate path always returns a row: the INSERT ... ON CONFLICT
+ * DO NOTHING guarantees one exists (racing concurrently against
+ * another operation's own get-or-create is exactly what the row lock
+ * that follows is for), then the locked SELECT reads it back.
  */
 export async function getOrCreateMasteryRecord(
   studentId: string,
   conceptId: string,
-  subjectId: string
+  subjectId: string,
+  options?: { client?: DbExecutor; forUpdate?: boolean }
 ) {
-  let record = await getMasteryRecord(studentId, conceptId);
+  const executor = options?.client ?? db;
+
+  if (options?.forUpdate) {
+    await executor.query(
+      `
+      INSERT INTO mastery_records (student_id, concept_id, subject_id, mastery_score, confidence_score, attempt_count, correct_count, incorrect_count)
+      VALUES ($1, $2, $3, 0, 0, 0, 0, 0)
+      ON CONFLICT (student_id, concept_id) DO NOTHING
+      `,
+      [studentId, conceptId, subjectId]
+    );
+    const record = await getMasteryRecord(studentId, conceptId, { client: executor, forUpdate: true });
+    return record!;
+  }
+
+  let record = await getMasteryRecord(studentId, conceptId, { client: executor });
 
   if (!record) {
     // Auto-create with default values
-    const result = await db.query(
+    const result = await executor.query(
       `
       INSERT INTO mastery_records (
         student_id,
@@ -147,287 +210,360 @@ export async function getOrCreateMasteryRecord(
 }
 
 /**
- * Main method: Update mastery based on learning evidence
+ * Reads the current mastery_records state for a duplicate/ALREADY_APPLIED
+ * response -- informational only (no lock: the transaction that owns
+ * this record already committed or never started), never a fabricated
+ * "as if newly applied" value. Falls back to zeros only in the
+ * pathological case where the record genuinely doesn't exist (it
+ * always will in practice -- the first, real application that won the
+ * operation_key race is what created it).
+ */
+async function readCurrentMasteryForDuplicateResponse(
+  studentId: string,
+  conceptId: string
+): Promise<{ masteryScore: number; confidenceScore: number; eventId: string }> {
+  const record = await getMasteryRecord(studentId, conceptId);
+  const masteryScore = record ? Number(record.mastery_score) : 0;
+  const confidenceScore = record ? Number(record.confidence_score) : 0;
+  let eventId = '';
+  if (record?.id) {
+    const eventResult = await db.query(
+      `SELECT id FROM mastery_events WHERE mastery_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [record.id]
+    );
+    eventId = eventResult.rows[0]?.id ?? '';
+  }
+  return { masteryScore, confidenceScore, eventId };
+}
+
+/**
+ * Main method: apply learning evidence to Mastery, Knowledge State, and
+ * their audit trail as ONE atomic, at-most-once cognitive-state change.
  *
- * Steps:
- * 1. Get/create mastery record
- * 2. Calculate new mastery using deterministic algorithm
- * 3. Update attempt counters
- * 4. Calculate confidence score
- * 5. Update mastery_records
- * 6. Create mastery_event (audit trail)
- * 7. Check if learning debt should be created/updated
- * 8. Return results
+ * Phase 2B (Evidence Idempotency & Mastery Integrity): when
+ * `input.identity` is present, this whole operation -- learning_evidence
+ * insertion, the Mastery mutation, its audit row, Knowledge State
+ * recalculation (including the Phase 2.2B Validation Cycle overlay),
+ * and the decision events that belong to this same application -- runs
+ * inside ONE short database transaction, gated by an atomic DB-level
+ * claim on a deterministic operation_key (see
+ * src/lib/algorithms/evidence-idempotency.ts). Two concurrent calls
+ * with the same identity can never both apply: the database itself
+ * decides which one wins (an INSERT racing a unique index), not a
+ * preceding SELECT. The loser rolls back cleanly and returns the
+ * ALREADY_APPLIED (duplicate: true) result instead of an error.
+ *
+ * HTTP delivery to StudyUs remains AT_LEAST_ONCE (a network retry, a
+ * double-click, or a server-side retry after a client timeout can all
+ * cause this function to be called more than once for the same real
+ * learner action) -- the guarantee this function makes is EXACTLY-ONCE
+ * COGNITIVE EFFECT for a given stable logical operation identity, not
+ * that it is only ever called once.
+ *
+ * `input.identity` omitted entirely (not merely one field blank) keeps
+ * today's unprotected behavior byte-for-byte -- the writers this phase
+ * did not wire an identity for (see the Phase 2B report's Evidence
+ * Writer Audit) are unaffected by any of this.
+ *
+ * Steps inside the transaction:
+ * 1. Read recent evidence for the confidence calc (BEFORE the gate --
+ *    see the "read before the gate" note below).
+ * 2. Atomically claim operation_key by inserting learning_evidence.
+ *    A unique_violation on that specific constraint here means this
+ *    exact operation already applied -- roll back, return
+ *    ALREADY_APPLIED. Any other error is a real failure and propagates.
+ * 3. Get-or-create + row-lock mastery_records.
+ * 4. Calculate new mastery using the deterministic algorithm (unchanged).
+ * 5. Update mastery_records; insert mastery_events; conditionally
+ *    upsert learning_debt and log the classified error, if any --
+ *    all inside the same transaction, so a duplicate can never produce
+ *    a second error record either (Phase 2B Step 4's correction).
+ * 6. Recalculate Concept Knowledge State using the SAME transactional
+ *    client (Phase 2.2A + 2.2B, unchanged algorithms -- see
+ *    knowledge-state.service.ts/validation-cycle.service.ts's own
+ *    Phase 2B doc comments).
+ * 7. Record the MASTERY_UPDATED (+ LEARNING_DEBT_CREATED, if any)
+ *    decision events on the SAME client -- part of the same atomic
+ *    operation, not a best-effort afterthought, for this call only.
+ * 8. Commit. If ANY of the above throws, the whole transaction rolls
+ *    back -- Evidence, Mastery, Knowledge State, and their audit trail
+ *    either all reflect this operation or none of them do; there is no
+ *    partially-applied state to reconcile.
  */
 export async function updateMastery(
   input: MasteryUpdateInput
 ): Promise<MasteryUpdateResult> {
-  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry, metadata, aiExecutionId } = input;
+  const { studentId, conceptId, subjectId, evidence, errorClassification, telemetry, metadata, aiExecutionId, identity } = input;
+  const operationKey = identity ? buildOperationKey(identity) : null;
 
-  // Step 1: Get or create mastery record
-  const masteryRecord = await getOrCreateMasteryRecord(
-    studentId,
-    conceptId,
-    subjectId
-  );
+  const client = await db.connect();
+  let duplicate = false;
+  let result: MasteryUpdateResult | null = null;
 
-  const oldMastery = Number.isFinite(Number(masteryRecord.mastery_score))
-    ? Number(masteryRecord.mastery_score)
-    : 0;
+  try {
+    await client.query('BEGIN');
 
-  // Step 2: Calculate new mastery using algorithm
-  const rawNewMastery = algorithmUpdateMastery(oldMastery, evidence);
-  const newMastery = Number.isFinite(rawNewMastery) ? rawNewMastery : oldMastery;
-  const delta = newMastery - oldMastery;
+    // Read BEFORE the idempotency gate -- calculateConfidence's
+    // "recent results" must never include the evidence row THIS call
+    // is about to write (that would change confidence_score's inputs
+    // for every future evidence write, an algorithm-adjacent behavior
+    // change Phase 2B does not make). Reading first, then writing,
+    // preserves the exact pre-Phase-2B ordering.
+    const recentResults = await getRecentResults(studentId, conceptId, 5, client);
 
-  // Step 3: Update attempt counters
-  let correctCount = masteryRecord.correct_count;
-  let incorrectCount = masteryRecord.incorrect_count;
+    // The atomic claim: the database, not a preceding SELECT, decides
+    // who wins a concurrent race for this operation_key (Phase 2B
+    // Step 10's correction). Evidence columns never depend on the
+    // Mastery record's current state, so this can safely be the FIRST
+    // write -- a duplicate is detected (and rolled back) before any
+    // mastery_records lock is ever taken, keeping a flood of retries
+    // cheap rather than serializing them behind real work.
+    let learningEvidenceId: string | null = null;
+    try {
+      const evidenceResult = await client.query(
+        `
+        INSERT INTO learning_evidence (
+          student_id, concept_id, source_type, result, difficulty, timestamp,
+          subject_id, activity_type, learning_mode, hints_used, ai_assistance_type,
+          confidence_before_answer, score_percent, metadata, operation_key
+        ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id
+        `,
+        [
+          studentId,
+          conceptId,
+          evidence.sourceType,
+          evidence.result,
+          evidence.difficulty,
+          subjectId,
+          telemetry?.activityType ?? null,
+          telemetry?.learningMode ?? null,
+          telemetry?.hintsUsed ?? 0,
+          telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
+          telemetry?.confidenceBeforeAnswer ?? null,
+          evidence.scorePercent ?? null,
+          metadata ? JSON.stringify(metadata) : null,
+          operationKey,
+        ]
+      );
+      learningEvidenceId = evidenceResult.rows[0].id;
+    } catch (err) {
+      if (operationKey && isOperationKeyConflict(err)) {
+        // Another (or an earlier) call already applied this exact
+        // logical operation. Roll back cleanly -- nothing else in this
+        // transaction has written anything yet -- and fall through:
+        // `duplicate` short-circuits the rest of this try block below,
+        // and the ALREADY_APPLIED result is built once the client has
+        // been released (see after the try/catch/finally).
+        await client.query('ROLLBACK');
+        duplicate = true;
+      } else {
+        throw err; // a real failure -- not our constraint, or no identity was ever supplied
+      }
+    }
 
-  if (evidence.result === 'correct') {
-    correctCount += 1;
-  } else if (evidence.result === 'incorrect') {
-    incorrectCount += 1;
+    if (!duplicate) {
+      // Get-or-create + row-lock mastery_records -- serializes
+      // concurrent DISTINCT (different operation_key) operations on
+      // the SAME concept against each other too, so a second
+      // legitimate delta is always computed against the first's
+      // already-applied result rather than a stale pre-write read
+      // (Phase 2B Step 12/13).
+      const masteryRecord = await getOrCreateMasteryRecord(studentId, conceptId, subjectId, { client, forUpdate: true });
+
+      const oldMastery = Number.isFinite(Number(masteryRecord.mastery_score)) ? Number(masteryRecord.mastery_score) : 0;
+
+      // Deterministic algorithm -- unchanged (Phase 2B makes no
+      // formula, weight, or threshold changes).
+      const rawNewMastery = algorithmUpdateMastery(oldMastery, evidence);
+      const newMastery = Number.isFinite(rawNewMastery) ? rawNewMastery : oldMastery;
+      const delta = newMastery - oldMastery;
+
+      let correctCount = masteryRecord.correct_count;
+      let incorrectCount = masteryRecord.incorrect_count;
+      if (evidence.result === 'correct') correctCount += 1;
+      else if (evidence.result === 'incorrect') incorrectCount += 1;
+      const attemptCount = masteryRecord.attempt_count + 1;
+
+      const confidenceInput = {
+        mastery: newMastery,
+        recentResults: recentResults.map((r) => r.result as any),
+        daysSinceLastAttempt: getDaysSinceLastAttempt(masteryRecord.last_practiced),
+        attemptCount,
+        correctCount,
+      };
+      const confidenceScore = calculateConfidence(confidenceInput);
+
+      // Next time this concept is due for review -- interval scales
+      // with the mastery/confidence just calculated, so well-known
+      // concepts get spaced out further than ones just past the
+      // "solid" threshold.
+      const nextReviewDate = calculateNextReviewDate(newMastery, confidenceScore);
+
+      const updateResult = await client.query(
+        `
+        UPDATE mastery_records
+        SET
+          mastery_score = $1,
+          confidence_score = $2,
+          attempt_count = $3,
+          correct_count = $4,
+          incorrect_count = $5,
+          last_practiced = NOW(),
+          next_review_date = $8,
+          updated_at = NOW()
+        WHERE student_id = $6 AND concept_id = $7
+        RETURNING id
+        `,
+        [newMastery, confidenceScore, attemptCount, correctCount, incorrectCount, studentId, conceptId, nextReviewDate]
+      );
+      const masteryRecordId = updateResult.rows[0].id;
+
+      const eventResult = await client.query(
+        `
+        INSERT INTO mastery_events (mastery_id, old_score, new_score, delta_reason, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING id
+        `,
+        [masteryRecordId, oldMastery, newMastery, `${evidence.sourceType}:${evidence.result}`.slice(0, 50)]
+      );
+      const eventId = eventResult.rows[0].id;
+
+      const recurrenceCount = incorrectCount; // Simple: count of incorrect answers
+      const shouldCreateDebt = shouldCreateLearningDebt(
+        newMastery,
+        evidence.sourceType === 'TOPIC_ASSESSMENT' || evidence.sourceType === 'CUMULATIVE_ASSESSMENT',
+        evidence.sourceType === 'PRACTICE_QUIZ' || evidence.sourceType === 'PRACTICE_QUESTION',
+        false, // TODO: check if prerequisite to upcoming exam
+        recurrenceCount
+      );
+
+      let learningDebtCreated = false;
+      let learningDebtSeverity = 0;
+
+      if (shouldCreateDebt) {
+        const severity = calculateDebtSeverity(newMastery, recurrenceCount, false);
+
+        const debtResult = await client.query(
+          `
+          INSERT INTO learning_debt (student_id, concept_id, subject_id, severity, status, created_at)
+          VALUES ($1, $2, $3, $4, 'active', NOW())
+          ON CONFLICT (student_id, concept_id)
+          DO UPDATE SET severity = $4, status = 'active', resolved_at = NULL
+          RETURNING id
+          `,
+          [studentId, conceptId, subjectId, severity]
+        );
+
+        learningDebtCreated = true;
+        learningDebtSeverity = severity;
+
+        // Phase 0E2 Step 19: shouldCreateLearningDebt's own boolean
+        // condition, spelled out as a machine-readable reason. Phase
+        // 2B: same transactional client -- part of this atomic
+        // operation now, not a best-effort afterthought (Step 15 of
+        // the Phase 2B task).
+        await recordDecisionEvent(
+          {
+            decisionType: 'LEARNING_DEBT_CREATED',
+            engine: 'debt-resolution-engine',
+            engineVersion: 'v1',
+            studentId,
+            subjectId,
+            conceptId,
+            sourceEventType: 'learning_debt',
+            sourceEventId: debtResult.rows[0]?.id ?? null,
+            newState: { severity, status: 'active' },
+            reasonCode: 'LOW_MASTERY_WITH_RECENT_ATTEMPT',
+            reasonDetails: { mastery: newMastery, recurrenceCount, sourceType: evidence.sourceType },
+          },
+          client
+        );
+      }
+
+      // Phase 0E2 Step 14: cross-engine auditability for the mastery
+      // update that just happened. Phase 2B: same transactional client.
+      await recordDecisionEvent(
+        {
+          decisionType: 'MASTERY_UPDATED',
+          engine: 'mastery-engine',
+          engineVersion: 'v1',
+          studentId,
+          subjectId,
+          conceptId,
+          sourceEventType: 'learning_evidence',
+          sourceEventId: learningEvidenceId,
+          previousState: { masteryScore: oldMastery },
+          newState: { masteryScore: newMastery, confidenceScore },
+          reasonCode: `${evidence.sourceType}:${evidence.result}`.slice(0, 50),
+          reasonDetails: {
+            sourceType: evidence.sourceType,
+            result: evidence.result,
+            scorePercent: evidence.scorePercent ?? null,
+            sampleSize: evidence.sampleSize ?? null,
+            delta,
+          },
+          aiExecutionId: aiExecutionId ?? null,
+        },
+        client
+      );
+
+      // Log a classified error, if this was a wrong/partial answer and
+      // the caller classified why. Phase 2B Step 4: now inside the
+      // same atomic operation as the evidence it's about -- a
+      // duplicate application (rejected above, before this line is
+      // ever reached) can never create a second error record either.
+      if (errorClassification && evidence.result !== 'correct') {
+        await client.query(
+          `INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type) VALUES ($1, $2, $3, $4, $5)`,
+          [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
+        );
+      }
+
+      // Phase 2.2A/2.2B, same transactional client (Phase 2B
+      // correction): Knowledge State is a projection, never a second
+      // source of truth. A failure here now rolls back the whole
+      // operation instead of silently leaving Mastery updated but
+      // Knowledge State stale -- deliberately, per Phase 2B's "if the
+      // operation is considered applied, cognitive state must be
+      // internally consistent" invariant. The caller (and,
+      // transitively, the student) sees an error and can safely
+      // retry: operation_key makes the retry itself idempotent.
+      await recalculateConceptKnowledgeState(studentId, conceptId, client);
+
+      await client.query('COMMIT');
+
+      result = { oldMastery, newMastery, delta, confidenceScore, learningDebtCreated, learningDebtSeverity, eventId };
+    }
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
   }
 
-  const attemptCount = masteryRecord.attempt_count + 1;
-
-  // Step 4: Calculate confidence score
-  const recentResults: any[] = await getRecentResults(studentId, conceptId, 5);
-  const confidenceInput = {
-    mastery: newMastery,
-    recentResults: recentResults.map(r => r.result as any),
-    daysSinceLastAttempt: getDaysSinceLastAttempt(masteryRecord.last_practiced),
-    attemptCount,
-    correctCount,
-  };
-
-  const confidenceScore = calculateConfidence(confidenceInput);
-
-  // Next time this concept is due for review -- interval scales with
-  // the mastery/confidence just calculated, so well-known concepts get
-  // spaced out further than ones just past the "solid" threshold.
-  const nextReviewDate = calculateNextReviewDate(newMastery, confidenceScore);
-
-  // Step 5: Update mastery_records
-  const updateResult = await db.query(
-    `
-    UPDATE mastery_records
-    SET
-      mastery_score = $1,
-      confidence_score = $2,
-      attempt_count = $3,
-      correct_count = $4,
-      incorrect_count = $5,
-      last_practiced = NOW(),
-      next_review_date = $8,
-      updated_at = NOW()
-    WHERE student_id = $6 AND concept_id = $7
-    RETURNING id
-    `,
-    [
-      newMastery,
-      confidenceScore,
-      attemptCount,
-      correctCount,
-      incorrectCount,
-      studentId,
+  if (duplicate) {
+    // Safe observability (Phase 2B Step 30/29): structural, opaque
+    // identifiers only -- never a student id, raw answer, or AI
+    // response.
+    console.info('[idempotency] duplicate evidence application prevented', {
+      operationType: identity!.operationType,
       conceptId,
-      nextReviewDate,
-    ]
-  );
-
-  const masteryRecordId = updateResult.rows[0].id;
-
-  // Step 6: Create mastery_event (audit trail)
-  const eventResult = await db.query(
-    `
-    INSERT INTO mastery_events (
-      mastery_id,
-      old_score,
-      new_score,
-      delta_reason,
-      created_at
-    ) VALUES ($1, $2, $3, $4, NOW())
-    RETURNING id
-    `,
-    [
-      masteryRecordId,
-      oldMastery,
-      newMastery,
-      `${evidence.sourceType}:${evidence.result}`.slice(0, 50),
-    ]
-  );
-
-  const eventId = eventResult.rows[0].id;
-
-  // Step 7: Check if learning debt should be created/updated
-  const recurrenceCount = incorrectCount; // Simple: count of incorrect answers
-  const shouldCreateDebt = shouldCreateLearningDebt(
-    newMastery,
-    evidence.sourceType === 'TOPIC_ASSESSMENT' || evidence.sourceType === 'CUMULATIVE_ASSESSMENT',
-    evidence.sourceType === 'PRACTICE_QUIZ' || evidence.sourceType === 'PRACTICE_QUESTION',
-    false, // TODO: check if prerequisite to upcoming exam
-    recurrenceCount
-  );
-
-  let learningDebtCreated = false;
-  let learningDebtSeverity = 0;
-
-  if (shouldCreateDebt) {
-    const severity = calculateDebtSeverity(
-      newMastery,
-      recurrenceCount,
-      false // TODO: check if prerequisite to upcoming exam
-    );
-
-    // Upsert learning debt
-    const debtResult = await db.query(
-      `
-      INSERT INTO learning_debt (
-        student_id,
-        concept_id,
-        subject_id,
-        severity,
-        status,
-        created_at
-      ) VALUES ($1, $2, $3, $4, 'active', NOW())
-      ON CONFLICT (student_id, concept_id)
-      DO UPDATE SET
-        severity = $4,
-        status = 'active',
-        resolved_at = NULL
-      RETURNING id
-      `,
-      [studentId, conceptId, subjectId, severity]
-    );
-
-    learningDebtCreated = true;
-    learningDebtSeverity = severity;
-
-    // Phase 0E2 Step 19: shouldCreateLearningDebt's own boolean
-    // condition, spelled out as a machine-readable reason -- mastery
-    // below 60 AND (attempted recently in assessment/practice, or
-    // recurrence >= 2, or blocking an upcoming exam). Never a fabricated
-    // reason beyond what the algorithm actually evaluated.
-    await recordDecisionEvent({
-      decisionType: 'LEARNING_DEBT_CREATED',
-      engine: 'debt-resolution-engine',
-      engineVersion: 'v1',
-      studentId,
-      subjectId,
-      conceptId,
-      sourceEventType: 'learning_debt',
-      sourceEventId: debtResult.rows[0]?.id ?? null,
-      newState: { severity, status: 'active' },
-      reasonCode: 'LOW_MASTERY_WITH_RECENT_ATTEMPT',
-      reasonDetails: { mastery: newMastery, recurrenceCount, sourceType: evidence.sourceType },
     });
+    const current = await readCurrentMasteryForDuplicateResponse(studentId, conceptId);
+    result = {
+      oldMastery: current.masteryScore,
+      newMastery: current.masteryScore,
+      delta: 0,
+      confidenceScore: current.confidenceScore,
+      learningDebtCreated: false,
+      learningDebtSeverity: 0,
+      eventId: current.eventId,
+      duplicate: true,
+    };
   }
 
-  // Step 8: Store learning evidence (for history + error analysis, and
-  // for the Learner Model's AI-assistance telemetry -- hints_used/
-  // ai_assistance_type/learning_mode feed Independent Mastery,
-  // Evidence Strength, and Confidence Calibration).
-  const evidenceResult = await db.query(
-    `
-    INSERT INTO learning_evidence (
-      student_id,
-      concept_id,
-      source_type,
-      result,
-      difficulty,
-      timestamp,
-      subject_id,
-      activity_type,
-      learning_mode,
-      hints_used,
-      ai_assistance_type,
-      confidence_before_answer,
-      score_percent,
-      metadata
-    ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13)
-    RETURNING id
-    `,
-    [
-      studentId,
-      conceptId,
-      evidence.sourceType,
-      evidence.result,
-      evidence.difficulty,
-      subjectId,
-      telemetry?.activityType ?? null,
-      telemetry?.learningMode ?? null,
-      telemetry?.hintsUsed ?? 0,
-      telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
-      telemetry?.confidenceBeforeAnswer ?? null,
-      evidence.scorePercent ?? null,
-      metadata ? JSON.stringify(metadata) : null,
-    ]
-  );
-  const learningEvidenceId = evidenceResult.rows[0]?.id ?? null;
-
-  // Phase 0E2 Step 14: cross-engine auditability for the mastery update
-  // that just happened -- mastery_events (above) remains the domain
-  // history record; this is the uniform-shaped, cross-engine-queryable
-  // twin of it. reasonCode reuses the exact string already computed for
-  // mastery_events.delta_reason (Step 7: prefer an existing exposed
-  // reason over inventing a new one).
-  await recordDecisionEvent({
-    decisionType: 'MASTERY_UPDATED',
-    engine: 'mastery-engine',
-    engineVersion: 'v1',
-    studentId,
-    subjectId,
-    conceptId,
-    sourceEventType: 'learning_evidence',
-    sourceEventId: learningEvidenceId,
-    previousState: { masteryScore: oldMastery },
-    newState: { masteryScore: newMastery, confidenceScore },
-    reasonCode: `${evidence.sourceType}:${evidence.result}`.slice(0, 50),
-    reasonDetails: {
-      sourceType: evidence.sourceType,
-      result: evidence.result,
-      scorePercent: evidence.scorePercent ?? null,
-      sampleSize: evidence.sampleSize ?? null,
-      delta,
-    },
-    // Never fabricated -- see the MasteryUpdateInput.aiExecutionId doc comment.
-    aiExecutionId: aiExecutionId ?? null,
-  });
-
-  // Step 9: Log a classified error, if this was a wrong/partial answer
-  // and the caller classified why -- feeds error-intelligence.service.ts's
-  // pattern detection (e.g. "keeps making procedural errors in Algebra").
-  if (errorClassification && evidence.result !== 'correct') {
-    await db.query(
-      `
-      INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type)
-      VALUES ($1, $2, $3, $4, $5)
-      `,
-      [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
-    );
-  }
-
-  // Step 10: Phase 2.2A -- recompute Concept Knowledge State from the
-  // evidence just written. Knowledge State is a projection, never a
-  // second source of truth; this keeps it immediately current with
-  // every evidence-writing action, the same way mastery_records itself
-  // updates synchronously above. Never allowed to fail the actual quiz
-  // submission this evidence came from.
-  await recalculateConceptKnowledgeState(studentId, conceptId).catch((err) =>
-    console.error('Knowledge State recalculation failed:', err)
-  );
-
-  return {
-    oldMastery,
-    newMastery,
-    delta,
-    confidenceScore,
-    learningDebtCreated,
-    learningDebtSeverity,
-    eventId,
-  };
+  return result!;
 }
 
 /**
@@ -436,9 +572,10 @@ export async function updateMastery(
 async function getRecentResults(
   studentId: string,
   conceptId: string,
-  limit: number = 5
+  limit: number = 5,
+  client: DbExecutor = db
 ) {
-  const result = await db.query(
+  const result = await client.query(
     `
     SELECT result
     FROM learning_evidence

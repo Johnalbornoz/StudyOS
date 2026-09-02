@@ -6,7 +6,7 @@
  * claims (see computeTransferScore).
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, validateJson, getPrompt, type AIProvenance } from '@/lib/ai';
@@ -155,8 +155,8 @@ Output ONLY this JSON, no markdown fences, no other text:
 }
 
 /** Reads transfer evidence for a concept straight from learning_evidence's metadata (sourceType='TRANSFER'). */
-export async function getTransferScore(studentId: string, conceptId: string): Promise<number | null> {
-  const result = await db.query(
+export async function getTransferScore(studentId: string, conceptId: string, client: DbExecutor = db): Promise<number | null> {
+  const result = await client.query(
     `SELECT result, metadata, timestamp FROM learning_evidence
      WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER'
      ORDER BY timestamp DESC LIMIT 10`,

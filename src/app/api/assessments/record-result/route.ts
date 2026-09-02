@@ -10,6 +10,12 @@ const RecordResultSchema = z.object({
   occurrenceId: z.string().uuid(),
   score: z.number().min(0),
   maxScore: z.number().positive(),
+  // Phase 2B: minted client-side once when the "Record Result" form is
+  // opened for a new entry, reused across any retry of that same
+  // submission. Deliberately not derived from occurrenceId (a real
+  // exam result may legitimately be corrected/re-entered later --
+  // Phase 2B Step 8).
+  submissionToken: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest) {
@@ -61,6 +67,7 @@ export async function POST(request: NextRequest) {
         studentId: validated.studentId,
         score: validated.score,
         maxScore: validated.maxScore,
+        submissionToken: validated.submissionToken,
       },
       preferredLanguage
     );

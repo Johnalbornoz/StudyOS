@@ -267,6 +267,16 @@ export interface QualifiedEvidenceInput {
   aiExecution?: AIProvenance;
   /** Phase 1D: already-normalized by the caller (normalizeResponseTiming) -- this function never re-derives or re-validates it, only carries it through additively into metadata.behavior. */
   responseTiming?: ResponseTiming;
+  /**
+   * Phase 2B: verification_attempts.id -- already the correct stable
+   * logical identity for "resolving THIS verification attempt" (it is
+   * created once, server-side, when the trigger fires, and never
+   * regenerated). Required so this, the only evidence-producing path
+   * in this file, is idempotent the same way every other evidence
+   * writer this phase covers is; there is no legitimate reason to call
+   * this function without a real verification attempt behind it.
+   */
+  verificationAttemptId: string;
 }
 
 /**
@@ -297,6 +307,11 @@ export async function submitQualifiedAssessmentEvidence(input: QualifiedEvidence
     conceptId: input.conceptId,
     subjectId: input.subjectId,
     evidence,
+    // Phase 2B: verification_attempts.id is created once, server-side,
+    // when the trigger fires -- already the correct stable logical
+    // identity; a resolved attempt cannot be re-resolved into a second
+    // piece of cognitive evidence.
+    identity: { operationType: 'VERIFICATION_RESOLUTION', operationId: input.verificationAttemptId, conceptId: input.conceptId },
     telemetry: {
       activityType: 'quiz',
       // ASSESSMENT Evidence Mode is always SOLO -- matches Phase 3A's
@@ -410,16 +425,28 @@ export async function getPendingVerificationAttempt(
   };
 }
 
+/**
+ * Phase 2B: defense-in-depth, not the primary guarantee -- the
+ * evidence idempotency key on the resulting updateMastery call is what
+ * actually prevents a second cognitive effect. This is a narrower,
+ * additional guard against the same concurrent race (two requests
+ * both reading `outcome IS NULL` before either writes) overwriting
+ * verification_attempts' own outcome/response with whichever request
+ * happened to finish last. `WHERE ... AND outcome IS NULL` makes the
+ * UPDATE itself the atomic claim; the caller checks the returned
+ * boolean rather than assuming success.
+ */
 export async function resolveVerificationAttempt(
   id: string,
   params: { verificationResponse: string; gradingConfidence: number; outcome: VerificationOutcome; assessmentConfidenceAfter: number }
-): Promise<void> {
-  await db.query(
+): Promise<boolean> {
+  const result = await db.query(
     `UPDATE verification_attempts
      SET verification_response = $2, verification_grading_confidence = $3, outcome = $4, assessment_confidence_after = $5, resolved_at = NOW()
-     WHERE id = $1`,
+     WHERE id = $1 AND outcome IS NULL`,
     [id, params.verificationResponse, params.gradingConfidence, params.outcome, params.assessmentConfidenceAfter]
   );
+  return (result.rowCount ?? 0) > 0;
 }
 
 export interface ExamReadinessCalibration {

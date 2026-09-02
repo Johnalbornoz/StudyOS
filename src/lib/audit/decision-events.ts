@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import type { DecisionEventInput } from './types';
 
 /**
@@ -35,10 +35,31 @@ function persistenceEnabled(): boolean {
   return process.env.VITEST !== 'true' || forceEnabledInTests;
 }
 
-export async function recordDecisionEvent(input: DecisionEventInput): Promise<void> {
+/**
+ * Phase 2B: `client` is optional and additive. Every pre-existing
+ * caller (there are many, across mastery/verification/learning-debt/
+ * misconception engines) keeps calling this with no client -- runs
+ * against the pool, keeps swallowing its own errors exactly as before,
+ * completely unaffected by this change.
+ *
+ * The ONE new caller that matters is mastery.service.ts's atomic
+ * evidence-application transaction: when `client` is the transaction's
+ * own checked-out connection, this decision event becomes part of that
+ * same atomic operation (Phase 2B Step 3's correction -- "IF THE
+ * OPERATION IS CONSIDERED APPLIED, THE COGNITIVE STATE MUST BE
+ * INTERNALLY CONSISTENT," which includes its own audit trail, not just
+ * the evidence/mastery/Knowledge State rows). That requires NOT
+ * swallowing the error in that one case -- a failure here must be able
+ * to roll back the whole transaction, the same way a failure in any
+ * other step of that operation would. Swallow-and-log stays the
+ * default (client omitted); propagate only when a caller explicitly
+ * opted this write into its own transaction.
+ */
+export async function recordDecisionEvent(input: DecisionEventInput, client?: DbExecutor): Promise<void> {
   if (!persistenceEnabled()) return;
+  const executor = client ?? db;
   try {
-    await db.query(
+    await executor.query(
       `INSERT INTO decision_events (
          decision_type, engine, engine_version, student_id, subject_id, concept_id,
          source_event_type, source_event_id, previous_state, new_state,
@@ -62,6 +83,7 @@ export async function recordDecisionEvent(input: DecisionEventInput): Promise<vo
       ]
     );
   } catch (err) {
+    if (client) throw err; // part of an atomic operation -- let the caller's transaction roll back
     console.error('[decision-audit] failed to persist decision_events row', {
       decisionType: input.decisionType,
       engine: input.engine,

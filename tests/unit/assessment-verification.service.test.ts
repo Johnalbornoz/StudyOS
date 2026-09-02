@@ -118,6 +118,7 @@ describe('Phase 3B -- GOLDEN ARCHITECTURAL TESTS', () => {
       sourceType: 'CUMULATIVE_ASSESSMENT', scorePercent: 95, difficulty: 3, sampleSize: 5,
       activityType: 'CUMULATIVE_ASSESSMENT', evidenceMode: 'ASSESSMENT',
       assessmentConfidence: 98, // very high confidence
+      verificationAttemptId: 'va-1',
     });
 
     expect(updateMasteryMock).toHaveBeenCalledTimes(1);
@@ -157,6 +158,7 @@ describe('Phase 3B -- GOLDEN ARCHITECTURAL TESTS', () => {
       sourceType: 'SOLO_VERIFICATION', scorePercent: 90, difficulty: 3, sampleSize: 1,
       activityType: 'CUMULATIVE_ASSESSMENT', evidenceMode: 'ASSESSMENT',
       assessmentConfidence: after, verificationOutcome: 'CONFIRMED',
+      verificationAttemptId: 'va-2',
     });
     // The confidence bump feeds confidenceWeight (evidence strength), not
     // a direct mastery write -- updateMastery's own deterministic algorithm
@@ -229,6 +231,39 @@ describe('Phase 3B -- verification attempt persistence', () => {
     expect(sql).not.toMatch(/original_score_percent/);
     expect(sql).not.toMatch(/assessment_confidence_before/);
     expect(sql).toMatch(/outcome/);
+  });
+});
+
+// --- Phase 2B: evidence idempotency wiring ---
+describe('Phase 2B -- submitQualifiedAssessmentEvidence identity + resolveVerificationAttempt claim semantics', () => {
+  it('threads a VERIFICATION_RESOLUTION identity keyed by verificationAttemptId + conceptId into updateMastery', async () => {
+    updateMasteryMock.mockResolvedValue({ oldMastery: 50, newMastery: 55, delta: 5, confidenceScore: 0.7, eventId: 'ev-1' });
+
+    await submitQualifiedAssessmentEvidence({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      sourceType: 'SOLO_VERIFICATION', scorePercent: 90, difficulty: 3, sampleSize: 1,
+      activityType: 'CUMULATIVE_ASSESSMENT', evidenceMode: 'ASSESSMENT',
+      assessmentConfidence: 80,
+      verificationAttemptId: 'va-xyz',
+    });
+
+    const call = updateMasteryMock.mock.calls[0][0];
+    expect(call.identity).toEqual({ operationType: 'VERIFICATION_RESOLUTION', operationId: 'va-xyz', conceptId: 'c1' });
+  });
+
+  it('resolveVerificationAttempt is defense-in-depth: its WHERE clause carries "AND outcome IS NULL", and it reports whether THIS call actually won the claim', async () => {
+    queryMock.mockResolvedValueOnce({ rowCount: 1, rows: [] }); // this call wins
+    const won = await resolveVerificationAttempt('va-1', {
+      verificationResponse: 'a', gradingConfidence: 0.8, outcome: 'CONFIRMED', assessmentConfidenceAfter: 75,
+    });
+    expect(won).toBe(true);
+    expect(queryMock.mock.calls[0][0]).toMatch(/outcome IS NULL/);
+
+    queryMock.mockResolvedValueOnce({ rowCount: 0, rows: [] }); // a concurrent request already resolved it
+    const lost = await resolveVerificationAttempt('va-1', {
+      verificationResponse: 'a', gradingConfidence: 0.8, outcome: 'CONFIRMED', assessmentConfidenceAfter: 75,
+    });
+    expect(lost).toBe(false);
   });
 });
 

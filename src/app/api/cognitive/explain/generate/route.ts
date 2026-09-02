@@ -31,7 +31,12 @@ export async function POST(request: NextRequest) {
       validated.language || 'en'
     );
     track(validated.studentId, 'explain_defend_started', { conceptId: validated.conceptId, activityType: validated.activityType });
-    return NextResponse.json({ success: true, data: result });
+    // Phase 2B: minted exactly once per generated activity, never at
+    // submit time (which would make every transport retry of the same
+    // submission look like a new logical action). The client rounds
+    // this back on /explain/submit unchanged -- the stable identity
+    // that call's evidence idempotency key is built from.
+    return NextResponse.json({ success: true, data: { ...result, activityId: crypto.randomUUID() } });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues[0]?.message }, { status: 400 });

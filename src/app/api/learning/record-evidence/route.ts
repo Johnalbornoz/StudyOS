@@ -41,6 +41,17 @@ const RecordEvidenceSchema = z.object({
   sourceType: z.string().min(1),
   confidenceWeight: z.number().min(0).max(1).optional(),
   errorClassification: z.string().optional(),
+  // Phase 2B: this is a generic, low-level evidence-writing endpoint
+  // with no domain-specific action to derive a stable identity from
+  // (unlike a quiz session id or a verification attempt id) -- so
+  // every caller must supply its own opaque, stable-across-retries
+  // idempotency key instead. Required, not optional: an internal/
+  // scripted caller of a route this direct is exactly the kind of
+  // writer Phase 2A's audit flagged as a silent bypass risk around
+  // the evidence idempotency guarantee (Step 9's
+  // PRODUCTION_LEGACY_IDEMPOTENCY_BYPASSES = 0 target) if it could
+  // skip identifying its own operation.
+  idempotencyKey: z.string().min(1, 'idempotencyKey is required'),
 });
 
 type RecordEvidenceRequest = z.infer<typeof RecordEvidenceSchema>;
@@ -112,6 +123,10 @@ export async function POST(request: NextRequest) {
       subjectId: validated.subjectId,
       evidence,
       errorClassification: validated.errorClassification,
+      // Phase 2B: RECORD_EVIDENCE::<caller-supplied key>::<conceptId>
+      // -- see the schema comment above for why this route can't
+      // derive its own identity the way every other writer does.
+      identity: { operationType: 'RECORD_EVIDENCE', operationId: validated.idempotencyKey, conceptId: validated.conceptId },
     });
 
     return NextResponse.json({

@@ -28,6 +28,14 @@ const MASTERY_RECORD = {
 function buildQueryMock() {
   return vi.fn(async (sql: string, params: any[] = []) => {
     const s = sql.replace(/\s+/g, ' ').trim();
+    if (/^(BEGIN|COMMIT|ROLLBACK)$/i.test(s)) {
+      return { rows: [] };
+    }
+    if (s.startsWith('INSERT INTO mastery_records')) {
+      // Phase 2B: the get-or-create upsert -- return value unused (the
+      // locked SELECT immediately below is what's actually read).
+      return { rows: [] };
+    }
     if (s.includes('FROM mastery_records') && s.includes('WHERE student_id = $1 AND concept_id = $2')) {
       return { rows: [MASTERY_RECORD] };
     }
@@ -58,7 +66,15 @@ async function runUpdateMastery(metadata: Record<string, unknown> | undefined) {
   const recordDecisionEventMock = vi.fn().mockResolvedValue(undefined);
   const recalculateMock = vi.fn().mockResolvedValue(undefined);
 
-  vi.doMock('@/lib/db', () => ({ db: { query: queryMock } }));
+  vi.doMock('@/lib/db', () => ({
+    db: {
+      query: queryMock,
+      // Phase 2B: updateMastery runs inside one transaction via a
+      // checked-out client -- reuse the same queryMock so every
+      // existing SQL-pattern branch above still applies.
+      connect: async () => ({ query: (...args: any[]) => queryMock(...(args as [string, any[]?])), release: () => {} }),
+    },
+  }));
   vi.doMock('@/lib/audit', () => ({ recordDecisionEvent: recordDecisionEventMock }));
   vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
   vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
@@ -133,8 +149,14 @@ describe('Phase 1D Step 21: identical evidence with vs. without behavioral timin
     const withTiming = await runUpdateMastery({ behavior: { responseTimes: [{ responseTimeMs: 4200, timingQuality: 'VALID' }] } });
     const withoutTiming = await runUpdateMastery(undefined);
 
-    expect(withTiming.recalculateArgs).toEqual(withoutTiming.recalculateArgs);
-    expect(withTiming.recalculateArgs).toEqual(['student-1', 'concept-1']);
+    // Phase 2B: a third argument (the atomic transaction's own client)
+    // is now always passed too -- a fresh object per call, so compared
+    // only for shape, not value/identity, here. The (studentId,
+    // conceptId) invariant this test actually exists to prove is
+    // exactly the first two.
+    expect(withTiming.recalculateArgs?.slice(0, 2)).toEqual(withoutTiming.recalculateArgs?.slice(0, 2));
+    expect(withTiming.recalculateArgs?.slice(0, 2)).toEqual(['student-1', 'concept-1']);
+    expect(withTiming.recalculateArgs).toHaveLength(3);
   });
 
   it('the learning_evidence INSERT differs ONLY in the metadata parameter -- and only by the added behavior key', async () => {
@@ -145,14 +167,22 @@ describe('Phase 1D Step 21: identical evidence with vs. without behavioral timin
     const [sqlWithout, paramsWithout]: [string, any[]] = withoutTiming.learningEvidenceCall as any;
 
     expect(sqlWith).toBe(sqlWithout); // identical SQL text
-    // Every param except the last (metadata, JSON-stringified) is identical --
-    // result/difficulty/timestamp-column/subject/activity/mode/hints/AI-
-    // assistance/confidence/scorePercent are all untouched by timing.
-    expect(paramsWith.slice(0, -1)).toEqual(paramsWithout.slice(0, -1));
+    // Every param except metadata (second-to-last -- Phase 2B added
+    // operation_key as the new, always-null-here, actually-last param)
+    // is identical -- result/difficulty/timestamp-column/subject/
+    // activity/mode/hints/AI-assistance/confidence/scorePercent are all
+    // untouched by timing.
+    expect(paramsWith.slice(0, -2)).toEqual(paramsWithout.slice(0, -2));
 
-    const metadataWith = JSON.parse(paramsWith[paramsWith.length - 1]);
-    const metadataWithout = paramsWithout[paramsWithout.length - 1];
+    const metadataWith = JSON.parse(paramsWith[paramsWith.length - 2]);
+    const metadataWithout = paramsWithout[paramsWithout.length - 2];
     expect(metadataWithout).toBeNull(); // no metadata passed at all -> exactly the pre-Phase-1D NULL
     expect(metadataWith).toEqual({ behavior: { responseTimes: [{ responseTimeMs: 4200, timingQuality: 'VALID' }] } });
+
+    // Phase 2B: neither call supplied `identity`, so operation_key
+    // (the true last param) is NULL for both -- unrelated to, and
+    // unaffected by, the timing-metadata invariant this test proves.
+    expect(paramsWith[paramsWith.length - 1]).toBeNull();
+    expect(paramsWithout[paramsWithout.length - 1]).toBeNull();
   });
 });

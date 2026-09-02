@@ -24,6 +24,11 @@ export default function TransferPage() {
   const [result, setResult] = useState<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string } | null>(null);
   // Phase 1D: stamped once, right when the prompt becomes visible.
   const presentedAtRef = useRef<string | null>(null);
+  // Phase 2B: minted server-side once per generated activity (never
+  // regenerated on submit), round-tripped unchanged on every submit
+  // attempt for THIS activity, including a network retry -- the
+  // stable identity the evidence idempotency key is built from.
+  const activityIdRef = useRef<string | null>(null);
 
   const t = getMessages(locale);
 
@@ -51,6 +56,7 @@ export default function TransferPage() {
       }
       setContext(body.data.context);
       setPrompt(body.data.prompt);
+      activityIdRef.current = body.data.activityId;
       setPhase('answering');
       // Phase 1D: the prompt just became visible/answerable.
       presentedAtRef.current = new Date().toISOString();
@@ -79,6 +85,7 @@ export default function TransferPage() {
         remediationStepId,
         questionPresentedAt: presentedAtRef.current,
         answerSubmittedAt,
+        activityId: activityIdRef.current,
       }),
     });
     const body = await res.json();
