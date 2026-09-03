@@ -99,9 +99,14 @@ export async function buildCompactTutorContext(studentId: string, conceptId: str
     getActiveRemediations(studentId),
   ]);
 
+  // Phase 2C-R: found during the Step 1 fresh audit -- this query predates
+  // Phase 2C's ACTIVE/RESOLVED lifecycle and had no status filter, so a
+  // fully RESOLVED misconception could still flag hasRecurringMisconception
+  // and bias tutor strategy selection. Scoped to ACTIVE, matching every
+  // other lifecycle-aware consumer (misconception.service.ts, knowledge-state.service.ts).
   const misconceptionCheck = await db.query(
     `SELECT 1 FROM student_misconceptions sm JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
-     WHERE sm.student_id = $1 AND ms.concept_id = $2 AND sm.occurrence_count >= 2 LIMIT 1`,
+     WHERE sm.student_id = $1 AND ms.concept_id = $2 AND sm.occurrence_count >= 2 AND sm.status = 'ACTIVE' LIMIT 1`,
     [studentId, conceptId]
   );
 

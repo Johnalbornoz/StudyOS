@@ -51,7 +51,7 @@ function sharedMock(sql: string, params: any[] = []) {
   if (s.includes('FROM concept_knowledge_state WHERE student_id = $1 AND concept_id = $2')) return { rows: [] };
   if (s.includes('FROM concepts c') && s.includes('LEFT JOIN concept_localizations')) return { rows: [{ subject_id: 'subject-1', label: 'Concept' }] };
   if (s.includes("source_type = 'TRANSFER'")) return { rows: [] };
-  if (s.includes('sm.occurrence_count, ms.is_critical')) return { rows: [] };
+  if (s.includes('sm.occurrence_count, sm.status, ms.is_critical')) return { rows: [] };
   if (s.includes('FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT')) return { rows: [] };
   if (s.includes('FROM errors')) return { rows: [] };
   if (s.includes('SELECT timestamp, metadata FROM learning_evidence')) return { rows: [] };

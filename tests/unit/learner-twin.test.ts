@@ -100,7 +100,7 @@ function buildMockQuery() {
     }
     if (s.includes("source_type = 'TRANSFER'")) return { rows: [] };
     if (s.includes('FROM student_misconceptions sm') && s.includes('COUNT')) return { rows: [{ active_count: '0', critical_count: '0', recurring_count: '0' }] };
-    if (s.includes('sm.occurrence_count, ms.is_critical')) return { rows: [] };
+    if (s.includes('sm.occurrence_count, sm.status, ms.is_critical')) return { rows: [] };
     if (s.includes('FROM student_misconceptions sm') && s.includes('occurrence_count >= 2')) return { rows: [] };
     if (s.includes('SELECT timestamp, metadata FROM learning_evidence')) return { rows: [] };
     if (s.includes('FROM assessment_occurrences ao')) return { rows: [] };

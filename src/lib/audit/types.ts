@@ -16,7 +16,13 @@ export type DecisionType =
   | 'VERIFICATION_RESOLVED'
   | 'LEARNING_DEBT_CREATED'
   | 'LEARNING_DEBT_RESOLVED'
-  | 'MISCONCEPTION_RECORDED';
+  | 'MISCONCEPTION_RECORDED'
+  // Phase 2C: a real lifecycle transition, not a new decision engine --
+  // recorded from the same misconception-engine, alongside
+  // MISCONCEPTION_RECORDED, only on an actual ACTIVE->RESOLVED or
+  // RESOLVED->ACTIVE transition (never on every read).
+  | 'MISCONCEPTION_RESOLVED'
+  | 'MISCONCEPTION_REACTIVATED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).

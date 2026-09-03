@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { evaluateExplanation, rubricScorePercent } from '@/services/explain-defend.service';
-import { updateMastery } from '@/services/mastery.service';
-import { classifyMisconception, recordStudentMisconception } from '@/services/misconception.service';
+import { updateMastery, type MasteryUpdateInput } from '@/services/mastery.service';
+import { classifyMisconception } from '@/services/misconception.service';
 import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
 import type { AIProvenance } from '@/lib/ai';
-import { recordDecisionEvent } from '@/lib/audit';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
 
@@ -49,7 +48,17 @@ export async function POST(request: NextRequest) {
     });
     const scorePercent = rubricScorePercent(rubric);
 
+    // Phase 2C: classification (AI) still runs here, before the
+    // transaction -- acceptable cost, same as grading (Phase 2B Step
+    // 15/2C Step 8/9). PERSISTENCE is not: the classified signature is
+    // handed to updateMastery as `misconceptionObservation` and only
+    // actually written if that call's own operation_key gate confirms
+    // this is a genuinely new application, inside that same
+    // transaction. A transport retry that re-runs classification here
+    // still cannot double-persist -- only the winning application's
+    // classification result is ever used.
     let misconceptionAiExecution: AIProvenance | undefined;
+    let misconceptionObservation: MasteryUpdateInput['misconceptionObservation'];
     if (rubric.misconceptionDetected) {
       const classified = await classifyMisconception(
         validated.conceptId,
@@ -62,26 +71,18 @@ export async function POST(request: NextRequest) {
       ).catch(() => null);
       if (classified) {
         misconceptionAiExecution = classified.aiExecution;
-        await recordStudentMisconception(validated.studentId, classified.signature.id, {
-          source: 'explain_defend',
-          prompt: validated.prompt,
-        });
-        // Phase 0E2 Step 18: only recorded when classification actually
-        // resulted in a persisted occurrence -- never for a null/no-
-        // misconception classification. Links the AI execution that
-        // produced it (always unambiguous: one classification call).
-        await recordDecisionEvent({
-          decisionType: 'MISCONCEPTION_RECORDED',
-          engine: 'misconception-engine',
-          engineVersion: 'v1',
-          studentId: validated.studentId,
-          subjectId: validated.subjectId,
-          conceptId: validated.conceptId,
-          sourceEventType: 'student_misconceptions',
-          newState: { misconceptionCode: classified.signature.misconceptionCode, isNew: classified.isNew, isCritical: classified.signature.isCritical },
-          reasonCode: 'AI_MISCONCEPTION_CLASSIFIED',
-          aiExecutionId: classified.aiExecution.aiExecutionId,
-        });
+        misconceptionObservation = {
+          signatureId: classified.signature.id,
+          misconceptionCode: classified.signature.misconceptionCode,
+          isCritical: classified.signature.isCritical,
+          // Phase 2C Step 17: no raw answer content beyond what this
+          // route already, pre-existingly, stamped here (unchanged
+          // shape) -- the NEW resolved/observed-by linkage uses the
+          // opaque learning_evidence id instead (see
+          // recordStudentMisconception's own signature).
+          evidenceRef: { source: 'explain_defend', prompt: validated.prompt },
+          aiExecution: classified.aiExecution,
+        };
       }
     }
 
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
         sampleSize: 1,
       },
       identity: { operationType: 'EXPLAIN_DEFEND', operationId: validated.activityId, conceptId: validated.conceptId },
+      misconceptionObservation,
       telemetry: { activityType: 'explain_defend', learningMode: 'COACH' },
       // Phase 0E1: AI provenance for the rubric evaluation, and for
       // misconception classification when it ran -- additive metadata,

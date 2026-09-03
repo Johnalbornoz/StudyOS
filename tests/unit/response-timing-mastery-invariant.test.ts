@@ -76,8 +76,17 @@ async function runUpdateMastery(metadata: Record<string, unknown> | undefined) {
     },
   }));
   vi.doMock('@/lib/audit', () => ({ recordDecisionEvent: recordDecisionEventMock }));
-  vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
-  vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
+  // Phase 2C: updateMastery's misconception-resolution check calls
+  // getActiveMasteryPolicy unconditionally for a non-observation
+  // application -- this fixture's PRACTICE_QUIZ evidence never
+  // qualifies as resolution evidence regardless of the exact values.
+  const policyMock = vi.fn().mockResolvedValue({
+    version: 1, minimumUnderstanding: 80, minimumIndependence: 80, minimumApplication: 75,
+    minimumRetention: 75, minimumTransfer: 70, requiresTransfer: true, maximumCriticalMisconceptions: 0,
+    minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
+  });
+  vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
+  vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
 
   const { updateMastery } = await import('@/services/mastery.service');
 

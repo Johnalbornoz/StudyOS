@@ -312,10 +312,19 @@ export async function readTransferSignal(studentId: StudentId, conceptId: string
   return { transferScore, quality: derived(null) };
 }
 
-/** Direct source: student_misconceptions, via the existing certified aggregate function. */
+/**
+ * Direct source: student_misconceptions, via the existing certified
+ * aggregate function. Phase 2C: activeCount/criticalCount/recurringCount
+ * are ACTIVE-only; resolvedCount is exposed too (real learner history,
+ * not a current defect). historicalCount (lifetime, active+resolved)
+ * exists on the underlying MisconceptionCounts but is deliberately not
+ * surfaced here -- the Twin stays a read layer over what a Decision
+ * Engine actually needs (current state), not a full misconception
+ * history browser.
+ */
 export async function readMisconceptionSummary(studentId: StudentId, conceptId: string): Promise<MisconceptionSummary> {
   const counts = await getMisconceptionCountsForConcept(studentId, conceptId);
-  return { ...counts, quality: fact() };
+  return { activeCount: counts.activeCount, criticalCount: counts.criticalCount, recurringCount: counts.recurringCount, resolvedCount: counts.resolvedCount, quality: fact() };
 }
 
 /** Direct source: learning_evidence, bounded (default last 10) -- never the full history. */

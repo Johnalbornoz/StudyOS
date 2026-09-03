@@ -160,6 +160,18 @@ function createFakeDb(options?: { failMasteryUpdateForConcept?: string }) {
     if (s.startsWith('INSERT INTO learning_debt')) return { rows: [{ id: 'debt-1' }] };
     if (s.startsWith('INSERT INTO errors')) return { rows: [] };
 
+    // Phase 2C/2C-R: updateMastery's misconception observation/
+    // resolution check runs on every non-duplicate application. None
+    // of this file's fixtures track any misconceptions, so there are
+    // never any ACTIVE signatures to find or resolve, and no test here
+    // passes `misconceptionObservation` -- these are safe, empty-result
+    // defaults, not real misconception-lifecycle behavior under test
+    // (that lives in misconception-lifecycle.test.ts).
+    if (s.startsWith('SELECT sm.misconception_signature_id FROM student_misconceptions')) return { rows: [] };
+    if (s.startsWith('UPDATE student_misconceptions')) return { rows: [] };
+    if (s.startsWith('SELECT status, occurrence_count FROM student_misconceptions')) return { rows: [] };
+    if (s.startsWith('INSERT INTO student_misconceptions')) return { rows: [{ occurrence_count: 1 }] };
+
     throw new Error(`Unmocked query in evidence-idempotency fixture: ${s}`);
   }
 
@@ -194,12 +206,22 @@ function baseInput(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const DEFAULT_TEST_POLICY = {
+  version: 1, minimumUnderstanding: 80, minimumIndependence: 80, minimumApplication: 75,
+  minimumRetention: 75, minimumTransfer: 70, requiresTransfer: true, maximumCriticalMisconceptions: 0,
+  minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
+};
+
 async function loadUpdateMastery(db: any, recalculateMock = vi.fn().mockResolvedValue(null), recordDecisionEventMock = vi.fn().mockResolvedValue(undefined)) {
   vi.resetModules();
   vi.doMock('@/lib/db', () => ({ db }));
   vi.doMock('@/lib/audit', () => ({ recordDecisionEvent: recordDecisionEventMock }));
-  vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
-  vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock }));
+  // Phase 2C: updateMastery's misconception-resolution check calls
+  // getActiveMasteryPolicy unconditionally for a non-observation
+  // application.
+  const policyMock = vi.fn().mockResolvedValue(DEFAULT_TEST_POLICY);
+  vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
+  vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
   const mod = await import('@/services/mastery.service');
   return { updateMastery: mod.updateMastery, recalculateMock, recordDecisionEventMock };
 }

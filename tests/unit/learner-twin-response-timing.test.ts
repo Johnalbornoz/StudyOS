@@ -228,7 +228,7 @@ describe('ConceptView.behavior.responseTiming (Digital Twin integration, Step 17
       if (s.includes('FROM mastery_records WHERE student_id = $1 AND concept_id = $2')) return { rows: [MASTERY_ROW] };
       if (s.includes('FROM concept_knowledge_state')) return { rows: [] };
       if (s.includes("source_type = 'TRANSFER'")) return { rows: [] };
-      if (s.includes('sm.occurrence_count, ms.is_critical')) return { rows: [] };
+      if (s.includes('sm.occurrence_count, sm.status, ms.is_critical')) return { rows: [] };
       if (s.includes('FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT') && s.includes('score_percent')) return { rows: [] };
       if (s.includes('SELECT timestamp, metadata FROM learning_evidence')) {
         return { rows: [{ timestamp: '2026-08-31T12:00:00.000Z', metadata: { behavior: { responseTimes: [{ responseTimeMs: 4200, timingQuality: 'VALID' }] } } }] };

@@ -41,7 +41,18 @@ vi.mock('@/lib/db', () => ({
     connect: async () => ({ query: (...args: any[]) => queryMock(...args), release: () => {} }),
   },
 }));
-vi.mock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: vi.fn().mockResolvedValue(null) }));
+vi.mock('@/services/knowledge-state.service', () => ({
+  recalculateConceptKnowledgeState: vi.fn().mockResolvedValue(null),
+  // Phase 2C: updateMastery's misconception-resolution check calls this
+  // unconditionally for a non-observation application -- a minimal
+  // valid policy shape is all this file's PRACTICE_QUIZ-only fixtures
+  // need (none of them ever qualify as resolution evidence).
+  getActiveMasteryPolicy: vi.fn().mockResolvedValue({
+    version: 1, minimumUnderstanding: 80, minimumIndependence: 80, minimumApplication: 75,
+    minimumRetention: 75, minimumTransfer: 70, requiresTransfer: true, maximumCriticalMisconceptions: 0,
+    minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
+  }),
+}));
 
 import { updateMastery } from '@/services/mastery.service';
 

@@ -134,9 +134,14 @@ export interface IndependenceSignal {
 }
 
 export interface MisconceptionSummary {
+  /** Phase 2C: CURRENTLY ACTIVE signatures only -- never a lifetime count. */
   activeCount: number;
+  /** Phase 2C: ACTIVE + critical only -- what actually gates VALIDATED_MASTERY. A resolved critical misconception is not counted here. */
   criticalCount: number;
+  /** Phase 2C: ACTIVE + occurrence_count >= 2 only. */
   recurringCount: number;
+  /** Phase 2C, additive: currently RESOLVED signature count -- real learner history, not a current defect. */
+  resolvedCount: number;
   quality: SignalQuality;
 }
 

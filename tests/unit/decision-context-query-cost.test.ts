@@ -47,7 +47,7 @@ function buildFullFixtureQuery() {
     if (s.includes('confidence_before_answer FROM learning_evidence') && s.includes('confidence_before_answer IS NOT NULL') && !s.includes('result')) return { rows: [] };
     if (s.includes('confidence_before_answer, result FROM learning_evidence')) return { rows: [] };
     if (s.includes('FROM student_misconceptions sm') && s.includes('COUNT')) return { rows: [{ active_count: '0', critical_count: '0', recurring_count: '0' }] };
-    if (s.includes('sm.occurrence_count, ms.is_critical')) return { rows: [] };
+    if (s.includes('sm.occurrence_count, sm.status, ms.is_critical')) return { rows: [] };
     if (s.includes('FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC LIMIT')) return { rows: [] };
     if (s.includes('FROM assessment_occurrences ao')) return { rows: [] };
     if (s.includes('FROM student_availability')) return { rows: [{ study_start_time: '16:30:00', study_end_time: '18:30:00', max_daily_minutes: 120, timezone: 'UTC', updated_at: null }] };

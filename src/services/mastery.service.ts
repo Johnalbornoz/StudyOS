@@ -16,9 +16,16 @@ import {
   type LearningEvidence,
 } from '@/lib/algorithms/mastery';
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
-import { recalculateConceptKnowledgeState } from './knowledge-state.service';
+import { recalculateConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
 import { recordDecisionEvent } from '@/lib/audit';
 import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
+import {
+  recordStudentMisconception,
+  resolveMisconceptionSignatures,
+  getActiveMisconceptionSignatureIdsForConcept,
+  isMisconceptionResolutionEvidence,
+} from './misconception.service';
+import type { AIProvenance } from '@/lib/ai';
 
 /** Postgres unique_violation. See database/migrations/20260901_1200_evidence_idempotency.sql. */
 const PG_UNIQUE_VIOLATION = '23505';
@@ -77,6 +84,45 @@ export interface MasteryUpdateInput {
    * field existed.
    */
   identity?: EvidenceApplicationIdentity;
+  /**
+   * Phase 2C: a misconception observation classified from THIS SAME
+   * logical action (e.g. Explain & Defend's rubric flagged one) --
+   * persisted only when this call's own operation_key gate confirms a
+   * genuinely new application, using the SAME transaction. Never
+   * persisted independently: a transport replay of the triggering
+   * request never reaches this at all, since the evidence-insert gate
+   * above it already rejected the retry (Phase 2B's identity reused,
+   * not a second idempotency system -- Phase 2C Step 8). AI
+   * classification itself may still run twice on a client retry
+   * (accepted cost, same as grading); only the winning application's
+   * classification is ever persisted.
+   */
+  misconceptionObservation?: {
+    signatureId: string;
+    misconceptionCode: string;
+    isCritical: boolean;
+    evidenceRef?: Record<string, unknown>;
+    aiExecution: AIProvenance;
+  };
+  /**
+   * Phase 2C-R: an explicit set of misconception signature ids THIS
+   * evidence is known to address -- e.g. a future targeted Explain
+   * activity or an explicitly-scoped Verification attempt (no current
+   * writer supplies this yet -- see the Phase 2C-R report §4/§6 for
+   * why: no existing generation/evaluation path knows which specific
+   * signature a response addressed). When present, ONLY these
+   * signatures may resolve, and only after being independently
+   * confirmed to belong to `conceptId` and be currently ACTIVE
+   * (resolveMisconceptionSignatures's own join/WHERE -- a foreign or
+   * stale id here is never trusted blindly). When ABSENT, `updateMastery`
+   * falls back to the conservative single-active-signature rule: the
+   * one ACTIVE signature on this concept resolves ONLY if there is
+   * exactly one; two or more ACTIVE signatures with no explicit scope
+   * resolves NOTHING (ambiguity is never guessed away -- Phase 2C-R
+   * Step 5, closing the concept-wide bulk-resolution defect external
+   * review found in Phase 2C).
+   */
+  resolvedMisconceptionSignatureIds?: string[];
 }
 
 export interface MasteryUpdateResult {
@@ -319,6 +365,12 @@ export async function updateMastery(
     // mastery_records lock is ever taken, keeping a flood of retries
     // cheap rather than serializing them behind real work.
     let learningEvidenceId: string | null = null;
+    // Named so Phase 2C's misconception-resolution check (below) can
+    // reuse the EXACT same computed value the evidence row itself
+    // stores, rather than recomputing "was this independent" a second,
+    // possibly-diverging way.
+    const computedAiAssistanceType =
+      telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE');
     try {
       const evidenceResult = await client.query(
         `
@@ -339,7 +391,7 @@ export async function updateMastery(
           telemetry?.activityType ?? null,
           telemetry?.learningMode ?? null,
           telemetry?.hintsUsed ?? 0,
-          telemetry?.aiAssistanceType ?? (telemetry?.hintsUsed ? (telemetry.hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE'),
+          computedAiAssistanceType,
           telemetry?.confidenceBeforeAnswer ?? null,
           evidence.scorePercent ?? null,
           metadata ? JSON.stringify(metadata) : null,
@@ -518,6 +570,98 @@ export async function updateMastery(
           `INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type) VALUES ($1, $2, $3, $4, $5)`,
           [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
         );
+      }
+
+      // Phase 2C: misconception observation, same transactional
+      // client, same atomic operation as the evidence it was
+      // classified from -- see MasteryUpdateInput.misconceptionObservation's
+      // own doc comment for the exactly-once reasoning. Mutually
+      // exclusive with the resolution check just below: a misconception
+      // genuinely (re)observed by THIS SAME action cannot, in the same
+      // breath, also be evidence that the concept is now free of it.
+      let misconceptionObserved = false;
+      if (input.misconceptionObservation) {
+        const obs = input.misconceptionObservation;
+        const observation = await recordStudentMisconception(studentId, obs.signatureId, obs.evidenceRef, learningEvidenceId, client);
+        misconceptionObserved = true;
+        await recordDecisionEvent(
+          {
+            decisionType: observation.isReactivation ? 'MISCONCEPTION_REACTIVATED' : 'MISCONCEPTION_RECORDED',
+            engine: 'misconception-engine',
+            engineVersion: 'v1',
+            studentId,
+            subjectId,
+            conceptId,
+            sourceEventType: 'student_misconceptions',
+            sourceEventId: learningEvidenceId,
+            previousState: { status: observation.previousStatus },
+            newState: { status: 'ACTIVE', occurrenceCount: observation.occurrenceCount },
+            reasonCode: observation.isReactivation ? 'MISCONCEPTION_REOBSERVED_AFTER_RESOLUTION' : 'AI_MISCONCEPTION_CLASSIFIED',
+            reasonDetails: { misconceptionCode: obs.misconceptionCode, isCritical: obs.isCritical },
+            aiExecutionId: obs.aiExecution.aiExecutionId,
+          },
+          client
+        );
+      }
+
+      // Phase 2C/2C-R: misconception resolution check -- runs for every
+      // non-duplicate evidence application (not just Explain & Defend's
+      // own), since Verification's SOLO_VERIFICATION evidence flows
+      // through this exact same function too. Reuses the Understanding
+      // threshold already fetched for the projector immediately below,
+      // computed once here so the projector (which reads criticalCount)
+      // sees the post-resolution state in this SAME pass -- never one
+      // interaction behind (Phase 2C Step 19's explicit ordering
+      // requirement).
+      if (!misconceptionObserved) {
+        const policyForResolution = await getActiveMasteryPolicy(client);
+        if (
+          isMisconceptionResolutionEvidence(
+            { sourceType: evidence.sourceType, scorePercent: evidence.scorePercent ?? null, result: evidence.result, aiAssistanceType: computedAiAssistanceType },
+            policyForResolution.minimumUnderstanding
+          )
+        ) {
+          // Phase 2C-R: resolution SCOPE -- never a concept-wide bulk
+          // resolve. Explicit scope wins when a caller supplies one
+          // (no current writer does -- see MasteryUpdateInput.resolvedMisconceptionSignatureIds's
+          // own doc comment); otherwise the conservative fallback: the
+          // single ACTIVE signature on this concept resolves only when
+          // there is EXACTLY one. Two or more ACTIVE signatures with no
+          // explicit scope resolves NONE of them -- ambiguity is never
+          // guessed away, closing the false-positive VALIDATED_MASTERY
+          // path external review found in Phase 2C.
+          let scopeIds: string[];
+          if (input.resolvedMisconceptionSignatureIds && input.resolvedMisconceptionSignatureIds.length > 0) {
+            scopeIds = input.resolvedMisconceptionSignatureIds;
+          } else {
+            const activeSignatureIds = await getActiveMisconceptionSignatureIdsForConcept(studentId, conceptId, client);
+            scopeIds = activeSignatureIds.length === 1 ? activeSignatureIds : [];
+          }
+
+          if (scopeIds.length > 0) {
+            const resolved = await resolveMisconceptionSignatures(studentId, conceptId, scopeIds, learningEvidenceId, client);
+            for (const r of resolved) {
+              await recordDecisionEvent(
+                {
+                  decisionType: 'MISCONCEPTION_RESOLVED',
+                  engine: 'misconception-engine',
+                  engineVersion: 'v1',
+                  studentId,
+                  subjectId,
+                  conceptId,
+                  sourceEventType: 'student_misconceptions',
+                  sourceEventId: learningEvidenceId,
+                  previousState: { status: 'ACTIVE' },
+                  newState: { status: 'RESOLVED' },
+                  reasonCode: 'RESOLUTION_EVIDENCE_QUALIFIED',
+                  reasonDetails: { misconceptionCode: r.misconceptionCode, isCritical: r.isCritical, resolvingSourceType: evidence.sourceType },
+                  aiExecutionId: null, // resolution is a DETERMINISTIC_DERIVATION from this evidence's own result/source-type -- never AI-attributed (Phase 2C Step 39).
+                },
+                client
+              );
+            }
+          }
+        }
       }
 
       // Phase 2.2A/2.2B, same transactional client (Phase 2B
