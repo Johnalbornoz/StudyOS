@@ -61,6 +61,14 @@ function buildFullFixtureQuery() {
     if (s.includes("DISTINCT ON (concept_id, new_state ->> 'masteryState')")) return { rows: [] };
     if (s.includes('FROM concept_knowledge_state WHERE student_id = $1 AND concept_id = ANY')) return { rows: [] };
     if (s.includes('FROM concept_relationships WHERE target_concept_id')) return { rows: [] };
+    // --- Phase 2D/2E derived metrics (only exercised when requested) ---
+    if (s.includes('FROM cognitive_diagnoses cd')) return { rows: [{ n: 1 }] };
+    if (s.includes("FROM remediation_paths WHERE student_id = $1 AND target_concept_id = $2 AND state IN ('CONFIRMED'")) return { rows: [{ n: 1 }] };
+    if (s.includes("FROM remediation_paths WHERE student_id = $1 AND target_concept_id = $2 AND state IN ('RESOLVED'")) return { rows: [{ state: 'RESOLVED', resolved_at: '2026-08-01T00:00:00.000Z' }] };
+    if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'")) {
+      return { rows: [{ id: 'cyc-1', student_id: STUDENT_ID, concept_id: CONCEPT_ID, subject_id: SUBJECT_ID, trigger_type: 'LOW_BASELINE', started_at: '2026-08-01', validation_deadline: '2026-09-20T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: null }] };
+    }
+    if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED'")) return { rows: [] };
     throw new Error(`Unmocked: ${s}`);
   });
 }
@@ -160,5 +168,38 @@ describe('Step 1: instrumented query-count measurement (real readers, no reader-
     const allCount = queryAll.mock.calls.length;
 
     expect(allCount).toBeGreaterThan(defaultCount);
+  });
+});
+
+describe('Phase 2D/2E: interventionState/validationState follow the exact same MetricProjection contract', () => {
+  it('default (no options): both are {requested: false}, carrying real, populated values only when actually requested', async () => {
+    const query = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query } }));
+    const { getDecisionContext } = await import('@/lib/learner-twin/service');
+
+    const ctxDefault = await getDecisionContext(STUDENT_ID, CONCEPT_ID);
+    expect(ctxDefault!.interventionState).toEqual({ requested: false });
+    expect(ctxDefault!.validationState).toEqual({ requested: false });
+
+    vi.resetModules();
+    const queryAll = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query: queryAll } }));
+    const { getDecisionContext: getAll } = await import('@/lib/learner-twin/service');
+    const ctxAll = await getAll(STUDENT_ID, CONCEPT_ID, { derivedMetrics: 'all' });
+
+    expect(ctxAll!.interventionState).toMatchObject({ requested: true, result: { available: true, value: { activeDiagnosisCount: 1, openInterventionCount: 1, lastOutcome: 'RESOLVED' } } });
+    expect(ctxAll!.validationState).toMatchObject({ requested: true, result: { available: true, value: { status: 'OPEN' } } });
+  });
+
+  it("requesting only ['interventionState'] runs it without touching validationState's queries", async () => {
+    const query = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query } }));
+    const { getDecisionContext } = await import('@/lib/learner-twin/service');
+
+    const ctx = await getDecisionContext(STUDENT_ID, CONCEPT_ID, { derivedMetrics: ['interventionState'] });
+
+    expect(ctx!.interventionState).toMatchObject({ requested: true });
+    expect(ctx!.validationState).toEqual({ requested: false });
+    expect(query.mock.calls.some(([sql]) => String(sql).includes('FROM validation_cycles'))).toBe(false);
   });
 });

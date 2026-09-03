@@ -19,6 +19,7 @@ import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 import { recalculateConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
 import { recordDecisionEvent } from '@/lib/audit';
 import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
+import { toCanonicalErrorType } from './error-intelligence.service';
 import {
   recordStudentMisconception,
   resolveMisconceptionSignatures,
@@ -566,9 +567,17 @@ export async function updateMastery(
       // duplicate application (rejected above, before this line is
       // ever reached) can never create a second error record either.
       if (errorClassification && evidence.result !== 'correct') {
+        // Phase 2F: errorClassification is caller-supplied free-form
+        // text (record-evidence/route.ts's own schema: z.string(), not
+        // an enum) -- canonicalized here at the one other INSERT INTO
+        // errors call site (error-intelligence.service.ts::recordError
+        // is the other), so a non-canonical value never reaches this
+        // table (and never trips the CHECK constraint added in
+        // database/migrations/20260905_1000_error_taxonomy_reconciliation.sql,
+        // which would otherwise abort this whole transaction).
         await client.query(
           `INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type) VALUES ($1, $2, $3, $4, $5)`,
-          [studentId, conceptId, subjectId, errorClassification, evidence.sourceType]
+          [studentId, conceptId, subjectId, toCanonicalErrorType(errorClassification), evidence.sourceType]
         );
       }
 

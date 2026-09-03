@@ -1,6 +1,8 @@
 import type { MasteryState, ValidationReadiness, DimensionScores as KnowledgeStateDimensionScores, StateReason } from '@/services/knowledge-state.service';
 import type { ConfidenceCalibration, EvidenceStrength } from '@/services/learner-model.service';
 import type { RecurringMisconception } from '@/services/misconception.service';
+import type { InterventionStateSummary } from '@/services/remediation.service';
+import type { ConceptValidationSummary } from '@/services/validation-cycle.service';
 import type {
   MetricResult,
   MetricProjection,
@@ -142,6 +144,16 @@ export interface MisconceptionSummary {
   recurringCount: number;
   /** Phase 2C, additive: currently RESOLVED signature count -- real learner history, not a current defect. */
   resolvedCount: number;
+  quality: SignalQuality;
+}
+
+/** Phase 2D: current-state Intervention Lifecycle summary for one concept -- see remediation.service.ts::getInterventionStateForConcept for the exact query semantics. */
+export interface InterventionState extends InterventionStateSummary {
+  quality: SignalQuality;
+}
+
+/** Phase 2E: current-state temporal-validation summary for one concept -- see validation-cycle.service.ts::getConceptValidationState. Never mutates a cycle's status -- read-only by construction. */
+export interface ConceptValidationState extends ConceptValidationSummary {
   quality: SignalQuality;
 }
 
@@ -296,6 +308,8 @@ export interface LearnerModel {
   calibration: MetricResult<AggregateCalibrationSummary>;
   velocitySummary: MetricResult<AggregateVelocitySummary>;
   studyPlanAdherence: MetricResult<StudyPlanAdherenceSummary>;
+  /** Phase 2E: Knowledge Validation Rate - 14 Days, student-scoped (getKVR14, unchanged algorithm). `available: false` (INSUFFICIENT_EVIDENCE) with zero CLOSED cycles -- never a fabricated 0%. */
+  kvr14: MetricResult<{ value: number | null; eligibleCount: number; validatedCount: number }>;
   dataQuality: DataQualitySummary;
 }
 
@@ -351,6 +365,10 @@ export interface ConceptView {
   retention: RetentionSignal;
   transfer: TransferSignal;
   misconceptions: MisconceptionSummary;
+  /** Phase 2D: eager, like misconceptions -- ConceptView is the "full detail" projection, always computed (unlike DecisionContext's lazy MetricProjection variant). */
+  interventionState: InterventionState;
+  /** Phase 2E: eager, same rationale as interventionState. */
+  validationState: ConceptValidationState;
   recentEvidence: EvidenceSummary[];
   errorPatterns: ErrorPatternSummary[];
   assessmentContext: AssessmentPressure;
@@ -402,6 +420,20 @@ export interface DecisionContext {
   learningVelocity: MetricProjection<LearningVelocitySummary>;
   helpDependency: MetricProjection<HelpDependencyComponents>;
   prerequisiteGaps: MetricProjection<PrerequisiteGapsSummary>;
+  /**
+   * Phase 2D/2E: intervention lifecycle and temporal-validation state --
+   * added specifically for a FUTURE Phase 4 Decision Engine to
+   * distinguish a new gap from a persistent one, a recently-repaired
+   * one, or an overdue revalidation (Phase 2 Central Question's "what
+   * cognitive work has already been attempted" clause). No current
+   * consumer (remediation/cognitive-diagnosis/tutor-strategy) reads
+   * these fields, so -- like learningVelocity/helpDependency/
+   * prerequisiteGaps above -- both are computed ONLY when
+   * `options.derivedMetrics` explicitly requests them; the default is
+   * `{requested: false}` and zero additional queries run.
+   */
+  interventionState: MetricProjection<InterventionStateSummary>;
+  validationState: MetricProjection<ConceptValidationSummary>;
   dataQuality: DataQualitySummary;
 }
 

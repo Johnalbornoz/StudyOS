@@ -15,6 +15,9 @@ import {
   getActiveValidationCycles,
   getValidationDeadlines,
   openValidationCycle,
+  isValidationCycleOverdue,
+  daysToValidationDeadline,
+  getConceptValidationState,
   type TriggerType,
 } from '@/services/validation-cycle.service';
 import { classifyRetention } from '@/services/knowledge-state.service';
@@ -587,5 +590,87 @@ describe('P0-A.1 durability. A persisted INTERVENTION_REQUIRED is not silently e
     expect(result).toBe('VALIDATED_MASTERY');
     const updateCall = queryMock.mock.calls.find((c) => String(c[0]).includes('UPDATE validation_cycles'));
     expect(updateCall?.[1]).toContain('VALIDATED_MASTERY');
+  });
+});
+
+// ---------------------------------------------------------------------
+// Phase 2E: temporal helpers + the concept-scoped read-only summary.
+// ---------------------------------------------------------------------
+
+describe('Phase 2E: isValidationCycleOverdue / daysToValidationDeadline -- pure, deterministic', () => {
+  const NOW = new Date('2026-09-10T00:00:00.000Z');
+
+  it('an OPEN cycle whose deadline is in the future is not overdue', () => {
+    expect(isValidationCycleOverdue({ status: 'OPEN', validationDeadline: '2026-09-15T00:00:00.000Z' }, NOW)).toBe(false);
+  });
+
+  it('an OPEN cycle whose deadline has passed is overdue', () => {
+    expect(isValidationCycleOverdue({ status: 'OPEN', validationDeadline: '2026-09-01T00:00:00.000Z' }, NOW)).toBe(true);
+  });
+
+  it('a CLOSED cycle is never "overdue" -- overdue only describes an unresolved OPEN cycle', () => {
+    expect(isValidationCycleOverdue({ status: 'CLOSED', validationDeadline: '2026-09-01T00:00:00.000Z' }, NOW)).toBe(false);
+  });
+
+  it('daysToValidationDeadline is positive before the deadline, negative after', () => {
+    expect(daysToValidationDeadline('2026-09-15T00:00:00.000Z', NOW)).toBe(5);
+    expect(daysToValidationDeadline('2026-09-05T00:00:00.000Z', NOW)).toBe(-5);
+  });
+
+  it('defaults `now` to the real current time when omitted (no hidden test-only branch)', () => {
+    // A deadline exactly 1000 years out will always be positive regardless of when this test runs.
+    expect(daysToValidationDeadline(new Date(Date.now() + 1000 * 365 * 24 * 60 * 60 * 1000))).toBeGreaterThan(0);
+  });
+});
+
+describe('Phase 2E: getConceptValidationState -- read-only, never mutates a cycle (never calls getActiveValidationCycle/resolveActiveCycle)', () => {
+  it("'NONE' when no Validation Cycle has ever existed for this concept", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }); // OPEN lookup
+    queryMock.mockResolvedValueOnce({ rows: [] }); // last-CLOSED lookup
+
+    const summary = await getConceptValidationState('s1', 'c1');
+
+    expect(summary).toEqual({ status: 'NONE', validationDeadline: null, daysToDeadline: null, lastOutcome: null, lastOutcomeAt: null, isReopenedFromPriorValidation: false });
+  });
+
+  it("'OPEN' (not yet overdue) reports the real deadline/days remaining and the prior CLOSED cycle's outcome, independently", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [{ id: 'cyc-2', student_id: 's1', concept_id: 'c1', subject_id: 'subj1', trigger_type: 'LOW_BASELINE', started_at: '2026-09-01', validation_deadline: '2026-09-20T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: null }],
+    });
+    queryMock.mockResolvedValueOnce({ rows: [{ final_outcome: 'DEVELOPING', closed_at: '2026-08-15T00:00:00.000Z' }] });
+
+    const summary = await getConceptValidationState('s1', 'c1');
+
+    expect(summary.status).toBe('OPEN');
+    expect(summary.validationDeadline).toBe('2026-09-20T00:00:00.000Z');
+    expect(summary.lastOutcome).toBe('DEVELOPING'); // the PRIOR cycle's outcome, shown alongside the new OPEN one
+    expect(summary.isReopenedFromPriorValidation).toBe(false);
+  });
+
+  it("'OVERDUE' when the OPEN cycle's deadline has already passed -- and this function never issues an UPDATE to close it", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [{ id: 'cyc-3', student_id: 's1', concept_id: 'c1', subject_id: 'subj1', trigger_type: 'LOW_BASELINE', started_at: '2026-01-01', validation_deadline: '2020-01-01T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: null }],
+    });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const summary = await getConceptValidationState('s1', 'c1');
+
+    expect(summary.status).toBe('OVERDUE');
+    expect(summary.daysToDeadline).toBeLessThan(0);
+    expect(queryMock).toHaveBeenCalledTimes(2); // the two direct SELECTs only -- no UPDATE, no resolve-on-read side effect
+    for (const call of queryMock.mock.calls) {
+      expect(String(call[0])).toMatch(/^SELECT/);
+    }
+  });
+
+  it('isReopenedFromPriorValidation is true when the current OPEN cycle carries a reopenedFromCycleId (a decay reopen)', async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [{ id: 'cyc-4', student_id: 's1', concept_id: 'c1', subject_id: 'subj1', trigger_type: 'KNOWLEDGE_DECAY', started_at: '2026-09-01', validation_deadline: '2026-09-20T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: 'cyc-1' }],
+    });
+    queryMock.mockResolvedValueOnce({ rows: [{ final_outcome: 'VALIDATED_MASTERY', closed_at: '2026-08-01T00:00:00.000Z' }] });
+
+    const summary = await getConceptValidationState('s1', 'c1');
+
+    expect(summary.isReopenedFromPriorValidation).toBe(true);
   });
 });

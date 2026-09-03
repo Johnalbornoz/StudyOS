@@ -1,11 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@/lib/db', () => ({ db: { query: vi.fn() } }));
+const queryMock = vi.fn();
+vi.mock('@/lib/db', () => ({ db: { query: (...args: any[]) => queryMock(...args) } }));
 vi.mock('@/services/concept-graph.service', () => ({
   getPrerequisites: vi.fn(),
   inferPrerequisitesForConcept: vi.fn(),
   confidenceTier: (c: number) => (c >= 0.75 ? 'HIGH' : c >= 0.45 ? 'MEDIUM' : 'LOW'),
 }));
+vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
+const recordDecisionEventMock = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/audit', () => ({ recordDecisionEvent: (...args: any[]) => recordDecisionEventMock(...args) }));
 
 import {
   errorTypeRelevance,
@@ -15,7 +19,13 @@ import {
   computeRootCauseScore,
   classifyDiagnosisState,
   evaluateDiagnosticCheck,
+  resolveDiagnosticCheck,
 } from '@/services/cognitive-diagnosis.service';
+
+beforeEach(() => {
+  queryMock.mockReset();
+  recordDecisionEventMock.mockClear();
+});
 
 describe('errorTypeRelevance', () => {
   it('ranks CONCEPTUAL highest and CARELESS lowest', () => {
@@ -145,5 +155,58 @@ describe('evaluateDiagnosticCheck', () => {
 
   it('is inconclusive with zero questions', () => {
     expect(evaluateDiagnosticCheck(0, 0)).toBe('INCONCLUSIVE');
+  });
+});
+
+/** Phase 2D: DIAGNOSIS_RESOLVED decision-event emission -- confirmed vs. rejected vs. inconclusive. */
+describe('resolveDiagnosticCheck -- DIAGNOSIS_RESOLVED decision events', () => {
+  const diagnosisRow = { id: 'diag-1', student_id: 'student-1', target_concept_id: 'target-1', candidate_concept_id: 'candidate-1', state: 'CONFIRMED', score: 0.6 };
+
+  it('CONFIRMED (weak diagnostic-check performance): emits exactly one DIAGNOSIS_RESOLVED with reasonCode DIAGNOSTIC_CHECK_CONFIRMED', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ ...diagnosisRow, state: 'LIKELY' }] }); // getDiagnosis
+    queryMock.mockResolvedValueOnce({ rows: [] }); // UPDATE
+
+    const result = await resolveDiagnosticCheck('diag-1', 1, 3);
+
+    expect(result?.outcome).toBe('CONFIRMED');
+    expect(recordDecisionEventMock).toHaveBeenCalledTimes(1);
+    expect(recordDecisionEventMock.mock.calls[0][0]).toMatchObject({
+      decisionType: 'DIAGNOSIS_RESOLVED',
+      sourceEventId: 'diag-1',
+      reasonCode: 'DIAGNOSTIC_CHECK_CONFIRMED',
+      previousState: { state: 'LIKELY' },
+      newState: { state: 'CONFIRMED' },
+    });
+  });
+
+  it('REJECTED (strong diagnostic-check performance): emits exactly one DIAGNOSIS_RESOLVED with reasonCode DIAGNOSTIC_CHECK_REJECTED', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ ...diagnosisRow, state: 'LIKELY' }] });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const result = await resolveDiagnosticCheck('diag-1', 3, 3);
+
+    expect(result?.outcome).toBe('REJECTED');
+    expect(recordDecisionEventMock).toHaveBeenCalledTimes(1);
+    expect(recordDecisionEventMock.mock.calls[0][0]).toMatchObject({ decisionType: 'DIAGNOSIS_RESOLVED', reasonCode: 'DIAGNOSTIC_CHECK_REJECTED' });
+  });
+
+  it('INCONCLUSIVE (middling performance): emits NO decision event -- the hypothesis stays open for a later re-check', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [diagnosisRow] });
+
+    const result = await resolveDiagnosticCheck('diag-1', 2, 3);
+
+    expect(result?.outcome).toBe('INCONCLUSIVE');
+    expect(recordDecisionEventMock).not.toHaveBeenCalled();
+    // No UPDATE issued either -- only the initial getDiagnosis SELECT.
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a nonexistent diagnosis id returns null without ever touching decision events', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const result = await resolveDiagnosticCheck('nonexistent', 1, 3);
+
+    expect(result).toBeNull();
+    expect(recordDecisionEventMock).not.toHaveBeenCalled();
   });
 });

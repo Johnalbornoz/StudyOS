@@ -22,7 +22,23 @@ export type DecisionType =
   // MISCONCEPTION_RECORDED, only on an actual ACTIVE->RESOLVED or
   // RESOLVED->ACTIVE transition (never on every read).
   | 'MISCONCEPTION_RESOLVED'
-  | 'MISCONCEPTION_REACTIVATED';
+  | 'MISCONCEPTION_REACTIVATED'
+  // Phase 2D: Intervention Lifecycle. Recorded only on a genuine,
+  // first-time state transition -- never on an idempotent replay (a
+  // diagnosis re-INSERT that hits ON CONFLICT DO NOTHING, a
+  // startRemediation call that returns an already-open path, or a
+  // completeRemediationStep replay of an already-completed step all
+  // emit none of these). DIAGNOSIS_RESOLVED covers both CONFIRMED and
+  // REJECTED outcomes of a Diagnostic Check (reasonCode distinguishes
+  // them) -- "resolved" here means "the open hypothesis question was
+  // answered either way," not "the underlying cognitive problem is
+  // fixed" (that is INTERVENTION_COMPLETED's job). See
+  // docs/audits/STUDYUS_PHASE_2_FINAL_COGNITIVE_MASTERY_CERTIFICATION.md
+  // §3 for the full lifecycle audit.
+  | 'DIAGNOSIS_CREATED'
+  | 'DIAGNOSIS_RESOLVED'
+  | 'INTERVENTION_STARTED'
+  | 'INTERVENTION_COMPLETED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -36,7 +52,12 @@ export type DecisionEngine =
   | 'knowledge-state-projector'
   | 'verification-engine'
   | 'debt-resolution-engine'
-  | 'misconception-engine';
+  | 'misconception-engine'
+  // Phase 2D: cognitive-diagnosis.service.ts (DIAGNOSIS_*) and
+  // remediation.service.ts (INTERVENTION_*) -- two existing, separate
+  // services, one shared engine label since both produce Intervention
+  // Lifecycle transitions over the same diagnosis->remediation chain.
+  | 'intervention-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;

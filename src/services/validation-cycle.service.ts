@@ -148,6 +148,34 @@ export function computeTimeToMastery(startedAt: string | Date, validatedAt: stri
   return Math.round(ms / (24 * 60 * 60 * 1000));
 }
 
+/**
+ * Phase 2E: a currently-OPEN cycle whose deadline has already passed
+ * but has not yet been resolved by evaluateValidationLifecycle (only
+ * that function is allowed to actually CLOSE a cycle -- see
+ * getValidationDeadlines's own doc comment on why a mere read must
+ * never do that as a side effect). This is a purely computed, derived
+ * fact -- never a persisted status -- so "OVERDUE" can never drift out
+ * of sync with the underlying `status`/`validationDeadline` columns it
+ * is computed from. `now` is an explicit parameter (never `new Date()`
+ * called internally) so callers -- and tests -- get a single,
+ * deterministic instant to reason about, per Phase 2E's UTC/no-hidden-
+ * clock discipline.
+ */
+export function isValidationCycleOverdue(cycle: Pick<ValidationCycle, 'status' | 'validationDeadline'>, now: Date = new Date()): boolean {
+  return cycle.status === 'OPEN' && new Date(cycle.validationDeadline).getTime() < now.getTime();
+}
+
+/**
+ * Phase 2E: days remaining until an OPEN cycle's deadline (negative
+ * once overdue) -- null when there is no cycle to measure against.
+ * Purely computed from `validationDeadline`, same determinism
+ * discipline as isValidationCycleOverdue.
+ */
+export function daysToValidationDeadline(validationDeadline: string | Date, now: Date = new Date()): number {
+  const ms = new Date(validationDeadline).getTime() - now.getTime();
+  return Math.round(ms / (24 * 60 * 60 * 1000));
+}
+
 /** Idempotent: an already-OPEN cycle for this (student, concept) is returned as-is (enforced by the DB's partial unique index too, not just this check). */
 export async function openValidationCycle(
   studentId: string,
@@ -446,4 +474,57 @@ export async function getValidationDeadlines(studentId: string): Promise<{ conce
     [studentId]
   );
   return result.rows.map((r) => ({ conceptId: r.concept_id, validationDeadline: r.validation_deadline }));
+}
+
+export type ConceptValidationStatus = 'NONE' | 'OPEN' | 'OVERDUE';
+
+export interface ConceptValidationSummary {
+  /** 'NONE' = no Validation Cycle has ever been opened for this concept -- distinct from an OPEN cycle that simply isn't overdue yet. */
+  status: ConceptValidationStatus;
+  validationDeadline: string | null;
+  /** Negative once overdue. Null when status is 'NONE'. */
+  daysToDeadline: number | null;
+  /** The most recently CLOSED cycle's outcome for this concept, if any -- independent of whether a new cycle is now OPEN. */
+  lastOutcome: FinalOutcome | null;
+  lastOutcomeAt: string | null;
+  /** True when the current (or most recent) cycle was opened via a decay reopen (reopenedFromCycleId set) -- Phase 2E's "recently repaired gap that regressed" signal, distinct from a brand-new gap. */
+  isReopenedFromPriorValidation: boolean;
+}
+
+/**
+ * Phase 2E: a read-only, concept-scoped temporal-validation summary for
+ * the Digital Learning Twin/DecisionContext -- deliberately a plain
+ * SELECT, never `getActiveValidationCycle`/`resolveActiveCycle` (both
+ * may CLOSE an expired cycle as a side effect of being asked, exactly
+ * the hazard `getValidationDeadlines`'s own doc comment warns about).
+ * `isValidationCycleOverdue` is applied purely in application code
+ * afterward, so merely reading this can never mutate a cycle's status
+ * -- only evaluateValidationLifecycle (the Knowledge Projector path)
+ * is ever allowed to do that.
+ */
+export async function getConceptValidationState(studentId: string, conceptId: string, client: DbExecutor = db): Promise<ConceptValidationSummary> {
+  const [openResult, lastClosedResult] = await Promise.all([
+    client.query(`SELECT * FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN' LIMIT 1`, [studentId, conceptId]),
+    client.query(
+      `SELECT final_outcome, closed_at FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED' ORDER BY closed_at DESC LIMIT 1`,
+      [studentId, conceptId]
+    ),
+  ]);
+  const lastOutcome: FinalOutcome | null = lastClosedResult.rows[0]?.final_outcome ?? null;
+  const lastOutcomeAt: string | null = lastClosedResult.rows[0]?.closed_at ?? null;
+
+  const openRow = openResult.rows[0];
+  if (!openRow) {
+    return { status: 'NONE', validationDeadline: null, daysToDeadline: null, lastOutcome, lastOutcomeAt, isReopenedFromPriorValidation: false };
+  }
+  const cycle = rowToCycle(openRow);
+  const overdue = isValidationCycleOverdue(cycle);
+  return {
+    status: overdue ? 'OVERDUE' : 'OPEN',
+    validationDeadline: cycle.validationDeadline,
+    daysToDeadline: daysToValidationDeadline(cycle.validationDeadline),
+    lastOutcome,
+    lastOutcomeAt,
+    isReopenedFromPriorValidation: cycle.reopenedFromCycleId !== null,
+  };
 }

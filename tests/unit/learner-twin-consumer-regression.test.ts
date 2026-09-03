@@ -73,6 +73,12 @@ function sharedMock(sql: string, params: any[] = []) {
   if (s.includes('FROM study_plans WHERE student_id')) return { rows: [] };
   if (s.includes('FROM study_sessions ss WHERE')) return { rows: [] };
   if (s.includes('SELECT result, timestamp FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp ASC')) return { rows: [] };
+  // Phase 2D/2E: eager on ConceptView -- always exercised.
+  if (s.includes('FROM cognitive_diagnoses cd')) return { rows: [{ n: 0 }] };
+  if (s.includes("FROM remediation_paths WHERE student_id = $1 AND target_concept_id = $2 AND state IN ('CONFIRMED'")) return { rows: [{ n: 0 }] };
+  if (s.includes("FROM remediation_paths WHERE student_id = $1 AND target_concept_id = $2 AND state IN ('RESOLVED'")) return { rows: [] };
+  if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'")) return { rows: [] };
+  if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED'")) return { rows: [] };
   throw new Error(`Unmocked: ${s}`);
 }
 

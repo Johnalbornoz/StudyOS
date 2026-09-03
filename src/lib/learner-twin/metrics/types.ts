@@ -80,9 +80,21 @@ export function metricRequested<T>(result: MetricResult<T>): MetricRequested<T> 
   return { requested: true, result };
 }
 
-/** The three DecisionContext-only derived metrics a future Decision Engine may explicitly request. */
-export type DerivedMetricName = 'helpDependency' | 'learningVelocity' | 'prerequisiteGaps';
-export const ALL_DERIVED_METRIC_NAMES: readonly DerivedMetricName[] = ['helpDependency', 'learningVelocity', 'prerequisiteGaps'];
+/**
+ * The DecisionContext-only derived metrics a future Decision Engine may
+ * explicitly request. Phase 2D/2E add `interventionState`/
+ * `validationState` to the original Phase 1E three -- same contract:
+ * `{requested: false}` by default, zero extra queries for current live
+ * consumers.
+ */
+export type DerivedMetricName = 'helpDependency' | 'learningVelocity' | 'prerequisiteGaps' | 'interventionState' | 'validationState';
+export const ALL_DERIVED_METRIC_NAMES: readonly DerivedMetricName[] = [
+  'helpDependency',
+  'learningVelocity',
+  'prerequisiteGaps',
+  'interventionState',
+  'validationState',
+];
 export function metricAvailable<T>(value: T): MetricAvailable<T> {
   return { available: true, value };
 }

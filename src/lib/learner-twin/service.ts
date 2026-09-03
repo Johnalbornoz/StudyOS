@@ -16,6 +16,9 @@
 import { db } from '@/lib/db';
 import * as R from './readers';
 import { getSubjectLearnerModel } from '@/services/learner-model.service';
+import { getKVR14 } from '@/services/validation-cycle.service';
+import type { InterventionStateSummary } from '@/services/remediation.service';
+import type { ConceptValidationSummary } from '@/services/validation-cycle.service';
 import type {
   StudentId,
   ProjectionOptions,
@@ -45,6 +48,7 @@ import {
   ALL_DERIVED_METRIC_NAMES,
   type DerivedMetricName,
   type MetricProjection,
+  type MetricResult,
 } from './metrics';
 
 const DEFAULT_HISTORY_LIMIT = 20;
@@ -89,11 +93,18 @@ export async function getOverview(studentId: StudentId, options: ProjectionOptio
   // confidence-tagged evidence in one query; velocity batches all
   // evidenced concepts in 3 fixed-shape queries (readLearningVelocityForConcepts) --
   // neither is one-query-per-concept (Step 28).
-  const [calibration, velocityByConcept, studyPlanAdherence] = await Promise.all([
+  const [calibration, velocityByConcept, studyPlanAdherence, kvr14Result] = await Promise.all([
     readAggregateCalibration(studentId),
     readLearningVelocityForConcepts(studentId, evidencedConceptIds),
     readStudyPlanAdherence(studentId),
+    // Phase 2E: student-scoped, unchanged algorithm (getKVR14) -- one
+    // bounded, indexed query, same cost class as the other three.
+    getKVR14(studentId),
   ]);
+  const kvr14: MetricResult<{ value: number | null; eligibleCount: number; validatedCount: number }> =
+    kvr14Result.eligibleCount === 0
+      ? metricUnavailable('INSUFFICIENT_EVIDENCE', 'No Validation Cycle has reached a terminal outcome yet.')
+      : metricAvailable(kvr14Result);
   const velocitySummary =
     evidencedConceptIds.length === 0
       ? metricUnavailable('INSUFFICIENT_EVIDENCE', 'No evidenced concepts yet.')
@@ -132,6 +143,7 @@ export async function getOverview(studentId: StudentId, options: ProjectionOptio
     calibration,
     velocitySummary,
     studyPlanAdherence,
+    kvr14,
     dataQuality: dataQuality(),
   };
 }
@@ -266,6 +278,8 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     metacognition,
     transfer,
     misconceptions,
+    interventionState,
+    validationState,
     recentEvidence,
     errorPatterns,
     assessmentContext,
@@ -280,6 +294,9 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     R.readMetacognitionSignal(studentId, conceptId),
     R.readTransferSignal(studentId, conceptId),
     R.readMisconceptionSummary(studentId, conceptId),
+    // Phase 2D/2E: eager, like misconceptions -- ConceptView is the "full detail" projection.
+    R.readInterventionState(studentId, conceptId),
+    R.readConceptValidationState(studentId, conceptId),
     R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
     R.readConceptErrorPatterns(studentId, subjectId, conceptId),
     R.readAssessmentPressure(studentId, subjectId),
@@ -317,6 +334,8 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     retention,
     transfer,
     misconceptions,
+    interventionState,
+    validationState,
     recentEvidence,
     errorPatterns,
     assessmentContext,
@@ -358,23 +377,47 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
   const prerequisiteGapsPromise: Promise<MetricProjection<any>> = requestedMetrics.has('prerequisiteGaps')
     ? readPrerequisiteGaps(studentId, conceptId).then(metricRequested)
     : Promise.resolve(METRIC_NOT_REQUESTED);
+  // Phase 2D/2E: same lazy contract as the three Phase 1E metrics above
+  // -- these summaries are always well-defined (a COUNT is never
+  // "insufficient evidence"), so when requested they resolve straight
+  // to `metricAvailable`, never `metricUnavailable`.
+  const interventionStatePromise: Promise<MetricProjection<InterventionStateSummary>> = requestedMetrics.has('interventionState')
+    ? R.readInterventionState(studentId, conceptId).then((v) => metricRequested(metricAvailable(v)))
+    : Promise.resolve(METRIC_NOT_REQUESTED);
+  const validationStatePromise: Promise<MetricProjection<ConceptValidationSummary>> = requestedMetrics.has('validationState')
+    ? R.readConceptValidationState(studentId, conceptId).then((v) => metricRequested(metricAvailable(v)))
+    : Promise.resolve(METRIC_NOT_REQUESTED);
 
-  const [knowledgeStateSignal, independence, metacognition, misconceptions, recentEvidence, assessmentPressure, planningContext, learningVelocity, helpDependency, prerequisiteGaps] =
-    await Promise.all([
-      R.readKnowledgeStateSignal(studentId, conceptId),
-      R.readIndependenceSignal(studentId, conceptId),
-      R.readMetacognitionSignal(studentId, conceptId),
-      R.readMisconceptionSummary(studentId, conceptId),
-      R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
-      R.readAssessmentPressure(studentId, subjectId),
-      R.readPlanningContext(studentId),
-      // Phase 1E: computed for a FUTURE Decision Engine's use only --
-      // Step 24 invariant: no current consumer reads these fields.
-      // Phase 1E-R: conditional on options.derivedMetrics (see above).
-      learningVelocityPromise,
-      helpDependencyPromise,
-      prerequisiteGapsPromise,
-    ]);
+  const [
+    knowledgeStateSignal,
+    independence,
+    metacognition,
+    misconceptions,
+    recentEvidence,
+    assessmentPressure,
+    planningContext,
+    learningVelocity,
+    helpDependency,
+    prerequisiteGaps,
+    interventionState,
+    validationState,
+  ] = await Promise.all([
+    R.readKnowledgeStateSignal(studentId, conceptId),
+    R.readIndependenceSignal(studentId, conceptId),
+    R.readMetacognitionSignal(studentId, conceptId),
+    R.readMisconceptionSummary(studentId, conceptId),
+    R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
+    R.readAssessmentPressure(studentId, subjectId),
+    R.readPlanningContext(studentId),
+    // Phase 1E: computed for a FUTURE Decision Engine's use only --
+    // Step 24 invariant: no current consumer reads these fields.
+    // Phase 1E-R: conditional on options.derivedMetrics (see above).
+    learningVelocityPromise,
+    helpDependencyPromise,
+    prerequisiteGapsPromise,
+    interventionStatePromise,
+    validationStatePromise,
+  ]);
 
   const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
 
@@ -403,6 +446,8 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     learningVelocity,
     helpDependency,
     prerequisiteGaps,
+    interventionState,
+    validationState,
     dataQuality: dataQuality(),
   };
 }

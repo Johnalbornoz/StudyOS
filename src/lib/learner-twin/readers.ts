@@ -41,6 +41,8 @@ import {
   type ConceptKnowledgeState,
 } from '@/services/knowledge-state.service';
 import { getMisconceptionCountsForConcept, getRecurringMisconceptions } from '@/services/misconception.service';
+import { getInterventionStateForConcept } from '@/services/remediation.service';
+import { getConceptValidationState, getKVR14 } from '@/services/validation-cycle.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
 import { getTransferScore } from '@/services/transfer.service';
 import { calculateForgettingRisk, calculateReviewIntervalDays } from '@/lib/algorithms/spaced-repetition';
@@ -55,6 +57,8 @@ import type {
   MetacognitionSignal,
   IndependenceSignal,
   MisconceptionSummary,
+  InterventionState,
+  ConceptValidationState,
   EvidenceSummary,
   ErrorPatternSummary,
   StateTransitionEvent,
@@ -325,6 +329,18 @@ export async function readTransferSignal(studentId: StudentId, conceptId: string
 export async function readMisconceptionSummary(studentId: StudentId, conceptId: string): Promise<MisconceptionSummary> {
   const counts = await getMisconceptionCountsForConcept(studentId, conceptId);
   return { activeCount: counts.activeCount, criticalCount: counts.criticalCount, recurringCount: counts.recurringCount, resolvedCount: counts.resolvedCount, quality: fact() };
+}
+
+/** Direct source: cognitive_diagnoses/remediation_paths, via the certified Phase 2D aggregate function (remediation.service.ts::getInterventionStateForConcept). Read-only -- never mutates a diagnosis/path's state. */
+export async function readInterventionState(studentId: StudentId, conceptId: string): Promise<InterventionState> {
+  const summary = await getInterventionStateForConcept(studentId, conceptId);
+  return { ...summary, quality: fact() };
+}
+
+/** Direct source: validation_cycles, via the certified Phase 2E aggregate function (validation-cycle.service.ts::getConceptValidationState). Deliberately never calls getActiveValidationCycle/resolveActiveCycle -- see that function's own doc comment on why a mere read must never close an expired cycle. */
+export async function readConceptValidationState(studentId: StudentId, conceptId: string): Promise<ConceptValidationState> {
+  const summary = await getConceptValidationState(studentId, conceptId);
+  return { ...summary, quality: fact() };
 }
 
 /** Direct source: learning_evidence, bounded (default last 10) -- never the full history. */

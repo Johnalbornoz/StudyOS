@@ -473,3 +473,26 @@ describe('updateMastery -- historical evidence without a key remains readable', 
     expect(call![0]).not.toMatch(/operation_key/i);
   });
 });
+
+describe('updateMastery -- Phase 2F: errorClassification is canonicalized before it reaches the errors table', () => {
+  it('a GradingErrorType-only value (ARITHMETIC), passed as the caller-supplied free-form errorClassification, is persisted as CARELESS', async () => {
+    const { db, queryMock } = createFakeDb();
+    const { updateMastery } = await loadUpdateMastery(db);
+
+    await updateMastery(baseInput({ errorClassification: 'ARITHMETIC', evidence: { result: 'incorrect', difficulty: 3, sourceType: 'PRACTICE_QUIZ', confidenceWeight: 0.9, scorePercent: 20, sampleSize: 1 } }));
+
+    const call = queryMock.mock.calls.find(([sql]) => /INSERT INTO errors/.test(sql));
+    expect(call).toBeTruthy();
+    expect(call![1][3]).toBe('CARELESS'); // never the raw, non-canonical 'ARITHMETIC'
+  });
+
+  it('a canonical errorClassification value passes through unchanged', async () => {
+    const { db, queryMock } = createFakeDb();
+    const { updateMastery } = await loadUpdateMastery(db);
+
+    await updateMastery(baseInput({ errorClassification: 'CONCEPTUAL', evidence: { result: 'incorrect', difficulty: 3, sourceType: 'PRACTICE_QUIZ', confidenceWeight: 0.9, scorePercent: 20, sampleSize: 1 } }));
+
+    const call = queryMock.mock.calls.find(([sql]) => /INSERT INTO errors/.test(sql));
+    expect(call![1][3]).toBe('CONCEPTUAL');
+  });
+});

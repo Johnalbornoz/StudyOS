@@ -18,6 +18,51 @@ import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 export type ErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
 
+/**
+ * Phase 2F: the canonical cognitive error taxonomy vs. quiz grading's
+ * own `GradingErrorType` (quiz-generation.service.ts) -- a superset
+ * adding ARITHMETIC/UNIT for a more specific student-facing grading
+ * explanation. Reconciliation was found REQUIRED, not merely
+ * cosmetic: `errors.error_type` had no CHECK constraint, so grading's
+ * two extra values could (and, in production, already had) reach this
+ * table verbatim -- silently excluded from
+ * cognitive-diagnosis.service.ts::getRelevantErrorRecurrence's
+ * `error_type IN ('CONCEPTUAL','PROCEDURAL','INCOMPLETE')` filter
+ * (an ARITHMETIC/UNIT error never counted toward root-cause
+ * recurrence, even a clearly repeated one) and falling back to a
+ * generic, unlabelled pattern meaning in ERROR_TYPE_MEANING below. See
+ * docs/audits/STUDYUS_PHASE_2_FINAL_COGNITIVE_MASTERY_CERTIFICATION.md
+ * §5 for the full audit.
+ *
+ * The chosen mapping is not arbitrary: ARITHMETIC -> CARELESS is
+ * already CARELESS's own stated definition ("small execution slips
+ * (arithmetic, sign errors, typos)"); UNIT -> PROCEDURAL, since
+ * forgetting/misapplying a unit conversion is a procedural-step
+ * omission, not a conceptual misunderstanding or a random slip. Any
+ * of the 5 canonical values pass through unchanged; a genuinely
+ * unrecognized future value maps to CARELESS (the most conservative
+ * bucket -- never silently inflates root-cause-investigation
+ * recurrence for a type this taxonomy doesn't understand yet) rather
+ * than throwing, since a classification value is diagnostic input, not
+ * a hard invariant to crash on.
+ */
+export function toCanonicalErrorType(t: string): ErrorType {
+  switch (t) {
+    case 'CONCEPTUAL':
+    case 'PROCEDURAL':
+    case 'CARELESS':
+    case 'INCOMPLETE':
+    case 'MISREADING':
+      return t;
+    case 'ARITHMETIC':
+      return 'CARELESS';
+    case 'UNIT':
+      return 'PROCEDURAL';
+    default:
+      return 'CARELESS';
+  }
+}
+
 const ERROR_TYPE_MEANING: Record<string, string> = {
   CONCEPTUAL: 'the student misunderstands what the concept actually means or how it relates to other ideas',
   PROCEDURAL: 'the student understands the concept but applies the steps or method incorrectly',
@@ -35,9 +80,16 @@ export interface RecordErrorInput {
 }
 
 export async function recordError(input: RecordErrorInput): Promise<void> {
+  // Phase 2F: one of exactly two INSERT INTO errors call sites
+  // (confirmed by a fresh grep this phase; the other is
+  // mastery.service.ts::updateMastery's errorClassification path,
+  // canonicalized there too) -- canonicalizing at each write site
+  // closes the taxonomy leak for every current writer, and the CHECK
+  // constraint added in database/migrations/20260905_1000_error_taxonomy_reconciliation.sql
+  // makes it impossible for any future writer to reopen it silently.
   await db.query(
     `INSERT INTO errors (student_id, concept_id, subject_id, error_type, source_type) VALUES ($1, $2, $3, $4, $5)`,
-    [input.studentId, input.conceptId, input.subjectId, input.errorType, input.sourceType]
+    [input.studentId, input.conceptId, input.subjectId, toCanonicalErrorType(input.errorType), input.sourceType]
   );
 }
 

@@ -22,6 +22,7 @@ import {
 } from './concept-graph.service';
 import type { ErrorType } from './error-intelligence.service';
 import { track } from '@/lib/analytics';
+import { recordDecisionEvent } from '@/lib/audit';
 
 export type DiagnosisState = 'SUSPECTED' | 'LIKELY' | 'DIAGNOSIS_REQUIRED' | 'CONFIRMED' | 'REJECTED';
 export type DiagnosticCheckOutcome = 'CONFIRMED' | 'REJECTED' | 'INCONCLUSIVE';
@@ -274,6 +275,30 @@ export async function generateRootCauseHypotheses(
     const diagnosisId = upserted.rows[0]?.id;
     if (!diagnosisId) continue;
 
+    // Phase 2D: recorded only when the INSERT above actually produced a
+    // new row (upserted.rows[0] is empty on the ON CONFLICT DO NOTHING
+    // branch, already handled by the `if (!diagnosisId) continue` above)
+    // -- never on a re-diagnosis that merely re-evaluates the same
+    // candidate. AI provenance is deliberately absent here: root-cause
+    // scoring is a deterministic function of already-certified Phase 1
+    // signals (Mastery/Retention/Independence) and the Knowledge Graph
+    // edge, not an AI inference (only prerequisite-edge INFERENCE, a
+    // separate, already-audited AI step, uses AI -- see
+    // inferPrerequisitesForConcept).
+    await recordDecisionEvent({
+      decisionType: 'DIAGNOSIS_CREATED',
+      engine: 'intervention-engine',
+      engineVersion: 'v1',
+      studentId,
+      subjectId,
+      conceptId: targetConceptId,
+      sourceEventType: 'cognitive_diagnoses',
+      sourceEventId: diagnosisId,
+      newState: { state, score, candidateConceptId: rel.sourceConceptId },
+      reasonCode: 'ROOT_CAUSE_HYPOTHESIS_GENERATED',
+      reasonDetails: { dominantErrorType, recurrenceCount, edgeConfidenceTier: confidenceTier(rel.confidence) },
+    });
+
     hypotheses.push({
       diagnosisId,
       candidateConceptId: rel.sourceConceptId,
@@ -343,6 +368,30 @@ export async function resolveDiagnosticCheck(
     targetConceptId: diagnosis.targetConceptId,
     correctCount,
     totalCount,
+  });
+  // Phase 2D: "resolved" here means the open hypothesis question (is
+  // this candidate the real root cause?) was answered either way --
+  // NOT that the underlying cognitive problem is fixed. That is
+  // INTERVENTION_COMPLETED's job, recorded separately once a
+  // remediation path actually resolves. `resolved_at` on
+  // cognitive_diagnoses names this same "diagnostic verification
+  // concluded" moment -- see the Phase 2D audit's history-vs-current-
+  // state section for the full distinction (a CONFIRMED diagnosis with
+  // no completed remediation still counts as an ACTIVE, unresolved
+  // cognitive gap via getActiveDiagnoses's own NOT EXISTS check, even
+  // though this table's own resolved_at is already non-null).
+  await recordDecisionEvent({
+    decisionType: 'DIAGNOSIS_RESOLVED',
+    engine: 'intervention-engine',
+    engineVersion: 'v1',
+    studentId: diagnosis.studentId,
+    conceptId: diagnosis.targetConceptId,
+    sourceEventType: 'cognitive_diagnoses',
+    sourceEventId: diagnosisId,
+    previousState: { state: diagnosis.state },
+    newState: { state: newState, candidateConceptId: diagnosis.candidateConceptId },
+    reasonCode: outcome === 'CONFIRMED' ? 'DIAGNOSTIC_CHECK_CONFIRMED' : 'DIAGNOSTIC_CHECK_REJECTED',
+    reasonDetails: { correctCount, totalCount },
   });
 
   return { diagnosis: { ...diagnosis, state: newState }, outcome };
