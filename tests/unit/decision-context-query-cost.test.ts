@@ -69,6 +69,30 @@ function buildFullFixtureQuery() {
       return { rows: [{ id: 'cyc-1', student_id: STUDENT_ID, concept_id: CONCEPT_ID, subject_id: SUBJECT_ID, trigger_type: 'LOW_BASELINE', started_at: '2026-08-01', validation_deadline: '2026-09-20T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: null }] };
     }
     if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED'")) return { rows: [] };
+    // Phase 3F/3-R: assessmentState (only exercised when requested)
+    if (s.includes("evidenceMode' = 'ASSESSMENT' OR")) {
+      return { rows: [{ timestamp: '2026-08-15T00:00:00.000Z', score_percent: '82', activity_type: 'CUMULATIVE_ASSESSMENT', source_type: 'ASSESSMENT_QUIZ' }] };
+    }
+    if (s.includes("evidenceMode' IN ('INDEPENDENT'")) {
+      return {
+        rows: [{ timestamp: '2026-08-15T00:00:00.000Z', score_percent: '82', activity_type: 'CUMULATIVE_ASSESSMENT', evidence_mode: 'ASSESSMENT', source_type: 'ASSESSMENT_QUIZ' }],
+      };
+    }
+    if (s.includes('timestamp, source_type, metadata FROM learning_evidence')) {
+      return {
+        rows: [
+          {
+            timestamp: '2026-08-15T00:00:00.000Z',
+            source_type: 'ASSESSMENT_QUIZ',
+            metadata: { evidenceMode: 'ASSESSMENT', questionSemantics: [{ cognitiveLevel: 'ANALYSIS' }] },
+          },
+        ],
+      };
+    }
+    if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) {
+      return { rows: [{ outcome: 'CONFIRMED', resolved_at: '2026-08-16T00:00:00.000Z', assessment_confidence_after: '88', variant_equivalence_confidence: '0.9' }] };
+    }
+    if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
     throw new Error(`Unmocked: ${s}`);
   });
 }
@@ -147,7 +171,17 @@ describe('Step 1: instrumented query-count measurement (real readers, no reader-
 
     // Every call this base run made is a base-DecisionContext query --
     // none of the Phase 1E-only query shapes appear in the call log.
-    const derivedMetricPatterns = ['mastery_policies', 'hints_used', 'verification_attempts', 'first_evidence_at', "new_state ->> 'masteryState'", 'concept_relationships'];
+    const derivedMetricPatterns = [
+      'mastery_policies',
+      'hints_used',
+      'verification_attempts',
+      'first_evidence_at',
+      "new_state ->> 'masteryState'",
+      'concept_relationships',
+      "evidenceMode' = 'ASSESSMENT'",
+      "evidenceMode' IN ('INDEPENDENT'",
+      'timestamp, source_type, metadata FROM learning_evidence',
+    ];
     const derivedCalls = query.mock.calls.filter(([sql]) => derivedMetricPatterns.some((p) => String(sql).includes(p)));
     expect(derivedCalls).toHaveLength(0);
     expect(baseQueryCount).toBeGreaterThan(0);
@@ -189,6 +223,52 @@ describe('Phase 2D/2E: interventionState/validationState follow the exact same M
 
     expect(ctxAll!.interventionState).toMatchObject({ requested: true, result: { available: true, value: { activeDiagnosisCount: 1, openInterventionCount: 1, lastOutcome: 'RESOLVED' } } });
     expect(ctxAll!.validationState).toMatchObject({ requested: true, result: { available: true, value: { status: 'OPEN' } } });
+  });
+
+  it('Phase 3F/3-R: assessmentState follows the exact same contract -- {requested: false} by default, real value only when requested', async () => {
+    const query = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query } }));
+    const { getDecisionContext } = await import('@/lib/learner-twin/service');
+
+    const ctxDefault = await getDecisionContext(STUDENT_ID, CONCEPT_ID);
+    expect(ctxDefault!.assessmentState).toEqual({ requested: false });
+    expect(query.mock.calls.some(([sql]) => String(sql).includes("evidenceMode' = 'ASSESSMENT'"))).toBe(false);
+    expect(query.mock.calls.some(([sql]) => String(sql).includes("evidenceMode' IN ('INDEPENDENT'"))).toBe(false);
+    expect(query.mock.calls.some(([sql]) => String(sql).includes('timestamp, source_type, metadata FROM learning_evidence'))).toBe(false);
+
+    vi.resetModules();
+    const queryAll = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query: queryAll } }));
+    const { getDecisionContext: getAll } = await import('@/lib/learner-twin/service');
+    const ctxAll = await getAll(STUDENT_ID, CONCEPT_ID, { derivedMetrics: 'all' });
+
+    expect(ctxAll!.assessmentState).toMatchObject({
+      requested: true,
+      result: {
+        available: true,
+        value: {
+          lastFormalAssessment: { scorePercent: 82 },
+          lastIndependentEvidence: { scorePercent: 82, evidenceMode: 'ASSESSMENT' },
+          lastVerification: { outcome: 'CONFIRMED', wasFreshQuestion: true },
+          hasPendingVerification: false,
+          cognitiveDemand: { observedLevels: ['ANALYSIS'], latestObservedLevel: 'ANALYSIS', sampleSize: 1 },
+        },
+      },
+    });
+  });
+
+  it("requesting only ['assessmentState'] runs it without touching interventionState/validationState's queries", async () => {
+    const query = buildFullFixtureQuery();
+    vi.doMock('@/lib/db', () => ({ db: { query } }));
+    const { getDecisionContext } = await import('@/lib/learner-twin/service');
+
+    const ctx = await getDecisionContext(STUDENT_ID, CONCEPT_ID, { derivedMetrics: ['assessmentState'] });
+
+    expect(ctx!.assessmentState).toMatchObject({ requested: true });
+    expect(ctx!.interventionState).toEqual({ requested: false });
+    expect(ctx!.validationState).toEqual({ requested: false });
+    expect(query.mock.calls.some(([sql]) => String(sql).includes('FROM cognitive_diagnoses'))).toBe(false);
+    expect(query.mock.calls.some(([sql]) => String(sql).includes('FROM validation_cycles'))).toBe(false);
   });
 
   it("requesting only ['interventionState'] runs it without touching validationState's queries", async () => {

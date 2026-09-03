@@ -97,7 +97,20 @@ export async function POST(request: NextRequest) {
 
     const verificationScorePercent = Math.round(grade.score * 100);
     const outcome = interpretVerificationOutcome(pending.originalScorePercent, verificationScorePercent);
-    const assessmentConfidenceAfter = recalculateConfidenceAfterVerification(pending.assessmentConfidenceBefore, outcome);
+    // Phase 3C.4: variantEquivalenceConfidence is null exactly when the
+    // verification question fell back to the original question verbatim
+    // (generateQuestionVariant failed to produce an equivalent variant --
+    // see generate-and-take/route.ts's trigger block). A same-question
+    // re-ask can't provide fresh independent confirmation, so a CONFIRMED
+    // outcome earned that way must not receive the same confidence boost
+    // a genuine fresh-variant CONFIRMED earns (CONTRADICTED is unaffected
+    // -- see recalculateConfidenceAfterVerification's doc comment).
+    const wasFreshQuestion = pending.variantEquivalenceConfidence !== null;
+    const assessmentConfidenceAfter = recalculateConfidenceAfterVerification(
+      pending.assessmentConfidenceBefore,
+      outcome,
+      wasFreshQuestion
+    );
 
     // Phase 2B: defense-in-depth against the concurrent-duplicate race
     // (two requests both reading `outcome IS NULL` before either
@@ -134,44 +147,84 @@ export async function POST(request: NextRequest) {
         previousState: { assessmentConfidenceBefore: pending.assessmentConfidenceBefore, originalScorePercent: pending.originalScorePercent },
         newState: { outcome, assessmentConfidenceAfter, verificationScorePercent },
         reasonCode: outcome,
+        // Phase 3C.4: auditable record of whether this CONFIRMED/CONTRADICTED
+        // decision was based on a fresh, equivalence-checked verification
+        // question or a same-question fallback -- needed to explain why a
+        // CONFIRMED outcome here may show no confidence movement.
+        // Phase 3-R Finding 1: also records explicitly whether this
+        // resolution produced qualified cognitive evidence at all (see
+        // below) -- a future Decision Engine can distinguish
+        // CONFIRMED_FRESH from CONFIRMED_SAME_QUESTION from these two
+        // existing fields without a second outcome taxonomy (§1.5).
+        reasonDetails: { wasFreshQuestion, qualifiesAsCognitiveEvidence: wasFreshQuestion },
         aiExecutionId: 'aiExecution' in grade ? grade.aiExecution?.aiExecutionId ?? null : null,
       });
     }
 
-    // The verification answer is itself real evidence -- SOLO_VERIFICATION
-    // already means exactly this ("the deliberate 'prove it independently'
-    // check", 0.9 source weight) and is reused rather than inventing a
-    // new source type. This is a new, append-only evidence event; the
-    // original assessment evidence (submitted earlier, before
-    // verification triggered) is never rewritten. Called unconditionally
-    // (even if this request lost the resolvedHere race above) -- the
-    // operation_key gate below (keyed on verification_attempts.id, not
-    // on which request happened to win resolveVerificationAttempt) is
-    // the actual, authoritative guarantee that this attempt's evidence
-    // is applied exactly once; a losing racer correctly gets back the
-    // real, already-applied mastery state rather than a fabricated one.
-    const masteryResult = await submitQualifiedAssessmentEvidence({
-      studentId: validated.studentId,
-      conceptId: validated.conceptId,
-      subjectId: quizSession.subjectId,
-      sourceType: 'SOLO_VERIFICATION',
-      scorePercent: verificationScorePercent,
-      difficulty: verificationQuestion.difficulty,
-      sampleSize: 1,
-      activityType: quizSession.activityType,
-      evidenceMode: quizSession.evidenceMode,
-      assessmentConfidence: assessmentConfidenceAfter,
-      verificationOutcome: outcome,
-      aiExecution: 'aiExecution' in grade ? grade.aiExecution : undefined,
-      verificationAttemptId: pending.id,
-      // Phase 1D: normalized once here, next to the raw client input --
-      // the clock already stopped client-side before this request was
-      // sent, so this never measures grading/AI latency (Step 13/14).
-      responseTiming: normalizeResponseTiming({
-        questionPresentedAt: validated.questionPresentedAt,
-        answerSubmittedAt: validated.answerSubmittedAt,
-      }),
-    });
+    // Phase 3-R Finding 1: a same-question fallback verification (the
+    // student re-answered the EXACT question they had just answered,
+    // because generateQuestionVariant could not produce a genuinely
+    // equivalent fresh item) is not a fresh independent demonstration --
+    // the student can simply recall or repeat their own prior response.
+    // Phase 3 already stopped it from earning a confidence BOOST
+    // (recalculateConfidenceAfterVerification above), but that alone did
+    // not stop it from still producing real SOLO_VERIFICATION cognitive
+    // evidence -- submitQualifiedAssessmentEvidence was previously called
+    // unconditionally here, so a same-question CONFIRMED still applied a
+    // real (unboosted-but-nonzero) confidenceWeight to updateMastery,
+    // which can move Mastery, contribute Independence evidence, and
+    // resolve an active misconception (isMisconceptionResolutionEvidence
+    // treats any 'correct'-result SOLO_VERIFICATION evidence as
+    // resolving evidence, regardless of question freshness). That is
+    // exactly the false-independence path this finding closes.
+    //
+    // wasFreshQuestion === false: the attempt still resolves its
+    // Assessment outcome and Assessment Confidence above (real
+    // reliability signal -- a same-question CONTRADICTED is still
+    // meaningful evidence of inconsistency), but produces NO cognitive
+    // mutation of any kind -- no learning_evidence row, no Mastery
+    // delta, no Independence evidence, no Knowledge State projection,
+    // no misconception resolution, no learning-debt effect. Never
+    // relabeled into a different sourceType to smuggle it through --
+    // this measurement is simply INSUFFICIENT/NON-QUALIFYING and stays
+    // that way; `mastery: null` in the response is the honest reflection
+    // of "no evidence was produced," not a fabricated zero-delta.
+    const masteryResult = wasFreshQuestion
+      ? await submitQualifiedAssessmentEvidence({
+          studentId: validated.studentId,
+          conceptId: validated.conceptId,
+          subjectId: quizSession.subjectId,
+          sourceType: 'SOLO_VERIFICATION',
+          scorePercent: verificationScorePercent,
+          difficulty: verificationQuestion.difficulty,
+          sampleSize: 1,
+          activityType: quizSession.activityType,
+          evidenceMode: quizSession.evidenceMode,
+          assessmentConfidence: assessmentConfidenceAfter,
+          verificationOutcome: outcome,
+          // Phase 3C.4: records whether THIS verification's own question was
+          // a fresh, equivalence-checked variant or a same-question fallback
+          // -- an auditability property of the verification evidence itself,
+          // independent of whatever variant confidence the ORIGINAL assessment
+          // question's own evidence row may separately carry. Always non-null
+          // here since this branch only runs when wasFreshQuestion is true.
+          variantEquivalenceConfidence: pending.variantEquivalenceConfidence,
+          // Phase 3-R: the verification question's own cognitive-level tag
+          // (when the AI generation step produced one), carried through so
+          // a fresh verification can genuinely contribute to Finding 3's
+          // bounded cognitive-demand summary -- never fabricated when absent.
+          cognitiveLevel: (verificationQuestion as any).cognitiveLevel ?? null,
+          aiExecution: 'aiExecution' in grade ? grade.aiExecution : undefined,
+          verificationAttemptId: pending.id,
+          // Phase 1D: normalized once here, next to the raw client input --
+          // the clock already stopped client-side before this request was
+          // sent, so this never measures grading/AI latency (Step 13/14).
+          responseTiming: normalizeResponseTiming({
+            questionPresentedAt: validated.questionPresentedAt,
+            answerSubmittedAt: validated.answerSubmittedAt,
+          }),
+        })
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -181,7 +234,9 @@ export async function POST(request: NextRequest) {
         outcome,
         assessmentConfidenceBefore: pending.assessmentConfidenceBefore,
         assessmentConfidenceAfter,
-        mastery: { previous: masteryResult.oldMastery, current: masteryResult.newMastery, delta: masteryResult.delta },
+        wasFreshQuestion,
+        qualifiesAsCognitiveEvidence: wasFreshQuestion,
+        mastery: masteryResult ? { previous: masteryResult.oldMastery, current: masteryResult.newMastery, delta: masteryResult.delta } : null,
       },
     });
   } catch (error) {

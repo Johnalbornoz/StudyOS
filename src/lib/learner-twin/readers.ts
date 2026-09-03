@@ -43,6 +43,7 @@ import {
 import { getMisconceptionCountsForConcept, getRecurringMisconceptions } from '@/services/misconception.service';
 import { getInterventionStateForConcept } from '@/services/remediation.service';
 import { getConceptValidationState, getKVR14 } from '@/services/validation-cycle.service';
+import { getAssessmentStateForConcept } from '@/services/assessment-verification.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
 import { getTransferScore } from '@/services/transfer.service';
 import { calculateForgettingRisk, calculateReviewIntervalDays } from '@/lib/algorithms/spaced-repetition';
@@ -59,6 +60,7 @@ import type {
   MisconceptionSummary,
   InterventionState,
   ConceptValidationState,
+  AssessmentState,
   EvidenceSummary,
   ErrorPatternSummary,
   StateTransitionEvent,
@@ -341,6 +343,27 @@ export async function readInterventionState(studentId: StudentId, conceptId: str
 export async function readConceptValidationState(studentId: StudentId, conceptId: string): Promise<ConceptValidationState> {
   const summary = await getConceptValidationState(studentId, conceptId);
   return { ...summary, quality: fact() };
+}
+
+/**
+ * Direct source: learning_evidence + verification_attempts, via the
+ * certified Phase 3F/3-R aggregate function
+ * (assessment-verification.service.ts::getAssessmentStateForConcept).
+ * Read-only -- never resolves a pending verification attempt.
+ *
+ * Phase 3-R §3.4: `cognitiveDemand` gets its own DETERMINISTIC_DERIVATION
+ * quality, distinct from the rest of this summary's SYSTEM_FACT quality
+ * -- its values are derived from an AI-tagged question property, never
+ * an unquestionable fact, even though the derivation itself is
+ * deterministic (see AssessmentState's own doc comment in types.ts).
+ */
+export async function readAssessmentState(studentId: StudentId, conceptId: string): Promise<AssessmentState> {
+  const summary = await getAssessmentStateForConcept(studentId, conceptId);
+  return {
+    ...summary,
+    quality: fact(),
+    cognitiveDemand: { ...summary.cognitiveDemand, quality: derived(summary.cognitiveDemand.lastObservedAt, summary.cognitiveDemand.sampleSize) },
+  };
 }
 
 /** Direct source: learning_evidence, bounded (default last 10) -- never the full history. */

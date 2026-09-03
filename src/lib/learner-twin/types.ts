@@ -3,6 +3,7 @@ import type { ConfidenceCalibration, EvidenceStrength } from '@/services/learner
 import type { RecurringMisconception } from '@/services/misconception.service';
 import type { InterventionStateSummary } from '@/services/remediation.service';
 import type { ConceptValidationSummary } from '@/services/validation-cycle.service';
+import type { AssessmentStateSummary } from '@/services/assessment-verification.service';
 import type {
   MetricResult,
   MetricProjection,
@@ -155,6 +156,27 @@ export interface InterventionState extends InterventionStateSummary {
 /** Phase 2E: current-state temporal-validation summary for one concept -- see validation-cycle.service.ts::getConceptValidationState. Never mutates a cycle's status -- read-only by construction. */
 export interface ConceptValidationState extends ConceptValidationSummary {
   quality: SignalQuality;
+}
+
+/**
+ * Phase 3F: current-state assessment/verification summary for one
+ * concept -- see assessment-verification.service.ts::getAssessmentStateForConcept.
+ * Read-only -- never resolves a pending verification attempt or writes
+ * evidence.
+ *
+ * Phase 3-R Finding 3 (§3.4 provenance): `quality` at the top level
+ * covers `lastFormalAssessment`/`lastIndependentEvidence`/
+ * `lastVerification`/`hasPendingVerification` -- direct reads of
+ * persisted facts, correctly SYSTEM_FACT. `cognitiveDemand` carries
+ * its OWN, separate `quality`, always DETERMINISTIC_DERIVATION: its
+ * values are derived from an AI-tagged question property
+ * (`cognitiveLevel`), not an unquestionable system fact, even though
+ * the derivation itself (reading, filtering, deduping already-tagged
+ * evidence) is fully deterministic.
+ */
+export interface AssessmentState extends Omit<AssessmentStateSummary, 'cognitiveDemand'> {
+  quality: SignalQuality;
+  cognitiveDemand: AssessmentStateSummary['cognitiveDemand'] & { quality: SignalQuality };
 }
 
 export interface EvidenceSummary {
@@ -369,6 +391,8 @@ export interface ConceptView {
   interventionState: InterventionState;
   /** Phase 2E: eager, same rationale as interventionState. */
   validationState: ConceptValidationState;
+  /** Phase 3F: eager, same rationale as interventionState/validationState -- see AssessmentState's doc comment. */
+  assessmentState: AssessmentState;
   recentEvidence: EvidenceSummary[];
   errorPatterns: ErrorPatternSummary[];
   assessmentContext: AssessmentPressure;
@@ -434,6 +458,20 @@ export interface DecisionContext {
    */
   interventionState: MetricProjection<InterventionStateSummary>;
   validationState: MetricProjection<ConceptValidationSummary>;
+  /**
+   * Phase 3F: assessment/verification state -- added specifically for a
+   * FUTURE Phase 4 Decision Engine to distinguish "never independently
+   * assessed" from "assessed, evidence still provisional pending
+   * verification" from "assessed and independently confirmed" (Phase 3
+   * Master Implementation's central question: "CAN THIS STUDENT
+   * DEMONSTRATE THE KNOWLEDGE INDEPENDENTLY... WITH EVIDENCE WE CAN
+   * TRUST?"). No current consumer (remediation/cognitive-diagnosis/
+   * tutor-strategy) reads this field, so -- like interventionState/
+   * validationState above -- it is computed ONLY when
+   * `options.derivedMetrics` explicitly requests it; the default is
+   * `{requested: false}` and zero additional queries run.
+   */
+  assessmentState: MetricProjection<AssessmentStateSummary>;
   dataQuality: DataQualitySummary;
 }
 

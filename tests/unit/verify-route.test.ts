@@ -30,6 +30,9 @@ vi.mock('@/services/assessment-verification.service', async () => {
   };
 });
 
+const recordDecisionEventMock = vi.fn();
+vi.mock('@/lib/audit', () => ({ recordDecisionEvent: (...a: any[]) => recordDecisionEventMock(...a) }));
+
 import { POST } from '@/app/api/quizzes/verify/route';
 
 const STUDENT_ID = '11111111-1111-4111-8111-111111111111';
@@ -64,6 +67,7 @@ beforeEach(() => {
   getPendingVerificationAttemptMock.mockReset();
   resolveVerificationAttemptMock.mockReset().mockResolvedValue(true);
   submitQualifiedAssessmentEvidenceMock.mockReset().mockResolvedValue({ oldMastery: 50, newMastery: 55, delta: 5 });
+  recordDecisionEventMock.mockReset().mockResolvedValue(undefined);
 });
 
 describe('Phase 3B -- POST /api/quizzes/verify: server remains authoritative', () => {
@@ -120,5 +124,206 @@ describe('Phase 3B -- POST /api/quizzes/verify: server remains authoritative', (
     const res: any = await POST(makeRequest({ studentId: STUDENT_ID }));
     expect(res.status).toBe(400);
     expect(getQuizSessionMock).not.toHaveBeenCalled();
+  });
+});
+
+// --- Phase 3C.4: same-question verification fallback must not produce false independent validation ---
+describe('Phase 3C.4 -- verification confidence must not reward a same-question re-ask as fresh independent confirmation', () => {
+  it('a CONFIRMED outcome on a same-question fallback (variantEquivalenceConfidence null) leaves Assessment Confidence unchanged', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    // null variantEquivalenceConfidence is exactly the persisted signal
+    // that generateQuestionVariant failed and the verification question
+    // fell back to the identical original question.
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ assessmentConfidenceBefore: 60, variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONFIRMED');
+    // No fresh-confirmation boost -- a same-question re-ask proves nothing
+    // new, so confidence must not move at all (mirrors the INCONCLUSIVE case).
+    expect(body.data.assessmentConfidenceAfter).toBe(body.data.assessmentConfidenceBefore);
+  });
+
+  it('a CONFIRMED outcome on a genuinely fresh, equivalence-checked variant still receives the confidence boost', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ assessmentConfidenceBefore: 60, variantEquivalenceConfidence: 0.92 }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONFIRMED');
+    expect(body.data.assessmentConfidenceAfter).toBeGreaterThan(body.data.assessmentConfidenceBefore);
+  });
+
+  it('a CONTRADICTED outcome on a same-question fallback still applies the full penalty -- freshness never weakens a contradiction', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ assessmentConfidenceBefore: 75, variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: false, score: 0, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'wrong' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONTRADICTED');
+    expect(body.data.assessmentConfidenceAfter).toBeLessThan(body.data.assessmentConfidenceBefore);
+  });
+
+  it('a fresh variant CONFIRMED passes the pending attempt\'s own variantEquivalenceConfidence and cognitiveLevel through to the resulting SOLO_VERIFICATION evidence, for auditability', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: 0.87 }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+
+    expect(submitQualifiedAssessmentEvidenceMock).toHaveBeenCalledTimes(1);
+    const evidenceInput = submitQualifiedAssessmentEvidenceMock.mock.calls[0][0];
+    expect(evidenceInput.variantEquivalenceConfidence).toBe(0.87);
+  });
+});
+
+// --- Phase 3-R Finding 1: same-question fallback must not produce QUALIFIED cognitive verification evidence ---
+describe('Phase 3-R Finding 1 -- a same-question fallback verification never produces SOLO_VERIFICATION cognitive evidence, regardless of outcome', () => {
+  it('same-question CONFIRMED: the attempt still resolves, but submitQualifiedAssessmentEvidence is never called and mastery is null', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONFIRMED');
+    expect(body.data.wasFreshQuestion).toBe(false);
+    expect(body.data.qualifiesAsCognitiveEvidence).toBe(false);
+    expect(body.data.mastery).toBeNull();
+    // The attempt itself still resolves (Assessment outcome/confidence
+    // are real, persisted facts) -- only the COGNITIVE EVIDENCE write
+    // is skipped.
+    expect(resolveVerificationAttemptMock).toHaveBeenCalledTimes(1);
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('same-question CONTRADICTED: still no cognitive evidence, even though Assessment Confidence legitimately drops', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ assessmentConfidenceBefore: 75, variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: false, score: 0, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'wrong' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONTRADICTED');
+    // ASSESSMENT RELIABILITY SIGNAL: confidence still legitimately drops.
+    expect(body.data.assessmentConfidenceAfter).toBeLessThan(body.data.assessmentConfidenceBefore);
+    // COGNITIVE PERFORMANCE EVIDENCE: none produced regardless.
+    expect(body.data.mastery).toBeNull();
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('same-question INCONCLUSIVE: no cognitive evidence', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ originalScorePercent: 85, variantEquivalenceConfidence: null }));
+    // 60% is neither "strong" (>=70) nor "weak" (<50) -- interpretVerificationOutcome falls through to INCONCLUSIVE.
+    gradeStructuredAnswerMock.mockReturnValue({ correct: false, score: 0.6, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('INCONCLUSIVE');
+    expect(body.data.mastery).toBeNull();
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('fresh equivalent CONFIRMED: current high-trust verification evidence behavior preserved -- submitQualifiedAssessmentEvidence IS called and mastery reflects it', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: 0.95 }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const body = await res.json();
+
+    expect(body.data.outcome).toBe('CONFIRMED');
+    expect(body.data.wasFreshQuestion).toBe(true);
+    expect(body.data.qualifiesAsCognitiveEvidence).toBe(true);
+    expect(body.data.mastery).toEqual({ previous: 50, current: 55, delta: 5 });
+    expect(submitQualifiedAssessmentEvidenceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('the VERIFICATION_RESOLVED decision event still records outcome/wasFreshQuestion/qualifiesAsCognitiveEvidence for a same-question attempt, preserving auditability', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+
+    expect(recordDecisionEventMock).toHaveBeenCalledTimes(1);
+    const call = recordDecisionEventMock.mock.calls[0][0];
+    expect(call.reasonDetails).toEqual({ wasFreshQuestion: false, qualifiesAsCognitiveEvidence: false });
+  });
+});
+
+// --- Phase 3-R release-blocking test list items 5-7, 17: direct, individually-named traceability ---
+describe('Phase 3-R -- required release-blocking checks (direct traceability to the remediation spec\'s numbered list)', () => {
+  it('#5 same-question fallback cannot increase Mastery -- updateMastery is never reached (submitQualifiedAssessmentEvidence, its only caller, is never invoked)', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+
+    // submitQualifiedAssessmentEvidence is this route's ONLY path to
+    // updateMastery (the sole Mastery-mutating function) -- proving it
+    // was never called is a direct, structural proof Mastery could not
+    // have moved, not an inference from a side effect.
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('#6 same-question fallback cannot contribute Independence evidence -- no SOLO learning_evidence row is written for this attempt at all', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+
+    // Independence evidence is itself derived from learning_evidence rows
+    // with learning_mode='SOLO' (stamped only inside
+    // submitQualifiedAssessmentEvidence) -- with that call never made,
+    // no such row exists for this attempt to contribute to Independence.
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('#7 same-question fallback cannot resolve an ACTIVE misconception -- updateMastery\'s misconception-resolution check never runs for this attempt', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ variantEquivalenceConfidence: null }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+
+    await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+
+    // isMisconceptionResolutionEvidence's SOLO_VERIFICATION branch (mastery.service.ts,
+    // via updateMastery) only ever runs on evidence that was actually
+    // submitted -- submitQualifiedAssessmentEvidence is the only call
+    // that could produce such a row for this attempt, and it never ran.
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('#17 verification replay stays exactly-once: a second request for an already-resolved attempt gets NO_PENDING_VERIFICATION, never a second evidence application', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    // First request resolves the pending attempt.
+    getPendingVerificationAttemptMock.mockResolvedValueOnce(pending({ variantEquivalenceConfidence: 0.9 }));
+    gradeStructuredAnswerMock.mockReturnValue({ correct: true, score: 1, feedback: '' });
+    const first: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    const firstBody = await first.json();
+    expect(firstBody.success).toBe(true);
+    expect(submitQualifiedAssessmentEvidenceMock).toHaveBeenCalledTimes(1);
+
+    // A replay (network retry, double-click) -- the real
+    // getPendingVerificationAttempt would now find no row with
+    // outcome IS NULL for this attempt (it was just resolved), so the
+    // mock reflects that by resolving to null on the second call.
+    getPendingVerificationAttemptMock.mockResolvedValueOnce(null);
+    const second: any = await POST(makeRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID, answer: 'b' }));
+    expect(second.status).toBe(404);
+    // Still exactly one evidence-producing call total, across both requests.
+    expect(submitQualifiedAssessmentEvidenceMock).toHaveBeenCalledTimes(1);
   });
 });

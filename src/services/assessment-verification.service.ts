@@ -27,7 +27,7 @@
  * decide anything.
  */
 
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { updateMastery, type MasteryUpdateResult } from './mastery.service';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { calculateAssessmentConfidence, behavioralAnomalyScore, type IntegritySignals } from '@/lib/assessment-confidence';
@@ -41,6 +41,7 @@ import { getAssessmentProfile } from '@/lib/assessment-profiles';
 import type { ActivityType, EvidenceMode } from '@/lib/activity-taxonomy';
 import type { AIProvenance } from '@/lib/ai';
 import { toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
+import { KNOWN_COGNITIVE_LEVELS, type CognitiveLevel } from './quiz-generation.service';
 
 export type VerificationOutcome = 'CONFIRMED' | 'CONTRADICTED' | 'INCONCLUSIVE';
 export type EvidenceStrength = 'HIGH' | 'MEDIUM' | 'LOW' | 'CONTRADICTED';
@@ -212,12 +213,33 @@ export function interpretVerificationOutcome(originalScorePercent: number, verif
  * INCONCLUSIVE passes verificationResult as null, so confidence is
  * left unchanged -- an inconclusive follow-up neither confirms nor
  * contradicts anything.
+ *
+ * Phase 3C.4 (measurement-consequence fix): `wasFreshQuestion` defaults
+ * to `true` for every existing caller/test, and must be explicitly
+ * passed `false` when the verification question was the fallback path
+ * -- the SAME item the student already answered, reused verbatim
+ * because a genuinely fresh, equivalent variant could not be generated
+ * (see generateQuestionVariant's documented null-on-failure contract).
+ * A same-question re-ask provides no new independent evidence: the
+ * student can simply recall or repeat their own prior response, so a
+ * CONFIRMED outcome earned that way must not receive the same +15
+ * "fresh independent confirmation" boost a genuine variant-based
+ * CONFIRMED earns -- it is treated as a no-op for confidence purposes,
+ * the same as INCONCLUSIVE (confidence left exactly where it was
+ * before verification). A CONTRADICTED outcome is NOT weakened by this
+ * -- disagreeing with your own answer to the identical question moments
+ * later is, if anything, stronger evidence of unreliable evidence, not
+ * weaker, so the full -25 penalty still applies regardless of question
+ * freshness. This closes the "same exact memorized question" false-
+ * validation path (Phase 3 Master Implementation §3C.7/§3G.4/§3G.7).
  */
 export function recalculateConfidenceAfterVerification(
   assessmentConfidenceBefore: number,
-  outcome: VerificationOutcome
+  outcome: VerificationOutcome,
+  wasFreshQuestion: boolean = true
 ): number {
-  const verificationResult = outcome === 'CONFIRMED' ? 'confirmed' : outcome === 'CONTRADICTED' ? 'contradicted' : null;
+  const verificationResult =
+    outcome === 'CONFIRMED' ? (wasFreshQuestion ? 'confirmed' : null) : outcome === 'CONTRADICTED' ? 'contradicted' : null;
   return calculateAssessmentConfidence({
     gradingConfidences: [assessmentConfidenceBefore / 100],
     verificationResult,
@@ -261,6 +283,8 @@ export interface QualifiedEvidenceInput {
   verificationOutcome?: VerificationOutcome | null;
   verificationTriggers?: VerificationTriggerResult[];
   variantEquivalenceConfidence?: number | null;
+  /** Phase 3-R Finding 3: the question's own cognitive-level tag, when the AI generation step produced one -- carried through additively so a qualifying evidence event can genuinely contribute to the bounded cognitive-demand summary (§getAssessmentStateForConcept). Never fabricated when the source question had no tag. */
+  cognitiveLevel?: CognitiveLevel | null;
   reasoningErrorTypes?: string[];
   assessmentProfile?: string;
   /** Phase 0E1: AI provenance for this evidence, when it was produced by an AI grading call (free-text verification questions only). */
@@ -326,6 +350,7 @@ export async function submitQualifiedAssessmentEvidence(input: QualifiedEvidence
         verificationOutcome: input.verificationOutcome ?? null,
         verificationTriggerIds: (input.verificationTriggers ?? []).map((t) => t.triggerId),
         variantEquivalenceConfidence: input.variantEquivalenceConfidence ?? null,
+        cognitiveLevel: input.cognitiveLevel ?? null,
         reasoningErrorTypes: input.reasoningErrorTypes ?? [],
         assessmentProfile: input.assessmentProfile ?? null,
         ...(input.aiExecution ? { aiExecution: input.aiExecution } : {}),
@@ -359,6 +384,20 @@ export interface PendingVerificationAttempt {
   verificationQuestion: unknown;
   originalScorePercent: number;
   assessmentConfidenceBefore: number;
+  /**
+   * Phase 3C.4: null exactly when the fallback-to-original path was
+   * used at creation time (generateQuestionVariant failed or returned
+   * a non-equivalent candidate) -- the SAME reliable signal
+   * createPendingVerificationAttempt already persists for
+   * variant_equivalence_confidence, now also read back so
+   * /api/quizzes/verify can tell a genuinely fresh verification
+   * question apart from a same-question re-ask before deciding how
+   * much confidence a CONFIRMED outcome earns (see
+   * recalculateConfidenceAfterVerification's wasFreshQuestion
+   * parameter). No new column, no new derivation -- this is the exact
+   * value already recorded at trigger time, simply exposed.
+   */
+  variantEquivalenceConfidence: number | null;
 }
 
 export async function createPendingVerificationAttempt(params: {
@@ -406,7 +445,7 @@ export async function getPendingVerificationAttempt(
   studentId: string
 ): Promise<PendingVerificationAttempt | null> {
   const result = await db.query(
-    `SELECT id, quiz_session_id, student_id, concept_id, verification_question, original_score_percent, assessment_confidence_before
+    `SELECT id, quiz_session_id, student_id, concept_id, verification_question, original_score_percent, assessment_confidence_before, variant_equivalence_confidence
      FROM verification_attempts
      WHERE quiz_session_id = $1 AND concept_id = $2 AND student_id = $3 AND outcome IS NULL
      ORDER BY created_at DESC LIMIT 1`,
@@ -422,6 +461,10 @@ export async function getPendingVerificationAttempt(
     verificationQuestion: row.verification_question,
     originalScorePercent: Number(row.original_score_percent),
     assessmentConfidenceBefore: Number(row.assessment_confidence_before),
+    variantEquivalenceConfidence:
+      row.variant_equivalence_confidence === null || row.variant_equivalence_confidence === undefined
+        ? null
+        : Number(row.variant_equivalence_confidence),
   };
 }
 
@@ -447,6 +490,246 @@ export async function resolveVerificationAttempt(
     [id, params.verificationResponse, params.gradingConfidence, params.outcome, params.assessmentConfidenceAfter]
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Same-question fallback SOLO_VERIFICATION rows must never count as
+ * qualifying independent evidence anywhere in this summary (Phase 3-R
+ * Finding 1/2/3) -- defense in depth: after the Finding 1 fix, no NEW
+ * row like this is ever written (submitQualifiedAssessmentEvidence is
+ * skipped entirely for a same-question fallback), but this exclusion
+ * still protects every reader below against any such row that may
+ * already exist. `metadata->>'variantEquivalenceConfidence' IS NULL`
+ * is true both when the key is absent and when it was stored as JSON
+ * `null` -- exactly "fallback was used," the same signal
+ * PendingVerificationAttempt.variantEquivalenceConfidence already
+ * relies on.
+ */
+const EXCLUDE_SAME_QUESTION_VERIFICATION_SQL = `NOT (source_type = 'SOLO_VERIFICATION' AND metadata->>'variantEquivalenceConfidence' IS NULL)`;
+
+/** Bounded scan window for the cognitive-demand summary below -- same "recent window of rows, not full history" contract as readResponseTimingSignal's rowLimit. */
+const COGNITIVE_DEMAND_SCAN_LIMIT = 30;
+
+/**
+ * Phase 3-R Finding 3: bounded FACTUAL state only -- "what cognitive
+ * demand has the learner actually demonstrated under qualifying
+ * independent conditions", never a competency decision. Deliberately
+ * does NOT expose a `competencyScore`, `requiredLevelMet`, or any
+ * curriculum-readiness judgment -- those belong to a future phase.
+ *
+ * `observedLevels` carries no ranking/ordering claim: this codebase
+ * has no certified canonical CognitiveLevel ordering constant anywhere
+ * (grepped the full source -- only the bare union type declaration in
+ * quiz-generation.service.ts exists, in Bloom's-taxonomy textual order,
+ * but never encoded as a ranking used by any decision logic). Rather
+ * than silently fabricate a ladder, this exposes an honest bounded set
+ * plus the single most recent observation (`latestObservedLevel`) --
+ * a fact about the latest evidence, not a "highest" judgment. A future
+ * phase that wants a genuine ranking must introduce and certify that
+ * ordering explicitly, not infer it from this summary.
+ */
+export interface CognitiveDemandSummary {
+  /** Distinct cognitive levels observed among qualifying evidence within the bounded scan window below. Empty when no qualifying, tagged evidence exists yet -- never fabricated. */
+  observedLevels: CognitiveLevel[];
+  /** The tag on the single most recent qualifying, cognitiveLevel-tagged evidence found in the scan window. Null when none exists (missing tags remain missing -- never guessed). */
+  latestObservedLevel: CognitiveLevel | null;
+  /** Count of qualifying, cognitiveLevel-tagged observations found within the bounded scan window -- NOT a lifetime total; a concept with more history than the scan window undercounts honestly rather than doing an unbounded read. */
+  sampleSize: number;
+  lastObservedAt: string | null;
+}
+
+/**
+ * Phase 3F/3-R: a read-only, concept-scoped Assessment/Verification
+ * state summary for the Digital Learning Twin/DecisionContext -- same
+ * rationale and shape contract as remediation.service.ts's
+ * InterventionStateSummary (Phase 2D) and validation-cycle.service.ts's
+ * ConceptValidationSummary (Phase 2E): exposes just enough for a future
+ * Decision Engine to tell "never independently assessed" from
+ * "assessed, evidence still provisional pending verification" from
+ * "assessed and confirmed independently" -- without becoming the
+ * assessment/verification engine itself. Bounded, indexed queries only
+ * -- no unbounded history, no per-question N+1.
+ */
+export interface AssessmentStateSummary {
+  /**
+   * Phase 3-R Finding 2 (renamed from `lastIndependentAssessment` --
+   * the old name was ambiguous with the broader `lastIndependentEvidence`
+   * below): this student's most recent FORMAL, trust-scored assessment
+   * evidence for this concept specifically -- evidenceMode = 'ASSESSMENT'
+   * (stamped by every in-app quiz/verification writer) OR a
+   * REAL_SCHOOL_EXAM row (exam-result.service.ts::recordExamResult,
+   * included by source_type since that legacy writer predates the
+   * Phase 3A Evidence Mode system and never stamps that metadata
+   * field). Deliberately narrower than `lastIndependentEvidence`:
+   * quick_check/retention_check (EvidenceMode INDEPENDENT) do NOT
+   * count here. Null when this concept has no formal assessment
+   * evidence yet -- never fabricated from a different mode's score.
+   */
+  lastFormalAssessment: { scorePercent: number; occurredAt: string; activityType: string | null; sourceType: string } | null;
+  /**
+   * Phase 3-R Finding 2: the broader "did the student demonstrate this
+   * without instructional AI assistance" signal -- EvidenceMode
+   * INDEPENDENT or ASSESSMENT, or a REAL_SCHOOL_EXAM row. A strict
+   * superset of `lastFormalAssessment`'s criteria, so this may report a
+   * MORE RECENT row than `lastFormalAssessment` (e.g. a quick_check
+   * completed after the student's last formal assessment). PRACTICE/
+   * REVIEW are excluded by EvidenceMode; COACH (Explain & Defend) and
+   * Transfer evidence are excluded structurally -- neither writer ever
+   * stamps metadata.evidenceMode at all, so they never match this
+   * filter no matter how the query is phrased. No historical evidence
+   * is ever relabeled -- this reads existing metadata honestly, never
+   * infers EvidenceMode retroactively for a row that never recorded it.
+   */
+  lastIndependentEvidence: { scorePercent: number; occurredAt: string; activityType: string | null; evidenceMode: string | null; sourceType: string } | null;
+  /**
+   * This student's most recent RESOLVED verification_attempts row for
+   * this concept, across every quiz session. `wasFreshQuestion` (Phase
+   * 3-R) makes the CONFIRMED_FRESH vs. CONFIRMED_SAME_QUESTION
+   * distinction (§1.5) directly readable here, from the same two
+   * already-persisted fields, without a second outcome taxonomy. Null
+   * when no verification has ever fired and resolved for this concept.
+   */
+  lastVerification: {
+    outcome: 'CONFIRMED' | 'CONTRADICTED' | 'INCONCLUSIVE';
+    resolvedAt: string;
+    assessmentConfidenceAfter: number | null;
+    wasFreshQuestion: boolean;
+  } | null;
+  /** True when this concept currently has an unresolved verification_attempts row -- its most recent ASSESSMENT-mode evidence is still provisional, awaiting an independence check. */
+  hasPendingVerification: boolean;
+  /** Phase 3-R Finding 3 -- see CognitiveDemandSummary's own doc comment. */
+  cognitiveDemand: CognitiveDemandSummary;
+}
+
+export async function getAssessmentStateForConcept(
+  studentId: string,
+  conceptId: string,
+  client: DbExecutor = db
+): Promise<AssessmentStateSummary> {
+  const [lastFormal, lastIndependent, lastVerification, pending, cognitiveDemandScan] = await Promise.all([
+    client.query(
+      `SELECT timestamp, score_percent, activity_type, source_type FROM learning_evidence
+       WHERE student_id = $1 AND concept_id = $2
+         AND (metadata->>'evidenceMode' = 'ASSESSMENT' OR source_type = 'REAL_SCHOOL_EXAM')
+         AND ${EXCLUDE_SAME_QUESTION_VERIFICATION_SQL}
+       ORDER BY timestamp DESC LIMIT 1`,
+      [studentId, conceptId]
+    ),
+    client.query(
+      `SELECT timestamp, score_percent, activity_type, metadata->>'evidenceMode' AS evidence_mode, source_type FROM learning_evidence
+       WHERE student_id = $1 AND concept_id = $2
+         AND (metadata->>'evidenceMode' IN ('INDEPENDENT', 'ASSESSMENT') OR source_type = 'REAL_SCHOOL_EXAM')
+         AND ${EXCLUDE_SAME_QUESTION_VERIFICATION_SQL}
+       ORDER BY timestamp DESC LIMIT 1`,
+      [studentId, conceptId]
+    ),
+    client.query(
+      `SELECT outcome, resolved_at, assessment_confidence_after, variant_equivalence_confidence FROM verification_attempts
+       WHERE student_id = $1 AND concept_id = $2 AND outcome IS NOT NULL
+       ORDER BY resolved_at DESC LIMIT 1`,
+      [studentId, conceptId]
+    ),
+    client.query(
+      `SELECT COUNT(*)::int AS n FROM verification_attempts WHERE student_id = $1 AND concept_id = $2 AND outcome IS NULL`,
+      [studentId, conceptId]
+    ),
+    // Phase 3-R Finding 3: bounded scan (LIMIT COGNITIVE_DEMAND_SCAN_LIMIT
+    // recent rows, most-recent-first) -- never an unbounded read, never
+    // a per-question follow-up query. Qualification and cognitiveLevel
+    // extraction happen in JS below (see the doc comment on
+    // CognitiveDemandSummary for exactly what qualifies).
+    client.query(
+      `SELECT timestamp, source_type, metadata FROM learning_evidence
+       WHERE student_id = $1 AND concept_id = $2 AND metadata IS NOT NULL
+       ORDER BY timestamp DESC LIMIT $3`,
+      [studentId, conceptId, COGNITIVE_DEMAND_SCAN_LIMIT]
+    ),
+  ]);
+
+  const formalRow = lastFormal.rows[0];
+  const independentRow = lastIndependent.rows[0];
+  const verificationRow = lastVerification.rows[0];
+
+  // Phase 3-R Finding 3: qualification mirrors lastIndependentEvidence's
+  // own criteria exactly (INDEPENDENT/ASSESSMENT EvidenceMode, or
+  // REAL_SCHOOL_EXAM, excluding any same-question SOLO_VERIFICATION
+  // row) -- cognitive demand is only ever derived from evidence that
+  // already counts as independent proof. A cognitiveLevel tag is read
+  // from `metadata.questionSemantics[].cognitiveLevel` (the original
+  // multi-question quiz-submission shape) and `metadata.cognitiveLevel`
+  // (the single-question SOLO_VERIFICATION shape, added this phase) --
+  // only a value in KNOWN_COGNITIVE_LEVELS is ever accepted; anything
+  // else (a stale/invalid tag) is silently skipped, never guessed.
+  const observedLevels = new Set<CognitiveLevel>();
+  let latestObservedLevel: CognitiveLevel | null = null;
+  let lastObservedAt: string | null = null;
+  let cognitiveSampleSize = 0;
+  for (const row of cognitiveDemandScan.rows) {
+    const metadata = row.metadata ?? {};
+    const evidenceMode = metadata.evidenceMode ?? null;
+    const sourceType = row.source_type;
+    const isSameQuestionVerification =
+      sourceType === 'SOLO_VERIFICATION' && (metadata.variantEquivalenceConfidence === null || metadata.variantEquivalenceConfidence === undefined);
+    const qualifies = !isSameQuestionVerification && (evidenceMode === 'INDEPENDENT' || evidenceMode === 'ASSESSMENT' || sourceType === 'REAL_SCHOOL_EXAM');
+    if (!qualifies) continue;
+
+    const rawLevels: unknown[] = [];
+    if (Array.isArray(metadata.questionSemantics)) {
+      for (const qs of metadata.questionSemantics) {
+        if (qs && typeof qs === 'object' && 'cognitiveLevel' in qs) rawLevels.push((qs as Record<string, unknown>).cognitiveLevel);
+      }
+    }
+    if (typeof metadata.cognitiveLevel === 'string') rawLevels.push(metadata.cognitiveLevel);
+
+    for (const raw of rawLevels) {
+      if (typeof raw !== 'string' || !KNOWN_COGNITIVE_LEVELS.has(raw)) continue; // unknown/missing stays missing -- never guessed
+      const level = raw as CognitiveLevel;
+      observedLevels.add(level);
+      cognitiveSampleSize++;
+      if (latestObservedLevel === null) {
+        // First qualifying, tagged row encountered = the most recent one,
+        // since the scan is ORDER BY timestamp DESC.
+        latestObservedLevel = level;
+        lastObservedAt = row.timestamp;
+      }
+    }
+  }
+
+  return {
+    lastFormalAssessment: formalRow
+      ? {
+          scorePercent: formalRow.score_percent !== null ? Number(formalRow.score_percent) : 0,
+          occurredAt: formalRow.timestamp,
+          activityType: formalRow.activity_type ?? null,
+          sourceType: formalRow.source_type,
+        }
+      : null,
+    lastIndependentEvidence: independentRow
+      ? {
+          scorePercent: independentRow.score_percent !== null ? Number(independentRow.score_percent) : 0,
+          occurredAt: independentRow.timestamp,
+          activityType: independentRow.activity_type ?? null,
+          evidenceMode: independentRow.evidence_mode ?? null,
+          sourceType: independentRow.source_type,
+        }
+      : null,
+    lastVerification: verificationRow
+      ? {
+          outcome: verificationRow.outcome,
+          resolvedAt: verificationRow.resolved_at,
+          assessmentConfidenceAfter:
+            verificationRow.assessment_confidence_after !== null ? Number(verificationRow.assessment_confidence_after) : null,
+          wasFreshQuestion: verificationRow.variant_equivalence_confidence !== null && verificationRow.variant_equivalence_confidence !== undefined,
+        }
+      : null,
+    hasPendingVerification: pending.rows[0].n > 0,
+    cognitiveDemand: {
+      observedLevels: Array.from(observedLevels),
+      latestObservedLevel,
+      sampleSize: cognitiveSampleSize,
+      lastObservedAt,
+    },
+  };
 }
 
 export interface ExamReadinessCalibration {

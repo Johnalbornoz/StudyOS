@@ -65,6 +65,7 @@ function decisionContextFixture(overrides: {
     prerequisiteGaps: { requested: false },
     interventionState: { requested: false },
     validationState: { requested: false },
+    assessmentState: { requested: false },
     dataQuality: { generatedAt: '2026-08-31T00:00:00.000Z', sourcesUsed: ['SYSTEM_FACT'] },
   };
 }

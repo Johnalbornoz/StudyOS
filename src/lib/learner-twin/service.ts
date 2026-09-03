@@ -19,6 +19,7 @@ import { getSubjectLearnerModel } from '@/services/learner-model.service';
 import { getKVR14 } from '@/services/validation-cycle.service';
 import type { InterventionStateSummary } from '@/services/remediation.service';
 import type { ConceptValidationSummary } from '@/services/validation-cycle.service';
+import type { AssessmentStateSummary } from '@/services/assessment-verification.service';
 import type {
   StudentId,
   ProjectionOptions,
@@ -280,6 +281,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     misconceptions,
     interventionState,
     validationState,
+    assessmentState,
     recentEvidence,
     errorPatterns,
     assessmentContext,
@@ -294,9 +296,10 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     R.readMetacognitionSignal(studentId, conceptId),
     R.readTransferSignal(studentId, conceptId),
     R.readMisconceptionSummary(studentId, conceptId),
-    // Phase 2D/2E: eager, like misconceptions -- ConceptView is the "full detail" projection.
+    // Phase 2D/2E/3F: eager, like misconceptions -- ConceptView is the "full detail" projection.
     R.readInterventionState(studentId, conceptId),
     R.readConceptValidationState(studentId, conceptId),
+    R.readAssessmentState(studentId, conceptId),
     R.readRecentEvidence(studentId, conceptId, DEFAULT_RECENT_EVIDENCE_LIMIT),
     R.readConceptErrorPatterns(studentId, subjectId, conceptId),
     R.readAssessmentPressure(studentId, subjectId),
@@ -336,6 +339,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     misconceptions,
     interventionState,
     validationState,
+    assessmentState,
     recentEvidence,
     errorPatterns,
     assessmentContext,
@@ -387,6 +391,12 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
   const validationStatePromise: Promise<MetricProjection<ConceptValidationSummary>> = requestedMetrics.has('validationState')
     ? R.readConceptValidationState(studentId, conceptId).then((v) => metricRequested(metricAvailable(v)))
     : Promise.resolve(METRIC_NOT_REQUESTED);
+  // Phase 3F: same lazy contract -- an AssessmentStateSummary is always
+  // well-defined (three bounded COUNT/SELECT queries, never "insufficient
+  // evidence"), so when requested it resolves straight to `metricAvailable`.
+  const assessmentStatePromise: Promise<MetricProjection<AssessmentStateSummary>> = requestedMetrics.has('assessmentState')
+    ? R.readAssessmentState(studentId, conceptId).then((v) => metricRequested(metricAvailable(v)))
+    : Promise.resolve(METRIC_NOT_REQUESTED);
 
   const [
     knowledgeStateSignal,
@@ -401,6 +411,7 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     prerequisiteGaps,
     interventionState,
     validationState,
+    assessmentState,
   ] = await Promise.all([
     R.readKnowledgeStateSignal(studentId, conceptId),
     R.readIndependenceSignal(studentId, conceptId),
@@ -417,6 +428,7 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     prerequisiteGapsPromise,
     interventionStatePromise,
     validationStatePromise,
+    assessmentStatePromise,
   ]);
 
   const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
@@ -448,6 +460,7 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     prerequisiteGaps,
     interventionState,
     validationState,
+    assessmentState,
     dataQuality: dataQuality(),
   };
 }

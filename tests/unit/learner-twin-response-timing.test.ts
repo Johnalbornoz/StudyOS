@@ -260,6 +260,12 @@ describe('ConceptView.behavior.responseTiming (Digital Twin integration, Step 17
       if (s.includes("FROM remediation_paths WHERE student_id = $1 AND target_concept_id = $2 AND state IN ('RESOLVED'")) return { rows: [] };
       if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'OPEN'")) return { rows: [] };
       if (s.includes("FROM validation_cycles WHERE student_id = $1 AND concept_id = $2 AND status = 'CLOSED'")) return { rows: [] };
+      // Phase 3F: eager on ConceptView -- always exercised.
+      if (s.includes("evidenceMode' = 'ASSESSMENT' OR")) return { rows: [] };
+      if (s.includes("evidenceMode' IN ('INDEPENDENT'")) return { rows: [] };
+      if (s.includes('timestamp, source_type, metadata FROM learning_evidence')) return { rows: [] };
+      if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) return { rows: [] };
+      if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
       throw new Error(`Unmocked: ${s}`);
     });
     vi.doMock('@/lib/db', () => ({ db: { query } }));

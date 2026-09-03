@@ -85,18 +85,49 @@ export interface QuestionOption {
 }
 
 /**
- * Phase 3 Pre-flight: optional question-evidence semantics. None of
- * these are produced by generation yet (tagging questions this way is
- * 3A/3B's job, once the Orchestrator actually consumes them) -- they
- * exist now so the schema/plumbing can carry them end-to-end (stored
- * in quiz_sessions.questions jsonb, no migration needed; surfaced into
- * learning_evidence.metadata.questionSemantics by the submission route
- * when present) without a later breaking change. Every field is
- * optional; a question that omits them behaves exactly as before.
+ * Phase 3 Pre-flight: optional question-evidence semantics. Every field
+ * is optional; a question that omits them behaves exactly as before.
+ *
+ * Phase 3D: cognitiveLevel and questionIntent are now genuinely produced
+ * by generateQuestionsForConcept -- requested in the generation prompt
+ * (buildQuestionGenerationPrompt) and read back from the AI's raw output
+ * (only a known enum value is ever accepted, otherwise left undefined --
+ * never fabricated), which is also what makes the two corresponding
+ * evaluateVariantEquivalence dimensions non-vacuous checks rather than
+ * automatic passes. evidenceDimensions, expectedReasoningType, and
+ * learningObjectiveId remain deliberately unpopulated by generation --
+ * no reliable signal for them exists yet (evidenceDimensions overlaps
+ * EvidenceMode's own already-authoritative independence dimension;
+ * expectedReasoningType and learningObjectiveId would require either a
+ * second AI judgment call with no grounding to check it against, or a
+ * curriculum-mapping input this codebase doesn't have) -- a conscious
+ * scope decision, not an oversight, left as future-friendly fields that
+ * existing consumers (equivalence checking, questionSemantics pass-
+ * through) already handle correctly whenever they ARE present.
  */
 export type QuestionIntent = 'CHECK_UNDERSTANDING' | 'CHECK_APPLICATION' | 'CHECK_TRANSFER' | 'DIAGNOSTIC_PROBE' | 'VERIFICATION';
 export type EvidenceDimension = 'understanding' | 'independence' | 'application' | 'retention' | 'transfer';
 export type CognitiveLevel = 'RECALL' | 'COMPREHENSION' | 'APPLICATION' | 'ANALYSIS' | 'SYNTHESIS' | 'EVALUATION';
+
+/**
+ * Phase 3D: the AI is only ever asked to tag a question with one of the
+ * four organic, content-derived intents below (see REQUIREMENTS item 8
+ * in buildQuestionGenerationPrompt) -- "VERIFICATION" is deliberately
+ * excluded from what generation can produce, because it isn't a
+ * property of the question's content but of the calling context (a
+ * question re-asked specifically to check independence after a
+ * verification trigger fires); generateQuestionVariant inherits the
+ * SOURCE question's questionIntent onto its variant rather than letting
+ * generation invent "VERIFICATION" itself.
+ */
+const KNOWN_QUESTION_INTENTS = new Set<string>(['CHECK_UNDERSTANDING', 'CHECK_APPLICATION', 'CHECK_TRANSFER', 'DIAGNOSTIC_PROBE']);
+/**
+ * Exported (Phase 3-R) so any reader that needs to validate a
+ * persisted/raw cognitiveLevel string (e.g. getAssessmentStateForConcept's
+ * bounded cognitive-demand scan) reuses this single source of truth
+ * rather than re-declaring a second, potentially-drifting enum set.
+ */
+export const KNOWN_COGNITIVE_LEVELS = new Set<string>(['RECALL', 'COMPREHENSION', 'APPLICATION', 'ANALYSIS', 'SYNTHESIS', 'EVALUATION']);
 export type ExpectedReasoningType = 'FACTUAL' | 'PROCEDURAL' | 'CONCEPTUAL' | 'METACOGNITIVE';
 
 export interface VisualAid {
@@ -195,6 +226,11 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
     difficulty: '3',
     explanation: '"..."',
     correctAnswer: '"..."',
+    // Phase 3D: requested for every question -- see REQUIREMENTS item 8
+    // in buildQuestionGenerationPrompt for the definitions the model is
+    // given for each allowed value.
+    cognitiveLevel: '"RECALL"|"COMPREHENSION"|"APPLICATION"|"ANALYSIS"|"SYNTHESIS"|"EVALUATION"',
+    questionIntent: '"CHECK_UNDERSTANDING"|"CHECK_APPLICATION"|"CHECK_TRANSFER"|"DIAGNOSTIC_PROBE"',
   };
   const format = ANSWER_FORMAT_BY_TYPE[type];
   if (format === 'single_choice' || format === 'multi_choice') {
@@ -375,6 +411,14 @@ ${shapeExamples}
         difficulty: Math.max(1, Math.min(5, q.difficulty || 3)),
         calculatorAllowed: typeof q.calculatorAllowed === 'boolean' ? q.calculatorAllowed : undefined,
         sourceReference: `Based on student's ${language} materials`,
+        // Phase 3D: only a known enum value is ever accepted -- anything
+        // else the model emits (a typo, a value outside the requested
+        // set, a missing field) becomes undefined, never a fabricated
+        // guess. See the type doc above GeneratedQuestion for why
+        // evidenceDimensions/expectedReasoningType/learningObjectiveId
+        // are deliberately NOT read here.
+        cognitiveLevel: KNOWN_COGNITIVE_LEVELS.has(q.cognitiveLevel) ? (q.cognitiveLevel as CognitiveLevel) : undefined,
+        questionIntent: KNOWN_QUESTION_INTENTS.has(q.questionIntent) ? (q.questionIntent as QuestionIntent) : undefined,
       };
 
       storedQuestions.push(question);
@@ -966,6 +1010,9 @@ ${groundingRequirement}
 5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
 6. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
 7. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps.
+8. Tag EVERY question with "cognitiveLevel" and "questionIntent", judged honestly against what the question actually demands -- never default to the same value for every question just because it's convenient:
+   - "cognitiveLevel" (the cognitive demand genuinely required to answer, Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
+   - "questionIntent" (what this question is primarily evidence of): "CHECK_UNDERSTANDING" (does the student grasp the concept itself), "CHECK_APPLICATION" (can the student use it in a concrete case), "CHECK_TRANSFER" (can the student use it in an unfamiliar context or combined with other concepts), "DIAGNOSTIC_PROBE" (designed to reveal a specific likely misconception rather than just pass/fail).
 
 ${closingNote}`;
 }
