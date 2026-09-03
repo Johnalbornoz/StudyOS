@@ -31,13 +31,16 @@ function decision(overrides: Partial<LearningDecision> = {}): LearningDecision {
     targetConceptIds: [],
     signals: [primarySignal],
     primarySignal,
+    learningState: 'DEVELOPING',
     targetDimension: 'UNDERSTANDING',
     activityType: 'PRACTICE',
     pedagogicalPriority: 'MEDIUM',
     temporalUrgency: null,
     priorityScore: 1000,
+    reasonCode: primarySignal.type,
     facts: [],
     dueAt: null,
+    policyVersion: 3,
     ...overrides,
   };
 }
@@ -159,11 +162,87 @@ describe('27. RETENTION_CHECK -> INDEPENDENT', () => {
   });
 });
 
-describe('28. SOLO_VERIFY -> INDEPENDENT', () => {
-  it('routes via the same single-concept cumulative_assessment convention remediation steps already use, evidenceMode INDEPENDENT per the taxonomy', async () => {
-    const s = await startLearningSession({ studentId: STUDENT, learningDecision: decision({ activityType: 'SOLO_VERIFY' }) });
+describe('28. SOLO_VERIFY -- Phase 4-R: resumes the EXISTING pending verification attempt, evidenceMode INDEPENDENT per the taxonomy', () => {
+  function verifyDecision(overrides: Partial<LearningDecision> = {}): LearningDecision {
+    return decision({ activityType: 'SOLO_VERIFY', verificationAttemptId: 'va-1', quizSessionId: 'quiz-1', ...overrides });
+  }
+
+  it('a genuinely pending attempt -> READY, launchTarget carries verifyAttemptId + the EXISTING quizId, never a new one', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] }) // ownership check
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'va-1', quiz_session_id: 'quiz-1', student_id: STUDENT, concept_id: 'c1',
+            verification_question: { id: 'q1' }, original_score_percent: '80', assessment_confidence_before: '60',
+            variant_equivalence_confidence: '0.9',
+          },
+        ],
+      }); // getPendingVerificationAttempt: still unresolved, matches
+    const s = await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
     expect(s.launchStatus).toBe('READY');
     expect(s.evidenceMode).toBe('INDEPENDENT');
+    expect(s.launchTarget).toContain('quizId=quiz-1');
+    expect(s.launchTarget).toContain('verifyAttemptId=va-1');
+    expect(s.launchTarget).toContain('conceptId=c1');
+    // Exactly the certified read path -- no INSERT/write query issued.
+    expect(queryMock.mock.calls.every(([sql]) => !/^\s*INSERT/i.test(String(sql)))).toBe(true);
+  });
+
+  it('missing verificationAttemptId/quizSessionId on the decision -> UNAVAILABLE, never a fabricated launch', async () => {
+    const s = await startLearningSession({ studentId: STUDENT, learningDecision: decision({ activityType: 'SOLO_VERIFY' }) });
+    expect(s.launchStatus).toBe('UNAVAILABLE');
+  });
+
+  it('Phase 4-R Finding 9 (stale decision safety): the attempt was resolved elsewhere between decision and launch -> UNAVAILABLE, never a fabricated READY', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] }) // ownership check
+      .mockResolvedValueOnce({ rows: [] }); // getPendingVerificationAttempt: outcome is no longer NULL -- correctly returns nothing
+    const s = await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
+    expect(s.launchStatus).toBe('UNAVAILABLE');
+  });
+
+  it('a different (newer) pending attempt now exists for the same (quizSessionId, conceptId, studentId) -> UNAVAILABLE, refuses to resume the wrong one', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'va-DIFFERENT', quiz_session_id: 'quiz-1', student_id: STUDENT, concept_id: 'c1', verification_question: {}, original_score_percent: '80', assessment_confidence_before: '60', variant_equivalence_confidence: null }],
+      });
+    const s = await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
+    expect(s.launchStatus).toBe('UNAVAILABLE');
+  });
+
+  it('Phase 4-R Finding 10 (foreign attempt access blocked): getPendingVerificationAttempt is called with THIS studentId, never trusting the decision alone -- a foreign learner can never resume another learner\'s attempt', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] }).mockResolvedValueOnce({ rows: [] });
+    await startLearningSession({ studentId: 'attacker-student', learningDecision: verifyDecision() });
+    // getPendingVerificationAttempt's own query is scoped by student_id = $3 -- confirmed the real studentId param was forwarded, not the decision's own actionConceptId/subjectId alone.
+    const pendingCall = queryMock.mock.calls[1];
+    expect(pendingCall?.[1]).toContain('attacker-student');
+  });
+
+  it('never issues a second call to createPendingVerificationAttempt or any INSERT -- SOLO_VERIFY launch resolution is read-only', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'va-1', quiz_session_id: 'quiz-1', student_id: STUDENT, concept_id: 'c1', verification_question: {}, original_score_percent: '80', assessment_confidence_before: '60', variant_equivalence_confidence: '0.9' }] });
+    await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
+    expect(queryMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('Phase 4-R Finding: double-launching the SAME decision (e.g. a double-click) resolves READY both times with zero duplicate/new verification_attempts -- launch resolution is idempotent by construction (pure read, no write)', async () => {
+    const pendingRow = { id: 'va-1', quiz_session_id: 'quiz-1', student_id: STUDENT, concept_id: 'c1', verification_question: { id: 'q1' }, original_score_percent: '80', assessment_confidence_before: '60', variant_equivalence_confidence: '0.9' };
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] })
+      .mockResolvedValueOnce({ rows: [pendingRow] })
+      .mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] })
+      .mockResolvedValueOnce({ rows: [pendingRow] });
+    const first = await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
+    const second = await startLearningSession({ studentId: STUDENT, learningDecision: verifyDecision() });
+    expect(first.launchStatus).toBe('READY');
+    expect(second.launchStatus).toBe('READY');
+    expect(first.launchTarget).toBe(second.launchTarget);
+    // 2 queries per launch (ownership + pending lookup), 4 total across both -- no extra write query snuck in on the second call.
+    expect(queryMock).toHaveBeenCalledTimes(4);
+    expect(queryMock.mock.calls.every(([sql]) => !/^\s*INSERT/i.test(String(sql)))).toBe(true);
   });
 });
 

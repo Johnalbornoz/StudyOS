@@ -19,6 +19,7 @@ import { db } from '@/lib/db';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { getRemediationPath, remediationStepHref, type RemediationStep } from './remediation.service';
+import { getPendingVerificationAttempt } from './assessment-verification.service';
 
 export type LaunchStatus = 'READY' | 'UNAVAILABLE';
 
@@ -195,6 +196,64 @@ async function remediationLaunch(studentId: string, decision: LearningDecision, 
   return { launchStatus: 'READY', launchTarget: href, launchParams: { remediationStepId: activeStep.id } };
 }
 
+/**
+ * Phase 4-R: SOLO_VERIFY resumes the EXISTING pending verification
+ * attempt the Decision Engine's VERIFICATION_PENDING signal already
+ * identified (`decision.verificationAttemptId`/`.quizSessionId`) -- it
+ * never creates a new verification_attempts row, never regenerates the
+ * question (same-question/freshness semantics are preserved exactly as
+ * already persisted, Phase 3-R -- this function never touches
+ * `verification_question`/`variant_equivalence_confidence` at all).
+ *
+ * Re-reads the attempt at LAUNCH time via the existing, certified
+ * `getPendingVerificationAttempt` -- the SAME (quizSessionId, conceptId,
+ * studentId)-scoped, `outcome IS NULL`-filtered lookup
+ * /api/quizzes/verify itself already uses for exactly this reason (see
+ * that function's own doc comment) -- rather than trusting the
+ * decision's own, possibly-stale snapshot. This closes Phase 4-R
+ * Finding 9: if the attempt was resolved elsewhere between decision
+ * computation and this launch, `getPendingVerificationAttempt` now
+ * correctly returns null (its own `outcome IS NULL` filter no longer
+ * matches), and this fails safely to UNAVAILABLE -- no duplicate
+ * verification, no new pending attempt, no cognitive mutation. The
+ * student-ownership check is implicit in the query itself
+ * (`student_id = studentId` in the WHERE clause) -- a foreign learner's
+ * `studentId` can never match another student's attempt (Finding 10 of
+ * the report: foreign-attempt access blocked at the same layer that
+ * already blocks it for direct API calls).
+ */
+async function verificationLaunch(studentId: string, decision: LearningDecision): Promise<LaunchResolution> {
+  if (!decision.verificationAttemptId || !decision.quizSessionId) {
+    return unavailable('SOLO_VERIFY requires a verificationAttemptId and quizSessionId; neither is present on this decision.');
+  }
+  const pending = await getPendingVerificationAttempt(decision.quizSessionId, decision.actionConceptId, studentId);
+  if (!pending) {
+    return unavailable(
+      `No unresolved verification attempt was found for this student/concept/quiz session -- it may already have been resolved elsewhere since this decision was computed.`
+    );
+  }
+  if (pending.id !== decision.verificationAttemptId) {
+    // A different pending attempt now exists for this exact
+    // (quizSessionId, conceptId, studentId) triple than the one the
+    // decision was computed against -- fail closed rather than resuming
+    // a reference that no longer points at the attempt it once did.
+    return unavailable(
+      `The pending verification attempt has changed since this decision was computed (expected ${decision.verificationAttemptId}, found ${pending.id}) -- refusing to launch a stale reference.`
+    );
+  }
+  // No new verification_attempts row, no question regeneration -- this
+  // only ever resolves a launch target/params pointing at the EXISTING
+  // attempt id; the actual answer submission still goes through the
+  // unmodified, certified /api/quizzes/verify pipeline (exactly-once
+  // guarantee preserved, Phase 2B/3-R contracts untouched).
+  return ready('/dashboard/quiz', {
+    subjectId: decision.subjectId,
+    conceptId: decision.actionConceptId,
+    quizId: decision.quizSessionId,
+    verifyAttemptId: pending.id,
+  });
+}
+
 async function resolveLaunch(studentId: string, decision: LearningDecision): Promise<LaunchResolution> {
   // Universal gate, before any ActivityType-specific branch: never
   // trust that actionConceptId genuinely belongs to subjectId/studentId
@@ -222,13 +281,10 @@ async function resolveLaunch(studentId: string, decision: LearningDecision): Pro
     case 'MOCK_EXAM':
       return subjectQuizLaunch('exam_simulation', decision);
     case 'SOLO_VERIFY':
-      // Not currently selected by Phase 3C's own policy (documented gap,
-      // not invented here) -- included for completeness and future-
-      // proofing. Matches the SAME convention remediation.service.ts's
-      // own remediationStepHref already uses for a SOLO_VERIFY
-      // remediation step: a single-concept-scoped cumulative_assessment,
-      // since no dedicated SOLO_VERIFY quizMode exists in production.
-      return quizLaunch('cumulative_assessment', decision);
+      // Phase 4-R: now genuinely selected by the policy (VERIFICATION_PENDING
+      // -> SOLO_VERIFY) -- resumes the EXISTING pending verification
+      // attempt; see verificationLaunch's own doc comment.
+      return verificationLaunch(studentId, decision);
     case 'REMEDIATION':
       return remediationLaunch(studentId, decision, ownership.label);
     case 'TRANSFER':

@@ -38,7 +38,35 @@ export type LearningSignalType =
   | 'LEARNING_DEBT'
   | 'INDEPENDENCE_GAP'
   | 'LOW_UNDERSTANDING'
-  | 'CALIBRATION_CONFLICT';
+  | 'CALIBRATION_CONFLICT'
+  /**
+   * Phase 4A/4B reconciliation: sourced from the Phase 3/3-R certified
+   * Digital Twin assessmentState (assessment-verification.service.ts's
+   * getAssessmentStateForConcept), which this engine had zero awareness
+   * of before Phase 4 -- it predates Phase 3. Fires when
+   * `hasPendingVerification` is true: the student's most recent
+   * Assessment-mode evidence for this concept still has an unresolved
+   * verification attempt, so it cannot yet be treated as confirmed
+   * independent proof. Never claims VALIDATED while this is true (see
+   * computeLearningState).
+   */
+  | 'VERIFICATION_PENDING'
+  /**
+   * Phase 4A/4B reconciliation: fires when this concept's understanding
+   * is otherwise adequate (real evidence exists, understanding at/above
+   * policy threshold) but `assessmentState.lastIndependentEvidence` is
+   * null -- i.e. every bit of that evidence was produced under PRACTICE/
+   * COACH conditions, never once under INDEPENDENT or ASSESSMENT Evidence
+   * Mode (or a real school exam). This is deliberately NOT the same
+   * signal as INDEPENDENCE_GAP below: INDEPENDENCE_GAP compares two
+   * numeric scores that both already exist (a measured gap); this signal
+   * fires when independent evidence is completely ABSENT, which
+   * INDEPENDENCE_GAP's own `independentMastery !== null` guard silently
+   * skips today -- exactly the "high Practice performance, zero
+   * independent confirmation" red-team scenario Phase 3 was built to
+   * expose but this engine, until Phase 4, never consumed.
+   */
+  | 'INSUFFICIENT_INDEPENDENT_EVIDENCE';
 
 /**
  * One true fact about one concept, from one source. Signals are never
@@ -59,6 +87,18 @@ export interface LearningSignal {
   occurrenceId?: string;
   misconceptionCode?: string;
   calibrationConflictId?: string;
+  /**
+   * Phase 4-R: set only on a `VERIFICATION_PENDING` signal -- the
+   * server-owned identity of the EXISTING unresolved `verification_attempts`
+   * row this signal describes (`AssessmentStateSummary.pendingVerification`,
+   * unmodified from where it was already computed). Never a client-
+   * supplied value, never used to construct a new attempt -- only to
+   * resume this exact one through the certified /api/quizzes/verify
+   * pipeline. See `selectActivityType`'s SOLO_VERIFY routing.
+   */
+  verificationAttemptId?: string;
+  /** Phase 4-R: the quiz session `verificationAttemptId` belongs to -- required by /api/quizzes/verify's existing (quizId, conceptId, studentId)-scoped lookup; carried alongside verificationAttemptId rather than re-derived. */
+  quizSessionId?: string;
   /** Set only when conceptId is a root-cause concept standing in for a different concept where the problem actually manifested (P0-B semantics, preserved here). */
   targetConceptId?: string;
   metadata: Record<string, unknown>;
@@ -76,6 +116,9 @@ export interface ConceptDecisionContext {
   diagnosisIds: string[];
   occurrenceIds: string[];
   calibrationConflictIds: string[];
+  /** Phase 4-R: collected from any VERIFICATION_PENDING signal(s), same array-of-provenance convention as remediationPathIds/diagnosisIds/occurrenceIds above (in practice at most one -- getAssessmentStateForConcept already deterministically selects the single actionable attempt, §Finding 4). */
+  verificationAttemptIds: string[];
+  quizSessionIds: string[];
 }
 
 export type TargetDimension =
@@ -96,6 +139,73 @@ export interface LearningFact {
   [key: string]: unknown;
 }
 
+/**
+ * Phase 4B -- Canonical Learning State: "what is true about this concept
+ * for this learner right now", strictly separate from the Next Best
+ * Learning Action ("what should happen next", i.e. `activityType`
+ * below). A state is never stored as an action and vice versa.
+ *
+ * This is NOT a new parallel classification invented from scratch --
+ * it is a thin, deterministic reconciliation over already-certified
+ * fields: `ConceptKnowledgeState.masteryState` (Phase 2.2A/B,
+ * UNKNOWN/LEARNING/DEVELOPING/PROVISIONAL_MASTERY/VALIDATED_MASTERY/
+ * AT_RISK/INTERVENTION_REQUIRED) and `.validationReadiness`
+ * (READY/INSUFFICIENT_EVIDENCE/WAITING_FOR_RETENTION/TRANSFER_REQUIRED/
+ * ACTIVE_CRITICAL_MISCONCEPTION) already answer most of this question.
+ * The only genuinely NEW dimensions Phase 4 adds are the two Phase 3
+ * Assessment/Verification facts this engine had zero awareness of
+ * before Phase 4 (PENDING_VERIFICATION, INSUFFICIENT_INDEPENDENT_EVIDENCE)
+ * and the concept-EXTERNAL relational facts Knowledge State itself
+ * cannot see (a prerequisite gap or an active remediation belongs to a
+ * DIFFERENT concept's evidence, not this one's own dimension scores).
+ *
+ * See computeLearningState's own doc comment for the exact, explicit
+ * precedence order -- this is not a numeric score.
+ */
+export type LearningState =
+  | 'NOT_STARTED'
+  | 'MISCONCEPTION_BLOCKED'
+  | 'PREREQUISITE_BLOCKED'
+  | 'NEEDS_REPAIR'
+  | 'PENDING_VERIFICATION'
+  | 'INSUFFICIENT_INDEPENDENT_EVIDENCE'
+  | 'RETENTION_RISK'
+  | 'TRANSFER_GAP'
+  | 'DEVELOPING'
+  | 'VALIDATED';
+
+/**
+ * Phase 4A/4E: the deterministic policy version for THIS file
+ * (adaptive-learning-policy.ts) specifically -- distinct from
+ * `mastery_policies.version` (Phase 2.2's own, DB-configured, versions
+ * the Knowledge State THRESHOLDS this file consumes but never redefines)
+ * and from `PendingVerificationAttempt`/assessment-profile versioning.
+ * This is a plain code constant, not a DB row, matching the fact that
+ * this policy is itself pure code over already-loaded data (see the
+ * file header) -- there is no runtime config to version.
+ *
+ * Bumped from Phase 3C's original (implicit, unversioned) release to 2
+ * for Phase 4A/4B/4C/4D's real, disclosed rule changes: two new signal
+ * types (VERIFICATION_PENDING, INSUFFICIENT_INDEPENDENT_EVIDENCE) and
+ * two new priority bands.
+ *
+ * Bumped again, 2 -> 3, for Phase 4-R: `selectActivityType`'s actual
+ * mapping for VERIFICATION_PENDING changed from "no dedicated branch,
+ * silently falls through to whatever a lower-precedence check would
+ * have picked" to an explicit `SOLO_VERIFY` selection -- a genuine,
+ * disclosed change to which ActivityType this policy produces for that
+ * signal, not merely an addition alongside unchanged existing behavior
+ * (unlike the band/signal additions that justified 1 -> 2, this
+ * one changes what an EXISTING signal already produced). Per this
+ * constant's own contract ("never a silent rule change"), that
+ * required a bump, audited and decided deliberately rather than left
+ * at 2.
+ *
+ * Every LearningDecision carries this value (`policyVersion`) so a
+ * consumer can always tell which rule set produced it.
+ */
+export const ADAPTIVE_LEARNING_POLICY_VERSION = 3;
+
 export interface LearningDecision {
   actionConceptId: string;
   subjectId: string;
@@ -103,6 +213,8 @@ export interface LearningDecision {
   rootCauseConceptId?: string;
   signals: LearningSignal[];
   primarySignal: LearningSignal;
+  /** Phase 4B: "what is true now" -- see LearningState's own doc comment. Never confused with `activityType` ("what should happen next"). */
+  learningState: LearningState;
   targetDimension: TargetDimension;
   activityType: ActivityType;
   pedagogicalPriority: PedagogicalPriority;
@@ -110,11 +222,19 @@ export interface LearningDecision {
   temporalUrgency: DueUrgency | null;
   /** Derived purely from the deterministic band+modifier ordering below -- never an independent second decision mechanism. */
   priorityScore: number;
+  /** Phase 4C.4: machine-readable reason -- a direct, explicit alias of `primarySignal.type` (no second, parallel reason-code taxonomy invented; see the Phase 4 report's §5.4). */
+  reasonCode: LearningSignalType;
   facts: LearningFact[];
   remediationPathId?: string;
   diagnosisId?: string;
   occurrenceId?: string;
+  /** Phase 4-R: present whenever this concept has an actionable pending verification (whether or not it drove this specific decision) -- same "collected from context, not just the primary signal" convention as remediationPathId/diagnosisId/occurrenceId above. See `selectActivityType`'s SOLO_VERIFY routing and `LearningSignal.verificationAttemptId`'s own doc comment. */
+  verificationAttemptId?: string;
+  /** Phase 4-R: the quiz session `verificationAttemptId` belongs to -- required by /api/quizzes/verify's existing lookup. */
+  quizSessionId?: string;
   dueAt?: string | null;
+  /** Phase 4E.2: see ADAPTIVE_LEARNING_POLICY_VERSION's own doc comment. */
+  policyVersion: number;
 }
 
 /**
@@ -144,6 +264,8 @@ export function consolidateSignals(
         diagnosisIds: [],
         occurrenceIds: [],
         calibrationConflictIds: [],
+        verificationAttemptIds: [],
+        quizSessionIds: [],
       };
       byId.set(id, ctx);
     }
@@ -158,6 +280,12 @@ export function consolidateSignals(
     if (signal.occurrenceId && !ctx.occurrenceIds.includes(signal.occurrenceId)) ctx.occurrenceIds.push(signal.occurrenceId);
     if (signal.calibrationConflictId && !ctx.calibrationConflictIds.includes(signal.calibrationConflictId)) {
       ctx.calibrationConflictIds.push(signal.calibrationConflictId);
+    }
+    if (signal.verificationAttemptId && !ctx.verificationAttemptIds.includes(signal.verificationAttemptId)) {
+      ctx.verificationAttemptIds.push(signal.verificationAttemptId);
+    }
+    if (signal.quizSessionId && !ctx.quizSessionIds.includes(signal.quizSessionId)) {
+      ctx.quizSessionIds.push(signal.quizSessionId);
     }
   }
 
@@ -186,8 +314,12 @@ const BAND = {
   MISCONCEPTION: 40,
   /** AT_RISK / validation deadlines / retention-due / transfer-required -- Phase 2.2's own maintenance-of-proof signals. */
   VALIDATION: 35,
+  /** Phase 4A/4B: VERIFICATION_PENDING is the Phase 3 Assessment/Verification analog of VALIDATION above -- "we need to close the loop before this evidence can be trusted" -- so it shares the same tier rather than inventing a new one. */
+  VERIFICATION_PENDING: 35,
   FORGETTING_RISK: 30,
   INDEPENDENCE_GAP: 20,
+  /** Phase 4A/4B: same tier as INDEPENDENCE_GAP -- both are "the evidence we have doesn't support trusting this concept as independently demonstrated yet" -- differing only in how the gap was detected (a measured score gap vs. a complete absence of independent/assessment evidence). */
+  INSUFFICIENT_INDEPENDENT_EVIDENCE: 20,
   LOW_UNDERSTANDING: 10,
   BASELINE: 0,
 } as const;
@@ -236,12 +368,16 @@ function evaluateSignal(signal: LearningSignal): { band: number; modifier: numbe
     case 'RETENTION_REVIEW_DUE':
     case 'TRANSFER_REQUIRED':
       return { band: BAND.VALIDATION, modifier: 0 };
+    case 'VERIFICATION_PENDING':
+      return { band: BAND.VERIFICATION_PENDING, modifier: 0 };
     case 'FORGETTING_RISK': {
       const risk = typeof signal.metadata.forgettingRisk === 'number' ? signal.metadata.forgettingRisk : 0;
       return { band: BAND.FORGETTING_RISK, modifier: risk };
     }
     case 'INDEPENDENCE_GAP':
       return { band: BAND.INDEPENDENCE_GAP, modifier: 0 };
+    case 'INSUFFICIENT_INDEPENDENT_EVIDENCE':
+      return { band: BAND.INSUFFICIENT_INDEPENDENT_EVIDENCE, modifier: 0 };
     case 'LOW_UNDERSTANDING': {
       const gap = typeof signal.metadata.gap === 'number' ? signal.metadata.gap : 0;
       return { band: BAND.LOW_UNDERSTANDING, modifier: gap };
@@ -343,10 +479,34 @@ export function selectActivityType(context: ConceptDecisionContext): ActivityTyp
   // semantics is a targeted PRACTICE pass on the prerequisite concept.
   if (types.has('PREREQUISITE_GAP')) return 'PRACTICE';
 
+  // Phase 4-R: a pending verification is a DIFFERENT concern from
+  // "no independent evidence exists yet" (INSUFFICIENT_INDEPENDENT_EVIDENCE,
+  // below) -- it means an ASSESSMENT-mode attempt already ran and a
+  // verification question already fired, and it's specifically THAT
+  // in-progress verification that must be completed, not a fresh
+  // independent check. `SOLO_VERIFY` is the exact existing ActivityType
+  // for "complete an already-created verification requirement" (vs.
+  // `SOLO_CHECK`'s "obtain initial independent evidence") -- selected
+  // here, ahead of RETENTION_CHECK/TRANSFER, positioned at the same
+  // precedence tier `computeLearningState` already gives
+  // PENDING_VERIFICATION (right after misconception/prerequisite/
+  // repair, ahead of retention/transfer/independence). The execution
+  // layer (`learning-session-engine.service.ts`) resumes the EXISTING
+  // attempt via `verificationAttemptId`/`quizSessionId` -- it never
+  // creates a new one.
+  if (types.has('VERIFICATION_PENDING')) return 'SOLO_VERIFY';
+
   const readiness = context.knowledgeState?.validationReadiness;
   if (readiness === 'WAITING_FOR_RETENTION' || types.has('RETENTION_REVIEW_DUE') || types.has('WAITING_FOR_RETENTION')) return 'RETENTION_CHECK';
   if (readiness === 'TRANSFER_REQUIRED' || types.has('TRANSFER_REQUIRED')) return 'TRANSFER';
-  if (types.has('INDEPENDENCE_GAP')) return 'SOLO_CHECK';
+  // Phase 4A/4B: same activity as INDEPENDENCE_GAP -- SOLO_CHECK is the
+  // one existing ActivityType whose EvidenceMode is INDEPENDENT, which
+  // is exactly the missing evidence this signal reports. Distinct from
+  // SOLO_VERIFY above: SOLO_CHECK obtains INITIAL independent evidence
+  // where none exists yet; SOLO_VERIFY completes an ALREADY-CREATED
+  // verification requirement. Never confused (Phase 4-R Finding 12,
+  // regression-tested).
+  if (types.has('INDEPENDENCE_GAP') || types.has('INSUFFICIENT_INDEPENDENT_EVIDENCE')) return 'SOLO_CHECK';
 
   if (types.has('CALIBRATION_CONFLICT')) {
     const actionable = context.signals.some((s) => s.type === 'CALIBRATION_CONFLICT' && s.metadata.actionable === true);
@@ -380,6 +540,12 @@ export function selectTargetDimension(context: ConceptDecisionContext, activityT
   if (types.has('CRITICAL_MISCONCEPTION') || types.has('RECURRING_MISCONCEPTION')) return 'MISCONCEPTION';
   if (activityType === 'RETENTION_CHECK') return 'RETENTION';
   if (activityType === 'TRANSFER') return 'TRANSFER';
+  // Phase 4-R: VALIDATION, not INDEPENDENCE -- completing an
+  // already-triggered verification is a "confirm/close the loop on
+  // evidence we already have" concern (the same category as
+  // INTERVENTION_REQUIRED/CALIBRATION_CONFLICT below), distinct from
+  // SOLO_CHECK's "build initial independent evidence" (INDEPENDENCE).
+  if (activityType === 'SOLO_VERIFY') return 'VALIDATION';
   if (activityType === 'SOLO_CHECK') return 'INDEPENDENCE';
   if (types.has('CALIBRATION_CONFLICT')) return 'VALIDATION';
   if (types.has('EXAM_APPROACHING') && context.signals.every((s) => s.type === 'EXAM_APPROACHING')) return 'EXAM_READINESS';
@@ -445,6 +611,12 @@ export function buildFacts(context: ConceptDecisionContext): LearningFact[] {
       case 'LOW_UNDERSTANDING':
         facts.push({ kind: 'lowUnderstanding', understandingScore: s.metadata.understandingScore });
         break;
+      case 'VERIFICATION_PENDING':
+        facts.push({ kind: 'verificationPending', verificationAttemptId: s.verificationAttemptId, createdAt: s.metadata.createdAt });
+        break;
+      case 'INSUFFICIENT_INDEPENDENT_EVIDENCE':
+        facts.push({ kind: 'insufficientIndependentEvidence', understandingScore: s.metadata.understandingScore });
+        break;
       case 'REMEDIATION_UNFINISHED':
         break; // corroborates REMEDIATION_ACTIVE -- no redundant duplicate fact
       default:
@@ -452,6 +624,72 @@ export function buildFacts(context: ConceptDecisionContext): LearningFact[] {
     }
   }
   return facts;
+}
+
+/**
+ * Phase 4B -- deterministic Learning State derivation. Pure: takes only
+ * the same `ConceptDecisionContext` (`.signals` + `.knowledgeState`)
+ * every other function in this file already operates on -- no new IO,
+ * no new data source.
+ *
+ * EXPLICIT PRECEDENCE (most-severe-first; the first matching rule wins,
+ * exactly like `evaluateSignal`'s own dominant-band ordering above --
+ * never a weighted/compensating combination):
+ *   1. NOT_STARTED -- no Knowledge State row yet, or masteryState UNKNOWN
+ *      (Phase 2.2A: UNKNOWN means evidenceCount === 0 -- nothing to
+ *      classify further).
+ *   2. MISCONCEPTION_BLOCKED -- a critical misconception is active
+ *      (Knowledge State's own criticalMisconceptionCount, or the
+ *      CRITICAL_MISCONCEPTION signal -- either source is sufficient).
+ *   3. PREREQUISITE_BLOCKED -- a confirmed root-cause gap (PREREQUISITE_GAP)
+ *      or an unresolved diagnosis (DIAGNOSIS_REQUIRED) exists for this
+ *      concept. This is a concept-EXTERNAL relational fact Knowledge
+ *      State's own per-concept dimensions cannot see.
+ *   4. NEEDS_REPAIR -- Phase 2.2B's own INTERVENTION_REQUIRED masteryState,
+ *      or an active remediation/intervention signal.
+ *   5. PENDING_VERIFICATION -- Phase 3/3-R's assessmentState.hasPendingVerification,
+ *      surfaced as VERIFICATION_PENDING. A concept never reads as
+ *      confirmed-independent while this is true, regardless of any
+ *      score.
+ *   6. INSUFFICIENT_INDEPENDENT_EVIDENCE -- Phase 3's lastIndependentEvidence
+ *      is null despite otherwise-adequate understanding (the "high
+ *      Practice performance, zero independent proof" case).
+ *   7. RETENTION_RISK -- Phase 2.2B's own AT_RISK masteryState, or
+ *      WAITING_FOR_RETENTION/a real forgetting-risk signal.
+ *   8. TRANSFER_GAP -- Phase 2.2's own TRANSFER_REQUIRED validationReadiness,
+ *      or the corresponding signal.
+ *   9. VALIDATED -- masteryState is already VALIDATED_MASTERY and none
+ *      of the above blocked it.
+ *   10. DEVELOPING -- the residual case (LEARNING/DEVELOPING/
+ *       PROVISIONAL_MASTERY with nothing blocking) -- real progress
+ *       exists, just not yet validated.
+ *
+ * Historical facts never poison this: a RESOLVED misconception no
+ * longer counts toward criticalMisconceptionCount (Phase 2C's own
+ * "currently active" definition), a CLOSED remediation path no longer
+ * produces a REMEDIATION_ACTIVE signal (remediation.service's own
+ * "active" definition), and a past verification_attempts row with
+ * `outcome IS NOT NULL` no longer counts toward hasPendingVerification
+ * -- every one of these facts is read fresh, current-state-only, from
+ * already-certified sources; this function adds no historical lookback
+ * of its own.
+ */
+export function computeLearningState(context: ConceptDecisionContext): LearningState {
+  const types = new Set(context.signals.map((s) => s.type));
+  const ks = context.knowledgeState;
+
+  if (!ks || ks.masteryState === 'UNKNOWN') return 'NOT_STARTED';
+  if (ks.criticalMisconceptionCount > 0 || types.has('CRITICAL_MISCONCEPTION')) return 'MISCONCEPTION_BLOCKED';
+  if (types.has('PREREQUISITE_GAP') || types.has('DIAGNOSIS_REQUIRED')) return 'PREREQUISITE_BLOCKED';
+  if (ks.masteryState === 'INTERVENTION_REQUIRED' || types.has('REMEDIATION_ACTIVE') || types.has('INTERVENTION_REQUIRED')) return 'NEEDS_REPAIR';
+  if (types.has('VERIFICATION_PENDING')) return 'PENDING_VERIFICATION';
+  if (types.has('INSUFFICIENT_INDEPENDENT_EVIDENCE')) return 'INSUFFICIENT_INDEPENDENT_EVIDENCE';
+  if (ks.masteryState === 'AT_RISK' || ks.validationReadiness === 'WAITING_FOR_RETENTION' || types.has('WAITING_FOR_RETENTION') || types.has('RETENTION_REVIEW_DUE') || types.has('FORGETTING_RISK')) {
+    return 'RETENTION_RISK';
+  }
+  if (ks.validationReadiness === 'TRANSFER_REQUIRED' || types.has('TRANSFER_REQUIRED')) return 'TRANSFER_GAP';
+  if (ks.masteryState === 'VALIDATED_MASTERY') return 'VALIDATED';
+  return 'DEVELOPING';
 }
 
 export function buildLearningDecision(context: ConceptDecisionContext): LearningDecision {
@@ -471,16 +709,21 @@ export function buildLearningDecision(context: ConceptDecisionContext): Learning
     rootCauseConceptId: context.rootCauseConceptId,
     signals: context.signals,
     primarySignal,
+    learningState: computeLearningState(context),
     targetDimension,
     activityType,
     pedagogicalPriority: priorityLabelForBand(band),
     temporalUrgency: computeTemporalUrgency(context),
     priorityScore,
+    reasonCode: primarySignal.type,
     facts: buildFacts(context),
     remediationPathId: context.remediationPathIds[0],
     diagnosisId: context.diagnosisIds[0],
     occurrenceId: context.occurrenceIds[0],
+    verificationAttemptId: context.verificationAttemptIds[0],
+    quizSessionId: context.quizSessionIds[0],
     dueAt: earliestDueAt(context),
+    policyVersion: ADAPTIVE_LEARNING_POLICY_VERSION,
   };
 }
 

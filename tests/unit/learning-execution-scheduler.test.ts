@@ -18,8 +18,8 @@ function decision(overrides: Partial<LearningDecision> = {}): LearningDecision {
   const primarySignal = sig();
   return {
     actionConceptId: 'c1', subjectId: 'subj1', targetConceptIds: [], signals: [primarySignal], primarySignal,
-    targetDimension: 'UNDERSTANDING', activityType: 'PRACTICE', pedagogicalPriority: 'MEDIUM',
-    temporalUrgency: null, priorityScore: 1000, facts: [], dueAt: null, ...overrides,
+    learningState: 'DEVELOPING', targetDimension: 'UNDERSTANDING', activityType: 'PRACTICE', pedagogicalPriority: 'MEDIUM',
+    temporalUrgency: null, priorityScore: 1000, reasonCode: primarySignal.type, facts: [], dueAt: null, policyVersion: 3, ...overrides,
   };
 }
 

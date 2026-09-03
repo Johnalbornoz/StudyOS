@@ -57,6 +57,12 @@ function defaultImpl(sql: string) {
   if (/FROM concepts c\s+(JOIN|LEFT JOIN LATERAL)/i.test(sql) || /FROM concepts c\s+JOIN subjects s/i.test(sql)) {
     return { rows: [{ id: CONCEPT, canonical_id: CONCEPT, label: 'Product Loop Concept', subject_name: 'Physics' }] };
   }
+  // Phase 4A/4B: getAssessmentStateForConcept's pending-verification
+  // COUNT query -- must return a real { n: 0 } row (never an empty rows
+  // array) since the reader does `pending.rows[0].n` unconditionally.
+  if (/SELECT COUNT\(\*\)::int AS n FROM verification_attempts/i.test(sql)) {
+    return { rows: [{ n: 0 }] };
+  }
   return { rows: [] };
 }
 

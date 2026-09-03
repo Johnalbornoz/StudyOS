@@ -33,7 +33,7 @@ vi.mock('@/services/assessment-verification.service', async () => {
 const recordDecisionEventMock = vi.fn();
 vi.mock('@/lib/audit', () => ({ recordDecisionEvent: (...a: any[]) => recordDecisionEventMock(...a) }));
 
-import { POST } from '@/app/api/quizzes/verify/route';
+import { POST, GET } from '@/app/api/quizzes/verify/route';
 
 const STUDENT_ID = '11111111-1111-4111-8111-111111111111';
 const CONCEPT_ID = '22222222-2222-4222-8222-222222222222';
@@ -325,5 +325,64 @@ describe('Phase 3-R -- required release-blocking checks (direct traceability to 
     expect(second.status).toBe(404);
     // Still exactly one evidence-producing call total, across both requests.
     expect(submitQualifiedAssessmentEvidenceMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+// --- Phase 4-R: GET /api/quizzes/verify -- the resume-continuation read path ---
+function makeGetRequest(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  return { url: `https://studyus.pro/api/quizzes/verify?${qs}` } as any;
+}
+
+describe('Phase 4-R -- GET /api/quizzes/verify: the smallest continuation path for a SOLO_VERIFY launch', () => {
+  it('a genuinely pending attempt returns its question and id, via the exact same certified lookup POST already uses', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ id: 'va-1', conceptId: CONCEPT_ID, verificationQuestion: { id: 'vq-1', answerFormat: 'text' } }));
+
+    const res: any = await GET(makeGetRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID }));
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(body.data.pending).toEqual({ verificationAttemptId: 'va-1', conceptId: CONCEPT_ID, question: { id: 'vq-1', answerFormat: 'text' } });
+  });
+
+  it('an already-resolved (or never-existed) attempt returns { pending: null }, never an error -- Finding 9 safe-state handling', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(null);
+
+    const res: any = await GET(makeGetRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID }));
+    const body = await res.json();
+
+    expect(res.status ?? 200).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.pending).toBeNull();
+  });
+
+  it('rejects a request for another student\'s quiz session -- foreign attempt access blocked', async () => {
+    getQuizSessionMock.mockResolvedValue(session({ studentId: 'someone-else' }));
+    const res: any = await GET(makeGetRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID }));
+    expect(res.status).toBe(404);
+    expect(getPendingVerificationAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it('requires studentId/quizId/conceptId -- rejects an incomplete request before touching any service', async () => {
+    const res: any = await GET(makeGetRequest({ studentId: STUDENT_ID }));
+    expect(res.status).toBe(400);
+    expect(getQuizSessionMock).not.toHaveBeenCalled();
+  });
+
+  it('unauthenticated requests are rejected before any lookup', async () => {
+    verifyAuthMock.mockResolvedValueOnce(null);
+    const res: any = await GET(makeGetRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID }));
+    expect(res.status).toBe(401);
+    expect(getQuizSessionMock).not.toHaveBeenCalled();
+  });
+
+  it('never writes anything -- no submitQualifiedAssessmentEvidence, no resolveVerificationAttempt call from a GET', async () => {
+    getQuizSessionMock.mockResolvedValue(session());
+    getPendingVerificationAttemptMock.mockResolvedValue(pending({ id: 'va-1', conceptId: CONCEPT_ID }));
+    await GET(makeGetRequest({ studentId: STUDENT_ID, quizId: 'quiz-1', conceptId: CONCEPT_ID }));
+    expect(submitQualifiedAssessmentEvidenceMock).not.toHaveBeenCalled();
+    expect(resolveVerificationAttemptMock).not.toHaveBeenCalled();
   });
 });

@@ -165,6 +165,7 @@ export type MessageKey =
   | 'quiz.modeReview' | 'quiz.modeReviewDesc' | 'quiz.modeRetentionCheck' | 'quiz.modeRetentionCheckDesc'
   | 'quiz.verificationTitle' | 'quiz.verificationExplain' | 'quiz.verificationSubmit'
   | 'quiz.verificationConfirmed' | 'quiz.verificationContradicted' | 'quiz.verificationInconclusive'
+  | 'quiz.verificationNotPending'
   | 'quiz.evidenceStrengthHigh' | 'quiz.evidenceStrengthMedium' | 'quiz.evidenceStrengthLow' | 'quiz.evidenceStrengthContradicted'
   | 'quiz.evidenceStrengthExplain' | 'quiz.examReadinessCalibrationLabel'
   | 'quiz.diagnosticConfirmed' | 'quiz.diagnosticRejected' | 'quiz.diagnosticInconclusive'
@@ -743,6 +744,7 @@ const es: Messages = {
   'quiz.verificationConfirmed': 'Este resultado quedó confirmado.',
   'quiz.verificationContradicted': 'Esta comprobación no coincide con tu respuesta anterior -- necesitaremos más evidencia.',
   'quiz.verificationInconclusive': 'El resultado todavía no es concluyente.',
+  'quiz.verificationNotPending': 'Esta comprobación ya no está pendiente -- puede que ya se haya resuelto.',
   'quiz.evidenceStrengthHigh': 'Evidencia sólida',
   'quiz.evidenceStrengthMedium': 'Evidencia moderada',
   'quiz.evidenceStrengthLow': 'Evidencia limitada',
@@ -1419,6 +1421,7 @@ const en: Messages = {
   'quiz.verificationConfirmed': 'This result was confirmed.',
   'quiz.verificationContradicted': "This check didn't match your earlier answer -- we'll need more evidence.",
   'quiz.verificationInconclusive': 'This result is still inconclusive.',
+  'quiz.verificationNotPending': "This check isn't pending anymore -- it may already have been resolved.",
   'quiz.evidenceStrengthHigh': 'Strong evidence',
   'quiz.evidenceStrengthMedium': 'Moderate evidence',
   'quiz.evidenceStrengthLow': 'Limited evidence',
@@ -2095,6 +2098,7 @@ const de: Messages = {
   'quiz.verificationConfirmed': 'Dieses Ergebnis wurde bestätigt.',
   'quiz.verificationContradicted': 'Diese Prüfung stimmt nicht mit deiner vorherigen Antwort überein -- wir brauchen mehr Nachweise.',
   'quiz.verificationInconclusive': 'Dieses Ergebnis ist noch nicht eindeutig.',
+  'quiz.verificationNotPending': 'Diese Überprüfung ist nicht mehr ausstehend -- sie wurde möglicherweise bereits gelöst.',
   'quiz.evidenceStrengthHigh': 'Starker Nachweis',
   'quiz.evidenceStrengthMedium': 'Mittlerer Nachweis',
   'quiz.evidenceStrengthLow': 'Begrenzter Nachweis',
@@ -2771,6 +2775,7 @@ const fr: Messages = {
   'quiz.verificationConfirmed': 'Ce résultat a été confirmé.',
   'quiz.verificationContradicted': 'Cette vérification ne correspond pas à votre réponse précédente -- il nous faudra plus de preuves.',
   'quiz.verificationInconclusive': "Ce résultat n'est pas encore concluant.",
+  'quiz.verificationNotPending': "Cette vérification n'est plus en attente -- elle a peut-être déjà été résolue.",
   'quiz.evidenceStrengthHigh': 'Preuve solide',
   'quiz.evidenceStrengthMedium': 'Preuve modérée',
   'quiz.evidenceStrengthLow': 'Preuve limitée',
@@ -3447,6 +3452,7 @@ const pt: Messages = {
   'quiz.verificationConfirmed': 'Este resultado foi confirmado.',
   'quiz.verificationContradicted': 'Esta verificação não corresponde à sua resposta anterior -- vamos precisar de mais evidências.',
   'quiz.verificationInconclusive': 'Este resultado ainda não é conclusivo.',
+  'quiz.verificationNotPending': 'Esta verificação já não está pendente -- pode já ter sido resolvida.',
   'quiz.evidenceStrengthHigh': 'Evidência forte',
   'quiz.evidenceStrengthMedium': 'Evidência moderada',
   'quiz.evidenceStrengthLow': 'Evidência limitada',

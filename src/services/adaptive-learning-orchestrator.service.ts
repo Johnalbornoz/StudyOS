@@ -41,6 +41,7 @@ import { getCalibrationConflicts, type CalibrationTag } from './external-assessm
 import { getUpcomingForStudent } from './assessment.service';
 import { getStudentMastery } from './mastery.service';
 import { getIndependentMastery } from './learner-model.service';
+import { getAssessmentStateForConcept } from './assessment-verification.service';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 import { EXAM_SOON_WINDOW_DAYS, FORGETTING_RISK_THRESHOLD } from './today-plan.service';
 import {
@@ -61,6 +62,8 @@ export {
   dominantSignal,
   computeTemporalUrgency,
   buildFacts,
+  computeLearningState,
+  ADAPTIVE_LEARNING_POLICY_VERSION,
 } from '@/lib/adaptive-learning-policy';
 export type {
   LearningSignal,
@@ -70,6 +73,7 @@ export type {
   TargetDimension,
   PedagogicalPriority,
   LearningFact,
+  LearningState,
 } from '@/lib/adaptive-learning-policy';
 
 /** Same >=20-point mastery-vs-independent-mastery convention already used ad hoc by remediation.service.ts's determineRemediationPattern and cognitive-diagnosis.service.ts's detectCognitiveIssue -- reused here, not reinvented. */
@@ -339,6 +343,52 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
           });
         }
       }
+    }
+
+    // --- 9. Phase 4A/4B reconciliation: Phase 3/3-R's certified
+    // assessmentState (assessment-verification.service.ts's
+    // getAssessmentStateForConcept) -- this engine had zero awareness of
+    // it before Phase 4, since it predates Phase 3. Same per-concept IO
+    // shape as getIndependentMastery above; getAssessmentStateForConcept
+    // itself issues only bounded, LIMIT-ed queries (never unbounded
+    // history), so this preserves rather than worsens this loop's
+    // existing per-concept query-cost profile (see the Phase 4 report's
+    // §9.12 for the measured delta).
+    const assessmentState = await getAssessmentStateForConcept(studentId, conceptId);
+    // Phase 4-R: carries the EXISTING pending attempt's own server-owned
+    // identity (never a client-supplied value, never a newly-minted one)
+    // through to the signal -- this is what makes the resulting
+    // SOLO_VERIFY decision executable rather than merely descriptive.
+    // `pendingVerification` is null exactly when `hasPendingVerification`
+    // is false (same underlying query, §Finding 3) -- the `if` guard
+    // below is redundant with that invariant but kept explicit for
+    // clarity and to fail closed (never push a signal with an undefined
+    // verificationAttemptId) if that invariant were ever violated.
+    if (assessmentState.hasPendingVerification && assessmentState.pendingVerification) {
+      signals.push({
+        type: 'VERIFICATION_PENDING',
+        source: 'assessment-verification.service',
+        conceptId,
+        subjectId: ks.subjectId,
+        verificationAttemptId: assessmentState.pendingVerification.verificationAttemptId,
+        quizSessionId: assessmentState.pendingVerification.quizSessionId,
+        metadata: { createdAt: assessmentState.pendingVerification.createdAt },
+      });
+    }
+    // Fires only when there is a real reason to believe the concept
+    // might otherwise be ready (real evidence exists and understanding
+    // already clears Phase 2.2's own policy bar) -- never on a concept
+    // that's still genuinely LEARNING, where "no independent evidence
+    // yet" isn't surprising or actionable on its own.
+    const understandingAdequate = ks.understandingScore !== null && ks.understandingScore >= policy.minimumUnderstanding;
+    if (understandingAdequate && assessmentState.lastIndependentEvidence === null) {
+      signals.push({
+        type: 'INSUFFICIENT_INDEPENDENT_EVIDENCE',
+        source: 'assessment-verification.service',
+        conceptId,
+        subjectId: ks.subjectId,
+        metadata: { understandingScore: ks.understandingScore },
+      });
     }
   }
 

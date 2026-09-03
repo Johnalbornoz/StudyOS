@@ -20,13 +20,16 @@ function decision(overrides: Partial<LearningDecision> = {}): LearningDecision {
     targetConceptIds: [],
     signals: [primarySignal],
     primarySignal,
+    learningState: 'DEVELOPING',
     targetDimension: 'UNDERSTANDING',
     activityType: 'PRACTICE',
     pedagogicalPriority: 'MEDIUM',
     temporalUrgency: null,
     priorityScore: 1000,
+    reasonCode: primarySignal.type,
     facts: [],
     dueAt: null,
+    policyVersion: 3,
     ...overrides,
   };
 }

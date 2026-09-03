@@ -597,8 +597,46 @@ export interface AssessmentStateSummary {
   } | null;
   /** True when this concept currently has an unresolved verification_attempts row -- its most recent ASSESSMENT-mode evidence is still provisional, awaiting an independence check. */
   hasPendingVerification: boolean;
+  /**
+   * Phase 4-R: server-owned identity for the CURRENT actionable pending
+   * verification -- the minimum a caller (the Decision Engine, and from
+   * there the execution layer) needs to RESUME the existing attempt
+   * through the certified /api/quizzes/verify pipeline, never enough to
+   * reconstruct or duplicate it. Deliberately excludes the question
+   * payload, response history, or any other verification_attempts
+   * column -- a caller that needs the question fetches it itself,
+   * server-side, from this same id (see /api/quizzes/verify's GET
+   * handler, Phase 4-R).
+   *
+   * Selection rule when more than one unresolved attempt legitimately
+   * exists for this student+concept (the schema has no uniqueness
+   * constraint preventing it -- each row is independently scoped to its
+   * own quiz_session_id, so two different Assessment attempts on
+   * different days can each leave their own unresolved verification):
+   * the single most recently CREATED one, `ORDER BY created_at DESC
+   * LIMIT 1` -- the exact same deterministic rule
+   * `getPendingVerificationAttempt` already uses for its own
+   * quiz-session-scoped lookup, reused here rather than inventing a
+   * second one. Historical/older unresolved rows are never deleted or
+   * silently resolved by this reader -- they simply aren't the
+   * currently-actionable one.
+   *
+   * Zero new queries: this reuses the exact same bounded query that
+   * previously only computed `hasPendingVerification` via COUNT(*) --
+   * upgraded to SELECT the row's own identity instead, since a caller
+   * needs more than a boolean to actually resume the attempt.
+   */
+  pendingVerification: PendingVerificationLocator | null;
   /** Phase 3-R Finding 3 -- see CognitiveDemandSummary's own doc comment. */
   cognitiveDemand: CognitiveDemandSummary;
+}
+
+/** Phase 4-R: see `AssessmentStateSummary.pendingVerification`'s own doc comment for the selection rule and scope. */
+export interface PendingVerificationLocator {
+  verificationAttemptId: string;
+  quizSessionId: string;
+  conceptId: string;
+  createdAt: string;
 }
 
 export async function getAssessmentStateForConcept(
@@ -629,8 +667,14 @@ export async function getAssessmentStateForConcept(
        ORDER BY resolved_at DESC LIMIT 1`,
       [studentId, conceptId]
     ),
+    // Phase 4-R: was a COUNT(*) query (only ever fed hasPendingVerification's
+    // boolean) -- upgraded to SELECT the row's own identity so a caller
+    // can actually resume it, without adding a new query (see
+    // AssessmentStateSummary.pendingVerification's own doc comment).
     client.query(
-      `SELECT COUNT(*)::int AS n FROM verification_attempts WHERE student_id = $1 AND concept_id = $2 AND outcome IS NULL`,
+      `SELECT id, quiz_session_id, created_at FROM verification_attempts
+       WHERE student_id = $1 AND concept_id = $2 AND outcome IS NULL
+       ORDER BY created_at DESC LIMIT 1`,
       [studentId, conceptId]
     ),
     // Phase 3-R Finding 3: bounded scan (LIMIT COGNITIVE_DEMAND_SCAN_LIMIT
@@ -722,7 +766,15 @@ export async function getAssessmentStateForConcept(
           wasFreshQuestion: verificationRow.variant_equivalence_confidence !== null && verificationRow.variant_equivalence_confidence !== undefined,
         }
       : null,
-    hasPendingVerification: pending.rows[0].n > 0,
+    hasPendingVerification: pending.rows.length > 0,
+    pendingVerification: pending.rows[0]
+      ? {
+          verificationAttemptId: pending.rows[0].id,
+          quizSessionId: pending.rows[0].quiz_session_id,
+          conceptId,
+          createdAt: pending.rows[0].created_at,
+        }
+      : null,
     cognitiveDemand: {
       observedLevels: Array.from(observedLevels),
       latestObservedLevel,

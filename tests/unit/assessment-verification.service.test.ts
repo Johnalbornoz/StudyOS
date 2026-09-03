@@ -287,14 +287,15 @@ function mockAssessmentStateQueries(overrides: {
   formal?: any[];
   independent?: any[];
   verification?: any[];
-  pendingCount?: number;
+  /** Phase 4-R: the pending-verification query now SELECTs the row's own identity (id, quiz_session_id, created_at), not a COUNT -- pass the row(s) directly. */
+  pending?: any[];
   cognitiveScan?: any[];
 } = {}) {
   queryMock
     .mockResolvedValueOnce({ rows: overrides.formal ?? [] })
     .mockResolvedValueOnce({ rows: overrides.independent ?? [] })
     .mockResolvedValueOnce({ rows: overrides.verification ?? [] })
-    .mockResolvedValueOnce({ rows: [{ n: overrides.pendingCount ?? 0 }] })
+    .mockResolvedValueOnce({ rows: overrides.pending ?? [] })
     .mockResolvedValueOnce({ rows: overrides.cognitiveScan ?? [] });
 }
 
@@ -306,6 +307,7 @@ describe('Phase 3F/3-R -- getAssessmentStateForConcept', () => {
     expect(state.lastIndependentEvidence).toBeNull();
     expect(state.lastVerification).toBeNull();
     expect(state.hasPendingVerification).toBe(false);
+    expect(state.pendingVerification).toBeNull();
     expect(state.cognitiveDemand).toEqual({ observedLevels: [], latestObservedLevel: null, sampleSize: 0, lastObservedAt: null });
   });
 
@@ -343,11 +345,38 @@ describe('Phase 3F/3-R -- getAssessmentStateForConcept', () => {
   it('reports a resolved verification (with wasFreshQuestion) and a currently-pending one independently', async () => {
     mockAssessmentStateQueries({
       verification: [{ outcome: 'CONFIRMED', resolved_at: '2026-08-21T00:00:00.000Z', assessment_confidence_after: '82', variant_equivalence_confidence: '0.9' }],
-      pendingCount: 1,
+      pending: [{ id: 'va-pending-1', quiz_session_id: 'quiz-x', created_at: '2026-08-22T00:00:00.000Z' }],
     });
     const state = await getAssessmentStateForConcept('s1', 'c1');
     expect(state.lastVerification).toEqual({ outcome: 'CONFIRMED', resolvedAt: '2026-08-21T00:00:00.000Z', assessmentConfidenceAfter: 82, wasFreshQuestion: true });
     expect(state.hasPendingVerification).toBe(true);
+  });
+
+  it('Phase 4-R: pendingVerification exposes the actionable attempt\'s server-owned identity -- verificationAttemptId, quizSessionId, conceptId, createdAt', async () => {
+    mockAssessmentStateQueries({
+      pending: [{ id: 'va-pending-1', quiz_session_id: 'quiz-x', created_at: '2026-08-22T00:00:00.000Z' }],
+    });
+    const state = await getAssessmentStateForConcept('s1', 'c1');
+    expect(state.pendingVerification).toEqual({
+      verificationAttemptId: 'va-pending-1',
+      quizSessionId: 'quiz-x',
+      conceptId: 'c1',
+      createdAt: '2026-08-22T00:00:00.000Z',
+    });
+  });
+
+  it('Phase 4-R Finding 4: when multiple unresolved attempts exist for this student+concept, the query itself is ORDER BY created_at DESC LIMIT 1 -- the deterministic "most recent" selection rule is enforced server-side, not left to the caller', async () => {
+    mockAssessmentStateQueries();
+    await getAssessmentStateForConcept('s1', 'c1');
+    const pendingSql = queryMock.mock.calls[3][0];
+    expect(pendingSql).toMatch(/ORDER BY created_at DESC LIMIT 1/);
+    expect(pendingSql).toMatch(/outcome IS NULL/);
+  });
+
+  it('zero new queries: getAssessmentStateForConcept still issues exactly 5 queries after the Phase 4-R pendingVerification extension', async () => {
+    mockAssessmentStateQueries();
+    await getAssessmentStateForConcept('s1', 'c1');
+    expect(queryMock).toHaveBeenCalledTimes(5);
   });
 
   it('lastVerification.wasFreshQuestion is false for a resolved same-question fallback attempt', async () => {

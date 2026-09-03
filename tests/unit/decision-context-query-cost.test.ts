@@ -92,7 +92,8 @@ function buildFullFixtureQuery() {
     if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) {
       return { rows: [{ outcome: 'CONFIRMED', resolved_at: '2026-08-16T00:00:00.000Z', assessment_confidence_after: '88', variant_equivalence_confidence: '0.9' }] };
     }
-    if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
+    // Phase 4-R: this query now SELECTs the pending row's own identity (id, quiz_session_id, created_at), not a COUNT -- empty rows = no pending attempt.
+    if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [] };
     throw new Error(`Unmocked: ${s}`);
   });
 }
@@ -251,6 +252,7 @@ describe('Phase 2D/2E: interventionState/validationState follow the exact same M
           lastIndependentEvidence: { scorePercent: 82, evidenceMode: 'ASSESSMENT' },
           lastVerification: { outcome: 'CONFIRMED', wasFreshQuestion: true },
           hasPendingVerification: false,
+          pendingVerification: null,
           cognitiveDemand: { observedLevels: ['ANALYSIS'], latestObservedLevel: 'ANALYSIS', sampleSize: 1 },
         },
       },

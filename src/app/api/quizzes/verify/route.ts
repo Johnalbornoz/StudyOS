@@ -244,3 +244,70 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+/**
+ * GET /api/quizzes/verify
+ *
+ * Phase 4-R: the smallest continuation path needed to make a
+ * `SOLO_VERIFY` Decision Engine recommendation actionable. Before this
+ * phase, the verification question was only ever shown once, inline,
+ * in the same response that triggered it (generate-and-take's
+ * `verificationNeeded`) -- there was no way to come back later and see
+ * what's still pending. This route fixes that by exposing exactly the
+ * already-persisted `verification_question` for the caller's own
+ * pending attempt, via the exact same certified, server-authoritative
+ * lookup the POST handler above already uses -- no new assessment
+ * semantics, no new write path, nothing regenerated.
+ *
+ * Query params: studentId (uuid), quizId (the quiz_session_id), conceptId (uuid).
+ * Returns `{ pending: null }` (never an error) when nothing is
+ * currently pending for that exact (quizId, conceptId, studentId) --
+ * the honest "already resolved, or never existed" case Phase 4-R
+ * Finding 9 requires the caller to handle safely, not fail on.
+ */
+export async function GET(request: NextRequest) {
+  const authContext = await verifyAuth();
+  if (!authContext) {
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const studentId = searchParams.get('studentId');
+  const quizId = searchParams.get('quizId');
+  const conceptId = searchParams.get('conceptId');
+  if (!studentId || !quizId || !conceptId) {
+    return NextResponse.json({ error: 'INVALID_INPUT', message: 'studentId, quizId, and conceptId are required' }, { status: 400 });
+  }
+
+  const canAccess = await verifyStudentAccess(authContext.userId, studentId, authContext.role);
+  if (!canAccess) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  const quizSession = await getQuizSession(quizId);
+  if (!quizSession || quizSession.studentId !== studentId) {
+    return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  const pending = await getPendingVerificationAttempt(quizId, conceptId, studentId);
+  if (!pending) {
+    // Not an error -- the attempt may have already been resolved
+    // (elsewhere, or by a prior visit to this same link) since whatever
+    // Decision Engine recommendation or old link brought the caller
+    // here was computed. The caller (the quiz page's resume branch)
+    // must show a safe "nothing to do here" state, never retry-create
+    // anything.
+    return NextResponse.json({ success: true, data: { pending: null } });
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      pending: {
+        verificationAttemptId: pending.id,
+        conceptId: pending.conceptId,
+        question: pending.verificationQuestion,
+      },
+    },
+  });
+}

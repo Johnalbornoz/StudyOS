@@ -211,6 +211,23 @@ export default function QuizPage() {
   const [verificationResults, setVerificationResults] = useState<Record<string, { outcome: string; evidenceQualification?: { strength: string } }>>({});
   const [verificationError, setVerificationError] = useState<Record<string, boolean>>({});
 
+  // Phase 4-R: resuming an EXISTING pending verification the Decision
+  // Engine's SOLO_VERIFY action pointed at (learning-session-engine.service.ts's
+  // verificationLaunch) -- entirely separate from the normal quiz-taking
+  // flow above (no generate-and-take call, no new quiz_session, no new
+  // verification_attempts row). `resumeQuizId` is the EXISTING quiz
+  // session id from the launch URL, distinct from the `quizId` state
+  // above (which is only ever set by a fresh generate-and-take call).
+  const resumeVerifyAttemptId = searchParams.get('verifyAttemptId');
+  const resumeQuizId = searchParams.get('quizId');
+  const [resumePhase, setResumePhase] = useState<'loading' | 'ready' | 'none' | 'error'>('loading');
+  const [resumeQuestion, setResumeQuestion] = useState<any>(null);
+  const [resumeAnswer, setResumeAnswer] = useState('');
+  const [resumeSubmitting, setResumeSubmitting] = useState(false);
+  const [resumeOutcome, setResumeOutcome] = useState<any>(null);
+  const [resumeError, setResumeError] = useState(false);
+  const resumePresentedAtRef = useRef<string | null>(null);
+
   const t = getMessages(locale);
 
   useEffect(() => {
@@ -488,6 +505,75 @@ export default function QuizPage() {
     }
   }
 
+  // Phase 4-R: fetches the EXISTING pending verification's question via
+  // the new GET /api/quizzes/verify continuation path (never regenerated,
+  // never a new attempt) once the student is identified. A `{pending:
+  // null}` response (Finding 9 -- already resolved, or a stale link) is
+  // not an error: it renders the honest "not pending anymore" state.
+  useEffect(() => {
+    if (!resumeVerifyAttemptId || !resumeQuizId || !conceptId || !studentId) return;
+    let cancelled = false;
+    async function loadPending() {
+      setResumePhase('loading');
+      try {
+        const res = await fetch(
+          `/api/quizzes/verify?studentId=${encodeURIComponent(studentId!)}&quizId=${encodeURIComponent(resumeQuizId!)}&conceptId=${encodeURIComponent(conceptId!)}`
+        );
+        const body = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !body.success) {
+          setResumePhase('error');
+          return;
+        }
+        if (!body.data.pending) {
+          setResumePhase('none');
+          return;
+        }
+        setResumeQuestion(body.data.pending.question);
+        resumePresentedAtRef.current = new Date().toISOString();
+        setResumePhase('ready');
+      } catch {
+        if (!cancelled) setResumePhase('error');
+      }
+    }
+    loadPending();
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeVerifyAttemptId, resumeQuizId, conceptId, studentId]);
+
+  // Same request shape as submitVerification above, POSTing to the
+  // exact same, unmodified, certified /api/quizzes/verify pipeline --
+  // this is not a second write path.
+  async function submitResumeVerification() {
+    if (!studentId || !resumeQuizId || !conceptId || !resumeAnswer) return;
+    const answerSubmittedAt = new Date().toISOString();
+    setResumeSubmitting(true);
+    setResumeError(false);
+    try {
+      const res = await fetch('/api/quizzes/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId,
+          quizId: resumeQuizId,
+          conceptId,
+          answer: resumeAnswer,
+          language: quizLanguage,
+          questionPresentedAt: resumePresentedAtRef.current || undefined,
+          answerSubmittedAt,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok || !body.success) throw new Error(body.message || t['common.error']);
+      setResumeOutcome(body.data);
+    } catch {
+      setResumeError(true);
+    } finally {
+      setResumeSubmitting(false);
+    }
+  }
+
   // Evidence-strength labels only -- never "Mastered"/"Not mastered".
   // Mastery, wherever it's shown anywhere in the product, comes
   // exclusively from Phase 2.2 Knowledge State, never from this number.
@@ -529,6 +615,94 @@ export default function QuizPage() {
       : mode === 'diagnostic_check'
       ? t['quiz.modeDiagnosticCheckDesc']
       : t['quiz.modeTopicPracticeDesc'];
+
+  // Phase 4-R: a resumed pending verification is a small, self-contained
+  // flow -- it never enters the normal setup/loading/quiz/results phase
+  // machine above at all (no generate-and-take call is ever made for
+  // it).
+  if (resumeVerifyAttemptId) {
+    return (
+      <div style={{ maxWidth: 520 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+          <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.verificationTitle']}
+        </div>
+        <div className="card" style={{ padding: 'var(--space-6)' }}>
+          <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{t['quiz.verificationTitle']}</p>
+
+          {resumePhase === 'loading' && <p style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{t['common.loading']}</p>}
+          {resumePhase === 'error' && <p role="alert" style={{ fontSize: 13.5, color: 'var(--error)' }}>{t['common.error']}</p>}
+          {resumePhase === 'none' && !resumeOutcome && (
+            <div>
+              <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['quiz.verificationNotPending']}</p>
+              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{t['quiz.backToSubject']}</Link>
+            </div>
+          )}
+          {resumeOutcome && (
+            <div>
+              <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>
+                {resumeOutcome.outcome === 'CONFIRMED'
+                  ? t['quiz.verificationConfirmed']
+                  : resumeOutcome.outcome === 'CONTRADICTED'
+                  ? t['quiz.verificationContradicted']
+                  : t['quiz.verificationInconclusive']}
+              </p>
+              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{t['quiz.backToSubject']}</Link>
+            </div>
+          )}
+          {resumePhase === 'ready' && resumeQuestion && !resumeOutcome && (
+            <div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t['quiz.verificationExplain']}</p>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: '8px 0' }}>
+                <MathText text={resumeQuestion.question} />
+              </p>
+              {resumeQuestion.visualAid && <VisualAidView aid={resumeQuestion.visualAid} />}
+              {resumeQuestion.answerFormat === 'single_choice' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {(resumeQuestion.options || []).map((opt: any) => {
+                    const isSelected = resumeAnswer === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setResumeAnswer(opt.id)}
+                        style={{
+                          textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+                          border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
+                          background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
+                          cursor: 'pointer', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--text-primary)',
+                        }}
+                      >
+                        <MathText text={opt.text} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <MathAnswerEditor
+                  value={resumeAnswer}
+                  onChange={setResumeAnswer}
+                  placeholder={t['quiz.typeAnswer']}
+                  subjectName={subjectName}
+                  studentId={studentId}
+                  locale={locale}
+                />
+              )}
+              {resumeError && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{t['common.error']}</p>}
+              <button
+                className="btn btn-primary"
+                style={{ marginTop: 8 }}
+                disabled={!resumeAnswer || resumeSubmitting}
+                aria-busy={resumeSubmitting}
+                onClick={submitResumeVerification}
+              >
+                {resumeSubmitting ? t['quiz.submitting'] : t['quiz.verificationSubmit']}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (phase === 'setup') {
     return (
