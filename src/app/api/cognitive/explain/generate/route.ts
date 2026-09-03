@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { generateExplainPrompt, type ExplainActivityType } from '@/services/explain-defend.service';
+import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
+import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
@@ -22,13 +24,25 @@ export async function POST(request: NextRequest) {
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
+    // Phase 5-R S2/S7: `conceptId` here is whatever the caller (a
+    // remediation EXPLAIN step, or a freestanding Explain & Defend
+    // activity) passed -- when it IS a remediation step, that concept
+    // id already comes from `remediationStepHref`/`remediationLaunch`
+    // (Phase 3D), which is itself always `path.rootCauseConceptId`, the
+    // Phase-4-selected prerequisite/root cause. This lookup never
+    // substitutes a different concept -- it only asks Phase 4 whether
+    // it has an active decision for exactly this one.
+    const intent = await getTeachingIntentForConcept(validated.studentId, validated.conceptId).catch(() => null);
+    const generationContext = intent ? toTeachingGenerationContext(intent) : undefined;
+
     const result = await generateExplainPrompt(
       validated.studentId,
       validated.subjectId,
       validated.conceptId,
       validated.conceptLabel,
       validated.activityType as ExplainActivityType,
-      validated.language || 'en'
+      validated.language || 'en',
+      generationContext
     );
     track(validated.studentId, 'explain_defend_started', { conceptId: validated.conceptId, activityType: validated.activityType });
     // Phase 2B: minted exactly once per generated activity, never at

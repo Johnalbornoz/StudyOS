@@ -42,10 +42,11 @@ export const PROMPT_REGISTRY = {
   }),
   'quiz.question_hint': definePrompt({
     id: 'quiz.question_hint',
-    version: 'v1',
+    version: 'v2',
     capability: 'OTHER',
     service: 'quiz-generation.service.ts:generateQuestionHint',
-    description: 'Generates 2-3 non-revealing hints for a quiz question the student is actively answering.',
+    description:
+      'Generates 2-3 non-revealing hints for a quiz question the student is actively answering. v2 (Phase 5-R): optionally accepts an adaptive teaching-constraints block (support level/barrier/strategy) that shapes hint explicitness -- the CRITICAL no-answer-reveal rules are restated after it and are never weakened by it. Behavior is identical to v1 when no adaptive context is supplied.',
   }),
   'misconception.classification': definePrompt({
     id: 'misconception.classification',
@@ -70,10 +71,11 @@ export const PROMPT_REGISTRY = {
   }),
   'explain.prompt_generation': definePrompt({
     id: 'explain.prompt_generation',
-    version: 'v1',
+    version: 'v2',
     capability: 'CONTENT_GENERATION',
     service: 'explain-defend.service.ts:generateExplainPrompt',
-    description: 'Writes one open-ended reasoning question for a concept, plus the checkable rubric elements a strong answer must include.',
+    description:
+      'Writes one open-ended reasoning question for a concept, plus the checkable rubric elements a strong answer must include. v2 (Phase 5-R): optionally accepts an adaptive teaching-constraints block for a REMEDIATION EXPLAIN step (misconception/prerequisite targeting, support level, strategy) -- identical to v1 output shape when no adaptive context is supplied. Also now threads AIExecutionContext (student/subject/concept) for provenance traceability.',
   }),
   'explain.rubric_evaluation': definePrompt({
     id: 'explain.rubric_evaluation',
@@ -133,10 +135,11 @@ export const PROMPT_REGISTRY = {
   }),
   'tutor.chat_reply': definePrompt({
     id: 'tutor.chat_reply',
-    version: 'v1',
+    version: 'v2',
     capability: 'TUTOR',
     service: 'tutor.service.ts:sendMessage',
-    description: 'Conversational tutor reply grounded in retrieved study material and a compact learner-aware strategy hint.',
+    description:
+      'Conversational tutor reply grounded in retrieved study material and a compact learner-aware strategy hint. v2 (Phase 5-R): when Phase 4 has an active decision for the message\'s concept, the pedagogical-approach section is now the canonical adaptive teaching-constraints block (barrier/support level/strategy/avoid-strategies) instead of the Phase 2 buildCompactTutorContext summary; buildCompactTutorContext remains the fallback when Phase 4 has no active decision for the concept. Also now threads AIExecutionContext for provenance traceability.',
   }),
   'formula.interactive_widget': definePrompt({
     id: 'formula.interactive_widget',

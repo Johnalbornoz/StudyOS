@@ -14,8 +14,33 @@ import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { buildCompactTutorContext } from './tutor-strategy.service';
+import { getTeachingIntentForConcept } from './adaptive-teaching.service';
+import { buildTeachingConstraintsBlock, toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
+import { getActiveRestrictedEvidenceForStudent } from './active-evidence-guard.service';
 import { executeAI, getPrompt } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+
+/**
+ * Phase 5-R2 S7: the smallest safe product behavior -- a real,
+ * localized reply (not an error, not a blank response), reusing the
+ * existing tutor_messages persistence path. Deliberately NOT part of
+ * src/lib/i18n/messages.ts's UI-wide MessageKey system (that system is
+ * for structured UI labels; tutor replies are already free-form AI
+ * text keyed only by the same simple `LOCALE_FULL_NAME`-style lookup
+ * this file already uses) -- one conversational sentence per language,
+ * not a new type-checked key across all 5 locale objects.
+ */
+const ASSISTANCE_BLOCKED_REPLY: Record<string, string> = {
+  es: 'No puedo darte ayuda de contenido para este tema mientras tengas un intento de evaluación independiente en curso. Termina el intento primero -- después puedo ayudarte a repasarlo.',
+  en: "I can't provide instructional help for this concept while an independent assessment attempt is active. Finish the attempt first, then I can help you review it.",
+  de: 'Ich kann dir zu diesem Thema keine inhaltliche Hilfe geben, solange ein unabhängiger Bewertungsversuch läuft. Beende zuerst den Versuch -- danach kann ich dir bei der Wiederholung helfen.',
+  fr: "Je ne peux pas t'aider sur ce sujet tant qu'une tentative d'évaluation indépendante est en cours. Termine d'abord la tentative -- ensuite je pourrai t'aider à la revoir.",
+  pt: 'Não posso te ajudar com o conteúdo deste tópico enquanto houver uma tentativa de avaliação independente em andamento. Termine a tentativa primeiro -- depois posso te ajudar a revisá-la.',
+};
+
+function assistanceBlockedReply(language: string): string {
+  return ASSISTANCE_BLOCKED_REPLY[language] ?? ASSISTANCE_BLOCKED_REPLY.en;
+}
 
 export interface TutorMessage {
   id: string;
@@ -79,6 +104,20 @@ export async function verifyConversationOwnership(conversationId: string, studen
   return (result.rowCount ?? 0) > 0;
 }
 
+/** Shared tail: persists one assistant reply (AI-generated or the blocked-assistance canned reply alike) and bumps the conversation. */
+async function persistAssistantReply(conversationId: string, userMessage: string, replyText: string): Promise<TutorMessage> {
+  const stored = await db.query(
+    `INSERT INTO tutor_messages (conversation_id, role, content) VALUES ($1, 'assistant', $2) RETURNING id, role, content, created_at`,
+    [conversationId, replyText]
+  );
+  await db.query(`UPDATE tutor_conversations SET updated_at = NOW(), title = COALESCE(title, $2) WHERE id = $1`, [
+    conversationId,
+    userMessage.slice(0, 80),
+  ]);
+  const row = stored.rows[0];
+  return { id: row.id, role: row.role, content: row.content, createdAt: row.created_at };
+}
+
 export async function sendMessage(
   conversationId: string,
   studentId: string,
@@ -104,6 +143,33 @@ export async function sendMessage(
     userMessage,
   ]);
 
+  // Phase 5-R2/5-R3/5-R4 S3/S5: the cross-surface guard runs
+  // UNCONDITIONALLY -- before any teaching computation, grounding, or
+  // AI call -- and no longer depends on subject or concept scope at
+  // all. Phase 5-R4 fresh finding: `conv.subject_id` is itself
+  // client-chosen at conversation-creation time -- a conversation
+  // deliberately labelled a different subject than an actively-
+  // restricted one, then asked in free text about the restricted
+  // subject's material, would have passed Phase 5-R3's subject-scoped
+  // check. Free-form text cannot be proven to stay within a
+  // conversation's nominal subject without AI classification, which
+  // the task forbids for an integrity control -- so subject/concept are
+  // no longer security boundaries for this gate (S5): while the
+  // student has ANY active restricted evidence collection anywhere,
+  // general Tutor instructional assistance is unavailable, full stop.
+  // `conceptId`/`conv.subject_id` remain used below for TeachingIntent/
+  // grounding once this gate has already passed -- never for deciding
+  // whether it runs. Fails CLOSED: if the guard's own lookup fails (a
+  // transient DB error), this treats it as blocked rather than
+  // silently reopening the bypass this remediation exists to close --
+  // an integrity control degrades to "unavailable," never "unchecked."
+  const evidenceState = await getActiveRestrictedEvidenceForStudent(studentId).catch(
+    (): { allowed: false; reason: 'GUARD_LOOKUP_FAILED' } => ({ allowed: false, reason: 'GUARD_LOOKUP_FAILED' })
+  );
+  if (!evidenceState.allowed) {
+    return persistAssistantReply(conversationId, userMessage, assistanceBlockedReply(language));
+  }
+
   let contextChunks: string[] = [];
   if (conv.subject_id) {
     const context = await retrieveContext(studentId, conv.subject_id, { query: userMessage, limit: 5 }).catch(
@@ -114,13 +180,22 @@ export async function sendMessage(
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 
-  // Learner-Aware Tutor (Phase 2): a compact, deterministic strategy
-  // pick based on this concept's state -- never the whole Learner
-  // Model, and the strategy itself is chosen by code, not the LLM.
-  // Only applies when the caller actually knows which concept this
-  // message is about; a general conversation behaves exactly as
-  // before Phase 2.
-  const cognitiveContext = conceptId ? await buildCompactTutorContext(studentId, conceptId).catch(() => null) : null;
+  // Phase 5-R S1/S2 (surface A: concept teaching/tutor generator),
+  // reconciling the Phase 2 Learner-Aware Tutor: prefer the canonical
+  // Phase 4 `TeachingIntent` when Phase 4 has an active decision for
+  // this concept -- it supersedes `buildCompactTutorContext`'s bare
+  // score-threshold strategy pick with one keyed off the certified
+  // `LearningState`/misconception/prerequisite/help-dependency signals.
+  // `buildCompactTutorContext` itself is UNCHANGED (zero diff to
+  // tutor-strategy.service.ts) and remains the honest fallback when
+  // Phase 4 has no active decision for this concept (a validated
+  // concept, or one with no signals yet) -- never fabricated, and the
+  // conversation behaves exactly as it did before Phase 5 in that case.
+  // Neither path runs at all when the caller doesn't know which
+  // concept this message is about, exactly as before Phase 2.
+  const teachingIntent = conceptId ? await getTeachingIntentForConcept(studentId, conceptId).catch(() => null) : null;
+  const cognitiveContext = !teachingIntent && conceptId ? await buildCompactTutorContext(studentId, conceptId).catch(() => null) : null;
+  const adaptiveTeachingBlock = teachingIntent ? buildTeachingConstraintsBlock(toTeachingGenerationContext(teachingIntent)) : null;
 
   const systemPrompt = `You are a patient, encouraging tutor helping a student understand their own study material.
 
@@ -133,9 +208,11 @@ ${
 }
 
 ${
-  cognitiveContext
-    ? `This question is about a concept the student has a track record on (${cognitiveContext.summary}). Pedagogical approach for this message: ${cognitiveContext.instruction}`
-    : ''
+  adaptiveTeachingBlock
+    ? adaptiveTeachingBlock
+    : cognitiveContext
+      ? `This question is about a concept the student has a track record on (${cognitiveContext.summary}). Pedagogical approach for this message: ${cognitiveContext.instruction}`
+      : ''
 }
 
 Teaching style:
@@ -167,21 +244,11 @@ Write your entire response in ${languageName}.`;
     model: 'claude-sonnet-5',
     promptId: prompt.id,
     promptVersion: prompt.version,
+    context: { studentId, subjectId: conv.subject_id ?? undefined, conceptId, sourceComponent: 'tutor.service.ts:sendMessage', sourceId: conversationId },
     call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 2048, system: systemPrompt, messages }, signal),
     // Free text, not JSON -- the only structural contract is "the provider answered with something".
     validate: (raw) => ({ valid: true, value: raw.text }),
   });
 
-  const stored = await db.query(
-    `INSERT INTO tutor_messages (conversation_id, role, content) VALUES ($1, 'assistant', $2) RETURNING id, role, content, created_at`,
-    [conversationId, replyText]
-  );
-
-  await db.query(
-    `UPDATE tutor_conversations SET updated_at = NOW(), title = COALESCE(title, $2) WHERE id = $1`,
-    [conversationId, userMessage.slice(0, 80)]
-  );
-
-  const row = stored.rows[0];
-  return { id: row.id, role: row.role, content: row.content, createdAt: row.created_at };
+  return persistAssistantReply(conversationId, userMessage, replyText);
 }

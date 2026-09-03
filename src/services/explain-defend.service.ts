@@ -14,6 +14,7 @@ import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { retrieveContext } from './rag.service';
 import { executeAI, validateJson, clamp, getPrompt, type AIProvenance } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { buildTeachingConstraintsBlock, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 
 export type ExplainActivityType = 'EXPLAIN' | 'JUSTIFY' | 'ERROR_ANALYSIS' | 'PREDICT' | 'COMPARE' | 'TEACH_BACK';
 
@@ -44,15 +45,19 @@ export async function generateExplainPrompt(
   conceptId: string,
   conceptLabel: string,
   activityType: ExplainActivityType,
-  language: string = 'en'
+  language: string = 'en',
+  /** Phase 5-R S2/S6/S7: set when this is a REMEDIATION EXPLAIN step and Phase 4 has an active decision for `conceptId` -- shapes misconception/prerequisite targeting and support level. `conceptId` here is always TeachingIntent.conceptId (the Phase-4-selected root cause) when one is supplied -- never a downstream substitute (see S7's own test). */
+  generationContext?: TeachingGenerationContext
 ): Promise<ExplainPrompt> {
   const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 3 }).catch(() => ({ chunks: [] as any[] }));
   const contextChunks = context.chunks.map((c: any) => c.text);
   const languageName = LOCALE_FULL_NAME[language] || language;
+  const adaptiveBlock = generationContext ? `\n\n${buildTeachingConstraintsBlock(generationContext)}` : '';
 
   const systemPrompt = `You write one open-ended reasoning question for a student studying "${conceptLabel}".
 
 ${ACTIVITY_FRAMING[activityType]}
+${adaptiveBlock}
 
 ${
   contextChunks.length > 0
@@ -73,6 +78,7 @@ expectedElements should have 3-5 items -- these become the grading rubric, so ke
     model: 'claude-sonnet-5',
     promptId: prompt.id,
     promptVersion: prompt.version,
+    context: { studentId, subjectId, conceptId, sourceComponent: 'explain-defend.service.ts:generateExplainPrompt' },
     call: (signal) =>
       callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 700, system: systemPrompt, messages: [{ role: 'user', content: 'Write the question.' }] }, signal),
     validate: (raw) =>

@@ -3,6 +3,8 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getQuizSession, recordHintUsed } from '@/services/quiz-persistence.service';
 import { generateQuestionHint } from '@/services/quiz-generation.service';
 import { canUseAI } from '@/lib/ai-permission-policy';
+import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
+import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 import { z } from 'zod';
 
 const HintSchema = z.object({
@@ -49,8 +51,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
+  // Phase 5-R S10: deterministic stop boundary -- at most one
+  // hint-generation event per question, using the session's OWN
+  // existing `hintsUsedQuestions` state (Phase 3A, unmodified schema).
+  // Not token-based, not a new table: once this question has already
+  // produced a hint, further requests return control to the student
+  // instead of generating (and paying for) another AI call.
+  if (quizSession.hintsUsedQuestions.includes(validated.questionIndex)) {
+    return NextResponse.json({ success: true, data: { hints: [], stopped: true, reason: 'MAX_SUPPORT_REACHED' } });
+  }
+
   try {
-    const hints = await generateQuestionHint(question, validated.language);
+    // Phase 5-R S1/S2: adaptive teaching context, when Phase 4 has an
+    // active decision for this concept (never fabricated when it
+    // doesn't -- getTeachingIntentForConcept returns null and this
+    // falls back to generateQuestionHint's pre-existing, unadapted
+    // behavior, unchanged from before this phase). `quizSession.conceptId`
+    // is null only for multi-concept sessions (CUMULATIVE_ASSESSMENT/
+    // MOCK_EXAM), which never reach this line -- `canUseAI` above
+    // already denied them (evidenceMode !== 'PRACTICE').
+    const intent = quizSession.conceptId
+      ? await getTeachingIntentForConcept(validated.studentId, quizSession.conceptId).catch(() => null)
+      : null;
+    const generationContext = intent ? toTeachingGenerationContext(intent) : undefined;
+
+    const hints = await generateQuestionHint(question, validated.language, generationContext, {
+      studentId: validated.studentId,
+      subjectId: quizSession.subjectId,
+      conceptId: quizSession.conceptId ?? undefined,
+      sourceId: validated.quizId,
+    });
     recordHintUsed(validated.quizId, validated.questionIndex).catch((err) =>
       console.error('Error recording hint usage:', err)
     );

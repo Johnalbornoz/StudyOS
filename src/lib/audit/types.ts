@@ -38,7 +38,16 @@ export type DecisionType =
   | 'DIAGNOSIS_CREATED'
   | 'DIAGNOSIS_RESOLVED'
   | 'INTERVENTION_STARTED'
-  | 'INTERVENTION_COMPLETED';
+  | 'INTERVENTION_COMPLETED'
+  // Phase 5F.2: recorded once per computed TeachingIntent by
+  // adaptive-teaching.service.ts -- the minimal honest strategy
+  // provenance the task's 5B.6/5F.2 instructions ask for, reusing this
+  // existing generic audit trail rather than a new table/migration.
+  // `decision_type`/`engine` are plain `text` columns with no DB-level
+  // CHECK constraint (see database/migrations/
+  // 20260831_1400_ai_execution_and_decision_audit.sql) -- only this TS
+  // union is closed, so adding this value requires zero migration.
+  | 'TEACHING_STRATEGY_SELECTED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -57,7 +66,9 @@ export type DecisionEngine =
   // remediation.service.ts (INTERVENTION_*) -- two existing, separate
   // services, one shared engine label since both produce Intervention
   // Lifecycle transitions over the same diagnosis->remediation chain.
-  | 'intervention-engine';
+  | 'intervention-engine'
+  // Phase 5: adaptive-teaching.service.ts -- see TEACHING_STRATEGY_SELECTED.
+  | 'adaptive-teaching-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;

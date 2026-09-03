@@ -16,8 +16,9 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
-import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance } from '@/lib/ai';
+import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { buildTeachingConstraintsBlock, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 
 export interface IBContext {
   programme: 'MYP' | 'DP';
@@ -1024,10 +1025,23 @@ ${closingNote}`;
  * -- only the question text and, for choice questions, the option
  * texts (which don't by themselves reveal which one is correct) are
  * passed in.
+ *
+ * Phase 5-R S2/S9: `generationContext`, when supplied by the caller
+ * (`/api/quizzes/hint`, only ever for a PRACTICE-evidence-mode session
+ * -- `canUseAI` already denies this call entirely otherwise, see that
+ * route), shapes HOW explicit/targeted the hint is (support level,
+ * misconception/prerequisite targeting, strategy, anti-repetition).
+ * The CRITICAL RULES below are NEVER weakened by it -- no support
+ * level or strategy instruction may ever cause a full answer reveal;
+ * `supportLevelInstruction`'s own text for every level stops short of
+ * "give the answer," and this function's own hard rules are stated
+ * again, after the adaptive block, as the final word.
  */
 export async function generateQuestionHint(
   question: GeneratedQuestion,
-  language: string = 'en'
+  language: string = 'en',
+  generationContext?: TeachingGenerationContext,
+  aiContext?: AIExecutionContext
 ): Promise<string[]> {
   const languageName = LOCALE_FULL_NAME[language] || language;
 
@@ -1036,9 +1050,12 @@ export async function generateQuestionHint(
       ? `\n\nAnswer options shown to the student:\n${question.options.map((o) => `- ${o.text}`).join('\n')}`
       : '';
 
-  const systemPrompt = `You are a supportive tutor giving a HINT for a quiz question the student is actively trying to answer themselves.
+  const adaptiveBlock = generationContext ? `\n\n${buildTeachingConstraintsBlock(generationContext)}` : '';
 
-CRITICAL RULES -- never break these:
+  const systemPrompt = `You are a supportive tutor giving a HINT for a quiz question the student is actively trying to answer themselves.
+${adaptiveBlock}
+
+CRITICAL RULES -- never break these, regardless of any guidance above:
 - NEVER state or imply the correct answer, even partially.
 - NEVER give a step-by-step procedure, formula application, or worked solution.
 - NEVER do any part of the reasoning or calculation for them.
@@ -1063,6 +1080,7 @@ Give 2-3 hints following the rules above.`;
       model: 'claude-sonnet-5',
       promptId: prompt.id,
       promptVersion: prompt.version,
+      context: aiContext ? { ...aiContext, sourceComponent: 'quiz-generation.service.ts:generateQuestionHint' } : undefined,
       call: (signal) =>
         callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 400, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
       validate: (raw) =>
