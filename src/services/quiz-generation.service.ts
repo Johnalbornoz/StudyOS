@@ -895,6 +895,322 @@ ${shapeExamples}
 }
 
 /**
+ * STABILIZATION QUIZ PERFORMANCE Step 22, evolved to the FINAL
+ * architecture validated end-to-end in Step 22D. The dedicated fast
+ * path for retention_check ONLY (EvidenceMode INDEPENDENT). Deliberately
+ * NOT a reuse of generatePracticeQuestions -- PRACTICE tolerates fewer
+ * than requested, retention_check must not (Step 21/21A's validated
+ * conclusion): this function is exact-6-or-nothing throughout.
+ *
+ * Architecture:
+ *   - 2 concurrent claude-haiku-4-5-20251001 calls, 3 questions each,
+ *     quiz.question_generation v3, 30_000ms per call.
+ *   - Preventive Variant B runtime diversification (Step 22C, combined
+ *     in Step 22D): Chunk A and Chunk B each receive the complete,
+ *     unmodified retention_check guidance PLUS a distinct one-sentence
+ *     runtime note nudging away from the most obvious textbook
+ *     examples -- request-specific dynamic content, not a
+ *     prompt-registry change (same precedent as the existing "chunk N
+ *     of M" note, already live in v3 without a version bump).
+ *   - No manual type assignment, no ALL_QUESTION_TYPES cycling -- each
+ *     chunk picks its own types from the complete guidance, exactly
+ *     like the legacy batch path.
+ *   - Each chunk must itself return exactly 3 schema-valid,
+ *     LaTeX-uncorrupted questions -- fewer (or a failed/timed-out call)
+ *     is a failed chunk, never a partial contribution.
+ *   - After both initial chunks succeed, classify the merged 6 in
+ *     order: exact normalized-text duplicate, then strict structural
+ *     overlap (Step 20C/22B/22D's validated deterministic fingerprint
+ *     -- conceptId + type + symbolic math shape from the question
+ *     field + cognitiveLevel + questionIntent; questions with no math
+ *     span get fingerprint null and are never compared). Clean ->
+ *     return immediately, no recovery call.
+ *   - Exactly ONE bounded recovery round, never more (max 3 AI calls
+ *     total): on a chunk failure, regenerate only the failed chunk; on
+ *     exact-duplicate/structural-overlap, the deterministic rule from
+ *     Step 22A/22B/22D applies -- always keep Chunk A, always
+ *     regenerate Chunk B, by fixed position, never by content or
+ *     learner data. The recovery call reuses the diversification note
+ *     of whichever chunk was retained (the exact pattern Step 22D
+ *     validated at 100% success/30 runs) plus an exclusion note
+ *     listing only the retained chunk's own question text -- never
+ *     correctAnswer, explanation, learner answers, or any evidence/
+ *     mastery/Knowledge State data. If both initial chunks fail, or the
+ *     recovery call itself fails/still collides, return [] -- no
+ *     second retry, no partial set can ever reach the learner.
+ */
+const RETENTION_CHUNK_MODEL = 'claude-haiku-4-5-20251001';
+const RETENTION_CHUNK_COUNT = 2;
+const RETENTION_QUESTIONS_PER_CHUNK = 3;
+export const RETENTION_REQUIRED_COUNT = RETENTION_CHUNK_COUNT * RETENTION_QUESTIONS_PER_CHUNK; // 6 -- the only count this fast path supports
+export const RETENTION_MAX_AI_CALLS_PER_ATTEMPT = 3; // 2 initial concurrent + at most 1 bounded recovery call
+
+const RETENTION_VARIANT_B_NOTE_CHUNK_A =
+  'Generate questions using examples and mathematical structures that vary from the most obvious textbook examples for this concept.';
+const RETENTION_VARIANT_B_NOTE_CHUNK_B =
+  'Generate questions using a different variety of examples and mathematical structures; avoid defaulting to the most obvious textbook examples.';
+
+/**
+ * Strict deterministic structural fingerprint (Step 20C, revalidated in
+ * Step 21/22B/22C/22D) -- local to retention_check only, not shared,
+ * not generalized to other modes. No AI, no embeddings, no invented
+ * prose similarity. Two questions collide only when they share the
+ * same concept, type, cognitiveLevel, questionIntent, AND the same
+ * symbolic shape of every math span in the question field itself
+ * (explanation/correctAnswer are deliberately excluded -- Step 20C
+ * found including them made the fingerprint too brittle). A question
+ * with no $...$/$$...$$ math span in its question field gets
+ * fingerprint null and is never grouped with anything.
+ */
+function extractRetentionMathSpans(text: string): string[] {
+  const spans: string[] = [];
+  const displayRe = /\$\$([\s\S]*?)\$\$/g;
+  const inlineRe = /\$([^$]*?)\$/g;
+  let m: RegExpExecArray | null;
+  while ((m = displayRe.exec(text))) spans.push(m[1]);
+  const withoutDisplay = text.replace(displayRe, '');
+  while ((m = inlineRe.exec(withoutDisplay))) spans.push(m[1]);
+  return spans;
+}
+function retentionSymbolicShape(raw: string): string {
+  // Normalize whitespace/casing, unify arrow notation, then abstract
+  // bare numeric literals to a placeholder while preserving
+  // exponent/subscript digit counts (as an equal-length placeholder) so
+  // "x^2" and "x^3" stay distinct but "2x" and "5x" collapse together --
+  // exactly the validated Step 22D diagnostic behavior.
+  let s = raw.toLowerCase().replace(/\s+/g, '');
+  s = s.replace(/\\to|\\rightarrow|->/g, 'TO');
+  s = s.replace(/(\^|_)(\d+)/g, (_m, marker, digits) => `${marker}${'E'.repeat(digits.length)}`);
+  s = s.replace(/\d+(\.\d+)?/g, 'N');
+  s = s.replace(/\^E+/g, (m) => '^' + 'D'.repeat(m.length - 1));
+  s = s.replace(/_E+/g, (m) => '_' + 'D'.repeat(m.length - 1));
+  return s;
+}
+export function computeRetentionStructuralFingerprint(
+  question: { question?: unknown; type?: unknown; cognitiveLevel?: unknown; questionIntent?: unknown },
+  conceptId: string
+): string | null {
+  const questionText = typeof question.question === 'string' ? question.question : '';
+  const spans = extractRetentionMathSpans(questionText);
+  if (spans.length === 0) return null;
+  const shape = spans.map(retentionSymbolicShape).sort().join('||');
+  return [conceptId, question.type ?? '?', shape, question.cognitiveLevel ?? '?', question.questionIntent ?? '?'].join('::');
+}
+function retentionStructuralOverlapGroupCount(questions: any[], conceptId: string): number {
+  const groups = new Map<string, number>();
+  for (const q of questions) {
+    const key = computeRetentionStructuralFingerprint(q, conceptId);
+    if (key === null) continue;
+    groups.set(key, (groups.get(key) || 0) + 1);
+  }
+  return [...groups.values()].filter((n) => n > 1).length;
+}
+function retentionHasExactDuplicate(questions: any[]): boolean {
+  const seen = new Set<string>();
+  for (const q of questions) {
+    const key = normalizeText(q.question).toLowerCase();
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
+}
+/** Only the retained chunk's own question text -- never correctAnswer, explanation, or any learner/evidence/mastery data. */
+function buildRetentionExclusionNote(retainedQuestions: any[]): string {
+  return `Generate a different set of questions, examples, and mathematical structures from the ones already selected below for this same retention check -- do not repeat the same problem, example, structure, or wording as any of these:\n${retainedQuestions
+    .map((q, i) => `${i + 1}. ${q.question}`)
+    .join('\n')}`;
+}
+
+type RetentionChunkOutcome = { ok: true; questions: any[] } | { ok: false; reason: 'TIMEOUT' | 'CHUNK_FAILURE' | 'VALIDATION' };
+
+export async function generateRetentionCheckQuestions(
+  conceptId: string,
+  studentId: string,
+  subjectId: string,
+  options: {
+    difficulty?: number;
+    guidance?: string;
+    language?: string;
+    ibContext?: IBContext | null;
+  } = {}
+): Promise<GeneratedQuestion[]> {
+  const difficulty = Math.max(1, Math.min(5, options.difficulty || 3));
+  const guidance = options.guidance || 'Choose whichever question types genuinely fit this specific material best.';
+  const language = options.language || 'en';
+  const ibContext = options.ibContext ?? null;
+
+  try {
+    const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
+
+    let conceptContext: { label: string; subjectName: string } | null = null;
+    if (context.chunks.length === 0) {
+      const conceptRow = await db.query(
+        `
+        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        FROM concepts c
+        JOIN subjects s ON s.id = c.subject_id
+        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
+        WHERE c.id = $1
+        `,
+        [conceptId, language]
+      );
+      const row = conceptRow.rows[0];
+      if (!row) {
+        console.warn(`Concept ${conceptId} not found`);
+        return [];
+      }
+      conceptContext = { label: row.label, subjectName: row.subject_name };
+    }
+
+    // visualAidRate is always 0 for retention_check (matches
+    // QUIZ_MODE_CONFIG.retention_check in route.ts -- a fast,
+    // low-friction confidence check never uses visual aids).
+    const types = ALL_QUESTION_TYPES;
+    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, context.chunks, 0, guidance, ibContext, conceptContext);
+    const prompt = getPrompt('quiz.question_generation');
+    const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateRetentionCheckQuestions' };
+
+    const requestChunk = (chunkIndex: number, diversificationNote: string, exclusionNote?: string): Promise<RetentionChunkOutcome> => {
+      const shapeExamples = types.map((t) => jsonShapeExample(t, false)).join(',\n');
+      const maxTokens = Math.min(16000, 900 * RETENTION_QUESTIONS_PER_CHUNK + 1500);
+      const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT}, contributing ${RETENTION_QUESTIONS_PER_CHUNK} of the ${RETENTION_REQUIRED_COUNT} total questions in this set. Generate EXACTLY ${RETENTION_QUESTIONS_PER_CHUNK} questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
+
+Output a JSON array containing exactly ${RETENTION_QUESTIONS_PER_CHUNK} elements (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
+[
+${shapeExamples}
+]`;
+      return executeAI<{ text: string }, RetentionChunkOutcome>({
+        capability: prompt.capability,
+        risk: 'HIGH_RISK',
+        provider: 'anthropic',
+        model: RETENTION_CHUNK_MODEL,
+        promptId: prompt.id,
+        promptVersion: prompt.version, // v3 -- same registry version every QUESTION_GENERATION call site reads (Step 18); Variant B notes and exclusion context are request-specific runtime content, not a static prompt change
+        timeoutMs: 30_000,
+        context: aiContext,
+        call: (signal) =>
+          callAnthropicMessages({ model: RETENTION_CHUNK_MODEL, maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }, signal),
+        validate: (raw) => {
+          const repaired = repairInvalidJsonEscapes(raw.text);
+          let parsed: any[];
+          try {
+            parsed = parseAIJson<any[]>(repaired);
+          } catch {
+            const salvaged = salvageJsonArray(repaired);
+            if (salvaged.length === 0) {
+              console.error('Failed to parse Claude response for a retention_check chunk:', raw.text);
+              return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
+            }
+            parsed = salvaged;
+          }
+          // LaTeX-corrupted items are filtered out here -- if that drops
+          // the chunk below 3, it surfaces as an ordinary VALIDATION
+          // failure below (Step 22D: corruption has no separately
+          // actionable recovery path from a bare-count failure).
+          const clean = parsed.filter((q) => q && q.question && q.type && ANSWER_FORMAT_BY_TYPE[q.type as QuestionType] && !isLatexCorrupted(q));
+          // INDEPENDENT semantics: a chunk that doesn't deliver exactly
+          // what it was asked for is itself invalid -- no partial
+          // contribution, unlike generatePracticeQuestions.
+          if (clean.length !== RETENTION_QUESTIONS_PER_CHUNK) {
+            return { valid: false, errors: [`Chunk ${chunkIndex} returned ${clean.length} valid question(s), expected exactly ${RETENTION_QUESTIONS_PER_CHUNK}`] };
+          }
+          return { valid: true, value: { ok: true, questions: clean } };
+        },
+        // Never throws -- classifies the failure via the gateway's own
+        // normalized error code so recovery (below) can pick the right
+        // action without re-deriving TIMEOUT vs VALIDATION itself.
+        fallback: (error) => ({
+          ok: false,
+          reason: error.code === 'TIMEOUT' ? 'TIMEOUT' : error.code === 'VALIDATION_ERROR' || error.code === 'INVALID_RESPONSE' ? 'VALIDATION' : 'CHUNK_FAILURE',
+        }),
+      }).then((r) => r.result);
+    };
+
+    const [chunkA, chunkB] = await Promise.all([
+      requestChunk(0, RETENTION_VARIANT_B_NOTE_CHUNK_A),
+      requestChunk(1, RETENTION_VARIANT_B_NOTE_CHUNK_B),
+    ]);
+
+    let retainedQuestions: any[] | null = null;
+    let retainedNote: string = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+    let regenerateChunkIndex: 0 | 1 = 1;
+
+    if (!chunkA.ok && !chunkB.ok) {
+      // Rule 6C: both chunks failed -- no recovery call can make more
+      // than one AI call, so there is nothing left to attempt.
+      console.error('retention_check fast path: both initial chunks failed -- returning no questions rather than a partial set');
+      return [];
+    } else if (!chunkA.ok || !chunkB.ok) {
+      // Rule 6B: exactly one chunk failed -- keep the valid one,
+      // regenerate the failed one once.
+      if (!chunkA.ok) {
+        retainedQuestions = (chunkB as { ok: true; questions: any[] }).questions;
+        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
+        regenerateChunkIndex = 0;
+      } else {
+        retainedQuestions = (chunkA as { ok: true; questions: any[] }).questions;
+        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+        regenerateChunkIndex = 1;
+      }
+    } else {
+      // Both chunks valid -- classify in order: exact duplicate, then
+      // strict structural overlap. CLEAN returns immediately, no
+      // recovery call.
+      const merged = [...chunkA.questions, ...chunkB.questions];
+      if (retentionHasExactDuplicate(merged)) {
+        // Rule 6A, deterministic: always keep Chunk A, always
+        // regenerate Chunk B -- never by content or learner data.
+        retainedQuestions = chunkA.questions;
+        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+        regenerateChunkIndex = 1;
+      } else if (retentionStructuralOverlapGroupCount(merged, conceptId) > 0) {
+        retainedQuestions = chunkA.questions;
+        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+        regenerateChunkIndex = 1;
+      } else {
+        const mapped = mapRawQuestionsToGenerated(merged, conceptId, language);
+        if (mapped.length !== RETENTION_REQUIRED_COUNT) {
+          console.error(`retention_check fast path: expected ${RETENTION_REQUIRED_COUNT} mapped questions, got ${mapped.length} -- returning no questions rather than a partial set`);
+          return [];
+        }
+        return mapped;
+      }
+    }
+
+    // Exactly ONE bounded recovery round -- no loops, no recursion that
+    // could trigger a second recovery. Exclusion context carries only
+    // the retained chunk's own question text.
+    const exclusionNote = buildRetentionExclusionNote(retainedQuestions!);
+    const recoveryOutcome = await requestChunk(regenerateChunkIndex, retainedNote, exclusionNote);
+    if (!recoveryOutcome.ok) {
+      console.error(`retention_check fast path: bounded recovery call failed (${recoveryOutcome.reason}) -- returning no questions, no second retry`);
+      return [];
+    }
+
+    const finalMerged = [...retainedQuestions!, ...recoveryOutcome.questions];
+    if (retentionHasExactDuplicate(finalMerged)) {
+      console.error('retention_check fast path: exact duplicate remained after bounded recovery -- returning no questions, no second retry');
+      return [];
+    }
+    if (retentionStructuralOverlapGroupCount(finalMerged, conceptId) > 0) {
+      console.error('retention_check fast path: structural overlap remained after bounded recovery -- returning no questions, no second retry');
+      return [];
+    }
+
+    const mapped = mapRawQuestionsToGenerated(finalMerged, conceptId, language);
+    if (mapped.length !== RETENTION_REQUIRED_COUNT) {
+      console.error(`retention_check fast path: expected ${RETENTION_REQUIRED_COUNT} mapped questions after recovery, got ${mapped.length} -- returning no questions rather than a partial set`);
+      return [];
+    }
+
+    return mapped;
+  } catch (error) {
+    console.error('Error generating retention_check questions:', error);
+    return [];
+  }
+}
+
+/**
  * Phase 3B: a variant question preserves everything that makes it a fair
  * substitute for the source question -- same concept, same learning
  * objective/cognitive level/reasoning type where known, same required

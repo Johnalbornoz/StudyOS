@@ -153,17 +153,19 @@ describe('quiz_mode configs unchanged (verified against the real route source, n
     expect(routeSrc).toMatch(/Math\.max\(2, Math\.min\(4, validated\.maxQuestions \?\? config\.defaultMax\)\)/);
   });
 
-  it('the route calls generateQuickCheckQuestions only for quick_check, generatePracticeQuestions only for topic_practice/review, and generateQuestionsForConcept for every other mode (Step 14)', async () => {
+  it('the route calls generateQuickCheckQuestions only for quick_check, generatePracticeQuestions only for topic_practice/review, generateRetentionCheckQuestions only for retention_check (count===6), and generateQuestionsForConcept for every other mode/case (Step 14/22)', async () => {
     const routeSrc = await readRouteSrc();
     expect(routeSrc).toContain("validated.quizMode === 'quick_check'");
     expect(routeSrc).toContain("validated.quizMode === 'topic_practice' || validated.quizMode === 'review'");
+    expect(routeSrc).toContain("validated.quizMode === 'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT");
     expect(routeSrc).toContain('generateQuickCheckQuestions(');
     expect(routeSrc).toContain('generatePracticeQuestions(');
+    expect(routeSrc).toContain('generateRetentionCheckQuestions(');
     expect(routeSrc).toContain('generateQuestionsForConcept(');
   });
 });
 
-describe('STABILIZATION QUIZ PERFORMANCE Step 14 -- mode isolation: retention_check/diagnostic_check/cumulative_assessment/exam_simulation and generateQuestionVariant are untouched by the practice/review chunked fast path', () => {
+describe('STABILIZATION QUIZ PERFORMANCE Step 14/22 -- mode isolation: diagnostic_check/cumulative_assessment/exam_simulation and generateQuestionVariant are untouched by any chunked fast path; retention_check is fast-pathed ONLY at count===6', () => {
   const readRouteSrc = async () => {
     const fs = await import('fs');
     const path = await import('path');
@@ -176,16 +178,28 @@ describe('STABILIZATION QUIZ PERFORMANCE Step 14 -- mode isolation: retention_ch
     expect(occurrences).toHaveLength(1);
   });
 
-  it('retention_check, diagnostic_check, cumulative_assessment, and exam_simulation are absent from the fast-path condition that selects generatePracticeQuestions/generateQuickCheckQuestions', async () => {
+  it('the route\'s retention_check branch is the ONLY caller of generateRetentionCheckQuestions (single call site)', async () => {
+    const routeSrc = await readRouteSrc();
+    const occurrences = routeSrc.match(/generateRetentionCheckQuestions\(/g) ?? [];
+    expect(occurrences).toHaveLength(1);
+  });
+
+  it('diagnostic_check, cumulative_assessment, and exam_simulation are absent from the fast-path condition entirely -- never routed to any chunked/fast-path generator', async () => {
     const routeSrc = await readRouteSrc();
     const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateQuestionsForConcept\(cId,/)?.[0] ?? '';
-    for (const mode of ['retention_check', 'diagnostic_check', 'cumulative_assessment', 'exam_simulation']) {
+    for (const mode of ['diagnostic_check', 'cumulative_assessment', 'exam_simulation']) {
       expect(fastPathCondition).not.toContain(`'${mode}'`);
     }
   });
 
-  it('generateQuestionsForConcept (the untouched legacy path) is still called for count values these 4 modes actually use -- 4 (diagnostic_check max), 6 (retention_check default), and 20 (cumulative_assessment/exam_simulation default) -- all as ONE executeAI call, never fanned out', async () => {
-    for (const count of [4, 6, 20]) {
+  it('retention_check\'s fast-path condition is guarded by count === RETENTION_REQUIRED_COUNT -- an overridden non-6 count falls through to the legacy generator, not silently forced onto an unvalidated chunk plan', async () => {
+    const routeSrc = await readRouteSrc();
+    const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateQuestionsForConcept\(cId,/)?.[0] ?? '';
+    expect(fastPathCondition).toContain("'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT");
+  });
+
+  it('generateQuestionsForConcept (the untouched legacy path) is still called for count values these modes actually use -- 4 (diagnostic_check max), 20 (cumulative_assessment/exam_simulation default), and any non-6 retention_check override -- all as ONE executeAI call, never fanned out', async () => {
+    for (const count of [4, 5, 7, 20]) {
       executeAIMock.mockClear();
       await generateQuestionsForConcept('c1', 's1', 'subj1', { count });
       expect(executeAIMock).toHaveBeenCalledTimes(1);
