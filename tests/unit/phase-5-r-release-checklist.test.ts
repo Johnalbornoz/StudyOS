@@ -47,9 +47,9 @@ describe('release test 22 -- every prompt this phase changed has a correctly bum
   it('tutor.chat_reply is v2', () => {
     expect(PROMPT_REGISTRY['tutor.chat_reply'].version).toBe('v2');
   });
-  it('every other registered prompt is untouched at v1 -- only the 3 activated surfaces changed', () => {
+  it('every other registered prompt is untouched at v1 -- only the 3 activated surfaces changed (plus quiz.question_generation, bumped later by STABILIZATION QUIZ PERFORMANCE Step 9 for an unrelated reason -- see its own doc comment in prompt-registry.ts)', () => {
     const untouchedIds = Object.keys(PROMPT_REGISTRY).filter(
-      (id) => !['quiz.question_hint', 'explain.prompt_generation', 'tutor.chat_reply'].includes(id)
+      (id) => !['quiz.question_hint', 'explain.prompt_generation', 'tutor.chat_reply', 'quiz.question_generation'].includes(id)
     );
     for (const id of untouchedIds) {
       expect(PROMPT_REGISTRY[id as keyof typeof PROMPT_REGISTRY].version).toBe('v1');

@@ -28,10 +28,25 @@ function definePrompt(def: PromptDefinition): PromptDefinition {
 export const PROMPT_REGISTRY = {
   'quiz.question_generation': definePrompt({
     id: 'quiz.question_generation',
-    version: 'v1',
+    // STABILIZATION QUIZ PERFORMANCE Step 18: v3 unifies all three live
+    // QUESTION_GENERATION call sites (generateQuestionsForConcept,
+    // generateQuickCheckQuestions, generatePracticeQuestions), retiring
+    // the v1 (legacy batch, pinned)/v2 (quick_check fast path) split
+    // from Steps 9/14. That split existed because quick_check's
+    // instructions were genuinely different text from the batch path's.
+    // v3's change -- an explicit JSON-escaping rule for LaTeX
+    // backslashes, added to REQUIREMENTS item 7 (Steps 15-17's root-
+    // cause finding: unescaped LaTeX backslashes inside JSON string
+    // values either fail to parse or silently corrupt into control
+    // characters) -- applies identically to every call site's own
+    // wording, so there is no reason for them to diverge here. All
+    // three now read `prompt.version` directly rather than pinning a
+    // literal string.
+    version: 'v3',
     capability: 'QUESTION_GENERATION',
-    service: 'quiz-generation.service.ts:generateQuestionsForConcept',
-    description: 'Generates up to N assessment questions for a concept, grounded in retrieved study material or general knowledge.',
+    service: 'quiz-generation.service.ts:generateQuestionsForConcept / generateQuickCheckQuestions / generatePracticeQuestions',
+    description:
+      'Generates assessment questions for a concept, grounded in retrieved study material or general knowledge, across three call sites sharing this one prompt version: generateQuestionsForConcept (single batch call, all modes except quick_check/topic_practice/review), generateQuickCheckQuestions (quick_check only -- deterministic 6-slot fast path, 6 parallel single-question calls each locked to one of 4 allowed types, all-or-nothing), generatePracticeQuestions (topic_practice/review only -- balanced parallel chunks of up to 4 questions each, partial-tolerant). v3 (Step 18) adds an explicit instruction that LaTeX backslashes inside the JSON output must be escaped for JSON validity, plus local (non-shared) pre-parse repair and post-parse corruption rejection at every call site -- see quiz-generation.service.ts:repairInvalidJsonEscapes/isLatexCorrupted.',
   }),
   'quiz.free_text_grading': definePrompt({
     id: 'quiz.free_text_grading',

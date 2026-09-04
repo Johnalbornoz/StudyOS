@@ -45,6 +45,8 @@ import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   generateQuestionsForConcept,
+  generateQuickCheckQuestions,
+  generatePracticeQuestions,
   generateQuestionVariant,
   gradeAnswer,
   gradeStructuredAnswer,
@@ -366,8 +368,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
 
     const config = QUIZ_MODE_CONFIG[validated.quizMode];
     // Diagnostic Check is always short (2-4 questions) regardless of what was requested -- it's a targeted check, not a full quiz.
+    // quick_check is always exactly 6 (STABILIZATION QUIZ PERFORMANCE Step 9): its dedicated
+    // fast path (generateQuickCheckQuestions) is an audited, fixed 6-slot/4-type plan, not a
+    // caller-configurable count -- a maxQuestions override is no longer honored for this mode.
     const maxQuestions =
-      validated.quizMode === 'diagnostic_check'
+      validated.quizMode === 'quick_check'
+        ? 6
+        : validated.quizMode === 'diagnostic_check'
         ? Math.max(2, Math.min(4, validated.maxQuestions ?? config.defaultMax))
         : Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
 
@@ -404,20 +411,47 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
 
     const perConceptCap = Math.max(1, Math.ceil(maxQuestions / conceptIds.length));
 
+    // STABILIZATION QUIZ PERFORMANCE Step 9/14: quick_check and
+    // topic_practice/review each have a dedicated fast path (Step 8's
+    // audit cleared quick_check's per-question fan-out; Step 13
+    // cleared topic_practice/review's chunked fan-out -- both PRACTICE-
+    // or already-all-or-nothing modes, never INDEPENDENT/ASSESSMENT).
+    // Every other mode (retention_check, diagnostic_check,
+    // cumulative_assessment, exam_simulation) keeps the original
+    // single-call batch behavior below, untouched. conceptIds has
+    // exactly one entry for all three fast-path modes (SINGLE_CONCEPT_MODES),
+    // so each still produces one inner array, keeping questionArrays'
+    // shape (one array per concept) identical for the flatten/
+    // askConfidence logic below regardless of which path ran.
     const [questionArrays, askConfidenceFlags] = await Promise.all([
-      Promise.all(
-        conceptIds.map((cId) =>
-          generateQuestionsForConcept(cId, validated.studentId, validated.subjectId, {
+      validated.quizMode === 'quick_check'
+        ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
+            difficulty: validated.difficulty || 3,
+            language,
+            ibContext,
+          }).then((qs) => [qs])
+        : validated.quizMode === 'topic_practice' || validated.quizMode === 'review'
+        ? generatePracticeQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
             count: perConceptCap,
             difficulty: validated.difficulty || 3,
-            types: ALL_QUESTION_TYPES,
             guidance: config.guidance,
             language,
             visualAidRate: config.visualAidRate,
             ibContext,
-          })
-        )
-      ),
+          }).then((qs) => [qs])
+        : Promise.all(
+            conceptIds.map((cId) =>
+              generateQuestionsForConcept(cId, validated.studentId, validated.subjectId, {
+                count: perConceptCap,
+                difficulty: validated.difficulty || 3,
+                types: ALL_QUESTION_TYPES,
+                guidance: config.guidance,
+                language,
+                visualAidRate: config.visualAidRate,
+                ibContext,
+              })
+            )
+          ),
       computeAskConfidenceFlags(validated.studentId, conceptIds, validated.quizMode),
     ]);
 

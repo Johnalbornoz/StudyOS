@@ -12,6 +12,7 @@
  */
 
 import { retrieveContext } from './rag.service';
+import { normalizeText } from './content-chunking.service';
 import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -261,6 +262,53 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
 }
 
 /**
+ * Maps the AI's raw per-question JSON objects into GeneratedQuestion
+ * records. Shared by generateQuestionsForConcept (batch path) and
+ * generateQuickCheckQuestions (quick_check fast path) so the two never
+ * drift on how a raw field becomes a stored one.
+ */
+function mapRawQuestionsToGenerated(questions: any[], conceptId: string, language: string): GeneratedQuestion[] {
+  const storedQuestions: GeneratedQuestion[] = [];
+
+  for (const q of questions) {
+    if (!q.question || !q.type) continue;
+    const type = q.type as QuestionType;
+    if (!ANSWER_FORMAT_BY_TYPE[type]) continue;
+
+    const question: GeneratedQuestion = {
+      id: `q-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      conceptId,
+      type,
+      answerFormat: ANSWER_FORMAT_BY_TYPE[type],
+      question: q.question,
+      options: normalizeOptions(q.options),
+      matchingPairs: Array.isArray(q.matchingPairs) ? q.matchingPairs : undefined,
+      orderingItems: Array.isArray(q.orderingItems) ? q.orderingItems : undefined,
+      classificationCategories: Array.isArray(q.classificationCategories) ? q.classificationCategories : undefined,
+      classificationItems: Array.isArray(q.classificationItems) ? q.classificationItems : undefined,
+      visualAid: sanitizeVisualAid(q.visualAid),
+      correctAnswer: q.correctAnswer || '',
+      explanation: q.explanation || '',
+      difficulty: Math.max(1, Math.min(5, q.difficulty || 3)),
+      calculatorAllowed: typeof q.calculatorAllowed === 'boolean' ? q.calculatorAllowed : undefined,
+      sourceReference: `Based on student's ${language} materials`,
+      // Phase 3D: only a known enum value is ever accepted -- anything
+      // else the model emits (a typo, a value outside the requested
+      // set, a missing field) becomes undefined, never a fabricated
+      // guess. See the type doc above GeneratedQuestion for why
+      // evidenceDimensions/expectedReasoningType/learningObjectiveId
+      // are deliberately NOT read here.
+      cognitiveLevel: KNOWN_COGNITIVE_LEVELS.has(q.cognitiveLevel) ? (q.cognitiveLevel as CognitiveLevel) : undefined,
+      questionIntent: KNOWN_QUESTION_INTENTS.has(q.questionIntent) ? (q.questionIntent as QuestionIntent) : undefined,
+    };
+
+    storedQuestions.push(question);
+  }
+
+  return storedQuestions;
+}
+
+/**
  * Generate quiz questions for a concept. `types` is the catalog Claude
  * is allowed to draw from (defaults to all 18 models) -- it does not
  * dictate which ones to actually use. Claude picks whichever types
@@ -269,6 +317,24 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
  * "keep it fast" for a quick check vs. "use the most demanding types
  * this material supports" for an exam simulation). `visualAidRate`
  * (0-1) controls how often a question gets a generated diagram/chart.
+ *
+ * STABILIZATION QUIZ PERFORMANCE Step 9: this is back to its original,
+ * single-batch-call behavior for every mode (topic_practice, review,
+ * retention_check, diagnostic_check, cumulative_assessment,
+ * exam_simulation, and generateQuestionVariant's count=1 calls). Step
+ * 7's parallel-per-question fan-out was fully reverted here after
+ * Step 8's audit found it silently broke assessment integrity for
+ * every ASSESSMENT/INDEPENDENT-evidence-mode activity except
+ * quick_check (deterministic type-cycling from index 0 systematically
+ * contradicted several modes' own guidance -- diagnostic_check could
+ * never reach its own preferred types at all; cumulative_assessment/
+ * exam_simulation were confirmed live-broken against real production
+ * concept counts). quick_check alone got a dedicated, separately
+ * audited fast path instead -- see generateQuickCheckQuestions below.
+ * model/prompt wording/timeout here are pinned back to their pre-Step-5
+ * values. promptVersion now reads the registry's own v3 (Step 18) --
+ * see the doc comment above repairInvalidJsonEscapes/isLatexCorrupted
+ * for what changed and why every QUESTION_GENERATION call site shares it.
  */
 export async function generateQuestionsForConcept(
   conceptId: string,
@@ -345,7 +411,27 @@ export async function generateQuestionsForConcept(
       provider: 'anthropic',
       model: 'claude-sonnet-5',
       promptId: prompt.id,
+      // STABILIZATION QUIZ PERFORMANCE Step 18: v3 unifies every live
+      // QUESTION_GENERATION call site (this one, quick_check's fast
+      // path, and the practice/review chunked path) on the same
+      // JSON-escaping instruction added to REQUIREMENTS item 7 above --
+      // retiring the v1/v2 split from Steps 9/14, which reflected a
+      // genuine wording difference this fix does not have (the JSON-
+      // escaping requirement applies identically everywhere). See the
+      // Step 18 report for why a unified bump was correct here rather
+      // than pinning this call site to a stale version.
       promptVersion: prompt.version,
+      // STABILIZATION QUIZ PERFORMANCE Step 10: the Step 4 timeoutMs:
+      // 60_000 override was a workaround for the ORIGINAL production
+      // 500 -- a single N-question batch call genuinely took ~39s. That
+      // condition no longer applies to this batch path the way it did:
+      // Step 8's audit and Step 9's revert mean this call site's actual
+      // production shape (model, prompt wording, count semantics) never
+      // changed from what shipped as v1, so the override is removed
+      // rather than carried forward as unexplained residue. No explicit
+      // timeoutMs here -- falls through to the Gateway's own
+      // DEFAULT_AI_TIMEOUT_MS (30_000), same as every other capability
+      // that never needed an override.
       context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuestionsForConcept' },
       call: (signal) =>
         callAnthropicMessages(
@@ -368,66 +454,442 @@ ${shapeExamples}
           signal
         ),
       validate: (raw) => {
+        // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair before
+        // both parse attempts, then CLASS B/newline-in-math corruption
+        // filtering on whatever array results -- see the doc comment
+        // above repairInvalidJsonEscapes/isLatexCorrupted for the full
+        // rationale. This path tolerates partial results already (the
+        // prompt's own "fewer is fine" semantics), so corrupted items
+        // are filtered out rather than failing the whole call.
+        const repaired = repairInvalidJsonEscapes(raw.text);
+        let parsed: any[];
         try {
-          const parsed = parseAIJson<any[]>(raw.text);
-          return { valid: true, value: parsed };
+          parsed = parseAIJson<any[]>(repaired);
         } catch {
           // A large batch (many verbose types like case_study/step_by_step)
           // can still hit the token budget and cut off mid-array. Salvage
           // whichever leading questions are already complete rather than
           // discarding a full, expensive generation call.
-          const salvaged = salvageJsonArray(raw.text);
+          const salvaged = salvageJsonArray(repaired);
           if (salvaged.length === 0) {
             console.error('Failed to parse Claude response:', raw.text);
             return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
           }
           console.warn(`Salvaged ${salvaged.length} questions from a truncated response`);
-          return { valid: true, value: salvaged };
+          parsed = salvaged;
         }
+        const clean = parsed.filter((q) => !isLatexCorrupted(q));
+        const rejected = parsed.length - clean.length;
+        if (rejected > 0) {
+          console.warn(`generateQuestionsForConcept: rejected ${rejected} question(s) for suspected LaTeX/JSON corruption`);
+        }
+        return { valid: true, value: clean };
       },
       fallback: () => [],
     });
 
-    const storedQuestions: GeneratedQuestion[] = [];
+    return mapRawQuestionsToGenerated(questions, conceptId, language);
+  } catch (error) {
+    console.error('Error generating questions:', error);
+    return [];
+  }
+}
 
-    for (const q of questions) {
-      if (!q.question || !q.type) continue;
-      const type = q.type as QuestionType;
-      if (!ANSWER_FORMAT_BY_TYPE[type]) continue;
+/**
+ * STABILIZATION QUIZ PERFORMANCE Step 9: the one sanctioned parallel
+ * fast path in this file, exclusively for quick_check (ActivityType
+ * SOLO_CHECK, EvidenceMode INDEPENDENT). Step 8's audit found the
+ * generic count>1 fan-out unsafe for every other mode but only
+ * CONDITIONED for quick_check -- and quick_check's own guidance already
+ * names exactly the 4 types this locks itself to, so there's no drift
+ * between what this fast path does and what quick_check was always
+ * supposed to prefer.
+ *
+ * Contract (deliberately stricter than the batch path above):
+ *   - Always exactly 6 questions -- not caller-configurable. Step 8
+ *     only validated this one plan; an arbitrary N was never audited,
+ *     so it isn't offered here. (This does mean a caller-supplied
+ *     `maxQuestions` override for quick_check, previously honored, no
+ *     longer is -- see the Step 9 report.)
+ *   - Slot i is deterministically assigned
+ *     QUICK_CHECK_TYPES[i % QUICK_CHECK_TYPES.length] in code -- never
+ *     left to the model, never drawn from the 18-type catalog.
+ *   - All-or-nothing: if any of the 6 slots fails generation,
+ *     validation, or returns a type other than its assigned one, the
+ *     WHOLE result is [] -- surfaced through the caller's existing
+ *     `questions.length === 0` -> GENERATION_FAILED path, the same
+ *     contract the batch path already has. No 5-question quick_check
+ *     ever reaches storeQuiz().
+ *   - claude-haiku-4-5-20251001, 30_000ms (the Gateway global default,
+ *     not overridden -- Step 10 also removed the batch path's own
+ *     60_000 override above, so both paths now use the same default).
+ *   - quiz.question_generation v3 (Step 18) -- unified with every other
+ *     QUESTION_GENERATION call site; the v1/v2 split from Steps 9/14 is
+ *     retired now that all three share the same JSON-escaping fix.
+ */
+export const QUICK_CHECK_TYPES: QuestionType[] = ['multiple_choice', 'true_false', 'yes_no', 'short_answer'];
+const QUICK_CHECK_SLOT_COUNT = 6;
+const QUICK_CHECK_MODEL = 'claude-haiku-4-5-20251001';
 
-      const question: GeneratedQuestion = {
-        id: `q-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        conceptId,
-        type,
-        answerFormat: ANSWER_FORMAT_BY_TYPE[type],
-        question: q.question,
-        options: normalizeOptions(q.options),
-        matchingPairs: Array.isArray(q.matchingPairs) ? q.matchingPairs : undefined,
-        orderingItems: Array.isArray(q.orderingItems) ? q.orderingItems : undefined,
-        classificationCategories: Array.isArray(q.classificationCategories) ? q.classificationCategories : undefined,
-        classificationItems: Array.isArray(q.classificationItems) ? q.classificationItems : undefined,
-        visualAid: sanitizeVisualAid(q.visualAid),
-        correctAnswer: q.correctAnswer || '',
-        explanation: q.explanation || '',
-        difficulty: Math.max(1, Math.min(5, q.difficulty || 3)),
-        calculatorAllowed: typeof q.calculatorAllowed === 'boolean' ? q.calculatorAllowed : undefined,
-        sourceReference: `Based on student's ${language} materials`,
-        // Phase 3D: only a known enum value is ever accepted -- anything
-        // else the model emits (a typo, a value outside the requested
-        // set, a missing field) becomes undefined, never a fabricated
-        // guess. See the type doc above GeneratedQuestion for why
-        // evidenceDimensions/expectedReasoningType/learningObjectiveId
-        // are deliberately NOT read here.
-        cognitiveLevel: KNOWN_COGNITIVE_LEVELS.has(q.cognitiveLevel) ? (q.cognitiveLevel as CognitiveLevel) : undefined,
-        questionIntent: KNOWN_QUESTION_INTENTS.has(q.questionIntent) ? (q.questionIntent as QuestionIntent) : undefined,
-      };
+export async function generateQuickCheckQuestions(
+  conceptId: string,
+  studentId: string,
+  subjectId: string,
+  options: {
+    difficulty?: number;
+    language?: string;
+    ibContext?: IBContext | null;
+  } = {}
+): Promise<GeneratedQuestion[]> {
+  const difficulty = Math.max(1, Math.min(5, options.difficulty || 3));
+  const language = options.language || 'en';
+  const ibContext = options.ibContext ?? null;
+  const guidance =
+    'A fast, low-friction confidence check. Prefer quick-to-answer types (multiple_choice, true_false, yes_no, short_answer) -- avoid long multi-step or open-ended types here.';
 
-      storedQuestions.push(question);
+  try {
+    const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
+
+    let conceptContext: { label: string; subjectName: string } | null = null;
+    if (context.chunks.length === 0) {
+      const conceptRow = await db.query(
+        `
+        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        FROM concepts c
+        JOIN subjects s ON s.id = c.subject_id
+        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
+        WHERE c.id = $1
+        `,
+        [conceptId, language]
+      );
+      const row = conceptRow.rows[0];
+      if (!row) {
+        console.warn(`Concept ${conceptId} not found`);
+        return [];
+      }
+      conceptContext = { label: row.label, subjectName: row.subject_name };
+    }
+
+    // Shared across all 6 slots -- describes only the 4 allowed shapes,
+    // never the full 18-type catalog (a smaller prompt than the batch
+    // path's, on top of the parallel-dispatch/Haiku wins).
+    const systemPrompt = buildQuestionGenerationPrompt(
+      QUICK_CHECK_TYPES,
+      difficulty,
+      language,
+      context.chunks,
+      0, // visualAidRate -- quick_check never uses visual aids, matching QUIZ_MODE_CONFIG.quick_check
+      guidance,
+      ibContext,
+      conceptContext
+    );
+    const prompt = getPrompt('quiz.question_generation');
+
+    const requestSlot = (slotIndex: number): Promise<any | null> => {
+      const assignedType = QUICK_CHECK_TYPES[slotIndex % QUICK_CHECK_TYPES.length];
+      const shapeExample = jsonShapeExample(assignedType, false);
+      const userMessage = `This is question ${slotIndex + 1} of ${QUICK_CHECK_SLOT_COUNT} in a quick confidence check. Generate EXACTLY 1 question of type "${assignedType}" -- never any other type -- covering a distinct aspect of the concept from the other questions in this set.
+
+Output a JSON array containing exactly one element (no markdown fences), shaped like:
+[
+${shapeExample}
+]`;
+      return executeAI({
+        capability: prompt.capability,
+        risk: 'HIGH_RISK',
+        provider: 'anthropic',
+        model: QUICK_CHECK_MODEL,
+        promptId: prompt.id,
+        promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site (see the doc comment above generateQuestionsForConcept's own promptVersion line)
+        timeoutMs: 30_000, // explicit -- the Gateway global default; kept explicit here for clarity even though the batch path above now relies on the same default implicitly (Step 10)
+        context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuickCheckQuestions' },
+        call: (signal) =>
+          callAnthropicMessages(
+            { model: QUICK_CHECK_MODEL, maxTokens: 2400, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] },
+            signal
+          ),
+        validate: (raw) => {
+          // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
+          // before both parse attempts; a CLASS B/newline-in-math
+          // corruption hit makes this slot invalid, same as any other
+          // validation failure -- routes through the existing
+          // fallback -> null -> all-or-nothing contract below, never a
+          // separate failure path.
+          const repaired = repairInvalidJsonEscapes(raw.text);
+          let parsed: any[];
+          try {
+            parsed = parseAIJson<any[]>(repaired);
+          } catch {
+            const salvaged = salvageJsonArray(repaired);
+            if (salvaged.length === 0) {
+              console.error('Failed to parse Claude response for quick_check slot:', raw.text);
+              return { valid: false, errors: ['Response was not valid JSON and no question could be salvaged'] };
+            }
+            parsed = salvaged;
+          }
+          const q = parsed[0];
+          if (!q || !q.question || q.type !== assignedType) {
+            return { valid: false, errors: [`Slot ${slotIndex} did not return a valid "${assignedType}" question`] };
+          }
+          if (isLatexCorrupted(q)) {
+            console.warn(`quick_check slot ${slotIndex}: rejected for suspected LaTeX/JSON corruption`);
+            return { valid: false, errors: [`Slot ${slotIndex} question failed LaTeX/JSON corruption check`] };
+          }
+          return { valid: true, value: q };
+        },
+        // Strict sentinel, not [] -- distinguishes "this slot failed" from
+        // "this slot legitimately returned nothing," so the all-or-nothing
+        // check below can never mistake one for the other.
+        fallback: () => null,
+      }).then((r) => r.result);
+    };
+
+    const slots = await Promise.all(Array.from({ length: QUICK_CHECK_SLOT_COUNT }, (_, i) => requestSlot(i)));
+    if (slots.some((q) => q === null)) {
+      console.error('quick_check fast path: at least one of 6 slots failed -- returning no questions rather than a partial set');
+      return [];
+    }
+
+    const storedQuestions = mapRawQuestionsToGenerated(slots as any[], conceptId, language);
+    // Defensive double-check of the same all-or-nothing contract --
+    // mapRawQuestionsToGenerated could in principle skip a malformed
+    // entry even after `validate` accepted it (e.g. a future edit to
+    // either function). Never let a partial set slip through silently.
+    if (storedQuestions.length !== QUICK_CHECK_SLOT_COUNT) {
+      console.error(`quick_check fast path: expected ${QUICK_CHECK_SLOT_COUNT} mapped questions, got ${storedQuestions.length} -- returning no questions rather than a partial set`);
+      return [];
     }
 
     return storedQuestions;
   } catch (error) {
-    console.error('Error generating questions:', error);
+    console.error('Error generating quick_check questions:', error);
+    return [];
+  }
+}
+
+/**
+ * STABILIZATION QUIZ PERFORMANCE Step 14. Step 12 measured the legacy
+ * single-call batch path timing out at count=20 (topic_practice/
+ * review's default) regardless of model, and found 5 concurrent calls
+ * x 4 questions the fastest AND most reliable chunk architecture (3/3
+ * full-valid repeated runs, median ~18.7s). Step 13 audited what that
+ * would need to be safe: PRACTICE evidence mode already tolerates
+ * fewer-than-requested (unlike INDEPENDENT/ASSESSMENT modes, which
+ * this deliberately does NOT touch -- see generatePracticeQuestions
+ * below), and a deterministic normalizeText-based check (no AI, no
+ * embeddings) is sufficient cross-chunk duplicate protection.
+ */
+export const MAX_QUESTIONS_PER_CHUNK = 4;
+const PRACTICE_CHUNK_MODEL = 'claude-haiku-4-5-20251001';
+
+/**
+ * Pure and deterministic -- no AI, no randomness. requestedCount <=
+ * MAX_QUESTIONS_PER_CHUNK returns a single-element plan: callers must
+ * treat that as "don't chunk, use the existing single-call legacy
+ * path" (generatePracticeQuestions does exactly that below) rather
+ * than routing a lone small-N request through the chunked machinery --
+ * chunking can't change the legacy v1 prompt's "Generate UP TO N
+ * questions" wording (Step 14's explicit constraint), and that wording
+ * was previously found to behave poorly at N=1 specifically (see the
+ * Step 9 development history: the batch wording let the model exceed
+ * a 1-question token budget, only fixed there by rewording to "EXACTLY
+ * 1" -- which this step is forbidden from doing to the shared v1
+ * prompt). For larger counts, splits into ceil(count/maxPerChunk)
+ * balanced chunks (sizes differ by at most 1, larger chunks first) --
+ * never a singleton remainder unless requestedCount itself is 1.
+ */
+export function planChunks(requestedCount: number, maxPerChunk: number = MAX_QUESTIONS_PER_CHUNK): number[] {
+  const count = Math.max(1, Math.min(20, requestedCount));
+  if (count <= maxPerChunk) return [count];
+  const chunkCount = Math.ceil(count / maxPerChunk);
+  const base = Math.floor(count / chunkCount);
+  const remainder = count % chunkCount;
+  return Array.from({ length: chunkCount }, (_, i) => (i < remainder ? base + 1 : base));
+}
+
+/**
+ * The chunked fast path for topic_practice and review ONLY -- the two
+ * PRACTICE-evidence-mode, single-concept modes Step 13 cleared for
+ * this. Every other caller (quick_check, retention_check,
+ * diagnostic_check, cumulative_assessment, exam_simulation,
+ * generateQuestionVariant) is untouched and keeps calling
+ * generateQuestionsForConcept/generateQuickCheckQuestions exactly as
+ * before -- this function is never referenced by them.
+ *
+ * Contract:
+ *   - count <= MAX_QUESTIONS_PER_CHUNK: delegates outright to the
+ *     unmodified generateQuestionsForConcept (no chunking machinery
+ *     touches a request this small).
+ *   - count > MAX_QUESTIONS_PER_CHUNK: planChunks(count) balanced
+ *     chunks, each an independent claude-haiku-4-5-20251001 call at
+ *     30_000ms, promptVersion v3 (Step 18, unified with every other
+ *     QUESTION_GENERATION call site) -- the prompt TEXT sent per call
+ *     is byte-identical to the legacy path's "Generate UP TO N
+ *     questions..." wording, just with N = that chunk's own size), run
+ *     concurrently.
+ *   - PRACTICE semantics (unlike quick_check's all-or-nothing):  a
+ *     chunk that times out, errors, or comes back short still lets the
+ *     other chunks' valid questions through -- only a fully empty
+ *     merged result (every chunk failed, or every question was a
+ *     cross-chunk duplicate of another) returns [], the same signal
+ *     every other generation path already surfaces as GENERATION_FAILED.
+ *   - Deterministic, AI-free duplicate protection after merging:
+ *     normalizeText + case-fold on each question's text (never
+ *     evaluateVariantEquivalence, which checks metadata equivalence,
+ *     not text identity -- see the Step 13 report for why that's the
+ *     wrong tool here; never a second AI/embedding call).
+ *   - Final result is capped at `count` -- never exceeds requestedCount
+ *     even if a chunk's own model call disobeyed its "up to" bound.
+ */
+export async function generatePracticeQuestions(
+  conceptId: string,
+  studentId: string,
+  subjectId: string,
+  options: {
+    count?: number;
+    difficulty?: number;
+    guidance?: string;
+    language?: string;
+    visualAidRate?: number;
+    ibContext?: IBContext | null;
+  } = {}
+): Promise<GeneratedQuestion[]> {
+  const count = Math.max(1, Math.min(20, options.count || 20));
+  const plan = planChunks(count);
+
+  if (plan.length === 1) {
+    return generateQuestionsForConcept(conceptId, studentId, subjectId, {
+      count,
+      difficulty: options.difficulty,
+      types: ALL_QUESTION_TYPES,
+      guidance: options.guidance,
+      language: options.language,
+      visualAidRate: options.visualAidRate,
+      ibContext: options.ibContext,
+    });
+  }
+
+  const difficulty = Math.max(1, Math.min(5, options.difficulty || 3));
+  const guidance = options.guidance || 'Choose whichever question types genuinely fit this specific material best.';
+  const language = options.language || 'en';
+  const visualAidRate = options.visualAidRate ?? 0;
+  const ibContext = options.ibContext ?? null;
+
+  try {
+    const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
+
+    let conceptContext: { label: string; subjectName: string } | null = null;
+    if (context.chunks.length === 0) {
+      const conceptRow = await db.query(
+        `
+        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        FROM concepts c
+        JOIN subjects s ON s.id = c.subject_id
+        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
+        WHERE c.id = $1
+        `,
+        [conceptId, language]
+      );
+      const row = conceptRow.rows[0];
+      if (!row) {
+        console.warn(`Concept ${conceptId} not found`);
+        return [];
+      }
+      conceptContext = { label: row.label, subjectName: row.subject_name };
+    }
+
+    const types = ALL_QUESTION_TYPES;
+    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, context.chunks, visualAidRate, guidance, ibContext, conceptContext);
+    const prompt = getPrompt('quiz.question_generation');
+    const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generatePracticeQuestions' };
+
+    const requestChunk = (chunkSize: number): Promise<any[]> => {
+      const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
+      const maxTokens = Math.min(16000, 900 * chunkSize + 1500);
+      const userMessage = `Generate UP TO ${chunkSize} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${chunkSize}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
+
+Output a JSON array (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
+[
+${shapeExamples}
+]`;
+      return executeAI({
+        capability: prompt.capability,
+        risk: 'HIGH_RISK',
+        provider: 'anthropic',
+        model: PRACTICE_CHUNK_MODEL,
+        promptId: prompt.id,
+        promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site -- was pinned 'v1' when this was orchestration-only; the shared prompt text itself has now genuinely changed for everyone
+        timeoutMs: 30_000,
+        context: aiContext,
+        call: (signal) =>
+          callAnthropicMessages({ model: PRACTICE_CHUNK_MODEL, maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }, signal),
+        validate: (raw) => {
+          // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
+          // before both parse attempts, then CLASS B/newline-in-math
+          // corruption filtering -- this chunk path already tolerates
+          // partial results (PRACTICE semantics), so corrupted items
+          // are filtered out, never fail the whole chunk.
+          const repaired = repairInvalidJsonEscapes(raw.text);
+          let parsed: any[];
+          try {
+            parsed = parseAIJson<any[]>(repaired);
+          } catch {
+            const salvaged = salvageJsonArray(repaired);
+            if (salvaged.length === 0) {
+              console.error('Failed to parse Claude response for a practice/review chunk:', raw.text);
+              return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
+            }
+            console.warn(`Salvaged ${salvaged.length} questions from a truncated practice/review chunk response`);
+            parsed = salvaged;
+          }
+          const clean = parsed.filter((q) => !isLatexCorrupted(q));
+          const rejected = parsed.length - clean.length;
+          if (rejected > 0) {
+            console.warn(`generatePracticeQuestions chunk: rejected ${rejected} question(s) for suspected LaTeX/JSON corruption`);
+          }
+          return { valid: true, value: clean };
+        },
+        // PRACTICE semantics: a failed/timed-out chunk contributes
+        // nothing rather than failing the whole quiz -- the other
+        // chunks' valid questions are still used (see the contract doc above).
+        fallback: () => [],
+      }).then((r) => r.result);
+    };
+
+    const chunkResults = await Promise.all(plan.map((chunkSize) => requestChunk(chunkSize)));
+    const rawMerged = chunkResults.flat();
+    const mapped = mapRawQuestionsToGenerated(rawMerged, conceptId, language);
+
+    // Deterministic, AI-free cross-chunk duplicate protection (Step 13
+    // report: normalizeText-based exact/normalized-text check is
+    // sufficient and doesn't require a second AI call; evaluateVariantEquivalence
+    // is deliberately NOT used here -- it checks metadata equivalence,
+    // never the question text itself, so it's the wrong tool for this).
+    const seen = new Set<string>();
+    const deduped: GeneratedQuestion[] = [];
+    let duplicatesRemoved = 0;
+    for (const q of mapped) {
+      const key = normalizeText(q.question).toLowerCase();
+      if (seen.has(key)) {
+        duplicatesRemoved++;
+        continue;
+      }
+      seen.add(key);
+      deduped.push(q);
+    }
+    if (duplicatesRemoved > 0) {
+      console.warn(`generatePracticeQuestions: removed ${duplicatesRemoved} duplicate question(s) across chunks for concept ${conceptId}`);
+    }
+
+    // PRACTICE semantics: never fail the whole quiz over a removed
+    // duplicate or a short/failed chunk -- only a fully empty result
+    // (every chunk failed, or every question collided as a duplicate)
+    // surfaces as a failure, via the same [] contract every other
+    // generation path already uses (route.ts's questions.length === 0
+    // -> GENERATION_FAILED check, unchanged).
+    return deduped.slice(0, count); // never exceed requestedCount
+  } catch (error) {
+    console.error('Error generating practice/review questions:', error);
     return [];
   }
 }
@@ -655,6 +1117,129 @@ function salvageJsonArray(text: string): any[] {
     lastBrace = stripped.lastIndexOf('}', lastBrace - 1);
   }
   return [];
+}
+
+/**
+ * STABILIZATION QUIZ PERFORMANCE Step 18. QUESTION_GENERATION asks the
+ * model to embed LaTeX (REQUIREMENTS item 7 above) inside JSON string
+ * values -- prompt v3 now tells it every LaTeX backslash must be
+ * doubled for JSON, but real model output can still occasionally slip.
+ * This is defense-in-depth on top of that prompt fix, local to
+ * QUESTION_GENERATION only -- src/lib/ai-json.ts's parseAIJson and the
+ * shared validateJson are never touched (Step 15's blast-radius
+ * finding: those are also used by GRADING/HINTS/CLASSIFICATION/
+ * CONTENT_GENERATION, none of which share this LaTeX-heavy risk).
+ *
+ * Two independent problems, two independent fixes (Steps 15-17):
+ *
+ * CLASS A -- invalid JSON escape (`\cdot`, `\sum`, `\sqrt`, `\alpha`):
+ * `\c`, `\s`, `\a` etc. aren't valid JSON escapes, so JSON.parse throws.
+ * repairInvalidJsonEscapes fixes this by doubling any backslash NOT
+ * already followed by a valid JSON escape character -- applied to raw
+ * model output BEFORE parseAIJson/salvageJsonArray. This alone is NOT
+ * sufficient for CLASS B (Step 16's own finding) -- doubling a
+ * backslash that's already a valid escape would break genuinely
+ * intended `\n`/`\t`/etc., so it deliberately leaves those alone.
+ *
+ * CLASS B -- valid JSON escape, silent corruption (`\times`, `\theta`,
+ * `\frac`, `\rightarrow`, `\begin`, `\neq`, `\nabla` -- any LaTeX
+ * command starting with b/f/n/r/t/u): JSON.parse SUCCEEDS but silently
+ * consumes the backslash+letter as a real control character, losing
+ * the first letter of the command. Nothing about the JSON is invalid,
+ * so this can only be caught AFTER a successful parse, by inspecting
+ * the resulting text. isLatexCorrupted (used by every QUESTION_
+ * GENERATION call site's `validate`) rejects a raw question if any
+ * LATEX_CAPABLE_FIELD contains:
+ *   - TAB / FORM_FEED / BACKSPACE / CARRIAGE_RETURN anywhere -- these
+ *     have no legitimate use anywhere in learner-facing quiz text,
+ *     confirmed against real stored production content (Step 17: 0
+ *     occurrences across 700 real math spans and 472 real text fields).
+ *   - NEWLINE, but ONLY inside an identified $...$/$$...$$ math span --
+ *     real multi-line explanations ("Paso 1... \n\n Paso 2...") are a
+ *     confirmed, legitimate, observed pattern outside math (Step 17:
+ *     2 real occurrences, both outside any math span, 0 real math
+ *     spans ever contained one), so newline is never rejected there.
+ *
+ * Known, accepted false positive (Step 17): a bare currency "$" pair
+ * (e.g. "$5... $10") can be misidentified as a math span by this same
+ * "$" delimiter heuristic. If a genuine newline happens to land between
+ * two such amounts, this rejects legitimate content. Accepted
+ * deliberately -- the failure direction is safe. A false reject costs
+ * one fewer question (topic_practice/review's existing partial
+ * tolerance) or one failed slot (quick_check's existing all-or-nothing);
+ * it never lets corrupted math reach a student, which is the priority
+ * this whole mechanism protects. No LaTeX-command dictionary, no custom
+ * JSON parser -- deliberately avoided per the Step 17 design (an
+ * incomplete dictionary gives false confidence; a hand-rolled parser is
+ * disproportionate engineering for what's fundamentally a small,
+ * bounded set of always-suspicious control characters).
+ */
+function repairInvalidJsonEscapes(text: string): string {
+  // Matches EITHER a complete, already-valid 2-character JSON escape
+  // sequence (backslash + one of ["\\/bfnrtu]) -- consumed atomically
+  // and left untouched -- OR a lone backslash on its own, which gets
+  // doubled. The atomic first alternative is what makes this safe on
+  // text that's ALREADY correctly double-escaped (increasingly the
+  // common case once the v3 prompt fix is working): a naive per-
+  // character "double any backslash not followed by a valid escape
+  // char" scan (an earlier version of this function) would examine the
+  // SECOND backslash of an already-correct "\\\\cdot" pair on its own,
+  // see it's followed by 'c' (not a valid escape char), and double it
+  // AGAIN -- corrupting already-valid JSON into 3 backslashes, which
+  // JSON.parse rejects. Matching the pair as one unit prevents that.
+  return text.replace(/\\["\\/bfnrtu]|\\/g, (match) => (match.length === 2 ? match : '\\\\'));
+}
+
+const LATEX_UNCONDITIONAL_SUSPICIOUS_CHARS = /[\t\f\b\r]/; // TAB, FORM_FEED, BACKSPACE, CARRIAGE_RETURN
+const LATEX_DISPLAY_MATH_RE = /\$\$([\s\S]*?)\$\$/g;
+const LATEX_INLINE_MATH_RE = /\$([^$]*?)\$/g;
+
+function textHasLatexCorruption(text: string): boolean {
+  if (LATEX_UNCONDITIONAL_SUSPICIOUS_CHARS.test(text)) return true;
+  LATEX_DISPLAY_MATH_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = LATEX_DISPLAY_MATH_RE.exec(text))) {
+    if (m[1].includes('\n')) return true;
+  }
+  const withoutDisplayMath = text.replace(LATEX_DISPLAY_MATH_RE, '');
+  LATEX_INLINE_MATH_RE.lastIndex = 0;
+  while ((m = LATEX_INLINE_MATH_RE.exec(withoutDisplayMath))) {
+    if (m[1].includes('\n')) return true;
+  }
+  return false;
+}
+
+/** Every LaTeX-capable free-text field a raw generated question can carry (Step 16's authoritative list). */
+function collectLatexCapableStrings(q: any): string[] {
+  if (!q || typeof q !== 'object') return [];
+  const strings: string[] = [];
+  const pushIf = (v: any) => {
+    if (typeof v === 'string') strings.push(v);
+  };
+  pushIf(q.question);
+  pushIf(q.explanation);
+  pushIf(q.correctAnswer);
+  if (Array.isArray(q.options)) for (const o of q.options) pushIf(o?.text);
+  if (Array.isArray(q.matchingPairs)) for (const p of q.matchingPairs) {
+    pushIf(p?.left);
+    pushIf(p?.right);
+  }
+  if (Array.isArray(q.orderingItems)) for (const item of q.orderingItems) pushIf(item);
+  if (Array.isArray(q.classificationCategories)) for (const c of q.classificationCategories) pushIf(c);
+  if (Array.isArray(q.classificationItems)) for (const c of q.classificationItems) pushIf(c?.item);
+  if (q.visualAid && typeof q.visualAid === 'object') {
+    pushIf(q.visualAid.caption);
+    if (q.visualAid.chartData && typeof q.visualAid.chartData === 'object') {
+      pushIf(q.visualAid.chartData.xLabel);
+      pushIf(q.visualAid.chartData.yLabel);
+      if (Array.isArray(q.visualAid.chartData.labels)) for (const l of q.visualAid.chartData.labels) pushIf(l);
+    }
+  }
+  return strings;
+}
+
+function isLatexCorrupted(rawQuestion: any): boolean {
+  return collectLatexCapableStrings(rawQuestion).some(textHasLatexCorruption);
 }
 
 function normalizeOptions(raw: any): QuestionOption[] | undefined {
@@ -1010,7 +1595,7 @@ ${groundingRequirement}
 4. Questions should test understanding, not just recall
 5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
 6. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
-7. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps.
+7. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps. Your entire response is a JSON document. Every backslash inside your LaTeX must itself be escaped for JSON: write it as two backslashes in the raw JSON for every one backslash LaTeX needs. For example: to display \\frac{a}{b}, write \\\\frac{a}{b} in your JSON output (not \\frac{a}{b}); to display \\times, write \\\\times; to display \\sqrt{x}, write \\\\sqrt{x}. A single backslash immediately before a letter is invalid JSON, or worse, silently corrupts your output into an unreadable control character -- never emit one. Do not use any math delimiter other than "$...$" or "$$...$$".
 8. Tag EVERY question with "cognitiveLevel" and "questionIntent", judged honestly against what the question actually demands -- never default to the same value for every question just because it's convenient:
    - "cognitiveLevel" (the cognitive demand genuinely required to answer, Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
    - "questionIntent" (what this question is primarily evidence of): "CHECK_UNDERSTANDING" (does the student grasp the concept itself), "CHECK_APPLICATION" (can the student use it in a concrete case), "CHECK_TRANSFER" (can the student use it in an unfamiliar context or combined with other concepts), "DIAGNOSTIC_PROBE" (designed to reveal a specific likely misconception rather than just pass/fail).
