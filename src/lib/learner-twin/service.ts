@@ -79,7 +79,7 @@ function dataQuality(sourcesUsed: DataQualitySummary['sourcesUsed'] = ['SYSTEM_F
 // ---------------------------------------------------------------------
 
 export async function getOverview(studentId: StudentId, options: ProjectionOptions = {}): Promise<LearnerModel> {
-  const [academicContext, languageContext, subjectRows, planningContext, evidenceCoverage, evidencedConceptIds] = await Promise.all([
+  const [academicContext, languageContext, subjectRows, planningContext, evidenceCoverage, evidencedConceptIds, memorySignalsById] = await Promise.all([
     R.readAcademicContext(studentId),
     R.readLanguageContext(studentId),
     R.readSubjects(studentId, options.subjectIds),
@@ -88,7 +88,11 @@ export async function getOverview(studentId: StudentId, options: ProjectionOptio
     // Phase 1E: bounded to concepts the student has actually engaged
     // with (a mastery_records row exists) -- never the full curriculum.
     db.query<{ concept_id: string }>(`SELECT concept_id FROM mastery_records WHERE student_id = $1`, [studentId]).then((r) => r.rows.map((row) => row.concept_id)),
+    // Step 6I: ONE batch Phase 6 memory read for the whole student --
+    // never one query per concept (Section 18).
+    R.getTwinMemorySignalsForStudent(db, studentId),
   ]);
+  const memoryOverview = R.aggregateMemoryOverview([...memorySignalsById.values()]);
 
   // Phase 1E: learner-wide derived metrics. Calibration pools all
   // confidence-tagged evidence in one query; velocity batches all
@@ -145,6 +149,7 @@ export async function getOverview(studentId: StudentId, options: ProjectionOptio
     velocitySummary,
     studyPlanAdherence,
     kvr14,
+    memoryOverview,
     dataQuality: dataQuality(),
   };
 }
@@ -158,7 +163,7 @@ export async function getSubjectView(studentId: StudentId, subjectId: string, op
   const subjectRow = subjectRows[0];
   if (!subjectRow) return null;
 
-  const [masteryRows, knowledgeStates, recurringMisconceptions, subjectAggregate] = await Promise.all([
+  const [masteryRows, knowledgeStates, recurringMisconceptions, subjectAggregate, memorySignalsById] = await Promise.all([
     R.readSubjectMasteryRows(studentId, subjectId),
     R.getSubjectKnowledgeState(studentId, subjectId),
     R.getRecurringMisconceptions(studentId),
@@ -166,10 +171,24 @@ export async function getSubjectView(studentId: StudentId, subjectId: string, op
     // (learner-model.service.ts::getSubjectLearnerModel) rather than
     // reimplementing avgMastery/avgRetention/avgIndependentMastery/
     // avgConfidenceCalibration/evidenceCoverage -- see Phase 1C report §6.
+    // NOTE (Step 6I): this aggregate's own avgRetention/atRiskCount are
+    // still legacy-sourced (learner-model.service.ts::getRetention) --
+    // left untouched here (Step 6I is Twin's own readers/service files
+    // only); see the Step 6I report's legacy caller map. memorySummary
+    // below is the new, purely Phase-6-sourced aggregate.
     getSubjectLearnerModel(studentId, subjectId),
+    // Step 6I: ONE batch Phase 6 memory read for the whole student,
+    // filtered to this subject's concepts below -- never one query per
+    // concept (Section 18).
+    R.getTwinMemorySignalsForStudent(db, studentId),
   ]);
 
   const subjectConceptIds = masteryRows.map((r) => r.concept_id);
+  const subjectMemorySignals = subjectConceptIds.flatMap((id) => {
+    const s = memorySignalsById.get(id);
+    return s ? [s] : [];
+  });
+  const memorySummary = R.aggregateSubjectMemorySummary(subjectMemorySignals);
   // Phase 1E: subject-scoped derived metrics -- batched, not per-concept.
   const [aggregateCalibration, aggregateVelocityByConcept, transferCoverage] = await Promise.all([
     readAggregateCalibration(studentId, subjectConceptIds),
@@ -248,6 +267,7 @@ export async function getSubjectView(studentId: StudentId, subjectId: string, op
     },
     concepts,
     needsAttention,
+    memorySummary,
     aggregateCalibration,
     aggregateVelocity,
     transferCoverage,
@@ -290,6 +310,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     helpDependency,
     learningVelocity,
     persistence,
+    memorySignal,
   ] = await Promise.all([
     R.readKnowledgeStateSignal(studentId, conceptId),
     R.readIndependenceSignal(studentId, conceptId),
@@ -310,9 +331,13 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     readHelpDependency(studentId, conceptId),
     readLearningVelocity(studentId, conceptId),
     readPersistence(studentId, conceptId),
+    // Step 6I: single-concept Phase 6 read -- ConceptView is inherently
+    // one-concept-per-call already, so this is not the N+1 pattern
+    // Section 18 warns about (that applies to SubjectView/Overview).
+    R.getTwinMemorySignal(db, studentId, conceptId),
   ]);
 
-  const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
+  const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null, memorySignal);
 
   const stateHistory = options.includeHistory
     ? await R.readStateHistory(studentId, conceptId, options.historyLimit ?? DEFAULT_HISTORY_LIMIT)
@@ -335,6 +360,7 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     independence,
     metacognition,
     retention,
+    memory: R.toMemorySignal(memorySignal),
     transfer,
     misconceptions,
     interventionState,
@@ -412,6 +438,7 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     interventionState,
     validationState,
     assessmentState,
+    memorySignal,
   ] = await Promise.all([
     R.readKnowledgeStateSignal(studentId, conceptId),
     R.readIndependenceSignal(studentId, conceptId),
@@ -429,9 +456,12 @@ export async function getDecisionContext(studentId: StudentId, conceptId: string
     interventionStatePromise,
     validationStatePromise,
     assessmentStatePromise,
+    // Step 6I: single-concept Phase 6 read, same rationale as
+    // getConceptView above -- DecisionContext is also one-concept-per-call.
+    R.getTwinMemorySignal(db, studentId, conceptId),
   ]);
 
-  const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null);
+  const retention = R.toRetentionSignal(masteryRow, knowledgeStateSignal?.dimensions.retention ?? null, memorySignal);
 
   return {
     studentId,

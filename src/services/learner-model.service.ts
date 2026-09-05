@@ -20,6 +20,10 @@
 import { db } from '@/lib/db';
 import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
 import { masteryToPercent, tryMasteryScore, averageMasteryScore, type MasteryScore } from '@/lib/mastery-format';
+// Step 6J-B1: getSubjectLearnerModel's avgRetention/atRiskCount now read
+// Phase 6's canonical predictive memory (retrievabilityNow) instead of
+// this file's own getRetention()/spaced-repetition formula -- see below.
+import { getCanonicalMemorySignalsForStudent } from '@/services/memory-read.service';
 
 export type EvidenceStrength = 'LOW' | 'MEDIUM' | 'HIGH';
 // Matches the DB CHECK constraint on learning_evidence.confidence_before_answer
@@ -365,19 +369,25 @@ export async function getSubjectLearnerModel(studentId: string, subjectId: strin
     `SELECT concept_id, mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND subject_id = $2`,
     [studentId, subjectId]
   );
+  // Step 6J-B1: ONE batch Phase 6 read for the whole student, filtered
+  // to this subject's concepts below -- never one query per concept.
+  // avgRetention/atRiskCount are predictive-memory semantics
+  // (RETRIEVABILITY_NOW / "at risk if predicted retrievability < 50"),
+  // never evidenced retention -- see Step 6J-A's audit -- so this reads
+  // retrievabilityNow, not demonstratedRetentionScore. Same threshold
+  // (<50) preserved exactly; only the source changed.
+  const canonicalMemorySignals = await getCanonicalMemorySignalsForStudent(db, studentId);
+
   const masteryScores: number[] = [];
   const validMasteryScores: MasteryScore[] = [];
   const retentions: number[] = [];
   let atRiskCount = 0;
   for (const row of masteryRows.rows) {
     masteryScores.push(Number(row.mastery_score));
-    // Validated separately from the raw masteryScores array above: getRetention
-    // below deliberately still receives the raw (unvalidated) value exactly as
-    // before -- it feeds an existing spaced-repetition calculation this hotfix
-    // is not touching. Only the display-bound average uses the validated score.
     const score = tryMasteryScore(row.mastery_score, `learner-model subject concept ${row.concept_id}`);
     if (score !== null) validMasteryScores.push(score);
-    const r = getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced);
+    const memorySignal = canonicalMemorySignals.get(row.concept_id);
+    const r = memorySignal?.retrievabilityNow ?? null;
     if (r !== null) {
       retentions.push(r);
       if (r < 50) atRiskCount++;

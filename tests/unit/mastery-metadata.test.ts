@@ -53,6 +53,11 @@ vi.mock('@/services/knowledge-state.service', () => ({
     minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
   }),
 }));
+// Phase 6 Step 6E: SHADOW MODE projector, unrelated to this metadata
+// fixture -- stubbed out like knowledge-state.service above.
+vi.mock('@/services/memory-projector.service', () => ({
+  projectConceptMemoryState: vi.fn().mockResolvedValue({ state: {}, stateChanged: false, diagnostics: {} }),
+}));
 
 import { updateMastery } from '@/services/mastery.service';
 

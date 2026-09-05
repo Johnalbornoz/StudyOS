@@ -53,4 +53,32 @@ describe('computeDebtResolutionCriteria', () => {
     expect(r.lowForgettingRisk.met).toBe(true);
     expect(r.allMet).toBe(true);
   });
+
+  // Step 6J-B1: null daysSinceLastSuccess/forgettingRisk (no genuine
+  // Phase 6 concept_memory_state row yet) must evaluate as NOT SATISFIED
+  // -- never fabricated as 0 days, Infinity, or a "worst case" 100% risk.
+  describe('NULL RETENTION PROOF / NULL FORGETTING RISK (Section 11) -- never fabricated, never satisfied', () => {
+    it('null daysSinceLastSuccess -> retentionProof.met is false, not true (would have been true under the old Infinity sentinel)', () => {
+      const r = computeDebtResolutionCriteria(90, [95, 90, 85], null, 10);
+      expect(r.retentionProof.met).toBe(false);
+      expect(r.retentionProof.daysSinceLastSuccess).toBeNull();
+      expect(r.allMet).toBe(false);
+    });
+
+    it('null forgettingRisk -> lowForgettingRisk.met is false, not true (would have been true under the old fabricated-100 fallback only if inverted incorrectly, but must never be treated as "satisfied" either way)', () => {
+      const r = computeDebtResolutionCriteria(90, [95, 90, 85], 20, null);
+      expect(r.lowForgettingRisk.met).toBe(false);
+      expect(r.lowForgettingRisk.current).toBeNull();
+      expect(r.allMet).toBe(false);
+    });
+
+    it('both null -> debt never resolves purely from missing Phase 6 data, even with perfect mastery/scores', () => {
+      const r = computeDebtResolutionCriteria(100, [100, 100, 100], null, null);
+      expect(r.masteryAbove85.met).toBe(true);
+      expect(r.recentScoresAbove80.met).toBe(true);
+      expect(r.retentionProof.met).toBe(false);
+      expect(r.lowForgettingRisk.met).toBe(false);
+      expect(r.allMet).toBe(false);
+    });
+  });
 });

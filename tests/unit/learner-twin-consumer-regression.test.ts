@@ -85,6 +85,9 @@ function sharedMock(sql: string, params: any[] = []) {
   if (s.includes('timestamp, source_type, metadata FROM learning_evidence')) return { rows: [] };
   if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) return { rows: [] };
   if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
+  // Step 6I: Phase 6 canonical memory state -- no row by default; the
+  // dedicated retention test below overrides this with a real fixture.
+  if (s.includes('FROM concept_memory_state')) return { rows: [] };
   throw new Error(`Unmocked: ${s}`);
 }
 
@@ -122,7 +125,32 @@ describe('Concept detail page migration: getLearnerConceptState (retained) vs ge
   });
 
   it('DELIBERATE EXCEPTION, documented: "retention" means two different things in the current codebase, and ConceptView correctly keeps them distinct rather than silently picking one', async () => {
-    const query = vi.fn(async (sql: string, params: any[]) => sharedMock(sql, params));
+    const query = vi.fn(async (sql: string, params: any[]) => {
+      const s = sql.replace(/\s+/g, ' ').trim();
+      // Step 6I: Phase 6 canonical memory state -- gives this fixture a
+      // real, non-null forgettingRisk to compare against.
+      if (s.includes('FROM concept_memory_state')) {
+        return {
+          rows: [
+            {
+              concept_id: CONCEPT_ID,
+              policy_version: 1,
+              initial_competence_anchor_at: '2026-07-01T00:00:00.000Z',
+              last_qualified_attempt_at: '2026-07-01T00:00:00.000Z',
+              last_successful_retention_at: null,
+              last_unsuccessful_retention_at: null,
+              demonstrated_retention_score: null,
+              retention_evidence_count: 0,
+              consecutive_qualifying_successes: 0,
+              memory_stability: 'UNSTABLE',
+              memory_status: 'WAITING_FOR_RETENTION',
+              next_review_at: '2026-07-04T00:00:00.000Z',
+            },
+          ],
+        };
+      }
+      return sharedMock(sql, params);
+    });
     vi.doMock('@/lib/db', () => ({ db: { query } }));
 
     const { getLearnerConceptState } = await import('@/services/learner-model.service');
@@ -131,25 +159,38 @@ describe('Concept detail page migration: getLearnerConceptState (retained) vs ge
     const before = await getLearnerConceptState(STUDENT_ID, CONCEPT_ID);
     const view = await getConceptView(STUDENT_ID, CONCEPT_ID);
 
-    // getLearnerConceptState.retention = learner-model.service.ts's
-    // getRetention() = a forward-looking "how likely are they to still
-    // remember it RIGHT NOW" estimate, algebraically 100 - forgettingRisk
-    // (its own doc comment: "the inverse of the existing forgetting-risk
-    // calculation"). ConceptView exposes this SAME number as
-    // `retention.forgettingRisk` (inverted back), not as `retentionScore`.
-    expect(before!.retention).toBe(100 - view!.retention.forgettingRisk!);
+    // Step 6I: getLearnerConceptState.retention (learner-model.service.ts's
+    // getRetention(), still the legacy spaced-repetition formula over
+    // mastery_records -- untouched by Step 6I, out of scope) and
+    // ConceptView.retention.forgettingRisk (now Phase 6's canonical
+    // computeLiveMemorySignals value, via memory-read.service.ts) are, as
+    // of this step, two INDEPENDENTLY SOURCED numbers with no required
+    // numeric relationship -- Twin no longer computes the legacy formula
+    // at all (Section 13: "Twin must no longer compute its own formula").
+    // This is a deliberate, disclosed authority change, not a bug: before
+    // Step 6I these two were proven identical (same underlying formula,
+    // fed from mastery_records both times); after Step 6I they generally
+    // will NOT agree, since one is legacy/mastery_records-derived and the
+    // other is Phase 6/concept_memory_state-derived. Assert non-equality
+    // explicitly, rather than silently dropping the comparison, so a
+    // future accidental re-convergence (or divergence) is visible here.
+    expect(before!.retention).not.toBe(100 - view!.retention.forgettingRisk!);
 
     // ConceptView.retention.retentionScore, by contrast, is the Knowledge
     // State "retention" DIMENSION (knowledge-state.service.ts's
-    // classifyRetention) -- a backward-looking "has the student PROVEN
-    // they still know this after a real time gap" evidence classification.
-    // These are two genuinely different pedagogical signals that happen
-    // to share the English word "retention" -- Phase 1B explicitly
-    // designed the Twin's retentionScore to be the Knowledge State
-    // dimension (Phase 1B report §17/§19), and this test proves that
-    // choice is real and intentional, not an accidental mismatch with the
-    // pre-existing LearnerConceptState.retention field.
+    // classifyRetention/Phase 6 mirror since Step 6G) -- a backward-
+    // looking "has the student PROVEN they still know this after a real
+    // time gap" evidence classification. Still genuinely distinct from
+    // both the legacy predictive value AND Phase 6's own
+    // forgettingRisk/retrievabilityNow -- Phase 1B's original design
+    // choice remains intact.
     expect(view!.retention.retentionScore).toBeNull(); // no concept_knowledge_state row in this fixture
     expect(view!.retention.forgettingRisk).not.toBeNull();
+
+    // Step 6I: ConceptView.retention.forgettingRisk and
+    // ConceptView.memory.forgettingRisk must be the exact same number --
+    // ONE canonical Phase 6 forgettingRisk within Twin, never two.
+    expect(view!.retention.forgettingRisk).toBe(view!.memory.forgettingRisk);
+    expect(view!.memory.memoryStatus).toBe('WAITING_FOR_RETENTION');
   });
 });

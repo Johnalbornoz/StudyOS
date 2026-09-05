@@ -3,6 +3,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...args: any[]) => queryMock(...args) } }));
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
+// Step 6G: the one test in this file that exercises the real
+// recalculateConceptKnowledgeState now also needs a Phase 6 memory read
+// -- unrelated to what this file actually tests (INTERVENTION_REQUIRED
+// projector propagation), so it's stubbed out with a neutral input
+// exactly like other Phase 6 shadow-mode dependencies are stubbed
+// elsewhere (see memory-projector.service mocks in mastery-metadata.test.ts etc).
+vi.mock('@/services/memory-read.service', () => ({
+  getPhase2MemoryInput: vi.fn().mockResolvedValue({
+    demonstratedRetentionScore: null,
+    retentionEvidenceCount: 0,
+    memoryStatus: 'NOT_ESTABLISHED',
+    lastSuccessfulRetentionAt: null,
+    policyVersion: 1,
+  }),
+}));
 
 import {
   isMeaningfulGap,
@@ -20,7 +35,6 @@ import {
   getConceptValidationState,
   type TriggerType,
 } from '@/services/validation-cycle.service';
-import { classifyRetention } from '@/services/knowledge-state.service';
 import type { DimensionScores, MisconceptionState, MasteryPolicy } from '@/services/knowledge-state.service';
 
 beforeEach(() => {
@@ -41,7 +55,6 @@ const POLICY: MasteryPolicy = {
   maximumCriticalMisconceptions: 0,
   minimumEvidenceCount: 3,
   minimumIndependentEvidenceCount: 2,
-  retentionMinGapDays: 3,
   validationWindowDays: 14,
 };
 
@@ -147,23 +160,10 @@ describe('4. Strong immediate performance remains Provisional through the lifecy
 });
 
 // --- 5 & 6. Retention: delayed evidence counts, immediate does not -----
-describe('5 & 6. Retention requires real time separation', () => {
-  it('evidence gapped past the policy minimum produces a real Retention score', () => {
-    const rows = [
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 100, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-01T00:00:00Z') },
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 90, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-05T00:00:00Z') },
-    ];
-    expect(classifyRetention(rows, 3)).toBe(90);
-  });
-
-  it('evidence from the same day as first exposure never counts as Retention', () => {
-    const rows = [
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 100, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-01T00:00:00Z') },
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 100, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-01T01:00:00Z') },
-    ];
-    expect(classifyRetention(rows, 3)).toBeNull();
-  });
-});
+// classifyRetention() (the legacy evidence-gap classifier this described)
+// was deleted in Step 6J-B2 -- Retention is now sourced entirely from
+// Phase 6's canonical memory model; its qualification-gap semantics are
+// covered in tests/unit/memory-model.test.ts instead.
 
 // --- 7. Successful Retention advances validation ------------------------
 describe('7. Successful Retention advances validation readiness toward READY', () => {
@@ -386,14 +386,6 @@ describe('25. Time-zone/date handling is deterministic', () => {
     expect(utc).toBe(14);
   });
 
-  it('classifyRetention\'s gap check is based on absolute elapsed time, not calendar-day boundaries in any particular zone', () => {
-    const rows = [
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 100, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-01T23:00:00Z') },
-      { sourceType: 'PRACTICE_QUIZ', result: 'correct' as const, scorePercent: 80, aiAssistanceType: 'NONE', timestamp: new Date('2026-01-02T01:00:00Z') },
-    ];
-    // Only 2 real hours apart (crosses a calendar-day boundary in UTC) -- must NOT count as a 3-day-gapped retrieval.
-    expect(classifyRetention(rows, 3)).toBeNull();
-  });
 });
 
 // --- P0-A: INTERVENTION_REQUIRED terminal escalation must survive the ------

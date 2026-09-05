@@ -35,7 +35,6 @@ import {
   classifyUnderstanding,
   classifyIndependence,
   classifyApplication,
-  classifyRetention,
   determineMasteryState,
   evaluateEvidenceSufficiency,
   type EvidenceRow,
@@ -43,6 +42,7 @@ import {
 } from './knowledge-state.service';
 import { getTransferScore } from './transfer.service';
 import { getMisconceptionCountsForConcept } from './misconception.service';
+import { replayMemoryProjectionFromEvidence } from './memory-projector.service';
 
 export interface BackfillMetrics {
   studentsScanned: number;
@@ -107,6 +107,16 @@ async function findCandidates(
  * dry run). Reuses the same exported, pure classification functions
  * the live projector uses, so the preview is a true preview of the
  * base (pre-2.2B-overlay) Mastery State, not a separate estimate.
+ *
+ * Step 6J-B2: the Retention dimension is now sourced the same way the
+ * live path (recalculateConceptKnowledgeState) sources it -- Phase 6's
+ * canonical demonstratedRetentionScore -- instead of the legacy
+ * classifyRetention() formula. It is reconstructed via a pure replay
+ * of learning_evidence (replayMemoryProjectionFromEvidence), NEVER by
+ * reading concept_memory_state: a dry-run preview must produce a
+ * correct answer even for a pair that has never been through Phase 6
+ * live projection or backfill yet, so it cannot assume that table is
+ * populated.
  */
 async function previewOne(studentId: string, conceptId: string): Promise<{ masteryState: Exclude<MasteryState, 'AT_RISK' | 'INTERVENTION_REQUIRED'>; retentionAvailable: boolean } | null> {
   const conceptRow = await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [conceptId]);
@@ -126,16 +136,17 @@ async function previewOne(studentId: string, conceptId: string): Promise<{ maste
   }));
 
   const policy = await getActiveMasteryPolicy();
-  const [transferScore, misconceptionCounts] = await Promise.all([
+  const [transferScore, misconceptionCounts, memoryProjection] = await Promise.all([
     getTransferScore(studentId, conceptId),
     getMisconceptionCountsForConcept(studentId, conceptId),
+    replayMemoryProjectionFromEvidence(db, studentId, conceptId),
   ]);
   const unassistedRows = rows.filter((r) => r.aiAssistanceType === 'NONE');
   const scores = {
     understanding: classifyUnderstanding(rows),
     independence: classifyIndependence(unassistedRows),
     application: classifyApplication(rows),
-    retention: classifyRetention(rows, policy.retentionMinGapDays),
+    retention: memoryProjection.detail.state.demonstratedRetentionScore,
     transfer: transferScore,
   };
   const sufficiency = evaluateEvidenceSufficiency(rows, policy);

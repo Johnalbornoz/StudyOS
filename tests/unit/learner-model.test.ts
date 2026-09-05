@@ -254,11 +254,13 @@ describe('getConceptIntelligenceBatch (Concept -> Topic/Subtopic aggregation inp
 describe('getSubjectLearnerModel (Subject Intelligence)', () => {
   it('returns all-null / zero-count when the subject has no mastery records', async () => {
     // Query order inside getSubjectLearnerModel: mastery_records, then
-    // (0 conceptIds -> getConceptIntelligenceBatch skips its query
-    // entirely), then learning_debt count, then getEvidenceCoverage's
-    // two queries (total concepts, evidenced concepts).
+    // Step 6J-B1's batch concept_memory_state read, then (0 conceptIds
+    // -> getConceptIntelligenceBatch skips its query entirely), then
+    // learning_debt count, then getEvidenceCoverage's two queries
+    // (total concepts, evidenced concepts).
     queryMock
       .mockResolvedValueOnce(rows([])) // mastery_records
+      .mockResolvedValueOnce(rows([])) // concept_memory_state batch read (Step 6J-B1)
       .mockResolvedValueOnce(rows([{ count: 0 }])) // debt count
       .mockResolvedValueOnce(rows([{ count: 0 }])); // evidence coverage: total concepts (0 -> coverage is null, second query never runs)
 

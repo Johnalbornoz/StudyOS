@@ -10,7 +10,6 @@ import {
   classifyUnderstanding,
   classifyIndependence,
   classifyApplication,
-  classifyRetention,
   evaluateEvidenceSufficiency,
   determineValidationReadiness,
   determineMasteryState,
@@ -37,7 +36,6 @@ const POLICY: MasteryPolicy = {
   maximumCriticalMisconceptions: 0,
   minimumEvidenceCount: 3,
   minimumIndependentEvidenceCount: 2,
-  retentionMinGapDays: 3,
   validationWindowDays: 14,
 };
 
@@ -74,7 +72,6 @@ describe('2. Unknown dimension remains null (never a fabricated 0)', () => {
     expect(classifyUnderstanding([])).toBeNull();
     expect(classifyIndependence([])).toBeNull();
     expect(classifyApplication([])).toBeNull();
-    expect(classifyRetention([], POLICY.retentionMinGapDays)).toBeNull();
   });
 });
 
@@ -141,15 +138,10 @@ describe('7 & 8. Transfer remains null without evidence, and is reused from Phas
     expect(determineValidationReadiness(scores, noMisconceptions(), sufficiency, POLICY)).toBe('TRANSFER_REQUIRED');
   });
 
-  it('none of the Understanding/Application/Retention classifiers ever include TRANSFER-sourced evidence -- Transfer only ever comes from getTransferScore', () => {
+  it('none of the Understanding/Application classifiers ever include TRANSFER-sourced evidence -- Transfer only ever comes from getTransferScore (Retention is sourced from Phase 6\'s canonical memory model, not classified from raw evidence pools here at all -- see memory-model.test.ts)', () => {
     const transferRows = [evidence({ sourceType: 'TRANSFER', result: 'correct', scorePercent: 100 })];
     expect(classifyUnderstanding(transferRows)).toBeNull();
     expect(classifyApplication(transferRows)).toBeNull();
-    expect(classifyRetention(transferRows, 0)).not.toBeNull(); // gap of 0 days always passes the gap check...
-    // ...but the point is TRANSFER rows are never specifically filtered *for* Retention's pool the way
-    // Understanding/Application explicitly exclude them -- Retention pools ALL evidence by design (any
-    // evidence, once time-separated, counts toward retention). Confirm that explicitly:
-    expect(classifyRetention(transferRows, 0)).toBe(100);
   });
 });
 
@@ -194,7 +186,6 @@ describe('12 & 13. The projector is deterministic: same inputs always produce th
     ];
     expect(classifyUnderstanding(rows)).toBe(classifyUnderstanding(rows));
     expect(classifyApplication(rows)).toBe(classifyApplication(rows));
-    expect(classifyRetention(rows, 3)).toBe(classifyRetention(rows, 3));
   });
 
   it('the full state-reason pipeline produces byte-identical output when replayed with the same inputs', () => {

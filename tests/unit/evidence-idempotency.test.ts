@@ -222,6 +222,12 @@ async function loadUpdateMastery(db: any, recalculateMock = vi.fn().mockResolved
   const policyMock = vi.fn().mockResolvedValue(DEFAULT_TEST_POLICY);
   vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
   vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
+  // Phase 6 Step 6E: SHADOW MODE projector, unrelated to evidence
+  // idempotency -- stubbed out like knowledge-state.service above, so
+  // this file's fake DB doesn't need to also model concept_memory_state.
+  const memoryProjectorMock = vi.fn().mockResolvedValue({ state: {}, stateChanged: false, diagnostics: {} });
+  vi.doMock('./memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
+  vi.doMock('@/services/memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
   const mod = await import('@/services/mastery.service');
   return { updateMastery: mod.updateMastery, recalculateMock, recordDecisionEventMock };
 }

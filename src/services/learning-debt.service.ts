@@ -13,8 +13,20 @@
 import { db } from '@/lib/db';
 import { calculateDebtSeverity } from '@/lib/algorithms/mastery';
 import { ensureConceptLocalizations } from './localization.service';
-import { getRetention } from './learner-model.service';
+// Step 6J-B1: forgettingRisk and the "retention proof" timestamp both
+// come from Phase 6's canonical memory-read.service.ts now (never
+// getRetention()/mastery_records.last_practiced) -- see
+// getLearningDebtCriteriaProgress and getActiveDebts below.
+import { getCanonicalMemorySignal, getCanonicalMemorySignalsForStudent } from './memory-read.service';
 import { recordDecisionEvent } from '@/lib/audit';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** now - lastSuccessfulRetentionAt, in whole days -- null (never a fabricated 0/Infinity) when no genuine qualified retention proof exists yet. Explicit `now` input, never a hidden Date.now() inside a pure function. */
+function daysSinceLastSuccessfulRetention(lastSuccessfulRetentionAt: string | null, now: Date = new Date()): number | null {
+  if (lastSuccessfulRetentionAt === null) return null;
+  return Math.floor((now.getTime() - new Date(lastSuccessfulRetentionAt).getTime()) / DAY_MS);
+}
 
 export interface LearningDebtRecord {
   id: string;
@@ -239,22 +251,32 @@ export async function updateDebtSeverity(
 export interface LearningDebtCriteriaProgress {
   masteryAbove85: { current: number; threshold: 85; met: boolean };
   recentScoresAbove80: { current: number | null; threshold: 80; sampleCount: number; requiredSamples: 3; met: boolean };
-  retentionProof: { daysSinceLastSuccess: number; threshold: 14; met: boolean };
-  lowForgettingRisk: { current: number; threshold: 20; met: boolean };
+  /**
+   * Step 6J-B1: daysSinceLastSuccess is null exactly when Phase 6's
+   * lastSuccessfulRetentionAt is null -- no genuine qualified retention
+   * proof exists yet (never conflated with "recent practice"). A null
+   * value means this criterion is NOT met -- never fabricated as 0
+   * days, Infinity, or "today".
+   */
+  retentionProof: { daysSinceLastSuccess: number | null; threshold: 14; met: boolean };
+  /** Step 6J-B1: null exactly when Phase 6 has no prediction yet (no concept_memory_state row) -- never a fabricated 100 ("assume worst case"). A null value means this criterion is NOT met. */
+  lowForgettingRisk: { current: number | null; threshold: 20; met: boolean };
   allMet: boolean;
 }
 
 export function computeDebtResolutionCriteria(
   currentMastery: number,
   recentScores: number[],
-  daysSinceLastSuccess: number,
-  forgettingRisk: number
+  daysSinceLastSuccess: number | null,
+  forgettingRisk: number | null
 ): LearningDebtCriteriaProgress {
   const recentAvg = recentScores.length >= 3 ? recentScores.slice(0, 3).reduce((a, b) => a + b, 0) / 3 : null;
   const masteryAbove85 = currentMastery > 85;
   const recentScoresAbove80 = recentAvg !== null && recentAvg > 80;
-  const retentionProof = daysSinceLastSuccess > 14;
-  const lowForgettingRisk = forgettingRisk < 20;
+  // Step 6J-B1: null never satisfies these criteria -- "we don't know
+  // yet" must never be treated as "the proof/low-risk condition holds".
+  const retentionProof = daysSinceLastSuccess !== null && daysSinceLastSuccess > 14;
+  const lowForgettingRisk = forgettingRisk !== null && forgettingRisk < 20;
   return {
     masteryAbove85: { current: currentMastery, threshold: 85, met: masteryAbove85 },
     recentScoresAbove80: { current: recentAvg, threshold: 80, sampleCount: recentScores.length, requiredSamples: 3, met: recentScoresAbove80 },
@@ -274,18 +296,18 @@ export async function getLearningDebtCriteriaProgress(
   conceptId: string
 ): Promise<LearningDebtCriteriaProgress | null> {
   const masteryRow = await db.query(
-    `SELECT mastery_score, confidence_score, last_practiced FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
+    `SELECT mastery_score FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
     [studentId, conceptId]
   );
   const record = masteryRow.rows[0];
   if (!record) return null;
 
   const mastery = Number(record.mastery_score);
-  const daysSinceLastSuccess = record.last_practiced
-    ? Math.floor((Date.now() - new Date(record.last_practiced).getTime()) / (1000 * 60 * 60 * 24))
-    : Infinity;
-  const retention = getRetention(mastery, Number(record.confidence_score), record.last_practiced);
-  const forgettingRisk = retention !== null ? 100 - retention : 100;
+  // Step 6J-B1: canonical Phase 6 read -- null (not a fallback to
+  // last_practiced/100) when no concept_memory_state row exists yet.
+  const memorySignal = await getCanonicalMemorySignal(db, studentId, conceptId);
+  const daysSinceLastSuccess = daysSinceLastSuccessfulRetention(memorySignal?.lastSuccessfulRetentionAt ?? null);
+  const forgettingRisk = memorySignal?.forgettingRisk ?? null;
 
   const recentScores = await getRecentAssessmentScores(studentId, conceptId, 3);
   return computeDebtResolutionCriteria(mastery, recentScores, daysSinceLastSuccess, forgettingRisk);
@@ -295,8 +317,8 @@ export async function checkAndResolveDebt(
   studentId: string,
   conceptId: string,
   currentMastery: number,
-  daysSinceLastSuccess: number,
-  forgettingRisk: number
+  daysSinceLastSuccess: number | null,
+  forgettingRisk: number | null
 ): Promise<LearningDebtRecord | null> {
   try {
     const debt = await getDebtRecord(studentId, conceptId);
@@ -340,7 +362,12 @@ export async function checkAndResolveDebt(
     );
 
     const row = result.rows[0];
-    const resolutionReason = `RESOLVED: Mastery ${currentMastery.toFixed(1)}% | Retention ${daysSinceLastSuccess}d | Risk ${forgettingRisk.toFixed(1)}%`;
+    // daysSinceLastSuccess/forgettingRisk are guaranteed non-null here --
+    // criteria.allMet (checked above) requires both retentionProof.met
+    // and lowForgettingRisk.met, which are only true for non-null
+    // inputs -- but formatted defensively rather than asserted, so a
+    // future change to that invariant fails safely instead of crashing.
+    const resolutionReason = `RESOLVED: Mastery ${currentMastery.toFixed(1)}% | Retention ${daysSinceLastSuccess ?? 'n/a'}d | Risk ${forgettingRisk !== null ? forgettingRisk.toFixed(1) : 'n/a'}%`;
 
     // Log resolution
     await db.query(
@@ -487,6 +514,12 @@ export async function getActiveDebts(
 
     const result = await db.query(query, params);
 
+    // Step 6J-B1: ONE batch Phase 6 read for the whole student -- never
+    // one query per debt row (the previous per-row getRetention() call
+    // was a pure-function call, not a query, but the replacement reads
+    // concept_memory_state, so this must be batched to avoid a real N+1).
+    const canonicalMemorySignals = await getCanonicalMemorySignalsForStudent(db, studentId);
+
     // Lazily re-check resolution on every read, the same way
     // forgetting_risk/retention are always computed fresh rather than
     // relying on something to have written a new value in the past --
@@ -498,11 +531,9 @@ export async function getActiveDebts(
       result.rows.map(async (row) => {
         if (row.mastery_score === null) return row; // no mastery record yet, nothing to re-check
         const mastery = Number(row.mastery_score);
-        const daysSinceLastSuccess = row.last_practiced
-          ? Math.floor((Date.now() - new Date(row.last_practiced).getTime()) / (1000 * 60 * 60 * 24))
-          : Infinity;
-        const retention = getRetention(mastery, Number(row.confidence_score), row.last_practiced);
-        const forgettingRisk = retention !== null ? 100 - retention : 100;
+        const memorySignal = canonicalMemorySignals.get(row.concept_id);
+        const daysSinceLastSuccess = daysSinceLastSuccessfulRetention(memorySignal?.lastSuccessfulRetentionAt ?? null);
+        const forgettingRisk = memorySignal?.forgettingRisk ?? null;
         const resolved = await checkAndResolveDebt(studentId, row.concept_id, mastery, daysSinceLastSuccess, forgettingRisk).catch(
           () => null
         );

@@ -94,6 +94,10 @@ function buildFullFixtureQuery() {
     }
     // Phase 4-R: this query now SELECTs the pending row's own identity (id, quiz_session_id, created_at), not a COUNT -- empty rows = no pending attempt.
     if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [] };
+    // Step 6I: Phase 6 canonical memory state -- one fixed query per
+    // getDecisionContext call (single-concept read), same for every
+    // scenario this file tests -- no row needed to keep query-count math simple.
+    if (s.includes('FROM concept_memory_state')) return { rows: [] };
     throw new Error(`Unmocked: ${s}`);
   });
 }

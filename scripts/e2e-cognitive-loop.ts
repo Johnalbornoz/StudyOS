@@ -18,8 +18,11 @@
  * (equivalent to: npx tsx --env-file=.env.local scripts/e2e-cognitive-loop.ts)
  */
 
+import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { updateMastery } from '@/services/mastery.service';
+import { buildOperationKey } from '@/lib/algorithms/evidence-idempotency';
+import type { ActivityType } from '@/lib/activity-taxonomy';
 import { getLearnerConceptState } from '@/services/learner-model.service';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import {
@@ -115,13 +118,34 @@ async function giveWeakEvidence(studentId: string, conceptId: string, subjectId:
   }
 }
 
+/**
+ * Step 6K-R: `activityType`, when supplied, is stamped into
+ * `metadata.activityType` -- the ONLY field Phase 6's normalizer
+ * reads (never the legacy top-level `activity_type` column, which
+ * `telemetry.activityType` below continues to populate exactly as
+ * before). Omitted (the default for every pre-existing call site),
+ * this produces byte-identical behavior to before this step: no
+ * metadata, Phase 6 treats the row as unqualifiable, exactly as it
+ * already did. Only Scenario C/D's specific retention-proving calls
+ * pass a real, canonical `ActivityType` here.
+ *
+ * `identity` is now always supplied (a fresh random operationId, safe
+ * since this is a synthetic, never-retried evidence event -- never
+ * built from a timestamp per evidence-idempotency.ts's own warning,
+ * but genuine randomness for a one-shot event is exactly what that
+ * warning does NOT prohibit). This gives every row a real
+ * `operation_key`, required for `hasValidOperationKey` -- without it,
+ * NO evidence this script ever writes could become a competence
+ * anchor or a qualified retention attempt, regardless of metadata.
+ */
 async function giveEvidence(
   studentId: string,
   conceptId: string,
   subjectId: string,
   sourceType: string,
   scorePercent: number,
-  aiAssistanceType: 'NONE' | 'HINT' = 'NONE'
+  aiAssistanceType: 'NONE' | 'HINT' = 'NONE',
+  activityType?: ActivityType
 ) {
   await updateMastery({
     studentId,
@@ -136,28 +160,52 @@ async function giveEvidence(
       sampleSize: 4,
     },
     telemetry: { activityType: 'quiz', learningMode: aiAssistanceType === 'NONE' ? 'SOLO' : 'COACH', hintsUsed: aiAssistanceType === 'NONE' ? 0 : 1, aiAssistanceType },
+    metadata: activityType ? { activityType } : undefined,
+    identity: { operationType: 'RECORD_EVIDENCE', operationId: randomUUID(), conceptId },
   });
 }
 
 /**
  * Inserts one evidence row directly with a backdated timestamp -- not
  * through updateMastery (which always stamps NOW()) -- so a concept's
- * `first_evidence_at` is genuinely in the past. This lets the rest of
- * the scenario write "today's" evidence and have it immediately count
- * toward Retention (real time separation from first exposure), without
- * the E2E script needing to actually wait days.
+ * competence anchor is genuinely in the past, and later "today"
+ * evidence is genuinely gapped from it by real elapsed time (never a
+ * wall-clock wait).
+ *
+ * Step 6K-R: under Phase 6's canonical model (unlike the legacy
+ * classifyRetention() formula this originally targeted), a bare
+ * "first evidence timestamp" cannot itself start the retention clock
+ * -- only a genuine competence anchor can (a CORRECT, UNASSISTED,
+ * INDEPENDENT/ASSESSMENT-mode event with a valid operation key; see
+ * memory-policy.ts::isAnchorEligible). So this now always writes a
+ * `result='correct'`, `ai_assistance_type='NONE'` row with a real
+ * `metadata.activityType` and a real `operation_key` -- the caller
+ * supplies a genuinely-passing `scorePercent` and an `activityType`
+ * whose EvidenceMode is INDEPENDENT or ASSESSMENT. This is a
+ * DELIBERATE, canonical replacement of the old "any evidence,
+ * regardless of quality, sets a timestamp" mechanism -- not a
+ * weakening of it (see the certification artifact's 6K-R section for
+ * the full before/after reasoning).
  */
 async function backdateFirstEvidence(
   studentId: string,
   conceptId: string,
   subjectId: string,
   scorePercent: number,
-  daysAgo: number
+  daysAgo: number,
+  activityType: ActivityType
 ) {
+  if (scorePercent < 70) {
+    // Anchors must be a genuine, correct demonstration of competence
+    // (isAnchorEligible requires result='correct') -- callers seeding
+    // an anchor must supply a real passing score, never a weak one.
+    throw new Error(`backdateFirstEvidence: scorePercent ${scorePercent} would not be a 'correct' result -- cannot serve as a competence anchor`);
+  }
+  const operationKey = buildOperationKey({ operationType: 'RECORD_EVIDENCE', operationId: randomUUID(), conceptId });
   await db.query(
-    `INSERT INTO learning_evidence (student_id, concept_id, subject_id, source_type, result, difficulty, score_percent, ai_assistance_type, timestamp)
-     VALUES ($1, $2, $3, 'PRACTICE_QUIZ', $4, 3, $5, 'HINT', NOW() - ($6 || ' days')::interval)`,
-    [studentId, conceptId, subjectId, scorePercent >= 70 ? 'correct' : scorePercent >= 50 ? 'partial' : 'incorrect', scorePercent, daysAgo]
+    `INSERT INTO learning_evidence (student_id, concept_id, subject_id, source_type, result, difficulty, score_percent, ai_assistance_type, hints_used, timestamp, operation_key, metadata)
+     VALUES ($1, $2, $3, 'PRACTICE_QUIZ', 'correct', 3, $4, 'NONE', 0, NOW() - ($5 || ' days')::interval, $6, $7::jsonb)`,
+    [studentId, conceptId, subjectId, scorePercent, daysAgo, operationKey, JSON.stringify({ activityType })]
   );
 }
 
@@ -373,12 +421,27 @@ async function scenarioConfirm() {
 /**
  * SCENARIO C -- the mandatory Phase 2.2B success golden path: a
  * concept whose evidence genuinely earns Validated Mastery. A backdated
- * baseline establishes real time separation from "today's" evidence, so
- * later evidence counts as real Retention without the script needing to
- * wait actual days. Understanding/Independence/Application all clear
- * policy, Retention (pooled from all time-separated evidence) and
- * Transfer both come in strong, and there are zero critical
- * misconceptions -- exactly the brief's "everything lines up" case.
+ * competence anchor establishes real time separation from "today's"
+ * evidence, so a later, genuinely qualifying retention attempt (Phase
+ * 6 canonical: a correct, unassisted CUMULATIVE_ASSESSMENT/TRANSFER-
+ * type event, at least the policy's minimum gap after the anchor)
+ * counts as real Retention without the script needing to wait actual
+ * days. Understanding/Independence/Application all clear policy,
+ * Retention (Phase 6's demonstratedRetentionScore, sourced through the
+ * real updateMastery -> projector -> Knowledge State path, never a
+ * fabricated concept_memory_state row) and Transfer both come in
+ * strong, and there are zero critical misconceptions -- exactly the
+ * brief's "everything lines up" case.
+ *
+ * Step 6K-R: this scenario's ORIGINAL mechanism ("any evidence, once
+ * time-separated from a bare first-evidence timestamp, counts toward
+ * Retention") was the pre-Phase-6 classifyRetention() formula's own
+ * semantic -- STALE under Phase 6, which requires a genuine competence
+ * anchor (correct, unassisted, INDEPENDENT/ASSESSMENT-mode) followed
+ * by a genuinely qualifying, unassisted retention attempt. The
+ * pedagogical intent (a concept that genuinely earns Validated Mastery
+ * when everything -- including real Retention -- lines up) is
+ * unchanged; only the mechanism proving Retention is now canonical.
  */
 async function scenarioValidationSuccess() {
   section('SCENARIO C: Phase 2.2B success golden path (Validated Mastery)');
@@ -386,11 +449,13 @@ async function scenarioValidationSuccess() {
   const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, validation)');
   const conceptId = await makeScratchConcept(subjectId, `centripetal_force_v_${RUN_ID}`, 'Centripetal Force');
 
-  // Baseline, 10 days ago -- weak, and HINT-assisted so it never pollutes Independence.
-  await backdateFirstEvidence(studentId, conceptId, subjectId, 42, 10);
+  // Competence anchor, 10 days ago -- a genuine, correct, unassisted
+  // SOLO_CHECK (Phase 6 canonical anchor semantics; see
+  // isAnchorEligible). Never itself a retention proof.
+  await backdateFirstEvidence(studentId, conceptId, subjectId, 85, 10, 'SOLO_CHECK');
 
   const cycleAfterBaseline = await getActiveValidationCycle(studentId, conceptId);
-  assert(cycleAfterBaseline === null, 'no Validation Cycle exists yet -- the backdated baseline was written directly, never through the projector');
+  assert(cycleAfterBaseline === null, 'no Validation Cycle exists yet -- the backdated anchor was written directly, never through the projector');
 
   // "Today": strong Understanding (Explain & Defend evidence), Independence, and Application.
   await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 88, 'NONE');
@@ -401,18 +466,27 @@ async function scenarioValidationSuccess() {
   await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 88, 'NONE');
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 86, 'NONE');
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 86, 'NONE');
-  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE');
-  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE');
+  // Step 6K-R: tagged with their real, matching canonical ActivityType
+  // (CUMULATIVE_ASSESSMENT/TRANSFER are qualifying retention-attempt
+  // types under MemoryPolicy v1) -- correct, unassisted, 10+ days
+  // after the anchor, these become genuine qualified retention
+  // attempts. Only the chronologically-first one actually qualifies
+  // (later ones are within the same gap window of each other, per the
+  // 3-day-spacing rule), but every candidate score here (82-84,
+  // whichever lands first) clears the 75 policy threshold, so the
+  // outcome is robust to exact timing.
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE', 'CUMULATIVE_ASSESSMENT');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 82, 'NONE', 'CUMULATIVE_ASSESSMENT');
 
   // Transfer, reusing Phase 2's real Transfer evidence path (same metadata stamp the real submit route uses).
-  await giveEvidence(studentId, conceptId, subjectId, 'TRANSFER', 78, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'TRANSFER', 78, 'NONE', 'TRANSFER');
   await db.query(
     `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || '{"transferDistance":"NEAR","assisted":false}'::jsonb
      WHERE id = (SELECT id FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER' ORDER BY timestamp DESC LIMIT 1)`,
     [studentId, conceptId]
   );
   // Re-run the projector now that Transfer evidence (and its metadata) is in place.
-  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 84, 'NONE');
+  await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 84, 'NONE', 'CUMULATIVE_ASSESSMENT');
 
   const finalState = await getConceptKnowledgeState(studentId, conceptId);
   assert(finalState !== null, 'Concept Knowledge State exists after the full evidence sequence');
@@ -450,6 +524,22 @@ async function scenarioValidationSuccess() {
  * in the unit tests), and once its Validation Cycle's deadline passes
  * without clearing policy, it must resolve to an explicit DEVELOPING
  * outcome -- never left as an implicit UNKNOWN.
+ *
+ * Step 6K-R: under the pre-Phase-6 classifyRetention() formula, a
+ * cluster of weak HINT-assisted attempts could drag Retention down
+ * while staying excluded from Independence (Retention pooled every
+ * evidence type; Independence only unassisted). That mechanism is now
+ * STALE -- Phase 6 requires an unassisted, unhinted, valid-operation-
+ * key event to ever qualify as a retention attempt at all (see
+ * isQualifiedRetentionAttempt), so HINT-assisted evidence is silently
+ * invisible to Phase 6, not a failing signal. The old cluster is left
+ * in place (it still genuinely drags Transfer below policy, unchanged),
+ * and one new, deliberate, UNASSISTED, moderately-low-scoring
+ * qualifying attempt is added to make Retention genuinely and
+ * canonically fail -- a real signal Phase 6 will actually see, at a
+ * score chosen to keep Independence's own average safely above policy
+ * despite pooling it too (unassisted evidence unavoidably counts
+ * toward both dimensions under Phase 6, unlike the old model).
  */
 async function scenarioValidationFailure() {
   section('SCENARIO D: Phase 2.2B failure golden path (never validated, deadline resolves explicitly)');
@@ -457,7 +547,7 @@ async function scenarioValidationFailure() {
   const subjectId = await makeScratchSubject(studentId, 'Physics HL (SCRATCH E2E, validation failure)');
   const conceptId = await makeScratchConcept(subjectId, `centripetal_force_f_${RUN_ID}`, 'Centripetal Force');
 
-  await backdateFirstEvidence(studentId, conceptId, subjectId, 42, 10);
+  await backdateFirstEvidence(studentId, conceptId, subjectId, 88, 10, 'SOLO_CHECK');
 
   // Strong Understanding, Independence, Application...
   await giveEvidence(studentId, conceptId, subjectId, 'EXPLANATION', 90, 'NONE');
@@ -466,14 +556,19 @@ async function scenarioValidationFailure() {
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 90, 'NONE');
   await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 85, 'NONE');
   await giveEvidence(studentId, conceptId, subjectId, 'CUMULATIVE_ASSESSMENT', 85, 'NONE');
-  // ...but a cluster of weak, HINT-assisted attempts (excluded from Independence, but Retention
-  // pools ALL time-separated evidence regardless of source) drags the real Retention picture down.
+  // A single, real, unassisted qualifying retention attempt at a
+  // clearly-failing score (55 < policy.minimumRetention=75) -- the
+  // canonical replacement for the old HINT-cluster mechanism below.
+  await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUIZ', 55, 'NONE', 'SOLO_VERIFY');
+  // Retained: still genuinely drags Transfer below policy (HINT-
+  // assisted, so invisible to Phase 6's Retention -- excluded from
+  // Independence too, exactly as before).
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
   await giveEvidence(studentId, conceptId, subjectId, 'PRACTICE_QUESTION', 20, 'HINT');
   // A poor, assisted Transfer attempt, reusing Phase 2's real Transfer evidence path
   // (HINT-assisted here so it's excluded from Independence's own pool, same as the
-  // weak PRACTICE_QUESTION cluster above -- only Retention pools every evidence type).
+  // weak PRACTICE_QUESTION cluster above).
   await giveEvidence(studentId, conceptId, subjectId, 'TRANSFER', 20, 'HINT');
   await db.query(
     `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || '{"transferDistance":"NEAR","assisted":true}'::jsonb
@@ -850,6 +945,15 @@ async function cleanup(studentIds: string[], backfillRunIds: string[] = []) {
     await db.query(`DELETE FROM validation_events WHERE validation_cycle_id IN (SELECT id FROM validation_cycles WHERE student_id = $1)`, [studentId]);
     await db.query(`DELETE FROM validation_cycles WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM concept_knowledge_state WHERE student_id = $1`, [studentId]);
+    // Step 6K-R: concept_memory_state (Phase 6) FK-references concepts,
+    // like concept_knowledge_state above -- must be removed before the
+    // per-subject `DELETE FROM concepts` below, or that delete fails
+    // with a foreign key violation on every concept that has ever
+    // received any evidence (projectConceptMemoryState upserts a row
+    // unconditionally, even a NOT_ESTABLISHED placeholder, on every
+    // updateMastery call -- see mastery.service.ts). This table did
+    // not exist when this cleanup routine was first written.
+    await db.query(`DELETE FROM concept_memory_state WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM student_misconceptions WHERE student_id = $1`, [studentId]);
     await db.query(`DELETE FROM remediation_steps WHERE remediation_path_id IN (SELECT id FROM remediation_paths WHERE student_id = $1)`, [studentId]);
     await db.query(`DELETE FROM remediation_paths WHERE student_id = $1`, [studentId]);
@@ -885,15 +989,83 @@ async function cleanup(studentIds: string[], backfillRunIds: string[] = []) {
 
   const residue = await db.query(`SELECT count(*)::int AS n FROM students WHERE clerk_id LIKE $1`, [`${SCRATCH_PREFIX}%`]);
   assert(residue.rows[0].n === 0, `zero residual scratch data left in the database (found ${residue.rows[0].n})`);
+  if (studentIds.length > 0) {
+    // Step 6K-R: explicit proof concept_memory_state specifically left
+    // zero residue -- checked directly by the studentIds this run
+    // created, since by this point `students` itself (and the
+    // clerk_id prefix the check above uses) is already gone.
+    const memoryStateResidue = await db.query(`SELECT count(*)::int AS n FROM concept_memory_state WHERE student_id = ANY($1::uuid[])`, [studentIds]);
+    assert(memoryStateResidue.rows[0].n === 0, `zero residual concept_memory_state rows left for this run's scratch students (found ${memoryStateResidue.rows[0].n})`);
+  }
   if (backfillRunIds.length > 0) {
     const backfillResidue = await db.query(`SELECT count(*)::int AS n FROM backfill_runs WHERE id = ANY($1::uuid[])`, [backfillRunIds]);
     assert(backfillResidue.rows[0].n === 0, `zero residual backfill_runs rows left (found ${backfillResidue.rows[0].n})`);
   }
 }
 
+/**
+ * Step 6K-R: a scenario error and a cleanup error are reported
+ * SEPARATELY -- a cleanup failure must never hide a scenario's own
+ * assertion results (or a scenario error) by throwing past the
+ * `RESULT: N passed, M failed` summary line. Each is caught in its
+ * own scope; the process still exits non-zero if either occurred.
+ */
+/**
+ * Step 6K-R safety guard: this script writes real (scratch-tagged)
+ * rows to whatever database DATABASE_URL resolves to -- which, run
+ * exactly as `npm run test:e2e` documents (`--env-file=.env.local`),
+ * is the SAME database `db:status`/`db:migrate` use, i.e. real
+ * production Neon in this repo's actual `.env.local`. 6K found that
+ * cleanup could fail partway through and leave scratch data behind
+ * for real, so this must never run silently against whatever
+ * DATABASE_URL happens to be configured.
+ *
+ * A separate `TEST_DATABASE_URL`-style selector distinct from
+ * `DATABASE_URL` was considered (Step 6K-R Section 21) and rejected:
+ * `@/lib/db`'s connection pool is constructed at ES module IMPORT
+ * TIME from `process.env.DATABASE_URL`, before any code in this file
+ * (or any file importing it) can run -- reassigning env vars inside
+ * this script happens too late to affect that pool. Making a distinct
+ * variable actually take effect would require splitting this script
+ * into a bootstrap (sets env, then dynamically imports the real
+ * implementation) and an implementation file -- a structural change
+ * well beyond "harness compatibility closure." The explicit opt-in
+ * gate below achieves the same safety goal (fail before the first
+ * database write, no silent run against whatever DATABASE_URL already
+ * is) without that restructuring: it is a per-run CONSENT flag, not a
+ * database selector, and is checked before any import in this file
+ * opens a real connection (Pool() construction is lazy -- the first
+ * actual query is what would matter, and this check runs first).
+ */
+function requireExplicitDatabaseWriteConsent(): boolean {
+  if (process.env.E2E_ALLOW_DATABASE_WRITES === 'true') return true;
+  console.error(
+    [
+      'E2E_SAFETY_GUARD: refusing to run.',
+      '',
+      'scripts/e2e-cognitive-loop.ts writes real (scratch-tagged) rows to',
+      'whatever database DATABASE_URL currently resolves to, and cleanup can',
+      'fail partway through and leave that data behind for real.',
+      '',
+      'Set E2E_ALLOW_DATABASE_WRITES=true ONLY when DATABASE_URL is confirmed',
+      'to point at a disposable/ephemeral database you are willing to write',
+      'to and clean up -- never against a shared or production database.',
+      '',
+      'No database connection was opened by this run.',
+    ].join('\n')
+  );
+  return false;
+}
+
 async function main() {
+  if (!requireExplicitDatabaseWriteConsent()) {
+    process.exitCode = 1;
+    return;
+  }
+
   const createdStudentIds: string[] = [];
   let backfillRunIds: string[] = [];
+  let scenarioError: unknown = null;
   try {
     const a = await scenarioConfirm();
     createdStudentIds.push(a.studentId);
@@ -910,12 +1082,21 @@ async function main() {
     backfillRunIds = f.backfillRunIds;
     const g = await scenarioEvidenceModeEngine();
     createdStudentIds.push(g.studentId);
-  } finally {
+  } catch (err) {
+    scenarioError = err;
+  }
+
+  let cleanupError: unknown = null;
+  try {
     await cleanup(createdStudentIds, backfillRunIds);
+  } catch (err) {
+    cleanupError = err;
   }
 
   console.log(`\n=== RESULT: ${passCount} passed, ${failCount} failed ===`);
-  process.exitCode = failCount > 0 ? 1 : 0;
+  if (scenarioError) console.error('SCENARIO FAILURE (thrown, not an assertion):', scenarioError);
+  if (cleanupError) console.error('CLEANUP FAILURE:', cleanupError);
+  process.exitCode = failCount > 0 || scenarioError || cleanupError ? 1 : 0;
 }
 
 main()

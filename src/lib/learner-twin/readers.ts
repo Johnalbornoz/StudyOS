@@ -30,7 +30,6 @@ import {
   getEvidenceStrength,
   getConfidence,
   getConfidenceCalibration,
-  getRetention,
   type ConfidenceCalibration,
   type EvidenceStrength,
 } from '@/services/learner-model.service';
@@ -46,7 +45,12 @@ import { getConceptValidationState, getKVR14 } from '@/services/validation-cycle
 import { getAssessmentStateForConcept } from '@/services/assessment-verification.service';
 import { getErrorPatterns } from '@/services/error-intelligence.service';
 import { getTransferScore } from '@/services/transfer.service';
-import { calculateForgettingRisk, calculateReviewIntervalDays } from '@/lib/algorithms/spaced-repetition';
+// Step 6I: getRetention/calculateForgettingRisk/calculateReviewIntervalDays
+// (the legacy spaced-repetition formula) are deliberately NOT imported
+// here anymore -- Twin's canonical forgettingRisk/nextReviewAt/
+// lastRetrievalAt now come exclusively from Phase 6 via
+// memory-read.service.ts (see toRetentionSignal/toMemorySignal below).
+import { getTwinMemorySignal, getTwinMemorySignalsForStudent, type TwinMemorySignal } from '@/services/memory-read.service';
 import { tryMasteryScore, masteryToPercent, averageMasteryScore } from '@/lib/mastery-format';
 import type {
   StudentId,
@@ -54,6 +58,9 @@ import type {
   MasterySignal,
   KnowledgeStateSignal,
   RetentionSignal,
+  MemorySignal,
+  SubjectMemorySummary,
+  MemoryOverviewSummary,
   TransferSignal,
   MetacognitionSignal,
   IndependenceSignal,
@@ -198,7 +205,17 @@ export { toSubjectAcademicContext };
 // Cognitive state (concept-level)
 // ---------------------------------------------------------------------
 
-/** Direct source: mastery_records (a fresh, minimal query -- getMasteryRecord's existing SELECT list omits next_review_date, which this module needs for retention). */
+/**
+ * Direct source: mastery_records (a fresh, minimal query).
+ *
+ * Step 6J-B2: no longer selects next_review_date -- a fresh
+ * repository-wide search found zero readers of this row's
+ * (now-removed) nextReviewDate field anywhere in the Twin (every
+ * consumer already sources review timing from Phase 6's
+ * concept_memory_state.next_review_at via TwinMemorySignal/
+ * MemorySignal instead). The mastery_records.next_review_date column
+ * itself, and mastery.service.ts's write to it, are unchanged.
+ */
 export async function readMasteryRow(
   studentId: StudentId,
   conceptId: string
@@ -209,11 +226,10 @@ export async function readMasteryRow(
   correctCount: number;
   incorrectCount: number;
   lastPracticed: string | null;
-  nextReviewDate: string | null;
   updatedAt: string | null;
 } | null> {
   const result = await db.query(
-    `SELECT mastery_score, confidence_score, attempt_count, correct_count, incorrect_count, last_practiced, next_review_date, updated_at
+    `SELECT mastery_score, confidence_score, attempt_count, correct_count, incorrect_count, last_practiced, updated_at
      FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
     [studentId, conceptId]
   );
@@ -226,7 +242,6 @@ export async function readMasteryRow(
     correctCount: Number(row.correct_count),
     incorrectCount: Number(row.incorrect_count),
     lastPracticed: row.last_practiced,
-    nextReviewDate: row.next_review_date,
     updatedAt: row.updated_at,
   };
 }
@@ -285,32 +300,115 @@ export async function readMetacognitionSignal(studentId: StudentId, conceptId: s
 
 /**
  * Derived on read: retentionScore comes from the Knowledge State
- * dimension (already computed); forgettingRisk is computed fresh from
- * the SAME spaced-repetition algorithm mastery.service.ts already
- * uses to set next_review_date -- no new algorithm, no duplicate
- * formula (Phase 1B §19/§17).
+ * dimension (already computed, and itself a Phase 6 mirror since Step
+ * 6G -- see knowledge-state.service.ts's own doc comment on
+ * `retentionScore`). forgettingRisk/nextReviewAt come from Phase 6's
+ * canonical memory signal (`memorySignal`, read via
+ * memory-read.service.ts::getTwinMemorySignal) -- Step 6I removes the
+ * legacy spaced-repetition.ts computation entirely; Twin computes no
+ * formula of its own. `memorySignal` is null when no
+ * concept_memory_state row exists yet -- these fields become null in
+ * that case, never a fallback to mastery_records, never a fabricated
+ * zero (Step 6I Section 11).
+ *
+ * Step 6J-B2: lastRetrievalAt (Step 6I's compatibility mapping for the
+ * ambiguous legacy field name) was removed from RetentionSignal
+ * entirely -- a fresh repository-wide search found zero readers of it
+ * anywhere, so this function no longer populates it.
  */
 export function toRetentionSignal(
   masteryRow: NonNullable<Awaited<ReturnType<typeof readMasteryRow>>> | null,
-  retentionDimension: number | null
+  retentionDimension: number | null,
+  memorySignal: TwinMemorySignal | null
 ): RetentionSignal {
-  if (!masteryRow) {
-    return { retentionScore: retentionDimension, forgettingRisk: null, lastRetrievalAt: null, nextReviewAt: null, quality: derived(null) };
-  }
-  let forgettingRisk: number | null = null;
-  if (masteryRow.lastPracticed) {
-    const daysSincePractice = Math.floor((Date.now() - new Date(masteryRow.lastPracticed).getTime()) / (1000 * 60 * 60 * 24));
-    const intervalDays = calculateReviewIntervalDays(masteryRow.masteryScore, masteryRow.confidenceScore);
-    forgettingRisk = calculateForgettingRisk(daysSincePractice, intervalDays);
-  }
   return {
     retentionScore: retentionDimension,
-    forgettingRisk,
-    lastRetrievalAt: masteryRow.lastPracticed,
-    nextReviewAt: masteryRow.nextReviewDate,
-    quality: derived(masteryRow.updatedAt),
+    forgettingRisk: memorySignal?.forgettingRisk ?? null,
+    nextReviewAt: memorySignal?.nextReviewAt ?? null,
+    quality: derived(masteryRow?.updatedAt ?? null),
   };
 }
+
+/**
+ * Step 6I: the full Phase 6B memory contract for one concept (Section
+ * 3) -- ConceptView's canonical memory detail. `quality.sourceType` is
+ * a DIFFERENT axis from `predictionConfidence` (Section 12): quality
+ * describes data completeness/provenance (do we have a
+ * concept_memory_state row at all, and how was it derived), while
+ * predictionConfidence describes how much to trust the specific
+ * retrievabilityNow/forgettingRisk NUMBER Phase 6 just computed
+ * (LOW when no successful retention proof exists yet). Never conflated.
+ * `memoryStatus: 'NOT_ESTABLISHED'` / `policyVersion: null` is the
+ * honest "no canonical memory state yet" representation when
+ * `memorySignal` is null -- never retention=0, forgettingRisk=0, or a
+ * legacy-sourced nextReviewAt.
+ */
+export function toMemorySignal(memorySignal: TwinMemorySignal | null): MemorySignal {
+  if (!memorySignal) {
+    return {
+      demonstratedRetentionScore: null,
+      retentionEvidenceCount: 0,
+      memoryStatus: 'NOT_ESTABLISHED',
+      memoryStability: 'UNSTABLE',
+      consecutiveQualifyingSuccesses: 0,
+      initialCompetenceAnchorAt: null,
+      lastQualifiedAttemptAt: null,
+      lastSuccessfulRetentionAt: null,
+      lastUnsuccessfulRetentionAt: null,
+      nextReviewAt: null,
+      retentionDue: false,
+      daysOverdue: null,
+      retrievabilityNow: null,
+      forgettingRisk: null,
+      predictionConfidence: 'LOW',
+      policyVersion: null,
+      quality: derived(null),
+    };
+  }
+  return { ...memorySignal, quality: derived(null) };
+}
+
+/**
+ * Step 6I Section 5/28: subject-level memory DISPLAY AGGREGATE only --
+ * never fed to Phase 4. Averages exclude concepts with a null value
+ * from BOTH the sum and the denominator (a null demonstratedRetentionScore
+ * is "not yet proven," not zero); `conceptsWithMemoryState` reports how
+ * many of the subject's concepts had a row at all, so a caller can tell
+ * "average of 2" from "average of 20" at a glance. Status counts are
+ * over every concept WITH a row (a concept with none contributes to
+ * none of the status buckets -- it is simply absent from this subject's
+ * memory picture yet, not silently folded into NOT_ESTABLISHED).
+ */
+export function aggregateSubjectMemorySummary(signals: TwinMemorySignal[]): SubjectMemorySummary {
+  const demonstrated = signals.flatMap((s) => (s.demonstratedRetentionScore !== null ? [s.demonstratedRetentionScore] : []));
+  const retrievability = signals.flatMap((s) => (s.retrievabilityNow !== null ? [s.retrievabilityNow] : []));
+  const avg = (values: number[]): number | null => (values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100 : null);
+
+  return {
+    avgDemonstratedRetentionScore: avg(demonstrated),
+    avgRetrievabilityNow: avg(retrievability),
+    conceptsWithMemoryState: signals.length,
+    conceptsDueCount: signals.filter((s) => s.retentionDue).length,
+    conceptsAtRiskCount: signals.filter((s) => s.memoryStatus === 'AT_RISK').length,
+    stableConceptsCount: signals.filter((s) => s.memoryStatus === 'STABLE').length,
+    waitingForRetentionCount: signals.filter((s) => s.memoryStatus === 'WAITING_FOR_RETENTION').length,
+    developingConceptsCount: signals.filter((s) => s.memoryStatus === 'DEVELOPING').length,
+    notEstablishedCount: signals.filter((s) => s.memoryStatus === 'NOT_ESTABLISHED').length,
+  };
+}
+
+/** Step 6I Section 6: Overview's coarse, student-wide memory counts -- transparent counts only, never a fabricated global "memory score." */
+export function aggregateMemoryOverview(signals: TwinMemorySignal[]): MemoryOverviewSummary {
+  return {
+    conceptsDueCount: signals.filter((s) => s.retentionDue).length,
+    conceptsAtRiskCount: signals.filter((s) => s.memoryStatus === 'AT_RISK').length,
+    stableConceptsCount: signals.filter((s) => s.memoryStatus === 'STABLE').length,
+    waitingForRetentionCount: signals.filter((s) => s.memoryStatus === 'WAITING_FOR_RETENTION').length,
+    totalConceptsWithMemoryState: signals.length,
+  };
+}
+
+export { getTwinMemorySignal, getTwinMemorySignalsForStudent };
 
 /** Direct/derived: computeTransferScore over learning_evidence, existing certified algorithm (transfer.service.ts). */
 export async function readTransferSignal(studentId: StudentId, conceptId: string): Promise<TransferSignal> {

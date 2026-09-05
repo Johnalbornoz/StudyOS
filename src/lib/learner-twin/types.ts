@@ -1,5 +1,6 @@
 import type { MasteryState, ValidationReadiness, DimensionScores as KnowledgeStateDimensionScores, StateReason } from '@/services/knowledge-state.service';
 import type { ConfidenceCalibration, EvidenceStrength } from '@/services/learner-model.service';
+import type { MemoryStatus, MemoryStability, PredictionConfidence } from '@/lib/memory-policy';
 import type { RecurringMisconception } from '@/services/misconception.service';
 import type { InterventionStateSummary } from '@/services/remediation.service';
 import type { ConceptValidationSummary } from '@/services/validation-cycle.service';
@@ -111,12 +112,108 @@ export interface KnowledgeStateSignal {
   quality: SignalQuality;
 }
 
+/**
+ * Step 6I: retentionScore is the ONE field here that stays exactly what
+ * it always was -- the Knowledge State "retention" DIMENSION (backward-
+ * looking, evidence-classified; a materialized mirror of Phase 6's
+ * demonstratedRetentionScore since Step 6G -- see knowledge-state.
+ * service.ts). DEMONSTRATED_RETENTION != RETRIEVABILITY: this field was
+ * never renamed to carry a predicted value, and never will be -- see
+ * MemorySignal below for the full Phase 6 predictive detail.
+ *
+ * forgettingRisk/nextReviewAt are Phase 6-sourced (never spaced-
+ * repetition.ts, never mastery_records). Step 6J-B2 confirmed the
+ * concept detail page (this type's only other historical consumer) now
+ * reads ConceptView.memory directly and no longer touches these two --
+ * their one remaining real reader is getDecisionContext's construction
+ * of DecisionContext.retention (@/lib/learner-twin/service.ts), which
+ * feeds remediation.service.ts/cognitive-diagnosis.service.ts/
+ * tutor-strategy.service.ts. Kept for that reason; prefer
+ * ConceptView.memory directly in new code regardless.
+ *
+ * lastRetrievalAt (Step 6I's compatibility field for the ambiguously-
+ * named legacy signal) was removed in Step 6J-B2: zero readers were
+ * found anywhere, including in the DecisionContext construction above.
+ */
 export interface RetentionSignal {
-  retentionScore: number | null; // Knowledge State dimension (0-100)
-  forgettingRisk: number | null; // 0-100, calculateForgettingRisk
-  lastRetrievalAt: string | null; // mastery_records.last_practiced
-  nextReviewAt: string | null; // mastery_records.next_review_date
+  retentionScore: number | null; // Knowledge State dimension (0-100) -- DEMONSTRATED, not predicted
+  /** @deprecated Step 6I: sourced from Phase 6's canonical forgettingRisk (computeLiveMemorySignals). Prefer ConceptView.memory.forgettingRisk; kept because DecisionContext.retention.forgettingRisk (getDecisionContext) still sources from this field -- see remediation/cognitive-diagnosis/tutor-strategy services. */
+  forgettingRisk: number | null;
+  /** @deprecated Step 6I: sourced from Phase 6's concept_memory_state.next_review_at (never mastery_records.next_review_date). Prefer ConceptView.memory.nextReviewAt; kept for the same DecisionContext.retention.nextReviewAt reason as forgettingRisk above. */
+  nextReviewAt: string | null;
   quality: SignalQuality;
+}
+
+/**
+ * Step 6I Section 3: the full canonical Phase 6 memory detail for one
+ * concept -- built exclusively from memory-read.service.ts's
+ * TwinMemorySignal (concept_memory_state + computeLiveMemorySignals).
+ * Never raw learning_evidence, never question/answer content.
+ *
+ * DEMONSTRATED_RETENTION != RETRIEVABILITY (Section 7): demonstratedRetentionScore
+ * is evidence-backed ("has the student PROVEN they still know this after
+ * a real gap"); retrievabilityNow is a live, decaying PREDICTION ("how
+ * likely is unaided recall right now"). Never conflate the two, and
+ * never place retrievabilityNow under a field named like "retention".
+ *
+ * `quality` (data completeness/provenance) and `predictionConfidence`
+ * (how much to trust the specific retrievability/forgettingRisk number)
+ * are deliberately separate axes (Section 12) -- quality answers "do we
+ * have a concept_memory_state row and how was it derived," predictionConfidence
+ * answers "how much should you trust THIS numeric prediction." A missing
+ * concept_memory_state row (no anchor established yet) is represented
+ * as memoryStatus='NOT_ESTABLISHED'/policyVersion=null with every
+ * numeric/timestamp field null -- never a fabricated 0.
+ */
+export interface MemorySignal {
+  demonstratedRetentionScore: number | null;
+  retentionEvidenceCount: number;
+  memoryStatus: MemoryStatus;
+  memoryStability: MemoryStability;
+  consecutiveQualifyingSuccesses: number;
+  initialCompetenceAnchorAt: string | null;
+  lastQualifiedAttemptAt: string | null;
+  lastSuccessfulRetentionAt: string | null;
+  lastUnsuccessfulRetentionAt: string | null;
+  nextReviewAt: string | null;
+  retentionDue: boolean;
+  daysOverdue: number | null;
+  retrievabilityNow: number | null;
+  forgettingRisk: number | null;
+  predictionConfidence: PredictionConfidence;
+  /** null only when no concept_memory_state row exists yet. */
+  policyVersion: number | null;
+  quality: SignalQuality;
+}
+
+/**
+ * Step 6I Section 5: subject-level memory DISPLAY AGGREGATE only --
+ * never fed to Phase 4 (Phase 4 reads memory-read.service.ts directly,
+ * per Step 6H-B; this is a Twin display projection). Averages exclude
+ * concepts with a null value from both the sum and the denominator
+ * (see aggregateSubjectMemorySummary's own doc comment) --
+ * conceptsWithMemoryState reports the actual denominator so a caller
+ * can distinguish "average of 2" from "average of 20".
+ */
+export interface SubjectMemorySummary {
+  avgDemonstratedRetentionScore: number | null;
+  avgRetrievabilityNow: number | null;
+  conceptsWithMemoryState: number;
+  conceptsDueCount: number;
+  conceptsAtRiskCount: number;
+  stableConceptsCount: number;
+  waitingForRetentionCount: number;
+  developingConceptsCount: number;
+  notEstablishedCount: number;
+}
+
+/** Step 6I Section 6: Overview's coarse, student-wide memory counts -- transparent counts only, never a fabricated global "memory score." */
+export interface MemoryOverviewSummary {
+  conceptsDueCount: number;
+  conceptsAtRiskCount: number;
+  stableConceptsCount: number;
+  waitingForRetentionCount: number;
+  totalConceptsWithMemoryState: number;
 }
 
 export interface TransferSignal {
@@ -332,6 +429,8 @@ export interface LearnerModel {
   studyPlanAdherence: MetricResult<StudyPlanAdherenceSummary>;
   /** Phase 2E: Knowledge Validation Rate - 14 Days, student-scoped (getKVR14, unchanged algorithm). `available: false` (INSUFFICIENT_EVIDENCE) with zero CLOSED cycles -- never a fabricated 0%. */
   kvr14: MetricResult<{ value: number | null; eligibleCount: number; validatedCount: number }>;
+  /** Step 6I: coarse, student-wide Phase 6 memory counts -- see MemoryOverviewSummary's own doc comment. */
+  memoryOverview: MemoryOverviewSummary;
   dataQuality: DataQualitySummary;
 }
 
@@ -367,6 +466,8 @@ export interface SubjectView {
   };
   concepts: ConceptSummary[];
   needsAttention: NeedsAttentionItem[];
+  /** Step 6I: canonical Phase 6 memory aggregate for this subject -- see SubjectMemorySummary's own doc comment for denominator semantics. Separate from cognitiveSummary.avgRetentionScore/atRiskCount, which remain the pre-existing Knowledge-State/legacy aggregate (unchanged by Step 6I -- see the Step 6I report for why these were left independent rather than merged). */
+  memorySummary: SubjectMemorySummary;
   /** Phase 1E: derived learner metrics, scoped to this subject. */
   aggregateCalibration: MetricResult<AggregateCalibrationSummary>;
   aggregateVelocity: MetricResult<AggregateVelocitySummary>;
@@ -385,6 +486,8 @@ export interface ConceptView {
   independence: IndependenceSignal;
   metacognition: MetacognitionSignal;
   retention: RetentionSignal;
+  /** Step 6I: the full canonical Phase 6 memory detail -- prefer this over `retention`'s deprecated forgettingRisk/lastRetrievalAt/nextReviewAt fields in new code. */
+  memory: MemorySignal;
   transfer: TransferSignal;
   misconceptions: MisconceptionSummary;
   /** Phase 2D: eager, like misconceptions -- ConceptView is the "full detail" projection, always computed (unlike DecisionContext's lazy MetricProjection variant). */

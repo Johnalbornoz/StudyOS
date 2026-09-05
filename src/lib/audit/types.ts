@@ -47,7 +47,19 @@ export type DecisionType =
   // CHECK constraint (see database/migrations/
   // 20260831_1400_ai_execution_and_decision_audit.sql) -- only this TS
   // union is closed, so adding this value requires zero migration.
-  | 'TEACHING_STRATEGY_SELECTED';
+  | 'TEACHING_STRATEGY_SELECTED'
+  // Phase 6 Step 6E: recorded by memory-projector.service.ts ONLY when
+  // a genuine semantic Phase 6 MemoryState transition occurs (never on
+  // an idempotent re-projection that leaves state unchanged, and never
+  // on a duplicate operation_key application, which never reaches the
+  // projector at all). SHADOW MODE: this is a write-only audit trail --
+  // no product consumer reads Phase 6 state or these events yet. Same
+  // zero-migration precedent as TEACHING_STRATEGY_SELECTED above.
+  | 'MEMORY_ANCHOR_ESTABLISHED'
+  | 'QUALIFIED_RETENTION_SUCCESS'
+  | 'QUALIFIED_RETENTION_PARTIAL'
+  | 'QUALIFIED_RETENTION_FAILURE'
+  | 'MEMORY_STATE_REPROJECTED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -68,7 +80,9 @@ export type DecisionEngine =
   // Lifecycle transitions over the same diagnosis->remediation chain.
   | 'intervention-engine'
   // Phase 5: adaptive-teaching.service.ts -- see TEACHING_STRATEGY_SELECTED.
-  | 'adaptive-teaching-engine';
+  | 'adaptive-teaching-engine'
+  // Phase 6 Step 6E: memory-projector.service.ts -- see MEMORY_ANCHOR_ESTABLISHED etc.
+  | 'memory-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;

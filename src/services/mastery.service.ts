@@ -18,6 +18,7 @@ import {
 import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 import { recalculateConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
 import { recordDecisionEvent } from '@/lib/audit';
+import { projectConceptMemoryState } from './memory-projector.service';
 import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
 import { toCanonicalErrorType } from './error-intelligence.service';
 import {
@@ -672,6 +673,19 @@ export async function updateMastery(
           }
         }
       }
+
+      // Phase 6 Step 6E: SHADOW MODE ONLY -- projects Phase 6's
+      // canonical MemoryState from learning_evidence (same
+      // transaction client, so it sees this call's own just-inserted,
+      // still-uncommitted row) and upserts concept_memory_state.
+      // Nothing downstream reads this state yet (not Knowledge State,
+      // not Phase 4, not the Twin) -- it runs BEFORE
+      // recalculateConceptKnowledgeState below only so a future step
+      // (6G) can make Knowledge State consume the freshly-projected
+      // value inside this same pass, without reordering anything
+      // again then. A failure here rolls back the whole operation,
+      // same as every other step of this atomic transaction.
+      await projectConceptMemoryState(client, studentId, conceptId);
 
       // Phase 2.2A/2.2B, same transactional client (Phase 2B
       // correction): Knowledge State is a projection, never a second

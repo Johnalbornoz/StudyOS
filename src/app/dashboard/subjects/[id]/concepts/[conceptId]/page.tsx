@@ -73,13 +73,9 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [conceptView, evidence, masteryRow, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
+  const [conceptView, evidence, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
     getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
-    query(
-      `SELECT last_practiced, next_review_date FROM mastery_records WHERE student_id = $1 AND concept_id = $2`,
-      [studentId, conceptId]
-    ),
     query(
       `SELECT id FROM learning_debt WHERE student_id = $1 AND concept_id = $2 AND status IN ('active', 'monitoring')`,
       [studentId, conceptId]
@@ -98,22 +94,24 @@ export default async function ConceptDetailPage({
   // is unchanged.
   //
   // IMPORTANT: "retention" here is deliberately `100 - forgettingRisk`,
-  // NOT `conceptView.retention.retentionScore`. The old
-  // getLearnerConceptState.retention field was learner-model.service.ts's
-  // getRetention() -- a forward-looking "how likely to still remember
-  // it right now" spaced-repetition estimate. ConceptView.retention.
-  // retentionScore is a DIFFERENT signal: the Knowledge State "retention"
-  // DIMENSION (a backward-looking "have they proven they still know it
-  // after a real gap" evidence classification). Using retentionScore
-  // here would have silently changed what this page displays -- see
-  // tests/unit/learner-twin-consumer-regression.test.ts for the proof
-  // these two are genuinely different numbers, and the Phase 1C report's
-  // "Retention Twin Contract" section for the full explanation.
+  // NOT `conceptView.retention.retentionScore`. This page's "retention"
+  // display has always been a predictive retrievability-style estimate
+  // (a forward-looking "how likely to still remember it right now"),
+  // never the Knowledge State "retention" DIMENSION (a backward-looking
+  // "have they proven they still know it after a real gap" evidence
+  // classification) -- see the Phase 1C report's "Retention Twin
+  // Contract" section. Step 6I changes only the SOURCE of that
+  // predictive number: conceptView.memory.forgettingRisk (Phase 6's
+  // canonical computeLiveMemorySignals value) rather than the legacy
+  // spaced-repetition.ts formula ConceptView.retention.forgettingRisk
+  // used before -- both fields carry the identical value now (Twin
+  // computes exactly one forgettingRisk), but memory is the canonical
+  // field going forward.
   const state = conceptView
     ? {
         masteryScore: conceptView.mastery.score,
         independentMastery: conceptView.independence.independentMastery,
-        retention: conceptView.retention.forgettingRisk !== null ? 100 - conceptView.retention.forgettingRisk : null,
+        retention: conceptView.memory.forgettingRisk !== null ? 100 - conceptView.memory.forgettingRisk : null,
         evidenceStrength: conceptView.independence.evidenceStrength,
         confidence: conceptView.metacognition.confidence,
         confidenceCalibration: conceptView.metacognition.confidenceCalibration,
@@ -137,8 +135,14 @@ export default async function ConceptDetailPage({
     );
   }
 
-  const lastPracticed = masteryRow.rows[0]?.last_practiced ?? null;
-  const nextReviewDate = masteryRow.rows[0]?.next_review_date ?? null;
+  // Step 6I: sourced from Phase 6's canonical concept_memory_state via
+  // ConceptView.memory (never mastery_records.last_practiced/
+  // next_review_date directly -- no raw memory-table query on this page
+  // anymore). lastSuccessfulRetentionAt is a more accurate match for the
+  // "last demonstrated" label than the old last_practiced (any attempt,
+  // not necessarily a genuine retention proof) ever was.
+  const lastPracticed = conceptView!.memory.lastSuccessfulRetentionAt;
+  const nextReviewDate = conceptView!.memory.nextReviewAt;
 
   // Deterministic CTA choice -- same signals already on this page, no
   // separate ranking engine. Low mastery wins first (foundational gap);
@@ -347,7 +351,8 @@ export default async function ConceptDetailPage({
               <span className="sr-only">{criterionStatusLabel(debtCriteria.retentionProof.met, t)}: </span>
               {t['conceptDetail.criterionRetentionProof']} —{' '}
               <span className="tabular">
-                {Number.isFinite(debtCriteria.retentionProof.daysSinceLastSuccess) ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
+                {/* Step 6J-B1: daysSinceLastSuccess is null (never the old Infinity sentinel) when no genuine Phase 6 retention proof exists yet. */}
+                {debtCriteria.retentionProof.daysSinceLastSuccess !== null ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
                 {t['conceptDetail.criterionDaysUnit']}
               </span>
             </li>
@@ -356,7 +361,11 @@ export default async function ConceptDetailPage({
                 {debtCriteria.lowForgettingRisk.met ? '✓' : '○'}
               </span>
               <span className="sr-only">{criterionStatusLabel(debtCriteria.lowForgettingRisk.met, t)}: </span>
-              {t['conceptDetail.criterionForgettingRisk']} — <span className="tabular">{Math.round(debtCriteria.lowForgettingRisk.current)}%</span>
+              {t['conceptDetail.criterionForgettingRisk']} —{' '}
+              <span className="tabular">
+                {/* Step 6J-B1: null (never a fabricated 100%) when Phase 6 has no prediction yet. */}
+                {debtCriteria.lowForgettingRisk.current !== null ? `${Math.round(debtCriteria.lowForgettingRisk.current)}%` : '—'}
+              </span>
             </li>
           </ul>
         </div>

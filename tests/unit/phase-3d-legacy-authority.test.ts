@@ -62,8 +62,8 @@ describe('39. adaptive-learning-policy.ts remains the sole Phase 3C priority aut
 });
 
 describe('40. Study Plan / Today are not migrated in this phase -- no copied Phase 3C policy exists in their files', () => {
-  it('today-plan.service.ts and study-plan.service.ts contain no copy of Phase 3C\'s BAND table or dominant-signal logic', () => {
-    for (const file of ['src/services/today-plan.service.ts', 'src/services/study-plan.service.ts']) {
+  it('study-plan.service.ts contains no copy of Phase 3C\'s BAND table or dominant-signal logic (today-plan.service.ts has zero production callers -- confirmed in Steps 6J-B2/6J-C -- but is retained as a manual regression/E2E fixture for scripts/e2e-cognitive-loop.ts, not deleted)', () => {
+    for (const file of ['src/services/study-plan.service.ts']) {
       const source = read(file);
       expect(source).not.toMatch(/const BAND\s*=/);
       expect(source).not.toMatch(/function dominantSignal/);

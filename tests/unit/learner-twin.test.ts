@@ -161,6 +161,32 @@ function buildMockQuery() {
     if (s.includes('timestamp, source_type, metadata FROM learning_evidence')) return { rows: [] };
     if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) return { rows: [] };
     if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
+    // Step 6I: Phase 6 canonical memory state -- same row shape whether
+    // this is the single-concept read (getTwinMemorySignal, 2 params)
+    // or the batch read (getTwinMemorySignalsForStudent, 1 param).
+    if (s.includes('FROM concept_memory_state')) {
+      if (params.length === 1 || params[1] === CONCEPT_ID) {
+        return {
+          rows: [
+            {
+              concept_id: CONCEPT_ID,
+              policy_version: 1,
+              initial_competence_anchor_at: '2026-08-01T00:00:00.000Z',
+              last_qualified_attempt_at: '2026-08-15T00:00:00.000Z',
+              last_successful_retention_at: '2026-08-15T00:00:00.000Z',
+              last_unsuccessful_retention_at: null,
+              demonstrated_retention_score: '80',
+              retention_evidence_count: 1,
+              consecutive_qualifying_successes: 1,
+              memory_stability: 'DEVELOPING',
+              memory_status: 'DEVELOPING',
+              next_review_at: '2026-09-05T00:00:00.000Z',
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    }
     // Anything unexpected fails loudly rather than silently returning empty rows.
     throw new Error(`Unmocked query in learner-twin test fixture: ${s}`);
   });
@@ -217,7 +243,11 @@ describe('Overview / Subject / Concept / DecisionContext projections', () => {
     expect(view!.knowledgeState.masteryState).toBe('PROVISIONAL_MASTERY');
     expect(view!.knowledgeState.dimensions.retention).toBe(80);
     expect(view!.retention.retentionScore).toBe(80);
-    expect(view!.retention.nextReviewAt).toBe('2026-09-05');
+    // Step 6I: nextReviewAt is now sourced from Phase 6's
+    // concept_memory_state.next_review_at (never mastery_records.
+    // next_review_date, which stays '2026-09-05' with no time component
+    // in this fixture but is no longer read for this field).
+    expect(view!.retention.nextReviewAt).toBe('2026-09-05T00:00:00.000Z');
     expect(view!.independence.independentMastery).not.toBeNull();
     expect(view!.metacognition.confidenceCalibration.samples).toBe(3);
   });

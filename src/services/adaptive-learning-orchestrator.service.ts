@@ -17,12 +17,25 @@
  *   (a pure read of already-persisted rows).
  * - Never ranks/decides inside learning-scheduler.service.ts -- getDueItems
  *   is consumed as-is; no new logic was added there.
- * - Never re-derives an existing algorithm (forgetting risk, Learning
- *   Unlock Value, remediation/diagnosis state machines, evidenceModeForActivity)
- *   -- every one of those is called directly from its own existing service.
+ * - Never re-derives an existing algorithm (Learning Unlock Value,
+ *   remediation/diagnosis state machines, evidenceModeForActivity) --
+ *   every one of those is called directly from its own existing service.
  * - No LLM call anywhere in this file or in the policy module.
  * - No new table/migration -- every decision is computed fresh from
  *   current state on every call.
+ *
+ * Step 6H-B: RETENTION_REVIEW_DUE and FORGETTING_RISK are now sourced
+ * from Phase 6's canonical concept_memory_state (via
+ * memory-read.service.ts::getPhase4MemorySignalsForStudent, ONE batch
+ * query for the whole student -- never one query per concept), never
+ * from mastery_records.next_review_date or
+ * spaced-repetition.ts::calculateForgettingRisk. This is a source
+ * replacement only: the BAND/modifier/activity-selection policy in
+ * adaptive-learning-policy.ts is unchanged, and getDueItems /
+ * spaced-repetition.ts remain untouched for their other, still-live
+ * consumers (see Step 6H-A/6H-B audits). A concept with no
+ * concept_memory_state row yet gets neither signal from Phase 6 -- no
+ * fallback to the legacy sources, no fabricated zero.
  */
 
 import { db } from '@/lib/db';
@@ -42,13 +55,15 @@ import { getUpcomingForStudent } from './assessment.service';
 import { getStudentMastery } from './mastery.service';
 import { getIndependentMastery } from './learner-model.service';
 import { getAssessmentStateForConcept } from './assessment-verification.service';
-import { calculateReviewIntervalDays, calculateForgettingRisk } from '@/lib/algorithms/spaced-repetition';
-import { EXAM_SOON_WINDOW_DAYS, FORGETTING_RISK_THRESHOLD } from './today-plan.service';
+import { getPhase4MemorySignalsForStudent } from './memory-read.service';
 import {
   consolidateSignals,
   buildLearningDecisions,
   rankLearningDecisions,
   EXAM_CRITICAL_DAYS,
+  EXAM_SOON_WINDOW_DAYS,
+  FORGETTING_RISK_THRESHOLD,
+  RETENTION_REVIEW_LOOKAHEAD_DAYS,
   type LearningSignal,
 } from '@/lib/adaptive-learning-policy';
 
@@ -86,6 +101,10 @@ async function getActiveSubjectIds(studentId: string): Promise<string[]> {
   return result.rows.map((r) => r.id);
 }
 
+function daysUntil(date: Date): number {
+  return (date.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+}
+
 interface LoadedSignals {
   signals: LearningSignal[];
   knowledgeStateByConceptId: Map<string, ConceptKnowledgeState>;
@@ -107,7 +126,7 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
 
   const policy = await getActiveMasteryPolicy();
 
-  const [dueItems, activeRemediations, activeDiagnoses, recurringMisconceptions, activeDebts, calibrationConflicts, upcomingExams, masteryRows] =
+  const [dueItems, activeRemediations, activeDiagnoses, recurringMisconceptions, activeDebts, calibrationConflicts, upcomingExams, masteryRows, phase4MemorySignals] =
     await Promise.all([
       getDueItems(studentId),
       getActiveRemediationsWithLabels(studentId).catch(() => []),
@@ -117,6 +136,11 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
       getCalibrationConflicts(studentId).catch(() => []),
       getUpcomingForStudent(studentId).catch(() => []),
       getStudentMastery(studentId, undefined, preferredLanguage).catch(() => []),
+      // Step 6H-B: ONE batch read for every concept's Phase 6 memory
+      // state -- never one query per concept (see this file's own
+      // header). A student with no canonical memory rows yet gets an
+      // empty Map, never an error.
+      getPhase4MemorySignalsForStudent(db, studentId).catch(() => new Map()),
     ]);
 
   const signals: LearningSignal[] = [];
@@ -127,9 +151,17 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
   // as-is, never re-derived. EXAM_APPROACHING is excluded here -- it's
   // subject-scoped (no conceptId) on DueItem by design, so it's built
   // separately below directly from the same assessment.service source
-  // the Scheduler itself uses.
+  // the Scheduler itself uses. RETENTION_REVIEW_DUE is ALSO excluded
+  // here as of Step 6H-B -- getDueItems still computes it internally
+  // from the legacy mastery_records.next_review_date (untouched, still
+  // used by other callers -- Step 6J-B2 confirmed scripts/e2e-cognitive-
+  // loop.ts's own Learning Scheduling Clock scenario still asserts on
+  // it directly, so this DueItemType/getRetentionDue was NOT retired),
+  // but it is no longer the canonical Phase 4 retention timing source;
+  // see the Phase 6 memory-derived signals block below, built directly
+  // from concept_memory_state instead.
   for (const item of dueItems) {
-    if (item.type === 'EXAM_APPROACHING' || !item.conceptId) continue;
+    if (item.type === 'EXAM_APPROACHING' || item.type === 'RETENTION_REVIEW_DUE' || !item.conceptId) continue;
     const subjectId = resolveSubjectId(item.conceptId, item.subjectId);
     if (!subjectId) continue;
     const base = {
@@ -143,7 +175,6 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
     else if (item.type === 'INTERVENTION_REQUIRED_CONCEPT') signals.push({ ...base, type: 'INTERVENTION_REQUIRED', metadata: {} });
     else if (item.type === 'VALIDATION_DEADLINE_APPROACHING') signals.push({ ...base, type: 'VALIDATION_DEADLINE_APPROACHING', metadata: {} });
     else if (item.type === 'VALIDATION_DEADLINE_OVERDUE') signals.push({ ...base, type: 'VALIDATION_DEADLINE_OVERDUE', metadata: {} });
-    else if (item.type === 'RETENTION_REVIEW_DUE') signals.push({ ...base, type: 'RETENTION_REVIEW_DUE', metadata: {} });
     else if (item.type === 'REMEDIATION_UNFINISHED') {
       signals.push({
         ...base,
@@ -329,19 +360,50 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
         });
       }
 
-      if (masteryRow.last_practiced) {
-        const daysSincePractice = Math.floor((now - new Date(masteryRow.last_practiced).getTime()) / (1000 * 60 * 60 * 24));
-        const intervalDays = calculateReviewIntervalDays(masteryScore, Number(masteryRow.confidence_score) || 50);
-        const forgettingRisk = calculateForgettingRisk(daysSincePractice, intervalDays);
-        if (forgettingRisk >= FORGETTING_RISK_THRESHOLD) {
+    }
+
+    // --- Step 6H-B: Phase 6 canonical memory-derived signals.
+    // RETENTION_REVIEW_DUE's date source is now concept_memory_state.
+    // next_review_at (never mastery_records.next_review_date); the
+    // existing "due soon" lookahead window is preserved exactly
+    // (RETENTION_REVIEW_LOOKAHEAD_DAYS = 7, same value
+    // learning-scheduler.service.ts used). FORGETTING_RISK's source is
+    // now Phase 6's own live prediction (never spaced-repetition.ts) --
+    // same threshold (FORGETTING_RISK_THRESHOLD = 50), same signal
+    // type, same BAND/modifier (evaluateSignal reads
+    // metadata.forgettingRisk exactly as before). A concept absent from
+    // phase4MemorySignals (no concept_memory_state row yet) gets
+    // neither signal -- no fallback, no fabricated zero.
+    const memorySignal = phase4MemorySignals.get(conceptId);
+    if (memorySignal) {
+      if (memorySignal.nextReviewAt !== null) {
+        const daysUntilReview = daysUntil(new Date(memorySignal.nextReviewAt));
+        if (daysUntilReview <= RETENTION_REVIEW_LOOKAHEAD_DAYS) {
           signals.push({
-            type: 'FORGETTING_RISK',
-            source: 'lib/algorithms/spaced-repetition',
+            type: 'RETENTION_REVIEW_DUE',
+            source: 'memory-read.service',
             conceptId,
             subjectId: ks.subjectId,
-            metadata: { forgettingRisk, daysSincePractice },
+            dueAt: memorySignal.nextReviewAt,
+            temporalUrgency: daysUntilReview < 0 ? 'HIGH' : 'LOW',
+            metadata: {},
           });
         }
+      }
+
+      if (memorySignal.forgettingRisk !== null && memorySignal.forgettingRisk >= FORGETTING_RISK_THRESHOLD) {
+        signals.push({
+          type: 'FORGETTING_RISK',
+          source: 'memory-read.service',
+          conceptId,
+          subjectId: ks.subjectId,
+          metadata: {
+            forgettingRisk: memorySignal.forgettingRisk,
+            memoryStability: memorySignal.memoryStability,
+            predictionConfidence: memorySignal.predictionConfidence,
+            lastSuccessfulRetentionAt: memorySignal.lastSuccessfulRetentionAt,
+          },
+        });
       }
     }
 

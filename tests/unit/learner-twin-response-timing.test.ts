@@ -266,6 +266,9 @@ describe('ConceptView.behavior.responseTiming (Digital Twin integration, Step 17
       if (s.includes('timestamp, source_type, metadata FROM learning_evidence')) return { rows: [] };
       if (s.includes('FROM verification_attempts') && s.includes('outcome IS NOT NULL')) return { rows: [] };
       if (s.includes('FROM verification_attempts') && s.includes('outcome IS NULL')) return { rows: [{ n: 0 }] };
+      // Step 6I: Phase 6 canonical memory state -- no row for this
+      // fixture concept (this test doesn't assert on memory fields).
+      if (s.includes('FROM concept_memory_state')) return { rows: [] };
       throw new Error(`Unmocked: ${s}`);
     });
     vi.doMock('@/lib/db', () => ({ db: { query } }));

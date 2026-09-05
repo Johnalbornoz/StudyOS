@@ -78,9 +78,9 @@ function defaultImpl(sql: string) {
     };
   }
   if (/FROM mastery_records mr\s+JOIN concepts c/i.test(sql)) {
-    // getStudentMastery -- feeds real FORGETTING_RISK computation via
-    // the actual calculateReviewIntervalDays/calculateForgettingRisk
-    // algorithms (not re-derived by the orchestrator).
+    // getStudentMastery -- display/independence-gap provenance only as
+    // of Step 6H-B; FORGETTING_RISK is fed by the real Phase 6
+    // concept_memory_state fixture below instead (getPhase4MemorySignalsForStudent).
     return {
       rows: [
         {
@@ -93,6 +93,36 @@ function defaultImpl(sql: string) {
           last_practiced: daysAgo(60),
           learning_debt_severity: null,
           learning_debt_status: null,
+        },
+      ],
+    };
+  }
+  // Step 6H-B: real Phase 6 memory state -- a stale anchor (60 days old,
+  // no successful retention proof yet, so consecutiveQualifyingSuccesses=0
+  // and expectedIntervalDays is the shortest band) drives a real, high
+  // computeLiveMemorySignals forgettingRisk via the actual algorithm (not
+  // re-derived by the orchestrator), exercising the real
+  // getPhase4MemorySignalsForStudent -> computeLiveMemorySignals chain.
+  // next_review_at is deliberately null here so this fixture isolates
+  // FORGETTING_RISK only -- this test's activityType assertion (REVIEW)
+  // would otherwise be preempted by RETENTION_REVIEW_DUE's own higher-
+  // precedence RETENTION_CHECK selection (see selectActivityType).
+  if (/FROM concept_memory_state\s+WHERE student_id = \$1/i.test(sql)) {
+    return {
+      rows: [
+        {
+          concept_id: CONCEPT,
+          policy_version: 1,
+          initial_competence_anchor_at: daysAgo(60),
+          last_qualified_attempt_at: null,
+          last_successful_retention_at: null,
+          last_unsuccessful_retention_at: null,
+          demonstrated_retention_score: null,
+          retention_evidence_count: 0,
+          consecutive_qualifying_successes: 0,
+          memory_stability: 'UNSTABLE',
+          memory_status: 'WAITING_FOR_RETENTION',
+          next_review_at: null,
         },
       ],
     };

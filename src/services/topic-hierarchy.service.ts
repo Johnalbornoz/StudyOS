@@ -15,7 +15,8 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
-import { getRetention, getConceptIntelligenceBatch } from './learner-model.service';
+import { getConceptIntelligenceBatch } from './learner-model.service';
+import { getCanonicalMemorySignalsForStudent } from './memory-read.service';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
@@ -256,8 +257,13 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
 
   // One batched query for Independent Mastery + Confidence Calibration
   // across every concept in the subject, instead of a per-concept call
-  // per accordion row.
-  const intelligence = await getConceptIntelligenceBatch(studentId, conceptIds);
+  // per accordion row. Step 6J-B1: same discipline for Phase 6's
+  // canonical predictive memory (retrievabilityNow) -- ONE batch read,
+  // never one query per concept row below.
+  const [intelligence, canonicalMemorySignals] = await Promise.all([
+    getConceptIntelligenceBatch(studentId, conceptIds),
+    getCanonicalMemorySignalsForStudent(db, studentId),
+  ]);
 
   const rows = await db.query(
     `
@@ -296,14 +302,13 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       id: row.concept_id,
       label: row.concept_label,
       // mastery_records.mastery_score is canonically 0.0-1.0 -- convert
-      // for display. getRetention below deliberately still receives the
-      // raw 0..1 value: it feeds an existing, separate spaced-repetition
-      // calculation this hotfix is not touching (see hotfix report).
+      // for display. Step 6J-B1: retention is Phase 6's canonical
+      // retrievabilityNow (a live, predicted "how likely is unaided
+      // recall right now" -- never demonstratedRetentionScore, a
+      // different, evidence-based concept) -- null (never fabricated)
+      // when no concept_memory_state row exists yet.
       masteryScore: masteryToPercent(tryMasteryScore(row.mastery_score, `topic-hierarchy concept ${row.concept_id}`)) ?? undefined,
-      retention:
-        row.mastery_score !== null
-          ? getRetention(Number(row.mastery_score), Number(row.confidence_score), row.last_practiced) ?? undefined
-          : undefined,
+      retention: canonicalMemorySignals.get(row.concept_id)?.retrievabilityNow ?? undefined,
       independentMastery: conceptIntel?.independentMastery ?? undefined,
       confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
       hasEvidence: row.mastery_score !== null,
@@ -330,10 +335,9 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
         id: r.id,
         label: r.label,
         masteryScore: masteryToPercent(tryMasteryScore(r.mastery_score, `topic-hierarchy unassigned concept ${r.id}`)) ?? undefined,
-        retention:
-          r.mastery_score !== null
-            ? getRetention(Number(r.mastery_score), Number(r.confidence_score), r.last_practiced) ?? undefined
-            : undefined,
+        // Step 6J-B1: same Phase 6 canonical retrievabilityNow as the
+        // assigned-concept branch above -- no fallback when unavailable.
+        retention: canonicalMemorySignals.get(r.id)?.retrievabilityNow ?? undefined,
         independentMastery: conceptIntel?.independentMastery ?? undefined,
         confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
         hasEvidence: r.mastery_score !== null,

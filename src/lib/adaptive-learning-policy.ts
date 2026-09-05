@@ -327,6 +327,43 @@ const BAND = {
 /** Matches today-plan.service.ts's own EXAM_CRITICAL_DAYS -- the one thing allowed to outrank active remediation. */
 export const EXAM_CRITICAL_DAYS = 2;
 
+/**
+ * Step 6H-B: relocated from today-plan.service.ts's own
+ * FORGETTING_RISK_THRESHOLD (DEAD as of Phase 3E/Step 6H-A -- zero
+ * production callers outside its own dead getTodayPlan). Same numeric
+ * value (50), preserved exactly -- only ownership moved, so canonical
+ * Phase 4 policy no longer depends on a dead service for a constant.
+ * Compared against Phase 6's canonical forgettingRisk (never the
+ * legacy spaced-repetition.ts value) by
+ * adaptive-learning-orchestrator.service.ts before it emits a
+ * FORGETTING_RISK signal.
+ */
+export const FORGETTING_RISK_THRESHOLD = 50;
+
+/**
+ * Step 6H-B: the existing "due soon" lookahead window for
+ * RETENTION_REVIEW_DUE, preserved exactly from
+ * learning-scheduler.service.ts's own DEFAULT_APPROACHING_WITHIN_DAYS
+ * (7) -- that service's own retention-specific query
+ * (mastery_records.next_review_date) is no longer the canonical Phase 4
+ * retention timing source, but the temporal-relevance RULE it used
+ * (due within the next N days, or already overdue) is unchanged. Only
+ * the date SOURCE changed, from mastery_records.next_review_date to
+ * Phase 6's concept_memory_state.next_review_at.
+ */
+export const RETENTION_REVIEW_LOOKAHEAD_DAYS = 7;
+
+/**
+ * Step 6J-B2: relocated from today-plan.service.ts (deleted this step,
+ * having zero remaining live callers -- see EXAM_CRITICAL_DAYS above
+ * for the same relocation pattern in Step 6H-B). Same numeric value
+ * (7), preserved exactly. How many days out an upcoming exam counts as
+ * "soon" for adaptive-learning-orchestrator.service.ts's EXAM_SOON
+ * signal -- unrelated to EXAM_CRITICAL_DAYS (2), the tighter window
+ * that outranks active remediation.
+ */
+export const EXAM_SOON_WINDOW_DAYS = 7;
+
 function evaluateSignal(signal: LearningSignal): { band: number; modifier: number } | null {
   switch (signal.type) {
     case 'EXAM_APPROACHING': {
@@ -573,7 +610,18 @@ export function buildFacts(context: ConceptDecisionContext): LearningFact[] {
         facts.push({ kind: 'transferRequired' });
         break;
       case 'FORGETTING_RISK':
-        facts.push({ kind: 'forgettingRisk', forgettingRisk: s.metadata.forgettingRisk });
+        // Step 6H-B: memoryStability/predictionConfidence/lastSuccessfulRetentionAt
+        // are Phase 6 provenance, included when the source signal carries
+        // them -- never a schema change, since LearningFact is already an
+        // open shape. Structured data only, never a rendered sentence and
+        // never a mention of the legacy mastery-based calculation.
+        facts.push({
+          kind: 'forgettingRisk',
+          forgettingRisk: s.metadata.forgettingRisk,
+          ...(s.metadata.memoryStability !== undefined ? { memoryStability: s.metadata.memoryStability } : {}),
+          ...(s.metadata.predictionConfidence !== undefined ? { predictionConfidence: s.metadata.predictionConfidence } : {}),
+          ...(s.metadata.lastSuccessfulRetentionAt !== undefined ? { lastSuccessfulRetentionAt: s.metadata.lastSuccessfulRetentionAt } : {}),
+        });
         break;
       case 'INDEPENDENCE_GAP':
         facts.push({ kind: 'independenceGap', independentMastery: s.metadata.independentMastery, masteryScore: s.metadata.masteryScore });

@@ -233,7 +233,7 @@ const SUFFICIENT_EVIDENCE: EvidenceSufficiency = { evidenceCount: 5, independent
 const REAL_POLICY: MasteryPolicy = {
   version: 1, minimumUnderstanding: 80, minimumIndependence: 80, minimumApplication: 75, minimumRetention: 75,
   minimumTransfer: 70, requiresTransfer: true, maximumCriticalMisconceptions: 0, minimumEvidenceCount: 3,
-  minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
+  minimumIndependentEvidenceCount: 2, validationWindowDays: 14,
 };
 
 describe('Step 33 (release-blocking): false-negative Mastery regression closed', () => {
@@ -466,10 +466,15 @@ async function loadUpdateMasteryReal(db: any) {
   const policyMock = vi.fn().mockResolvedValue({
     version: 1, minimumUnderstanding: 80, minimumIndependence: 80, minimumApplication: 75, minimumRetention: 75,
     minimumTransfer: 70, requiresTransfer: true, maximumCriticalMisconceptions: 0, minimumEvidenceCount: 3,
-    minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
+    minimumIndependentEvidenceCount: 2, validationWindowDays: 14,
   });
   vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: vi.fn().mockResolvedValue(null), getActiveMasteryPolicy: policyMock }));
   vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: vi.fn().mockResolvedValue(null), getActiveMasteryPolicy: policyMock }));
+  // Phase 6 Step 6E: SHADOW MODE projector, unrelated to misconception
+  // lifecycle -- stubbed out like knowledge-state.service above.
+  const memoryProjectorMock = vi.fn().mockResolvedValue({ state: {}, stateChanged: false, diagnostics: {} });
+  vi.doMock('./memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
+  vi.doMock('@/services/memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
   const mod = await import('@/services/mastery.service');
   return { updateMastery: mod.updateMastery, recordDecisionEventMock };
 }

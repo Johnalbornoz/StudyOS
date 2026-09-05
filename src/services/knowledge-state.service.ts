@@ -17,6 +17,7 @@ import type { EvidenceResult, EvidenceSourceType } from '@/lib/algorithms/master
 import { getTransferScore } from './transfer.service';
 import { getMisconceptionCountsForConcept } from './misconception.service';
 import { evaluateValidationLifecycle } from './validation-cycle.service';
+import { getPhase2MemoryInput } from './memory-read.service';
 import { track } from '@/lib/analytics';
 import { recordDecisionEvent } from '@/lib/audit';
 
@@ -47,16 +48,24 @@ export interface MasteryPolicy {
   maximumCriticalMisconceptions: number;
   minimumEvidenceCount: number;
   minimumIndependentEvidenceCount: number;
-  retentionMinGapDays: number;
   validationWindowDays: number;
 }
 
-/** The highest-version row in mastery_policies -- there is always exactly one active policy at a time. */
+/**
+ * The highest-version row in mastery_policies -- there is always
+ * exactly one active policy at a time.
+ *
+ * Step 6J-B2: the `retention_min_gap_days` DB column still exists
+ * (deprecated schema, not dropped) but is deliberately no longer
+ * selected/exposed here -- its only former runtime reader was
+ * classifyRetention(), now deleted; Retention qualification belongs
+ * exclusively to MemoryPolicy v1 (Step 6G Section 10).
+ */
 export async function getActiveMasteryPolicy(client: DbExecutor = db): Promise<MasteryPolicy> {
   const result = await client.query(
     `SELECT version, minimum_understanding, minimum_independence, minimum_application, minimum_retention,
             minimum_transfer, requires_transfer, maximum_critical_misconceptions, minimum_evidence_count,
-            minimum_independent_evidence_count, retention_min_gap_days, validation_window_days
+            minimum_independent_evidence_count, validation_window_days
      FROM mastery_policies ORDER BY version DESC LIMIT 1`
   );
   const row = result.rows[0];
@@ -72,7 +81,6 @@ export async function getActiveMasteryPolicy(client: DbExecutor = db): Promise<M
     maximumCriticalMisconceptions: row.maximum_critical_misconceptions,
     minimumEvidenceCount: row.minimum_evidence_count,
     minimumIndependentEvidenceCount: row.minimum_independent_evidence_count,
-    retentionMinGapDays: row.retention_min_gap_days,
     validationWindowDays: row.validation_window_days,
   };
 }
@@ -148,22 +156,6 @@ export function classifyApplication(rows: EvidenceRow[]): number | null {
   return average(rows.filter((r) => APPLICATION_SOURCES.has(r.sourceType as string)));
 }
 
-/**
- * Retention: evidence-based, never predicted. Only counts attempts
- * that occurred at least `minGapDays` after this concept's first
- * evidence -- immediate practice, even a 100% immediately after
- * learning, never counts as Retention. Null with no such evidence yet,
- * which is the common, correct case for a freshly-diagnosed concept.
- */
-export function classifyRetention(rows: EvidenceRow[], minGapDays: number): number | null {
-  if (rows.length === 0) return null;
-  const sorted = [...rows].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  const firstEvidenceAt = new Date(sorted[0].timestamp).getTime();
-  const minGapMs = minGapDays * 24 * 60 * 60 * 1000;
-  const gapped = rows.filter((r) => new Date(r.timestamp).getTime() - firstEvidenceAt >= minGapMs);
-  return average(gapped);
-}
-
 export interface EvidenceSufficiency {
   evidenceCount: number;
   independentEvidenceCount: number;
@@ -184,6 +176,7 @@ export interface DimensionScores {
   understanding: number | null;
   independence: number | null;
   application: number | null;
+  /** Step 6G: sourced verbatim from Phase 6's concept_memory_state.demonstrated_retention_score in the canonical live path -- see recalculateConceptKnowledgeState. No transformation, no second weighting, no fallback. */
   retention: number | null;
   transfer: number | null;
 }
@@ -289,6 +282,16 @@ export interface ConceptKnowledgeState {
   understandingScore: number | null;
   independenceScore: number | null;
   applicationScore: number | null;
+  /**
+   * Step 6G: after this integration, this column is a MATERIALIZED
+   * MIRROR of the canonical Phase 6 demonstratedRetentionScore for any
+   * concept recalculated through the live path -- it is NOT an
+   * independent source of truth. It remains physically present (and
+   * historical rows recalculated before this step may still carry a
+   * legacy classifyRetention()-derived value until their next live
+   * recalculation) purely for backward compatibility; do not read it
+   * as authoritative without confirming when it was last projected.
+   */
   retentionScore: number | null;
   transferScore: number | null;
   activeMisconceptionCount: number;
@@ -384,12 +387,27 @@ export async function recalculateConceptKnowledgeState(
     getMisconceptionCountsForConcept(studentId, conceptId, client),
   ]);
 
+  // Step 6G: Phase 6 is the sole Retention-dimension authority in this
+  // canonical live path. The projector (mastery.service.ts::
+  // updateMastery) always runs immediately before this function, in the
+  // same transaction, so concept_memory_state already reflects this
+  // transaction's own (possibly still-uncommitted) evidence. A missing
+  // row here is an invariant violation, not a case to fall back to
+  // classifyRetention()/legacy retention_score/getRetention() -- letting
+  // getPhase2MemoryInput throw rolls back the whole transaction instead
+  // of committing two inconsistent truths. policy.retentionMinGapDays is
+  // deliberately NOT read here anymore -- qualification belongs
+  // exclusively to MemoryPolicy v1 (Step 6G Section 10).
+  const memoryInput = await getPhase2MemoryInput(client, studentId, conceptId);
+
   const unassistedRows = rows.filter((r) => r.aiAssistanceType === 'NONE');
   const scores: DimensionScores = {
     understanding: classifyUnderstanding(rows),
     independence: classifyIndependence(unassistedRows),
     application: classifyApplication(rows),
-    retention: classifyRetention(rows, policy.retentionMinGapDays),
+    // Direct passthrough -- no transformation, no second weighting, no
+    // averaging, no fallback (Step 6G Section 6). null stays null.
+    retention: memoryInput.demonstratedRetentionScore,
     transfer: transferScore,
   };
 

@@ -87,6 +87,13 @@ async function runUpdateMastery(metadata: Record<string, unknown> | undefined) {
   });
   vi.doMock('./knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
   vi.doMock('@/services/knowledge-state.service', () => ({ recalculateConceptKnowledgeState: recalculateMock, getActiveMasteryPolicy: policyMock }));
+  // Phase 6 Step 6E: SHADOW MODE projector, unrelated to this Phase 1D
+  // invariant -- stubbed out exactly like recalculateConceptKnowledgeState
+  // above, so this fixture's DB mock doesn't need to also model
+  // concept_memory_state's query shape.
+  const memoryProjectorMock = vi.fn().mockResolvedValue({ state: {}, stateChanged: false, diagnostics: {} });
+  vi.doMock('./memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
+  vi.doMock('@/services/memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
 
   const { updateMastery } = await import('@/services/mastery.service');
 
