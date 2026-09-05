@@ -22,6 +22,13 @@ const NEW_OR_CHANGED_FILES = [
   'src/services/tutor.service.ts',
   'src/app/api/quizzes/hint/route.ts',
   'src/app/api/cognitive/explain/generate/route.ts',
+  // Step 6L-B1: the Remediation Session Shell's one read boundary --
+  // the 4th deliberate TeachingIntent consumer (see its own header
+  // comment for why: the same getTeachingIntentForConcept call
+  // explain/generate and quizzes/hint already make live, called once
+  // more here for the support-level/misconception-context signal, not
+  // a new category of side effect).
+  'src/lib/remediation-session-view.ts',
 ];
 
 function read(path: string): string {
@@ -92,7 +99,7 @@ describe('S18 -- Phase 4 decision fields are never reassigned in the wired call 
   });
 });
 
-describe('LIVE_TEACHING_INTENT_CONSUMERS -- exactly 3 canonical surfaces, no indiscriminate wiring', () => {
+describe('LIVE_TEACHING_INTENT_CONSUMERS -- exactly 4 canonical surfaces (Step 6L-B1 added the 4th, deliberately), no indiscriminate wiring', () => {
   it('quiz-generation.service.ts::generateQuestionHint consumes TeachingGenerationContext', () => {
     expect(read('src/services/quiz-generation.service.ts')).toMatch(/generationContext\?: TeachingGenerationContext/);
   });
@@ -101,6 +108,9 @@ describe('LIVE_TEACHING_INTENT_CONSUMERS -- exactly 3 canonical surfaces, no ind
   });
   it('tutor.service.ts::sendMessage consumes getTeachingIntentForConcept', () => {
     expect(read('src/services/tutor.service.ts')).toMatch(/getTeachingIntentForConcept/);
+  });
+  it('Step 6L-B1: remediation-session-view.ts::getRemediationSessionView consumes getTeachingIntentForConcept for the support-level/misconception-context signal only', () => {
+    expect(read('src/lib/remediation-session-view.ts')).toMatch(/getTeachingIntentForConcept/);
   });
   it('no other production source file references TeachingGenerationContext/getTeachingIntentForConcept (indiscriminate-wiring guard)', () => {
     const allowed = new Set(NEW_OR_CHANGED_FILES);

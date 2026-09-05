@@ -119,11 +119,11 @@ function transferLaunch(decision: LearningDecision, label: string | null): Launc
 
 /**
  * REMEDIATION never starts a new path, never re-runs diagnosis, and
- * never substitutes a different concept -- it only resolves where the
+ * never substitutes a different concept -- it only verifies that the
  * ALREADY-ACTIVE step of the ALREADY-DETERMINED path (the same one
- * Phase 3C's REMEDIATION_ACTIVE signal pointed at) sends the student,
- * via the existing remediationStepHref used everywhere else in the
- * product.
+ * Phase 3C's REMEDIATION_ACTIVE signal pointed at) is genuinely this
+ * student's, on the right concept, before sending them into the
+ * Remediation Session Shell (Step 6L-B1) for that path.
  *
  * getRemediationPath is path-id scoped, not student-scoped -- a
  * remediationPathId is never trusted on its own. Three invariants are
@@ -140,19 +140,20 @@ function transferLaunch(decision: LearningDecision, label: string | null): Launc
  *      LearningSession.actionConceptId and the launched concept can
  *      never diverge).
  *
- * Once (2) holds, activeStep.conceptId (verified equal to
- * rootCauseConceptId by (3)) is the SAME concept as
- * decision.actionConceptId, already ownership-verified by the caller --
- * so the already-resolved label is reused for TRANSFER/EXPLAIN steps
- * rather than a second query. TRANSFER/EXPLAIN steps get a corrected
- * href built here rather than editing remediation.service.ts --
- * remediationStepHref's TRANSFER/EXPLAIN cases have a known
- * pre-existing gap (they omit subjectId/conceptLabel, which those
- * destination pages require) that predates Phase 3D and is out of this
- * phase's scope to fix at the source; see the architecture doc's known
- * limitations.
+ * Step 6L-B1: once all three hold, this resolves to the shell
+ * (`/dashboard/remediation/[pathId]`) rather than straight to the
+ * active step's own activity href -- WHICH step, its href, its
+ * support level, and its "why" are then re-derived, read-only, by the
+ * shell's own boundary (getRemediationSessionView) at render time.
+ * This is a pure presentation/navigation change: none of the three
+ * invariants above were relaxed, and the former TRANSFER/EXPLAIN
+ * special-casing (building a corrected href with subjectId/
+ * conceptLabel that remediationStepHref's own TRANSFER/EXPLAIN cases
+ * omit) is no longer needed here, since the shell's own
+ * getRemediationSessionView/remediationStepHref call resolves that
+ * regardless of step type.
  */
-async function remediationLaunch(studentId: string, decision: LearningDecision, label: string | null): Promise<LaunchResolution> {
+async function remediationLaunch(studentId: string, decision: LearningDecision): Promise<LaunchResolution> {
   if (!decision.remediationPathId) {
     return unavailable('REMEDIATION requires an active remediationPathId; none is present on this decision.');
   }
@@ -178,22 +179,10 @@ async function remediationLaunch(studentId: string, decision: LearningDecision, 
     );
   }
 
-  if (activeStep.stepType === 'TRANSFER' || activeStep.stepType === 'EXPLAIN') {
-    if (activeStep.stepType === 'TRANSFER' && !label) {
-      return unavailable(`Could not resolve a label for concept ${activeStep.conceptId}; this TRANSFER step requires one to launch.`);
-    }
-    const base = activeStep.stepType === 'TRANSFER' ? '/dashboard/cognitive/transfer' : '/dashboard/cognitive/explain';
-    const params: Record<string, string> = {
-      conceptId: activeStep.conceptId,
-      subjectId: decision.subjectId,
-      remediationStepId: activeStep.id,
-    };
-    if (activeStep.stepType === 'TRANSFER' && label) params.conceptLabel = label;
-    return ready(base, params);
-  }
-
-  const href = remediationStepHref(activeStep, { id: path.id, subjectId: decision.subjectId });
-  return { launchStatus: 'READY', launchTarget: href, launchParams: { remediationStepId: activeStep.id } };
+  // Not routed through ready()/buildUrl(): the path id is a route
+  // segment, not a query param, so there is no query string to build
+  // (ready() would leave a bare trailing "?").
+  return { launchStatus: 'READY', launchTarget: `/dashboard/remediation/${path.id}`, launchParams: {} };
 }
 
 /**
@@ -286,7 +275,12 @@ async function resolveLaunch(studentId: string, decision: LearningDecision): Pro
       // attempt; see verificationLaunch's own doc comment.
       return verificationLaunch(studentId, decision);
     case 'REMEDIATION':
-      return remediationLaunch(studentId, decision, ownership.label);
+      // Step 6L-B1: remediationLaunch still verifies every invariant it
+      // always did (path exists/belongs to this student/root cause and
+      // active step match) but now resolves READY to the Remediation
+      // Session Shell instead of straight to the active step's activity
+      // href -- see its own doc comment.
+      return remediationLaunch(studentId, decision);
     case 'TRANSFER':
       return transferLaunch(decision, ownership.label);
     default:

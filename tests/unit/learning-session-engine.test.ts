@@ -114,7 +114,9 @@ describe('24 & 25. REMEDIATION continues the existing path and acts on the root 
     expect(getRemediationPathMock).toHaveBeenCalledWith('rp-99');
     expect(s.remediationPathId).toBe('rp-99');
     expect(s.launchStatus).toBe('READY');
-    expect(s.launchTarget).toContain('remediationStepId=step-1');
+    // Step 6L-B1: lands on the Remediation Session Shell for this exact
+    // path id, never a new/different path.
+    expect(s.launchTarget).toBe('/dashboard/remediation/rp-99');
   });
 
   it('25: acts on actionConceptId/root cause -- the launched step belongs to the SAME path Phase 3C pointed at, never a different concept fabricated by the Session Engine', async () => {
@@ -124,7 +126,11 @@ describe('24 & 25. REMEDIATION continues the existing path and acts on the root 
       learningDecision: decision({ activityType: 'REMEDIATION', remediationPathId: 'rp-99', actionConceptId: 'root-B', subjectId: 'subj1' }),
     });
     expect(s.actionConceptId).toBe('root-B');
-    expect(s.launchTarget).toContain('conceptId=root-B');
+    // Step 6L-B1: the shell URL itself no longer encodes the concept --
+    // WHICH concept was verified is what actionConceptId asserts above;
+    // the shell re-derives it, read-only, from the same path at render
+    // time (getRemediationSessionView).
+    expect(s.launchTarget).toBe('/dashboard/remediation/rp-99');
   });
 
   it('fails explicitly when the path has no active step, rather than substituting a different activity', async () => {
@@ -395,10 +401,13 @@ describe('P0-3D.2. Remediation path/root-cause consistency', () => {
       learningDecision: decision({ activityType: 'REMEDIATION', actionConceptId: 'root-B', subjectId: 'subj1', remediationPathId: 'rp-1' }),
     });
     expect(s.launchStatus).toBe('READY');
-    expect(s.launchTarget).toContain('remediationStepId=step-1');
+    // Step 6L-B1: lands on the shell for this path; the concept the
+    // active step operates on is re-verified/rendered by the shell
+    // itself, not encoded in this URL.
+    expect(s.launchTarget).toBe('/dashboard/remediation/rp-1');
   });
 
-  it('6. LearningSession.actionConceptId always matches the concept encoded in a REMEDIATION launchTarget', async () => {
+  it('6. LearningSession.actionConceptId always matches the root cause Phase 3D verified, even though the REMEDIATION launchTarget (the shell) no longer encodes a concept in its URL', async () => {
     queryMock.mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] });
     getRemediationPathMock.mockResolvedValue(path({ studentId: STUDENT, rootCauseConceptId: 'root-B', steps: [step({ conceptId: 'root-B', stepType: 'RETRIEVAL' })] }));
     const s = await startLearningSession({
@@ -407,8 +416,8 @@ describe('P0-3D.2. Remediation path/root-cause consistency', () => {
     });
     expect(s.launchStatus).toBe('READY');
     expect(s.actionConceptId).toBe('root-B');
-    expect(s.launchTarget).toContain('conceptId=root-B');
-    expect(s.launchParams.conceptId ?? new URL(`http://x${s.launchTarget}`).searchParams.get('conceptId')).toBe('root-B');
+    expect(s.launchTarget).toBe('/dashboard/remediation/rp-1');
+    expect(s.launchParams).toEqual({});
   });
 
   it('a TRANSFER remediation step also enforces the same root-cause consistency before launching', async () => {
