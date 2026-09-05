@@ -13,6 +13,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
 import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
+import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -207,6 +208,15 @@ export default async function ConceptDetailPage({
     );
   }
 
+  // Step 6L-A: one plain-language situation label, derived only from
+  // canonical, already-computed backend state -- never a new academic-
+  // truth model (see concept-situation-labels.ts). Absent entirely when
+  // Phase 2 has no Knowledge State row yet for this concept (distinct
+  // from `!state` above, which is Phase 6/Twin-level absence).
+  const situation = knowledgeState
+    ? conceptSituation(knowledgeState.masteryState, knowledgeState.validationReadiness, conceptView!.memory.memoryStatus)
+    : null;
+
   const evidenceStrengthLabel =
     state.evidenceStrength === 'HIGH'
       ? t['conceptDetail.evidenceStrengthHigh']
@@ -221,7 +231,23 @@ export default async function ConceptDetailPage({
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', gap: 6 }}>
         <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{subject.name}</Link> / {concept.label}
       </div>
-      <h1 style={{ marginBottom: 'var(--space-6)' }}>{concept.label}</h1>
+      <h1 style={{ marginBottom: 'var(--space-4)' }}>{concept.label}</h1>
+
+      {situation && (
+        <div
+          className="card"
+          style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}
+        >
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.situationTitle']}</div>
+          <div style={{ fontSize: 18, fontWeight: 650 }}>{conceptSituationLabel(situation, t)}</div>
+          <div style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 4 }}>
+            <span style={{ fontWeight: 650 }}>{t['conceptDetail.situationNextLabel']}:</span>{' '}
+            <Link href={ctaConfig[primaryCTA].href} style={{ color: 'var(--brand-ink)' }}>
+              {ctaConfig[primaryCTA].label}
+            </Link>
+          </div>
+        </div>
+      )}
 
       <h2 style={{ fontSize: 16, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.yourLearning']}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>

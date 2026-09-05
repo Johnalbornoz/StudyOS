@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getLearningOSSnapshot, type ConceptDisplayInfo } from '@/services/learning-os-snapshot.service';
 import { estimateActivityMinutes, type LearningPlanItem } from '@/lib/learning-execution-policy';
@@ -7,6 +8,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import WhyThisV3 from '../WhyThisV3';
 import { activityLabel } from '../activityLabel';
+import { activityCta } from '../activityCta';
 import StartSessionButton from '../StartSessionButton';
 
 /**
@@ -75,8 +77,8 @@ function ItemRow({
       <StartSessionButton
         studentId={studentId}
         actionConceptId={decision.actionConceptId}
-        label={t['today.practice']}
-        accessibleLabel={`${t['today.practice']}: ${label}`}
+        label={activityCta(decision.activityType, t)}
+        accessibleLabel={`${activityCta(decision.activityType, t)}: ${label}`}
         unavailableLabel={t['today3.unavailableBody']}
         retryLabel={t['today3.retry']}
         variant="secondary"
@@ -107,6 +109,18 @@ export default async function TodayPage() {
   const best = snapshot?.nextExecutableItem ?? null;
   const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
   const isEmpty = !snapshot || snapshot.decisions.length === 0;
+
+  // Step 6L-A: "nothing to show" has two very different meanings for the
+  // student -- a brand-new/cold profile with no evidence yet to build a
+  // recommendation from, versus an established student who is genuinely
+  // caught up right now. Distinguishing them is a plain existence check
+  // over already-canonical data (never a new recommendation/diagnostic
+  // policy), so the cold state is never confused with "you're at risk"
+  // or "you're behind."
+  const isCold = isEmpty
+    ? (await query(`SELECT EXISTS (SELECT 1 FROM learning_evidence WHERE student_id = $1) AS has_evidence`, [studentId])).rows[0]
+        .has_evidence === false
+    : false;
 
   return (
     <div>
@@ -149,7 +163,7 @@ export default async function TodayPage() {
           <StartSessionButton
             studentId={studentId}
             actionConceptId={best.decision.actionConceptId}
-            label={t['bestNextAction.start']}
+            label={activityCta(best.decision.activityType, t)}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
             variant="primary"
@@ -159,8 +173,15 @@ export default async function TodayPage() {
 
       {isEmpty ? (
         <div className="card empty-state">
-          <strong>{t['today3.emptyTitle']}</strong>
-          {t['today3.emptyBody']}
+          <strong>{isCold ? t['today3.coldStateTitle'] : t['today3.emptyTitle']}</strong>
+          {isCold ? t['today3.coldStateBody'] : t['today3.emptyBody']}
+          {isCold && (
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <Link href="/dashboard/subjects" className="btn btn-primary">
+                {t['today3.coldStateCta']}
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <>
