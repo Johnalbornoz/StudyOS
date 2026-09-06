@@ -295,53 +295,22 @@ function toDateString(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export async function storeStudyPlan(plan: StudyPlan): Promise<string> {
-  const client = await db.connect();
-  try {
-    await client.query('BEGIN');
-
-    const planResult = await client.query(
-      `
-      INSERT INTO study_plans (id, student_id, period_start, period_end, generated_at, status)
-      VALUES (gen_random_uuid(), $1, $2, $3, NOW(), 'active')
-      RETURNING id
-      `,
-      [plan.studentId, toDateString(plan.startDate), toDateString(plan.endDate)]
-    );
-    const planId = planResult.rows[0].id;
-
-    for (const session of plan.sessions) {
-      const sessionResult = await client.query(
-        `
-        INSERT INTO study_sessions (id, plan_id, scheduled_date, estimated_duration_minutes, completion_status)
-        VALUES (gen_random_uuid(), $1, $2, $3, 'pending')
-        RETURNING id
-        `,
-        [planId, toDateString(session.date), session.totalMinutes]
-      );
-      const sessionId = sessionResult.rows[0].id;
-
-      let sequence = 0;
-      for (const item of session.items) {
-        await client.query(
-          `
-          INSERT INTO study_session_items (id, session_id, concept_id, item_type, reason, sequence, duration_estimate_minutes)
-          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
-          `,
-          [sessionId, item.conceptId, item.activityType, item.priority, sequence++, item.estimatedMinutes]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    return planId;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error storing study plan:', error);
-    throw error;
-  } finally {
-    client.release();
-  }
+/**
+ * @deprecated Phase 8 -- Step 8G1. DISABLED legacy writer.
+ *
+ * The canonical plan authority is `learning_plan` / `learning_plan_item`
+ * (`CANONICAL_PLAN_AUTHORITY`), written ONLY by the 8B projector via
+ * `rebuildLearningPlan` (8D) and the learner-agency service (8F). No
+ * production flow creates `study_plans` / `study_sessions` /
+ * `study_session_items` rows any more; the 3 historical `study_plans`
+ * rows are preserved untouched. This stub is retained for type/import
+ * stability and throws if anything tries to write a legacy plan.
+ */
+export async function storeStudyPlan(_plan: StudyPlan): Promise<string> {
+  void toDateString; // retained helper; no longer used by a live path
+  throw new Error(
+    'LEGACY_PLAN_WRITER_DISABLED: study_plans is frozen historical data. Use rebuildLearningPlan (Phase 8 canonical plan).',
+  );
 }
 
 /**

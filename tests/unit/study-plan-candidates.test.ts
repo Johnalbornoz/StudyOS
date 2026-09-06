@@ -100,29 +100,24 @@ describe('34. Student isolation: candidate building is always scoped to the supp
   });
 });
 
-describe('32. Existing persistence shape is unchanged', () => {
-  it('storeStudyPlan still writes to study_plans / study_sessions / study_session_items, in that order', async () => {
+describe('8G1. Legacy Study Plan writer is disabled', () => {
+  it('storeStudyPlan throws LEGACY_PLAN_WRITER_DISABLED and issues no query', async () => {
     const { storeStudyPlan } = await import('@/services/study-plan.service');
-    const client = { query: vi.fn().mockImplementation(async (sql: string) => {
-      if (/INSERT INTO study_plans/i.test(sql)) return { rows: [{ id: 'plan-1' }] };
-      if (/INSERT INTO study_sessions/i.test(sql)) return { rows: [{ id: 'sess-1' }] };
-      return { rows: [] };
-    }), release: vi.fn() };
+    const connect = vi.fn();
     const { db } = await import('@/lib/db');
-    (db as any).connect = vi.fn().mockResolvedValue(client);
+    (db as any).connect = connect;
 
     const plan = {
       studentId: STUDENT, startDate: new Date('2026-01-01'), endDate: new Date('2026-01-01'),
-      sessions: [{ id: 's', studentId: STUDENT, date: new Date('2026-01-01'), totalMinutes: 10, items: [
-        { conceptId: 'c1', canonicalId: 'c1', label: 'X', activityType: 'PRACTICE' as const, estimatedMinutes: 10, priority: 'CRITICAL' as const, facts: [], resources: {} },
-      ], subjectBreakdown: [] }],
-      totalStudyMinutes: 10, subjectsInPlan: ['Physics'], criticalConceptsCount: 1,
+      sessions: [], totalStudyMinutes: 0, subjectsInPlan: [], criticalConceptsCount: 0,
     };
-    await storeStudyPlan(plan);
+    await expect(storeStudyPlan(plan as any)).rejects.toThrow(/LEGACY_PLAN_WRITER_DISABLED/);
+    expect(connect).not.toHaveBeenCalled();
+  });
 
-    const sqlCalls = client.query.mock.calls.map((c: any[]) => String(c[0]));
-    expect(sqlCalls.some((s) => /INSERT INTO study_plans/i.test(s))).toBe(true);
-    expect(sqlCalls.some((s) => /INSERT INTO study_sessions/i.test(s))).toBe(true);
-    expect(sqlCalls.some((s) => /INSERT INTO study_session_items/i.test(s))).toBe(true);
+  it('the cutover constants declare the canonical authority', async () => {
+    const { CANONICAL_PLAN_AUTHORITY, LEGACY_PLAN_WRITER_ACTIVE } = await import('@/lib/learning-orchestration-policy');
+    expect(CANONICAL_PLAN_AUTHORITY).toBe('learning_plan/learning_plan_item');
+    expect(LEGACY_PLAN_WRITER_ACTIVE).toBe(false);
   });
 });

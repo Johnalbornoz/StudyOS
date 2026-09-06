@@ -56,3 +56,19 @@ export function planItemDayBucket(scheduledDate: string, todayIso: string): Plan
   if (scheduledDate === todayIso) return 'TODAY';
   return 'UPCOMING';
 }
+
+/**
+ * 8G1 compatibility only: the legacy Study Plan API exposed a coarse
+ * CRITICAL/HIGH/MEDIUM/LOW band. Derive it deterministically from the
+ * canonical goal tier so the compat shim over `/api/study-plan/generate`
+ * keeps its old response shape. Not used anywhere in the canonical UI.
+ */
+export type LegacyPriorityBand = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export function legacyPriorityBand(reasonCode: OrchestrationReasonCode): LegacyPriorityBand {
+  const tier = getOrchestrationGoalTier(reasonCode);
+  if (tier === 1) return 'CRITICAL';
+  if (tier <= 3) return 'HIGH';
+  if (tier <= 5) return 'MEDIUM';
+  return 'LOW';
+}

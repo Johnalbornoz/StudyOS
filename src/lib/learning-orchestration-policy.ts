@@ -67,6 +67,27 @@ export const ORCHESTRATION_HORIZON_DAYS = 14 as const;
 export const ORCHESTRATION_MAX_ITEMS_PER_DAY = 4 as const;
 
 // ---------------------------------------------------------------------
+// Legacy Study Plan cutover (Step 8G1)
+// ---------------------------------------------------------------------
+
+/**
+ * The single source of truth for a learner's schedule. Every plan read
+ * and every plan write goes through these tables (8B read boundary /
+ * 8B SOLE writer). The legacy `study_plans` / `study_sessions` /
+ * `study_session_items` tables are frozen historical data -- still
+ * present, never dropped, never written by any production flow.
+ */
+export const CANONICAL_PLAN_AUTHORITY = 'learning_plan/learning_plan_item' as const;
+
+/**
+ * `false` after 8G1: no production code path inserts a `study_plans`,
+ * `study_sessions`, or `study_session_items` row. `storeStudyPlan` is a
+ * disabled stub that throws; `/api/study-plan/generate` is a
+ * compatibility shim over the canonical planner.
+ */
+export const LEGACY_PLAN_WRITER_ACTIVE = false as const;
+
+// ---------------------------------------------------------------------
 // Plan + item status taxonomy
 // ---------------------------------------------------------------------
 

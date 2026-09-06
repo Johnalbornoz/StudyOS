@@ -1,54 +1,27 @@
 /**
- * POST /api/study-plan/generate
+ * `/api/study-plan/generate` -- Phase 8 Step 8G1 COMPATIBILITY SHIM.
  *
- * Generate a personalized study plan for the student
+ * The canonical plan authority is `learning_plan` / `learning_plan_item`
+ * (written only by the 8B projector). This endpoint no longer generates
+ * or stores a legacy `study_plans` row -- it is kept only so any
+ * lingering external caller keeps working:
  *
- * Request body:
- * {
- *   studentId: string
- *   daysAhead?: number (default 7)
- *   dailyMinutes?: number (default 90)
- *   startDate?: string (ISO date, default today)
- * }
+ *   POST -> runs the canonical `rebuildLearningPlan`, then returns the
+ *           resulting ACTIVE plan in the old response shape.
+ *   GET  -> returns the ACTIVE canonical plan in the old response shape
+ *           (no rebuild -- a read never mutates a plan).
  *
- * Response:
- * {
- *   success: boolean
- *   data: {
- *     planId: string
- *     plan: {
- *       startDate: string
- *       endDate: string
- *       sessions: [
- *         {
- *           date: string
- *           totalMinutes: number
- *           items: [
- *             {
- *               conceptId: string
- *               label: string
- *               activityType: string
- *               estimatedMinutes: number
- *               priority: string
- *             }
- *           ]
- *         }
- *       ]
- *       totalStudyMinutes: number
- *       criticalConceptsCount: number
- *     }
- *   }
- * }
+ * `daysAhead` / `dailyMinutes` / `startDate` in the POST body are
+ * accepted for backward compatibility and ignored: the canonical plan
+ * is a rolling 14-day horizon in the learner's timezone, and capacity
+ * is set via `/api/learning/capacity`.
  */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
-import {
-  generateStudyPlan,
-  storeStudyPlan,
-  getActiveStudyPlan,
-} from '@/services/study-plan.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { rebuildLearningPlan } from '@/services/learning-orchestration.service';
+import { getLegacyShapedCanonicalPlan } from '@/services/legacy-study-plan-compat';
+import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 
 const GenerateStudyPlanSchema = z.object({
@@ -58,153 +31,50 @@ const GenerateStudyPlanSchema = z.object({
   startDate: z.string().datetime().optional(),
 });
 
-type GenerateStudyPlanRequest = z.infer<typeof GenerateStudyPlanSchema>;
-
-/** GET the currently active plan, without generating a new one. */
 export async function GET(request: NextRequest) {
   const authContext = await verifyAuth();
-  if (!authContext) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const studentId = searchParams.get('studentId');
-  if (!studentId) {
-    return NextResponse.json({ error: 'INVALID_INPUT', message: 'Missing studentId' }, { status: 400 });
-  }
+  const studentId = new URL(request.url).searchParams.get('studentId');
+  if (!studentId) return NextResponse.json({ error: 'INVALID_INPUT', message: 'Missing studentId' }, { status: 400 });
 
   const canAccess = await verifyStudentAccess(authContext.userId, studentId, authContext.role);
-  if (!canAccess) {
-    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-  }
+  if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const preferredLanguage = await getInterfaceLanguage(studentId);
-  const plan = await getActiveStudyPlan(studentId, preferredLanguage);
-
-  if (!plan) {
-    return NextResponse.json({ success: true, data: { plan: null } });
-  }
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      plan: {
-        startDate: plan.startDate.toISOString(),
-        endDate: plan.endDate.toISOString(),
-        sessions: plan.sessions.map((s) => ({
-          date: s.date.toISOString(),
-          totalMinutes: s.totalMinutes,
-          items: s.items.map((item) => ({
-            conceptId: item.conceptId,
-            canonicalId: item.canonicalId,
-            label: item.label,
-            activityType: item.activityType,
-            estimatedMinutes: item.estimatedMinutes,
-            priority: item.priority,
-          })),
-          subjectBreakdown: s.subjectBreakdown,
-        })),
-        totalStudyMinutes: plan.totalStudyMinutes,
-        subjectsInPlan: plan.subjectsInPlan,
-        criticalConceptsCount: plan.criticalConceptsCount,
-      },
-    },
-  });
+  const shaped = await getLegacyShapedCanonicalPlan(studentId, preferredLanguage);
+  return NextResponse.json({ success: true, data: shaped });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
     const authContext = await verifyAuth();
-    if (!authContext) {
-      return NextResponse.json(
-        { error: 'UNAUTHORIZED', message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED', message: 'Authentication required' }, { status: 401 });
 
-    const body = await request.json();
-
-    // Validate input
-    let validated: GenerateStudyPlanRequest;
+    let validated: z.infer<typeof GenerateStudyPlanSchema>;
     try {
-      validated = GenerateStudyPlanSchema.parse(body);
+      validated = GenerateStudyPlanSchema.parse(await request.json());
     } catch (error: any) {
-      return NextResponse.json(
-        {
-          error: 'INVALID_INPUT',
-          message: error.errors?.[0]?.message || 'Invalid request body',
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message || 'Invalid request body' }, { status: 400 });
     }
 
-    // Verify authorization
-    const canAccess = await verifyStudentAccess(
-      authContext.userId,
-      validated.studentId,
-      authContext.role
-    );
-
+    const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) {
-      return NextResponse.json(
-        {
-          error: 'FORBIDDEN',
-          message: 'You do not have permission to generate a plan for this student',
-        },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'You do not have permission to generate a plan for this student' }, { status: 403 });
     }
 
-    const startDate = validated.startDate ? new Date(validated.startDate) : new Date();
     const preferredLanguage = await getInterfaceLanguage(validated.studentId);
+    await rebuildLearningPlan(validated.studentId, { preferredLanguage });
+    const shaped = await getLegacyShapedCanonicalPlan(validated.studentId, preferredLanguage);
 
-    // Generate plan
-    const plan = await generateStudyPlan(validated.studentId, {
-      daysAhead: validated.daysAhead || 7,
-      dailyMinutes: validated.dailyMinutes || 90,
-      startDate,
-      preferredLanguage,
-    });
-
-    // Store plan
-    const planId = await storeStudyPlan(plan);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        planId,
-        plan: {
-          startDate: plan.startDate.toISOString(),
-          endDate: plan.endDate.toISOString(),
-          sessions: plan.sessions.map(s => ({
-            date: s.date.toISOString(),
-            totalMinutes: s.totalMinutes,
-            items: s.items.map(item => ({
-              conceptId: item.conceptId,
-              canonicalId: item.canonicalId,
-              label: item.label,
-              activityType: item.activityType,
-              estimatedMinutes: item.estimatedMinutes,
-              priority: item.priority,
-            })),
-            subjectBreakdown: s.subjectBreakdown,
-          })),
-          totalStudyMinutes: plan.totalStudyMinutes,
-          subjectsInPlan: plan.subjectsInPlan,
-          criticalConceptsCount: plan.criticalConceptsCount,
-        },
-      },
-    });
+    return NextResponse.json({ success: true, data: shaped });
   } catch (error) {
-    console.error('Error generating study plan:', error);
-    return NextResponse.json(
-      {
-        error: 'INTERNAL_ERROR',
-        message: 'Failed to generate study plan',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined,
-      },
-      { status: 500 }
-    );
+    logOperationalWarning({
+      subsystem: 'phase8-orchestrator',
+      operation: 'studyPlanGenerateCompat',
+      error,
+      context: { route: 'POST /api/study-plan/generate' },
+    });
+    return NextResponse.json({ error: 'INTERNAL_ERROR', message: 'Failed to generate study plan' }, { status: 500 });
   }
 }
