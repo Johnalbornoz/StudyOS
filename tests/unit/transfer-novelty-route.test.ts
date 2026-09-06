@@ -1,12 +1,19 @@
 /**
- * Phase 7 -- Step 7B2: generate/submit route anti-memorization wiring.
+ * Phase 7 -- Steps 7B2 / 7D1 / 7D2: generate/submit route wiring.
  *
- * generate: bounded regeneration on a recent structural duplicate, then
- * fail-closed 409 with one terminal WARN and zero AI calls beyond the
- * cap; unseen candidate behaves exactly like 7B1.
- * submit: a DIFFERENT taskId re-submitting a recent duplicate fingerprint
- * is rejected 409 before evaluateTransferResponse/updateMastery; the
- * SAME taskId (idempotent resubmit) is unaffected.
+ * generate (7B2): bounded regeneration on a recent structural duplicate,
+ * then fail-closed 409 with one terminal WARN and no AI calls beyond the
+ * cap.
+ * generate (7D1): structured candidate, one persisted
+ * transfer_task_instances row per served task, raw novelty metadata not
+ * leaked to the client, typed 503 on any AI failure.
+ * generate (7D2): deterministic server-side novelty certification --
+ * novelty_validation_passed is written true ONLY when the certifier
+ * passes; an uncertified-but-unique task is still served (persisted
+ * false, one WARN); target concepts are resolved in ONE batched query.
+ * submit: a DIFFERENT taskId re-submitting a recent duplicate
+ * fingerprint is rejected 409 before evaluateTransferResponse/
+ * updateMastery; the SAME taskId (idempotent resubmit) is unaffected.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -107,9 +114,9 @@ describe('7B2/7D1 -- generate route', () => {
     expect(opsWarns()).toHaveLength(0);
   });
 
-  it('persists exactly one transfer_task_instances row with novelty_validation_passed = false', async () => {
+  it('7D2: a certifiable candidate persists exactly one row with novelty_validation_passed = true, no uncertified WARN', async () => {
     withRecentEvidence([]);
-    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT));
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT)); // MID + STRATEGY, unique
     const res = await GENERATE(req({ studentId: STUDENT, subjectId: SUBJECT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
     const body = await res.json();
     const inserts = dbQueryMock.mock.calls.filter((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])));
@@ -118,7 +125,66 @@ describe('7B2/7D1 -- generate route', () => {
     expect(params[0]).toBe(body.data.transferTaskId); // id == minted transferTaskId
     expect(params[1]).toBe(STUDENT);
     expect(params[2]).toBe(CONCEPT);
-    expect(params[params.length - 1]).toBe(false); // novelty_validation_passed
+    expect(params[params.length - 1]).toBe(true); // novelty_validation_passed
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(1);
+    expect(opsWarns()).toHaveLength(0);
+    // empty targetConceptIds -> no target-resolution query at all
+    expect(dbQueryMock.mock.calls.some((c) => /FROM concepts WHERE id = ANY/i.test(String(c[0])))).toBe(false);
+  });
+
+  it('7D2: a structurally-unique but non-certifying candidate is still served, persisted false, with one certify WARN', async () => {
+    withRecentEvidence([]);
+    // MID task that only varies CONTEXT -> DISTANCE_NOVELTY_MISMATCH; both attempts identical
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT, { noveltyDimensions: ['CONTEXT'] }));
+    const res = await GENERATE(req({ studentId: STUDENT, subjectId: SUBJECT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
+    const body = await res.json();
+    expect(res.status ?? 200).toBe(200);
+    expect(body.data.transferTaskId).toMatch(UUID_RE);
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(2); // spent the spare call trying to certify
+    const inserts = dbQueryMock.mock.calls.filter((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])));
+    expect(inserts).toHaveLength(1);
+    expect((inserts[0][1] as any[])[inserts[0][1].length - 1]).toBe(false); // novelty_validation_passed
+    const warns = opsWarns();
+    expect(warns).toHaveLength(1);
+    expect(warns[0]).toMatchObject({ subsystem: 'transfer', operation: 'certifyStructuredTransferNovelty', conceptId: CONCEPT });
+    const raw = (warnSpy.mock.calls as any[][]).find((c) => c[0] === '[ops]')![1] as string;
+    expect(raw).not.toContain(STUDENT);
+    expect(raw).not.toContain(NEW_PROMPT);
+  });
+
+  it('7D2: target concepts are resolved in ONE batched query; unresolved -> not certified', async () => {
+    const TARGET = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+    dbQueryMock.mockImplementation(async (sql: string) => {
+      if (typeof sql === 'string' && /FROM concepts WHERE id = ANY/i.test(sql)) return { rows: [] }; // none resolve
+      return { rows: [] };
+    });
+    generateStructuredTransferActivityMock.mockResolvedValue(
+      candidate(NEW_PROMPT, { distance: 'FAR', noveltyDimensions: ['CONCEPT_COMBINATION'], targetConceptIds: [TARGET] }),
+    );
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'FAR' }));
+    const body = await res.json();
+    expect(res.status ?? 200).toBe(200);
+    const conceptResolveCalls = dbQueryMock.mock.calls.filter((c) => /FROM concepts WHERE id = ANY/i.test(String(c[0])));
+    expect(conceptResolveCalls.length).toBe(2); // one per AI attempt, never one-per-id
+    expect(conceptResolveCalls[0][1]).toEqual([[TARGET]]); // batched: array param
+    const inserts = dbQueryMock.mock.calls.filter((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])));
+    expect((inserts[0][1] as any[])[inserts[0][1].length - 1]).toBe(false);
+  });
+
+  it('7D2: FAR with a resolvable target concept is certified (persisted true)', async () => {
+    const TARGET = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+    dbQueryMock.mockImplementation(async (sql: string) => {
+      if (typeof sql === 'string' && /FROM concepts WHERE id = ANY/i.test(sql)) return { rows: [{ id: TARGET }] };
+      return { rows: [] };
+    });
+    generateStructuredTransferActivityMock.mockResolvedValue(
+      candidate(NEW_PROMPT, { distance: 'FAR', noveltyDimensions: ['CONCEPT_COMBINATION'], targetConceptIds: [TARGET] }),
+    );
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'FAR' }));
+    await res.json();
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(1);
+    const inserts = dbQueryMock.mock.calls.filter((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])));
+    expect((inserts[0][1] as any[])[inserts[0][1].length - 1]).toBe(true);
   });
 
   it('first candidate is a recent duplicate -> regenerates once -> serves the unseen 2nd candidate', async () => {

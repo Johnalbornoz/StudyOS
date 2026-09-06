@@ -15,7 +15,12 @@ import {
 import {
   persistTransferTaskInstance,
   getRecentTransferTaskFingerprints,
+  resolveKnownConceptIds,
 } from '@/services/transfer-task-instance.service';
+import {
+  certifyStructuredTransferNovelty,
+  type TransferNoveltyCertificationResult,
+} from '@/lib/transfer-novelty-certification';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { track } from '@/lib/analytics';
 import { z } from 'zod';
@@ -30,13 +35,24 @@ import { z } from 'zod';
  * /transfer/submit can later trust that row instead of the browser for
  * transferDistance / transferModality / noveltyDimensions /
  * targetConceptIds / contextDomain / taskFamilyId / generator versions
- * / noveltyValidationPassed. 7D1 always writes
- * `noveltyValidationPassed = false`; only 7D2's deterministic
- * certifier ever flips it true.
+ * / noveltyValidationPassed.
  *
- * Bounded generation: normally ONE AI call. At most ONE extra call, and
- * only when the first candidate is a recent structural duplicate --
- * never a retry loop. Total AI calls per request <= 2.
+ * 7D2: the server is the SOLE authority on whether a task earns its
+ * claimed NEAR / MID / FAR. After a candidate passes the 7B2
+ * structural-fingerprint guard, the route runs the deterministic
+ * `certifyStructuredTransferNovelty` decision core
+ * (validateTransferDistanceNovelty + fingerprint-guard outcome + ONE
+ * batched target-concept existence check, never N+1). The
+ * transfer_task_instances row is written with
+ * `novelty_validation_passed = true` ONLY when that certifier returns
+ * `certified`. An uncertified-but-structurally-unique task is still
+ * served (the learner gets the practice); 7D3 is what stops it from
+ * advancing demonstrated transfer depth.
+ *
+ * Bounded generation: normally ONE AI call. At most ONE extra call,
+ * used when the first candidate is a recent structural duplicate OR
+ * fails novelty certification -- never a retry loop. Total AI calls per
+ * request <= 2.
  *
  * Expected failures return a typed status, never a raw 500:
  *   - every AI failure  -> 503 TRANSFER_GENERATION_TEMPORARILY_UNAVAILABLE
@@ -102,6 +118,7 @@ export async function POST(request: NextRequest) {
     let candidateFingerprint = '';
     let aiCalls = 0;
     let lastGuardEligible = false;
+    let certification: TransferNoveltyCertificationResult | null = null;
 
     while (aiCalls < MAX_GENERATION_AI_CALLS) {
       try {
@@ -127,10 +144,21 @@ export async function POST(request: NextRequest) {
       aiCalls++;
       candidateFingerprint = computeTransferPromptFingerprint(candidate.prompt);
       const guard = evaluateTransferNoveltyGuard({ candidateFingerprint, recentFingerprints });
-      if (guard.eligible) {
-        lastGuardEligible = true;
-        break;
-      }
+      lastGuardEligible = guard.eligible;
+
+      // 7D2: deterministic server-side novelty certification. ONE
+      // batched target-concept existence check (empty -> no query, no
+      // N+1). The server -- not the AI -- decides NEAR/MID/FAR here.
+      const resolvedTargetConceptIds = await resolveKnownConceptIds(candidate.targetConceptIds);
+      certification = certifyStructuredTransferNovelty({
+        transferDistance: candidate.distance,
+        noveltyDimensions: candidate.noveltyDimensions,
+        fingerprintGuardEligible: guard.eligible,
+        requestedTargetConceptIds: candidate.targetConceptIds,
+        resolvedTargetConceptIds,
+      });
+
+      if (guard.eligible && certification.certified) break;
     }
 
     if (!candidate || !lastGuardEligible) {
@@ -147,19 +175,26 @@ export async function POST(request: NextRequest) {
 
     // Server-minted canonical task identity. `activityId` is an exact
     // alias for current clients / the evidence idempotency key.
+    // 7D2: the certifier ran for every candidate in the loop; this is
+    // the verdict for the candidate we're about to serve. `certified`
+    // is the ONLY thing that may write novelty_validation_passed = true.
+    const certified = certification?.certified === true;
+    const certifiedNoveltyDimensions = certification?.noveltyDimensions ?? [...candidate.noveltyDimensions];
+
     const transferTaskId = randomUUID();
     const promptExactHash = computeTransferPromptExactHash(candidate.prompt);
     const taskFamilyId = computeTransferTaskFamilyId({
       sourceConceptId: validated.conceptId,
       transferDistance: candidate.distance,
       transferModality: candidate.transferModality,
-      noveltyDimensions: candidate.noveltyDimensions,
+      noveltyDimensions: certifiedNoveltyDimensions,
       targetConceptIds: candidate.targetConceptIds,
       contextDomain: candidate.contextDomain,
     });
 
     // The trust bridge: persist the server's view of this task BEFORE
-    // returning it. 7D1 never certifies novelty here -- that is 7D2.
+    // returning it. novelty_validation_passed reflects the 7D2
+    // deterministic certifier -- never the AI, never the client.
     try {
       await persistTransferTaskInstance({
         id: transferTaskId,
@@ -168,7 +203,7 @@ export async function POST(request: NextRequest) {
         subjectId: validated.subjectId ?? null,
         transferDistance: candidate.distance,
         transferModality: candidate.transferModality,
-        noveltyDimensions: candidate.noveltyDimensions,
+        noveltyDimensions: certifiedNoveltyDimensions,
         targetConceptIds: candidate.targetConceptIds,
         contextDomain: candidate.contextDomain,
         taskFamilyId,
@@ -176,7 +211,7 @@ export async function POST(request: NextRequest) {
         promptExactHash,
         generatorVersion: null,
         generatorPromptVersion: candidate.generatorPromptVersion,
-        noveltyValidationPassed: false,
+        noveltyValidationPassed: certified,
       });
     } catch (persistError) {
       // Without a persisted instance /transfer/submit cannot trust the
@@ -188,6 +223,16 @@ export async function POST(request: NextRequest) {
         context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
       });
       return NextResponse.json({ error: 'TRANSFER_GENERATION_TEMPORARILY_UNAVAILABLE' }, { status: 503 });
+    }
+
+    if (!certified) {
+      // Served, but it will NOT count toward demonstrated transfer
+      // depth (7D3). One WARN, no prompt / studentId / reason text.
+      logOperationalWarning({
+        subsystem: 'transfer',
+        operation: 'certifyStructuredTransferNovelty',
+        context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId, count: aiCalls },
+      });
     }
 
     track(validated.studentId, 'transfer_started', { conceptId: validated.conceptId, distance: validated.distance });

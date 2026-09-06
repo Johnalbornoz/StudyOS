@@ -111,6 +111,23 @@ export async function loadTransferTaskInstance(id: string, client: DbExecutor = 
 }
 
 /**
+ * Phase 7 (7D2): ONE batched existence check for a set of target
+ * concept ids -- never a per-id query. Returns the subset that resolves
+ * to a real concept row. The 7D2 certifier requires every requested
+ * target concept to appear in this result. Empty input -> empty result,
+ * no query.
+ */
+export async function resolveKnownConceptIds(
+  ids: readonly string[],
+  client: DbExecutor = db,
+): Promise<string[]> {
+  const unique = [...new Set(ids)].filter((x) => typeof x === 'string' && x.length > 0);
+  if (unique.length === 0) return [];
+  const res = await client.query(`SELECT id FROM concepts WHERE id = ANY($1::uuid[])`, [unique]);
+  return res.rows.map((r) => r.id);
+}
+
+/**
  * Recent registry rows for one (student, concept) -- the trusted
  * source for the 7B2 structural-duplicate scan going forward. Bounded.
  */
