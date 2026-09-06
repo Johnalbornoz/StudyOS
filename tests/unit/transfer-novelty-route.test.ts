@@ -98,7 +98,10 @@ function instanceRow(over: Record<string, any> = {}) {
   };
 }
 
-/** dbQuery: recent-fingerprints SELECT -> given rows; task-instance load -> map; anything else -> {rows:[]}. */
+/** 7E2: canonical transfer depth used to authorize the generate distance. */
+let conceptTransferDepth: string | null = 'NEAR_DEMONSTRATED'; // default: MID requests are authorized
+
+/** dbQuery: recent-fingerprints SELECT -> given rows; task-instance load -> map; transfer depth -> conceptTransferDepth; anything else -> {rows:[]}. */
 function withRecentEvidence(rows: any[]) {
   dbQueryMock.mockImplementation(async (sql: string, params?: any[]) => {
     if (typeof sql === 'string' && sql.includes("source_type = 'TRANSFER'") && sql.includes('ORDER BY timestamp DESC')) {
@@ -107,6 +110,9 @@ function withRecentEvidence(rows: any[]) {
     if (typeof sql === 'string' && /FROM transfer_task_instances WHERE id = \$1/.test(sql)) {
       const row = params && taskInstanceRows[params[0]];
       return { rows: row ? [row] : [] };
+    }
+    if (typeof sql === 'string' && /SELECT transfer_depth FROM concept_transfer_state WHERE student_id = \$1 AND concept_id = \$2/.test(sql)) {
+      return { rows: conceptTransferDepth === null ? [] : [{ transfer_depth: conceptTransferDepth }] };
     }
     return { rows: [] };
   });
@@ -121,6 +127,7 @@ beforeEach(() => {
   updateMasteryMock.mockReset().mockResolvedValue({ duplicate: false, oldMastery: 10, newMastery: 20, delta: 10 });
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });
   taskInstanceRows = {};
+  conceptTransferDepth = 'NEAR_DEMONSTRATED';
   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => {
@@ -267,6 +274,32 @@ describe('7B2/7D1 -- generate route', () => {
     expect(warns[0]).toMatchObject({ subsystem: 'transfer', operation: 'generateStructuredTransferActivity' });
     const raw = (warnSpy.mock.calls as any[][]).find((c) => c[0] === '[ops]')![1] as string;
     expect(raw).not.toContain(STUDENT);
+  });
+
+  it('7E2: a client asking for FAR with only NONE transfer depth is clamped to NEAR, one WARN, task served at NEAR', async () => {
+    withRecentEvidence([]);
+    conceptTransferDepth = null; // no concept_transfer_state row -> max authorized NEAR
+    generateStructuredTransferActivityMock.mockImplementation(async (_l: string, _c: string, distance: string) =>
+      candidate(NEW_PROMPT, { distance, noveltyDimensions: distance === 'NEAR' ? ['CONTEXT'] : ['CONCEPT_COMBINATION'] }),
+    );
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'FAR' }));
+    const body = await res.json();
+    expect(res.status ?? 200).toBe(200);
+    expect(body.data.distance).toBe('NEAR'); // served at the authorized ceiling, not the requested FAR
+    expect(generateStructuredTransferActivityMock.mock.calls[0][2]).toBe('NEAR'); // route asked the generator for NEAR
+    expect(opsWarns().some((w) => w.operation === 'authorizeRequestedTransferDistance')).toBe(true);
+    const raw = (warnSpy.mock.calls as any[][]).find((c) => c[0] === '[ops]')![1] as string;
+    expect(raw).not.toContain(STUDENT);
+  });
+
+  it('7E2: NEAR_DEMONSTRATED depth authorizes a MID request unchanged (no clamp WARN)', async () => {
+    withRecentEvidence([]);
+    conceptTransferDepth = 'NEAR_DEMONSTRATED';
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT)); // MID + STRATEGY
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
+    const body = await res.json();
+    expect(body.data.distance).toBe('MID');
+    expect(opsWarns().some((w) => w.operation === 'authorizeRequestedTransferDistance')).toBe(false);
   });
 });
 

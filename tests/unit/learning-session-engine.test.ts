@@ -158,6 +158,26 @@ describe('26. TRANSFER routes to the existing transfer flow', () => {
     expect(s.launchTarget).toContain('conceptLabel=Momentum');
     expect(s.evidenceMode).toBe('INDEPENDENT');
   });
+
+  it('7E2: forwards decision.transferDistanceHint as the distance launch param', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] });
+    const s = await startLearningSession({
+      studentId: STUDENT,
+      learningDecision: decision({ activityType: 'TRANSFER', subjectId: 'subj1', actionConceptId: 'c1', transferDistanceHint: 'MID' }),
+    });
+    expect(s.launchTarget).toContain('distance=MID');
+    expect(s.launchParams.distance).toBe('MID');
+  });
+
+  it('7E2: omits the distance param entirely when no hint is present', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ label: 'Momentum' }] });
+    const s = await startLearningSession({
+      studentId: STUDENT,
+      learningDecision: decision({ activityType: 'TRANSFER', subjectId: 'subj1', actionConceptId: 'c1' }),
+    });
+    expect(s.launchTarget).not.toContain('distance=');
+    expect(s.launchParams.distance).toBeUndefined();
+  });
 });
 
 describe('27. RETENTION_CHECK -> INDEPENDENT', () => {

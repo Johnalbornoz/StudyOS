@@ -17,6 +17,9 @@ import {
   getRecentTransferTaskFingerprints,
   resolveKnownConceptIds,
 } from '@/services/transfer-task-instance.service';
+import { getConceptTransferDepth } from '@/services/transfer-read.service';
+import { authorizeRequestedTransferDistance } from '@/lib/transfer-distance-authorization';
+import { db } from '@/lib/db';
 import {
   certifyStructuredTransferNovelty,
   type TransferNoveltyCertificationResult,
@@ -86,7 +89,23 @@ export async function POST(request: NextRequest) {
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
     const language = validated.language || 'en';
-    const distance = validated.distance as TransferDistance;
+
+    // Phase 7 (7E2): the browser is NOT authoritative for NEAR/MID/FAR.
+    // Clamp the requested distance to what canonical
+    // concept_transfer_state.transfer_depth has EARNED for this
+    // (student, concept). FAR is unreachable until depth is
+    // GENERALIZED/ROBUST -- there is no public "give me a FAR task"
+    // path. A clamp is served silently at the ceiling with one WARN.
+    const transferDepth = await getConceptTransferDepth(db, validated.studentId, validated.conceptId);
+    const distanceAuth = authorizeRequestedTransferDistance(validated.distance, transferDepth);
+    const distance = distanceAuth.authorized as TransferDistance;
+    if (distanceAuth.clamped) {
+      logOperationalWarning({
+        subsystem: 'transfer',
+        operation: 'authorizeRequestedTransferDistance',
+        context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
+      });
+    }
 
     // One bounded read of this learner's recent structural fingerprints
     // for this concept -- from BOTH canonical TRANSFER evidence and the
@@ -235,7 +254,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    track(validated.studentId, 'transfer_started', { conceptId: validated.conceptId, distance: validated.distance });
+    track(validated.studentId, 'transfer_started', { conceptId: validated.conceptId, distance });
 
     // Learner-facing payload. `distance` + `promptFingerprint` are kept
     // for existing clients; the raw novelty metadata (dimensions /

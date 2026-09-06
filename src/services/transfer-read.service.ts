@@ -86,6 +86,24 @@ function rowToPhase4TransferSignal(row: Record<string, any>): Phase4TransferSign
 }
 
 /**
+ * Phase 7 Step 7E2: the single canonical transfer depth for one
+ * (student, concept). `null` when there is no `concept_transfer_state`
+ * row yet. Used by /transfer/generate to authorize the requested
+ * distance -- the browser is never trusted for NEAR/MID/FAR.
+ */
+export async function getConceptTransferDepth(
+  client: DbExecutor,
+  studentId: string,
+  conceptId: string,
+): Promise<TransferDepth | null> {
+  const result = await client.query(
+    `SELECT transfer_depth FROM concept_transfer_state WHERE student_id = $1 AND concept_id = $2 LIMIT 1`,
+    [studentId, conceptId],
+  );
+  return (result.rows[0]?.transfer_depth as TransferDepth | undefined) ?? null;
+}
+
+/**
  * ONE batched read for the whole student. A concept with no
  * `concept_transfer_state` row is simply absent from the Map -- callers
  * MUST treat "absent" as "no transfer signal", never as a zeroed

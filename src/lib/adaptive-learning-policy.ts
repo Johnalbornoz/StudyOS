@@ -18,6 +18,7 @@
 import type { ActivityType } from './activity-taxonomy';
 import type { ConceptKnowledgeState } from '@/services/knowledge-state.service';
 import type { DueUrgency } from '@/services/learning-scheduler.service';
+import type { TransferDistance } from '@/lib/transfer-policy';
 
 export type LearningSignalType =
   | 'AT_RISK'
@@ -250,6 +251,17 @@ export interface LearningDecision {
   /** Phase 4-R: the quiz session `verificationAttemptId` belongs to -- required by /api/quizzes/verify's existing lookup. */
   quizSessionId?: string;
   dueAt?: string | null;
+  /**
+   * Phase 7 Step 7E2: present ONLY on a TRANSFER decision. The
+   * server-chosen transfer distance the launch should use -- Phase 4
+   * still owns the WHAT (activityType === 'TRANSFER'); this is the
+   * "which distance" hint the session engine forwards. Deterministic
+   * and conservative: NEAR by default, MID only once near transfer is
+   * demonstrated (FAR_TRANSFER_GAP). FAR is NEVER hinted here -- it is
+   * reachable only through /transfer/generate's server-side
+   * authorization once demonstrated depth earns it.
+   */
+  transferDistanceHint?: TransferDistance;
   /** Phase 4E.2: see ADAPTIVE_LEARNING_POLICY_VERSION's own doc comment. */
   policyVersion: number;
 }
@@ -774,10 +786,33 @@ export function computeLearningState(context: ConceptDecisionContext): LearningS
   return 'DEVELOPING';
 }
 
+/**
+ * Phase 7 Step 7E2: the transfer distance a TRANSFER launch should use.
+ * Deterministic, conservative, and non-authoritative for FAR:
+ *   - not a TRANSFER decision            -> undefined
+ *   - FAR_TRANSFER_GAP (near shown, far not) and NOT fragile / near-gap -> 'MID'
+ *   - anything else (near gap, fragile, or a bare TRANSFER_REQUIRED with
+ *     no transfer state yet)             -> 'NEAR'
+ * FAR is never returned -- reaching a FAR task is gated entirely by
+ * /transfer/generate's server-side authorization against demonstrated
+ * transfer depth.
+ */
+export function selectTransferDistanceHint(
+  context: ConceptDecisionContext,
+  activityType: ActivityType,
+): TransferDistance | undefined {
+  if (activityType !== 'TRANSFER') return undefined;
+  const types = new Set(context.signals.map((s) => s.type));
+  if (types.has('NEAR_TRANSFER_GAP') || types.has('TRANSFER_FRAGILE')) return 'NEAR';
+  if (types.has('FAR_TRANSFER_GAP')) return 'MID';
+  return 'NEAR';
+}
+
 export function buildLearningDecision(context: ConceptDecisionContext): LearningDecision {
   const { signal: primarySignal, band, modifier } = dominantSignal(context);
   const activityType = selectActivityType(context);
   const targetDimension = selectTargetDimension(context, activityType);
+  const transferDistanceHint = selectTransferDistanceHint(context, activityType);
   // Clamped so a modifier can never cross into the next band -- the
   // whole point of a lexicographic policy (section 10's "must not be a
   // naive sum" requirement).
@@ -805,6 +840,7 @@ export function buildLearningDecision(context: ConceptDecisionContext): Learning
     verificationAttemptId: context.verificationAttemptIds[0],
     quizSessionId: context.quizSessionIds[0],
     dueAt: earliestDueAt(context),
+    ...(transferDistanceHint ? { transferDistanceHint } : {}),
     policyVersion: ADAPTIVE_LEARNING_POLICY_VERSION,
   };
 }

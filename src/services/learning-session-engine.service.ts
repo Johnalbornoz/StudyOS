@@ -114,7 +114,14 @@ function transferLaunch(decision: LearningDecision, label: string | null): Launc
   if (!label) {
     return unavailable(`Could not resolve a label for concept ${decision.actionConceptId}; TRANSFER requires one to launch.`);
   }
-  return ready('/dashboard/cognitive/transfer', { subjectId: decision.subjectId, conceptId: decision.actionConceptId, conceptLabel: label });
+  // Phase 7 Step 7E2: forward Phase 4's server-chosen transfer distance
+  // hint as a launch param. It is NOT authoritative -- /transfer/generate
+  // re-authorizes the requested distance against canonical
+  // concept_transfer_state before generating. Omitted (page defaults to
+  // NEAR) when Phase 4 supplied no hint.
+  const params: Record<string, string> = { subjectId: decision.subjectId, conceptId: decision.actionConceptId, conceptLabel: label };
+  if (decision.transferDistanceHint) params.distance = decision.transferDistanceHint;
+  return ready('/dashboard/cognitive/transfer', params);
 }
 
 /**

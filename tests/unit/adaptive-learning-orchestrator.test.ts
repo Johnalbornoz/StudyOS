@@ -338,3 +338,51 @@ describe('29 & 30. Legacy NBA v2 compatibility invariants, reproduced against Ph
     expect(lower.priorityScore).toBeGreaterThan(higher.priorityScore);
   });
 });
+
+describe('7E2. transferDistanceHint on a TRANSFER decision', () => {
+  function transferDecision(extraSignals: LearningSignal[] = []): LearningDecision {
+    const ks = ksState({ conceptId: 'c1', validationReadiness: 'TRANSFER_REQUIRED', masteryState: 'DEVELOPING' });
+    const signals = [
+      signal({ type: 'TRANSFER_REQUIRED', conceptId: 'c1', subjectId: 'subj1', source: 'knowledge-state.service' }),
+      ...extraSignals,
+    ];
+    return buildDecision(signals, new Map([['c1', ks]]));
+  }
+
+  it('is set only on a TRANSFER decision (a non-transfer decision has no hint)', () => {
+    const nonTransfer = buildDecision([signal({ type: 'LOW_UNDERSTANDING', conceptId: 'c1', subjectId: 's1', metadata: { understandingScore: 40, gap: 40 } })]);
+    expect(nonTransfer.activityType).not.toBe('TRANSFER');
+    expect(nonTransfer.transferDistanceHint).toBeUndefined();
+  });
+
+  it('bare TRANSFER_REQUIRED (no transfer-state signal) -> NEAR', () => {
+    const d = transferDecision();
+    expect(d.activityType).toBe('TRANSFER');
+    expect(d.transferDistanceHint).toBe('NEAR');
+  });
+
+  it('FAR_TRANSFER_GAP present -> MID (step up one level, never straight to FAR)', () => {
+    const d = transferDecision([signal({ type: 'FAR_TRANSFER_GAP', conceptId: 'c1', subjectId: 'subj1', source: 'transfer-read.service' })]);
+    expect(d.transferDistanceHint).toBe('MID');
+  });
+
+  it('NEAR_TRANSFER_GAP -> NEAR even if FAR_TRANSFER_GAP is somehow also present', () => {
+    const d = transferDecision([
+      signal({ type: 'NEAR_TRANSFER_GAP', conceptId: 'c1', subjectId: 'subj1', source: 'transfer-read.service' }),
+      signal({ type: 'FAR_TRANSFER_GAP', conceptId: 'c1', subjectId: 'subj1', source: 'transfer-read.service' }),
+    ]);
+    expect(d.transferDistanceHint).toBe('NEAR');
+  });
+
+  it('TRANSFER_FRAGILE -> NEAR (consolidate)', () => {
+    const d = transferDecision([signal({ type: 'TRANSFER_FRAGILE', conceptId: 'c1', subjectId: 'subj1', source: 'transfer-read.service' })]);
+    expect(d.transferDistanceHint).toBe('NEAR');
+  });
+
+  it('never hints FAR', () => {
+    for (const t of ['NEAR_TRANSFER_GAP', 'FAR_TRANSFER_GAP', 'TRANSFER_FRAGILE'] as const) {
+      const d = transferDecision([signal({ type: t, conceptId: 'c1', subjectId: 'subj1', source: 'transfer-read.service' })]);
+      expect(d.transferDistanceHint).not.toBe('FAR');
+    }
+  });
+});
