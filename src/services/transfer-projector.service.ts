@@ -76,17 +76,22 @@ export interface TransferProjectionResult {
  *   inserted -- held to the post-7C1 canonical-route contract by
  *   `toProjectionEvidence` (a violation throws and rolls the
  *   transaction back). Historical rows are normalized conservatively.
+ *   Pass `null` (7C3 historical backfill) when there is no "current"
+ *   row: every row is then normalized under the conservative
+ *   historical rules and none is held to the live-writer contract.
  */
 export async function projectConceptTransferState(
   client: DbExecutor,
   studentId: string,
   conceptId: string,
-  currentEvidenceId: string,
+  currentEvidenceId: string | null,
 ): Promise<TransferProjectionResult> {
   const historyRes = await client.query(HISTORY_QUERY, [studentId, conceptId]);
   const rows = historyRes.rows as RawTransferEvidenceRow[];
 
-  const evidence = rows.map((r) => toProjectionEvidence(r, { conceptId, isCurrent: r.id === currentEvidenceId }));
+  const evidence = rows.map((r) =>
+    toProjectionEvidence(r, { conceptId, isCurrent: currentEvidenceId !== null && r.id === currentEvidenceId }),
+  );
   const replayed = replayTransferState(evidence);
 
   const stateRes = await client.query(STATE_QUERY, [studentId, conceptId]);

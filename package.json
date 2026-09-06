@@ -12,7 +12,8 @@
     "db:status": "tsx --env-file=.env.local scripts/db-status.ts",
     "db:migrate": "tsx --env-file=.env.local scripts/db-migrate.ts",
     "db:repro-test": "bash scripts/db-reproducibility-test.sh",
-    "db:migration-test": "bash scripts/db-migration-test.sh"
+    "db:migration-test": "bash scripts/db-migration-test.sh",
+    "backfill:transfer": "tsx --env-file=.env.local scripts/backfill-transfer-state.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
