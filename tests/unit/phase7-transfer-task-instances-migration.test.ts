@@ -15,10 +15,13 @@ const MIGRATION_FILE = '20260908_1000_phase7_transfer_task_instances.sql';
 const sql = readFileSync(join(MIGRATIONS_DIR, MIGRATION_FILE), 'utf-8');
 
 describe('7D1 -- transfer_task_instances migration is additive and correctly shaped', () => {
-  it('exists and is the latest migration by filename order', () => {
+  it('exists and sorts before the Phase 8 learning_plan migration', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
     expect(files).toContain(MIGRATION_FILE);
-    expect(files[files.length - 1]).toBe(MIGRATION_FILE);
+    // 8A1 (20260909_1000_phase8_learning_plan.sql) is the newer migration;
+    // this one must still be the last one before it.
+    const next = files[files.indexOf(MIGRATION_FILE) + 1];
+    expect(next).toBe('20260909_1000_phase8_learning_plan.sql');
   });
 
   it('uses a fresh date segment -- no keyset collision with an earlier migration', () => {
