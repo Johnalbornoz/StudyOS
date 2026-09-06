@@ -2,18 +2,24 @@
  * STUDYUS PHASE 6L -- LEARNING EXPERIENCE ACTIVATION
  * Step 6L-C1: CONCEPT NEXT ACTION / WHY.
  *
- * Presentation-mapping + source-content tests only, matching this
- * repo's established convention (tests/unit/6l-a-learning-experience.test.ts,
- * tests/unit/6l-b1-remediation-shell.test.ts) -- there is no React
- * component test harness in this project. Every assertion here proves
- * that Concept Detail's new "what next / why" section is wired to the
- * ONE canonical next-action authority (Phase 4's LearningDecision, via
- * the already-exported getBestLearningDecisionForConcept) through the
- * ONE canonical presentation layer (activityLabel/activityCta/
- * WhyThisV3) and the ONE canonical launch mechanism
- * (StartSessionButton -> /api/learning/session/start ->
- * startLearningSession) -- never a second, page-local decision,
- * reason-mapping, or routing table.
+ * LX-3 (Concept Mission) RELOCATED this section. The invariant is
+ * unchanged -- the ONE next action on the concept screen is still a
+ * verbatim pass-through of Phase 4's LearningDecision (via the
+ * already-exported getBestLearningDecisionForConcept), rendered through
+ * the ONE canonical presentation layer (activityLabel/activityCta/
+ * WhyThisV3) and launched through the ONE canonical mechanism
+ * (StartSessionButton -> /api/learning/session/start) -- but it now
+ * lives in the Concept Mission read boundary
+ * (concept-mission-view.service.ts, which does the canonical fetch +
+ * `.catch(() => null)`), the pure read model (lib/lx/concept-mission.ts,
+ * which passes the ActivityType through and NEVER selects one), and the
+ * presentational component (ConceptMission.tsx). The concept page
+ * itself no longer fetches the decision or carries any page-local
+ * next-action / CTA-ordering heuristic.
+ *
+ * Source-content tests only, matching this repo's established
+ * convention -- there is no React component test harness in this
+ * project.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -22,131 +28,132 @@ import { ADAPTIVE_LEARNING_POLICY_VERSION } from '@/lib/adaptive-learning-policy
 import { ADAPTIVE_TEACHING_POLICY_VERSION } from '@/lib/adaptive-teaching-policy';
 
 const PAGE_PATH = 'src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx';
+const MISSION_SERVICE_PATH = 'src/services/concept-mission-view.service.ts';
+const MISSION_MODEL_PATH = 'src/lib/lx/concept-mission.ts';
+const MISSION_COMPONENT_PATH = 'src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptMission.tsx';
 
 function read(relPath: string): string {
   return readFileSync(join(process.cwd(), relPath), 'utf-8');
 }
 
 describe('canonical next-action source (Part 2) -- Phase 4 LearningDecision is the only authority', () => {
-  const source = read(PAGE_PATH);
+  const service = read(MISSION_SERVICE_PATH);
+  const model = read(MISSION_MODEL_PATH);
+  const page = read(PAGE_PATH);
 
-  it('imports and calls getBestLearningDecisionForConcept from the canonical service, not a re-implementation', () => {
-    expect(source).toMatch(/import \{ getBestLearningDecisionForConcept \} from '@\/services\/adaptive-teaching\.service'/);
-    expect(source).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)/);
+  it('the Mission read boundary imports and calls getBestLearningDecisionForConcept from the canonical service, not a re-implementation', () => {
+    expect(service).toMatch(/import \{ getBestLearningDecisionForConcept \} from '@\/services\/adaptive-teaching\.service'/);
+    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)/);
   });
 
-  it('the next-action section is never gated or chosen by a local mastery/retention/verification threshold', () => {
-    // The page's PRE-EXISTING primaryCTA heuristic (practice/soloCheck/
-    // review/tutor) is untouched by this step and deliberately out of
-    // scope -- this test targets only the NEW section, proving it never
-    // reads state.masteryScore/state.retention/state.independentMastery
-    // to decide what nextDecision should be (it is never reassigned at
-    // all -- it is the direct, single return value of the canonical
-    // call above).
-    expect(source).not.toMatch(/nextDecision\s*=\s*(?!await getBestLearningDecisionForConcept)/);
-    // Landmark: nextDecision is the last element of the canonical
-    // Promise.all destructure. (Phase 7 7F1 swapped the raw
-    // `transferScore` element for the learner-safe `transferDepth`.)
-    expect(source).toMatch(/const \[conceptView, evidence, activeDebt, history, transferDepth, knowledgeState, nextDecision\]/);
+  it('the pure read model never selects an ActivityType -- it only passes the canonical decision through', () => {
+    // `activityType` may only ever be assigned from the supplied
+    // decision or set to null; never from a taxonomy selector.
+    expect(model).not.toMatch(/selectActivityType|selectTargetDimension|chooseActivity/);
+    expect(model).toMatch(/activityType: decision\.activityType/);
+    expect(model).toMatch(/activityType: null/);
+    // and no score/threshold inputs at all -- the model's inputs are
+    // enums + presence counts.
+    expect(model).not.toMatch(/masteryScore|understandingScore|forgettingRisk|retentionScore/);
   });
 
-  it('the section is present but does not appear inside the pre-existing primaryCTA heuristic block', () => {
-    const nextDecisionBlock = source.match(/\{nextDecision && \(([\s\S]*?)\)\}/);
-    expect(nextDecisionBlock).toBeTruthy();
-    expect(nextDecisionBlock![1]).not.toMatch(/primaryCTA/);
+  it('the concept page no longer re-derives the decision or carries a page-local next-action heuristic', () => {
+    expect(page).not.toMatch(/getBestLearningDecisionForConcept/);
+    expect(page).not.toMatch(/primaryCTA/);
+    expect(page).not.toMatch(/orderedManualToolKeys/);
+    expect(page).toMatch(/getConceptMissionView\(/);
   });
 });
 
 describe('no raw orchestration internals ever reach the learner (Part 4)', () => {
-  const source = read(PAGE_PATH);
+  const component = read(MISSION_COMPONENT_PATH);
 
-  it('never interpolates the raw activityType, reasonCode, or a decision/policy field directly into JSX text', () => {
-    expect(source).not.toMatch(/\{nextDecision\.activityType\}/);
-    expect(source).not.toMatch(/\{nextDecision\.reasonCode\}/);
-    expect(source).not.toMatch(/\{nextDecision\.learningState\}/);
-    expect(source).not.toMatch(/\{nextDecision\.policyVersion\}/);
+  it('never interpolates a raw activityType / reasonCode / policy field as a JSX text node', () => {
+    // a raw enum rendered directly as text would look like `>{now.activityType}<`
+    expect(component).not.toMatch(/>\s*\{now\.activityType\}\s*</);
+    expect(component).not.toMatch(/>\s*\{view\.journey\.reasonCode\}\s*</);
+    expect(component).not.toMatch(/>\s*\{now\.learningState\}\s*</);
+    // reasonCode is only ever used to index the conceptMission.reason.* copy table
+    expect(component).toMatch(/conceptMission\.reason\.\$\{view\.journey\.reasonCode\}/);
   });
 
   it('every render of the decision goes through the certified activityLabel/activityCta mappers', () => {
-    expect(source).toMatch(/activityLabel\(nextDecision\.activityType, t\)/);
-    expect(source).toMatch(/activityCta\(nextDecision\.activityType, t\)/);
+    expect(component).toMatch(/activityLabel\(now\.activityType, t\)/);
+    expect(component).toMatch(/activityCta\(now\.activityType, t\)/);
   });
 });
 
 describe('canonical why/reason presentation (Part 5) -- reuses WhyThisV3, no second reason table', () => {
-  const source = read(PAGE_PATH);
+  const component = read(MISSION_COMPONENT_PATH);
+  const model = read(MISSION_MODEL_PATH);
 
   it('imports and renders the certified WhyThisV3 component with the decision\'s own facts', () => {
-    expect(source).toMatch(/import WhyThisV3 from '@\/app\/dashboard\/WhyThisV3'/);
-    expect(source).toMatch(/<WhyThisV3 facts=\{nextDecision\.facts\} t=\{t\} \/>/);
+    expect(component).toMatch(/import WhyThisV3 from '@\/app\/dashboard\/WhyThisV3'/);
+    expect(component).toMatch(/<WhyThisV3 facts=\{now\.facts\} t=\{t\} \/>/);
   });
 
-  it('does not define a second fact/reason-to-copy switch statement on this page', () => {
-    // WhyThisV3 owns the one LearningFact -> sentence mapping (its own
-    // internal switch over fact.kind); this page must never define a
-    // second one.
-    expect(source).not.toMatch(/switch\s*\(\s*fact\.kind\s*\)/);
-    expect(source).not.toMatch(/case 'retentionReviewDue'/);
+  it('does not define a second fact/reason-to-copy switch statement in the Mission layer', () => {
+    for (const src of [component, model]) {
+      expect(src).not.toMatch(/switch\s*\(\s*fact\.kind\s*\)/);
+      expect(src).not.toMatch(/case 'retentionReviewDue'/);
+    }
   });
 });
 
 describe('canonical launch routing (Part 6/7) -- StartSessionButton is the only mechanism, no second routing table', () => {
-  const source = read(PAGE_PATH);
+  const component = read(MISSION_COMPONENT_PATH);
 
   it('imports and renders StartSessionButton for the next-action CTA, scoped to this concept', () => {
-    expect(source).toMatch(/import StartSessionButton from '@\/app\/dashboard\/StartSessionButton'/);
-    expect(source).toMatch(/<StartSessionButton[\s\S]{0,400}actionConceptId=\{nextDecision\.actionConceptId\}/);
+    expect(component).toMatch(/import StartSessionButton from '@\/app\/dashboard\/StartSessionButton'/);
+    expect(component).toMatch(/<StartSessionButton[\s\S]{0,400}actionConceptId=\{now\.actionConceptId\}/);
   });
 
-  it('never hardcodes a remediation route, a quiz mode URL, or any manual href built from nextDecision', () => {
-    const nextDecisionBlock = source.match(/\{nextDecision && \(([\s\S]*?)\n {6}\)\}/);
-    expect(nextDecisionBlock).toBeTruthy();
-    expect(nextDecisionBlock![1]).not.toMatch(/\/dashboard\/remediation/);
-    expect(nextDecisionBlock![1]).not.toMatch(/\/dashboard\/quiz\?/);
-    expect(nextDecisionBlock![1]).not.toMatch(/\/dashboard\/cognitive/);
-    expect(nextDecisionBlock![1]).not.toMatch(/href=/);
+  it('never hardcodes a remediation route, a quiz mode URL, or any manual href built from the decision', () => {
+    // the CANONICAL_ACTION branch (up to the NO_CANONICAL_ACTION comment)
+    const canonicalBranch = component.slice(
+      component.indexOf("now.kind === 'CANONICAL_ACTION'"),
+      component.indexOf('// NO_CANONICAL_ACTION'),
+    );
+    expect(canonicalBranch.length).toBeGreaterThan(0);
+    expect(canonicalBranch).not.toMatch(/\/dashboard\/remediation/);
+    expect(canonicalBranch).not.toMatch(/\/dashboard\/quiz\?/);
+    expect(canonicalBranch).not.toMatch(/\/dashboard\/cognitive/);
+    expect(canonicalBranch).not.toMatch(/href=/);
   });
 
   it('wires the existing unavailable/retry degradation labels -- never a bespoke error string', () => {
-    expect(source).toMatch(/unavailableLabel=\{t\['today3\.unavailableBody'\]\}/);
-    expect(source).toMatch(/retryLabel=\{t\['today3\.retry'\]\}/);
+    expect(component).toMatch(/unavailableLabel=\{t\['today3\.unavailableBody'\]\}/);
+    expect(component).toMatch(/retryLabel=\{t\['today3\.retry'\]\}/);
   });
 
   it('a REMEDIATION decision reaches the 6L-B1 shell purely through the pre-existing, already-certified session-engine chain -- proven by that chain\'s own certified tests, not re-derived here', () => {
-    // Cross-reference, not a re-implementation: the actual routing
-    // proof (REMEDIATION -> remediationLaunch -> /dashboard/remediation/[pathId])
-    // lives in learning-session-engine.service.ts and is already
-    // covered by tests/unit/learning-session-engine.test.ts and
-    // tests/unit/6l-b1-remediation-shell.test.ts. This page adds
-    // nothing to that chain -- it only supplies studentId/actionConceptId,
-    // exactly like Today's ItemRow does.
     const engineSource = read('src/services/learning-session-engine.service.ts');
     expect(engineSource).toMatch(/`\/dashboard\/remediation\/\$\{path\.id\}`/);
   });
 });
 
-describe('failure degradation (Part 3) -- decision lookup failure never breaks the page or fabricates a recommendation', () => {
-  const source = read(PAGE_PATH);
+describe('failure degradation (Part 3) -- decision lookup failure never breaks the screen or fabricates a recommendation', () => {
+  const service = read(MISSION_SERVICE_PATH);
+  const model = read(MISSION_MODEL_PATH);
 
   it('the canonical call is wrapped in .catch(() => null), matching the 6L-B1-established pattern', () => {
-    expect(source).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
   });
 
-  it('the section is rendered only behind a truthy check -- no ternary fallback, no default recommendation literal', () => {
-    expect(source).toMatch(/\{nextDecision && \(/);
-    // Never a `nextDecision ? (...) : (<fallback UI>)` pattern for this
-    // block, and never a hardcoded fallback like "Practice more".
-    expect(source).not.toMatch(/nextDecision \? \(/);
-    expect(source).not.toMatch(/nextDecision\s*\?\?/);
+  it('a null decision yields NO_CANONICAL_ACTION with no activity -- never a fabricated default recommendation', () => {
+    expect(model).toMatch(/kind: 'NO_CANONICAL_ACTION'/);
+    // the no-decision fallback is LEARN_FIRST / CONSOLIDATED_NO_ACTION,
+    // neither of which is an ActivityType from the taxonomy.
+    expect(model).toMatch(/fallback: stage === 'CONSOLIDATED' \? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST'/);
+    // full behavioural coverage of the null path lives in
+    // tests/unit/lx3-concept-mission.test.ts.
   });
 
-  it('a null nextDecision does not affect any pre-existing field on this page (state/situation/knowledgeState continue to compute independently)', () => {
-    // nextDecision is fetched in the same Promise.all as the other
-    // independent reads, not sequenced after/gated by them.
-    const promiseAllBlocks = source.match(/await Promise\.all\(\[[\s\S]*?\]\);/g) ?? [];
-    const decisionBlock = promiseAllBlocks.find((b) => b.includes('getConceptView(studentId, conceptId)'));
+  it('the decision fetch is one of the independent Promise.all reads in the boundary, not sequenced after them', () => {
+    const promiseAllBlocks = service.match(/await Promise\.all\(\[[\s\S]*?\]\);/g) ?? [];
+    const decisionBlock = promiseAllBlocks.find((b) => b.includes('getBestLearningDecisionForConcept'));
     expect(decisionBlock).toBeTruthy();
-    expect(decisionBlock).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+    expect(decisionBlock).toMatch(/\.catch\(\(\) => null\)/);
   });
 });
 

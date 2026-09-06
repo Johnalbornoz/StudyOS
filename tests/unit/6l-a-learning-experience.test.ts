@@ -206,8 +206,14 @@ describe('NO FRONTEND POLICY -- mapping functions cannot independently invent ca
   });
 
   it('the concept detail page\'s situation banner is computed from conceptSituation() over already-canonical fields, never a new threshold', () => {
+    // LX-3 (Concept Mission) demoted the situation banner into the
+    // "More about my progress" disclosure and dropped the `!state`
+    // early return, so `conceptView` is no longer non-null-asserted
+    // here -- the memoryStatus arg is now `conceptView?.memory.memoryStatus ?? null`.
+    // The invariant is unchanged: the label is `conceptSituation()` over
+    // already-canonical fields, never a new threshold.
     const source = read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx');
-    expect(source).toMatch(/conceptSituation\(\s*knowledgeState\.masteryState,\s*knowledgeState\.validationReadiness,\s*conceptView!\.memory\.memoryStatus\s*\)/);
+    expect(source).toMatch(/conceptSituation\(\s*knowledgeState\.masteryState,\s*knowledgeState\.validationReadiness,\s*conceptView\??\.memory\.memoryStatus\s*(?:\?\?\s*null\s*)?\)/);
   });
 });
 

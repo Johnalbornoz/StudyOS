@@ -327,7 +327,50 @@ export type MessageKey =
   | 'plan8.capacityLabel' | 'plan8.capacitySave' | 'plan8.status.PLANNED' | 'plan8.status.READY'
   | 'plan8.why.ASSESSMENT_APPROACHING' | 'plan8.why.RETENTION_DUE' | 'plan8.why.REMEDIATION_REQUIRED' | 'plan8.why.VERIFICATION_READY'
   | 'plan8.why.PREREQUISITE_FIRST' | 'plan8.why.TRANSFER_PROGRESSION' | 'plan8.why.MISCONCEPTION_BLOCK' | 'plan8.why.LEARNING_DEBT'
-  | 'plan8.why.CURRICULUM_PROGRESSION' | 'plan8.why.LEARNER_REQUESTED';
+  | 'plan8.why.CURRICULUM_PROGRESSION' | 'plan8.why.LEARNER_REQUESTED'
+  | 'conceptMission.goalTitle'
+  | 'conceptMission.goalFallbackTemplate'
+  | 'conceptMission.journeyTitle'
+  | 'conceptMission.journeyYouAreHere'
+  | 'conceptMission.nowTitle'
+  | 'conceptMission.noActionConsolidatedTitle'
+  | 'conceptMission.noActionConsolidatedBody'
+  | 'conceptMission.noActionLearnFirstTitle'
+  | 'conceptMission.noActionLearnFirstBody'
+  | 'conceptMission.reinforceBadge'
+  | 'conceptMission.reinforceBody'
+  | 'conceptMission.learnTitle'
+  | 'conceptMission.learnExpandRead'
+  | 'conceptMission.learnExpandReview'
+  | 'conceptMission.learnCollapse'
+  | 'conceptMission.moreTitle'
+  | 'conceptMission.moreHint'
+  | 'conceptMission.secondaryTutor'
+  | 'conceptMission.readyToProveNote'
+  | 'conceptMission.stage.NOT_STARTED'
+  | 'conceptMission.stage.LEARN'
+  | 'conceptMission.stage.PRACTICE'
+  | 'conceptMission.stage.READY_TO_PROVE'
+  | 'conceptMission.stage.PROVE'
+  | 'conceptMission.stage.RETAIN'
+  | 'conceptMission.stage.TRANSFER'
+  | 'conceptMission.stage.CONSOLIDATED'
+  | 'conceptMission.milestone.passed'
+  | 'conceptMission.milestone.current'
+  | 'conceptMission.milestone.upcoming'
+  | 'conceptMission.milestone.demonstrated'
+  | 'conceptMission.reason.NO_KNOWLEDGE_STATE'
+  | 'conceptMission.reason.ACTIVE_MISCONCEPTION'
+  | 'conceptMission.reason.PREREQUISITE_GAP'
+  | 'conceptMission.reason.REPAIR_IN_PROGRESS'
+  | 'conceptMission.reason.VERIFICATION_PENDING'
+  | 'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET'
+  | 'conceptMission.reason.RETENTION_DUE'
+  | 'conceptMission.reason.TRANSFER_REQUIRED'
+  | 'conceptMission.reason.VALIDATED_MASTERY'
+  | 'conceptMission.reason.UNDERSTANDING_STILL_FORMING'
+  | 'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED'
+  | 'conceptMission.reason.BUILDING_EVIDENCE';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1170,6 +1213,49 @@ const es: Messages = {
   'nav.groupMore': 'Más',
   'nav.menu': 'Menú',
   'nav.closeMenu': 'Cerrar menú',
+  'conceptMission.goalTitle': 'Qué significa dominarlo',
+  'conceptMission.goalFallbackTemplate': 'Entiende {concept} y aplícalo de forma correcta y autónoma.',
+  'conceptMission.journeyTitle': 'Tu recorrido con este concepto',
+  'conceptMission.journeyYouAreHere': 'Estás aquí: {stage}',
+  'conceptMission.nowTitle': 'Ahora',
+  'conceptMission.noActionConsolidatedTitle': 'Consolidado',
+  'conceptMission.noActionConsolidatedBody': 'Ahora mismo no hace falta nada. StudyUS te lo volverá a proponer para un repaso de retención cuando toque.',
+  'conceptMission.noActionLearnFirstTitle': 'Empieza por entenderlo',
+  'conceptMission.noActionLearnFirstBody': 'Lee la explicación de abajo para formarte una idea clara; después StudyUS te guiará en el siguiente paso.',
+  'conceptMission.reinforceBadge': 'Apoyo temporal',
+  'conceptMission.reinforceBody': 'Estás recibiendo apoyo extra en el mismo objetivo. Cuando se resuelva, vuelves a tu recorrido.',
+  'conceptMission.learnTitle': 'Entender este concepto',
+  'conceptMission.learnExpandRead': 'Leer la explicación',
+  'conceptMission.learnExpandReview': 'Repasar la explicación',
+  'conceptMission.learnCollapse': 'Ocultar la explicación',
+  'conceptMission.moreTitle': 'Más sobre mi progreso',
+  'conceptMission.moreHint': 'Medidas detalladas: no las necesitas para seguir avanzando.',
+  'conceptMission.secondaryTutor': 'Preguntar al tutor',
+  'conceptMission.readyToProveNote': 'Listo para demostrarlo por tu cuenta.',
+  'conceptMission.stage.NOT_STARTED': 'Sin empezar',
+  'conceptMission.stage.LEARN': 'Aprender',
+  'conceptMission.stage.PRACTICE': 'Practicar',
+  'conceptMission.stage.READY_TO_PROVE': 'Listo para demostrar',
+  'conceptMission.stage.PROVE': 'Demostrar',
+  'conceptMission.stage.RETAIN': 'Retener',
+  'conceptMission.stage.TRANSFER': 'Transferir',
+  'conceptMission.stage.CONSOLIDATED': 'Consolidado',
+  'conceptMission.milestone.passed': '{stage} — paso anterior',
+  'conceptMission.milestone.current': '{stage} — estás aquí',
+  'conceptMission.milestone.upcoming': '{stage} — más adelante',
+  'conceptMission.milestone.demonstrated': '{stage} — hecho, ya lo has demostrado',
+  'conceptMission.reason.NO_KNOWLEDGE_STATE': 'Aún no has empezado este concepto.',
+  'conceptMission.reason.ACTIVE_MISCONCEPTION': 'Primero hay que aclarar un malentendido.',
+  'conceptMission.reason.PREREQUISITE_GAP': 'Algo en lo que se apoya este concepto necesita atención primero.',
+  'conceptMission.reason.REPAIR_IN_PROGRESS': 'Estás resolviendo una corrección de este concepto.',
+  'conceptMission.reason.VERIFICATION_PENDING': 'Es momento de demostrar que puedes hacerlo por tu cuenta.',
+  'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET': 'Lo entiendes; lo siguiente es hacerlo sin ayuda.',
+  'conceptMission.reason.RETENTION_DUE': 'Es momento de comprobar que aún lo recuerdas.',
+  'conceptMission.reason.TRANSFER_REQUIRED': 'Lo siguiente es usarlo en un tipo de situación nueva.',
+  'conceptMission.reason.VALIDATED_MASTERY': 'Has demostrado un dominio sólido y autónomo de esto.',
+  'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Todavía estás formándote una idea clara de esto.',
+  'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Has practicado lo suficiente: estás listo para demostrarlo.',
+  'conceptMission.reason.BUILDING_EVIDENCE': 'Estás ganando constancia entre distintos ejemplos.',
 };
 
 const en: Messages = {
@@ -2011,6 +2097,49 @@ const en: Messages = {
   'nav.groupMore': 'More',
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Close menu',
+  'conceptMission.goalTitle': 'What success looks like',
+  'conceptMission.goalFallbackTemplate': 'Understand {concept} and apply it correctly and on your own.',
+  'conceptMission.journeyTitle': 'Your path through this concept',
+  'conceptMission.journeyYouAreHere': 'You are here: {stage}',
+  'conceptMission.nowTitle': 'Now',
+  'conceptMission.noActionConsolidatedTitle': 'Consolidated',
+  'conceptMission.noActionConsolidatedBody': 'Nothing is needed right now. StudyUS will bring this back for a retention check when it\'s due.',
+  'conceptMission.noActionLearnFirstTitle': 'Start by understanding it',
+  'conceptMission.noActionLearnFirstBody': 'Read the explanation below to build a clear picture, then StudyUS will guide your next step.',
+  'conceptMission.reinforceBadge': 'Temporary support',
+  'conceptMission.reinforceBody': 'You\'re getting extra support on the same goal. Once it\'s cleared, you\'re back on your path.',
+  'conceptMission.learnTitle': 'Understand this concept',
+  'conceptMission.learnExpandRead': 'Read the explanation',
+  'conceptMission.learnExpandReview': 'Review the explanation',
+  'conceptMission.learnCollapse': 'Hide the explanation',
+  'conceptMission.moreTitle': 'More about my progress',
+  'conceptMission.moreHint': 'Detailed measures — you don\'t need these to keep going.',
+  'conceptMission.secondaryTutor': 'Ask the tutor',
+  'conceptMission.readyToProveNote': 'Ready to prove it on your own.',
+  'conceptMission.stage.NOT_STARTED': 'Not started',
+  'conceptMission.stage.LEARN': 'Learn',
+  'conceptMission.stage.PRACTICE': 'Practice',
+  'conceptMission.stage.READY_TO_PROVE': 'Ready to prove',
+  'conceptMission.stage.PROVE': 'Prove',
+  'conceptMission.stage.RETAIN': 'Retain',
+  'conceptMission.stage.TRANSFER': 'Transfer',
+  'conceptMission.stage.CONSOLIDATED': 'Consolidated',
+  'conceptMission.milestone.passed': '{stage} — earlier step',
+  'conceptMission.milestone.current': '{stage} — you are here',
+  'conceptMission.milestone.upcoming': '{stage} — coming up',
+  'conceptMission.milestone.demonstrated': '{stage} — done, you\'ve shown this',
+  'conceptMission.reason.NO_KNOWLEDGE_STATE': 'You haven\'t started this concept yet.',
+  'conceptMission.reason.ACTIVE_MISCONCEPTION': 'There\'s a misunderstanding to clear up first.',
+  'conceptMission.reason.PREREQUISITE_GAP': 'Something this concept builds on needs attention first.',
+  'conceptMission.reason.REPAIR_IN_PROGRESS': 'You\'re working through a fix for this concept.',
+  'conceptMission.reason.VERIFICATION_PENDING': 'It\'s time to show you can do this on your own.',
+  'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET': 'You understand it — next is doing it without help.',
+  'conceptMission.reason.RETENTION_DUE': 'It\'s time to check you still remember this.',
+  'conceptMission.reason.TRANSFER_REQUIRED': 'Next is using this in a new kind of situation.',
+  'conceptMission.reason.VALIDATED_MASTERY': 'You\'ve shown solid, independent command of this.',
+  'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'You\'re still building a clear picture of this.',
+  'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'You\'ve practised enough — you\'re ready to prove it.',
+  'conceptMission.reason.BUILDING_EVIDENCE': 'You\'re building consistency across different examples.',
 };
 
 const de: Messages = {
@@ -2852,6 +2981,49 @@ const de: Messages = {
   'nav.groupMore': 'Mehr',
   'nav.menu': 'Menü',
   'nav.closeMenu': 'Menü schließen',
+  'conceptMission.goalTitle': 'Was Können hier bedeutet',
+  'conceptMission.goalFallbackTemplate': 'Verstehe {concept} und wende es korrekt und selbstständig an.',
+  'conceptMission.journeyTitle': 'Dein Weg durch dieses Konzept',
+  'conceptMission.journeyYouAreHere': 'Du bist hier: {stage}',
+  'conceptMission.nowTitle': 'Jetzt',
+  'conceptMission.noActionConsolidatedTitle': 'Gefestigt',
+  'conceptMission.noActionConsolidatedBody': 'Im Moment ist nichts nötig. StudyUS legt dir das Konzept wieder vor, wenn eine Behaltensprüfung ansteht.',
+  'conceptMission.noActionLearnFirstTitle': 'Beginne damit, es zu verstehen',
+  'conceptMission.noActionLearnFirstBody': 'Lies die Erklärung unten, um dir ein klares Bild zu machen; danach führt dich StudyUS zum nächsten Schritt.',
+  'conceptMission.reinforceBadge': 'Vorübergehende Unterstützung',
+  'conceptMission.reinforceBody': 'Du bekommst zusätzliche Unterstützung beim selben Ziel. Sobald es geklärt ist, geht es auf deinem Weg weiter.',
+  'conceptMission.learnTitle': 'Dieses Konzept verstehen',
+  'conceptMission.learnExpandRead': 'Erklärung lesen',
+  'conceptMission.learnExpandReview': 'Erklärung ansehen',
+  'conceptMission.learnCollapse': 'Erklärung ausblenden',
+  'conceptMission.moreTitle': 'Mehr zu meinem Fortschritt',
+  'conceptMission.moreHint': 'Detaillierte Kennzahlen – du brauchst sie nicht, um weiterzumachen.',
+  'conceptMission.secondaryTutor': 'Tutor fragen',
+  'conceptMission.readyToProveNote': 'Bereit, es selbstständig zu zeigen.',
+  'conceptMission.stage.NOT_STARTED': 'Nicht begonnen',
+  'conceptMission.stage.LEARN': 'Lernen',
+  'conceptMission.stage.PRACTICE': 'Üben',
+  'conceptMission.stage.READY_TO_PROVE': 'Bereit zum Nachweis',
+  'conceptMission.stage.PROVE': 'Nachweisen',
+  'conceptMission.stage.RETAIN': 'Behalten',
+  'conceptMission.stage.TRANSFER': 'Übertragen',
+  'conceptMission.stage.CONSOLIDATED': 'Gefestigt',
+  'conceptMission.milestone.passed': '{stage} — früherer Schritt',
+  'conceptMission.milestone.current': '{stage} — du bist hier',
+  'conceptMission.milestone.upcoming': '{stage} — kommt noch',
+  'conceptMission.milestone.demonstrated': '{stage} — erledigt, du hast es gezeigt',
+  'conceptMission.reason.NO_KNOWLEDGE_STATE': 'Du hast dieses Konzept noch nicht begonnen.',
+  'conceptMission.reason.ACTIVE_MISCONCEPTION': 'Zuerst ist ein Missverständnis zu klären.',
+  'conceptMission.reason.PREREQUISITE_GAP': 'Etwas, worauf dieses Konzept aufbaut, braucht zuerst Aufmerksamkeit.',
+  'conceptMission.reason.REPAIR_IN_PROGRESS': 'Du arbeitest gerade an einer Korrektur dieses Konzepts.',
+  'conceptMission.reason.VERIFICATION_PENDING': 'Es ist Zeit zu zeigen, dass du das selbstständig kannst.',
+  'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET': 'Du verstehst es – als Nächstes machst du es ohne Hilfe.',
+  'conceptMission.reason.RETENTION_DUE': 'Es ist Zeit zu prüfen, ob du es noch weißt.',
+  'conceptMission.reason.TRANSFER_REQUIRED': 'Als Nächstes wendest du es in einer neuartigen Situation an.',
+  'conceptMission.reason.VALIDATED_MASTERY': 'Du hast ein sicheres, selbstständiges Beherrschen gezeigt.',
+  'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Du entwickelst noch ein klares Bild davon.',
+  'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Du hast genug geübt – du bist bereit, es nachzuweisen.',
+  'conceptMission.reason.BUILDING_EVIDENCE': 'Du baust Sicherheit über verschiedene Beispiele hinweg auf.',
 };
 
 const fr: Messages = {
@@ -3693,6 +3865,49 @@ const fr: Messages = {
   'nav.groupMore': 'Plus',
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Fermer le menu',
+  'conceptMission.goalTitle': 'Ce que réussir veut dire',
+  'conceptMission.goalFallbackTemplate': 'Comprends {concept} et applique-le correctement et en autonomie.',
+  'conceptMission.journeyTitle': 'Ton parcours sur ce concept',
+  'conceptMission.journeyYouAreHere': 'Tu es ici : {stage}',
+  'conceptMission.nowTitle': 'Maintenant',
+  'conceptMission.noActionConsolidatedTitle': 'Consolidé',
+  'conceptMission.noActionConsolidatedBody': 'Rien n\'est nécessaire pour l\'instant. StudyUS te le représentera pour un contrôle de mémorisation le moment venu.',
+  'conceptMission.noActionLearnFirstTitle': 'Commence par le comprendre',
+  'conceptMission.noActionLearnFirstBody': 'Lis l\'explication ci-dessous pour te faire une idée claire, puis StudyUS te guidera vers l\'étape suivante.',
+  'conceptMission.reinforceBadge': 'Soutien temporaire',
+  'conceptMission.reinforceBody': 'Tu reçois un soutien supplémentaire sur le même objectif. Une fois réglé, tu reprends ton parcours.',
+  'conceptMission.learnTitle': 'Comprendre ce concept',
+  'conceptMission.learnExpandRead': 'Lire l\'explication',
+  'conceptMission.learnExpandReview': 'Revoir l\'explication',
+  'conceptMission.learnCollapse': 'Masquer l\'explication',
+  'conceptMission.moreTitle': 'En savoir plus sur ma progression',
+  'conceptMission.moreHint': 'Mesures détaillées — tu n\'en as pas besoin pour continuer.',
+  'conceptMission.secondaryTutor': 'Demander au tuteur',
+  'conceptMission.readyToProveNote': 'Prêt à le démontrer en autonomie.',
+  'conceptMission.stage.NOT_STARTED': 'Pas commencé',
+  'conceptMission.stage.LEARN': 'Apprendre',
+  'conceptMission.stage.PRACTICE': 'S\'entraîner',
+  'conceptMission.stage.READY_TO_PROVE': 'Prêt à démontrer',
+  'conceptMission.stage.PROVE': 'Démontrer',
+  'conceptMission.stage.RETAIN': 'Mémoriser',
+  'conceptMission.stage.TRANSFER': 'Transférer',
+  'conceptMission.stage.CONSOLIDATED': 'Consolidé',
+  'conceptMission.milestone.passed': '{stage} — étape précédente',
+  'conceptMission.milestone.current': '{stage} — tu es ici',
+  'conceptMission.milestone.upcoming': '{stage} — à venir',
+  'conceptMission.milestone.demonstrated': '{stage} — fait, tu l\'as montré',
+  'conceptMission.reason.NO_KNOWLEDGE_STATE': 'Tu n\'as pas encore commencé ce concept.',
+  'conceptMission.reason.ACTIVE_MISCONCEPTION': 'Il y a d\'abord un malentendu à lever.',
+  'conceptMission.reason.PREREQUISITE_GAP': 'Un prérequis de ce concept demande d\'abord de l\'attention.',
+  'conceptMission.reason.REPAIR_IN_PROGRESS': 'Tu es en train de corriger ce concept.',
+  'conceptMission.reason.VERIFICATION_PENDING': 'C\'est le moment de montrer que tu peux le faire seul.',
+  'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET': 'Tu le comprends — l\'étape suivante, c\'est le faire sans aide.',
+  'conceptMission.reason.RETENTION_DUE': 'C\'est le moment de vérifier que tu t\'en souviens encore.',
+  'conceptMission.reason.TRANSFER_REQUIRED': 'L\'étape suivante, c\'est l\'utiliser dans un type de situation nouveau.',
+  'conceptMission.reason.VALIDATED_MASTERY': 'Tu as montré une maîtrise solide et autonome.',
+  'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Tu es encore en train de te faire une idée claire.',
+  'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Tu t\'es assez entraîné — tu es prêt à le démontrer.',
+  'conceptMission.reason.BUILDING_EVIDENCE': 'Tu gagnes en régularité sur différents exemples.',
 };
 
 const pt: Messages = {
@@ -4534,6 +4749,49 @@ const pt: Messages = {
   'nav.groupMore': 'Mais',
   'nav.menu': 'Menu',
   'nav.closeMenu': 'Fechar menu',
+  'conceptMission.goalTitle': 'O que significa dominar isto',
+  'conceptMission.goalFallbackTemplate': 'Entenda {concept} e aplique-o de forma correta e autônoma.',
+  'conceptMission.journeyTitle': 'Seu percurso neste conceito',
+  'conceptMission.journeyYouAreHere': 'Você está aqui: {stage}',
+  'conceptMission.nowTitle': 'Agora',
+  'conceptMission.noActionConsolidatedTitle': 'Consolidado',
+  'conceptMission.noActionConsolidatedBody': 'Nada é necessário agora. O StudyUS trará isto de volta para uma verificação de retenção quando for a hora.',
+  'conceptMission.noActionLearnFirstTitle': 'Comece por entendê-lo',
+  'conceptMission.noActionLearnFirstBody': 'Leia a explicação abaixo para formar uma ideia clara; depois o StudyUS guiará o seu próximo passo.',
+  'conceptMission.reinforceBadge': 'Apoio temporário',
+  'conceptMission.reinforceBody': 'Você está recebendo apoio extra no mesmo objetivo. Quando resolver, volta ao seu percurso.',
+  'conceptMission.learnTitle': 'Entender este conceito',
+  'conceptMission.learnExpandRead': 'Ler a explicação',
+  'conceptMission.learnExpandReview': 'Revisar a explicação',
+  'conceptMission.learnCollapse': 'Ocultar a explicação',
+  'conceptMission.moreTitle': 'Mais sobre o meu progresso',
+  'conceptMission.moreHint': 'Medidas detalhadas — você não precisa delas para continuar.',
+  'conceptMission.secondaryTutor': 'Perguntar ao tutor',
+  'conceptMission.readyToProveNote': 'Pronto para demonstrar por conta própria.',
+  'conceptMission.stage.NOT_STARTED': 'Não iniciado',
+  'conceptMission.stage.LEARN': 'Aprender',
+  'conceptMission.stage.PRACTICE': 'Praticar',
+  'conceptMission.stage.READY_TO_PROVE': 'Pronto para demonstrar',
+  'conceptMission.stage.PROVE': 'Demonstrar',
+  'conceptMission.stage.RETAIN': 'Reter',
+  'conceptMission.stage.TRANSFER': 'Transferir',
+  'conceptMission.stage.CONSOLIDATED': 'Consolidado',
+  'conceptMission.milestone.passed': '{stage} — etapa anterior',
+  'conceptMission.milestone.current': '{stage} — você está aqui',
+  'conceptMission.milestone.upcoming': '{stage} — mais adiante',
+  'conceptMission.milestone.demonstrated': '{stage} — feito, você já demonstrou isto',
+  'conceptMission.reason.NO_KNOWLEDGE_STATE': 'Você ainda não começou este conceito.',
+  'conceptMission.reason.ACTIVE_MISCONCEPTION': 'Primeiro há um mal-entendido a esclarecer.',
+  'conceptMission.reason.PREREQUISITE_GAP': 'Algo em que este conceito se apoia precisa de atenção primeiro.',
+  'conceptMission.reason.REPAIR_IN_PROGRESS': 'Você está resolvendo uma correção deste conceito.',
+  'conceptMission.reason.VERIFICATION_PENDING': 'É hora de mostrar que você consegue fazer isto sozinho.',
+  'conceptMission.reason.NO_INDEPENDENT_EVIDENCE_YET': 'Você entende — o próximo passo é fazer sem ajuda.',
+  'conceptMission.reason.RETENTION_DUE': 'É hora de verificar se você ainda se lembra disto.',
+  'conceptMission.reason.TRANSFER_REQUIRED': 'O próximo passo é usar isto em um tipo de situação novo.',
+  'conceptMission.reason.VALIDATED_MASTERY': 'Você demonstrou um domínio sólido e autônomo disto.',
+  'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Você ainda está formando uma ideia clara disto.',
+  'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Você praticou o suficiente — está pronto para demonstrar.',
+  'conceptMission.reason.BUILDING_EVIDENCE': 'Você está ganhando consistência entre exemplos diferentes.',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

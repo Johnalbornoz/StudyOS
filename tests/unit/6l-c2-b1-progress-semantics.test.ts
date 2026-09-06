@@ -279,20 +279,41 @@ describe('Step 28 / 6L-B1 / 6L-C1 / policy protection (Parts 15-18)', () => {
     expect(shellSource).toMatch(/href=\{view\.activityHref\}/);
   });
 
-  it('6L-C1\'s canonical next-action authority is untouched -- getBestLearningDecisionForConcept/WhyThisV3/StartSessionButton wiring unchanged', () => {
-    const source = read(CONCEPT_DETAIL_PATH);
-    expect(source).toMatch(/import \{ getBestLearningDecisionForConcept \} from '@\/services\/adaptive-teaching\.service'/);
-    expect(source).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
-    expect(source).toMatch(/<WhyThisV3 facts=\{nextDecision\.facts\} t=\{t\} \/>/);
-    expect(source).toMatch(/<StartSessionButton/);
+  // LX-3 (Concept Mission) moved the canonical next-action authority off
+  // the concept page and into the Concept Mission read boundary
+  // (concept-mission-view.service.ts) + presentational component
+  // (ConceptMission.tsx). 6L-C1's invariant is unchanged -- the ONE
+  // next action is still a verbatim pass-through of Phase 4's
+  // LearningDecision, rendered through the same certified mappers
+  // (WhyThisV3) and launched through the same mechanism
+  // (StartSessionButton) -- it just lives in a different file now.
+  it('LX-3: canonical next-action authority is preserved via the Concept Mission read boundary', () => {
+    const service = read('src/services/concept-mission-view.service.ts');
+    expect(service).toMatch(/import \{ getBestLearningDecisionForConcept \} from '@\/services\/adaptive-teaching\.service'/);
+    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+
+    const component = read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptMission.tsx');
+    expect(component).toMatch(/<WhyThisV3 facts=\{now\.facts\} t=\{t\} \/>/);
+    expect(component).toMatch(/<StartSessionButton/);
+    // the component renders the ActivityType it is handed -- it never selects one
+    expect(component).toMatch(/activityLabel\(now\.activityType, t\)/);
+    expect(component).not.toMatch(/selectActivityType|chooseActivity/);
   });
 
-  it('6L-C1-R1\'s reconciliation (situation banner informational-only, manual tools demoted) is untouched', () => {
+  it('LX-3: the concept page keeps no page-local next-action or CTA-ordering heuristic; situation is demoted & still informational-only', () => {
     const source = read(CONCEPT_DETAIL_PATH);
-    const situationBlock = source.match(/\{situation && \(([\s\S]*?)\n {6}\)\}/);
+    // the old page-local heuristic and manual-tool link row are gone
+    expect(source).not.toMatch(/primaryCTA/);
+    expect(source).not.toMatch(/orderedManualToolKeys/);
+    expect(source).not.toMatch(/const ctaConfig/);
+    // the page no longer re-derives the decision itself -- it goes through the read boundary
+    expect(source).not.toMatch(/getBestLearningDecisionForConcept/);
+    expect(source).toMatch(/getConceptMissionView\(/);
+    // situation label still rendered, still with no embedded next-action, now inside the progress disclosure
+    const situationBlock = source.match(/\{situation && \(([\s\S]*?)\)\}/);
     expect(situationBlock).toBeTruthy();
-    expect(situationBlock![1]).not.toMatch(/situationNextLabel/);
-    expect(source).toMatch(/const orderedManualToolKeys: CTA\[\] = \[primaryCTA, /);
+    expect(situationBlock![1]).not.toMatch(/situationNextLabel|StartSessionButton|activityCta/);
+    expect(source).toMatch(/<details className="cm-more"/);
   });
 
   it('protected policy version constants are unchanged', () => {
