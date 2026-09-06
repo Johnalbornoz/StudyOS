@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { generateTransferActivity, type TransferDistance } from '@/services/transfer.service';
+import { computeTransferPromptFingerprint } from '@/lib/transfer-task-identity';
 import { track } from '@/lib/analytics';
 import { z } from 'zod';
 
@@ -29,12 +31,24 @@ export async function POST(request: NextRequest) {
       validated.language || 'en'
     );
     track(validated.studentId, 'transfer_started', { conceptId: validated.conceptId, distance: validated.distance });
-    // Phase 2B: minted exactly once per generated activity, never at
-    // submit time (which would make every transport retry of the same
-    // submission look like a new logical action). The client rounds
-    // this back on /transfer/submit unchanged -- the stable identity
-    // that call's evidence idempotency key is built from.
-    return NextResponse.json({ success: true, data: { ...result, activityId: crypto.randomUUID() } });
+    // Phase 2B / Phase 7 (7B1): ONE server-minted id per generated
+    // task. `transferTaskId` is the canonical Phase 7 task identity;
+    // `activityId` is kept as an exact alias (activityId ===
+    // transferTaskId) for current clients and the existing evidence
+    // idempotency key. Never two different ids for the same task.
+    // `promptFingerprint` is a non-authoritative convenience for the
+    // client -- the server recomputes it from the submitted prompt on
+    // /transfer/submit.
+    const transferTaskId = randomUUID();
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...result,
+        transferTaskId,
+        activityId: transferTaskId,
+        promptFingerprint: computeTransferPromptFingerprint(result.prompt),
+      },
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues[0]?.message }, { status: 400 });

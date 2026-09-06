@@ -5,6 +5,7 @@ import { updateMastery } from '@/services/mastery.service';
 import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
 import { normalizeResponseTiming, toResponseTimingEntries } from '@/lib/algorithms/response-timing';
+import { computeTransferPromptFingerprint, resolveTransferTaskId } from '@/lib/transfer-task-identity';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -17,17 +18,20 @@ const Schema = z.object({
   studentResponse: z.string().min(1),
   language: z.string().optional(),
   remediationStepId: z.string().uuid().optional(),
-  // Phase 2B: minted by /transfer/generate, round-tripped unchanged --
-  // the stable logical identity for this ONE transfer attempt's
-  // evidence. A transport retry of this same submission reuses it; a
-  // genuinely new attempt only ever has one because /transfer/generate
-  // mints a fresh one every time it's called.
-  activityId: z.string().uuid(),
+  // Phase 2B / Phase 7 (7B1): the stable logical identity for THIS one
+  // transfer attempt's evidence, minted by /transfer/generate. During
+  // the compatibility window `activityId === transferTaskId`; a client
+  // may send either or both. Both-but-different is rejected (400), never
+  // silently resolved -- see resolveTransferTaskId.
+  transferTaskId: z.string().uuid().optional(),
+  activityId: z.string().uuid().optional(),
   // Phase 1D: loose optional strings -- a malformed value degrades to a
   // quality label (normalizeResponseTiming), never fails this request.
   questionPresentedAt: z.string().optional(),
   answerSubmittedAt: z.string().optional(),
 });
+// NB: any client-sent `promptFingerprint` is dropped by Zod here on
+// purpose -- the server always recomputes it from `prompt` below.
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +41,18 @@ export async function POST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    // Phase 7 (7B1): resolve the ONE canonical task id. Both-but-different
+    // is a client bug, not something to guess through.
+    const idResolution = resolveTransferTaskId({ transferTaskId: validated.transferTaskId, activityId: validated.activityId });
+    if (!idResolution.ok) {
+      return NextResponse.json({ error: 'INVALID_INPUT', message: idResolution.error }, { status: 400 });
+    }
+    const canonicalTaskId = idResolution.taskId;
+    // Server is the sole fingerprint authority -- recomputed from the
+    // prompt the browser actually submitted (which is the exact prompt
+    // evaluateTransferResponse grades). Never trusts a client value.
+    const promptFingerprint = computeTransferPromptFingerprint(validated.prompt);
 
     const language = validated.language || 'en';
     const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language, {
@@ -58,7 +74,7 @@ export async function POST(request: NextRequest) {
         scorePercent,
         sampleSize: 1,
       },
-      identity: { operationType: 'TRANSFER', operationId: validated.activityId, conceptId: validated.conceptId },
+      identity: { operationType: 'TRANSFER', operationId: canonicalTaskId, conceptId: validated.conceptId },
       telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
       // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
       // row to the AI evaluation that produced this evidence -- always
@@ -107,6 +123,14 @@ export async function POST(request: NextRequest) {
             transferDistance: validated.distance,
             assisted: false,
             aiExecution: graded.aiExecution,
+            // Phase 7 (7B1): canonical task identity + server-computed
+            // structural prompt fingerprint. Additive metadata only --
+            // does not affect computeTransferScore / mastery / KS /
+            // memory, and is not yet consumed by any qualification or
+            // novelty logic (that is 7B2+).
+            transferTaskId: canonicalTaskId,
+            promptFingerprint,
+            sourceConceptId: validated.conceptId,
             ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
           }),
         ]
