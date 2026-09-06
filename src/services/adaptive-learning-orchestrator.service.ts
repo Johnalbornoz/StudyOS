@@ -40,6 +40,7 @@
 
 import { db } from '@/lib/db';
 import { mapWithConcurrency } from '@/lib/bounded-concurrency';
+import { logOperationalWarning } from '@/lib/observability/operational-log';
 import {
   getSubjectKnowledgeState,
   getActiveMasteryPolicy,
@@ -127,6 +128,27 @@ interface LoadedSignals {
 }
 
 /**
+ * Closeout D1 (observability only): each student-wide signal source
+ * below has ALWAYS degraded to an empty result on failure so one dead
+ * dependency can't take down "what next". That fail-soft behavior is
+ * unchanged -- this wrapper just makes the degradation visible in the
+ * platform logs (one WARN per failed source, never per concept) before
+ * returning the SAME fallback value. No retry, no new fallback path,
+ * no studentId in the log.
+ */
+function failSoftSignalSource<T>(failedSource: string, fallback: T, work: Promise<T>): Promise<T> {
+  return work.catch((error) => {
+    logOperationalWarning({
+      subsystem: 'phase4-orchestrator',
+      operation: 'loadLearningSignals',
+      error,
+      context: { failedSource },
+    });
+    return fallback;
+  });
+}
+
+/**
  * Loads every existing signal source read-only and shapes each into a
  * LearningSignal. No consolidation/ranking happens here -- that's the
  * pure policy's job, so it can be unit-tested without any of this IO.
@@ -145,18 +167,18 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
   const [dueItems, activeRemediations, activeDiagnoses, recurringMisconceptions, activeDebts, calibrationConflicts, upcomingExams, masteryRows, phase4MemorySignals] =
     await Promise.all([
       getDueItems(studentId),
-      getActiveRemediationsWithLabels(studentId).catch(() => []),
-      getActiveDiagnoses(studentId).catch(() => []),
-      getRecurringMisconceptions(studentId).catch(() => []),
-      getActiveDebts(studentId, undefined, preferredLanguage).catch(() => []),
-      getCalibrationConflicts(studentId).catch(() => []),
-      getUpcomingForStudent(studentId).catch(() => []),
-      getStudentMastery(studentId, undefined, preferredLanguage).catch(() => []),
+      failSoftSignalSource('getActiveRemediationsWithLabels', [], getActiveRemediationsWithLabels(studentId)),
+      failSoftSignalSource('getActiveDiagnoses', [], getActiveDiagnoses(studentId)),
+      failSoftSignalSource('getRecurringMisconceptions', [], getRecurringMisconceptions(studentId)),
+      failSoftSignalSource('getActiveDebts', [], getActiveDebts(studentId, undefined, preferredLanguage)),
+      failSoftSignalSource('getCalibrationConflicts', [], getCalibrationConflicts(studentId)),
+      failSoftSignalSource('getUpcomingForStudent', [], getUpcomingForStudent(studentId)),
+      failSoftSignalSource('getStudentMastery', [], getStudentMastery(studentId, undefined, preferredLanguage)),
       // Step 6H-B: ONE batch read for every concept's Phase 6 memory
       // state -- never one query per concept (see this file's own
       // header). A student with no canonical memory rows yet gets an
       // empty Map, never an error.
-      getPhase4MemorySignalsForStudent(db, studentId).catch(() => new Map()),
+      failSoftSignalSource('getPhase4MemorySignalsForStudent', new Map(), getPhase4MemorySignalsForStudent(db, studentId)),
     ]);
 
   const signals: LearningSignal[] = [];

@@ -20,6 +20,7 @@
  * its own connection or transaction.
  */
 import { type DbExecutor } from '@/lib/db';
+import { logOperationalError } from '@/lib/observability/operational-log';
 import { MEMORY_POLICY_V1, type MemoryPolicyV1, type MemoryStatus, type MemoryStability, type PredictionConfidence } from '@/lib/memory-policy';
 import { computeLiveMemorySignals, type MemoryState } from '@/lib/algorithms/memory-model';
 
@@ -107,7 +108,23 @@ export class MissingConceptMemoryStateError extends Error {
  */
 export async function getPhase2MemoryInput(client: DbExecutor, studentId: string, conceptId: string): Promise<Phase2MemoryInput> {
   const record = await getConceptMemoryState(client, studentId, conceptId);
-  if (record === null) throw new MissingConceptMemoryStateError(studentId, conceptId);
+  if (record === null) {
+    // Closeout D1 (observability only): this invariant violation was
+    // already fatal (it rolls back the surrounding updateMastery
+    // transaction and rethrows) but landed in production only as a
+    // generic route-level console.error. Emit one structured ERROR at
+    // the detection point -- BEFORE the throw, which is unchanged --
+    // so operators can see the subsystem/operation/concept. studentId
+    // is deliberately not logged (Closeout D0 decision 1).
+    const error = new MissingConceptMemoryStateError(studentId, conceptId);
+    logOperationalError({
+      subsystem: 'phase6-memory',
+      operation: 'getPhase2MemoryInput',
+      error,
+      context: { conceptId },
+    });
+    throw error;
+  }
   return {
     demonstratedRetentionScore: record.demonstratedRetentionScore,
     retentionEvidenceCount: record.retentionEvidenceCount,

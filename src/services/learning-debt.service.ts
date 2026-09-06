@@ -12,6 +12,7 @@
 
 import { db } from '@/lib/db';
 import { calculateDebtSeverity } from '@/lib/algorithms/mastery';
+import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { ensureConceptLocalizations } from './localization.service';
 // Step 6J-B1: forgettingRisk and the "retention proof" timestamp both
 // come from Phase 6's canonical memory-read.service.ts now (never
@@ -475,8 +476,19 @@ export async function getActiveDebts(
       : `SELECT ld.concept_id FROM learning_debt ld JOIN subjects s ON s.id = ld.subject_id WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring') AND s.status = 'active'`;
     const debtConceptIdsParams = subjectId ? [studentId, subjectId] : [studentId];
     const debtConceptIds = await db.query(debtConceptIdsQuery, debtConceptIdsParams);
-    ensureConceptLocalizations(debtConceptIds.rows.map((r) => r.concept_id), preferredLanguage).catch((err) =>
-      console.error('Background concept localization failed:', err)
+    // Closeout D1 (observability only): still fire-and-forget, still
+    // never awaited, timing unchanged -- the swallowed failure just
+    // becomes a structured WARN instead of a generic console.error.
+    ensureConceptLocalizations(debtConceptIds.rows.map((r) => r.concept_id), preferredLanguage).catch((error) =>
+      logOperationalWarning({
+        subsystem: 'learning-debt',
+        operation: 'ensureConceptLocalizations',
+        error,
+        context: {
+          count: debtConceptIds.rows.length,
+          ...(subjectId ? { subjectId } : {}),
+        },
+      })
     );
 
     let query = `
@@ -527,6 +539,13 @@ export async function getActiveDebts(
     // the last time anyone looked gets resolved right now instead of
     // never (this endpoint was previously the only way to trigger a
     // resolution check, and nothing in the app ever called it).
+    // Closeout D1 (observability only): a failed lazy re-resolution
+    // stays fail-soft -- the debt is simply kept in the returned list,
+    // exactly as before -- but the swallowed error is now visible.
+    // Collected as a Set here and emitted ONCE per getActiveDebts call
+    // (never one log per row), with the failed conceptIds listed back
+    // in deterministic row order below.
+    const debtResolutionFailures = new Set<string>();
     const stillActive = await Promise.all(
       result.rows.map(async (row) => {
         if (row.mastery_score === null) return row; // no mastery record yet, nothing to re-check
@@ -535,11 +554,29 @@ export async function getActiveDebts(
         const daysSinceLastSuccess = daysSinceLastSuccessfulRetention(memorySignal?.lastSuccessfulRetentionAt ?? null);
         const forgettingRisk = memorySignal?.forgettingRisk ?? null;
         const resolved = await checkAndResolveDebt(studentId, row.concept_id, mastery, daysSinceLastSuccess, forgettingRisk).catch(
-          () => null
+          () => {
+            debtResolutionFailures.add(row.concept_id);
+            return null;
+          }
         );
         return resolved ? null : row;
       })
     );
+
+    if (debtResolutionFailures.size > 0) {
+      const failedConceptIds = result.rows
+        .map((r) => r.concept_id as string)
+        .filter((id) => debtResolutionFailures.has(id));
+      logOperationalWarning({
+        subsystem: 'learning-debt',
+        operation: 'getActiveDebts.checkAndResolveDebt',
+        context: {
+          ...(subjectId ? { subjectId } : {}),
+          count: failedConceptIds.length,
+          conceptIds: failedConceptIds,
+        },
+      });
+    }
 
     return stillActive
       .filter((row): row is NonNullable<typeof row> => row !== null)
