@@ -92,7 +92,7 @@ describe('7C2 -- projector UPSERT', () => {
     expect(p[6]).toEqual([]); // distinct novelty dims
     expect(p[8]).toBe('NEAR'); // last_successful_transfer_distance
     expect(p[9]).toBe('NEAR_DEMONSTRATED'); // transfer_depth
-    expect(p[10]).toBe(1); // policy_version
+    expect(p[10]).toBe(2); // policy_version (7G1: bumped 1->2)
   });
 
   it('semantic no-op: replayed state == persisted state -> NO write', async () => {
@@ -104,7 +104,7 @@ describe('7C2 -- projector UPSERT', () => {
       last_successful_transfer_at: '2026-09-01T00:00:00.000Z',
       last_successful_transfer_distance: 'NEAR',
       transfer_depth: 'NEAR_DEMONSTRATED',
-      policy_version: 1,
+      policy_version: 2,
     }];
     const { client, calls } = mockClient(history, existing);
     const res = await projectConceptTransferState(client, S, C, 'e1');
@@ -144,7 +144,7 @@ describe('7D3 -- projector audit events (transfer-engine)', () => {
     expect(ev.map((e) => e.decisionType).sort()).toEqual(['TRANSFER_DEPTH_ADVANCED', 'TRANSFER_EVIDENCE_QUALIFIED']);
     for (const e of ev) {
       expect(e.engine).toBe('transfer-engine');
-      expect(e.engineVersion).toBe('1');
+      expect(e.engineVersion).toBe('2'); // 7G1: engineVersion == TRANSFER_POLICY_VERSION
       expect(e.conceptId).toBe(C);
     }
     const qualified = ev.find((e) => e.decisionType === 'TRANSFER_EVIDENCE_QUALIFIED')!;
@@ -189,7 +189,7 @@ describe('7D3 -- projector audit events (transfer-engine)', () => {
       last_successful_transfer_at: '2026-09-01T00:00:00.000Z',
       last_successful_transfer_distance: 'NEAR',
       transfer_depth: 'NEAR_DEMONSTRATED',
-      policy_version: 1,
+      policy_version: 2,
     }];
     const { client, calls } = mockClient(
       [

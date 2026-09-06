@@ -9,6 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   TRANSFER_POLICY_VERSION,
+  TRANSFER_ROBUST_MIN_SPACING_DAYS,
+  isRobustSpacingSatisfied,
   TRANSFER_DISTANCE_VALUES,
   NOVELTY_DIMENSIONS,
   TRANSFER_MODALITIES,
@@ -30,8 +32,27 @@ import {
 // Taxonomy -- exact, no drift
 // ---------------------------------------------------------------------
 describe('7A1 -- taxonomy', () => {
-  it('policy version is 1', () => {
-    expect(TRANSFER_POLICY_VERSION).toBe(1);
+  it('policy version is 2 (7G1: activated the ROBUST spacing rule)', () => {
+    expect(TRANSFER_POLICY_VERSION).toBe(2);
+  });
+  it('7G1 -- TRANSFER_ROBUST_MIN_SPACING_DAYS is 3', () => {
+    expect(TRANSFER_ROBUST_MIN_SPACING_DAYS).toBe(3);
+  });
+});
+
+describe('7G1 -- isRobustSpacingSatisfied', () => {
+  const d = (n: number) => `2026-09-${String(n).padStart(2, '0')}T00:00:00.000Z`;
+  it('null anchor -> false', () => {
+    expect(isRobustSpacingSatisfied(null, d(10))).toBe(false);
+  });
+  it('exactly 3 days -> true; under 3 -> false', () => {
+    expect(isRobustSpacingSatisfied(d(1), d(4))).toBe(true);
+    expect(isRobustSpacingSatisfied(d(1), d(3))).toBe(false);
+    expect(isRobustSpacingSatisfied(d(1), d(1))).toBe(false);
+  });
+  it('unparseable input -> false (fail closed)', () => {
+    expect(isRobustSpacingSatisfied('not-a-date', d(10))).toBe(false);
+    expect(isRobustSpacingSatisfied(d(1), 'not-a-date')).toBe(false);
   });
   it('TransferDistance values are exactly NEAR/MID/FAR', () => {
     expect([...TRANSFER_DISTANCE_VALUES]).toEqual(['NEAR', 'MID', 'FAR']);

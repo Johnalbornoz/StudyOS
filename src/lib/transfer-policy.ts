@@ -42,7 +42,39 @@
 export type { TransferDistance } from '@/services/transfer.service';
 import type { TransferDistance } from '@/services/transfer.service';
 
-export const TRANSFER_POLICY_VERSION = 1 as const;
+// Phase 7 Step 7G1: bumped 1 -> 2. v2 activates the deterministic
+// ROBUST spacing rule (TRANSFER_ROBUST_MIN_SPACING_DAYS) -- v1 could
+// never reach ROBUST because no spacing policy existed. Every
+// concept_transfer_state row is reprojected to v2 by a controlled
+// production reprojection; the replayed depth / score for existing
+// evidence is UNCHANGED by the bump (v1 already never reached ROBUST),
+// so the reprojection earns no new depth and emits no depth-advance
+// audit events.
+export const TRANSFER_POLICY_VERSION = 2 as const;
+
+/**
+ * Phase 7 Step 7G1: the minimum number of days that must elapse
+ * between the qualified SUCCESS that ESTABLISHED demonstrated
+ * GENERALIZED transfer and a later qualified MID/FAR SUCCESS (in a new
+ * task family) for that later success to advance depth to ROBUST.
+ * Deterministic -- the replay computes the gap from the evidence rows'
+ * own timestamps, never from a wall clock.
+ */
+export const TRANSFER_ROBUST_MIN_SPACING_DAYS = 3;
+
+/**
+ * Pure. True when `currentAt` is at least TRANSFER_ROBUST_MIN_SPACING_DAYS
+ * after `generalizedAt`. Both are ISO timestamps from canonical
+ * evidence rows. A missing / unparseable input is treated as
+ * not-yet-spaced (fail closed -- never fabricate ROBUST).
+ */
+export function isRobustSpacingSatisfied(generalizedAt: string | null, currentAt: string): boolean {
+  if (!generalizedAt) return false;
+  const from = Date.parse(generalizedAt);
+  const to = Date.parse(currentAt);
+  if (Number.isNaN(from) || Number.isNaN(to)) return false;
+  return (to - from) / 86_400_000 >= TRANSFER_ROBUST_MIN_SPACING_DAYS;
+}
 
 /** Exhaustive list mirror of TransferDistance -- for enum-drift tests and iteration. */
 export const TRANSFER_DISTANCE_VALUES = ['NEAR', 'MID', 'FAR'] as const;

@@ -28,6 +28,7 @@ import {
   TRANSFER_POLICY_VERSION,
   NOVELTY_DIMENSIONS,
   transferDepthTransition,
+  isRobustSpacingSatisfied,
   type TransferDistance,
   type TransferDepth,
   type NoveltyDimension,
@@ -241,6 +242,10 @@ export function replayTransferState(evidence: readonly CanonicalTransferProjecti
     successfulTaskFamilyIds: string[];
   } = { depth: 'NONE', successfulDistances: [], successfulNoveltyDimensions: [], successfulTaskFamilyIds: [] };
 
+  // 7G1: the timestamp of the qualified SUCCESS that first established
+  // GENERALIZED -- the anchor the ROBUST spacing rule measures from.
+  let generalizedEstablishedAt: string | null = null;
+
   for (const e of ordered) {
     if (e.result !== 'SUCCESS' || e.assisted) continue; // PARTIAL/FAILURE/assisted: score only, never depth
     // an independent SUCCESS
@@ -275,6 +280,15 @@ export function replayTransferState(evidence: readonly CanonicalTransferProjecti
     else far += 1;
     lastSuccessfulTransferDistance = e.transferDistance;
 
+    // 7G1: deterministic ROBUST spacing -- satisfied when >= 3 days
+    // (TRANSFER_ROBUST_MIN_SPACING_DAYS) have elapsed since GENERALIZED
+    // was established. An explicit `meta.spacingSatisfied` (synthetic /
+    // test evidence only -- never set by any production writer) still
+    // acts as an override so that path is unchanged.
+    const spacingSatisfied =
+      e.spacingSatisfied ||
+      (prior.depth === 'GENERALIZED' && isRobustSpacingSatisfied(generalizedEstablishedAt, e.timestamp));
+
     const res = transferDepthTransition({
       prior: { ...prior },
       attempt: {
@@ -283,10 +297,13 @@ export function replayTransferState(evidence: readonly CanonicalTransferProjecti
         transferDistance: e.transferDistance,
         noveltyDimensions: e.noveltyDimensions,
         taskFamilyId: e.taskFamilyId,
-        spacingSatisfied: e.spacingSatisfied,
+        spacingSatisfied,
       },
     });
     prior.depth = res.depth;
+    if (generalizedEstablishedAt === null && (res.depth === 'GENERALIZED' || res.depth === 'ROBUST')) {
+      generalizedEstablishedAt = e.timestamp;
+    }
     if (!prior.successfulDistances.includes(e.transferDistance)) prior.successfulDistances.push(e.transferDistance);
     prior.successfulNoveltyDimensions = sortNovelty([...prior.successfulNoveltyDimensions, ...e.noveltyDimensions]);
     if (e.taskFamilyId && !prior.successfulTaskFamilyIds.includes(e.taskFamilyId)) prior.successfulTaskFamilyIds.push(e.taskFamilyId);

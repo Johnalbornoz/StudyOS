@@ -167,7 +167,7 @@ describe('7C3 -- write mode', () => {
       expect(row.mid_transfer_success_count).toBe(0);
       expect(row.far_transfer_success_count).toBe(0);
       expect(row.distinct_novelty_dimensions_ok).toEqual([]);
-      expect(row.policy_version).toBe(1);
+      expect(row.policy_version).toBe(2); // 7G1: TRANSFER_POLICY_VERSION bumped 1 -> 2
       expect(row.last_successful_transfer_distance === null || row.last_successful_transfer_distance === 'NEAR').toBe(true);
     }
 

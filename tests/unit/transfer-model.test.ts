@@ -144,6 +144,22 @@ describe('7C2 -- future phase7Certified evidence: real depth rules', () => {
     ]);
     expect(r.transferDepth).toBe('ROBUST');
   });
+  it('7G1 -- ROBUST via the DETERMINISTIC timestamp rule (no meta.spacingSatisfied): >=3 days after GENERALIZED', () => {
+    const day = (n: number) => `2026-09-${String(n).padStart(2, '0')}T00:00:00.000Z`;
+    const r = replayTransferState([
+      certified({ transferDistance: 'FAR', noveltyDimensions: ['CONSTRAINT'], taskFamilyId: 'fam-1', timestamp: day(1), evidenceId: 'a' }),
+      certified({ transferDistance: 'MID', noveltyDimensions: ['STRATEGY'], taskFamilyId: 'fam-2', timestamp: day(4), evidenceId: 'b' }),
+    ]);
+    expect(r.transferDepth).toBe('ROBUST');
+  });
+  it('7G1 -- a MID/FAR success only 2 days after GENERALIZED stays GENERALIZED', () => {
+    const day = (n: number) => `2026-09-${String(n).padStart(2, '0')}T00:00:00.000Z`;
+    const r = replayTransferState([
+      certified({ transferDistance: 'FAR', noveltyDimensions: ['CONSTRAINT'], taskFamilyId: 'fam-1', timestamp: day(1), evidenceId: 'a' }),
+      certified({ transferDistance: 'MID', noveltyDimensions: ['STRATEGY'], taskFamilyId: 'fam-2', timestamp: day(3), evidenceId: 'b' }),
+    ]);
+    expect(r.transferDepth).toBe('GENERALIZED');
+  });
   it('GENERALIZED + rapid same-family repeat -> stays GENERALIZED', () => {
     const r = replayTransferState([
       certified({ transferDistance: 'FAR', noveltyDimensions: ['GOAL_FRAMING'], taskFamilyId: 'fam-1', timestamp: ts(1), evidenceId: 'a' }),
