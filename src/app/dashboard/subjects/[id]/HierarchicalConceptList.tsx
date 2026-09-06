@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import ConceptList from './ConceptList';
 import { SubjectHierarchy, HierarchyConcept } from '@/services/topic-hierarchy.service';
+import type { MasteryState } from '@/services/knowledge-state.service';
 
 const UNASSIGNED_KEY = '__unassigned__';
 
@@ -40,7 +41,7 @@ function buildSecondaryLine(concepts: HierarchyConcept[], t: ReturnType<typeof g
   const coverage = evidenceCoveragePercent(concepts);
   return (
     [
-      retention !== null ? `${t['subjectDetail.retention']} ${retention}%` : null,
+      retention !== null ? `${t['subjectDetail.freshness']} ${retention}%` : null,
       independentMastery !== null ? `${t['subjectDetail.independentMastery']} ${independentMastery}%` : null,
       confidenceCalibration !== null ? `${t['subjectDetail.confidenceCalibration']} ${confidenceCalibration}%` : null,
       coverage !== null ? `${t['subjectDetail.evidenceCoverage']} ${coverage}%` : null,
@@ -159,11 +160,20 @@ export default function HierarchicalConceptList({
   studentId,
   locale,
   hierarchy,
+  masteryStates,
 }: {
   subjectId: string;
   studentId: string;
   locale: Locale;
   hierarchy: SubjectHierarchy;
+  /**
+   * Step 6L-C2-B1: conceptId -> the already-persisted, canonical
+   * MasteryState (knowledge-state.service.ts) for each concept in this
+   * subject -- fetched once, in bulk, by the server page. Never
+   * recomputed here; a concept absent from this map (no knowledge-
+   * state row yet) simply gets no qualifier, never a fabricated one.
+   */
+  masteryStates: Record<string, MasteryState>;
 }) {
   const t = getMessages(locale);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
@@ -239,6 +249,7 @@ export default function HierarchicalConceptList({
                               conceptId: c.id,
                               label: c.label,
                               masteryScore: c.masteryScore ?? 0,
+                              masteryState: masteryStates[c.id] ?? null,
                             }))}
                           />
                         </div>
@@ -274,6 +285,7 @@ export default function HierarchicalConceptList({
                   conceptId: c.id,
                   label: c.label,
                   masteryScore: c.masteryScore ?? 0,
+                  masteryState: masteryStates[c.id] ?? null,
                 }))}
               />
             </div>

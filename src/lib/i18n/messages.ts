@@ -113,8 +113,8 @@ export type MessageKey =
   | 'whyThis.forgettingRisk' | 'whyThis.independenceGap' | 'whyThis.lowMastery'
   | 'whyThis.activeRemediation' | 'whyThis.prerequisiteGap' | 'whyThis.diagnosisRequired' | 'whyThis.recurringMisconception'
   | 'debt.sectionNeedsAttention' | 'debt.sectionAtRisk' | 'debt.atRiskSubtitle'
-  | 'dashboard.yourLearning' | 'dashboard.retention' | 'dashboard.independentMastery' | 'dashboard.notEnoughEvidence'
-  | 'dashboard.evidenceCoverage' | 'subjectDetail.evidenceCoverage' | 'subjectDetail.retention' | 'subjectDetail.independentMastery'
+  | 'dashboard.yourLearning' | 'dashboard.freshness' | 'dashboard.independentMastery' | 'dashboard.notEnoughEvidence'
+  | 'dashboard.evidenceCoverage' | 'subjectDetail.evidenceCoverage' | 'subjectDetail.freshness' | 'subjectDetail.independentMastery'
   | 'subjectDetail.activeLearningDebt' | 'subjectDetail.confidenceCalibration' | 'subjectDetail.atRisk'
   | 'subjectDetail.debtCriteriaTitle' | 'subjectDetail.debtCriteriaBody'
   | 'conceptDetail.debtProgressTitle' | 'conceptDetail.criterionMastery' | 'conceptDetail.criterionRecentScores'
@@ -172,6 +172,14 @@ export type MessageKey =
   // Phase 4 does or doesn't have a canonical decision, so this row
   // never implies it is itself a recommendation.
   | 'conceptDetail.otherWaysTitle'
+  // Step 6L-C2-B1: predicted-freshness disambiguation caption -- shown
+  // only next to the freshness metric, so a learner never mistakes a
+  // live time-based prediction for the separate, evidence-based
+  // "proven over time" retention dimension shown elsewhere on the page.
+  | 'conceptDetail.freshnessCaption'
+  // Step 6L-C2-B1: per-concept Subjects-list qualifier section is
+  // presented via the existing masteryStateLabel mapping -- no new
+  // key/enum needed for the qualifier text itself.
   | 'parent.title' | 'parent.subtitle' | 'parent.linkLabel' | 'parent.linkPlaceholder' | 'parent.linkButton'
   | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
   | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
@@ -375,12 +383,12 @@ const es: Messages = {
   'dashboard.conceptsAtRisk': 'Conceptos en riesgo',
   'dashboard.needReview': 'requieren repaso',
   'dashboard.yourLearning': 'Tu aprendizaje',
-  'dashboard.retention': 'Retención',
+  'dashboard.freshness': 'Frescura',
   'dashboard.independentMastery': 'Dominio independiente',
   'dashboard.notEnoughEvidence': 'Aún no hay suficiente evidencia',
   'dashboard.evidenceCoverage': 'Evidencia verificada',
   'subjectDetail.evidenceCoverage': 'evidencia verificada',
-  'subjectDetail.retention': 'retención',
+  'subjectDetail.freshness': 'frescura',
   'subjectDetail.independentMastery': 'dominio independiente',
   'subjectDetail.activeLearningDebt': 'en deuda de aprendizaje',
   'subjectDetail.confidenceCalibration': 'calibración de confianza',
@@ -505,6 +513,7 @@ const es: Messages = {
   'remediation.backToToday': 'Volver a Hoy',
   'conceptDetail.nextSectionTitle': 'Lo siguiente',
   'conceptDetail.otherWaysTitle': 'Otras formas de trabajar este concepto',
+  'conceptDetail.freshnessCaption': 'Una predicción según el tiempo transcurrido, no una prueba de que lo recuerdas.',
   'dashboard.avgMastery': 'Dominio promedio',
   'dashboard.avgMasterySubtitle': 'en todas tus materias',
   'dashboard.avgMasteryEmpty': 'sube contenido para empezar',
@@ -1123,12 +1132,12 @@ const en: Messages = {
   'dashboard.conceptsAtRisk': 'Concepts at risk',
   'dashboard.needReview': 'need review',
   'dashboard.yourLearning': 'Your learning',
-  'dashboard.retention': 'Retention',
+  'dashboard.freshness': 'Freshness',
   'dashboard.independentMastery': 'Independent mastery',
   'dashboard.notEnoughEvidence': 'Not enough evidence yet',
   'dashboard.evidenceCoverage': 'Evidence coverage',
   'subjectDetail.evidenceCoverage': 'evidence coverage',
-  'subjectDetail.retention': 'retention',
+  'subjectDetail.freshness': 'freshness',
   'subjectDetail.independentMastery': 'independent mastery',
   'subjectDetail.activeLearningDebt': 'in learning debt',
   'subjectDetail.confidenceCalibration': 'confidence calibration',
@@ -1253,6 +1262,7 @@ const en: Messages = {
   'remediation.backToToday': 'Back to Today',
   'conceptDetail.nextSectionTitle': 'What next',
   'conceptDetail.otherWaysTitle': 'Other ways to work on this concept',
+  'conceptDetail.freshnessCaption': 'A prediction based on time passed, not proof you still remember it.',
   'dashboard.avgMastery': 'Average mastery',
   'dashboard.avgMasterySubtitle': 'across all subjects',
   'dashboard.avgMasteryEmpty': 'upload content to get started',
@@ -1871,12 +1881,12 @@ const de: Messages = {
   'dashboard.conceptsAtRisk': 'Gefährdete Konzepte',
   'dashboard.needReview': 'müssen wiederholt werden',
   'dashboard.yourLearning': 'Dein Lernstand',
-  'dashboard.retention': 'Behalten',
+  'dashboard.freshness': 'Frische',
   'dashboard.independentMastery': 'Eigenständiges Verständnis',
   'dashboard.notEnoughEvidence': 'Noch nicht genug Daten',
   'dashboard.evidenceCoverage': 'Nachgewiesene Abdeckung',
   'subjectDetail.evidenceCoverage': 'nachgewiesene Abdeckung',
-  'subjectDetail.retention': 'Behalten',
+  'subjectDetail.freshness': 'Frische',
   'subjectDetail.independentMastery': 'eigenständiges Verständnis',
   'subjectDetail.activeLearningDebt': 'mit Lernrückstand',
   'subjectDetail.confidenceCalibration': 'Selbsteinschätzung',
@@ -2001,6 +2011,7 @@ const de: Messages = {
   'remediation.backToToday': 'Zurück zu Heute',
   'conceptDetail.nextSectionTitle': 'Als Nächstes',
   'conceptDetail.otherWaysTitle': 'Andere Wege, an diesem Konzept zu arbeiten',
+  'conceptDetail.freshnessCaption': 'Eine Vorhersage basierend auf der verstrichenen Zeit, kein Beweis, dass du dich noch erinnerst.',
   'dashboard.avgMastery': 'Durchschnittliche Beherrschung',
   'dashboard.avgMasterySubtitle': 'in allen Fächern',
   'dashboard.avgMasteryEmpty': 'Lade Inhalte hoch, um zu starten',
@@ -2619,12 +2630,12 @@ const fr: Messages = {
   'dashboard.conceptsAtRisk': 'Concepts à risque',
   'dashboard.needReview': 'à réviser',
   'dashboard.yourLearning': 'Ton apprentissage',
-  'dashboard.retention': 'Rétention',
+  'dashboard.freshness': 'Fraîcheur',
   'dashboard.independentMastery': 'Maîtrise autonome',
   'dashboard.notEnoughEvidence': "Pas encore assez de données",
   'dashboard.evidenceCoverage': 'Couverture des preuves',
   'subjectDetail.evidenceCoverage': 'couverture des preuves',
-  'subjectDetail.retention': 'rétention',
+  'subjectDetail.freshness': 'fraîcheur',
   'subjectDetail.independentMastery': 'maîtrise autonome',
   'subjectDetail.activeLearningDebt': 'en dette d’apprentissage',
   'subjectDetail.confidenceCalibration': 'calibration de la confiance',
@@ -2749,6 +2760,7 @@ const fr: Messages = {
   'remediation.backToToday': "Retour à Aujourd'hui",
   'conceptDetail.nextSectionTitle': 'La suite',
   'conceptDetail.otherWaysTitle': "D'autres façons de travailler ce concept",
+  'conceptDetail.freshnessCaption': "Une prédiction basée sur le temps écoulé, pas une preuve que tu t'en souviens encore.",
   'dashboard.avgMastery': 'Maîtrise moyenne',
   'dashboard.avgMasterySubtitle': 'toutes matières confondues',
   'dashboard.avgMasteryEmpty': 'importez du contenu pour commencer',
@@ -3367,12 +3379,12 @@ const pt: Messages = {
   'dashboard.conceptsAtRisk': 'Conceitos em risco',
   'dashboard.needReview': 'precisam de revisão',
   'dashboard.yourLearning': 'Seu aprendizado',
-  'dashboard.retention': 'Retenção',
+  'dashboard.freshness': 'Frescor',
   'dashboard.independentMastery': 'Domínio independente',
   'dashboard.notEnoughEvidence': 'Ainda não há evidência suficiente',
   'dashboard.evidenceCoverage': 'Cobertura de evidência',
   'subjectDetail.evidenceCoverage': 'cobertura de evidência',
-  'subjectDetail.retention': 'retenção',
+  'subjectDetail.freshness': 'frescor',
   'subjectDetail.independentMastery': 'domínio independente',
   'subjectDetail.activeLearningDebt': 'em dívida de aprendizagem',
   'subjectDetail.confidenceCalibration': 'calibração de confiança',
@@ -3497,6 +3509,7 @@ const pt: Messages = {
   'remediation.backToToday': 'Voltar para Hoje',
   'conceptDetail.nextSectionTitle': 'A seguir',
   'conceptDetail.otherWaysTitle': 'Outras formas de trabalhar este conceito',
+  'conceptDetail.freshnessCaption': 'Uma previsão baseada no tempo decorrido, não uma prova de que você ainda se lembra.',
   'dashboard.avgMastery': 'Domínio médio',
   'dashboard.avgMasterySubtitle': 'em todas as suas matérias',
   'dashboard.avgMasteryEmpty': 'envie conteúdo para começar',

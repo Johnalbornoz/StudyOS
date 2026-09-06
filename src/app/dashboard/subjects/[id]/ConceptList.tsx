@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplanationPanel';
+import type { MasteryState } from '@/services/knowledge-state.service';
+import { masteryStateLabel } from '@/lib/knowledge-state-labels';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -16,6 +18,16 @@ interface ConceptRow {
   conceptId: string;
   label: string;
   masteryScore: number;
+  /**
+   * Step 6L-C2-B1: the already-persisted, canonical MasteryState for
+   * this concept (knowledge-state.service.ts) -- null only when no
+   * knowledge-state row exists yet for it. Rendered via the existing,
+   * certified `masteryStateLabel` mapping (never a raw enum) as a
+   * small qualifier next to the bare mastery percentage, so a high
+   * mastery_score can never stand alone as if it meant "finished" --
+   * see the 6L-C2-A0 audit's Subjects-list finding.
+   */
+  masteryState: MasteryState | null;
 }
 
 export default function ConceptList({
@@ -97,11 +109,24 @@ export default function ConceptList({
             >
               {c.label}
             </Link>
-            <div className="mastery-row" style={{ flex: 1 }}>
-              <div className="mastery-bar">
-                <span className={masteryFillClass(c.masteryScore)} style={{ width: `${c.masteryScore}%` }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <div className="mastery-row">
+                <div className="mastery-bar">
+                  <span className={masteryFillClass(c.masteryScore)} style={{ width: `${c.masteryScore}%` }} />
+                </div>
+                <span className="mastery-pct tabular">{Math.round(c.masteryScore)}%</span>
               </div>
-              <span className="mastery-pct tabular">{Math.round(c.masteryScore)}%</span>
+              {/* Step 6L-C2-B1: a plain-language qualifier from the
+                  existing, certified MasteryState mapping -- never a
+                  raw enum, never a second percentage -- so a high
+                  mastery_score can't stand alone as "finished" when the
+                  gated classification says otherwise (e.g. still
+                  DEVELOPING despite a green 75%+ bar). Omitted entirely
+                  when no knowledge-state row exists yet -- never a
+                  fabricated qualifier. */}
+              {c.masteryState && (
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{masteryStateLabel(c.masteryState, t)}</span>
+              )}
             </div>
             <button
               type="button"

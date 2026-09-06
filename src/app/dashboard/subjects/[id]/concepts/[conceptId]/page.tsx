@@ -329,11 +329,23 @@ export default async function ConceptDetailPage({
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.mastery']}</div>
           <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>{formatMasteryPercent(tryMasteryScore(state.masteryScore, `concept detail ${conceptId}`))}</div>
         </div>
+        {/*
+         * Step 6L-C2-B1: this card shows the Phase 6 PREDICTED value
+         * (100 - forgettingRisk, a live, purely time-derived estimate --
+         * see memory-policy.ts::computeRetrievability). It must never be
+         * labeled "Retention" -- that word implies proof, and this
+         * number requires none; it can fall on its own with elapsed
+         * time and no learner activity at all. The OBSERVED, evidence-
+         * gated counterpart (demonstratedRetentionScore) is shown
+         * separately below, in the Knowledge State card's own "Lo
+         * recuerdo"/"I remember it" row -- never merged with this one.
+         */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.retention']}</div>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.freshness']}</div>
           <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
             {state.retention !== null ? `${Math.round(state.retention)}%` : t['dashboard.notEnoughEvidence']}
           </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{t['conceptDetail.freshnessCaption']}</div>
         </div>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.independentMastery']}</div>

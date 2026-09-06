@@ -7,6 +7,7 @@ import { getStudentMastery } from '@/services/mastery.service';
 import { getContentSources } from '@/services/content.service';
 import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
 import { getSubjectView } from '@/lib/learner-twin';
+import { getSubjectKnowledgeState, type MasteryState } from '@/services/knowledge-state.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
@@ -39,15 +40,23 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  // Four independent reads (none depends on another's result) -- run in
+  // Five independent reads (none depends on another's result) -- run in
   // parallel instead of sequentially. Each keeps its own fallback, so a
   // failure in one never blocks or breaks the others.
-  const [concepts, contentSources, hierarchy, subjectView] = await Promise.all([
+  const [concepts, contentSources, hierarchy, subjectView, knowledgeStates] = await Promise.all([
     getStudentMastery(studentId, id, locale, true).catch(() => []),
     getContentSources(studentId, id).catch(() => []),
     getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] })),
     getSubjectView(studentId, id).catch(() => null),
+    // Step 6L-C2-B1: ONE batch read for the whole subject (never one
+    // query per concept) -- the already-persisted, canonical
+    // MasteryState per concept, reused as-is via the existing
+    // masteryStateLabel mapping to qualify the bare mastery percentage
+    // below. Never recomputed, never a new threshold.
+    getSubjectKnowledgeState(studentId, id).catch(() => []),
   ]);
+  const masteryStates: Record<string, MasteryState> = {};
+  for (const row of knowledgeStates) masteryStates[row.conceptId] = row.masteryState;
   const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
   // Digital Learning Twin (Phase 1C) cognitive summary -- same shape/values
   // getSubjectLearnerModel always produced, now sourced from the canonical
@@ -85,7 +94,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             learnerModel.atRiskCount > 0) && (
             <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>
               {[
-                learnerModel.avgRetentionScore !== null ? `${t['subjectDetail.retention']} ${learnerModel.avgRetentionScore}%` : null,
+                learnerModel.avgRetentionScore !== null ? `${t['subjectDetail.freshness']} ${learnerModel.avgRetentionScore}%` : null,
                 learnerModel.avgIndependentMastery !== null
                   ? `${t['subjectDetail.independentMastery']} ${learnerModel.avgIndependentMastery}%`
                   : null,
@@ -149,7 +158,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           {t['subjectDetail.noConceptsBody']}
         </div>
       ) : (
-        <HierarchicalConceptList subjectId={id} studentId={studentId} locale={locale} hierarchy={hierarchy} />
+        <HierarchicalConceptList subjectId={id} studentId={studentId} locale={locale} hierarchy={hierarchy} masteryStates={masteryStates} />
       )}
 
       <UploadPanel subjectId={id} subjectName={subject.name} studentId={studentId} locale={locale} />
