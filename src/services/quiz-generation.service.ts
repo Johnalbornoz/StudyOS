@@ -19,7 +19,7 @@ import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
-import { buildTeachingConstraintsBlock, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
+import { buildTeachingConstraintsBlock, transferPreparationInstruction, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 
 export interface IBContext {
   programme: 'MYP' | 'DP';
@@ -1952,9 +1952,16 @@ export async function generateQuestionHint(
       : '';
 
   const adaptiveBlock = generationContext ? `\n\n${buildTeachingConstraintsBlock(generationContext)}` : '';
+  // Phase 7 Step 7E3: the ONE supported surface that consumes the
+  // teach-for-transfer advisory. Empty (and omitted) unless the Phase 4
+  // decision behind this hint carries a transfer signal/state. The
+  // CRITICAL no-answer-reveal rules below always follow it and are
+  // never weakened by it.
+  const transferPrepText = transferPreparationInstruction(generationContext?.transferPreparation);
+  const transferPrepBlock = transferPrepText ? `\n\n${transferPrepText}` : '';
 
   const systemPrompt = `You are a supportive tutor giving a HINT for a quiz question the student is actively trying to answer themselves.
-${adaptiveBlock}
+${adaptiveBlock}${transferPrepBlock}
 
 CRITICAL RULES -- never break these, regardless of any guidance above:
 - NEVER state or imply the correct answer, even partially.

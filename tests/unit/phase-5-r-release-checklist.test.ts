@@ -45,8 +45,8 @@ describe('release test 21 -- Teaching policy version unchanged unless the policy
 });
 
 describe('release test 22 -- every prompt this phase changed has a correctly bumped version', () => {
-  it('quiz.question_hint is v2 (system prompt now optionally carries adaptive constraints)', () => {
-    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v2');
+  it('quiz.question_hint is v3 (v2 adaptive constraints + v3 Phase 7 7E3 teach-for-transfer clause)', () => {
+    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v3');
   });
   it('explain.prompt_generation is v2', () => {
     expect(PROMPT_REGISTRY['explain.prompt_generation'].version).toBe('v2');

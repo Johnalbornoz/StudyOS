@@ -8,6 +8,7 @@ import {
   buildTeachingConstraintsBlock,
   supportLevelInstruction,
   toTeachingGenerationContext,
+  transferPreparationInstruction,
   type TeachingGenerationContext,
 } from '@/lib/adaptive-teaching-generation';
 import { computeTeachingIntent, type TeachingContextInputs } from '@/lib/adaptive-teaching-policy';
@@ -121,5 +122,46 @@ describe('toTeachingGenerationContext -- reuses TeachingIntent fields verbatim, 
     expect(generationContext.successCriteria).toBe(intent.successCriteria);
     // No field not already on TeachingIntent -- no new model.
     expect(Object.keys(generationContext).every((k) => k in intent)).toBe(true);
+  });
+});
+
+describe('7E3 -- transferPreparationInstruction (NOT part of buildTeachingConstraintsBlock)', () => {
+  it('undefined / all-false advisory -> empty string', () => {
+    expect(transferPreparationInstruction(undefined)).toBe('');
+    expect(transferPreparationInstruction({ varyContext: false, varyRepresentation: false, fadeScaffold: false, encourageRecognition: false })).toBe('');
+  });
+
+  it('includes a clause per set flag and always ends with the no-reveal rule', () => {
+    const text = transferPreparationInstruction({ varyContext: true, varyRepresentation: true, fadeScaffold: true, encourageRecognition: true });
+    expect(text).toMatch(/TEACH-FOR-TRANSFER/);
+    expect(text).toMatch(/context different from where the concept was first taught/);
+    expect(text).toMatch(/different representation/);
+    expect(text).toMatch(/recognising WHEN this concept applies/);
+    expect(text).toMatch(/least help that could unblock them/);
+    expect(text).toMatch(/Never state or reveal the answer\.$/);
+  });
+
+  it('only the set flags contribute', () => {
+    const text = transferPreparationInstruction({ varyContext: false, varyRepresentation: false, fadeScaffold: false, encourageRecognition: true });
+    expect(text).toMatch(/recognising WHEN this concept applies/);
+    expect(text).not.toMatch(/different representation/);
+  });
+
+  it('buildTeachingConstraintsBlock never contains the teach-for-transfer clause (single-surface boundary)', () => {
+    const ctx = baseCtx({ transferPreparation: { varyContext: true, varyRepresentation: true, fadeScaffold: true, encourageRecognition: true } });
+    expect(buildTeachingConstraintsBlock(ctx)).not.toMatch(/TEACH-FOR-TRANSFER/);
+  });
+
+  it('toTeachingGenerationContext carries transferPreparation through verbatim', () => {
+    const inputs: TeachingContextInputs = { calibrationLabel: 'WELL_CALIBRATED', independentMastery: 80, masteryScore: 85, helpDependencyFlag: false, cognitiveLevel: null, previousStrategies: [] };
+    const sig1: LearningSignal = { type: 'FAR_TRANSFER_GAP', source: 'test', conceptId: 'c1', subjectId: 's1', metadata: {} } as LearningSignal;
+    const base: LearningSignal = { type: 'LOW_UNDERSTANDING', source: 'test', conceptId: 'c1', subjectId: 's1', metadata: {} } as LearningSignal;
+    const decision: LearningDecision = {
+      actionConceptId: 'c1', subjectId: 's1', targetConceptIds: [], signals: [base, sig1], primarySignal: base,
+      learningState: 'DEVELOPING', targetDimension: 'UNDERSTANDING', activityType: 'PRACTICE', pedagogicalPriority: 'MEDIUM',
+      temporalUrgency: null, priorityScore: 1000, reasonCode: 'LOW_UNDERSTANDING', facts: [], dueAt: null, policyVersion: 3,
+    };
+    const intent = computeTeachingIntent('s1', decision, inputs);
+    expect(toTeachingGenerationContext(intent).transferPreparation).toEqual(intent.transferPreparation);
   });
 });

@@ -43,6 +43,12 @@ import type { ErrorType } from '@/services/error-intelligence.service';
  * (adaptive-learning-policy.ts) -- any change to barrier classification,
  * strategy selection, support-level thresholds, or explanation-depth
  * rules bumps this, documented here, never silent.
+ *
+ * Phase 7 Step 7E3 does NOT bump this: `transferPreparation` is a new
+ * ADVISORY field derived from the decision's own transfer signal/state,
+ * additively appended to TeachingIntent. It changes none of the
+ * versioned rules above -- barrier / strategy / support / depth for
+ * every existing input are byte-identical.
  */
 export const ADAPTIVE_TEACHING_POLICY_VERSION = 1;
 
@@ -143,7 +149,76 @@ export interface TeachingIntent {
   avoidStrategies: TutorStrategy[];
   previousStrategies: TutorStrategy[];
   successCriteria: string;
+  /**
+   * Phase 7 Step 7E3: advisory for a SUPPORTED practice / remediation
+   * context that is building toward an eventual INDEPENDENT transfer
+   * proof. Every flag is false when the current context carries no
+   * transfer signal at all. It never applies to the transfer PROOF
+   * itself (that stays supportLevel INDEPENDENT, no AI), and consuming
+   * it is wired into exactly ONE supported surface (quiz hint
+   * generation -- PRACTICE evidence).
+   */
+  transferPreparation: TransferPreparationAdvisory;
   policyVersion: number;
+}
+
+/**
+ * Phase 7 Step 7E3: four deterministic teach-for-transfer nudges.
+ * `varyRepresentation` is "show it more than one way", the OPPOSITE of
+ * classifying a preferred modality -- so it does not cross the
+ * learning-style line this file's header forbids.
+ */
+export interface TransferPreparationAdvisory {
+  /** Practice this concept across more than one surface context. */
+  varyContext: boolean;
+  /** Present it in more than one representation (equation / graph / table / prose). */
+  varyRepresentation: boolean;
+  /** Withdraw worked-example / hint scaffolding faster than the support level alone would. */
+  fadeScaffold: boolean;
+  /** Prompt the learner to notice WHEN the concept applies, not only how to execute it. */
+  encourageRecognition: boolean;
+}
+
+const NO_TRANSFER_PREPARATION: TransferPreparationAdvisory = {
+  varyContext: false,
+  varyRepresentation: false,
+  fadeScaffold: false,
+  encourageRecognition: false,
+};
+
+const TRANSFER_PREP_SIGNAL_TYPES: ReadonlySet<LearningSignalType> = new Set([
+  'TRANSFER_REQUIRED',
+  'NEAR_TRANSFER_GAP',
+  'FAR_TRANSFER_GAP',
+  'TRANSFER_FRAGILE',
+]);
+
+/**
+ * Pure. Fires when the current decision carries a transfer signal or
+ * state (a TRANSFER_GAP learning state, a TRANSFER activity, or any of
+ * the Phase 4 transfer signals). `fadeScaffold` additionally requires
+ * that the learner is not already in heavy support -- you do not fade
+ * scaffolds out from under a misconception / prerequisite repair.
+ */
+export function computeTransferPreparation(
+  decision: LearningDecision,
+  barrier: PrimaryBarrier,
+  supportLevel: SupportLevel,
+): TransferPreparationAdvisory {
+  // Read-only destructure -- this function never writes a decision field.
+  const { learningState, activityType, signals } = decision;
+  const applies =
+    barrier === 'TRANSFER_GAP' ||
+    learningState === 'TRANSFER_GAP' ||
+    activityType === 'TRANSFER' ||
+    signals.some((s) => TRANSFER_PREP_SIGNAL_TYPES.has(s.type));
+  if (!applies) return NO_TRANSFER_PREPARATION;
+  return {
+    varyContext: true,
+    varyRepresentation: true,
+    encourageRecognition: true,
+    fadeScaffold: supportLevel === 'PARTIAL_SUPPORT' || supportLevel === 'MINIMAL_SUPPORT' || supportLevel === 'INDEPENDENT',
+  };
 }
 
 /**
@@ -347,6 +422,7 @@ const SUCCESS_CRITERIA: Record<PrimaryBarrier, string> = {
 export function computeTeachingIntent(studentId: string, decision: LearningDecision, inputs: TeachingContextInputs): TeachingIntent {
   const barrier = computePrimaryBarrier(decision, inputs);
   const strategy = selectTeachingStrategy(barrier, inputs);
+  const supportLevel = computeSupportLevel(decision, barrier, inputs);
   return {
     studentId,
     subjectId: decision.subjectId,
@@ -359,13 +435,14 @@ export function computeTeachingIntent(studentId: string, decision: LearningDecis
     primaryBarrier: barrier,
     misconceptionCodes: extractMisconceptionCodes(decision),
     prerequisiteConceptIds: decision.targetConceptIds,
-    supportLevel: computeSupportLevel(decision, barrier, inputs),
+    supportLevel,
     explanationDepth: computeExplanationDepth(decision, barrier, inputs),
     reasoningDemand: inputs.cognitiveLevel,
     strategy,
     avoidStrategies: computeAvoidStrategies(inputs.previousStrategies),
     previousStrategies: inputs.previousStrategies,
     successCriteria: SUCCESS_CRITERIA[barrier],
+    transferPreparation: computeTransferPreparation(decision, barrier, supportLevel),
     policyVersion: ADAPTIVE_TEACHING_POLICY_VERSION,
   };
 }

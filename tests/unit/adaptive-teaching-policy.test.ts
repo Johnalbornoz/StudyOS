@@ -292,3 +292,51 @@ describe('13. AI governance -- this file never generates content or calls a prov
     expect(result).not.toBeInstanceOf(Promise);
   });
 });
+
+describe('7E3 -- computeTransferPreparation (via computeTeachingIntent)', () => {
+  it('no transfer signal / state -> every flag false', () => {
+    const intent = computeTeachingIntent('s1', decision(), NEUTRAL_INPUTS);
+    expect(intent.transferPreparation).toEqual({
+      varyContext: false, varyRepresentation: false, fadeScaffold: false, encourageRecognition: false,
+    });
+  });
+
+  it('a TRANSFER_REQUIRED signal on a PRACTICE decision -> prep applies', () => {
+    const s = sig({ type: 'TRANSFER_REQUIRED' });
+    const intent = computeTeachingIntent('s1', decision({ signals: [sig(), s] }), NEUTRAL_INPUTS);
+    expect(intent.transferPreparation.varyContext).toBe(true);
+    expect(intent.transferPreparation.varyRepresentation).toBe(true);
+    expect(intent.transferPreparation.encourageRecognition).toBe(true);
+  });
+
+  it('learningState TRANSFER_GAP -> prep applies even with no explicit transfer signal', () => {
+    const intent = computeTeachingIntent('s1', decision({ learningState: 'TRANSFER_GAP' as LearningState }), NEUTRAL_INPUTS);
+    expect(intent.transferPreparation.varyContext).toBe(true);
+  });
+
+  it('fadeScaffold is gated on support level: false under HIGH_SUPPORT, true under lighter support', () => {
+    const far = sig({ type: 'FAR_TRANSFER_GAP' });
+    const heavy = computeTeachingIntent(
+      's1',
+      decision({ learningState: 'MISCONCEPTION_BLOCKED', reasonCode: 'CRITICAL_MISCONCEPTION', signals: [sig({ type: 'CRITICAL_MISCONCEPTION' }), far] }),
+      NEUTRAL_INPUTS,
+    );
+    expect(heavy.supportLevel).toBe('HIGH_SUPPORT');
+    expect(heavy.transferPreparation.fadeScaffold).toBe(false);
+
+    const light = computeTeachingIntent('s1', decision({ signals: [sig(), far] }), NEUTRAL_INPUTS);
+    expect(['PARTIAL_SUPPORT', 'MINIMAL_SUPPORT', 'INDEPENDENT']).toContain(light.supportLevel);
+    expect(light.transferPreparation.fadeScaffold).toBe(true);
+  });
+
+  it('is deterministic', () => {
+    const d = decision({ signals: [sig(), sig({ type: 'TRANSFER_FRAGILE' })] });
+    const a = computeTeachingIntent('s1', d, NEUTRAL_INPUTS).transferPreparation;
+    const b = computeTeachingIntent('s1', d, NEUTRAL_INPUTS).transferPreparation;
+    expect(a).toEqual(b);
+  });
+
+  it('does not bump ADAPTIVE_TEACHING_POLICY_VERSION', () => {
+    expect(ADAPTIVE_TEACHING_POLICY_VERSION).toBe(1);
+  });
+});

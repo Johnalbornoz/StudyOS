@@ -57,11 +57,18 @@ export const PROMPT_REGISTRY = {
   }),
   'quiz.question_hint': definePrompt({
     id: 'quiz.question_hint',
-    version: 'v2',
+    // Phase 7 (7E3): v3 adds an optional TEACH-FOR-TRANSFER clause after
+    // the adaptive block -- fires only when the Phase 4 decision behind
+    // the hint carries a transfer signal/state, and nudges toward
+    // varied context / representation / recognition / lighter
+    // scaffolding. The CRITICAL no-answer-reveal rules still follow it
+    // and are never weakened. Identical to v2 when no transfer prep
+    // applies; identical to v1 when no adaptive context is supplied.
+    version: 'v3',
     capability: 'OTHER',
     service: 'quiz-generation.service.ts:generateQuestionHint',
     description:
-      'Generates 2-3 non-revealing hints for a quiz question the student is actively answering. v2 (Phase 5-R): optionally accepts an adaptive teaching-constraints block (support level/barrier/strategy) that shapes hint explicitness -- the CRITICAL no-answer-reveal rules are restated after it and are never weakened by it. Behavior is identical to v1 when no adaptive context is supplied.',
+      'Generates 2-3 non-revealing hints for a quiz question the student is actively answering. v2 (Phase 5-R): optional adaptive teaching-constraints block. v3 (Phase 7 7E3): optional teach-for-transfer clause on supported practice building toward an independent transfer task. The CRITICAL no-answer-reveal rules are restated last and never weakened.',
   }),
   'misconception.classification': definePrompt({
     id: 'misconception.classification',

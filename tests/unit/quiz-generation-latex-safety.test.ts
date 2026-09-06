@@ -296,9 +296,12 @@ describe('prompt version provenance (Step 18 Section 8): every QUESTION_GENERATI
     for (const call of executeAIMock.mock.calls) expect(call[0].promptVersion).toBe('v3');
   });
 
-  it('unrelated prompts (grading, hints, and others outside QUESTION_GENERATION) are unchanged -- verified against the real registry, not re-derived here', () => {
+  it('QUESTION_GENERATION-unrelated prompts are not touched by Step 18 (grading / misconception stay v1; quiz.question_hint moves independently, Phase 5-R then Phase 7 7E3)', () => {
     expect(PROMPT_REGISTRY['quiz.free_text_grading'].version).toBe('v1');
-    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v2');
+    // quiz.question_hint is NOT a QUESTION_GENERATION prompt -- its
+    // version is owned by the adaptive-teaching work (v2 Phase 5-R, v3
+    // Phase 7 7E3), never by this Step 18 LaTeX-safety change.
+    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v3');
     expect(PROMPT_REGISTRY['misconception.classification'].version).toBe('v1');
   });
 });

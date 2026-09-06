@@ -81,3 +81,45 @@ describe('generateQuestionHint -- backward compatible with no adaptive context (
     expect(params.system).toMatch(/NEVER state or imply the correct answer/);
   });
 });
+
+describe('7E3 -- teach-for-transfer clause on the ONE supported surface (quiz hints)', () => {
+  const neutral: TeachingContextInputs = {
+    calibrationLabel: 'WELL_CALIBRATED', independentMastery: 85, masteryScore: 88, helpDependencyFlag: false, cognitiveLevel: null, previousStrategies: [],
+  };
+
+  it('a PRACTICE decision carrying a FAR_TRANSFER_GAP signal -> the hint prompt gets the TEACH-FOR-TRANSFER clause', async () => {
+    const far = sig({ type: 'FAR_TRANSFER_GAP', source: 'transfer-read.service' });
+    const d = decision({ signals: [sig(), far], primarySignal: sig() });
+    const intent = computeTeachingIntent('s1', d, neutral);
+    expect(intent.transferPreparation.varyContext).toBe(true);
+    await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
+    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    expect(params.system).toMatch(/TEACH-FOR-TRANSFER/);
+    expect(params.system).toMatch(/recognising WHEN this concept applies/);
+    // no-answer-reveal rules still present and last
+    expect(params.system).toMatch(/NEVER state or imply the correct answer/);
+    expect(params.system.indexOf('TEACH-FOR-TRANSFER')).toBeLessThan(params.system.indexOf('NEVER state or imply'));
+  });
+
+  it('a plain LOW_UNDERSTANDING PRACTICE decision (no transfer signal) -> NO teach-for-transfer clause', async () => {
+    const intent = computeTeachingIntent('s1', decision(), neutral);
+    expect(intent.transferPreparation.varyContext).toBe(false);
+    await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
+    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    expect(params.system).not.toMatch(/TEACH-FOR-TRANSFER/);
+  });
+
+  it('fadeScaffold clause appears only when the learner is not in heavy support', async () => {
+    const far = sig({ type: 'FAR_TRANSFER_GAP', source: 'transfer-read.service' });
+    // heavy support: a misconception barrier -> HIGH_SUPPORT -> fadeScaffold false
+    const heavy = computeTeachingIntent(
+      's1',
+      decision({ learningState: 'MISCONCEPTION_BLOCKED', reasonCode: 'CRITICAL_MISCONCEPTION', signals: [sig({ type: 'CRITICAL_MISCONCEPTION' }), far] }),
+      neutral,
+    );
+    expect(heavy.transferPreparation.fadeScaffold).toBe(false);
+    // light support
+    const light = computeTeachingIntent('s1', decision({ signals: [sig(), far] }), neutral);
+    expect(light.transferPreparation.fadeScaffold).toBe(true);
+  });
+});

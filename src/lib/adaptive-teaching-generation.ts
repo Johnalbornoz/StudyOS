@@ -13,7 +13,7 @@
  * re-describing each `TutorStrategy` value a second time.
  */
 
-import type { TeachingIntent, SupportLevel } from './adaptive-teaching-policy';
+import type { TeachingIntent, SupportLevel, TransferPreparationAdvisory } from './adaptive-teaching-policy';
 import { strategyInstruction, type TutorStrategy } from '@/services/tutor-strategy.service';
 
 /** Section 4: the exact fields a content generator needs -- a Pick of TeachingIntent, never a parallel learner-state model. */
@@ -29,7 +29,13 @@ export type TeachingGenerationContext = Pick<
   | 'prerequisiteConceptIds'
   | 'avoidStrategies'
   | 'successCriteria'
->;
+> &
+  // Phase 7 Step 7E3: carried on the context so a generator CAN read
+  // it, but only ONE supported surface (quiz hint generation) actually
+  // does -- buildTeachingConstraintsBlock deliberately does not.
+  // Optional so pre-7E3 call sites / fixtures stay valid; production
+  // always populates it via toTeachingGenerationContext.
+  Partial<Pick<TeachingIntent, 'transferPreparation'>>;
 
 export function toTeachingGenerationContext(intent: TeachingIntent): TeachingGenerationContext {
   return {
@@ -43,7 +49,27 @@ export function toTeachingGenerationContext(intent: TeachingIntent): TeachingGen
     prerequisiteConceptIds: intent.prerequisiteConceptIds,
     avoidStrategies: intent.avoidStrategies,
     successCriteria: intent.successCriteria,
+    transferPreparation: intent.transferPreparation,
   };
+}
+
+/**
+ * Phase 7 Step 7E3: the teach-for-transfer clause. Empty string when
+ * no flag is set (the caller filters it out). NOT part of
+ * buildTeachingConstraintsBlock -- it is added by exactly one supported
+ * surface (quiz-generation.service.ts::generateQuestionHint) so that
+ * teach-for-transfer prep never leaks into the tutor / Explain & Defend
+ * surfaces and never touches the INDEPENDENT transfer proof itself.
+ */
+export function transferPreparationInstruction(prep: TransferPreparationAdvisory | undefined): string {
+  if (!prep) return '';
+  const parts: string[] = [];
+  if (prep.varyContext) parts.push('frame the hint around a context different from where the concept was first taught');
+  if (prep.varyRepresentation) parts.push('where natural, refer to a different representation (equation / graph / table / prose) than the question uses');
+  if (prep.encourageRecognition) parts.push('nudge the student toward recognising WHEN this concept applies, not only how to execute it');
+  if (prep.fadeScaffold) parts.push('keep the hint lighter than usual -- give the least help that could unblock them');
+  if (parts.length === 0) return '';
+  return `TEACH-FOR-TRANSFER (this is supported practice building toward an independent transfer task): ${parts.join('; ')}. Never state or reveal the answer.`;
 }
 
 /**
