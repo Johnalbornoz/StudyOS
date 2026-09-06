@@ -402,4 +402,17 @@ describe('7D3 -- submit route trusted task instance', () => {
     expect(res.status ?? 200).toBe(200);
     expect(updateMasteryMock.mock.calls[0][0].metadata.noveltyValidationPassed).toBe(false);
   });
+
+  it('7F1: an INCORRECT transfer attempt never auto-creates a misconception', async () => {
+    withRecentEvidence([]);
+    setTaskInstance(TASK_B, instanceRow());
+    evaluateTransferResponseMock.mockResolvedValueOnce({ result: 'incorrect', feedback: 'not quite', aiExecution: { aiExecutionId: 'ai-x' } });
+    const { res } = await submit({ transferTaskId: TASK_B });
+    expect(res.status ?? 200).toBe(200);
+    const call = updateMasteryMock.mock.calls[0][0];
+    expect(call.misconceptionObservation).toBeUndefined();
+    expect(call.evidence.result).toBe('incorrect');
+    // no student_misconceptions write anywhere on this path
+    expect(dbQueryMock.mock.calls.some((c) => /student_misconceptions/i.test(String(c[0])))).toBe(false);
+  });
 });

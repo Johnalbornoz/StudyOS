@@ -44,7 +44,10 @@ describe('canonical next-action source (Part 2) -- Phase 4 LearningDecision is t
     // all -- it is the direct, single return value of the canonical
     // call above).
     expect(source).not.toMatch(/nextDecision\s*=\s*(?!await getBestLearningDecisionForConcept)/);
-    expect(source).toMatch(/const \[conceptView, evidence, activeDebt, history, transferScore, knowledgeState, nextDecision\]/);
+    // Landmark: nextDecision is the last element of the canonical
+    // Promise.all destructure. (Phase 7 7F1 swapped the raw
+    // `transferScore` element for the learner-safe `transferDepth`.)
+    expect(source).toMatch(/const \[conceptView, evidence, activeDebt, history, transferDepth, knowledgeState, nextDecision\]/);
   });
 
   it('the section is present but does not appear inside the pre-existing primaryCTA heuristic block', () => {

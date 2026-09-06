@@ -131,6 +131,9 @@ export type MessageKey =
   | 'dashboard.confidenceCalibration'
   | 'conceptDetail.yourLearning' | 'conceptDetail.mastery' | 'conceptDetail.confidence' | 'conceptDetail.evidenceStrength'
   | 'conceptDetail.transfer'
+  // Phase 7 Step 7F1: learner-safe transfer progression phrases (see transfer-progression-labels.ts).
+  | 'conceptDetail.transferDepth.none' | 'conceptDetail.transferDepth.nearDemonstrated'
+  | 'conceptDetail.transferDepth.generalized' | 'conceptDetail.transferDepth.robust'
   | 'knowledgeState.sectionTitle' | 'knowledgeState.understanding' | 'knowledgeState.independence' | 'knowledgeState.application' | 'knowledgeState.retention' | 'knowledgeState.transfer' | 'knowledgeState.pendingValidation' | 'knowledgeState.stateUnknown' | 'knowledgeState.stateLearning' | 'knowledgeState.stateDeveloping' | 'knowledgeState.stateProvisional' | 'knowledgeState.stateValidated' | 'knowledgeState.stateAtRisk' | 'knowledgeState.stateInterventionRequired'
   | 'conceptDetail.evidenceStrengthLow' | 'conceptDetail.evidenceStrengthMedium' | 'conceptDetail.evidenceStrengthHigh'
   | 'conceptDetail.lastDemonstrated' | 'conceptDetail.nextReview' | 'conceptDetail.whyStudyusThinks'
@@ -226,6 +229,8 @@ export type MessageKey =
   | 'cognitive.explainTitle' | 'cognitive.explainPlaceholder' | 'cognitive.submitAnswer' | 'cognitive.feedbackTitle'
   | 'cognitive.continueButton' | 'cognitive.transferTitle' | 'cognitive.transferContextLabel' | 'cognitive.generating'
   | 'cognitive.resultCorrect' | 'cognitive.resultPartial' | 'cognitive.resultIncorrect'
+  // Phase 7 Step 7F1: transfer-scoped, non-verdict copy for a not-correct stretch attempt.
+  | 'cognitive.transferResultIncorrect' | 'cognitive.transferAttemptNote'
   | 'quiz.maxQuestionsLabel' | 'quiz.maxQuestionsHint' | 'quiz.startQuiz'
   | 'quiz.selectAllThatApply' | 'quiz.typeAnswer' | 'quiz.matchInstructions' | 'quiz.orderInstructions' | 'quiz.classifyInstructions'
   | 'mathToolbar.categoriesLabel' | 'mathToolbar.categoryBasic' | 'mathToolbar.categoryStructures' | 'mathToolbar.categoryGreek' | 'mathToolbar.categoryPhysics' | 'mathToolbar.categoryMore' | 'mathToolbar.insert' | 'mathToolbar.plus' | 'mathToolbar.minus' | 'mathToolbar.times' | 'mathToolbar.divide' | 'mathToolbar.equals' | 'mathToolbar.notEquals' | 'mathToolbar.plusMinus' | 'mathToolbar.approx' | 'mathToolbar.lessThan' | 'mathToolbar.greaterThan' | 'mathToolbar.lessOrEqual' | 'mathToolbar.greaterOrEqual' | 'mathToolbar.square' | 'mathToolbar.exponent' | 'mathToolbar.subscript' | 'mathToolbar.fraction' | 'mathToolbar.squareRoot' | 'mathToolbar.nthRoot' | 'mathToolbar.parentheses' | 'mathToolbar.absoluteValue' | 'mathToolbar.pi' | 'mathToolbar.theta' | 'mathToolbar.alpha' | 'mathToolbar.beta' | 'mathToolbar.gamma' | 'mathToolbar.lambda' | 'mathToolbar.mu' | 'mathToolbar.rho' | 'mathToolbar.sigma' | 'mathToolbar.phi' | 'mathToolbar.omega' | 'mathToolbar.bigOmega' | 'mathToolbar.delta' | 'mathToolbar.vector' | 'mathToolbar.arrow' | 'mathToolbar.degree' | 'mathToolbar.dotProduct' | 'mathToolbar.sum' | 'mathToolbar.integral' | 'mathToolbar.infinity' | 'mathToolbar.partial'
@@ -430,6 +435,10 @@ const es: Messages = {
   'conceptDetail.mastery': 'Dominio',
   'conceptDetail.confidence': 'Confianza',
   'conceptDetail.transfer': 'Transferencia',
+  'conceptDetail.transferDepth.none': 'Aún no lo has aplicado en una situación nueva',
+  'conceptDetail.transferDepth.nearDemonstrated': 'Empezando a aplicarlo en situaciones nuevas',
+  'conceptDetail.transferDepth.generalized': 'Lo aplicas en situaciones diferentes',
+  'conceptDetail.transferDepth.robust': 'Lo aplicas con seguridad en situaciones desconocidas',
   'knowledgeState.sectionTitle': 'Dominio del concepto',
   'knowledgeState.understanding': 'Lo entiendo',
   'knowledgeState.independence': 'Lo hago solo',
@@ -906,6 +915,8 @@ const es: Messages = {
   'cognitive.resultCorrect': 'Correcto',
   'cognitive.resultPartial': 'Parcial',
   'cognitive.resultIncorrect': 'Incorrecto',
+  'cognitive.transferResultIncorrect': 'Esta vez no del todo',
+  'cognitive.transferAttemptNote': 'Aplicar una idea en una situación desconocida es difícil: este intento se trata de ese salto y no cambia lo que ya has demostrado que sabes sobre el concepto.',
   'quiz.maxQuestionsLabel': 'Máximo de preguntas',
   'quiz.maxQuestionsHint': 'La IA decide cuántas preguntas generar según el contenido disponible, sin superar este máximo.',
   'quiz.startQuiz': 'Comenzar',
@@ -1187,6 +1198,10 @@ const en: Messages = {
   'conceptDetail.mastery': 'Mastery',
   'conceptDetail.confidence': 'Confidence',
   'conceptDetail.transfer': 'Transfer',
+  'conceptDetail.transferDepth.none': 'Not yet applied in a new situation',
+  'conceptDetail.transferDepth.nearDemonstrated': 'Starting to apply it in new situations',
+  'conceptDetail.transferDepth.generalized': 'Applying it across different situations',
+  'conceptDetail.transferDepth.robust': 'Applies it reliably in unfamiliar situations',
   'knowledgeState.sectionTitle': 'Concept mastery',
   'knowledgeState.understanding': 'I understand it',
   'knowledgeState.independence': 'I can do it alone',
@@ -1663,6 +1678,8 @@ const en: Messages = {
   'cognitive.resultCorrect': 'Correct',
   'cognitive.resultPartial': 'Partial',
   'cognitive.resultIncorrect': 'Incorrect',
+  'cognitive.transferResultIncorrect': 'Not quite this time',
+  'cognitive.transferAttemptNote': 'Applying an idea in an unfamiliar situation is hard — this attempt is about that stretch, and it doesn’t change what you’ve already shown you know about the concept.',
   'quiz.maxQuestionsLabel': 'Maximum questions',
   'quiz.maxQuestionsHint': 'The AI decides how many questions to generate based on the available content, never exceeding this maximum.',
   'quiz.startQuiz': 'Start',
@@ -1944,6 +1961,10 @@ const de: Messages = {
   'conceptDetail.mastery': 'Beherrschung',
   'conceptDetail.confidence': 'Selbstvertrauen',
   'conceptDetail.transfer': 'Übertragung',
+  'conceptDetail.transferDepth.none': 'Noch nicht in einer neuen Situation angewendet',
+  'conceptDetail.transferDepth.nearDemonstrated': 'Beginnt, es in neuen Situationen anzuwenden',
+  'conceptDetail.transferDepth.generalized': 'Wendet es in verschiedenen Situationen an',
+  'conceptDetail.transferDepth.robust': 'Wendet es zuverlässig in unbekannten Situationen an',
   'knowledgeState.sectionTitle': 'Konzeptbeherrschung',
   'knowledgeState.understanding': 'Ich verstehe es',
   'knowledgeState.independence': 'Ich kann es allein',
@@ -2420,6 +2441,8 @@ const de: Messages = {
   'cognitive.resultCorrect': 'Richtig',
   'cognitive.resultPartial': 'Teilweise',
   'cognitive.resultIncorrect': 'Falsch',
+  'cognitive.transferResultIncorrect': 'Diesmal noch nicht ganz',
+  'cognitive.transferAttemptNote': 'Eine Idee in einer unbekannten Situation anzuwenden ist schwer – bei diesem Versuch geht es um genau diesen Schritt, und er ändert nichts daran, was du beim Konzept selbst bereits gezeigt hast.',
   'quiz.maxQuestionsLabel': 'Maximale Anzahl Fragen',
   'quiz.maxQuestionsHint': 'Die KI entscheidet je nach verfügbarem Inhalt, wie viele Fragen sie erstellt, ohne dieses Maximum zu überschreiten.',
   'quiz.startQuiz': 'Starten',
@@ -2701,6 +2724,10 @@ const fr: Messages = {
   'conceptDetail.mastery': 'Maîtrise',
   'conceptDetail.confidence': 'Confiance',
   'conceptDetail.transfer': 'Transfert',
+  'conceptDetail.transferDepth.none': 'Pas encore appliqué dans une situation nouvelle',
+  'conceptDetail.transferDepth.nearDemonstrated': 'Commence à l’appliquer dans des situations nouvelles',
+  'conceptDetail.transferDepth.generalized': 'L’applique dans des situations différentes',
+  'conceptDetail.transferDepth.robust': 'L’applique avec assurance dans des situations inconnues',
   'knowledgeState.sectionTitle': 'Maîtrise du concept',
   'knowledgeState.understanding': 'Je le comprends',
   'knowledgeState.independence': 'Je le fais seul(e)',
@@ -3177,6 +3204,8 @@ const fr: Messages = {
   'cognitive.resultCorrect': 'Correct',
   'cognitive.resultPartial': 'Partiel',
   'cognitive.resultIncorrect': 'Incorrect',
+  'cognitive.transferResultIncorrect': 'Pas tout à fait cette fois',
+  'cognitive.transferAttemptNote': 'Appliquer une idée dans une situation inconnue est difficile : cette tentative porte sur cet effort, et elle ne change rien à ce que tu as déjà démontré sur le concept lui-même.',
   'quiz.maxQuestionsLabel': 'Nombre maximum de questions',
   'quiz.maxQuestionsHint': "L'IA décide du nombre de questions à générer selon le contenu disponible, sans dépasser ce maximum.",
   'quiz.startQuiz': 'Commencer',
@@ -3458,6 +3487,10 @@ const pt: Messages = {
   'conceptDetail.mastery': 'Domínio',
   'conceptDetail.confidence': 'Confiança',
   'conceptDetail.transfer': 'Transferência',
+  'conceptDetail.transferDepth.none': 'Ainda não aplicado em uma situação nova',
+  'conceptDetail.transferDepth.nearDemonstrated': 'Começando a aplicá-lo em situações novas',
+  'conceptDetail.transferDepth.generalized': 'Aplica-o em situações diferentes',
+  'conceptDetail.transferDepth.robust': 'Aplica-o com segurança em situações desconhecidas',
   'knowledgeState.sectionTitle': 'Domínio do conceito',
   'knowledgeState.understanding': 'Eu entendo',
   'knowledgeState.independence': 'Eu faço sozinho(a)',
@@ -3934,6 +3967,8 @@ const pt: Messages = {
   'cognitive.resultCorrect': 'Correto',
   'cognitive.resultPartial': 'Parcial',
   'cognitive.resultIncorrect': 'Incorreto',
+  'cognitive.transferResultIncorrect': 'Desta vez não foi bem',
+  'cognitive.transferAttemptNote': 'Aplicar uma ideia em uma situação desconhecida é difícil — esta tentativa é sobre esse salto e não muda o que você já mostrou que sabe sobre o conceito.',
   'quiz.maxQuestionsLabel': 'Máximo de perguntas',
   'quiz.maxQuestionsHint': 'A IA decide quantas perguntas gerar de acordo com o conteúdo disponível, sem ultrapassar este máximo.',
   'quiz.startQuiz': 'Começar',

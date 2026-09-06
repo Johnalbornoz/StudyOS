@@ -108,8 +108,20 @@ export default function TransferPage() {
     );
   }
 
-  const resultLabel = result ? (result.result === 'correct' ? t['cognitive.resultCorrect'] : result.result === 'partial' ? t['cognitive.resultPartial'] : t['cognitive.resultIncorrect']) : '';
-  const resultColor = result ? (result.result === 'correct' ? 'var(--brand)' : result.result === 'partial' ? 'var(--warning)' : 'var(--error)') : undefined;
+  // Phase 7 (7F1): a not-correct transfer attempt is a STRETCH attempt,
+  // not a verdict on whether the learner knows the concept. Use gentle,
+  // transfer-scoped copy -- never "incorrect / you don't know this" --
+  // and never imply a misconception (none is recorded server-side for a
+  // transfer attempt).
+  const resultLabel = result
+    ? result.result === 'correct'
+      ? t['cognitive.resultCorrect']
+      : result.result === 'partial'
+        ? t['cognitive.resultPartial']
+        : t['cognitive.transferResultIncorrect']
+    : '';
+  const resultColor = result ? (result.result === 'correct' ? 'var(--brand)' : result.result === 'partial' ? 'var(--warning)' : 'var(--text-secondary)') : undefined;
+  const showTransferAttemptNote = !!result && result.result !== 'correct';
 
   return (
     <div style={{ maxWidth: 560 }}>
@@ -159,6 +171,11 @@ export default function TransferPage() {
             <div role="status" aria-live="polite" style={{ marginTop: 'var(--space-2)' }}>
               <div style={{ fontSize: 20, fontWeight: 650, marginBottom: 4, color: resultColor }}>{resultLabel}</div>
               <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{result.feedback}</p>
+              {showTransferAttemptNote && (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+                  {t['cognitive.transferAttemptNote']}
+                </p>
+              )}
               <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
                 {t['cognitive.continueButton']}
               </Link>

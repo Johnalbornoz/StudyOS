@@ -195,13 +195,18 @@ describe('verification readiness is never presented as verified (Part 10)', () =
   });
 });
 
-describe('transfer is not inferred from mastery, no new transfer UI (Part 12)', () => {
-  it('no new transfer-related rendering was added to the touched files beyond the pre-existing transferScore card', () => {
+describe('transfer is not inferred from mastery (Part 12; transfer UI updated in Phase 7 7F1)', () => {
+  it('the transfer card renders a learner-safe progression label from the canonical concept_transfer_state read -- never a raw score / NEAR-MID-FAR / engine internal', () => {
     const source = read(CONCEPT_DETAIL_PATH);
-    // Exactly the one pre-existing transfer card/reference -- this
-    // phase adds none.
-    const transferMatches = source.match(/transferScore/g) ?? [];
-    expect(transferMatches.length).toBeGreaterThan(0); // still present, unmodified
+    // 7F1: the raw `transferScore` % was replaced by transferDepthLabel(),
+    // fed by getConceptTransferDepth (canonical concept_transfer_state).
+    expect(source).not.toMatch(/transferScore/);
+    expect(source).toMatch(/getConceptTransferDepth\(db, studentId, conceptId\)/);
+    expect(source).toMatch(/transferDepthLabel\(transferDepth, t\)/);
+    // still never derived from mastery / knowledge-state on this page
+    expect(source).not.toMatch(/transferDepth\s*=\s*(?!await |getConceptTransferDepth)/);
+    // no raw distance vocabulary or engine identifiers in the page
+    expect(source).not.toMatch(/\bNEAR_DEMONSTRATED\b|\bnoveltyDimensions\b|\btaskFamilyId\b|\bpromptFingerprint\b|policyVersion/);
   });
 });
 

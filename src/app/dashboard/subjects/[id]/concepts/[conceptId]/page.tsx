@@ -6,7 +6,9 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getConceptEvidenceSummary, getConceptEvidenceHistory } from '@/services/learner-model.service';
 import { getConceptView } from '@/lib/learner-twin';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
-import { getTransferScore } from '@/services/transfer.service';
+import { getConceptTransferDepth } from '@/services/transfer-read.service';
+import { transferDepthLabel } from '@/lib/transfer-progression-labels';
+import { db } from '@/lib/db';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { getBestLearningDecisionForConcept } from '@/services/adaptive-teaching.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -86,7 +88,7 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [conceptView, evidence, activeDebt, history, transferScore, knowledgeState, nextDecision] = await Promise.all([
+  const [conceptView, evidence, activeDebt, history, transferDepth, knowledgeState, nextDecision] = await Promise.all([
     getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -94,7 +96,11 @@ export default async function ConceptDetailPage({
       [studentId, conceptId]
     ),
     getConceptEvidenceHistory(studentId, conceptId, 20),
-    getTransferScore(studentId, conceptId),
+    // Phase 7 (7F1): canonical concept_transfer_state depth -> a
+    // learner-safe progression phrase. Never surfaces NEAR/MID/FAR,
+    // novelty dimensions, task families, fingerprints, weights, or the
+    // policy version. Fails soft to null (renders as "not yet").
+    getConceptTransferDepth(db, studentId, conceptId).catch(() => null),
     getConceptKnowledgeState(studentId, conceptId),
     // Step 6L-C1: the ONLY next-action authority for this section is
     // Phase 4's own current decision for this concept -- never derived
@@ -372,12 +378,15 @@ export default async function ConceptDetailPage({
         <div
           className="card"
           role="group"
-          aria-label={`${t['conceptDetail.transfer']}: ${transferScore !== null ? `${Math.round(transferScore)}%` : t['dashboard.notEnoughEvidence']}`}
+          aria-label={`${t['conceptDetail.transfer']}: ${transferDepthLabel(transferDepth, t)}`}
           style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}
         >
           <div className="label" style={{ color: 'var(--text-muted)' }} aria-hidden="true">{t['conceptDetail.transfer']}</div>
-          <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }} aria-hidden="true">
-            {transferScore !== null ? `${Math.round(transferScore)}%` : t['dashboard.notEnoughEvidence']}
+          {/* Phase 7 (7F1): learner-safe progression phrase from
+              canonical concept_transfer_state -- never a raw
+              NEAR/MID/FAR label, score, or engine internal. */}
+          <div style={{ fontSize: 16, fontWeight: 650, lineHeight: 1.35 }} aria-hidden="true">
+            {transferDepthLabel(transferDepth, t)}
           </div>
         </div>
       </div>
