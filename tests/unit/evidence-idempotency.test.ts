@@ -502,3 +502,84 @@ describe('updateMastery -- Phase 2F: errorClassification is canonicalized before
     expect(call![1][3]).toBe('CONCEPTUAL');
   });
 });
+
+describe('updateMastery -- Phase 7 (7C1): TRANSFER metadata is atomic with the learning_evidence INSERT', () => {
+  const TRANSFER_METADATA = {
+    transferDistance: 'MID',
+    assisted: false,
+    aiExecution: { aiExecutionId: 'ai-xfer-1' },
+    transferTaskId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    promptFingerprint: 'a'.repeat(64),
+    sourceConceptId: 'concept-1',
+  };
+  const transferInput = (overrides: Record<string, unknown> = {}) =>
+    baseInput({
+      evidence: { result: 'correct' as const, difficulty: 4, sourceType: 'TRANSFER' as const, confidenceWeight: 0.85, scorePercent: 100, sampleSize: 1 },
+      telemetry: { activityType: 'transfer', learningMode: 'SOLO' as const },
+      metadata: TRANSFER_METADATA,
+      identity: { operationType: 'TRANSFER', operationId: 'xfer-op-1', conceptId: 'concept-1' } as EvidenceApplicationIdentity,
+      ...overrides,
+    });
+
+  const sqlOf = (c: unknown[]): string => String(c[0]);
+
+  function evidenceInsertMetadata(queryMock: { mock: { calls: unknown[][] } }): any {
+    const call = queryMock.mock.calls.find((c) => /INSERT INTO learning_evidence/.test(sqlOf(c)));
+    expect(call, 'learning_evidence INSERT ran').toBeTruthy();
+    const params = call![1] as any[];
+    const raw = params[params.length - 2]; // ...(), metadata, operation_key
+    return raw == null ? null : JSON.parse(raw);
+  }
+
+  it('the canonical Transfer metadata is present in the SAME INSERT (no post-commit UPDATE)', async () => {
+    const { db, queryMock } = createFakeDb();
+    const { updateMastery } = await loadUpdateMastery(db);
+
+    const res = await updateMastery(transferInput());
+    expect(res.duplicate).toBeUndefined();
+
+    expect(evidenceInsertMetadata(queryMock)).toMatchObject({
+      transferDistance: 'MID',
+      assisted: false,
+      transferTaskId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      promptFingerprint: 'a'.repeat(64),
+      sourceConceptId: 'concept-1',
+      aiExecution: { aiExecutionId: 'ai-xfer-1' },
+    });
+    expect(queryMock.mock.calls.some((c) => /UPDATE learning_evidence/i.test(sqlOf(c)))).toBe(false);
+  });
+
+  it('a mid-transaction failure rolls back the evidence row AND its Transfer metadata -- no orphan', async () => {
+    const { db, queryMock, claimedKeys } = createFakeDb({ failMasteryUpdateForConcept: 'concept-1' });
+    const { updateMastery, recalculateMock } = await loadUpdateMastery(db);
+
+    await expect(updateMastery(transferInput())).rejects.toThrow('simulated mid-transaction failure');
+
+    expect(queryMock.mock.calls.some((c) => sqlOf(c) === 'ROLLBACK')).toBe(true);
+    expect(queryMock.mock.calls.some((c) => sqlOf(c) === 'COMMIT')).toBe(false);
+    expect(claimedKeys.has(buildOperationKey({ operationType: 'TRANSFER', operationId: 'xfer-op-1', conceptId: 'concept-1' }))).toBe(false);
+    expect(recalculateMock).not.toHaveBeenCalled();
+  });
+
+  it('a duplicate retry never re-writes the original evidence metadata', async () => {
+    const { db, queryMock } = createFakeDb();
+    const { updateMastery } = await loadUpdateMastery(db);
+
+    const first = await updateMastery(transferInput());
+    const second = await updateMastery(
+      transferInput({ metadata: { ...TRANSFER_METADATA, aiExecution: { aiExecutionId: 'ai-xfer-RETRY' } } }),
+    );
+
+    expect(first.duplicate).toBeUndefined();
+    expect(second.duplicate).toBe(true);
+    expect(queryMock.mock.calls.filter((c) => /INSERT INTO learning_evidence/.test(sqlOf(c))).length).toBe(2);
+    expect(queryMock.mock.calls.some((c) => /UPDATE learning_evidence/i.test(sqlOf(c)))).toBe(false);
+  });
+
+  it('non-Transfer callers that pass no metadata still insert metadata = NULL (unchanged)', async () => {
+    const { db, queryMock } = createFakeDb();
+    const { updateMastery } = await loadUpdateMastery(db);
+    await updateMastery(baseInput({ identity: { operationType: 'QUIZ_SUBMISSION', operationId: 'q-nometa', conceptId: 'concept-1' } }));
+    expect(evidenceInsertMetadata(queryMock)).toBeNull();
+  });
+});

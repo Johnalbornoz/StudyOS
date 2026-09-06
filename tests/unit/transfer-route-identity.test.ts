@@ -111,17 +111,18 @@ describe('7B1 -- submit route canonical id resolution', () => {
   });
 });
 
-describe('7B1 -- submit route evidence metadata', () => {
-  function metadataFromLastMerge() {
-    const call = dbQueryMock.mock.calls.find((c) => typeof c[0] === 'string' && c[0].includes('UPDATE learning_evidence'));
-    expect(call, 'metadata UPDATE ran').toBeTruthy();
-    return JSON.parse(call![1][2] as string);
+describe('7B1/7C1 -- submit route evidence metadata (atomic, via updateMastery)', () => {
+  // 7C1: canonical Transfer metadata is now passed INTO updateMastery
+  // (same learning_evidence INSERT / same transaction), not stamped by
+  // a post-commit `UPDATE learning_evidence`.
+  function atomicMetadata() {
+    expect(updateMasteryMock).toHaveBeenCalled();
+    return updateMasteryMock.mock.calls[0][0].metadata;
   }
 
   it('adds transferTaskId + server-computed promptFingerprint + sourceConceptId, keeps existing keys', async () => {
     await submit({ activityId: OTHER_ID });
-    const meta = metadataFromLastMerge();
-    expect(meta).toMatchObject({
+    expect(atomicMetadata()).toMatchObject({
       transferDistance: 'MID',
       assisted: false,
       aiExecution: { aiExecutionId: 'ai-1' },
@@ -133,16 +134,20 @@ describe('7B1 -- submit route evidence metadata', () => {
 
   it('a client-sent promptFingerprint is ignored (never becomes canonical metadata)', async () => {
     await submit({ activityId: OTHER_ID, promptFingerprint: 'deadbeef-client-supplied' });
-    const meta = metadataFromLastMerge();
+    const meta = atomicMetadata();
     expect(meta.promptFingerprint).toBe(computeTransferPromptFingerprint(PROMPT));
     expect(meta.promptFingerprint).not.toBe('deadbeef-client-supplied');
   });
 
-  it('on updateMastery duplicate: metadata merge is skipped (unchanged idempotency behavior)', async () => {
-    updateMasteryMock.mockResolvedValueOnce({ duplicate: true, oldMastery: 20, newMastery: 20, delta: 0 });
+  it('no post-commit UPDATE learning_evidence anywhere (dual-writing removed)', async () => {
     await submit({ activityId: OTHER_ID });
-    const merged = dbQueryMock.mock.calls.some((c) => typeof c[0] === 'string' && c[0].includes('UPDATE learning_evidence'));
-    expect(merged).toBe(false);
+    expect(dbQueryMock.mock.calls.some((c) => typeof c[0] === 'string' && /UPDATE learning_evidence/i.test(c[0]))).toBe(false);
+  });
+
+  it('on updateMastery duplicate: still no second evidence write, remediation step not completed', async () => {
+    updateMasteryMock.mockResolvedValueOnce({ duplicate: true, oldMastery: 20, newMastery: 20, delta: 0 });
+    await submit({ activityId: OTHER_ID, remediationStepId: '55555555-5555-4555-8555-555555555555' });
+    expect(dbQueryMock.mock.calls.some((c) => typeof c[0] === 'string' && /UPDATE learning_evidence/i.test(c[0]))).toBe(false);
   });
 
   it('score path is untouched: updateMastery still gets sourceType TRANSFER, confidenceWeight 0.85, MID difficulty 4', async () => {

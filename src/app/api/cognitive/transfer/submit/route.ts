@@ -87,6 +87,36 @@ export async function POST(request: NextRequest) {
     });
     const scorePercent = graded.result === 'correct' ? 100 : graded.result === 'partial' ? 50 : 0;
 
+    // Phase 1D: normalized BEFORE updateMastery now -- the client clock
+    // stopped on submit, before evaluateTransferResponse's AI call ran,
+    // so this never measures grading latency (Step 13). Moved above the
+    // evidence write so it can be part of the SAME INSERT.
+    const timing = normalizeResponseTiming({
+      questionPresentedAt: validated.questionPresentedAt,
+      answerSubmittedAt: validated.answerSubmittedAt,
+    });
+    const responseTimingEntries = toResponseTimingEntries([{ timing }]);
+
+    // Phase 7 (7C1): canonical Transfer evidence metadata -- ALL
+    // server-derived (no browser-supplied value is spread in). Passed
+    // to updateMastery so it is written in the SAME learning_evidence
+    // INSERT / SAME transaction as the canonical evidence row (the
+    // future 7C2 projector must observe a complete evidence row before
+    // COMMIT). Replaces the previous post-commit `UPDATE learning_evidence
+    // SET metadata = ...` second statement. Additive: does not affect
+    // computeTransferScore / Mastery / Knowledge State / MemoryPolicy,
+    // and is not yet consumed by any qualification / novelty / depth
+    // logic (7B2 guard runs earlier; 7C2+ is the projector).
+    const evidenceMetadata: Record<string, unknown> = {
+      transferDistance: validated.distance,
+      assisted: false,
+      aiExecution: graded.aiExecution,
+      transferTaskId: canonicalTaskId,
+      promptFingerprint,
+      sourceConceptId: validated.conceptId,
+      ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
+    };
+
     const masteryResult = await updateMastery({
       studentId: validated.studentId,
       conceptId: validated.conceptId,
@@ -101,71 +131,25 @@ export async function POST(request: NextRequest) {
       },
       identity: { operationType: 'TRANSFER', operationId: canonicalTaskId, conceptId: validated.conceptId },
       telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
+      // 7C1: written atomically inside updateMastery's own transaction.
+      // On the operation_key duplicate path the whole INSERT is rolled
+      // back, so a retry never mutates the original evidence row's
+      // metadata -- exactly the idempotency guarantee the old
+      // post-commit UPDATE had to replicate with a `!duplicate` guard.
+      metadata: evidenceMetadata,
       // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
       // row to the AI evaluation that produced this evidence -- always
       // unambiguous here (one grading call per submission).
       aiExecutionId: graded.aiExecution.aiExecutionId,
     });
 
-    // Phase 1D: normalized here -- the client clock stopped on submit,
-    // before evaluateTransferResponse's AI call above ran, so this never
-    // measures grading latency (Step 13).
-    const timing = normalizeResponseTiming({
-      questionPresentedAt: validated.questionPresentedAt,
-      answerSubmittedAt: validated.answerSubmittedAt,
-    });
-    const responseTimingEntries = toResponseTimingEntries([{ timing }]);
-
-    // Phase 2B: this metadata UPDATE and the remediation-step
-    // completion below are both side effects of THIS ONE logical
-    // Transfer attempt, same as the evidence row itself -- if
-    // updateMastery just reported a duplicate (a retry of an
-    // already-applied attempt), skip both rather than overwrite the
-    // original application's stamped metadata with THIS retry's fresh
-    // AI re-grading (grading itself is not gated by the idempotency
-    // key -- Phase 2B Step 15 -- so a retry's aiExecution is a
-    // genuinely different value that must not clobber the first
-    // application's) or double-complete a remediation step.
-    if (!masteryResult.duplicate) {
-      // metadata isn't part of MasteryUpdateInput's telemetry shape --
-      // stamp transferDistance onto the just-written evidence row
-      // directly so computeTransferScore can read it back later.
-      const { db } = await import('@/lib/db');
-      await db.query(
-        `UPDATE learning_evidence SET metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
-         WHERE id = (
-           SELECT id FROM learning_evidence
-           WHERE student_id = $1 AND concept_id = $2 AND source_type = 'TRANSFER'
-           ORDER BY timestamp DESC LIMIT 1
-         )`,
-        [
-          validated.studentId,
-          validated.conceptId,
-          // Phase 0E1: AI provenance is additive here, same jsonb merge
-          // pattern already used for transferDistance/assisted. Phase 1D:
-          // behavior.responseTimes only included when timing was usable.
-          JSON.stringify({
-            transferDistance: validated.distance,
-            assisted: false,
-            aiExecution: graded.aiExecution,
-            // Phase 7 (7B1): canonical task identity + server-computed
-            // structural prompt fingerprint. Additive metadata only --
-            // does not affect computeTransferScore / mastery / KS /
-            // memory, and is not yet consumed by any qualification or
-            // novelty logic (that is 7B2+).
-            transferTaskId: canonicalTaskId,
-            promptFingerprint,
-            sourceConceptId: validated.conceptId,
-            ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
-          }),
-        ]
+    // Phase 2B: still a side effect of THIS ONE logical Transfer
+    // attempt -- skipped on the duplicate (retry) path so a remediation
+    // step is never double-completed.
+    if (!masteryResult.duplicate && validated.remediationStepId) {
+      await completeRemediationStep(validated.remediationStepId, { success: graded.result !== 'incorrect', score: scorePercent }).catch(
+        (err) => console.error('Failed to complete remediation step:', err)
       );
-
-      if (validated.remediationStepId) {
-        await completeRemediationStep(validated.remediationStepId, { success: graded.result !== 'incorrect', score: scorePercent }).catch(
-          (err) => console.error('Failed to complete remediation step:', err)
-        );
-      }
     }
 
     track(validated.studentId, 'transfer_completed', { conceptId: validated.conceptId, distance: validated.distance, result: graded.result });

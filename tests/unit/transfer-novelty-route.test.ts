@@ -156,12 +156,18 @@ describe('7B2 -- submit route bypass guard', () => {
     expect(updateMasteryMock).toHaveBeenCalledTimes(1);
   });
 
-  it('no recent duplicate -> proceeds and still stamps identity metadata (7B1 behavior intact)', async () => {
+  it('no recent duplicate -> proceeds and passes identity metadata atomically into updateMastery (7C1)', async () => {
     withRecentEvidence([]);
     const { res } = await submit({ transferTaskId: TASK_B });
     expect(res.status ?? 200).toBe(200);
-    const mergeCall = dbQueryMock.mock.calls.find((c) => String(c[0]).includes('UPDATE learning_evidence'));
-    const meta = JSON.parse(mergeCall![1][2] as string);
-    expect(meta).toMatchObject({ transferTaskId: TASK_B, promptFingerprint: SEEN_FP, sourceConceptId: CONCEPT, transferDistance: 'MID', assisted: false });
+    expect(updateMasteryMock.mock.calls[0][0].metadata).toMatchObject({
+      transferTaskId: TASK_B,
+      promptFingerprint: SEEN_FP,
+      sourceConceptId: CONCEPT,
+      transferDistance: 'MID',
+      assisted: false,
+    });
+    // no post-commit UPDATE learning_evidence (dual-writing removed)
+    expect(dbQueryMock.mock.calls.some((c) => /UPDATE learning_evidence/i.test(String(c[0])))).toBe(false);
   });
 });
