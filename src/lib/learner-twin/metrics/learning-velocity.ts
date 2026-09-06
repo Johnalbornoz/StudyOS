@@ -60,6 +60,18 @@ function daysBetween(a: string, b: string): number {
   return Math.round((new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * `MIN(timestamp)` over a `timestamptz` column comes back from node-pg
+ * as a JS `Date` (only OID 1082 `date` is overridden to stay a string
+ * in src/lib/db.ts, not OID 1184 `timestamptz`). Everything downstream
+ * here treats `firstEvidenceAt` as an ISO string (`.slice(0, 10)`,
+ * `new Date(...)`), so normalize once at the boundary. Accepts a plain
+ * ISO string too (tests, or a future driver-config change) unchanged.
+ */
+function toIsoTimestamp(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
 /** Distinct dates strictly between (inclusive) two date strings, from an already-sorted array. */
 function activeDaysInWindow(dates: string[], startDate: string, endDate: string): number {
   return dates.filter((d) => d >= startDate && d <= endDate).length;
@@ -83,12 +95,17 @@ function toMilestone(eventAt: string | undefined, currentRank: number, requiredR
 
 /** Pure: computes one concept's summary from already-fetched, already-grouped rows. */
 export function computeLearningVelocity(
-  firstEvidenceAt: string,
+  firstEvidenceAtRaw: string | Date,
   distinctDates: string[],
   provisionalEventAt: string | undefined,
   validatedEventAt: string | undefined,
   currentMasteryState: MasteryState | null
 ): LearningVelocitySummary {
+  // Defensive normalization: the DB read path passes a JS `Date` for
+  // `MIN(timestamp)` (timestamptz). Coerce here too so this pure
+  // function can never throw a `.slice is not a function` regardless of
+  // what a caller hands it.
+  const firstEvidenceAt = toIsoTimestamp(firstEvidenceAtRaw);
   const currentRank = currentMasteryState ? MASTERY_RANK[currentMasteryState] : 0;
   const provisionalMastery = toMilestone(provisionalEventAt, currentRank, 3);
   const validatedMastery = toMilestone(validatedEventAt, currentRank, 4);

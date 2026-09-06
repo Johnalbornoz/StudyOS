@@ -120,3 +120,42 @@ describe('aggregateLearningVelocity (Step 8): median across concepts, never a na
     expect(aggregate.totalConceptCount).toBe(0);
   });
 });
+
+describe('computeLearningVelocity -- P0 regression (6L-C1-H1): timestamptz first_evidence_at arrives as a JS Date', () => {
+  // node-pg parses `MIN(timestamp)` over a timestamptz column into a JS
+  // Date (only OID 1082 `date` is overridden to stay a string in
+  // src/lib/db.ts, not OID 1184 `timestamptz`). The prod read path
+  // (readLearningVelocityForConcepts) passes that Date straight in.
+  // Before the fix, `firstEvidenceAt.slice(0, 10)` threw
+  // "firstEvidenceAt.slice is not a function", which rejected
+  // getConceptView and 500'd the entire Concept Detail page
+  // (React #441) for every concept with evidence.
+  const asDate = new Date('2026-08-01T10:00:00.000Z');
+
+  it('accepts a Date and does not throw', () => {
+    expect(() =>
+      computeLearningVelocity(asDate, ['2026-08-01', '2026-08-03'], undefined, undefined, 'LEARNING')
+    ).not.toThrow();
+  });
+
+  it('a Date input yields the exact same summary as the equivalent ISO string', () => {
+    const fromDate = computeLearningVelocity(
+      asDate,
+      ['2026-08-01', '2026-08-05', '2026-08-08'],
+      '2026-08-08T09:00:00.000Z',
+      undefined,
+      'PROVISIONAL_MASTERY'
+    );
+    const fromString = computeLearningVelocity(
+      '2026-08-01T10:00:00.000Z',
+      ['2026-08-01', '2026-08-05', '2026-08-08'],
+      '2026-08-08T09:00:00.000Z',
+      undefined,
+      'PROVISIONAL_MASTERY'
+    );
+    expect(fromDate).toEqual(fromString);
+    expect(fromDate.firstEvidenceAt).toBe('2026-08-01T10:00:00.000Z'); // normalized to an ISO string, never a Date
+    expect(fromDate.calendarDaysToProvisional).toBe(7);
+    expect(fromDate.activeStudyDaysToProvisional).toBe(3);
+  });
+});
