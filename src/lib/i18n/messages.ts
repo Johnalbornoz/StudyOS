@@ -101,6 +101,9 @@ export type MessageKey =
   | 'today.reasonExamSoon' | 'today.reasonDebt' | 'today.reasonLowMastery'
   | 'today.daysUntilExam' | 'today.severity' | 'today.mastery' | 'today.practice'
   | 'today.trackedCount' | 'today.reasonForgetting' | 'today.forgettingRisk'
+  // Closeout B: retention-check eyebrow on the existing Today card,
+  // shown only when Phase 4 already chose activityType RETENTION_CHECK.
+  | 'today.retentionEyebrow'
   | 'today.sectionCritical' | 'today.sectionThisWeek' | 'today.sectionCanWait'
   | 'today.criticalSubtitle' | 'today.thisWeekSubtitle' | 'today.canWaitSubtitle'
   | 'today.examLabel' | 'today.debtSinceLabel' | 'today.lastPracticedLabel'
@@ -520,6 +523,7 @@ const es: Messages = {
   'conceptDetail.nextSectionTitle': 'Lo siguiente',
   'conceptDetail.otherWaysTitle': 'Otras formas de trabajar este concepto',
   'conceptDetail.freshnessCaption': 'Una predicción según el tiempo transcurrido, no una prueba de que lo recuerdas.',
+  'today.retentionEyebrow': 'Volvemos a comprobarlo',
   'support.assistedTitle': 'Con ayuda disponible',
   'support.assistedHintNote': 'Puedes pedir una pista si te atascas.',
   'support.independentTitle': 'Por tu cuenta',
@@ -704,7 +708,7 @@ const es: Messages = {
   'whyThisV3.retentionReviewDue': 'Es momento de comprobar si todavía lo recuerdas.',
   'whyThisV3.waitingForRetention': 'Estamos esperando ver si esto se queda contigo con el tiempo.',
   'whyThisV3.transferRequired': 'Necesitas mostrar que puedes aplicar esto en una situación nueva.',
-  'whyThisV3.forgettingRisk': 'Tu retención está bajando — cerca de {risk}% de riesgo de olvido.',
+  'whyThisV3.forgettingRisk': 'Conviene comprobar este concepto antes de que se debilite.',
   'whyThisV3.independenceGap': 'Te va bien con ayuda, pero solo {independentMastery}% correcto por tu cuenta recientemente.',
   'whyThisV3.recurringMisconception': 'Esta misma confusión ha aparecido {count} veces.',
   'whyThisV3.criticalMisconception': 'Hay una confusión clave aquí que vale la pena aclarar primero.',
@@ -1276,6 +1280,7 @@ const en: Messages = {
   'conceptDetail.nextSectionTitle': 'What next',
   'conceptDetail.otherWaysTitle': 'Other ways to work on this concept',
   'conceptDetail.freshnessCaption': 'A prediction based on time passed, not proof you still remember it.',
+  'today.retentionEyebrow': 'Checking in on this one again',
   'support.assistedTitle': 'Help available',
   'support.assistedHintNote': 'You can ask for a hint if you get stuck.',
   'support.independentTitle': 'On your own',
@@ -1460,7 +1465,7 @@ const en: Messages = {
   'whyThisV3.retentionReviewDue': "It's time to check if you still remember this.",
   'whyThisV3.waitingForRetention': "We're waiting to see if this sticks over time.",
   'whyThisV3.transferRequired': 'You need to show you can apply this in a new situation.',
-  'whyThisV3.forgettingRisk': 'Your retention is slipping -- about {risk}% forgetting risk.',
+  'whyThisV3.forgettingRisk': 'Worth checking this concept before it fades.',
   'whyThisV3.independenceGap': 'You do well with help, but only {independentMastery}% correct on your own recently.',
   'whyThisV3.recurringMisconception': 'This same mix-up has come up {count} times.',
   'whyThisV3.criticalMisconception': "There's a key misunderstanding here worth clearing up first.",
@@ -2032,6 +2037,7 @@ const de: Messages = {
   'conceptDetail.nextSectionTitle': 'Als Nächstes',
   'conceptDetail.otherWaysTitle': 'Andere Wege, an diesem Konzept zu arbeiten',
   'conceptDetail.freshnessCaption': 'Eine Vorhersage basierend auf der verstrichenen Zeit, kein Beweis, dass du dich noch erinnerst.',
+  'today.retentionEyebrow': 'Wir schauen noch einmal nach',
   'support.assistedTitle': 'Hilfe verfügbar',
   'support.assistedHintNote': 'Du kannst einen Hinweis anfordern, wenn du nicht weiterkommst.',
   'support.independentTitle': 'Auf eigene Faust',
@@ -2216,7 +2222,7 @@ const de: Messages = {
   'whyThisV3.retentionReviewDue': 'Zeit zu prüfen, ob du dich noch daran erinnerst.',
   'whyThisV3.waitingForRetention': 'Wir warten ab, ob das langfristig hängen bleibt.',
   'whyThisV3.transferRequired': 'Du musst zeigen, dass du das auf eine neue Situation anwenden kannst.',
-  'whyThisV3.forgettingRisk': 'Deine Behaltensleistung sinkt -- etwa {risk}% Vergessensrisiko.',
+  'whyThisV3.forgettingRisk': 'Es lohnt sich, dieses Konzept zu prüfen, bevor es verblasst.',
   'whyThisV3.independenceGap': 'Mit Hilfe klappt es gut, aber zuletzt nur {independentMastery}% allein richtig.',
   'whyThisV3.recurringMisconception': 'Dieses Missverständnis kam schon {count} Mal vor.',
   'whyThisV3.criticalMisconception': 'Hier gibt es ein zentrales Missverständnis, das zuerst geklärt werden sollte.',
@@ -2788,6 +2794,7 @@ const fr: Messages = {
   'conceptDetail.nextSectionTitle': 'La suite',
   'conceptDetail.otherWaysTitle': "D'autres façons de travailler ce concept",
   'conceptDetail.freshnessCaption': "Une prédiction basée sur le temps écoulé, pas une preuve que tu t'en souviens encore.",
+  'today.retentionEyebrow': 'On revient le vérifier',
   'support.assistedTitle': 'Aide disponible',
   'support.assistedHintNote': 'Tu peux demander un indice si tu bloques.',
   'support.independentTitle': 'Par toi-même',
@@ -2972,7 +2979,7 @@ const fr: Messages = {
   'whyThisV3.retentionReviewDue': "C'est le moment de vérifier si tu t'en souviens encore.",
   'whyThisV3.waitingForRetention': 'On attend de voir si cela reste acquis dans le temps.',
   'whyThisV3.transferRequired': 'Tu dois montrer que tu peux appliquer cela dans une nouvelle situation.',
-  'whyThisV3.forgettingRisk': "Ta rétention diminue -- environ {risk}% de risque d'oubli.",
+  'whyThisV3.forgettingRisk': "Mieux vaut vérifier ce concept avant qu'il ne s'estompe.",
   'whyThisV3.independenceGap': "Tu réussis bien avec de l'aide, mais seulement {independentMastery}% de réussite seul récemment.",
   'whyThisV3.recurringMisconception': 'Cette même confusion est revenue {count} fois.',
   'whyThisV3.criticalMisconception': 'Il y a une confusion clé ici à clarifier en premier.',
@@ -3544,6 +3551,7 @@ const pt: Messages = {
   'conceptDetail.nextSectionTitle': 'A seguir',
   'conceptDetail.otherWaysTitle': 'Outras formas de trabalhar este conceito',
   'conceptDetail.freshnessCaption': 'Uma previsão baseada no tempo decorrido, não uma prova de que você ainda se lembra.',
+  'today.retentionEyebrow': 'Vamos verificar de novo',
   'support.assistedTitle': 'Com ajuda disponível',
   'support.assistedHintNote': 'Você pode pedir uma dica se travar.',
   'support.independentTitle': 'Por conta própria',
@@ -3728,7 +3736,7 @@ const pt: Messages = {
   'whyThisV3.retentionReviewDue': 'Hora de verificar se você ainda se lembra disso.',
   'whyThisV3.waitingForRetention': 'Estamos esperando para ver se isso permanece com o tempo.',
   'whyThisV3.transferRequired': 'Você precisa mostrar que consegue aplicar isso em uma nova situação.',
-  'whyThisV3.forgettingRisk': 'Sua retenção está caindo -- cerca de {risk}% de risco de esquecimento.',
+  'whyThisV3.forgettingRisk': 'Vale a pena verificar este conceito antes que ele enfraqueça.',
   'whyThisV3.independenceGap': 'Você vai bem com ajuda, mas só {independentMastery}% de acerto sozinho recentemente.',
   'whyThisV3.recurringMisconception': 'Essa mesma confusão já apareceu {count} vezes.',
   'whyThisV3.criticalMisconception': 'Há uma confusão-chave aqui que vale a pena esclarecer primeiro.',

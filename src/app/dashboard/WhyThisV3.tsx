@@ -24,7 +24,11 @@ function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): st
     case 'transferRequired':
       return t['whyThisV3.transferRequired'];
     case 'forgettingRisk':
-      return t['whyThisV3.forgettingRisk'].replace('{risk}', String(fact.forgettingRisk ?? '-'));
+      // Closeout B: forgettingRisk is a PREDICTED, purely time-derived
+      // signal -- never a demonstrated decline. The copy is a fixed,
+      // prediction-framed sentence with no raw risk value; the number
+      // (fact.forgettingRisk) is deliberately not interpolated.
+      return t['whyThisV3.forgettingRisk'];
     case 'independenceGap':
       return t['whyThisV3.independenceGap'].replace('{independentMastery}', String(fact.independentMastery ?? '-'));
     case 'recurringMisconception':

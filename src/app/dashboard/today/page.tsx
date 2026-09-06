@@ -46,6 +46,19 @@ function ItemRow({
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Closeout B: retention eyebrow. Branches ONLY on the
+            already-chosen canonical activityType -- no re-ranking, no
+            due-date/threshold logic, no raw memory value. */}
+        {decision.activityType === 'RETENTION_CHECK' && (
+          <div
+            style={{
+              fontSize: 10.5, fontWeight: 650, color: 'var(--brand-ink)',
+              textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 3,
+            }}
+          >
+            {t['today.retentionEyebrow']}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 600, fontSize: 15 }}>{label}</span>
           <span
@@ -153,6 +166,18 @@ export default async function TodayPage() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 4 }}>{t['bestNextAction.title']}</div>
+            {/* Closeout B: retention eyebrow -- same guard as ItemRow, on the
+                already-chosen canonical activityType only. */}
+            {best.decision.activityType === 'RETENTION_CHECK' && (
+              <div
+                style={{
+                  fontSize: 10.5, fontWeight: 650, color: 'var(--brand-ink)',
+                  textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 3,
+                }}
+              >
+                {t['today.retentionEyebrow']}
+              </div>
+            )}
             <div style={{ fontSize: 17, fontWeight: 650 }}>{bestLabel?.label ?? best.decision.actionConceptId}</div>
             <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 2 }}>
               {bestLabel?.subjectName} · {activityLabel(best.decision.activityType, t)} ·{' '}
