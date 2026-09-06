@@ -316,14 +316,18 @@ export const TRANSFER_COVERAGE_MODEL_VERSION = 'v1';
 export interface StudyPlanAdherenceSummary {
   windowStart: string; // date (YYYY-MM-DD)
   windowEnd: string; // date (YYYY-MM-DD), never later than "today"
+  /**
+   * DENOMINATOR: ACTIVE `learning_plan_item` rows scheduled within the
+   * window that have come due, EXCLUDING auto-`SUPERSEDED` items (a
+   * replan-driven supersede is never a learner miss). Field name kept
+   * for backward compatibility -- it now counts plan items, not
+   * `study_sessions` rows.
+   */
   scheduledSessions: number;
   /**
-   * Phase 1E-R: a session counts as completed only when learning_evidence
-   * exists for a CONCEPT that session's OWN study_session_items planned,
-   * on that session's own scheduled_date -- concept-level matching, not
-   * exact-question identity, but never "any evidence that day" regardless
-   * of subject. See study-plan-adherence.ts's own doc comment for the
-   * external-review finding this corrected.
+   * NUMERATOR: those items that are `COMPLETED` or have canonical
+   * `learning_evidence` for their concept on/after the scheduled date.
+   * Always evidence-derived; never a self-report or a dead status column.
    */
   completedSessions: number;
   missedSessions: number;
@@ -331,7 +335,43 @@ export interface StudyPlanAdherenceSummary {
   quality: DerivedMetricQuality;
 }
 
-export const STUDY_PLAN_ADHERENCE_MODEL_VERSION = 'v1';
+/** v2 (Phase 8 -- Step 8H1): source migrated from legacy study_plans to canonical learning_plan_item. */
+export const STUDY_PLAN_ADHERENCE_MODEL_VERSION = 'v2';
+
+// ---------------------------------------------------------------------
+// 6b. Orchestration 14-day objective progress (Phase 8 -- Step 8H1)
+// ---------------------------------------------------------------------
+
+/**
+ * The four canonical 14-day outcome objectives Phase 8 schedules toward.
+ * Each maps to a REAL canonical outcome in Phase 3/6/7 state -- being
+ * scheduled is never itself "achieved". Blocker classes (misconception /
+ * prerequisite / remediation / learning-debt), plain curriculum
+ * progression, and learner-requested practice are deliberately NOT
+ * objectives here: they are not "mastered" merely by appearing on the
+ * plan.
+ */
+export type OrchestrationObjectiveType =
+  | 'VALIDATED_MASTERY' // from VERIFICATION_READY  -> concept_knowledge_state.mastery_state = VALIDATED_MASTERY
+  | 'QUALIFIED_RETENTION' // from RETENTION_DUE       -> concept_memory_state.last_successful_retention_at >= scheduled_date
+  | 'TRANSFER_DEPTH_ADVANCE' // from TRANSFER_PROGRESSION -> concept_transfer_state.transfer_depth deeper than plan-time depth
+  | 'ASSESSMENT_READINESS'; // from ASSESSMENT_APPROACHING -> concept reached PROVISIONAL_MASTERY+
+
+export interface OrchestrationObjectiveProgressSummary {
+  horizonStart: string;
+  horizonEnd: string;
+  /** Number of ACTIVE-plan items whose reason maps to a tracked objective. */
+  tracked: number;
+  /** Of those, how many the canonical state shows the objective actually met. */
+  achieved: number;
+  achievedRate: number | null;
+  byType: Record<OrchestrationObjectiveType, { tracked: number; achieved: number }>;
+  /** Plain-language statement of exactly how `achieved` is decided. No opaque score. */
+  method: string;
+  quality: DerivedMetricQuality;
+}
+
+export const ORCHESTRATION_OBJECTIVE_PROGRESS_MODEL_VERSION = 'v1';
 
 // ---------------------------------------------------------------------
 // 7. Persistence / Recovery Summary (student + concept)

@@ -72,3 +72,32 @@ export function legacyPriorityBand(reasonCode: OrchestrationReasonCode): LegacyP
   if (tier <= 5) return 'MEDIUM';
   return 'LOW';
 }
+
+/**
+ * 8H1: which 14-day OUTCOME objective (if any) a plan item's reason
+ * code is scheduled toward. Only the four outcome classes map; blocker
+ * classes, plain curriculum progression, and learner-requested practice
+ * return `null` -- they are never "mastered" just by being scheduled.
+ * PURE. The metric layer decides whether the objective is actually met
+ * by reading canonical Phase 3/6/7 state.
+ */
+export type OrchestrationObjectiveKind =
+  | 'VALIDATED_MASTERY'
+  | 'QUALIFIED_RETENTION'
+  | 'TRANSFER_DEPTH_ADVANCE'
+  | 'ASSESSMENT_READINESS';
+
+export function orchestrationObjectiveType(reasonCode: OrchestrationReasonCode): OrchestrationObjectiveKind | null {
+  switch (reasonCode) {
+    case 'VERIFICATION_READY':
+      return 'VALIDATED_MASTERY';
+    case 'RETENTION_DUE':
+      return 'QUALIFIED_RETENTION';
+    case 'TRANSFER_PROGRESSION':
+      return 'TRANSFER_DEPTH_ADVANCE';
+    case 'ASSESSMENT_APPROACHING':
+      return 'ASSESSMENT_READINESS';
+    default:
+      return null;
+  }
+}

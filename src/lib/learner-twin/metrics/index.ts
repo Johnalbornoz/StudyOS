@@ -18,4 +18,5 @@ export { computeAggregateCalibration, readAggregateCalibration } from './calibra
 export { readPrerequisiteGaps } from './prerequisite-gaps';
 export { computeTransferCoverage, readTransferCoverage } from './transfer-coverage';
 export { readStudyPlanAdherence, type StudyPlanAdherenceOptions } from './study-plan-adherence';
+export { readOrchestrationObjectiveProgress } from './orchestration-objective-progress';
 export { computePersistence, readPersistence } from './persistence';
