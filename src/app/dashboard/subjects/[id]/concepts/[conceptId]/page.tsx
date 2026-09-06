@@ -8,12 +8,17 @@ import { getConceptView } from '@/lib/learner-twin';
 import { getLearningDebtCriteriaProgress } from '@/services/learning-debt.service';
 import { getTransferScore } from '@/services/transfer.service';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
+import { getBestLearningDecisionForConcept } from '@/services/adaptive-teaching.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
 import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
+import { activityLabel } from '@/app/dashboard/activityLabel';
+import { activityCta } from '@/app/dashboard/activityCta';
+import WhyThisV3 from '@/app/dashboard/WhyThisV3';
+import StartSessionButton from '@/app/dashboard/StartSessionButton';
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -36,9 +41,16 @@ function futureDay(date: string | null, t: ReturnType<typeof getMessages>): stri
  * Concept Detail: the drill-down endpoint of Progress/Subjects (never
  * a nav item of its own). Every number here comes from
  * getLearnerConceptState/getConceptEvidenceSummary -- no invented
- * metric, no LLM-generated explanation. CTA choice is a small
- * deterministic rule over the same learner state already computed for
- * this page, not a separate recommendation engine.
+ * metric, no LLM-generated explanation.
+ *
+ * Step 6L-C1-R1: Phase 4's LearningDecision (`nextDecision`) is the
+ * ONE perceptible "what should I do next?" authority on this page --
+ * see the "What next / Why" card. The page-local `primaryCTA`
+ * heuristic below is NOT a second recommendation: it only orders the
+ * pre-existing manual/optional concept tools (practice/soloCheck/
+ * review/tutor), which render with secondary styling and copy that
+ * never implies StudyUS selected them, whether or not a canonical
+ * decision exists.
  */
 export default async function ConceptDetailPage({
   params,
@@ -74,7 +86,7 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const [conceptView, evidence, activeDebt, history, transferScore, knowledgeState] = await Promise.all([
+  const [conceptView, evidence, activeDebt, history, transferScore, knowledgeState, nextDecision] = await Promise.all([
     getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -84,6 +96,16 @@ export default async function ConceptDetailPage({
     getConceptEvidenceHistory(studentId, conceptId, 20),
     getTransferScore(studentId, conceptId),
     getConceptKnowledgeState(studentId, conceptId),
+    // Step 6L-C1: the ONLY next-action authority for this section is
+    // Phase 4's own current decision for this concept -- never derived
+    // from mastery/retention/verification/knowledge-state locally on
+    // this page. Same background-write caveat already accepted for
+    // this exact call chain in 6L-B1 (getLearningDecisions ->
+    // getActiveDebts -> ensureConceptLocalizations): wrapped in
+    // .catch(() => null) so a failure here degrades to "omit the
+    // section" rather than breaking Concept Detail or fabricating a
+    // recommendation.
+    getBestLearningDecisionForConcept(studentId, conceptId).catch(() => null),
   ]);
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
@@ -145,11 +167,14 @@ export default async function ConceptDetailPage({
   const lastPracticed = conceptView!.memory.lastSuccessfulRetentionAt;
   const nextReviewDate = conceptView!.memory.nextReviewAt;
 
-  // Deterministic CTA choice -- same signals already on this page, no
-  // separate ranking engine. Low mastery wins first (foundational gap);
-  // then an independence gap (looks fine, hasn't proven it alone); then
-  // declining retention (needs a refresh, not new material); otherwise
-  // the concept is in good shape and the Tutor is for open questions.
+  // Step 6L-C1-R1: this heuristic no longer functions as a pedagogical
+  // recommendation -- Phase 4's LearningDecision (`nextDecision`,
+  // fetched above) is the one next-action authority on this page now.
+  // `primaryCTA` is kept ONLY to order the manual/optional concept-
+  // tools row below (most-likely-relevant first, from the same
+  // signals as before) -- it is never rendered as "what to do now,"
+  // never styled as primary/recommended, and never shown inside the
+  // situation banner.
   type CTA = 'practice' | 'soloCheck' | 'review' | 'tutor';
   const primaryCTA: CTA =
     state.masteryScore < 50
@@ -175,7 +200,11 @@ export default async function ConceptDetailPage({
     },
     tutor: { label: t['conceptDetail.ctaAskTutor'], href: `/dashboard/tutor?subjectId=${subjectId}&conceptId=${conceptId}` },
   };
-  const secondaryCTAs = (Object.keys(ctaConfig) as CTA[]).filter((k) => k !== primaryCTA);
+  // Step 6L-C1-R1: renamed from `secondaryCTAs` -- there is no more
+  // "primary" heuristic CTA to be secondary relative to. This is
+  // simply a display order (most-likely-relevant first) for a flat
+  // list of equal-weight, equally-styled manual tools.
+  const orderedManualToolKeys: CTA[] = [primaryCTA, ...(Object.keys(ctaConfig) as CTA[]).filter((k) => k !== primaryCTA)];
 
   const whyFacts: string[] = [];
   if (evidence.totalAttempts > 0) {
@@ -233,19 +262,64 @@ export default async function ConceptDetailPage({
       </div>
       <h1 style={{ marginBottom: 'var(--space-4)' }}>{concept.label}</h1>
 
+      {/*
+       * Step 6L-C1: "What next / Why" -- the ONLY next-action authority
+       * here is Phase 4's own current LearningDecision for this concept
+       * (nextDecision, fetched above via getBestLearningDecisionForConcept
+       * and never re-derived from mastery/retention/knowledge-state on
+       * this page). Presentation goes exclusively through the same
+       * certified mappers Today already uses (activityLabel/activityCta/
+       * WhyThisV3), and the CTA launches through the exact same
+       * canonical mechanism (StartSessionButton -> POST /api/learning/
+       * session/start -> startLearningSession) Today uses -- so a
+       * REMEDIATION decision lands on the certified 6L-B1 shell exactly
+       * as it does from Today, with no second routing table here. When
+       * Phase 4 has no current decision for this concept (null), the
+       * section is omitted entirely -- never a fabricated "Practice
+       * more" default.
+       */}
+      {nextDecision && (
+        <div
+          className="card"
+          style={{ marginBottom: 'var(--space-6)', borderColor: 'var(--brand)', borderWidth: 2, display: 'flex', flexDirection: 'column', gap: 4 }}
+        >
+          {/* Step 6L-C1-R1: a real heading (h2, same visual style via
+              .label) -- see the situation banner's own comment for why. */}
+          <h2 className="label" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t['conceptDetail.nextSectionTitle']}</h2>
+          <div style={{ fontSize: 18, fontWeight: 650 }}>{activityLabel(nextDecision.activityType, t)}</div>
+          <WhyThisV3 facts={nextDecision.facts} t={t} />
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <StartSessionButton
+              studentId={studentId}
+              actionConceptId={nextDecision.actionConceptId}
+              label={activityCta(nextDecision.activityType, t)}
+              accessibleLabel={`${activityCta(nextDecision.activityType, t)}: ${activityLabel(nextDecision.activityType, t)}`}
+              unavailableLabel={t['today3.unavailableBody']}
+              retryLabel={t['today3.retry']}
+              variant="primary"
+            />
+          </div>
+        </div>
+      )}
+
+      {/*
+       * Step 6L-C1-R1: this banner answers "what is my current
+       * situation?" only -- it no longer embeds its own "what to do
+       * now" action line. That question now has exactly one answer on
+       * this page (the canonical card above, when nextDecision
+       * exists); duplicating it here from a different, page-local
+       * heuristic was the exact conflict the 6L-C1 visual review
+       * flagged. The situation LABEL itself (conceptSituation) is
+       * unaffected -- still the same canonical, already-computed
+       * mapping from Knowledge State + memory status, unchanged.
+       */}
       {situation && (
         <div
           className="card"
           style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}
         >
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.situationTitle']}</div>
+          <h2 className="label" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t['conceptDetail.situationTitle']}</h2>
           <div style={{ fontSize: 18, fontWeight: 650 }}>{conceptSituationLabel(situation, t)}</div>
-          <div style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 4 }}>
-            <span style={{ fontWeight: 650 }}>{t['conceptDetail.situationNextLabel']}:</span>{' '}
-            <Link href={ctaConfig[primaryCTA].href} style={{ color: 'var(--brand-ink)' }}>
-              {ctaConfig[primaryCTA].label}
-            </Link>
-          </div>
         </div>
       )}
 
@@ -397,11 +471,19 @@ export default async function ConceptDetailPage({
         </div>
       )}
 
+      {/*
+       * Step 6L-C1-R1: demoted from a primary+secondary CTA row (which
+       * duplicated/competed with the canonical "what next" card above)
+       * to a flat row of equal-weight, secondary-styled manual tools.
+       * Title and styling deliberately never say "recommended" or
+       * "what to do now" -- these are optional ways to work with the
+       * concept, not a second next-action authority. Order is still
+       * `primaryCTA`-first (most-likely-relevant), but nothing here is
+       * visually or semantically privileged over the others.
+       */}
+      <h2 style={{ fontSize: 16, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.otherWaysTitle']}</h2>
       <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginBottom: 'var(--space-6)' }}>
-        <Link href={ctaConfig[primaryCTA].href} className="btn btn-primary">
-          {ctaConfig[primaryCTA].label}
-        </Link>
-        {secondaryCTAs.map((k) => (
+        {orderedManualToolKeys.map((k) => (
           <Link key={k} href={ctaConfig[k].href} className="btn btn-secondary">
             {ctaConfig[k].label}
           </Link>

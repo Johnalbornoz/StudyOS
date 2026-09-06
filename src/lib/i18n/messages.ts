@@ -162,6 +162,16 @@ export type MessageKey =
   | 'remediation.independentTitle' | 'remediation.independentNote'
   | 'remediation.notFoundTitle' | 'remediation.notFoundBody'
   | 'remediation.completedTitle' | 'remediation.completedBody' | 'remediation.backToToday'
+  // Step 6L-C1: one structural section heading for Concept Detail's new
+  // "what next / why" block -- the action/reason copy itself is owned
+  // entirely by the existing activityLabel/activityCta/WhyThisV3
+  // presentation layer, never duplicated here.
+  | 'conceptDetail.nextSectionTitle'
+  // Step 6L-C1-R1: the demoted, clearly-secondary framing for the
+  // pre-existing manual/legacy concept tools -- reused whenever
+  // Phase 4 does or doesn't have a canonical decision, so this row
+  // never implies it is itself a recommendation.
+  | 'conceptDetail.otherWaysTitle'
   | 'parent.title' | 'parent.subtitle' | 'parent.linkLabel' | 'parent.linkPlaceholder' | 'parent.linkButton'
   | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
   | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
@@ -493,6 +503,8 @@ const es: Messages = {
   'remediation.completedTitle': '¡Ruta de refuerzo completada!',
   'remediation.completedBody': 'Has terminado esta ruta de refuerzo.',
   'remediation.backToToday': 'Volver a Hoy',
+  'conceptDetail.nextSectionTitle': 'Lo siguiente',
+  'conceptDetail.otherWaysTitle': 'Otras formas de trabajar este concepto',
   'dashboard.avgMastery': 'Dominio promedio',
   'dashboard.avgMasterySubtitle': 'en todas tus materias',
   'dashboard.avgMasteryEmpty': 'sube contenido para empezar',
@@ -1239,6 +1251,8 @@ const en: Messages = {
   'remediation.completedTitle': 'Reinforcement path complete!',
   'remediation.completedBody': "You've finished this reinforcement path.",
   'remediation.backToToday': 'Back to Today',
+  'conceptDetail.nextSectionTitle': 'What next',
+  'conceptDetail.otherWaysTitle': 'Other ways to work on this concept',
   'dashboard.avgMastery': 'Average mastery',
   'dashboard.avgMasterySubtitle': 'across all subjects',
   'dashboard.avgMasteryEmpty': 'upload content to get started',
@@ -1985,6 +1999,8 @@ const de: Messages = {
   'remediation.completedTitle': 'Auffrischungsweg abgeschlossen!',
   'remediation.completedBody': 'Du hast diesen Auffrischungsweg beendet.',
   'remediation.backToToday': 'Zurück zu Heute',
+  'conceptDetail.nextSectionTitle': 'Als Nächstes',
+  'conceptDetail.otherWaysTitle': 'Andere Wege, an diesem Konzept zu arbeiten',
   'dashboard.avgMastery': 'Durchschnittliche Beherrschung',
   'dashboard.avgMasterySubtitle': 'in allen Fächern',
   'dashboard.avgMasteryEmpty': 'Lade Inhalte hoch, um zu starten',
@@ -2731,6 +2747,8 @@ const fr: Messages = {
   'remediation.completedTitle': 'Parcours de renforcement terminé !',
   'remediation.completedBody': 'Tu as terminé ce parcours de renforcement.',
   'remediation.backToToday': "Retour à Aujourd'hui",
+  'conceptDetail.nextSectionTitle': 'La suite',
+  'conceptDetail.otherWaysTitle': "D'autres façons de travailler ce concept",
   'dashboard.avgMastery': 'Maîtrise moyenne',
   'dashboard.avgMasterySubtitle': 'toutes matières confondues',
   'dashboard.avgMasteryEmpty': 'importez du contenu pour commencer',
@@ -3477,6 +3495,8 @@ const pt: Messages = {
   'remediation.completedTitle': 'Caminho de reforço concluído!',
   'remediation.completedBody': 'Você concluiu este caminho de reforço.',
   'remediation.backToToday': 'Voltar para Hoje',
+  'conceptDetail.nextSectionTitle': 'A seguir',
+  'conceptDetail.otherWaysTitle': 'Outras formas de trabalhar este conceito',
   'dashboard.avgMastery': 'Domínio médio',
   'dashboard.avgMasterySubtitle': 'em todas as suas matérias',
   'dashboard.avgMasteryEmpty': 'envie conteúdo para começar',
