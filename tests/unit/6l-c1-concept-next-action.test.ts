@@ -154,25 +154,39 @@ describe('Step 28 worktree protection (Part 10)', () => {
     expect(source).not.toMatch(/quiz-answer-guards/);
   });
 
-  it('messages.ts Step 28 confidenceRequired hunks are untouched by this step\'s edits (content-signature check)', () => {
-    // Mirrors the exact verification technique used in 6L-A-R1/6L-B1:
-    // the 6 confidenceRequired lines (2 per locale x 5, plus the type
-    // union member) must still be present, verbatim, in messages.ts.
+  it('this step touches ONLY its own conceptDetail.* i18n keys -- adds them, clobbers nothing, and never pulls in Step 28 content', () => {
+    // 6L-C1-R2 decoupling: the earlier version of this test REQUIRED the
+    // Step 28 `quiz.confidenceRequired*` strings to be present in
+    // messages.ts -- but those belong to a separate, uncommitted
+    // workstream, so a clean checkout of this release (which correctly
+    // does NOT carry Step 28) failed it. The real intent -- "6L-C1 must
+    // not overwrite or contaminate unrelated i18n data" -- is preserved
+    // here as a clean-checkout-safe invariant.
     const source = read('src/lib/i18n/messages.ts');
-    const expectedLines = [
-      "'quiz.confidenceRequiredHint': 'Selecciona una opción para continuar.',",
-      "'quiz.confidenceRequiredHelper': 'Selecciona qué tan seguro estás para continuar.',",
-      "'quiz.confidenceRequiredHint': 'Select an option to continue.',",
-      "'quiz.confidenceRequiredHelper': 'Select how confident you are to continue.',",
-      "'quiz.confidenceRequiredHint': 'Wähle eine Option aus, um fortzufahren.',",
-      "'quiz.confidenceRequiredHelper': 'Wähle aus, wie sicher du dir bist, um fortzufahren.',",
-      "'quiz.confidenceRequiredHint': 'Sélectionne une option pour continuer.',",
-      "'quiz.confidenceRequiredHelper': 'Sélectionne à quel point tu es sûr(e) pour continuer.',",
-      "'quiz.confidenceRequiredHint': 'Selecione uma opção para continuar.',",
-      "'quiz.confidenceRequiredHelper': 'Selecione o quão confiante você está para continuar.',",
-    ];
-    for (const line of expectedLines) {
-      expect(source).toContain(line);
+
+    // 1. 6L-C1's OWN keys are present: the MessageKey union member plus
+    //    exactly one entry per supported locale (es/en/de/fr/pt).
+    for (const key of ['conceptDetail.nextSectionTitle', 'conceptDetail.otherWaysTitle']) {
+      expect(source).toMatch(new RegExp(`\\|\\s*'${key.replace(/\./g, '\\.')}'`));
+      expect(source.split(`'${key}':`).length - 1).toBe(5);
+    }
+
+    // 2. 6L-C1 does NOT itself introduce Step 28 content. A clean
+    //    checkout of this exact release must never contain the
+    //    confidenceRequired strings -- that is a different release.
+    expect(source).not.toContain('quiz.confidenceRequired');
+
+    // 3. Additive only: a representative spread of pre-existing,
+    //    unrelated keys is still intact (no accidental clobber of the
+    //    file this step edits).
+    for (const untouched of [
+      "'quiz.confidenceQuestion':",
+      "'quiz.confidenceLow':",
+      "'dashboard.avgMastery':",
+      "'remediation.headerTitle':",
+      "'conceptDetail.situationTitle':",
+    ]) {
+      expect(source).toContain(untouched);
     }
   });
 });

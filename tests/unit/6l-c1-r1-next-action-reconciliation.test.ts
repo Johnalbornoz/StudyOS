@@ -143,22 +143,29 @@ describe('Step 28 / 6L-B1 / policy protection (re-verified for this reconciliati
     expect(source).not.toMatch(/quiz-answer-guards/);
   });
 
-  it('messages.ts Step 28 confidenceRequired hunks remain untouched (content-signature check)', () => {
+  it('this reconciliation touches ONLY its own conceptDetail.* i18n keys -- adds them, clobbers nothing, and never pulls in Step 28 content', () => {
+    // 6L-C1-R2 decoupling -- see the twin test in
+    // 6l-c1-concept-next-action.test.ts for the full rationale. The
+    // previous assertion required the uncommitted Step 28
+    // `quiz.confidenceRequired*` strings to be present, which fails on a
+    // clean checkout of this release (Step 28 is a separate workstream).
     const source = read('src/lib/i18n/messages.ts');
-    const expectedLines = [
-      "'quiz.confidenceRequiredHint': 'Selecciona una opción para continuar.',",
-      "'quiz.confidenceRequiredHelper': 'Selecciona qué tan seguro estás para continuar.',",
-      "'quiz.confidenceRequiredHint': 'Select an option to continue.',",
-      "'quiz.confidenceRequiredHelper': 'Select how confident you are to continue.',",
-      "'quiz.confidenceRequiredHint': 'Wähle eine Option aus, um fortzufahren.',",
-      "'quiz.confidenceRequiredHelper': 'Wähle aus, wie sicher du dir bist, um fortzufahren.',",
-      "'quiz.confidenceRequiredHint': 'Sélectionne une option pour continuer.',",
-      "'quiz.confidenceRequiredHelper': 'Sélectionne à quel point tu es sûr(e) pour continuer.',",
-      "'quiz.confidenceRequiredHint': 'Selecione uma opção para continuar.',",
-      "'quiz.confidenceRequiredHelper': 'Selecione o quão confiante você está para continuar.',",
-    ];
-    for (const line of expectedLines) {
-      expect(source).toContain(line);
+
+    for (const key of ['conceptDetail.nextSectionTitle', 'conceptDetail.otherWaysTitle']) {
+      expect(source).toMatch(new RegExp(`\\|\\s*'${key.replace(/\./g, '\\.')}'`));
+      expect(source.split(`'${key}':`).length - 1).toBe(5);
+    }
+
+    expect(source).not.toContain('quiz.confidenceRequired');
+
+    for (const untouched of [
+      "'quiz.confidenceQuestion':",
+      "'quiz.confidenceLow':",
+      "'dashboard.avgMastery':",
+      "'remediation.headerTitle':",
+      "'conceptDetail.situationTitle':",
+    ]) {
+      expect(source).toContain(untouched);
     }
   });
 
