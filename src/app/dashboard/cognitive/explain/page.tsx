@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import LearningSupportStatus from '../../LearningSupportStatus';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 
 export default function ExplainDefendPage() {
@@ -110,6 +111,11 @@ export default function ExplainDefendPage() {
         <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{conceptLabel}</Link>
       </div>
       <h1 style={{ marginBottom: 'var(--space-6)' }}>{t['cognitive.explainTitle']}</h1>
+
+      {/* Phase 6 Closeout A: Explain & Defend is always an independent
+          reasoning demonstration -- no hints, no AI help. Fixed by the
+          activity's identity, not derived from any learner state. */}
+      <LearningSupportStatus assistanceMode="INDEPENDENT" context="EXPLAIN" t={t} />
 
       <div className="card" style={{ padding: 'var(--space-6)' }}>
         <p id="explain-prompt" style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>

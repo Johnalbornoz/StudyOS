@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import LearningSupportStatus from '../../LearningSupportStatus';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 
 type TransferDistance = 'NEAR' | 'MID' | 'FAR';
@@ -121,6 +122,11 @@ export default function TransferPage() {
           {t['cognitive.transferContextLabel']}: {context}
         </p>
       )}
+
+      {/* Phase 6 Closeout A: Transfer is always an independent attempt
+          (Evidence Mode INDEPENDENT) -- no hints, no AI help. Fixed by
+          the activity's identity, not derived from any learner state. */}
+      <LearningSupportStatus assistanceMode="INDEPENDENT" context="SOLO" t={t} />
 
       <div className="card" style={{ padding: 'var(--space-6)' }}>
         <p id="transfer-prompt" style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>

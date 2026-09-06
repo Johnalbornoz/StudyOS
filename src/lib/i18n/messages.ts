@@ -177,6 +177,12 @@ export type MessageKey =
   // live time-based prediction for the separate, evidence-based
   // "proven over time" retention dimension shown elsewhere on the page.
   | 'conceptDetail.freshnessCaption'
+  // Phase 6 Closeout A: in-flow assisted / independent indicator
+  // (src/app/dashboard/LearningSupportStatus.tsx). Presentation only --
+  // no policy, no raw enum.
+  | 'support.assistedTitle' | 'support.assistedHintNote'
+  | 'support.independentTitle' | 'support.independentNote'
+  | 'support.assessmentNote' | 'support.diagnosticNote' | 'support.explainNote'
   // Step 6L-C2-B1: per-concept Subjects-list qualifier section is
   // presented via the existing masteryStateLabel mapping -- no new
   // key/enum needed for the qualifier text itself.
@@ -514,6 +520,13 @@ const es: Messages = {
   'conceptDetail.nextSectionTitle': 'Lo siguiente',
   'conceptDetail.otherWaysTitle': 'Otras formas de trabajar este concepto',
   'conceptDetail.freshnessCaption': 'Una predicción según el tiempo transcurrido, no una prueba de que lo recuerdas.',
+  'support.assistedTitle': 'Con ayuda disponible',
+  'support.assistedHintNote': 'Puedes pedir una pista si te atascas.',
+  'support.independentTitle': 'Por tu cuenta',
+  'support.independentNote': 'Sin pistas ni ayuda de IA — esto muestra lo que sabes solo.',
+  'support.assessmentNote': 'Evaluación: sin pistas ni ayuda de IA.',
+  'support.diagnosticNote': 'Sin pistas — nos ayuda a ver dónde reforzar.',
+  'support.explainNote': 'Explícalo con tus palabras — sin ayuda de IA.',
   'dashboard.avgMastery': 'Dominio promedio',
   'dashboard.avgMasterySubtitle': 'en todas tus materias',
   'dashboard.avgMasteryEmpty': 'sube contenido para empezar',
@@ -1263,6 +1276,13 @@ const en: Messages = {
   'conceptDetail.nextSectionTitle': 'What next',
   'conceptDetail.otherWaysTitle': 'Other ways to work on this concept',
   'conceptDetail.freshnessCaption': 'A prediction based on time passed, not proof you still remember it.',
+  'support.assistedTitle': 'Help available',
+  'support.assistedHintNote': 'You can ask for a hint if you get stuck.',
+  'support.independentTitle': 'On your own',
+  'support.independentNote': 'No hints or AI help — this shows what you know on your own.',
+  'support.assessmentNote': 'Assessment: no hints or AI help.',
+  'support.diagnosticNote': 'No hints — this helps us see what to reinforce.',
+  'support.explainNote': 'Explain it in your own words — no AI help.',
   'dashboard.avgMastery': 'Average mastery',
   'dashboard.avgMasterySubtitle': 'across all subjects',
   'dashboard.avgMasteryEmpty': 'upload content to get started',
@@ -2012,6 +2032,13 @@ const de: Messages = {
   'conceptDetail.nextSectionTitle': 'Als Nächstes',
   'conceptDetail.otherWaysTitle': 'Andere Wege, an diesem Konzept zu arbeiten',
   'conceptDetail.freshnessCaption': 'Eine Vorhersage basierend auf der verstrichenen Zeit, kein Beweis, dass du dich noch erinnerst.',
+  'support.assistedTitle': 'Hilfe verfügbar',
+  'support.assistedHintNote': 'Du kannst einen Hinweis anfordern, wenn du nicht weiterkommst.',
+  'support.independentTitle': 'Auf eigene Faust',
+  'support.independentNote': 'Keine Hinweise oder KI-Hilfe — das zeigt, was du allein kannst.',
+  'support.assessmentNote': 'Prüfung: keine Hinweise oder KI-Hilfe.',
+  'support.diagnosticNote': 'Keine Hinweise — das hilft uns zu sehen, was zu vertiefen ist.',
+  'support.explainNote': 'Erkläre es mit deinen eigenen Worten — ohne KI-Hilfe.',
   'dashboard.avgMastery': 'Durchschnittliche Beherrschung',
   'dashboard.avgMasterySubtitle': 'in allen Fächern',
   'dashboard.avgMasteryEmpty': 'Lade Inhalte hoch, um zu starten',
@@ -2761,6 +2788,13 @@ const fr: Messages = {
   'conceptDetail.nextSectionTitle': 'La suite',
   'conceptDetail.otherWaysTitle': "D'autres façons de travailler ce concept",
   'conceptDetail.freshnessCaption': "Une prédiction basée sur le temps écoulé, pas une preuve que tu t'en souviens encore.",
+  'support.assistedTitle': 'Aide disponible',
+  'support.assistedHintNote': 'Tu peux demander un indice si tu bloques.',
+  'support.independentTitle': 'Par toi-même',
+  'support.independentNote': "Sans indices ni aide de l'IA — cela montre ce que tu sais seul(e).",
+  'support.assessmentNote': "Évaluation : sans indices ni aide de l'IA.",
+  'support.diagnosticNote': 'Sans indices — cela nous aide à voir quoi renforcer.',
+  'support.explainNote': "Explique-le avec tes propres mots — sans aide de l'IA.",
   'dashboard.avgMastery': 'Maîtrise moyenne',
   'dashboard.avgMasterySubtitle': 'toutes matières confondues',
   'dashboard.avgMasteryEmpty': 'importez du contenu pour commencer',
@@ -3510,6 +3544,13 @@ const pt: Messages = {
   'conceptDetail.nextSectionTitle': 'A seguir',
   'conceptDetail.otherWaysTitle': 'Outras formas de trabalhar este conceito',
   'conceptDetail.freshnessCaption': 'Uma previsão baseada no tempo decorrido, não uma prova de que você ainda se lembra.',
+  'support.assistedTitle': 'Com ajuda disponível',
+  'support.assistedHintNote': 'Você pode pedir uma dica se travar.',
+  'support.independentTitle': 'Por conta própria',
+  'support.independentNote': 'Sem dicas nem ajuda de IA — isto mostra o que você sabe sozinho.',
+  'support.assessmentNote': 'Avaliação: sem dicas nem ajuda de IA.',
+  'support.diagnosticNote': 'Sem dicas — isto nos ajuda a ver o que reforçar.',
+  'support.explainNote': 'Explique com suas palavras — sem ajuda de IA.',
   'dashboard.avgMastery': 'Domínio médio',
   'dashboard.avgMasterySubtitle': 'em todas as suas matérias',
   'dashboard.avgMasteryEmpty': 'envie conteúdo para começar',

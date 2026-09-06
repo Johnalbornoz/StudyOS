@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import LearningSupportStatus, { type LearningSupportContext } from '../LearningSupportStatus';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import MathAnswerEditor from '@/components/MathAnswerEditor';
 import MathText from '@/components/MathText';
@@ -16,6 +17,21 @@ type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' 
 // enforcement is still the server (see /api/quizzes/hint), this only
 // controls whether the Hint button even renders.
 const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review'];
+// Phase 6 Closeout A: which explanatory sentence the in-flow
+// assisted/independent indicator shows. Purely presentation copy
+// selection off the SAME fixed quizMode -> Evidence Mode taxonomy fact
+// the Hint button already uses -- no policy, no threshold. A mode that
+// is PRACTICE_EVIDENCE_MODES shows the "help available" copy; every
+// other mode is independent and shows the context-specific note below.
+const QUIZ_SUPPORT_CONTEXT: Record<QuizMode, LearningSupportContext> = {
+  topic_practice: 'PRACTICE',
+  review: 'PRACTICE',
+  quick_check: 'SOLO',
+  retention_check: 'SOLO',
+  cumulative_assessment: 'ASSESSMENT',
+  exam_simulation: 'ASSESSMENT',
+  diagnostic_check: 'DIAGNOSTIC',
+};
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
 interface VisualAid {
@@ -1070,6 +1086,24 @@ export default function QuizPage() {
       </div>
 
       <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
+        {/* Phase 6 Closeout A: in-flow assisted/independent indicator.
+            Presentation only -- derived from the quiz mode already in
+            the URL (or the resumed verification flow), never from
+            mastery/retention/hint thresholds and never from a
+            TeachingIntent fetch. Server (canUseAI) stays the AI-use
+            authority. */}
+        {(() => {
+          const isVerify = !!resumeVerifyAttemptId;
+          const supported = !isVerify && PRACTICE_EVIDENCE_MODES.includes(quizMode);
+          return (
+            <LearningSupportStatus
+              assistanceMode={supported ? 'SUPPORTED' : 'INDEPENDENT'}
+              hintsAvailable={supported}
+              context={isVerify ? 'SOLO' : QUIZ_SUPPORT_CONTEXT[quizMode]}
+              t={t}
+            />
+          );
+        })()}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
           <span
             style={{
