@@ -58,6 +58,7 @@ import { getStudentMastery } from './mastery.service';
 import { getIndependentMastery } from './learner-model.service';
 import { getAssessmentStateForConcept } from './assessment-verification.service';
 import { getPhase4MemorySignalsForStudent } from './memory-read.service';
+import { getPhase4TransferSignalsForStudent } from './transfer-read.service';
 import {
   consolidateSignals,
   buildLearningDecisions,
@@ -164,7 +165,7 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
 
   const policy = await getActiveMasteryPolicy();
 
-  const [dueItems, activeRemediations, activeDiagnoses, recurringMisconceptions, activeDebts, calibrationConflicts, upcomingExams, masteryRows, phase4MemorySignals] =
+  const [dueItems, activeRemediations, activeDiagnoses, recurringMisconceptions, activeDebts, calibrationConflicts, upcomingExams, masteryRows, phase4MemorySignals, phase4TransferSignals] =
     await Promise.all([
       getDueItems(studentId),
       failSoftSignalSource('getActiveRemediationsWithLabels', [], getActiveRemediationsWithLabels(studentId)),
@@ -179,6 +180,12 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
       // header). A student with no canonical memory rows yet gets an
       // empty Map, never an error.
       failSoftSignalSource('getPhase4MemorySignalsForStudent', new Map(), getPhase4MemorySignalsForStudent(db, studentId)),
+      // Phase 7 Step 7E1: ONE batch read of concept_transfer_state.
+      // Advisory only -- a student with no transfer-state rows gets an
+      // empty Map and a byte-identical decision (evaluateSignal returns
+      // null for every NEAR_TRANSFER_GAP / FAR_TRANSFER_GAP /
+      // TRANSFER_FRAGILE, and no decision function branches on them).
+      failSoftSignalSource('getPhase4TransferSignalsForStudent', new Map(), getPhase4TransferSignalsForStudent(db, studentId)),
     ]);
 
   const signals: LearningSignal[] = [];
@@ -424,6 +431,50 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
     }
     if (ks.validationReadiness === 'TRANSFER_REQUIRED') {
       signals.push({ type: 'TRANSFER_REQUIRED', source: 'knowledge-state.service', conceptId, subjectId: ks.subjectId, metadata: {} });
+    }
+
+    // Phase 7 Step 7E1: canonical concept_transfer_state-derived
+    // signals. ADVISORY -- surfaced for observability and downstream
+    // (7E2+), never priority-driving here (evaluateSignal returns null
+    // for all three) and never consulted by any WHAT-decision branch. A
+    // concept absent from phase4TransferSignals (no concept_transfer_state
+    // row) gets none of them -- no fallback, no fabricated zero.
+    const transferSignal = phase4TransferSignals.get(conceptId);
+    if (transferSignal) {
+      if (transferSignal.nearTransferGap) {
+        signals.push({
+          type: 'NEAR_TRANSFER_GAP',
+          source: 'transfer-read.service',
+          conceptId,
+          subjectId: ks.subjectId,
+          metadata: { nearTransferSuccessCount: transferSignal.nearTransferSuccessCount, transferDepth: transferSignal.transferDepth },
+        });
+      }
+      if (transferSignal.farTransferGap) {
+        signals.push({
+          type: 'FAR_TRANSFER_GAP',
+          source: 'transfer-read.service',
+          conceptId,
+          subjectId: ks.subjectId,
+          metadata: {
+            midTransferSuccessCount: transferSignal.midTransferSuccessCount,
+            farTransferSuccessCount: transferSignal.farTransferSuccessCount,
+            transferDepth: transferSignal.transferDepth,
+          },
+        });
+      }
+      if (transferSignal.transferFragile) {
+        signals.push({
+          type: 'TRANSFER_FRAGILE',
+          source: 'transfer-read.service',
+          conceptId,
+          subjectId: ks.subjectId,
+          metadata: {
+            demonstratedTransferScore: transferSignal.demonstratedTransferScore,
+            transferDepth: transferSignal.transferDepth,
+          },
+        });
+      }
     }
 
     if (masteryRow && masteryRow.mastery_score !== null) {

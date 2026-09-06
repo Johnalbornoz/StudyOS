@@ -66,7 +66,24 @@ export type LearningSignalType =
    * independent confirmation" red-team scenario Phase 3 was built to
    * expose but this engine, until Phase 4, never consumed.
    */
-  | 'INSUFFICIENT_INDEPENDENT_EVIDENCE';
+  | 'INSUFFICIENT_INDEPENDENT_EVIDENCE'
+  /**
+   * Phase 7 Step 7E1: canonical `concept_transfer_state`-derived
+   * signals (via transfer-read.service.ts::getPhase4TransferSignalsForStudent).
+   * They complement -- never replace -- the pre-7E `TRANSFER_REQUIRED`
+   * (knowledge-state validationReadiness) and `TRANSFER_GAP`
+   * (adaptive-learning-policy reasonCode). Phase 4 keeps WHAT
+   * authority: in 7E1 these are ADVISORY only -- evaluateSignal returns
+   * null for them, and no decision function branches on them, so a
+   * student with no transfer state gets a byte-identical decision.
+   * NEAR_TRANSFER_GAP: transfer engaged, no depth established yet.
+   * FAR_TRANSFER_GAP: near transfer demonstrated, far/generalized not.
+   * TRANSFER_FRAGILE: transfer demonstrated once, current rolling
+   * transfer score is weak (< TRANSFER_FRAGILE_SCORE_THRESHOLD).
+   */
+  | 'NEAR_TRANSFER_GAP'
+  | 'FAR_TRANSFER_GAP'
+  | 'TRANSFER_FRAGILE';
 
 /**
  * One true fact about one concept, from one source. Signals are never
@@ -341,6 +358,16 @@ export const EXAM_CRITICAL_DAYS = 2;
 export const FORGETTING_RISK_THRESHOLD = 50;
 
 /**
+ * Phase 7 Step 7E1: below this rolling demonstrated-transfer score
+ * (computeTransferScore, 0-100), a concept that HAS demonstrated
+ * transfer at some depth is flagged TRANSFER_FRAGILE -- the
+ * deliberately non-monotonic counterpart to the monotonic
+ * `transfer_depth`. Advisory only in 7E1 (evaluateSignal returns null
+ * for it); it never drives priority or the WHAT decision here.
+ */
+export const TRANSFER_FRAGILE_SCORE_THRESHOLD = 50;
+
+/**
  * Step 6H-B: the existing "due soon" lookahead window for
  * RETENTION_REVIEW_DUE, preserved exactly from
  * learning-scheduler.service.ts's own DEFAULT_APPROACHING_WITHIN_DAYS
@@ -425,6 +452,13 @@ function evaluateSignal(signal: LearningSignal): { band: number; modifier: numbe
     // repair" states) -- it never drives priority on its own so the two
     // sources are never double-counted.
     case 'REMEDIATION_UNFINISHED':
+      return null;
+    // Phase 7 Step 7E1: surfaced for observability / downstream (7E2+),
+    // but ADVISORY -- they never drive priority or the WHAT decision in
+    // 7E1. Phase 4 keeps authority; changing this is 7E2's concern.
+    case 'NEAR_TRANSFER_GAP':
+    case 'FAR_TRANSFER_GAP':
+    case 'TRANSFER_FRAGILE':
       return null;
     default:
       return null;
