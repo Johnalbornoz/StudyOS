@@ -6,9 +6,6 @@ import { getSubjectAccentColor } from '@/lib/subject-color';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import OnboardingChecklist from './OnboardingChecklist';
-import AcademicProfileCTA from './AcademicProfileCTA';
-import { getAcademicProfile } from '@/services/academic-profile.service';
 import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
 import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 
@@ -45,41 +42,11 @@ export default async function DashboardPage() {
   const user = await currentUser();
   const firstName = user?.firstName;
 
-  const [overview, quizSessionsResult, academicProfile] = await Promise.all([
-    getStudentProgressOverview(studentId, locale),
-    query(`SELECT 1 FROM quiz_sessions WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] })),
-    getAcademicProfile(studentId).catch(() => null),
-  ]);
-
-  const hasPracticed = quizSessionsResult.rows.length > 0;
-  const hasSubject = overview.subjects.length > 0;
-  const hasContent = overview.subjects.some((s) => s.conceptCount > 0);
-
-  const onboardingSteps = [
-    {
-      done: hasSubject,
-      title: t['onboarding.step1Title'],
-      body: t['onboarding.step1Body'],
-      cta: t['onboarding.step1Cta'],
-      href: '/dashboard/subjects/new',
-    },
-    {
-      done: hasContent,
-      title: t['onboarding.step2Title'],
-      body: t['onboarding.step2Body'],
-      cta: t['onboarding.step2Cta'],
-      href: hasSubject ? `/dashboard/subjects/${overview.subjects[0].subjectId}` : '/dashboard/subjects/new',
-    },
-    {
-      done: hasPracticed,
-      title: t['onboarding.step3Title'],
-      body: t['onboarding.step3Body'],
-      cta: t['onboarding.step3Cta'],
-      href: hasSubject ? `/dashboard/subjects/${overview.subjects[0].subjectId}` : '/dashboard/subjects/new',
-    },
-  ];
-  const showOnboarding = onboardingSteps.some((s) => !s.done);
-  const showAcademicProfileCTA = !academicProfile?.profileCompleted;
+  // LX-2: Progress is a reporting surface only. First-time setup now
+  // lives in /dashboard/onboarding (first-destination routing) and the
+  // "what next" nudges belong to Today (LX-6) -- the old dismissible
+  // onboarding / academic-profile cards were removed from this page.
+  const overview = await getStudentProgressOverview(studentId, locale);
 
   const achievementLines: string[] = [];
   if (overview.achievements.validatedMasteryCount > 0) {
@@ -116,19 +83,6 @@ export default async function DashboardPage() {
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>
-
-      {showOnboarding && (
-        <OnboardingChecklist title={t['onboarding.title']} steps={onboardingSteps} dismissLabel={t['onboarding.dismiss']} />
-      )}
-
-      {showAcademicProfileCTA && (
-        <AcademicProfileCTA
-          title={t['profile.ctaTitle']}
-          body={t['profile.ctaBody']}
-          buttonLabel={t['profile.ctaButton']}
-          dismissLabel={t['profile.ctaDismiss']}
-        />
-      )}
 
       {/* 1. What I've achieved */}
       <div style={{ marginBottom: 'var(--space-8)' }}>

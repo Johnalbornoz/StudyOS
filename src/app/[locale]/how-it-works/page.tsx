@@ -87,6 +87,7 @@ export default async function HowItWorksPage({ params }: { params: Promise<{ loc
           <Step index={2} title={t['howItWorks.step2Title']} body={t['howItWorks.step2Body']} />
           <Step index={3} title={t['howItWorks.step3Title']} body={t['howItWorks.step3Body']} />
           <Step index={4} title={t['howItWorks.step4Title']} body={t['howItWorks.step4Body']} />
+          <Step index={5} title={t['howItWorks.step5Title']} body={t['howItWorks.step5Body']} />
         </div>
 
         <div style={{ marginTop: 'var(--space-10)', textAlign: 'center' }}>

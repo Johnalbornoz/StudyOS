@@ -48,7 +48,9 @@ export default function NewSubjectPage() {
       });
 
       if (res.ok) {
-        router.push('/dashboard');
+        // LX-2: after creating a subject the learner goes to "what
+        // should I do now" (Today), not the KPI Progress page.
+        router.push('/dashboard/today');
         router.refresh();
       } else {
         const body = await res.json().catch(() => ({}));

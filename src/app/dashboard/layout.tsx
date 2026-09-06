@@ -1,19 +1,16 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import { currentUser } from '@clerk/nextjs/server';
-import { UserButton } from '@clerk/nextjs';
-import Link from 'next/link';
-import { CalendarDays, LayoutDashboard, BookOpen, RotateCcw, Bell, ListChecks, MessageCircle, Users, Flame, ShieldCheck, CreditCard, GraduationCap } from 'lucide-react';
+import { auth } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/services/admin.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getStudentStreak } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { auth } from '@clerk/nextjs/server';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import { buildLearnerNav } from '@/lib/lx/learner-navigation';
 import LanguageSwitcher from './LanguageSwitcher';
-import SidebarNav from './SidebarNav';
+import LearnerShell, { type ResolvedNavGroup } from './LearnerShell';
 
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
@@ -22,11 +19,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId: clerkUserId } = await auth();
   const user = await currentUser();
 
@@ -50,109 +43,36 @@ export default async function DashboardLayout({
   }
 
   const t = getMessages(locale);
-
   const displayName = user?.firstName || 'Student';
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
   const isAdmin = isAdminEmail(email);
 
+  // LX-2E: navigation organised around learner intent
+  // (Today / My Path / Progress), resolved to plain strings for the
+  // client shell.
+  const navGroups: ResolvedNavGroup[] = buildLearnerNav({ isAdmin, debtCount, notifCount }).map((g) => ({
+    kind: g.kind,
+    title: g.titleKey ? t[g.titleKey as keyof typeof t] : undefined,
+    items: g.items.map((i) => ({
+      key: i.key,
+      href: i.href,
+      label: t[i.labelKey as keyof typeof t] ?? i.key,
+      iconKey: i.iconKey,
+      badge: i.badge,
+    })),
+  }));
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh' }}>
-      <aside
-        style={{
-          background: 'var(--bg-base)',
-          borderRight: '1px solid var(--border-default)',
-          padding: 'var(--space-6) var(--space-4)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--space-2)' }}>
-          <Image src="/logo.png" alt="StudyUS" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
-        </div>
-
-        <SidebarNav
-          groups={[
-            {
-              title: t['nav.groupLearning'],
-              items: [
-                { href: '/dashboard/today', label: t['nav.today'], icon: <CalendarDays size={16} strokeWidth={2} aria-hidden /> },
-                { href: '/dashboard/subjects', label: t['nav.subjects'], icon: <BookOpen size={16} strokeWidth={2} aria-hidden /> },
-                { href: '/dashboard/learning-debt', label: t['nav.debt'], icon: <RotateCcw size={16} strokeWidth={2} aria-hidden />, badge: debtCount },
-                { href: '/dashboard', label: t['nav.dashboard'], icon: <LayoutDashboard size={16} strokeWidth={2} aria-hidden /> },
-                { href: '/dashboard/study-plan', label: t['nav.studyPlan'], icon: <ListChecks size={16} strokeWidth={2} aria-hidden /> },
-                { href: '/dashboard/tutor', label: t['nav.tutor'], icon: <MessageCircle size={16} strokeWidth={2} aria-hidden /> },
-              ],
-            },
-            {
-              title: t['nav.groupAccount'],
-              items: [
-                { href: '/dashboard/notifications', label: t['nav.notifications'], icon: <Bell size={16} strokeWidth={2} aria-hidden />, badge: notifCount },
-                { href: '/dashboard/parent', label: t['nav.parent'], icon: <Users size={16} strokeWidth={2} aria-hidden /> },
-                { href: '/dashboard/billing', label: t['billing.title'], icon: <CreditCard size={16} strokeWidth={2} aria-hidden /> },
-              ],
-            },
-            ...(isAdmin
-              ? [
-                  {
-                    title: t['nav.groupSystem'],
-                    items: [
-                      { href: '/dashboard/admin', label: t['nav.admin'], icon: <ShieldCheck size={16} strokeWidth={2} aria-hidden /> },
-                    ],
-                  },
-                ]
-              : []),
-          ]}
-        />
-
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          <Link
-            href="/dashboard/profile"
-            className="nav-link"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-              padding: '8px var(--space-3)', borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)', fontSize: 13.5, fontWeight: 500,
-            }}
-          >
-            <GraduationCap size={16} strokeWidth={2} aria-hidden />
-            {t['profile.navLabel']}
-          </Link>
-
-          <LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />
-
-          <div
-            style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-              padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <UserButton appearance={{ elements: { avatarBox: { width: 30, height: 30 } } }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {displayName}
-              </div>
-            </div>
-            {streak > 0 && (
-              <div
-                title={`${streak} ${t['streak.days']} ${t['streak.label']}`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
-                  fontSize: 12.5, fontWeight: 700, color: 'var(--warning)',
-                }}
-              >
-                <Flame size={14} strokeWidth={2.2} aria-hidden fill="currentColor" />
-                <span className="tabular">{streak}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      <main style={{ padding: 'var(--space-8) var(--space-16) var(--space-16)', maxWidth: 1120 }}>
-        {children}
-      </main>
-    </div>
+    <LearnerShell
+      groups={navGroups}
+      displayName={displayName}
+      streak={streak}
+      streakLabel={`${streak} ${t['streak.days']} ${t['streak.label']}`}
+      menuLabel={t['nav.menu']}
+      closeLabel={t['nav.closeMenu']}
+      localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
+    >
+      {children}
+    </LearnerShell>
   );
 }

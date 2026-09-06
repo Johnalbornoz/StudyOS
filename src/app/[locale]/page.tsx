@@ -100,6 +100,37 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        {/* LX-2B: the learner-visible learning model -- Learn -> Practice
+            -> Prove -> Retain -> Transfer. Presentation/explanation only;
+            the journey itself is canonical (LX-1). */}
+        <section style={{ marginBottom: 'var(--space-12)' }}>
+          <h2 style={{ fontSize: 22, marginBottom: 6 }}>{t['marketing.stagesTitle']}</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 15.5, lineHeight: 1.55, maxWidth: '62ch', margin: '0 0 var(--space-6)' }}>
+            {t['marketing.stagesIntro']}
+          </p>
+          <ol
+            style={{
+              listStyle: 'none', margin: 0, padding: 0,
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)',
+            }}
+          >
+            {([
+              [t['marketing.stageLearnName'], t['marketing.stageLearnBody']],
+              [t['marketing.stagePracticeName'], t['marketing.stagePracticeBody']],
+              [t['marketing.stageProveName'], t['marketing.stageProveBody']],
+              [t['marketing.stageRetainName'], t['marketing.stageRetainBody']],
+              [t['marketing.stageTransferName'], t['marketing.stageTransferBody']],
+            ] as const).map(([name, body], i) => (
+              <li key={name} style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}>
+                <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 4 }}>
+                  {i + 1}. {name}
+                </div>
+                <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-12)' }}>
           <Section title={t['marketing.section1Title']} body={t['marketing.section1Body']} />
           <Section title={t['marketing.section2Title']} body={t['marketing.section2Body']} />
