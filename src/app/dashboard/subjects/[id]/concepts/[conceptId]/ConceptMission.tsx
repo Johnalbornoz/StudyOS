@@ -41,7 +41,9 @@ function milestoneStatusText(m: ConceptMissionMilestone, t: T): string {
       ? 'conceptMission.milestone.current'
       : m.position === 'PASSED'
         ? 'conceptMission.milestone.passed'
-        : 'conceptMission.milestone.upcoming';
+        : m.position === 'INDETERMINATE'
+          ? 'conceptMission.milestone.indeterminate'
+          : 'conceptMission.milestone.upcoming';
   return (t[key as keyof T] as string).replace('{stage}', rungLabel);
 }
 
@@ -49,21 +51,25 @@ function markerGlyph(m: ConceptMissionMilestone): string {
   if (m.demonstrated) return '✓';
   if (m.position === 'CURRENT') return '●';
   if (m.position === 'PASSED') return '–';
+  if (m.position === 'INDETERMINATE') return '·';
   return '○';
 }
 
 function JourneyRail({ view, t }: { view: ConceptMissionView; t: T }) {
-  const { milestones, stage, intervention } = view.journey;
+  const journey = view.journey;
+  const unavailable = journey.status === 'UNAVAILABLE';
   return (
     <section aria-labelledby="cm-journey-title" style={{ marginBottom: 'var(--space-6)' }}>
       <h2 id="cm-journey-title" className="label" style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 'var(--space-2)' }}>
         {t['conceptMission.journeyTitle']}
       </h2>
       <p style={{ margin: '0 0 var(--space-3)', fontSize: 15, fontWeight: 600 }}>
-        {t['conceptMission.journeyYouAreHere'].replace('{stage}', stageLabel(stage, t))}
+        {unavailable
+          ? t['conceptMission.journeyUnavailable']
+          : t['conceptMission.journeyYouAreHere'].replace('{stage}', stageLabel(journey.stage, t))}
       </p>
       <ol className="cm-rail">
-        {milestones.map((m) => (
+        {journey.milestones.map((m) => (
           <li
             key={m.rung}
             className={`cm-rung cm-rung-${m.position.toLowerCase()}${m.demonstrated ? ' cm-rung-done' : ''}`}
@@ -77,10 +83,12 @@ function JourneyRail({ view, t }: { view: ConceptMissionView; t: T }) {
           </li>
         ))}
       </ol>
-      <p style={{ margin: 'var(--space-3) 0 0', fontSize: 13.5, color: 'var(--text-secondary)' }}>
-        {(t[`conceptMission.reason.${view.journey.reasonCode}` as keyof T] as string) ?? ''}
-      </p>
-      {intervention === 'REINFORCE' && (
+      {!unavailable && (
+        <p style={{ margin: 'var(--space-3) 0 0', fontSize: 13.5, color: 'var(--text-secondary)' }}>
+          {(t[`conceptMission.reason.${journey.reasonCode}` as keyof T] as string) ?? ''}
+        </p>
+      )}
+      {!unavailable && journey.intervention === 'REINFORCE' && (
         <div
           className="card"
           style={{ marginTop: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}

@@ -1,5 +1,5 @@
 /**
- * LX-3B -- CONCEPT MISSION READ MODEL (pure presentation).
+ * LX-3B / LX-3R -- CONCEPT MISSION READ MODEL (pure presentation).
  *
  * Turns already-canonical StudyUS learning truth for ONE (student,
  * concept) into the single presentation structure the Concept Mission
@@ -19,9 +19,7 @@
  *   - NEVER chooses an ActivityType. The one primary action is a
  *     verbatim pass-through of the canonical Phase 4 `LearningDecision`
  *     (`getBestLearningDecisionForConcept`). When Phase 4 has no
- *     decision, the Mission shows NO activity -- it falls back to
- *     "understand it first" (Learn) or, when the concept is already
- *     validated, "nothing required now".
+ *     decision, the Mission shows NO activity.
  *   - NEVER invents completion history. A journey rung is only marked
  *     "demonstrated" when a specific canonical record proves it
  *     (evidence rows / independent-evidence rows / a real retention
@@ -30,28 +28,28 @@
  *   - Derives the learner-visible stage exclusively through LX-1's pure
  *     `deriveLearnerJourneyStage` contract.
  *
- * THE ONE DERIVATION THIS MODULE PERFORMS BEYOND PASS-THROUGH
- * ---------------------------------------------------------------
- * `deriveLearnerJourneyStage` requires a Phase 4B `LearningState`. That
- * value only exists while Phase 4 has an actionable decision for the
- * concept. For a brand-new concept (no decision) or an already-
- * validated one (no decision), there is no canonical `LearningState`,
- * so this module maps the two remaining canonical knowledge-state
- * facts to the only two journey endpoints that need no decision-level
- * signal:
+ * JOURNEY STATE SOURCE (LX-3R repair)
+ * ----------------------------------
+ * `deriveLearnerJourneyStage` needs a Phase 4B `LearningState`. This
+ * module NEVER invents one. The read boundary
+ * (`concept-mission-view.service.ts`) resolves it canonically and hands
+ * this builder a discriminated `journeyInput`:
  *
- *   masteryState == null | 'UNKNOWN'        -> LearningState 'NOT_STARTED'
- *   masteryState == 'VALIDATED_MASTERY'     -> LearningState 'VALIDATED'
- *   otherwise (residual DEVELOPING band)    -> LearningState 'DEVELOPING'
+ *   { kind: 'RESOLVED', learningState, source }
+ *       source 'LEARNING_DECISION'          -- from the Phase 4 LearningDecision itself
+ *       source 'CANONICAL_POLICY_NO_SIGNALS'-- Phase 4 produced no decision for this
+ *                                             concept (authoritatively zero signals),
+ *                                             so the boundary called the CANONICAL pure
+ *                                             policy `computeLearningState({knowledgeState,
+ *                                             signals: []})` -- reused verbatim, never
+ *                                             re-implemented.
+ *   { kind: 'UNAVAILABLE' }
+ *       -- the decision read FAILED (threw). Canonical truth is genuinely
+ *          unavailable; the Mission says so and shows no stage marker.
  *
- * This is a state-enum -> state-enum translation, not a score
- * computation and not a re-ordering of `computeLearningState`'s
- * precedence (there are no competing signals to order -- by definition
- * the orchestrator produced no decision). `deriveLearnerJourneyStage`
- * rule 7 then splits the DEVELOPING band using the canonical
- * `masteryState` / `validationReadiness` it already consumes.
- * `journey.source` records which path was taken so the boundary stays
- * auditable.
+ * There is NO `VALIDATED_MASTERY -> VALIDATED` special case and NO
+ * `otherwise -> DEVELOPING` fallback here. Absence of a decision is
+ * never converted into an invented stage by this layer.
  */
 
 import {
@@ -66,7 +64,7 @@ import type { TransferDepth } from '@/lib/transfer-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
 
 /** Bumped only when the shape or the derivation rules here change. */
-export const CONCEPT_MISSION_VIEW_VERSION = 1 as const;
+export const CONCEPT_MISSION_VIEW_VERSION = 2 as const;
 
 /* ------------------------------------------------------------------ */
 /* Inputs -- every field is an output of an existing canonical source  */
@@ -89,6 +87,17 @@ export interface ConceptMissionLearningDecision {
   facts: LearningFact[];
 }
 
+export type ConceptMissionJourneySource = 'LEARNING_DECISION' | 'CANONICAL_POLICY_NO_SIGNALS';
+
+/**
+ * How the read boundary resolved the canonical learning state. The
+ * builder never computes this -- it only routes it into
+ * `deriveLearnerJourneyStage` (RESOLVED) or renders "unavailable".
+ */
+export type ConceptMissionJourneyInput =
+  | { kind: 'RESOLVED'; learningState: LearningState; source: ConceptMissionJourneySource }
+  | { kind: 'UNAVAILABLE' };
+
 /** Canonical Phase 6 memory facts (`ConceptView.memory`). `null` when no concept_memory_state row exists yet. */
 export interface ConceptMissionMemory {
   /** A genuine retention-success timestamp -- the only proof that RETAIN was demonstrated. */
@@ -106,7 +115,11 @@ export interface ConceptMissionInputs {
   /** Pre-interpolated fallback goal copy (interface language). Used only when `conceptDescription` is blank. */
   goalFallbackText: string;
   knowledgeState: ConceptMissionKnowledgeState | null;
+  /** How the boundary canonically resolved the journey state. See ConceptMissionJourneyInput. */
+  journeyInput: ConceptMissionJourneyInput;
+  /** The Phase 4 decision, for the NOW card only. `null` = NO_CANONICAL_ACTION (including on a read failure). */
   learningDecision: ConceptMissionLearningDecision | null;
+  /** Canonical Phase 6 memory facts (`ConceptView.memory`). `null` when no row yet. */
   memory: ConceptMissionMemory | null;
   /** Canonical Phase 7 depth (`concept_transfer_state.transfer_depth`). `null` when no row yet. */
   transferDepth: TransferDepth | null;
@@ -118,16 +131,10 @@ export interface ConceptMissionInputs {
 /* View                                                               */
 /* ------------------------------------------------------------------ */
 
-export type ConceptMissionJourneySource =
-  | 'LEARNING_DECISION'
-  | 'KNOWLEDGE_STATE_VALIDATED'
-  | 'KNOWLEDGE_STATE_RESIDUAL'
-  | 'NO_KNOWLEDGE_STATE';
-
 /** The five learner-visible journey rungs. READY_TO_PROVE is a readiness flag on PROVE, not a sixth rung. */
 export type ConceptMissionRung = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER';
 
-export type ConceptMissionMilestonePosition = 'PASSED' | 'CURRENT' | 'UPCOMING';
+export type ConceptMissionMilestonePosition = 'PASSED' | 'CURRENT' | 'UPCOMING' | 'INDETERMINATE';
 
 export type ConceptMissionDemonstratedBy =
   | 'EVIDENCE_RECORDED'
@@ -137,6 +144,7 @@ export type ConceptMissionDemonstratedBy =
 
 export interface ConceptMissionMilestone {
   rung: ConceptMissionRung;
+  /** 'INDETERMINATE' when the canonical learning state is unavailable -- the rail is shown without a "you are here". */
   position: ConceptMissionMilestonePosition;
   /** True only when a specific canonical record proves this rung was reached. Never inferred from `position`. */
   demonstrated: boolean;
@@ -145,14 +153,22 @@ export interface ConceptMissionMilestone {
   readyToProve?: boolean;
 }
 
-export interface ConceptMissionJourney {
-  stage: LearnerJourneyStage;
-  intervention: LearnerJourneyIntervention | null;
-  /** Raw reason code from `deriveLearnerJourneyStage` -- the page maps it to `conceptMission.reason.*` copy. */
-  reasonCode: string;
-  milestones: ConceptMissionMilestone[];
-  source: ConceptMissionJourneySource;
-}
+export type ConceptMissionJourney =
+  | {
+      status: 'RESOLVED';
+      stage: LearnerJourneyStage;
+      intervention: LearnerJourneyIntervention | null;
+      /** Raw reason code from `deriveLearnerJourneyStage` -- the page maps it to `conceptMission.reason.*` copy. */
+      reasonCode: string;
+      milestones: ConceptMissionMilestone[];
+      source: ConceptMissionJourneySource;
+    }
+  | {
+      status: 'UNAVAILABLE';
+      /** Why the stage cannot be shown -- honest, not a stage. */
+      reason: 'LEARNING_STATE_READ_FAILED';
+      milestones: ConceptMissionMilestone[];
+    };
 
 export type ConceptMissionNowKind = 'CANONICAL_ACTION' | 'NO_CANONICAL_ACTION';
 export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION';
@@ -182,7 +198,7 @@ export interface ConceptMissionLearn {
   available: true;
   /** 'REVIEW' when an explanation is already cached for this locale, else 'READ'. Copy hint only. */
   state: 'READ' | 'REVIEW';
-  /** PRIMARY_INLINE when understanding is the current job (stage LEARN, NOT_STARTED, or REINFORCE); else SECONDARY. */
+  /** PRIMARY_INLINE when understanding is the current job (stage LEARN / NOT_STARTED / REINFORCE, or state unavailable); else SECONDARY. */
   prominence: 'PRIMARY_INLINE' | 'SECONDARY';
 }
 
@@ -221,21 +237,6 @@ function currentRungIndex(stage: LearnerJourneyStage): number {
   }
 }
 
-/** Map the two decision-less knowledge-state facts to a coarse LearningState. See the module header. */
-function effectiveLearningState(
-  decision: ConceptMissionLearningDecision | null,
-  ks: ConceptMissionKnowledgeState | null,
-): { learningState: LearningState; source: ConceptMissionJourneySource } {
-  if (decision) return { learningState: decision.learningState, source: 'LEARNING_DECISION' };
-  if (ks == null || ks.masteryState === 'UNKNOWN') {
-    return { learningState: 'NOT_STARTED', source: 'NO_KNOWLEDGE_STATE' };
-  }
-  if (ks.masteryState === 'VALIDATED_MASTERY') {
-    return { learningState: 'VALIDATED', source: 'KNOWLEDGE_STATE_VALIDATED' };
-  }
-  return { learningState: 'DEVELOPING', source: 'KNOWLEDGE_STATE_RESIDUAL' };
-}
-
 /** Presence-of-canonical-record proof that a rung was reached. Never a score, never inferred from stage. */
 function demonstratedFor(
   rung: ConceptMissionRung,
@@ -255,14 +256,25 @@ function demonstratedFor(
   }
 }
 
+/**
+ * @param stage the resolved learner-visible stage, or `null` when the
+ *   canonical learning state is unavailable (every rung -> INDETERMINATE,
+ *   `demonstrated` still driven purely by canonical records).
+ */
 function buildMilestones(
-  stage: LearnerJourneyStage,
+  stage: LearnerJourneyStage | null,
   inputs: ConceptMissionInputs,
 ): ConceptMissionMilestone[] {
-  const currentIdx = currentRungIndex(stage);
+  const currentIdx = stage === null ? -1 : currentRungIndex(stage);
   return RUNG_ORDER.map((rung, i) => {
     const position: ConceptMissionMilestonePosition =
-      i < currentIdx ? 'PASSED' : i === currentIdx ? 'CURRENT' : 'UPCOMING';
+      stage === null
+        ? 'INDETERMINATE'
+        : i < currentIdx
+          ? 'PASSED'
+          : i === currentIdx
+            ? 'CURRENT'
+            : 'UPCOMING';
     const demonstratedBy = demonstratedFor(rung, inputs);
     const milestone: ConceptMissionMilestone = {
       rung,
@@ -281,8 +293,35 @@ function buildGoal(inputs: ConceptMissionInputs): ConceptMissionGoal {
   return { text: inputs.goalFallbackText, source: 'FALLBACK_FROM_NAME' };
 }
 
+function buildJourney(inputs: ConceptMissionInputs): ConceptMissionJourney {
+  if (inputs.journeyInput.kind === 'UNAVAILABLE') {
+    return {
+      status: 'UNAVAILABLE',
+      reason: 'LEARNING_STATE_READ_FAILED',
+      milestones: buildMilestones(null, inputs),
+    };
+  }
+  const { learningState, source } = inputs.journeyInput;
+  const journeyResult = deriveLearnerJourneyStage({
+    learningState,
+    masteryState: inputs.knowledgeState?.masteryState ?? null,
+    validationReadiness: inputs.knowledgeState?.validationReadiness ?? null,
+    memoryStatus: inputs.memory?.memoryStatus ?? null,
+    retentionDue: inputs.memory?.retentionDue ?? false,
+    transferDepth: inputs.transferDepth ?? null,
+  });
+  return {
+    status: 'RESOLVED',
+    stage: journeyResult.stage,
+    intervention: journeyResult.intervention,
+    reasonCode: journeyResult.reason,
+    milestones: buildMilestones(journeyResult.stage, inputs),
+    source,
+  };
+}
+
 function buildNow(
-  stage: LearnerJourneyStage,
+  journey: ConceptMissionJourney,
   decision: ConceptMissionLearningDecision | null,
 ): ConceptMissionNow {
   if (decision) {
@@ -294,21 +333,22 @@ function buildNow(
       fallback: null,
     };
   }
+  const consolidated = journey.status === 'RESOLVED' && journey.stage === 'CONSOLIDATED';
   return {
     kind: 'NO_CANONICAL_ACTION',
     activityType: null,
     actionConceptId: null,
     facts: [],
-    fallback: stage === 'CONSOLIDATED' ? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST',
+    fallback: consolidated ? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST',
   };
 }
 
-function buildLearn(
-  stage: LearnerJourneyStage,
-  intervention: LearnerJourneyIntervention | null,
-  hasCachedExplanation: boolean,
-): ConceptMissionLearn {
-  const understandingIsTheJob = intervention === 'REINFORCE' || stage === 'LEARN' || stage === 'NOT_STARTED';
+function buildLearn(journey: ConceptMissionJourney, hasCachedExplanation: boolean): ConceptMissionLearn {
+  const understandingIsTheJob =
+    journey.status === 'UNAVAILABLE' ||
+    journey.intervention === 'REINFORCE' ||
+    journey.stage === 'LEARN' ||
+    journey.stage === 'NOT_STARTED';
   return {
     available: true,
     state: hasCachedExplanation ? 'REVIEW' : 'READ',
@@ -317,21 +357,12 @@ function buildLearn(
 }
 
 /**
- * Pure. Deterministic. No I/O. Given already-fetched canonical values,
- * returns the one presentation structure the Concept Mission renders.
+ * Pure. Deterministic. No I/O. Given already-fetched canonical values
+ * (and a canonically-resolved `journeyInput`), returns the one
+ * presentation structure the Concept Mission renders.
  */
 export function buildConceptMissionView(inputs: ConceptMissionInputs): ConceptMissionView {
-  const { learningState, source } = effectiveLearningState(inputs.learningDecision, inputs.knowledgeState);
-
-  const journeyResult = deriveLearnerJourneyStage({
-    learningState,
-    masteryState: inputs.knowledgeState?.masteryState ?? null,
-    validationReadiness: inputs.knowledgeState?.validationReadiness ?? null,
-    memoryStatus: inputs.memory?.memoryStatus ?? null,
-    retentionDue: inputs.memory?.retentionDue ?? false,
-    transferDepth: inputs.transferDepth ?? null,
-  });
-
+  const journey = buildJourney(inputs);
   return {
     identity: {
       conceptName: inputs.conceptName,
@@ -339,15 +370,9 @@ export function buildConceptMissionView(inputs: ConceptMissionInputs): ConceptMi
       subjectId: inputs.subjectId,
     },
     goal: buildGoal(inputs),
-    journey: {
-      stage: journeyResult.stage,
-      intervention: journeyResult.intervention,
-      reasonCode: journeyResult.reason,
-      milestones: buildMilestones(journeyResult.stage, inputs),
-      source,
-    },
-    now: buildNow(journeyResult.stage, inputs.learningDecision),
-    learn: buildLearn(journeyResult.stage, journeyResult.intervention, inputs.hasCachedExplanation),
+    journey,
+    now: buildNow(journey, inputs.learningDecision),
+    learn: buildLearn(journey, inputs.hasCachedExplanation),
     contractVersion: CONCEPT_MISSION_VIEW_VERSION,
   };
 }

@@ -70,6 +70,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       streakLabel={`${streak} ${t['streak.days']} ${t['streak.label']}`}
       menuLabel={t['nav.menu']}
       closeLabel={t['nav.closeMenu']}
+      navLabel={t['nav.primary']}
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
     >
       {children}

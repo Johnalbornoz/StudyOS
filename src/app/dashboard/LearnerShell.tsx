@@ -70,9 +70,20 @@ export interface ResolvedNavGroup {
   items: ResolvedNavItem[];
 }
 
-function NavList({ groups, onNavigate, pathname }: { groups: ResolvedNavGroup[]; onNavigate?: () => void; pathname: string }) {
+function NavList({
+  groups,
+  onNavigate,
+  pathname,
+  label,
+}: {
+  groups: ResolvedNavGroup[];
+  onNavigate?: () => void;
+  pathname: string;
+  /** LX-3R: a localized, landmark-distinct label -- the sidebar and the drawer each pass their own. */
+  label: string;
+}) {
   return (
-    <nav aria-label="Primary" style={{ display: 'flex', flexDirection: 'column' }}>
+    <nav aria-label={label} style={{ display: 'flex', flexDirection: 'column' }}>
       {groups.map((group) => (
         <div key={group.kind}>
           {group.title && <div className="lx-nav-grouptitle">{group.title}</div>}
@@ -133,6 +144,7 @@ export default function LearnerShell({
   streakLabel,
   menuLabel,
   closeLabel,
+  navLabel,
   localeSwitcher,
   chrome = 'full',
   children,
@@ -143,6 +155,8 @@ export default function LearnerShell({
   streakLabel: string;
   menuLabel: string;
   closeLabel: string;
+  /** LX-3R: localized landmark name for the persistent sidebar nav (distinct from the drawer's, which uses menuLabel). */
+  navLabel: string;
   localeSwitcher: ReactNode;
   chrome?: 'full' | 'minimal';
   children: ReactNode;
@@ -229,7 +243,7 @@ export default function LearnerShell({
       {/* desktop sidebar */}
       <aside className="lx-sidebar">
         {logo}
-        <NavList groups={groups} pathname={pathname} />
+        <NavList groups={groups} pathname={pathname} label={navLabel} />
         <Footer displayName={displayName} streak={streak} streakLabel={streakLabel} localeSwitcher={localeSwitcher} />
       </aside>
 
@@ -259,7 +273,7 @@ export default function LearnerShell({
                 <X size={20} strokeWidth={2} aria-hidden />
               </button>
             </div>
-            <NavList groups={groups} pathname={pathname} onNavigate={() => setOpen(false)} />
+            <NavList groups={groups} pathname={pathname} onNavigate={() => setOpen(false)} label={menuLabel} />
             <Footer displayName={displayName} streak={streak} streakLabel={streakLabel} localeSwitcher={localeSwitcher} />
           </div>
         </>

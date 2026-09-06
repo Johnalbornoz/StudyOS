@@ -30,6 +30,9 @@ const KEYS = [
   'conceptMission.milestone.current',
   'conceptMission.milestone.upcoming',
   'conceptMission.milestone.demonstrated',
+  // LX-3R -- honest no-state presentation
+  'conceptMission.journeyUnavailable',
+  'conceptMission.milestone.indeterminate',
 ] as const;
 
 // every LearnerJourneyStage + every visible rung
@@ -76,9 +79,18 @@ describe('LX-3 Concept Mission i18n', () => {
     for (const loc of LOCALES) {
       expect(MESSAGES[loc]['conceptMission.goalFallbackTemplate']).toContain('{concept}');
       expect(MESSAGES[loc]['conceptMission.journeyYouAreHere']).toContain('{stage}');
-      for (const k of ['passed', 'current', 'upcoming', 'demonstrated']) {
+      for (const k of ['passed', 'current', 'upcoming', 'demonstrated', 'indeterminate']) {
         expect(MESSAGES[loc][`conceptMission.milestone.${k}` as keyof (typeof MESSAGES)[typeof loc]]).toContain('{stage}');
       }
+    }
+  });
+
+  it('LX-3R: the duplicate nav landmark label is localized and distinct from the drawer label', () => {
+    for (const loc of LOCALES) {
+      const primary = MESSAGES[loc]['nav.primary'];
+      const menu = MESSAGES[loc]['nav.menu'];
+      expect(typeof primary === 'string' && primary.length > 0, `${loc}:nav.primary`).toBe(true);
+      expect(primary).not.toBe(menu);
     }
   });
 

@@ -370,7 +370,10 @@ export type MessageKey =
   | 'conceptMission.reason.VALIDATED_MASTERY'
   | 'conceptMission.reason.UNDERSTANDING_STILL_FORMING'
   | 'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED'
-  | 'conceptMission.reason.BUILDING_EVIDENCE';
+  | 'conceptMission.reason.BUILDING_EVIDENCE'
+  | 'conceptMission.journeyUnavailable'
+  | 'conceptMission.milestone.indeterminate'
+  | 'nav.primary';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1256,6 +1259,9 @@ const es: Messages = {
   'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Todavía estás formándote una idea clara de esto.',
   'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Has practicado lo suficiente: estás listo para demostrarlo.',
   'conceptMission.reason.BUILDING_EVIDENCE': 'Estás ganando constancia entre distintos ejemplos.',
+  'conceptMission.journeyUnavailable': 'Estado de aprendizaje no disponible ahora mismo.',
+  'conceptMission.milestone.indeterminate': '{stage} — estado no disponible',
+  'nav.primary': 'Navegación principal',
 };
 
 const en: Messages = {
@@ -2140,6 +2146,9 @@ const en: Messages = {
   'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'You\'re still building a clear picture of this.',
   'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'You\'ve practised enough — you\'re ready to prove it.',
   'conceptMission.reason.BUILDING_EVIDENCE': 'You\'re building consistency across different examples.',
+  'conceptMission.journeyUnavailable': 'Learning status not available right now.',
+  'conceptMission.milestone.indeterminate': '{stage} — status not available',
+  'nav.primary': 'Main navigation',
 };
 
 const de: Messages = {
@@ -3024,6 +3033,9 @@ const de: Messages = {
   'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Du entwickelst noch ein klares Bild davon.',
   'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Du hast genug geübt – du bist bereit, es nachzuweisen.',
   'conceptMission.reason.BUILDING_EVIDENCE': 'Du baust Sicherheit über verschiedene Beispiele hinweg auf.',
+  'conceptMission.journeyUnavailable': 'Lernstatus derzeit nicht verfügbar.',
+  'conceptMission.milestone.indeterminate': '{stage} — Status nicht verfügbar',
+  'nav.primary': 'Hauptnavigation',
 };
 
 const fr: Messages = {
@@ -3908,6 +3920,9 @@ const fr: Messages = {
   'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Tu es encore en train de te faire une idée claire.',
   'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Tu t\'es assez entraîné — tu es prêt à le démontrer.',
   'conceptMission.reason.BUILDING_EVIDENCE': 'Tu gagnes en régularité sur différents exemples.',
+  'conceptMission.journeyUnavailable': 'Statut d\'apprentissage indisponible pour le moment.',
+  'conceptMission.milestone.indeterminate': '{stage} — statut indisponible',
+  'nav.primary': 'Navigation principale',
 };
 
 const pt: Messages = {
@@ -4792,6 +4807,9 @@ const pt: Messages = {
   'conceptMission.reason.UNDERSTANDING_STILL_FORMING': 'Você ainda está formando uma ideia clara disto.',
   'conceptMission.reason.EVIDENCE_SUFFICIENT_NOT_YET_VALIDATED': 'Você praticou o suficiente — está pronto para demonstrar.',
   'conceptMission.reason.BUILDING_EVIDENCE': 'Você está ganhando consistência entre exemplos diferentes.',
+  'conceptMission.journeyUnavailable': 'Status de aprendizagem indisponível no momento.',
+  'conceptMission.milestone.indeterminate': '{stage} — status indisponível',
+  'nav.primary': 'Navegação principal',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

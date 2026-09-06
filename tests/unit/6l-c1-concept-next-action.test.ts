@@ -74,7 +74,7 @@ describe('no raw orchestration internals ever reach the learner (Part 4)', () =>
     expect(component).not.toMatch(/>\s*\{view\.journey\.reasonCode\}\s*</);
     expect(component).not.toMatch(/>\s*\{now\.learningState\}\s*</);
     // reasonCode is only ever used to index the conceptMission.reason.* copy table
-    expect(component).toMatch(/conceptMission\.reason\.\$\{view\.journey\.reasonCode\}/);
+    expect(component).toMatch(/conceptMission\.reason\.\$\{journey\.reasonCode\}/);
   });
 
   it('every render of the decision goes through the certified activityLabel/activityCta mappers', () => {
@@ -136,15 +136,22 @@ describe('failure degradation (Part 3) -- decision lookup failure never breaks t
   const service = read(MISSION_SERVICE_PATH);
   const model = read(MISSION_MODEL_PATH);
 
-  it('the canonical call is wrapped in .catch(() => null), matching the 6L-B1-established pattern', () => {
-    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+  it('a decision-read failure is not silently swallowed -- it degrades to journey UNAVAILABLE, not a fake state (LX-3R)', () => {
+    // LX-3R changed the decision read: a thrown read must be
+    // distinguishable from a successful empty one, so it is no longer
+    // `.catch(() => null)`. The other reads still degrade softly.
+    expect(service).not.toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+    expect(service).toMatch(/status: 'READ_FAILED'/);
+    expect(service).toMatch(/journeyInput = \{ kind: 'UNAVAILABLE' \}/);
+    expect(service).toMatch(/getConceptView\(studentId, conceptId\)\.catch\(\(\) => null\)/);
   });
 
   it('a null decision yields NO_CANONICAL_ACTION with no activity -- never a fabricated default recommendation', () => {
     expect(model).toMatch(/kind: 'NO_CANONICAL_ACTION'/);
     // the no-decision fallback is LEARN_FIRST / CONSOLIDATED_NO_ACTION,
     // neither of which is an ActivityType from the taxonomy.
-    expect(model).toMatch(/fallback: stage === 'CONSOLIDATED' \? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST'/);
+    expect(model).toMatch(/journey\.status === 'RESOLVED' && journey\.stage === 'CONSOLIDATED'/);
+    expect(model).toMatch(/consolidated \? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST'/);
     // full behavioural coverage of the null path lives in
     // tests/unit/lx3-concept-mission.test.ts.
   });
@@ -153,7 +160,8 @@ describe('failure degradation (Part 3) -- decision lookup failure never breaks t
     const promiseAllBlocks = service.match(/await Promise\.all\(\[[\s\S]*?\]\);/g) ?? [];
     const decisionBlock = promiseAllBlocks.find((b) => b.includes('getBestLearningDecisionForConcept'));
     expect(decisionBlock).toBeTruthy();
-    expect(decisionBlock).toMatch(/\.catch\(\(\) => null\)/);
+    // LX-3R: the read resolves to a discriminated {status:'OK'|'READ_FAILED'} inside the Promise.all
+    expect(decisionBlock).toMatch(/status: 'READ_FAILED'/);
   });
 });
 

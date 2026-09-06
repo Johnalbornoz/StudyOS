@@ -290,7 +290,10 @@ describe('Step 28 / 6L-B1 / 6L-C1 / policy protection (Parts 15-18)', () => {
   it('LX-3: canonical next-action authority is preserved via the Concept Mission read boundary', () => {
     const service = read('src/services/concept-mission-view.service.ts');
     expect(service).toMatch(/import \{ getBestLearningDecisionForConcept \} from '@\/services\/adaptive-teaching\.service'/);
-    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.catch\(\(\) => null\)/);
+    // LX-3R: the decision read is a discriminated {status:'OK'|'READ_FAILED'}
+    // (a thrown read must not become a fake "no signals" state).
+    expect(service).toMatch(/getBestLearningDecisionForConcept\(studentId, conceptId\)\.then\(/);
+    expect(service).toMatch(/status: 'READ_FAILED'/);
 
     const component = read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptMission.tsx');
     expect(component).toMatch(/<WhyThisV3 facts=\{now\.facts\} t=\{t\} \/>/);
