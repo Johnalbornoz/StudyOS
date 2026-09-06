@@ -51,6 +51,7 @@ import {
   type MetricProjection,
   type MetricResult,
 } from './metrics';
+import { readOptionalDerivedMetric } from './optional-metric';
 
 const DEFAULT_HISTORY_LIMIT = 20;
 const DEFAULT_RECENT_EVIDENCE_LIMIT = 5;
@@ -327,10 +328,15 @@ export async function getConceptView(studentId: StudentId, conceptId: string, op
     // Phase 1D: raw behavioral observation only -- see ResponseTimingSignal's doc comment.
     R.readResponseTimingSignal(studentId, conceptId),
     // Phase 1E: derived learner metrics -- see docs/architecture/digital-learning-twin.md.
-    readPrerequisiteGaps(studentId, conceptId),
-    readHelpDependency(studentId, conceptId),
-    readLearningVelocity(studentId, conceptId),
-    readPersistence(studentId, conceptId),
+    // D6: OPTIONAL derived metrics -- a computation/read failure in one
+    // makes ONLY that metric unavailable (reason COMPUTATION_ERROR) +
+    // one structured WARN; it never rejects this projection. The
+    // required reads above stay unguarded (Concept Detail still fails
+    // closed if core Twin state cannot be read).
+    readOptionalDerivedMetric('readPrerequisiteGaps', () => readPrerequisiteGaps(studentId, conceptId), { conceptId, subjectId }),
+    readOptionalDerivedMetric('readHelpDependency', () => readHelpDependency(studentId, conceptId), { conceptId, subjectId }),
+    readOptionalDerivedMetric('readLearningVelocity', () => readLearningVelocity(studentId, conceptId), { conceptId, subjectId }),
+    readOptionalDerivedMetric('readPersistence', () => readPersistence(studentId, conceptId), { conceptId, subjectId }),
     // Step 6I: single-concept Phase 6 read -- ConceptView is inherently
     // one-concept-per-call already, so this is not the N+1 pattern
     // Section 18 warns about (that applies to SubjectView/Overview).

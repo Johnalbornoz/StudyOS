@@ -38,7 +38,16 @@ export type MetricUnavailableReason =
   | 'INSUFFICIENT_EVIDENCE'
   | 'INSUFFICIENT_TEMPORAL_HISTORY'
   | 'INSUFFICIENT_POLICY'
-  | 'NOT_APPLICABLE';
+  | 'NOT_APPLICABLE'
+  // D6: the metric is conceptually applicable and was requested, but
+  // StudyUS could not compute/read it during THIS operation (an
+  // unexpected error in the reader). Operational/unavailability
+  // metadata only -- it never means the learner failed, lacks
+  // evidence, the metric doesn't apply, or the metric wasn't
+  // requested, and it never alters official learner state. Used by
+  // readOptionalDerivedMetric so one optional derived metric's failure
+  // cannot take down the whole ConceptView projection.
+  | 'COMPUTATION_ERROR';
 
 export interface MetricUnavailable {
   available: false;
