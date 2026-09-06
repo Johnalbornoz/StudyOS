@@ -73,7 +73,21 @@ export type DecisionType =
   // precedent as TEACHING_STRATEGY_SELECTED / MEMORY_ANCHOR_ESTABLISHED
   // (decision_type / engine are plain text, no DB CHECK).
   | 'TRANSFER_EVIDENCE_QUALIFIED'
-  | 'TRANSFER_DEPTH_ADVANCED';
+  | 'TRANSFER_DEPTH_ADVANCED'
+  // Phase 8 Step 8B1: recorded by learning-plan-projector.service.ts --
+  // the SOLE writer of learning_plan / learning_plan_item -- inside its
+  // own per-student serialized transaction, NEVER on a semantic no-op
+  // (same proposed plan -> 0 writes, 0 events). PLAN_CREATED: a first
+  // ACTIVE plan for the student, or an orchestration-policy-version
+  // replacement. PLAN_REPLANNED: a semantic item / horizon diff on an
+  // existing ACTIVE plan. PLAN_ITEM_SUPERSEDED: one live plan item was
+  // superseded (a "move" = SUPERSEDE old + ADD new). Orchestration
+  // commitments only -- never learner-state truth, never PII. Same
+  // zero-migration precedent as the Phase 6/7 additions (decision_type /
+  // engine are plain text, no DB CHECK).
+  | 'PLAN_CREATED'
+  | 'PLAN_REPLANNED'
+  | 'PLAN_ITEM_SUPERSEDED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -99,7 +113,11 @@ export type DecisionEngine =
   | 'memory-engine'
   // Phase 7 Step 7D3: transfer-projector.service.ts -- see
   // TRANSFER_EVIDENCE_QUALIFIED / TRANSFER_DEPTH_ADVANCED.
-  | 'transfer-engine';
+  | 'transfer-engine'
+  // Phase 8 Step 8B1: learning-plan-projector.service.ts -- see
+  // PLAN_CREATED / PLAN_REPLANNED / PLAN_ITEM_SUPERSEDED. engineVersion
+  // is String(ORCHESTRATION_POLICY_VERSION).
+  | 'orchestration-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;
