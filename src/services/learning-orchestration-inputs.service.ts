@@ -78,6 +78,8 @@ export interface OrchestrationInputsDiagnostics {
   assessmentBatchReads: number;
   remediationBatchReads: number;
   curriculumReads: number;
+  /** 8F1: one batched read of student_unavailable_dates over the horizon. */
+  unavailableDateReads: number;
 }
 
 export interface OrchestrationInputs {
@@ -100,7 +102,7 @@ export interface OrchestrationInputs {
   curriculumEligible: EligibleCurriculumConcept[];
   activePlan: LearningPlanRow | null;
 
-  /** Populated in 8F1 (student_unavailable_dates). Empty here. */
+  /** 8F1: learner-declared unavailable dates within the horizon (YYYY-MM-DD, ascending). */
   unavailableDates: string[];
 
   diagnostics: OrchestrationInputsDiagnostics;
@@ -177,7 +179,8 @@ export async function getLearningOrchestrationInputs(
   const horizonStart = horizon.horizonStart!;
   const horizonEnd = horizon.horizonEnd!;
 
-  const [decisions, memorySignals, transferSignals, assessmentsRes, remediationRes, curriculumEligible, activePlan] = await Promise.all([
+  const [decisions, memorySignals, transferSignals, assessmentsRes, remediationRes, curriculumEligible, activePlan, unavailableRes] =
+    await Promise.all([
     getLearningDecisions(studentId, ctx.preferredLanguage), // Phase 4 -- ONE call
     getPhase4MemorySignalsForStudent(client, studentId, now), // Phase 6 -- ONE batch
     getPhase4TransferSignalsForStudent(client, studentId), // Phase 7 -- ONE batch
@@ -200,6 +203,14 @@ export async function getLearningOrchestrationInputs(
     ),
     getCurriculumEligibleConcepts(studentId, perSubjectLimit, client),
     getActiveLearningPlan(studentId, client),
+    // 8F1 -- learner-declared unavailable dates over the horizon (ONE batch).
+    client.query(
+      `SELECT unavailable_date
+       FROM student_unavailable_dates
+       WHERE student_id = $1 AND unavailable_date >= $2 AND unavailable_date <= $3
+       ORDER BY unavailable_date ASC`,
+      [studentId, horizonStart, horizonEnd],
+    ),
   ]);
 
   const assessments: UpcomingAssessment[] = assessmentsRes.rows.map((r) => ({
@@ -235,7 +246,7 @@ export async function getLearningOrchestrationInputs(
     activeRemediations,
     curriculumEligible,
     activePlan,
-    unavailableDates: [],
+    unavailableDates: unavailableRes.rows.map((r) => String(r.unavailable_date).slice(0, 10)),
     diagnostics: {
       phase4DecisionReads: 1,
       memoryBatchReads: 1,
@@ -243,6 +254,7 @@ export async function getLearningOrchestrationInputs(
       assessmentBatchReads: 1,
       remediationBatchReads: 1,
       curriculumReads: 1,
+      unavailableDateReads: 1,
     },
   };
 }
@@ -280,4 +292,78 @@ export async function captureLearnerTimezone(
     [studentId, ianaTimezone],
   );
   return { ok: true, timezone: ianaTimezone, created: res.rows[0]?.created === true };
+}
+
+// ---------------------------------------------------------------------
+// Capacity capture -- a second narrowly-scoped write, added in 8F1 so
+// the learner can set a real daily study budget. It UPSERTs ONLY the
+// `student_availability.max_daily_minutes` column; the study window and
+// timezone are never touched here. Like timezone capture it is invoked
+// ONLY from an explicit learner action, never from a read.
+// ---------------------------------------------------------------------
+
+/** Product-safe bounds for a learner-chosen daily study budget (minutes). */
+export const MIN_DAILY_STUDY_MINUTES = 15;
+export const MAX_DAILY_STUDY_MINUTES = 300;
+
+export type CapacityCaptureResult =
+  | { ok: true; maxDailyMinutes: number; created: boolean }
+  | { ok: false; error: 'OUT_OF_RANGE' };
+
+export async function captureLearnerCapacity(
+  studentId: string,
+  maxDailyMinutes: number,
+  client: DbExecutor = db,
+): Promise<CapacityCaptureResult> {
+  if (!Number.isFinite(maxDailyMinutes) || !Number.isInteger(maxDailyMinutes)) {
+    return { ok: false, error: 'OUT_OF_RANGE' };
+  }
+  if (maxDailyMinutes < MIN_DAILY_STUDY_MINUTES || maxDailyMinutes > MAX_DAILY_STUDY_MINUTES) {
+    return { ok: false, error: 'OUT_OF_RANGE' };
+  }
+  const res = await client.query(
+    `INSERT INTO student_availability (student_id, max_daily_minutes)
+     VALUES ($1, $2)
+     ON CONFLICT (student_id) DO UPDATE SET max_daily_minutes = EXCLUDED.max_daily_minutes, updated_at = NOW()
+     RETURNING (xmax = 0) AS created`,
+    [studentId, maxDailyMinutes],
+  );
+  return { ok: true, maxDailyMinutes, created: res.rows[0]?.created === true };
+}
+
+// ---------------------------------------------------------------------
+// Unavailable-date capture -- 8F1. Additive rows only; deleting a row
+// makes the day available again on the next rebuild. Never blocks
+// canonical evidence, never penalises cognitive state.
+// ---------------------------------------------------------------------
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export type UnavailableDateResult =
+  | { ok: true; date: string; action: 'ADDED' | 'REMOVED' | 'ALREADY' }
+  | { ok: false; error: 'INVALID_DATE' };
+
+export async function setLearnerUnavailableDate(
+  studentId: string,
+  isoDate: string,
+  unavailable: boolean,
+  client: DbExecutor = db,
+): Promise<UnavailableDateResult> {
+  if (typeof isoDate !== 'string' || !ISO_DATE_RE.test(isoDate) || Number.isNaN(Date.parse(isoDate))) {
+    return { ok: false, error: 'INVALID_DATE' };
+  }
+  if (unavailable) {
+    const res = await client.query(
+      `INSERT INTO student_unavailable_dates (student_id, unavailable_date)
+       VALUES ($1, $2)
+       ON CONFLICT (student_id, unavailable_date) DO NOTHING`,
+      [studentId, isoDate],
+    );
+    return { ok: true, date: isoDate, action: (res.rowCount ?? 0) > 0 ? 'ADDED' : 'ALREADY' };
+  }
+  await client.query(
+    `DELETE FROM student_unavailable_dates WHERE student_id = $1 AND unavailable_date = $2`,
+    [studentId, isoDate],
+  );
+  return { ok: true, date: isoDate, action: 'REMOVED' };
 }

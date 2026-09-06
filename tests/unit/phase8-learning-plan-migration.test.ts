@@ -26,10 +26,12 @@ function tableBody(name: string): string {
 }
 
 describe('8A1 -- learning_plan / learning_plan_item migration is additive and correctly shaped', () => {
-  it('exists and is the latest migration; uses a fresh date segment (no keyset collision)', () => {
+  it('exists with a fresh date segment (no keyset collision); 8F1 adds the only newer Phase 8 migration', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
     expect(files).toContain(MIGRATION_FILE);
-    expect(files[files.length - 1]).toBe(MIGRATION_FILE);
+    const idx = files.indexOf(MIGRATION_FILE);
+    // Nothing sorts between 8A1 and the 8F1 unavailable-dates migration.
+    expect(files[idx + 1]).toBe('20260910_1000_phase8_unavailable_dates.sql');
     const dates = files.map((f) => f.split('_')[0]);
     expect(dates.filter((d) => d === '20260909')).toEqual(['20260909']);
   });

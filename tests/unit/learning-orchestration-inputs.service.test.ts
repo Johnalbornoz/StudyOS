@@ -17,6 +17,8 @@ vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 import {
   getLearningOrchestrationInputs,
   captureLearnerTimezone,
+  captureLearnerCapacity,
+  setLearnerUnavailableDate,
 } from '@/services/learning-orchestration-inputs.service';
 
 const STU = 'p8c-student';
@@ -60,12 +62,15 @@ describe('8C1 -- query bound', () => {
     expect(inputs.diagnostics).toEqual({
       phase4DecisionReads: 1, memoryBatchReads: 1, transferBatchReads: 1,
       assessmentBatchReads: 1, remediationBatchReads: 1, curriculumReads: 1,
+      unavailableDateReads: 1,
     });
     const calls = queryMock.mock.calls.map((c) => String(c[0] ?? '').replace(/\s+/g, ' '));
     // Phase 8's OWN assessment read is the plain SELECT that filters by horizonStart -- exactly one.
     expect(calls.filter((c) => /FROM assessment_occurrences ao WHERE ao\.scheduled_date >= \$2/.test(c))).toHaveLength(1);
     // Phase 8's OWN curriculum-eligibility read -- exactly one.
     expect(calls.filter((c) => /ROW_NUMBER\(\) OVER \( PARTITION BY c\.subject_id/.test(c))).toHaveLength(1);
+    // 8F1 -- Phase 8's OWN batched unavailable-dates read -- exactly one.
+    expect(calls.filter((c) => /FROM student_unavailable_dates WHERE student_id = \$1 AND unavailable_date >= \$2/.test(c))).toHaveLength(1);
   });
 
   it('reads assessments via a PLAIN SELECT on assessment_occurrences (no getUpcomingForStudent hidden write)', async () => {
@@ -140,5 +145,45 @@ describe('8C1 -- captureLearnerTimezone (the ONLY write; explicit call only)', (
     expect(sql).toMatch(/INSERT INTO student_availability \(student_id, timezone\).*ON CONFLICT \(student_id\) DO UPDATE SET timezone = EXCLUDED\.timezone/);
     expect(sql).not.toMatch(/study_start_time|study_end_time|max_daily_minutes/);
     expect(queryMock.mock.calls[0][1]).toEqual([STU, 'America/Bogota']);
+  });
+});
+
+describe('8F1 -- captureLearnerCapacity (narrow write: max_daily_minutes only)', () => {
+  it('rejects an out-of-range or non-integer value with no query', async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    expect(await captureLearnerCapacity(STU, 5)).toEqual({ ok: false, error: 'OUT_OF_RANGE' });
+    expect(await captureLearnerCapacity(STU, 999)).toEqual({ ok: false, error: 'OUT_OF_RANGE' });
+    expect(await captureLearnerCapacity(STU, 42.5)).toEqual({ ok: false, error: 'OUT_OF_RANGE' });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+  it('UPSERTs ONLY student_availability.max_daily_minutes', async () => {
+    queryMock.mockResolvedValue({ rows: [{ created: false }] });
+    const r = await captureLearnerCapacity(STU, 120);
+    expect(r).toEqual({ ok: true, maxDailyMinutes: 120, created: false });
+    const sql = String(queryMock.mock.calls[0][0]).replace(/\s+/g, ' ');
+    expect(sql).toMatch(/INSERT INTO student_availability \(student_id, max_daily_minutes\).*ON CONFLICT \(student_id\) DO UPDATE SET max_daily_minutes = EXCLUDED\.max_daily_minutes/);
+    expect(sql).not.toMatch(/timezone|study_start_time|study_end_time/);
+    expect(queryMock.mock.calls[0][1]).toEqual([STU, 120]);
+  });
+});
+
+describe('8F1 -- setLearnerUnavailableDate (additive row / delete only)', () => {
+  it('rejects a malformed date with no query', async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    expect(await setLearnerUnavailableDate(STU, '09/10/2026', true)).toEqual({ ok: false, error: 'INVALID_DATE' });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+  it('marking unavailable INSERTs ... ON CONFLICT DO NOTHING', async () => {
+    queryMock.mockResolvedValue({ rows: [], rowCount: 1 });
+    const r = await setLearnerUnavailableDate(STU, '2026-09-20', true);
+    expect(r).toEqual({ ok: true, date: '2026-09-20', action: 'ADDED' });
+    const sql = String(queryMock.mock.calls[0][0]).replace(/\s+/g, ' ');
+    expect(sql).toMatch(/INSERT INTO student_unavailable_dates \(student_id, unavailable_date\).*ON CONFLICT \(student_id, unavailable_date\) DO NOTHING/);
+  });
+  it('clearing unavailable DELETEs the row', async () => {
+    queryMock.mockResolvedValue({ rows: [], rowCount: 1 });
+    const r = await setLearnerUnavailableDate(STU, '2026-09-20', false);
+    expect(r).toEqual({ ok: true, date: '2026-09-20', action: 'REMOVED' });
+    expect(String(queryMock.mock.calls[0][0])).toMatch(/DELETE FROM student_unavailable_dates/);
   });
 });

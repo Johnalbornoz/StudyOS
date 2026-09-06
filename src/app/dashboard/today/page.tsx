@@ -2,7 +2,9 @@ import { auth } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
-import { getLearningOSSnapshot, type ConceptDisplayInfo } from '@/services/learning-os-snapshot.service';
+import { getLearningOSSnapshot, loadConceptLabels, type ConceptDisplayInfo } from '@/services/learning-os-snapshot.service';
+import { getLearningPlanHorizon } from '@/services/learning-plan-read.service';
+import { planItemWhyKey, planItemDayBucket } from '@/lib/learning-plan-presentation';
 import { estimateActivityMinutes, type LearningPlanItem } from '@/lib/learning-execution-policy';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -116,6 +118,20 @@ export default async function TodayPage() {
   const t = getMessages(locale);
 
   const snapshot = await getLearningOSSnapshot(studentId, { preferredLanguage: locale }).catch(() => null);
+
+  // 8F1 -- "Tu camino": a STRICTLY READ-ONLY 14-day plan glance below
+  // the unchanged Phase 4 hero. It reads the 8B read boundary only; a
+  // render here never creates, rolls, or reconciles a plan. If the read
+  // fails, Today still works -- the section just doesn't render.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const horizon = await getLearningPlanHorizon(studentId).catch(() => null);
+  const caminoItems = (horizon?.items ?? []).slice(0, 6);
+  const caminoLabels = caminoItems.length
+    ? await loadConceptLabels(
+        caminoItems.map((i) => i.conceptId).filter((v): v is string => !!v),
+        locale,
+      ).catch(() => new Map<string, ConceptDisplayInfo>())
+    : new Map<string, ConceptDisplayInfo>();
 
   const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -264,6 +280,53 @@ export default async function TodayPage() {
             </div>
           )}
         </>
+      )}
+
+      {caminoItems.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: 2 }}>
+            <h2 style={{ margin: 0, fontSize: 18 }}>{t['plan8.pathTitle']}</h2>
+            <Link href="/dashboard/study-plan" style={{ fontSize: 13, color: 'var(--brand-ink)', fontWeight: 600 }}>
+              {t['plan8.viewFull']}
+            </Link>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 var(--space-3)' }}>{t['plan8.pathSubtitle']}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {caminoItems.map((it) => {
+              const info = it.conceptId ? caminoLabels.get(it.conceptId) : null;
+              const bucket = planItemDayBucket(it.scheduledDate, todayIso);
+              const dayLabel =
+                bucket === 'TODAY'
+                  ? t['plan8.today']
+                  : bucket === 'OVERDUE'
+                    ? t['plan8.overdue']
+                    : new Date(it.scheduledDate).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+              return (
+                <div
+                  key={it.id}
+                  className="card"
+                  style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', borderLeft: `3px solid ${bucket === 'OVERDUE' ? 'var(--warning)' : 'var(--border-default)'}` }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{info?.label ?? it.conceptId ?? ''}</span>
+                      <span className="tabular" style={{ fontSize: 11, fontWeight: 650, color: 'var(--brand-ink)', background: 'var(--brand-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}>
+                        {activityLabel(it.intendedActivityType, t)}
+                      </span>
+                      <span className="tabular" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {t['plan8.minutes'].replace('{min}', String(it.estimatedMinutes))}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {dayLabel}
+                      {info?.subjectName ? ` · ${info.subjectName}` : ''} · {t[planItemWhyKey(it.reasonCode) as keyof typeof t]}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );

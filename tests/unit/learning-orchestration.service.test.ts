@@ -69,6 +69,11 @@ function installFake(f: Fake, opts: { manyDecisions?: number } = {}) {
     if (/^UPDATE learning_plan SET status = 'SUPERSEDED'/.test(s)) { const p = f.plans.find((x) => x.id === params[0]); if (p) p.status = 'SUPERSEDED'; return { rows: [], rowCount: 1 }; }
     if (/^UPDATE learning_plan SET horizon_start/.test(s)) { const p = f.plans.find((x) => x.id === params[0]); if (p) Object.assign(p, { horizon_start: params[1], horizon_end: params[2], planning_anchor_at: params[3] }); return { rows: [], rowCount: 1 }; }
     if (/FROM learning_plan_item WHERE plan_id = \$1$/.test(s)) return { rows: f.items.filter((i) => i.plan_id === params[0]), rowCount: 0 };
+    // read-service horizon items (used by 8F1 learner-item carry-forward)
+    if (/FROM learning_plan_item WHERE plan_id = \$1 AND status = ANY\(\$2\)/.test(s)) {
+      const live = f.items.filter((i) => i.plan_id === params[0] && ['PLANNED', 'READY'].includes(i.status));
+      return { rows: live, rowCount: live.length };
+    }
     if (/^INSERT INTO learning_plan_item /.test(s)) {
       const [plan_id, student_id, subject_id, concept_id, scheduled_date, , iat, rc, src, prio, mins, opv, opkey, prov] = params;
       if (f.items.some((i) => i.operation_key === opkey)) throw new Error('unique constraint');
@@ -133,6 +138,35 @@ describe('8D1 -- rebuildLearningPlan', () => {
     // but per-day caps mean not all land on day 1.
     const day1 = f.items.filter((i) => i.scheduled_date === '2026-09-06');
     expect(day1.length).toBeLessThanOrEqual(3); // 30 min / 10 min
+  });
+
+  it('8F1: carries a LIVE learner-authored item (MANUAL_RESCHEDULE) through a rebuild instead of superseding it', async () => {
+    const f: Fake = { plans: [], items: [], unavailable: [] };
+    installFake(f);
+    await rebuildLearningPlan(STU, { now: NOW });
+    const plan = f.plans.find((p) => p.status === 'ACTIVE')!;
+
+    // learner rescheduled something the engine will never re-derive
+    f.items.push({
+      id: uuid(), plan_id: plan.id, student_id: STU, subject_id: SUBJ, concept_id: 'c-manual',
+      scheduled_date: '2026-09-12', intended_activity_type: 'PRACTICE', reason_code: 'CURRICULUM_PROGRESSION',
+      source: 'MANUAL_RESCHEDULE', priority_at_plan_time: 0, estimated_minutes: 20, status: 'PLANNED',
+      orchestration_policy_version: 1, operation_key: `LPI::v1::${STU}::c-manual::CURRICULUM_PROGRESSION::2026-09-12`,
+      provenance: {}, superseded_by_item_id: null,
+    });
+    // and one that has fallen off the back of the rolling horizon
+    f.items.push({
+      id: uuid(), plan_id: plan.id, student_id: STU, subject_id: SUBJ, concept_id: 'c-old',
+      scheduled_date: '2026-08-01', intended_activity_type: 'PRACTICE', reason_code: 'LEARNER_REQUESTED',
+      source: 'MANUAL_RESCHEDULE', priority_at_plan_time: 0, estimated_minutes: 20, status: 'PLANNED',
+      orchestration_policy_version: 1, operation_key: `LPI::v1::${STU}::c-old::LEARNER_REQUESTED::2026-08-01`,
+      provenance: {}, superseded_by_item_id: null,
+    });
+
+    await rebuildLearningPlan(STU, { now: NOW });
+
+    expect(f.items.find((i) => i.concept_id === 'c-manual')!.status).toBe('PLANNED');
+    expect(f.items.find((i) => i.concept_id === 'c-old')!.status).toBe('SUPERSEDED');
   });
 
   it('does not run inside a cognitive transaction and calls no AI (grep guard)', async () => {

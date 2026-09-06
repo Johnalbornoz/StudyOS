@@ -30,6 +30,7 @@ import {
   type DeferReason,
 } from '@/lib/learning-orchestration-policy';
 import { projectLearningPlan, type ProposedLearningPlanItem, type ProjectLearningPlanResult } from '@/services/learning-plan-projector.service';
+import { getLearningPlanHorizon } from '@/services/learning-plan-read.service';
 
 export interface RebuildLearningPlanOptions extends OrchestrationInputsContext {
   now?: Date;
@@ -141,6 +142,41 @@ export async function rebuildLearningPlan(
     operationKey: p.operationKey,
     provenance: p.candidate.provenance ?? {},
   }));
+
+  // 6b. Carry forward LIVE learner-authored items -- an explicit
+  //     reschedule (source MANUAL_RESCHEDULE) or a self-requested extra
+  //     practice (reasonCode LEARNER_REQUESTED). The engine never
+  //     re-derives these, so without this they would be SUPERSEDED on
+  //     the very next rebuild (which fires on every accepted evidence),
+  //     silently undoing the learner's choice. They are kept only while
+  //     still inside the rolling horizon; a learner item that falls off
+  //     the back of the horizon expires naturally like any other.
+  //     They never displace an engine obligation (same-key items keep
+  //     the engine's copy) and are not run through the allocator.
+  if (inputs.activePlan) {
+    const horizon = await getLearningPlanHorizon(studentId, client);
+    const proposedKeys = new Set(proposedItems.map((p) => p.operationKey));
+    for (const it of horizon?.items ?? []) {
+      const learnerAuthored = it.source === 'MANUAL_RESCHEDULE' || it.reasonCode === 'LEARNER_REQUESTED';
+      if (!learnerAuthored) continue;
+      if (it.scheduledDate < inputs.horizonStart || it.scheduledDate > inputs.horizonEnd) continue;
+      if (proposedKeys.has(it.operationKey)) continue;
+      proposedItems.push({
+        subjectId: it.subjectId,
+        conceptId: it.conceptId,
+        scheduledDate: it.scheduledDate,
+        timeWindow: it.timeWindow,
+        intendedActivityType: it.intendedActivityType,
+        reasonCode: it.reasonCode,
+        source: it.source,
+        priorityAtPlanTime: it.priorityAtPlanTime,
+        estimatedMinutes: it.estimatedMinutes,
+        operationKey: it.operationKey,
+        provenance: it.provenance,
+      });
+      proposedKeys.add(it.operationKey);
+    }
+  }
 
   const planResult = await projectLearningPlan({
     studentId,
