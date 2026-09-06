@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setDecisionEventPersistenceForTests } from '@/lib/audit';
 import {
   projectLearningPlan,
+  applyPlanItemStatusChanges,
   type ProjectLearningPlanInput,
   type ProposedLearningPlanItem,
 } from '@/services/learning-plan-projector.service';
@@ -83,6 +84,11 @@ function makeFake(students: string[] = [STU]): Fake {
     if (/^UPDATE learning_plan_item SET status = 'SUPERSEDED'/.test(s)) {
       const i = f.items.find((x) => x.id === params[0]);
       if (i) Object.assign(i, { status: 'SUPERSEDED', superseded_by_item_id: params[1], updated_at: new Date() });
+      return { rows: [], rowCount: i ? 1 : 0 };
+    }
+    if (/^UPDATE learning_plan_item SET status = \$3, updated_at = NOW\(\) WHERE id = \$1 AND student_id = \$2 AND status IN \('PLANNED', 'READY'\)/.test(s)) {
+      const i = f.items.find((x) => x.id === params[0] && x.student_id === params[1] && (x.status === 'PLANNED' || x.status === 'READY'));
+      if (i) Object.assign(i, { status: params[2], updated_at: new Date() });
       return { rows: [], rowCount: i ? 1 : 0 };
     }
     if (/^INSERT INTO decision_events /.test(s)) {
@@ -286,5 +292,38 @@ describe('8B1 -- audit governance', () => {
       expect(e.engine).toBe('orchestration-engine');
       expect(e.engine_version).toBe('1');
     }
+  });
+});
+
+describe('8E1 -- applyPlanItemStatusChanges (still the SOLE table writer)', () => {
+  it('transitions only LIVE items; a terminal item is never re-marked', async () => {
+    const f = makeFake();
+    await projectLearningPlan(input(f, { proposedItems: [item({ conceptId: 'a' }), item({ conceptId: 'b' })] }));
+    const [a, b] = f.items;
+    b.status = 'SUPERSEDED'; // pretend a prior replan superseded b
+    const r = await applyPlanItemStatusChanges(STU, [
+      { itemId: a.id, status: 'COMPLETED' },
+      { itemId: b.id, status: 'EXPIRED' }, // must be ignored -- b is terminal
+    ], f.client as any);
+    expect(r.updated).toBe(1);
+    expect(f.items.find((i) => i.id === a.id).status).toBe('COMPLETED');
+    expect(f.items.find((i) => i.id === b.id).status).toBe('SUPERSEDED'); // untouched
+  });
+
+  it('takes the per-student FOR UPDATE lock and emits no PLAN_* audit event', async () => {
+    const f = makeFake();
+    await projectLearningPlan(input(f, { proposedItems: [item({ conceptId: 'a' })] }));
+    f.events.length = 0;
+    await applyPlanItemStatusChanges(STU, [{ itemId: f.items[0].id, status: 'COMPLETED' }], f.client as any);
+    expect(f.calls.some((c) => /FROM students WHERE id = \$1 FOR UPDATE/.test(c))).toBe(true);
+    expect(f.events).toEqual([]);
+  });
+
+  it('empty change list -> no query at all', async () => {
+    const f = makeFake();
+    f.calls.length = 0;
+    const r = await applyPlanItemStatusChanges(STU, [], f.client as any);
+    expect(r).toEqual({ updated: 0 });
+    expect(f.calls).toEqual([]);
   });
 });

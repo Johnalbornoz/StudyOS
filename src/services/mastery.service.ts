@@ -744,6 +744,23 @@ export async function updateMastery(
     };
   }
 
+  // Phase 8 Step 8E1: POST-COMMIT orchestration notification. This runs
+  // AFTER the cognitive transaction has committed and the client is
+  // released -- it is NEVER part of that transaction and can never roll
+  // it back. Fail-soft by contract (the helper logs and swallows every
+  // error). `mastery.service` depends only on this tiny trigger module,
+  // never on Phase 8 planning internals (§8E1.7). Skipped on the
+  // idempotent duplicate path (no state actually changed).
+  if (!duplicate) {
+    try {
+      const { notifyLearningOrchestrationChange } = await import('./learning-plan-orchestration-trigger');
+      await notifyLearningOrchestrationChange(studentId, 'EVIDENCE_APPLIED');
+    } catch {
+      // unreachable in practice -- the helper never throws -- but the
+      // committed cognitive result must be returned regardless.
+    }
+  }
+
   return result!;
 }
 

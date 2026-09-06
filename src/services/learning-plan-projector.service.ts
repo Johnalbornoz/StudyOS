@@ -360,6 +360,60 @@ export async function projectLearningPlan(input: ProjectLearningPlanInput): Prom
   }
 }
 
+// ---------------------------------------------------------------------
+// 8E1: narrowly-scoped lifecycle writes -- still the SOLE table writer.
+// ---------------------------------------------------------------------
+
+export type PlanItemLifecycleStatus = 'COMPLETED' | 'EXPIRED' | 'SKIPPED';
+
+export interface PlanItemStatusChange {
+  itemId: string;
+  status: PlanItemLifecycleStatus;
+}
+
+/**
+ * Reconciliation writes (8E1 completion / expiry, and a learner SKIP).
+ * Only LIVE items (PLANNED / READY) transition; a terminal item is
+ * never reopened or re-marked. Own transaction + per-student lock, same
+ * as `projectLearningPlan`. Emits no PLAN_* audit event -- these are
+ * derived lifecycle facts, not replans; the following maintenance
+ * rebuild emits PLAN_REPLANNED if the plan's live set actually changed.
+ */
+export async function applyPlanItemStatusChanges(
+  studentId: string,
+  changes: readonly PlanItemStatusChange[],
+  client?: DbExecutor,
+): Promise<{ updated: number }> {
+  if (changes.length === 0) return { updated: 0 };
+  const run = async (c: DbExecutor): Promise<{ updated: number }> => {
+    await c.query(`SELECT id FROM students WHERE id = $1 FOR UPDATE`, [studentId]);
+    let updated = 0;
+    for (const ch of changes) {
+      const res = await c.query(
+        `UPDATE learning_plan_item
+         SET status = $3, updated_at = NOW()
+         WHERE id = $1 AND student_id = $2 AND status IN ('PLANNED', 'READY')`,
+        [ch.itemId, studentId, ch.status],
+      );
+      updated += res.rowCount ?? 0;
+    }
+    return { updated };
+  };
+  if (client) return run(client);
+  const conn = await db.connect();
+  try {
+    await conn.query('BEGIN');
+    const r = await run(conn);
+    await conn.query('COMMIT');
+    return r;
+  } catch (err) {
+    await conn.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 /** Re-export for callers that need the canonical version at plan time. */
 export { ORCHESTRATION_POLICY_VERSION };
 export type { LearningPlanRow, LearningPlanItemRow };
