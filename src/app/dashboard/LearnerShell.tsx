@@ -149,22 +149,62 @@ export default function LearnerShell({
 }) {
   const pathname = usePathname() ?? '';
   const [open, setOpen] = useState(false);
-  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setOpen(false); // close the drawer on every route change
   }, [pathname]);
 
+  // LX-2P: the drawer is aria-modal, so keyboard focus must be
+  // contained while it is open (no interaction with background
+  // content), returned to the trigger on close, and the body must not
+  // scroll behind it.
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = 'hidden';
-    closeBtnRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
+
+    const drawer = drawerRef.current;
+    const focusables = () =>
+      Array.from(
+        drawer?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+    // initial focus -> first focusable (the close button)
+    (focusables()[0] ?? drawer)?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = list[0];
+      const last = list[list.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      // wrap, and pull focus back in if it ever escaped the drawer
+      if (e.shiftKey) {
+        if (active === first || !drawer?.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !drawer?.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKey, true);
       menuBtnRef.current?.focus();
     };
   }, [open]);
@@ -212,10 +252,10 @@ export default function LearnerShell({
       {open && (
         <>
           <div className="lx-drawer-backdrop" onClick={() => setOpen(false)} aria-hidden />
-          <div id="lx-drawer" className="lx-drawer" role="dialog" aria-modal="true" aria-label={menuLabel}>
+          <div ref={drawerRef} id="lx-drawer" className="lx-drawer" role="dialog" aria-modal="true" aria-label={menuLabel} tabIndex={-1}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {logo}
-              <button ref={closeBtnRef} type="button" className="lx-menu-btn" aria-label={closeLabel} onClick={() => setOpen(false)}>
+              <button type="button" className="lx-menu-btn" aria-label={closeLabel} onClick={() => setOpen(false)}>
                 <X size={20} strokeWidth={2} aria-hidden />
               </button>
             </div>

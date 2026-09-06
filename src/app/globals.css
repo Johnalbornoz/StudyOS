@@ -361,3 +361,34 @@ a { color: inherit; text-decoration: none; }
 @media (min-width: 1024px) {
   .lx-drawer, .lx-drawer-backdrop, .lx-topbar { display: none !important; }
 }
+
+/* ---------- LX-2P: responsive marketing header ---------- */
+/* Own class (not the undefined --space-5 token) so the public top
+   nav degrades cleanly instead of crowding on narrow screens. */
+.mkt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-8);
+  border-bottom: 1px solid var(--border-default);
+}
+.mkt-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+@media (max-width: 600px) {
+  .mkt-header {
+    padding: var(--space-3) var(--space-4);
+    row-gap: var(--space-2);
+  }
+  .mkt-nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+  .mkt-nav .btn { padding: 0 var(--space-3); }
+}

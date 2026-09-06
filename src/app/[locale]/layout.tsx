@@ -21,16 +21,11 @@ export default async function MarketingLayout({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <header
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: 'var(--space-5) var(--space-8)', borderBottom: '1px solid var(--border-default)',
-        }}
-      >
+      <header className="mkt-header">
         <Link href={`/${locale}`} style={{ display: 'flex', alignItems: 'center' }}>
           <Image src="/logo.png" alt="StudyUS" width={112} height={37} priority style={{ height: 32, width: 'auto' }} />
         </Link>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+        <nav className="mkt-nav">
           <Link href={`/${locale}/how-it-works`} style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500 }}>
             {t['marketing.navHowItWorks']}
           </Link>
