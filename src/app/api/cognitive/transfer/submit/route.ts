@@ -6,6 +6,8 @@ import { completeRemediationStep } from '@/services/remediation.service';
 import { track } from '@/lib/analytics';
 import { normalizeResponseTiming, toResponseTimingEntries } from '@/lib/algorithms/response-timing';
 import { computeTransferPromptFingerprint, resolveTransferTaskId } from '@/lib/transfer-task-identity';
+import { getRecentTransferFingerprints, isDuplicateTransferFingerprint } from '@/services/transfer-novelty.service';
+import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 
 const Schema = z.object({
@@ -53,6 +55,29 @@ export async function POST(request: NextRequest) {
     // prompt the browser actually submitted (which is the exact prompt
     // evaluateTransferResponse grades). Never trusts a client value.
     const promptFingerprint = computeTransferPromptFingerprint(validated.prompt);
+
+    // Phase 7 (7B2): anti-memorization at the submit boundary. A client
+    // could bypass the guarded generation route and submit a task that
+    // is structurally identical (same fingerprint) to one this learner
+    // already did recently for this concept -- under a DIFFERENT
+    // transferTaskId. Reject that before any AI grading / mastery
+    // write. An idempotent resubmission of the SAME task (same
+    // canonicalTaskId) is explicitly excluded, so operation_key
+    // idempotency is untouched.
+    const recentFingerprints = await getRecentTransferFingerprints(validated.studentId, validated.conceptId);
+    const structuralDuplicate = isDuplicateTransferFingerprint({
+      candidateFingerprint: promptFingerprint,
+      recentFingerprints,
+      excludeTransferTaskId: canonicalTaskId,
+    });
+    if (structuralDuplicate.duplicate) {
+      logOperationalWarning({
+        subsystem: 'transfer',
+        operation: 'submitTransferResponse',
+        context: { conceptId: validated.conceptId },
+      });
+      return NextResponse.json({ error: 'TRANSFER_TASK_DUPLICATE' }, { status: 409 });
+    }
 
     const language = validated.language || 'en';
     const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language, {
