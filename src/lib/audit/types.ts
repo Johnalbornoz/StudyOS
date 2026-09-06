@@ -59,7 +59,21 @@ export type DecisionType =
   | 'QUALIFIED_RETENTION_SUCCESS'
   | 'QUALIFIED_RETENTION_PARTIAL'
   | 'QUALIFIED_RETENTION_FAILURE'
-  | 'MEMORY_STATE_REPROJECTED';
+  | 'MEMORY_STATE_REPROJECTED'
+  // Phase 7 Step 7D3: recorded by transfer-projector.service.ts ONLY
+  // on a genuine semantic transition of Phase 7 transfer state, from
+  // the same updateMastery transaction that wrote the qualifying
+  // TRANSFER evidence -- never on an idempotent re-projection, never on
+  // a duplicate operation_key application (which never reaches the
+  // projector), and never from the historical backfill (skipAudit).
+  // TRANSFER_EVIDENCE_QUALIFIED: the current TRANSFER evidence row is
+  // phase7-certified, independent and correct. TRANSFER_DEPTH_ADVANCED:
+  // demonstrated transfer depth moved strictly deeper (NONE ->
+  // NEAR_DEMONSTRATED -> GENERALIZED -> ROBUST). Same zero-migration
+  // precedent as TEACHING_STRATEGY_SELECTED / MEMORY_ANCHOR_ESTABLISHED
+  // (decision_type / engine are plain text, no DB CHECK).
+  | 'TRANSFER_EVIDENCE_QUALIFIED'
+  | 'TRANSFER_DEPTH_ADVANCED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -82,7 +96,10 @@ export type DecisionEngine =
   // Phase 5: adaptive-teaching.service.ts -- see TEACHING_STRATEGY_SELECTED.
   | 'adaptive-teaching-engine'
   // Phase 6 Step 6E: memory-projector.service.ts -- see MEMORY_ANCHOR_ESTABLISHED etc.
-  | 'memory-engine';
+  | 'memory-engine'
+  // Phase 7 Step 7D3: transfer-projector.service.ts -- see
+  // TRANSFER_EVIDENCE_QUALIFIED / TRANSFER_DEPTH_ADVANCED.
+  | 'transfer-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;

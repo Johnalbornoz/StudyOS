@@ -83,10 +83,18 @@ export const PROMPT_REGISTRY = {
   }),
   'transfer.response_evaluation': definePrompt({
     id: 'transfer.response_evaluation',
-    version: 'v1',
+    // Phase 7 (7D3): v2 grades the TRANSFER specifically -- whether the
+    // student APPLIED the concept to the genuinely new context, not
+    // whether they restated or recalled it. The grading call now runs
+    // against the server-trusted prompt loaded from the
+    // transfer_task_instances registry (verified byte-identical to the
+    // submitted prompt via prompt_exact_hash before this call), and its
+    // result flows into a phase7-certified learning_evidence row.
+    version: 'v2',
     capability: 'TRANSFER_EVALUATION',
     service: 'transfer.service.ts:evaluateTransferResponse',
-    description: "Grades a student's transfer response as correct/partial/incorrect with brief feedback.",
+    description:
+      "Grades a student's transfer response as correct/partial/incorrect with brief feedback. v2 (7D3): explicitly grades application to the NEW context (recall / restatement of the concept alone is not 'correct'); runs on the server-trusted generated prompt.",
   }),
   'explain.prompt_generation': definePrompt({
     id: 'explain.prompt_generation',

@@ -8,8 +8,9 @@
  * and that legacy production-shaped evidence never yields depth above
  * NEAR_DEMONSTRATED.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { projectConceptTransferState } from '@/services/transfer-projector.service';
+import { setDecisionEventPersistenceForTests } from '@/lib/audit';
 
 const FP = 'b'.repeat(64);
 const S = 'stu-1';
@@ -17,6 +18,10 @@ const C = 'concept-1';
 
 function meta(o: Record<string, unknown> = {}) {
   return { transferDistance: 'MID', assisted: false, transferTaskId: 'task-1', promptFingerprint: FP, sourceConceptId: C, ...o };
+}
+/** Certified (7D-shaped) evidence metadata. */
+function certifiedMeta(o: Record<string, unknown> = {}) {
+  return meta({ noveltyValidationPassed: true, noveltyDimensions: ['STRATEGY'], taskFamilyId: 'fam-1', ...o });
 }
 
 /** A mock client whose TRANSFER-history SELECT returns `history` and whose
@@ -29,10 +34,29 @@ function mockClient(history: any[], existing: any[] = []) {
     if (s.startsWith('SELECT id, timestamp, result, metadata FROM learning_evidence')) return { rows: history };
     if (s.includes('FROM concept_transfer_state')) return { rows: existing };
     if (s.startsWith('INSERT INTO concept_transfer_state')) return { rows: [] };
+    if (s.startsWith('INSERT INTO decision_events')) return { rows: [] };
     throw new Error(`unmocked query: ${s}`);
   });
   return { client: { query } as any, calls, query };
 }
+const decisionEvents = (calls: Array<{ sql: string; params?: any[] }>) =>
+  calls
+    .filter((c) => /INSERT INTO decision_events/.test(c.sql))
+    .map((c) => {
+      const p = c.params!;
+      // column order: decision_type, engine, engine_version, student_id, subject_id, concept_id, source_event_type, source_event_id, previous_state, new_state, reason_code, reason_details, ai_execution_id, metadata
+      return {
+        decisionType: p[0],
+        engine: p[1],
+        engineVersion: p[2],
+        conceptId: p[5],
+        sourceEventType: p[6],
+        sourceEventId: p[7],
+        previousState: p[8] ? JSON.parse(p[8]) : null,
+        newState: p[9] ? JSON.parse(p[9]) : null,
+        reasonCode: p[10],
+      };
+    });
 const upserts = (calls: Array<{ sql: string; params?: any[] }>) => calls.filter((c) => /INSERT INTO concept_transfer_state/.test(c.sql));
 
 describe('7C2 -- projector canonical read', () => {
@@ -104,5 +128,86 @@ describe('7C2 -- projector UPSERT', () => {
     expect(res.state.transferDepth).toBe('NEAR_DEMONSTRATED'); // 2 legacy-style successes
     expect(res.state.nearTransferSuccessCount).toBe(2);
     expect(upserts(calls)).toHaveLength(1);
+  });
+});
+
+describe('7D3 -- projector audit events (transfer-engine)', () => {
+  beforeEach(() => setDecisionEventPersistenceForTests(true));
+  afterEach(() => setDecisionEventPersistenceForTests(false));
+
+  it('certified independent SUCCESS from NONE -> TRANSFER_EVIDENCE_QUALIFIED + TRANSFER_DEPTH_ADVANCED, engine transfer-engine v1', async () => {
+    const { client, calls } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: certifiedMeta() },
+    ]);
+    await projectConceptTransferState(client, S, C, 'e1');
+    const ev = decisionEvents(calls);
+    expect(ev.map((e) => e.decisionType).sort()).toEqual(['TRANSFER_DEPTH_ADVANCED', 'TRANSFER_EVIDENCE_QUALIFIED']);
+    for (const e of ev) {
+      expect(e.engine).toBe('transfer-engine');
+      expect(e.engineVersion).toBe('1');
+      expect(e.conceptId).toBe(C);
+    }
+    const qualified = ev.find((e) => e.decisionType === 'TRANSFER_EVIDENCE_QUALIFIED')!;
+    expect(qualified.sourceEventType).toBe('learning_evidence');
+    expect(qualified.sourceEventId).toBe('e1');
+    const advanced = ev.find((e) => e.decisionType === 'TRANSFER_DEPTH_ADVANCED')!;
+    expect(advanced.previousState).toEqual({ transferDepth: 'NONE' });
+    expect(advanced.newState.transferDepth).not.toBe('NONE');
+  });
+
+  it('skipAudit -> emits nothing even on a real transition', async () => {
+    const { client, calls } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: certifiedMeta() },
+    ]);
+    await projectConceptTransferState(client, S, C, 'e1', { skipAudit: true });
+    expect(decisionEvents(calls)).toHaveLength(0);
+    expect(upserts(calls)).toHaveLength(1); // state still written
+  });
+
+  it('backfill-style call (currentEvidenceId = null) -> emits nothing', async () => {
+    const { client, calls } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: certifiedMeta() },
+    ]);
+    await projectConceptTransferState(client, S, C, null);
+    expect(decisionEvents(calls)).toHaveLength(0);
+  });
+
+  it('legacy (non-certified) current SUCCESS -> NO TRANSFER_EVIDENCE_QUALIFIED, but TRANSFER_DEPTH_ADVANCED for the NONE->NEAR_DEMONSTRATED move', async () => {
+    const { client, calls } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta({ transferDistance: 'MID' }) }, // no noveltyValidationPassed
+    ]);
+    await projectConceptTransferState(client, S, C, 'e1');
+    const types = decisionEvents(calls).map((e) => e.decisionType);
+    expect(types).toEqual(['TRANSFER_DEPTH_ADVANCED']);
+  });
+
+  it('a further certified NEAR success at an already-reached depth -> QUALIFIED only, no DEPTH_ADVANCED', async () => {
+    const existing = [{
+      demonstrated_transfer_score: 100,
+      near_transfer_success_count: 1, mid_transfer_success_count: 0, far_transfer_success_count: 0,
+      distinct_novelty_dimensions_ok: ['STRATEGY'],
+      last_successful_transfer_at: '2026-09-01T00:00:00.000Z',
+      last_successful_transfer_distance: 'NEAR',
+      transfer_depth: 'NEAR_DEMONSTRATED',
+      policy_version: 1,
+    }];
+    const { client, calls } = mockClient(
+      [
+        { id: 'e0', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: certifiedMeta({ transferDistance: 'NEAR', noveltyDimensions: ['CONTEXT'] }) },
+        { id: 'e1', timestamp: '2026-09-02T00:00:00Z', result: 'correct', metadata: certifiedMeta({ transferDistance: 'NEAR', noveltyDimensions: ['CONTEXT'] }) },
+      ],
+      existing,
+    );
+    await projectConceptTransferState(client, S, C, 'e1');
+    const types = decisionEvents(calls).map((e) => e.decisionType);
+    expect(types).toEqual(['TRANSFER_EVIDENCE_QUALIFIED']);
+  });
+
+  it('current row is a FAILURE -> no audit events (and typically no state change)', async () => {
+    const { client, calls } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'incorrect', metadata: certifiedMeta() },
+    ]);
+    await projectConceptTransferState(client, S, C, 'e1');
+    expect(decisionEvents(calls)).toHaveLength(0);
   });
 });

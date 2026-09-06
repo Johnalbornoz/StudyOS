@@ -54,7 +54,7 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a) } }
 
 import { POST as GENERATE } from '@/app/api/cognitive/transfer/generate/route';
 import { POST as SUBMIT } from '@/app/api/cognitive/transfer/submit/route';
-import { computeTransferPromptFingerprint } from '@/lib/transfer-task-identity';
+import { computeTransferPromptFingerprint, computeTransferPromptExactHash } from '@/lib/transfer-task-identity';
 
 const STUDENT = '11111111-1111-4111-8111-111111111111';
 const SUBJECT = '22222222-2222-4222-8222-222222222222';
@@ -69,11 +69,44 @@ const NEW_PROMPT = 'Explain why a spinning wheel needs an inward force, using an
 const req = (body: any) => ({ json: async () => body } as any);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** dbQuery: recent-fingerprints SELECT -> given rows; anything else -> {rows:[]}. */
+/** rows keyed for the transfer_task_instances load (7D3). */
+let taskInstanceRows: Record<string, any> = {};
+function setTaskInstance(id: string, row: Record<string, any> | null) {
+  if (row === null) delete taskInstanceRows[id];
+  else taskInstanceRows[id] = row;
+}
+/** Build a plausible persisted transfer_task_instances row for `prompt`. */
+function instanceRow(over: Record<string, any> = {}) {
+  return {
+    id: TASK_B,
+    student_id: STUDENT,
+    concept_id: CONCEPT,
+    subject_id: SUBJECT,
+    transfer_distance: 'MID',
+    transfer_modality: 'STRUCTURAL',
+    novelty_dimensions: ['STRATEGY'],
+    target_concept_ids: [],
+    context_domain: 'sports',
+    task_family_id: 'fam-1',
+    prompt_fingerprint: SEEN_FP,
+    prompt_exact_hash: computeTransferPromptExactHash(SEEN_PROMPT),
+    generator_version: null,
+    generator_prompt_version: 'v2',
+    novelty_validation_passed: true,
+    created_at: new Date('2026-09-05T00:00:00Z'),
+    ...over,
+  };
+}
+
+/** dbQuery: recent-fingerprints SELECT -> given rows; task-instance load -> map; anything else -> {rows:[]}. */
 function withRecentEvidence(rows: any[]) {
-  dbQueryMock.mockImplementation(async (sql: string) => {
+  dbQueryMock.mockImplementation(async (sql: string, params?: any[]) => {
     if (typeof sql === 'string' && sql.includes("source_type = 'TRANSFER'") && sql.includes('ORDER BY timestamp DESC')) {
       return { rows };
+    }
+    if (typeof sql === 'string' && /FROM transfer_task_instances WHERE id = \$1/.test(sql)) {
+      const row = params && taskInstanceRows[params[0]];
+      return { rows: row ? [row] : [] };
     }
     return { rows: [] };
   });
@@ -87,6 +120,7 @@ beforeEach(() => {
   evaluateTransferResponseMock.mockReset().mockResolvedValue({ result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-1' } });
   updateMasteryMock.mockReset().mockResolvedValue({ duplicate: false, oldMastery: 10, newMastery: 20, delta: 10 });
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });
+  taskInstanceRows = {};
   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => {
@@ -246,17 +280,17 @@ async function submit(extra: Record<string, unknown>) {
 describe('7B2 -- submit route bypass guard', () => {
   it('different taskId re-submitting a recent duplicate fingerprint -> 409 before grading/mastery', async () => {
     withRecentEvidence([{ metadata: { promptFingerprint: SEEN_FP, transferTaskId: TASK_A }, timestamp: 't' }]);
-    const { res, body } = await submit({ transferTaskId: TASK_B });
+    const { res, body } = await submit({ transferTaskId: TASK_B }); // no instance -> bypass scenario
     expect(res.status).toBe(409);
     expect(body.error).toBe('TRANSFER_TASK_DUPLICATE');
     expect(evaluateTransferResponseMock).not.toHaveBeenCalled();
     expect(updateMasteryMock).not.toHaveBeenCalled();
-    expect(opsWarns()).toHaveLength(1);
-    expect(opsWarns()[0]).toMatchObject({ subsystem: 'transfer', operation: 'submitTransferResponse', conceptId: CONCEPT });
+    expect(opsWarns().some((w) => w.operation === 'submitTransferResponse' && w.conceptId === CONCEPT)).toBe(true);
   });
 
   it('SAME taskId re-submitting its own fingerprint -> not a structural duplicate, proceeds (idempotency preserved)', async () => {
     withRecentEvidence([{ metadata: { promptFingerprint: SEEN_FP, transferTaskId: TASK_A }, timestamp: 't' }]);
+    setTaskInstance(TASK_A, instanceRow({ id: TASK_A }));
     const { res } = await submit({ transferTaskId: TASK_A });
     expect(res.status ?? 200).toBe(200);
     expect(evaluateTransferResponseMock).toHaveBeenCalledTimes(1);
@@ -270,18 +304,69 @@ describe('7B2 -- submit route bypass guard', () => {
     expect(updateMasteryMock).toHaveBeenCalledTimes(1);
   });
 
-  it('no recent duplicate -> proceeds and passes identity metadata atomically into updateMastery (7C1)', async () => {
+  it('no recent duplicate, no task instance -> legacy path: identity metadata atomic, NOT phase7-certified', async () => {
     withRecentEvidence([]);
     const { res } = await submit({ transferTaskId: TASK_B });
     expect(res.status ?? 200).toBe(200);
-    expect(updateMasteryMock.mock.calls[0][0].metadata).toMatchObject({
+    const meta = updateMasteryMock.mock.calls[0][0].metadata;
+    expect(meta).toMatchObject({
       transferTaskId: TASK_B,
       promptFingerprint: SEEN_FP,
       sourceConceptId: CONCEPT,
-      transferDistance: 'MID',
+      transferDistance: 'MID', // client value -- no instance to override it
       assisted: false,
     });
-    // no post-commit UPDATE learning_evidence (dual-writing removed)
+    expect(meta).not.toHaveProperty('noveltyValidationPassed');
+    expect(meta).not.toHaveProperty('taskFamilyId');
+    expect(opsWarns().some((w) => w.operation === 'submitTransferResponse.taskInstanceMissing')).toBe(true);
     expect(dbQueryMock.mock.calls.some((c) => /UPDATE learning_evidence/i.test(String(c[0])))).toBe(false);
+  });
+});
+
+describe('7D3 -- submit route trusted task instance', () => {
+  it('loads the instance and writes server-trusted phase7-certified metadata atomically into updateMastery', async () => {
+    withRecentEvidence([]);
+    setTaskInstance(TASK_B, instanceRow({ transfer_distance: 'FAR', novelty_dimensions: ['CONCEPT_COMBINATION'], task_family_id: 'fam-far' }));
+    const { res } = await submit({ transferTaskId: TASK_B, distance: 'NEAR' }); // client LIES: says NEAR
+    expect(res.status ?? 200).toBe(200);
+    const call = updateMasteryMock.mock.calls[0][0];
+    expect(call.metadata).toMatchObject({
+      transferDistance: 'FAR', // trusted instance value, NOT the client's 'NEAR'
+      noveltyValidationPassed: true,
+      noveltyDimensions: ['CONCEPT_COMBINATION'],
+      transferModality: 'STRUCTURAL',
+      taskFamilyId: 'fam-far',
+      promptExactHash: computeTransferPromptExactHash(SEEN_PROMPT),
+      contextDomain: 'sports',
+    });
+    expect(call.evidence.difficulty).toBe(5); // FAR difficulty, from the trusted distance
+  });
+
+  it('rejects a prompt that is not byte-identical to the generated one, BEFORE grading or mastery', async () => {
+    withRecentEvidence([]);
+    setTaskInstance(TASK_B, instanceRow({ prompt_exact_hash: computeTransferPromptExactHash('a completely different prompt') }));
+    const { res, body } = await submit({ transferTaskId: TASK_B });
+    expect(res.status).toBe(409);
+    expect(body.error).toBe('TRANSFER_TASK_PROMPT_MISMATCH');
+    expect(evaluateTransferResponseMock).not.toHaveBeenCalled();
+    expect(updateMasteryMock).not.toHaveBeenCalled();
+    expect(opsWarns().some((w) => w.operation === 'submitTransferResponse.promptExactHash')).toBe(true);
+  });
+
+  it('rejects an instance that belongs to a different student/concept', async () => {
+    withRecentEvidence([]);
+    setTaskInstance(TASK_B, instanceRow({ student_id: '99999999-9999-4999-8999-999999999999' }));
+    const { res, body } = await submit({ transferTaskId: TASK_B });
+    expect(res.status).toBe(409);
+    expect(body.error).toBe('TRANSFER_TASK_MISMATCH');
+    expect(updateMasteryMock).not.toHaveBeenCalled();
+  });
+
+  it('an uncertified instance (novelty_validation_passed = false) still submits, metadata carries the false flag', async () => {
+    withRecentEvidence([]);
+    setTaskInstance(TASK_B, instanceRow({ novelty_validation_passed: false }));
+    const { res } = await submit({ transferTaskId: TASK_B });
+    expect(res.status ?? 200).toBe(200);
+    expect(updateMasteryMock.mock.calls[0][0].metadata.noveltyValidationPassed).toBe(false);
   });
 });

@@ -97,6 +97,16 @@ const TRANSFER_DEPTH_ORDER: Record<TransferDepth, number> = {
   ROBUST: 3,
 };
 
+/** Rank of a depth for monotonic comparisons (higher == deeper). */
+export function transferDepthRank(depth: TransferDepth): number {
+  return TRANSFER_DEPTH_ORDER[depth];
+}
+
+/** True iff `next` is strictly deeper than `prev` -- the only shape a real TRANSFER_DEPTH_ADVANCED transition takes. */
+export function isDeeperTransferDepth(next: TransferDepth, prev: TransferDepth): boolean {
+  return TRANSFER_DEPTH_ORDER[next] > TRANSFER_DEPTH_ORDER[prev];
+}
+
 // --- distance <-> novelty compatibility ------------------------------
 
 /** CONTEXT/SURFACE alone are "the wrapper changed" -- not enough for MID/FAR. */

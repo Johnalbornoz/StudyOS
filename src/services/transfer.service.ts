@@ -220,10 +220,20 @@ export async function evaluateTransferResponse(
   context?: { studentId?: string; subjectId?: string; conceptId?: string }
 ): Promise<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string; aiExecution: AIProvenance }> {
   const languageName = LOCALE_FULL_NAME[language] || language;
-  const systemPrompt = `Grade whether a student correctly applied "${conceptLabel}" to this new context.
+  // 7D3 (v2): grade the TRANSFER -- did the student APPLY "${conceptLabel}"
+  // to this new context and reach a sound result? Merely restating,
+  // defining, or recalling the concept without applying it here is NOT
+  // "correct" (at most "partial"). Applying the right idea with a minor
+  // slip is "partial".
+  const systemPrompt = `Grade whether a student correctly APPLIED "${conceptLabel}" to the NEW context in the question below -- not whether they can recall or restate the concept.
 
 Question: ${prompt}
 Student's answer: ${studentResponse}
+
+Grading:
+- "correct": the student applied the concept to this new context and reached a sound result.
+- "partial": the student applied the right idea but with a flawed step, or only partially addressed the new context.
+- "incorrect": the student did not apply the concept to the new context (including answers that only restate or define the concept).
 
 Output ONLY this JSON, no markdown fences, no other text:
 {"result": "correct" | "partial" | "incorrect", "feedback": "1-2 sentences in ${languageName}"}`;
