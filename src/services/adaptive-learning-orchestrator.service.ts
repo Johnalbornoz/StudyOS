@@ -39,6 +39,7 @@
  */
 
 import { db } from '@/lib/db';
+import { mapWithConcurrency } from '@/lib/bounded-concurrency';
 import {
   getSubjectKnowledgeState,
   getActiveMasteryPolicy,
@@ -93,6 +94,21 @@ export type {
 
 /** Same >=20-point mastery-vs-independent-mastery convention already used ad hoc by remediation.service.ts's determineRemediationPattern and cognitive-diagnosis.service.ts's detectCognitiveIssue -- reused here, not reinvented. */
 const INDEPENDENCE_GAP_THRESHOLD = 20;
+
+/**
+ * Phase 6 Closeout C1: how many per-concept read tasks
+ * (getIndependentMastery + getAssessmentStateForConcept, and the
+ * per-diagnosis getLearningUnlockValue) `loadLearningSignals` runs at
+ * once, replacing a strictly serial `for...of await` loop. This is an
+ * OPERATIONAL concurrency bound only -- it changes nothing about which
+ * reads happen, their SQL, their results, or the resulting
+ * LearningDecision set / order (results are consumed in the original
+ * concept-iteration order); it only overlaps the IO. Kept low relative
+ * to the pg pool's default max (~10), since each concept task itself
+ * fans out several SQL promises. Never learning-policy, never
+ * client-configurable.
+ */
+const LEARNING_SIGNAL_CONCURRENCY = 4;
 
 const DATA_QUALITY_ONLY_TAGS = new Set<CalibrationTag>(['LOW_MAPPING_CONFIDENCE', 'COVERAGE_MISMATCH']);
 
@@ -212,9 +228,27 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
   // remediatedDiagnosisIds de-dup, reused here rather than
   // reimplemented differently).
   const remediatedDiagnosisIds = new Set(activeRemediations.map((p) => p.diagnosisId).filter((id): id is string => !!id));
+  // Closeout C1: the getLearningUnlockValue reads for CONFIRMED,
+  // not-yet-remediated diagnoses were a small serial `await` chain --
+  // fetch them concurrently (bounded), keyed by diagnosis id, then emit
+  // signals in the ORIGINAL activeDiagnoses order below. Same reads,
+  // same call count, same output; only the IO overlaps.
+  const confirmedUnremediatedDiagnoses = activeDiagnoses.filter(
+    (d) => d.state === 'CONFIRMED' && !remediatedDiagnosisIds.has(d.id)
+  );
+  const diagnosisUnlockResults = await mapWithConcurrency(
+    confirmedUnremediatedDiagnoses,
+    LEARNING_SIGNAL_CONCURRENCY,
+    (d) => getLearningUnlockValue(d.candidateConceptId)
+  );
+  const diagnosisUnlockById = new Map(
+    confirmedUnremediatedDiagnoses.map(
+      (d, i): [string, (typeof diagnosisUnlockResults)[number]] => [d.id, diagnosisUnlockResults[i]],
+    ),
+  );
   for (const d of activeDiagnoses) {
     if (d.state === 'CONFIRMED' && !remediatedDiagnosisIds.has(d.id)) {
-      const unlock = await getLearningUnlockValue(d.candidateConceptId);
+      const unlock = diagnosisUnlockById.get(d.id)!;
       signals.push({
         type: 'PREREQUISITE_GAP',
         source: 'cognitive-diagnosis.service',
@@ -318,7 +352,31 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
   const masteryByConceptId = new Map<string, any>(masteryRows.map((r: any) => [r.concept_id, r]));
   const now = Date.now();
 
-  for (const [conceptId, ks] of knowledgeStateByConceptId) {
+  // Closeout C1: the two per-concept awaits below were the O(N) SERIAL
+  // critical path of this function -- getIndependentMastery (only when
+  // the concept has a non-null mastery_score, exactly as before) and
+  // getAssessmentStateForConcept (always). READ PHASE: fetch them for
+  // every concept with a bounded fan-out. BUILD PHASE (the loop): walk
+  // the results in the ORIGINAL concept iteration order and run the
+  // unchanged signal-construction logic. Identical reads, identical call
+  // counts, identical per-concept branch conditions, identical signal
+  // order -- only the IO is overlapped.
+  const conceptReadInputs = [...knowledgeStateByConceptId];
+  const conceptReads = await mapWithConcurrency(
+    conceptReadInputs,
+    LEARNING_SIGNAL_CONCURRENCY,
+    async ([conceptId, ks]) => {
+      const masteryRow = masteryByConceptId.get(conceptId);
+      const independentMastery =
+        masteryRow && masteryRow.mastery_score !== null
+          ? await getIndependentMastery(studentId, conceptId)
+          : null;
+      const assessmentState = await getAssessmentStateForConcept(studentId, conceptId);
+      return { conceptId, ks, masteryRow, independentMastery, assessmentState };
+    },
+  );
+
+  for (const { conceptId, ks, masteryRow, independentMastery, assessmentState } of conceptReads) {
     if (ks.criticalMisconceptionCount > 0) {
       signals.push({
         type: 'CRITICAL_MISCONCEPTION',
@@ -346,10 +404,8 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
       signals.push({ type: 'TRANSFER_REQUIRED', source: 'knowledge-state.service', conceptId, subjectId: ks.subjectId, metadata: {} });
     }
 
-    const masteryRow = masteryByConceptId.get(conceptId);
     if (masteryRow && masteryRow.mastery_score !== null) {
       const masteryScore = Number(masteryRow.mastery_score);
-      const independentMastery = await getIndependentMastery(studentId, conceptId);
       if (independentMastery !== null && masteryScore - independentMastery >= INDEPENDENCE_GAP_THRESHOLD) {
         signals.push({
           type: 'INDEPENDENCE_GAP',
@@ -415,8 +471,9 @@ async function loadLearningSignals(studentId: string, preferredLanguage: string)
     // itself issues only bounded, LIMIT-ed queries (never unbounded
     // history), so this preserves rather than worsens this loop's
     // existing per-concept query-cost profile (see the Phase 4 report's
-    // §9.12 for the measured delta).
-    const assessmentState = await getAssessmentStateForConcept(studentId, conceptId);
+    // §9.12 for the measured delta). Closeout C1: this read is now
+    // issued in the bounded fan-out READ PHASE above; the value it
+    // yields is byte-for-byte the same.
     // Phase 4-R: carries the EXISTING pending attempt's own server-owned
     // identity (never a client-supplied value, never a newly-minted one)
     // through to the signal -- this is what makes the resulting
