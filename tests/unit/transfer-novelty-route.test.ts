@@ -17,12 +17,25 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
-const generateTransferActivityMock = vi.fn();
+const generateStructuredTransferActivityMock = vi.fn();
 const evaluateTransferResponseMock = vi.fn();
 vi.mock('@/services/transfer.service', () => ({
-  generateTransferActivity: (...a: any[]) => generateTransferActivityMock(...a),
+  generateStructuredTransferActivity: (...a: any[]) => generateStructuredTransferActivityMock(...a),
   evaluateTransferResponse: (...a: any[]) => evaluateTransferResponseMock(...a),
 }));
+
+/** 7D1: shape a structured-candidate mock result from just a prompt. */
+const candidate = (prompt: string, over: Record<string, unknown> = {}) => ({
+  distance: 'MID',
+  context: 'c',
+  prompt,
+  noveltyDimensions: ['STRATEGY'],
+  transferModality: 'STRUCTURAL',
+  targetConceptIds: [],
+  contextDomain: 'sports',
+  generatorPromptVersion: 'v2',
+  ...over,
+});
 
 const updateMasteryMock = vi.fn();
 vi.mock('@/services/mastery.service', () => ({ updateMastery: (...a: any[]) => updateMasteryMock(...a) }));
@@ -63,7 +76,7 @@ let warnSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
-  generateTransferActivityMock.mockReset();
+  generateStructuredTransferActivityMock.mockReset();
   evaluateTransferResponseMock.mockReset().mockResolvedValue({ result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-1' } });
   updateMasteryMock.mockReset().mockResolvedValue({ duplicate: false, oldMastery: 10, newMastery: 20, delta: 10 });
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });
@@ -75,50 +88,85 @@ afterEach(() => {
 
 const opsWarns = () => (warnSpy.mock.calls as any[][]).filter((c) => c[0] === '[ops]').map((c) => JSON.parse(c[1] as string));
 
-describe('7B2 -- generate route', () => {
-  it('unseen candidate: 1 AI call, served exactly like 7B1', async () => {
+describe('7B2/7D1 -- generate route', () => {
+  it('unseen candidate: 1 AI call, minted id, activityId alias, fingerprint recomputed server-side', async () => {
     withRecentEvidence([]);
-    generateTransferActivityMock.mockResolvedValue({ distance: 'MID', context: 'c', prompt: NEW_PROMPT });
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT));
     const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
     const body = await res.json();
     expect(res.status ?? 200).toBe(200);
-    expect(generateTransferActivityMock).toHaveBeenCalledTimes(1);
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(1);
     expect(body.data.transferTaskId).toMatch(UUID_RE);
     expect(body.data.activityId).toBe(body.data.transferTaskId);
     expect(body.data.promptFingerprint).toBe(computeTransferPromptFingerprint(NEW_PROMPT));
+    // 7D1: raw server-only novelty metadata is NOT leaked to the client
+    expect(body.data).not.toHaveProperty('noveltyDimensions');
+    expect(body.data).not.toHaveProperty('transferModality');
+    expect(body.data).not.toHaveProperty('taskFamilyId');
+    expect(body.data).not.toHaveProperty('promptExactHash');
     expect(opsWarns()).toHaveLength(0);
+  });
+
+  it('persists exactly one transfer_task_instances row with novelty_validation_passed = false', async () => {
+    withRecentEvidence([]);
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(NEW_PROMPT));
+    const res = await GENERATE(req({ studentId: STUDENT, subjectId: SUBJECT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
+    const body = await res.json();
+    const inserts = dbQueryMock.mock.calls.filter((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])));
+    expect(inserts).toHaveLength(1);
+    const params = inserts[0][1] as any[];
+    expect(params[0]).toBe(body.data.transferTaskId); // id == minted transferTaskId
+    expect(params[1]).toBe(STUDENT);
+    expect(params[2]).toBe(CONCEPT);
+    expect(params[params.length - 1]).toBe(false); // novelty_validation_passed
   });
 
   it('first candidate is a recent duplicate -> regenerates once -> serves the unseen 2nd candidate', async () => {
     withRecentEvidence([{ metadata: { promptFingerprint: SEEN_FP, transferTaskId: TASK_A }, timestamp: 't' }]);
-    generateTransferActivityMock
-      .mockResolvedValueOnce({ distance: 'MID', context: 'c', prompt: SEEN_PROMPT }) // duplicate
-      .mockResolvedValueOnce({ distance: 'MID', context: 'c', prompt: NEW_PROMPT }); // unseen
+    generateStructuredTransferActivityMock
+      .mockResolvedValueOnce(candidate(SEEN_PROMPT)) // duplicate
+      .mockResolvedValueOnce(candidate(NEW_PROMPT)); // unseen
     const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
     const body = await res.json();
     expect(res.status ?? 200).toBe(200);
-    expect(generateTransferActivityMock).toHaveBeenCalledTimes(2);
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(2);
     expect(body.data.promptFingerprint).toBe(computeTransferPromptFingerprint(NEW_PROMPT));
     expect(opsWarns()).toHaveLength(0); // recovered -> no terminal warn
     expect(dbQueryMock.mock.calls.filter((c) => String(c[0]).includes("source_type = 'TRANSFER'")).length).toBe(1); // one bounded read reused
   });
 
-  it('terminal duplicate: both candidates duplicate -> 409, exactly 2 AI calls, one WARN, no id, no evidence', async () => {
+  it('terminal duplicate: both candidates duplicate -> 409, exactly 2 AI calls, one WARN, no id, no instance row', async () => {
     withRecentEvidence([{ metadata: { promptFingerprint: SEEN_FP, transferTaskId: TASK_A }, timestamp: 't' }]);
-    generateTransferActivityMock.mockResolvedValue({ distance: 'MID', context: 'c', prompt: SEEN_PROMPT });
+    generateStructuredTransferActivityMock.mockResolvedValue(candidate(SEEN_PROMPT));
     const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
     const body = await res.json();
     expect(res.status).toBe(409);
     expect(body.error).toBe('TRANSFER_TASK_NOT_NOVEL_ENOUGH');
     expect(body.data).toBeUndefined();
-    expect(generateTransferActivityMock).toHaveBeenCalledTimes(2);
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(2);
+    expect(dbQueryMock.mock.calls.some((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])))).toBe(false);
     const warns = opsWarns();
     expect(warns).toHaveLength(1);
-    expect(warns[0]).toMatchObject({ subsystem: 'transfer', operation: 'generateTransferActivity', conceptId: CONCEPT, count: 2 });
+    expect(warns[0]).toMatchObject({ subsystem: 'transfer', operation: 'generateStructuredTransferActivity.novelty', conceptId: CONCEPT, count: 2 });
     const raw = (warnSpy.mock.calls as any[][]).find((c) => c[0] === '[ops]')![1] as string;
     expect(raw).not.toContain(STUDENT);
     expect(raw).not.toContain(SEEN_FP);
-    expect(raw).not.toContain('prompt');
+  });
+
+  it('every AI failure -> 503 TRANSFER_GENERATION_TEMPORARILY_UNAVAILABLE, one WARN, no raw 500, no instance row', async () => {
+    withRecentEvidence([]);
+    generateStructuredTransferActivityMock.mockRejectedValue(new Error('provider timeout'));
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'X', distance: 'MID' }));
+    const body = await res.json();
+    expect(res.status).toBe(503);
+    expect(body.error).toBe('TRANSFER_GENERATION_TEMPORARILY_UNAVAILABLE');
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalledTimes(1); // no retry loop
+    expect(dbQueryMock.mock.calls.some((c) => /INSERT INTO transfer_task_instances/i.test(String(c[0])))).toBe(false);
+    const warns = opsWarns();
+    expect(warns).toHaveLength(1);
+    expect(warns[0]).toMatchObject({ subsystem: 'transfer', operation: 'generateStructuredTransferActivity' });
+    const raw = (warnSpy.mock.calls as any[][]).find((c) => c[0] === '[ops]')![1] as string;
+    expect(raw).not.toContain(STUDENT);
   });
 });
 

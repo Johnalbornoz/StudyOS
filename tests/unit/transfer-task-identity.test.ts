@@ -11,8 +11,11 @@ import { createHash } from 'crypto';
 import {
   normalizeTransferPrompt,
   computeTransferPromptFingerprint,
+  computeTransferPromptExactHash,
+  computeTransferTaskFamilyId,
   buildTransferTaskIdentityMetadata,
   resolveTransferTaskId,
+  TRANSFER_TASK_INSTANCE_COLUMNS,
 } from '@/lib/transfer-task-identity';
 
 const fp = computeTransferPromptFingerprint;
@@ -142,5 +145,91 @@ describe('7B1 -- buildTransferTaskIdentityMetadata', () => {
     });
     expect(meta.generatorVersion).toBe('gen-1');
     expect(meta.generatorPromptVersion).toBe('v1');
+  });
+});
+
+describe('7D1 -- computeTransferPromptExactHash (exact-content integrity, NOT the structural fingerprint)', () => {
+  const ex = computeTransferPromptExactHash;
+  const BASE = 'A car takes a turn of radius 40 m at 15 m/s. Find the centripetal acceleration.';
+
+  it('returns a stable lowercase 64-hex string', () => {
+    expect(ex(BASE)).toMatch(/^[0-9a-f]{64}$/);
+    expect(ex(BASE)).toBe(ex(BASE));
+  });
+
+  it('PRESERVES numeric literals that the structural fingerprint deliberately folds', () => {
+    // same structural fingerprint...
+    expect(computeTransferPromptFingerprint('Solve with 10')).toBe(computeTransferPromptFingerprint('Solve with 42'));
+    // ...but a DIFFERENT exact hash
+    expect(ex('Solve with 10')).not.toBe(ex('Solve with 42'));
+  });
+
+  it('PRESERVES case that the structural fingerprint folds', () => {
+    expect(computeTransferPromptFingerprint(BASE)).toBe(computeTransferPromptFingerprint(BASE.toUpperCase()));
+    expect(ex(BASE)).not.toBe(ex(BASE.toUpperCase()));
+  });
+
+  it('is stable across cosmetic whitespace / CRLF only (generation<->submission transport)', () => {
+    expect(ex('A car takes\r\na turn')).toBe(ex('A car takes\na turn'));
+    expect(ex('  A car   takes a turn  ')).toBe(ex('A car takes a turn'));
+  });
+
+  it('distinguishes a genuinely different prompt', () => {
+    expect(ex(BASE)).not.toBe(ex(BASE + ' Show your working.'));
+  });
+});
+
+describe('7D1 -- computeTransferTaskFamilyId (the pedagogical shape, not one exact prompt)', () => {
+  const fam = computeTransferTaskFamilyId;
+  const BASE = {
+    sourceConceptId: 'c-1',
+    transferDistance: 'MID',
+    transferModality: 'STRUCTURAL',
+    noveltyDimensions: ['STRATEGY', 'CONSTRAINT'],
+    targetConceptIds: [] as string[],
+    contextDomain: 'sports',
+  };
+
+  it('returns a stable lowercase 64-hex string', () => {
+    expect(fam(BASE)).toMatch(/^[0-9a-f]{64}$/);
+    expect(fam(BASE)).toBe(fam(BASE));
+  });
+
+  it('is independent of novelty-dimension ORDER and casing', () => {
+    expect(fam({ ...BASE, noveltyDimensions: ['constraint', 'strategy'] })).toBe(fam(BASE));
+  });
+
+  it('is independent of target-concept-id ORDER', () => {
+    expect(fam({ ...BASE, targetConceptIds: ['b', 'a'] })).toBe(fam({ ...BASE, targetConceptIds: ['a', 'b'] }));
+  });
+
+  it('folds contextDomain case / surrounding whitespace / null-vs-empty', () => {
+    expect(fam({ ...BASE, contextDomain: '  Sports ' })).toBe(fam(BASE));
+    expect(fam({ ...BASE, contextDomain: null })).toBe(fam({ ...BASE, contextDomain: '' }));
+  });
+
+  it('does NOT depend on the exact prompt / fingerprint / transferTaskId (not passed in at all)', () => {
+    // Two different exact prompts in the same family share a family id
+    // purely because the descriptor is identical -- the function has no
+    // prompt parameter.
+    expect(fam(BASE)).toBe(fam({ ...BASE }));
+  });
+
+  it('CHANGES when any structural facet changes', () => {
+    expect(fam({ ...BASE, transferDistance: 'FAR' })).not.toBe(fam(BASE));
+    expect(fam({ ...BASE, transferModality: 'REPRESENTATIONAL' })).not.toBe(fam(BASE));
+    expect(fam({ ...BASE, noveltyDimensions: ['STRATEGY'] })).not.toBe(fam(BASE));
+    expect(fam({ ...BASE, targetConceptIds: ['x'] })).not.toBe(fam(BASE));
+    expect(fam({ ...BASE, contextDomain: 'cooking' })).not.toBe(fam(BASE));
+    expect(fam({ ...BASE, sourceConceptId: 'c-2' })).not.toBe(fam(BASE));
+  });
+});
+
+describe('7D1 -- TRANSFER_TASK_INSTANCE_COLUMNS mirror', () => {
+  it('is the migration column order and has no duplicates', () => {
+    expect(TRANSFER_TASK_INSTANCE_COLUMNS[0]).toBe('id');
+    expect(TRANSFER_TASK_INSTANCE_COLUMNS).toContain('prompt_exact_hash');
+    expect(TRANSFER_TASK_INSTANCE_COLUMNS).toContain('novelty_validation_passed');
+    expect(new Set(TRANSFER_TASK_INSTANCE_COLUMNS).size).toBe(TRANSFER_TASK_INSTANCE_COLUMNS.length);
   });
 });

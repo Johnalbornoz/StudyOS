@@ -72,10 +72,14 @@ export const PROMPT_REGISTRY = {
   }),
   'transfer.activity_generation': definePrompt({
     id: 'transfer.activity_generation',
-    version: 'v1',
+    // Phase 7 (7D1): v2 returns a STRUCTURED candidate -- prompt +
+    // context plus AI-PROPOSED transferDistance / noveltyDimensions /
+    // targetConceptIds / contextDomain. The server (7D2) is the sole
+    // authority that certifies those; the AI only proposes them.
+    version: 'v2',
     capability: 'CONTENT_GENERATION',
-    service: 'transfer.service.ts:generateTransferActivity',
-    description: 'Writes one application question testing transfer of a concept to a new context at a given distance.',
+    service: 'transfer.service.ts:generateTransferActivityV2',
+    description: 'Writes one structured transfer task (prompt + context + proposed novelty metadata) for a concept at a target distance.',
   }),
   'transfer.response_evaluation': definePrompt({
     id: 'transfer.response_evaluation',

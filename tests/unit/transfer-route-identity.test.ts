@@ -17,10 +17,10 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
-const generateTransferActivityMock = vi.fn();
+const generateStructuredTransferActivityMock = vi.fn();
 const evaluateTransferResponseMock = vi.fn();
 vi.mock('@/services/transfer.service', () => ({
-  generateTransferActivity: (...a: any[]) => generateTransferActivityMock(...a),
+  generateStructuredTransferActivity: (...a: any[]) => generateStructuredTransferActivityMock(...a),
   evaluateTransferResponse: (...a: any[]) => evaluateTransferResponseMock(...a),
 }));
 
@@ -48,7 +48,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
-  generateTransferActivityMock.mockReset().mockResolvedValue({ distance: 'MID', context: 'a bike on a curve', prompt: PROMPT });
+  generateStructuredTransferActivityMock.mockReset().mockResolvedValue({
+    distance: 'MID',
+    context: 'a bike on a curve',
+    prompt: PROMPT,
+    noveltyDimensions: ['STRATEGY'],
+    transferModality: 'STRUCTURAL',
+    targetConceptIds: [],
+    contextDomain: 'sports',
+    generatorPromptVersion: 'v2',
+  });
   evaluateTransferResponseMock.mockReset().mockResolvedValue({ result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-1' } });
   updateMasteryMock.mockReset().mockResolvedValue({ duplicate: false, oldMastery: 10, newMastery: 20, delta: 10 });
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });

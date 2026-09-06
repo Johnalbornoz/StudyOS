@@ -54,13 +54,17 @@ describe('release test 22 -- every prompt this phase changed has a correctly bum
   it('tutor.chat_reply is v2', () => {
     expect(PROMPT_REGISTRY['tutor.chat_reply'].version).toBe('v2');
   });
-  it('every other registered prompt is untouched at v1 -- only the 3 activated surfaces changed (plus quiz.question_generation, bumped later by STABILIZATION QUIZ PERFORMANCE Step 9 for an unrelated reason -- see its own doc comment in prompt-registry.ts)', () => {
+  it('every other registered prompt is untouched at v1 -- only the 3 Phase 5-R activated surfaces changed (plus quiz.question_generation for STABILIZATION QUIZ PERFORMANCE Step 9, and transfer.activity_generation for Phase 7 Step 7D1 structured generation -- see their own doc comments in prompt-registry.ts)', () => {
     const untouchedIds = Object.keys(PROMPT_REGISTRY).filter(
-      (id) => !['quiz.question_hint', 'explain.prompt_generation', 'tutor.chat_reply', 'quiz.question_generation'].includes(id)
+      (id) =>
+        !['quiz.question_hint', 'explain.prompt_generation', 'tutor.chat_reply', 'quiz.question_generation', 'transfer.activity_generation'].includes(id)
     );
     for (const id of untouchedIds) {
       expect(PROMPT_REGISTRY[id as keyof typeof PROMPT_REGISTRY].version).toBe('v1');
     }
+  });
+  it('transfer.activity_generation is v2 (Phase 7 Step 7D1 -- structured candidate generation)', () => {
+    expect(PROMPT_REGISTRY['transfer.activity_generation'].version).toBe('v2');
   });
 });
 

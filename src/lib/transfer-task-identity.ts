@@ -122,6 +122,78 @@ export function buildTransferTaskIdentityMetadata(input: {
   return meta;
 }
 
+/**
+ * Phase 7 (7D1): EXACT-content hash of a transfer prompt.
+ *
+ * Unlike `computeTransferPromptFingerprint` (which normalizes numeric
+ * literals away, on purpose, for anti-memorization), this preserves
+ * every lexical and numeric token. Canonicalization is minimal and
+ * lossless-for-identity: NFC unicode, CRLF -> LF, collapse runs of
+ * whitespace to a single space, trim. Purpose: prove at submit time
+ * that the prompt the learner answered is byte-identical to the one
+ * /transfer/generate produced and persisted. NEVER conflate with the
+ * structural fingerprint.
+ */
+export function computeTransferPromptExactHash(prompt: string): string {
+  const canonical = prompt.normalize('NFC').replace(/\r\n?/g, '\n').replace(/[ \t\f\v]+/g, ' ').replace(/ *\n */g, '\n').trim();
+  return createHash('sha256').update(canonical, 'utf8').digest('hex');
+}
+
+/**
+ * Phase 7 (7D1): deterministic id for a transfer task FAMILY -- the
+ * pedagogical challenge shape, NOT one exact prompt. Two structurally
+ * related challenges (same source concept, distance, modality, novelty
+ * dimensions, target concepts, context domain) share a family; the
+ * exact prompt / fingerprint / transferTaskId are deliberately
+ * EXCLUDED so they don't make every task its own family. Used by
+ * transfer-policy's ROBUST rule ("a later success in a DIFFERENT task
+ * family").
+ */
+export function computeTransferTaskFamilyId(descriptor: {
+  sourceConceptId: string;
+  transferDistance: string;
+  transferModality: string;
+  noveltyDimensions: readonly string[];
+  targetConceptIds: readonly string[];
+  contextDomain?: string | null;
+}): string {
+  const canonical = JSON.stringify({
+    c: descriptor.sourceConceptId,
+    d: descriptor.transferDistance,
+    m: descriptor.transferModality,
+    n: [...descriptor.noveltyDimensions].map((x) => x.trim().toUpperCase()).sort(),
+    t: [...descriptor.targetConceptIds].sort(),
+    x: (descriptor.contextDomain ?? '').normalize('NFC').trim().toLowerCase(),
+  });
+  return createHash('sha256').update(canonical, 'utf8').digest('hex');
+}
+
+/**
+ * Phase 7 (7D1): column list of `transfer_task_instances`
+ * (database/migrations/20260908_1000_phase7_transfer_task_instances.sql),
+ * in migration order. Pure mirror -- the migration test asserts this
+ * matches the SQL exactly, and the DAL builds its INSERT from the same
+ * order.
+ */
+export const TRANSFER_TASK_INSTANCE_COLUMNS = [
+  'id',
+  'student_id',
+  'concept_id',
+  'subject_id',
+  'transfer_distance',
+  'transfer_modality',
+  'novelty_dimensions',
+  'target_concept_ids',
+  'context_domain',
+  'task_family_id',
+  'prompt_fingerprint',
+  'prompt_exact_hash',
+  'generator_version',
+  'generator_prompt_version',
+  'novelty_validation_passed',
+  'created_at',
+] as const;
+
 export type TransferTaskIdResolutionError = 'MISSING_TASK_ID' | 'CONFLICTING_TASK_IDS';
 
 export type TransferTaskIdResolution =

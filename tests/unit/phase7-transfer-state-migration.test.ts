@@ -16,10 +16,13 @@ const MIGRATION_FILE = '20260907_1400_phase7_transfer_state.sql';
 const sql = readFileSync(join(MIGRATIONS_DIR, MIGRATION_FILE), 'utf-8');
 
 describe('7C1 -- concept_transfer_state migration is additive and correctly shaped', () => {
-  it('exists and is the latest migration by filename order', () => {
+  it('exists and sorts before the 7D1 task-instances migration', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
     expect(files).toContain(MIGRATION_FILE);
-    expect(files[files.length - 1]).toBe(MIGRATION_FILE);
+    // 7D1 (20260908_1000_phase7_transfer_task_instances.sql) is the newer
+    // Phase 7 migration; this one must still be the last one before it.
+    const next = files[files.indexOf(MIGRATION_FILE) + 1];
+    expect(next).toBe('20260908_1000_phase7_transfer_task_instances.sql');
   });
 
   it('creates exactly one table: concept_transfer_state', () => {
