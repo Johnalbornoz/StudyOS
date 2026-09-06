@@ -19,6 +19,7 @@ import { calculateNextReviewDate } from '@/lib/algorithms/spaced-repetition';
 import { recalculateConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
 import { recordDecisionEvent } from '@/lib/audit';
 import { projectConceptMemoryState } from './memory-projector.service';
+import { projectConceptTransferState } from './transfer-projector.service';
 import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
 import { toCanonicalErrorType } from './error-intelligence.service';
 import {
@@ -686,6 +687,19 @@ export async function updateMastery(
       // again then. A failure here rolls back the whole operation,
       // same as every other step of this atomic transaction.
       await projectConceptMemoryState(client, studentId, conceptId);
+
+      // Phase 7 Step 7C2: canonical Transfer state projector -- ONLY
+      // for accepted (non-duplicate) TRANSFER evidence, same
+      // deterministic-projection-from-canonical-evidence pattern as the
+      // Phase 6 memory projector above and inside this same
+      // transaction (a throw here -- e.g. a live-writer invariant
+      // violation on the just-inserted row -- rolls the whole
+      // operation back). It does NOT feed Knowledge State's `transfer`
+      // dimension (still getTransferScore); it only maintains
+      // concept_transfer_state.
+      if (evidence.sourceType === 'TRANSFER' && learningEvidenceId) {
+        await projectConceptTransferState(client, studentId, conceptId, learningEvidenceId);
+      }
 
       // Phase 2.2A/2.2B, same transactional client (Phase 2B
       // correction): Knowledge State is a projection, never a second

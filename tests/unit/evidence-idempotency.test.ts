@@ -212,7 +212,12 @@ const DEFAULT_TEST_POLICY = {
   minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2, retentionMinGapDays: 3, validationWindowDays: 14,
 };
 
-async function loadUpdateMastery(db: any, recalculateMock = vi.fn().mockResolvedValue(null), recordDecisionEventMock = vi.fn().mockResolvedValue(undefined)) {
+async function loadUpdateMastery(
+  db: any,
+  recalculateMock = vi.fn().mockResolvedValue(null),
+  recordDecisionEventMock = vi.fn().mockResolvedValue(undefined),
+  transferProjectorMock = vi.fn().mockResolvedValue({ state: {}, stateChanged: false }),
+) {
   vi.resetModules();
   vi.doMock('@/lib/db', () => ({ db }));
   vi.doMock('@/lib/audit', () => ({ recordDecisionEvent: recordDecisionEventMock }));
@@ -228,8 +233,15 @@ async function loadUpdateMastery(db: any, recalculateMock = vi.fn().mockResolved
   const memoryProjectorMock = vi.fn().mockResolvedValue({ state: {}, stateChanged: false, diagnostics: {} });
   vi.doMock('./memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
   vi.doMock('@/services/memory-projector.service', () => ({ projectConceptMemoryState: memoryProjectorMock }));
+  // Phase 7 Step 7C2: Transfer state projector -- stubbed here so this
+  // file's fake DB doesn't model concept_transfer_state. Its real DB
+  // behavior is covered by transfer-projector.test.ts; here we only
+  // assert updateMastery's WIRING (TRANSFER-only, once, before COMMIT,
+  // rolled back on throw).
+  vi.doMock('./transfer-projector.service', () => ({ projectConceptTransferState: transferProjectorMock }));
+  vi.doMock('@/services/transfer-projector.service', () => ({ projectConceptTransferState: transferProjectorMock }));
   const mod = await import('@/services/mastery.service');
-  return { updateMastery: mod.updateMastery, recalculateMock, recordDecisionEventMock };
+  return { updateMastery: mod.updateMastery, recalculateMock, recordDecisionEventMock, transferProjectorMock };
 }
 
 describe('updateMastery -- sequential duplicate (Step: sequential duplicate quiz submission)', () => {
@@ -581,5 +593,78 @@ describe('updateMastery -- Phase 7 (7C1): TRANSFER metadata is atomic with the l
     const { updateMastery } = await loadUpdateMastery(db);
     await updateMastery(baseInput({ identity: { operationType: 'QUIZ_SUBMISSION', operationId: 'q-nometa', conceptId: 'concept-1' } }));
     expect(evidenceInsertMetadata(queryMock)).toBeNull();
+  });
+});
+
+describe('updateMastery -- Phase 7 (7C2): Transfer state projector wiring', () => {
+  const xferInput = (overrides: Record<string, unknown> = {}) =>
+    baseInput({
+      evidence: { result: 'correct' as const, difficulty: 4, sourceType: 'TRANSFER' as const, confidenceWeight: 0.85, scorePercent: 100, sampleSize: 1 },
+      telemetry: { activityType: 'transfer', learningMode: 'SOLO' as const },
+      metadata: { transferDistance: 'MID', assisted: false, transferTaskId: 't-1', promptFingerprint: 'a'.repeat(64), sourceConceptId: 'concept-1' },
+      identity: { operationType: 'TRANSFER', operationId: 'xfer-1', conceptId: 'concept-1' } as EvidenceApplicationIdentity,
+      ...overrides,
+    });
+
+  it('runs the Transfer projector exactly once for an accepted TRANSFER write, with (student, concept, currentEvidenceId)', async () => {
+    const { db } = createFakeDb();
+    const { updateMastery, transferProjectorMock } = await loadUpdateMastery(db);
+    await updateMastery(xferInput());
+    expect(transferProjectorMock).toHaveBeenCalledTimes(1);
+    const [, sId, cId, evId] = transferProjectorMock.mock.calls[0];
+    expect([sId, cId]).toEqual(['student-1', 'concept-1']);
+    expect(typeof evId).toBe('string'); // the just-inserted learning_evidence id
+  });
+
+  it('does NOT run the Transfer projector for non-TRANSFER evidence', async () => {
+    const { db } = createFakeDb();
+    const { updateMastery, transferProjectorMock } = await loadUpdateMastery(db);
+    for (const st of ['PRACTICE_QUIZ', 'SOLO_VERIFICATION', 'TOPIC_ASSESSMENT'] as const) {
+      await updateMastery(
+        baseInput({
+          evidence: { result: 'correct', difficulty: 3, sourceType: st, confidenceWeight: 0.9, scorePercent: 100, sampleSize: 1 },
+          identity: { operationType: 'QUIZ_SUBMISSION', operationId: `op-${st}`, conceptId: 'concept-1' },
+        }),
+      );
+    }
+    expect(transferProjectorMock).not.toHaveBeenCalled();
+  });
+
+  it('a duplicate TRANSFER retry does NOT re-run the projector (once across first + retry)', async () => {
+    const { db } = createFakeDb();
+    const { updateMastery, transferProjectorMock } = await loadUpdateMastery(db);
+    const identity = { operationType: 'TRANSFER', operationId: 'xfer-dup', conceptId: 'concept-1' } as EvidenceApplicationIdentity;
+    const first = await updateMastery(xferInput({ identity }));
+    const second = await updateMastery(xferInput({ identity }));
+    expect(first.duplicate).toBeUndefined();
+    expect(second.duplicate).toBe(true);
+    expect(transferProjectorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('projector runs BEFORE Knowledge State recalculation and BEFORE COMMIT', async () => {
+    const { db, queryMock } = createFakeDb();
+    const order: string[] = [];
+    const ksMock = vi.fn().mockImplementation(async () => { order.push('KS'); return null; });
+    const xferMock = vi.fn().mockImplementation(async () => { order.push('TRANSFER'); return { state: {}, stateChanged: true }; });
+    const { updateMastery } = await loadUpdateMastery(db, ksMock, vi.fn().mockResolvedValue(undefined), xferMock);
+    await updateMastery(xferInput());
+    expect(order).toEqual(['TRANSFER', 'KS']);
+    // COMMIT happened after both
+    const commitIdx = queryMock.mock.calls.findIndex((c: unknown[]) => String(c[0]) === 'COMMIT');
+    expect(commitIdx).toBeGreaterThan(-1);
+  });
+
+  it('a projector failure rolls back the whole transaction -- no evidence, no Mastery, no KS', async () => {
+    const { db, queryMock, claimedKeys } = createFakeDb();
+    const ksMock = vi.fn().mockResolvedValue(null);
+    const xferMock = vi.fn().mockRejectedValue(new Error('INVALID_CURRENT_TRANSFER_EVIDENCE: simulated'));
+    const { updateMastery } = await loadUpdateMastery(db, ksMock, vi.fn().mockResolvedValue(undefined), xferMock);
+
+    await expect(updateMastery(xferInput())).rejects.toThrow(/INVALID_CURRENT_TRANSFER_EVIDENCE/);
+
+    expect(queryMock.mock.calls.some((c: unknown[]) => String(c[0]) === 'ROLLBACK')).toBe(true);
+    expect(queryMock.mock.calls.some((c: unknown[]) => String(c[0]) === 'COMMIT')).toBe(false);
+    expect(claimedKeys.has(buildOperationKey({ operationType: 'TRANSFER', operationId: 'xfer-1', conceptId: 'concept-1' }))).toBe(false);
+    expect(ksMock).not.toHaveBeenCalled();
   });
 });

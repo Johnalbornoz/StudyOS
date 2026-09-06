@@ -1,0 +1,108 @@
+/**
+ * Phase 7 -- Step 7C2: transfer-projector.service DB behavior.
+ *
+ * Mock client only (the caller's transaction connection). Asserts: one
+ * unbounded canonical history query (ORDER BY timestamp ASC, id ASC),
+ * a state read, an UPSERT with ON CONFLICT(student_id, concept_id),
+ * semantic-noop write suppression, current-row strictness -> throw,
+ * and that legacy production-shaped evidence never yields depth above
+ * NEAR_DEMONSTRATED.
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { projectConceptTransferState } from '@/services/transfer-projector.service';
+
+const FP = 'b'.repeat(64);
+const S = 'stu-1';
+const C = 'concept-1';
+
+function meta(o: Record<string, unknown> = {}) {
+  return { transferDistance: 'MID', assisted: false, transferTaskId: 'task-1', promptFingerprint: FP, sourceConceptId: C, ...o };
+}
+
+/** A mock client whose TRANSFER-history SELECT returns `history` and whose
+ *  concept_transfer_state SELECT returns `existing` (0 or 1 row). */
+function mockClient(history: any[], existing: any[] = []) {
+  const calls: Array<{ sql: string; params: any[] }> = [];
+  const query = vi.fn(async (sql: string, params: any[] = []) => {
+    calls.push({ sql, params });
+    const s = sql.replace(/\s+/g, ' ').trim();
+    if (s.startsWith('SELECT id, timestamp, result, metadata FROM learning_evidence')) return { rows: history };
+    if (s.includes('FROM concept_transfer_state')) return { rows: existing };
+    if (s.startsWith('INSERT INTO concept_transfer_state')) return { rows: [] };
+    throw new Error(`unmocked query: ${s}`);
+  });
+  return { client: { query } as any, calls, query };
+}
+const upserts = (calls: Array<{ sql: string; params?: any[] }>) => calls.filter((c) => /INSERT INTO concept_transfer_state/.test(c.sql));
+
+describe('7C2 -- projector canonical read', () => {
+  it('one unbounded history query, ordered by (timestamp ASC, id ASC), scoped to TRANSFER', async () => {
+    const { client, calls } = mockClient([{ id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta() }]);
+    await projectConceptTransferState(client, S, C, 'e1');
+    const hist = calls.find((c) => /FROM learning_evidence/.test(c.sql))!;
+    expect(hist.sql).toMatch(/source_type = 'TRANSFER'/);
+    expect(hist.sql).toMatch(/ORDER BY timestamp ASC, id ASC/);
+    expect(hist.sql).not.toMatch(/LIMIT/i);
+    expect(hist.params).toEqual([S, C]);
+  });
+});
+
+describe('7C2 -- projector UPSERT', () => {
+  it('inserts concept_transfer_state via ON CONFLICT(student_id, concept_id) DO UPDATE when state changed', async () => {
+    const { client, calls } = mockClient([{ id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta({ transferDistance: 'FAR' }) }]);
+    const res = await projectConceptTransferState(client, S, C, 'e1');
+    expect(res.stateChanged).toBe(true);
+    const up = upserts(calls);
+    expect(up).toHaveLength(1);
+    expect(up[0].sql).toMatch(/ON CONFLICT \(student_id, concept_id\) DO UPDATE SET/);
+    expect(up[0].sql).toMatch(/updated_at\s+=\s+NOW\(\)/);
+  });
+
+  it('legacy FAR-labelled production evidence -> persists transfer_depth NEAR_DEMONSTRATED, near count 1, distance NEAR', async () => {
+    const { client, calls } = mockClient([{ id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta({ transferDistance: 'FAR' }) }]);
+    await projectConceptTransferState(client, S, C, 'e1');
+    const p = upserts(calls)[0].params!;
+    // params order: student, concept, score, near, mid, far, dims[], lastAt, lastDist, depth, policyVersion
+    expect(p[3]).toBe(1); // near
+    expect([p[4], p[5]]).toEqual([0, 0]); // mid, far
+    expect(p[6]).toEqual([]); // distinct novelty dims
+    expect(p[8]).toBe('NEAR'); // last_successful_transfer_distance
+    expect(p[9]).toBe('NEAR_DEMONSTRATED'); // transfer_depth
+    expect(p[10]).toBe(1); // policy_version
+  });
+
+  it('semantic no-op: replayed state == persisted state -> NO write', async () => {
+    const history = [{ id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta({ transferDistance: 'MID' }) }];
+    const existing = [{
+      demonstrated_transfer_score: 100,
+      near_transfer_success_count: 1, mid_transfer_success_count: 0, far_transfer_success_count: 0,
+      distinct_novelty_dimensions_ok: [],
+      last_successful_transfer_at: '2026-09-01T00:00:00.000Z',
+      last_successful_transfer_distance: 'NEAR',
+      transfer_depth: 'NEAR_DEMONSTRATED',
+      policy_version: 1,
+    }];
+    const { client, calls } = mockClient(history, existing);
+    const res = await projectConceptTransferState(client, S, C, 'e1');
+    expect(res.stateChanged).toBe(false);
+    expect(upserts(calls)).toHaveLength(0);
+  });
+
+  it('current row invariant violation -> throws (transaction will roll back)', async () => {
+    const { client } = mockClient([
+      { id: 'e1', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta({ promptFingerprint: 'not-canonical' }) },
+    ]);
+    await expect(projectConceptTransferState(client, S, C, 'e1')).rejects.toThrow(/INVALID_CURRENT_TRANSFER_EVIDENCE/);
+  });
+
+  it('historical malformed row is tolerated; only the CURRENT row is strict', async () => {
+    const { client, calls } = mockClient([
+      { id: 'old', timestamp: '2026-08-01T00:00:00Z', result: 'correct', metadata: { transferDistance: 'BOGUS' } }, // legacy, tolerated
+      { id: 'e2', timestamp: '2026-09-01T00:00:00Z', result: 'correct', metadata: meta() }, // current, valid
+    ]);
+    const res = await projectConceptTransferState(client, S, C, 'e2');
+    expect(res.state.transferDepth).toBe('NEAR_DEMONSTRATED'); // 2 legacy-style successes
+    expect(res.state.nearTransferSuccessCount).toBe(2);
+    expect(upserts(calls)).toHaveLength(1);
+  });
+});

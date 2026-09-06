@@ -11,6 +11,7 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, validateJson, getPrompt, type AIProvenance } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { computeTransferScore, type TransferEvidenceRow } from '@/lib/algorithms/transfer-score';
 
 export type TransferDistance = 'NEAR' | 'MID' | 'FAR';
 
@@ -71,39 +72,13 @@ Output ONLY this JSON, no markdown fences, no other text:
   return { distance, context: result.context, prompt: result.prompt };
 }
 
-export interface TransferEvidenceRow {
-  transferDistance: TransferDistance;
-  result: 'correct' | 'partial' | 'incorrect';
-  assisted: boolean;
-  timestamp: string | Date;
-}
-
-const DISTANCE_WEIGHT: Record<TransferDistance, number> = { NEAR: 0.7, MID: 1.0, FAR: 1.3 };
-const RESULT_VALUE: Record<TransferEvidenceRow['result'], number> = { correct: 100, partial: 50, incorrect: 0 };
-
-/**
- * Deterministic, null-safe (never 0 with no evidence). Averages
- * distance-weighted, assistance-discounted results over the last 10
- * transfer attempts -- a MID/FAR success counts for more than a NEAR
- * one, and an assisted success counts for less than an independent one,
- * without needing a separate Independent-Transfer dimension yet.
- */
-export function computeTransferScore(rows: TransferEvidenceRow[]): number | null {
-  if (rows.length === 0) return null;
-  const recent = [...rows]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 10);
-
-  let weightedSum = 0;
-  let weightTotal = 0;
-  for (const row of recent) {
-    const weight = DISTANCE_WEIGHT[row.transferDistance] * (row.assisted ? 0.6 : 1.0);
-    weightedSum += RESULT_VALUE[row.result] * weight;
-    weightTotal += weight;
-  }
-  if (weightTotal === 0) return null;
-  return Math.round(weightedSum / weightTotal);
-}
+// Phase 7 (7C2): the pure scorer moved to
+// src/lib/algorithms/transfer-score.ts so the Phase 7 projector calls
+// the exact same implementation. Imported above for this module's own
+// use (getTransferScore) and re-exported here so this module's public
+// surface (and every existing importer/test) is unchanged.
+export { computeTransferScore };
+export type { TransferEvidenceRow };
 
 /**
  * Grades one transfer response as correct/partial/incorrect with brief
