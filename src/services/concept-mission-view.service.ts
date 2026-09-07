@@ -99,10 +99,16 @@ export async function getConceptMissionView(
   /** Pre-interpolated fallback goal copy (interface language), used only when the concept has no description. */
   goalFallbackText: string,
 ): Promise<ConceptMissionViewResult> {
+  // LX-3P-R1: `concept_localizations` in the authoritative production
+  // schema has only `label` (+ `concept_id` / `language`) -- NOT
+  // `description`. There is no canonical stored concept description /
+  // objective. Per the LX-3 / LX-3R goal contract, an absent
+  // description degrades to the approved name-based fallback
+  // (`buildGoal` -> source FALLBACK_FROM_NAME); it is never a schema
+  // invention and never triggers AI generation on this read.
   const conceptRow = await query(
     `SELECT s.name AS subject_name,
-            COALESCE(cl.label, c.canonical_id) AS label,
-            cl.description AS description
+            COALESCE(cl.label, c.canonical_id) AS label
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id
      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
@@ -150,7 +156,10 @@ export async function getConceptMissionView(
     conceptName: row.label,
     subjectId,
     subjectName: row.subject_name,
-    conceptDescription: row.description ?? null,
+    // LX-3P-R1: no canonical stored concept description in the
+    // production schema -> always null here -> the approved name-based
+    // goal fallback is used.
+    conceptDescription: null,
     goalFallbackText,
     knowledgeState: knowledgeState
       ? {

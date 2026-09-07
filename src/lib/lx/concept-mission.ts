@@ -110,7 +110,14 @@ export interface ConceptMissionInputs {
   conceptName: string;
   subjectId: string;
   subjectName: string;
-  /** concept_localizations.description for the interface locale, if any. The canonical goal source. */
+  /**
+   * A canonical stored concept description / objective, when one
+   * exists. LX-3P-R1: the authoritative production schema stores no
+   * such field (`concept_localizations` has only `label`), so the read
+   * boundary currently always passes `null` here and the name-based
+   * fallback in `buildGoal` is used. Kept as an input so a future
+   * canonical objective source can supply it without a contract change.
+   */
   conceptDescription: string | null;
   /** Pre-interpolated fallback goal copy (interface language). Used only when `conceptDescription` is blank. */
   goalFallbackText: string;
