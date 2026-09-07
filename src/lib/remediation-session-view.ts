@@ -46,7 +46,13 @@ export interface RemediationSessionStepView {
 
 export type RemediationSessionViewResult =
   | { readonly status: 'NOT_FOUND' }
-  | { readonly status: 'TERMINAL'; readonly pathState: RemediationPathState }
+  | {
+      readonly status: 'TERMINAL';
+      readonly pathState: RemediationPathState;
+      /** LX-5F: the journey this intervention was repairing -- for the continuation checkpoint. `null` if the concept row is gone. */
+      readonly conceptId: string | null;
+      readonly subjectId: string | null;
+    }
   | {
       readonly status: 'ACTIVE';
       readonly pathId: string;
@@ -80,18 +86,9 @@ export async function getRemediationSessionView(
   // history exists (Section 24).
   if (!path || path.studentId !== studentId) return { status: 'NOT_FOUND' };
 
-  if (path.state === 'RESOLVED' || path.state === 'REJECTED') {
-    return { status: 'TERMINAL', pathState: path.state };
-  }
-
-  const activeStepIndex = path.steps.findIndex((s) => s.status === 'active');
-  const activeStep = activeStepIndex >= 0 ? path.steps[activeStepIndex] : null;
-  // Defensive: a non-terminal path state with no active step is an
-  // inconsistent/mid-transition read (e.g. a race with
-  // completeRemediationStep) -- never crash or fabricate a step; treat
-  // it the same as a terminal path so the shell fails safe.
-  if (!activeStep) return { status: 'TERMINAL', pathState: path.state };
-
+  // LX-5F: resolve the repaired concept up front so a TERMINAL result
+  // can carry it for the continuation checkpoint. `cl.description` is
+  // never read (LX-3P-R1) -- label only.
   const conceptRow = await db.query(
     `SELECT c.subject_id, COALESCE(cl.label, c.canonical_id) AS label
      FROM concepts c
@@ -100,6 +97,31 @@ export async function getRemediationSessionView(
     [path.rootCauseConceptId, preferredLanguage]
   );
   const conceptRowData = conceptRow.rows[0];
+
+  if (path.state === 'RESOLVED' || path.state === 'REJECTED') {
+    return {
+      status: 'TERMINAL',
+      pathState: path.state,
+      conceptId: conceptRowData ? path.rootCauseConceptId : null,
+      subjectId: conceptRowData?.subject_id ?? null,
+    };
+  }
+
+  const activeStepIndex = path.steps.findIndex((s) => s.status === 'active');
+  const activeStep = activeStepIndex >= 0 ? path.steps[activeStepIndex] : null;
+  // Defensive: a non-terminal path state with no active step is an
+  // inconsistent/mid-transition read (e.g. a race with
+  // completeRemediationStep) -- never crash or fabricate a step; treat
+  // it the same as a terminal path so the shell fails safe.
+  if (!activeStep) {
+    return {
+      status: 'TERMINAL',
+      pathState: path.state,
+      conceptId: conceptRowData ? path.rootCauseConceptId : null,
+      subjectId: conceptRowData?.subject_id ?? null,
+    };
+  }
+
   if (!conceptRowData) return { status: 'NOT_FOUND' };
 
   const activityHref = remediationStepHref(activeStep, { id: path.id, subjectId: conceptRowData.subject_id });

@@ -442,7 +442,24 @@ export type MessageKey =
   | 'prove.moreNeededBody'
   | 'activeLearning.activityComplete'
   | 'activeLearning.practiceAgain'
-  | 'activeLearning.retryNote';
+  | 'activeLearning.retryNote'
+  | 'continuation.learn.headline'
+  | 'continuation.learn.body'
+  | 'continuation.learn.continue'
+  | 'continuation.practice.headline'
+  | 'continuation.practice.body'
+  | 'continuation.prove.headline'
+  | 'continuation.prove.body'
+  | 'continuation.transfer.headline'
+  | 'continuation.transfer.body'
+  | 'continuation.retain.headline'
+  | 'continuation.retain.body'
+  | 'continuation.reinforce.headline'
+  | 'continuation.reinforce.body'
+  | 'continuation.reinforce.continue'
+  | 'continuation.continue'
+  | 'continuation.backToConcept'
+  | 'continuation.resolveFailed';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1400,6 +1417,23 @@ const es: Messages = {
   'activeLearning.activityComplete': 'Actividad completada',
   'activeLearning.practiceAgain': 'Practicar de nuevo',
   'activeLearning.retryNote': 'Practicar de nuevo inicia una sesión de práctica asistida nueva; su evidencia se suma.',
+  'continuation.learn.headline': 'Ya tienes la idea',
+  'continuation.learn.body': 'Ahora StudyUS te ayudará a usarla.',
+  'continuation.learn.continue': 'Seguir aprendiendo',
+  'continuation.practice.headline': 'Práctica completada',
+  'continuation.practice.body': 'StudyUS ha actualizado lo que sabe sobre tu progreso.',
+  'continuation.prove.headline': 'Intento registrado',
+  'continuation.prove.body': 'StudyUS ha revisado tu evidencia independiente.',
+  'continuation.transfer.headline': 'Intento de transferencia registrado',
+  'continuation.transfer.body': 'StudyUS ha revisado cómo lo aplicaste en un contexto nuevo.',
+  'continuation.retain.headline': 'Repaso de retención completado',
+  'continuation.retain.body': 'StudyUS ha actualizado cuánto se te ha quedado.',
+  'continuation.reinforce.headline': 'Refuerzo completado',
+  'continuation.reinforce.body': 'Ahora volvamos a tu recorrido.',
+  'continuation.reinforce.continue': 'Volver a mi recorrido',
+  'continuation.continue': 'Continuar',
+  'continuation.backToConcept': 'Volver al concepto',
+  'continuation.resolveFailed': 'No se pudo determinar el siguiente paso. Puedes volver al concepto.',
 };
 
 const en: Messages = {
@@ -2356,6 +2390,23 @@ const en: Messages = {
   'activeLearning.activityComplete': 'Activity complete',
   'activeLearning.practiceAgain': 'Practise again',
   'activeLearning.retryNote': 'Practising again starts a fresh supported-practice session; its evidence is added.',
+  'continuation.learn.headline': 'You\'ve got the idea',
+  'continuation.learn.body': 'Now StudyUS will help you use it.',
+  'continuation.learn.continue': 'Continue learning',
+  'continuation.practice.headline': 'Practice complete',
+  'continuation.practice.body': 'StudyUS has updated what it knows about your progress.',
+  'continuation.prove.headline': 'Attempt recorded',
+  'continuation.prove.body': 'StudyUS has checked your independent evidence.',
+  'continuation.transfer.headline': 'Transfer attempt recorded',
+  'continuation.transfer.body': 'StudyUS has checked how you applied it in a new context.',
+  'continuation.retain.headline': 'Retention check complete',
+  'continuation.retain.body': 'StudyUS has updated how well this is sticking.',
+  'continuation.reinforce.headline': 'Repair complete',
+  'continuation.reinforce.body': 'Now let\'s get back to your journey.',
+  'continuation.reinforce.continue': 'Back to my journey',
+  'continuation.continue': 'Continue',
+  'continuation.backToConcept': 'Back to the concept',
+  'continuation.resolveFailed': 'Couldn\'t work out the next step. You can go back to the concept.',
 };
 
 const de: Messages = {
@@ -3312,6 +3363,23 @@ const de: Messages = {
   'activeLearning.activityComplete': 'Aktivität abgeschlossen',
   'activeLearning.practiceAgain': 'Nochmal üben',
   'activeLearning.retryNote': 'Nochmal üben startet eine neue unterstützte Übungssitzung; deren Nachweise kommen hinzu.',
+  'continuation.learn.headline': 'Du hast die Idee',
+  'continuation.learn.body': 'Jetzt hilft dir StudyUS, sie anzuwenden.',
+  'continuation.learn.continue': 'Weiterlernen',
+  'continuation.practice.headline': 'Übung abgeschlossen',
+  'continuation.practice.body': 'StudyUS hat seinen Blick auf deinen Fortschritt aktualisiert.',
+  'continuation.prove.headline': 'Versuch erfasst',
+  'continuation.prove.body': 'StudyUS hat deine eigenständigen Nachweise geprüft.',
+  'continuation.transfer.headline': 'Transferversuch erfasst',
+  'continuation.transfer.body': 'StudyUS hat geprüft, wie du es in einem neuen Kontext angewendet hast.',
+  'continuation.retain.headline': 'Behaltensprüfung abgeschlossen',
+  'continuation.retain.body': 'StudyUS hat aktualisiert, wie gut das sitzt.',
+  'continuation.reinforce.headline': 'Behebung abgeschlossen',
+  'continuation.reinforce.body': 'Jetzt zurück zu deinem Weg.',
+  'continuation.reinforce.continue': 'Zurück zu meinem Weg',
+  'continuation.continue': 'Weiter',
+  'continuation.backToConcept': 'Zurück zum Konzept',
+  'continuation.resolveFailed': 'Der nächste Schritt ließ sich nicht ermitteln. Du kannst zum Konzept zurück.',
 };
 
 const fr: Messages = {
@@ -4268,6 +4336,23 @@ const fr: Messages = {
   'activeLearning.activityComplete': 'Activité terminée',
   'activeLearning.practiceAgain': 'S\'entraîner encore',
   'activeLearning.retryNote': 'S\'entraîner à nouveau lance une nouvelle séance de pratique accompagnée ; ses preuves s\'ajoutent.',
+  'continuation.learn.headline': 'Tu as saisi l\'idée',
+  'continuation.learn.body': 'Maintenant, StudyUS va t\'aider à l\'utiliser.',
+  'continuation.learn.continue': 'Continuer l\'apprentissage',
+  'continuation.practice.headline': 'Entraînement terminé',
+  'continuation.practice.body': 'StudyUS a mis à jour ce qu\'il sait de ta progression.',
+  'continuation.prove.headline': 'Tentative enregistrée',
+  'continuation.prove.body': 'StudyUS a vérifié tes preuves autonomes.',
+  'continuation.transfer.headline': 'Tentative de transfert enregistrée',
+  'continuation.transfer.body': 'StudyUS a vérifié comment tu l\'as appliqué dans un nouveau contexte.',
+  'continuation.retain.headline': 'Contrôle de mémorisation terminé',
+  'continuation.retain.body': 'StudyUS a mis à jour ta rétention.',
+  'continuation.reinforce.headline': 'Réparation terminée',
+  'continuation.reinforce.body': 'Maintenant, revenons à ton parcours.',
+  'continuation.reinforce.continue': 'Revenir à mon parcours',
+  'continuation.continue': 'Continuer',
+  'continuation.backToConcept': 'Revenir au concept',
+  'continuation.resolveFailed': 'Impossible de déterminer l\'étape suivante. Tu peux revenir au concept.',
 };
 
 const pt: Messages = {
@@ -5224,6 +5309,23 @@ const pt: Messages = {
   'activeLearning.activityComplete': 'Atividade concluída',
   'activeLearning.practiceAgain': 'Praticar de novo',
   'activeLearning.retryNote': 'Praticar de novo inicia uma nova sessão de prática assistida; sua evidência é somada.',
+  'continuation.learn.headline': 'Você entendeu a ideia',
+  'continuation.learn.body': 'Agora o StudyUS vai te ajudar a usá-la.',
+  'continuation.learn.continue': 'Continuar aprendendo',
+  'continuation.practice.headline': 'Prática concluída',
+  'continuation.practice.body': 'O StudyUS atualizou o que sabe sobre o seu progresso.',
+  'continuation.prove.headline': 'Tentativa registrada',
+  'continuation.prove.body': 'O StudyUS verificou a sua evidência independente.',
+  'continuation.transfer.headline': 'Tentativa de transferência registrada',
+  'continuation.transfer.body': 'O StudyUS verificou como você aplicou isto em um novo contexto.',
+  'continuation.retain.headline': 'Verificação de retenção concluída',
+  'continuation.retain.body': 'O StudyUS atualizou o quanto isto está fixando.',
+  'continuation.reinforce.headline': 'Reforço concluído',
+  'continuation.reinforce.body': 'Agora vamos voltar ao seu percurso.',
+  'continuation.reinforce.continue': 'Voltar ao meu percurso',
+  'continuation.continue': 'Continuar',
+  'continuation.backToConcept': 'Voltar ao conceito',
+  'continuation.resolveFailed': 'Não foi possível determinar o próximo passo. Você pode voltar ao conceito.',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

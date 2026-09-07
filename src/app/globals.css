@@ -480,6 +480,11 @@ a { color: inherit; text-decoration: none; }
 }
 .al-response-req { margin: 0 0 var(--space-2); }
 
+/* ---------- LX-5: continuation checkpoint ---------- */
+.lx-checkpoint.card { border-color: var(--brand); border-width: 2px; }
+.lx-checkpoint p#lx-cp-heading { font-size: 12px; }
+.lx-checkpoint p#lx-cp-heading:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 2px; }
+
 /* ---------- LX-3: Concept Mission journey rail ---------- */
 .cm-rail {
   list-style: none;

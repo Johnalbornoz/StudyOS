@@ -11,8 +11,10 @@ import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contr
 import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-generation.service';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
+import type { LearningActivityKind } from '@/lib/lx/continuation';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
+import ContinuationPanel from './ContinuationPanel';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -185,6 +187,17 @@ export default function QuizPage() {
   const isCanonicalFlow =
     !wantsSetup && !!conceptId && modeParam !== 'cumulative_assessment' && modeParam !== 'exam_simulation';
 
+  // LX-5D: which finished-activity checkpoint copy to show. Presentation
+  // only -- the continuation resolver re-reads canonical truth for the
+  // actual next action regardless of this.
+  const continuationKind: LearningActivityKind = remediationStepId
+    ? 'REINFORCE'
+    : modeParam === 'quick_check'
+      ? 'PROVE'
+      : modeParam === 'retention_check'
+        ? 'RETAIN'
+        : 'PRACTICE';
+
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
   const [quizMode] = useState<QuizMode>(modeParam);
@@ -233,6 +246,18 @@ export default function QuizPage() {
 
   // LX-4R R4: per-question hints moved into the ContextualHelp surface
   // (/api/learning/contextual-help). The legacy toggle/state is gone.
+
+  // LX-5J: record the concept this activity was launched for, so Focus
+  // Mode Exit can return to its Concept Mission (navigation context
+  // only, per-tab).
+  useEffect(() => {
+    if (!subjectId || !conceptId) return;
+    try {
+      sessionStorage.setItem('lx.activityOrigin', JSON.stringify({ subjectId, conceptId }));
+    } catch {
+      /* private mode -- Exit falls back to Today */
+    }
+  }, [subjectId, conceptId]);
 
   // LX-4R: the teach-first phase + canonical support presentation.
   const [teachingExperience, setTeachingExperience] = useState<TeachingExperienceView | null>(null);
@@ -1145,14 +1170,36 @@ export default function QuizPage() {
           </p>
         )}
 
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{t['quiz.reviewButton']}</button>
+        {/* LX-5D: the activity no longer dead-ends at "back to subject".
+            One canonical continuation -- the resolver re-reads Phase 4 /
+            first-touch and launches the next canonical action, or
+            returns to the Concept Mission. For Prove, an insufficient
+            gap simply means the canonical re-read keeps the same
+            purpose (no local "if sufficient => RETAIN"). */}
+        {subjectId && conceptId && studentId && !resumeVerifyAttemptId && !diagnosisId && (
+          <div style={{ marginTop: 'var(--space-6)' }}>
+            <ContinuationPanel
+              studentId={studentId}
+              subjectId={subjectId}
+              conceptId={conceptId}
+              locale={quizLanguage}
+              from={continuationKind}
+              note={
+                results.proveSufficiency && !results.proveSufficiency.sufficient
+                  ? t['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
+                  : undefined
+              }
+            />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost" onClick={() => setReviewing(true)}>{t['quiz.reviewButton']}</button>
           {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && studentId && (
-            <button className="btn btn-primary" onClick={() => studentId && generateQuiz(studentId)}>
+            <button className="btn btn-ghost" onClick={() => studentId && generateQuiz(studentId)}>
               {t['activeLearning.practiceAgain']}
             </button>
           )}
-          <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
         </div>
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && (
           <p style={{ marginTop: 'var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{t['activeLearning.retryNote']}</p>

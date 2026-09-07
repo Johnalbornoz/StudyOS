@@ -4,6 +4,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getRemediationSessionView } from '@/lib/remediation-session-view';
+import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
 import {
   remediationStepLabel,
   remediationStepDescription,
@@ -64,15 +65,33 @@ export default async function RemediationSessionPage({
   }
 
   if (view.status === 'TERMINAL') {
+    // LX-5F: REINFORCE is an overlay on a journey -- when the repair is
+    // done, carry the learner back into that journey via the canonical
+    // continuation resolver (re-reads Phase 4 -- the engine may now want
+    // something other than the original activity), not to a generic
+    // Today page.
     return (
       <div className="card empty-state">
         <strong>{t['remediation.completedTitle']}</strong>
         {t['remediation.completedBody']}
-        <div style={{ marginTop: 'var(--space-4)' }}>
-          <Link href="/dashboard/today" className="btn btn-primary">
-            {t['remediation.backToToday']}
-          </Link>
-        </div>
+        {view.conceptId && view.subjectId ? (
+          <div style={{ marginTop: 'var(--space-4)', textAlign: 'left', maxWidth: 420, marginInline: 'auto' }}>
+            <ContinuationPanel
+              studentId={studentId}
+              subjectId={view.subjectId}
+              conceptId={view.conceptId}
+              locale={locale}
+              from="REINFORCE"
+              variant="inline"
+            />
+          </div>
+        ) : (
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Link href="/dashboard/today" className="btn btn-primary">
+              {t['remediation.backToToday']}
+            </Link>
+          </div>
+        )}
       </div>
     );
   }

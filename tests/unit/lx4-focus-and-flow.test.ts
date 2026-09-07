@@ -35,7 +35,8 @@ describe('LX-4K Focus Mode -- the shell collapses on active-learning routes', ()
   });
 
   it('the focus chrome has an accessible, keyboard-reachable exit', () => {
-    expect(SHELL).toMatch(/<Link href=\{exitHref\} className="lx-exit" aria-label=\{exitLabel\}/);
+    // LX-5J: exit prefers the recorded activity origin (Concept Mission) over the default.
+    expect(SHELL).toMatch(/<Link href=\{originExitHref \?\? exitHref\} className="lx-exit" aria-label=\{exitLabel\}/);
     expect(CSS).toMatch(/\.lx-exit:focus-visible/);
   });
 

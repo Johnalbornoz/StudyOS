@@ -189,6 +189,28 @@ export default function LearnerShell({
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
+  // LX-5J: context-aware Focus Mode exit. An activity page (quiz) records
+  // the concept it was launched for in sessionStorage; if present, Exit
+  // returns to that Concept Mission rather than a generic Today.
+  // sessionStorage is navigation context only -- never pedagogical
+  // truth, per-tab, cleared by the browser.
+  const [originExitHref, setOriginExitHref] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('lx.activityOrigin');
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && typeof o.subjectId === 'string' && typeof o.conceptId === 'string') {
+          setOriginExitHref(`/dashboard/subjects/${o.subjectId}/concepts/${o.conceptId}`);
+          return;
+        }
+      }
+    } catch {
+      /* private mode / malformed -- fall through to the default */
+    }
+    setOriginExitHref(null);
+  }, [pathname]);
+
   useEffect(() => {
     setOpen(false); // close the drawer on every route change
   }, [pathname]);
@@ -259,7 +281,7 @@ export default function LearnerShell({
     return (
       <div className="lx-shell lx-shell--focus">
         <div className="lx-focusbar">
-          <Link href={exitHref} className="lx-exit" aria-label={exitLabel}>
+          <Link href={originExitHref ?? exitHref} className="lx-exit" aria-label={exitLabel}>
             <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />
             <span>{exitLabel}</span>
           </Link>

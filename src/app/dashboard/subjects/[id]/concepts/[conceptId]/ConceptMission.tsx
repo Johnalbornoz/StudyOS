@@ -160,6 +160,7 @@ function NowCard({
         <div style={{ marginTop: 'var(--space-2)' }}>
           <ConceptExplanationDisclosure
             studentId={studentId}
+            subjectId={view.identity.subjectId}
             conceptId={conceptId}
             locale={locale}
             expandLabel={t['conceptMission.learnExpandRead']}
@@ -216,6 +217,7 @@ export default function ConceptMission({
           <h2 id="cm-learn-title" style={{ fontSize: 16, marginBottom: 'var(--space-3)' }}>{t['conceptMission.learnTitle']}</h2>
           <ConceptExplanationDisclosure
             studentId={studentId}
+            subjectId={view.identity.subjectId}
             conceptId={conceptId}
             locale={locale}
             expandLabel={learnLabel}
@@ -230,6 +232,7 @@ export default function ConceptMission({
         {view.learn.prominence === 'SECONDARY' && (
           <ConceptExplanationDisclosure
             studentId={studentId}
+            subjectId={view.identity.subjectId}
             conceptId={conceptId}
             locale={locale}
             expandLabel={learnLabel}

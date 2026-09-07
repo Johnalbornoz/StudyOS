@@ -15,9 +15,11 @@ import { useId, useRef, useState } from 'react';
 import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, type ConceptExplanationData } from '@/app/dashboard/subjects/[id]/ConceptExplanationPanel';
+import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
 
 export default function ConceptExplanationDisclosure({
   studentId,
+  subjectId,
   conceptId,
   locale,
   expandLabel,
@@ -26,6 +28,7 @@ export default function ConceptExplanationDisclosure({
   emphasis = 'secondary',
 }: {
   studentId: string;
+  subjectId: string;
   conceptId: string;
   locale: Locale;
   expandLabel: string;
@@ -89,6 +92,23 @@ export default function ConceptExplanationDisclosure({
             data={data ?? undefined}
             headerLabel={t['conceptMission.learnTitle']}
           />
+        )}
+        {/* LX-5C: the Learn experience no longer dead-ends. Once the
+            explanation has actually rendered, a continuation checkpoint
+            re-reads canonical truth and carries the learner forward.
+            Reading is EXPERIENCE PROGRESS, not mastery evidence -- this
+            writes nothing. */}
+        {open && !loading && !error && data && (
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <ContinuationPanel
+              studentId={studentId}
+              subjectId={subjectId}
+              conceptId={conceptId}
+              locale={locale}
+              from="LEARN"
+              variant="inline"
+            />
+          </div>
         )}
       </div>
     </div>
