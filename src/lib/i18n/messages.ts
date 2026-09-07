@@ -373,7 +373,34 @@ export type MessageKey =
   | 'conceptMission.reason.BUILDING_EVIDENCE'
   | 'conceptMission.journeyUnavailable'
   | 'conceptMission.milestone.indeterminate'
-  | 'nav.primary';
+  | 'nav.primary'
+  | 'nav.exitActivity'
+  | 'teachingExperience.mode.EXPLAIN'
+  | 'teachingExperience.mode.MODEL'
+  | 'teachingExperience.mode.GUIDE'
+  | 'teachingExperience.mode.PRACTICE'
+  | 'teachingExperience.mode.INDEPENDENT'
+  | 'responseContract.ANSWER_ONLY'
+  | 'responseContract.SHOW_WORK'
+  | 'responseContract.EXPLAIN'
+  | 'responseContract.JUSTIFY'
+  | 'responseContract.label'
+  | 'activeLearning.needHelp'
+  | 'activeLearning.tryAgain'
+  | 'activeLearning.continue'
+  | 'activeLearning.proveTitle'
+  | 'activeLearning.proveBody'
+  | 'activeLearning.helpUnavailable'
+  | 'feedback.whatHappened'
+  | 'feedback.why'
+  | 'feedback.whatToChange'
+  | 'feedback.correctReinforce'
+  | 'help.explainDifferently'
+  | 'help.showExample'
+  | 'help.giveHint'
+  | 'help.remindRule'
+  | 'help.showFirstStep'
+  | 'help.whyWrong';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1262,6 +1289,33 @@ const es: Messages = {
   'conceptMission.journeyUnavailable': 'Estado de aprendizaje no disponible ahora mismo.',
   'conceptMission.milestone.indeterminate': '{stage} — estado no disponible',
   'nav.primary': 'Navegación principal',
+  'nav.exitActivity': 'Salir',
+  'teachingExperience.mode.EXPLAIN': 'Entender',
+  'teachingExperience.mode.MODEL': 'Ejemplo resuelto',
+  'teachingExperience.mode.GUIDE': 'Resolver juntos',
+  'teachingExperience.mode.PRACTICE': 'Practicar',
+  'teachingExperience.mode.INDEPENDENT': 'Demostrar',
+  'responseContract.ANSWER_ONLY': 'Da la respuesta final.',
+  'responseContract.SHOW_WORK': 'Muestra tu procedimiento y da la respuesta final.',
+  'responseContract.EXPLAIN': 'Explica tu razonamiento.',
+  'responseContract.JUSTIFY': 'Da tu respuesta y justifícala.',
+  'responseContract.label': 'Qué se te pide',
+  'activeLearning.needHelp': '¿Necesitas ayuda?',
+  'activeLearning.tryAgain': 'Intentar de nuevo',
+  'activeLearning.continue': 'Continuar',
+  'activeLearning.proveTitle': 'Demuéstralo',
+  'activeLearning.proveBody': 'Ahora muestra que puedes hacerlo por tu cuenta: sin pistas, sin ayuda.',
+  'activeLearning.helpUnavailable': 'La ayuda no está disponible mientras demuestras lo que sabes.',
+  'feedback.whatHappened': 'Qué pasó',
+  'feedback.why': 'Por qué',
+  'feedback.whatToChange': 'Qué cambiar',
+  'feedback.correctReinforce': 'Correcto. La idea clave que aplicaste:',
+  'help.explainDifferently': 'Explícamelo de otra forma',
+  'help.showExample': 'Muéstrame un ejemplo',
+  'help.giveHint': 'Dame una pista',
+  'help.remindRule': 'Recuérdame la idea',
+  'help.showFirstStep': 'Muéstrame el primer paso',
+  'help.whyWrong': '¿Por qué está mal?',
 };
 
 const en: Messages = {
@@ -2149,6 +2203,33 @@ const en: Messages = {
   'conceptMission.journeyUnavailable': 'Learning status not available right now.',
   'conceptMission.milestone.indeterminate': '{stage} — status not available',
   'nav.primary': 'Main navigation',
+  'nav.exitActivity': 'Exit',
+  'teachingExperience.mode.EXPLAIN': 'Understand',
+  'teachingExperience.mode.MODEL': 'Worked example',
+  'teachingExperience.mode.GUIDE': 'Solve together',
+  'teachingExperience.mode.PRACTICE': 'Practice',
+  'teachingExperience.mode.INDEPENDENT': 'Prove',
+  'responseContract.ANSWER_ONLY': 'Give the final answer.',
+  'responseContract.SHOW_WORK': 'Show your work and give the final answer.',
+  'responseContract.EXPLAIN': 'Explain your reasoning.',
+  'responseContract.JUSTIFY': 'Give your answer and justify it.',
+  'responseContract.label': 'What\'s being asked',
+  'activeLearning.needHelp': 'Need help?',
+  'activeLearning.tryAgain': 'Try again',
+  'activeLearning.continue': 'Continue',
+  'activeLearning.proveTitle': 'Prove it',
+  'activeLearning.proveBody': 'Now show that you can do this on your own — no hints, no help.',
+  'activeLearning.helpUnavailable': 'Help is off while you prove what you know.',
+  'feedback.whatHappened': 'What happened',
+  'feedback.why': 'Why',
+  'feedback.whatToChange': 'What to change',
+  'feedback.correctReinforce': 'Correct. The key idea you applied:',
+  'help.explainDifferently': 'Explain this differently',
+  'help.showExample': 'Show me an example',
+  'help.giveHint': 'Give me a hint',
+  'help.remindRule': 'Remind me of the idea',
+  'help.showFirstStep': 'Show the first step',
+  'help.whyWrong': 'Why is this wrong?',
 };
 
 const de: Messages = {
@@ -3036,6 +3117,33 @@ const de: Messages = {
   'conceptMission.journeyUnavailable': 'Lernstatus derzeit nicht verfügbar.',
   'conceptMission.milestone.indeterminate': '{stage} — Status nicht verfügbar',
   'nav.primary': 'Hauptnavigation',
+  'nav.exitActivity': 'Beenden',
+  'teachingExperience.mode.EXPLAIN': 'Verstehen',
+  'teachingExperience.mode.MODEL': 'Beispiel',
+  'teachingExperience.mode.GUIDE': 'Gemeinsam lösen',
+  'teachingExperience.mode.PRACTICE': 'Üben',
+  'teachingExperience.mode.INDEPENDENT': 'Nachweisen',
+  'responseContract.ANSWER_ONLY': 'Gib die endgültige Antwort.',
+  'responseContract.SHOW_WORK': 'Zeige deinen Rechenweg und gib die endgültige Antwort.',
+  'responseContract.EXPLAIN': 'Erkläre deine Überlegung.',
+  'responseContract.JUSTIFY': 'Gib deine Antwort und begründe sie.',
+  'responseContract.label': 'Was gefragt ist',
+  'activeLearning.needHelp': 'Brauchst du Hilfe?',
+  'activeLearning.tryAgain': 'Nochmal versuchen',
+  'activeLearning.continue': 'Weiter',
+  'activeLearning.proveTitle': 'Zeig, dass du es kannst',
+  'activeLearning.proveBody': 'Zeig jetzt, dass du das selbstständig kannst – ohne Hinweise, ohne Hilfe.',
+  'activeLearning.helpUnavailable': 'Hilfe ist aus, während du dein Können zeigst.',
+  'feedback.whatHappened': 'Was passiert ist',
+  'feedback.why': 'Warum',
+  'feedback.whatToChange': 'Was du ändern solltest',
+  'feedback.correctReinforce': 'Richtig. Die Kernidee, die du angewendet hast:',
+  'help.explainDifferently': 'Erkläre es anders',
+  'help.showExample': 'Zeig mir ein Beispiel',
+  'help.giveHint': 'Gib mir einen Hinweis',
+  'help.remindRule': 'Erinnere mich an die Idee',
+  'help.showFirstStep': 'Zeig den ersten Schritt',
+  'help.whyWrong': 'Warum ist das falsch?',
 };
 
 const fr: Messages = {
@@ -3923,6 +4031,33 @@ const fr: Messages = {
   'conceptMission.journeyUnavailable': 'Statut d\'apprentissage indisponible pour le moment.',
   'conceptMission.milestone.indeterminate': '{stage} — statut indisponible',
   'nav.primary': 'Navigation principale',
+  'nav.exitActivity': 'Quitter',
+  'teachingExperience.mode.EXPLAIN': 'Comprendre',
+  'teachingExperience.mode.MODEL': 'Exemple résolu',
+  'teachingExperience.mode.GUIDE': 'Résoudre ensemble',
+  'teachingExperience.mode.PRACTICE': 'S\'entraîner',
+  'teachingExperience.mode.INDEPENDENT': 'Démontrer',
+  'responseContract.ANSWER_ONLY': 'Donne la réponse finale.',
+  'responseContract.SHOW_WORK': 'Montre ton raisonnement et donne la réponse finale.',
+  'responseContract.EXPLAIN': 'Explique ton raisonnement.',
+  'responseContract.JUSTIFY': 'Donne ta réponse et justifie-la.',
+  'responseContract.label': 'Ce qui est demandé',
+  'activeLearning.needHelp': 'Besoin d\'aide ?',
+  'activeLearning.tryAgain': 'Réessayer',
+  'activeLearning.continue': 'Continuer',
+  'activeLearning.proveTitle': 'Démontre-le',
+  'activeLearning.proveBody': 'Montre maintenant que tu peux le faire seul — sans indices, sans aide.',
+  'activeLearning.helpUnavailable': 'L\'aide est désactivée pendant que tu démontres tes acquis.',
+  'feedback.whatHappened': 'Ce qui s\'est passé',
+  'feedback.why': 'Pourquoi',
+  'feedback.whatToChange': 'Ce qu\'il faut changer',
+  'feedback.correctReinforce': 'Correct. L\'idée clé que tu as appliquée :',
+  'help.explainDifferently': 'Explique-le autrement',
+  'help.showExample': 'Montre-moi un exemple',
+  'help.giveHint': 'Donne-moi un indice',
+  'help.remindRule': 'Rappelle-moi l\'idée',
+  'help.showFirstStep': 'Montre la première étape',
+  'help.whyWrong': 'Pourquoi est-ce faux ?',
 };
 
 const pt: Messages = {
@@ -4810,6 +4945,33 @@ const pt: Messages = {
   'conceptMission.journeyUnavailable': 'Status de aprendizagem indisponível no momento.',
   'conceptMission.milestone.indeterminate': '{stage} — status indisponível',
   'nav.primary': 'Navegação principal',
+  'nav.exitActivity': 'Sair',
+  'teachingExperience.mode.EXPLAIN': 'Entender',
+  'teachingExperience.mode.MODEL': 'Exemplo resolvido',
+  'teachingExperience.mode.GUIDE': 'Resolver juntos',
+  'teachingExperience.mode.PRACTICE': 'Praticar',
+  'teachingExperience.mode.INDEPENDENT': 'Demonstrar',
+  'responseContract.ANSWER_ONLY': 'Dê a resposta final.',
+  'responseContract.SHOW_WORK': 'Mostre o seu procedimento e dê a resposta final.',
+  'responseContract.EXPLAIN': 'Explique o seu raciocínio.',
+  'responseContract.JUSTIFY': 'Dê a sua resposta e justifique-a.',
+  'responseContract.label': 'O que se pede',
+  'activeLearning.needHelp': 'Precisa de ajuda?',
+  'activeLearning.tryAgain': 'Tentar de novo',
+  'activeLearning.continue': 'Continuar',
+  'activeLearning.proveTitle': 'Demonstre',
+  'activeLearning.proveBody': 'Agora mostre que consegue fazer isto sozinho — sem dicas, sem ajuda.',
+  'activeLearning.helpUnavailable': 'A ajuda fica desativada enquanto você demonstra o que sabe.',
+  'feedback.whatHappened': 'O que aconteceu',
+  'feedback.why': 'Por quê',
+  'feedback.whatToChange': 'O que mudar',
+  'feedback.correctReinforce': 'Correto. A ideia-chave que você aplicou:',
+  'help.explainDifferently': 'Explique de outra forma',
+  'help.showExample': 'Mostre-me um exemplo',
+  'help.giveHint': 'Dê-me uma dica',
+  'help.remindRule': 'Lembre-me da ideia',
+  'help.showFirstStep': 'Mostre o primeiro passo',
+  'help.whyWrong': 'Por que isto está errado?',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

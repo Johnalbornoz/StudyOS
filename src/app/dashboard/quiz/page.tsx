@@ -7,6 +7,9 @@ import LearningSupportStatus, { type LearningSupportContext } from '../LearningS
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import MathAnswerEditor from '@/components/MathAnswerEditor';
 import MathText from '@/components/MathText';
+import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
+import type { QuestionType } from '@/services/quiz-generation.service';
+import type { EvidenceMode } from '@/lib/activity-taxonomy';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -168,6 +171,15 @@ export default function QuizPage() {
   const diagnosisId = searchParams.get('diagnosisId'); // only used for mode=diagnostic_check
   const remediationStepId = searchParams.get('remediationStepId'); // only used when launched from a Repair Path step
   const modeParam = (searchParams.get('mode') as QuizMode | null) || (conceptId ? 'topic_practice' : 'cumulative_assessment');
+  // LX-4K: a canonical learning launch (Concept Mission / LearningDecision
+  // -> session/start) always arrives with a concept + a single-concept
+  // mode. It already carries its purpose -- no configurator, no
+  // learner-facing question-count control. Only legacy/manual
+  // multi-concept entry (assessment / exam), or an explicit ?setup=1,
+  // still shows the setup form.
+  const wantsSetup = searchParams.get('setup') === '1';
+  const isCanonicalFlow =
+    !wantsSetup && !!conceptId && modeParam !== 'cumulative_assessment' && modeParam !== 'exam_simulation';
 
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -291,7 +303,12 @@ export default function QuizPage() {
             conceptId: conceptId || undefined,
             conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
             quizMode,
-            maxQuestions,
+            // LX-4I: the learner never sets evidence sufficiency for a
+            // canonical Practice/Prove flow. The route applies its own
+            // per-mode execution count (canonical evidence-gap-driven
+            // count is a documented LX-4 condition). Legacy/manual setup
+            // still passes the slider value.
+            ...(isCanonicalFlow ? {} : { maxQuestions }),
             ...(languageOverride ? { language: languageOverride } : {}),
           }),
         });
@@ -311,8 +328,23 @@ export default function QuizPage() {
         setPhase('error');
       }
     },
-    [subjectId, conceptId, quizMode, maxQuestions, selectedConceptIds]
+    [subjectId, conceptId, quizMode, maxQuestions, selectedConceptIds, isCanonicalFlow]
   );
+
+  // LX-4K: canonical flow skips the configurator entirely.
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (
+      isCanonicalFlow &&
+      studentId &&
+      phase === 'setup' &&
+      !resumeVerifyAttemptId &&
+      !autoStartedRef.current
+    ) {
+      autoStartedRef.current = true;
+      generateQuiz(studentId);
+    }
+  }, [isCanonicalFlow, studentId, phase, resumeVerifyAttemptId, generateQuiz]);
 
   useEffect(() => {
     const q = questions[current];
@@ -720,6 +752,13 @@ export default function QuizPage() {
     );
   }
 
+  // LX-4K: the canonical flow never shows the configurator -- it
+  // auto-starts (effect above). While that resolves, show a calm
+  // loading state, not the form.
+  if (phase === 'setup' && isCanonicalFlow) {
+    return <div className="card empty-state">{t['quiz.generating']}</div>;
+  }
+
   if (phase === 'setup') {
     return (
       <div style={{ maxWidth: 520 }}>
@@ -1046,13 +1085,26 @@ export default function QuizPage() {
   const q = questions[current];
   if (!q) return null;
 
+  // LX-4F (presentation): the learner sees BEFORE answering what a
+  // complete response is. Presentation-only -- the server-side grader
+  // guard (applyResponseContractGuard) is the enforcement authority.
+  const clientEvidenceMode: EvidenceMode = PRACTICE_EVIDENCE_MODES.includes(quizMode)
+    ? 'PRACTICE'
+    : quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation'
+      ? 'ASSESSMENT'
+      : 'INDEPENDENT';
+  const responseContract = deriveResponseEvidenceContract(
+    { type: q.type as QuestionType, expectedReasoningType: null },
+    clientEvidenceMode,
+  );
+  const isProveMode = !PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
+
   return (
     <div style={{ maxWidth: 640 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 6 }}>
-          <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.breadcrumbQuiz']}
-        </div>
-
+      {/* LX-4K: Focus Mode already provides an Exit affordance -- the
+          in-page breadcrumb is gone. The language picker stays (a
+          learner may switch mid-activity) but is demoted to the corner. */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
         <select
           value={quizLanguage}
           disabled={switchingLanguage}
@@ -1104,28 +1156,12 @@ export default function QuizPage() {
             />
           );
         })()}
+        {/* LX-4J: the intrinsic 1-5 difficulty dots were removed -- there
+            is no canonical learner-relative difficulty authority (target
+            challenge is UNRESOLVED), so showing a five-level scale
+            implied one. The calculator affordance stays: it is a
+            functional constraint, not a metric. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
-              color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            {t['quiz.difficultyLabel']}
-            <span style={{ display: 'inline-flex', gap: 3 }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span
-                  key={i}
-                  aria-hidden
-                  style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: i < q.difficulty ? 'var(--brand)' : 'var(--border-default)',
-                  }}
-                />
-              ))}
-            </span>
-          </span>
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
               title={q.calculatorAllowed ? t['quiz.calculatorAllowed'] : t['quiz.calculatorNotAllowed']}
@@ -1153,6 +1189,20 @@ export default function QuizPage() {
           )}
         </div>
 
+        {isProveMode && (
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{t['activeLearning.proveTitle']}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {t['activeLearning.proveBody']}
+            </p>
+          </div>
+        )}
+
+        <p style={{ margin: '0 0 var(--space-2)', fontSize: 12.5, color: 'var(--text-muted)' }}>
+          <span className="label" style={{ color: 'var(--text-muted)' }}>{t['responseContract.label']}:</span>{' '}
+          {t[`responseContract.${responseContract.kind}` as keyof typeof t]}
+        </p>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
           <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>
             <MathText text={q.question} />
@@ -1163,8 +1213,9 @@ export default function QuizPage() {
               className="btn btn-ghost"
               style={{ fontSize: 13, flexShrink: 0 }}
               onClick={toggleHints}
+              aria-expanded={hintsVisible}
             >
-              {hintsVisible ? t['quiz.hintButtonHide'] : t['quiz.hintButton']}
+              {hintsVisible ? t['quiz.hintButtonHide'] : t['activeLearning.needHelp']}
             </button>
           )}
         </div>

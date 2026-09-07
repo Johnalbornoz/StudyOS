@@ -393,6 +393,47 @@ a { color: inherit; text-decoration: none; }
   .mkt-nav .btn { padding: 0 var(--space-3); }
 }
 
+/* ---------- LX-4K: Focus Mode chrome ---------- */
+.lx-shell--focus {
+  display: block;
+  min-height: 100vh;
+  background: var(--bg-base);
+}
+.lx-focusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: 52px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-base);
+}
+.lx-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+}
+.lx-exit:hover { color: var(--text-primary); background: var(--bg-subtle); }
+.lx-exit:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.lx-main--focus {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6) var(--space-16);
+}
+@media (max-width: 600px) {
+  .lx-main--focus { padding: var(--space-8) var(--space-4) var(--space-12); }
+}
+
 /* ---------- LX-3: Concept Mission journey rail ---------- */
 .cm-rail {
   list-style: none;

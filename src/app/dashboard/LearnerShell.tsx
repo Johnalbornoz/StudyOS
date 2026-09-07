@@ -10,11 +10,15 @@
  *     to close, focus moved into the drawer on open and restored on
  *     close, body scroll locked while open)
  *
- * `chrome` is the structural seam for a future LX-4 focus state:
- *   - 'full'    -> nav + drawer (this phase)
- *   - 'minimal' -> just a slim bar with a back affordance, no nav
- * LX-2 only ever renders 'full'. LX-4 adds a nested layout that passes
- * 'minimal' without every activity re-inventing the shell.
+ * `chrome` is the structural seam for the LX-4 focus state:
+ *   - 'full'    -> nav + drawer
+ *   - 'minimal' -> slim bar with an Exit affordance, no nav
+ *
+ * LX-4K FOCUS MODE: during active learning the full learner navigation
+ * disappears. Rather than a nested layout per activity, the shell
+ * itself collapses to the minimal chrome whenever the current path is
+ * an active-learning route (FOCUS_MODE_PREFIXES). No second navigation
+ * system is built; Focus Mode owns presentation only.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -28,6 +32,7 @@ import {
   Route,
   BookOpen,
   RotateCcw,
+  ArrowLeft,
   ListChecks,
   MessageCircle,
   Bell,
@@ -40,6 +45,18 @@ import {
   X,
 } from 'lucide-react';
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
+
+/**
+ * LX-4K -- routes that ARE an active learning activity. On these the
+ * shell renders the minimal focus chrome (Exit + logo, no nav). Keep
+ * this list tight: only surfaces where the learner is mid-activity.
+ */
+const FOCUS_MODE_PREFIXES = [
+  '/dashboard/quiz',
+  '/dashboard/remediation',
+  '/dashboard/cognitive/explain',
+  '/dashboard/cognitive/transfer',
+] as const;
 
 const ICONS: Record<string, ReactNode> = {
   CalendarDays: <CalendarDays size={16} strokeWidth={2} aria-hidden />,
@@ -145,6 +162,8 @@ export default function LearnerShell({
   menuLabel,
   closeLabel,
   navLabel,
+  exitLabel,
+  exitHref = '/dashboard/today',
   localeSwitcher,
   chrome = 'full',
   children,
@@ -157,6 +176,10 @@ export default function LearnerShell({
   closeLabel: string;
   /** LX-3R: localized landmark name for the persistent sidebar nav (distinct from the drawer's, which uses menuLabel). */
   navLabel: string;
+  /** LX-4K: Focus Mode exit affordance label. */
+  exitLabel: string;
+  /** LX-4K: safe destination for the Focus Mode exit. Defaults to Today. */
+  exitHref?: string;
   localeSwitcher: ReactNode;
   chrome?: 'full' | 'minimal';
   children: ReactNode;
@@ -229,11 +252,20 @@ export default function LearnerShell({
     </Link>
   );
 
-  if (chrome === 'minimal') {
+  // LX-4K: collapse to the minimal chrome for any active-learning route.
+  const inFocusMode = chrome === 'minimal' || FOCUS_MODE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  if (inFocusMode) {
     return (
-      <div className="lx-shell" style={{ gridTemplateColumns: '1fr' }}>
-        <div className="lx-topbar" style={{ display: 'flex' }}>{logo}</div>
-        <main className="lx-main">{children}</main>
+      <div className="lx-shell lx-shell--focus">
+        <div className="lx-focusbar">
+          <Link href={exitHref} className="lx-exit" aria-label={exitLabel}>
+            <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />
+            <span>{exitLabel}</span>
+          </Link>
+          {logo}
+        </div>
+        <main className="lx-main lx-main--focus">{children}</main>
       </div>
     );
   }

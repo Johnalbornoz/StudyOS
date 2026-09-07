@@ -71,6 +71,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       menuLabel={t['nav.menu']}
       closeLabel={t['nav.closeMenu']}
       navLabel={t['nav.primary']}
+      exitLabel={t['nav.exitActivity']}
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
     >
       {children}

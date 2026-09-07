@@ -55,7 +55,12 @@ import {
   GeneratedQuestion,
   ALL_QUESTION_TYPES,
   IBContext,
+  type QuestionType,
+  type ExpectedReasoningType,
 } from '@/services/quiz-generation.service';
+import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
+import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
+import { aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
@@ -649,7 +654,32 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             studentId: validated.studentId,
             subjectId: quizSession.subjectId,
           });
-          return { questionIndex: answer.questionIndex, question, rawAnswer: answer.answer, gradeResult, reportedConfidence: answer.confidence, timing };
+          // LX-4F: the Response/Evidence Contract is the grader whitelist,
+          // enforced at runtime. For an ANSWER_ONLY question (e.g. a plain
+          // numeric problem with no canonical PROCEDURAL reasoning tag), a
+          // correct final answer can never be marked down for absent work
+          // or disliked phrasing. SHOW_WORK / EXPLAIN / JUSTIFY are
+          // returned unchanged (the grader legitimately scores METHOD /
+          // REASONING there).
+          const contract = deriveResponseEvidenceContract(
+            {
+              type: question.type as QuestionType,
+              expectedReasoningType: (question.expectedReasoningType as ExpectedReasoningType | undefined) ?? null,
+            },
+            quizSession.evidenceMode,
+          );
+          const guarded = applyResponseContractGuard(contract, gradeResult, {
+            studentAnswer: answer.answer,
+            correctAnswer: question.correctAnswer,
+          });
+          return {
+            questionIndex: answer.questionIndex,
+            question,
+            rawAnswer: answer.answer,
+            gradeResult: { ...gradeResult, ...guarded },
+            reportedConfidence: answer.confidence,
+            timing,
+          };
         }
         const structured = gradeStructuredAnswer(question, answer.answer);
         return {
@@ -682,6 +712,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         }>;
         gradingConfidences: number[];
         questionTypes: string[];
+        // LX-4J: the ACTUAL generated difficulty of each question in this
+        // bucket -- the evidence row's difficulty is the mean of these
+        // (aggregateEvidenceDifficulty), never a hardcoded constant.
+        questionDifficulties: number[];
         // Phase 0E1: AI provenance for every free-text-graded question in
         // this concept's bucket -- which execution/provider/model/prompt
         // produced the grade. Empty for concepts graded only by the
@@ -708,6 +742,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         questionSemantics: [],
         gradingConfidences: [],
         questionTypes: [],
+        questionDifficulties: [],
         aiGrading: [],
         responseTimings: [],
       };
@@ -716,6 +751,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       bucket.questionIndexes.push(questionIndex);
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
+      bucket.questionDifficulties.push(question.difficulty);
       bucket.responseTimings.push({ questionIndex, timing });
       if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
         bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
@@ -793,7 +829,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         const conceptScore = Math.round((bucket.correct / bucket.total) * 100);
         const evidence: LearningEvidence = {
           result: conceptScore >= 70 ? 'correct' : conceptScore >= 50 ? 'partial' : 'incorrect',
-          difficulty: 3,
+          // LX-4J / LX-1R evidence-consistency contract: the actual mean
+          // generated difficulty of this concept's questions, never a
+          // hardcoded constant.
+          difficulty: aggregateEvidenceDifficulty(bucket.questionDifficulties),
           sourceType: config.evidenceSource,
           confidenceWeight: 0.9,
           // The real score and how many questions backed it -- a 15/15
