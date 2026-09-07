@@ -61,6 +61,9 @@ import {
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
+import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
+import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
+import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
@@ -284,6 +287,9 @@ function toClientQuestion(q: GeneratedQuestion, index: number) {
     classificationCategories: q.classificationCategories,
     visualAid: q.visualAid,
     askConfidence: q.askConfidence || undefined,
+    // LX-4R R5: the generator's canonical reasoning tag, so the client's
+    // "what's being asked" line matches the server grader guard.
+    expectedReasoningType: q.expectedReasoningType,
   };
 }
 
@@ -378,12 +384,77 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // quick_check is always exactly 6 (STABILIZATION QUIZ PERFORMANCE Step 9): its dedicated
     // fast path (generateQuickCheckQuestions) is an audited, fixed 6-slot/4-type plan, not a
     // caller-configurable count -- a maxQuestions override is no longer honored for this mode.
-    const maxQuestions =
+    let maxQuestions =
       validated.quizMode === 'quick_check'
         ? 6
         : validated.quizMode === 'diagnostic_check'
         ? Math.max(2, Math.min(4, validated.maxQuestions ?? config.defaultMax))
         : Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
+
+    // LX-4R R8: for a canonical single-concept PRACTICE / PROVE flow the
+    // question count derives from the CANONICAL evidence gap
+    // (mastery_policies minimum - what the learner already has), via
+    // deriveEvidenceRequirement / resolveQuestionCount. RETAIN /
+    // TRANSFER / DIAGNOSE / ASSESS stay on their existing execution
+    // defaults (the contract returns UNRESOLVED for them -- an
+    // execution default is not pedagogical truth).
+    let countAuthority: {
+      status: 'CANONICAL_GAP' | 'EXECUTION_DEFAULT';
+      pedagogicalRequirement?: number;
+      executionMinimum?: number;
+      source?: string;
+      zeroGapMismatch?: boolean;
+    } = { status: 'EXECUTION_DEFAULT' };
+    if (
+      isSingleConceptMode(validated.quizMode) &&
+      validated.conceptId &&
+      validated.quizMode !== 'diagnostic_check'
+    ) {
+      try {
+        const activityType = activityTypeForQuizMode(validated.quizMode);
+        const policy = await getActiveMasteryPolicy();
+        const ks = await getConceptKnowledgeState(validated.studentId, validated.conceptId).catch(() => null);
+        const requirement = deriveEvidenceRequirement({
+          activityType,
+          evidenceMode: evidenceModeForQuizMode(validated.quizMode),
+          targetDimension: 'UNDERSTANDING',
+          masteryPolicy: policy,
+          currentSufficiency: ks
+            ? {
+                evidenceCount: ks.evidenceCount,
+                independentEvidenceCount: ks.independentEvidenceCount,
+                passed:
+                  ks.evidenceCount >= policy.minimumEvidenceCount &&
+                  ks.independentEvidenceCount >= policy.minimumIndependentEvidenceCount,
+              }
+            : null,
+        });
+        const resolved = resolveQuestionCount(requirement);
+        if (resolved.status === 'DETERMINED' && requirement.questionCount.status === 'DETERMINED') {
+          const gap = requirement.questionCount.pedagogicalRequirement;
+          const zeroGapMismatch = gap === 0;
+          if (zeroGapMismatch) {
+            // R8: do NOT silently run one question to fill an execution
+            // minimum when canonical policy says no further evidence is
+            // needed. Surface the authority mismatch; still generate the
+            // execution minimum (0 questions is not a runnable activity).
+            console.warn(
+              `[LX-4R R8] question-count authority mismatch: canonical evidence gap for concept ${validated.conceptId} (${validated.quizMode}) is 0, but Phase 3C selected this activity. Running executionMinimum ${requirement.questionCount.executionMinimum}; not treated as a pedagogical requirement.`,
+            );
+          }
+          maxQuestions = resolved.count;
+          countAuthority = {
+            status: 'CANONICAL_GAP',
+            pedagogicalRequirement: gap,
+            executionMinimum: requirement.questionCount.executionMinimum,
+            source: requirement.questionCount.source,
+            zeroGapMismatch,
+          };
+        }
+      } catch (e) {
+        console.error('[LX-4R R8] evidence-requirement resolution failed, using execution default:', e);
+      }
+    }
 
     let conceptIds: string[];
     let primaryConceptId: string | null;
@@ -511,6 +582,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         language,
         quizMode: validated.quizMode,
         maxQuestions,
+        // LX-4R R8: where the count came from -- CANONICAL_GAP (mastery
+        // policy evidence gap) or EXECUTION_DEFAULT (unresolved mode).
+        // `zeroGapMismatch` is set when Phase 3C launched a canonical
+        // PRACTICE/PROVE activity with no remaining evidence need.
+        countAuthority,
         ibProgramme: ibContext?.programme || 'none',
         quiz: {
           questions: questions.map(toClientQuestion),
@@ -787,6 +863,11 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         score: gradeResult.score,
         feedback: (gradeResult as any).feedback || '',
         explanation: question.explanation,
+        // LX-4R R6: canonical grader classification, passed through for
+        // the pedagogical feedback structure. The client PRESENTS these;
+        // it never re-derives a diagnosis.
+        errorType: (gradeResult as any).errorType ?? null,
+        reasoningValid: typeof (gradeResult as any).reasoningValid === 'boolean' ? (gradeResult as any).reasoningValid : null,
       });
     }
 
@@ -1134,11 +1215,60 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
+    // LX-4R R7: after INDEPENDENT/ASSESSMENT evidence is written for a
+    // single concept, re-read CANONICAL Evidence Sufficiency. One
+    // correct answer never equals "Prove complete" -- the client shows
+    // an activity-complete state ONLY when the canonical independent-
+    // evidence gap is 0. It never decides the next activity (LX-5).
+    let proveSufficiency:
+      | { conceptId: string; sufficient: boolean; currentIndependentEvidenceCount: number; canonicalMinimumIndependentEvidenceCount: number; remainingGap: number }
+      | null = null;
+    if (
+      quizSession.conceptId &&
+      (quizSession.evidenceMode === 'INDEPENDENT' || quizSession.evidenceMode === 'ASSESSMENT')
+    ) {
+      try {
+        const [policy, ks] = await Promise.all([
+          getActiveMasteryPolicy(),
+          getConceptKnowledgeState(validated.studentId, quizSession.conceptId),
+        ]);
+        if (ks) {
+          const requirement = deriveEvidenceRequirement({
+            activityType: quizSession.activityType,
+            evidenceMode: quizSession.evidenceMode,
+            targetDimension: 'INDEPENDENCE',
+            masteryPolicy: policy,
+            currentSufficiency: {
+              evidenceCount: ks.evidenceCount,
+              independentEvidenceCount: ks.independentEvidenceCount,
+              passed:
+                ks.evidenceCount >= policy.minimumEvidenceCount &&
+                ks.independentEvidenceCount >= policy.minimumIndependentEvidenceCount,
+            },
+          });
+          const gap =
+            requirement.questionCount.status === 'DETERMINED'
+              ? requirement.questionCount.pedagogicalRequirement
+              : Math.max(0, policy.minimumIndependentEvidenceCount - ks.independentEvidenceCount);
+          proveSufficiency = {
+            conceptId: quizSession.conceptId,
+            sufficient: gap === 0,
+            currentIndependentEvidenceCount: ks.independentEvidenceCount,
+            canonicalMinimumIndependentEvidenceCount: policy.minimumIndependentEvidenceCount,
+            remainingGap: gap,
+          };
+        }
+      } catch (e) {
+        console.error('[LX-4R R7] prove sufficiency re-check failed:', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         quizId: validated.quizId,
         results: { score, correctCount, incorrectCount, totalQuestions },
+        proveSufficiency,
         mastery: primaryMastery
           ? { previous: primaryMastery.previousMastery, current: primaryMastery.newMastery, delta: primaryMastery.delta }
           : undefined,

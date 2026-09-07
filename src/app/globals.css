@@ -434,6 +434,52 @@ a { color: inherit; text-decoration: none; }
   .lx-main--focus { padding: var(--space-8) var(--space-4) var(--space-12); }
 }
 
+/* ---------- LX-4R: teach-first phase + contextual help + feedback ---------- */
+.al-teach-progress { display: flex; gap: 6px; margin-bottom: var(--space-4); }
+.al-teach-dot { width: 28px; height: 4px; border-radius: 999px; background: var(--border-default); }
+.al-teach-dot.active { background: var(--brand); }
+.al-teach-dot.done { background: var(--brand-subtle); }
+.al-teach-card { padding: var(--space-8); border-left: 3px solid var(--brand); }
+.al-worked { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.al-worked li {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+.al-guided-step {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-sm);
+  background: var(--brand-subtle);
+}
+
+.al-help { margin-bottom: var(--space-5); }
+.al-help-trigger[aria-expanded='true'] { color: var(--brand-ink); }
+.al-help-panel {
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+}
+.al-help-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.al-help-actions .btn { height: 34px; font-size: 13px; }
+.al-help-result { margin-top: var(--space-3); font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
+.al-fb-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--brand);
+  background: var(--bg-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.al-response-req { margin: 0 0 var(--space-2); }
+
 /* ---------- LX-3: Concept Mission journey rail ---------- */
 .cm-rail {
   list-style: none;

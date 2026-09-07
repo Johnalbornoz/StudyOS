@@ -210,6 +210,14 @@ export const PROMPT_REGISTRY = {
     service: 'ai.service.ts:generateQuestion',
     description: 'Older, single-question-at-a-time generator used by /api/quizzes/generate -- parallel to quiz-generation.service.ts, not yet consolidated.',
   }),
+  'learning.guided_practice': definePrompt({
+    id: 'learning.guided_practice',
+    version: 'v1',
+    capability: 'CONTENT_GENERATION',
+    service: 'teaching-content.service.ts:generateGuidedPractice',
+    description:
+      'LX-4R R3: generates ONE short "solve it together" sequence for a concept -- a worked problem broken into 2-4 steps, each with a one-line prompt, an expected intermediate answer, and a why. Teaching scaffolding only; never an assessment question, never writes evidence. Does not choose concept/activity/mastery/support.',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;

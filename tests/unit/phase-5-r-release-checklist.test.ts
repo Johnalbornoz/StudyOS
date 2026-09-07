@@ -29,6 +29,15 @@ const NEW_OR_CHANGED_FILES = [
   // more here for the support-level/misconception-context signal, not
   // a new category of side effect).
   'src/lib/remediation-session-view.ts',
+  // LX-4R R1/R4: two deliberate consumers that make canonical adaptive
+  // teaching VISIBLE in the active-learning experience -- both call the
+  // SAME getTeachingIntentForConcept (never a re-implementation).
+  //   - teaching-intent route: returns ONLY the derived
+  //     TeachingExperienceView (client never sees raw TeachingIntent).
+  //   - contextual-help route: uses it to adapt hint generation, exactly
+  //     as /api/quizzes/hint already does.
+  'src/app/api/learning/teaching-intent/route.ts',
+  'src/app/api/learning/contextual-help/route.ts',
 ];
 
 function read(path: string): string {
@@ -113,7 +122,7 @@ describe('S18 -- Phase 4 decision fields are never reassigned in the wired call 
   });
 });
 
-describe('LIVE_TEACHING_INTENT_CONSUMERS -- exactly 4 canonical surfaces (Step 6L-B1 added the 4th, deliberately), no indiscriminate wiring', () => {
+describe('LIVE_TEACHING_INTENT_CONSUMERS -- canonical surfaces only (6L-B1 added the 4th; LX-4R added the teaching-intent + contextual-help routes), no indiscriminate wiring', () => {
   it('quiz-generation.service.ts::generateQuestionHint consumes TeachingGenerationContext', () => {
     expect(read('src/services/quiz-generation.service.ts')).toMatch(/generationContext\?: TeachingGenerationContext/);
   });

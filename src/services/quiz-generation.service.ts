@@ -131,6 +131,15 @@ const KNOWN_QUESTION_INTENTS = new Set<string>(['CHECK_UNDERSTANDING', 'CHECK_AP
  */
 export const KNOWN_COGNITIVE_LEVELS = new Set<string>(['RECALL', 'COMPREHENSION', 'APPLICATION', 'ANALYSIS', 'SYNTHESIS', 'EVALUATION']);
 export type ExpectedReasoningType = 'FACTUAL' | 'PROCEDURAL' | 'CONCEPTUAL' | 'METACOGNITIVE';
+/**
+ * LX-4R R5: `expectedReasoningType` IS now requested at generation time
+ * (the generator wrote the question, it knows what reasoning it
+ * demands) and read back with the same known-enum-only guard as
+ * `cognitiveLevel` -- never fabricated after the learner answers, never
+ * left to the grader to decide. Feeds `deriveResponseEvidenceContract`
+ * (which only TIGHTENS the obligation when the tag is present).
+ */
+export const KNOWN_EXPECTED_REASONING_TYPES = new Set<string>(['FACTUAL', 'PROCEDURAL', 'CONCEPTUAL', 'METACOGNITIVE']);
 
 export interface VisualAid {
   kind: 'diagram' | 'chart';
@@ -233,6 +242,8 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
     // given for each allowed value.
     cognitiveLevel: '"RECALL"|"COMPREHENSION"|"APPLICATION"|"ANALYSIS"|"SYNTHESIS"|"EVALUATION"',
     questionIntent: '"CHECK_UNDERSTANDING"|"CHECK_APPLICATION"|"CHECK_TRANSFER"|"DIAGNOSTIC_PROBE"',
+    // LX-4R R5.
+    expectedReasoningType: '"FACTUAL"|"PROCEDURAL"|"CONCEPTUAL"|"METACOGNITIVE"',
   };
   const format = ANSWER_FORMAT_BY_TYPE[type];
   if (format === 'single_choice' || format === 'multi_choice') {
@@ -300,6 +311,10 @@ function mapRawQuestionsToGenerated(questions: any[], conceptId: string, languag
       // are deliberately NOT read here.
       cognitiveLevel: KNOWN_COGNITIVE_LEVELS.has(q.cognitiveLevel) ? (q.cognitiveLevel as CognitiveLevel) : undefined,
       questionIntent: KNOWN_QUESTION_INTENTS.has(q.questionIntent) ? (q.questionIntent as QuestionIntent) : undefined,
+      // LX-4R R5: known-enum-only, never fabricated (same guard as cognitiveLevel).
+      expectedReasoningType: KNOWN_EXPECTED_REASONING_TYPES.has(q.expectedReasoningType)
+        ? (q.expectedReasoningType as ExpectedReasoningType)
+        : undefined,
     };
 
     storedQuestions.push(question);
@@ -1912,9 +1927,10 @@ ${groundingRequirement}
 5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
 6. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
 7. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps. Your entire response is a JSON document. Every backslash inside your LaTeX must itself be escaped for JSON: write it as two backslashes in the raw JSON for every one backslash LaTeX needs. For example: to display \\frac{a}{b}, write \\\\frac{a}{b} in your JSON output (not \\frac{a}{b}); to display \\times, write \\\\times; to display \\sqrt{x}, write \\\\sqrt{x}. A single backslash immediately before a letter is invalid JSON, or worse, silently corrupts your output into an unreadable control character -- never emit one. Do not use any math delimiter other than "$...$" or "$$...$$".
-8. Tag EVERY question with "cognitiveLevel" and "questionIntent", judged honestly against what the question actually demands -- never default to the same value for every question just because it's convenient:
+8. Tag EVERY question with "cognitiveLevel", "questionIntent" and "expectedReasoningType", judged honestly against what the question actually demands -- never default to the same value for every question just because it's convenient:
    - "cognitiveLevel" (the cognitive demand genuinely required to answer, Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
    - "questionIntent" (what this question is primarily evidence of): "CHECK_UNDERSTANDING" (does the student grasp the concept itself), "CHECK_APPLICATION" (can the student use it in a concrete case), "CHECK_TRANSFER" (can the student use it in an unfamiliar context or combined with other concepts), "DIAGNOSTIC_PROBE" (designed to reveal a specific likely misconception rather than just pass/fail).
+   - "expectedReasoningType" (what a COMPLETE correct response must actually demonstrate -- this sets what the student is told to provide and what the grader is allowed to score): "FACTUAL" (recall/state the answer; no working or explanation is expected -- typical for a definition or a single-value lookup), "PROCEDURAL" (a method/derivation must be shown, not only the final value -- e.g. a multi-step calculation where the working is the point), "CONCEPTUAL" (the response must explain WHY, in the student's own words, not just give a result), "METACOGNITIVE" (the student must reflect on or justify their own choice/confidence/approach). Choose FACTUAL for a plain numeric or short-answer question that only needs the answer; choose PROCEDURAL only when the working genuinely must be assessed.
 
 ${closingNote}`;
 }

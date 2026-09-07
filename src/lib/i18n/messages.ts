@@ -400,7 +400,49 @@ export type MessageKey =
   | 'help.giveHint'
   | 'help.remindRule'
   | 'help.showFirstStep'
-  | 'help.whyWrong';
+  | 'help.whyWrong'
+  | 'teachingIntro.explainTitle'
+  | 'teachingIntro.modelTitle'
+  | 'teachingIntro.guideTitle'
+  | 'teachingIntro.continue'
+  | 'teachingIntro.startPractice'
+  | 'teachingIntro.skip'
+  | 'teachingIntro.loading'
+  | 'workedExample.title'
+  | 'workedExample.step'
+  | 'workedExample.why'
+  | 'workedExample.revealNext'
+  | 'guided.title'
+  | 'guided.yourStep'
+  | 'guided.check'
+  | 'guided.reveal'
+  | 'guided.expected'
+  | 'guided.nextStep'
+  | 'guided.done'
+  | 'guided.notEvidence'
+  | 'help.menuTitle'
+  | 'help.close'
+  | 'help.loading'
+  | 'help.error'
+  | 'feedback.whatNow'
+  | 'feedback.almost'
+  | 'feedback.incorrect'
+  | 'feedback.correct'
+  | 'feedback.methodSoundNumberOff'
+  | 'errorTeach.CONCEPTUAL'
+  | 'errorTeach.PROCEDURAL'
+  | 'errorTeach.CARELESS'
+  | 'errorTeach.INCOMPLETE'
+  | 'errorTeach.MISREADING'
+  | 'errorTeach.ARITHMETIC'
+  | 'errorTeach.UNIT'
+  | 'prove.sufficientTitle'
+  | 'prove.sufficientBody'
+  | 'prove.moreNeededTitle'
+  | 'prove.moreNeededBody'
+  | 'activeLearning.activityComplete'
+  | 'activeLearning.practiceAgain'
+  | 'activeLearning.retryNote';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1316,6 +1358,48 @@ const es: Messages = {
   'help.remindRule': 'Recuérdame la idea',
   'help.showFirstStep': 'Muéstrame el primer paso',
   'help.whyWrong': '¿Por qué está mal?',
+  'teachingIntro.explainTitle': 'Primero, la idea',
+  'teachingIntro.modelTitle': 'Míralo resuelto',
+  'teachingIntro.guideTitle': 'Hazlo conmigo',
+  'teachingIntro.continue': 'Continuar',
+  'teachingIntro.startPractice': 'Estoy listo para practicar',
+  'teachingIntro.skip': 'Ir directo a practicar',
+  'teachingIntro.loading': 'Preparando la enseñanza…',
+  'workedExample.title': 'Ejemplo resuelto',
+  'workedExample.step': 'Paso {n}',
+  'workedExample.why': 'Por qué',
+  'workedExample.revealNext': 'Ver el siguiente paso',
+  'guided.title': 'Resolvámoslo juntos',
+  'guided.yourStep': 'Tu turno',
+  'guided.check': 'Comprobar',
+  'guided.reveal': 'Mostrar este paso',
+  'guided.expected': 'Deberíamos llegar a',
+  'guided.nextStep': 'Siguiente paso',
+  'guided.done': 'Ya lo tienes: ahora practica tú.',
+  'guided.notEvidence': 'Esto es práctica guiada. No cuenta como evidencia.',
+  'help.menuTitle': '¿Con qué te ayudo?',
+  'help.close': 'Cerrar',
+  'help.loading': 'Un momento…',
+  'help.error': 'No se pudo obtener la ayuda. Inténtalo de nuevo.',
+  'feedback.whatNow': 'Qué hacer ahora',
+  'feedback.almost': 'Casi',
+  'feedback.incorrect': 'Todavía no',
+  'feedback.correct': 'Correcto',
+  'feedback.methodSoundNumberOff': 'Tu método es correcto; el resultado numérico se desvió.',
+  'errorTeach.CONCEPTUAL': 'La idea de fondo se entendió al revés.',
+  'errorTeach.PROCEDURAL': 'La idea está bien; falló un paso del método.',
+  'errorTeach.CARELESS': 'Un descuido pequeño sobre un trabajo por lo demás correcto.',
+  'errorTeach.INCOMPLETE': 'Correcto hasta donde llega, pero sin terminar.',
+  'errorTeach.MISREADING': 'Se respondió a otra pregunta distinta.',
+  'errorTeach.ARITHMETIC': 'El planteamiento estaba bien; un cálculo salió mal.',
+  'errorTeach.UNIT': 'Método y cálculo bien; las unidades fallaron.',
+  'prove.sufficientTitle': 'Evidencia suficiente',
+  'prove.sufficientBody': 'Has aportado evidencia independiente suficiente para este concepto.',
+  'prove.moreNeededTitle': 'Falta un poco más',
+  'prove.moreNeededBody': 'Necesitas {n} demostración(es) independiente(s) más para este concepto.',
+  'activeLearning.activityComplete': 'Actividad completada',
+  'activeLearning.practiceAgain': 'Practicar de nuevo',
+  'activeLearning.retryNote': 'Practicar de nuevo inicia una sesión de práctica asistida nueva; su evidencia se suma.',
 };
 
 const en: Messages = {
@@ -2230,6 +2314,48 @@ const en: Messages = {
   'help.remindRule': 'Remind me of the idea',
   'help.showFirstStep': 'Show the first step',
   'help.whyWrong': 'Why is this wrong?',
+  'teachingIntro.explainTitle': 'First, the idea',
+  'teachingIntro.modelTitle': 'See it worked out',
+  'teachingIntro.guideTitle': 'Do one with me',
+  'teachingIntro.continue': 'Continue',
+  'teachingIntro.startPractice': 'I\'m ready to practice',
+  'teachingIntro.skip': 'Skip to practice',
+  'teachingIntro.loading': 'Preparing the teaching…',
+  'workedExample.title': 'Worked example',
+  'workedExample.step': 'Step {n}',
+  'workedExample.why': 'Why',
+  'workedExample.revealNext': 'Reveal the next step',
+  'guided.title': 'Let\'s solve one together',
+  'guided.yourStep': 'Your turn',
+  'guided.check': 'Check',
+  'guided.reveal': 'Show this step',
+  'guided.expected': 'We should get',
+  'guided.nextStep': 'Next step',
+  'guided.done': 'You\'ve got it — now practise it yourself.',
+  'guided.notEvidence': 'This is guided practice. It doesn\'t count as evidence.',
+  'help.menuTitle': 'What would help?',
+  'help.close': 'Close',
+  'help.loading': 'One moment…',
+  'help.error': 'Couldn\'t get help. Try again.',
+  'feedback.whatNow': 'What to do now',
+  'feedback.almost': 'Almost',
+  'feedback.incorrect': 'Not yet',
+  'feedback.correct': 'Correct',
+  'feedback.methodSoundNumberOff': 'Your method is sound; the number came out wrong.',
+  'errorTeach.CONCEPTUAL': 'The underlying idea was misunderstood.',
+  'errorTeach.PROCEDURAL': 'The idea is right; a step of the method slipped.',
+  'errorTeach.CARELESS': 'A small slip on otherwise correct work.',
+  'errorTeach.INCOMPLETE': 'Correct as far as it goes, but unfinished.',
+  'errorTeach.MISREADING': 'A different question was answered.',
+  'errorTeach.ARITHMETIC': 'The setup was right; a calculation went wrong.',
+  'errorTeach.UNIT': 'Method and calculation were right; units were off.',
+  'prove.sufficientTitle': 'Enough evidence',
+  'prove.sufficientBody': 'You\'ve provided enough independent evidence for this concept.',
+  'prove.moreNeededTitle': 'A little more needed',
+  'prove.moreNeededBody': 'You need {n} more independent demonstration(s) for this concept.',
+  'activeLearning.activityComplete': 'Activity complete',
+  'activeLearning.practiceAgain': 'Practise again',
+  'activeLearning.retryNote': 'Practising again starts a fresh supported-practice session; its evidence is added.',
 };
 
 const de: Messages = {
@@ -3144,6 +3270,48 @@ const de: Messages = {
   'help.remindRule': 'Erinnere mich an die Idee',
   'help.showFirstStep': 'Zeig den ersten Schritt',
   'help.whyWrong': 'Warum ist das falsch?',
+  'teachingIntro.explainTitle': 'Zuerst die Idee',
+  'teachingIntro.modelTitle': 'Sieh es gelöst',
+  'teachingIntro.guideTitle': 'Mach eins mit mir',
+  'teachingIntro.continue': 'Weiter',
+  'teachingIntro.startPractice': 'Ich bin bereit zu üben',
+  'teachingIntro.skip': 'Direkt zum Üben',
+  'teachingIntro.loading': 'Unterricht wird vorbereitet…',
+  'workedExample.title': 'Beispiel',
+  'workedExample.step': 'Schritt {n}',
+  'workedExample.why': 'Warum',
+  'workedExample.revealNext': 'Nächsten Schritt zeigen',
+  'guided.title': 'Lösen wir eins zusammen',
+  'guided.yourStep': 'Du bist dran',
+  'guided.check': 'Prüfen',
+  'guided.reveal': 'Diesen Schritt zeigen',
+  'guided.expected': 'Wir sollten erhalten',
+  'guided.nextStep': 'Nächster Schritt',
+  'guided.done': 'Du hast es – jetzt übe selbst.',
+  'guided.notEvidence': 'Das ist geführtes Üben. Es zählt nicht als Nachweis.',
+  'help.menuTitle': 'Womit kann ich helfen?',
+  'help.close': 'Schließen',
+  'help.loading': 'Einen Moment…',
+  'help.error': 'Hilfe nicht verfügbar. Versuch es nochmal.',
+  'feedback.whatNow': 'Was jetzt zu tun ist',
+  'feedback.almost': 'Fast',
+  'feedback.incorrect': 'Noch nicht',
+  'feedback.correct': 'Richtig',
+  'feedback.methodSoundNumberOff': 'Deine Methode stimmt; die Zahl war falsch.',
+  'errorTeach.CONCEPTUAL': 'Die zugrunde liegende Idee wurde missverstanden.',
+  'errorTeach.PROCEDURAL': 'Die Idee stimmt; ein Methodenschritt ging daneben.',
+  'errorTeach.CARELESS': 'Ein kleiner Ausrutscher bei sonst korrekter Arbeit.',
+  'errorTeach.INCOMPLETE': 'Soweit korrekt, aber nicht zu Ende geführt.',
+  'errorTeach.MISREADING': 'Eine andere Frage wurde beantwortet.',
+  'errorTeach.ARITHMETIC': 'Der Ansatz stimmte; eine Rechnung ging schief.',
+  'errorTeach.UNIT': 'Methode und Rechnung stimmten; die Einheiten waren falsch.',
+  'prove.sufficientTitle': 'Genug Nachweise',
+  'prove.sufficientBody': 'Du hast genug eigenständige Nachweise für dieses Konzept erbracht.',
+  'prove.moreNeededTitle': 'Noch etwas nötig',
+  'prove.moreNeededBody': 'Du brauchst {n} weitere eigenständige Nachweise für dieses Konzept.',
+  'activeLearning.activityComplete': 'Aktivität abgeschlossen',
+  'activeLearning.practiceAgain': 'Nochmal üben',
+  'activeLearning.retryNote': 'Nochmal üben startet eine neue unterstützte Übungssitzung; deren Nachweise kommen hinzu.',
 };
 
 const fr: Messages = {
@@ -4058,6 +4226,48 @@ const fr: Messages = {
   'help.remindRule': 'Rappelle-moi l\'idée',
   'help.showFirstStep': 'Montre la première étape',
   'help.whyWrong': 'Pourquoi est-ce faux ?',
+  'teachingIntro.explainTitle': 'D\'abord, l\'idée',
+  'teachingIntro.modelTitle': 'Vois-le résolu',
+  'teachingIntro.guideTitle': 'Fais-en un avec moi',
+  'teachingIntro.continue': 'Continuer',
+  'teachingIntro.startPractice': 'Je suis prêt à m\'entraîner',
+  'teachingIntro.skip': 'Passer à la pratique',
+  'teachingIntro.loading': 'Préparation de l\'enseignement…',
+  'workedExample.title': 'Exemple résolu',
+  'workedExample.step': 'Étape {n}',
+  'workedExample.why': 'Pourquoi',
+  'workedExample.revealNext': 'Révéler l\'étape suivante',
+  'guided.title': 'Résolvons-en un ensemble',
+  'guided.yourStep': 'À toi',
+  'guided.check': 'Vérifier',
+  'guided.reveal': 'Montrer cette étape',
+  'guided.expected': 'On devrait obtenir',
+  'guided.nextStep': 'Étape suivante',
+  'guided.done': 'Tu l\'as — maintenant entraîne-toi.',
+  'guided.notEvidence': 'C\'est de la pratique guidée. Ça ne compte pas comme preuve.',
+  'help.menuTitle': 'Qu\'est-ce qui aiderait ?',
+  'help.close': 'Fermer',
+  'help.loading': 'Un instant…',
+  'help.error': 'Aide indisponible. Réessaie.',
+  'feedback.whatNow': 'Que faire maintenant',
+  'feedback.almost': 'Presque',
+  'feedback.incorrect': 'Pas encore',
+  'feedback.correct': 'Correct',
+  'feedback.methodSoundNumberOff': 'Ta méthode est bonne ; le nombre est faux.',
+  'errorTeach.CONCEPTUAL': 'L\'idée de fond a été mal comprise.',
+  'errorTeach.PROCEDURAL': 'L\'idée est juste ; une étape de la méthode a dérapé.',
+  'errorTeach.CARELESS': 'Une petite erreur sur un travail par ailleurs correct.',
+  'errorTeach.INCOMPLETE': 'Correct jusque-là, mais non terminé.',
+  'errorTeach.MISREADING': 'Une autre question a été traitée.',
+  'errorTeach.ARITHMETIC': 'La mise en place était bonne ; un calcul a échoué.',
+  'errorTeach.UNIT': 'Méthode et calcul bons ; les unités étaient fausses.',
+  'prove.sufficientTitle': 'Preuves suffisantes',
+  'prove.sufficientBody': 'Tu as fourni assez de preuves autonomes pour ce concept.',
+  'prove.moreNeededTitle': 'Encore un peu',
+  'prove.moreNeededBody': 'Il te faut {n} démonstration(s) autonome(s) de plus.',
+  'activeLearning.activityComplete': 'Activité terminée',
+  'activeLearning.practiceAgain': 'S\'entraîner encore',
+  'activeLearning.retryNote': 'S\'entraîner à nouveau lance une nouvelle séance de pratique accompagnée ; ses preuves s\'ajoutent.',
 };
 
 const pt: Messages = {
@@ -4972,6 +5182,48 @@ const pt: Messages = {
   'help.remindRule': 'Lembre-me da ideia',
   'help.showFirstStep': 'Mostre o primeiro passo',
   'help.whyWrong': 'Por que isto está errado?',
+  'teachingIntro.explainTitle': 'Primeiro, a ideia',
+  'teachingIntro.modelTitle': 'Veja resolvido',
+  'teachingIntro.guideTitle': 'Faça um comigo',
+  'teachingIntro.continue': 'Continuar',
+  'teachingIntro.startPractice': 'Estou pronto para praticar',
+  'teachingIntro.skip': 'Ir direto para praticar',
+  'teachingIntro.loading': 'Preparando o ensino…',
+  'workedExample.title': 'Exemplo resolvido',
+  'workedExample.step': 'Passo {n}',
+  'workedExample.why': 'Por quê',
+  'workedExample.revealNext': 'Revelar o próximo passo',
+  'guided.title': 'Vamos resolver um juntos',
+  'guided.yourStep': 'Sua vez',
+  'guided.check': 'Verificar',
+  'guided.reveal': 'Mostrar este passo',
+  'guided.expected': 'Devemos chegar a',
+  'guided.nextStep': 'Próximo passo',
+  'guided.done': 'Você entendeu — agora pratique você.',
+  'guided.notEvidence': 'Isto é prática guiada. Não conta como evidência.',
+  'help.menuTitle': 'O que ajudaria?',
+  'help.close': 'Fechar',
+  'help.loading': 'Um momento…',
+  'help.error': 'Não foi possível obter ajuda. Tente de novo.',
+  'feedback.whatNow': 'O que fazer agora',
+  'feedback.almost': 'Quase',
+  'feedback.incorrect': 'Ainda não',
+  'feedback.correct': 'Correto',
+  'feedback.methodSoundNumberOff': 'Seu método está certo; o número saiu errado.',
+  'errorTeach.CONCEPTUAL': 'A ideia de fundo foi mal compreendida.',
+  'errorTeach.PROCEDURAL': 'A ideia está certa; um passo do método falhou.',
+  'errorTeach.CARELESS': 'Um deslize pequeno em um trabalho por outro lado correto.',
+  'errorTeach.INCOMPLETE': 'Correto até onde vai, mas incompleto.',
+  'errorTeach.MISREADING': 'Foi respondida outra pergunta.',
+  'errorTeach.ARITHMETIC': 'A montagem estava certa; um cálculo deu errado.',
+  'errorTeach.UNIT': 'Método e cálculo certos; as unidades falharam.',
+  'prove.sufficientTitle': 'Evidência suficiente',
+  'prove.sufficientBody': 'Você forneceu evidência independente suficiente para este conceito.',
+  'prove.moreNeededTitle': 'Falta um pouco',
+  'prove.moreNeededBody': 'Você precisa de mais {n} demonstração(ões) independente(s).',
+  'activeLearning.activityComplete': 'Atividade concluída',
+  'activeLearning.practiceAgain': 'Praticar de novo',
+  'activeLearning.retryNote': 'Praticar de novo inicia uma nova sessão de prática assistida; sua evidência é somada.',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

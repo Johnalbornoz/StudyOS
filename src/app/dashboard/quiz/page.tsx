@@ -8,8 +8,11 @@ import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages'
 import MathAnswerEditor from '@/components/MathAnswerEditor';
 import MathText from '@/components/MathText';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
-import type { QuestionType } from '@/services/quiz-generation.service';
+import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-generation.service';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
+import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
+import TeachingIntro from './TeachingIntro';
+import ContextualHelp from './ContextualHelp';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -60,6 +63,7 @@ interface Question {
   difficulty: number;
   calculatorAllowed?: boolean;
   askConfidence?: boolean;
+  expectedReasoningType?: string;
 }
 
 type ConfidenceLevel = 'NOT_SURE' | 'SOMEWHAT_SURE' | 'VERY_SURE';
@@ -217,6 +221,8 @@ export default function QuizPage() {
   const questionPresentedAtRef = useRef<Record<number, string>>({});
   const answerSubmittedAtRef = useRef<Record<number, string>>({});
   const verificationPresentedAtRef = useRef<Record<string, string>>({});
+  // R9: move focus to the results heading when results appear.
+  const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
@@ -225,10 +231,13 @@ export default function QuizPage() {
   const [results, setResults] = useState<any>(null);
   const [reviewing, setReviewing] = useState(false);
 
-  const [hints, setHints] = useState<Record<number, string[]>>({});
-  const [hintsVisible, setHintsVisible] = useState(false);
-  const [hintLoading, setHintLoading] = useState(false);
-  const [hintError, setHintError] = useState(false);
+  // LX-4R R4: per-question hints moved into the ContextualHelp surface
+  // (/api/learning/contextual-help). The legacy toggle/state is gone.
+
+  // LX-4R: the teach-first phase + canonical support presentation.
+  const [teachingExperience, setTeachingExperience] = useState<TeachingExperienceView | null>(null);
+  const [teachingStage, setTeachingStage] = useState<'teaching' | 'questions'>('questions');
+  const [countAuthority, setCountAuthority] = useState<{ status: string; zeroGapMismatch?: boolean } | null>(null);
 
   // Phase 3B: student verification flow -- one additional confirming
   // question per concept whose evidence was ambiguous, never shown for
@@ -318,11 +327,29 @@ export default function QuizPage() {
         setQuizId(genBody.data.quizId);
         setQuizLanguage(genBody.data.language);
         setQuestions(genBody.data.quiz.questions);
+        setCountAuthority(genBody.data.countAuthority ?? null);
         setCurrent(0);
         setAnswers({});
         setResults(null);
         setReviewing(false);
+        setTeachingExperience(null);
+        setTeachingStage('questions');
         setPhase('quiz');
+
+        // LX-4R R1: fetch the canonical Teaching Experience for this
+        // activity. If it prescribes a teach-first flow (EXPLAIN / MODEL
+        // / GUIDE), enter the teaching phase before the questions.
+        // Presentation only -- SupportLevel was decided server-side.
+        void fetch(`/api/learning/teaching-intent?studentId=${sid}&quizId=${genBody.data.quizId}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((b) => {
+            const view: TeachingExperienceView | null = b?.data?.teachingExperience ?? null;
+            setTeachingExperience(view);
+            if (view && view.stages.some((s: string) => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE')) {
+              setTeachingStage('teaching');
+            }
+          })
+          .catch(() => {});
       } catch (err: any) {
         setError(err.message);
         setPhase('error');
@@ -365,10 +392,12 @@ export default function QuizPage() {
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
     setConfidenceSelected(null);
-    setHintsVisible(false);
-    setHintError(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, questions.length]);
+
+  useEffect(() => {
+    if (results && !reviewing) resultsHeadingRef.current?.focus();
+  }, [results, reviewing]);
 
   useEffect(() => {
     // Phase 1D: a verification question becomes presented the moment it
@@ -380,32 +409,6 @@ export default function QuizPage() {
       }
     }
   }, [results]);
-
-  async function toggleHints() {
-    if (hintsVisible) {
-      setHintsVisible(false);
-      return;
-    }
-    setHintsVisible(true);
-    if ((hints[current] && hints[current].length > 0) || !studentId || !quizId) return;
-
-    setHintLoading(true);
-    setHintError(false);
-    try {
-      const res = await fetch('/api/quizzes/hint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, quizId, questionIndex: current, language: quizLanguage }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error();
-      setHints((prev) => ({ ...prev, [current]: body.data.hints }));
-    } catch {
-      setHintError(true);
-    } finally {
-      setHintLoading(false);
-    }
-  }
 
   async function changeQuizLanguage(next: Locale) {
     if (!studentId || next === quizLanguage) return;
@@ -863,40 +866,78 @@ export default function QuizPage() {
     const perConcept = results.perConceptResults || [];
 
     if (reviewing) {
-      const review: ReviewItem[] = results.review || [];
+      const review: (ReviewItem & { errorType?: string | null; reasoningValid?: boolean | null })[] = results.review || [];
+      const supportedPractice = PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
       return (
         <div style={{ maxWidth: 680 }}>
           <h1>{t['quiz.reviewTitle']}</h1>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
-            {review.map((r) => (
-              <div key={r.questionIndex} className="card" style={{ padding: 'var(--space-6)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{r.conceptLabel}</span>
-                  <span className={`chip ${r.correct ? 'chip-good' : 'chip-critical'}`}>
-                    {r.correct ? t['quiz.correctBadge'] : t['quiz.incorrectBadge']}
-                  </span>
-                </div>
-                <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>
-                  <MathText text={r.question} />
-                </p>
-                {r.visualAid && <VisualAidView aid={r.visualAid} />}
-                <div style={{ fontSize: 14, marginBottom: 4 }}>
-                  <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
-                </div>
-                {!r.correct && (
-                  <div style={{ fontSize: 14, marginBottom: 4, color: 'var(--success)' }}>
-                    <strong>{t['quiz.correctAnswerLabel']}:</strong> <MathText text={r.correctAnswer} />
+            {review.map((r) => {
+              // LX-4R R6: pedagogical feedback -- what happened / why /
+              // what to change / what now. `errorType` / `reasoningValid`
+              // are the CANONICAL grader classification; the UI presents
+              // them, it never re-derives a diagnosis.
+              const whatHappened = r.correct
+                ? t['feedback.correct']
+                : r.reasoningValid
+                  ? t['feedback.almost']
+                  : t['feedback.incorrect'];
+              const whyKey = r.errorType ? (`errorTeach.${r.errorType}` as keyof typeof t) : null;
+              const why = whyKey && t[whyKey] ? t[whyKey] : r.reasoningValid ? t['feedback.methodSoundNumberOff'] : '';
+              return (
+                <div key={r.questionIndex} className="card al-fb" style={{ padding: 'var(--space-6)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+                    <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{r.conceptLabel}</span>
+                    <span className={`chip ${r.correct ? 'chip-good' : 'chip-critical'}`}>{whatHappened}</span>
                   </div>
-                )}
-                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 8 }}>
-                  <strong>{t['quiz.explanationLabel']}:</strong> <MathText text={r.explanation} />
-                </p>
-              </div>
-            ))}
+                  <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>
+                    <MathText text={r.question} />
+                  </p>
+                  {r.visualAid && <VisualAidView aid={r.visualAid} />}
+                  <div style={{ fontSize: 14, marginBottom: 4 }}>
+                    <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
+                  </div>
+                  {!r.correct && (
+                    <div style={{ fontSize: 14, marginBottom: 4, color: 'var(--success)' }}>
+                      <strong>{t['quiz.correctAnswerLabel']}:</strong> <MathText text={r.correctAnswer} />
+                    </div>
+                  )}
+
+                  {!r.correct && (why || r.feedback) && (
+                    <div className="al-fb-body">
+                      {why && (
+                        <div>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{t['feedback.why']}</p>
+                          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}>{why}</p>
+                        </div>
+                      )}
+                      {r.feedback && (
+                        <div>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{t['feedback.whatToChange']}</p>
+                          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}><MathText text={r.feedback} /></p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 8 }}>
+                    <strong>{t['quiz.explanationLabel']}:</strong> <MathText text={r.explanation} />
+                  </p>
+                </div>
+              );
+            })}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary" onClick={() => setReviewing(false)}>{t['quiz.backToResults']}</button>
-            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary">{t['quiz.backToSubject']}</Link>
+            {/* LX-4R R6: act on the feedback -- retry inside the activity
+                rather than being pushed straight on. See the results view
+                for the retry-evidence note. */}
+            {supportedPractice && studentId && (
+              <button className="btn btn-primary" onClick={() => studentId && generateQuiz(studentId)}>
+                {t['activeLearning.practiceAgain']}
+              </button>
+            )}
+            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
           </div>
         </div>
       );
@@ -904,8 +945,9 @@ export default function QuizPage() {
 
     return (
       <div style={{ maxWidth: 620 }}>
-        <h1>{t['quiz.results']}</h1>
-        <div className="card" style={{ marginTop: 'var(--space-6)' }}>
+        <h1 tabIndex={-1} ref={resultsHeadingRef}>{t['quiz.results']}</h1>
+        {/* R9: the outcome is announced to assistive tech when it appears. */}
+        <div className="card" role="status" aria-live="polite" style={{ marginTop: 'var(--space-6)' }}>
           <div className="label" style={{ color: 'var(--text-muted)' }}>{t['quiz.score']}</div>
           <div className="tabular" style={{ fontSize: 40, fontWeight: 650, margin: '4px 0' }}>
             {results.results.score}%
@@ -1074,11 +1116,72 @@ export default function QuizPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
+        {/* LX-4R R7: canonical Evidence Sufficiency after INDEPENDENT
+            evidence -- one correct answer is not "Prove complete". The
+            server re-read the mastery-policy gap; this only presents it
+            and NEVER decides the next activity (LX-5). */}
+        {results.proveSufficiency && (
+          <div
+            className="card"
+            style={{ marginTop: 'var(--space-4)', borderColor: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)' }}
+          >
+            <p className="label" style={{ color: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)', margin: '0 0 4px' }}>
+              {results.proveSufficiency.sufficient ? t['prove.sufficientTitle'] : t['prove.moreNeededTitle']}
+            </p>
+            <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}>
+              {results.proveSufficiency.sufficient
+                ? t['prove.sufficientBody']
+                : t['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))}
+            </p>
+          </div>
+        )}
+
+        {/* LX-4R R8: surfaced authority mismatch -- Phase 3C launched a
+            canonical PRACTICE/PROVE activity with no remaining evidence
+            gap. Not hidden behind an execution minimum. */}
+        {countAuthority?.zeroGapMismatch && (
+          <p style={{ marginTop: 'var(--space-3)', fontSize: 12.5, color: 'var(--text-muted)' }}>
+            {t['activeLearning.activityComplete']}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{t['quiz.reviewButton']}</button>
-          <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary">{t['quiz.backToSubject']}</Link>
+          {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && studentId && (
+            <button className="btn btn-primary" onClick={() => studentId && generateQuiz(studentId)}>
+              {t['activeLearning.practiceAgain']}
+            </button>
+          )}
+          <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
         </div>
+        {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && (
+          <p style={{ marginTop: 'var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{t['activeLearning.retryNote']}</p>
+        )}
       </div>
+    );
+  }
+
+  // LX-4R R1/R2/R3: the teach-first phase, when the canonical Teaching
+  // Experience prescribes it. Renders EXPLAIN / MODEL / GUIDE, then
+  // hands off to the questions.
+  if (
+    phase === 'quiz' &&
+    teachingStage === 'teaching' &&
+    teachingExperience &&
+    studentId &&
+    quizId &&
+    conceptId
+  ) {
+    return (
+      <TeachingIntro
+        view={teachingExperience}
+        studentId={studentId}
+        quizId={quizId}
+        conceptId={conceptId}
+        conceptLabel={subjectName}
+        locale={quizLanguage}
+        onDone={() => setTeachingStage('questions')}
+      />
     );
   }
 
@@ -1094,7 +1197,9 @@ export default function QuizPage() {
       ? 'ASSESSMENT'
       : 'INDEPENDENT';
   const responseContract = deriveResponseEvidenceContract(
-    { type: q.type as QuestionType, expectedReasoningType: null },
+    // LX-4R R5: the generator now populates expectedReasoningType, so the
+    // learner-facing "what's being asked" line matches the grader's view.
+    { type: q.type as QuestionType, expectedReasoningType: ((q as any).expectedReasoningType as ExpectedReasoningType | undefined) ?? null },
     clientEvidenceMode,
   );
   const isProveMode = !PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
@@ -1195,52 +1300,25 @@ export default function QuizPage() {
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               {t['activeLearning.proveBody']}
             </p>
+            {/* R9: the reason help is unavailable, stated -- not just absent. */}
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{t['activeLearning.helpUnavailable']}</p>
           </div>
         )}
 
-        <p style={{ margin: '0 0 var(--space-2)', fontSize: 12.5, color: 'var(--text-muted)' }}>
+        <p className="al-response-req" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
           <span className="label" style={{ color: 'var(--text-muted)' }}>{t['responseContract.label']}:</span>{' '}
           {t[`responseContract.${responseContract.kind}` as keyof typeof t]}
         </p>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-          <p style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px', flex: 1 }}>
-            <MathText text={q.question} />
-          </p>
-          {PRACTICE_EVIDENCE_MODES.includes(quizMode) && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              style={{ fontSize: 13, flexShrink: 0 }}
-              onClick={toggleHints}
-              aria-expanded={hintsVisible}
-            >
-              {hintsVisible ? t['quiz.hintButtonHide'] : t['activeLearning.needHelp']}
-            </button>
-          )}
-        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px' }}>
+          <MathText text={q.question} />
+        </h2>
 
-        {hintsVisible && (
-          <div
-            style={{
-              marginBottom: 'var(--space-5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-subtle)', border: '1px solid var(--border-default)',
-            }}
-          >
-            {hintLoading ? (
-              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
-                {t['quiz.hintLoading']}
-              </p>
-            ) : hintError || (hints[current] && hints[current].length === 0) ? (
-              <p style={{ fontSize: 13.5, color: 'var(--error)', margin: 0 }}>{t['quiz.hintError']}</p>
-            ) : (
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-                {(hints[current] || []).map((h, i) => (
-                  <li key={i}>{h}</li>
-                ))}
-              </ul>
-            )}
-          </div>
+        {/* LX-4R R4: the contextual help surface (PRACTICE only). The
+            server (/api/learning/contextual-help -> canUseAI) is the
+            authority; it is never rendered for Prove / assessment. */}
+        {PRACTICE_EVIDENCE_MODES.includes(quizMode) && studentId && quizId && (
+          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
         )}
 
         {q.askConfidence && (
