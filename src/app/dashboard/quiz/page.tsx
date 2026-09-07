@@ -247,17 +247,11 @@ export default function QuizPage() {
   // LX-4R R4: per-question hints moved into the ContextualHelp surface
   // (/api/learning/contextual-help). The legacy toggle/state is gone.
 
-  // LX-5J: record the concept this activity was launched for, so Focus
-  // Mode Exit can return to its Concept Mission (navigation context
-  // only, per-tab).
-  useEffect(() => {
-    if (!subjectId || !conceptId) return;
-    try {
-      sessionStorage.setItem('lx.activityOrigin', JSON.stringify({ subjectId, conceptId }));
-    } catch {
-      /* private mode -- Exit falls back to Today */
-    }
-  }, [subjectId, conceptId]);
+  // LX-5R Issue 2: the quiz no longer writes a Focus Mode origin. The
+  // quiz URL already carries subjectId + conceptId, so LearnerShell
+  // derives Exit from the current route -- which cannot go stale the way
+  // a shared sessionStorage key did (a later transfer/remediation would
+  // read a previous quiz's concept). See LearnerShell + FocusOriginBeacon.
 
   // LX-4R: the teach-first phase + canonical support presentation.
   const [teachingExperience, setTeachingExperience] = useState<TeachingExperienceView | null>(null);

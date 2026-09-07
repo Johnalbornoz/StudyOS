@@ -5,6 +5,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getRemediationSessionView } from '@/lib/remediation-session-view';
 import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
+import FocusOriginBeacon from '@/app/dashboard/FocusOriginBeacon';
 import {
   remediationStepLabel,
   remediationStepDescription,
@@ -72,6 +73,9 @@ export default async function RemediationSessionPage({
     // Today page.
     return (
       <div className="card empty-state">
+        {view.conceptId && view.subjectId && (
+          <FocusOriginBeacon subjectId={view.subjectId} conceptId={view.conceptId} />
+        )}
         <strong>{t['remediation.completedTitle']}</strong>
         {t['remediation.completedBody']}
         {view.conceptId && view.subjectId ? (
@@ -101,6 +105,11 @@ export default async function RemediationSessionPage({
 
   return (
     <div style={{ maxWidth: 640 }}>
+      {/* LX-5R Issue 2: this route is keyed by pathId, so its URL does not
+          carry the concept -- publish a path-scoped Focus Mode origin the
+          shell trusts only while the learner is on THIS path. */}
+      <FocusOriginBeacon subjectId={view.subjectId} conceptId={view.conceptId} />
+
       {/* Session header */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 4px' }}>{view.conceptLabel}</p>

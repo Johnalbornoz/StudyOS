@@ -137,15 +137,11 @@ describe('LX-5F remediation completion returns to the journey, not Today', () =>
   });
 });
 
-/* ---------- LX-5J: Focus Mode exit ---------- */
-describe('LX-5J Focus Mode exit is context-aware', () => {
-  it('the shell prefers a recorded activity origin (Concept Mission) over the default Today', () => {
-    expect(SHELL).toMatch(/sessionStorage\.getItem\('lx\.activityOrigin'\)/);
+/* ---------- LX-5J / LX-5R Issue 2: Focus Mode exit ---------- */
+describe('LX-5J Focus Mode exit is context-aware (see lx5r-continuation-repair for the full matrix)', () => {
+  it('the shell resolves an activity origin and falls back to the default', () => {
     expect(SHELL).toMatch(/originExitHref \?\? exitHref/);
-    expect(SHELL).toMatch(/\/dashboard\/subjects\/\$\{o\.subjectId\}\/concepts\/\$\{o\.conceptId\}/);
-  });
-  it('the quiz activity records its concept origin (navigation context only)', () => {
-    expect(QUIZ).toMatch(/sessionStorage\.setItem\('lx\.activityOrigin', JSON\.stringify\(\{ subjectId, conceptId \}\)\)/);
+    expect(SHELL).toMatch(/\/dashboard\/subjects\/\$\{curSubjectId\}\/concepts\/\$\{curConceptId\}/);
   });
   it('it degrades safely when sessionStorage is unavailable', () => {
     expect(SHELL).toMatch(/catch \{[\s\S]*?fall through to the default/);

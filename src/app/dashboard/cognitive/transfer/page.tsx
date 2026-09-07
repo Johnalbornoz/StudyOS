@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LearningSupportStatus from '../../LearningSupportStatus';
+import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 
 type TransferDistance = 'NEAR' | 'MID' | 'FAR';
@@ -176,9 +177,28 @@ export default function TransferPage() {
                   {t['cognitive.transferAttemptNote']}
                 </p>
               )}
-              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
-                {t['cognitive.continueButton']}
-              </Link>
+              {/* LX-5R Issue 1: the real Transfer completion surface. A
+                  transfer attempt (correct or not) is not a dead end -- carry
+                  the learner forward through the SAME canonical continuation
+                  resolver (re-reads Phase 4 / Phase 8; never picks the next
+                  ActivityType here). `from` is presentation copy only; a
+                  remediation-step transfer shows the REINFORCE checkpoint. */}
+              {studentId && subjectId && conceptId ? (
+                <div style={{ marginTop: 'var(--space-4)' }}>
+                  <ContinuationPanel
+                    studentId={studentId}
+                    subjectId={subjectId}
+                    conceptId={conceptId}
+                    locale={locale}
+                    from={remediationStepId ? 'REINFORCE' : 'TRANSFER'}
+                    variant="inline"
+                  />
+                </div>
+              ) : (
+                <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
+                  {t['cognitive.continueButton']}
+                </Link>
+              )}
             </div>
           )
         )}

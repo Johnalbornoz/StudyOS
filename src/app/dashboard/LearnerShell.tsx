@@ -24,7 +24,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
 import {
   CalendarDays,
@@ -185,31 +185,55 @@ export default function LearnerShell({
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? '';
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
-  // LX-5J: context-aware Focus Mode exit. An activity page (quiz) records
-  // the concept it was launched for in sessionStorage; if present, Exit
-  // returns to that Concept Mission rather than a generic Today.
-  // sessionStorage is navigation context only -- never pedagogical
-  // truth, per-tab, cleared by the browser.
-  const [originExitHref, setOriginExitHref] = useState<string | null>(null);
+  // LX-5R Issue 2: context-aware Focus Mode exit, resolved so a previous
+  // activity's context can NEVER leak into a later one.
+  //   1. Current route wins. quiz / transfer / explain carry subjectId +
+  //      conceptId in their own URL -- derive Exit straight from that. It
+  //      is by definition the activity the learner is in; nothing to go
+  //      stale.
+  //   2. Otherwise a path-scoped beacon (remediation shell, keyed by
+  //      pathId) -- trusted ONLY while its `key` equals the live pathname.
+  //   3. Otherwise the default (Today). Deep-link with no trustworthy
+  //      origin, or sessionStorage unavailable, lands here -- never on
+  //      stale context.
+  // sessionStorage holds navigation context only, never pedagogical truth.
+  const curSubjectId = searchParams.get('subjectId');
+  const curConceptId = searchParams.get('conceptId');
+  const [beaconExitHref, setBeaconExitHref] = useState<string | null>(null);
   useEffect(() => {
+    if (curSubjectId && curConceptId) {
+      setBeaconExitHref(null); // current route is authoritative; ignore any beacon
+      return;
+    }
     try {
       const raw = sessionStorage.getItem('lx.activityOrigin');
       if (raw) {
         const o = JSON.parse(raw);
-        if (o && typeof o.subjectId === 'string' && typeof o.conceptId === 'string') {
-          setOriginExitHref(`/dashboard/subjects/${o.subjectId}/concepts/${o.conceptId}`);
+        if (
+          o &&
+          o.key === pathname &&
+          typeof o.subjectId === 'string' &&
+          typeof o.conceptId === 'string'
+        ) {
+          setBeaconExitHref(`/dashboard/subjects/${o.subjectId}/concepts/${o.conceptId}`);
           return;
         }
       }
     } catch {
       /* private mode / malformed -- fall through to the default */
     }
-    setOriginExitHref(null);
-  }, [pathname]);
+    setBeaconExitHref(null);
+  }, [pathname, curSubjectId, curConceptId]);
+
+  const originExitHref =
+    curSubjectId && curConceptId
+      ? `/dashboard/subjects/${curSubjectId}/concepts/${curConceptId}`
+      : beaconExitHref;
 
   useEffect(() => {
     setOpen(false); // close the drawer on every route change

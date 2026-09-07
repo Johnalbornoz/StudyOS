@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LearningSupportStatus from '../../LearningSupportStatus';
+import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 
 export default function ExplainDefendPage() {
@@ -150,9 +151,27 @@ export default function ExplainDefendPage() {
               <div className="tabular" style={{ fontSize: 28, fontWeight: 650, marginBottom: 4 }}>{feedback.scorePercent}%</div>
               <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{t['cognitive.feedbackTitle']}</p>
               <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{feedback.feedback}</p>
-              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
-                {t['cognitive.continueButton']}
-              </Link>
+              {/* LX-5R Issue 1 (extended): the Explain/Defend completion surface
+                  is structurally identical to Transfer's -- same dead end, same
+                  fix. It is only ever reached as a remediation sub-activity, so
+                  the REINFORCE checkpoint carries the learner back into the
+                  repair journey via the same canonical resolver. */}
+              {studentId && subjectId && conceptId ? (
+                <div style={{ marginTop: 'var(--space-4)' }}>
+                  <ContinuationPanel
+                    studentId={studentId}
+                    subjectId={subjectId}
+                    conceptId={conceptId}
+                    locale={locale}
+                    from={remediationStepId ? 'REINFORCE' : 'LEARN'}
+                    variant="inline"
+                  />
+                </div>
+              ) : (
+                <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
+                  {t['cognitive.continueButton']}
+                </Link>
+              )}
             </div>
           )
         )}
