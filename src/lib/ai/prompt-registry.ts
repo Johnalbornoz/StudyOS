@@ -226,6 +226,14 @@ export const PROMPT_REGISTRY = {
     description:
       'LX-4P-R2: TRANSLATE-ONLY. Renders an EXISTING generated quiz question into another display language without regenerating it -- numbers, formulas, units, option ids, answer semantics, type and difficulty are preserved by instruction and then re-validated against the stored original (question-localization.service.ts:reconcileLocalization); a failed check discards the translation and the caller falls back to LX-4P-R1 explicit restart. Never produces a new question, never writes evidence, never touches the stored quiz session.',
   }),
+  'quiz.question_localization_verify': definePrompt({
+    id: 'quiz.question_localization_verify',
+    version: 'v1',
+    capability: 'EXPLANATION_EVALUATION',
+    service: 'question-localization.service.ts:verifyLocalizationEquivalence',
+    description:
+      'LX-4P-R2R1: independent VERIFICATION (never translates or rewrites). Given the canonical source question, a candidate localized question, the stored correctAnswer, the question type and option ids, it reports whether the candidate asks the SAME question with the same polarity/negations, comparisons, quantities, units, causal/temporal relations, scenario and requested task -- and whether the stored correctAnswer is still correct for the candidate. Output is a strict {equivalent, correctAnswerStillValid, semanticDifferences[], confidence} verdict; the localization is used only if it passes (fail-closed).',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;

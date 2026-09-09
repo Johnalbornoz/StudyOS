@@ -26,6 +26,7 @@ const Schema = z.object({
   studentId: z.string().uuid(),
   quizId: z.string(),
   questionIndex: z.number().int().min(0),
+  /** The DISPLAY language to render the question in -- the stored session language is never changed. */
   targetLanguage: z.enum(LOCALES as [string, ...string[]]),
   /** The option ids in their current on-screen order -- preserved so choices don't reshuffle under the learner. */
   optionOrder: z.array(z.string()).optional(),
@@ -70,7 +71,11 @@ export async function POST(request: NextRequest) {
 
   const result = await localizeGeneratedQuestion({
     question: original,
-    targetLanguage: v.targetLanguage,
+    // R2R1 R5: displayLanguage is what the learner sees; the stored
+    // session.language (sourceLanguage) is unchanged and remains the
+    // grading + verification reference.
+    displayLanguage: v.targetLanguage,
+    sourceLanguage: session.language,
     context: { studentId: v.studentId, subjectId: session.subjectId },
   });
 
