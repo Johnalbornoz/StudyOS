@@ -239,6 +239,13 @@ export default function QuizPage() {
 
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
+  // LX-4P-R1: a language change during an ACTIVE attempt must never
+  // silently regenerate the item the learner is on. StudyUS has no
+  // same-item question localization today, so the question language is
+  // latched for the life of the attempt; changing it is an explicit
+  // "start a new session" the learner has to confirm. Holds the target
+  // locale while that confirmation is pending.
+  const [pendingLanguageSwitch, setPendingLanguageSwitch] = useState<Locale | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
@@ -429,14 +436,39 @@ export default function QuizPage() {
     }
   }, [results]);
 
-  async function changeQuizLanguage(next: Locale) {
-    if (!studentId || next === quizLanguage) return;
+  // LX-4P-R1: regenerate the session in a new question language. This is
+  // the ONLY path that mints a new quizId / question batch for a language
+  // change, and it is only ever reached (a) before an item is on screen,
+  // or (b) after the learner explicitly confirmed a restart.
+  async function regenerateInLanguage(next: Locale) {
+    if (!studentId) return;
     setSwitchingLanguage(true);
     try {
       await generateQuiz(studentId, next);
     } finally {
       setSwitchingLanguage(false);
     }
+  }
+
+  function changeQuizLanguage(next: Locale) {
+    if (!studentId || next === quizLanguage) return;
+    // An active attempt (item presented, or teach-first stage running):
+    // never regenerate silently -- ask first. The <select> is controlled
+    // by `value={quizLanguage}`, so it visually snaps back on its own
+    // until/unless the learner confirms.
+    if (phase === 'quiz') {
+      setPendingLanguageSwitch(next);
+      return;
+    }
+    // Setup / pre-item: no learner-facing item to disturb -- safe to
+    // switch straight away.
+    void regenerateInLanguage(next);
+  }
+
+  function confirmPendingLanguageSwitch() {
+    const next = pendingLanguageSwitch;
+    setPendingLanguageSwitch(null);
+    if (next) void regenerateInLanguage(next);
   }
 
   function encodeCurrentAnswer(q: Question): string {
@@ -1247,15 +1279,49 @@ export default function QuizPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
+      {/* LX-4P-R1: changing the question language during an active attempt
+          starts a NEW session (no same-item localization exists yet) --
+          the learner confirms that explicitly here. UI language is a
+          separate account setting and is not touched by this control. */}
+      {pendingLanguageSwitch && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lx-langswitch-title"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.45)', padding: 'var(--space-4)',
+          }}
+        >
+          <div className="card" style={{ maxWidth: 420, padding: 'var(--space-6)' }}>
+            <h2 id="lx-langswitch-title" style={{ fontSize: 17, fontWeight: 650, margin: '0 0 var(--space-2)' }}>
+              {t['quiz.langSwitch.title']}
+            </h2>
+            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 var(--space-4)' }}>
+              {t['quiz.langSwitch.body'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-ghost" onClick={() => setPendingLanguageSwitch(null)}>
+                {t['quiz.langSwitch.cancel']}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={confirmPendingLanguageSwitch}>
+                {t['quiz.langSwitch.confirm'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* LX-4K: Focus Mode already provides an Exit affordance -- the
-          in-page breadcrumb is gone. The language picker stays (a
-          learner may switch mid-activity) but is demoted to the corner. */}
+          in-page breadcrumb is gone. The picker (question language, not
+          UI language) stays but is demoted to the corner. */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
         <select
           value={quizLanguage}
           disabled={switchingLanguage}
           onChange={(e) => changeQuizLanguage(e.target.value as Locale)}
           title={t['quiz.languagePickerLabel']}
+          aria-label={t['quiz.languagePickerLabel']}
           style={{
             height: 30, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
             background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'inherit',

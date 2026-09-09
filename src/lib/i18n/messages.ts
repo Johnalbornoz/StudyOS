@@ -212,7 +212,7 @@ export type MessageKey =
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
-  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel'
+  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
@@ -1434,6 +1434,10 @@ const es: Messages = {
   'continuation.continue': 'Continuar',
   'continuation.backToConcept': 'Volver al concepto',
   'continuation.resolveFailed': 'No se pudo determinar el siguiente paso. Puedes volver al concepto.',
+  'quiz.langSwitch.title': '¿Cambiar el idioma de las preguntas?',
+  'quiz.langSwitch.body': 'Empezarás una nueva sesión de práctica en {lang} y se perderá tu progreso en esta actividad. El idioma de la interfaz de StudyUS no cambia.',
+  'quiz.langSwitch.cancel': 'Cancelar',
+  'quiz.langSwitch.confirm': 'Empezar en {lang}',
 };
 
 const en: Messages = {
@@ -2407,6 +2411,10 @@ const en: Messages = {
   'continuation.continue': 'Continue',
   'continuation.backToConcept': 'Back to the concept',
   'continuation.resolveFailed': 'Couldn\'t work out the next step. You can go back to the concept.',
+  'quiz.langSwitch.title': 'Change the question language?',
+  'quiz.langSwitch.body': 'You\'ll start a new practice session in {lang} and lose your progress in this activity. The StudyUS interface language does not change.',
+  'quiz.langSwitch.cancel': 'Cancel',
+  'quiz.langSwitch.confirm': 'Start in {lang}',
 };
 
 const de: Messages = {
@@ -3380,6 +3388,10 @@ const de: Messages = {
   'continuation.continue': 'Weiter',
   'continuation.backToConcept': 'Zurück zum Konzept',
   'continuation.resolveFailed': 'Der nächste Schritt ließ sich nicht ermitteln. Du kannst zum Konzept zurück.',
+  'quiz.langSwitch.title': 'Sprache der Fragen ändern?',
+  'quiz.langSwitch.body': 'Du startest eine neue Übungssitzung auf {lang} und verlierst deinen Fortschritt in dieser Aktivität. Die Sprache der StudyUS-Oberfläche ändert sich nicht.',
+  'quiz.langSwitch.cancel': 'Abbrechen',
+  'quiz.langSwitch.confirm': 'Auf {lang} starten',
 };
 
 const fr: Messages = {
@@ -4353,6 +4365,10 @@ const fr: Messages = {
   'continuation.continue': 'Continuer',
   'continuation.backToConcept': 'Revenir au concept',
   'continuation.resolveFailed': 'Impossible de déterminer l\'étape suivante. Tu peux revenir au concept.',
+  'quiz.langSwitch.title': 'Changer la langue des questions ?',
+  'quiz.langSwitch.body': 'Tu vas commencer une nouvelle session d\'entraînement en {lang} et perdre ta progression dans cette activité. La langue de l\'interface StudyUS ne change pas.',
+  'quiz.langSwitch.cancel': 'Annuler',
+  'quiz.langSwitch.confirm': 'Commencer en {lang}',
 };
 
 const pt: Messages = {
@@ -5326,6 +5342,10 @@ const pt: Messages = {
   'continuation.continue': 'Continuar',
   'continuation.backToConcept': 'Voltar ao conceito',
   'continuation.resolveFailed': 'Não foi possível determinar o próximo passo. Você pode voltar ao conceito.',
+  'quiz.langSwitch.title': 'Mudar o idioma das perguntas?',
+  'quiz.langSwitch.body': 'Você vai começar uma nova sessão de prática em {lang} e perder o seu progresso nesta atividade. O idioma da interface do StudyUS não muda.',
+  'quiz.langSwitch.cancel': 'Cancelar',
+  'quiz.langSwitch.confirm': 'Começar em {lang}',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };
