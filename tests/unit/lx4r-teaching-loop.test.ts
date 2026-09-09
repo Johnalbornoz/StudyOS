@@ -120,7 +120,9 @@ describe('LX-4R R5 -- expectedReasoningType is generated, read back with a known
     expect(GEN).toMatch(/KNOWN_EXPECTED_REASONING_TYPES = new Set<string>\(\['FACTUAL', 'PROCEDURAL', 'CONCEPTUAL', 'METACOGNITIVE'\]\)/);
   });
   it('the client contract + server grader use the same tag (never re-derived after the answer)', () => {
-    expect(ROUTE).toMatch(/expectedReasoningType: q\.expectedReasoningType/); // sent to client
+    // LX-4P-R2: toClientQuestion moved to @/lib/quiz/client-question.
+    const CLIENTQ = read('src/lib/quiz/client-question.ts');
+    expect(CLIENTQ).toMatch(/expectedReasoningType: q\.expectedReasoningType/); // sent to client
     expect(QUIZ).toMatch(/expectedReasoningType: \(\(q as any\)\.expectedReasoningType/); // client contract input
     expect(ROUTE).toMatch(/deriveResponseEvidenceContract\(/); // grader guard input
   });

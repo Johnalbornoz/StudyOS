@@ -65,6 +65,7 @@ import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/eviden
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
+import { shuffleArray, toClientQuestion } from '@/lib/quiz/client-question';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getIndependentMastery, shouldAskConfidence, type ConfidenceLevel } from '@/services/learner-model.service';
@@ -260,38 +261,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/** Strip the correct answer/order/pairing before sending a question to the client. */
-function toClientQuestion(q: GeneratedQuestion, index: number) {
-  return {
-    index,
-    conceptId: q.conceptId,
-    type: q.type,
-    answerFormat: q.answerFormat,
-    question: q.question,
-    difficulty: q.difficulty,
-    calculatorAllowed: q.calculatorAllowed,
-    options: q.options ? shuffleArray(q.options) : undefined,
-    matchingLeft: q.matchingPairs?.map((p) => p.left),
-    matchingRightShuffled: q.matchingPairs ? shuffleArray(q.matchingPairs.map((p) => p.right)) : undefined,
-    orderingItemsShuffled: q.orderingItems ? shuffleArray(q.orderingItems) : undefined,
-    classificationItems: q.classificationItems?.map((it) => it.item),
-    classificationCategories: q.classificationCategories,
-    visualAid: q.visualAid,
-    askConfidence: q.askConfidence || undefined,
-    // LX-4R R5: the generator's canonical reasoning tag, so the client's
-    // "what's being asked" line matches the server grader guard.
-    expectedReasoningType: q.expectedReasoningType,
-  };
-}
+// LX-4P-R2: shuffleArray + toClientQuestion moved to
+// `@/lib/quiz/client-question` so the same-item localization endpoint
+// reshapes a localized question exactly as the original was reshaped.
 
 /**
  * Decides, per concept, whether the first question about it in this
@@ -589,7 +561,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         countAuthority,
         ibProgramme: ibContext?.programme || 'none',
         quiz: {
-          questions: questions.map(toClientQuestion),
+          questions: questions.map((q, i) => toClientQuestion(q, i)),
           count: questions.length,
         },
         message: 'Quiz generated. Submit answers with this quizId to complete.',

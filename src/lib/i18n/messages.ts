@@ -212,7 +212,7 @@ export type MessageKey =
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
-  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm'
+  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
@@ -1438,6 +1438,9 @@ const es: Messages = {
   'quiz.langSwitch.body': 'Empezarás una nueva sesión de práctica en {lang} y se perderá tu progreso en esta actividad. El idioma de la interfaz de StudyUS no cambia.',
   'quiz.langSwitch.cancel': 'Cancelar',
   'quiz.langSwitch.confirm': 'Empezar en {lang}',
+  'quiz.langSwitch.cantLocalizeTitle': 'No se puede cambiar el idioma de esta pregunta aquí mismo',
+  'quiz.langSwitch.cantLocalizeBody': 'StudyUS no puede traducir esta pregunta con seguridad sin cambiarla. Empezar en {lang} iniciará una actividad nueva. El idioma de la interfaz no cambia.',
+  'quiz.langSwitch.startNewActivity': 'Iniciar actividad nueva',
 };
 
 const en: Messages = {
@@ -2415,6 +2418,9 @@ const en: Messages = {
   'quiz.langSwitch.body': 'You\'ll start a new practice session in {lang} and lose your progress in this activity. The StudyUS interface language does not change.',
   'quiz.langSwitch.cancel': 'Cancel',
   'quiz.langSwitch.confirm': 'Start in {lang}',
+  'quiz.langSwitch.cantLocalizeTitle': 'This question can\'t change language in place',
+  'quiz.langSwitch.cantLocalizeBody': 'StudyUS can\'t safely translate this question without changing it. Starting in {lang} will begin a new activity. The interface language does not change.',
+  'quiz.langSwitch.startNewActivity': 'Start new activity',
 };
 
 const de: Messages = {
@@ -3392,6 +3398,9 @@ const de: Messages = {
   'quiz.langSwitch.body': 'Du startest eine neue Übungssitzung auf {lang} und verlierst deinen Fortschritt in dieser Aktivität. Die Sprache der StudyUS-Oberfläche ändert sich nicht.',
   'quiz.langSwitch.cancel': 'Abbrechen',
   'quiz.langSwitch.confirm': 'Auf {lang} starten',
+  'quiz.langSwitch.cantLocalizeTitle': 'Diese Frage kann die Sprache hier nicht wechseln',
+  'quiz.langSwitch.cantLocalizeBody': 'StudyUS kann diese Frage nicht sicher übersetzen, ohne sie zu verändern. Ein Start auf {lang} beginnt eine neue Aktivität. Die Oberflächensprache ändert sich nicht.',
+  'quiz.langSwitch.startNewActivity': 'Neue Aktivität starten',
 };
 
 const fr: Messages = {
@@ -4369,6 +4378,9 @@ const fr: Messages = {
   'quiz.langSwitch.body': 'Tu vas commencer une nouvelle session d\'entraînement en {lang} et perdre ta progression dans cette activité. La langue de l\'interface StudyUS ne change pas.',
   'quiz.langSwitch.cancel': 'Annuler',
   'quiz.langSwitch.confirm': 'Commencer en {lang}',
+  'quiz.langSwitch.cantLocalizeTitle': 'Cette question ne peut pas changer de langue sur place',
+  'quiz.langSwitch.cantLocalizeBody': 'StudyUS ne peut pas traduire cette question sans la modifier. Commencer en {lang} lancera une nouvelle activité. La langue de l\'interface ne change pas.',
+  'quiz.langSwitch.startNewActivity': 'Lancer une nouvelle activité',
 };
 
 const pt: Messages = {
@@ -5346,6 +5358,9 @@ const pt: Messages = {
   'quiz.langSwitch.body': 'Você vai começar uma nova sessão de prática em {lang} e perder o seu progresso nesta atividade. O idioma da interface do StudyUS não muda.',
   'quiz.langSwitch.cancel': 'Cancelar',
   'quiz.langSwitch.confirm': 'Começar em {lang}',
+  'quiz.langSwitch.cantLocalizeTitle': 'Esta pergunta não pode mudar de idioma aqui mesmo',
+  'quiz.langSwitch.cantLocalizeBody': 'O StudyUS não consegue traduzir esta pergunta com segurança sem alterá-la. Começar em {lang} iniciará uma nova atividade. O idioma da interface não muda.',
+  'quiz.langSwitch.startNewActivity': 'Iniciar nova atividade',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

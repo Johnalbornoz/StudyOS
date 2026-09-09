@@ -39,13 +39,17 @@ export default function ContextualHelp({
   quizId,
   questionIndex,
   locale,
+  uiLocale,
 }: {
   studentId: string;
   quizId: string;
   questionIndex: number;
+  /** LX-4P-R2: activity/question language -- the help CONTENT is generated in this. */
   locale: Locale;
+  /** LX-4P-R2/R13: account interface language -- the menu labels ("Need help?", action names, errors) use this. */
+  uiLocale: Locale;
 }) {
-  const t = getMessages(locale);
+  const t = getMessages(uiLocale);
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<HelpAction | null>(null);

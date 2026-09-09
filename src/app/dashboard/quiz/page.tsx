@@ -239,13 +239,28 @@ export default function QuizPage() {
 
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
-  // LX-4P-R1: a language change during an ACTIVE attempt must never
-  // silently regenerate the item the learner is on. StudyUS has no
-  // same-item question localization today, so the question language is
-  // latched for the life of the attempt; changing it is an explicit
-  // "start a new session" the learner has to confirm. Holds the target
-  // locale while that confirmation is pending.
+  // LX-4P-R1 / LX-4P-R2: a language change during an ACTIVE attempt must
+  // never silently regenerate the item the learner is on.
+  //  - LX-4P-R2 (preferred): translate the SAME question in place
+  //    (/api/quizzes/localize-question) -- same quizId, index, draft,
+  //    teaching stage, evidence context.
+  //  - LX-4P-R1 (fallback): if a safe translation can't be produced,
+  //    the explicit "start a new session" confirmation. `pendingLanguageSwitch`
+  //    holds the target locale while that confirmation is pending.
   const [pendingLanguageSwitch, setPendingLanguageSwitch] = useState<Locale | null>(null);
+  // LX-4P-R2: the language the current question batch was GENERATED in
+  // (the stored quiz_sessions.language). Switching back to it restores
+  // the stored original; switching away localizes.
+  const [sessionOriginalLanguage, setSessionOriginalLanguage] = useState<Locale | null>(null);
+  // LX-4P-R2: pristine batch as generated -- the source for restoring a
+  // question when the learner switches back to the original language.
+  const originalQuestionsRef = useRef<Question[]>([]);
+  // LX-4P-R2: `${index}@${locale}` keys already attempted, so the lazy
+  // per-question localization effect never re-fires for the same target.
+  const localizeAttemptedRef = useRef<Set<string>>(new Set());
+  // LX-4P-R2: true only while the localize dialog fallback path itself
+  // failed validation/provider (drives the R15 "can't do it in place" copy).
+  const [localizeFailedFallback, setLocalizeFailedFallback] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
@@ -352,6 +367,12 @@ export default function QuizPage() {
 
         setQuizId(genBody.data.quizId);
         setQuizLanguage(genBody.data.language);
+        // LX-4P-R2: remember the generated language + the pristine batch,
+        // so a later same-item localization can translate away from and
+        // restore back to the original.
+        setSessionOriginalLanguage(genBody.data.language);
+        originalQuestionsRef.current = genBody.data.quiz.questions;
+        localizeAttemptedRef.current = new Set();
         setQuestions(genBody.data.quiz.questions);
         setCountAuthority(genBody.data.countAuthority ?? null);
         setCurrent(0);
@@ -450,26 +471,114 @@ export default function QuizPage() {
     }
   }
 
-  function changeQuizLanguage(next: Locale) {
-    if (!studentId || next === quizLanguage) return;
-    // An active attempt (item presented, or teach-first stage running):
-    // never regenerate silently -- ask first. The <select> is controlled
-    // by `value={quizLanguage}`, so it visually snaps back on its own
-    // until/unless the learner confirms.
-    if (phase === 'quiz') {
+  // LX-4P-R2: translate ONE stored question in place. Returns the
+  // localized client question on success, or null (caller falls back to
+  // the explicit-restart dialog). Never mutates quizId/index/answers/
+  // teaching state -- it only swaps the presentation of questions[idx].
+  const localizeQuestionAt = useCallback(
+    async (idx: number, target: Locale): Promise<Question | null> => {
+      if (!studentId || !quizId) return null;
+      const cur = questions[idx];
+      const optionOrder = cur?.options?.map((o) => o.id);
+      try {
+        const res = await fetch('/api/quizzes/localize-question', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId, quizId, questionIndex: idx, targetLanguage: target, optionOrder }),
+        });
+        const body = await res.json();
+        if (!res.ok || !body?.success || !body.data?.ok || !body.data.question) return null;
+        return { ...body.data.question, index: idx } as Question;
+      } catch {
+        return null;
+      }
+    },
+    [studentId, quizId, questions],
+  );
+
+  // LX-4P-R2: the learner changed the question language mid-attempt.
+  // Preferred path -- same-item localization of the CURRENT question.
+  async function attemptSameItemLocalization(next: Locale) {
+    if (!studentId || !quizId) {
       setPendingLanguageSwitch(next);
       return;
     }
-    // Setup / pre-item: no learner-facing item to disturb -- safe to
-    // switch straight away.
+    setSwitchingLanguage(true);
+    try {
+      const localized = await localizeQuestionAt(current, next);
+      if (localized) {
+        localizeAttemptedRef.current.add(`${current}@${next}`);
+        setQuestions((qs) => qs.map((q, i) => (i === current ? localized : q)));
+        setQuizLanguage(next);
+        // quizId, current, answers, draft, teachingExperience,
+        // teachingStage, results are all deliberately untouched.
+      } else {
+        // No safe in-place translation -- fall back to LX-4P-R1.
+        setLocalizeFailedFallback(true);
+        setPendingLanguageSwitch(next);
+      }
+    } finally {
+      setSwitchingLanguage(false);
+    }
+  }
+
+  function changeQuizLanguage(next: Locale) {
+    if (!studentId || next === quizLanguage) return;
+    if (phase === 'quiz') {
+      if (teachingStage === 'teaching') {
+        // No in-place localization of a teach-first stage in this hotfix;
+        // and there is no selector rendered here. Defensive: restart path.
+        setPendingLanguageSwitch(next);
+        return;
+      }
+      // Active question: try to translate the SAME item first.
+      void attemptSameItemLocalization(next);
+      return;
+    }
+    // Setup / pre-item: no learner-facing item to disturb.
     void regenerateInLanguage(next);
   }
 
   function confirmPendingLanguageSwitch() {
     const next = pendingLanguageSwitch;
     setPendingLanguageSwitch(null);
+    setLocalizeFailedFallback(false);
     if (next) void regenerateInLanguage(next);
   }
+
+  function cancelPendingLanguageSwitch() {
+    setPendingLanguageSwitch(null);
+    setLocalizeFailedFallback(false);
+  }
+
+  // LX-4P-R2: keep the CURRENT question's presentation in sync with the
+  // chosen question language as the learner advances through a batch
+  // that was switched. Best-effort: a failure leaves that one question
+  // in the original language rather than interrupting the attempt.
+  useEffect(() => {
+    if (phase !== 'quiz' || teachingStage !== 'questions' || !quizId || !sessionOriginalLanguage) return;
+    const orig = originalQuestionsRef.current[current];
+    if (!orig) return;
+
+    if (quizLanguage === sessionOriginalLanguage) {
+      // Back on the generated language -- restore the stored original.
+      setQuestions((qs) => (qs[current] && qs[current] !== orig ? qs.map((q, i) => (i === current ? orig : q)) : qs));
+      return;
+    }
+    const key = `${current}@${quizLanguage}`;
+    if (localizeAttemptedRef.current.has(key)) return;
+    localizeAttemptedRef.current.add(key);
+    let cancelled = false;
+    void localizeQuestionAt(current, quizLanguage).then((localized) => {
+      if (cancelled) return;
+      if (localized) setQuestions((qs) => qs.map((q, i) => (i === current ? localized : q)));
+      else setQuestions((qs) => (qs[current] !== orig ? qs.map((q, i) => (i === current ? orig : q)) : qs));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, quizLanguage, phase, teachingStage, quizId, sessionOriginalLanguage]);
 
   function encodeCurrentAnswer(q: Question): string {
     switch (q.answerFormat) {
@@ -1253,6 +1362,7 @@ export default function QuizPage() {
         conceptId={conceptId}
         conceptLabel={subjectName}
         locale={quizLanguage}
+        uiLocale={locale}
         onDone={() => setTeachingStage('questions')}
       />
     );
@@ -1279,10 +1389,13 @@ export default function QuizPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      {/* LX-4P-R1: changing the question language during an active attempt
-          starts a NEW session (no same-item localization exists yet) --
-          the learner confirms that explicitly here. UI language is a
-          separate account setting and is not touched by this control. */}
+      {/* LX-4P-R2: a mid-attempt question-language change first tries
+          same-item localization (/api/quizzes/localize-question). This
+          dialog is only the FALLBACK -- shown when no safe in-place
+          translation could be produced (localizeFailedFallback) or when
+          there is no live session yet. Confirming it starts a new
+          activity. UI language is a separate account setting this
+          control never touches. */}
       {pendingLanguageSwitch && (
         <div
           role="dialog"
@@ -1295,17 +1408,22 @@ export default function QuizPage() {
         >
           <div className="card" style={{ maxWidth: 420, padding: 'var(--space-6)' }}>
             <h2 id="lx-langswitch-title" style={{ fontSize: 17, fontWeight: 650, margin: '0 0 var(--space-2)' }}>
-              {t['quiz.langSwitch.title']}
+              {t[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeTitle' : 'quiz.langSwitch.title']}
             </h2>
             <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 var(--space-4)' }}>
-              {t['quiz.langSwitch.body'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
+              {t[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeBody' : 'quiz.langSwitch.body'].replace(
+                '{lang}',
+                LOCALE_NAMES[pendingLanguageSwitch],
+              )}
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-ghost" onClick={() => setPendingLanguageSwitch(null)}>
+              <button type="button" className="btn btn-ghost" onClick={cancelPendingLanguageSwitch}>
                 {t['quiz.langSwitch.cancel']}
               </button>
               <button type="button" className="btn btn-primary" onClick={confirmPendingLanguageSwitch}>
-                {t['quiz.langSwitch.confirm'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
+                {localizeFailedFallback
+                  ? t['quiz.langSwitch.startNewActivity']
+                  : t['quiz.langSwitch.confirm'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
               </button>
             </div>
           </div>
@@ -1425,7 +1543,7 @@ export default function QuizPage() {
             server (/api/learning/contextual-help -> canUseAI) is the
             authority; it is never rendered for Prove / assessment. */}
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && studentId && quizId && (
-          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
+          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} uiLocale={locale} />
         )}
 
         {q.askConfidence && (

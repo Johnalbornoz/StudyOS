@@ -27,12 +27,14 @@ const HELP = read('src/app/dashboard/quiz/ContextualHelp.tsx');
 describe('LX-4P-R1 R4 -- a mid-attempt language change never silently regenerates', () => {
   it('changeQuizLanguage does NOT call generateQuiz/regenerateInLanguage while phase === quiz', () => {
     const fn = QUIZ.slice(QUIZ.indexOf('function changeQuizLanguage('), QUIZ.indexOf('function confirmPendingLanguageSwitch('));
-    // an active attempt: stage a pending switch and bail BEFORE any regen
-    expect(fn).toMatch(/if \(phase === 'quiz'\) \{\s*setPendingLanguageSwitch\(next\);\s*return;\s*\}/);
-    const activeBranch = fn.slice(0, fn.indexOf('return;') + 'return;'.length);
-    expect(activeBranch).not.toMatch(/generateQuiz\(|regenerateInLanguage\(/);
-    // changeQuizLanguage itself never calls generateQuiz directly
+    // an active question: try same-item localization first (LX-4P-R2),
+    // never a silent regenerate
+    expect(fn).toMatch(/if \(phase === 'quiz'\) \{/);
+    expect(fn).toMatch(/void attemptSameItemLocalization\(next\);/);
+    // regeneration only on the setup / pre-item path
     expect(fn).not.toMatch(/generateQuiz\(/);
+    const activeBranch = fn.slice(fn.indexOf("if (phase === 'quiz')"), fn.indexOf('// Setup / pre-item'));
+    expect(activeBranch).not.toMatch(/regenerateInLanguage\(/);
   });
 
   it('regeneration in a new language is reached ONLY pre-item or after explicit confirm', () => {
@@ -48,13 +50,13 @@ describe('LX-4P-R1 R4 -- a mid-attempt language change never silently regenerate
     expect(confirmFn).toMatch(/if \(next\) void regenerateInLanguage\(next\)/);
   });
 
-  it('the confirm dialog is a real modal gated on pendingLanguageSwitch, with cancel + confirm', () => {
+  it('the restart-fallback dialog is a real modal gated on pendingLanguageSwitch, with cancel + confirm', () => {
     expect(QUIZ).toMatch(/\{pendingLanguageSwitch && \(/);
-    const dlg = QUIZ.slice(QUIZ.indexOf('{pendingLanguageSwitch && ('), QUIZ.indexOf('{pendingLanguageSwitch && (') + 1400);
+    const dlg = QUIZ.slice(QUIZ.indexOf('{pendingLanguageSwitch && ('), QUIZ.indexOf('{pendingLanguageSwitch && (') + 1800);
     expect(dlg).toMatch(/role="dialog"/);
     expect(dlg).toMatch(/aria-modal="true"/);
-    expect(dlg).toMatch(/t\['quiz\.langSwitch\.title'\]/);
-    expect(dlg).toMatch(/onClick=\{\(\) => setPendingLanguageSwitch\(null\)\}/); // Cancel
+    expect(dlg).toMatch(/quiz\.langSwitch\.title/);
+    expect(dlg).toMatch(/onClick=\{cancelPendingLanguageSwitch\}/); // Cancel
     expect(dlg).toMatch(/onClick=\{confirmPendingLanguageSwitch\}/); // Confirm
   });
 

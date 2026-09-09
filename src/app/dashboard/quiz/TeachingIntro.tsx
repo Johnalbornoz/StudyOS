@@ -47,6 +47,7 @@ export default function TeachingIntro({
   conceptId,
   conceptLabel,
   locale,
+  uiLocale,
   onDone,
 }: {
   view: TeachingExperienceView;
@@ -54,10 +55,13 @@ export default function TeachingIntro({
   quizId: string;
   conceptId: string;
   conceptLabel: string;
+  /** LX-4P-R2: the activity/question language -- drives the CONTENT fetches (explanation, guided practice). */
   locale: Locale;
+  /** LX-4P-R2/R13: the account interface language -- drives every t[...] chrome string (titles, buttons, "your step", "Check"). */
+  uiLocale: Locale;
   onDone: () => void;
 }) {
-  const t = getMessages(locale);
+  const t = getMessages(uiLocale);
 
   const stages: IntroStage[] = view.stages.filter(
     (s): s is IntroStage => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE',
@@ -187,7 +191,7 @@ export default function TeachingIntro({
         )}
 
         {stage === 'GUIDE' && guided && (
-          <GuidedPractice guided={guided} locale={locale} onComplete={advance} />
+          <GuidedPractice guided={guided} uiLocale={uiLocale} onComplete={advance} />
         )}
       </section>
 
@@ -210,14 +214,15 @@ export default function TeachingIntro({
 /** R3 -- one guided sequence: prompt -> your step -> reveal -> why -> next. */
 function GuidedPractice({
   guided,
-  locale,
+  uiLocale,
   onComplete,
 }: {
   guided: Guided;
-  locale: Locale;
+  /** LX-4P-R2/R13: chrome only ("your step", "Check", "expected") -- the problem/steps are pedagogical content already in the activity language. */
+  uiLocale: Locale;
   onComplete: () => void;
 }) {
-  const t = getMessages(locale);
+  const t = getMessages(uiLocale);
   const [stepIdx, setStepIdx] = useState(0);
   const [entry, setEntry] = useState('');
   const [revealed, setRevealed] = useState(false);

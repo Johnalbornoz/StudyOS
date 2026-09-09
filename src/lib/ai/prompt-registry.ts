@@ -218,6 +218,14 @@ export const PROMPT_REGISTRY = {
     description:
       'LX-4R R3: generates ONE short "solve it together" sequence for a concept -- a worked problem broken into 2-4 steps, each with a one-line prompt, an expected intermediate answer, and a why. Teaching scaffolding only; never an assessment question, never writes evidence. Does not choose concept/activity/mastery/support.',
   }),
+  'quiz.question_localization': definePrompt({
+    id: 'quiz.question_localization',
+    version: 'v1',
+    capability: 'CONTENT_GENERATION',
+    service: 'question-localization.service.ts:localizeGeneratedQuestion',
+    description:
+      'LX-4P-R2: TRANSLATE-ONLY. Renders an EXISTING generated quiz question into another display language without regenerating it -- numbers, formulas, units, option ids, answer semantics, type and difficulty are preserved by instruction and then re-validated against the stored original (question-localization.service.ts:reconcileLocalization); a failed check discards the translation and the caller falls back to LX-4P-R1 explicit restart. Never produces a new question, never writes evidence, never touches the stored quiz session.',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;
