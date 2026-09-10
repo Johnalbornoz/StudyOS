@@ -24,8 +24,8 @@ vi.mock('@/services/rag.service', () => ({ retrieveContext: (...a: any[]) => ret
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
 
-const callAnthropicMessagesMock = vi.fn();
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn();
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 import { generateQuestionsForConcept, generateQuestionVariant, ANSWER_FORMAT_BY_TYPE, type GeneratedQuestion } from '@/services/quiz-generation.service';
 import { DEFAULT_AI_TIMEOUT_MS } from '@/lib/ai';
@@ -35,7 +35,7 @@ beforeEach(() => {
   executeAIMock.mockReset().mockResolvedValue({ result: [], execution: {} as any, provenance: {} as any });
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
-  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '[]' });
+  callModelMock.mockReset().mockResolvedValue({ text: '[]', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
 });
 
 describe('generateQuestionsForConcept: single-call batch behavior, no fan-out for any count (Step 7 fully reverted)', () => {
@@ -66,10 +66,10 @@ describe('generateQuestionsForConcept: single-call batch behavior, no fan-out fo
 });
 
 describe('generateQuestionsForConcept: model, timeout, and prompt provenance pinned to their pre-performance-refactor values', () => {
-  it('model is claude-sonnet-5 (not Haiku) -- unchanged from before Step 5', async () => {
+  it('model is the QUESTION_GENERATION route model (Luna)', async () => {
     await generateQuestionsForConcept('c1', 's1', 'subj1', { count: 6 });
     const call = executeAIMock.mock.calls[0][0];
-    expect(call.model).toBe('claude-sonnet-5');
+    expect(call.model).toBe('gpt-5.6-luna');
   });
 
   it('timeoutMs is no longer explicitly set (Step 10 removed the Step 4 workaround) -- effective timeout falls through to DEFAULT_AI_TIMEOUT_MS (30000)', async () => {
@@ -104,7 +104,7 @@ describe('generateQuestionsForConcept: model, timeout, and prompt provenance pin
       return { result: [], execution: {} as any, provenance: {} as any };
     });
     await generateQuestionsForConcept('c1', 's1', 'subj1', { count: 6 });
-    const msg = callAnthropicMessagesMock.mock.calls[0][0].messages[0].content as string;
+    const msg = callModelMock.mock.calls[0][0].user as string;
     expect(msg).toContain('Generate UP TO 6 questions');
     expect(msg).toContain('fewer is fine');
     expect(msg).not.toContain('EXACTLY 1 question');
@@ -116,7 +116,7 @@ describe('generateQuestionsForConcept: model, timeout, and prompt provenance pin
       return { result: [], execution: {} as any, provenance: {} as any };
     });
     await generateQuestionsForConcept('c1', 's1', 'subj1', { count: 6 });
-    const msg = callAnthropicMessagesMock.mock.calls[0][0].messages[0].content as string;
+    const msg = callModelMock.mock.calls[0][0].user as string;
     expect(msg).toContain('"case_study"');
     expect(msg).toContain('"error_detection"');
   });
@@ -232,7 +232,7 @@ describe('generateQuestionVariant: unchanged (always count=1, routes through the
     expect(executeAIMock).toHaveBeenCalledTimes(1);
   });
 
-  it('still uses claude-sonnet-5 and promptVersion v1 -- untouched by the quick_check fast path', async () => {
+  it('still uses the QUESTION_GENERATION route model (Luna) and promptVersion v1 -- untouched by the quick_check fast path', async () => {
     executeAIMock.mockResolvedValue({
       result: [
         { type: 'multiple_choice', question: 'What is 3+3?', options: [{ id: 'A', text: '5' }, { id: 'B', text: '6' }], correctAnswer: 'B', explanation: 'x', difficulty: 2 },
@@ -242,7 +242,7 @@ describe('generateQuestionVariant: unchanged (always count=1, routes through the
     });
     await generateQuestionVariant(sourceQuestion, 's1', 'subj1', 'en');
     const call = executeAIMock.mock.calls[0][0];
-    expect(call.model).toBe('claude-sonnet-5');
+    expect(call.model).toBe('gpt-5.6-luna');
     expect(call.promptVersion).toBe('v3'); // routes through generateQuestionsForConcept, which now reads the registry's current v3
     expect(call.timeoutMs).toBeUndefined(); // Step 10 -- falls through to DEFAULT_AI_TIMEOUT_MS, same as the batch path it reuses
   });
@@ -253,7 +253,7 @@ describe('generateQuestionVariant: unchanged (always count=1, routes through the
       return { result: [], execution: {} as any, provenance: {} as any };
     });
     await generateQuestionVariant(sourceQuestion, 's1', 'subj1', 'en');
-    const msg = callAnthropicMessagesMock.mock.calls[0][0].messages[0].content as string;
+    const msg = callModelMock.mock.calls[0][0].user as string;
     expect(msg).toContain('Generate UP TO 1 questions');
   });
 });

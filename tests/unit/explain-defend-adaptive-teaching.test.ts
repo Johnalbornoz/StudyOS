@@ -10,8 +10,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const callAnthropicMessagesMock = vi.fn().mockResolvedValue({ text: '{"prompt":"q","expectedElements":["a"]}' });
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn().mockResolvedValue({ text: '{"prompt":"q","expectedElements":["a"]}', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 const retrieveContextMock = vi.fn().mockResolvedValue({ chunks: [{ text: 'Chunk from the student\'s own material.' }] });
 vi.mock('@/services/rag.service', () => ({ retrieveContext: (...a: any[]) => retrieveContextMock(...a) }));
@@ -37,7 +37,7 @@ const neutral: TeachingContextInputs = {
 };
 
 beforeEach(() => {
-  callAnthropicMessagesMock.mockClear();
+  callModelMock.mockClear();
   retrieveContextMock.mockClear();
 });
 
@@ -46,7 +46,7 @@ describe('generateExplainPrompt -- misconception experience reaches the live gen
     const intent = computeTeachingIntent('student-1', decision(), neutral);
     const generationContext = toTeachingGenerationContext(intent);
     await generateExplainPrompt('student-1', 'subj1', 'c1', 'Newton\'s First Law', 'EXPLAIN', 'en', generationContext);
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('FORCE_ALONG_VELOCITY');
     expect(params.system).toMatch(/contrast/i);
   });
@@ -62,7 +62,7 @@ describe('generateExplainPrompt -- prerequisite experience (release test 3)', ()
     // lesson subject: the generator is never even told about the
     // downstream concept's label.
     await generateExplainPrompt('student-1', 'subj1', 'prerequisite-concept', 'Prerequisite Concept', 'EXPLAIN', 'en', generationContext);
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('Prerequisite Concept');
     expect(params.system).not.toContain('downstream-concept');
     expect(params.system).toMatch(/teach the prerequisite/i);
@@ -74,7 +74,7 @@ describe('generateExplainPrompt -- grounding preserved (release test 15 / S13)',
     const intent = computeTeachingIntent('student-1', decision(), neutral);
     const generationContext = toTeachingGenerationContext(intent);
     await generateExplainPrompt('student-1', 'subj1', 'c1', 'Newton\'s First Law', 'EXPLAIN', 'en', generationContext);
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain("Chunk from the student's own material.");
     expect(retrieveContextMock).toHaveBeenCalled();
   });
@@ -85,10 +85,10 @@ describe('generateExplainPrompt -- multilingual invariance (release test 16)', (
     const intent = computeTeachingIntent('student-1', decision(), neutral);
     const generationContext = toTeachingGenerationContext(intent);
     await generateExplainPrompt('student-1', 'subj1', 'c1', 'Concepto', 'EXPLAIN', 'es', generationContext);
-    const [esParams] = callAnthropicMessagesMock.mock.calls[0];
-    callAnthropicMessagesMock.mockClear();
+    const [esParams] = callModelMock.mock.calls[0];
+    callModelMock.mockClear();
     await generateExplainPrompt('student-1', 'subj1', 'c1', 'Concept', 'EXPLAIN', 'en', generationContext);
-    const [enParams] = callAnthropicMessagesMock.mock.calls[0];
+    const [enParams] = callModelMock.mock.calls[0];
     // Extract just the adaptive block text (identical across both calls).
     expect(esParams.system).toContain('FORCE_ALONG_VELOCITY');
     expect(enParams.system).toContain('FORCE_ALONG_VELOCITY');
@@ -100,7 +100,7 @@ describe('generateExplainPrompt -- multilingual invariance (release test 16)', (
 describe('generateExplainPrompt -- backward compatible when no adaptive context is supplied (v1 behavior preserved)', () => {
   it('produces no adaptive guidance section at all', async () => {
     await generateExplainPrompt('student-1', 'subj1', 'c1', 'Some Concept', 'EXPLAIN', 'en');
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).not.toMatch(/ADAPTIVE TEACHING GUIDANCE/);
   });
 });
@@ -118,7 +118,7 @@ describe('generateExplainPrompt -- AI provenance context now threaded through (r
 
 describe('generateExplainPrompt -- AI failure produces zero cognitive effect (release test 14)', () => {
   it('a provider failure throws and generates no result -- no cognitive mutation is even possible from this function, which performs none', async () => {
-    callAnthropicMessagesMock.mockRejectedValueOnce(new Error('provider down'));
+    callModelMock.mockRejectedValueOnce(new Error('provider down'));
     await expect(generateExplainPrompt('student-1', 'subj1', 'c1', 'Some Concept', 'EXPLAIN', 'en')).rejects.toThrow();
   });
 });

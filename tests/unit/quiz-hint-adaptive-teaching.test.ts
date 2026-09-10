@@ -7,8 +7,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const callAnthropicMessagesMock = vi.fn().mockResolvedValue({ text: '["hint one", "hint two"]' });
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn().mockResolvedValue({ text: '["hint one", "hint two"]' });
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 import { generateQuestionHint, type GeneratedQuestion } from '@/services/quiz-generation.service';
 import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
@@ -29,14 +29,14 @@ function decision(overrides: Partial<LearningDecision> = {}): LearningDecision {
   };
 }
 
-beforeEach(() => callAnthropicMessagesMock.mockClear());
+beforeEach(() => callModelMock.mockClear());
 
 describe('generateQuestionHint -- support level honored (release test 6)', () => {
   it('HIGH_SUPPORT explicitly permits a worked example in the system prompt', async () => {
     const neutral: TeachingContextInputs = { calibrationLabel: 'WELL_CALIBRATED', independentMastery: 90, masteryScore: 90, helpDependencyFlag: false, cognitiveLevel: null, previousStrategies: [] };
     const intent = computeTeachingIntent('s1', decision({ learningState: 'MISCONCEPTION_BLOCKED', reasonCode: 'CRITICAL_MISCONCEPTION' }), neutral);
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toMatch(/worked example/i);
   });
 
@@ -45,7 +45,7 @@ describe('generateQuestionHint -- support level honored (release test 6)', () =>
     const intent = computeTeachingIntent('s1', decision(), dependent);
     expect(intent.supportLevel).toBe('MINIMAL_SUPPORT');
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toMatch(/light cue|prompting question/i);
   });
 });
@@ -55,7 +55,7 @@ describe('generateQuestionHint -- CRITICAL no-answer-reveal rules are never weak
     const neutral: TeachingContextInputs = { calibrationLabel: 'WELL_CALIBRATED', independentMastery: 90, masteryScore: 90, helpDependencyFlag: false, cognitiveLevel: null, previousStrategies: [] };
     const intent = computeTeachingIntent('s1', decision({ learningState: 'MISCONCEPTION_BLOCKED', reasonCode: 'CRITICAL_MISCONCEPTION' }), neutral);
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toMatch(/NEVER state or imply the correct answer/);
     expect(params.system).toMatch(/never break these, regardless of any guidance above/i);
   });
@@ -68,7 +68,7 @@ describe('generateQuestionHint -- misconception targeting reaches the hint gener
     const d = decision({ learningState: 'MISCONCEPTION_BLOCKED', primarySignal: misSignal, signals: [misSignal], reasonCode: 'CRITICAL_MISCONCEPTION' });
     const intent = computeTeachingIntent('s1', d, withMisconception);
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('SIGN_ERROR');
   });
 });
@@ -76,7 +76,7 @@ describe('generateQuestionHint -- misconception targeting reaches the hint gener
 describe('generateQuestionHint -- backward compatible with no adaptive context (v1 behavior)', () => {
   it('produces no adaptive guidance section at all', async () => {
     await generateQuestionHint(QUESTION, 'en');
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).not.toMatch(/ADAPTIVE TEACHING GUIDANCE/);
     expect(params.system).toMatch(/NEVER state or imply the correct answer/);
   });
@@ -93,7 +93,7 @@ describe('7E3 -- teach-for-transfer clause on the ONE supported surface (quiz hi
     const intent = computeTeachingIntent('s1', d, neutral);
     expect(intent.transferPreparation.varyContext).toBe(true);
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toMatch(/TEACH-FOR-TRANSFER/);
     expect(params.system).toMatch(/recognising WHEN this concept applies/);
     // no-answer-reveal rules still present and last
@@ -105,7 +105,7 @@ describe('7E3 -- teach-for-transfer clause on the ONE supported surface (quiz hi
     const intent = computeTeachingIntent('s1', decision(), neutral);
     expect(intent.transferPreparation.varyContext).toBe(false);
     await generateQuestionHint(QUESTION, 'en', toTeachingGenerationContext(intent));
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).not.toMatch(/TEACH-FOR-TRANSFER/);
   });
 

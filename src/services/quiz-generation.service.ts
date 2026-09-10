@@ -18,7 +18,14 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
+
+// LX-4P-PERF-R1C C1/C16: the canonical learner runtime is OpenAI-only.
+// Question generation -> Luna (primary); grading/evaluation -> Terra.
+const QGEN_ROUTE = resolveModels('QUESTION_GENERATION');
+const GRADE_ROUTE = resolveModels('GRADING');
 import { buildTeachingConstraintsBlock, transferPreparationInstruction, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 
 export interface IBContext {
@@ -363,8 +370,11 @@ export async function generateQuestionsForConcept(
     language?: string;
     visualAidRate?: number;
     ibContext?: IBContext | null;
+    /** LX-4P-PERF-R1C C5: force the Terra fallback model for a quality-gate retry. Defaults to the QUESTION_GENERATION primary (Luna). */
+    modelOverride?: string;
   } = {}
 ): Promise<GeneratedQuestion[]> {
+  const genModel = options.modelOverride || QGEN_ROUTE.primary;
   const count = Math.max(1, Math.min(20, options.count || 20));
   const difficulty = Math.max(1, Math.min(5, options.difficulty || 3));
   const types: QuestionType[] = options.types && options.types.length > 0 ? options.types : ALL_QUESTION_TYPES;
@@ -405,11 +415,16 @@ export async function generateQuestionsForConcept(
       conceptContext = { label: row.label, subjectName: row.subject_name };
     }
 
+    // LX-4P-PERF-R1C C13: bounded RAG reuse -- fold in only as much
+    // retrieved context as this capability's declared budget allows, so
+    // a large document can never inflate the prompt unboundedly. Whole
+    // chunks only, never below one chunk.
+    const contextChunks = fitContextChunks(context.chunks, budgetFor('question_generation_practice').maxContextChars);
     const systemPrompt = buildQuestionGenerationPrompt(
       types,
       difficulty,
       language,
-      context.chunks,
+      contextChunks,
       visualAidRate,
       guidance,
       ibContext,
@@ -423,8 +438,8 @@ export async function generateQuestionsForConcept(
     const { result: questions } = await executeAI({
       capability: prompt.capability,
       risk: 'HIGH_RISK', // correctAnswer feeds gradeStructuredAnswer's deterministic comparison directly
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: QGEN_ROUTE.provider,
+      model: genModel,
       promptId: prompt.id,
       // STABILIZATION QUIZ PERFORMANCE Step 18: v3 unifies every live
       // QUESTION_GENERATION call site (this one, quick_check's fast
@@ -449,22 +464,18 @@ export async function generateQuestionsForConcept(
       // that never needed an override.
       context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuestionsForConcept' },
       call: (signal) =>
-        callAnthropicMessages(
+        callModel(
           {
-            model: 'claude-sonnet-5',
+            provider: QGEN_ROUTE.provider,
+            model: genModel,
             maxTokens,
             system: systemPrompt,
-            messages: [
-              {
-                role: 'user',
-                content: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
+            user: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
 Output a JSON array (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
 [
 ${shapeExamples}
 ]`,
-              },
-            ],
           },
           signal
         ),
@@ -535,7 +546,7 @@ ${shapeExamples}
  *     `questions.length === 0` -> GENERATION_FAILED path, the same
  *     contract the batch path already has. No 5-question quick_check
  *     ever reaches storeQuiz().
- *   - claude-haiku-4-5-20251001, 30_000ms (the Gateway global default,
+ *   - the QUESTION_GENERATION route model (LX-4P-PERF-R1C: OpenAI Luna), 30_000ms (the Gateway global default,
  *     not overridden -- Step 10 also removed the batch path's own
  *     60_000 override above, so both paths now use the same default).
  *   - quiz.question_generation v3 (Step 18) -- unified with every other
@@ -544,7 +555,7 @@ ${shapeExamples}
  */
 export const QUICK_CHECK_TYPES: QuestionType[] = ['multiple_choice', 'true_false', 'yes_no', 'short_answer'];
 const QUICK_CHECK_SLOT_COUNT = 6;
-const QUICK_CHECK_MODEL = 'claude-haiku-4-5-20251001';
+const QUICK_CHECK_MODEL = QGEN_ROUTE.primary;
 
 export async function generateQuickCheckQuestions(
   conceptId: string,
@@ -588,11 +599,13 @@ export async function generateQuickCheckQuestions(
     // Shared across all 6 slots -- describes only the 4 allowed shapes,
     // never the full 18-type catalog (a smaller prompt than the batch
     // path's, on top of the parallel-dispatch/Haiku wins).
+    // LX-4P-PERF-R1C C13: bounded RAG reuse -- quick_check's slot budget.
+    const contextChunks = fitContextChunks(context.chunks, budgetFor('question_generation_slot').maxContextChars);
     const systemPrompt = buildQuestionGenerationPrompt(
       QUICK_CHECK_TYPES,
       difficulty,
       language,
-      context.chunks,
+      contextChunks,
       0, // visualAidRate -- quick_check never uses visual aids, matching QUIZ_MODE_CONFIG.quick_check
       guidance,
       ibContext,
@@ -612,15 +625,15 @@ ${shapeExample}
       return executeAI({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
-        provider: 'anthropic',
+        provider: QGEN_ROUTE.provider,
         model: QUICK_CHECK_MODEL,
         promptId: prompt.id,
         promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site (see the doc comment above generateQuestionsForConcept's own promptVersion line)
         timeoutMs: 30_000, // explicit -- the Gateway global default; kept explicit here for clarity even though the batch path above now relies on the same default implicitly (Step 10)
         context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuickCheckQuestions' },
         call: (signal) =>
-          callAnthropicMessages(
-            { model: QUICK_CHECK_MODEL, maxTokens: 2400, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] },
+          callModel(
+            { provider: QGEN_ROUTE.provider, model: QUICK_CHECK_MODEL, maxTokens: budgetFor('question_generation_slot').maxOutputTokens, reasoningEffort: budgetFor('question_generation_slot').reasoningEffort, system: systemPrompt, user: userMessage },
             signal
           ),
         validate: (raw) => {
@@ -695,7 +708,7 @@ ${shapeExample}
  * embeddings) is sufficient cross-chunk duplicate protection.
  */
 export const MAX_QUESTIONS_PER_CHUNK = 4;
-const PRACTICE_CHUNK_MODEL = 'claude-haiku-4-5-20251001';
+const PRACTICE_CHUNK_MODEL = QGEN_ROUTE.primary;
 
 /**
  * Pure and deterministic -- no AI, no randomness. requestedCount <=
@@ -736,7 +749,7 @@ export function planChunks(requestedCount: number, maxPerChunk: number = MAX_QUE
  *     unmodified generateQuestionsForConcept (no chunking machinery
  *     touches a request this small).
  *   - count > MAX_QUESTIONS_PER_CHUNK: planChunks(count) balanced
- *     chunks, each an independent claude-haiku-4-5-20251001 call at
+ *     chunks, each an independent the QUESTION_GENERATION route model (LX-4P-PERF-R1C: OpenAI Luna) call at
  *     30_000ms, promptVersion v3 (Step 18, unified with every other
  *     QUESTION_GENERATION call site) -- the prompt TEXT sent per call
  *     is byte-identical to the legacy path's "Generate UP TO N
@@ -773,10 +786,14 @@ export async function generatePracticeQuestions(
   const plan = planChunks(count);
 
   if (plan.length === 1) {
-    return generateQuestionsForConcept(conceptId, studentId, subjectId, {
+    // LX-4P-PERF-R1C C7: the canonical small-count Practice path no longer
+    // falls through to a bare generator call -- it goes through the
+    // Luna-first Quality Gate (deterministic contract + semantic verify +
+    // one Terra fallback). Lazy import avoids a require cycle.
+    const { generateGatedPracticeBatch } = await import('@/services/gated-question-generation.service');
+    return generateGatedPracticeBatch(conceptId, studentId, subjectId, {
       count,
       difficulty: options.difficulty,
-      types: ALL_QUESTION_TYPES,
       guidance: options.guidance,
       language: options.language,
       visualAidRate: options.visualAidRate,
@@ -814,7 +831,10 @@ export async function generatePracticeQuestions(
     }
 
     const types = ALL_QUESTION_TYPES;
-    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, context.chunks, visualAidRate, guidance, ibContext, conceptContext);
+    // LX-4P-PERF-R1C C13: bounded RAG reuse -- per-chunk context budget
+    // (the same envelope every parallel chunk shares).
+    const contextChunks = fitContextChunks(context.chunks, budgetFor('question_generation_chunk').maxContextChars);
+    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, contextChunks, visualAidRate, guidance, ibContext, conceptContext);
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generatePracticeQuestions' };
 
@@ -830,14 +850,14 @@ ${shapeExamples}
       return executeAI({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
-        provider: 'anthropic',
+        provider: QGEN_ROUTE.provider,
         model: PRACTICE_CHUNK_MODEL,
         promptId: prompt.id,
         promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site -- was pinned 'v1' when this was orchestration-only; the shared prompt text itself has now genuinely changed for everyone
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callAnthropicMessages({ model: PRACTICE_CHUNK_MODEL, maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model: PRACTICE_CHUNK_MODEL, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
           // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
           // before both parse attempts, then CLASS B/newline-in-math
@@ -918,7 +938,7 @@ ${shapeExamples}
  * conclusion): this function is exact-6-or-nothing throughout.
  *
  * Architecture:
- *   - 2 concurrent claude-haiku-4-5-20251001 calls, 3 questions each,
+ *   - 2 concurrent the QUESTION_GENERATION route model (LX-4P-PERF-R1C: OpenAI Luna) calls, 3 questions each,
  *     quiz.question_generation v3, 30_000ms per call.
  *   - Preventive Variant B runtime diversification (Step 22C, combined
  *     in Step 22D): Chunk A and Chunk B each receive the complete,
@@ -954,7 +974,7 @@ ${shapeExamples}
  *     recovery call itself fails/still collides, return [] -- no
  *     second retry, no partial set can ever reach the learner.
  */
-const RETENTION_CHUNK_MODEL = 'claude-haiku-4-5-20251001';
+const RETENTION_CHUNK_MODEL = QGEN_ROUTE.primary;
 const RETENTION_CHUNK_COUNT = 2;
 const RETENTION_QUESTIONS_PER_CHUNK = 3;
 export const RETENTION_REQUIRED_COUNT = RETENTION_CHUNK_COUNT * RETENTION_QUESTIONS_PER_CHUNK; // 6 -- the only count this fast path supports
@@ -1081,7 +1101,9 @@ export async function generateRetentionCheckQuestions(
     // QUIZ_MODE_CONFIG.retention_check in route.ts -- a fast,
     // low-friction confidence check never uses visual aids).
     const types = ALL_QUESTION_TYPES;
-    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, context.chunks, 0, guidance, ibContext, conceptContext);
+    // LX-4P-PERF-R1C C13: bounded RAG reuse -- per-chunk context budget.
+    const contextChunks = fitContextChunks(context.chunks, budgetFor('question_generation_chunk').maxContextChars);
+    const systemPrompt = buildQuestionGenerationPrompt(types, difficulty, language, contextChunks, 0, guidance, ibContext, conceptContext);
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateRetentionCheckQuestions' };
 
@@ -1097,14 +1119,14 @@ ${shapeExamples}
       return executeAI<{ text: string }, RetentionChunkOutcome>({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
-        provider: 'anthropic',
+        provider: QGEN_ROUTE.provider,
         model: RETENTION_CHUNK_MODEL,
         promptId: prompt.id,
         promptVersion: prompt.version, // v3 -- same registry version every QUESTION_GENERATION call site reads (Step 18); Variant B notes and exclusion context are request-specific runtime content, not a static prompt change
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callAnthropicMessages({ model: RETENTION_CHUNK_MODEL, maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model: RETENTION_CHUNK_MODEL, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
           const repaired = repairInvalidJsonEscapes(raw.text);
           let parsed: any[];
@@ -1782,21 +1804,19 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
   const { result, provenance } = await executeAI({
     capability: prompt.capability,
     risk: 'HIGH_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: GRADE_ROUTE.provider,
+    model: GRADE_ROUTE.primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
     context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId: question.conceptId, sourceComponent: 'quiz-generation.service.ts:gradeAnswer' },
     call: (signal) =>
-      callAnthropicMessages(
+      callModel(
         {
-          model: 'claude-sonnet-5',
+          provider: GRADE_ROUTE.provider,
+          model: GRADE_ROUTE.primary,
           maxTokens: 1536,
           system: systemPrompt,
-          messages: [
-            {
-              role: 'user',
-              content: `Grade this answer:
+          user: `Grade this answer:
 
 Question type: ${question.type}
 Question: ${question.question}
@@ -1812,8 +1832,6 @@ Respond with JSON (no markdown):
   "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | "ARITHMETIC" | "UNIT" | null,
   "reasoningValid": true/false
 }`,
-            },
-          ],
         },
         signal
       ),
@@ -1996,17 +2014,20 @@ Output ONLY a JSON array of strings, no markdown, no explanation. Example shape:
 Give 2-3 hints following the rules above.`;
 
   const prompt = getPrompt('quiz.question_hint');
+  // LX-4P-PERF-R1C C9: contextual help -> Luna primary; concise (budget).
+  const HINT_ROUTE = resolveModels(prompt.capability);
+  const HINT_BUDGET = budgetFor('contextual_help');
   try {
     const { result } = await executeAI({
       capability: prompt.capability,
       risk: 'LOW_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: HINT_ROUTE.provider,
+      model: HINT_ROUTE.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: aiContext ? { ...aiContext, sourceComponent: 'quiz-generation.service.ts:generateQuestionHint' } : undefined,
       call: (signal) =>
-        callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 400, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+        callModel({ provider: HINT_ROUTE.provider, model: HINT_ROUTE.primary, maxTokens: HINT_BUDGET.maxOutputTokens, reasoningEffort: HINT_BUDGET.reasoningEffort, system: systemPrompt, user: userPrompt }, signal),
       validate: (raw) =>
         validateJson(raw, (parsed) => {
           if (!Array.isArray(parsed)) return { value: [] as string[], errors: [] };

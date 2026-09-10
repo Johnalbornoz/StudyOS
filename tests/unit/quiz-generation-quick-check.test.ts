@@ -18,8 +18,8 @@ vi.mock('@/services/rag.service', () => ({ retrieveContext: (...a: any[]) => ret
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
 
-const callAnthropicMessagesMock = vi.fn();
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn();
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 import { generateQuickCheckQuestions, QUICK_CHECK_TYPES } from '@/services/quiz-generation.service';
 
@@ -34,7 +34,7 @@ function fakeQuestionOfType(type: string, i: number) {
 beforeEach(() => {
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
-  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '[]' });
+  callModelMock.mockReset().mockResolvedValue({ text: '[]', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
   // Default: every slot succeeds, returning a question of whatever type
   // that slot's own userMessage says it must be (parsed out of the
   // prompt so this mock stays correct regardless of call order).
@@ -52,10 +52,10 @@ describe('generateQuickCheckQuestions: 6 parallel calls, Haiku, deterministic ty
     expect(executeAIMock).toHaveBeenCalledTimes(6);
   });
 
-  it('every call uses claude-haiku-4-5-20251001', async () => {
+  it('every call uses the QUESTION_GENERATION route model (Luna)', async () => {
     await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
     for (const call of executeAIMock.mock.calls) {
-      expect(call[0].model).toBe('claude-haiku-4-5-20251001');
+      expect(call[0].model).toBe('gpt-5.6-luna');
     }
   });
 
@@ -86,7 +86,7 @@ describe('generateQuickCheckQuestions: 6 parallel calls, Haiku, deterministic ty
       return { result: null, execution: {} as any, provenance: {} as any }; // exercised only for the prompt text; slot success doesn't matter here
     });
     await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(6);
     const expectedTypesInOrder = ['multiple_choice', 'true_false', 'yes_no', 'short_answer', 'multiple_choice', 'true_false'];
     messages.forEach((msg, i) => {

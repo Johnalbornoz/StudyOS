@@ -8,24 +8,30 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// LX-4P-PERF-R1C: the canonical runtime now calls OpenAI (via callModel);
+// the end-to-end mock returns the OpenAI Chat Completions wire shape.
 function anthropicTextResponse(text: string, ok = true, status = 200) {
   return {
     ok,
     status,
-    json: async () => ({ content: [{ type: 'text', text }] }),
+    json: async () => ({ choices: [{ message: { content: text } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }),
     text: async () => text,
   } as Response;
 }
 
 const originalFetch = global.fetch;
 const originalKey = process.env.ANTHROPIC_API_KEY;
+const originalOpenAIKey = process.env.OPENAI_API_KEY;
 
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
+  process.env.OPENAI_API_KEY = 'test-key';
 });
 afterEach(() => {
   global.fetch = originalFetch;
   process.env.ANTHROPIC_API_KEY = originalKey;
+  if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+  else process.env.OPENAI_API_KEY = originalOpenAIKey;
   vi.restoreAllMocks();
   vi.resetModules();
 });
@@ -48,7 +54,7 @@ describe('gradeAnswer (quiz.free_text_grading) -- HIGH_RISK end-to-end mocked fl
     expect(grade.errorType).toBeNull();
     expect(grade.reasoningValid).toBe(true);
     expect(grade.aiExecution.aiPromptId).toBe('quiz.free_text_grading');
-    expect(grade.aiExecution.aiProvider).toBe('anthropic');
+    expect(grade.aiExecution.aiProvider).toBe('openai'); // LX-4P-PERF-R1C: GRADING -> OpenAI (Terra)
   });
 
   it('grading threshold unchanged: score/confidence are clamped into [0,1] exactly as before', async () => {

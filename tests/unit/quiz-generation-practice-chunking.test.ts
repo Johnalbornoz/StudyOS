@@ -18,8 +18,8 @@ vi.mock('@/services/rag.service', () => ({ retrieveContext: (...a: any[]) => ret
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
 
-const callAnthropicMessagesMock = vi.fn();
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn();
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 import { planChunks, MAX_QUESTIONS_PER_CHUNK, generatePracticeQuestions } from '@/services/quiz-generation.service';
 
@@ -27,7 +27,7 @@ beforeEach(() => {
   executeAIMock.mockReset().mockResolvedValue({ result: [], execution: {} as any, provenance: {} as any });
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
-  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '[]' });
+  callModelMock.mockReset().mockResolvedValue({ text: '[]', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
 });
 
 function fakeQuestion(i: number, question?: string) {
@@ -68,23 +68,32 @@ describe('planChunks: pure, deterministic balanced planner', () => {
   });
 });
 
-describe('generatePracticeQuestions: count <= 4 delegates to the unmodified legacy single-call path', () => {
-  it('count=4 fires exactly 1 executeAI call (no chunking machinery)', async () => {
-    await generatePracticeQuestions('c1', 's1', 'subj1', { count: 4 });
-    expect(executeAIMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('count=4 call uses the legacy model (claude-sonnet-5) and v3 -- proves it truly reused generateQuestionsForConcept, not a parallel Haiku implementation', async () => {
+describe('generatePracticeQuestions: count <= 4 goes through the Luna-first Quality Gate (no chunking machinery)', () => {
+  // LX-4P-PERF-R1C C7: the small-count canonical path no longer bare-delegates
+  // to a single generator call -- it runs generateGatedPracticeBatch (Luna
+  // generate -> quality gate -> one Terra fallback). With the mocked
+  // executeAI returning [] every time, that is: 1 Luna generate + 1 Terra
+  // generate (the gate has nothing to verify), then a recoverable [].
+  it('count=4: the first generate call is a single Luna call at v3 (not a Haiku chunk fan-out)', async () => {
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 4 });
     const call = executeAIMock.mock.calls[0][0];
-    expect(call.model).toBe('claude-sonnet-5');
+    expect(call.capability).toBe('QUESTION_GENERATION');
+    expect(call.model).toBe('gpt-5.6-luna');
     expect(call.promptVersion).toBe('v3');
+    // at most 2 QUESTION_GENERATION calls (Luna + one Terra fallback) -- never a 5x chunk fan-out
+    const genCalls = executeAIMock.mock.calls.filter((c) => c[0].capability === 'QUESTION_GENERATION');
+    expect(genCalls.length).toBeLessThanOrEqual(2);
   });
 
-  it('count=1 also delegates to the single-call path (never a lone chunk)', async () => {
+  it('count=4: the fallback generate call, when it happens, is Terra -- never a Claude model', async () => {
+    await generatePracticeQuestions('c1', 's1', 'subj1', { count: 4 });
+    const genCalls = executeAIMock.mock.calls.filter((c) => c[0].capability === 'QUESTION_GENERATION');
+    for (const c of genCalls) expect(['gpt-5.6-luna', 'gpt-5.6-terra']).toContain(c[0].model);
+  });
+
+  it('count=1 also goes through the gated path (never a lone chunk), first call = Luna', async () => {
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 1 });
-    expect(executeAIMock).toHaveBeenCalledTimes(1);
-    expect(executeAIMock.mock.calls[0][0].model).toBe('claude-sonnet-5');
+    expect(executeAIMock.mock.calls[0][0].model).toBe('gpt-5.6-luna');
   });
 });
 
@@ -104,10 +113,10 @@ describe('generatePracticeQuestions: count > 4 fans out into chunked Haiku calls
     expect(executeAIMock).toHaveBeenCalledTimes(2);
   });
 
-  it('every chunked call uses claude-haiku-4-5-20251001, promptVersion v3, timeoutMs 30000', async () => {
+  it('every chunked call uses the QUESTION_GENERATION route model (Luna), promptVersion v3, timeoutMs 30000', async () => {
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
     for (const call of executeAIMock.mock.calls) {
-      expect(call[0].model).toBe('claude-haiku-4-5-20251001');
+      expect(call[0].model).toBe('gpt-5.6-luna');
       expect(call[0].promptVersion).toBe('v3');
       expect(call[0].timeoutMs).toBe(30_000);
       expect(call[0].promptId).toBe('quiz.question_generation');
@@ -120,7 +129,7 @@ describe('generatePracticeQuestions: count > 4 fans out into chunked Haiku calls
       return { result: [], execution: {} as any, provenance: {} as any };
     });
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(5);
     for (const msg of messages) {
       expect(msg).toContain('Generate UP TO 4 questions');

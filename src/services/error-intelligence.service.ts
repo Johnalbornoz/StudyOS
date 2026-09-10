@@ -14,7 +14,8 @@ import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
 import { executeAI, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 
 export type ErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
 
@@ -261,16 +262,16 @@ Use 2 to 3 "sections" covering, in this spirit: (1) what is likely going wrong c
   const { result } = await executeAI({
     capability: prompt.capability,
     risk: 'LOW_RISK', // formative feedback text, display-only, not learning-state
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: resolveModels('CONTENT_GENERATION').provider,
+    model: resolveModels('CONTENT_GENERATION').primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
     call: (signal) =>
-      callAnthropicMessages(
-        { model: 'claude-sonnet-5', maxTokens: 1200, system: systemPrompt, messages: [{ role: 'user', content: `Help me understand this pattern of mistakes.` }] },
+      callModel(
+        { provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 1200, system: systemPrompt, user: 'Help me understand this pattern of mistakes.' },
         signal
       ),
-    validate: (raw) => ({ valid: true, value: coerceGuidance(raw.text || '{}') }),
+    validate: (raw: { text: string }) => ({ valid: true, value: coerceGuidance(raw.text || '{}') }),
   });
   return result;
 }

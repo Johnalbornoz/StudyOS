@@ -12,6 +12,7 @@ import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-genera
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 import type { LearningActivityKind } from '@/lib/lx/continuation';
+import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
 import ContinuationPanel from './ContinuationPanel';
@@ -437,13 +438,23 @@ export default function QuizPage() {
       setError(null);
       perfMark('T0_start');
 
-      // wave A -- canonical Teaching Experience, no quiz session needed
-      const tiP = fetch(
-        `/api/learning/teaching-intent?studentId=${sid}&conceptId=${conceptId}&mode=${quizMode}`,
-      )
-        .then((r) => (r.ok ? r.json() : null))
-        .then((b) => (b?.data?.teachingExperience ?? null) as TeachingExperienceView | null)
-        .catch(() => null);
+      // wave A -- canonical Teaching Experience, no quiz session needed.
+      // LX-4P-PERF-R1C C12: when the Continue handoff already carries the
+      // server-derived Teaching Experience for THIS concept + mode and it
+      // is fresh + intact, transport it -- the canonical decision was
+      // already computed by /api/learning/continue, so we skip the
+      // /api/learning/teaching-intent round-trip entirely. Consume-once:
+      // the handoff is always cleared on read. Missing / stale / mismatched
+      // / forged -> null -> the canonical fetch runs exactly as before.
+      const handoffView = conceptId ? consumeLaunchTeachingHandoff(conceptId, quizMode) : null;
+      const tiP: Promise<TeachingExperienceView | null> = handoffView
+        ? Promise.resolve(handoffView)
+        : fetch(
+            `/api/learning/teaching-intent?studentId=${sid}&conceptId=${conceptId}&mode=${quizMode}`,
+          )
+            .then((r) => (r.ok ? r.json() : null))
+            .then((b) => (b?.data?.teachingExperience ?? null) as TeachingExperienceView | null)
+            .catch(() => null);
 
       // wave B -- question generation, in the background
       setGenState('loading');

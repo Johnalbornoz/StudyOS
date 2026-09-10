@@ -28,8 +28,8 @@ vi.mock('@/services/rag.service', () => ({ retrieveContext: (...a: any[]) => ret
 const queryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
 
-const callAnthropicMessagesMock = vi.fn();
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn();
+vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
 import {
   generateRetentionCheckQuestions,
@@ -59,23 +59,23 @@ function fakeQuestion(i: number, overrides: Partial<{ question: string; type: st
 
 /**
  * A validate()/fallback() aware mock that actually invokes the caller's
- * own `call` (so callAnthropicMessagesMock genuinely receives each
+ * own `call` (so callModelMock genuinely receives each
  * chunk's real userMessage, inspectable in assertions) and `validate`/
  * `fallback`, exactly as the real gateway would -- just without the
  * network. `chunkResponses` are consumed in call order (chunk A, chunk
  * B, then the bounded recovery call if one occurs).
  */
 function wireRealisticExecuteAI(chunkResponses: Array<{ text: string } | { error: 'TIMEOUT' | 'PROVIDER_ERROR' }>) {
-  callAnthropicMessagesMock.mockReset();
+  callModelMock.mockReset();
   for (const resp of chunkResponses) {
     if ('error' in resp) {
-      callAnthropicMessagesMock.mockImplementationOnce(async () => {
+      callModelMock.mockImplementationOnce(async () => {
         const err: any = new Error(resp.error);
         err.name = resp.error === 'TIMEOUT' ? 'AbortError' : 'Error';
         throw err;
       });
     } else {
-      callAnthropicMessagesMock.mockImplementationOnce(async () => ({ text: resp.text }));
+      callModelMock.mockImplementationOnce(async () => ({ text: resp.text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' }));
     }
   }
   executeAIMock.mockReset().mockImplementation(async (opts: any) => {
@@ -105,7 +105,7 @@ function cleanChunkText(base: number) {
 beforeEach(() => {
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
-  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '[]' });
+  callModelMock.mockReset().mockResolvedValue({ text: '[]', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
   executeAIMock.mockReset();
 });
 
@@ -146,10 +146,10 @@ describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes
     expect(executeAIMock).toHaveBeenCalledTimes(2); // CLEAN (distinct bases 0/10) -- no recovery call
   });
 
-  it('both calls use claude-haiku-4-5-20251001, promptId quiz.question_generation, promptVersion v3, timeoutMs 30000', async () => {
+  it('both calls use the QUESTION_GENERATION route model (Luna), promptId quiz.question_generation, promptVersion v3, timeoutMs 30000', async () => {
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     for (const call of executeAIMock.mock.calls) {
-      expect(call[0].model).toBe('claude-haiku-4-5-20251001');
+      expect(call[0].model).toBe('gpt-5.6-luna');
       expect(call[0].promptId).toBe('quiz.question_generation');
       expect(call[0].promptVersion).toBe('v3');
       expect(call[0].timeoutMs).toBe(30_000);
@@ -159,7 +159,7 @@ describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes
 
   it('each call requests exactly 3 questions, carries the "chunk N of 2" / "6 total questions" context, and its own Variant B note', async () => {
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(2);
     for (const msg of messages) {
       expect(msg).toContain('Generate EXACTLY 3 questions');
@@ -174,7 +174,7 @@ describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes
   });
 
   it('does not manually assign or cycle question types -- no per-slot "prefer type X" instruction appears', async () => {
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     for (const msg of messages) {
       expect(msg).not.toContain('prefer question type');
@@ -279,7 +279,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(6);
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages[2]).toContain('chunk 2 of 2'); // regenerating slot B (index 1)
     expect(messages[2]).toContain(VARIANT_B_NOTE_A); // reuses the RETAINED chunk's (A's) own note, per Step 22D's validated pattern
   });
@@ -291,7 +291,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(6);
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages[2]).toContain('1. Same question text'); // exclusion note lists retained chunk A's own question text
   });
 
@@ -301,7 +301,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     expect(executeAIMock).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(6);
     // mock.calls[0] is chunk A's (rejected) call -- still recorded even though it threw.
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(3);
     expect(messages[2]).toContain('chunk 1 of 2'); // recovery regenerates slot A (index 0)
     expect(messages[2]).toContain(VARIANT_B_NOTE_B); // reuses retained Chunk B's own note
@@ -312,7 +312,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(6);
-    const messages = callAnthropicMessagesMock.mock.calls.map((c) => c[0].messages[0].content as string);
+    const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(3);
     expect(messages[2]).toContain('chunk 2 of 2'); // recovery regenerates slot B (index 1)
     expect(messages[2]).toContain(VARIANT_B_NOTE_A); // reuses retained Chunk A's own note
@@ -330,7 +330,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     const chunkB = JSON.stringify([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: cleanChunkText(20) }]);
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
-    const recoveryMsg = callAnthropicMessagesMock.mock.calls[2][0].messages[0].content as string;
+    const recoveryMsg = callModelMock.mock.calls[2][0].user as string;
     expect(recoveryMsg).toContain('Same question text');
     // "correctAnswer" itself appears only as a schema-shape label (the JSON template shown to the model for every field) --
     // what must never leak is an actual answer/explanation VALUE or any learner/evidence data.

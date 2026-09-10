@@ -30,7 +30,10 @@
  */
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor } from '@/lib/ai/token-budgets';
+import { LOCALIZATION_PAYLOAD_SCHEMA, SEMANTIC_VERDICT_SCHEMA } from '@/lib/ai/schemas';
 import { parseAIJson } from '@/lib/ai-json';
 import type { GeneratedQuestion, AnswerFormat } from '@/services/quiz-generation.service';
 
@@ -324,14 +327,17 @@ export async function verifyLocalizationEquivalence(input: {
     LOCALE_FULL_NAME[sourceLanguage] || sourceLanguage,
     LOCALE_FULL_NAME[displayLanguage] || displayLanguage,
   );
+  // LX-4P-PERF-R1C C11: semantic equivalence -> stronger OpenAI eval model (Terra).
+  const vRoute = resolveModels(prompt.capability);
+  const vBudget = budgetFor('semantic_verification');
   try {
     const { result } = await executeAI<{ text: string }, SemanticVerdict>({
       capability: prompt.capability,
       // Consequence: this verdict gates whether a localized presentation
       // may stand in for the canonical graded item -- protects evidence.
       risk: 'HIGH_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: vRoute.provider,
+      model: vRoute.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: {
@@ -340,8 +346,8 @@ export async function verifyLocalizationEquivalence(input: {
         sourceComponent: 'question-localization.service.ts:verifyLocalizationEquivalence',
       },
       call: (signal) =>
-        callAnthropicMessages(
-          { model: 'claude-sonnet-5', maxTokens: 900, system, messages: [{ role: 'user', content: user }] },
+        callModel(
+          { provider: vRoute.provider, model: vRoute.primary, system, user, maxTokens: vBudget.maxOutputTokens, jsonSchema: SEMANTIC_VERDICT_SCHEMA, reasoningEffort: vBudget.reasoningEffort },
           signal,
         ),
       validate: (raw) => {
@@ -415,20 +421,23 @@ export async function localizeGeneratedQuestion(input: {
 
   const { system, user } = buildPrompt(question, LOCALE_FULL_NAME[displayLanguage] || displayLanguage);
   const prompt = getPrompt('quiz.question_localization');
+  // LX-4P-PERF-R1C C11: display-text transform -> OpenAI Luna primary, strict schema.
+  const lRoute = resolveModels(prompt.capability);
+  const lBudget = budgetFor('question_localization');
 
   let ai: AiLocalized;
   try {
     const { result } = await executeAI<{ text: string }, AiLocalized>({
       capability: prompt.capability,
       risk: 'MEDIUM_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: lRoute.provider,
+      model: lRoute.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: { ...context, conceptId: question.conceptId, sourceComponent: 'question-localization.service.ts:localizeGeneratedQuestion' },
       call: (signal) =>
-        callAnthropicMessages(
-          { model: 'claude-sonnet-5', maxTokens: 2000, system, messages: [{ role: 'user', content: user }] },
+        callModel(
+          { provider: lRoute.provider, model: lRoute.primary, system, user, maxTokens: lBudget.maxOutputTokens, jsonSchema: LOCALIZATION_PAYLOAD_SCHEMA, reasoningEffort: lBudget.reasoningEffort },
           signal,
         ),
       validate: (raw) => {

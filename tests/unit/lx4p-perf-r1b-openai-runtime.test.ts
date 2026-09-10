@@ -80,11 +80,17 @@ describe('LX-4P-PERF-R1B B12 -- provider usage parsing', () => {
 
 /* ---------- B12: pricing is configured, not billing truth ---------- */
 describe('LX-4P-PERF-R1B B12 -- cost estimate', () => {
-  it('with the $0 default table the estimate is not "complete" and says so', () => {
-    const c = estimateCostUSD({ model: LUNA, inputTokens: 1000, cachedInputTokens: 0, outputTokens: 500 });
+  it('an unpriced model ($0 row) is not "complete" and says so', () => {
+    const c = estimateCostUSD({ model: 'claude-sonnet-5', inputTokens: 1000, cachedInputTokens: 0, outputTokens: 500 });
     expect(c.usd).toBe(0);
     expect(c.complete).toBe(false);
     expect(c.note).toMatch(/configure MODEL_PRICING/);
+  });
+  it('LX-4P-PERF-R1C: Luna has configured reference prices -> a real, complete estimate', () => {
+    const c = estimateCostUSD({ model: LUNA, inputTokens: 1_000_000, cachedInputTokens: 0, outputTokens: 500_000 });
+    // 1M input * $0.20/M + 500k output * $1.20/M
+    expect(c.usd).toBeCloseTo(0.2 + 0.6, 6);
+    expect(c.complete).toBe(true);
   });
   it('with no provider usage -> null, not 0', () => {
     const c = estimateCostUSD({ model: LUNA, inputTokens: null, cachedInputTokens: null, outputTokens: null });
@@ -169,7 +175,8 @@ describe('LX-4P-PERF-R1B B12 -- runtime event carries a cost estimate', () => {
       inputTokens: 1000, cachedInputTokens: 0, outputTokens: 200, latencyMs: 4200, fallbackUsed: false, qualityGateResult: 'PASS',
     });
     expect(ev).toHaveProperty('estimatedCostUSD');
-    expect(ev).toHaveProperty('costComplete', false); // $0 table
+    expect(typeof ev.estimatedCostUSD).toBe('number'); // Luna is priced (R1C)
+    expect(ev).toHaveProperty('costComplete', true);
   });
 });
 

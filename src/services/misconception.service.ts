@@ -10,7 +10,8 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { track } from '@/lib/analytics';
 import { executeAI, validateJson, getPrompt, AIExecutionFailure, type AIProvenance } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 
 export interface MisconceptionSignature {
   id: string;
@@ -376,16 +377,13 @@ If there's no clear, specific misconception (e.g. it looks like a careless slip,
     const outcome = await executeAI({
       capability: prompt.capability,
       risk: 'HIGH_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: resolveModels('COGNITIVE_ANALYSIS').provider,
+      model: resolveModels('COGNITIVE_ANALYSIS').primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId, sourceComponent: 'misconception.service.ts:classifyMisconception' },
       call: (signal) =>
-        callAnthropicMessages(
-          { model: 'claude-sonnet-5', maxTokens: 500, system: systemPrompt, messages: [{ role: 'user', content: 'Classify this answer.' }] },
-          signal
-        ),
+        callModel({ provider: resolveModels('COGNITIVE_ANALYSIS').provider, model: resolveModels('COGNITIVE_ANALYSIS').primary, maxTokens: 500, system: systemPrompt, user: 'Classify this answer.' }, signal),
       validate: (raw) => validateJson<ClassificationResult>({ text: raw.text || '{"misconceptionCode": null}' }, (v) => ({ value: v, errors: [] })),
     });
     parsed = outcome.result;

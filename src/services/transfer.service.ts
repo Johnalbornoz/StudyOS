@@ -10,7 +10,8 @@ import { db, type DbExecutor } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, validateJson, getPrompt, type AIProvenance } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 import { computeTransferScore, type TransferEvidenceRow } from '@/lib/algorithms/transfer-score';
 
 export type TransferDistance = 'NEAR' | 'MID' | 'FAR';
@@ -84,15 +85,12 @@ Output ONLY this JSON, no markdown fences, no other text:
   const { result } = await executeAI({
     capability: prompt.capability,
     risk: 'MEDIUM_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: resolveModels('CONTENT_GENERATION').provider,
+    model: resolveModels('CONTENT_GENERATION').primary,
     promptId: prompt.id,
     promptVersion: 'v1',
     call: (signal) =>
-      callAnthropicMessages(
-        { model: 'claude-sonnet-5', maxTokens: 500, system: systemPrompt, messages: [{ role: 'user', content: 'Write the transfer question.' }] },
-        signal
-      ),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 500, system: systemPrompt, user: 'Write the transfer question.' }, signal),
     validate: (raw) =>
       validateJson<{ context: string; prompt: string }>({ text: raw.text || '{}' }, (parsed) => ({
         value: { context: parsed.context, prompt: parsed.prompt },
@@ -146,16 +144,13 @@ Output ONLY this JSON, no markdown fences, no other text:
   const { result } = await executeAI({
     capability: registered.capability,
     risk: 'MEDIUM_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: resolveModels('CONTENT_GENERATION').provider,
+    model: resolveModels('CONTENT_GENERATION').primary,
     promptId: registered.id,
     promptVersion: registered.version, // v2
     context: { ...aiContext, sourceComponent: 'transfer.service.ts:generateStructuredTransferActivity' },
     call: (signal) =>
-      callAnthropicMessages(
-        { model: 'claude-sonnet-5', maxTokens: 700, system: systemPrompt, messages: [{ role: 'user', content: 'Write the structured transfer task.' }] },
-        signal,
-      ),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: systemPrompt, user: 'Write the structured transfer task.' }, signal),
     validate: (raw) =>
       validateJson<{ context: string; prompt: string; noveltyDimensions: string[]; contextDomain: string | null }>(
         { text: raw.text || '{}' },
@@ -242,13 +237,13 @@ Output ONLY this JSON, no markdown fences, no other text:
   const { result, provenance } = await executeAI({
     capability: registeredPrompt.capability,
     risk: 'HIGH_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: resolveModels('TRANSFER_EVALUATION').provider,
+    model: resolveModels('TRANSFER_EVALUATION').primary,
     promptId: registeredPrompt.id,
     promptVersion: registeredPrompt.version,
     context: { ...context, sourceComponent: 'transfer.service.ts:evaluateTransferResponse' },
     call: (signal) =>
-      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 300, system: systemPrompt, messages: [{ role: 'user', content: 'Grade this.' }] }, signal),
+      callModel({ provider: resolveModels('TRANSFER_EVALUATION').provider, model: resolveModels('TRANSFER_EVALUATION').primary, maxTokens: 300, system: systemPrompt, user: 'Grade this.' }, signal),
     validate: (raw) =>
       validateJson<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string }>({ text: raw.text || '{}' }, (parsed) => ({
         value: {

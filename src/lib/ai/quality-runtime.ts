@@ -59,11 +59,12 @@ export interface GatedGenerationSpec<T> {
   systemPrompt: string;
   /** Dynamic tail -- concept / context / activity state. */
   buildUserMessage: () => string;
-  jsonSchema: OpenAIJsonSchema;
+  /** Strict Structured Outputs schema. Omit for plain json_object mode (teaching content). */
+  jsonSchema?: OpenAIJsonSchema;
   /** Turn the raw text into a typed candidate, or null if unusable. */
   parse: (text: string) => T | null;
-  /** Deterministic gate -- runs first, no I/O. */
-  deterministicGate: (value: T) => DeterministicVerdict;
+  /** Deterministic gate -- runs first, no I/O. Omit for a pass-through (content whose only gate is "it parsed"). */
+  deterministicGate?: (value: T) => DeterministicVerdict;
   /** Semantic verification -- only invoked when the deterministic gate is inconclusive/PASS but judgment is still needed. */
   semanticVerify?: (value: T) => Promise<SemanticVerdict>;
   /** Stable cache key for the system+schema prefix (B8). */
@@ -128,7 +129,7 @@ async function attempt<T>(
     return { pass: false, reason, gate: 'NOT_RUN', usageRaw, latencyMs: Date.now() - startedAt };
   }
 
-  const det = spec.deterministicGate(value);
+  const det = spec.deterministicGate ? spec.deterministicGate(value) : { pass: true, reason: '' };
   if (!det.pass) {
     return { pass: false, reason: det.reason || 'DETERMINISTIC_FAIL', gate: 'DETERMINISTIC_FAIL', usageRaw, latencyMs: Date.now() - startedAt };
   }

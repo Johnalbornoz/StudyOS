@@ -17,6 +17,8 @@
  * PROGRESS, never mastery evidence -- nothing here writes anything.
  */
 
+import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
+
 export const CONTINUATION_CONTRACT_VERSION = 1 as const;
 
 /**
@@ -57,6 +59,22 @@ export type ContinuationResolution =
       activityType: string;
       /** Which canonical authority produced it. Auditable. */
       source: 'PHASE_4_DECISION' | 'CURRICULUM_FIRST_TOUCH';
+      /**
+       * LX-4P-PERF-R1C C12 -- decision de-duplication for the
+       * Continue -> teaching-launch handoff. The canonical derived
+       * Teaching Experience for the concept being launched, computed ONCE
+       * here from the SAME canonical `TeachingIntent` +
+       * `deriveTeachingExperience` that `/api/learning/teaching-intent`
+       * would otherwise recompute on the quiz page. The client only
+       * TRANSPORTS this value to the launch (it never derives it) and
+       * always re-validates it (same concept + mode, fresh, structurally
+       * intact) before use, falling back to the canonical
+       * `/api/learning/teaching-intent` fetch when it is absent, stale,
+       * or mismatched. `null` when there is no single concept to teach or
+       * the intent was unavailable -- the client then resolves it
+       * canonically, exactly as before this optimisation.
+       */
+      teachingExperience?: TeachingExperienceView | null;
     }
   | {
       /** No canonical next action -- return to the Concept Mission with an honest "nothing to do right now" state. */

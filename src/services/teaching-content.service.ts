@@ -20,7 +20,9 @@ import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
 import { executeAI, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
 
 export interface GuidedPracticeStep {
   /** One line: "What should we do first?" */
@@ -85,7 +87,10 @@ export async function generateGuidedPractice(
   language: string = 'en',
 ): Promise<GuidedPractice> {
   const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 4 }).catch(() => ({ chunks: [] as any[] }));
-  const chunks: string[] = context.chunks.map((c: any) => c.text);
+  // LX-4P-PERF-R1C C13: bounded RAG reuse -- guided_practice context budget.
+  const chunks: string[] = fitContextChunks(context.chunks, budgetFor('guided_practice').maxContextChars).map(
+    (c: any) => c.text
+  );
   const languageName = LOCALE_FULL_NAME[language] || language;
 
   const systemPrompt = `You are a tutor doing ONE problem together with a student, out loud, step by step. This is TEACHING, not a test.
@@ -103,21 +108,26 @@ Write everything in ${languageName}. Output ONLY this JSON, no markdown fences:
 
   try {
     const prompt = getPrompt('learning.guided_practice');
+    // LX-4P-PERF-R1C C9: GUIDE content -> OpenAI Luna primary; structured payload.
+    const route = resolveModels(prompt.capability);
+    const budget = budgetFor('guided_practice');
     const { result } = await executeAI({
       capability: prompt.capability,
       risk: 'LOW_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: route.provider,
+      model: route.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: { studentId, subjectId, conceptId, sourceComponent: 'teaching-content.service.ts:generateGuidedPractice' },
       call: (signal) =>
-        callAnthropicMessages(
+        callModel(
           {
-            model: 'claude-sonnet-5',
-            maxTokens: 1800,
+            provider: route.provider,
+            model: route.primary,
+            maxTokens: budget.maxOutputTokens,
+            reasoningEffort: budget.reasoningEffort,
             system: systemPrompt,
-            messages: [{ role: 'user', content: `Let's work through "${conceptLabel}" together.` }],
+            user: `Let's work through "${conceptLabel}" together.`,
           },
           signal,
         ),

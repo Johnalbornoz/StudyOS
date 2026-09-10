@@ -22,6 +22,7 @@ import {
   type LearningActivityKind,
   type ContinuationResolution,
 } from '@/lib/lx/continuation';
+import { writeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 
 export default function ContinuationPanel({
   studentId,
@@ -66,6 +67,26 @@ export default function ContinuationPanel({
       const body = await res.json();
       const c: ContinuationResolution | undefined = body?.data?.continuation;
       if (c?.status === 'LAUNCH' && c.launchTarget) {
+        // LX-4P-PERF-R1C C12: transport the server-derived Teaching
+        // Experience to the launch so the quiz page does not recompute the
+        // same canonical decision. Transport only -- the quiz page
+        // re-validates (same concept + mode, fresh, intact) and falls back
+        // to its own canonical /api/learning/teaching-intent fetch when
+        // this is absent, stale, or mismatched.
+        if ('teachingExperience' in c) {
+          let mode: string | null = null;
+          try {
+            mode = new URL(c.launchTarget, window.location.origin).searchParams.get('mode');
+          } catch {
+            /* non-quiz / relative parse failure -- leave mode null (handoff will be ignored) */
+          }
+          writeLaunchTeachingHandoff({
+            conceptId,
+            mode,
+            teachingExperience: c.teachingExperience ?? null,
+            ts: Date.now(),
+          });
+        }
         router.push(c.launchTarget);
         return;
       }

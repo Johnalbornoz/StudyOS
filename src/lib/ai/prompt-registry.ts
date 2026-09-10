@@ -226,6 +226,14 @@ export const PROMPT_REGISTRY = {
     description:
       'LX-4P-R2: TRANSLATE-ONLY. Renders an EXISTING generated quiz question into another display language without regenerating it -- numbers, formulas, units, option ids, answer semantics, type and difficulty are preserved by instruction and then re-validated against the stored original (question-localization.service.ts:reconcileLocalization); a failed check discards the translation and the caller falls back to LX-4P-R1 explicit restart. Never produces a new question, never writes evidence, never touches the stored quiz session.',
   }),
+  'quiz.question_quality_verify': definePrompt({
+    id: 'quiz.question_quality_verify',
+    version: 'v1',
+    capability: 'EXPLANATION_EVALUATION',
+    service: 'question-quality-verifier.service.ts:verifyQuestionQuality',
+    description:
+      'LX-4P-PERF-R1C C6: independent semantic quality verdict for ONE generated question, on the claims deterministic validation cannot establish (concept alignment, non-deterministic answer correctness, ambiguity, reasoning-requirement consistency, distractor plausibility, scenario appropriateness, visual consistency). Verify-only strict structured verdict; never rewrites. The generator cannot self-certify without this gate. Routed to the stronger evaluation model.',
+  }),
   'quiz.question_localization_verify': definePrompt({
     id: 'quiz.question_localization_verify',
     version: 'v1',

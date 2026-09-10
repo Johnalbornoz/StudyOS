@@ -20,21 +20,20 @@ function sourceQuestion(overrides: Partial<GeneratedQuestion> = {}): GeneratedQu
   };
 }
 
+// LX-4P-PERF-R1C: QUESTION_GENERATION routes to OpenAI -- the mock returns
+// the OpenAI Chat Completions wire shape.
 function mockAnthropicResponse(questions: any[]) {
   return {
     ok: true,
     text: async () => '',
-    json: async () => ({ content: [{ type: 'text', text: JSON.stringify(questions) }] }),
+    json: async () => ({ choices: [{ message: { content: JSON.stringify(questions) } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }),
   };
 }
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
-  // Phase 0E1: the shared AI gateway now fails fast with CONFIGURATION_ERROR
-  // when ANTHROPIC_API_KEY is unset, rather than sending a request with a
-  // missing key -- this test only cares about the mocked fetch response, so
-  // stub a key too.
   vi.stubEnv('ANTHROPIC_API_KEY', 'test-key');
+  vi.stubEnv('OPENAI_API_KEY', 'test-key');
 });
 
 describe('Phase 3B -- Question Variant Equivalence Contract', () => {

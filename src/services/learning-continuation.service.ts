@@ -22,9 +22,11 @@
  * itself, NEVER writes evidence, NEVER creates a second recommendation
  * engine.
  */
-import { getBestLearningDecisionForConcept } from '@/services/adaptive-teaching.service';
+import { getBestLearningDecisionForConcept, getTeachingIntent } from '@/services/adaptive-teaching.service';
 import { getLearningDecisions } from '@/services/adaptive-learning-orchestrator.service';
-import { startLearningSession } from '@/services/learning-session-engine.service';
+import { startLearningSession, type LearningSession } from '@/services/learning-session-engine.service';
+import { deriveTeachingExperience, type TeachingExperienceView } from '@/lib/lx/teaching-experience';
+import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { getCurriculumEligibleConcepts } from '@/services/curriculum-eligibility-read.service';
 import { bootstrapNotStartedLearningDecision, hasLiveDecisionForConcept } from '@/lib/curriculum-progression-bootstrap';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
@@ -35,6 +37,42 @@ export interface ResolveContinuationInput {
   studentId: string;
   conceptId: string;
   subjectId: string;
+}
+
+/**
+ * LX-4P-PERF-R1C C12 -- derive the launch's Teaching Experience ONCE,
+ * here, from the canonical decision this resolver already holds.
+ *
+ * It reuses the SAME `getTeachingIntent` + `deriveTeachingExperience`
+ * the quiz page's `/api/learning/teaching-intent` call would run, and
+ * the canonical `EvidenceMode` the session engine already fixed for the
+ * launched activity (`LearningSession.evidenceMode` =
+ * `evidenceModeForActivity(activityType)`). The client transports this
+ * to the launch instead of recomputing it. Best-effort only: any
+ * failure returns `null` and the client falls back to its own canonical
+ * `/api/learning/teaching-intent` resolution. This never decides or
+ * writes anything -- `deriveTeachingExperience` is pure presentation,
+ * and every downstream evidence / permission gate is still enforced
+ * server-side regardless of what the client transports.
+ */
+async function deriveLaunchTeachingExperience(
+  studentId: string,
+  decision: LearningDecision,
+  session: Pick<LearningSession, 'evidenceMode'>,
+): Promise<TeachingExperienceView | null> {
+  try {
+    const intent = await getTeachingIntent(studentId, decision);
+    if (!intent) return null;
+    return deriveTeachingExperience({
+      supportLevel: intent.supportLevel,
+      explanationDepth: intent.explanationDepth,
+      evidenceMode: session.evidenceMode,
+      primaryBarrier: intent.primaryBarrier,
+      hasActiveMisconception: intent.misconceptionCodes.length > 0,
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveContinuation(input: ResolveContinuationInput): Promise<ContinuationResolution> {
@@ -55,11 +93,13 @@ export async function resolveContinuation(input: ResolveContinuationInput): Prom
     try {
       const session = await startLearningSession({ studentId, learningDecision: phase4Decision });
       if (session.launchStatus === 'READY' && session.launchTarget) {
+        const teachingExperience = await deriveLaunchTeachingExperience(studentId, phase4Decision, session);
         return {
           status: 'LAUNCH',
           launchTarget: session.launchTarget,
           activityType: phase4Decision.activityType,
           source: 'PHASE_4_DECISION',
+          teachingExperience,
         };
       }
       return { status: 'RETURN_TO_MISSION', reason: 'DECISION_UNAVAILABLE' };
@@ -79,11 +119,13 @@ export async function resolveContinuation(input: ResolveContinuationInput): Prom
           const bootstrap = bootstrapNotStartedLearningDecision({ studentId, subjectId, conceptId });
           const session = await startLearningSession({ studentId, learningDecision: bootstrap });
           if (session.launchStatus === 'READY' && session.launchTarget) {
+            const teachingExperience = await deriveLaunchTeachingExperience(studentId, bootstrap, session);
             return {
               status: 'LAUNCH',
               launchTarget: session.launchTarget,
               activityType: bootstrap.activityType,
               source: 'CURRICULUM_FIRST_TOUCH',
+              teachingExperience,
             };
           }
         }

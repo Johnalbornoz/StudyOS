@@ -26,7 +26,11 @@ describe('LX-4P-PERF-R1 R3 -- teaching renders without waiting for the question 
     const fn = QUIZ.slice(QUIZ.indexOf('const startCanonicalActivity = useCallback'), QUIZ.indexOf('// LX-4K: canonical flow skips the configurator'));
     expect(fn).toMatch(/wave A -- canonical Teaching Experience/);
     expect(fn).toMatch(/wave B -- question generation, in the background/);
-    expect(fn).toMatch(/const tiP = fetch\(\s*\n?\s*`\/api\/learning\/teaching-intent\?studentId=\$\{sid\}&conceptId=\$\{conceptId\}&mode=\$\{quizMode\}`/);
+    // LX-4P-PERF-R1C C12: wave A is either the transported Continue handoff
+    // (no round-trip) or the canonical teaching-intent fetch -- still issued
+    // in parallel with wave B, still never awaited before the teach-first render.
+    expect(fn).toMatch(/const handoffView = conceptId \? consumeLaunchTeachingHandoff\(conceptId, quizMode\) : null/);
+    expect(fn).toMatch(/const tiP: Promise<TeachingExperienceView \| null> = handoffView\s*\n\s*\? Promise\.resolve\(handoffView\)\s*\n\s*: fetch\(\s*\n?\s*`\/api\/learning\/teaching-intent\?studentId=\$\{sid\}&conceptId=\$\{conceptId\}&mode=\$\{quizMode\}`/);
     expect(fn).toMatch(/const genP = fetch\('\/api\/quizzes\/generate-and-take'/);
     // teach-first: render the teaching stage as soon as TeachingIntent resolves
     expect(fn).toMatch(/if \(teachFirst\) \{\s*\n\s*setTeachingStage\('teaching'\);\s*\n\s*setPhase\('quiz'\); \/\/ teaching UI can render NOW/);

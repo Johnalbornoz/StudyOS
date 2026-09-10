@@ -14,10 +14,16 @@ export interface ModelPrice {
   outputPerM: number;
 }
 
-/** CONFIGURED, not authoritative. `0` where a price is not yet known -> the estimate reads as $0 for that component, never a guess. */
+/**
+ * CONFIGURED REFERENCE PRICES (LX-4P-PERF-R1C C15) -- USD per 1M tokens.
+ * These are a configured table, NOT billing-system truth. `estimateCostUSD`
+ * = provider-reported token usage x this table. Update when prices change.
+ * `0` for a model means "not configured" -> the estimate for it reads $0
+ * with `complete: false`, never a guess.
+ */
 export const MODEL_PRICING: Record<string, ModelPrice> = {
-  'gpt-5.6-luna': { inputPerM: 0, cachedInputPerM: 0, outputPerM: 0 },
-  'gpt-5.6-terra': { inputPerM: 0, cachedInputPerM: 0, outputPerM: 0 },
+  'gpt-5.6-luna': { inputPerM: 0.2, cachedInputPerM: 0.02, outputPerM: 1.2 },
+  'gpt-5.6-terra': { inputPerM: 2.0, cachedInputPerM: 0.2, outputPerM: 12.0 },
   'claude-sonnet-5': { inputPerM: 0, cachedInputPerM: 0, outputPerM: 0 },
   'claude-haiku-4-5-20251001': { inputPerM: 0, cachedInputPerM: 0, outputPerM: 0 },
 };

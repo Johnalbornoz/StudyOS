@@ -4,7 +4,9 @@ import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
 import { generateInteractiveFormula, InteractiveFormula } from './interactive-formula.service';
 import { executeAI, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
 
 export interface ConceptExplanation {
   summary: string;
@@ -81,7 +83,11 @@ export async function getConceptExplanation(
   const context = await retrieveContext(studentId, concept.subject_id, { conceptId, limit: 5 }).catch(
     () => ({ chunks: [] as any[] })
   );
-  const contextChunks = context.chunks.map((c: any) => c.text);
+  // LX-4P-PERF-R1C C13: bounded RAG reuse -- truncate to the
+  // concept_explanation context budget before folding into the prompt.
+  const contextChunks = fitContextChunks(context.chunks, budgetFor('concept_explanation').maxContextChars).map(
+    (c: any) => c.text
+  );
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 
@@ -111,25 +117,25 @@ Write everything in ${languageName}. Output ONLY a JSON object, no markdown fenc
 Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. definition, why it matters, how it's applied, a common point of confusion) -- whichever genuinely fits this concept, not a fixed template. Keep each section body to 2-4 sentences. Keep it focused on this concept only.`;
 
   const registeredPrompt = getPrompt('concept.explanation');
+  // LX-4P-PERF-R1C C9: MODEL/explanation content -> OpenAI Luna primary.
+  const route = resolveModels(registeredPrompt.capability);
+  const budget = budgetFor('concept_explanation');
   const { result } = await executeAI({
     capability: registeredPrompt.capability,
     risk: 'LOW_RISK', // cached, student-facing content; doesn't affect mastery/correctness
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: route.provider,
+    model: route.primary,
     promptId: registeredPrompt.id,
     promptVersion: registeredPrompt.version,
     call: (signal) =>
-      callAnthropicMessages(
+      callModel(
         {
-          model: 'claude-sonnet-5',
-          // Generous headroom: 4 sections + examples in a denser language
-          // (Spanish/German prose runs longer than English for the same
-          // content) previously got truncated mid-string at 1400, which
-          // broke the JSON and surfaced as raw, unparsed text to the
-          // student -- see tryParseExplanation's cache-eviction comment.
-          maxTokens: 3000,
+          provider: route.provider,
+          model: route.primary,
+          maxTokens: budget.maxOutputTokens,
+          reasoningEffort: budget.reasoningEffort,
           system: systemPrompt,
-          messages: [{ role: 'user', content: `Explain "${conceptLabel}" to me.` }],
+          user: `Explain "${conceptLabel}" to me.`,
         },
         signal
       ),

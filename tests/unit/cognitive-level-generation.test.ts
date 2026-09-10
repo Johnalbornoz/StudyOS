@@ -10,24 +10,29 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// LX-4P-PERF-R1C: QUESTION_GENERATION now routes to OpenAI (callModel).
 function anthropicTextResponse(text: string) {
   return {
     ok: true,
     status: 200,
-    json: async () => ({ content: [{ type: 'text', text }] }),
+    json: async () => ({ choices: [{ message: { content: text } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }),
     text: async () => text,
   } as Response;
 }
 
 const originalFetch = global.fetch;
 const originalKey = process.env.ANTHROPIC_API_KEY;
+const originalOpenAIKey = process.env.OPENAI_API_KEY;
 
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
+  process.env.OPENAI_API_KEY = 'test-key';
 });
 afterEach(() => {
   global.fetch = originalFetch;
   process.env.ANTHROPIC_API_KEY = originalKey;
+  if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+  else process.env.OPENAI_API_KEY = originalOpenAIKey;
   vi.restoreAllMocks();
   vi.resetModules();
 });

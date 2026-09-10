@@ -13,7 +13,8 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { retrieveContext } from './rag.service';
 import { executeAI, validateJson, clamp, getPrompt, type AIProvenance } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 import { buildTeachingConstraintsBlock, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 
 export type ExplainActivityType = 'EXPLAIN' | 'JUSTIFY' | 'ERROR_ANALYSIS' | 'PREDICT' | 'COMPARE' | 'TEACH_BACK';
@@ -74,13 +75,13 @@ expectedElements should have 3-5 items -- these become the grading rubric, so ke
   const { result } = await executeAI({
     capability: prompt.capability,
     risk: 'MEDIUM_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: resolveModels('CONTENT_GENERATION').provider,
+    model: resolveModels('CONTENT_GENERATION').primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
     context: { studentId, subjectId, conceptId, sourceComponent: 'explain-defend.service.ts:generateExplainPrompt' },
     call: (signal) =>
-      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 700, system: systemPrompt, messages: [{ role: 'user', content: 'Write the question.' }] }, signal),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: systemPrompt, user: 'Write the question.' }, signal),
     validate: (raw) =>
       validateJson<{ prompt: string; expectedElements: string[] }>({ text: raw.text || '{}' }, (parsed) => ({
         value: { prompt: parsed.prompt, expectedElements: parsed.expectedElements || [] },
@@ -141,16 +142,17 @@ Output ONLY this JSON, no markdown fences, no other text:
 0 = missing/wrong, 4 = fully correct and clear, for each 0-4 dimension.`;
 
   const registeredPrompt = getPrompt('explain.rubric_evaluation');
+  const EVAL_ROUTE = resolveModels('GRADING');
   const { result, provenance } = await executeAI({
     capability: registeredPrompt.capability,
     risk: 'HIGH_RISK',
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: EVAL_ROUTE.provider,
+    model: EVAL_ROUTE.primary,
     promptId: registeredPrompt.id,
     promptVersion: registeredPrompt.version,
     context: { ...context, sourceComponent: 'explain-defend.service.ts:evaluateExplanation' },
     call: (signal) =>
-      callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 600, system: systemPrompt, messages: [{ role: 'user', content: 'Grade this answer.' }] }, signal),
+      callModel({ provider: EVAL_ROUTE.provider, model: EVAL_ROUTE.primary, maxTokens: 600, system: systemPrompt, user: 'Grade this answer.' }, signal),
     validate: (raw) =>
       validateJson<RubricResult>({ text: raw.text || '{}' }, (parsed) => ({
         value: {
