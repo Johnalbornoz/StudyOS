@@ -8,11 +8,26 @@ export interface OpenAIChatMessage {
   content: string;
 }
 
+/** LX-4P-PERF-R1B B2 -- a strict JSON Schema for OpenAI Structured Outputs. */
+export interface OpenAIJsonSchema {
+  name: string;
+  /** A JSON Schema object. `strict: true` is applied automatically. */
+  schema: Record<string, unknown>;
+}
+
 export interface OpenAIChatParams {
   model: string;
   messages: OpenAIChatMessage[];
-  /** Mirrors interactive-formula.service.ts's existing `response_format: { type: 'json_object' }` usage. */
+  /** Legacy: `response_format: { type: 'json_object' }`. */
   responseFormatJson?: boolean;
+  /** B2: strict Structured Outputs -- takes precedence over `responseFormatJson`. */
+  jsonSchema?: OpenAIJsonSchema;
+  /** B7: bounded output. Maps to `max_completion_tokens`. */
+  maxTokens?: number;
+  /** B8: stable prefix cache key so a shared system/schema prefix is billed once. */
+  promptCacheKey?: string;
+  /** B7: reasoning-effort hint for models that accept it. */
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
 }
 
 export interface OpenAIChatResult {
@@ -32,6 +47,12 @@ function requireOpenAIKey(): string {
 export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSignal): Promise<OpenAIChatResult> {
   const apiKey = requireOpenAIKey();
 
+  const responseFormat = params.jsonSchema
+    ? { response_format: { type: 'json_schema', json_schema: { name: params.jsonSchema.name, strict: true, schema: params.jsonSchema.schema } } }
+    : params.responseFormatJson
+      ? { response_format: { type: 'json_object' } }
+      : {};
+
   const response = await fetch(OPENAI_CHAT_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -41,7 +62,10 @@ export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSign
     body: JSON.stringify({
       model: params.model,
       messages: params.messages,
-      ...(params.responseFormatJson ? { response_format: { type: 'json_object' } } : {}),
+      ...responseFormat,
+      ...(typeof params.maxTokens === 'number' ? { max_completion_tokens: params.maxTokens } : {}),
+      ...(params.promptCacheKey ? { prompt_cache_key: params.promptCacheKey } : {}),
+      ...(params.reasoningEffort ? { reasoning_effort: params.reasoningEffort } : {}),
     }),
     signal,
   });
@@ -52,7 +76,12 @@ export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSign
   }
 
   const data: any = await response.json();
-  const text = data?.choices?.[0]?.message?.content ?? '';
+  // A strict-schema refusal comes back as `message.refusal`; surface it as an invalid response, never silent empty text.
+  const choice = data?.choices?.[0]?.message;
+  if (choice?.refusal) {
+    throw new AIExecutionError('INVALID_RESPONSE', `OpenAI refused the structured request: ${String(choice.refusal).slice(0, 200)}`);
+  }
+  const text = choice?.content ?? '';
   return { text, raw: data };
 }
 
