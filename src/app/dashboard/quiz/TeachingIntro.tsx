@@ -47,21 +47,26 @@ export default function TeachingIntro({
   conceptId,
   conceptLabel,
   locale,
-  uiLocale,
   onDone,
 }: {
   view: TeachingExperienceView;
   studentId: string;
-  quizId: string;
+  /** LX-4P-PERF-R1 R6: null until the background question batch returns a session. EXPLAIN/MODEL do not need it; GUIDE waits for it. */
+  quizId: string | null;
   conceptId: string;
   conceptLabel: string;
-  /** LX-4P-R2: the activity/question language -- drives the CONTENT fetches (explanation, guided practice). */
+  /**
+   * LX-4P-PERF-R1 R20: the activity/question language governs the ENTIRE
+   * active learning surface -- both the content fetches (explanation,
+   * guided practice) AND every chrome string here (titles, "Reveal the
+   * next step", "Continue", "Skip to practice", "your step", "Check").
+   * The global StudyUS shell stays on interface_language; this surface
+   * does not. (Supersedes the LX-4P-R2 R13 uiLocale split.)
+   */
   locale: Locale;
-  /** LX-4P-R2/R13: the account interface language -- drives every t[...] chrome string (titles, buttons, "your step", "Check"). */
-  uiLocale: Locale;
   onDone: () => void;
 }) {
-  const t = getMessages(uiLocale);
+  const t = getMessages(locale);
 
   const stages: IntroStage[] = view.stages.filter(
     (s): s is IntroStage => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE',
@@ -69,47 +74,52 @@ export default function TeachingIntro({
   // MODEL only when the canonical view asks for a worked example.
   const plan = stages.filter((s) => (s === 'MODEL' ? view.showWorkedExample : true));
 
+  const needsExplanation = plan.includes('EXPLAIN') || plan.includes('MODEL');
+  const needsGuided = plan.includes('GUIDE');
+
   const [idx, setIdx] = useState(0);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [guided, setGuided] = useState<Guided | null>(null);
-  const [loading, setLoading] = useState(true);
+  // LX-4P-PERF-R1 R6: MODEL/EXPLAIN and GUIDE prepare INDEPENDENTLY.
+  // MODEL renders as soon as its explanation is ready -- it never waits
+  // on GUIDE (which additionally needs the background quiz session).
+  const [expLoading, setExpLoading] = useState(needsExplanation);
+  const [gpLoading, setGpLoading] = useState(needsGuided);
   const [exampleStep, setExampleStep] = useState(1);
 
+  // EXPLAIN / MODEL content -- needs only conceptId, fires immediately.
   useEffect(() => {
+    if (!needsExplanation) { setExpLoading(false); return; }
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      const needsExplanation = plan.includes('EXPLAIN') || plan.includes('MODEL');
-      const needsGuided = plan.includes('GUIDE');
-      const [exp, gp] = await Promise.all([
-        needsExplanation
-          ? fetch(`/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((b) => b?.data?.explanation ?? null)
-              .catch(() => null)
-          : Promise.resolve(null),
-        needsGuided
-          ? fetch('/api/learning/guided-practice', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ studentId, quizId, language: locale }),
-            })
-              .then((r) => (r.ok ? r.json() : null))
-              .then((b) => b?.data?.guidedPractice ?? null)
-              .catch(() => null)
-          : Promise.resolve(null),
-      ]);
-      if (cancelled) return;
-      setExplanation(exp);
-      setGuided(gp);
-      setLoading(false);
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
+    setExpLoading(true);
+    fetch(`/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => b?.data?.explanation ?? null)
+      .catch(() => null)
+      .then((exp) => { if (!cancelled) { setExplanation(exp); setExpLoading(false); } });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conceptId, quizId]);
+  }, [conceptId, locale]);
+
+  // GUIDE content -- needs the quiz session; prepares in the background
+  // while the learner is in MODEL. Fires once quizId is available.
+  useEffect(() => {
+    if (!needsGuided) { setGpLoading(false); return; }
+    if (!quizId) { setGpLoading(true); return; }
+    let cancelled = false;
+    setGpLoading(true);
+    fetch('/api/learning/guided-practice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, quizId, language: locale }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => b?.data?.guidedPractice ?? null)
+      .catch(() => null)
+      .then((gp) => { if (!cancelled) { setGuided(gp); setGpLoading(false); } });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conceptId, quizId, locale]);
 
   // Drop stages whose content failed to load, so we never show an empty stage.
   const effectivePlan = plan.filter((s) => {
@@ -119,18 +129,30 @@ export default function TeachingIntro({
     return true;
   });
 
-  useEffect(() => {
-    if (!loading && effectivePlan.length === 0) onDone();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, effectivePlan.length]);
+  // A canonical GUIDE stage that hasn't loaded yet is still PENDING, not
+  // absent -- so MODEL is not treated as the last stage while we wait.
+  const guidePending = needsGuided && gpLoading;
 
-  if (loading) {
+  useEffect(() => {
+    if (!expLoading && !gpLoading && effectivePlan.length === 0) onDone();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expLoading, gpLoading, effectivePlan.length]);
+
+  // Block only on the FIRST needed content (explanation). GUIDE catches
+  // up in the background.
+  if (expLoading) {
     return <div className="card empty-state">{t['teachingIntro.loading']}</div>;
   }
-  if (effectivePlan.length === 0) return null;
+  if (effectivePlan.length === 0 && !guidePending) return null;
+
+  // If the learner has finished the loaded stages but a canonical GUIDE
+  // is still preparing, hold here briefly rather than skipping it.
+  if (guidePending && idx >= effectivePlan.length) {
+    return <div className="card empty-state">{t['teachingIntro.loading']}</div>;
+  }
 
   const stage = effectivePlan[Math.min(idx, effectivePlan.length - 1)];
-  const isLast = idx >= effectivePlan.length - 1;
+  const isLast = idx >= effectivePlan.length - 1 && !guidePending;
 
   function advance() {
     if (isLast) onDone();
@@ -191,7 +213,7 @@ export default function TeachingIntro({
         )}
 
         {stage === 'GUIDE' && guided && (
-          <GuidedPractice guided={guided} uiLocale={uiLocale} onComplete={advance} />
+          <GuidedPractice guided={guided} locale={locale} onComplete={advance} />
         )}
       </section>
 
@@ -214,15 +236,15 @@ export default function TeachingIntro({
 /** R3 -- one guided sequence: prompt -> your step -> reveal -> why -> next. */
 function GuidedPractice({
   guided,
-  uiLocale,
+  locale,
   onComplete,
 }: {
   guided: Guided;
-  /** LX-4P-R2/R13: chrome only ("your step", "Check", "expected") -- the problem/steps are pedagogical content already in the activity language. */
-  uiLocale: Locale;
+  /** LX-4P-PERF-R1 R20: the active learning surface -- chrome AND content -- follows the activity/question language. */
+  locale: Locale;
   onComplete: () => void;
 }) {
-  const t = getMessages(uiLocale);
+  const t = getMessages(locale);
   const [stepIdx, setStepIdx] = useState(0);
   const [entry, setEntry] = useState('');
   const [revealed, setRevealed] = useState(false);

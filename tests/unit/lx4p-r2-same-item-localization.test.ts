@@ -225,22 +225,25 @@ describe('LX-4P-R2 R11 -- MODEL/GUIDE completion survives a question-language ch
   });
 });
 
-/* ---------- R13: teaching UI chrome uses interface_language ---------- */
-describe('LX-4P-R2 R13 -- teaching / help chrome follows the UI locale, content follows the activity language', () => {
-  it('TeachingIntro chrome (t[...]) is driven by uiLocale; content fetches use locale', () => {
-    expect(TEACH).toMatch(/const t = getMessages\(uiLocale\)/);
+/* ---------- R20 (supersedes R13): the whole active surface follows the activity language ---------- */
+describe('LX-4P-PERF-R1 R20 -- the active learning surface (chrome + content) follows the activity/question language', () => {
+  it('TeachingIntro + GuidedPractice drive every t[...] chrome string off `locale` (the activity language), not a UI-locale prop', () => {
+    expect(TEACH).toMatch(/const t = getMessages\(locale\)/);
+    expect(TEACH).not.toMatch(/getMessages\(uiLocale\)|uiLocale:/);
     expect(TEACH).toMatch(/\/api\/concepts\/\$\{conceptId\}\/explanation\?studentId=\$\{studentId\}&language=\$\{locale\}/);
     expect(TEACH).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, language: locale \}\)/);
     // GuidedPractice sub-component too
-    expect(TEACH).toMatch(/function GuidedPractice\(\{[\s\S]*?uiLocale[\s\S]*?const t = getMessages\(uiLocale\)/);
+    expect(TEACH).toMatch(/function GuidedPractice\(\{[\s\S]*?const t = getMessages\(locale\)/);
   });
-  it('ContextualHelp menu labels use uiLocale; help content is still requested in the activity language', () => {
-    expect(HELP).toMatch(/const t = getMessages\(uiLocale\)/);
+  it('ContextualHelp menu chrome AND help content both follow the activity language', () => {
+    expect(HELP).toMatch(/const t = getMessages\(locale\)/);
+    expect(HELP).not.toMatch(/uiLocale/);
     expect(HELP).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, questionIndex, action, language: locale \}\)/);
   });
-  it('the quiz page passes both: locale={quizLanguage} (content) + uiLocale={locale} (chrome)', () => {
-    expect(QUIZ).toMatch(/<TeachingIntro[\s\S]*?locale=\{quizLanguage\}\s*\n\s*uiLocale=\{locale\}/);
-    expect(QUIZ).toMatch(/<ContextualHelp[^>]*locale=\{quizLanguage\} uiLocale=\{locale\}/);
+  it('the quiz page passes the activity language (quizLanguage) as the single `locale` prop', () => {
+    expect(QUIZ).toMatch(/<TeachingIntro[\s\S]*?locale=\{quizLanguage\}\s*\n\s*onDone=/);
+    expect(QUIZ).toMatch(/<ContextualHelp[^>]*locale=\{quizLanguage\} \/>/);
+    expect(QUIZ).not.toMatch(/uiLocale=\{locale\}/);
   });
 });
 

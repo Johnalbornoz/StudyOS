@@ -68,10 +68,11 @@ describe('LX-4P-R1 R4 -- a mid-attempt language change never silently regenerate
 
 /* ---------- R3: attempt identity preserved until confirm ---------- */
 describe('LX-4P-R1 R3 -- attempt identity (quizId / index / drafts) is untouched by a staged switch', () => {
-  it('only generateQuiz mints a new quizId / resets current / clears answers -- and it resets them together', () => {
-    const gen = QUIZ.slice(QUIZ.indexOf('const generateQuiz = useCallback('), QUIZ.indexOf('// LX-4K: canonical flow skips the configurator'));
-    expect(gen).toMatch(/setQuizId\(genBody\.data\.quizId\)/);
-    expect(gen).toMatch(/setQuestions\(genBody\.data\.quiz\.questions\)/);
+  it('only applyGenResult mints a new quizId / resets current / clears answers -- and it resets them together', () => {
+    // LX-4P-PERF-R1: the state-application block was factored into applyGenResult
+    const gen = QUIZ.slice(QUIZ.indexOf('const applyGenResult = useCallback('), QUIZ.indexOf('const genBody = useCallback('));
+    expect(gen).toMatch(/setQuizId\(data\.quizId\)/);
+    expect(gen).toMatch(/setQuestions\(data\.quiz\.questions\)/);
     // index + answers reset in the same place -> no "index reset while retaining prior answers"
     expect(gen).toMatch(/setCurrent\(0\);\s*\n\s*setAnswers\(\{\}\);/);
   });
@@ -91,9 +92,10 @@ describe('LX-4P-R1 R5 -- evidence cannot mix question batches', () => {
     expect(sub).toMatch(/quizId,\s*\n\s*answers: answerList/);
   });
   it('a regenerated session gets a fresh quizId (the old one is abandoned, never co-written)', () => {
-    // setQuizId is fed straight from the fresh generate response, so answers
-    // submitted after a confirmed switch can only land on the new session.
-    expect(QUIZ).toMatch(/setQuizId\(genBody\.data\.quizId\)/);
+    // setQuizId is fed straight from the fresh generate response (via
+    // applyGenResult), so answers submitted after a confirmed switch can
+    // only land on the new session.
+    expect(QUIZ).toMatch(/setQuizId\(data\.quizId\)/);
   });
 });
 
@@ -113,14 +115,19 @@ describe('LX-4P-R1 R6 -- UI locale and question language are separate values', (
 });
 
 /* ---------- R7: teaching loop language consistency ---------- */
-describe('LX-4P-R1 R7 -- MODEL / GUIDE content is not regenerated on a UI-locale change', () => {
-  it('TeachingIntro content load depends on [conceptId, quizId] -- not on locale alone', () => {
-    // the effect that fetches explanation + guided-practice
-    const eff = TEACH.slice(TEACH.indexOf('async function load()'), TEACH.indexOf('}, [conceptId, quizId]'));
-    expect(eff).toMatch(/\/api\/concepts\/\$\{conceptId\}\/explanation/);
-    expect(eff).toMatch(/\/api\/learning\/guided-practice/);
-    expect(TEACH).toMatch(/\}, \[conceptId, quizId\]\);/);
-    expect(TEACH).not.toMatch(/\}, \[conceptId, quizId, locale\]\)/);
+describe('LX-4P-R1 R7 -- MODEL / GUIDE content is fetched from canonical keys, and language switching during teaching goes through an explicit restart', () => {
+  it('TeachingIntro content fetches are keyed to the concept + (for GUIDE) the session -- explanation needs no quizId', () => {
+    // LX-4P-PERF-R1 R6: two independent effects now.
+    expect(TEACH).toMatch(/\/api\/concepts\/\$\{conceptId\}\/explanation/);
+    expect(TEACH).toMatch(/\/api\/learning\/guided-practice/);
+    // EXPLAIN/MODEL effect: concept + activity language, no quizId
+    expect(TEACH).toMatch(/\/\/ EXPLAIN \/ MODEL content[\s\S]*?\}, \[conceptId, locale\]\);/);
+    // GUIDE effect: waits for the session
+    expect(TEACH).toMatch(/if \(!quizId\) \{ setGpLoading\(true\); return; \}/);
+    expect(TEACH).toMatch(/\}, \[conceptId, quizId, locale\]\);/);
+    // a language change while teachingStage === 'teaching' is a restart, not
+    // an in-place re-fetch (asserted in lx4p-r2 R11) -- so `locale` in the
+    // deps only ever changes with a new quizId anyway.
   });
 });
 

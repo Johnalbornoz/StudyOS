@@ -238,6 +238,11 @@ export default function QuizPage() {
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
+  // LX-4P-PERF-R1 R3: for the canonical flow, question generation runs in
+  // the BACKGROUND while the learner is in MODEL/GUIDE -- it never blocks
+  // the teaching stage. 'idle' before start, 'loading' in flight, 'ready'
+  // batch stored, 'error' recoverable (retry at the Practice transition).
+  const [genState, setGenState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
   // LX-4P-R1 / LX-4P-R2: a language change during an ACTIVE attempt must
   // never silently regenerate the item the learner is on.
@@ -339,6 +344,49 @@ export default function QuizPage() {
     init();
   }, [subjectId]);
 
+  // LX-4P-PERF-R1 R22: cheap client journey marks (T0..T6) -> one console
+  // line each, no telemetry infra. `[perf]` so ops can grep a real TTFI.
+  const perfMark = useCallback((label: string) => {
+    try {
+      console.log('[perf]', JSON.stringify({ label, t: Math.round(performance.now()), conceptId, quizMode }));
+    } catch { /* performance unavailable */ }
+  }, [conceptId, quizMode]);
+
+  // Apply one generate-and-take response to state (everything EXCEPT phase
+  // / teaching stage, which the caller owns). Shared by generateQuiz and
+  // the canonical background flow.
+  const applyGenResult = useCallback((data: any) => {
+    setQuizId(data.quizId);
+    setQuizLanguage(data.language);
+    // LX-4P-R2: remember the generated language + the pristine batch, so a
+    // later same-item localization can translate away and restore back.
+    setSessionOriginalLanguage(data.language);
+    originalQuestionsRef.current = data.quiz.questions;
+    localizeAttemptedRef.current = new Set();
+    setQuestions(data.quiz.questions);
+    setCountAuthority(data.countAuthority ?? null);
+    setCurrent(0);
+    setAnswers({});
+    setResults(null);
+    setReviewing(false);
+  }, []);
+
+  const genBody = useCallback(
+    (sid: string, languageOverride?: Locale) => ({
+      studentId: sid,
+      subjectId,
+      conceptId: conceptId || undefined,
+      conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
+      quizMode,
+      // LX-4I: the learner never sets evidence sufficiency for a canonical
+      // Practice/Prove flow. The route applies its own per-mode canonical
+      // count. Legacy/manual setup still passes the slider value.
+      ...(isCanonicalFlow ? {} : { maxQuestions }),
+      ...(languageOverride ? { language: languageOverride } : {}),
+    }),
+    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions],
+  );
+
   const generateQuiz = useCallback(
     async (sid: string, languageOverride?: Locale) => {
       setPhase('loading');
@@ -347,47 +395,20 @@ export default function QuizPage() {
         const genRes = await fetch('/api/quizzes/generate-and-take', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            studentId: sid,
-            subjectId,
-            conceptId: conceptId || undefined,
-            conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
-            quizMode,
-            // LX-4I: the learner never sets evidence sufficiency for a
-            // canonical Practice/Prove flow. The route applies its own
-            // per-mode execution count (canonical evidence-gap-driven
-            // count is a documented LX-4 condition). Legacy/manual setup
-            // still passes the slider value.
-            ...(isCanonicalFlow ? {} : { maxQuestions }),
-            ...(languageOverride ? { language: languageOverride } : {}),
-          }),
+          body: JSON.stringify(genBody(sid, languageOverride)),
         });
-        const genBody = await genRes.json();
-        if (!genRes.ok) throw new Error(genBody.message || 'Could not generate the quiz');
+        const body = await genRes.json();
+        if (!genRes.ok) throw new Error(body.message || 'Could not generate the quiz');
 
-        setQuizId(genBody.data.quizId);
-        setQuizLanguage(genBody.data.language);
-        // LX-4P-R2: remember the generated language + the pristine batch,
-        // so a later same-item localization can translate away from and
-        // restore back to the original.
-        setSessionOriginalLanguage(genBody.data.language);
-        originalQuestionsRef.current = genBody.data.quiz.questions;
-        localizeAttemptedRef.current = new Set();
-        setQuestions(genBody.data.quiz.questions);
-        setCountAuthority(genBody.data.countAuthority ?? null);
-        setCurrent(0);
-        setAnswers({});
-        setResults(null);
-        setReviewing(false);
+        applyGenResult(body.data);
+        setGenState('ready');
         setTeachingExperience(null);
         setTeachingStage('questions');
         setPhase('quiz');
 
         // LX-4R R1: fetch the canonical Teaching Experience for this
-        // activity. If it prescribes a teach-first flow (EXPLAIN / MODEL
-        // / GUIDE), enter the teaching phase before the questions.
-        // Presentation only -- SupportLevel was decided server-side.
-        void fetch(`/api/learning/teaching-intent?studentId=${sid}&quizId=${genBody.data.quizId}`)
+        // activity. Presentation only -- SupportLevel was decided server-side.
+        void fetch(`/api/learning/teaching-intent?studentId=${sid}&quizId=${body.data.quizId}`)
           .then((r) => (r.ok ? r.json() : null))
           .then((b) => {
             const view: TeachingExperienceView | null = b?.data?.teachingExperience ?? null;
@@ -402,7 +423,76 @@ export default function QuizPage() {
         setPhase('error');
       }
     },
-    [subjectId, conceptId, quizMode, maxQuestions, selectedConceptIds, isCanonicalFlow]
+    [genBody, applyGenResult]
+  );
+
+  // LX-4P-PERF-R1 R3/R4/R6: the canonical activity start. TeachingIntent
+  // (resolved from conceptId, NOT quizId) and question generation run in
+  // PARALLEL. For a teach-first experience the teaching stage renders as
+  // soon as TeachingIntent resolves -- it never waits for the question
+  // batch, which keeps preparing in the background while the learner is
+  // in MODEL/GUIDE.
+  const startCanonicalActivity = useCallback(
+    (sid: string) => {
+      setError(null);
+      perfMark('T0_start');
+
+      // wave A -- canonical Teaching Experience, no quiz session needed
+      const tiP = fetch(
+        `/api/learning/teaching-intent?studentId=${sid}&conceptId=${conceptId}&mode=${quizMode}`,
+      )
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => (b?.data?.teachingExperience ?? null) as TeachingExperienceView | null)
+        .catch(() => null);
+
+      // wave B -- question generation, in the background
+      setGenState('loading');
+      perfMark('T4_gen_start');
+      const genP = fetch('/api/quizzes/generate-and-take', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(genBody(sid)),
+      })
+        .then(async (r) => {
+          const b = await r.json();
+          if (!r.ok) throw new Error(b.message || 'Could not generate the quiz');
+          return b.data;
+        });
+
+      const applyGen = genP
+        .then((data) => {
+          applyGenResult(data);
+          setGenState('ready');
+          perfMark('T5_gen_ready');
+        })
+        .catch(() => {
+          setGenState('error'); // recoverable at the Practice transition
+        });
+
+      tiP.then((view) => {
+        setTeachingExperience(view);
+        perfMark('T1_teachingintent_ready');
+        const teachFirst =
+          !!view && view.stages.some((s: string) => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE');
+        if (teachFirst) {
+          setTeachingStage('teaching');
+          setPhase('quiz'); // teaching UI can render NOW -- questions still cooking
+        } else {
+          // direct Practice -- we do need the batch before showing anything
+          void applyGen.then(() => {
+            setTeachingStage('questions');
+            setPhase('quiz');
+          });
+        }
+      });
+
+      // safety net: if TeachingIntent is slow/failed but questions are
+      // ready, don't leave the learner on the spinner.
+      void applyGen.then(() => {
+        setPhase((p) => (p === 'setup' || p === 'loading' ? 'quiz' : p));
+      });
+    },
+    [conceptId, quizMode, genBody, applyGenResult, perfMark],
   );
 
   // LX-4K: canonical flow skips the configurator entirely.
@@ -416,9 +506,9 @@ export default function QuizPage() {
       !autoStartedRef.current
     ) {
       autoStartedRef.current = true;
-      generateQuiz(studentId);
+      startCanonicalActivity(studentId);
     }
-  }, [isCanonicalFlow, studentId, phase, resumeVerifyAttemptId, generateQuiz]);
+  }, [isCanonicalFlow, studentId, phase, resumeVerifyAttemptId, startCanonicalActivity]);
 
   useEffect(() => {
     const q = questions[current];
@@ -431,6 +521,7 @@ export default function QuizPage() {
     // doesn't run again for the same index.
     if (!questionPresentedAtRef.current[current]) {
       questionPresentedAtRef.current[current] = new Date().toISOString();
+      if (current === 0) perfMark('T6_first_practice_question');
     }
     setSingleChoice(null);
     setMultiChoice([]);
@@ -1346,12 +1437,15 @@ export default function QuizPage() {
   // LX-4R R1/R2/R3: the teach-first phase, when the canonical Teaching
   // Experience prescribes it. Renders EXPLAIN / MODEL / GUIDE, then
   // hands off to the questions.
+  // LX-4P-PERF-R1 R3: `quizId` is NOT required -- the teaching stage
+  // renders while the question batch is still generating in the
+  // background (EXPLAIN/MODEL need only conceptId; GUIDE waits for the
+  // session internally).
   if (
     phase === 'quiz' &&
     teachingStage === 'teaching' &&
     teachingExperience &&
     studentId &&
-    quizId &&
     conceptId
   ) {
     return (
@@ -1362,9 +1456,34 @@ export default function QuizPage() {
         conceptId={conceptId}
         conceptLabel={subjectName}
         locale={quizLanguage}
-        uiLocale={locale}
         onDone={() => setTeachingStage('questions')}
       />
+    );
+  }
+
+  // LX-4P-PERF-R1 R3/R25: teaching is done but the background question
+  // batch isn't ready yet -- a brief recoverable state, never a dead end
+  // and never a return to Concept Mission.
+  if (phase === 'quiz' && teachingStage === 'questions' && questions.length === 0 && genState !== 'ready') {
+    return (
+      <div className="card empty-state" style={{ textAlign: 'center' }}>
+        {genState === 'error' ? (
+          <>
+            <strong>{t['practice.prepareFailedTitle']}</strong>
+            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['practice.prepareFailedBody']}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ marginTop: 'var(--space-4)' }}
+              onClick={() => { if (studentId) { setGenState('idle'); void generateQuiz(studentId); } }}
+            >
+              {t['practice.prepareRetry']}
+            </button>
+          </>
+        ) : (
+          <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>{t['practice.preparing']}</p>
+        )}
+      </div>
     );
   }
 
@@ -1543,7 +1662,7 @@ export default function QuizPage() {
             server (/api/learning/contextual-help -> canUseAI) is the
             authority; it is never rendered for Prove / assessment. */}
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && studentId && quizId && (
-          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} uiLocale={locale} />
+          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
         )}
 
         {q.askConfidence && (

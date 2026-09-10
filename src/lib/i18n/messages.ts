@@ -212,7 +212,7 @@ export type MessageKey =
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
-  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity'
+  | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity' | 'practice.preparing' | 'practice.prepareFailedTitle' | 'practice.prepareFailedBody' | 'practice.prepareRetry'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
@@ -1441,6 +1441,10 @@ const es: Messages = {
   'quiz.langSwitch.cantLocalizeTitle': 'No se puede cambiar el idioma de esta pregunta aquí mismo',
   'quiz.langSwitch.cantLocalizeBody': 'StudyUS no puede traducir esta pregunta con seguridad sin cambiarla. Empezar en {lang} iniciará una actividad nueva. El idioma de la interfaz no cambia.',
   'quiz.langSwitch.startNewActivity': 'Iniciar actividad nueva',
+  'practice.preparing': 'Preparando tu práctica…',
+  'practice.prepareFailedTitle': 'No se pudo preparar la práctica',
+  'practice.prepareFailedBody': 'Tu progreso de enseñanza está a salvo. Vuelve a intentarlo.',
+  'practice.prepareRetry': 'Reintentar',
 };
 
 const en: Messages = {
@@ -2421,6 +2425,10 @@ const en: Messages = {
   'quiz.langSwitch.cantLocalizeTitle': 'This question can\'t change language in place',
   'quiz.langSwitch.cantLocalizeBody': 'StudyUS can\'t safely translate this question without changing it. Starting in {lang} will begin a new activity. The interface language does not change.',
   'quiz.langSwitch.startNewActivity': 'Start new activity',
+  'practice.preparing': 'Preparing your practice…',
+  'practice.prepareFailedTitle': 'Couldn\'t prepare your practice',
+  'practice.prepareFailedBody': 'Your teaching progress is safe. Try again.',
+  'practice.prepareRetry': 'Try again',
 };
 
 const de: Messages = {
@@ -3401,6 +3409,10 @@ const de: Messages = {
   'quiz.langSwitch.cantLocalizeTitle': 'Diese Frage kann die Sprache hier nicht wechseln',
   'quiz.langSwitch.cantLocalizeBody': 'StudyUS kann diese Frage nicht sicher übersetzen, ohne sie zu verändern. Ein Start auf {lang} beginnt eine neue Aktivität. Die Oberflächensprache ändert sich nicht.',
   'quiz.langSwitch.startNewActivity': 'Neue Aktivität starten',
+  'practice.preparing': 'Deine Übung wird vorbereitet…',
+  'practice.prepareFailedTitle': 'Übung konnte nicht vorbereitet werden',
+  'practice.prepareFailedBody': 'Dein Lernfortschritt ist gesichert. Versuch es erneut.',
+  'practice.prepareRetry': 'Erneut versuchen',
 };
 
 const fr: Messages = {
@@ -4381,6 +4393,10 @@ const fr: Messages = {
   'quiz.langSwitch.cantLocalizeTitle': 'Cette question ne peut pas changer de langue sur place',
   'quiz.langSwitch.cantLocalizeBody': 'StudyUS ne peut pas traduire cette question sans la modifier. Commencer en {lang} lancera une nouvelle activité. La langue de l\'interface ne change pas.',
   'quiz.langSwitch.startNewActivity': 'Lancer une nouvelle activité',
+  'practice.preparing': 'Préparation de ton entraînement…',
+  'practice.prepareFailedTitle': 'Impossible de préparer l\'entraînement',
+  'practice.prepareFailedBody': 'Ta progression d\'apprentissage est sauvegardée. Réessaie.',
+  'practice.prepareRetry': 'Réessayer',
 };
 
 const pt: Messages = {
@@ -5361,6 +5377,10 @@ const pt: Messages = {
   'quiz.langSwitch.cantLocalizeTitle': 'Esta pergunta não pode mudar de idioma aqui mesmo',
   'quiz.langSwitch.cantLocalizeBody': 'O StudyUS não consegue traduzir esta pergunta com segurança sem alterá-la. Começar em {lang} iniciará uma nova atividade. O idioma da interface não muda.',
   'quiz.langSwitch.startNewActivity': 'Iniciar nova atividade',
+  'practice.preparing': 'Preparando a sua prática…',
+  'practice.prepareFailedTitle': 'Não foi possível preparar a prática',
+  'practice.prepareFailedBody': 'O seu progresso de ensino está salvo. Tente novamente.',
+  'practice.prepareRetry': 'Tentar novamente',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };
