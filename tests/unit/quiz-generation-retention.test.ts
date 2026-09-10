@@ -31,6 +31,20 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 const callModelMock = vi.fn();
 vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
+// LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate now runs on the
+// merged retention_check set too (deterministic contract + semantic
+// verify where required), feeding the SAME single bounded recovery. These
+// tests cover the 2x3 + one-recovery ARCHITECTURE; the independent
+// semantic verifier has its own suite, so it is stubbed to pass here.
+// Tests that specifically exercise a gate rejection re-mock it locally.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import {
   generateRetentionCheckQuestions,
   RETENTION_REQUIRED_COUNT,

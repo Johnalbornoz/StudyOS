@@ -19,7 +19,7 @@ import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
-import { resolveModels } from '@/lib/ai/model-routing';
+import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
 
 // LX-4P-PERF-R1C C1/C16: the canonical learner runtime is OpenAI-only.
@@ -613,7 +613,7 @@ export async function generateQuickCheckQuestions(
     );
     const prompt = getPrompt('quiz.question_generation');
 
-    const requestSlot = (slotIndex: number): Promise<any | null> => {
+    const requestSlot = (slotIndex: number, model: string = QUICK_CHECK_MODEL): Promise<any | null> => {
       const assignedType = QUICK_CHECK_TYPES[slotIndex % QUICK_CHECK_TYPES.length];
       const shapeExample = jsonShapeExample(assignedType, false);
       const userMessage = `This is question ${slotIndex + 1} of ${QUICK_CHECK_SLOT_COUNT} in a quick confidence check. Generate EXACTLY 1 question of type "${assignedType}" -- never any other type -- covering a distinct aspect of the concept from the other questions in this set.
@@ -626,14 +626,14 @@ ${shapeExample}
         capability: prompt.capability,
         risk: 'HIGH_RISK',
         provider: QGEN_ROUTE.provider,
-        model: QUICK_CHECK_MODEL,
+        model,
         promptId: prompt.id,
         promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site (see the doc comment above generateQuestionsForConcept's own promptVersion line)
         timeoutMs: 30_000, // explicit -- the Gateway global default; kept explicit here for clarity even though the batch path above now relies on the same default implicitly (Step 10)
         context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuickCheckQuestions' },
         call: (signal) =>
           callModel(
-            { provider: QGEN_ROUTE.provider, model: QUICK_CHECK_MODEL, maxTokens: budgetFor('question_generation_slot').maxOutputTokens, reasoningEffort: budgetFor('question_generation_slot').reasoningEffort, system: systemPrompt, user: userMessage },
+            { provider: QGEN_ROUTE.provider, model, maxTokens: budgetFor('question_generation_slot').maxOutputTokens, reasoningEffort: budgetFor('question_generation_slot').reasoningEffort, system: systemPrompt, user: userMessage },
             signal
           ),
         validate: (raw) => {
@@ -688,7 +688,54 @@ ${shapeExample}
       return [];
     }
 
-    return storedQuestions;
+    // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate -- quick_check
+    // is gated exactly like every other learner-facing path. All-or-
+    // nothing is preserved: every one of the 6 slots must clear the gate,
+    // and a slot that fails gets ONE Terra regeneration; if any slot
+    // still fails, the whole set is [] (never a partial quick_check).
+    const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
+    const { recordRuntimeEvent, buildRuntimeEvent } = await import('@/lib/ai/runtime-event');
+    const qcGateReq = { conceptId, language, context: { studentId, subjectId } };
+    const emitQc = (model: string, fallbackUsed: boolean, acc: number, rej: number, reason?: string) =>
+      recordRuntimeEvent(
+        buildRuntimeEvent({
+          capability: 'QUESTION_GENERATION', provider: 'openai', model,
+          promptId: 'quiz.question_generation', promptVersion: 'v3',
+          inputTokens: null, cachedInputTokens: null, outputTokens: null, latencyMs: 0,
+          fallbackUsed, fallbackReason: reason,
+          qualityGateResult: acc > 0 ? (rej > 0 ? 'DETERMINISTIC_FAIL' : 'PASS') : 'REJECTED',
+          acceptedCount: acc, rejectedCount: rej,
+        }),
+      );
+
+    const g1 = await applyQuestionQualityGate(storedQuestions, qcGateReq);
+    emitQc(QUICK_CHECK_MODEL, false, g1.accepted.length, g1.deterministicRejected + g1.semanticRejected);
+    if (g1.accepted.length === QUICK_CHECK_SLOT_COUNT) return g1.accepted;
+
+    const acceptedSet = new Set(g1.accepted);
+    const failedSlots = storedQuestions.map((_, i) => i).filter((i) => !acceptedSet.has(storedQuestions[i]));
+    const replacements = await Promise.all(failedSlots.map((i) => requestSlot(i, TERRA)));
+    if (replacements.some((r) => r === null)) {
+      console.error('quick_check fast path: a Terra slot regeneration failed -- returning no questions rather than a partial set');
+      emitQc(TERRA, true, 0, failedSlots.length, 'a slot regeneration failed');
+      return [];
+    }
+    const replMapped = mapRawQuestionsToGenerated(replacements as any[], conceptId, language);
+    if (replMapped.length !== failedSlots.length) {
+      emitQc(TERRA, true, 0, failedSlots.length, 'replacement mapping short');
+      return [];
+    }
+    const g2 = await applyQuestionQualityGate(replMapped, qcGateReq);
+    emitQc(TERRA, true, g2.accepted.length, g2.deterministicRejected + g2.semanticRejected, 'luna slot(s) failed the gate');
+    if (g2.accepted.length !== failedSlots.length) {
+      console.error('quick_check fast path: a regenerated slot still failed the quality gate -- returning no questions rather than a partial set');
+      return [];
+    }
+    const stitched = [...storedQuestions];
+    failedSlots.forEach((slot, k) => {
+      stitched[slot] = g2.accepted[k];
+    });
+    return stitched;
   } catch (error) {
     console.error('Error generating quick_check questions:', error);
     return [];
@@ -838,7 +885,7 @@ export async function generatePracticeQuestions(
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generatePracticeQuestions' };
 
-    const requestChunk = (chunkSize: number): Promise<any[]> => {
+    const requestChunk = (chunkSize: number, model: string = PRACTICE_CHUNK_MODEL): Promise<any[]> => {
       const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
       const maxTokens = Math.min(16000, 900 * chunkSize + 1500);
       const userMessage = `Generate UP TO ${chunkSize} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${chunkSize}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
@@ -851,13 +898,13 @@ ${shapeExamples}
         capability: prompt.capability,
         risk: 'HIGH_RISK',
         provider: QGEN_ROUTE.provider,
-        model: PRACTICE_CHUNK_MODEL,
+        model,
         promptId: prompt.id,
         promptVersion: prompt.version, // STABILIZATION Step 18: now v3, unified with every other QUESTION_GENERATION call site -- was pinned 'v1' when this was orchestration-only; the shared prompt text itself has now genuinely changed for everyone
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model: PRACTICE_CHUNK_MODEL, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
           // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
           // before both parse attempts, then CLASS B/newline-in-math
@@ -892,8 +939,27 @@ ${shapeExamples}
     };
 
     const chunkResults = await Promise.all(plan.map((chunkSize) => requestChunk(chunkSize)));
-    const rawMerged = chunkResults.flat();
-    const mapped = mapRawQuestionsToGenerated(rawMerged, conceptId, language);
+
+    // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate. Every
+    // parallel chunk is gated in parallel (deterministic contract +
+    // semantic verify where required); a chunk whose gated Luna output
+    // is EMPTY triggers ONE narrow Terra regeneration of THAT chunk only
+    // -- never a whole-batch Terra rerun. PRACTICE stays partial-
+    // tolerant: a chunk that still yields nothing contributes nothing,
+    // it never fails the whole quiz.
+    const { gateUnitWithTerraFallback } = await import('@/services/gated-question-generation.service');
+    const gateReq = { conceptId, language, context: { studentId, subjectId } };
+    const gatedChunks = await Promise.all(
+      plan.map((chunkSize, i) => {
+        const lunaMapped = mapRawQuestionsToGenerated(chunkResults[i], conceptId, language);
+        return gateUnitWithTerraFallback(
+          lunaMapped,
+          { ...gateReq, targetCount: chunkSize, fallbackWhen: 'EMPTY' },
+          async () => mapRawQuestionsToGenerated(await requestChunk(chunkSize, TERRA), conceptId, language),
+        ).then((r) => r.accepted);
+      }),
+    );
+    const mapped = gatedChunks.flat();
 
     // Deterministic, AI-free cross-chunk duplicate protection (Step 13
     // report: normalizeText-based exact/normalized-text check is
@@ -1107,7 +1173,12 @@ export async function generateRetentionCheckQuestions(
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateRetentionCheckQuestions' };
 
-    const requestChunk = (chunkIndex: number, diversificationNote: string, exclusionNote?: string): Promise<RetentionChunkOutcome> => {
+    const requestChunk = (
+      chunkIndex: number,
+      diversificationNote: string,
+      exclusionNote?: string,
+      model: string = RETENTION_CHUNK_MODEL,
+    ): Promise<RetentionChunkOutcome> => {
       const shapeExamples = types.map((t) => jsonShapeExample(t, false)).join(',\n');
       const maxTokens = Math.min(16000, 900 * RETENTION_QUESTIONS_PER_CHUNK + 1500);
       const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT}, contributing ${RETENTION_QUESTIONS_PER_CHUNK} of the ${RETENTION_REQUIRED_COUNT} total questions in this set. Generate EXACTLY ${RETENTION_QUESTIONS_PER_CHUNK} questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
@@ -1120,13 +1191,13 @@ ${shapeExamples}
         capability: prompt.capability,
         risk: 'HIGH_RISK',
         provider: QGEN_ROUTE.provider,
-        model: RETENTION_CHUNK_MODEL,
+        model,
         promptId: prompt.id,
         promptVersion: prompt.version, // v3 -- same registry version every QUESTION_GENERATION call site reads (Step 18); Variant B notes and exclusion context are request-specific runtime content, not a static prompt change
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model: RETENTION_CHUNK_MODEL, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
           const repaired = repairInvalidJsonEscapes(raw.text);
           let parsed: any[];
@@ -1210,15 +1281,36 @@ ${shapeExamples}
           console.error(`retention_check fast path: expected ${RETENTION_REQUIRED_COUNT} mapped questions, got ${mapped.length} -- returning no questions rather than a partial set`);
           return [];
         }
-        return mapped;
+        // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate.
+        // retention_check is gated exactly like every other learner-facing
+        // path (deterministic contract + semantic verify where required).
+        // A gate failure feeds the SAME single bounded recovery a
+        // parse/dup/overlap failure does -- regenerate the gate-failing
+        // chunk once, keep the other, still <=3 generation calls,
+        // still exact-6-or-nothing.
+        const g = await retentionApplyGate(mapped, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
+        if (g.accepted.length === RETENTION_REQUIRED_COUNT) return g.accepted;
+        const acc = new Set(g.accepted);
+        const chunkAFailed = mapped.slice(0, RETENTION_QUESTIONS_PER_CHUNK).some((q) => !acc.has(q));
+        if (chunkAFailed) {
+          // keep B, regenerate A
+          retainedQuestions = chunkB.questions;
+          retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
+          regenerateChunkIndex = 0;
+        } else {
+          retainedQuestions = chunkA.questions;
+          retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+          regenerateChunkIndex = 1;
+        }
       }
     }
 
     // Exactly ONE bounded recovery round -- no loops, no recursion that
     // could trigger a second recovery. Exclusion context carries only
-    // the retained chunk's own question text.
+    // the retained chunk's own question text. R1C-R1: the recovery call
+    // is Terra (the "one stronger regeneration on failure").
     const exclusionNote = buildRetentionExclusionNote(retainedQuestions!);
-    const recoveryOutcome = await requestChunk(regenerateChunkIndex, retainedNote, exclusionNote);
+    const recoveryOutcome = await requestChunk(regenerateChunkIndex, retainedNote, exclusionNote, TERRA);
     if (!recoveryOutcome.ok) {
       console.error(`retention_check fast path: bounded recovery call failed (${recoveryOutcome.reason}) -- returning no questions, no second retry`);
       return [];
@@ -1240,11 +1332,50 @@ ${shapeExamples}
       return [];
     }
 
-    return mapped;
+    // R1C-R1: final universal quality gate on the recovered set -- no
+    // further generation call, exact-6-or-nothing preserved.
+    const finalGate = await retentionApplyGate(mapped, conceptId, language, studentId, subjectId, TERRA, true);
+    if (finalGate.accepted.length !== RETENTION_REQUIRED_COUNT) {
+      console.error('retention_check fast path: a question failed the quality gate after bounded recovery -- returning no questions, no second retry');
+      return [];
+    }
+    return finalGate.accepted;
   } catch (error) {
     console.error('Error generating retention_check questions:', error);
     return [];
   }
+}
+
+/**
+ * R1C-R1 helper: run the universal Question Quality Gate over a
+ * retention_check set and emit the runtime event. Kept local so the
+ * exact-6-or-nothing recovery flow above reads linearly.
+ */
+async function retentionApplyGate(
+  mapped: GeneratedQuestion[],
+  conceptId: string,
+  language: string,
+  studentId: string,
+  subjectId: string,
+  model: string,
+  fallbackUsed: boolean,
+): Promise<{ accepted: GeneratedQuestion[] }> {
+  const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
+  const { recordRuntimeEvent, buildRuntimeEvent } = await import('@/lib/ai/runtime-event');
+  const g = await applyQuestionQualityGate(mapped, { conceptId, language, context: { studentId, subjectId } });
+  const rejected = g.deterministicRejected + g.semanticRejected;
+  recordRuntimeEvent(
+    buildRuntimeEvent({
+      capability: 'QUESTION_GENERATION', provider: 'openai', model,
+      promptId: 'quiz.question_generation', promptVersion: 'v3',
+      inputTokens: null, cachedInputTokens: null, outputTokens: null, latencyMs: 0,
+      fallbackUsed,
+      qualityGateResult: g.accepted.length === mapped.length ? 'PASS' : rejected > 0 ? 'DETERMINISTIC_FAIL' : 'REJECTED',
+      acceptedCount: g.accepted.length,
+      rejectedCount: rejected,
+    }),
+  );
+  return { accepted: g.accepted };
 }
 
 /**
@@ -1428,6 +1559,21 @@ export async function generateQuestionVariant(
 
   const evaluation = evaluateVariantEquivalence(source, rawVariant);
   if (!evaluation.equivalent) return null; // fails the equivalence contract -- fall back, never accept silently
+
+  // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate. A variant is
+  // learner-facing (it replaces the original in a verification attempt --
+  // an evidence-consequence moment), so it must clear the same
+  // deterministic contract + semantic verdict every other generated
+  // question does, on the AI's raw output, BEFORE the source's semantic
+  // tags are copied in. Any failure -> null -> the caller falls back to
+  // reusing the source question (assessment is never blocked).
+  const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
+  const vGate = await applyQuestionQualityGate([rawVariant], {
+    conceptId: source.conceptId,
+    language,
+    context: { studentId, subjectId },
+  });
+  if (vGate.accepted.length === 0) return null;
 
   const variant: GeneratedQuestion = {
     ...rawVariant,

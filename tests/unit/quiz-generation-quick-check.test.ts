@@ -21,13 +21,27 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 const callModelMock = vi.fn();
 vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
+// LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate now runs on the
+// 6 quick_check slots too. These tests cover the slot ARCHITECTURE
+// (parallelism, model, prompt, all-or-nothing) -- the independent
+// semantic verifier has its own suite, so it is stubbed to pass here.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import { generateQuickCheckQuestions, QUICK_CHECK_TYPES } from '@/services/quiz-generation.service';
 
 function fakeQuestionOfType(type: string, i: number) {
-  const base: any = { type, question: `Q${i} (${type})`, correctAnswer: 'x', explanation: 'because', difficulty: 3 };
-  if (type === 'multiple_choice') base.options = [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }];
-  if (type === 'true_false') base.options = [{ id: 'true', text: 'True' }, { id: 'false', text: 'False' }];
-  if (type === 'yes_no') base.options = [{ id: 'yes', text: 'Yes' }, { id: 'no', text: 'No' }];
+  // R1C-R1: correctAnswer must be a real option id for choice types, or
+  // the UNIVERSAL Question Quality Gate correctly rejects the fixture.
+  const base: any = { type, question: `Q${i} (${type})`, correctAnswer: 'a plausible short answer', explanation: 'because', difficulty: 3 };
+  if (type === 'multiple_choice') { base.options = [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }]; base.correctAnswer = 'A'; }
+  if (type === 'true_false') { base.options = [{ id: 'true', text: 'True' }, { id: 'false', text: 'False' }]; base.correctAnswer = 'true'; }
+  if (type === 'yes_no') { base.options = [{ id: 'yes', text: 'Yes' }, { id: 'no', text: 'No' }]; base.correctAnswer = 'yes'; }
   return base;
 }
 

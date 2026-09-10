@@ -27,6 +27,18 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 const callModelMock = vi.fn();
 vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
+// LX-4P-PERF-R1C-R1: generateQuestionVariant now also clears the
+// UNIVERSAL Question Quality Gate on its raw output. This file is about
+// call SHAPE (single call, model, wording), so the independent semantic
+// verifier is stubbed to pass.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import { generateQuestionsForConcept, generateQuestionVariant, ANSWER_FORMAT_BY_TYPE, type GeneratedQuestion } from '@/services/quiz-generation.service';
 import { DEFAULT_AI_TIMEOUT_MS } from '@/lib/ai';
 import { PROMPT_REGISTRY } from '@/lib/ai/prompt-registry';
@@ -153,7 +165,7 @@ describe('quiz_mode configs unchanged (verified against the real route source, n
     expect(routeSrc).toMatch(/Math\.max\(2, Math\.min\(4, validated\.maxQuestions \?\? config\.defaultMax\)\)/);
   });
 
-  it('the route calls generateQuickCheckQuestions only for quick_check, generatePracticeQuestions only for topic_practice/review, generateRetentionCheckQuestions only for retention_check (count===6), and generateQuestionsForConcept for every other mode/case (Step 14/22)', async () => {
+  it('the route calls generateQuickCheckQuestions only for quick_check, generatePracticeQuestions only for topic_practice/review, generateRetentionCheckQuestions only for retention_check (count===6), and the gated batch (generateGatedQuestionBatch) for every other mode/case (Step 14/22 + R1C-R1)', async () => {
     const routeSrc = await readRouteSrc();
     expect(routeSrc).toContain("validated.quizMode === 'quick_check'");
     expect(routeSrc).toContain("validated.quizMode === 'topic_practice' || validated.quizMode === 'review'");
@@ -161,7 +173,10 @@ describe('quiz_mode configs unchanged (verified against the real route source, n
     expect(routeSrc).toContain('generateQuickCheckQuestions(');
     expect(routeSrc).toContain('generatePracticeQuestions(');
     expect(routeSrc).toContain('generateRetentionCheckQuestions(');
-    expect(routeSrc).toContain('generateQuestionsForConcept(');
+    // R1C-R1: cumulative / exam / diagnostic now go through the UNIVERSAL
+    // Question Quality Gate via generateGatedQuestionBatch, not a bare
+    // generateQuestionsForConcept call.
+    expect(routeSrc).toContain('generateGatedQuestionBatch(');
   });
 });
 
@@ -186,7 +201,7 @@ describe('STABILIZATION QUIZ PERFORMANCE Step 14/22 -- mode isolation: diagnosti
 
   it('diagnostic_check, cumulative_assessment, and exam_simulation are absent from the fast-path condition entirely -- never routed to any chunked/fast-path generator', async () => {
     const routeSrc = await readRouteSrc();
-    const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateQuestionsForConcept\(cId,/)?.[0] ?? '';
+    const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateGatedQuestionBatch\(cId,/)?.[0] ?? '';
     for (const mode of ['diagnostic_check', 'cumulative_assessment', 'exam_simulation']) {
       expect(fastPathCondition).not.toContain(`'${mode}'`);
     }
@@ -194,7 +209,7 @@ describe('STABILIZATION QUIZ PERFORMANCE Step 14/22 -- mode isolation: diagnosti
 
   it('retention_check\'s fast-path condition is guarded by count === RETENTION_REQUIRED_COUNT -- an overridden non-6 count falls through to the legacy generator, not silently forced onto an unvalidated chunk plan', async () => {
     const routeSrc = await readRouteSrc();
-    const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateQuestionsForConcept\(cId,/)?.[0] ?? '';
+    const fastPathCondition = routeSrc.match(/const \[questionArrays, askConfidenceFlags\][\s\S]*?generateGatedQuestionBatch\(cId,/)?.[0] ?? '';
     expect(fastPathCondition).toContain("'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT");
   });
 

@@ -4,6 +4,18 @@ vi.mock('@/services/rag.service', () => ({
   retrieveContext: vi.fn().mockResolvedValue({ chunks: [{ id: 'c1', text: 'Sample study material about the concept.', similarity: 1, sourceId: 's1' }] }),
 }));
 
+// LX-4P-PERF-R1C-R1: generateQuestionVariant now also clears the UNIVERSAL
+// Question Quality Gate on its raw output (a variant is learner-facing).
+// These tests are about the EQUIVALENCE contract; the independent
+// semantic verifier has its own suite, so it is stubbed to pass here.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import { generateQuestionVariant, evaluateVariantEquivalence, type GeneratedQuestion } from '@/services/quiz-generation.service';
 
 function sourceQuestion(overrides: Partial<GeneratedQuestion> = {}): GeneratedQuestion {

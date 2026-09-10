@@ -44,7 +44,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-  generateQuestionsForConcept,
   generateQuickCheckQuestions,
   generatePracticeQuestions,
   generateRetentionCheckQuestions,
@@ -58,6 +57,7 @@ import {
   type QuestionType,
   type ExpectedReasoningType,
 } from '@/services/quiz-generation.service';
+import { generateGatedQuestionBatch } from '@/services/gated-question-generation.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
@@ -500,8 +500,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             ibContext,
           }).then((qs) => [qs])
         : Promise.all(
+            // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate --
+            // cumulative_assessment / exam_simulation / diagnostic_check
+            // (and retention_check with a non-6 override) go through the
+            // gated batch (Luna -> deterministic contract + semantic
+            // verify where required -> one Terra regeneration if empty).
+            // These are evidence-consequence paths: they get at least the
+            // same acceptance standard as assisted Practice. Counts,
+            // EvidenceMode and per-concept partial-tolerance are unchanged.
             conceptIds.map((cId) =>
-              generateQuestionsForConcept(cId, validated.studentId, validated.subjectId, {
+              generateGatedQuestionBatch(cId, validated.studentId, validated.subjectId, {
                 count: perConceptCap,
                 difficulty: validated.difficulty || 3,
                 types: ALL_QUESTION_TYPES,

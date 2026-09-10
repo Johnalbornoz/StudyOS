@@ -25,6 +25,16 @@ export interface AIRuntimeEvent {
   fallbackUsed: boolean;
   fallbackReason?: string;
   qualityGateResult: QualityGateResult;
+  /**
+   * LX-4P-PERF-R1C-R1 -- how many generated questions this attempt
+   * contributed after the Question Quality Gate, and how many it
+   * rejected. Present only for gated generation attempts; lets the live
+   * benchmark compute first-pass acceptance rate, Terra fallback rate,
+   * accepted/generated ratio, and cost per accepted question. Never
+   * carries learner content.
+   */
+  acceptedCount?: number;
+  rejectedCount?: number;
   estimatedCostUSD: number | null;
   costComplete: boolean;
 }

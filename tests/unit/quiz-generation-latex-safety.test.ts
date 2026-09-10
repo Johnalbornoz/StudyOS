@@ -33,6 +33,18 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 const callAnthropicMessagesMock = vi.fn();
 vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
 
+// LX-4P-PERF-R1C-R1: the chunked practice path is now gated. These tests
+// exercise the LaTeX/JSON corruption validate pipeline, not the semantic
+// verifier -- stub it to pass so a clean question isn't dropped for an
+// unrelated reason.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import { generateQuestionsForConcept, generateQuickCheckQuestions, generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { PROMPT_REGISTRY } from '@/lib/ai/prompt-registry';
 

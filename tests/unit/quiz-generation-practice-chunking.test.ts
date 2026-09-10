@@ -21,10 +21,25 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 const callModelMock = vi.fn();
 vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => callModelMock(...a) }));
 
+// LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate runs on every
+// generated batch/chunk. These tests are about the chunking ARCHITECTURE
+// (parallelism, call count, prompt wording, dedup, partial tolerance) --
+// the independent semantic verifier has its own suite, so it is stubbed
+// to a passing verdict here.
+vi.mock('@/services/question-quality-verifier.service', () => ({
+  verifyQuestionQuality: vi.fn(async () => ({
+    conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+    distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+  })),
+  evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
+}));
+
 import { planChunks, MAX_QUESTIONS_PER_CHUNK, generatePracticeQuestions } from '@/services/quiz-generation.service';
 
 beforeEach(() => {
-  executeAIMock.mockReset().mockResolvedValue({ result: [], execution: {} as any, provenance: {} as any });
+  // Default: every chunk returns one structurally valid question -> it
+  // clears the gate, so no Terra fallback fires (REQUIRED TEST 3).
+  executeAIMock.mockReset().mockResolvedValue({ result: [fakeQuestion(0)], execution: {} as any, provenance: {} as any });
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
   callModelMock.mockReset().mockResolvedValue({ text: '[]', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
@@ -97,8 +112,8 @@ describe('generatePracticeQuestions: count <= 4 goes through the Luna-first Qual
   });
 });
 
-describe('generatePracticeQuestions: count > 4 fans out into chunked Haiku calls', () => {
-  it('count=20 fires exactly 5 executeAI calls', async () => {
+describe('generatePracticeQuestions: count > 4 fans out into gated parallel Luna chunks', () => {
+  it('count=20 fires exactly 5 executeAI calls (valid Luna chunks -> no Terra)', async () => {
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
     expect(executeAIMock).toHaveBeenCalledTimes(5);
   });
@@ -126,11 +141,11 @@ describe('generatePracticeQuestions: count > 4 fans out into chunked Haiku calls
   it('the prompt wording sent per chunk is the unmodified legacy "UP TO N... fewer is fine" batch wording, not a rewritten one', async () => {
     executeAIMock.mockImplementation(async (opts: any) => {
       await opts.call(new AbortController().signal);
-      return { result: [], execution: {} as any, provenance: {} as any };
+      return { result: [fakeQuestion(0)], execution: {} as any, provenance: {} as any };
     });
     await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
     const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
-    expect(messages).toHaveLength(5);
+    expect(messages).toHaveLength(5); // 5 valid Luna chunks, no Terra
     for (const msg of messages) {
       expect(msg).toContain('Generate UP TO 4 questions');
       expect(msg).toContain('fewer is fine');
@@ -139,18 +154,55 @@ describe('generatePracticeQuestions: count > 4 fans out into chunked Haiku calls
   });
 });
 
+describe('generatePracticeQuestions: count > 4 -- the UNIVERSAL Question Quality Gate on each parallel chunk (R1C-R1)', () => {
+  it('every chunk is gated; a chunk whose Luna output is empty fires ONE Terra regeneration of THAT chunk only', async () => {
+    let call = 0;
+    executeAIMock.mockImplementation(async () => {
+      const i = call++;
+      // chunk index 2's Luna call (the 3rd) yields nothing; its Terra
+      // retry (fires last, call index 5) recovers it.
+      if (i === 2) return { result: [], execution: {} as any, provenance: {} as any };
+      return { result: [fakeQuestion(i)], execution: {} as any, provenance: {} as any };
+    });
+    const questions = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
+    // 5 Luna + exactly 1 Terra (only the empty chunk) -- never a whole-batch Terra rerun.
+    expect(executeAIMock).toHaveBeenCalledTimes(6);
+    const models = executeAIMock.mock.calls.map((c) => c[0].model);
+    expect(models.filter((m) => m === 'gpt-5.6-luna')).toHaveLength(5);
+    expect(models.filter((m) => m === 'gpt-5.6-terra')).toHaveLength(1);
+    expect(questions.length).toBeGreaterThan(0);
+  });
+
+  it('valid Luna chunks -> NO Terra call at all', async () => {
+    await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
+    expect(executeAIMock.mock.calls.every((c) => c[0].model === 'gpt-5.6-luna')).toBe(true);
+  });
+
+  it('a Terra chunk that still fails the gate -> its invalid questions never reach the learner (PRACTICE stays partial-tolerant, never [])', async () => {
+    let call = 0;
+    executeAIMock.mockImplementation(async (opts: any) => {
+      const i = call++;
+      if (i === 2) return { result: [], execution: {} as any, provenance: {} as any }; // chunk 2 Luna empty
+      if (i === 5) return { result: opts.fallback(new Error('down')), execution: {} as any, provenance: {} as any }; // chunk 2 Terra also empty
+      return { result: [fakeQuestion(i)], execution: {} as any, provenance: {} as any };
+    });
+    const questions = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });
+    expect(questions.length).toBeGreaterThan(0); // the 4 healthy chunks still delivered
+    expect(questions.length).toBeLessThan(5); // chunk 2 contributed nothing -- partial, not all-or-nothing
+  });
+});
+
 describe('generatePracticeQuestions: PRACTICE partial-failure semantics -- never all-or-nothing', () => {
-  it('one failed chunk (fallback fires) still returns the other chunks\' valid questions', async () => {
+  it('one failed chunk whose Terra retry succeeds -> full delivery, exactly one extra (Terra) call', async () => {
     let call = 0;
     executeAIMock.mockImplementation(async (opts: any) => {
       const i = call++;
       if (i === 2) return { result: opts.fallback(new Error('down')), execution: {} as any, provenance: {} as any };
       return { result: [fakeQuestion(i)], execution: {} as any, provenance: {} as any };
     });
-    const questions = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 }); // 5 chunks, 1 fails
-    expect(executeAIMock).toHaveBeenCalledTimes(5);
-    expect(questions.length).toBeGreaterThan(0);
-    expect(questions.length).toBeLessThan(5); // fewer chunks succeeded than the 5 planned -- proves partial delivery, not all-or-nothing
+    const questions = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 }); // 5 chunks, 1 fails, its Terra recovers
+    expect(executeAIMock).toHaveBeenCalledTimes(6); // 5 Luna + 1 Terra (only the failed chunk)
+    expect(questions.length).toBe(5);
   });
 
   it('all chunks failing returns [] (same GENERATION_FAILED signal every other path uses)', async () => {
