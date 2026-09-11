@@ -91,6 +91,8 @@ export default function ConceptExplanationDisclosure({
             error={error}
             data={data ?? undefined}
             headerLabel={t['conceptMission.learnTitle']}
+            conceptId={conceptId}
+            studentId={studentId}
           />
         )}
         {/* LX-5C: the Learn experience no longer dead-ends. Once the

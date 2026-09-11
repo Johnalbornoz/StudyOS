@@ -4,6 +4,7 @@ import 'katex/dist/katex.min.css';
 import { Locale, getMessages } from '@/lib/i18n/messages';
 import InteractiveFormulaWidget from './InteractiveFormulaWidget';
 import { InteractiveFormula } from '@/services/interactive-formula.service';
+import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
 
 export interface ConceptExplanationData {
   summary: string;
@@ -18,14 +19,33 @@ export function ConceptExplanationPanel({
   error,
   data,
   headerLabel,
+  conceptId,
+  studentId,
 }: {
   locale: Locale;
   loading: boolean;
   error: boolean;
   data?: ConceptExplanationData;
   headerLabel?: string;
+  /**
+   * LX-4P-PERF-R1D: when both are supplied, the OPTIONAL
+   * interactive-formula widget is fetched via its own request after the
+   * explanation renders (progressive enhancement). Omit them and the
+   * panel simply renders `data.interactiveFormula` if the explanation
+   * response already carried one.
+   */
+  conceptId?: string;
+  studentId?: string;
 }) {
   const t = getMessages(locale);
+
+  const fetchedFormula = useInteractiveFormula(
+    conceptId ?? '',
+    studentId ?? '',
+    locale,
+    !!conceptId && !!studentId && !!data && !data.interactiveFormula,
+  );
+  const interactiveFormula = data?.interactiveFormula ?? fetchedFormula;
 
   return (
     <div
@@ -85,12 +105,12 @@ export function ConceptExplanationPanel({
               {data.summary}
             </p>
 
-            {data.interactiveFormula && (
-              <InteractiveFormulaWidget locale={locale} data={data.interactiveFormula} />
+            {interactiveFormula && (
+              <InteractiveFormulaWidget locale={locale} data={interactiveFormula} />
             )}
 
             {data.sections.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: data.interactiveFormula ? 20 : 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: interactiveFormula ? 20 : 0 }}>
                 {data.sections.map((s, i) => (
                   <div key={i}>
                     <h5

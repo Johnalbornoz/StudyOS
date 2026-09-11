@@ -167,6 +167,8 @@ export default function ConceptList({
               loading={explainLoadingId === c.conceptId}
               error={explainErrorId === c.conceptId}
               data={explanations[c.conceptId]}
+              conceptId={c.conceptId}
+              studentId={studentId}
             />
           )}
         </div>

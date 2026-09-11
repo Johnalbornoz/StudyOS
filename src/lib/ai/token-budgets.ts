@@ -23,6 +23,8 @@ export const TOKEN_BUDGETS = {
   question_generation_slot: { maxOutputTokens: 2400, maxContextChars: 4000, reasoningEffort: 'minimal' },
   concept_explanation: { maxOutputTokens: 2200, maxContextChars: 6000, reasoningEffort: 'low' },
   guided_practice: { maxOutputTokens: 1600, maxContextChars: 5000, reasoningEffort: 'low' },
+  /** LX-4P-PERF-R1D: optional interactive-formula widget enrichment -- off the MODEL critical path, bounded, generated once. */
+  interactive_formula: { maxOutputTokens: 1500, maxContextChars: 3000, reasoningEffort: 'low' },
   contextual_help: { maxOutputTokens: 700, maxContextChars: 3000, reasoningEffort: 'minimal' },
   question_localization: { maxOutputTokens: 2000, maxContextChars: 0, reasoningEffort: 'minimal' },
   semantic_verification: { maxOutputTokens: 900, maxContextChars: 0, reasoningEffort: 'low' },

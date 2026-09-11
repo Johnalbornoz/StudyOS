@@ -16,11 +16,13 @@
  * decided upstream; this only presents it.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
 import type { TeachingExperienceView, TeachingExperienceMode } from '@/lib/lx/teaching-experience';
+import InteractiveFormulaWidget from '@/app/dashboard/subjects/[id]/InteractiveFormulaWidget';
+import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
 
 interface Explanation {
   summary: string;
@@ -88,6 +90,9 @@ export default function TeachingIntro({
   const [exampleStep, setExampleStep] = useState(1);
 
   // EXPLAIN / MODEL content -- needs only conceptId, fires immediately.
+  // LX-4P-PERF-R1D R7: this fetch (concept.explanation only) is the MODEL
+  // TTFI. The optional interactive-formula widget is a SEPARATE request
+  // below and its timing is never folded in here.
   useEffect(() => {
     if (!needsExplanation) { setExpLoading(false); return; }
     let cancelled = false;
@@ -96,10 +101,28 @@ export default function TeachingIntro({
       .then((r) => (r.ok ? r.json() : null))
       .then((b) => b?.data?.explanation ?? null)
       .catch(() => null)
-      .then((exp) => { if (!cancelled) { setExplanation(exp); setExpLoading(false); } });
+      .then((exp) => {
+        if (cancelled) return;
+        try { console.log('[perf]', JSON.stringify({ label: 'EXPLANATION_READY', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
+        setExplanation(exp);
+        setExpLoading(false);
+      });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conceptId, locale]);
+
+  // LX-4P-PERF-R1D R4: OPTIONAL interactive-formula widget. Progressive
+  // enhancement -- a real independent client request that fires only
+  // AFTER the explanation is ready, never blocks MODEL, and degrades
+  // silently. Inserted into the MODEL stage when it arrives.
+  // Only when a MODEL worked-example stage will actually render the widget.
+  const wantsFormula = plan.includes('MODEL') && view.showWorkedExample;
+  const interactiveFormula = useInteractiveFormula(
+    conceptId,
+    studentId,
+    locale,
+    wantsFormula && !!explanation,
+  );
 
   // GUIDE content -- needs the quiz session; prepares in the background
   // while the learner is in MODEL. Fires once quizId is available.
@@ -137,6 +160,22 @@ export default function TeachingIntro({
     if (!expLoading && !gpLoading && effectivePlan.length === 0) onDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expLoading, gpLoading, effectivePlan.length]);
+
+  // LX-4P-PERF-R1D R7: MODEL_RENDERED -- fires once, when the MODEL stage
+  // first becomes visible with its content on screen. The delta from
+  // EXPLANATION_READY is the MODEL render only; the formula widget is
+  // never on this path.
+  const modelVisible =
+    !expLoading &&
+    effectivePlan.length > 0 &&
+    effectivePlan[Math.min(idx, effectivePlan.length - 1)] === 'MODEL';
+  const modelRenderedRef = useRef(false);
+  useEffect(() => {
+    if (modelVisible && !modelRenderedRef.current) {
+      modelRenderedRef.current = true;
+      try { console.log('[perf]', JSON.stringify({ label: 'MODEL_RENDERED', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
+    }
+  }, [modelVisible, conceptId]);
 
   // Block only on the FIRST needed content (explanation). GUIDE catches
   // up in the background.
@@ -208,6 +247,14 @@ export default function TeachingIntro({
               <button type="button" className="btn btn-secondary" onClick={() => setExampleStep((s) => s + 1)}>
                 {t['workedExample.revealNext']}
               </button>
+            )}
+            {/* LX-4P-PERF-R1D R4: optional enrichment -- inserted only when
+                it has arrived. MODEL is fully usable without it; no
+                spinner, no error state. */}
+            {interactiveFormula && (
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <InteractiveFormulaWidget locale={locale} data={interactiveFormula} />
+              </div>
             )}
           </div>
         )}

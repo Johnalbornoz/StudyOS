@@ -22,7 +22,7 @@ export default function AddConceptTab({
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ label: string; explanation: ConceptExplanationData } | null>(null);
+  const [result, setResult] = useState<{ label: string; explanation: ConceptExplanationData; conceptId: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function AddConceptTab({
       const explainBody = await explainRes.json();
       if (!explainRes.ok) throw new Error(explainBody.error || t['common.error']);
 
-      setResult({ label: createBody.data.label, explanation: explainBody.data.explanation });
+      setResult({ label: createBody.data.label, explanation: explainBody.data.explanation, conceptId });
       setLabel('');
       router.refresh();
     } catch (err: any) {
@@ -152,7 +152,7 @@ export default function AddConceptTab({
       {result && (
         <div style={{ marginTop: 'var(--space-4)' }}>
           <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>{result.label}</h4>
-          <ConceptExplanationPanel locale={locale} loading={false} error={false} data={result.explanation} />
+          <ConceptExplanationPanel locale={locale} loading={false} error={false} data={result.explanation} conceptId={result.conceptId} studentId={studentId} />
         </div>
       )}
     </div>

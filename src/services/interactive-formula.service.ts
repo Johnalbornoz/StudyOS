@@ -1,6 +1,8 @@
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, getPrompt } from '@/lib/ai';
-import { callOpenAIChat } from '@/lib/ai/adapters/openai';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor } from '@/lib/ai/token-budgets';
 
 export interface FormulaVariable {
   symbol: string;
@@ -82,8 +84,17 @@ function validateFormula(parsed: any): InteractiveFormula | null {
  * Generates an interactive formula-exploration widget's data (variables,
  * ranges, a mathjs-evaluable expression, and an optional SVG diagram
  * template with {{token}} placeholders) for concepts that have a clean
- * numeric formula -- physics, chemistry, math. Uses OpenAI rather than
- * Claude specifically for this piece, per the user's explicit choice.
+ * numeric formula -- physics, chemistry, math.
+ *
+ * LX-4P-PERF-R1D:
+ *  - OPTIONAL enrichment only -- this NEVER sits on the MODEL critical
+ *    path. It is fetched by its own client request lifecycle after the
+ *    explanation is already renderable.
+ *  - Routed through the central capability registry
+ *    (`CONTENT_GENERATION` -> gpt-5.6-luna), not a hard-coded model id.
+ *    No Terra escalation: an optional widget that fails to generate just
+ *    returns null.
+ *  - Bounded output budget (`interactive_formula`).
  *
  * Returns null when the concept has no formula worth an interactive
  * widget, or when generation/validation fails for any reason -- the
@@ -132,22 +143,25 @@ Key relationship, if any: ${formulaHint || 'unknown -- decide based on the conce
 ${contextChunks.length > 0 ? `\nContext from the student's material:\n${contextChunks.join('\n\n')}` : ''}`;
 
   const prompt = getPrompt('formula.interactive_widget');
+  // LX-4P-PERF-R1D R5: central routing -- CONTENT_GENERATION -> Luna.
+  const route = resolveModels(prompt.capability);
+  const budget = budgetFor('interactive_formula');
   const { result } = await executeAI({
     capability: prompt.capability,
     risk: 'LOW_RISK', // returns null (falls back to a plain explanation) unless a full, internally-validated widget is produced
-    provider: 'openai',
-    model: 'gpt-5.6',
+    provider: route.provider,
+    model: route.primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
     call: (signal) =>
-      callOpenAIChat(
+      callModel(
         {
-          model: 'gpt-5.6',
-          responseFormatJson: true,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
+          provider: route.provider,
+          model: route.primary,
+          maxTokens: budget.maxOutputTokens,
+          reasoningEffort: budget.reasoningEffort,
+          system: systemPrompt,
+          user: userPrompt,
         },
         signal
       ),

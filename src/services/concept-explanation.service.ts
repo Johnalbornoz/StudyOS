@@ -12,7 +12,20 @@ export interface ConceptExplanation {
   summary: string;
   sections: { heading: string; body: string }[];
   examples: string[];
+  /**
+   * LX-4P-PERF-R1D: OPTIONAL enrichment. NOT produced on the MODEL
+   * critical path -- present only once the separate
+   * `GET /api/concepts/[id]/interactive-formula` request has generated
+   * and cached it. Absent otherwise; the UI renders MODEL without it.
+   */
   interactiveFormula?: InteractiveFormula;
+  /**
+   * LX-4P-PERF-R1D: eligibility flags carried so the deferred
+   * interactive-formula request never has to re-run `concept.explanation`
+   * to decide whether a widget is even applicable (R6).
+   */
+  hasFormula?: boolean;
+  formulaHint?: string;
 }
 
 /**
@@ -34,6 +47,8 @@ function tryParseExplanation(raw: string): ConceptExplanation | null {
           .map((s: any) => ({ heading: s.heading, body: s.body })),
         examples: Array.isArray(parsed.examples) ? parsed.examples.filter((e: any) => typeof e === 'string') : [],
         interactiveFormula: parsed.interactiveFormula ?? undefined,
+        hasFormula: parsed.hasFormula === true ? true : undefined,
+        formulaHint: typeof parsed.formulaHint === 'string' ? parsed.formulaHint : undefined,
       };
     }
   } catch {
@@ -147,27 +162,22 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
   });
   const { explanation, rawText } = result;
 
-  let hasFormula = false;
-  let formulaHint = '';
+  // LX-4P-PERF-R1D R3: the interactive-formula widget is OPTIONAL
+  // enrichment and must NEVER block MODEL. We do NOT call
+  // generateInteractiveFormula here (a ~3 s AI call that used to sit
+  // serially between the ready explanation and the endpoint response,
+  // and was not even rendered on the MODEL surface). Instead we persist
+  // the eligibility flag + hint, and the widget is generated on demand
+  // by `getInteractiveFormula` via its own client request lifecycle
+  // (`GET /api/concepts/[id]/interactive-formula`), after MODEL is
+  // already renderable.
   try {
     const parsedRaw = parseAIJson(rawText);
-    hasFormula = parsedRaw?.hasFormula === true;
-    formulaHint = typeof parsedRaw?.formulaHint === 'string' ? parsedRaw.formulaHint : '';
+    explanation.hasFormula = parsedRaw?.hasFormula === true ? true : undefined;
+    explanation.formulaHint =
+      explanation.hasFormula && typeof parsedRaw?.formulaHint === 'string' ? parsedRaw.formulaHint : undefined;
   } catch {
     // No formula metadata available -- proceed without the widget.
-  }
-
-  if (hasFormula) {
-    const formula = await generateInteractiveFormula(
-      conceptLabel,
-      concept.subject_name,
-      formulaHint,
-      contextChunks,
-      language
-    );
-    if (formula) {
-      explanation.interactiveFormula = formula;
-    }
   }
 
   await query(
@@ -177,4 +187,75 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
   );
 
   return explanation;
+}
+
+/**
+ * LX-4P-PERF-R1D R3/R6 -- the deferred, optional interactive-formula
+ * widget for a concept. Its own request lifecycle, entirely off the
+ * MODEL critical path.
+ *
+ * Eligibility (R6):
+ *  - the concept must have a persisted explanation whose `hasFormula`
+ *    flag is true. If the explanation isn't generated yet, or the
+ *    concept is plain conceptual content (`hasFormula` !== true), this
+ *    returns null WITHOUT any AI call.
+ * Caching:
+ *  - a generated widget is merged back into the persisted explanation
+ *    JSON, so it is generated at most once per concept+language
+ *    (subsequent calls are a cache read, no AI).
+ */
+export async function getInteractiveFormula(
+  studentId: string,
+  conceptId: string,
+  language: string = 'en',
+): Promise<InteractiveFormula | null> {
+  const conceptResult = await query(
+    `SELECT c.subject_id, s.student_id, s.name AS subject_name, cl.label
+     FROM concepts c
+     JOIN subjects s ON s.id = c.subject_id
+     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
+     WHERE c.id = $1`,
+    [conceptId, language],
+  );
+  const concept = conceptResult.rows[0];
+  if (!concept) throw new Error('CONCEPT_NOT_FOUND');
+  if (concept.student_id !== studentId) throw new Error('FORBIDDEN');
+
+  const cached = await query(
+    `SELECT content FROM concept_explanations WHERE concept_id = $1 AND language = $2`,
+    [conceptId, language],
+  );
+  const stored = (cached.rowCount ?? 0) > 0 ? tryParseExplanation(cached.rows[0].content) : null;
+
+  // Not eligible: no explanation yet, or the concept has no clean formula.
+  if (!stored || stored.hasFormula !== true) return null;
+  // Cache hit: already generated once.
+  if (stored.interactiveFormula) return stored.interactiveFormula;
+
+  const conceptLabel = concept.label || 'this concept';
+  const context = await retrieveContext(studentId, concept.subject_id, { conceptId, limit: 5 }).catch(
+    () => ({ chunks: [] as any[] }),
+  );
+  const contextChunks = fitContextChunks(context.chunks, budgetFor('interactive_formula').maxContextChars).map(
+    (c: any) => c.text,
+  );
+
+  const formula = await generateInteractiveFormula(
+    conceptLabel,
+    concept.subject_name,
+    stored.formulaHint || '',
+    contextChunks,
+    language,
+  ).catch(() => null);
+  if (!formula) return null;
+
+  // Merge into the persisted explanation JSON so it is generated once.
+  const merged: ConceptExplanation = { ...stored, interactiveFormula: formula };
+  await query(
+    `UPDATE concept_explanations SET content = $3 WHERE concept_id = $1 AND language = $2`,
+    [conceptId, language, JSON.stringify(merged)],
+  ).catch(() => {
+    /* cache write is best-effort -- the widget is still returned to this caller */
+  });
+  return formula;
 }
