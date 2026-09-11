@@ -60,6 +60,22 @@ export interface AIExecutionMetadata {
   validationStatus: 'PASSED' | 'FAILED' | 'NOT_APPLICABLE';
   fallbackUsed: boolean;
   errorCode?: AIErrorCode;
+  /**
+   * LX-4P-PERF-R1G -- REAL provider usage/cost for this ONE execution,
+   * present only when the call site opted in via `parseUsage` AND the
+   * provider actually returned a response (absent for a call-level
+   * failure such as a timeout, network error, or provider refusal --
+   * no response was ever obtained to read usage from). Never fabricated;
+   * a StudyUS-side validation/parsing rejection does NOT erase these --
+   * they reflect what the provider already billed, regardless of
+   * `success`/`validationStatus`.
+   */
+  inputTokens?: number | null;
+  cachedInputTokens?: number | null;
+  outputTokens?: number | null;
+  estimatedCostUSD?: number | null;
+  /** true only when every figure needed to compute estimatedCostUSD was known -- never fabricated as complete. */
+  costComplete?: boolean;
 }
 
 /** The safe, DB-storable subset of execution metadata -- what's allowed into learning_evidence.metadata (Step 18). */

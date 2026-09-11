@@ -4,8 +4,10 @@ import type { AIExecutionMetadata } from './types';
  * Safe structured logging around the AI gateway (Step 17). Only ever
  * emits the fields on AIExecutionMetadata -- executionId, capability,
  * provider, model, promptId, promptVersion, durationMs, success,
- * validationStatus, fallbackUsed, errorCode. Never the student's name,
- * email, raw prompt, raw response, or any credential.
+ * validationStatus, fallbackUsed, errorCode, and (LX-4P-PERF-R1G) REAL
+ * provider token usage + estimated cost, when the call site opted in.
+ * Never the student's name, email, raw prompt, raw response, or any
+ * credential.
  *
  * Raw prompt/response content can optionally be inspected in local
  * development ONLY, and only when explicitly opted into via
@@ -27,6 +29,13 @@ export function logAIExecution(execution: AIExecutionMetadata): void {
     validationStatus: execution.validationStatus,
     fallbackUsed: execution.fallbackUsed,
     ...(execution.errorCode ? { errorCode: execution.errorCode } : {}),
+    // LX-4P-PERF-R1G: present only when the call site supplied
+    // `parseUsage` -- shape/number fields only, never fabricated.
+    ...(execution.inputTokens !== undefined ? { inputTokens: execution.inputTokens } : {}),
+    ...(execution.cachedInputTokens !== undefined ? { cachedInputTokens: execution.cachedInputTokens } : {}),
+    ...(execution.outputTokens !== undefined ? { outputTokens: execution.outputTokens } : {}),
+    ...(execution.estimatedCostUSD !== undefined ? { estimatedCostUSD: execution.estimatedCostUSD } : {}),
+    ...(execution.costComplete !== undefined ? { costComplete: execution.costComplete } : {}),
   };
   if (execution.success) {
     console.log('[ai]', JSON.stringify(line));

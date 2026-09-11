@@ -48,6 +48,11 @@ export function estimateCostUSD(i: CostInputs): CostEstimate {
   if (i.inputTokens === null && i.outputTokens === null) {
     return { usd: null, note: 'no provider usage reported', complete: false };
   }
+  // LX-4P-PERF-R1G R5: a cached count that exceeds the input count is an
+  // inconsistent usage report -- never trust it into a cost figure.
+  if (i.inputTokens !== null && i.cachedInputTokens !== null && i.cachedInputTokens > i.inputTokens) {
+    return { usd: null, note: 'cachedInputTokens exceeds inputTokens -- invalid usage report', complete: false };
+  }
   const cached = i.cachedInputTokens ?? 0;
   const freshInput = Math.max(0, (i.inputTokens ?? 0) - cached);
   const usd =

@@ -37,6 +37,10 @@ vi.mock('@/services/question-quality-verifier.service', () => ({
 vi.mock('@/lib/ai/runtime-event', () => ({
   recordRuntimeEvent: (...a: any[]) => h.record(...a),
   buildRuntimeEvent: (b: any) => b,
+  // LX-4P-PERF-R1G: generateGatedQuestionBatch now always routes through
+  // the aggregate (operationId-tagged) event path -- this mock just
+  // needs to exist and be call-through, not to compute real cost.
+  buildAggregateRuntimeEvent: (base: any, calls: any[]) => ({ ...base, calls }),
 }));
 
 import { generateGatedPracticeBatch } from '@/services/gated-question-generation.service';

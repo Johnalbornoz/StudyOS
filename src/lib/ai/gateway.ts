@@ -3,6 +3,8 @@ import type { AICapability, AIRiskLevel, AIProvider, AIExecutionMetadata, AIExec
 import { AIExecutionError, normalizeProviderError } from './errors';
 import { logAIExecution } from './logging';
 import { getAIExecutionAuditSink } from './audit';
+import type { ProviderUsage } from './usage';
+import { estimateCostUSD } from './pricing';
 
 /** No AI call in StudyUs waits forever (Step 7) -- 30s covers every current call's observed shape, including large batch generations. */
 export const DEFAULT_AI_TIMEOUT_MS = 30_000;
@@ -24,6 +26,16 @@ export interface ExecuteAIOptions<TRaw, TResult> {
   context?: AIExecutionContext;
   /** Performs the actual provider call. Must respect the given AbortSignal. */
   call: (signal: AbortSignal) => Promise<TRaw>;
+  /**
+   * LX-4P-PERF-R1G -- optional: extracts REAL provider usage from the
+   * raw response. Called once, right after `call` resolves, BEFORE
+   * `validate` -- a StudyUS validation/parsing failure happens AFTER
+   * the provider already consumed (and billed) tokens, so usage must
+   * never depend on `validate` succeeding. Never fabricated: return
+   * nulls for any field the provider didn't report. Omitted entirely
+   * for capabilities that don't track cost (unchanged behavior).
+   */
+  parseUsage?: (raw: TRaw) => ProviderUsage;
   /** Parses + validates the raw provider response into a typed domain result. Never optional -- HIGH_RISK outputs cannot bypass this (Step 11). */
   validate: (raw: TRaw) => AIValidationResult<TResult>;
   /**
@@ -78,9 +90,20 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
     promptVersion: opts.promptVersion,
     startedAt,
   };
+  // LX-4P-PERF-R1G: set once `raw` is obtained (below), read by every
+  // `finish()` call from then on -- success, a thrown validate, or a
+  // rejected validation all see the SAME real usage/cost, because a
+  // StudyUS-side rejection never un-consumes the tokens the provider
+  // already billed. Stays null when `call` itself failed (no response
+  // was ever obtained) or the capability didn't opt in via `parseUsage`.
+  let usage: ProviderUsage | null = null;
+  let cost: ReturnType<typeof estimateCostUSD> | null = null;
+
   const finish = (partial: Pick<AIExecutionMetadata, 'success' | 'validationStatus' | 'fallbackUsed' | 'errorCode'>): AIExecutionMetadata => ({
     ...baseMeta,
     durationMs: Date.now() - startedAtMs,
+    ...(usage ? { inputTokens: usage.inputTokens, cachedInputTokens: usage.cachedInputTokens, outputTokens: usage.outputTokens } : {}),
+    ...(cost ? { estimatedCostUSD: cost.usd, costComplete: cost.complete } : {}),
     ...partial,
   });
   const provenanceFor = (): AIExecutionOutcome<TResult>['provenance'] => ({
@@ -135,6 +158,18 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
     return resolveFailure(normalizeProviderError(err, controller.signal.aborted), 'NOT_APPLICABLE');
   }
   clearTimeout(timer);
+
+  if (opts.parseUsage) {
+    try {
+      usage = opts.parseUsage(raw);
+      cost = estimateCostUSD({ model: opts.model, ...usage });
+    } catch {
+      // A caller-supplied parseUsage must never take down the real
+      // operation -- fall back to "unknown", never fabricate.
+      usage = null;
+      cost = null;
+    }
+  }
 
   let validation: AIValidationResult<TResult>;
   try {

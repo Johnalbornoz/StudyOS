@@ -20,7 +20,7 @@ export type { AnthropicMessagesParams, AnthropicMessagesResult, AnthropicMessage
 export { callOpenAIChat, callOpenAIEmbedding } from './adapters/openai';
 export type { OpenAIChatParams, OpenAIChatResult, OpenAIChatMessage, OpenAIEmbeddingParams, OpenAIEmbeddingResult, OpenAIJsonSchema } from './adapters/openai';
 // LX-4P-PERF-R1B -- OpenAI quality-gated runtime.
-export { callModel } from './adapters/call-model';
+export { callModel, parseCallModelUsage } from './adapters/call-model';
 export type { CallModelParams, CallModelResult } from './adapters/call-model';
 export { CAPABILITY_ROUTING, resolveModels, isAnthropicModel, LUNA, TERRA } from './model-routing';
 export type { CapabilityRoute } from './model-routing';
@@ -30,8 +30,11 @@ export { parseProviderUsage } from './usage';
 export type { ProviderUsage } from './usage';
 export { MODEL_PRICING, estimateCostUSD } from './pricing';
 export type { ModelPrice, CostEstimate } from './pricing';
-export { buildRuntimeEvent, recordRuntimeEvent } from './runtime-event';
+export { buildRuntimeEvent, buildAggregateRuntimeEvent, recordRuntimeEvent } from './runtime-event';
 export type { AIRuntimeEvent, QualityGateResult } from './runtime-event';
+// LX-4P-PERF-R1G -- usage/cost aggregation across multiple billable calls.
+export { aggregateCost } from './usage-aggregation';
+export type { BillableCallUsage, AggregatedCost } from './usage-aggregation';
 export { generateWithQualityGate } from './quality-runtime';
 export type { GatedGenerationSpec, GatedGenerationResult, GatedGenerationRouting } from './quality-runtime';
 export { postgresAIExecutionAuditSink, noopAIExecutionAuditSink, setAIExecutionAuditSink, getAIExecutionAuditSink } from './audit';

@@ -9,6 +9,7 @@
 import { callAnthropicMessages } from './anthropic';
 import { callOpenAIChat, type OpenAIJsonSchema } from './openai';
 import type { AIProvider } from '../types';
+import { parseProviderUsage, type ProviderUsage } from '../usage';
 
 export interface CallModelParams {
   provider: AIProvider;
@@ -54,4 +55,15 @@ export async function callModel(p: CallModelParams, signal: AbortSignal): Promis
     signal,
   );
   return { text: r.text, raw: r.raw, provider: 'anthropic', model: p.model };
+}
+
+/**
+ * LX-4P-PERF-R1G -- the one place a `CallModelResult` becomes a
+ * provider-neutral `ProviderUsage`. Every `executeAI({ parseUsage })`
+ * call site that transports through `callModel` should pass this
+ * directly rather than re-deriving `parseProviderUsage(provider, raw)`
+ * itself.
+ */
+export function parseCallModelUsage(r: CallModelResult): ProviderUsage {
+  return parseProviderUsage(r.provider, r.raw);
 }

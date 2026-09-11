@@ -23,8 +23,9 @@
  * Retention, cumulative / exam, and variant generation all pass through
  * here (or through `applyQuestionQualityGate` directly).
  */
+import { randomUUID } from 'crypto';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
-import { recordRuntimeEvent, buildRuntimeEvent } from '@/lib/ai/runtime-event';
+import { recordRuntimeEvent, buildRuntimeEvent, buildAggregateRuntimeEvent, type BillableCallUsage } from '@/lib/ai/runtime-event';
 import { checkQuestionQualityDeterministic } from '@/lib/lx/question-quality-contract';
 import { verifyQuestionQuality, evaluateQuestionQualityVerdict } from '@/services/question-quality-verifier.service';
 import { generateQuestionsForConcept, type GeneratedQuestion } from '@/services/quiz-generation.service';
@@ -61,7 +62,19 @@ function textKey(q: GeneratedQuestion): string {
 export async function applyQuestionQualityGate(
   questions: GeneratedQuestion[],
   req: QualityGateReq,
-): Promise<{ accepted: GeneratedQuestion[]; deterministicRejected: number; semanticRejected: number }> {
+): Promise<{
+  accepted: GeneratedQuestion[];
+  deterministicRejected: number;
+  semanticRejected: number;
+  /**
+   * LX-4P-PERF-R1G R9 -- the REAL usage of every Terra semantic-
+   * verification call this gate run made (one per question that needed
+   * one). These are billable AI calls in their own right; a caller
+   * aggregating this unit's true cost must include them, not just the
+   * generation call that produced the questions being verified.
+   */
+  semanticCalls: BillableCallUsage[];
+}> {
   let deterministicRejected = 0;
   const needsSemantic: GeneratedQuestion[] = [];
   const passed: GeneratedQuestion[] = [];
@@ -87,12 +100,16 @@ export async function applyQuestionQualityGate(
 
   // Independent semantic verdicts, in parallel -- fail-closed on any
   // rejected/low-confidence/malformed verdict.
+  const semanticCalls: BillableCallUsage[] = [];
   const verdicts = await Promise.all(
     needsSemantic.map(async (q) => {
       const verdict = await verifyQuestionQuality({
         question: q,
         requestedLanguage: req.language || 'en',
         context: req.context,
+        onUsage: (usage, model) => {
+          semanticCalls.push({ model, usage });
+        },
       }).catch(() => null);
       return { q, ok: evaluateQuestionQualityVerdict(verdict).pass };
     }),
@@ -107,7 +124,7 @@ export async function applyQuestionQualityGate(
   // Preserve the caller's original ordering.
   const kept = new Set<GeneratedQuestion>([...passed, ...semanticSurvivors]);
   const accepted = questions.filter((q) => kept.has(q));
-  return { accepted, deterministicRejected, semanticRejected };
+  return { accepted, deterministicRejected, semanticRejected, semanticCalls };
 }
 
 const QGEN_ROUTE = resolveModels('QUESTION_GENERATION');
@@ -140,6 +157,46 @@ function emitGateEvent(args: {
   );
 }
 
+/**
+ * LX-4P-PERF-R1G -- an OPERATION-level variant of `emitGateEvent`: prices
+ * every REAL billable call this attempt made (its own generation call
+ * plus every semantic-verification call the gate ran against it) and
+ * tags the event with `operationId` so it can be correlated with the
+ * OTHER attempt's event (e.g. Luna's event and a Terra fallback's event)
+ * without ever summing them into one another -- each event still
+ * reports only what THAT attempt itself consumed.
+ */
+function emitAggregateGateEvent(args: {
+  model: string;
+  fallbackUsed: boolean;
+  fallbackReason?: string;
+  acceptedCount: number;
+  rejectedCount: number;
+  gate: 'PASS' | 'DETERMINISTIC_FAIL' | 'SEMANTIC_FAIL' | 'REJECTED';
+  operationId: string;
+  calls: BillableCallUsage[];
+}): void {
+  recordRuntimeEvent(
+    buildAggregateRuntimeEvent(
+      {
+        capability: 'QUESTION_GENERATION',
+        provider: 'openai',
+        model: args.model,
+        promptId: 'quiz.question_generation',
+        promptVersion: 'v3',
+        latencyMs: 0,
+        fallbackUsed: args.fallbackUsed,
+        fallbackReason: args.fallbackReason,
+        qualityGateResult: args.gate,
+        acceptedCount: args.acceptedCount,
+        rejectedCount: args.rejectedCount,
+        operationId: args.operationId,
+      },
+      args.calls,
+    ),
+  );
+}
+
 function gateVerdict(accepted: number, det: number, sem: number): 'PASS' | 'DETERMINISTIC_FAIL' | 'SEMANTIC_FAIL' | 'REJECTED' {
   if (accepted > 0) return 'PASS';
   if (det > 0 && det >= sem) return 'DETERMINISTIC_FAIL';
@@ -155,6 +212,23 @@ export interface GateUnitResult {
   terraRejected: number;
   fallbackUsed: boolean;
   fallbackReason?: string;
+}
+
+/**
+ * LX-4P-PERF-R1G R7/R8 -- optional real-usage plumbing for
+ * `gateUnitWithTerraFallback`. Absent entirely, the function behaves
+ * EXACTLY as before (hardcoded-null `[ai-runtime]` events via
+ * `emitGateEvent`) -- this is how the >4 practice-chunk path stays
+ * byte-for-byte unaffected by this repair. Present, the caller has
+ * already collected every generation call it made (Luna's, and Terra's
+ * if a fallback fires) via `generateQuestionsForConcept`'s `onUsage`,
+ * and `operationId` correlates this unit's (up to two) `[ai-runtime]`
+ * events with each other and with every constituent `[ai]` call log.
+ */
+export interface GateUnitTelemetry {
+  lunaGenerationCalls: BillableCallUsage[];
+  terraGenerationCalls: BillableCallUsage[];
+  operationId: string;
 }
 
 /**
@@ -175,16 +249,30 @@ export async function gateUnitWithTerraFallback(
   luna: GeneratedQuestion[],
   req: QualityGateReq & { targetCount: number; fallbackWhen: 'EMPTY' | 'SHORT' },
   regenerateWithTerra: () => Promise<GeneratedQuestion[]>,
+  telemetry?: GateUnitTelemetry,
 ): Promise<GateUnitResult> {
   const g1 = await applyQuestionQualityGate(luna, req);
   const lunaRejected = g1.deterministicRejected + g1.semanticRejected;
-  emitGateEvent({
-    model: QGEN_ROUTE.primary,
-    fallbackUsed: false,
-    acceptedCount: g1.accepted.length,
-    rejectedCount: lunaRejected,
-    gate: gateVerdict(g1.accepted.length, g1.deterministicRejected, g1.semanticRejected),
-  });
+  const lunaGate = gateVerdict(g1.accepted.length, g1.deterministicRejected, g1.semanticRejected);
+  if (telemetry) {
+    emitAggregateGateEvent({
+      model: QGEN_ROUTE.primary,
+      fallbackUsed: false,
+      acceptedCount: g1.accepted.length,
+      rejectedCount: lunaRejected,
+      gate: lunaGate,
+      operationId: telemetry.operationId,
+      calls: [...telemetry.lunaGenerationCalls, ...g1.semanticCalls],
+    });
+  } else {
+    emitGateEvent({
+      model: QGEN_ROUTE.primary,
+      fallbackUsed: false,
+      acceptedCount: g1.accepted.length,
+      rejectedCount: lunaRejected,
+      gate: lunaGate,
+    });
+  }
 
   const enough =
     req.fallbackWhen === 'EMPTY' ? g1.accepted.length > 0 : g1.accepted.length >= req.targetCount;
@@ -203,14 +291,28 @@ export async function gateUnitWithTerraFallback(
   const terra = await regenerateWithTerra().catch(() => [] as GeneratedQuestion[]);
   const g2 = await applyQuestionQualityGate(terra, req);
   const terraRejected = g2.deterministicRejected + g2.semanticRejected;
-  emitGateEvent({
-    model: TERRA,
-    fallbackUsed: true,
-    fallbackReason,
-    acceptedCount: g2.accepted.length,
-    rejectedCount: terraRejected,
-    gate: gateVerdict(g2.accepted.length, g2.deterministicRejected, g2.semanticRejected),
-  });
+  const terraGate = gateVerdict(g2.accepted.length, g2.deterministicRejected, g2.semanticRejected);
+  if (telemetry) {
+    emitAggregateGateEvent({
+      model: TERRA,
+      fallbackUsed: true,
+      fallbackReason,
+      acceptedCount: g2.accepted.length,
+      rejectedCount: terraRejected,
+      gate: terraGate,
+      operationId: telemetry.operationId,
+      calls: [...telemetry.terraGenerationCalls, ...g2.semanticCalls],
+    });
+  } else {
+    emitGateEvent({
+      model: TERRA,
+      fallbackUsed: true,
+      fallbackReason,
+      acceptedCount: g2.accepted.length,
+      rejectedCount: terraRejected,
+      gate: terraGate,
+    });
+  }
 
   // Merge Luna survivors + Terra survivors, AI-free dedup, cap at target.
   const seen = new Set<string>();
@@ -258,16 +360,32 @@ export async function generateGatedQuestionBatch(
   };
   const target = Math.max(1, opts.count ?? 1);
 
-  const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, baseGenOpts).catch(
-    () => [] as GeneratedQuestion[],
-  );
+  // LX-4P-PERF-R1G R7/R8 -- a fresh id correlates this operation's (up
+  // to two) [ai-runtime] events with each other, and each generation
+  // call's REAL usage is captured via onUsage as it happens (survives
+  // whatever the Quality Gate later decides about the questions).
+  const operationId = randomUUID();
+  const lunaGenerationCalls: BillableCallUsage[] = [];
+  const terraGenerationCalls: BillableCallUsage[] = [];
+
+  const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
+    ...baseGenOpts,
+    onUsage: (usage) => {
+      lunaGenerationCalls.push({ model: QGEN_ROUTE.primary, usage });
+    },
+  }).catch(() => [] as GeneratedQuestion[]);
   const result = await gateUnitWithTerraFallback(
     luna,
     { conceptId, language: opts.language, context: ctx, targetCount: target, fallbackWhen: 'EMPTY' },
     () =>
-      generateQuestionsForConcept(conceptId, studentId, subjectId, { ...baseGenOpts, modelOverride: TERRA }).catch(
-        () => [] as GeneratedQuestion[],
-      ),
+      generateQuestionsForConcept(conceptId, studentId, subjectId, {
+        ...baseGenOpts,
+        modelOverride: TERRA,
+        onUsage: (usage) => {
+          terraGenerationCalls.push({ model: TERRA, usage });
+        },
+      }).catch(() => [] as GeneratedQuestion[]),
+    { lunaGenerationCalls, terraGenerationCalls, operationId },
   );
   return result.accepted;
 }

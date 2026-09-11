@@ -11,14 +11,15 @@
  *
  * Routed to the stronger evaluation model (Terra) per CAPABILITY_ROUTING.
  */
-import { executeAI, getPrompt } from '@/lib/ai';
-import { callModel } from '@/lib/ai/adapters/call-model';
+import { executeAI, getPrompt, AIExecutionFailure } from '@/lib/ai';
+import { callModel, parseCallModelUsage, type CallModelResult } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
 import { budgetFor } from '@/lib/ai/token-budgets';
 import { QUESTION_QUALITY_VERDICT_SCHEMA } from '@/lib/ai/schemas';
 import { parseAIJson } from '@/lib/ai-json';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import type { SemanticVerdict } from '@/lib/ai/quality-runtime';
+import type { ProviderUsage } from '@/lib/ai/usage';
 
 export interface QuestionQualityVerdict {
   conceptAligned: boolean;
@@ -90,6 +91,14 @@ export async function verifyQuestionQuality(input: {
   question: GeneratedQuestion;
   requestedLanguage: string;
   context?: { studentId?: string; subjectId?: string };
+  /**
+   * LX-4P-PERF-R1G: optional -- reports the REAL provider usage for this
+   * ONE semantic-verification call, whatever the outcome (accepted
+   * verdict, a rejected/invalid verdict shape, or a thrown
+   * AIExecutionFailure). Never fabricated; omitted fields mean the
+   * provider didn't report them. Purely additive.
+   */
+  onUsage?: (usage: ProviderUsage, model: string) => void;
 }): Promise<QuestionQualityVerdict | null> {
   const { question, requestedLanguage, context } = input;
   const prompt = getPrompt('quiz.question_quality_verify');
@@ -98,7 +107,7 @@ export async function verifyQuestionQuality(input: {
   const { system, user } = buildPrompt(question, requestedLanguage, !!question.visualAid);
 
   try {
-    const { result } = await executeAI<{ text: string; raw: unknown }, QuestionQualityVerdict>({
+    const { result, execution } = await executeAI<CallModelResult, QuestionQualityVerdict>({
       capability: prompt.capability,
       risk: 'HIGH_RISK',
       provider: route.provider,
@@ -111,6 +120,9 @@ export async function verifyQuestionQuality(input: {
           { provider: route.provider, model: route.primary, system, user, maxTokens: budget.maxOutputTokens, jsonSchema: QUESTION_QUALITY_VERDICT_SCHEMA, reasoningEffort: budget.reasoningEffort },
           signal,
         ),
+      // LX-4P-PERF-R1G: extracted right after `call` resolves, before
+      // `validate` -- survives a rejected/invalid verdict shape.
+      parseUsage: (raw) => parseCallModelUsage(raw),
       validate: (raw) => {
         try {
           const p = parseAIJson<QuestionQualityVerdict>(raw.text || '{}');
@@ -136,8 +148,23 @@ export async function verifyQuestionQuality(input: {
         }
       },
     });
+    input.onUsage?.(
+      { inputTokens: execution.inputTokens ?? null, cachedInputTokens: execution.cachedInputTokens ?? null, outputTokens: execution.outputTokens ?? null },
+      route.primary,
+    );
     return result;
-  } catch {
+  } catch (err) {
+    // LX-4P-PERF-R1G: a StudyUS-side validation rejection (thrown as
+    // AIExecutionFailure) still carries whatever real usage the provider
+    // returned -- that call was already billed. A `call`-level failure
+    // (timeout, network error) never obtained a response, so `execution`
+    // carries no usage there, matching the provider's actual bill.
+    if (err instanceof AIExecutionFailure) {
+      input.onUsage?.(
+        { inputTokens: err.execution.inputTokens ?? null, cachedInputTokens: err.execution.cachedInputTokens ?? null, outputTokens: err.execution.outputTokens ?? null },
+        route.primary,
+      );
+    }
     return null;
   }
 }

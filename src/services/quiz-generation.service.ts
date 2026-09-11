@@ -18,10 +18,11 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
-import { callModel, type CallModelResult } from '@/lib/ai/adapters/call-model';
+import { callModel, parseCallModelUsage, type CallModelResult } from '@/lib/ai/adapters/call-model';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
 import { GENERATED_QUESTION_BATCH_SCHEMA } from '@/lib/ai/schemas';
+import type { ProviderUsage } from '@/lib/ai/usage';
 
 // LX-4P-PERF-R1C C1/C16: the canonical learner runtime is OpenAI-only.
 // Question generation -> Luna (primary); grading/evaluation -> Terra.
@@ -373,6 +374,14 @@ export async function generateQuestionsForConcept(
     ibContext?: IBContext | null;
     /** LX-4P-PERF-R1C C5: force the Terra fallback model for a quality-gate retry. Defaults to the QUESTION_GENERATION primary (Luna). */
     modelOverride?: string;
+    /**
+     * LX-4P-PERF-R1G: optional -- reports the REAL provider usage for
+     * this generation call (whatever the outcome: accepted, rejected,
+     * or a structural parse failure). Never fabricated; omitted fields
+     * mean the provider didn't report them. Purely additive -- existing
+     * callers that don't pass it see no change.
+     */
+    onUsage?: (usage: ProviderUsage) => void;
   } = {}
 ): Promise<GeneratedQuestion[]> {
   const genModel = options.modelOverride || QGEN_ROUTE.primary;
@@ -436,7 +445,7 @@ export async function generateQuestionsForConcept(
 
     const maxTokens = Math.min(16000, 900 * count + 1500);
     const prompt = getPrompt('quiz.question_generation');
-    const { result: questions } = await executeAI({
+    const { result: questions, execution } = await executeAI({
       capability: prompt.capability,
       risk: 'HIGH_RISK', // correctAnswer feeds gradeStructuredAnswer's deterministic comparison directly
       provider: QGEN_ROUTE.provider,
@@ -516,7 +525,17 @@ ${shapeExamples}
         }
         return { valid: true, value: clean };
       },
+      // LX-4P-PERF-R1G: extracted once `call` resolves, BEFORE `validate`
+      // runs -- so this call's real usage survives regardless of whether
+      // `validate` accepts, rejects, or the batch falls back to `[]`.
+      parseUsage: (raw) => parseCallModelUsage(raw),
       fallback: () => [],
+    });
+
+    options.onUsage?.({
+      inputTokens: execution.inputTokens ?? null,
+      cachedInputTokens: execution.cachedInputTokens ?? null,
+      outputTokens: execution.outputTokens ?? null,
     });
 
     return mapRawQuestionsToGenerated(questions, conceptId, language);
