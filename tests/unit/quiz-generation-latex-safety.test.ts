@@ -7,6 +7,11 @@
  * (no live provider call, no DB write), plus direct unit tests of the
  * two helpers via generateQuestionsForConcept's own validate pipeline.
  *
+ * LX-4P-PERF-R1F: the wire shape these raw strings simulate is the
+ * strict Structured Output contract -- an OBJECT root with a
+ * "questions" array (`parseGeneratedQuestionBatch`'s one boundary),
+ * not a bare array. Every raw fixture below is wrapped accordingly.
+ *
  * IMPORTANT test-construction note: every raw JSON string below is built
  * as a literal JS template string, NOT via JSON.stringify(jsObject). A
  * single backslash written in a JS source string (e.g. '\\cdot') becomes
@@ -52,28 +57,33 @@ beforeEach(() => {
   executeAIMock.mockReset();
   retrieveContextMock.mockReset().mockResolvedValue({ chunks: [] });
   queryMock.mockReset().mockResolvedValue({ rows: [{ label: 'Concept', subject_name: 'Subject' }] });
-  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '[]' });
+  callAnthropicMessagesMock.mockReset().mockResolvedValue({ text: '{"questions":[]}' });
 });
 
 /**
  * Drives generateQuestionsForConcept's real validate() pipeline (CLASS A
- * repair -> parseAIJson/salvage -> CLASS B/newline-in-math rejection)
- * against a single raw model-response string, returning the accepted
- * clean question array. This is how every test below actually exercises
- * repairInvalidJsonEscapes/isLatexCorrupted -- both are private, so
- * they're proven correct through the one public surface that calls them.
+ * repair -> parseGeneratedQuestionBatch/salvage -> CLASS B/newline-in-math
+ * rejection) against a single raw model-response string, returning the
+ * accepted clean question array. This is how every test below actually
+ * exercises repairInvalidJsonEscapes/isLatexCorrupted -- both are
+ * private, so they're proven correct through the one public surface
+ * that calls them.
  */
 async function runValidatePipeline(rawResponseText: string): Promise<any[]> {
   executeAIMock.mockReset().mockImplementation(async (opts: any) => {
-    const validation = opts.validate({ text: rawResponseText });
+    const validation = opts.validate({ text: rawResponseText, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
     return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
   });
   return generateQuestionsForConcept('c1', 's1', 'subj1', { count: 1 });
 }
 
-/** Base multiple_choice fields, with `explanation` substituted -- built as a raw string, not JSON.stringify. */
+/**
+ * Base multiple_choice fields, with `explanation` substituted -- built as
+ * a raw string, not JSON.stringify. Wrapped in the strict object-root
+ * wire shape ({"questions": [...]}).
+ */
 function mcQuestionRaw(explanation: string): string {
-  return `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"${explanation}","difficulty":3,"question":"Q"}]`;
+  return `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"${explanation}","difficulty":3,"question":"Q"}]}`;
 }
 
 describe('CLASS A: invalid JSON escape repair (parse would otherwise throw; repair fixes it, intended LaTeX preserved)', () => {
@@ -146,9 +156,11 @@ describe('NEWLINE class: \\neq / \\nabla corrupted inside math -- rejected; legi
     // Step 14's actual captured data. Built via JSON.stringify here
     // deliberately -- there is no backslash-escaping subtlety to defeat
     // when the only special character is a real newline.
-    const raw = JSON.stringify([
-      { type: 'multiple_choice', options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], correctAnswer: 'A', difficulty: 3, question: 'Q', explanation: 'Paso 1: identify the pattern.\n\nPaso 2: solve for $x = 5$.' },
-    ]);
+    const raw = JSON.stringify({
+      questions: [
+        { type: 'multiple_choice', options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], correctAnswer: 'A', difficulty: 3, question: 'Q', explanation: 'Paso 1: identify the pattern.\n\nPaso 2: solve for $x = 5$.' },
+      ],
+    });
     const result = await runValidatePipeline(raw);
     expect(result).toHaveLength(1);
     expect(result[0].explanation).toContain('Paso 1');
@@ -178,37 +190,37 @@ describe('NEWLINE class: \\neq / \\nabla corrupted inside math -- rejected; legi
 
 describe('recursive inspection: the same policy applies to every LaTeX-capable field, not just explanation', () => {
   it('corruption in options[].text is rejected', async () => {
-    const raw = `[{"type":"multiple_choice","options":[{"id":"A","text":"$x \\neq y$"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"$x \\neq y$"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in correctAnswer is rejected', async () => {
-    const raw = `[{"type":"short_answer","correctAnswer":"$x \\neq y$","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"short_answer","correctAnswer":"$x \\neq y$","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in matchingPairs[].left/right is rejected', async () => {
-    const raw = `[{"type":"matching","matchingPairs":[{"left":"$x \\neq y$","right":"ok"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"matching","matchingPairs":[{"left":"$x \\neq y$","right":"ok"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in orderingItems[] is rejected', async () => {
-    const raw = `[{"type":"ordering","orderingItems":["step 1","$x \\neq y$"],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"ordering","orderingItems":["step 1","$x \\neq y$"],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in classificationCategories[] is rejected', async () => {
-    const raw = `[{"type":"classification","classificationCategories":["$x \\neq y$","other"],"classificationItems":[{"item":"a","category":"other"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"classification","classificationCategories":["$x \\neq y$","other"],"classificationItems":[{"item":"a","category":"other"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in classificationItems[].item is rejected', async () => {
-    const raw = `[{"type":"classification","classificationCategories":["cat"],"classificationItems":[{"item":"$x \\neq y$","category":"cat"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]`;
+    const raw = `{"questions":[{"type":"classification","classificationCategories":["cat"],"classificationItems":[{"item":"$x \\neq y$","category":"cat"}],"correctAnswer":"summary","explanation":"clean","difficulty":3,"question":"Q"}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 
   it('corruption in visualAid.caption/chartData fields is rejected', async () => {
-    const raw = `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q","visualAid":{"kind":"chart","chartData":{"chartType":"line","labels":["$x \\neq y$"],"values":[1]},"caption":"clean caption"}}]`;
+    const raw = `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q","visualAid":{"kind":"chart","chartData":{"chartType":"line","labels":["$x \\neq y$"],"values":[1]},"caption":"clean caption"}}]}`;
     expect(await runValidatePipeline(raw)).toHaveLength(0);
   });
 });
@@ -221,9 +233,11 @@ describe('currency-dollar false-positive (known, documented, accepted trade-off)
     // misread as "inside a math span" and the question is rejected.
     // Documented and accepted (Step 17/18): the failure direction only
     // ever costs one fewer question, never lets corrupted content through.
-    const raw = JSON.stringify([
-      { type: 'multiple_choice', options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], correctAnswer: 'A', difficulty: 3, question: 'Q', explanation: 'It costs $5\nnot $10 as I said.' },
-    ]);
+    const raw = JSON.stringify({
+      questions: [
+        { type: 'multiple_choice', options: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }], correctAnswer: 'A', difficulty: 3, question: 'Q', explanation: 'It costs $5\nnot $10 as I said.' },
+      ],
+    });
     const result = await runValidatePipeline(raw);
     expect(result).toHaveLength(0); // rejected -- the documented, accepted trade-off, not a bug
   });
@@ -253,8 +267,10 @@ describe('quick_check: any corrupted slot fails the WHOLE generation (all-or-not
       const i = call++;
       const assignedTypes = ['multiple_choice', 'true_false', 'yes_no', 'short_answer', 'multiple_choice', 'true_false'];
       const type = assignedTypes[i];
-      const text = i === 2 ? `[{"type":"${type}","question":"Q","correctAnswer":"a","explanation":"$x \\neq y$","difficulty":3}]` : `[{"type":"${type}","question":"Q","correctAnswer":"a","explanation":"clean","difficulty":3}]`;
-      const validation = opts.validate({ text });
+      const text = i === 2
+        ? `{"questions":[{"type":"${type}","question":"Q","correctAnswer":"a","explanation":"$x \\neq y$","difficulty":3}]}`
+        : `{"questions":[{"type":"${type}","question":"Q","correctAnswer":"a","explanation":"clean","difficulty":3}]}`;
+      const validation = opts.validate({ text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
       return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
     });
     const result = await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
@@ -265,8 +281,8 @@ describe('quick_check: any corrupted slot fails the WHOLE generation (all-or-not
 describe('practice/review chunking: a corrupted question within a chunk reduces the final count, never fails the whole quiz (partial tolerance preserved)', () => {
   it('one corrupted question among several in a chunk is filtered out, the rest still delivered', async () => {
     executeAIMock.mockImplementation(async (opts: any) => {
-      const text = `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean 1","difficulty":3,"question":"Q1"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Q2"}]`;
-      const validation = opts.validate({ text });
+      const text = `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean 1","difficulty":3,"question":"Q1"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Q2"}]}`;
+      const validation = opts.validate({ text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
       return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
     });
     const result = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 6 }); // count=6 -> 2 chunks
@@ -276,8 +292,8 @@ describe('practice/review chunking: a corrupted question within a chunk reduces 
 
   it('final result never exceeds requestedCount even with corruption filtering in play', async () => {
     executeAIMock.mockImplementation(async (opts: any) => {
-      const text = `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q"}]`;
-      const validation = opts.validate({ text });
+      const text = `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Q"}]}`;
+      const validation = opts.validate({ text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
       return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
     });
     const result = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 6 });

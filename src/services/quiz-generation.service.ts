@@ -18,9 +18,10 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
-import { callModel } from '@/lib/ai/adapters/call-model';
+import { callModel, type CallModelResult } from '@/lib/ai/adapters/call-model';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
+import { GENERATED_QUESTION_BATCH_SCHEMA } from '@/lib/ai/schemas';
 
 // LX-4P-PERF-R1C C1/C16: the canonical learner runtime is OpenAI-only.
 // Question generation -> Luna (primary); grading/evaluation -> Terra.
@@ -469,43 +470,47 @@ export async function generateQuestionsForConcept(
             provider: QGEN_ROUTE.provider,
             model: genModel,
             maxTokens,
+            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
             system: systemPrompt,
             user: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
-Output a JSON array (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
-[
+Output a JSON object (no markdown fences) with this exact shape -- a "questions" array, one element per question, each element's shape depending on its "type":
+{"questions": [
 ${shapeExamples}
-]`,
+]}`,
           },
           signal
         ),
       validate: (raw) => {
-        // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair before
-        // both parse attempts, then CLASS B/newline-in-math corruption
-        // filtering on whatever array results -- see the doc comment
-        // above repairInvalidJsonEscapes/isLatexCorrupted for the full
-        // rationale. This path tolerates partial results already (the
-        // prompt's own "fewer is fine" semantics), so corrupted items
-        // are filtered out rather than failing the whole call.
-        const repaired = repairInvalidJsonEscapes(raw.text);
-        let parsed: any[];
-        try {
-          parsed = parseAIJson<any[]>(repaired);
-        } catch {
-          // A large batch (many verbose types like case_study/step_by_step)
-          // can still hit the token budget and cut off mid-array. Salvage
-          // whichever leading questions are already complete rather than
-          // discarding a full, expensive generation call.
-          const salvaged = salvageJsonArray(repaired);
-          if (salvaged.length === 0) {
-            console.error('Failed to parse Claude response:', raw.text);
-            return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
-          }
-          console.warn(`Salvaged ${salvaged.length} questions from a truncated response`);
-          parsed = salvaged;
+        // LX-4P-PERF-R1F: safe structural diagnostics + the ONE
+        // object-root -> GeneratedQuestion[] boundary (parseGeneratedQuestionBatch).
+        // STABILIZATION QUIZ PERFORMANCE Step 18's CLASS A/B LaTeX repair
+        // and corruption filtering still runs on whatever questions result.
+        const message = (raw.raw as any)?.choices?.[0]?.message;
+        const finishReason = (raw.raw as any)?.choices?.[0]?.finish_reason ?? null;
+        const parseStart = Date.now();
+        const outcome = parseGeneratedQuestionBatch(raw.text, finishReason);
+        logQuestionBatchDiagnostics({
+          model: raw.model,
+          finishReason,
+          hasContent: !!raw.text,
+          contentLength: raw.text?.length ?? 0,
+          hasRefusal: !!message?.refusal,
+          hasUsage: !!(raw.raw as any)?.usage,
+          parsedRoot: outcome.parsedRoot,
+          keys: outcome.keys,
+          questionsCount: outcome.ok ? outcome.questions.length : null,
+          failureStage: outcome.failureStage,
+          parseMs: Date.now() - parseStart,
+        });
+        if (!outcome.ok) {
+          return { valid: false, errors: [`${outcome.failureStage}: ${outcome.detail}`] };
         }
-        const clean = parsed.filter((q) => !isLatexCorrupted(q));
-        const rejected = parsed.length - clean.length;
+        // This path tolerates partial results already (the prompt's own
+        // "fewer is fine" semantics), so corrupted items are filtered out
+        // rather than failing the whole call.
+        const clean = outcome.questions.filter((q: any) => !isLatexCorrupted(q));
+        const rejected = outcome.questions.length - clean.length;
         if (rejected > 0) {
           console.warn(`generateQuestionsForConcept: rejected ${rejected} question(s) for suspected LaTeX/JSON corruption`);
         }
@@ -618,10 +623,10 @@ export async function generateQuickCheckQuestions(
       const shapeExample = jsonShapeExample(assignedType, false);
       const userMessage = `This is question ${slotIndex + 1} of ${QUICK_CHECK_SLOT_COUNT} in a quick confidence check. Generate EXACTLY 1 question of type "${assignedType}" -- never any other type -- covering a distinct aspect of the concept from the other questions in this set.
 
-Output a JSON array containing exactly one element (no markdown fences), shaped like:
-[
+Output a JSON object (no markdown fences) with this exact shape -- a "questions" array containing exactly one element:
+{"questions": [
 ${shapeExample}
-]`;
+]}`;
       return executeAI({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
@@ -633,29 +638,37 @@ ${shapeExample}
         context: { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateQuickCheckQuestions' },
         call: (signal) =>
           callModel(
-            { provider: QGEN_ROUTE.provider, model, maxTokens: budgetFor('question_generation_slot').maxOutputTokens, reasoningEffort: budgetFor('question_generation_slot').reasoningEffort, system: systemPrompt, user: userMessage },
+            {
+              provider: QGEN_ROUTE.provider, model,
+              maxTokens: budgetFor('question_generation_slot').maxOutputTokens,
+              reasoningEffort: budgetFor('question_generation_slot').reasoningEffort,
+              jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
+              system: systemPrompt, user: userMessage,
+            },
             signal
           ),
         validate: (raw) => {
-          // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
-          // before both parse attempts; a CLASS B/newline-in-math
+          // LX-4P-PERF-R1F: same object-root boundary as every other
+          // QUESTION_GENERATION call site. A CLASS B/newline-in-math
           // corruption hit makes this slot invalid, same as any other
           // validation failure -- routes through the existing
           // fallback -> null -> all-or-nothing contract below, never a
           // separate failure path.
-          const repaired = repairInvalidJsonEscapes(raw.text);
-          let parsed: any[];
-          try {
-            parsed = parseAIJson<any[]>(repaired);
-          } catch {
-            const salvaged = salvageJsonArray(repaired);
-            if (salvaged.length === 0) {
-              console.error('Failed to parse Claude response for quick_check slot:', raw.text);
-              return { valid: false, errors: ['Response was not valid JSON and no question could be salvaged'] };
-            }
-            parsed = salvaged;
+          const message = (raw.raw as any)?.choices?.[0]?.message;
+          const finishReason = (raw.raw as any)?.choices?.[0]?.finish_reason ?? null;
+          const parseStart = Date.now();
+          const outcome = parseGeneratedQuestionBatch(raw.text, finishReason);
+          logQuestionBatchDiagnostics({
+            model: raw.model, finishReason, hasContent: !!raw.text, contentLength: raw.text?.length ?? 0,
+            hasRefusal: !!message?.refusal, hasUsage: !!(raw.raw as any)?.usage,
+            parsedRoot: outcome.parsedRoot, keys: outcome.keys,
+            questionsCount: outcome.ok ? outcome.questions.length : null,
+            failureStage: outcome.failureStage, parseMs: Date.now() - parseStart,
+          });
+          if (!outcome.ok) {
+            return { valid: false, errors: [`Slot ${slotIndex}: ${outcome.failureStage}: ${outcome.detail}`] };
           }
-          const q = parsed[0];
+          const q = outcome.questions[0];
           if (!q || !q.question || q.type !== assignedType) {
             return { valid: false, errors: [`Slot ${slotIndex} did not return a valid "${assignedType}" question`] };
           }
@@ -890,10 +903,10 @@ export async function generatePracticeQuestions(
       const maxTokens = Math.min(16000, 900 * chunkSize + 1500);
       const userMessage = `Generate UP TO ${chunkSize} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${chunkSize}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
-Output a JSON array (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
-[
+Output a JSON object (no markdown fences) with this exact shape -- a "questions" array, one element per question, each element's shape depending on its "type":
+{"questions": [
 ${shapeExamples}
-]`;
+]}`;
       return executeAI({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
@@ -904,28 +917,28 @@ ${shapeExamples}
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
-          // STABILIZATION QUIZ PERFORMANCE Step 18: CLASS A repair
-          // before both parse attempts, then CLASS B/newline-in-math
-          // corruption filtering -- this chunk path already tolerates
-          // partial results (PRACTICE semantics), so corrupted items
-          // are filtered out, never fail the whole chunk.
-          const repaired = repairInvalidJsonEscapes(raw.text);
-          let parsed: any[];
-          try {
-            parsed = parseAIJson<any[]>(repaired);
-          } catch {
-            const salvaged = salvageJsonArray(repaired);
-            if (salvaged.length === 0) {
-              console.error('Failed to parse Claude response for a practice/review chunk:', raw.text);
-              return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
-            }
-            console.warn(`Salvaged ${salvaged.length} questions from a truncated practice/review chunk response`);
-            parsed = salvaged;
+          // LX-4P-PERF-R1F: same object-root boundary as every other
+          // QUESTION_GENERATION call site. This chunk path already
+          // tolerates partial results (PRACTICE semantics), so corrupted
+          // items are filtered out, never fail the whole chunk.
+          const message = (raw.raw as any)?.choices?.[0]?.message;
+          const finishReason = (raw.raw as any)?.choices?.[0]?.finish_reason ?? null;
+          const parseStart = Date.now();
+          const outcome = parseGeneratedQuestionBatch(raw.text, finishReason);
+          logQuestionBatchDiagnostics({
+            model: raw.model, finishReason, hasContent: !!raw.text, contentLength: raw.text?.length ?? 0,
+            hasRefusal: !!message?.refusal, hasUsage: !!(raw.raw as any)?.usage,
+            parsedRoot: outcome.parsedRoot, keys: outcome.keys,
+            questionsCount: outcome.ok ? outcome.questions.length : null,
+            failureStage: outcome.failureStage, parseMs: Date.now() - parseStart,
+          });
+          if (!outcome.ok) {
+            return { valid: false, errors: [`${outcome.failureStage}: ${outcome.detail}`] };
           }
-          const clean = parsed.filter((q) => !isLatexCorrupted(q));
-          const rejected = parsed.length - clean.length;
+          const clean = outcome.questions.filter((q: any) => !isLatexCorrupted(q));
+          const rejected = outcome.questions.length - clean.length;
           if (rejected > 0) {
             console.warn(`generatePracticeQuestions chunk: rejected ${rejected} question(s) for suspected LaTeX/JSON corruption`);
           }
@@ -1183,11 +1196,11 @@ export async function generateRetentionCheckQuestions(
       const maxTokens = Math.min(16000, 900 * RETENTION_QUESTIONS_PER_CHUNK + 1500);
       const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT}, contributing ${RETENTION_QUESTIONS_PER_CHUNK} of the ${RETENTION_REQUIRED_COUNT} total questions in this set. Generate EXACTLY ${RETENTION_QUESTIONS_PER_CHUNK} questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
 
-Output a JSON array containing exactly ${RETENTION_QUESTIONS_PER_CHUNK} elements (no markdown fences). Each element's shape depends on its "type" -- here is the shape for each allowed type:
-[
+Output a JSON object (no markdown fences) with this exact shape -- a "questions" array containing exactly ${RETENTION_QUESTIONS_PER_CHUNK} elements, each element's shape depending on its "type":
+{"questions": [
 ${shapeExamples}
-]`;
-      return executeAI<{ text: string }, RetentionChunkOutcome>({
+]}`;
+      return executeAI<CallModelResult, RetentionChunkOutcome>({
         capability: prompt.capability,
         risk: 'HIGH_RISK',
         provider: QGEN_ROUTE.provider,
@@ -1197,20 +1210,25 @@ ${shapeExamples}
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, system: systemPrompt, user: userMessage }, signal),
+          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage }, signal),
         validate: (raw) => {
-          const repaired = repairInvalidJsonEscapes(raw.text);
-          let parsed: any[];
-          try {
-            parsed = parseAIJson<any[]>(repaired);
-          } catch {
-            const salvaged = salvageJsonArray(repaired);
-            if (salvaged.length === 0) {
-              console.error('Failed to parse Claude response for a retention_check chunk:', raw.text);
-              return { valid: false, errors: ['Response was not valid JSON and no questions could be salvaged'] };
-            }
-            parsed = salvaged;
+          // LX-4P-PERF-R1F: same object-root boundary as every other
+          // QUESTION_GENERATION call site.
+          const message = (raw.raw as any)?.choices?.[0]?.message;
+          const finishReason = (raw.raw as any)?.choices?.[0]?.finish_reason ?? null;
+          const parseStart = Date.now();
+          const outcome = parseGeneratedQuestionBatch(raw.text, finishReason);
+          logQuestionBatchDiagnostics({
+            model: raw.model, finishReason, hasContent: !!raw.text, contentLength: raw.text?.length ?? 0,
+            hasRefusal: !!message?.refusal, hasUsage: !!(raw.raw as any)?.usage,
+            parsedRoot: outcome.parsedRoot, keys: outcome.keys,
+            questionsCount: outcome.ok ? outcome.questions.length : null,
+            failureStage: outcome.failureStage, parseMs: Date.now() - parseStart,
+          });
+          if (!outcome.ok) {
+            return { valid: false, errors: [`Chunk ${chunkIndex}: ${outcome.failureStage}: ${outcome.detail}`] };
           }
+          const parsed = outcome.questions;
           // LaTeX-corrupted items are filtered out here -- if that drops
           // the chunk below 3, it surfaces as an ordinary VALIDATION
           // failure below (Step 22D: corruption has no separately
@@ -1601,15 +1619,138 @@ export async function generateQuestionVariant(
   };
 }
 
-/** Recover the leading complete objects from a JSON array cut off mid-stream. */
-function salvageJsonArray(text: string): any[] {
+/**
+ * LX-4P-PERF-R1F -- safe structural diagnostics only. NEVER includes
+ * question text, options, explanations, prompts, or RAG content --
+ * shape/counts/booleans only, safe for QA to read from logs.
+ */
+type QuestionBatchFailureStage =
+  | 'NONE'
+  | 'EMPTY_RESPONSE'
+  | 'OUTPUT_TRUNCATED'
+  | 'INVALID_JSON'
+  | 'BATCH_WRAPPER_INVALID';
+
+interface QuestionBatchDiagnostics {
+  model: string;
+  finishReason: string | null;
+  hasContent: boolean;
+  contentLength: number;
+  hasRefusal: boolean;
+  hasUsage: boolean;
+  parsedRoot: 'OBJECT' | 'ARRAY' | 'NULL' | 'INVALID_JSON';
+  keys: string[];
+  questionsCount: number | null;
+  failureStage: QuestionBatchFailureStage;
+  /** R12: proves domain parsing is negligible next to the model call itself (which is logged separately by the gateway's own [ai] execution record). */
+  parseMs: number;
+}
+
+function logQuestionBatchDiagnostics(d: QuestionBatchDiagnostics): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[ai-structure]', JSON.stringify(d));
+  } catch {
+    /* logging must never throw */
+  }
+}
+
+interface QuestionBatchParseOutcome {
+  ok: boolean;
+  questions: any[];
+  failureStage: QuestionBatchFailureStage;
+  detail?: string;
+  parsedRoot: QuestionBatchDiagnostics['parsedRoot'];
+  keys: string[];
+}
+
+/**
+ * LX-4P-PERF-R1F R5 -- the ONE explicit boundary between OpenAI's
+ * strict, OBJECT-rooted Structured Output (`{"questions": [...]}` --
+ * required because strict Structured Outputs cannot root a schema in a
+ * bare array) and this module's array-shaped `GeneratedQuestion[]`
+ * domain contract. No other function in this file unwraps `.questions`
+ * itself -- every QUESTION_GENERATION call site's `validate` closure
+ * goes through here.
+ *
+ * Root cause this replaces: every call site used to do
+ * `parsed = parseAIJson<any[]>(repaired)` -- a compile-time-only cast
+ * with NO runtime check -- and then call `.filter()`/index into
+ * `parsed` as if it were always an array. Once the model (correctly)
+ * returned an object (`{"questions": [...]}"`), `.filter` on a plain
+ * object threw, and that uncaught throw inside `validate` was what
+ * `executeAI` classified as `INVALID_RESPONSE` -- a StudyUS contract
+ * mismatch, not a provider or quality defect. This function makes that
+ * shape check explicit and never throws; a mismatch becomes an ordinary
+ * `{valid:false}` (-> `VALIDATION_ERROR`, correctly classified) instead
+ * of an uncaught exception.
+ *
+ * R6: this is the LIVE OpenAI runtime boundary -- it never silently
+ * accepts a bare array here (that would hide a real regression).
+ * Historical/offline `GeneratedQuestion[]` content (the Sonnet quality
+ * baseline corpus, cached `quiz_sessions.questions` rows) is read
+ * directly from storage as already-typed `GeneratedQuestion[]` and
+ * never passes through this parser at all -- that compatibility stays
+ * explicit at the storage boundary, not smuggled in here.
+ */
+function parseGeneratedQuestionBatch(rawText: string, finishReason: string | null): QuestionBatchParseOutcome {
+  if (!rawText) {
+    return { ok: false, questions: [], failureStage: 'EMPTY_RESPONSE', detail: 'empty content', parsedRoot: 'NULL', keys: [] };
+  }
+
+  const repaired = repairInvalidJsonEscapes(rawText);
+  let parsed: unknown;
+  try {
+    parsed = parseAIJson<unknown>(repaired);
+  } catch {
+    const salvaged = salvageQuestionBatch(repaired);
+    if (salvaged.length > 0) {
+      return { ok: true, questions: salvaged, failureStage: 'NONE', detail: `salvaged ${salvaged.length} from a truncated response`, parsedRoot: 'INVALID_JSON', keys: [] };
+    }
+    return {
+      ok: false,
+      questions: [],
+      failureStage: finishReason === 'length' ? 'OUTPUT_TRUNCATED' : 'INVALID_JSON',
+      detail: 'not valid JSON and nothing could be salvaged',
+      parsedRoot: 'INVALID_JSON',
+      keys: [],
+    };
+  }
+
+  const parsedRoot: QuestionBatchDiagnostics['parsedRoot'] =
+    parsed === null ? 'NULL' : Array.isArray(parsed) ? 'ARRAY' : typeof parsed === 'object' ? 'OBJECT' : 'INVALID_JSON';
+  const keys = parsedRoot === 'OBJECT' ? Object.keys(parsed as object) : [];
+
+  if (parsedRoot !== 'OBJECT' || !Array.isArray((parsed as any).questions)) {
+    return {
+      ok: false,
+      questions: [],
+      failureStage: 'BATCH_WRAPPER_INVALID',
+      detail: `expected an object with a "questions" array; got ${parsedRoot.toLowerCase()}`,
+      parsedRoot,
+      keys,
+    };
+  }
+
+  return { ok: true, questions: (parsed as any).questions, failureStage: 'NONE', parsedRoot, keys };
+}
+
+/**
+ * Recover the leading complete question objects from a
+ * `{"questions": [ ...` payload cut off mid-stream -- the object-wrapper
+ * analogue of the old bare-array salvage. Tries progressively shorter
+ * prefixes, closing both the array and the wrapping object.
+ */
+function salvageQuestionBatch(text: string): any[] {
   const stripped = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  const qIdx = stripped.indexOf('"questions"');
+  if (qIdx === -1) return [];
   let lastBrace = stripped.lastIndexOf('}');
-  while (lastBrace > 0) {
-    const candidate = stripped.slice(0, lastBrace + 1) + ']';
+  while (lastBrace > qIdx) {
+    const candidate = stripped.slice(0, lastBrace + 1) + ']}';
     try {
       const parsed = JSON.parse(candidate);
-      if (Array.isArray(parsed)) return parsed;
+      if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
     } catch {
       // keep shrinking
     }
@@ -1635,7 +1776,7 @@ function salvageJsonArray(text: string): any[] {
  * `\c`, `\s`, `\a` etc. aren't valid JSON escapes, so JSON.parse throws.
  * repairInvalidJsonEscapes fixes this by doubling any backslash NOT
  * already followed by a valid JSON escape character -- applied to raw
- * model output BEFORE parseAIJson/salvageJsonArray. This alone is NOT
+ * model output BEFORE parseAIJson/salvageQuestionBatch. This alone is NOT
  * sufficient for CLASS B (Step 16's own finding) -- doubling a
  * backslash that's already a valid escape would break genuinely
  * intended `\n`/`\t`/etc., so it deliberately leaves those alone.

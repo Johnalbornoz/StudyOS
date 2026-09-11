@@ -33,12 +33,14 @@ function sourceQuestion(overrides: Partial<GeneratedQuestion> = {}): GeneratedQu
 }
 
 // LX-4P-PERF-R1C: QUESTION_GENERATION routes to OpenAI -- the mock returns
-// the OpenAI Chat Completions wire shape.
+// the OpenAI Chat Completions wire shape. LX-4P-PERF-R1F: the strict
+// Structured Output wire shape is object-rooted ({"questions": [...]});
+// this helper wraps the caller's array the same way the real model does.
 function mockAnthropicResponse(questions: any[]) {
   return {
     ok: true,
     text: async () => '',
-    json: async () => ({ choices: [{ message: { content: JSON.stringify(questions) } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }),
+    json: async () => ({ choices: [{ message: { content: JSON.stringify({ questions }) } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }),
   };
 }
 

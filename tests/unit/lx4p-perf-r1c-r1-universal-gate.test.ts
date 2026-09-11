@@ -56,7 +56,7 @@ describe('R1C-R1 R1 -- learner-facing generation path audit', () => {
   });
 
   it('Prove / assessment variant: generateQuestionVariant clears the deterministic contract + semantic verdict before acceptance', () => {
-    const v = QG.slice(QG.indexOf('export async function generateQuestionVariant'), QG.indexOf('function salvageJsonArray'));
+    const v = QG.slice(QG.indexOf('export async function generateQuestionVariant'), QG.indexOf('function parseGeneratedQuestionBatch'));
     expect(v).toMatch(/applyQuestionQualityGate\(\[rawVariant\]/);
     expect(v).toMatch(/if \(vGate\.accepted\.length === 0\) return null/);
   });

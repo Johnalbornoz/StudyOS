@@ -37,7 +37,12 @@ const generatedQuestion = {
     question: str,
     correctAnswer: str,
     explanation: str,
-    difficulty: { type: 'integer', minimum: 1, maximum: 5 },
+    // LX-4P-PERF-R1F R7: no `minimum`/`maximum` -- numeric range keywords
+    // are not part of OpenAI's confirmed-supported strict-mode subset
+    // (type/properties/required/additionalProperties/items/enum/anyOf/
+    // $ref only). The 1-5 range is still enforced downstream by the
+    // deterministic Question Quality Contract.
+    difficulty: { type: 'integer' },
     options: {
       type: ['array', 'null'],
       items: { type: 'object', additionalProperties: false, properties: { id: str, text: str }, required: ['id', 'text'] },

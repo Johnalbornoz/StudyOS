@@ -46,17 +46,20 @@ describe('generateQuestionsForConcept -- Phase 3D cognitiveLevel/questionIntent'
 
     global.fetch = vi.fn().mockResolvedValue(
       anthropicTextResponse(
-        JSON.stringify([
-          {
-            type: 'short_answer',
-            question: 'Apply F=ma to find force given m=2kg, a=3m/s^2.',
-            correctAnswer: '6N',
-            explanation: 'F = 2 * 3 = 6N.',
-            difficulty: 3,
-            cognitiveLevel: 'APPLICATION',
-            questionIntent: 'CHECK_APPLICATION',
-          },
-        ])
+        // LX-4P-PERF-R1F: strict Structured Output wire shape -- object root, "questions" array.
+        JSON.stringify({
+          questions: [
+            {
+              type: 'short_answer',
+              question: 'Apply F=ma to find force given m=2kg, a=3m/s^2.',
+              correctAnswer: '6N',
+              explanation: 'F = 2 * 3 = 6N.',
+              difficulty: 3,
+              cognitiveLevel: 'APPLICATION',
+              questionIntent: 'CHECK_APPLICATION',
+            },
+          ],
+        })
       )
     ) as any;
 
@@ -74,17 +77,19 @@ describe('generateQuestionsForConcept -- Phase 3D cognitiveLevel/questionIntent'
 
     global.fetch = vi.fn().mockResolvedValue(
       anthropicTextResponse(
-        JSON.stringify([
-          {
-            type: 'short_answer',
-            question: 'What is F=ma?',
-            correctAnswer: 'Newton’s Second Law',
-            explanation: 'x',
-            difficulty: 2,
-            cognitiveLevel: 'MASTERY', // not a real enum value
-            questionIntent: 'VERIFICATION', // reserved for the calling context, never AI-generated
-          },
-        ])
+        JSON.stringify({
+          questions: [
+            {
+              type: 'short_answer',
+              question: 'What is F=ma?',
+              correctAnswer: 'Newton’s Second Law',
+              explanation: 'x',
+              difficulty: 2,
+              cognitiveLevel: 'MASTERY', // not a real enum value
+              questionIntent: 'VERIFICATION', // reserved for the calling context, never AI-generated
+            },
+          ],
+        })
       )
     ) as any;
 
@@ -102,9 +107,11 @@ describe('generateQuestionsForConcept -- Phase 3D cognitiveLevel/questionIntent'
 
     global.fetch = vi.fn().mockResolvedValue(
       anthropicTextResponse(
-        JSON.stringify([
-          { type: 'short_answer', question: 'What is F=ma?', correctAnswer: 'Newton’s Second Law', explanation: 'x', difficulty: 2 },
-        ])
+        JSON.stringify({
+          questions: [
+            { type: 'short_answer', question: 'What is F=ma?', correctAnswer: 'Newton’s Second Law', explanation: 'x', difficulty: 2 },
+          ],
+        })
       )
     ) as any;
 
