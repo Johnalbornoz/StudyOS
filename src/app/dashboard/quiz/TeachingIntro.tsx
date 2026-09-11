@@ -50,6 +50,7 @@ export default function TeachingIntro({
   conceptLabel,
   quizMode,
   locale,
+  exitHref,
   onDone,
 }: {
   view: TeachingExperienceView;
@@ -81,6 +82,14 @@ export default function TeachingIntro({
    * does not. (Supersedes the LX-4P-R2 R13 uiLocale split.)
    */
   locale: Locale;
+  /**
+   * LX-4P-PERF-R1E-R1 R2/R5: destination for the "Exit the activity"
+   * action when a canonically REQUIRED GUIDE stage fails to prepare.
+   * StudyUS decides the learning path -- there is no "skip GUIDE"; the
+   * only way out of a failed GUIDE besides retrying is leaving the
+   * activity entirely (never a silent fall-through to Practice).
+   */
+  exitHref: string;
   onDone: () => void;
 }) {
   const t = getMessages(locale);
@@ -99,9 +108,14 @@ export default function TeachingIntro({
   const [guided, setGuided] = useState<Guided | null>(null);
   // LX-4P-PERF-R1 R6: MODEL/EXPLAIN and GUIDE prepare INDEPENDENTLY.
   // MODEL renders as soon as its explanation is ready -- it never waits
-  // on GUIDE (which additionally needs the background quiz session).
+  // on GUIDE.
   const [expLoading, setExpLoading] = useState(needsExplanation);
-  const [gpLoading, setGpLoading] = useState(needsGuided);
+  // LX-4P-PERF-R1E-R1 R1/R3: GUIDE's own lifecycle, explicit and
+  // separate from Practice question-generation state (genState, on the
+  // quiz page). 'error' is a distinct, TERMINAL-until-retried state --
+  // it is never collapsed into "no GUIDE" (see effectivePlan below).
+  const [guideState, setGuideState] = useState<'idle' | 'loading' | 'ready' | 'error'>(needsGuided ? 'loading' : 'idle');
+  const [guideAttempt, setGuideAttempt] = useState(0);
   const [exampleStep, setExampleStep] = useState(1);
 
   // EXPLAIN / MODEL content -- needs only conceptId, fires immediately.
@@ -146,11 +160,27 @@ export default function TeachingIntro({
   // locale) is available, fully independent of and in parallel with
   // question generation. A failed or never-returning question batch
   // (quizId never arriving) must never leave GUIDE pending forever.
+  //
+  // LX-4P-PERF-R1E-R1 R3: `guideKeyRef` makes one attempt idempotent
+  // (StrictMode double-invoke / unrelated re-renders never refire it)
+  // while a genuinely new concept/mode/locale OR an explicit retry
+  // (`guideAttempt` bump) always does fire a fresh request.
+  const guideKeyRef = useRef<string | null>(null);
+  const guideRetryInFlightRef = useRef(false);
   useEffect(() => {
-    if (!needsGuided) { setGpLoading(false); return; }
+    if (!needsGuided) { setGuideState('idle'); return; }
+    const key = `${conceptId}@${quizMode}@${locale}@${guideAttempt}`;
+    if (guideKeyRef.current === key) return;
+    guideKeyRef.current = key;
+    guideRetryInFlightRef.current = false;
     let cancelled = false;
-    setGpLoading(true);
-    try { console.log('[perf]', JSON.stringify({ label: 'GUIDE_REQUEST_STARTED', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
+    setGuideState('loading');
+    try {
+      console.log('[perf]', JSON.stringify({
+        label: guideAttempt > 0 ? 'GUIDE_RETRY_STARTED' : 'GUIDE_REQUEST_STARTED',
+        t: Math.round(performance.now()), conceptId,
+      }));
+    } catch { /* noop */ }
     fetch('/api/learning/guided-practice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -161,30 +191,52 @@ export default function TeachingIntro({
       .catch(() => null)
       .then((gp) => {
         if (cancelled) return;
-        try { console.log('[perf]', JSON.stringify({ label: gp ? 'GUIDE_READY' : 'GUIDE_FAILED', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
-        setGuided(gp);
-        setGpLoading(false);
+        guideRetryInFlightRef.current = false;
+        // LX-4P-PERF-R1E-R1 R1: a canonically REQUIRED GUIDE that comes
+        // back empty is a FAILURE, never silently treated as "not
+        // required" -- see effectivePlan below, which never drops GUIDE
+        // for this reason.
+        const ok = !!gp && Array.isArray(gp.steps) && gp.steps.length > 0;
+        try {
+          console.log('[perf]', JSON.stringify({ label: ok ? 'GUIDE_READY' : 'GUIDE_FAILED', t: Math.round(performance.now()), conceptId }));
+        } catch { /* noop */ }
+        if (ok) {
+          setGuided(gp);
+          setGuideState('ready');
+        } else {
+          setGuided(null);
+          setGuideState('error');
+        }
       });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conceptId, quizMode, locale]);
+  }, [conceptId, quizMode, locale, guideAttempt]);
 
-  // Drop stages whose content failed to load, so we never show an empty stage.
+  // LX-4P-PERF-R1E-R1 R3: RETRY issues a fresh bounded request. The ref
+  // guard blocks a second concurrent request from a rapid double-click;
+  // the effect above additionally no-ops on a repeated identical key.
+  function retryGuide() {
+    if (guideRetryInFlightRef.current) return;
+    guideRetryInFlightRef.current = true;
+    setGuideAttempt((a) => a + 1);
+  }
+
+  // Drop stages whose content failed to load, so we never show an empty
+  // stage -- EXCEPT GUIDE. LX-4P-PERF-R1E-R1 R1: a canonical GUIDE stage
+  // is never removed from the effective plan because its content failed
+  // or is still loading. It stays a reserved stage with its own
+  // pending/ready/error presentation below; only GUIDE_NOT_REQUIRED
+  // (never in `plan` to begin with, i.e. `!needsGuided`) omits it.
   const effectivePlan = plan.filter((s) => {
     if (s === 'EXPLAIN') return !!explanation?.summary;
     if (s === 'MODEL') return (explanation?.examples?.length ?? 0) > 0;
-    if (s === 'GUIDE') return (guided?.steps?.length ?? 0) > 0;
-    return true;
+    return true; // GUIDE (and any other canonical stage) always kept
   });
 
-  // A canonical GUIDE stage that hasn't loaded yet is still PENDING, not
-  // absent -- so MODEL is not treated as the last stage while we wait.
-  const guidePending = needsGuided && gpLoading;
-
   useEffect(() => {
-    if (!expLoading && !gpLoading && effectivePlan.length === 0) onDone();
+    if (!expLoading && guideState !== 'loading' && effectivePlan.length === 0) onDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expLoading, gpLoading, effectivePlan.length]);
+  }, [expLoading, guideState, effectivePlan.length]);
 
   // LX-4P-PERF-R1D R7: MODEL_RENDERED -- fires once, when the MODEL stage
   // first becomes visible with its content on screen. The delta from
@@ -203,20 +255,18 @@ export default function TeachingIntro({
   }, [modelVisible, conceptId]);
 
   // Block only on the FIRST needed content (explanation). GUIDE catches
-  // up in the background.
+  // up in the background, and -- LX-4P-PERF-R1E-R1 -- always keeps its
+  // own reserved slot in effectivePlan (pending/ready/error rendered
+  // inline below), so there is no longer a separate "hold here while
+  // GUIDE loads" branch: the learner simply reaches the GUIDE stage in
+  // sequence and sees its own state there.
   if (expLoading) {
     return <div className="card empty-state">{t['teachingIntro.loading']}</div>;
   }
-  if (effectivePlan.length === 0 && !guidePending) return null;
-
-  // If the learner has finished the loaded stages but a canonical GUIDE
-  // is still preparing, hold here briefly rather than skipping it.
-  if (guidePending && idx >= effectivePlan.length) {
-    return <div className="card empty-state">{t['teachingIntro.loading']}</div>;
-  }
+  if (effectivePlan.length === 0) return null;
 
   const stage = effectivePlan[Math.min(idx, effectivePlan.length - 1)];
-  const isLast = idx >= effectivePlan.length - 1 && !guidePending;
+  const isLast = idx >= effectivePlan.length - 1;
 
   function advance() {
     if (isLast) onDone();
@@ -284,8 +334,33 @@ export default function TeachingIntro({
           </div>
         )}
 
-        {stage === 'GUIDE' && guided && (
+        {/* LX-4P-PERF-R1E-R1 R2/R5: GUIDE's three sub-states. A required
+            GUIDE is NEVER silently replaced by Practice -- 'loading'
+            shows a plain teaching-specific pending line, 'error' shows an
+            explicit recoverable retry/exit state, and only 'ready' lets
+            the learner actually work through (and thereby genuinely
+            complete) the guided sequence. There is no skip action here. */}
+        {stage === 'GUIDE' && guideState === 'loading' && (
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)' }}>{t['guided.preparing']}</p>
+        )}
+        {stage === 'GUIDE' && guideState === 'ready' && guided && (
           <GuidedPractice guided={guided} locale={locale} onComplete={advance} />
+        )}
+        {stage === 'GUIDE' && guideState === 'error' && (
+          <div>
+            <h2 style={{ fontSize: 18, margin: '4px 0 var(--space-2)' }}>{t['guided.failedTitle']}</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 var(--space-4)' }}>
+              {t['guided.failedBody']}
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-primary" onClick={retryGuide}>
+                {t['guided.retry']}
+              </button>
+              <a href={exitHref} className="btn btn-ghost">
+                {t['guided.exit']}
+              </a>
+            </div>
+          </div>
         )}
       </section>
 

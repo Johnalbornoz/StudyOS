@@ -124,8 +124,9 @@ describe('LX-4P-R1 R7 -- MODEL / GUIDE content is fetched from canonical keys, a
     // EXPLAIN/MODEL effect: concept + activity language, no quizId
     expect(TEACH).toMatch(/\/\/ EXPLAIN \/ MODEL content[\s\S]*?\}, \[conceptId, locale\]\);/);
     // GUIDE effect: fires from canonical context, never waits on quizId
-    expect(TEACH).not.toMatch(/if \(!quizId\) \{ setGpLoading\(true\); return; \}/);
-    expect(TEACH).toMatch(/\}, \[conceptId, quizMode, locale\]\);/);
+    expect(TEACH).not.toMatch(/if \(!quizId\)/);
+    // LX-4P-PERF-R1E-R1: guideAttempt (RETRY) joined the dep array too.
+    expect(TEACH).toMatch(/\}, \[conceptId, quizMode, locale, guideAttempt\]\);/);
     // a language change while teachingStage === 'teaching' is a restart, not
     // an in-place re-fetch (asserted in lx4p-r2 R11) -- so `locale` in the
     // deps only ever changes with a new quizMode/session anyway.

@@ -170,23 +170,26 @@ const TEACHING_CONTENT = read('src/services/teaching-content.service.ts');
 
 describe('R1E R3/R4/R5 -- client: GUIDE fires independently, never blocked by question generation', () => {
   it('the GUIDE effect no longer gates on quizId', () => {
-    expect(TEACH).not.toMatch(/if \(!quizId\) \{ setGpLoading\(true\); return; \}/);
-    expect(TEACH).toMatch(/if \(!needsGuided\) \{ setGpLoading\(false\); return; \}/);
+    expect(TEACH).not.toMatch(/if \(!quizId\)/);
+    expect(TEACH).toMatch(/if \(!needsGuided\) \{ setGuideState\('idle'\); return; \}/);
   });
   it('the GUIDE request body carries conceptId + the canonical quizMode, not quizId', () => {
     const gp = TEACH.slice(TEACH.indexOf('GUIDE content -- teaching scaffolding'), TEACH.indexOf('// Drop stages'));
     expect(gp).toMatch(/body: JSON\.stringify\(\{ studentId, conceptId, mode: quizMode, language: locale \}\)/);
-    expect(gp).toMatch(/\}, \[conceptId, quizMode, locale\]\);/);
+    expect(gp).toMatch(/\}, \[conceptId, quizMode, locale, guideAttempt\]\);/);
   });
-  it('MODEL and GUIDE stay independent state -- gpLoading is never read by the explanation effect, expLoading never read by the GUIDE effect', () => {
+  it('MODEL and GUIDE stay independent state -- guideState is never read by the explanation effect, expLoading never read by the GUIDE effect', () => {
     const explainEffect = TEACH.slice(TEACH.indexOf('// EXPLAIN / MODEL content'), TEACH.indexOf('// LX-4P-PERF-R1D R4'));
     const guideEffect = TEACH.slice(TEACH.indexOf('GUIDE content -- teaching scaffolding'), TEACH.indexOf('// Drop stages'));
-    expect(explainEffect).not.toMatch(/gpLoading|guided\b/);
+    expect(explainEffect).not.toMatch(/guideState|guided\b/);
     expect(guideEffect).not.toMatch(/expLoading|explanation\./);
   });
   it('a still-preparing canonical GUIDE is PENDING, not silently skipped, and never confused with Practice generation state', () => {
-    expect(TEACH).toMatch(/const guidePending = needsGuided && gpLoading/);
-    expect(TEACH).not.toMatch(/guidePending.*genState|genState.*guidePending/);
+    // LX-4P-PERF-R1E-R1: GUIDE keeps its own reserved effectivePlan slot
+    // unconditionally -- pending/ready/error render inline inside it --
+    // rather than a boolean gating whether GUIDE appears in the plan.
+    expect(TEACH).toMatch(/return true; \/\/ GUIDE \(and any other canonical stage\) always kept/);
+    expect(TEACH).not.toMatch(/guideState.*genState|genState.*guideState/);
   });
 });
 
@@ -205,7 +208,7 @@ describe('R1E R8 -- observability: GUIDE_* marks distinct from QUESTION_GEN_* ma
   it('no learner content is logged in any of these marks (only label/t/conceptId)', () => {
     const perfLines = [...TEACH.matchAll(/console\.log\('\[perf\]', JSON\.stringify\(\{([^}]*)\}\)\)/g)].map((m) => m[1]);
     for (const line of perfLines) {
-      expect(line).toMatch(/^[\s\S]*label:[\s\S]*t:[\s\S]*conceptId\s*$/);
+      expect(line).toMatch(/^[\s\S]*label:[\s\S]*t:[\s\S]*conceptId,?\s*$/);
     }
   });
 });

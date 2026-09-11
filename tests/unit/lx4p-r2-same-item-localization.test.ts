@@ -243,7 +243,8 @@ describe('LX-4P-PERF-R1 R20 -- the active learning surface (chrome + content) fo
     expect(HELP).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, questionIndex, action, language: locale \}\)/);
   });
   it('the quiz page passes the activity language (quizLanguage) as the single `locale` prop', () => {
-    expect(QUIZ).toMatch(/<TeachingIntro[\s\S]*?locale=\{quizLanguage\}\s*\n\s*onDone=/);
+    // LX-4P-PERF-R1E-R1: exitHref now sits between locale and onDone.
+    expect(QUIZ).toMatch(/<TeachingIntro[\s\S]*?locale=\{quizLanguage\}[\s\S]*?exitHref=[\s\S]*?onDone=/);
     expect(QUIZ).toMatch(/<ContextualHelp[^>]*locale=\{quizLanguage\} \/>/);
     expect(QUIZ).not.toMatch(/uiLocale=\{locale\}/);
   });

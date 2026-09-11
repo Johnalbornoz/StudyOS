@@ -420,6 +420,11 @@ export type MessageKey =
   | 'guided.nextStep'
   | 'guided.done'
   | 'guided.notEvidence'
+  | 'guided.preparing'
+  | 'guided.failedTitle'
+  | 'guided.failedBody'
+  | 'guided.retry'
+  | 'guided.exit'
   | 'help.menuTitle'
   | 'help.close'
   | 'help.loading'
@@ -1394,6 +1399,11 @@ const es: Messages = {
   'guided.nextStep': 'Siguiente paso',
   'guided.done': 'Ya lo tienes: ahora practica tú.',
   'guided.notEvidence': 'Esto es práctica guiada. No cuenta como evidencia.',
+  'guided.preparing': 'Preparando el ejemplo guiado…',
+  'guided.failedTitle': 'No se pudo preparar el ejemplo guiado',
+  'guided.failedBody': 'Tu progreso de enseñanza está a salvo. Puedes reintentar o salir de la actividad.',
+  'guided.retry': 'Reintentar',
+  'guided.exit': 'Salir de la actividad',
   'help.menuTitle': '¿Con qué te ayudo?',
   'help.close': 'Cerrar',
   'help.loading': 'Un momento…',
@@ -2378,6 +2388,11 @@ const en: Messages = {
   'guided.nextStep': 'Next step',
   'guided.done': 'You\'ve got it — now practise it yourself.',
   'guided.notEvidence': 'This is guided practice. It doesn\'t count as evidence.',
+  'guided.preparing': 'Preparing the guided example…',
+  'guided.failedTitle': 'We couldn\'t prepare the guided example',
+  'guided.failedBody': 'Your teaching progress is safe. You can retry or exit the activity.',
+  'guided.retry': 'Try again',
+  'guided.exit': 'Exit the activity',
   'help.menuTitle': 'What would help?',
   'help.close': 'Close',
   'help.loading': 'One moment…',
@@ -3362,6 +3377,11 @@ const de: Messages = {
   'guided.nextStep': 'Nächster Schritt',
   'guided.done': 'Du hast es – jetzt übe selbst.',
   'guided.notEvidence': 'Das ist geführtes Üben. Es zählt nicht als Nachweis.',
+  'guided.preparing': 'Das geführte Beispiel wird vorbereitet…',
+  'guided.failedTitle': 'Das geführte Beispiel konnte nicht vorbereitet werden',
+  'guided.failedBody': 'Dein Lernfortschritt ist gesichert. Du kannst es erneut versuchen oder die Aktivität verlassen.',
+  'guided.retry': 'Erneut versuchen',
+  'guided.exit': 'Aktivität verlassen',
   'help.menuTitle': 'Womit kann ich helfen?',
   'help.close': 'Schließen',
   'help.loading': 'Einen Moment…',
@@ -4346,6 +4366,11 @@ const fr: Messages = {
   'guided.nextStep': 'Étape suivante',
   'guided.done': 'Tu l\'as — maintenant entraîne-toi.',
   'guided.notEvidence': 'C\'est de la pratique guidée. Ça ne compte pas comme preuve.',
+  'guided.preparing': 'Préparation de l\'exemple guidé…',
+  'guided.failedTitle': 'Impossible de préparer l\'exemple guidé',
+  'guided.failedBody': 'Ta progression pédagogique est sauvegardée. Tu peux réessayer ou quitter l\'activité.',
+  'guided.retry': 'Réessayer',
+  'guided.exit': 'Quitter l\'activité',
   'help.menuTitle': 'Qu\'est-ce qui aiderait ?',
   'help.close': 'Fermer',
   'help.loading': 'Un instant…',
@@ -5330,6 +5355,11 @@ const pt: Messages = {
   'guided.nextStep': 'Próximo passo',
   'guided.done': 'Você entendeu — agora pratique você.',
   'guided.notEvidence': 'Isto é prática guiada. Não conta como evidência.',
+  'guided.preparing': 'Preparando o exemplo guiado…',
+  'guided.failedTitle': 'Não foi possível preparar o exemplo guiado',
+  'guided.failedBody': 'Seu progresso de ensino está seguro. Você pode tentar novamente ou sair da atividade.',
+  'guided.retry': 'Tentar novamente',
+  'guided.exit': 'Sair da atividade',
   'help.menuTitle': 'O que ajudaria?',
   'help.close': 'Fechar',
   'help.loading': 'Um momento…',

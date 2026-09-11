@@ -12,6 +12,7 @@ import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-genera
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 import type { LearningActivityKind } from '@/lib/lx/continuation';
+import { conceptMissionPath } from '@/lib/lx/continuation';
 import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
@@ -1474,6 +1475,10 @@ export default function QuizPage() {
         conceptLabel={subjectName}
         quizMode={quizMode}
         locale={quizLanguage}
+        // LX-4P-PERF-R1E-R1 R2/R5: where "Exit the activity" goes when a
+        // canonically required GUIDE stage fails to prepare -- the
+        // Concept Mission, never a silent fall-through to Practice.
+        exitHref={subjectId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'}
         onDone={() => setTeachingStage('questions')}
       />
     );

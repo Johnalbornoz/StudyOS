@@ -152,7 +152,10 @@ describe('R1D -- language / ordering / background generation / evidence untouche
   it('test 9 -- MODEL / GUIDE stage ordering logic is unchanged', () => {
     expect(TEACH).toMatch(/const stages: IntroStage\[\] = view\.stages\.filter\(/);
     expect(TEACH).toMatch(/const plan = stages\.filter\(\(s\) => \(s === 'MODEL' \? view\.showWorkedExample : true\)\)/);
-    expect(TEACH).toMatch(/const guidePending = needsGuided && gpLoading/);
+    // LX-4P-PERF-R1E-R1: GUIDE now keeps a permanent reserved slot in
+    // effectivePlan (pending/ready/error rendered inline) rather than a
+    // separate "pending" boolean gating whether it's in the plan at all.
+    expect(TEACH).toMatch(/return true; \/\/ GUIDE \(and any other canonical stage\) always kept/);
   });
 
   it('test 10 -- the background question-generation architecture is untouched', () => {

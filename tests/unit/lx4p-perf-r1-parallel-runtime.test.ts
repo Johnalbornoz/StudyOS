@@ -84,14 +84,19 @@ describe('LX-4P-PERF-R1 R6 -- MODEL renders when its content is ready; it never 
     // fires from the same canonical context (conceptId/quizMode/locale).
     expect(TEACH).toMatch(/\/\/ GUIDE content -- teaching scaffolding, not evidence\./);
     expect(TEACH).toMatch(/const \[expLoading, setExpLoading\] = useState/);
-    expect(TEACH).toMatch(/const \[gpLoading, setGpLoading\] = useState/);
+    // LX-4P-PERF-R1E-R1: GUIDE's own explicit lifecycle state, distinct
+    // from a bare loading boolean -- see the PENDING assertion below.
+    expect(TEACH).toMatch(/const \[guideState, setGuideState\] = useState<'idle' \| 'loading' \| 'ready' \| 'error'>/);
   });
   it('the whole-component loading gate blocks only on explanation, not on GUIDE', () => {
     expect(TEACH).toMatch(/\/\/ Block only on the FIRST needed content \(explanation\)\.[\s\S]*?if \(expLoading\) \{/);
   });
   it('a still-preparing canonical GUIDE is treated as PENDING, not skipped', () => {
-    expect(TEACH).toMatch(/const guidePending = needsGuided && gpLoading/);
-    expect(TEACH).toMatch(/const isLast = idx >= effectivePlan\.length - 1 && !guidePending/);
+    // LX-4P-PERF-R1E-R1: GUIDE keeps its OWN reserved slot in
+    // effectivePlan unconditionally -- pending is rendered inline inside
+    // that stage, not by excluding it from the plan.
+    expect(TEACH).toMatch(/return true; \/\/ GUIDE \(and any other canonical stage\) always kept/);
+    expect(TEACH).toMatch(/const isLast = idx >= effectivePlan\.length - 1;/);
   });
   it('quizId is nullable on the TeachingIntro contract (question batch may still be cooking)', () => {
     expect(TEACH).toMatch(/quizId: string \| null/);
