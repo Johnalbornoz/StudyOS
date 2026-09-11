@@ -231,7 +231,9 @@ describe('LX-4P-PERF-R1 R20 -- the active learning surface (chrome + content) fo
     expect(TEACH).toMatch(/const t = getMessages\(locale\)/);
     expect(TEACH).not.toMatch(/getMessages\(uiLocale\)|uiLocale:/);
     expect(TEACH).toMatch(/\/api\/concepts\/\$\{conceptId\}\/explanation\?studentId=\$\{studentId\}&language=\$\{locale\}/);
-    expect(TEACH).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, language: locale \}\)/);
+    // LX-4P-PERF-R1E: GUIDE's request body no longer carries quizId; mode
+    // is the canonical QuizMode, language is still the activity language.
+    expect(TEACH).toMatch(/body: JSON\.stringify\(\{ studentId, conceptId, mode: quizMode, language: locale \}\)/);
     // GuidedPractice sub-component too
     expect(TEACH).toMatch(/function GuidedPractice\(\{[\s\S]*?const t = getMessages\(locale\)/);
   });

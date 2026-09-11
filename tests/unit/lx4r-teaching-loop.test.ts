@@ -78,7 +78,12 @@ describe('LX-4R R3 -- guided practice is scaffolding, never evidence, never a de
     expect(TEACHING_CONTENT).not.toMatch(/computeSupportLevel|selectActivityType|LearningDecision|isProveRequired/);
   });
   it('the guided-practice route is gated on canUseAI (PRACTICE only) and touches no evidence path', () => {
-    expect(GP_ROUTE).toMatch(/canUseAI\(\{ evidenceMode: session\.evidenceMode/);
+    // LX-4P-PERF-R1E: evidenceMode now resolves from either the quizId
+    // session or the canonical QuizMode taxonomy, but the SAME canUseAI
+    // gate applies to whichever one resolved it.
+    expect(GP_ROUTE).toMatch(/canUseAI\(\{ evidenceMode, feature: 'EXPLAIN' \}\)/);
+    expect(GP_ROUTE).toMatch(/evidenceMode = session\.evidenceMode/);
+    expect(GP_ROUTE).toMatch(/evidenceMode = evidenceModeForQuizMode\(mode\)/);
     expect(GP_ROUTE).not.toMatch(/updateMastery|learning_evidence/);
   });
   it('the GUIDE stage in the UI states it does not count as evidence', () => {

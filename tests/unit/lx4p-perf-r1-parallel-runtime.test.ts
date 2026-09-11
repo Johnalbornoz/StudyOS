@@ -80,7 +80,9 @@ describe('LX-4P-PERF-R1 R6 -- MODEL renders when its content is ready; it never 
   it('explanation and guided-practice load in SEPARATE effects', () => {
     expect(TEACH).not.toMatch(/Promise\.all\(\[/); // the old blocking join is gone
     expect(TEACH).toMatch(/\/\/ EXPLAIN \/ MODEL content -- needs only conceptId, fires immediately\./);
-    expect(TEACH).toMatch(/\/\/ GUIDE content -- needs the quiz session; prepares in the background/);
+    // LX-4P-PERF-R1E: GUIDE no longer needs the quiz session either -- it
+    // fires from the same canonical context (conceptId/quizMode/locale).
+    expect(TEACH).toMatch(/\/\/ GUIDE content -- teaching scaffolding, not evidence\./);
     expect(TEACH).toMatch(/const \[expLoading, setExpLoading\] = useState/);
     expect(TEACH).toMatch(/const \[gpLoading, setGpLoading\] = useState/);
   });

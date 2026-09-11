@@ -116,18 +116,19 @@ describe('LX-4P-R1 R6 -- UI locale and question language are separate values', (
 
 /* ---------- R7: teaching loop language consistency ---------- */
 describe('LX-4P-R1 R7 -- MODEL / GUIDE content is fetched from canonical keys, and language switching during teaching goes through an explicit restart', () => {
-  it('TeachingIntro content fetches are keyed to the concept + (for GUIDE) the session -- explanation needs no quizId', () => {
-    // LX-4P-PERF-R1 R6: two independent effects now.
+  it('TeachingIntro content fetches are keyed to the concept + canonical quizMode -- explanation and GUIDE both need no quizId', () => {
+    // LX-4P-PERF-R1 R6: two independent effects. LX-4P-PERF-R1E: GUIDE no
+    // longer waits for a quiz session either.
     expect(TEACH).toMatch(/\/api\/concepts\/\$\{conceptId\}\/explanation/);
     expect(TEACH).toMatch(/\/api\/learning\/guided-practice/);
     // EXPLAIN/MODEL effect: concept + activity language, no quizId
     expect(TEACH).toMatch(/\/\/ EXPLAIN \/ MODEL content[\s\S]*?\}, \[conceptId, locale\]\);/);
-    // GUIDE effect: waits for the session
-    expect(TEACH).toMatch(/if \(!quizId\) \{ setGpLoading\(true\); return; \}/);
-    expect(TEACH).toMatch(/\}, \[conceptId, quizId, locale\]\);/);
+    // GUIDE effect: fires from canonical context, never waits on quizId
+    expect(TEACH).not.toMatch(/if \(!quizId\) \{ setGpLoading\(true\); return; \}/);
+    expect(TEACH).toMatch(/\}, \[conceptId, quizMode, locale\]\);/);
     // a language change while teachingStage === 'teaching' is a restart, not
     // an in-place re-fetch (asserted in lx4p-r2 R11) -- so `locale` in the
-    // deps only ever changes with a new quizId anyway.
+    // deps only ever changes with a new quizMode/session anyway.
   });
 });
 

@@ -456,9 +456,13 @@ export default function QuizPage() {
             .then((b) => (b?.data?.teachingExperience ?? null) as TeachingExperienceView | null)
             .catch(() => null);
 
-      // wave B -- question generation, in the background
+      // wave B -- question generation, in the background.
+      // LX-4P-PERF-R1E R8: QUESTION_GEN_* marks, distinct from TeachingIntro's
+      // own GUIDE_* marks -- a generation failure here must be
+      // unambiguous in the logs and never be confused with a GUIDE failure.
       setGenState('loading');
       perfMark('T4_gen_start');
+      perfMark('QUESTION_GEN_STARTED');
       const genP = fetch('/api/quizzes/generate-and-take', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -475,9 +479,11 @@ export default function QuizPage() {
           applyGenResult(data);
           setGenState('ready');
           perfMark('T5_gen_ready');
+          perfMark('QUESTION_GEN_READY');
         })
         .catch(() => {
           setGenState('error'); // recoverable at the Practice transition
+          perfMark('QUESTION_GEN_FAILED');
         });
 
       tiP.then((view) => {
@@ -1466,6 +1472,7 @@ export default function QuizPage() {
         quizId={quizId}
         conceptId={conceptId}
         conceptLabel={subjectName}
+        quizMode={quizMode}
         locale={quizLanguage}
         onDone={() => setTeachingStage('questions')}
       />

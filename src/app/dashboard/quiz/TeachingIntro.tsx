@@ -48,15 +48,30 @@ export default function TeachingIntro({
   quizId,
   conceptId,
   conceptLabel,
+  quizMode,
   locale,
   onDone,
 }: {
   view: TeachingExperienceView;
   studentId: string;
-  /** LX-4P-PERF-R1 R6: null until the background question batch returns a session. EXPLAIN/MODEL do not need it; GUIDE waits for it. */
+  /**
+   * LX-4P-PERF-R1 R6: null until the background question batch returns a
+   * session. EXPLAIN/MODEL never needed it. LX-4P-PERF-R1E: GUIDE no
+   * longer needs it either -- kept on the contract (received, optionally
+   * forwarded) for a future/legacy caller that already has a session,
+   * never required for GUIDE to start.
+   */
   quizId: string | null;
   conceptId: string;
   conceptLabel: string;
+  /**
+   * LX-4P-PERF-R1E R2: the canonical QuizMode -- transport input only.
+   * GUIDE's server route re-derives EvidenceMode from this through the
+   * fixed QuizMode -> ActivityType -> EvidenceMode taxonomy; the client
+   * never computes or sends an EvidenceMode/SupportLevel/permission
+   * decision itself.
+   */
+  quizMode: string;
   /**
    * LX-4P-PERF-R1 R20: the activity/question language governs the ENTIRE
    * active learning surface -- both the content fetches (explanation,
@@ -124,25 +139,35 @@ export default function TeachingIntro({
     wantsFormula && !!explanation,
   );
 
-  // GUIDE content -- needs the quiz session; prepares in the background
-  // while the learner is in MODEL. Fires once quizId is available.
+  // GUIDE content -- teaching scaffolding, not evidence. LX-4P-PERF-R1E
+  // R1/R3: GUIDE must NEVER depend on the background Practice question
+  // batch (quizId) -- it fires as soon as the SAME canonical context
+  // MODEL and TeachingIntent already have (studentId/conceptId/quizMode/
+  // locale) is available, fully independent of and in parallel with
+  // question generation. A failed or never-returning question batch
+  // (quizId never arriving) must never leave GUIDE pending forever.
   useEffect(() => {
     if (!needsGuided) { setGpLoading(false); return; }
-    if (!quizId) { setGpLoading(true); return; }
     let cancelled = false;
     setGpLoading(true);
+    try { console.log('[perf]', JSON.stringify({ label: 'GUIDE_REQUEST_STARTED', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
     fetch('/api/learning/guided-practice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId, quizId, language: locale }),
+      body: JSON.stringify({ studentId, conceptId, mode: quizMode, language: locale }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((b) => b?.data?.guidedPractice ?? null)
       .catch(() => null)
-      .then((gp) => { if (!cancelled) { setGuided(gp); setGpLoading(false); } });
+      .then((gp) => {
+        if (cancelled) return;
+        try { console.log('[perf]', JSON.stringify({ label: gp ? 'GUIDE_READY' : 'GUIDE_FAILED', t: Math.round(performance.now()), conceptId })); } catch { /* noop */ }
+        setGuided(gp);
+        setGpLoading(false);
+      });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conceptId, quizId, locale]);
+  }, [conceptId, quizMode, locale]);
 
   // Drop stages whose content failed to load, so we never show an empty stage.
   const effectivePlan = plan.filter((s) => {
