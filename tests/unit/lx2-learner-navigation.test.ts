@@ -15,12 +15,13 @@ describe('LX-2E buildLearnerNav', () => {
   it('primary group is exactly Today / My Path / Progress, in that order', () => {
     const primary = nav().find((g) => g.kind === 'PRIMARY')!;
     expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress']);
-    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/subjects', '/dashboard']);
+    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard']);
   });
 
-  it('My Path carries a documented temporary mapping to the existing Subjects experience', () => {
+  it('LX-7: My Path now has its own real implementation -- no temporary stand-in mapping remains', () => {
     const myPath = nav().find((g) => g.kind === 'PRIMARY')!.items.find((i) => i.key === 'myPath')!;
-    expect(myPath.temporaryMappingNote).toMatch(/LX-7|Subjects/);
+    expect(myPath.temporaryMappingNote).toBeUndefined();
+    expect(myPath.href).toBe('/dashboard/path');
   });
 
   it('secondary group is useful-not-primary (study plan, learning debt, tutor)', () => {
@@ -46,8 +47,7 @@ describe('LX-2E buildLearnerNav', () => {
   it('every href is under /dashboard and there are no duplicates', () => {
     const hrefs = allNavHrefs(nav({ isAdmin: true }));
     expect(hrefs.every((h) => h.startsWith('/dashboard'))).toBe(true);
-    // /dashboard/subjects appears once (My Path); a separate Subjects item was folded in
-    expect(hrefs.filter((h) => h === '/dashboard/subjects').length).toBe(1);
+    expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
   it('every labelKey resolves in every supported locale', () => {

@@ -222,7 +222,10 @@ export default async function TodayPage() {
             <a href="/dashboard/today" className="btn btn-primary">
               {t['today3.unresolvedRetry']}
             </a>
-            <Link href="/dashboard/study-plan" className="btn btn-ghost">
+            {/* LX-7: "View My Path" now points at the real My Path (it
+                previously pointed at the unrelated rolling-plan page,
+                the same href the nav item used before LX-7 existed). */}
+            <Link href="/dashboard/path" className="btn btn-ghost">
               {t['today3.viewMyPath']}
             </Link>
           </div>

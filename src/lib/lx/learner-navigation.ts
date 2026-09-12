@@ -10,8 +10,6 @@
  *   UTILITY   -- account / profile / language / system
  *
  * TEMPORARY MAPPINGS (documented, replaced by later phases):
- *   - "My Path" has no LX-7 implementation yet -> it maps to the
- *     existing Subjects experience.
  *   - "Progress" maps to the existing dashboard Progress page.
  *   - "Today" maps to the existing Today surface (LX-6 redesigns its
  *     contents, not its position).
@@ -56,10 +54,9 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
       { key: 'today', href: '/dashboard/today', labelKey: 'nav.today', iconKey: 'CalendarDays' },
       {
         key: 'myPath',
-        href: '/dashboard/subjects',
+        href: '/dashboard/path',
         labelKey: 'nav.myPath',
         iconKey: 'Route',
-        temporaryMappingNote: 'LX-2 stand-in: My Path has no LX-7 implementation yet; maps to the existing Subjects experience.',
       },
       { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard' },
     ],

@@ -65,7 +65,14 @@ type DecisionRead =
  * the canonical `knowledgeState` here is reuse of the canonical policy,
  * not a reconstruction of its rules.
  */
-function zeroSignalContext(
+/**
+ * LX-7: exported so My Path's per-subject journey builder (path-view.ts)
+ * can construct the identical zero-signal context for every concept in
+ * a subject that currently has no active LearningDecision -- reusing
+ * this exact, already-certified helper rather than re-deriving a
+ * second "what if there were no signals" shape.
+ */
+export function zeroSignalContext(
   conceptId: string,
   subjectId: string,
   knowledgeState: ConceptKnowledgeState | null,

@@ -222,10 +222,11 @@ export interface ConceptMissionView {
 /* Derivation                                                         */
 /* ------------------------------------------------------------------ */
 
-const RUNG_ORDER: readonly ConceptMissionRung[] = ['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'];
+/** LX-7: exported so My Path can lay out the identical five-rung line and PASSED/CURRENT/UPCOMING split this rail uses -- one shared ordering, never a second copy. */
+export const RUNG_ORDER: readonly ConceptMissionRung[] = ['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'];
 
-/** Which rung a learner-visible stage sits on. CONSOLIDATED = past the last rung. */
-function currentRungIndex(stage: LearnerJourneyStage): number {
+/** Which rung a learner-visible stage sits on. CONSOLIDATED = past the last rung. LX-7: exported for the same reason as RUNG_ORDER above. */
+export function currentRungIndex(stage: LearnerJourneyStage): number {
   switch (stage) {
     case 'NOT_STARTED':
     case 'LEARN':
