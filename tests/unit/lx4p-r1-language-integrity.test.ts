@@ -62,7 +62,12 @@ describe('LX-4P-R1 R4 -- a mid-attempt language change never silently regenerate
 
   it('the <select> is controlled by quizLanguage (snaps back on cancel) and stays labelled', () => {
     expect(QUIZ).toMatch(/value=\{quizLanguage\}[\s\S]*?onChange=\{\(e\) => changeQuizLanguage\(e\.target\.value as Locale\)\}/);
-    expect(QUIZ).toMatch(/aria-label=\{t\['quiz\.languagePickerLabel'\]\}/);
+    // LX-4P-R3: the language picker itself is part of the active learning
+    // surface (it lives inside the activity card, controls the activity's
+    // OWN language) -- its label now follows activity language (`at`),
+    // not the account's interface locale (`t`), same as every other
+    // active-learning string on this page.
+    expect(QUIZ).toMatch(/aria-label=\{at\['quiz\.languagePickerLabel'\]\}/);
   });
 });
 

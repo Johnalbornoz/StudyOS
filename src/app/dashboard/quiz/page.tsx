@@ -335,7 +335,20 @@ function QuizPageContent() {
   const [resumeError, setResumeError] = useState(false);
   const resumePresentedAtRef = useRef<string | null>(null);
 
+  // LX-4P-R3: `t` is the GLOBAL interface locale (account/settings, the
+  // pre-activity setup form, and the app shell -- e.g. "Salir" -- which
+  // this file never renders). `at` ("activity translations") is the
+  // canonical ACTIVITY language -- the entire active learning experience
+  // once an activity has actually started (MODEL/GUIDE/PRACTICE/PROVE,
+  // question chrome, assistance, response-contract, confidence, math
+  // toolbar, hints, feedback, retry, verification) reads ONLY from `at`,
+  // never from `t`, and never infers a language of its own. `quizLanguage`
+  // is the SAME canonical value already threaded to TeachingIntro /
+  // ContextualHelp / ContinuationPanel -- this just makes every OTHER
+  // string on this page follow it too, instead of silently defaulting to
+  // the interface locale.
   const t = getMessages(locale);
+  const at = getMessages(quizLanguage);
 
   useEffect(() => {
     async function init() {
@@ -919,14 +932,16 @@ function QuizPageContent() {
   // Evidence-strength labels only -- never "Mastered"/"Not mastered".
   // Mastery, wherever it's shown anywhere in the product, comes
   // exclusively from Phase 2.2 Knowledge State, never from this number.
+  // LX-4P-R3: only ever rendered inside the active Results/verification
+  // surface -- activity language (`at`), like everything else there.
   const evidenceStrengthLabel = (strength: string) =>
     strength === 'HIGH'
-      ? t['quiz.evidenceStrengthHigh']
+      ? at['quiz.evidenceStrengthHigh']
       : strength === 'MEDIUM'
-      ? t['quiz.evidenceStrengthMedium']
+      ? at['quiz.evidenceStrengthMedium']
       : strength === 'CONTRADICTED'
-      ? t['quiz.evidenceStrengthContradicted']
-      : t['quiz.evidenceStrengthLow'];
+      ? at['quiz.evidenceStrengthContradicted']
+      : at['quiz.evidenceStrengthLow'];
 
   const modeLabel = (mode: QuizMode) =>
     mode === 'quick_check'
@@ -966,34 +981,34 @@ function QuizPageContent() {
     return (
       <div style={{ maxWidth: 520 }}>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
-          <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{t['nav.subjects']}</Link> / {t['quiz.verificationTitle']}
+          <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{at['nav.subjects']}</Link> / {at['quiz.verificationTitle']}
         </div>
         <div className="card" style={{ padding: 'var(--space-6)' }}>
-          <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{t['quiz.verificationTitle']}</p>
+          <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.verificationTitle']}</p>
 
-          {resumePhase === 'loading' && <p style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{t['common.loading']}</p>}
-          {resumePhase === 'error' && <p role="alert" style={{ fontSize: 13.5, color: 'var(--error)' }}>{t['common.error']}</p>}
+          {resumePhase === 'loading' && <p style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>{at['common.loading']}</p>}
+          {resumePhase === 'error' && <p role="alert" style={{ fontSize: 13.5, color: 'var(--error)' }}>{at['common.error']}</p>}
           {resumePhase === 'none' && !resumeOutcome && (
             <div>
-              <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['quiz.verificationNotPending']}</p>
-              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{t['quiz.backToSubject']}</Link>
+              <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{at['quiz.verificationNotPending']}</p>
+              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{at['quiz.backToSubject']}</Link>
             </div>
           )}
           {resumeOutcome && (
             <div>
               <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>
                 {resumeOutcome.outcome === 'CONFIRMED'
-                  ? t['quiz.verificationConfirmed']
+                  ? at['quiz.verificationConfirmed']
                   : resumeOutcome.outcome === 'CONTRADICTED'
-                  ? t['quiz.verificationContradicted']
-                  : t['quiz.verificationInconclusive']}
+                  ? at['quiz.verificationContradicted']
+                  : at['quiz.verificationInconclusive']}
               </p>
-              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{t['quiz.backToSubject']}</Link>
+              <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-primary" style={{ marginTop: 12 }}>{at['quiz.backToSubject']}</Link>
             </div>
           )}
           {resumePhase === 'ready' && resumeQuestion && !resumeOutcome && (
             <div>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t['quiz.verificationExplain']}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{at['quiz.verificationExplain']}</p>
               <p style={{ fontSize: 14, fontWeight: 600, margin: '8px 0' }}>
                 <MathText text={resumeQuestion.question} />
               </p>
@@ -1023,13 +1038,13 @@ function QuizPageContent() {
                 <MathAnswerEditor
                   value={resumeAnswer}
                   onChange={setResumeAnswer}
-                  placeholder={t['quiz.typeAnswer']}
+                  placeholder={at['quiz.typeAnswer']}
                   subjectName={subjectName}
                   studentId={studentId}
-                  locale={locale}
+                  locale={quizLanguage}
                 />
               )}
-              {resumeError && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{t['common.error']}</p>}
+              {resumeError && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{at['common.error']}</p>}
               <button
                 className="btn btn-primary"
                 style={{ marginTop: 8 }}
@@ -1037,7 +1052,7 @@ function QuizPageContent() {
                 aria-busy={resumeSubmitting}
                 onClick={submitResumeVerification}
               >
-                {resumeSubmitting ? t['quiz.submitting'] : t['quiz.verificationSubmit']}
+                {resumeSubmitting ? at['quiz.submitting'] : at['quiz.verificationSubmit']}
               </button>
             </div>
           )}
@@ -1135,25 +1150,25 @@ function QuizPageContent() {
   }
 
   if (phase === 'loading') {
-    return <div className="card empty-state">{t['quiz.generating']}</div>;
+    return <div className="card empty-state">{at['quiz.generating']}</div>;
   }
 
   if (phase === 'error') {
     return (
       <div>
         <div className="card empty-state" style={{ color: 'var(--error)' }}>
-          <strong>{t['quiz.loadError']}</strong>
+          <strong>{at['quiz.loadError']}</strong>
           {error}
         </div>
         <Link href="/dashboard" className="btn btn-secondary" style={{ marginTop: 'var(--space-4)' }}>
-          {t['quiz.backToDashboard']}
+          {at['quiz.backToDashboard']}
         </Link>
       </div>
     );
   }
 
   if (results) {
-    const messageText = t[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
+    const messageText = at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
     const perConcept = results.perConceptResults || [];
 
     if (reviewing) {
@@ -1161,7 +1176,7 @@ function QuizPageContent() {
       const supportedPractice = PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
       return (
         <div style={{ maxWidth: 680 }}>
-          <h1>{t['quiz.reviewTitle']}</h1>
+          <h1>{at['quiz.reviewTitle']}</h1>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
             {review.map((r) => {
               // LX-4R R6: pedagogical feedback -- what happened / why /
@@ -1169,12 +1184,12 @@ function QuizPageContent() {
               // are the CANONICAL grader classification; the UI presents
               // them, it never re-derives a diagnosis.
               const whatHappened = r.correct
-                ? t['feedback.correct']
+                ? at['feedback.correct']
                 : r.reasoningValid
-                  ? t['feedback.almost']
-                  : t['feedback.incorrect'];
+                  ? at['feedback.almost']
+                  : at['feedback.incorrect'];
               const whyKey = r.errorType ? (`errorTeach.${r.errorType}` as keyof typeof t) : null;
-              const why = whyKey && t[whyKey] ? t[whyKey] : r.reasoningValid ? t['feedback.methodSoundNumberOff'] : '';
+              const why = whyKey && at[whyKey] ? at[whyKey] : r.reasoningValid ? at['feedback.methodSoundNumberOff'] : '';
               return (
                 <div key={r.questionIndex} className="card al-fb" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
@@ -1186,11 +1201,11 @@ function QuizPageContent() {
                   </p>
                   {r.visualAid && <VisualAidView aid={r.visualAid} />}
                   <div style={{ fontSize: 14, marginBottom: 4 }}>
-                    <strong>{t['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
+                    <strong>{at['quiz.yourAnswer']}:</strong> {r.studentAnswer ? <MathText text={r.studentAnswer} /> : '—'}
                   </div>
                   {!r.correct && (
                     <div style={{ fontSize: 14, marginBottom: 4, color: 'var(--success)' }}>
-                      <strong>{t['quiz.correctAnswerLabel']}:</strong> <MathText text={r.correctAnswer} />
+                      <strong>{at['quiz.correctAnswerLabel']}:</strong> <MathText text={r.correctAnswer} />
                     </div>
                   )}
 
@@ -1198,13 +1213,13 @@ function QuizPageContent() {
                     <div className="al-fb-body">
                       {why && (
                         <div>
-                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{t['feedback.why']}</p>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{at['feedback.why']}</p>
                           <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}>{why}</p>
                         </div>
                       )}
                       {r.feedback && (
                         <div>
-                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{t['feedback.whatToChange']}</p>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{at['feedback.whatToChange']}</p>
                           <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}><MathText text={r.feedback} /></p>
                         </div>
                       )}
@@ -1212,23 +1227,23 @@ function QuizPageContent() {
                   )}
 
                   <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 8 }}>
-                    <strong>{t['quiz.explanationLabel']}:</strong> <MathText text={r.explanation} />
+                    <strong>{at['quiz.explanationLabel']}:</strong> <MathText text={r.explanation} />
                   </p>
                 </div>
               );
             })}
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={() => setReviewing(false)}>{t['quiz.backToResults']}</button>
+            <button className="btn btn-secondary" onClick={() => setReviewing(false)}>{at['quiz.backToResults']}</button>
             {/* LX-4R R6: act on the feedback -- retry inside the activity
                 rather than being pushed straight on. See the results view
                 for the retry-evidence note. */}
             {supportedPractice && studentId && (
               <button className="btn btn-primary" onClick={() => studentId && generateQuiz(studentId)}>
-                {t['activeLearning.practiceAgain']}
+                {at['activeLearning.practiceAgain']}
               </button>
             )}
-            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
+            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{at['quiz.backToSubject']}</Link>
           </div>
         </div>
       );
@@ -1236,15 +1251,15 @@ function QuizPageContent() {
 
     return (
       <div style={{ maxWidth: 620 }}>
-        <h1 tabIndex={-1} ref={resultsHeadingRef}>{t['quiz.results']}</h1>
+        <h1 tabIndex={-1} ref={resultsHeadingRef}>{at['quiz.results']}</h1>
         {/* R9: the outcome is announced to assistive tech when it appears. */}
         <div className="card" role="status" aria-live="polite" style={{ marginTop: 'var(--space-6)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{t['quiz.score']}</div>
+          <div className="label" style={{ color: 'var(--text-muted)' }}>{at['quiz.score']}</div>
           <div className="tabular" style={{ fontSize: 40, fontWeight: 650, margin: '4px 0' }}>
             {results.results.score}%
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-            {results.results.correctCount} / {results.results.totalQuestions} {t['quiz.correctOf']}
+            {results.results.correctCount} / {results.results.totalQuestions} {at['quiz.correctOf']}
           </p>
 
           {results.diagnosticOutcome && (
@@ -1256,10 +1271,10 @@ function QuizPageContent() {
             >
               <strong style={{ fontSize: 13.5 }}>
                 {results.diagnosticOutcome.outcome === 'CONFIRMED'
-                  ? t['quiz.diagnosticConfirmed']
+                  ? at['quiz.diagnosticConfirmed']
                   : results.diagnosticOutcome.outcome === 'REJECTED'
-                  ? t['quiz.diagnosticRejected']
-                  : t['quiz.diagnosticInconclusive']}
+                  ? at['quiz.diagnosticRejected']
+                  : at['quiz.diagnosticInconclusive']}
               </strong>
             </div>
           )}
@@ -1273,16 +1288,16 @@ function QuizPageContent() {
             >
               <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--brand-ink)' }}>
                 {results.ibEstimate.programme === 'DP'
-                  ? `${t['ib.estimatedGrade']}: ${results.ibEstimate.grade}/7`
-                  : `${t['ib.estimatedBand']}: ${results.ibEstimate.band}/8`}
+                  ? `${at['ib.estimatedGrade']}: ${results.ibEstimate.grade}/7`
+                  : `${at['ib.estimatedBand']}: ${results.ibEstimate.band}/8`}
               </span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t['ib.disclaimer']}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{at['ib.disclaimer']}</span>
             </div>
           )}
 
           {perConcept.length === 1 && results.mastery && (
             <p style={{ fontSize: 14, marginTop: 'var(--space-3)' }}>
-              {t['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
+              {at['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
               <span style={{ color: results.mastery.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
                 ({results.mastery.delta >= 0 ? '+' : ''}{results.mastery.delta})
               </span>
@@ -1291,7 +1306,7 @@ function QuizPageContent() {
 
           {perConcept.length > 1 && (
             <div style={{ marginTop: 'var(--space-4)' }}>
-              <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{t['quiz.masteryLabel']}</p>
+              <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['quiz.masteryLabel']}</p>
               {perConcept.map((p: any) => (
                 <div key={p.conceptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5, marginBottom: 4, gap: 8 }}>
                   <span>
@@ -1300,7 +1315,7 @@ function QuizPageContent() {
                       <span
                         className="chip"
                         style={{ marginLeft: 6, fontSize: 11 }}
-                        title={t['quiz.evidenceStrengthExplain']}
+                        title={at['quiz.evidenceStrengthExplain']}
                       >
                         {evidenceStrengthLabel(p.evidenceQualification.strength)}
                       </span>
@@ -1319,7 +1334,7 @@ function QuizPageContent() {
 
           {results.examReadinessCalibration && (
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
-              {t['quiz.examReadinessCalibrationLabel']}: {results.examReadinessCalibration.predictedReadiness}% → {results.examReadinessCalibration.actualPerformance}%
+              {at['quiz.examReadinessCalibrationLabel']}: {results.examReadinessCalibration.predictedReadiness}% → {results.examReadinessCalibration.actualPerformance}%
             </p>
           )}
 
@@ -1328,7 +1343,7 @@ function QuizPageContent() {
 
         {(results.verificationNeeded || []).length > 0 && (
           <div className="card" style={{ marginTop: 'var(--space-4)' }}>
-            <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{t['quiz.verificationTitle']}</p>
+            <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['quiz.verificationTitle']}</p>
             {(results.verificationNeeded || []).map((v: any) => {
               const resolved = verificationResults[v.conceptId];
               if (resolved) {
@@ -1337,10 +1352,10 @@ function QuizPageContent() {
                     <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>{v.conceptLabel}</p>
                     <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
                       {resolved.outcome === 'CONFIRMED'
-                        ? t['quiz.verificationConfirmed']
+                        ? at['quiz.verificationConfirmed']
                         : resolved.outcome === 'CONTRADICTED'
-                        ? t['quiz.verificationContradicted']
-                        : t['quiz.verificationInconclusive']}
+                        ? at['quiz.verificationContradicted']
+                        : at['quiz.verificationInconclusive']}
                     </p>
                     {resolved.evidenceQualification && (
                       <span className="chip" style={{ fontSize: 11, marginTop: 4, display: 'inline-block' }}>
@@ -1353,7 +1368,7 @@ function QuizPageContent() {
               return (
                 <div key={v.conceptId} style={{ padding: 'var(--space-4) 0', borderTop: '1px solid var(--border-default)' }}>
                   <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>{v.conceptLabel}</p>
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t['quiz.verificationExplain']}</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{at['quiz.verificationExplain']}</p>
                   <p style={{ fontSize: 14, fontWeight: 600, margin: '8px 0' }}>
                     <MathText text={v.question.question} />
                   </p>
@@ -1383,14 +1398,14 @@ function QuizPageContent() {
                     <MathAnswerEditor
                       value={verificationAnswers[v.conceptId] || ''}
                       onChange={(val) => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: val }))}
-                      placeholder={t['quiz.typeAnswer']}
+                      placeholder={at['quiz.typeAnswer']}
                       subjectName={subjectName}
                       studentId={studentId}
-                      locale={locale}
+                      locale={quizLanguage}
                     />
                   )}
                   {verificationError[v.conceptId] && (
-                    <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{t['common.error']}</p>
+                    <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', marginTop: 6 }}>{at['common.error']}</p>
                   )}
                   <button
                     className="btn btn-primary"
@@ -1399,7 +1414,7 @@ function QuizPageContent() {
                     aria-busy={!!verificationSubmitting[v.conceptId]}
                     onClick={() => submitVerification(v.conceptId)}
                   >
-                    {verificationSubmitting[v.conceptId] ? t['quiz.submitting'] : t['quiz.verificationSubmit']}
+                    {verificationSubmitting[v.conceptId] ? at['quiz.submitting'] : at['quiz.verificationSubmit']}
                   </button>
                 </div>
               );
@@ -1417,12 +1432,12 @@ function QuizPageContent() {
             style={{ marginTop: 'var(--space-4)', borderColor: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)' }}
           >
             <p className="label" style={{ color: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)', margin: '0 0 4px' }}>
-              {results.proveSufficiency.sufficient ? t['prove.sufficientTitle'] : t['prove.moreNeededTitle']}
+              {results.proveSufficiency.sufficient ? at['prove.sufficientTitle'] : at['prove.moreNeededTitle']}
             </p>
             <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}>
               {results.proveSufficiency.sufficient
-                ? t['prove.sufficientBody']
-                : t['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))}
+                ? at['prove.sufficientBody']
+                : at['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))}
             </p>
           </div>
         )}
@@ -1432,7 +1447,7 @@ function QuizPageContent() {
             gap. Not hidden behind an execution minimum. */}
         {countAuthority?.zeroGapMismatch && (
           <p style={{ marginTop: 'var(--space-3)', fontSize: 12.5, color: 'var(--text-muted)' }}>
-            {t['activeLearning.activityComplete']}
+            {at['activeLearning.activityComplete']}
           </p>
         )}
 
@@ -1452,7 +1467,7 @@ function QuizPageContent() {
               from={continuationKind}
               note={
                 results.proveSufficiency && !results.proveSufficiency.sufficient
-                  ? t['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
+                  ? at['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
                   : undefined
               }
             />
@@ -1460,15 +1475,15 @@ function QuizPageContent() {
         )}
 
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost" onClick={() => setReviewing(true)}>{t['quiz.reviewButton']}</button>
+          <button className="btn btn-ghost" onClick={() => setReviewing(true)}>{at['quiz.reviewButton']}</button>
           {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && studentId && (
             <button className="btn btn-ghost" onClick={() => studentId && generateQuiz(studentId)}>
-              {t['activeLearning.practiceAgain']}
+              {at['activeLearning.practiceAgain']}
             </button>
           )}
         </div>
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && (
-          <p style={{ marginTop: 'var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{t['activeLearning.retryNote']}</p>
+          <p style={{ marginTop: 'var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{at['activeLearning.retryNote']}</p>
         )}
       </div>
     );
@@ -1514,19 +1529,19 @@ function QuizPageContent() {
       <div className="card empty-state" style={{ textAlign: 'center' }}>
         {genState === 'error' ? (
           <>
-            <strong>{t['practice.prepareFailedTitle']}</strong>
-            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['practice.prepareFailedBody']}</p>
+            <strong>{at['practice.prepareFailedTitle']}</strong>
+            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{at['practice.prepareFailedBody']}</p>
             <button
               type="button"
               className="btn btn-primary"
               style={{ marginTop: 'var(--space-4)' }}
               onClick={() => { if (studentId) { setGenState('idle'); void generateQuiz(studentId); } }}
             >
-              {t['practice.prepareRetry']}
+              {at['practice.prepareRetry']}
             </button>
           </>
         ) : (
-          <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>{t['practice.preparing']}</p>
+          <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>{at['practice.preparing']}</p>
         )}
       </div>
     );
@@ -1572,22 +1587,22 @@ function QuizPageContent() {
         >
           <div className="card" style={{ maxWidth: 420, padding: 'var(--space-6)' }}>
             <h2 id="lx-langswitch-title" style={{ fontSize: 17, fontWeight: 650, margin: '0 0 var(--space-2)' }}>
-              {t[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeTitle' : 'quiz.langSwitch.title']}
+              {at[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeTitle' : 'quiz.langSwitch.title']}
             </h2>
             <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 var(--space-4)' }}>
-              {t[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeBody' : 'quiz.langSwitch.body'].replace(
+              {at[localizeFailedFallback ? 'quiz.langSwitch.cantLocalizeBody' : 'quiz.langSwitch.body'].replace(
                 '{lang}',
                 LOCALE_NAMES[pendingLanguageSwitch],
               )}
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-ghost" onClick={cancelPendingLanguageSwitch}>
-                {t['quiz.langSwitch.cancel']}
+                {at['quiz.langSwitch.cancel']}
               </button>
               <button type="button" className="btn btn-primary" onClick={confirmPendingLanguageSwitch}>
                 {localizeFailedFallback
-                  ? t['quiz.langSwitch.startNewActivity']
-                  : t['quiz.langSwitch.confirm'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
+                  ? at['quiz.langSwitch.startNewActivity']
+                  : at['quiz.langSwitch.confirm'].replace('{lang}', LOCALE_NAMES[pendingLanguageSwitch])}
               </button>
             </div>
           </div>
@@ -1602,8 +1617,8 @@ function QuizPageContent() {
           value={quizLanguage}
           disabled={switchingLanguage}
           onChange={(e) => changeQuizLanguage(e.target.value as Locale)}
-          title={t['quiz.languagePickerLabel']}
-          aria-label={t['quiz.languagePickerLabel']}
+          title={at['quiz.languagePickerLabel']}
+          aria-label={at['quiz.languagePickerLabel']}
           style={{
             height: 30, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
             background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'inherit',
@@ -1646,7 +1661,7 @@ function QuizPageContent() {
               assistanceMode={supported ? 'SUPPORTED' : 'INDEPENDENT'}
               hintsAvailable={supported}
               context={isVerify ? 'SOLO' : QUIZ_SUPPORT_CONTEXT[quizMode]}
-              t={t}
+              t={at}
             />
           );
         })()}
@@ -1658,7 +1673,7 @@ function QuizPageContent() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
-              title={q.calculatorAllowed ? t['quiz.calculatorAllowed'] : t['quiz.calculatorNotAllowed']}
+              title={q.calculatorAllowed ? at['quiz.calculatorAllowed'] : at['quiz.calculatorNotAllowed']}
               style={{
                 position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 26, height: 26, borderRadius: 'var(--radius-full)',
@@ -1685,18 +1700,18 @@ function QuizPageContent() {
 
         {isProveMode && (
           <div style={{ marginBottom: 'var(--space-4)' }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{t['activeLearning.proveTitle']}</p>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{at['activeLearning.proveTitle']}</p>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              {t['activeLearning.proveBody']}
+              {at['activeLearning.proveBody']}
             </p>
             {/* R9: the reason help is unavailable, stated -- not just absent. */}
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{t['activeLearning.helpUnavailable']}</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{at['activeLearning.helpUnavailable']}</p>
           </div>
         )}
 
         <p className="al-response-req" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-          <span className="label" style={{ color: 'var(--text-muted)' }}>{t['responseContract.label']}:</span>{' '}
-          {t[`responseContract.${responseContract.kind}` as keyof typeof t]}
+          <span className="label" style={{ color: 'var(--text-muted)' }}>{at['responseContract.label']}:</span>{' '}
+          {at[`responseContract.${responseContract.kind}` as keyof typeof t]}
         </p>
 
         <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px' }}>
@@ -1713,13 +1728,13 @@ function QuizPageContent() {
         {q.askConfidence && (
           <div
             role="radiogroup"
-            aria-label={t['quiz.confidenceQuestion']}
+            aria-label={at['quiz.confidenceQuestion']}
             style={{
               marginBottom: 'var(--space-5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)',
               background: 'var(--bg-subtle)', border: '1px solid var(--border-default)',
             }}
           >
-            <p style={{ margin: '0 0 var(--space-3)', fontSize: 14, fontWeight: 600 }}>{t['quiz.confidenceQuestion']}</p>
+            <p style={{ margin: '0 0 var(--space-3)', fontSize: 14, fontWeight: 600 }}>{at['quiz.confidenceQuestion']}</p>
             <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
               {(['NOT_SURE', 'SOMEWHAT_SURE', 'VERY_SURE'] as ConfidenceLevel[]).map((level) => (
                 <button
@@ -1731,7 +1746,7 @@ function QuizPageContent() {
                   className={`btn ${confidenceSelected === level ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ fontSize: 13.5, flex: '1 1 auto', minWidth: 100 }}
                 >
-                  {level === 'NOT_SURE' ? t['quiz.confidenceLow'] : level === 'SOMEWHAT_SURE' ? t['quiz.confidenceMedium'] : t['quiz.confidenceHigh']}
+                  {level === 'NOT_SURE' ? at['quiz.confidenceLow'] : level === 'SOMEWHAT_SURE' ? at['quiz.confidenceMedium'] : at['quiz.confidenceHigh']}
                 </button>
               ))}
             </div>
@@ -1773,7 +1788,7 @@ function QuizPageContent() {
 
         {q.answerFormat === 'multi_choice' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 4px' }}>{t['quiz.selectAllThatApply']}</p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 4px' }}>{at['quiz.selectAllThatApply']}</p>
             {(q.options || []).map((opt) => {
               const isSelected = multiChoice.includes(opt.id);
               return (
@@ -1804,16 +1819,16 @@ function QuizPageContent() {
           <MathAnswerEditor
             value={textAnswer}
             onChange={setTextAnswer}
-            placeholder={t['quiz.typeAnswer']}
+            placeholder={at['quiz.typeAnswer']}
             subjectName={subjectName}
             studentId={studentId}
-            locale={locale}
+            locale={quizLanguage}
           />
         )}
 
         {q.answerFormat === 'matching' && (
           <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{t['quiz.matchInstructions']}</p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.matchInstructions']}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {(q.matchingLeft || []).map((left) => (
                 <div key={left} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -1836,7 +1851,7 @@ function QuizPageContent() {
 
         {q.answerFormat === 'ordering' && (
           <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{t['quiz.orderInstructions']}</p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.orderInstructions']}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {orderingAnswer.map((item, i) => (
                 <div key={item} style={{
@@ -1855,7 +1870,7 @@ function QuizPageContent() {
 
         {q.answerFormat === 'classification' && (
           <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{t['quiz.classifyInstructions']}</p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.classifyInstructions']}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {(q.classificationItems || []).map((item) => (
                 <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -1878,7 +1893,7 @@ function QuizPageContent() {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
           <button onClick={nextQuestion} disabled={!canProceed(q) || submitting || switchingLanguage} className="btn btn-primary">
-            {submitting ? t['quiz.submitting'] : current + 1 < questions.length ? t['quiz.next'] : t['quiz.viewResults']}
+            {submitting ? at['quiz.submitting'] : current + 1 < questions.length ? at['quiz.next'] : at['quiz.viewResults']}
           </button>
         </div>
       </div>
