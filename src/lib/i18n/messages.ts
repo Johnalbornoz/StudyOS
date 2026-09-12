@@ -300,11 +300,24 @@ export type MessageKey =
   | 'activityCta.PRACTICE' | 'activityCta.REVIEW' | 'activityCta.SOLO_CHECK' | 'activityCta.DIAGNOSTIC_CHECK'
   | 'activityCta.REMEDIATION' | 'activityCta.SOLO_VERIFY' | 'activityCta.TRANSFER'
   | 'activityCta.RETENTION_CHECK' | 'activityCta.CUMULATIVE_ASSESSMENT' | 'activityCta.MOCK_EXAM'
+  // LX-6: a THIRD presentation-only mapping alongside activityLabel.*
+  // (noun badge) and activityCta.* (imperative verb) -- a short "why
+  // this kind of action, now" sentence, keyed by the same canonical
+  // ActivityType. Never a new taxonomy, never a threshold/heuristic:
+  // pure enum -> sentence, exactly like its two siblings.
+  | 'todayNarrative.PRACTICE' | 'todayNarrative.REVIEW' | 'todayNarrative.SOLO_CHECK' | 'todayNarrative.DIAGNOSTIC_CHECK'
+  | 'todayNarrative.REMEDIATION' | 'todayNarrative.SOLO_VERIFY' | 'todayNarrative.TRANSFER'
+  | 'todayNarrative.RETENTION_CHECK' | 'todayNarrative.CUMULATIVE_ASSESSMENT' | 'todayNarrative.MOCK_EXAM'
   | 'today3.subtitle' | 'today3.sessionTitle' | 'today3.sessionSubtitle'
   | 'today3.deferredTitle' | 'today3.deferredSubtitle' | 'today3.deferredBadge'
   | 'today3.emptyTitle' | 'today3.emptyBody'
   | 'today3.coldStateTitle' | 'today3.coldStateBody' | 'today3.coldStateCta'
   | 'today3.unavailableTitle' | 'today3.unavailableBody' | 'today3.retry' | 'today3.minutesPlanned'
+  // LX-6 R4/R23: UNRESOLVED -- the Today decision itself could not be
+  // read (a request/read failure), distinct from CONSOLIDATED (read
+  // succeeded, genuinely nothing due) and NO_ACTIVE_LEARNING_PATH (cold
+  // profile). Never a fabricated recommendation.
+  | 'today3.unresolvedTitle' | 'today3.unresolvedBody' | 'today3.unresolvedRetry' | 'today3.viewMyPath'
   // Progress V2 -- student-facing Progress dashboard (achievements /
   // capabilities / subject-concept progress / needs attention),
   // replacing the old technical scorecard. Reuses knowledgeState.* and
@@ -912,6 +925,16 @@ const es: Messages = {
   'activityCta.RETENTION_CHECK': 'Comprobar que todavía lo recuerdas',
   'activityCta.CUMULATIVE_ASSESSMENT': 'Empezar evaluación',
   'activityCta.MOCK_EXAM': 'Empezar simulacro',
+  'todayNarrative.PRACTICE': 'Ya tienes la idea. Ahora ponla en práctica.',
+  'todayNarrative.REVIEW': 'Un repaso rápido para no perder el ritmo.',
+  'todayNarrative.SOLO_CHECK': 'Demuestra lo que puedes hacer sin ayuda.',
+  'todayNarrative.DIAGNOSTIC_CHECK': 'Una comprobación rápida para ver en qué punto estás.',
+  'todayNarrative.REMEDIATION': 'Una vuelta más con apoyo antes de seguir.',
+  'todayNarrative.SOLO_VERIFY': 'Sin pistas: demuestra que puedes hacerlo tú solo.',
+  'todayNarrative.TRANSFER': 'Ya has demostrado que lo entiendes. Ahora aplícalo en una situación nueva.',
+  'todayNarrative.RETENTION_CHECK': 'Veamos qué se te queda todavía.',
+  'todayNarrative.CUMULATIVE_ASSESSMENT': 'Une varios conceptos a la vez.',
+  'todayNarrative.MOCK_EXAM': 'Practica en condiciones de examen real.',
   'today3.subtitle': 'Tu mejor próximo paso, elegido entre todo lo que importa ahora mismo — y lo que más cabe hoy.',
   'today3.sessionTitle': 'Tu sesión de hoy',
   'today3.sessionSubtitle': 'En orden de prioridad — lo que cabe en el tiempo que tienes.',
@@ -927,6 +950,10 @@ const es: Messages = {
   'today3.unavailableBody': 'Algo cambió o se perdió la conexión. Inténtalo de nuevo.',
   'today3.retry': 'Reintentar',
   'today3.minutesPlanned': '{planned} de {available} min planeados',
+  'today3.unresolvedTitle': 'No pudimos cargar tu próximo paso.',
+  'today3.unresolvedBody': 'Hubo un problema al leer tu progreso. Tu información está a salvo -- inténtalo de nuevo.',
+  'today3.unresolvedRetry': 'Reintentar',
+  'today3.viewMyPath': 'Ver mi camino',
   'progress.title': 'Progreso',
   'progress.subtitle': 'Lo que lograste, cómo aprendés y qué sigue.',
   'progress.overallMasteryLabel': 'Dominio general',
@@ -1901,6 +1928,16 @@ const en: Messages = {
   'activityCta.RETENTION_CHECK': 'Check if you still remember',
   'activityCta.CUMULATIVE_ASSESSMENT': 'Start assessment',
   'activityCta.MOCK_EXAM': 'Start practice exam',
+  'todayNarrative.PRACTICE': "You've got the idea. Now put it into practice.",
+  'todayNarrative.REVIEW': 'A quick refresher to keep it sharp.',
+  'todayNarrative.SOLO_CHECK': 'Show what you can do without help.',
+  'todayNarrative.DIAGNOSTIC_CHECK': 'A quick check to see where you stand.',
+  'todayNarrative.REMEDIATION': 'One more supported round before you move on.',
+  'todayNarrative.SOLO_VERIFY': "No hints -- show you can do it on your own.",
+  'todayNarrative.TRANSFER': "You've shown you understand it. Now use it in a new situation.",
+  'todayNarrative.RETENTION_CHECK': "Let's see what's still sticking.",
+  'todayNarrative.CUMULATIVE_ASSESSMENT': 'Bring several concepts together at once.',
+  'todayNarrative.MOCK_EXAM': 'Practice under real exam conditions.',
   'today3.subtitle': 'Your best next step, chosen from everything that matters right now -- and what else fits today.',
   'today3.sessionTitle': "Today's Session",
   'today3.sessionSubtitle': 'In priority order -- what fits in the time you have.',
@@ -1916,6 +1953,10 @@ const en: Messages = {
   'today3.unavailableBody': 'Something changed or the connection dropped. Try again.',
   'today3.retry': 'Try again',
   'today3.minutesPlanned': '{planned} of {available} min planned',
+  'today3.unresolvedTitle': "We couldn't load your next step.",
+  'today3.unresolvedBody': "Something went wrong reading your progress. Your information is safe -- try again.",
+  'today3.unresolvedRetry': 'Try again',
+  'today3.viewMyPath': 'View my path',
   'progress.title': 'Progress',
   'progress.subtitle': "What you've achieved, how you're learning, and what's next.",
   'progress.overallMasteryLabel': 'Overall mastery',
@@ -2890,6 +2931,16 @@ const de: Messages = {
   'activityCta.RETENTION_CHECK': 'Prüfen, ob du dich noch erinnerst',
   'activityCta.CUMULATIVE_ASSESSMENT': 'Bewertung starten',
   'activityCta.MOCK_EXAM': 'Übungsprüfung starten',
+  'todayNarrative.PRACTICE': 'Du hast die Idee verstanden. Jetzt wende sie an.',
+  'todayNarrative.REVIEW': 'Eine kurze Auffrischung, damit es sitzen bleibt.',
+  'todayNarrative.SOLO_CHECK': 'Zeig, was du ohne Hilfe kannst.',
+  'todayNarrative.DIAGNOSTIC_CHECK': 'Ein kurzer Check, um zu sehen, wo du stehst.',
+  'todayNarrative.REMEDIATION': 'Noch eine unterstützte Runde, bevor es weitergeht.',
+  'todayNarrative.SOLO_VERIFY': 'Keine Hinweise – zeig, dass du es allein kannst.',
+  'todayNarrative.TRANSFER': 'Du hast gezeigt, dass du es verstehst. Jetzt wende es in einer neuen Situation an.',
+  'todayNarrative.RETENTION_CHECK': 'Schauen wir, was noch hängen geblieben ist.',
+  'todayNarrative.CUMULATIVE_ASSESSMENT': 'Bring mehrere Konzepte auf einmal zusammen.',
+  'todayNarrative.MOCK_EXAM': 'Übe unter echten Prüfungsbedingungen.',
   'today3.subtitle': 'Dein bester nächster Schritt, ausgewählt aus allem, was gerade wichtig ist -- und was heute sonst noch passt.',
   'today3.sessionTitle': 'Deine heutige Sitzung',
   'today3.sessionSubtitle': 'In Prioritätsreihenfolge -- was in deine verfügbare Zeit passt.',
@@ -2905,6 +2956,10 @@ const de: Messages = {
   'today3.unavailableBody': 'Etwas hat sich geändert oder die Verbindung ist abgebrochen. Versuch es erneut.',
   'today3.retry': 'Erneut versuchen',
   'today3.minutesPlanned': '{planned} von {available} Min. geplant',
+  'today3.unresolvedTitle': 'Wir konnten deinen nächsten Schritt nicht laden.',
+  'today3.unresolvedBody': 'Beim Lesen deines Fortschritts ist etwas schiefgelaufen. Deine Daten sind sicher – versuch es erneut.',
+  'today3.unresolvedRetry': 'Erneut versuchen',
+  'today3.viewMyPath': 'Meinen Weg ansehen',
   'progress.title': 'Fortschritt',
   'progress.subtitle': 'Was du erreicht hast, wie du lernst und was als Nächstes kommt.',
   'progress.overallMasteryLabel': 'Gesamtbeherrschung',
@@ -3879,6 +3934,16 @@ const fr: Messages = {
   'activityCta.RETENTION_CHECK': "Vérifier si tu t'en souviens encore",
   'activityCta.CUMULATIVE_ASSESSMENT': "Commencer l'évaluation",
   'activityCta.MOCK_EXAM': "Commencer l'examen blanc",
+  'todayNarrative.PRACTICE': "Tu as compris l'idée. Mets-la maintenant en pratique.",
+  'todayNarrative.REVIEW': 'Un petit rappel pour ne rien perdre.',
+  'todayNarrative.SOLO_CHECK': 'Montre ce que tu sais faire sans aide.',
+  'todayNarrative.DIAGNOSTIC_CHECK': "Un point rapide pour voir où tu en es.",
+  'todayNarrative.REMEDIATION': 'Encore un tour accompagné avant de continuer.',
+  'todayNarrative.SOLO_VERIFY': "Sans indice : montre que tu peux le faire seul(e).",
+  'todayNarrative.TRANSFER': 'Tu as montré que tu comprends. Applique-le maintenant dans une nouvelle situation.',
+  'todayNarrative.RETENTION_CHECK': "Voyons ce qu'il te reste en mémoire.",
+  'todayNarrative.CUMULATIVE_ASSESSMENT': 'Relie plusieurs concepts à la fois.',
+  'todayNarrative.MOCK_EXAM': "Entraîne-toi dans les conditions réelles de l'examen.",
   'today3.subtitle': "Ta meilleure prochaine étape, choisie parmi tout ce qui compte maintenant -- et ce qui rentre aujourd'hui.",
   'today3.sessionTitle': "Ta session d'aujourd'hui",
   'today3.sessionSubtitle': 'Par ordre de priorité -- ce qui rentre dans le temps dont tu disposes.',
@@ -3894,6 +3959,10 @@ const fr: Messages = {
   'today3.unavailableBody': 'Quelque chose a changé ou la connexion a été perdue. Réessaie.',
   'today3.retry': 'Réessayer',
   'today3.minutesPlanned': '{planned} sur {available} min prévues',
+  'today3.unresolvedTitle': "Nous n'avons pas pu charger ta prochaine étape.",
+  'today3.unresolvedBody': "Un problème est survenu lors de la lecture de ta progression. Tes données sont en sécurité -- réessaie.",
+  'today3.unresolvedRetry': 'Réessayer',
+  'today3.viewMyPath': 'Voir mon parcours',
   'progress.title': 'Progrès',
   'progress.subtitle': "Ce que tu as accompli, comment tu apprends, et la suite.",
   'progress.overallMasteryLabel': 'Maîtrise globale',
@@ -4868,6 +4937,16 @@ const pt: Messages = {
   'activityCta.RETENTION_CHECK': 'Verificar se você ainda lembra',
   'activityCta.CUMULATIVE_ASSESSMENT': 'Iniciar avaliação',
   'activityCta.MOCK_EXAM': 'Iniciar simulado',
+  'todayNarrative.PRACTICE': 'Você entendeu a ideia. Agora coloque em prática.',
+  'todayNarrative.REVIEW': 'Uma revisão rápida para não perder o ritmo.',
+  'todayNarrative.SOLO_CHECK': 'Mostre o que você consegue fazer sem ajuda.',
+  'todayNarrative.DIAGNOSTIC_CHECK': 'Uma checagem rápida para ver onde você está.',
+  'todayNarrative.REMEDIATION': 'Mais uma rodada com apoio antes de continuar.',
+  'todayNarrative.SOLO_VERIFY': 'Sem dicas: mostre que você consegue sozinho.',
+  'todayNarrative.TRANSFER': 'Você já mostrou que entende. Agora aplique isso em uma situação nova.',
+  'todayNarrative.RETENTION_CHECK': 'Vamos ver o que ainda ficou.',
+  'todayNarrative.CUMULATIVE_ASSESSMENT': 'Junte vários conceitos de uma vez.',
+  'todayNarrative.MOCK_EXAM': 'Pratique em condições reais de prova.',
   'today3.subtitle': 'Seu melhor próximo passo, escolhido entre tudo o que importa agora -- e o que mais cabe hoje.',
   'today3.sessionTitle': 'Sua sessão de hoje',
   'today3.sessionSubtitle': 'Em ordem de prioridade -- o que cabe no tempo que você tem.',
@@ -4883,6 +4962,10 @@ const pt: Messages = {
   'today3.unavailableBody': 'Algo mudou ou a conexão caiu. Tente novamente.',
   'today3.retry': 'Tentar novamente',
   'today3.minutesPlanned': '{planned} de {available} min planejados',
+  'today3.unresolvedTitle': 'Não conseguimos carregar seu próximo passo.',
+  'today3.unresolvedBody': 'Algo deu errado ao ler seu progresso. Suas informações estão seguras -- tente novamente.',
+  'today3.unresolvedRetry': 'Tentar novamente',
+  'today3.viewMyPath': 'Ver meu caminho',
   'progress.title': 'Progresso',
   'progress.subtitle': 'O que você conquistou, como está aprendendo e o que vem a seguir.',
   'progress.overallMasteryLabel': 'Domínio geral',

@@ -20,6 +20,7 @@ export default function StartSessionButton({
   unavailableLabel,
   retryLabel,
   variant = 'primary',
+  launchMark,
 }: {
   studentId: string;
   actionConceptId: string;
@@ -28,6 +29,15 @@ export default function StartSessionButton({
   unavailableLabel: string;
   retryLabel: string;
   variant?: 'primary' | 'secondary';
+  /**
+   * LX-6 R19 -- optional safe observability label. When supplied, one
+   * `[perf]` line is logged right before navigation, carrying only
+   * this label + `conceptId` (never learner content, never the launch
+   * URL). Callers that don't care about a specific event name (most
+   * StartSessionButton uses outside Today) simply omit it -- no log,
+   * no behavior change.
+   */
+  launchMark?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -45,6 +55,11 @@ export default function StartSessionButton({
       const body = await res.json();
       const session = body?.data?.session;
       if (res.ok && session?.launchStatus === 'READY' && session.launchTarget) {
+        if (launchMark) {
+          try {
+            console.log('[perf]', JSON.stringify({ label: launchMark, t: Math.round(performance.now()), conceptId: actionConceptId }));
+          } catch { /* noop */ }
+        }
         router.push(session.launchTarget);
         return;
       }
