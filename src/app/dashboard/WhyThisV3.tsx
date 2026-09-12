@@ -8,6 +8,26 @@ import type { getMessages } from '@/lib/i18n/messages';
  * exactly, but reads the new fact shape (LearningFact: {kind, ...}) any
  * Phase 3E product surface consumes instead of the legacy
  * TodayReason-era WhyThisFact.
+ *
+ * LX-6R1: this explains WHY THE ACTIVITY IS NEXT, never HOW THE ENGINE
+ * SCORED THE LEARNER. Every fact's fixed, qualitative sentence is the
+ * SAME regardless of the underlying number -- severity/mastery/
+ * comprehension/understanding values are read from `fact` (they remain
+ * fully intact on the canonical LearningFact for ranking, Decision
+ * Trace, and admin/QA observability) but are NEVER interpolated into
+ * this component's output. `recurringMisconception`'s occurrence count
+ * and `prerequisiteGap`'s blocked-concept count are the deliberate
+ * exception: a plain tally of concrete, already-observed events (how
+ * many times, how many other concepts) reads as a fact to the learner,
+ * not as an internal diagnostic score -- unlike severity/mastery/
+ * understanding, which are the engine's own computed metrics.
+ *
+ * LX-6R1 (R3/R4): optional `maxFacts` caps how many fact sentences are
+ * joined -- the hero passes `maxFacts={1}` so it shows at most ONE
+ * short supporting reason instead of stacking every fact on the
+ * decision. Secondary rows omit it and keep the unrestricted list.
+ * `decision.facts` itself, its length, and its ordering are untouched;
+ * this only slices what gets rendered.
  */
 function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): string {
   switch (fact.kind) {
@@ -16,7 +36,11 @@ function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): st
       return daysUntil <= 0 ? t['whyThisV3.examApproachingToday'] : t['whyThisV3.examApproaching'].replace('{days}', String(daysUntil));
     }
     case 'learningDebt':
-      return t['whyThisV3.learningDebt'].replace('{severity}', String(fact.severity ?? '-'));
+      // LX-6R1: severity (1-5) is canonical, drives ranking, and stays
+      // fully intact on the fact object for Decision Trace/QA -- it is
+      // never interpolated into the learner-facing sentence. Fixed,
+      // qualitative copy only, same for every severity value.
+      return t['whyThisV3.learningDebt'];
     case 'retentionReviewDue':
       return t['whyThisV3.retentionReviewDue'];
     case 'waitingForRetention':
@@ -30,7 +54,9 @@ function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): st
       // (fact.forgettingRisk) is deliberately not interpolated.
       return t['whyThisV3.forgettingRisk'];
     case 'independenceGap':
-      return t['whyThisV3.independenceGap'].replace('{independentMastery}', String(fact.independentMastery ?? '-'));
+      // LX-6R1: independentMastery (%) stays on the fact for Decision
+      // Trace/QA -- never shown to the learner as a raw percentage.
+      return t['whyThisV3.independenceGap'];
     case 'recurringMisconception':
       return t['whyThisV3.recurringMisconception'].replace('{count}', String(fact.occurrenceCount ?? 0));
     case 'criticalMisconception':
@@ -54,17 +80,28 @@ function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): st
       // deliberately neutral, "worth a closer look," never a verdict.
       return t['whyThisV3.calibrationConflict'];
     case 'lowUnderstanding':
-      return t['whyThisV3.lowUnderstanding'].replace('{understandingScore}', String(Math.round(Number(fact.understandingScore ?? 0))));
+      // LX-6R1: understandingScore (%) stays on the fact for Decision
+      // Trace/QA -- never rendered as a raw comprehension percentage.
+      return t['whyThisV3.lowUnderstanding'];
     default:
       return '';
   }
 }
 
-export default function WhyThisV3({ facts, t }: { facts: LearningFact[]; t: ReturnType<typeof getMessages> }) {
+export default function WhyThisV3({
+  facts,
+  t,
+  maxFacts,
+}: {
+  facts: LearningFact[];
+  t: ReturnType<typeof getMessages>;
+  maxFacts?: number;
+}) {
   if (facts.length === 0) return null;
   const sentence = facts
     .map((f) => factSentence(f, t))
     .filter(Boolean)
+    .slice(0, maxFacts ?? Infinity)
     .join(' ');
   if (!sentence) return null;
 

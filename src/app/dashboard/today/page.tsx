@@ -265,7 +265,9 @@ export default async function TodayPage() {
           <p style={{ fontSize: 16.5, lineHeight: 1.5, color: 'var(--text-primary)', margin: 'var(--space-4) 0 0', maxWidth: '52ch' }}>
             {activityNarrative(best.decision.activityType, t)}
           </p>
-          <WhyThisV3 facts={best.decision.facts} t={t} />
+          {/* LX-6R1 R3: at most ONE short supporting reason under the hero --
+              never stack every fact on the decision. */}
+          <WhyThisV3 facts={best.decision.facts} t={t} maxFacts={1} />
           <div style={{ marginTop: 'var(--space-5)' }}>
             <StartSessionButton
               studentId={studentId}
