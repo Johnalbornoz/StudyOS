@@ -13,6 +13,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { buildInteractionContract, type InteractionContractInputs } from '@/lib/lx/interaction-contract';
+import { evidenceModeForActivity } from '@/lib/activity-taxonomy';
 import { buildActivityLanguageContext, fallbackToSupportedLocale, activityLanguageToBCP47 } from '@/lib/lx/activity-language';
 import { presentationForSupportLevel } from '@/lib/lx/support-presentation';
 import { deriveVisualArtifact, validateVisualArtifact, type VisualArtifact } from '@/lib/lx/visual-contract';
@@ -43,7 +44,7 @@ const baseFake: GeneratedQuestion = {
 
 function contractInputs(over: Partial<InteractionContractInputs> = {}): InteractionContractInputs {
   return {
-    activityType: 'PRACTICE',
+    integrityMode: 'PRACTICE',
     answerFormat: 'text',
     activityLanguage: buildActivityLanguageContext('en'),
     capabilities: { speechRecognitionSupported: true, speechSynthesisSupported: true },
@@ -128,9 +129,14 @@ describe('LX-8 VOICE 7-15', () => {
 
   it('13. voice is offered in Independent activities too (pure input, evidenceMode-independent) -- RETENTION_CHECK/TRANSFER/SOLO_VERIFY all get VOICE for a text answer', () => {
     for (const activityType of ['RETENTION_CHECK', 'TRANSFER', 'SOLO_VERIFY'] as const) {
-      const c = buildInteractionContract(contractInputs({ activityType, answerFormat: 'text' }));
+      // Real server-side composition: activityType -> evidenceModeForActivity
+      // (activity-taxonomy.ts, untouched) -> integrityMode input.
+      const integrityMode = evidenceModeForActivity(activityType);
+      expect(integrityMode).toBe('INDEPENDENT');
+      const c = buildInteractionContract(contractInputs({ integrityMode, answerFormat: 'text', activityType }));
       expect(c.integrityMode).toBe('INDEPENDENT');
       expect(c.inputModes).toContain('VOICE');
+      expect(c.provenance.activityType).toBe(activityType);
     }
   });
 
@@ -155,8 +161,9 @@ describe('LX-8 VOICE 7-15', () => {
  * TTS 16-19                                                       *
  * ============================================================== */
 describe('LX-8 TTS 16-19', () => {
-  it('16. the quiz page reads the question aloud in quizLanguage (the activity language), not any interface-language state', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/<ReadAloudButton\s*\n?\s*text=\{q\.question\}\s*\n?\s*activityLanguage=\{quizLanguage\}/);
+  it('16. the quiz page reads the question aloud in the interactionContract’s activityLanguage (itself sourced from quizLanguage), not any interface-language state', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/<ReadAloudButton\s*\n?\s*text=\{q\.question\}\s*\n?\s*activityLanguage=\{ic\.activityLanguage\}/);
+    expect(QUIZ_PAGE_SRC).toMatch(/buildActivityLanguageContext\(quizLanguage\)/);
   });
 
   it('17. activityLanguageToBCP47 is a deterministic per-locale mapping, unrelated to any interface-language input', () => {
@@ -275,9 +282,11 @@ describe('LX-8 VISUAL 25-30', () => {
  * LANGUAGE 31-33                                                  *
  * ============================================================== */
 describe('LX-8 LANGUAGE 31-33', () => {
-  it('31. TTS/STT locale in the quiz page comes from quizLanguage (activity language), never getInterfaceLanguage', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/activityLanguage=\{quizLanguage\}/g);
-    expect(QUIZ_PAGE_SRC).not.toMatch(/activityLanguage=\{.*[Ii]nterface/);
+  it('31. TTS/STT locale in the quiz page comes from the interactionContract, itself built from quizLanguage (activity language), never getInterfaceLanguage', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/buildActivityLanguageContext\(quizLanguage\)/);
+    expect(QUIZ_PAGE_SRC).toMatch(/activityLanguage=\{ic\.activityLanguage\}/);
+    expect(QUIZ_PAGE_SRC).toMatch(/expectedResponseLanguage=\{ic\.expectedResponseLanguage\}/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/activityLanguage:\s*.*[Ii]nterface/);
   });
 
   it('32. expectedResponseLanguage is preserved as its own distinct field, not merely an alias', () => {
@@ -299,13 +308,13 @@ describe('LX-8 LANGUAGE 31-33', () => {
  * ============================================================== */
 describe('LX-8 INTEGRITY 34-39', () => {
   it('34. accessibility TTS (AUDIO output) remains available in INDEPENDENT integrityMode', () => {
-    const c = buildInteractionContract(contractInputs({ activityType: 'RETENTION_CHECK' }));
+    const c = buildInteractionContract(contractInputs({ integrityMode: 'INDEPENDENT' }));
     expect(c.integrityMode).toBe('INDEPENDENT');
     expect(c.outputModes).toContain('AUDIO');
   });
 
   it('35. STT remains available as pure input in INDEPENDENT integrityMode (duplicate of test 13, restated as an integrity requirement)', () => {
-    const c = buildInteractionContract(contractInputs({ activityType: 'TRANSFER', answerFormat: 'text' }));
+    const c = buildInteractionContract(contractInputs({ integrityMode: 'INDEPENDENT', answerFormat: 'text' }));
     expect(c.integrityMode).toBe('INDEPENDENT');
     expect(c.inputModes).toContain('VOICE');
   });
@@ -377,7 +386,7 @@ describe('LX-8 OBSERVABILITY 43-44', () => {
     for (const call of logSpy.mock.calls) {
       expect(call[0]).toBe('[interaction]');
       const parsed = JSON.parse(call[1] as string);
-      expect(Object.keys(parsed).every((k) => ['label', 'conceptId', 'activityType', 'inputMode', 'outputMode', 'supportLevel', 'activityLanguage', 'latencyMs', 'errorCode'].includes(k))).toBe(true);
+      expect(Object.keys(parsed).every((k) => ['label', 'conceptId', 'activityType', 'inputModes', 'outputModes', 'supportLevel', 'activityLanguage', 'expectedResponseLanguage', 'integrityMode', 'latencyMs', 'errorCode'].includes(k))).toBe(true);
     }
     logSpy.mockRestore();
   });

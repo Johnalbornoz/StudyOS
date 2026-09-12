@@ -25,10 +25,16 @@ export type InteractionEventLabel =
 export interface InteractionEventMeta {
   conceptId?: string;
   activityType?: string;
-  inputMode?: string;
-  outputMode?: string;
+  /** Comma-joined InputMode[]/OutputMode[] -- a plain string, never the learner's own content. */
+  inputModes?: string;
+  outputModes?: string;
   supportLevel?: string;
+  /** The content/activity language (TTS follows this). */
   activityLanguage?: string;
+  /** LX-8R1 R3: what the learner's answer is expected to be IN (STT follows this) -- kept distinct from activityLanguage even when numerically equal today. */
+  expectedResponseLanguage?: string;
+  /** Verbatim EvidenceMode -- provenance only, never re-derived from this log. */
+  integrityMode?: string;
   latencyMs?: number;
   errorCode?: string;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -26,6 +26,9 @@ import ContinuationPanel from './ContinuationPanel';
 // confirmed browser support, so `ssr: false` costs no extra flicker.
 const ReadAloudButton = dynamic(() => import('../ReadAloudButton'), { ssr: false });
 const VoiceInputButton = dynamic(() => import('../VoiceInputButton'), { ssr: false });
+import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/interaction-contract';
+import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
+import { logInteraction } from '@/lib/lx/multimodal-observability';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -36,6 +39,18 @@ type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' 
 // enforcement is still the server (see /api/quizzes/hint), this only
 // controls whether the Hint button even renders.
 const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review'];
+// LX-8R1 R1: the ONE place this page derives its coarse, presentation-
+// only EvidenceMode mirror from quizMode -- extracted so it is computed
+// once and fed into buildInteractionContract (interaction-contract.ts)
+// as that module's `integrityMode` INPUT, rather than a second,
+// independently-maintained copy of the same ternary living next to the
+// modality-rendering JSX. Still never the enforcement authority --
+// canUseAI (server) remains that.
+function coarseEvidenceModeForQuizMode(quizMode: QuizMode): EvidenceMode {
+  if (PRACTICE_EVIDENCE_MODES.includes(quizMode)) return 'PRACTICE';
+  if (quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation') return 'ASSESSMENT';
+  return 'INDEPENDENT';
+}
 // Phase 6 Closeout A: which explanatory sentence the in-flow
 // assisted/independent indicator shows. Purely presentation copy
 // selection off the SAME fixed quizMode -> Evidence Mode taxonomy fact
@@ -365,6 +380,68 @@ function QuizPageContent() {
   // the interface locale.
   const t = getMessages(locale);
   const at = getMessages(quizLanguage);
+
+  // LX-8R1 R1: ONE interaction-policy authority. Runtime browser
+  // capability detection is an INPUT to buildInteractionContract
+  // (interaction-contract.ts), never an independent modality-
+  // eligibility rule this page decides on its own -- this page must
+  // never re-derive "voice allowed because answerFormat === text"
+  // anywhere; it only reads interactionContract.inputModes/outputModes
+  // below.
+  const [modalityCapabilities, setModalityCapabilities] = useState<ModalityCapabilities>({
+    speechRecognitionSupported: false,
+    speechSynthesisSupported: false,
+  });
+  useEffect(() => {
+    setModalityCapabilities({
+      speechRecognitionSupported: typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
+      speechSynthesisSupported: typeof window !== 'undefined' && 'speechSynthesis' in window,
+    });
+  }, []);
+
+  // LX-8R1 R3: activityLanguage (the content's own language, governs
+  // TTS) and expectedResponseLanguage (governs STT) are kept as two
+  // distinct fields on ONE context object, even though they resolve
+  // identically today -- the seam a future language-learning surface
+  // would widen, with zero VoiceInputButton/ReadAloudButton
+  // architecture change.
+  const activityLanguageContext = buildActivityLanguageContext(quizLanguage);
+  const coarseEvidenceMode = coarseEvidenceModeForQuizMode(quizMode);
+  const currentQuestionForContract = questions[current] ?? null;
+  const interactionContract = useMemo(
+    () =>
+      currentQuestionForContract
+        ? buildInteractionContract({
+            integrityMode: coarseEvidenceMode,
+            answerFormat: currentQuestionForContract.answerFormat,
+            activityLanguage: activityLanguageContext,
+            capabilities: modalityCapabilities,
+          })
+        : null,
+    // activityLanguageContext is a fresh object every render (a plain
+    // pure builder call, not state) -- depend on its primitive fields,
+    // never the object identity, so this memo doesn't recompute every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentQuestionForContract, coarseEvidenceMode, activityLanguageContext.activityLanguage, activityLanguageContext.expectedResponseLanguage, modalityCapabilities],
+  );
+
+  // LX-8R1 observability: INTERACTION_CONTRACT_READY once per question
+  // shown (never per re-render -- a hint toggle or confidence pick must
+  // not spam this event).
+  const loggedInteractionContractForRef = useRef<number>(-1);
+  useEffect(() => {
+    if (!interactionContract || loggedInteractionContractForRef.current === current) return;
+    loggedInteractionContractForRef.current = current;
+    logInteraction('INTERACTION_CONTRACT_READY', {
+      conceptId: conceptId ?? undefined,
+      inputModes: interactionContract.inputModes.join(','),
+      outputModes: interactionContract.outputModes.join(','),
+      supportLevel: interactionContract.supportLevel ?? undefined,
+      activityLanguage: interactionContract.activityLanguage,
+      expectedResponseLanguage: interactionContract.expectedResponseLanguage,
+      integrityMode: interactionContract.integrityMode,
+    });
+  }, [interactionContract, current, conceptId]);
 
   useEffect(() => {
     async function init() {
@@ -748,10 +825,15 @@ function QuizPageContent() {
       case 'multi_choice':
         return multiChoice.join(',');
       case 'text':
-        // LX-8 R13/R38: when the reasoning surface was shown, fold it
-        // into the SAME single string the grader already receives --
-        // no grader change, no new evidence field. Presentation-only.
-        return explanationAnswer.trim() ? `${textAnswer}\n\n${at['multimodal.reasoningLabel']}: ${explanationAnswer}` : textAnswer;
+        // LX-8 R13/R38, LX-8R1 R4: when the reasoning surface was shown,
+        // fold it into the SAME single string the grader already
+        // receives -- no grader change, no new evidence field.
+        // Presentation-only. A fixed, language-neutral "---" marker
+        // precedes the (localized) reasoning label so the boundary
+        // between answer and reasoning is unambiguous to the grader
+        // regardless of activity language, never relying on the label
+        // text alone to signal the split.
+        return explanationAnswer.trim() ? `${textAnswer}\n\n---\n${at['multimodal.reasoningLabel']}: ${explanationAnswer}` : textAnswer;
       case 'matching':
         return JSON.stringify(matchingAnswer);
       case 'ordering':
@@ -1573,17 +1655,21 @@ function QuizPageContent() {
   // LX-4F (presentation): the learner sees BEFORE answering what a
   // complete response is. Presentation-only -- the server-side grader
   // guard (applyResponseContractGuard) is the enforcement authority.
-  const clientEvidenceMode: EvidenceMode = PRACTICE_EVIDENCE_MODES.includes(quizMode)
-    ? 'PRACTICE'
-    : quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation'
-      ? 'ASSESSMENT'
-      : 'INDEPENDENT';
+  // LX-8R1 R1: reuses the SAME coarseEvidenceMode already computed
+  // above for interactionContract -- never a second, independently
+  // maintained copy of this ternary.
+  const clientEvidenceMode = coarseEvidenceMode;
   const responseContract = deriveResponseEvidenceContract(
     // LX-4R R5: the generator now populates expectedReasoningType, so the
     // learner-facing "what's being asked" line matches the grader's view.
     { type: q.type as QuestionType, expectedReasoningType: ((q as any).expectedReasoningType as ExpectedReasoningType | undefined) ?? null },
     clientEvidenceMode,
   );
+  // LX-8R1 R1: the ONE interaction-policy authority for this question --
+  // computed once above (useMemo), never re-derived here. Guaranteed
+  // non-null: `currentQuestionForContract` (questions[current]) equals
+  // `q` at this point, past the `if (!q) return null` guard above.
+  const ic = interactionContract!;
   const isProveMode = !PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
 
   return (
@@ -1740,14 +1826,18 @@ function QuizPageContent() {
           </h2>
           {/* LX-8 R8/R22: read-aloud is accessibility, not help -- offered
               regardless of quizMode/evidenceMode, reading exactly this
-              question text, nothing more. */}
-          <ReadAloudButton
-            text={q.question}
-            activityLanguage={quizLanguage}
-            label={at['multimodal.readAloud']}
-            stopLabel={at['multimodal.stopReading']}
-            conceptId={conceptId ?? undefined}
-          />
+              question text, nothing more. LX-8R1 R1: gated by the ONE
+              interactionContract authority (ic.outputModes), never a
+              second "AUDIO allowed because..." rule here. */}
+          {ic.outputModes.includes('AUDIO') && (
+            <ReadAloudButton
+              text={q.question}
+              activityLanguage={ic.activityLanguage}
+              label={at['multimodal.readAloud']}
+              stopLabel={at['multimodal.stopReading']}
+              conceptId={conceptId ?? undefined}
+            />
+          )}
         </div>
 
         {/* LX-4R R4: the contextual help surface (PRACTICE only). The
@@ -1861,22 +1951,29 @@ function QuizPageContent() {
                 free-text surface -- offered regardless of quizMode
                 (assistance gating is a completely separate axis), never
                 auto-submitted (VoiceInputButton requires explicit
-                review + accept before it ever touches textAnswer). */}
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <VoiceInputButton
-                activityLanguage={quizLanguage}
-                onAccept={(transcript) => setTextAnswer(transcript)}
-                micLabel={at['multimodal.speakAnswer']}
-                stopLabel={at['multimodal.stopRecording']}
-                reviewTitle={at['multimodal.reviewTranscript']}
-                useThisLabel={at['multimodal.useThisAnswer']}
-                reRecordLabel={at['multimodal.recordAgain']}
-                discardLabel={at['multimodal.discard']}
-                permissionDeniedLabel={at['multimodal.micPermissionDenied']}
-                transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
-                conceptId={conceptId ?? undefined}
-              />
-            </div>
+                review + accept before it ever touches textAnswer).
+                LX-8R1 R1: gated by the ONE interactionContract authority
+                (ic.inputModes) -- never a second "VOICE allowed because
+                answerFormat === text" check here. LX-8R1 R3: recognition
+                locale is ic.expectedResponseLanguage, never
+                ic.activityLanguage directly. */}
+            {ic.inputModes.includes('VOICE') && (
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <VoiceInputButton
+                  expectedResponseLanguage={ic.expectedResponseLanguage}
+                  onAccept={(transcript) => setTextAnswer(transcript)}
+                  micLabel={at['multimodal.speakAnswer']}
+                  stopLabel={at['multimodal.stopRecording']}
+                  reviewTitle={at['multimodal.reviewTranscript']}
+                  useThisLabel={at['multimodal.useThisAnswer']}
+                  reRecordLabel={at['multimodal.recordAgain']}
+                  discardLabel={at['multimodal.discard']}
+                  permissionDeniedLabel={at['multimodal.micPermissionDenied']}
+                  transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
+                  conceptId={conceptId ?? undefined}
+                />
+              </div>
+            )}
             {/* LX-8 R13: a SEPARATE reasoning surface -- only when the
                 already-canonical ResponseEvidenceContract says this
                 question asks for work/justification alongside a final

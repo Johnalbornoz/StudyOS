@@ -23,9 +23,27 @@ import { logInteraction } from '@/lib/lx/multimodal-observability';
  * an AI-generated improvement -- there is no AI call anywhere in this
  * component.
  *
- * R29: no audio is ever persisted or sent anywhere -- SpeechRecognition
- * is entirely browser/OS-local; this component holds only the
- * resulting text, and only for as long as the review step lasts.
+ * LX-8R1 R2 -- PRIVACY MODEL (corrected; do not restate the old,
+ * overclaiming version of this comment):
+ *   - StudyUS does not intentionally persist or upload raw microphone
+ *     audio through its own backend in this browser-native
+ *     implementation. This component holds only the resulting text
+ *     (`transcript`), and only for as long as the review step lasts --
+ *     never an audio blob, never a recording.
+ *   - StudyUS's OWN backend receives no audio at all in this
+ *     implementation (there is no upload endpoint, no fetch carrying
+ *     audio anywhere in this file).
+ *   - What StudyUS does NOT control: whether the BROWSER's own
+ *     `SpeechRecognition` implementation performs recognition on-device
+ *     or by sending audio to the browser vendor's own cloud service
+ *     (e.g. Chrome's implementation is vendor-cloud-backed on many
+ *     platforms). That behavior is outside this runtime's control and
+ *     is NOT something this component -- or StudyUS -- can promise
+ *     either way.
+ *   - Browser-native STT therefore requires explicit privacy/security
+ *     review and approval before Production use with minors, if
+ *     product policy requires it -- this phase does not perform that
+ *     review or grant that approval.
  * Observability (R30) logs event labels + safe metadata only, never
  * the transcript itself.
  *
@@ -34,9 +52,18 @@ import { logInteraction } from '@/lib/lx/multimodal-observability';
  * support and accuracy vary; when the API is absent this component
  * renders nothing and the existing typed input remains the only path
  * (R27).
+ *
+ * LX-8R1 R3 -- LANGUAGE AUTHORITY: recognition locale comes from
+ * `expectedResponseLanguage` (what the learner's answer is expected to
+ * be IN), never from the activity's own content/instruction language.
+ * They are numerically identical today (StudyUS does not yet have a
+ * language-learning surface where they'd diverge), but this component
+ * only ever reads the `expectedResponseLanguage` prop -- a future
+ * instructionLanguage != expectedResponseLanguage case changes nothing
+ * here, only what the caller passes in.
  */
 export interface VoiceInputButtonProps {
-  activityLanguage: Locale;
+  expectedResponseLanguage: Locale;
   /** Called only when the learner explicitly accepts the (possibly edited) transcript. */
   onAccept: (transcript: string) => void;
   micLabel: string;
@@ -88,18 +115,21 @@ export default function VoiceInputButton(props: VoiceInputButtonProps) {
       return;
     }
     const recognition = new Ctor();
-    recognition.lang = activityLanguageToBCP47(props.activityLanguage);
+    // LX-8R1 R3: STT locale is expectedResponseLanguage, never the
+    // activity's content language directly -- see this file's own doc
+    // comment above.
+    recognition.lang = activityLanguageToBCP47(props.expectedResponseLanguage);
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onstart = () => {
       setState('LISTENING');
-      logInteraction('VOICE_INPUT_STARTED', { conceptId: props.conceptId, activityLanguage: props.activityLanguage });
+      logInteraction('VOICE_INPUT_STARTED', { conceptId: props.conceptId, activityLanguage: props.expectedResponseLanguage });
     };
     recognition.onresult = (event: any) => {
       const text = event?.results?.[0]?.[0]?.transcript ?? '';
       setTranscript(text);
       setState('REVIEW'); // R4/R7: never auto-submitted -- explicit review required.
-      logInteraction('VOICE_TRANSCRIPTION_READY', { conceptId: props.conceptId, activityLanguage: props.activityLanguage });
+      logInteraction('VOICE_TRANSCRIPTION_READY', { conceptId: props.conceptId, activityLanguage: props.expectedResponseLanguage });
     };
     recognition.onerror = (event: any) => {
       const code = event?.error ?? 'UNKNOWN';

@@ -23,6 +23,14 @@ import { logInteraction } from '@/lib/lx/multimodal-observability';
  * R9: `activityLanguage` must be the ACTIVITY's language (e.g. the
  * quiz page's own `quizLanguage` state), never the interface language
  * -- the caller is responsible for passing the right one.
+ *
+ * LX-8R1 R3 -- LANGUAGE AUTHORITY: TTS speaks the language of the
+ * CONTENT being read (the question/instruction text itself), so it
+ * follows `activityLanguage` -- deliberately NOT `expectedResponseLanguage`
+ * (that field governs what the LEARNER's answer should be in, via
+ * VoiceInputButton, a different question). The two are numerically
+ * identical today; this component only ever reads `activityLanguage`,
+ * so a future case where they diverge changes nothing here.
  */
 export interface ReadAloudButtonProps {
   /** The exact canonical text to read -- never altered, summarized, or supplemented. */
