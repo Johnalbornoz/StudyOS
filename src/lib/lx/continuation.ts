@@ -140,3 +140,70 @@ export function checkpointFor(kind: LearningActivityKind): ContinuationCheckpoin
 export function conceptMissionPath(origin: Pick<LearningOrigin, 'subjectId' | 'conceptId'>): string {
   return `/dashboard/subjects/${origin.subjectId}/concepts/${origin.conceptId}`;
 }
+
+/**
+ * LX-5R1 -- a canonical `LAUNCH` may legitimately point at the SAME route
+ * the learner is already on (e.g. PRACTICE -> PRACTICE for the same
+ * concept/mode). Pushing an identical URL is a no-op in the Next.js App
+ * Router -- no navigation fires, so the destination page never gets a
+ * chance to start a fresh activity instance. This query param carries a
+ * one-shot nonce that makes such a relaunch a genuine navigation without
+ * changing what is being launched -- the destination page's OWN
+ * searchParams (subjectId/conceptId/mode/...) are untouched; it only
+ * uses this value to key a full remount. Never a routing/pedagogical
+ * signal on its own.
+ */
+export const RELAUNCH_NONCE_PARAM = 'relaunch';
+
+/** Pure, collision-cheap nonce -- not a security token, just "different every call". */
+export function newRelaunchNonce(): string {
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * True when `a` and `b` resolve to the same pathname and the same set of
+ * query parameters, IGNORING `RELAUNCH_NONCE_PARAM` on either side (so a
+ * learner who already relaunched once, carrying an old nonce in the
+ * current URL, is still correctly compared against a fresh server
+ * `launchTarget` that never has one).
+ */
+export function isSameRoute(currentUrl: string, targetUrl: string, base = 'http://lx.invalid'): boolean {
+  let a: URL, b: URL;
+  try {
+    a = new URL(currentUrl, base);
+    b = new URL(targetUrl, base);
+  } catch {
+    return false; // unparsable -- never claim same-route, let normal navigation proceed
+  }
+  if (a.pathname !== b.pathname) return false;
+  const strip = (u: URL) => {
+    const p = new URLSearchParams(u.searchParams);
+    p.delete(RELAUNCH_NONCE_PARAM);
+    return [...p.entries()].sort(([k1], [k2]) => k1.localeCompare(k2));
+  };
+  const aEntries = strip(a);
+  const bEntries = strip(b);
+  if (aEntries.length !== bEntries.length) return false;
+  return aEntries.every(([k, v], i) => k === bEntries[i][0] && v === bEntries[i][1]);
+}
+
+/**
+ * The navigation target `ContinuationPanel` should actually push: the
+ * server's `launchTarget` unchanged for a normal (different-route)
+ * navigation, or `launchTarget` with a fresh relaunch nonce appended when
+ * it is route-equivalent to `currentUrl` -- the smallest change that
+ * turns a would-be no-op push into a real one. Never alters the
+ * destination's own concept/mode/query semantics; on any parse failure,
+ * degrades to the raw `launchTarget` (still navigable, just not
+ * guaranteed to force a remount) rather than throwing.
+ */
+export function buildRelaunchTarget(currentUrl: string, launchTarget: string, nonce: string = newRelaunchNonce()): string {
+  try {
+    if (!isSameRoute(currentUrl, launchTarget)) return launchTarget;
+    const u = new URL(launchTarget, 'http://lx.invalid');
+    u.searchParams.set(RELAUNCH_NONCE_PARAM, nonce);
+    return `${u.pathname}?${u.searchParams.toString()}`;
+  } catch {
+    return launchTarget;
+  }
+}

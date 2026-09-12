@@ -12,7 +12,7 @@ import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-genera
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 import type { LearningActivityKind } from '@/lib/lx/continuation';
-import { conceptMissionPath } from '@/lib/lx/continuation';
+import { conceptMissionPath, RELAUNCH_NONCE_PARAM } from '@/lib/lx/continuation';
 import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
@@ -172,7 +172,29 @@ function VisualAidView({ aid }: { aid: VisualAid }) {
   );
 }
 
+/**
+ * LX-5R1 -- a canonical PRACTICE -> PRACTICE (or any same-route) LAUNCH
+ * still needs a genuinely NEW activity instance: fresh quizId, fresh
+ * questions, fresh answers/results, teaching stage reset. React does not
+ * reset a component's own state just because its search params changed
+ * on a re-render, and query-string-only navigation does not remount a
+ * Next.js page on its own -- so this thin wrapper reads the one-shot
+ * relaunch nonce ContinuationPanel appends for a same-route relaunch
+ * (see src/lib/lx/continuation.ts) and uses it as a React `key`. A key
+ * change forces React to fully discard and recreate `QuizPageContent`,
+ * which resets EVERY piece of local state in one guaranteed operation --
+ * far more robust than manually nulling out each field (quizId,
+ * questions, answers, results, teachingExperience, phase, genState,
+ * autoStartedRef, ...) and risking missing one. A normal, different-route
+ * launch is unaffected: no nonce is present, the key is just `''`.
+ */
 export default function QuizPage() {
+  const searchParams = useSearchParams();
+  const relaunchKey = searchParams.get(RELAUNCH_NONCE_PARAM) || '';
+  return <QuizPageContent key={relaunchKey} />;
+}
+
+function QuizPageContent() {
   const searchParams = useSearchParams();
   const subjectId = searchParams.get('subjectId');
   const conceptId = searchParams.get('conceptId');
