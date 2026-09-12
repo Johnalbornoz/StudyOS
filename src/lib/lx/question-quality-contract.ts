@@ -42,6 +42,8 @@ export type QualityFailureCode =
   | 'AMBIGUOUS_STRUCTURE'
   | 'VISUAL_UNSUPPORTED'
   | 'VISUAL_INCONSISTENT'
+  | 'VISUAL_MISSING_RENDER_DATA'
+  | 'VISUAL_INACCESSIBLE'
   | 'NUMERIC_ANSWER_MISMATCH';
 
 export interface QualityFailure {
@@ -158,11 +160,23 @@ export function checkQuestionQualityDeterministic(
     failures.push({ code: 'CORRECT_ANSWER_INCOMPATIBLE', detail: 'choice format with no options' });
   }
 
-  // VISUAL (B11 -- only line/bar + inline diagram, deterministically checked)
+  // VISUAL (B11 -- only line/bar + inline diagram, deterministically
+  // checked; LX-8 R19 extends this with two narrow, cheap-to-check
+  // rules that were previously missing: a diagram with nothing to
+  // render, and a visual with no accessible description at all --
+  // both are unambiguous structural facts, not a content-correctness
+  // judgment, so they belong in this deterministic pass, not the
+  // semantic verifier.)
   if (q.visualAid) {
     const va = q.visualAid;
     if (!SUPPORTED_VISUAL_KINDS.has(va.kind)) {
       failures.push({ code: 'VISUAL_UNSUPPORTED', detail: `kind=${va.kind}` });
+    }
+    if (va.kind === 'diagram' && !isNonEmptyString(va.svg)) {
+      failures.push({ code: 'VISUAL_MISSING_RENDER_DATA', detail: 'diagram has no svg -- referenced visual is missing' });
+    }
+    if (!isNonEmptyString(va.caption)) {
+      failures.push({ code: 'VISUAL_INACCESSIBLE', detail: 'no caption/accessible description for this visual' });
     }
     if (va.chartData) {
       const c = va.chartData;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import LearningSupportStatus, { type LearningSupportContext } from '../LearningSupportStatus';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
@@ -17,6 +18,14 @@ import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
 import ContinuationPanel from './ContinuationPanel';
+// LX-8 R33: optional modality controls are never on the critical
+// rendering path -- both use browser-only APIs (speechSynthesis /
+// SpeechRecognition) and are irrelevant to the very first paint of a
+// question, so their code loads on demand rather than in the initial
+// quiz bundle. Each component already renders nothing until it has
+// confirmed browser support, so `ssr: false` costs no extra flicker.
+const ReadAloudButton = dynamic(() => import('../ReadAloudButton'), { ssr: false });
+const VoiceInputButton = dynamic(() => import('../VoiceInputButton'), { ssr: false });
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -245,6 +254,13 @@ function QuizPageContent() {
   const [singleChoice, setSingleChoice] = useState<string | null>(null);
   const [multiChoice, setMultiChoice] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState('');
+  // LX-8 R13: a SEPARATE reasoning surface, shown only when the
+  // already-canonical ResponseEvidenceContract (below) says this
+  // question requires work/justification alongside a final answer --
+  // never a new evidence rule, purely a presentation split of the one
+  // free-text answer the grader already receives (see
+  // encodeCurrentAnswer's 'text' case).
+  const [explanationAnswer, setExplanationAnswer] = useState('');
   const [matchingAnswer, setMatchingAnswer] = useState<Record<string, string>>({});
   const [orderingAnswer, setOrderingAnswer] = useState<string[]>([]);
   const [classificationAnswer, setClassificationAnswer] = useState<Record<string, string>>({});
@@ -579,6 +595,7 @@ function QuizPageContent() {
     setSingleChoice(null);
     setMultiChoice([]);
     setTextAnswer('');
+    setExplanationAnswer('');
     setMatchingAnswer({});
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
@@ -731,7 +748,10 @@ function QuizPageContent() {
       case 'multi_choice':
         return multiChoice.join(',');
       case 'text':
-        return textAnswer;
+        // LX-8 R13/R38: when the reasoning surface was shown, fold it
+        // into the SAME single string the grader already receives --
+        // no grader change, no new evidence field. Presentation-only.
+        return explanationAnswer.trim() ? `${textAnswer}\n\n${at['multimodal.reasoningLabel']}: ${explanationAnswer}` : textAnswer;
       case 'matching':
         return JSON.stringify(matchingAnswer);
       case 'ordering':
@@ -1714,9 +1734,21 @@ function QuizPageContent() {
           {at[`responseContract.${responseContract.kind}` as keyof typeof t]}
         </p>
 
-        <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 'var(--space-4)', lineHeight: '28px' }}>
-          <MathText text={q.question} />
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, lineHeight: '28px', flex: 1 }}>
+            <MathText text={q.question} />
+          </h2>
+          {/* LX-8 R8/R22: read-aloud is accessibility, not help -- offered
+              regardless of quizMode/evidenceMode, reading exactly this
+              question text, nothing more. */}
+          <ReadAloudButton
+            text={q.question}
+            activityLanguage={quizLanguage}
+            label={at['multimodal.readAloud']}
+            stopLabel={at['multimodal.stopReading']}
+            conceptId={conceptId ?? undefined}
+          />
+        </div>
 
         {/* LX-4R R4: the contextual help surface (PRACTICE only). The
             server (/api/learning/contextual-help -> canUseAI) is the
@@ -1816,14 +1848,53 @@ function QuizPageContent() {
         )}
 
         {q.answerFormat === 'text' && (
-          <MathAnswerEditor
-            value={textAnswer}
-            onChange={setTextAnswer}
-            placeholder={at['quiz.typeAnswer']}
-            subjectName={subjectName}
-            studentId={studentId}
-            locale={quizLanguage}
-          />
+          <div>
+            <MathAnswerEditor
+              value={textAnswer}
+              onChange={setTextAnswer}
+              placeholder={at['quiz.typeAnswer']}
+              subjectName={subjectName}
+              studentId={studentId}
+              locale={quizLanguage}
+            />
+            {/* LX-8 R3/R4/R6: voice is a pure INPUT method for this same
+                free-text surface -- offered regardless of quizMode
+                (assistance gating is a completely separate axis), never
+                auto-submitted (VoiceInputButton requires explicit
+                review + accept before it ever touches textAnswer). */}
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <VoiceInputButton
+                activityLanguage={quizLanguage}
+                onAccept={(transcript) => setTextAnswer(transcript)}
+                micLabel={at['multimodal.speakAnswer']}
+                stopLabel={at['multimodal.stopRecording']}
+                reviewTitle={at['multimodal.reviewTranscript']}
+                useThisLabel={at['multimodal.useThisAnswer']}
+                reRecordLabel={at['multimodal.recordAgain']}
+                discardLabel={at['multimodal.discard']}
+                permissionDeniedLabel={at['multimodal.micPermissionDenied']}
+                transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
+                conceptId={conceptId ?? undefined}
+              />
+            </div>
+            {/* LX-8 R13: a SEPARATE reasoning surface -- only when the
+                already-canonical ResponseEvidenceContract says this
+                question asks for work/justification alongside a final
+                answer. Never rendered for a plain ANSWER_ONLY/EXPLAIN-only ask. */}
+            {(responseContract.requiresWork || responseContract.requiresJustification) && (
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['multimodal.reasoningLabel']}</p>
+                <MathAnswerEditor
+                  value={explanationAnswer}
+                  onChange={setExplanationAnswer}
+                  placeholder={at['multimodal.reasoningPlaceholder']}
+                  subjectName={subjectName}
+                  studentId={studentId}
+                  locale={quizLanguage}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {q.answerFormat === 'matching' && (
