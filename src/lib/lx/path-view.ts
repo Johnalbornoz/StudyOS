@@ -176,6 +176,26 @@ function summarize(concepts: ConceptPathView[]): SubjectPathSummary {
 }
 
 /**
+ * LX-7R1: the ONE place that decides "what is this subject's current
+ * canonical action, if any" -- reused by both `buildSubjectPathView`
+ * below and any other learner-facing surface (e.g. the Subjects detail
+ * page's CTA) that needs a subject-scoped action. Never an independent
+ * recommendation algorithm: it only filters and ranks the SAME
+ * `LearningDecision[]` Today/My Path already read off the shared
+ * snapshot, preferring the globally-best concept when it happens to
+ * belong to this subject so a subject-scoped surface can never disagree
+ * with Today/My Path about the same concept (R20/B6).
+ */
+export function resolveSubjectCurrentDecision(snapshot: LearningOSSnapshot | null, subjectId: string): LearningDecision | null {
+  if (!snapshot) return null;
+  const subjectDecisions = rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === subjectId));
+  if (subjectDecisions.length === 0) return null;
+  const globalCurrentConceptId = snapshot.nextExecutableItem?.decision.actionConceptId ?? null;
+  const preferred = globalCurrentConceptId ? subjectDecisions.find((d) => d.actionConceptId === globalCurrentConceptId) : undefined;
+  return preferred ?? subjectDecisions[0];
+}
+
+/**
  * Full Topic -> Concept journey for one subject. `currentConceptId`
  * prefers the globally-best concept from the shared snapshot when it
  * belongs to this subject, so the SAME concept is marked current on
@@ -192,9 +212,7 @@ export async function buildSubjectPathView(context: MyPathContext, subjectId: st
 
   const subjectDecisions = snapshot ? rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === subjectId)) : [];
   const decisionByConceptId = new Map(subjectDecisions.map((d) => [d.actionConceptId, d]));
-  const globalCurrentConceptId = snapshot?.nextExecutableItem?.decision.actionConceptId ?? null;
-  const subjectHasGlobalCurrent = globalCurrentConceptId != null && decisionByConceptId.has(globalCurrentConceptId);
-  const currentConceptId = subjectHasGlobalCurrent ? globalCurrentConceptId : (subjectDecisions[0]?.actionConceptId ?? null);
+  const currentConceptId = resolveSubjectCurrentDecision(snapshot, subjectId)?.actionConceptId ?? null;
 
   const toConceptView = (concept: HierarchyConcept): ConceptPathView => ({
     conceptId: concept.id,

@@ -8,6 +8,8 @@ import { getContentSources } from '@/services/content.service';
 import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
 import { getSubjectView } from '@/lib/learner-twin';
 import { getSubjectKnowledgeState, type MasteryState } from '@/services/knowledge-state.service';
+import { getLearningOSSnapshot } from '@/services/learning-os-snapshot.service';
+import { resolveSubjectCurrentDecision } from '@/lib/lx/path-view';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
@@ -16,6 +18,8 @@ import SubjectSettingsPanel from './SubjectSettingsPanel';
 import HierarchicalConceptList from './HierarchicalConceptList';
 import { getSubjectAccentColor } from '@/lib/subject-color';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
+import { activityCta } from '../../activityCta';
+import StartSessionButton from '../../StartSessionButton';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -40,10 +44,10 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   const subject = subjectResult.rows[0];
   if (!subject) notFound();
 
-  // Five independent reads (none depends on another's result) -- run in
+  // Six independent reads (none depends on another's result) -- run in
   // parallel instead of sequentially. Each keeps its own fallback, so a
   // failure in one never blocks or breaks the others.
-  const [concepts, contentSources, hierarchy, subjectView, knowledgeStates] = await Promise.all([
+  const [concepts, contentSources, hierarchy, subjectView, knowledgeStates, snapshot] = await Promise.all([
     getStudentMastery(studentId, id, locale, true).catch(() => []),
     getContentSources(studentId, id).catch(() => []),
     getSubjectHierarchy(id, studentId, locale).catch(() => ({ topics: [], unassigned: [] })),
@@ -54,10 +58,19 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
     // masteryStateLabel mapping to qualify the bare mastery percentage
     // below. Never recomputed, never a new threshold.
     getSubjectKnowledgeState(studentId, id).catch(() => []),
+    // LX-7R1: the same Phase 3E snapshot Today/My Path already read --
+    // never a subject-specific recommendation algorithm. See
+    // resolveSubjectCurrentDecision below.
+    getLearningOSSnapshot(studentId, { preferredLanguage: locale }).catch(() => null),
   ]);
   const masteryStates: Record<string, MasteryState> = {};
   for (const row of knowledgeStates) masteryStates[row.conceptId] = row.masteryState;
-  const weakest = [...concepts].sort((a: any, b: any) => a.mastery_score - b.mastery_score)[0];
+  // LX-7R1: replaces the old `[...concepts].sort((a,b) => a.mastery_score - b.mastery_score)[0]`
+  // "Practice weakest" heuristic -- raw mastery is not an action-selection
+  // authority. The subject's CTA now surfaces the same canonical decision
+  // Today/My Path would for this subject (or nothing, if there isn't one),
+  // never an independently-derived "weakest concept" pick.
+  const subjectDecision = resolveSubjectCurrentDecision(snapshot, id);
   // Digital Learning Twin (Phase 1C) cognitive summary -- same shape/values
   // getSubjectLearnerModel always produced, now sourced from the canonical
   // getSubjectView projection. subjectView is only null if the subject
@@ -114,9 +127,23 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             </p>
           )}
         </div>
-        {weakest && (
-          <Link href={`/dashboard/quiz?subjectId=${id}&conceptId=${weakest.concept_id}`} className="btn btn-primary">
-            {t['subjectDetail.practiceWeak']}
+        {subjectDecision ? (
+          // LX-7R1 B3/B6/B7: the canonical decision for this subject,
+          // launched through the same authority Today/My Path use --
+          // never a hand-built /dashboard/quiz?... URL.
+          <StartSessionButton
+            studentId={studentId}
+            actionConceptId={subjectDecision.actionConceptId}
+            label={activityCta(subjectDecision.activityType, t)}
+            unavailableLabel={t['today3.unavailableBody']}
+            retryLabel={t['today3.retry']}
+            variant="primary"
+          />
+        ) : (
+          // LX-7R1 B4: no canonical action for this subject right now --
+          // a neutral link, never an invented "Practice" fallback.
+          <Link href={`/dashboard/path/${id}`} className="btn btn-secondary">
+            {t['subjectDetail.viewMyPath']}
           </Link>
         )}
       </div>

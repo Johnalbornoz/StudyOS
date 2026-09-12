@@ -1028,16 +1028,19 @@ ${shapeExamples}
 }
 
 /**
- * STABILIZATION QUIZ PERFORMANCE Step 22, evolved to the FINAL
- * architecture validated end-to-end in Step 22D. The dedicated fast
- * path for retention_check ONLY (EvidenceMode INDEPENDENT). Deliberately
- * NOT a reuse of generatePracticeQuestions -- PRACTICE tolerates fewer
- * than requested, retention_check must not (Step 21/21A's validated
- * conclusion): this function is exact-6-or-nothing throughout.
+ * STABILIZATION QUIZ PERFORMANCE Step 22, evolved through Step 22D and
+ * RET-R1 (deficit-preserving recovery repair). The dedicated fast path
+ * for retention_check ONLY (EvidenceMode INDEPENDENT). Deliberately NOT
+ * a reuse of generatePracticeQuestions -- PRACTICE tolerates fewer than
+ * requested, retention_check must not: the PUBLISHED result is still
+ * exact-6-or-nothing (never 1-5 questions reach the learner), but as of
+ * RET-R1 that count is reached by preserving every individually-accepted
+ * question, never by discarding an accepted question's siblings.
  *
  * Architecture:
- *   - 2 concurrent the QUESTION_GENERATION route model (LX-4P-PERF-R1C: OpenAI Luna) calls, 3 questions each,
- *     quiz.question_generation v3, 30_000ms per call.
+ *   - 2 concurrent QUESTION_GENERATION route model (LX-4P-PERF-R1C:
+ *     OpenAI Luna) calls, 3 questions each, quiz.question_generation
+ *     v3, 30_000ms per call.
  *   - Preventive Variant B runtime diversification (Step 22C, combined
  *     in Step 22D): Chunk A and Chunk B each receive the complete,
  *     unmodified retention_check guidance PLUS a distinct one-sentence
@@ -1051,26 +1054,31 @@ ${shapeExamples}
  *   - Each chunk must itself return exactly 3 schema-valid,
  *     LaTeX-uncorrupted questions -- fewer (or a failed/timed-out call)
  *     is a failed chunk, never a partial contribution.
- *   - After both initial chunks succeed, classify the merged 6 in
- *     order: exact normalized-text duplicate, then strict structural
- *     overlap (Step 20C/22B/22D's validated deterministic fingerprint
- *     -- conceptId + type + symbolic math shape from the question
- *     field + cognitiveLevel + questionIntent; questions with no math
- *     span get fingerprint null and are never compared). Clean ->
- *     return immediately, no recovery call.
- *   - Exactly ONE bounded recovery round, never more (max 3 AI calls
- *     total): on a chunk failure, regenerate only the failed chunk; on
- *     exact-duplicate/structural-overlap, the deterministic rule from
- *     Step 22A/22B/22D applies -- always keep Chunk A, always
- *     regenerate Chunk B, by fixed position, never by content or
- *     learner data. The recovery call reuses the diversification note
- *     of whichever chunk was retained (the exact pattern Step 22D
- *     validated at 100% success/30 runs) plus an exclusion note
- *     listing only the retained chunk's own question text -- never
- *     correctAnswer, explanation, learner answers, or any evidence/
- *     mastery/Knowledge State data. If both initial chunks fail, or the
- *     recovery call itself fails/still collides, return [] -- no
- *     second retry, no partial set can ever reach the learner.
+ *   - Once a raw baseline (one or two chunks' worth) is selected, exact
+ *     normalized-text duplicate and strict structural overlap (Step
+ *     20C/22B/22D's validated deterministic fingerprint -- conceptId +
+ *     type + symbolic math shape from the question field + cognitive
+ *     Level + questionIntent) between the two ORIGINAL chunks still
+ *     collapses to a deterministic keep-Chunk-A/regenerate-Chunk-B rule,
+ *     unchanged from before RET-R1 -- that was never the live bug.
+ *   - RET-R1: the baseline is then gated PER QUESTION (LX-4P-PERF-R1C-R1's
+ *     universal Quality Gate). A rejection removes only that question;
+ *     every accepted sibling survives. `deficit = 6 - acceptedUnique.length`.
+ *   - If deficit > 0: exactly ONE bounded recovery round (never more,
+ *     max 3 AI calls total), at the smallest legal chunk size (3),
+ *     model Terra, exclusion note listing every already-accepted
+ *     question's own text (never correctAnswer/explanation/learner
+ *     data). The replacement chunk is itself gated, then deduped
+ *     per-question against everything already accepted (retention's
+ *     own fingerprint authority) -- only enough unique, accepted
+ *     replacements to close the deficit are kept; the rest are simply
+ *     unused, never fabricated into the set, never causing a valid one
+ *     to be dropped.
+ *   - If the canonical count still can't be reached after that one
+ *     recovery round, this returns [] and logs a precise, safe reason
+ *     (`RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS`, metadata only, no
+ *     question content) -- no second retry, no partial set can ever
+ *     reach the learner.
  */
 const RETENTION_CHUNK_MODEL = QGEN_ROUTE.primary;
 const RETENTION_CHUNK_COUNT = 2;
@@ -1152,6 +1160,53 @@ function buildRetentionExclusionNote(retainedQuestions: any[]): string {
   return `Generate a different set of questions, examples, and mathematical structures from the ones already selected below for this same retention check -- do not repeat the same problem, example, structure, or wording as any of these:\n${retainedQuestions
     .map((q, i) => `${i + 1}. ${q.question}`)
     .join('\n')}`;
+}
+
+/**
+ * RET-R1: per-question dedup of candidate replacements against the
+ * questions already accepted (and against each other) -- the SAME
+ * retention fingerprint/exact-text authority used everywhere else in
+ * this fast path (`normalizeText` + `computeRetentionStructuralFingerprint`),
+ * just applied per question instead of as a whole-chunk group count. A
+ * candidate that duplicates (exactly or structurally) anything already
+ * accepted is dropped; it never causes a sibling candidate that IS
+ * unique to be discarded too.
+ */
+function dedupeAgainstAccepted(candidates: GeneratedQuestion[], accepted: GeneratedQuestion[], conceptId: string): GeneratedQuestion[] {
+  const usedTextKeys = new Set(accepted.map((q) => normalizeText(q.question).toLowerCase()));
+  const usedFingerprints = new Set(
+    accepted.map((q) => computeRetentionStructuralFingerprint(q, conceptId)).filter((f): f is string => f !== null)
+  );
+  const kept: GeneratedQuestion[] = [];
+  for (const q of candidates) {
+    const textKey = normalizeText(q.question).toLowerCase();
+    if (usedTextKeys.has(textKey)) continue;
+    const fingerprint = computeRetentionStructuralFingerprint(q, conceptId);
+    if (fingerprint !== null && usedFingerprints.has(fingerprint)) continue;
+    usedTextKeys.add(textKey);
+    if (fingerprint !== null) usedFingerprints.add(fingerprint);
+    kept.push(q);
+  }
+  return kept;
+}
+
+/** RET-R1 A9: safe, learner/question-content-free observability -- one line per retention generation event. */
+function logRetention(label: string, meta: Record<string, unknown> = {}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[retention]', JSON.stringify({ label, ...meta }));
+  } catch { /* logging must never break generation */ }
+}
+
+/** RET-R1 A8: metadata-only, no question content -- accompanies the `RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS` reason when bounded recovery cannot reach the canonical count. */
+export interface RetentionInsufficientMeta {
+  requestedCount: number;
+  initialGeneratedCount: number;
+  initialAcceptedCount: number;
+  initialRejectedCount: number;
+  replacementGeneratedCount: number;
+  replacementAcceptedCount: number;
+  remainingDeficit: number;
 }
 
 type RetentionChunkOutcome = { ok: true; questions: any[] } | { ok: false; reason: 'TIMEOUT' | 'CHUNK_FAILURE' | 'VALIDATION' };
@@ -1271,112 +1326,142 @@ ${shapeExamples}
       }).then((r) => r.result);
     };
 
+    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT });
+
+    const reportInsufficient = (meta: RetentionInsufficientMeta): GeneratedQuestion[] => {
+      logRetention('RETENTION_BATCH_INSUFFICIENT', { reason: 'RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS', ...meta });
+      return [];
+    };
+
     const [chunkA, chunkB] = await Promise.all([
       requestChunk(0, RETENTION_VARIANT_B_NOTE_CHUNK_A),
       requestChunk(1, RETENTION_VARIANT_B_NOTE_CHUNK_B),
     ]);
 
-    let retainedQuestions: any[] | null = null;
-    let retainedNote: string = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-    let regenerateChunkIndex: 0 | 1 = 1;
-
     if (!chunkA.ok && !chunkB.ok) {
       // Rule 6C: both chunks failed -- no recovery call can make more
       // than one AI call, so there is nothing left to attempt.
       console.error('retention_check fast path: both initial chunks failed -- returning no questions rather than a partial set');
-      return [];
-    } else if (!chunkA.ok || !chunkB.ok) {
+      return reportInsufficient({
+        requestedCount: RETENTION_REQUIRED_COUNT, initialGeneratedCount: 0, initialAcceptedCount: 0, initialRejectedCount: 0,
+        replacementGeneratedCount: 0, replacementAcceptedCount: 0, remainingDeficit: RETENTION_REQUIRED_COUNT,
+      });
+    }
+
+    // RET-R1: which RAW chunk(s) to gate, and -- only if a recovery
+    // round later turns out to be needed -- which note/slot that
+    // recovery call should use. The two ALL-OR-NOTHING cases below (a
+    // chunk that never generated at all, or two chunks whose raw
+    // text/structure collide) are UNCHANGED from before this repair:
+    // collision-driven whole-chunk discarding was never the live bug
+    // (see A1) -- Quality Gate rejection discarding an otherwise-valid
+    // sibling question was.
+    let rawBaseline: any[];
+    let recoveryNote: string;
+    let recoverySlotIndex: 0 | 1;
+
+    if (!chunkA.ok || !chunkB.ok) {
       // Rule 6B: exactly one chunk failed -- keep the valid one,
       // regenerate the failed one once.
       if (!chunkA.ok) {
-        retainedQuestions = (chunkB as { ok: true; questions: any[] }).questions;
-        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
-        regenerateChunkIndex = 0;
+        rawBaseline = (chunkB as { ok: true; questions: any[] }).questions;
+        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
+        recoverySlotIndex = 0;
       } else {
-        retainedQuestions = (chunkA as { ok: true; questions: any[] }).questions;
-        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-        regenerateChunkIndex = 1;
+        rawBaseline = (chunkA as { ok: true; questions: any[] }).questions;
+        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+        recoverySlotIndex = 1;
       }
     } else {
       // Both chunks valid -- classify in order: exact duplicate, then
-      // strict structural overlap. CLEAN returns immediately, no
-      // recovery call.
+      // strict structural overlap.
       const merged = [...chunkA.questions, ...chunkB.questions];
-      if (retentionHasExactDuplicate(merged)) {
+      if (retentionHasExactDuplicate(merged) || retentionStructuralOverlapGroupCount(merged, conceptId) > 0) {
         // Rule 6A, deterministic: always keep Chunk A, always
         // regenerate Chunk B -- never by content or learner data.
-        retainedQuestions = chunkA.questions;
-        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-        regenerateChunkIndex = 1;
-      } else if (retentionStructuralOverlapGroupCount(merged, conceptId) > 0) {
-        retainedQuestions = chunkA.questions;
-        retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-        regenerateChunkIndex = 1;
+        rawBaseline = chunkA.questions;
+        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
+        recoverySlotIndex = 1;
       } else {
-        const mapped = mapRawQuestionsToGenerated(merged, conceptId, language);
-        if (mapped.length !== RETENTION_REQUIRED_COUNT) {
-          console.error(`retention_check fast path: expected ${RETENTION_REQUIRED_COUNT} mapped questions, got ${mapped.length} -- returning no questions rather than a partial set`);
-          return [];
-        }
-        // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate.
-        // retention_check is gated exactly like every other learner-facing
-        // path (deterministic contract + semantic verify where required).
-        // A gate failure feeds the SAME single bounded recovery a
-        // parse/dup/overlap failure does -- regenerate the gate-failing
-        // chunk once, keep the other, still <=3 generation calls,
-        // still exact-6-or-nothing.
-        const g = await retentionApplyGate(mapped, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
-        if (g.accepted.length === RETENTION_REQUIRED_COUNT) return g.accepted;
-        const acc = new Set(g.accepted);
-        const chunkAFailed = mapped.slice(0, RETENTION_QUESTIONS_PER_CHUNK).some((q) => !acc.has(q));
-        if (chunkAFailed) {
-          // keep B, regenerate A
-          retainedQuestions = chunkB.questions;
-          retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
-          regenerateChunkIndex = 0;
-        } else {
-          retainedQuestions = chunkA.questions;
-          retainedNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-          regenerateChunkIndex = 1;
-        }
+        rawBaseline = merged;
+        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
+        recoverySlotIndex = 1;
       }
     }
 
-    // Exactly ONE bounded recovery round -- no loops, no recursion that
-    // could trigger a second recovery. Exclusion context carries only
-    // the retained chunk's own question text. R1C-R1: the recovery call
-    // is Terra (the "one stronger regeneration on failure").
-    const exclusionNote = buildRetentionExclusionNote(retainedQuestions!);
-    const recoveryOutcome = await requestChunk(regenerateChunkIndex, retainedNote, exclusionNote, TERRA);
-    if (!recoveryOutcome.ok) {
-      console.error(`retention_check fast path: bounded recovery call failed (${recoveryOutcome.reason}) -- returning no questions, no second retry`);
-      return [];
+    const mappedBaseline = mapRawQuestionsToGenerated(rawBaseline, conceptId, language);
+    if (mappedBaseline.length !== rawBaseline.length) {
+      // Each chunk already validated itself upstream (exactly
+      // RETENTION_QUESTIONS_PER_CHUNK schema-valid items), so this is
+      // defensive only -- treated as "nothing usable," same spirit as
+      // the old bare-count guard.
+      console.error(`retention_check fast path: expected ${rawBaseline.length} mapped questions, got ${mappedBaseline.length} -- returning no questions rather than a partial set`);
+      return reportInsufficient({
+        requestedCount: RETENTION_REQUIRED_COUNT, initialGeneratedCount: rawBaseline.length, initialAcceptedCount: 0,
+        initialRejectedCount: rawBaseline.length, replacementGeneratedCount: 0, replacementAcceptedCount: 0, remainingDeficit: RETENTION_REQUIRED_COUNT,
+      });
     }
 
-    const finalMerged = [...retainedQuestions!, ...recoveryOutcome.questions];
-    if (retentionHasExactDuplicate(finalMerged)) {
-      console.error('retention_check fast path: exact duplicate remained after bounded recovery -- returning no questions, no second retry');
-      return [];
-    }
-    if (retentionStructuralOverlapGroupCount(finalMerged, conceptId) > 0) {
-      console.error('retention_check fast path: structural overlap remained after bounded recovery -- returning no questions, no second retry');
-      return [];
+    // A2/A3: gate EVERY baseline question individually. A rejection
+    // removes only that one question -- an accepted sibling from the
+    // same chunk is never discarded merely because another failed.
+    const initialGate = await retentionApplyGate(mappedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
+    const acceptedUnique: GeneratedQuestion[] = [...initialGate.accepted];
+    const initialAcceptedCount = acceptedUnique.length;
+    const initialRejectedCount = mappedBaseline.length - initialAcceptedCount;
+    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount });
+
+    let replacementGeneratedCount = 0;
+    let replacementAcceptedCount = 0;
+    let deficit = RETENTION_REQUIRED_COUNT - acceptedUnique.length;
+
+    if (deficit > 0) {
+      logRetention('RETENTION_DEFICIT_IDENTIFIED', { deficit });
+      logRetention('RETENTION_RECOVERY_STARTED', { deficit });
+
+      // A4: exactly ONE bounded recovery round, at the smallest legal
+      // chunk size -- no loop, no second retry. R1C-R1: the recovery
+      // call is Terra. The exclusion note now lists every question
+      // already accepted (not just one retained chunk's worth), so the
+      // recovery call cannot duplicate any of them.
+      const exclusionNote = buildRetentionExclusionNote(acceptedUnique);
+      const recoveryOutcome = await requestChunk(recoverySlotIndex, recoveryNote, exclusionNote, TERRA);
+
+      if (!recoveryOutcome.ok) {
+        console.error(`retention_check fast path: bounded recovery call failed (${recoveryOutcome.reason}) -- no second retry`);
+      } else {
+        replacementGeneratedCount = recoveryOutcome.questions.length;
+        // A6: replacements go through the SAME Structured Output ->
+        // parseGeneratedQuestionBatch -> deterministic gate -> semantic
+        // verification -> dedupe pipeline as everything else -- no
+        // bypass. Dedup reuses retention's own existing fingerprint
+        // authority (computeRetentionStructuralFingerprint), applied
+        // per question so ONE colliding replacement never discards an
+        // unrelated, unique one (A3).
+        const mappedRecovery = mapRawQuestionsToGenerated(recoveryOutcome.questions, conceptId, language);
+        const recoveryGate = await retentionApplyGate(mappedRecovery, conceptId, language, studentId, subjectId, TERRA, true);
+        const uniqueReplacements = dedupeAgainstAccepted(recoveryGate.accepted, acceptedUnique, conceptId);
+        for (const q of uniqueReplacements) {
+          if (acceptedUnique.length >= RETENTION_REQUIRED_COUNT) break; // A5: never exceed the canonical count
+          acceptedUnique.push(q);
+        }
+        replacementAcceptedCount = acceptedUnique.length - initialAcceptedCount;
+      }
+
+      logRetention('RETENTION_RECOVERY_COMPLETE', { replacementGeneratedCount, replacementAcceptedCount, finalAcceptedCount: acceptedUnique.length });
     }
 
-    const mapped = mapRawQuestionsToGenerated(finalMerged, conceptId, language);
-    if (mapped.length !== RETENTION_REQUIRED_COUNT) {
-      console.error(`retention_check fast path: expected ${RETENTION_REQUIRED_COUNT} mapped questions after recovery, got ${mapped.length} -- returning no questions rather than a partial set`);
-      return [];
+    deficit = RETENTION_REQUIRED_COUNT - acceptedUnique.length;
+    if (deficit > 0) {
+      console.error(`retention_check fast path: ${deficit} question(s) short of the canonical count after bounded recovery -- returning no questions, no second retry`);
+      return reportInsufficient({
+        requestedCount: RETENTION_REQUIRED_COUNT, initialGeneratedCount: mappedBaseline.length, initialAcceptedCount, initialRejectedCount,
+        replacementGeneratedCount, replacementAcceptedCount, remainingDeficit: deficit,
+      });
     }
 
-    // R1C-R1: final universal quality gate on the recovered set -- no
-    // further generation call, exact-6-or-nothing preserved.
-    const finalGate = await retentionApplyGate(mapped, conceptId, language, studentId, subjectId, TERRA, true);
-    if (finalGate.accepted.length !== RETENTION_REQUIRED_COUNT) {
-      console.error('retention_check fast path: a question failed the quality gate after bounded recovery -- returning no questions, no second retry');
-      return [];
-    }
-    return finalGate.accepted;
+    logRetention('RETENTION_BATCH_READY', { finalCount: acceptedUnique.length });
+    return acceptedUnique.slice(0, RETENTION_REQUIRED_COUNT); // A5, defensive: never exceed the canonical count
   } catch (error) {
     console.error('Error generating retention_check questions:', error);
     return [];

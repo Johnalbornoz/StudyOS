@@ -43,11 +43,13 @@ describe('R1C-R1 R1 -- learner-facing generation path audit', () => {
     expect(qc).toMatch(/returning no questions rather than a partial set/); // all-or-nothing preserved
   });
 
-  it('Retention: the merged set is gated (retentionApplyGate) feeding the single bounded recovery, exact-6-or-nothing', () => {
+  it('Retention: the baseline is gated (retentionApplyGate) feeding the single bounded recovery, published result exact-6-or-nothing (RET-R1: per-question, deficit-preserving)', () => {
     const rc = QG.slice(QG.indexOf('export async function generateRetentionCheckQuestions'), QG.indexOf('async function retentionApplyGate'));
-    expect(rc).toMatch(/retentionApplyGate\(mapped, conceptId, language, studentId, subjectId/);
+    expect(rc).toMatch(/retentionApplyGate\(mappedBaseline, conceptId, language, studentId, subjectId/);
     expect(QG).toMatch(/async function retentionApplyGate\(/);
-    expect(rc).toMatch(/a question failed the quality gate after bounded recovery/);
+    expect(rc).toMatch(/question\(s\) short of the canonical count after bounded recovery/);
+    // RET-R1 A2: an accepted question is never discarded because a sibling failed.
+    expect(rc).not.toMatch(/chunkAFailed/);
   });
 
   it('cumulative / exam / diagnostic: routed through generateGatedQuestionBatch, not a bare generateQuestionsForConcept', () => {

@@ -84,7 +84,7 @@ export type MessageKey =
   | 'subjectNew.isLanguageHelp' | 'subjectNew.targetLanguageLabel'
   | 'subjectNew.quizLanguageLabel' | 'subjectNew.quizLanguageMatch'
   | 'subjectNew.quizLanguageFixed' | 'subjectNew.submit'
-  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.practiceWeak'
+  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.viewMyPath'
   | 'subjectDetail.practice' | 'subjectDetail.noConceptsTitle' | 'subjectDetail.noConceptsBody'
   | 'subjectDetail.uploadTitle' | 'subjectDetail.uploadBody' | 'subjectDetail.uploadSubmit'
   | 'subjectDetail.uploading' | 'subjectDetail.statusUploading' | 'subjectDetail.statusProcessing'
@@ -815,7 +815,7 @@ const es: Messages = {
   'subjectNew.submit': 'Crear materia',
   'subjectDetail.conceptCount': 'conceptos',
   'subjectDetail.avgMastery': 'dominio promedio',
-  'subjectDetail.practiceWeak': 'Practicar concepto débil',
+  'subjectDetail.viewMyPath': 'Ver mi ruta',
   'subjectDetail.practice': 'Practicar',
   'subjectDetail.noConceptsTitle': 'Aún no hay conceptos aquí',
   'subjectDetail.noConceptsBody': 'Sube material de estudio abajo para que la IA extraiga los conceptos automáticamente.',
@@ -1856,7 +1856,7 @@ const en: Messages = {
   'subjectNew.submit': 'Create subject',
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'average mastery',
-  'subjectDetail.practiceWeak': 'Practice weakest concept',
+  'subjectDetail.viewMyPath': 'View my path',
   'subjectDetail.practice': 'Practice',
   'subjectDetail.noConceptsTitle': 'No concepts yet',
   'subjectDetail.noConceptsBody': 'Upload study material below so AI can extract concepts automatically.',
@@ -2897,7 +2897,7 @@ const de: Messages = {
   'subjectNew.submit': 'Fach erstellen',
   'subjectDetail.conceptCount': 'Konzepte',
   'subjectDetail.avgMastery': 'durchschnittliche Beherrschung',
-  'subjectDetail.practiceWeak': 'Schwächstes Konzept üben',
+  'subjectDetail.viewMyPath': 'Meinen Weg ansehen',
   'subjectDetail.practice': 'Üben',
   'subjectDetail.noConceptsTitle': 'Noch keine Konzepte',
   'subjectDetail.noConceptsBody': 'Lade unten Lernmaterial hoch, damit die KI automatisch Konzepte extrahiert.',
@@ -3938,7 +3938,7 @@ const fr: Messages = {
   'subjectNew.submit': 'Créer la matière',
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'maîtrise moyenne',
-  'subjectDetail.practiceWeak': 'Pratiquer le concept le plus faible',
+  'subjectDetail.viewMyPath': 'Voir mon parcours',
   'subjectDetail.practice': "S'entraîner",
   'subjectDetail.noConceptsTitle': 'Pas encore de concepts',
   'subjectDetail.noConceptsBody': "Importez du contenu ci-dessous pour que l'IA extraie les concepts automatiquement.",
@@ -4979,7 +4979,7 @@ const pt: Messages = {
   'subjectNew.submit': 'Criar matéria',
   'subjectDetail.conceptCount': 'conceitos',
   'subjectDetail.avgMastery': 'domínio médio',
-  'subjectDetail.practiceWeak': 'Praticar conceito fraco',
+  'subjectDetail.viewMyPath': 'Ver minha rota',
   'subjectDetail.practice': 'Praticar',
   'subjectDetail.noConceptsTitle': 'Ainda não há conceitos aqui',
   'subjectDetail.noConceptsBody': 'Envie material de estudo abaixo para que a IA extraia os conceitos automaticamente.',
