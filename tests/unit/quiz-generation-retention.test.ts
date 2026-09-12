@@ -1,11 +1,12 @@
 /**
- * STABILIZATION QUIZ PERFORMANCE Step 23: generateRetentionCheckQuestions
- * -- the FINAL validated retention_check (EvidenceMode INDEPENDENT) fast
- * path, evolved from Step 22's plain 2x3 chunking into the Step 22D
- * architecture: preventive Variant B runtime diversification on both
- * initial chunks, plus exactly one bounded recovery round (chunk
- * failure, exact duplicate, or strict structural overlap), still
- * exact-6-or-nothing throughout -- never a partial set.
+ * STABILIZATION QUIZ PERFORMANCE Step 23, evolved through RET-R1
+ * (deficit-preserving recovery) and RET-R2 (candidate-surplus
+ * reliability) -- the FINAL validated retention_check (EvidenceMode
+ * INDEPENDENT) fast path: preventive Variant B runtime diversification
+ * on both initial chunks, a bounded candidate SURPLUS at every wave
+ * (initial: 4+4=8 candidates for a published count of 6; recovery:
+ * deficit+2 clamped to [3,6]), plus exactly one bounded recovery round,
+ * still exact-6-or-nothing throughout -- never a partial set.
  *
  * Mocks executeAI directly -- no live provider call, no DB write.
  *
@@ -34,9 +35,11 @@ vi.mock('@/lib/ai/adapters/call-model', () => ({ callModel: (...a: any[]) => cal
 // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate now runs on the
 // merged retention_check set too (deterministic contract + semantic
 // verify where required), feeding the SAME single bounded recovery. These
-// tests cover the 2x3 + one-recovery ARCHITECTURE; the independent
-// semantic verifier has its own suite, so it is stubbed to pass here.
-// Tests that specifically exercise a gate rejection re-mock it locally.
+// tests cover the initial-surplus + one-recovery ARCHITECTURE; the
+// independent semantic verifier has its own suite, so it is stubbed to
+// pass here. Tests that specifically exercise a gate rejection re-mock
+// it locally (see tests/unit/ret-r1-retention-deficit-recovery.test.ts
+// and tests/unit/ret-r2-candidate-surplus.test.ts).
 vi.mock('@/services/question-quality-verifier.service', () => ({
   verifyQuestionQuality: vi.fn(async () => ({
     conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
@@ -48,6 +51,7 @@ vi.mock('@/services/question-quality-verifier.service', () => ({
 import {
   generateRetentionCheckQuestions,
   RETENTION_REQUIRED_COUNT,
+  RETENTION_INITIAL_CANDIDATE_COUNT,
   RETENTION_MAX_AI_CALLS_PER_ATTEMPT,
   computeRetentionStructuralFingerprint,
 } from '@/services/quiz-generation.service';
@@ -57,6 +61,9 @@ const VARIANT_B_NOTE_A =
   'Generate questions using examples and mathematical structures that vary from the most obvious textbook examples for this concept.';
 const VARIANT_B_NOTE_B =
   'Generate questions using a different variety of examples and mathematical structures; avoid defaulting to the most obvious textbook examples.';
+
+/** RET-R2: mirrors the production RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK (4) -- duplicated here deliberately so these tests pin the exact contract rather than importing a private constant. */
+const INITIAL_CHUNK_SIZE = 4;
 
 function fakeQuestion(i: number, overrides: Partial<{ question: string; type: string; cognitiveLevel: string; questionIntent: string }> = {}) {
   return {
@@ -120,8 +127,9 @@ function batch(questions: any[]): string {
   return JSON.stringify({ questions });
 }
 
-function cleanChunkText(base: number) {
-  return batch([fakeQuestion(base), fakeQuestion(base + 1), fakeQuestion(base + 2)]);
+/** RET-R2: an initial-wave chunk now carries INITIAL_CHUNK_SIZE (4) candidates, not 3. */
+function cleanChunkText(base: number, count = INITIAL_CHUNK_SIZE) {
+  return batch(Array.from({ length: count }, (_, i) => fakeQuestion(base + i)));
 }
 
 beforeEach(() => {
@@ -131,19 +139,24 @@ beforeEach(() => {
   executeAIMock.mockReset();
 });
 
-describe('RETENTION_REQUIRED_COUNT is 6 (2 chunks x 3)', () => {
+describe('RETENTION_REQUIRED_COUNT is 6 -- the canonical published count, independent of candidate volume', () => {
   it('equals 6', () => {
     expect(RETENTION_REQUIRED_COUNT).toBe(6);
   });
+
+  it('RET-R2: RETENTION_INITIAL_CANDIDATE_COUNT (8) exceeds RETENTION_REQUIRED_COUNT (6) -- candidate surplus, never conflated with the published count', () => {
+    expect(RETENTION_INITIAL_CANDIDATE_COUNT).toBe(8);
+    expect(RETENTION_INITIAL_CANDIDATE_COUNT).toBeGreaterThan(RETENTION_REQUIRED_COUNT);
+  });
 });
 
-describe('RETENTION_MAX_AI_CALLS_PER_ATTEMPT is 3 (2 initial + at most 1 bounded recovery)', () => {
+describe('RETENTION_MAX_AI_CALLS_PER_ATTEMPT is 3 (2 initial + at most 1 bounded recovery) -- unchanged by RET-R2', () => {
   it('equals 3', () => {
     expect(RETENTION_MAX_AI_CALLS_PER_ATTEMPT).toBe(3);
   });
 });
 
-describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes', () => {
+describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes, candidate surplus', () => {
   beforeEach(() => wireRealisticExecuteAI([{ text: cleanChunkText(0) }, { text: cleanChunkText(10) }]));
 
   it('fires exactly 2 executeAI calls when both initial chunks are clean', async () => {
@@ -179,13 +192,13 @@ describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes
     expect(PROMPT_REGISTRY['quiz.question_generation'].version).toBe('v3');
   });
 
-  it('each call requests exactly 3 questions, carries the "chunk N of 2" / "6 total questions" context, and its own Variant B note', async () => {
+  it('RET-R2: each initial call requests exactly 4 CANDIDATE questions (a surplus over the 6 published), carries "chunk N of 2" framing and its own Variant B note', async () => {
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages).toHaveLength(2);
     for (const msg of messages) {
-      expect(msg).toContain('Generate EXACTLY 3 questions');
-      expect(msg).toContain('6 total questions');
+      expect(msg).toContain('Generate EXACTLY 4 CANDIDATE questions');
+      expect(msg).toContain(`select the best ${RETENTION_REQUIRED_COUNT}`);
     }
     expect(messages[0]).toContain('chunk 1 of 2');
     expect(messages[1]).toContain('chunk 2 of 2');
@@ -203,10 +216,10 @@ describe('INITIAL SUCCESS: architecture, model, prompt, timeout, Variant B notes
     }
   });
 
-  it('returns exactly 6 questions when both chunks succeed cleanly, with no recovery call', async () => {
+  it('RET-R2: 8 clean initial candidates -> published result is still exactly 6, extras simply unused, no recovery call', async () => {
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toHaveLength(6);
-    expect(executeAIMock).toHaveBeenCalledTimes(2); // no 3rd (recovery) call for a CLEAN initial set
+    expect(executeAIMock).toHaveBeenCalledTimes(2); // no 3rd (recovery) call -- 8 accepted already clears the deficit
   });
 });
 
@@ -284,31 +297,30 @@ describe('STRUCTURAL FINGERPRINT (computeRetentionStructuralFingerprint)', () =>
   });
 });
 
-describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
-  it('structural overlap between the two initial chunks => exactly one recovery call, keeping A and regenerating B', async () => {
+describe('RECOVERY: exactly one bounded round, deterministic selection, RET-R2 surplus sizing', () => {
+  it('structural overlap between the two initial chunks => keep A (4), deficit=2, one recovery call for 4 candidates', async () => {
     const overlapping = batch([
       fakeQuestion(0, { question: 'Evaluate $2x + 3$' }),
-      fakeQuestion(1),
-      fakeQuestion(2),
+      fakeQuestion(1), fakeQuestion(2), fakeQuestion(3),
     ]);
     const overlappingB = batch([
       fakeQuestion(10, { question: 'Evaluate $9x + 41$' }), // same structural shape as chunk A's q0
-      fakeQuestion(11),
-      fakeQuestion(12),
+      fakeQuestion(11), fakeQuestion(12), fakeQuestion(13),
     ]);
-    const recoveryB = cleanChunkText(20);
+    const recoveryB = cleanChunkText(20); // 4 candidates, matching recoveryCandidateCount(deficit=2) === 4
     wireRealisticExecuteAI([{ text: overlapping }, { text: overlappingB }, { text: recoveryB }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
     expect(result).toHaveLength(6);
     const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
     expect(messages[2]).toContain('chunk 2 of 2'); // regenerating slot B (index 1)
+    expect(messages[2]).toContain('Generate EXACTLY 4'); // recoveryCandidateCount(2) === 4
     expect(messages[2]).toContain(VARIANT_B_NOTE_A); // reuses the RETAINED chunk's (A's) own note, per Step 22D's validated pattern
   });
 
-  it('exact duplicate between the two initial chunks => exactly one recovery call, keeping A and regenerating B', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
+  it('exact duplicate between the two initial chunks => keep A (4), deficit=2, one recovery call for 4 candidates', async () => {
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: cleanChunkText(20) }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
@@ -317,7 +329,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     expect(messages[2]).toContain('1. Same question text'); // exclusion note lists retained chunk A's own question text
   });
 
-  it('Chunk A failure + Chunk B valid => regenerate A once, recovery call targets slot A', async () => {
+  it('Chunk A failure + Chunk B valid (4) => keep B, deficit=2, recovery call targets slot A for 4 candidates', async () => {
     wireRealisticExecuteAI([{ error: 'PROVIDER_ERROR' }, { text: cleanChunkText(10) }, { text: cleanChunkText(20) }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
@@ -329,7 +341,7 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     expect(messages[2]).toContain(VARIANT_B_NOTE_B); // reuses retained Chunk B's own note
   });
 
-  it('Chunk B failure + Chunk A valid => regenerate B once, recovery call targets slot B', async () => {
+  it('Chunk B failure + Chunk A valid (4) => keep A, deficit=2, recovery call targets slot B for 4 candidates', async () => {
     wireRealisticExecuteAI([{ text: cleanChunkText(0) }, { error: 'TIMEOUT' }, { text: cleanChunkText(20) }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock).toHaveBeenCalledTimes(3);
@@ -348,8 +360,8 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
   });
 
   it('recovery exclusion context contains the retained question text but no answers/explanations/learner data', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: cleanChunkText(20) }]);
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     const recoveryMsg = callModelMock.mock.calls[2][0].user as string;
@@ -363,11 +375,17 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
     expect(recoveryMsg).not.toContain('prior attempt');
   });
 
-  it('no second retry: even a structural-overlap-triggering recovery result is accepted or rejected outright, never re-attempted', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
-    const recoveryStillDuplicate = batch([fakeQuestion(20, { question: 'Same question text' }), fakeQuestion(21), fakeQuestion(22)]);
-    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryStillDuplicate }]);
+  it('no second retry: a recovery batch that entirely collides with the retained set is accepted or rejected outright, never re-attempted', async () => {
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    // All 4 recovery candidates duplicate an already-accepted question exactly -- 0 survive per-question dedup, deficit(2) stays unmet.
+    const recoveryAllDuplicate = batch([
+      fakeQuestion(20, { question: 'Same question text' }),
+      fakeQuestion(21, { question: 'Same question text' }),
+      fakeQuestion(22, { question: 'Same question text' }),
+      fakeQuestion(23, { question: 'Same question text' }),
+    ]);
+    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryAllDuplicate }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
     expect(executeAIMock).toHaveBeenCalledTimes(3); // exactly 3, never a 4th call
@@ -375,10 +393,10 @@ describe('RECOVERY: exactly one bounded round, deterministic selection', () => {
 });
 
 describe('FINAL FAILURE: recovery outcome still invalid => []', () => {
-  it('recovery returns only 2 valid questions => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
-    const recoveryShort = batch([fakeQuestion(20), fakeQuestion(21)]); // only 2
+  it('recovery returns fewer candidates than requested => chunk validation fails => []', async () => {
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    const recoveryShort = batch([fakeQuestion(20), fakeQuestion(21)]); // only 2, but recoveryCandidateCount(2) === 4 is required
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryShort }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
@@ -386,40 +404,46 @@ describe('FINAL FAILURE: recovery outcome still invalid => []', () => {
   });
 
   it('recovery schema invalid (missing required fields) => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
-    const recoveryInvalid = batch([fakeQuestion(20), fakeQuestion(21), { type: 'multiple_choice' /* missing question */ }]);
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    const recoveryInvalid = batch([fakeQuestion(20), fakeQuestion(21), fakeQuestion(22), { type: 'multiple_choice' /* missing question */ }]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryInvalid }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
   });
 
   it('recovery LaTeX corrupted => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
-    // \neq corrupted into a raw control char inside inline math -- corrupted item filtered, leaving only 2.
-    const recoveryCorrupted = `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Q20","cognitiveLevel":"APPLICATION","questionIntent":"CHECK_APPLICATION"},${JSON.stringify(fakeQuestion(21))},${JSON.stringify(fakeQuestion(22))}]`;
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    // \neq corrupted into a raw control char inside inline math -- corrupted item filtered, leaving only 3 of the 4 requested.
+    const recoveryCorrupted = `[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Q20","cognitiveLevel":"APPLICATION","questionIntent":"CHECK_APPLICATION"},${JSON.stringify(fakeQuestion(21))},${JSON.stringify(fakeQuestion(22))},${JSON.stringify(fakeQuestion(23))}]`;
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryCorrupted }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
   });
 
-  it('recovery exact duplicate remains (recovered chunk duplicates the retained chunk) => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Retained question' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Retained question' }), fakeQuestion(11), fakeQuestion(12)]);
-    const recoveryDup = batch([fakeQuestion(20, { question: 'Retained question' }), fakeQuestion(21), fakeQuestion(22)]);
-    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryDup }]);
+  it('recovery entirely duplicates the retained set => []', async () => {
+    const chunkA = batch([fakeQuestion(0, { question: 'Retained question' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Retained question' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    const recoveryAllDup = batch([
+      fakeQuestion(20, { question: 'Retained question' }),
+      fakeQuestion(21, { question: 'Retained question' }),
+      fakeQuestion(22, { question: 'Retained question' }),
+      fakeQuestion(23, { question: 'Retained question' }),
+    ]);
+    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryAllDup }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
   });
 
-  it('recovery structural overlap remains (recovered chunk structurally collides with retained chunk) => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1, { question: 'Evaluate $2x + 3$' }), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
+  it('recovery entirely structurally overlaps the retained set => []', async () => {
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1, { question: 'Evaluate $2x + 3$' }), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
     const recoveryOverlap = batch([
       fakeQuestion(20, { question: 'Evaluate $9x + 41$' }), // same structural shape as retained chunk A's 2nd question
-      fakeQuestion(21),
-      fakeQuestion(22),
+      fakeQuestion(21, { question: 'Evaluate $5x + 7$' }),
+      fakeQuestion(22, { question: 'Evaluate $3x + 2$' }),
+      fakeQuestion(23, { question: 'Evaluate $8x + 6$' }),
     ]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryOverlap }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
@@ -427,8 +451,8 @@ describe('FINAL FAILURE: recovery outcome still invalid => []', () => {
   });
 
   it('recovery call itself fails (timeout) => []', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { error: 'TIMEOUT' }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(result).toEqual([]);
@@ -451,9 +475,14 @@ describe('INVARIANTS', () => {
   });
 
   it('MAX_AI_CALLS_PER_RETENTION_ATTEMPT = 3 -- no scenario ever fires a 4th executeAI call', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12)]);
-    const recoveryStillBad = batch([fakeQuestion(20, { question: 'Same question text' }), fakeQuestion(21), fakeQuestion(22)]);
+    const chunkA = batch([fakeQuestion(0, { question: 'Same question text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
+    const chunkB = batch([fakeQuestion(10, { question: 'Same question text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+    const recoveryStillBad = batch([
+      fakeQuestion(20, { question: 'Same question text' }),
+      fakeQuestion(21, { question: 'Same question text' }),
+      fakeQuestion(22, { question: 'Same question text' }),
+      fakeQuestion(23, { question: 'Same question text' }),
+    ]);
     wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recoveryStillBad }]);
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     expect(executeAIMock.mock.calls.length).toBeLessThanOrEqual(3);
@@ -469,7 +498,7 @@ describe('INVARIANTS', () => {
 });
 
 describe('mode isolation: retention_check fast path is a new, separate function -- does not touch other capabilities', () => {
-  it('generateRetentionCheckQuestions accepts no `count` option -- it is exact-6-only by construction, not a general chunked generator', () => {
+  it('generateRetentionCheckQuestions accepts no `count` option -- the PUBLISHED count is exact-6-only by construction, not a general chunked generator', () => {
     const optionsShape = Object.keys({ difficulty: 3, guidance: 'x', language: 'en', ibContext: null });
     expect(optionsShape).not.toContain('count');
   });

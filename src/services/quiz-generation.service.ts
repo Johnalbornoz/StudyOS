@@ -1028,52 +1028,77 @@ ${shapeExamples}
 }
 
 /**
- * STABILIZATION QUIZ PERFORMANCE Step 22, evolved through Step 22D and
- * RET-R1 (deficit-preserving recovery repair). The dedicated fast path
- * for retention_check ONLY (EvidenceMode INDEPENDENT). Deliberately NOT
- * a reuse of generatePracticeQuestions -- PRACTICE tolerates fewer than
+ * STABILIZATION QUIZ PERFORMANCE Step 22, evolved through Step 22D,
+ * RET-R1 (deficit-preserving recovery repair), and RET-R2 (candidate-
+ * surplus reliability repair). The dedicated fast path for
+ * retention_check ONLY (EvidenceMode INDEPENDENT). Deliberately NOT a
+ * reuse of generatePracticeQuestions -- PRACTICE tolerates fewer than
  * requested, retention_check must not: the PUBLISHED result is still
- * exact-6-or-nothing (never 1-5 questions reach the learner), but as of
- * RET-R1 that count is reached by preserving every individually-accepted
- * question, never by discarding an accepted question's siblings.
+ * exact-6-or-nothing (never 1-5 questions reach the learner).
  *
- * Architecture:
- *   - 2 concurrent QUESTION_GENERATION route model (LX-4P-PERF-R1C:
- *     OpenAI Luna) calls, 3 questions each, quiz.question_generation
- *     v3, 30_000ms per call.
+ * RET-R2 -- CANONICAL COUNT vs. CANDIDATE COUNT (the point of this
+ * revision): `RETENTION_REQUIRED_COUNT` (6, what the learner sees) and
+ * how many candidates are ASKED FOR are now two separate numbers.
+ * RET-R1 proved the preserve-every-accepted-question logic works, but
+ * with observed Quality Gate rejection rates, requesting exactly 6
+ * candidates up front and then only a minimum-legal 3-candidate
+ * recovery batch could still land short after one bounded recovery
+ * round even with providers behaving normally -- a candidate-VOLUME
+ * problem, not a preservation-logic bug. The fix is to generate a
+ * bounded SURPLUS of candidates at every step, so the gate has room to
+ * reject low-quality ones without starving the final count:
+ *   - Initial wave: 2 concurrent Luna calls, `RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK`
+ *     (4, not 3) candidates each = `RETENTION_INITIAL_CANDIDATE_COUNT`
+ *     (8) candidates total -- 2 more than the 6 ever published.
+ *   - Recovery wave (only if deficit > 0 after gating the initial 8):
+ *     exactly ONE Terra call, requesting `recoveryCandidateCount(deficit)`
+ *     -- `deficit + 2`, clamped to `[3, 6]` -- never exactly the
+ *     deficit, since some recovery candidates may themselves be
+ *     rejected.
+ *   - Selection: gate ALL candidates, dedupe, then take candidates in
+ *     the SAME stable, deterministic order `applyQuestionQualityGate`
+ *     already preserves (the caller's original array order) -- no new
+ *     quality ranking is invented. If >= 6 survive, the extras are
+ *     simply unused (never a second, informal quality signal); if
+ *     exactly 6 or fewer survive, all of them count toward the deficit.
+ *   - Call budget is UNCHANGED: still 2 concurrent initial + at most 1
+ *     recovery = `RETENTION_MAX_AI_CALLS_PER_ATTEMPT` (3) generation
+ *     calls total, no retry loop, no unbounded anything -- only the
+ *     CANDIDATE COUNT per call grew, never the CALL COUNT.
+ *
+ * Architecture (otherwise unchanged from RET-R1):
  *   - Preventive Variant B runtime diversification (Step 22C, combined
  *     in Step 22D): Chunk A and Chunk B each receive the complete,
  *     unmodified retention_check guidance PLUS a distinct one-sentence
  *     runtime note nudging away from the most obvious textbook
  *     examples -- request-specific dynamic content, not a
- *     prompt-registry change (same precedent as the existing "chunk N
- *     of M" note, already live in v3 without a version bump).
+ *     prompt-registry change.
  *   - No manual type assignment, no ALL_QUESTION_TYPES cycling -- each
  *     chunk picks its own types from the complete guidance, exactly
  *     like the legacy batch path.
- *   - Each chunk must itself return exactly 3 schema-valid,
- *     LaTeX-uncorrupted questions -- fewer (or a failed/timed-out call)
- *     is a failed chunk, never a partial contribution.
+ *   - Each chunk must itself return EXACTLY the candidate count it was
+ *     asked for, schema-valid and LaTeX-uncorrupted -- fewer (or a
+ *     failed/timed-out call) is a failed chunk, never a partial
+ *     contribution.
  *   - Once a raw baseline (one or two chunks' worth) is selected, exact
  *     normalized-text duplicate and strict structural overlap (Step
- *     20C/22B/22D's validated deterministic fingerprint -- conceptId +
- *     type + symbolic math shape from the question field + cognitive
- *     Level + questionIntent) between the two ORIGINAL chunks still
- *     collapses to a deterministic keep-Chunk-A/regenerate-Chunk-B rule,
- *     unchanged from before RET-R1 -- that was never the live bug.
+ *     20C/22B/22D's validated deterministic fingerprint) between the
+ *     two ORIGINAL chunks still collapses to a deterministic
+ *     keep-Chunk-A/regenerate-Chunk-B rule, unchanged from before
+ *     RET-R1/RET-R2 -- collision handling was never the live bug either
+ *     phase targeted.
  *   - RET-R1: the baseline is then gated PER QUESTION (LX-4P-PERF-R1C-R1's
- *     universal Quality Gate). A rejection removes only that question;
- *     every accepted sibling survives. `deficit = 6 - acceptedUnique.length`.
- *   - If deficit > 0: exactly ONE bounded recovery round (never more,
- *     max 3 AI calls total), at the smallest legal chunk size (3),
- *     model Terra, exclusion note listing every already-accepted
- *     question's own text (never correctAnswer/explanation/learner
- *     data). The replacement chunk is itself gated, then deduped
- *     per-question against everything already accepted (retention's
- *     own fingerprint authority) -- only enough unique, accepted
- *     replacements to close the deficit are kept; the rest are simply
- *     unused, never fabricated into the set, never causing a valid one
- *     to be dropped.
+ *     universal Quality Gate, unchanged/unweakened). A rejection
+ *     removes only that question; every accepted sibling survives.
+ *     `deficit = 6 - acceptedUnique.length`.
+ *   - If deficit > 0: exactly ONE bounded recovery round, model Terra,
+ *     exclusion note listing every already-accepted question's own
+ *     text (never correctAnswer/explanation/learner data). The
+ *     replacement candidates are themselves gated, then deduped
+ *     per-question against everything already accepted -- only enough
+ *     unique, accepted replacements to close the deficit are kept; any
+ *     surplus is simply unused, never fabricated into the set, never
+ *     causing a valid one to be dropped.
  *   - If the canonical count still can't be reached after that one
  *     recovery round, this returns [] and logs a precise, safe reason
  *     (`RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS`, metadata only, no
@@ -1082,9 +1107,26 @@ ${shapeExamples}
  */
 const RETENTION_CHUNK_MODEL = QGEN_ROUTE.primary;
 const RETENTION_CHUNK_COUNT = 2;
-const RETENTION_QUESTIONS_PER_CHUNK = 3;
-export const RETENTION_REQUIRED_COUNT = RETENTION_CHUNK_COUNT * RETENTION_QUESTIONS_PER_CHUNK; // 6 -- the only count this fast path supports
-export const RETENTION_MAX_AI_CALLS_PER_ATTEMPT = 3; // 2 initial concurrent + at most 1 bounded recovery call
+/** RET-R2 R2: the canonical FINAL published count -- independent of how many candidates are requested from the model below. Never conflate the two. */
+export const RETENTION_REQUIRED_COUNT = 6;
+/** RET-R2 R3: candidates requested per initial concurrent chunk -- 1 more than an even 6/2 split, so a single rejection in either chunk doesn't force recovery. */
+const RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK = 4;
+/** RET-R2: total initial candidate surplus -- 8, i.e. 2 more candidates than are ever published. */
+export const RETENTION_INITIAL_CANDIDATE_COUNT = RETENTION_CHUNK_COUNT * RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK;
+export const RETENTION_MAX_AI_CALLS_PER_ATTEMPT = 3; // 2 initial concurrent + at most 1 bounded recovery call -- unchanged by RET-R2
+
+/**
+ * RET-R2 R4: deterministic, bounded recovery candidate surplus. NEVER
+ * exactly the deficit (a recovery candidate can itself be rejected) and
+ * NEVER unbounded -- clamped to [3, 6], the same [minimum legal chunk,
+ * maximum this fast path will ever ask a single bounded call for]
+ * range. No learner-specific or mastery-specific input; a pure function
+ * of the remaining deficit only. deficit 1 -> 3, deficit 2 -> 4,
+ * deficit 3 -> 5, deficit 4+ -> 6 (the ceiling).
+ */
+function recoveryCandidateCount(deficit: number): number {
+  return Math.min(6, Math.max(3, deficit + 2));
+}
 
 const RETENTION_VARIANT_B_NOTE_CHUNK_A =
   'Generate questions using examples and mathematical structures that vary from the most obvious textbook examples for this concept.';
@@ -1260,17 +1302,24 @@ export async function generateRetentionCheckQuestions(
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generateRetentionCheckQuestions' };
 
+    // RET-R2 R2/R3: `count` is the CANDIDATE count for this one call --
+    // deliberately a parameter, never a fixed module constant, so the
+    // initial wave (RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK) and the
+    // recovery wave (recoveryCandidateCount(deficit)) can request
+    // different, purpose-sized surpluses through the exact same
+    // generation/validation path -- never a second implementation.
     const requestChunk = (
       chunkIndex: number,
+      count: number,
       diversificationNote: string,
       exclusionNote?: string,
       model: string = RETENTION_CHUNK_MODEL,
     ): Promise<RetentionChunkOutcome> => {
       const shapeExamples = types.map((t) => jsonShapeExample(t, false)).join(',\n');
-      const maxTokens = Math.min(16000, 900 * RETENTION_QUESTIONS_PER_CHUNK + 1500);
-      const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT}, contributing ${RETENTION_QUESTIONS_PER_CHUNK} of the ${RETENTION_REQUIRED_COUNT} total questions in this set. Generate EXACTLY ${RETENTION_QUESTIONS_PER_CHUNK} questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
+      const maxTokens = Math.min(16000, 900 * count + 1500);
+      const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT} for this retention check. Generate EXACTLY ${count} CANDIDATE questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. Candidates are quality-reviewed after generation; StudyUS will select the best ${RETENTION_REQUIRED_COUNT} across both chunks, so not every candidate you write will necessarily be used -- write every one to the same high standard regardless. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
 
-Output a JSON object (no markdown fences) with this exact shape -- a "questions" array containing exactly ${RETENTION_QUESTIONS_PER_CHUNK} elements, each element's shape depending on its "type":
+Output a JSON object (no markdown fences) with this exact shape -- a "questions" array containing exactly ${count} elements, each element's shape depending on its "type":
 {"questions": [
 ${shapeExamples}
 ]}`;
@@ -1304,15 +1353,16 @@ ${shapeExamples}
           }
           const parsed = outcome.questions;
           // LaTeX-corrupted items are filtered out here -- if that drops
-          // the chunk below 3, it surfaces as an ordinary VALIDATION
-          // failure below (Step 22D: corruption has no separately
-          // actionable recovery path from a bare-count failure).
+          // the chunk below `count`, it surfaces as an ordinary
+          // VALIDATION failure below (Step 22D: corruption has no
+          // separately actionable recovery path from a bare-count
+          // failure).
           const clean = parsed.filter((q) => q && q.question && q.type && ANSWER_FORMAT_BY_TYPE[q.type as QuestionType] && !isLatexCorrupted(q));
           // INDEPENDENT semantics: a chunk that doesn't deliver exactly
           // what it was asked for is itself invalid -- no partial
           // contribution, unlike generatePracticeQuestions.
-          if (clean.length !== RETENTION_QUESTIONS_PER_CHUNK) {
-            return { valid: false, errors: [`Chunk ${chunkIndex} returned ${clean.length} valid question(s), expected exactly ${RETENTION_QUESTIONS_PER_CHUNK}`] };
+          if (clean.length !== count) {
+            return { valid: false, errors: [`Chunk ${chunkIndex} returned ${clean.length} valid question(s), expected exactly ${count}`] };
           }
           return { valid: true, value: { ok: true, questions: clean } };
         },
@@ -1326,7 +1376,7 @@ ${shapeExamples}
       }).then((r) => r.result);
     };
 
-    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT });
+    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT, initialCandidateCount: RETENTION_INITIAL_CANDIDATE_COUNT });
 
     const reportInsufficient = (meta: RetentionInsufficientMeta): GeneratedQuestion[] => {
       logRetention('RETENTION_BATCH_INSUFFICIENT', { reason: 'RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS', ...meta });
@@ -1334,8 +1384,8 @@ ${shapeExamples}
     };
 
     const [chunkA, chunkB] = await Promise.all([
-      requestChunk(0, RETENTION_VARIANT_B_NOTE_CHUNK_A),
-      requestChunk(1, RETENTION_VARIANT_B_NOTE_CHUNK_B),
+      requestChunk(0, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_A),
+      requestChunk(1, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_B),
     ]);
 
     if (!chunkA.ok && !chunkB.ok) {
@@ -1391,8 +1441,8 @@ ${shapeExamples}
 
     const mappedBaseline = mapRawQuestionsToGenerated(rawBaseline, conceptId, language);
     if (mappedBaseline.length !== rawBaseline.length) {
-      // Each chunk already validated itself upstream (exactly
-      // RETENTION_QUESTIONS_PER_CHUNK schema-valid items), so this is
+      // Each chunk already validated itself upstream (exactly however
+      // many candidates it was asked for, schema-valid), so this is
       // defensive only -- treated as "nothing usable," same spirit as
       // the old bare-count guard.
       console.error(`retention_check fast path: expected ${rawBaseline.length} mapped questions, got ${mappedBaseline.length} -- returning no questions rather than a partial set`);
@@ -1409,23 +1459,28 @@ ${shapeExamples}
     const acceptedUnique: GeneratedQuestion[] = [...initialGate.accepted];
     const initialAcceptedCount = acceptedUnique.length;
     const initialRejectedCount = mappedBaseline.length - initialAcceptedCount;
-    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount });
+    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialGate.rejectionReasons });
 
     let replacementGeneratedCount = 0;
     let replacementAcceptedCount = 0;
     let deficit = RETENTION_REQUIRED_COUNT - acceptedUnique.length;
 
     if (deficit > 0) {
+      // RET-R2 R4: bounded candidate SURPLUS for the recovery call --
+      // never exactly the deficit (a recovery candidate can itself be
+      // rejected), never unbounded. See recoveryCandidateCount's own
+      // doc comment for the exact, deterministic formula.
+      const recoveryCount = recoveryCandidateCount(deficit);
       logRetention('RETENTION_DEFICIT_IDENTIFIED', { deficit });
-      logRetention('RETENTION_RECOVERY_STARTED', { deficit });
+      logRetention('RETENTION_RECOVERY_STARTED', { deficit, recoveryCandidateCount: recoveryCount });
 
-      // A4: exactly ONE bounded recovery round, at the smallest legal
-      // chunk size -- no loop, no second retry. R1C-R1: the recovery
-      // call is Terra. The exclusion note now lists every question
-      // already accepted (not just one retained chunk's worth), so the
-      // recovery call cannot duplicate any of them.
+      // A4: exactly ONE bounded recovery round -- no loop, no second
+      // retry. R1C-R1: the recovery call is Terra. The exclusion note
+      // now lists every question already accepted (not just one
+      // retained chunk's worth), so the recovery call cannot duplicate
+      // any of them.
       const exclusionNote = buildRetentionExclusionNote(acceptedUnique);
-      const recoveryOutcome = await requestChunk(recoverySlotIndex, recoveryNote, exclusionNote, TERRA);
+      const recoveryOutcome = await requestChunk(recoverySlotIndex, recoveryCount, recoveryNote, exclusionNote, TERRA);
 
       if (!recoveryOutcome.ok) {
         console.error(`retention_check fast path: bounded recovery call failed (${recoveryOutcome.reason}) -- no second retry`);
@@ -1446,6 +1501,7 @@ ${shapeExamples}
           acceptedUnique.push(q);
         }
         replacementAcceptedCount = acceptedUnique.length - initialAcceptedCount;
+        logRetention('RETENTION_RECOVERY_GATE_COMPLETE', { generatedCount: mappedRecovery.length, acceptedCount: recoveryGate.accepted.length, rejectedCount: mappedRecovery.length - recoveryGate.accepted.length, rejectionReasons: recoveryGate.rejectionReasons });
       }
 
       logRetention('RETENTION_RECOVERY_COMPLETE', { replacementGeneratedCount, replacementAcceptedCount, finalAcceptedCount: acceptedUnique.length });
@@ -1469,6 +1525,38 @@ ${shapeExamples}
 }
 
 /**
+ * RET-R2 R8: safe, aggregate-only rejection-reason telemetry for one
+ * gated batch -- which existing `QualityFailureCode`(s) (or
+ * `SEMANTIC_REJECTED`, when a candidate cleared the deterministic
+ * contract but the independent semantic verifier still declined it)
+ * account for the questions NOT in `accepted`. Re-runs the SAME pure,
+ * side-effect-free `checkQuestionQualityDeterministic` the real gate
+ * already used (never a second decision -- `accepted` from
+ * `applyQuestionQualityGate` remains the sole authority on what
+ * actually passed) purely to bucket counts for observability. Counts
+ * only -- never the question text/answer that triggered a code.
+ */
+async function classifyRetentionRejections(
+  mapped: GeneratedQuestion[],
+  accepted: GeneratedQuestion[],
+  conceptId: string,
+): Promise<Record<string, number>> {
+  const { checkQuestionQualityDeterministic } = await import('@/lib/lx/question-quality-contract');
+  const acceptedSet = new Set(accepted);
+  const reasons: Record<string, number> = {};
+  for (const q of mapped) {
+    if (acceptedSet.has(q)) continue;
+    const det = checkQuestionQualityDeterministic(q, { conceptId });
+    if (det.status === 'FAIL') {
+      for (const f of det.failures) reasons[f.code] = (reasons[f.code] ?? 0) + 1;
+    } else {
+      reasons.SEMANTIC_REJECTED = (reasons.SEMANTIC_REJECTED ?? 0) + 1;
+    }
+  }
+  return reasons;
+}
+
+/**
  * R1C-R1 helper: run the universal Question Quality Gate over a
  * retention_check set and emit the runtime event. Kept local so the
  * exact-6-or-nothing recovery flow above reads linearly.
@@ -1481,7 +1569,7 @@ async function retentionApplyGate(
   subjectId: string,
   model: string,
   fallbackUsed: boolean,
-): Promise<{ accepted: GeneratedQuestion[] }> {
+): Promise<{ accepted: GeneratedQuestion[]; rejectionReasons: Record<string, number> }> {
   const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
   const { recordRuntimeEvent, buildRuntimeEvent } = await import('@/lib/ai/runtime-event');
   const g = await applyQuestionQualityGate(mapped, { conceptId, language, context: { studentId, subjectId } });
@@ -1497,7 +1585,8 @@ async function retentionApplyGate(
       rejectedCount: rejected,
     }),
   );
-  return { accepted: g.accepted };
+  const rejectionReasons = await classifyRetentionRejections(mapped, g.accepted, conceptId);
+  return { accepted: g.accepted, rejectionReasons };
 }
 
 /**
