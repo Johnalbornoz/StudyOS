@@ -20,7 +20,14 @@ export type InteractionEventLabel =
   | 'MATH_INPUT_USED'
   | 'VISUAL_RENDER_READY'
   | 'VISUAL_RENDER_FAILED'
-  | 'MODALITY_FALLBACK_USED';
+  | 'MODALITY_FALLBACK_USED'
+  // LX-8R2 R15 -- structured math editor + voice-to-math pipeline.
+  | 'MATH_EDITOR_READY'
+  | 'MATH_VOICE_PARSE_STARTED'
+  | 'MATH_VOICE_PARSE_SUCCEEDED'
+  | 'MATH_VOICE_PARSE_PARTIAL'
+  | 'MATH_VOICE_PARSE_FAILED'
+  | 'MATH_RESPONSE_ACCEPTED';
 
 export interface InteractionEventMeta {
   conceptId?: string;
@@ -37,6 +44,10 @@ export interface InteractionEventMeta {
   integrityMode?: string;
   latencyMs?: number;
   errorCode?: string;
+  /** LX-8R2 R15: the language MathSpeechParser was invoked with (expectedResponseLanguage) -- never the transcript/expression itself. */
+  language?: string;
+  /** LX-8R2 R15: a safe enum label for how a math-voice parse attempt resolved -- e.g. 'PARSED' or a MathParseFailureReason. Never the transcript or the parsed expression. */
+  parserResult?: string;
 }
 
 export function logInteraction(label: InteractionEventLabel, meta: InteractionEventMeta = {}): void {

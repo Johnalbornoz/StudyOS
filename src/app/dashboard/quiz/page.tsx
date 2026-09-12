@@ -26,9 +26,18 @@ import ContinuationPanel from './ContinuationPanel';
 // confirmed browser support, so `ssr: false` costs no extra flicker.
 const ReadAloudButton = dynamic(() => import('../ReadAloudButton'), { ssr: false });
 const VoiceInputButton = dynamic(() => import('../VoiceInputButton'), { ssr: false });
+// LX-8R2 R4: MathExpressionEditor mounts a real DOM custom element
+// (<math-field>, from the `mathlive` package) that does not exist
+// server-side -- ssr:false, same pattern as every other browser-only
+// modality control above. MathVoiceInput wraps VoiceInputButton (also
+// ssr:false) with the deterministic voice-to-math pipeline (R7).
+const MathExpressionEditor = dynamic(() => import('@/components/MathExpressionEditor'), { ssr: false });
+const MathVoiceInput = dynamic(() => import('../MathVoiceInput'), { ssr: false });
 import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/interaction-contract';
 import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
+import { inferMathToolbarSubject } from '@/lib/math-toolbar-config';
+import { createMathResponse, toGraderString, type MathResponse } from '@/lib/lx/math-response-contract';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -194,6 +203,50 @@ function VisualAidView({ aid }: { aid: VisualAid }) {
       )}
     </div>
   );
+}
+
+/**
+ * LX-8R2 -- decides whether the FINAL-ANSWER box for a question should
+ * be the structured `MathExpressionEditor` (R4) instead of the plain
+ * prose `MathAnswerEditor`. Gated on the SAME pre-existing, non-
+ * adaptive subject heuristic `inferMathToolbarSubject` already uses to
+ * prioritize toolbar buttons (mathematics/physics) -- never a new
+ * classifier, never touches SupportLevel/mastery/evidence (R25/R26 of
+ * LX-8 remain untouched; this only changes which INPUT WIDGET renders).
+ * Excludes EXPLAIN/JUSTIFY-kind questions (case_study, scenario,
+ * comparison, justification, error_detection, prediction, open_ended)
+ * even in a math subject, since those ask for verbal reasoning/defense
+ * of a claim, not a computed expression -- a math-only structured
+ * field cannot hold flowing prose. Matches the LX-8R2 spec's own R8
+ * examples: ANSWER_ONLY/SHOW_WORK/JUSTIFY get "[math answer]"; EXPLAIN
+ * gets "[text unless canonical question expects math]" (kept as text
+ * here; EXPLAIN answers may still use MathAnswerEditor's own inline
+ * math-symbol toolbar).
+ */
+function isMathAnswerContext(subjectName: string | undefined, kind: 'ANSWER_ONLY' | 'SHOW_WORK' | 'EXPLAIN' | 'JUSTIFY'): boolean {
+  const subject = inferMathToolbarSubject(subjectName);
+  return (subject === 'mathematics' || subject === 'physics') && kind !== 'EXPLAIN' && kind !== 'JUSTIFY';
+}
+
+/**
+ * `textAnswer`/`resumeAnswer`/`verificationAnswers[...]` remain the
+ * SAME plain-string state every existing consumer already reads
+ * (encodeCurrentAnswer, canProceed, the grader, Review's `MathText`
+ * rendering of `r.studentAnswer`) -- no new state shape, no grader
+ * change (R10). For a math answer, that string holds the canonical
+ * LaTeX wrapped in the SAME `$...$` inline-math convention
+ * `MathText`/AI-generated content already use (math-text.ts), so
+ * Review's existing `<MathText text={r.studentAnswer} />` renders it
+ * as real typeset math with zero changes to Review itself, and the AI
+ * grader (already reading AI-authored $-delimited LaTeX in the
+ * question/model-answer) sees the same convention back.
+ */
+function wrapMathForStorage(latex: string): string {
+  return latex ? `$${latex}$` : '';
+}
+function unwrapMathFromStorage(stored: string): string {
+  const m = /^\$([\s\S]*)\$$/.exec(stored.trim());
+  return m ? m[1] : stored;
 }
 
 /**
@@ -1939,14 +1992,38 @@ function QuizPageContent() {
 
         {q.answerFormat === 'text' && (
           <div>
-            <MathAnswerEditor
-              value={textAnswer}
-              onChange={setTextAnswer}
-              placeholder={at['quiz.typeAnswer']}
-              subjectName={subjectName}
-              studentId={studentId}
-              locale={quizLanguage}
-            />
+            {/* LX-8R2 R4/R8: the FINAL-ANSWER box only -- a structured
+                math editor when this is a math-subject, non-EXPLAIN/
+                JUSTIFY ask (isMathAnswerContext), otherwise the
+                unchanged prose MathAnswerEditor. The reasoning/
+                justification box below is NEVER switched -- it stays
+                the prose editor regardless (R8's "[reasoning/work]"/
+                "[justification]" are text surfaces, distinct from the
+                "[math answer]" box). `textAnswer` remains the one
+                string every existing consumer reads; the math editor
+                just writes canonical LaTeX into it, $-wrapped so
+                Review's existing MathText rendering of r.studentAnswer
+                picks it up with no changes there. */}
+            {isMathAnswerContext(subjectName, responseContract.kind) ? (
+              <MathExpressionEditor
+                value={createMathResponse(unwrapMathFromStorage(textAnswer))}
+                onChange={(next: MathResponse) => setTextAnswer(wrapMathForStorage(toGraderString(next)))}
+                locale={quizLanguage}
+                studentId={studentId}
+                conceptId={conceptId ?? undefined}
+                activityType={quizMode}
+                placeholder={at['quiz.typeAnswer']}
+              />
+            ) : (
+              <MathAnswerEditor
+                value={textAnswer}
+                onChange={setTextAnswer}
+                placeholder={at['quiz.typeAnswer']}
+                subjectName={subjectName}
+                studentId={studentId}
+                locale={quizLanguage}
+              />
+            )}
             {/* LX-8 R3/R4/R6: voice is a pure INPUT method for this same
                 free-text surface -- offered regardless of quizMode
                 (assistance gating is a completely separate axis), never
@@ -1956,22 +2033,43 @@ function QuizPageContent() {
                 (ic.inputModes) -- never a second "VOICE allowed because
                 answerFormat === text" check here. LX-8R1 R3: recognition
                 locale is ic.expectedResponseLanguage, never
-                ic.activityLanguage directly. */}
+                ic.activityLanguage directly. LX-8R2 R1/R7: for a math
+                answer, voice input routes through MathVoiceInput's
+                transcript -> deterministic math-parse -> "StudyUS
+                understood" review pipeline instead of writing the raw
+                transcript directly into the answer. */}
             {ic.inputModes.includes('VOICE') && (
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <VoiceInputButton
-                  expectedResponseLanguage={ic.expectedResponseLanguage}
-                  onAccept={(transcript) => setTextAnswer(transcript)}
-                  micLabel={at['multimodal.speakAnswer']}
-                  stopLabel={at['multimodal.stopRecording']}
-                  reviewTitle={at['multimodal.reviewTranscript']}
-                  useThisLabel={at['multimodal.useThisAnswer']}
-                  reRecordLabel={at['multimodal.recordAgain']}
-                  discardLabel={at['multimodal.discard']}
-                  permissionDeniedLabel={at['multimodal.micPermissionDenied']}
-                  transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
-                  conceptId={conceptId ?? undefined}
-                />
+                {isMathAnswerContext(subjectName, responseContract.kind) ? (
+                  <MathVoiceInput
+                    expectedResponseLanguage={ic.expectedResponseLanguage}
+                    onAccept={(response: MathResponse) => setTextAnswer(wrapMathForStorage(toGraderString(response)))}
+                    conceptId={conceptId ?? undefined}
+                    activityType={quizMode}
+                    micLabel={at['multimodal.speakAnswer']}
+                    stopLabel={at['multimodal.stopRecording']}
+                    reviewTitle={at['multimodal.reviewTranscript']}
+                    useThisLabel={at['multimodal.useThisAnswer']}
+                    reRecordLabel={at['multimodal.recordAgain']}
+                    discardLabel={at['multimodal.discard']}
+                    permissionDeniedLabel={at['multimodal.micPermissionDenied']}
+                    transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
+                  />
+                ) : (
+                  <VoiceInputButton
+                    expectedResponseLanguage={ic.expectedResponseLanguage}
+                    onAccept={(transcript) => setTextAnswer(transcript)}
+                    micLabel={at['multimodal.speakAnswer']}
+                    stopLabel={at['multimodal.stopRecording']}
+                    reviewTitle={at['multimodal.reviewTranscript']}
+                    useThisLabel={at['multimodal.useThisAnswer']}
+                    reRecordLabel={at['multimodal.recordAgain']}
+                    discardLabel={at['multimodal.discard']}
+                    permissionDeniedLabel={at['multimodal.micPermissionDenied']}
+                    transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
+                    conceptId={conceptId ?? undefined}
+                  />
+                )}
               </div>
             )}
             {/* LX-8 R13: a SEPARATE reasoning surface -- only when the
