@@ -16,6 +16,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const h = vi.hoisted(() => ({
   det: vi.fn(),
   verify: vi.fn(),
+  // LX-9R3 D3: applyQuestionQualityGate batches semantic verification
+  // (verifyQuestionQualityBatch) whenever more than one candidate needs
+  // it. Default implementation delegates to the SAME `h.verify` mock,
+  // one call per candidate, run concurrently (Promise.all) -- so every
+  // existing per-test `h.verify` configuration (sequencing, rejection,
+  // throw-to-fail-closed, concurrency timing) keeps working unchanged
+  // whether the gate takes the single-candidate or batched path.
+  verifyBatch: vi.fn(async ({ candidates }: any) => {
+    const entries = await Promise.all(
+      candidates.map(async (c: any) => [c.id, await h.verify({ question: c.question })] as const),
+    );
+    return new Map(entries);
+  }),
   evalV: vi.fn(),
   record: vi.fn(),
 }));
@@ -23,6 +36,7 @@ const h = vi.hoisted(() => ({
 vi.mock('@/lib/lx/question-quality-contract', () => ({ checkQuestionQualityDeterministic: (...a: any[]) => h.det(...a) }));
 vi.mock('@/services/question-quality-verifier.service', () => ({
   verifyQuestionQuality: (...a: any[]) => h.verify(...a),
+  verifyQuestionQualityBatch: (a: any) => h.verifyBatch(a),
   evaluateQuestionQualityVerdict: (...a: any[]) => h.evalV(...a),
 }));
 vi.mock('@/lib/ai/runtime-event', () => ({

@@ -36,6 +36,15 @@ vi.mock('@/services/question-quality-verifier.service', () => ({
     conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
     distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
   })),
+  // LX-9R3 D3: applyQuestionQualityGate batches semantic verification
+  // when more than one candidate needs it -- this mock must answer
+  // BOTH call shapes with equivalent (always-pass) verdicts.
+  verifyQuestionQualityBatch: vi.fn(async ({ candidates }: any) =>
+    new Map(candidates.map((c: any) => [c.id, {
+      conceptAligned: true, answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+      distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+    }]))
+  ),
   evaluateQuestionQualityVerdict: vi.fn(() => ({ pass: true, reason: '' })),
 }));
 

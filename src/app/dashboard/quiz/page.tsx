@@ -1361,13 +1361,29 @@ function QuizPageContent() {
     // only the two quizMode values that are themselves already independent
     // no-help checks qualify.
     const passedIndependentCheck = results.messageKey !== 'keep_going';
+    // LX-9R3 A1/A6: a good score alone is NOT sufficient for the RETAINED
+    // milestone. `retentionCheckQualified` (present only for
+    // retention_check, from mastery.service.ts's own memory-policy gap
+    // check) is undefined/true for a genuine, evidence-counting attempt
+    // and explicitly false for a real attempt that arrived too soon to
+    // ever count (memory-model.ts's replay leaves concept_memory_state
+    // provably untouched) -- the exact live bug where "EVIDENCIA
+    // SUFICIENTE" was shown for an attempt that changed nothing. `=== false`
+    // (not `!== true`) so a mode/response shape where this field is simply
+    // absent (e.g. an older cached response) never accidentally suppresses
+    // the milestone.
+    const retentionTooSoon = quizMode === 'retention_check' && results.retentionCheckQualified === false;
     const milestone: MilestoneType | null =
-      quizMode === 'retention_check' && passedIndependentCheck
+      quizMode === 'retention_check' && passedIndependentCheck && !retentionTooSoon
         ? 'RETAINED'
         : quizMode === 'quick_check' && passedIndependentCheck
           ? 'PROVED'
           : null;
-    const messageText = milestone ? at[milestoneFeedbackKey(milestone)] : at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
+    const messageText = retentionTooSoon
+      ? at['quiz.retentionTooSoon']
+      : milestone
+        ? at[milestoneFeedbackKey(milestone)]
+        : at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
     const perConcept = results.perConceptResults || [];
 
     if (reviewing) {
@@ -1494,7 +1510,15 @@ function QuizPageContent() {
             </div>
           )}
 
-          {perConcept.length === 1 && results.mastery && (
+          {/* LX-9R3 Part E: retention_check is an evidence pass/fail
+              check (durable retrieval), not a mastery-building activity
+              -- raw mastery_score confidence is no longer the PRIMARY
+              feedback here (that would be exactly the reported
+              "Dominio del concepto: 2.91% -> 3.56%" leak, inconsistent
+              with LX-9R1's canonical journey model). `messageText`
+              below already carries the real, canonical outcome
+              (RETAINED milestone, or the honest "too soon" notice). */}
+          {quizMode !== 'retention_check' && perConcept.length === 1 && results.mastery && (
             <p style={{ fontSize: 14, marginTop: 'var(--space-3)' }}>
               {at['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
               <span style={{ color: results.mastery.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>

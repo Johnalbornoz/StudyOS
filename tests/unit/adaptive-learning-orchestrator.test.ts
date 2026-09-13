@@ -162,9 +162,31 @@ describe('11. Diagnosis required selects DIAGNOSTIC_CHECK', () => {
 });
 
 describe('12 & 13. Retention selects RETENTION_CHECK, evidence mode stays INDEPENDENT', () => {
-  it('12. retention due / WAITING_FOR_RETENTION selects RETENTION_CHECK', () => {
+  it('12. WAITING_FOR_RETENTION alone (no genuinely-due timing signal) does NOT select RETENTION_CHECK', () => {
+    // LX-9R3 A1/A2/A3: proven live infinite loop -- WAITING_FOR_RETENTION
+    // fires the moment validated mastery is reached, before
+    // memory-policy.ts's minimumRetentionGapDays has elapsed. Offering
+    // RETENTION_CHECK here alone guaranteed a same-day attempt could
+    // never qualify, then got re-offered forever. See tests below for
+    // the corrected, timing-aware trigger.
     const d = buildDecision([signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 's1' })]);
+    expect(d.activityType).not.toBe('RETENTION_CHECK');
+  });
+
+  it('12b. WAITING_FOR_RETENTION + RETENTION_REVIEW_DUE with temporalUrgency HIGH (genuinely past due) selects RETENTION_CHECK', () => {
+    const d = buildDecision([
+      signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 's1' }),
+      signal({ type: 'RETENTION_REVIEW_DUE', conceptId: 'c1', subjectId: 's1', temporalUrgency: 'HIGH' }),
+    ]);
     expect(d.activityType).toBe('RETENTION_CHECK');
+  });
+
+  it('12c. WAITING_FOR_RETENTION + RETENTION_REVIEW_DUE with temporalUrgency LOW (due within the lookahead window, not yet) does NOT select RETENTION_CHECK', () => {
+    const d = buildDecision([
+      signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 's1' }),
+      signal({ type: 'RETENTION_REVIEW_DUE', conceptId: 'c1', subjectId: 's1', temporalUrgency: 'LOW' }),
+    ]);
+    expect(d.activityType).not.toBe('RETENTION_CHECK');
   });
 
   it('13. evidenceModeForActivity(RETENTION_CHECK) remains INDEPENDENT -- no second mapping introduced', () => {

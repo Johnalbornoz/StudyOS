@@ -1115,6 +1115,15 @@ const RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK = 4;
 /** RET-R2: total initial candidate surplus -- 8, i.e. 2 more candidates than are ever published. */
 export const RETENTION_INITIAL_CANDIDATE_COUNT = RETENTION_CHUNK_COUNT * RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK;
 export const RETENTION_MAX_AI_CALLS_PER_ATTEMPT = 3; // 2 initial concurrent + at most 1 bounded recovery call -- unchanged by RET-R2
+/**
+ * LX-9R3 B3: bounded cross-attempt novelty window, in ATTEMPTS (not
+ * questions, not global history). Deliberately small and fixed -- this
+ * is "don't repeat what the learner JUST saw," never "this learner can
+ * never see a similar question again." Older attempts fall out of the
+ * window on their own as new ones are generated; nothing is ever
+ * permanently blocked (LX-9R3 test 14).
+ */
+const RETENTION_NOVELTY_ATTEMPT_WINDOW = 3;
 
 /**
  * RET-R2 R4: deterministic, bounded recovery candidate surplus. NEVER
@@ -1192,6 +1201,47 @@ function buildRetentionExclusionNote(retainedQuestions: any[]): string {
   return `Generate a different set of questions, examples, and mathematical structures from the ones already selected below for this same retention check -- do not repeat the same problem, example, structure, or wording as any of these:\n${retainedQuestions
     .map((q, i) => `${i + 1}. ${q.question}`)
     .join('\n')}`;
+}
+
+/**
+ * LX-9R3 B5: told what to avoid via the bounded recent-attempt window's
+ * own question text -- same disclosure level as `buildRetentionExclusionNote`
+ * above (question text only, never correctAnswer/explanation/evidence),
+ * never the learner's full unbounded history.
+ */
+function buildRetentionCrossAttemptExclusionNote(recentQuestions: GeneratedQuestion[]): string {
+  return `This learner has already seen the following questions (or ones testing the identical construct with only the surface numbers or context swapped) in recent retention checks for this same concept. Generate genuinely different questions this time -- vary the representation, context, structure, or reasoning path meaningfully, not just the numbers:\n${recentQuestions
+    .map((q, i) => `${i + 1}. ${q.question}`)
+    .join('\n')}`;
+}
+
+/**
+ * LX-9R3 B1/B2: cross-attempt novelty source. Quality Gate/dedupe
+ * (`dedupeAgainstAccepted`) previously only knew about candidates from
+ * the SAME generation call -- a learner's prior retention attempts were
+ * completely invisible to it. This reuses the exact persisted shape
+ * `storeQuiz` already writes to `quiz_sessions.questions` (RET-R#'s own
+ * `GeneratedQuestion[]`), so no second fingerprint format or extra
+ * write path is introduced -- the SAME `computeRetentionStructuralFingerprint`
+ * / normalized-text authority just gets more candidates to compare
+ * against. Bounded to the last `attemptWindow` RETENTION_CHECK attempts
+ * (B3); a DB failure here fails OPEN to an empty history (never blocks
+ * generation over a non-critical novelty lookup -- the Quality Gate
+ * itself is the only thing allowed to fail closed).
+ */
+async function fetchRecentRetentionQuestions(studentId: string, conceptId: string, attemptWindow: number): Promise<GeneratedQuestion[]> {
+  const result = await db.query(
+    `SELECT questions FROM quiz_sessions
+     WHERE student_id = $1 AND concept_id = $2 AND activity_type = 'RETENTION_CHECK'
+     ORDER BY created_at DESC LIMIT $3`,
+    [studentId, conceptId, attemptWindow]
+  );
+  const all: GeneratedQuestion[] = [];
+  for (const row of result.rows as Array<{ questions: unknown }>) {
+    const qs = typeof row.questions === 'string' ? JSON.parse(row.questions) : row.questions;
+    if (Array.isArray(qs)) all.push(...(qs as GeneratedQuestion[]));
+  }
+  return all;
 }
 
 /** RET-R3 B2: safe aggregate counts of what `dedupeAgainstAccepted` dropped and why -- never question text. */
@@ -1287,7 +1337,15 @@ export async function generateRetentionCheckQuestions(
   const ibContext = options.ibContext ?? null;
 
   try {
-    const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
+    // LX-9R3 B2/B3: kicked off ALONGSIDE retrieveContext (never
+    // serialized in front of it) -- a bounded DB lookup, not another AI
+    // call, so it must never add to the critical latency path this
+    // phase is also trying to shorten (Part D).
+    const [context, recentHistory] = await Promise.all([
+      retrieveContext(studentId, subjectId, { conceptId, limit: 5 }),
+      fetchRecentRetentionQuestions(studentId, conceptId, RETENTION_NOVELTY_ATTEMPT_WINDOW).catch(() => [] as GeneratedQuestion[]),
+    ]);
+    const crossAttemptNote = recentHistory.length > 0 ? buildRetentionCrossAttemptExclusionNote(recentHistory) : undefined;
 
     let conceptContext: { label: string; subjectName: string } | null = null;
     if (context.chunks.length === 0) {
@@ -1393,7 +1451,7 @@ ${shapeExamples}
       }).then((r) => r.result);
     };
 
-    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT, initialCandidateCount: RETENTION_INITIAL_CANDIDATE_COUNT });
+    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT, initialCandidateCount: RETENTION_INITIAL_CANDIDATE_COUNT, recentHistoryQuestionCount: recentHistory.length, noveltyWindowAttempts: RETENTION_NOVELTY_ATTEMPT_WINDOW });
 
     const reportInsufficient = (meta: RetentionInsufficientMeta): GeneratedQuestion[] => {
       logRetention('RETENTION_BATCH_INSUFFICIENT', { reason: 'RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS', ...meta });
@@ -1401,8 +1459,8 @@ ${shapeExamples}
     };
 
     const [chunkA, chunkB] = await Promise.all([
-      requestChunk(0, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_A),
-      requestChunk(1, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_B),
+      requestChunk(0, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_A, crossAttemptNote),
+      requestChunk(1, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_B, crossAttemptNote),
     ]);
 
     if (!chunkA.ok && !chunkB.ok) {
@@ -1481,10 +1539,35 @@ ${shapeExamples}
       });
     }
 
-    // A2/A3: gate EVERY baseline question individually. A rejection
-    // removes only that one question -- an accepted sibling from the
-    // same chunk is never discarded merely because another failed.
-    const initialGate = await retentionApplyGate(mappedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
+    // LX-9R3 D4/D5: per-question dedupe BEFORE the gate runs, not only
+    // after. A duplicate/structurally-overlapping candidate among the
+    // raw baseline is free to detect (text/fingerprint comparison, no
+    // AI) -- removing it HERE means it never reaches the deterministic
+    // OR semantic step, so it can never cost a Terra call. This is the
+    // earliest point cross-candidate duplicates are detectable; never
+    // required to pay for verifying a candidate that was always going
+    // to be discarded as a duplicate. RET-R3's own dedupe below still
+    // runs too (defense in depth against anything this pass couldn't
+    // see, e.g. a gate-time transformation) -- after this pass it is
+    // expected to find nothing left to remove in the common case.
+    // LX-9R3 B1/B4: same-batch dedupe runs FIRST (unchanged order/
+    // authority from before this phase), so any collision it attributes
+    // to `preGateDedupe` is genuinely a within-this-generation
+    // duplicate. Cross-attempt novelty then runs on the ALREADY-
+    // same-batch-deduped result, comparing ONLY against `recentHistory`
+    // -- since no two survivors share a fingerprint/text at this point,
+    // every `noveltyDedupe` rejection is attributable purely to a match
+    // against a recent PRIOR attempt, never conflated with same-batch
+    // duplicate telemetry below.
+    const preGateDedupe = dedupeAgainstAccepted(mappedBaseline, [], conceptId);
+    const noveltyDedupe = dedupeAgainstAccepted(preGateDedupe.kept, recentHistory, conceptId);
+    const dedupedBaseline = noveltyDedupe.kept;
+
+    // A2/A3: gate EVERY (deduped) baseline question individually. A
+    // rejection removes only that one question -- an accepted sibling
+    // from the same chunk is never discarded merely because another
+    // failed.
+    const initialGate = await retentionApplyGate(dedupedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
     // RET-R3 B4/B5: gate FIRST (above, unchanged authority), THEN
     // per-question dedupe against an empty "already accepted" set --
     // i.e. dedupe the gate's own accepted candidates against EACH
@@ -1503,13 +1586,21 @@ ${shapeExamples}
     // RET-R3 B2/B3: the gate's own rejectionReasons (accurate per-
     // candidate classification, carried forward from the real decision
     // authority -- never reconstructed) merged with the SEPARATE
-    // duplicate/structural-overlap counts this dedupe pass just
-    // computed, under their OWN distinct category names so a duplicate
-    // is never misreported as a semantic or schema rejection (B3).
+    // duplicate/structural-overlap counts from BOTH dedupe passes
+    // (pre-gate and post-gate), under their OWN distinct category names
+    // so a duplicate is never misreported as a semantic or schema
+    // rejection (B3).
     const initialRejectionReasons: Record<string, number> = { ...initialGate.rejectionReasons };
-    if (initialDedupe.exactDuplicateCount > 0) initialRejectionReasons.DUPLICATE_OF_ACCEPTED = initialDedupe.exactDuplicateCount;
-    if (initialDedupe.structuralOverlapCount > 0) initialRejectionReasons.STRUCTURAL_OVERLAP_WITH_ACCEPTED = initialDedupe.structuralOverlapCount;
-    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialRejectionReasons });
+    const exactDuplicateCount = preGateDedupe.exactDuplicateCount + initialDedupe.exactDuplicateCount;
+    const structuralOverlapCount = preGateDedupe.structuralOverlapCount + initialDedupe.structuralOverlapCount;
+    if (exactDuplicateCount > 0) initialRejectionReasons.DUPLICATE_OF_ACCEPTED = exactDuplicateCount;
+    if (structuralOverlapCount > 0) initialRejectionReasons.STRUCTURAL_OVERLAP_WITH_ACCEPTED = structuralOverlapCount;
+    // LX-9R3 B4: cross-attempt novelty rejections get their OWN reason
+    // codes -- a candidate rejected for matching a recent PRIOR attempt
+    // is never misreported as a same-batch duplicate.
+    if (noveltyDedupe.exactDuplicateCount > 0) initialRejectionReasons.CROSS_ATTEMPT_EXACT_DUPLICATE = noveltyDedupe.exactDuplicateCount;
+    if (noveltyDedupe.structuralOverlapCount > 0) initialRejectionReasons.CROSS_ATTEMPT_STRUCTURAL_OVERLAP = noveltyDedupe.structuralOverlapCount;
+    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, gatedCount: dedupedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialRejectionReasons });
 
     let replacementGeneratedCount = 0;
     let replacementAcceptedCount = 0;
@@ -1529,7 +1620,13 @@ ${shapeExamples}
       // now lists every question already accepted (not just one
       // retained chunk's worth), so the recovery call cannot duplicate
       // any of them.
-      const exclusionNote = buildRetentionExclusionNote(acceptedUnique);
+      // LX-9R3 B4: the recovery call is told to avoid BOTH what this
+      // attempt has already accepted AND the bounded recent-attempt
+      // history -- the same two reference sets the dedupe below checks
+      // the recovery candidates against.
+      const exclusionNote = crossAttemptNote
+        ? `${crossAttemptNote}\n\n${buildRetentionExclusionNote(acceptedUnique)}`
+        : buildRetentionExclusionNote(acceptedUnique);
       const recoveryOutcome = await requestChunk(recoverySlotIndex, recoveryCount, recoveryNote, exclusionNote, TERRA);
 
       if (!recoveryOutcome.ok) {
@@ -1545,7 +1642,10 @@ ${shapeExamples}
         // unrelated, unique one (A3).
         const mappedRecovery = mapRawQuestionsToGenerated(recoveryOutcome.questions, conceptId, language);
         const recoveryGate = await retentionApplyGate(mappedRecovery, conceptId, language, studentId, subjectId, TERRA, true);
-        const recoveryDedupe = dedupeAgainstAccepted(recoveryGate.accepted, acceptedUnique, conceptId);
+        // LX-9R3 B4: recovery candidates are also checked against the
+        // bounded recent-attempt history, not just this attempt's own
+        // accepted set.
+        const recoveryDedupe = dedupeAgainstAccepted(recoveryGate.accepted, [...acceptedUnique, ...recentHistory], conceptId);
         for (const q of recoveryDedupe.kept) {
           if (acceptedUnique.length >= RETENTION_REQUIRED_COUNT) break; // A5: never exceed the canonical count
           acceptedUnique.push(q);
@@ -2467,11 +2567,21 @@ function buildQuestionGenerationPrompt(
 ): string {
   const typeInstructions = types.map((t) => `- ${typeInstruction(t)}`).join('\n');
 
+  // LX-9R3 C2: difficulty must describe a real, testable cognitive
+  // demand -- not a vague adjective tier. LOWER = direct recall or a
+  // single familiar-form application step; HIGHER = multi-step
+  // reasoning, diagnosing an error in someone else's work, a less
+  // familiar representation, transfer to an unfamiliar context,
+  // combined operations, or greater abstraction. Each tier below names
+  // concretely what must be true of the question's structure, not just
+  // an adjective, so a generated question's structural demand can
+  // actually be checked against its assigned tier.
   let difficultyDesc = '';
-  if (difficulty <= 2) difficultyDesc = 'basic, foundational understanding';
-  else if (difficulty <= 3) difficultyDesc = 'intermediate, requires some analysis';
-  else if (difficulty <= 4) difficultyDesc = 'advanced, requires application and synthesis';
-  else difficultyDesc = 'expert, requires deep understanding and integration';
+  if (difficulty <= 1) difficultyDesc = 'direct recall or the single most familiar, textbook-form application of the concept -- no combined operations, no unfamiliar representation, no multi-step reasoning';
+  else if (difficulty === 2) difficultyDesc = 'one clear application step in a familiar representation -- still no multi-step reasoning, error diagnosis, or context transfer required';
+  else if (difficulty === 3) difficultyDesc = "combines two related steps, or requires translating between two equivalent representations of the same idea (e.g. word problem ↔ symbolic form, graph ↔ equation) -- genuine but bounded reasoning, not yet transfer to an unfamiliar context";
+  else if (difficulty === 4) difficultyDesc = "multi-step reasoning across several steps, a less familiar representation or context than the textbook default, or diagnosing an error in someone else's reasoning/work -- more than one idea must be coordinated to answer";
+  else difficultyDesc = 'transfer to a genuinely unfamiliar context, combining multiple operations or concepts in one question, or reasoning at a higher level of abstraction (e.g. explaining why a method works, generalizing a pattern, or judging between competing approaches) -- not merely a longer version of an easier question';
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 

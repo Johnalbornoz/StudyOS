@@ -27,7 +27,7 @@ import { randomUUID } from 'crypto';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { recordRuntimeEvent, buildRuntimeEvent, buildAggregateRuntimeEvent, type BillableCallUsage } from '@/lib/ai/runtime-event';
 import { checkQuestionQualityDeterministic } from '@/lib/lx/question-quality-contract';
-import { verifyQuestionQuality, evaluateQuestionQualityVerdict } from '@/services/question-quality-verifier.service';
+import { verifyQuestionQuality, verifyQuestionQualityBatch, evaluateQuestionQualityVerdict, type QuestionQualityVerdict } from '@/services/question-quality-verifier.service';
 import { generateQuestionsForConcept, type GeneratedQuestion } from '@/services/quiz-generation.service';
 
 export interface GatedPracticeOptions {
@@ -98,26 +98,43 @@ export async function applyQuestionQualityGate(
     needsSemantic.push(q); // NOT_DETERMINISTICALLY_VERIFIED
   }
 
-  // Independent semantic verdicts, in parallel -- fail-closed on any
-  // rejected/low-confidence/malformed verdict.
+  // LX-9R3 D3: independent semantic verdicts. More than one candidate
+  // needing verification goes through ONE batched Terra call
+  // (verifyQuestionQualityBatch) instead of N separate ones -- exactly
+  // one candidate still uses the original single-candidate call (no
+  // batching benefit, avoids the batch prompt/schema overhead for the
+  // trivial case). Both paths are fail-closed identically: a missing,
+  // malformed, or foreign-id verdict can only ever reject the ONE
+  // candidate it belongs to, never approve or affect any other.
   const semanticCalls: BillableCallUsage[] = [];
-  const verdicts = await Promise.all(
-    needsSemantic.map(async (q) => {
-      const verdict = await verifyQuestionQuality({
-        question: q,
-        requestedLanguage: req.language || 'en',
-        context: req.context,
-        onUsage: (usage, model) => {
-          semanticCalls.push({ model, usage });
-        },
-      }).catch(() => null);
-      return { q, ok: evaluateQuestionQualityVerdict(verdict).pass };
-    }),
-  );
   let semanticRejected = 0;
   const semanticSurvivors: GeneratedQuestion[] = [];
-  for (const { q, ok } of verdicts) {
-    if (ok) semanticSurvivors.push(q);
+
+  if (needsSemantic.length > 1) {
+    const candidates = needsSemantic.map((q, i) => ({ id: String(i), question: q }));
+    const verdictsById = await verifyQuestionQualityBatch({
+      candidates,
+      requestedLanguage: req.language || 'en',
+      context: req.context,
+      onUsage: (usage, model) => {
+        semanticCalls.push({ model, usage });
+      },
+    }).catch(() => new Map<string, QuestionQualityVerdict | null>());
+    for (const { id, question } of candidates) {
+      if (evaluateQuestionQualityVerdict(verdictsById.get(id) ?? null).pass) semanticSurvivors.push(question);
+      else semanticRejected++;
+    }
+  } else if (needsSemantic.length === 1) {
+    const q = needsSemantic[0];
+    const verdict = await verifyQuestionQuality({
+      question: q,
+      requestedLanguage: req.language || 'en',
+      context: req.context,
+      onUsage: (usage, model) => {
+        semanticCalls.push({ model, usage });
+      },
+    }).catch(() => null);
+    if (evaluateQuestionQualityVerdict(verdict).pass) semanticSurvivors.push(q);
     else semanticRejected++;
   }
 

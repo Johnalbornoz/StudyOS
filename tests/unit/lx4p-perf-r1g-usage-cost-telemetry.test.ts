@@ -302,6 +302,17 @@ describe('R7/R8/R9 -- gate-level aggregation: Luna generation + N semantic verif
     }));
     vi.doMock('@/services/question-quality-verifier.service', () => ({
       verifyQuestionQuality: (...a: any[]) => g.verify(...a),
+      // LX-9R3 D3: applyQuestionQualityGate batches semantic verification
+      // (verifyQuestionQualityBatch) once more than one candidate needs
+      // it -- delegate per-candidate to the SAME `g.verify` mock (with
+      // the SAME shared `onUsage`) so this suite's per-call billable-usage
+      // assertions keep holding for either the single or batched path.
+      verifyQuestionQualityBatch: async ({ candidates, onUsage }: any) => {
+        const entries = await Promise.all(
+          candidates.map(async (c: any) => [c.id, await g.verify({ question: c.question, onUsage })] as const),
+        );
+        return new Map(entries);
+      },
       evaluateQuestionQualityVerdict: (...a: any[]) => g.evalV(...a),
     }));
     vi.doMock('@/lib/ai/runtime-event', async (importOriginal) => {

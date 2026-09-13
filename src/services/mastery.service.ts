@@ -146,6 +146,22 @@ export interface MasteryUpdateResult {
    */
   duplicate?: boolean;
   eventId: string;
+  /**
+   * LX-9R3 A1/A6: present (never fabricated) ONLY when this evidence's
+   * `metadata.activityType === 'RETENTION_CHECK'` -- true iff THIS
+   * submission's evidence was actually counted as a
+   * QualifiedRetentionAttempt (memory-policy.ts's own gap/spacing gate,
+   * `MEMORY_POLICY_V1.minimumRetentionGapDays`), false when it was a
+   * genuine attempt that arrived too soon after the reference anchor to
+   * ever count (memory-model.ts's replay silently `continue`s over a
+   * too-soon attempt -- concept_memory_state is provably untouched by
+   * it). Derived from `projectConceptMemoryState`'s own `stateChanged`
+   * -- never a second qualification computation: that projector is a
+   * PURE function of the evidence history (no wall-clock dependency),
+   * so within one `updateMastery` call (exactly one new evidence row)
+   * `stateChanged` can only be true because THIS row caused it.
+   */
+  retentionCheckQualified?: boolean;
 }
 
 /**
@@ -686,7 +702,11 @@ export async function updateMastery(
       // value inside this same pass, without reordering anything
       // again then. A failure here rolls back the whole operation,
       // same as every other step of this atomic transaction.
-      await projectConceptMemoryState(client, studentId, conceptId);
+      const memoryProjection = await projectConceptMemoryState(client, studentId, conceptId);
+      // LX-9R3 A1/A6: only meaningful for retention_check evidence --
+      // see MasteryUpdateResult.retentionCheckQualified's own doc
+      // comment for why `stateChanged` is a safe, non-fabricated proxy.
+      const retentionCheckQualified = metadata?.activityType === 'RETENTION_CHECK' ? memoryProjection.stateChanged : undefined;
 
       // Phase 7 Step 7C2: canonical Transfer state projector -- ONLY
       // for accepted (non-duplicate) TRANSFER evidence, same
@@ -714,7 +734,7 @@ export async function updateMastery(
 
       await client.query('COMMIT');
 
-      result = { oldMastery, newMastery, delta, confidenceScore, learningDebtCreated, learningDebtSeverity, eventId };
+      result = { oldMastery, newMastery, delta, confidenceScore, learningDebtCreated, learningDebtSeverity, eventId, retentionCheckQualified };
     }
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

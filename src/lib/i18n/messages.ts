@@ -215,7 +215,7 @@ export type MessageKey =
   | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity' | 'practice.preparing' | 'practice.prepareFailedTitle' | 'practice.prepareFailedBody' | 'practice.prepareRetry'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
-  | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
+  | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing' | 'quiz.retentionTooSoon'
   | 'progression.milestoneStarted' | 'progression.milestoneProved' | 'progression.milestoneRetained' | 'progression.milestoneTransferred' | 'progression.milestoneConsolidated'
   | 'quiz.modeQuickCheck' | 'quiz.modeTopicPractice' | 'quiz.modeCumulative' | 'quiz.modeExamSim'
   | 'quiz.modeQuickCheckDesc' | 'quiz.modeTopicPracticeDesc' | 'quiz.modeCumulativeDesc' | 'quiz.modeExamSimDesc'
@@ -1068,7 +1068,7 @@ const es: Messages = {
   'quiz.backToDashboard': 'Volver al panel',
   'quiz.backToSubject': 'Volver a la materia',
   'quiz.results': 'Resultados',
-  'quiz.score': 'Puntaje',
+  'quiz.score': 'Puntaje de esta actividad',
   'quiz.correctOf': 'correctas',
   'quiz.masteryLabel': 'Dominio del concepto',
   'quiz.confidenceQuestion': '¿Qué tan seguro estás?',
@@ -1087,6 +1087,7 @@ const es: Messages = {
   'quiz.msgExcellent': '¡Excelente! Gran progreso.',
   'quiz.msgGood': 'Buen esfuerzo. Sigue practicando.',
   'quiz.msgKeepGoing': 'Sigue trabajando en este concepto.',
+  'quiz.retentionTooSoon': 'Ya practicaste este repaso de memoria hoy. Vuelve a intentarlo en unos días para que cuente como evidencia de que lo recuerdas con el tiempo.',
   'progression.milestoneStarted': 'Has comenzado este concepto.',
   'progression.milestoneProved': 'Lo demostraste de forma independiente.',
   'progression.milestoneRetained': 'Todavía lo recuerdas después de un tiempo.',
@@ -2144,7 +2145,7 @@ const en: Messages = {
   'quiz.backToDashboard': 'Back to dashboard',
   'quiz.backToSubject': 'Back to subject',
   'quiz.results': 'Results',
-  'quiz.score': 'Score',
+  'quiz.score': "This activity's score",
   'quiz.correctOf': 'correct',
   'quiz.masteryLabel': 'Concept mastery',
   'quiz.confidenceQuestion': 'How confident are you?',
@@ -2163,6 +2164,7 @@ const en: Messages = {
   'quiz.msgExcellent': 'Excellent! Great progress.',
   'quiz.msgGood': 'Good effort. Keep practicing.',
   'quiz.msgKeepGoing': 'Keep working on this concept.',
+  'quiz.retentionTooSoon': "You already practiced this memory check today. Try again in a few days so it counts as evidence you still remember it over time.",
   'progression.milestoneStarted': "You've started this concept.",
   'progression.milestoneProved': 'You demonstrated this independently.',
   'progression.milestoneRetained': 'You still remember this after time.',
@@ -3220,7 +3222,7 @@ const de: Messages = {
   'quiz.backToDashboard': 'Zurück zur Übersicht',
   'quiz.backToSubject': 'Zurück zum Fach',
   'quiz.results': 'Ergebnisse',
-  'quiz.score': 'Punktzahl',
+  'quiz.score': 'Ergebnis dieser Aktivität',
   'quiz.correctOf': 'richtig',
   'quiz.masteryLabel': 'Konzeptbeherrschung',
   'quiz.confidenceQuestion': 'Wie sicher bist du dir?',
@@ -3239,6 +3241,7 @@ const de: Messages = {
   'quiz.msgExcellent': 'Ausgezeichnet! Großer Fortschritt.',
   'quiz.msgGood': 'Gute Leistung. Übe weiter.',
   'quiz.msgKeepGoing': 'Arbeite weiter an diesem Konzept.',
+  'quiz.retentionTooSoon': 'Du hast diese Gedächtnisprüfung heute schon gemacht. Versuche es in ein paar Tagen erneut, damit es als Nachweis zählt, dass du es dir langfristig gemerkt hast.',
   'progression.milestoneStarted': 'Du hast mit diesem Konzept begonnen.',
   'progression.milestoneProved': 'Du hast das eigenständig gezeigt.',
   'progression.milestoneRetained': 'Du erinnerst dich auch nach einiger Zeit noch daran.',
@@ -4296,7 +4299,7 @@ const fr: Messages = {
   'quiz.backToDashboard': 'Retour au tableau de bord',
   'quiz.backToSubject': 'Retour à la matière',
   'quiz.results': 'Résultats',
-  'quiz.score': 'Score',
+  'quiz.score': 'Score de cette activité',
   'quiz.correctOf': 'correctes',
   'quiz.masteryLabel': 'Maîtrise du concept',
   'quiz.confidenceQuestion': 'À quel point es-tu sûr(e) ?',
@@ -4315,6 +4318,7 @@ const fr: Messages = {
   'quiz.msgExcellent': 'Excellent ! Bon progrès.',
   'quiz.msgGood': 'Bon effort. Continuez à vous entraîner.',
   'quiz.msgKeepGoing': 'Continuez à travailler ce concept.',
+  'quiz.retentionTooSoon': "Tu as déjà fait ce contrôle de mémorisation aujourd'hui. Réessaie dans quelques jours pour que cela compte comme preuve que tu t'en souviens dans la durée.",
   'progression.milestoneStarted': 'Tu as commencé ce concept.',
   'progression.milestoneProved': 'Tu l\'as démontré de façon autonome.',
   'progression.milestoneRetained': 'Tu t\'en souviens encore après un certain temps.',
@@ -5372,7 +5376,7 @@ const pt: Messages = {
   'quiz.backToDashboard': 'Voltar ao painel',
   'quiz.backToSubject': 'Voltar à matéria',
   'quiz.results': 'Resultados',
-  'quiz.score': 'Pontuação',
+  'quiz.score': 'Pontuação desta atividade',
   'quiz.correctOf': 'corretas',
   'quiz.masteryLabel': 'Domínio do conceito',
   'quiz.confidenceQuestion': 'Quão confiante você está?',
@@ -5391,6 +5395,7 @@ const pt: Messages = {
   'quiz.msgExcellent': 'Excelente! Ótimo progresso.',
   'quiz.msgGood': 'Bom esforço. Continue praticando.',
   'quiz.msgKeepGoing': 'Continue trabalhando neste conceito.',
+  'quiz.retentionTooSoon': 'Você já praticou esta verificação de memória hoje. Tente novamente em alguns dias para que conte como evidência de que você ainda se lembra com o tempo.',
   'progression.milestoneStarted': 'Você começou este conceito.',
   'progression.milestoneProved': 'Você demonstrou isso de forma independente.',
   'progression.milestoneRetained': 'Você ainda se lembra disso depois de um tempo.',

@@ -53,6 +53,16 @@ vi.mock('@/services/question-quality-verifier.service', () => ({
     answerCorrect: true, unambiguous: true, reasoningConsistent: true,
     distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
   })),
+  // LX-9R3 D3: applyQuestionQualityGate batches semantic verification
+  // when more than one candidate needs it -- this mock must answer
+  // BOTH call shapes with the SAME SEMANTIC_REJECT-marker logic.
+  verifyQuestionQualityBatch: vi.fn(async ({ candidates }: any) =>
+    new Map(candidates.map((c: any) => [c.id, {
+      conceptAligned: !String(c.question?.question ?? '').includes('SEMANTIC_REJECT'),
+      answerCorrect: true, unambiguous: true, reasoningConsistent: true,
+      distractorsPlausible: true, scenarioAppropriate: true, visualConsistent: true, issues: [], confidence: 0.95,
+    }]))
+  ),
   evaluateQuestionQualityVerdict: vi.fn((verdict: any) => ({ pass: !!verdict?.conceptAligned, reason: verdict?.conceptAligned ? '' : 'test-forced semantic rejection' })),
 }));
 
@@ -429,7 +439,9 @@ describe('RET-R2 tests 21-29 -- adjacent capabilities and contracts are untouche
 
   it('27. Luna/Terra provider routing is unchanged: initial chunks use RETENTION_CHUNK_MODEL (Luna), recovery uses Terra', () => {
     const retentionFnSrc = QG.slice(QG.indexOf('export async function generateRetentionCheckQuestions'), QG.indexOf('async function retentionApplyGate'));
-    expect(retentionFnSrc).toMatch(/requestChunk\(0, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_A\)/);
+    // LX-9R3 B5: the initial chunks now also pass the bounded
+    // cross-attempt novelty exclusion note as a 4th argument.
+    expect(retentionFnSrc).toMatch(/requestChunk\(0, RETENTION_INITIAL_CANDIDATE_COUNT_PER_CHUNK, RETENTION_VARIANT_B_NOTE_CHUNK_A, crossAttemptNote\)/);
     expect(retentionFnSrc).toMatch(/requestChunk\(recoverySlotIndex, recoveryCount, recoveryNote, exclusionNote, TERRA\)/);
   });
 

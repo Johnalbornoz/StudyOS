@@ -962,6 +962,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           // (diagnostic resolution, remediation-step completion) avoid
           // double-processing a retried submission.
           duplicate: masteryResult.duplicate === true,
+          // LX-9R3 A6/E: present only for retention_check evidence --
+          // see MasteryUpdateResult.retentionCheckQualified's own doc
+          // comment. The results screen must never claim retention was
+          // demonstrated/completed when this is false, regardless of
+          // score.
+          retentionCheckQualified: masteryResult.retentionCheckQualified,
         };
       })
     );
@@ -1252,6 +1258,13 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         mastery: primaryMastery
           ? { previous: primaryMastery.previousMastery, current: primaryMastery.newMastery, delta: primaryMastery.delta }
           : undefined,
+        // LX-9R3 A6/E: present only when quizMode is retention_check --
+        // see MasteryUpdateResult.retentionCheckQualified. The results
+        // screen must derive its completion copy from THIS, never from
+        // score alone (a good score on a too-soon attempt is real
+        // performance, but memory-policy.ts's own spacing gate means it
+        // was never counted as retention evidence).
+        retentionCheckQualified: quizSession.activityType === 'RETENTION_CHECK' ? primaryMastery?.retentionCheckQualified : undefined,
         perConceptResults: perConceptResultsWithEvidence,
         review,
         messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',

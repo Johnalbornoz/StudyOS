@@ -182,11 +182,45 @@ describe('Phase 4G.5 -- RED TEAM: retention risk on previously-validated knowled
     expect(decision.learningState).toBe('RETENTION_RISK');
   });
 
-  it('WAITING_FOR_RETENTION validationReadiness alone -> RETENTION_RISK, activityType RETENTION_CHECK', () => {
+  it('WAITING_FOR_RETENTION validationReadiness alone -> RETENTION_RISK (the journey stage is still accurately RETAIN), but activityType is NOT RETENTION_CHECK without a genuinely-due timing signal', () => {
+    // LX-9R3 A1/A2/A3: WAITING_FOR_RETENTION alone becomes true the
+    // MOMENT validated mastery is first reached -- often the same day,
+    // before memory-policy.ts's own minimumRetentionGapDays has
+    // actually elapsed. Offering RETENTION_CHECK on this signal ALONE
+    // (with no RETENTION_REVIEW_DUE signal present at all, as in this
+    // exact fixture) previously guaranteed a same-day attempt would be
+    // silently disqualified no matter the score, then re-offered
+    // forever -- a proven live infinite loop. learningState correctly
+    // stays RETENTION_RISK (the concept genuinely hasn't demonstrated
+    // retention yet); only the ACTIVITY offered right now changes.
     const ks = ksState({ masteryState: 'DEVELOPING', validationReadiness: 'WAITING_FOR_RETENTION' });
     const decision = decisionFor([signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 'subj1', metadata: {} })], ks);
     expect(decision.learningState).toBe('RETENTION_RISK');
+    expect(decision.activityType).not.toBe('RETENTION_CHECK');
+  });
+
+  it('WAITING_FOR_RETENTION + RETENTION_REVIEW_DUE with temporalUrgency HIGH (genuinely past due, a fresh attempt CAN qualify) -> RETENTION_CHECK', () => {
+    const ks = ksState({ masteryState: 'DEVELOPING', validationReadiness: 'WAITING_FOR_RETENTION' });
+    const decision = decisionFor(
+      [
+        signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 'subj1', metadata: {} }),
+        signal({ type: 'RETENTION_REVIEW_DUE', conceptId: 'c1', subjectId: 'subj1', metadata: {}, temporalUrgency: 'HIGH' }),
+      ],
+      ks
+    );
     expect(decision.activityType).toBe('RETENTION_CHECK');
+  });
+
+  it('WAITING_FOR_RETENTION + RETENTION_REVIEW_DUE with temporalUrgency LOW (due within the lookahead window, but not yet -- a fresh attempt today CANNOT qualify) -> NOT RETENTION_CHECK', () => {
+    const ks = ksState({ masteryState: 'DEVELOPING', validationReadiness: 'WAITING_FOR_RETENTION' });
+    const decision = decisionFor(
+      [
+        signal({ type: 'WAITING_FOR_RETENTION', conceptId: 'c1', subjectId: 'subj1', metadata: {} }),
+        signal({ type: 'RETENTION_REVIEW_DUE', conceptId: 'c1', subjectId: 'subj1', metadata: {}, temporalUrgency: 'LOW' }),
+      ],
+      ks
+    );
+    expect(decision.activityType).not.toBe('RETENTION_CHECK');
   });
 });
 

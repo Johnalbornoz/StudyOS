@@ -234,6 +234,14 @@ export const PROMPT_REGISTRY = {
     description:
       'LX-4P-PERF-R1C C6: independent semantic quality verdict for ONE generated question, on the claims deterministic validation cannot establish (concept alignment, non-deterministic answer correctness, ambiguity, reasoning-requirement consistency, distractor plausibility, scenario appropriateness, visual consistency). Verify-only strict structured verdict; never rewrites. The generator cannot self-certify without this gate. Routed to the stronger evaluation model.',
   }),
+  'quiz.question_quality_verify_batch': definePrompt({
+    id: 'quiz.question_quality_verify_batch',
+    version: 'v1',
+    capability: 'EXPLANATION_EVALUATION',
+    service: 'question-quality-verifier.service.ts:verifyQuestionQualityBatch',
+    description:
+      'LX-9R3 D3: the SAME independent semantic verdict as quiz.question_quality_verify, batched -- ONE Terra call verifies N candidates (each judged strictly on its own merits, tagged by an explicit id) instead of N separate Terra calls. Used by applyQuestionQualityGate whenever more than one candidate needs semantic verification.',
+  }),
   'quiz.question_localization_verify': definePrompt({
     id: 'quiz.question_localization_verify',
     version: 'v1',

@@ -176,3 +176,49 @@ export const QUESTION_QUALITY_VERDICT_SCHEMA: OpenAIJsonSchema = {
     ],
   },
 };
+
+/**
+ * LX-9R3 D3 -- the SAME per-candidate verdict shape as
+ * QUESTION_QUALITY_VERDICT_SCHEMA, batched: one Terra call verifies N
+ * candidates instead of N Terra calls verifying one each. Candidate
+ * isolation is explicit and structural, never left to prose: each
+ * verdict carries the SAME opaque `id` its own input candidate was
+ * tagged with, and the caller (question-quality-verifier.service.ts)
+ * maps verdicts back to candidates STRICTLY by that id -- a missing id
+ * in the response fails closed for THAT candidate only (never inferred
+ * from array position, which a short/malformed/reordered response could
+ * silently corrupt).
+ */
+export const QUESTION_QUALITY_VERDICT_BATCH_SCHEMA: OpenAIJsonSchema = {
+  name: 'question_quality_verdict_batch',
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      verdicts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            id: str,
+            conceptAligned: bool,
+            answerCorrect: bool,
+            unambiguous: bool,
+            reasoningConsistent: bool,
+            distractorsPlausible: bool,
+            scenarioAppropriate: bool,
+            visualConsistent: bool,
+            issues: { type: 'array', items: str },
+            confidence: { type: 'number', minimum: 0, maximum: 1 },
+          },
+          required: [
+            'id', 'conceptAligned', 'answerCorrect', 'unambiguous', 'reasoningConsistent',
+            'distractorsPlausible', 'scenarioAppropriate', 'visualConsistent', 'issues', 'confidence',
+          ],
+        },
+      },
+    },
+    required: ['verdicts'],
+  },
+};

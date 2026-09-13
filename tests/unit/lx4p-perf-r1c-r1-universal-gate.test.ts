@@ -45,7 +45,10 @@ describe('R1C-R1 R1 -- learner-facing generation path audit', () => {
 
   it('Retention: the baseline is gated (retentionApplyGate) feeding the single bounded recovery, published result exact-6-or-nothing (RET-R1: per-question, deficit-preserving)', () => {
     const rc = QG.slice(QG.indexOf('export async function generateRetentionCheckQuestions'), QG.indexOf('async function retentionApplyGate'));
-    expect(rc).toMatch(/retentionApplyGate\(mappedBaseline, conceptId, language, studentId, subjectId/);
+    // LX-9R3 D4: cross-attempt-safe pre-gate dedup runs on mappedBaseline
+    // BEFORE the gate, so the gate itself is fed the deduped baseline --
+    // never an already-known-duplicate candidate.
+    expect(rc).toMatch(/retentionApplyGate\(dedupedBaseline, conceptId, language, studentId, subjectId/);
     expect(QG).toMatch(/async function retentionApplyGate\(/);
     expect(rc).toMatch(/question\(s\) short of the canonical count after bounded recovery/);
     // RET-R1 A2: an accepted question is never discarded because a sibling failed.

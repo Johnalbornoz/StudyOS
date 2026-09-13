@@ -580,7 +580,36 @@ export function selectActivityType(context: ConceptDecisionContext): ActivityTyp
   if (types.has('VERIFICATION_PENDING')) return 'SOLO_VERIFY';
 
   const readiness = context.knowledgeState?.validationReadiness;
-  if (readiness === 'WAITING_FOR_RETENTION' || types.has('RETENTION_REVIEW_DUE') || types.has('WAITING_FOR_RETENTION')) return 'RETENTION_CHECK';
+  // LX-9R3 A1/A2/A3: PROVEN LIVE INFINITE LOOP. `readiness ===
+  // 'WAITING_FOR_RETENTION'` (Knowledge State's own "no qualifying
+  // retention attempt exists yet" signal) becomes true THE MOMENT
+  // validated mastery is first reached -- often the SAME day, well
+  // before memory-policy.ts's own `minimumRetentionGapDays` (3) has
+  // actually elapsed since the competence anchor. The old condition
+  // treated that state-only fact as independently sufficient to offer
+  // RETENTION_CHECK, and separately treated bare `RETENTION_REVIEW_DUE`
+  // presence as sufficient too -- WITHOUT ever reading that signal's
+  // own `temporalUrgency`. Both paths could offer the activity before a
+  // fresh attempt could possibly succeed: memory-model.ts's replay
+  // silently `continue`s over a too-soon attempt (state provably
+  // untouched, regardless of score), so the SAME signals fired again on
+  // the next decision -- an unbreakable same-day loop, proven live.
+  //
+  // The fix reads no new data: `RETENTION_REVIEW_DUE`'s own
+  // `temporalUrgency` ('HIGH' only once the review date has actually
+  // passed, 'LOW' while merely upcoming within the lookahead window) is
+  // computed from the SAME anchor+interval math as the qualification
+  // gate itself (`minimumReviewIntervalDays` and
+  // `minimumRetentionGapDays` are both 3) -- so by the time this signal
+  // reads HIGH, a fresh attempt taken right now can actually qualify.
+  // `WAITING_FOR_RETENTION` alone, with no genuinely-due timing signal
+  // at all, no longer offers RETENTION_CHECK on its own -- the concept
+  // correctly still reads as RETENTION_RISK (computeLearningState is
+  // unchanged; the stage is still accurately RETAIN), it just isn't
+  // actionable yet, and falls through to REVIEW/PRACTICE below instead
+  // of a doomed quiz.
+  const retentionReviewDue = context.signals.find((s) => s.type === 'RETENTION_REVIEW_DUE');
+  if (retentionReviewDue?.temporalUrgency === 'HIGH') return 'RETENTION_CHECK';
   if (readiness === 'TRANSFER_REQUIRED' || types.has('TRANSFER_REQUIRED')) return 'TRANSFER';
   // Phase 4A/4B: same activity as INDEPENDENCE_GAP -- SOLO_CHECK is the
   // one existing ActivityType whose EvidenceMode is INDEPENDENT, which

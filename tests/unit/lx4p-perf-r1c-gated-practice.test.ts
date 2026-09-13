@@ -20,6 +20,17 @@ const h = vi.hoisted(() => ({
   gen: vi.fn(),
   det: vi.fn(),
   verify: vi.fn(),
+  // LX-9R3 D3: this file's fixtures never send more than one candidate
+  // needing semantic verification, so applyQuestionQualityGate never
+  // takes the batched path here -- this default (delegating to
+  // `h.verify`, one call per candidate) exists only so the module mock
+  // stays complete and behaves correctly if that ever changes.
+  verifyBatch: vi.fn(async ({ candidates }: any) => {
+    const entries = await Promise.all(
+      candidates.map(async (c: any) => [c.id, await h.verify({ question: c.question })] as const),
+    );
+    return new Map(entries);
+  }),
   evalV: vi.fn(),
   record: vi.fn(),
 }));
@@ -32,6 +43,7 @@ vi.mock('@/lib/lx/question-quality-contract', () => ({
 }));
 vi.mock('@/services/question-quality-verifier.service', () => ({
   verifyQuestionQuality: (...a: any[]) => h.verify(...a),
+  verifyQuestionQualityBatch: (a: any) => h.verifyBatch(a),
   evaluateQuestionQualityVerdict: (...a: any[]) => h.evalV(...a),
 }));
 vi.mock('@/lib/ai/runtime-event', () => ({
