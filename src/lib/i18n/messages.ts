@@ -370,6 +370,9 @@ export type MessageKey =
   | 'conceptMission.noActionConsolidatedBody'
   | 'conceptMission.noActionLearnFirstTitle'
   | 'conceptMission.noActionLearnFirstBody'
+  | 'conceptMission.noActionRetentionWaitingTitle'
+  | 'conceptMission.noActionRetentionWaitingBody'
+  | 'conceptMission.noActionRetentionWaitingBodyWithDate'
   | 'conceptMission.reinforceBadge'
   | 'conceptMission.reinforceBody'
   | 'conceptMission.learnTitle'
@@ -1437,6 +1440,9 @@ const es: Messages = {
   'conceptMission.noActionConsolidatedBody': 'Ahora mismo no hace falta nada. StudyUS te lo volverá a proponer para un repaso de retención cuando toque.',
   'conceptMission.noActionLearnFirstTitle': 'Empieza por entenderlo',
   'conceptMission.noActionLearnFirstBody': 'Lee la explicación de abajo para formarte una idea clara; después StudyUS te guiará en el siguiente paso.',
+  'conceptMission.noActionRetentionWaitingTitle': 'Ya lo demostraste por tu cuenta',
+  'conceptMission.noActionRetentionWaitingBody': 'Ahora necesitamos comprobar que lo sigues recordando después de un tiempo. StudyUS te lo propondrá cuando sea el momento adecuado.',
+  'conceptMission.noActionRetentionWaitingBodyWithDate': 'Ahora necesitamos comprobar que lo sigues recordando después de un tiempo. Tu próxima comprobación estará disponible el {date}.',
   'conceptMission.reinforceBadge': 'Apoyo temporal',
   'conceptMission.reinforceBody': 'Estás recibiendo apoyo extra en el mismo objetivo. Cuando se resuelva, vuelves a tu recorrido.',
   'conceptMission.learnTitle': 'Entender este concepto',
@@ -2514,6 +2520,9 @@ const en: Messages = {
   'conceptMission.noActionConsolidatedBody': 'Nothing is needed right now. StudyUS will bring this back for a retention check when it\'s due.',
   'conceptMission.noActionLearnFirstTitle': 'Start by understanding it',
   'conceptMission.noActionLearnFirstBody': 'Read the explanation below to build a clear picture, then StudyUS will guide your next step.',
+  'conceptMission.noActionRetentionWaitingTitle': 'You\'ve already proven it on your own',
+  'conceptMission.noActionRetentionWaitingBody': 'Now we need to check that you still remember it after some time has passed. StudyUS will offer this when the time is right.',
+  'conceptMission.noActionRetentionWaitingBodyWithDate': 'Now we need to check that you still remember it after some time has passed. Your next check will be available on {date}.',
   'conceptMission.reinforceBadge': 'Temporary support',
   'conceptMission.reinforceBody': 'You\'re getting extra support on the same goal. Once it\'s cleared, you\'re back on your path.',
   'conceptMission.learnTitle': 'Understand this concept',
@@ -3591,6 +3600,9 @@ const de: Messages = {
   'conceptMission.noActionConsolidatedBody': 'Im Moment ist nichts nötig. StudyUS legt dir das Konzept wieder vor, wenn eine Behaltensprüfung ansteht.',
   'conceptMission.noActionLearnFirstTitle': 'Beginne damit, es zu verstehen',
   'conceptMission.noActionLearnFirstBody': 'Lies die Erklärung unten, um dir ein klares Bild zu machen; danach führt dich StudyUS zum nächsten Schritt.',
+  'conceptMission.noActionRetentionWaitingTitle': 'Du hast es bereits eigenständig nachgewiesen',
+  'conceptMission.noActionRetentionWaitingBody': 'Jetzt müssen wir prüfen, ob du es dir nach einiger Zeit noch merkst. StudyUS bietet dir das an, sobald es soweit ist.',
+  'conceptMission.noActionRetentionWaitingBodyWithDate': 'Jetzt müssen wir prüfen, ob du es dir nach einiger Zeit noch merkst. Deine nächste Prüfung ist ab dem {date} verfügbar.',
   'conceptMission.reinforceBadge': 'Vorübergehende Unterstützung',
   'conceptMission.reinforceBody': 'Du bekommst zusätzliche Unterstützung beim selben Ziel. Sobald es geklärt ist, geht es auf deinem Weg weiter.',
   'conceptMission.learnTitle': 'Dieses Konzept verstehen',
@@ -4668,6 +4680,9 @@ const fr: Messages = {
   'conceptMission.noActionConsolidatedBody': 'Rien n\'est nécessaire pour l\'instant. StudyUS te le représentera pour un contrôle de mémorisation le moment venu.',
   'conceptMission.noActionLearnFirstTitle': 'Commence par le comprendre',
   'conceptMission.noActionLearnFirstBody': 'Lis l\'explication ci-dessous pour te faire une idée claire, puis StudyUS te guidera vers l\'étape suivante.',
+  'conceptMission.noActionRetentionWaitingTitle': 'Tu l\'as déjà démontré par toi-même',
+  'conceptMission.noActionRetentionWaitingBody': 'Nous devons maintenant vérifier que tu t\'en souviens encore après un certain temps. StudyUS te le proposera au bon moment.',
+  'conceptMission.noActionRetentionWaitingBodyWithDate': 'Nous devons maintenant vérifier que tu t\'en souviens encore après un certain temps. Ta prochaine vérification sera disponible le {date}.',
   'conceptMission.reinforceBadge': 'Soutien temporaire',
   'conceptMission.reinforceBody': 'Tu reçois un soutien supplémentaire sur le même objectif. Une fois réglé, tu reprends ton parcours.',
   'conceptMission.learnTitle': 'Comprendre ce concept',
@@ -5745,6 +5760,9 @@ const pt: Messages = {
   'conceptMission.noActionConsolidatedBody': 'Nada é necessário agora. O StudyUS trará isto de volta para uma verificação de retenção quando for a hora.',
   'conceptMission.noActionLearnFirstTitle': 'Comece por entendê-lo',
   'conceptMission.noActionLearnFirstBody': 'Leia a explicação abaixo para formar uma ideia clara; depois o StudyUS guiará o seu próximo passo.',
+  'conceptMission.noActionRetentionWaitingTitle': 'Você já provou isso por conta própria',
+  'conceptMission.noActionRetentionWaitingBody': 'Agora precisamos verificar se você ainda se lembra disso depois de um tempo. O StudyUS vai propor isso no momento certo.',
+  'conceptMission.noActionRetentionWaitingBodyWithDate': 'Agora precisamos verificar se você ainda se lembra disso depois de um tempo. Sua próxima verificação estará disponível em {date}.',
   'conceptMission.reinforceBadge': 'Apoio temporário',
   'conceptMission.reinforceBody': 'Você está recebendo apoio extra no mesmo objetivo. Quando resolver, volta ao seu percurso.',
   'conceptMission.learnTitle': 'Entender este conceito',

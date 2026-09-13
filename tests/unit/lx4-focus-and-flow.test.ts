@@ -80,11 +80,11 @@ describe('LX-4J -- evidence difficulty is the actual generated difficulty, not a
     expect(ROUTE).toMatch(/bucket\.questionDifficulties\.push\(question\.difficulty\)/);
   });
 
-  it('no learner-relative target-difficulty heuristic was introduced (still UNRESOLVED)', () => {
+  it('LX-9R3-R1: resolveTargetDifficulty is now the real, canonical authority -- still no raw masteryScore band mapping', () => {
     const diffContract = read('src/lib/lx/difficulty-contract.ts');
-    expect(diffContract).toMatch(/resolveTargetDifficulty\(\)/);
-    expect(diffContract).toMatch(/status: 'UNRESOLVED'/);
-    // no mastery-score band mapping anywhere in the difficulty contract
+    expect(diffContract).toMatch(/export function resolveTargetDifficulty\(context: TargetDifficultyContext\)/);
+    // The policy is keyed off the existing MasteryState classification
+    // and critical-misconception count -- never a raw masteryScore band.
     expect(diffContract).not.toMatch(/masteryScore.*[<>]=?\s*\d+/);
   });
 

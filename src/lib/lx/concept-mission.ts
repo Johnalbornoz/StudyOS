@@ -104,6 +104,8 @@ export interface ConceptMissionMemory {
   lastSuccessfulRetentionAt: string | null;
   retentionDue: boolean;
   memoryStatus: MemoryStatus | null;
+  /** LX-9R3-R1 W2: `ConceptView.memory.nextReviewAt` (MemorySignal), verbatim -- the SAME canonical date `retentionDue` is already derived from, exposed for "when does this become eligible" copy. `null` when no anchor exists yet. */
+  nextReviewAt: string | null;
 }
 
 export interface ConceptMissionInputs {
@@ -178,7 +180,17 @@ export type ConceptMissionJourney =
     };
 
 export type ConceptMissionNowKind = 'CANONICAL_ACTION' | 'NO_CANONICAL_ACTION';
-export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION';
+/**
+ * LX-9R3-R1 W1: `RETENTION_WAITING` added -- stage is RETAIN but the
+ * canonical review isn't due yet (`memory.retentionDue === false`), so
+ * NO actionable CTA is offered (whatever the underlying LearningDecision
+ * would have been -- the fixed `RETENTION_CHECK`-when-due branch, or
+ * its REVIEW/PRACTICE not-yet-due fallback -- neither can produce
+ * qualifying spaced-retention evidence today; showing either as "the
+ * next action" is exactly the proven live infinite-loop shape this
+ * phase closes).
+ */
+export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION' | 'RETENTION_WAITING';
 
 export interface ConceptMissionNow {
   kind: ConceptMissionNowKind;
@@ -189,6 +201,8 @@ export interface ConceptMissionNow {
   facts: LearningFact[];
   /** Only when `kind === 'NO_CANONICAL_ACTION'`: what the screen offers instead of an activity. */
   fallback: ConceptMissionNowFallback | null;
+  /** Only when `fallback === 'RETENTION_WAITING'` and a canonical date exists (`memory.nextReviewAt`) -- else `null`. Never computed here; passed through verbatim. */
+  nextEligibleReviewAt: string | null;
   /**
    * Deliberately NO time estimate. LX-3E: do not invent "~N min" -- omit
    * until a real estimated-duration authority exists.
@@ -331,7 +345,28 @@ function buildJourney(inputs: ConceptMissionInputs): ConceptMissionJourney {
 function buildNow(
   journey: ConceptMissionJourney,
   decision: ConceptMissionLearningDecision | null,
+  memory: ConceptMissionMemory | null,
 ): ConceptMissionNow {
+  // LX-9R3-R1 W1: RETAIN stage but the review genuinely isn't due yet.
+  // `retentionDue` is the SAME already-canonical fact `buildJourney`
+  // already consulted (via `deriveLearnerJourneyStage`) to arrive at
+  // this very RETAIN stage -- this is a presentation choice over an
+  // EXISTING canonical fact, never a new ActivityType decision (the
+  // Mission still never picks one). Checked ahead of `decision` so it
+  // overrides whatever activityType the LearningDecision carries here
+  // (the fixed RETENTION_CHECK-when-due branch, or its not-yet-due
+  // REVIEW/PRACTICE fallback) -- neither is a genuinely actionable
+  // "next step" while spaced retention hasn't matured.
+  if (journey.status === 'RESOLVED' && journey.stage === 'RETAIN' && memory?.retentionDue === false) {
+    return {
+      kind: 'NO_CANONICAL_ACTION',
+      activityType: null,
+      actionConceptId: null,
+      facts: [],
+      fallback: 'RETENTION_WAITING',
+      nextEligibleReviewAt: memory?.nextReviewAt ?? null,
+    };
+  }
   if (decision) {
     return {
       kind: 'CANONICAL_ACTION',
@@ -339,6 +374,7 @@ function buildNow(
       actionConceptId: decision.actionConceptId,
       facts: decision.facts,
       fallback: null,
+      nextEligibleReviewAt: null,
     };
   }
   const consolidated = journey.status === 'RESOLVED' && journey.stage === 'CONSOLIDATED';
@@ -348,6 +384,7 @@ function buildNow(
     actionConceptId: null,
     facts: [],
     fallback: consolidated ? 'CONSOLIDATED_NO_ACTION' : 'LEARN_FIRST',
+    nextEligibleReviewAt: null,
   };
 }
 
@@ -379,7 +416,7 @@ export function buildConceptMissionView(inputs: ConceptMissionInputs): ConceptMi
     },
     goal: buildGoal(inputs),
     journey,
-    now: buildNow(journey, inputs.learningDecision),
+    now: buildNow(journey, inputs.learningDecision, inputs.memory),
     learn: buildLearn(journey, inputs.hasCachedExplanation),
     contractVersion: CONCEPT_MISSION_VIEW_VERSION,
   };

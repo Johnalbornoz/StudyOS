@@ -125,7 +125,7 @@ describe('LX-3R -- the builder never invents a LearningState', () => {
       base({
         journeyInput: UNAVAILABLE,
         knowledgeState: ks('DEVELOPING', 'INSUFFICIENT_EVIDENCE', 10, 3),
-        memory: { lastSuccessfulRetentionAt: '2026-01-02T00:00:00Z', retentionDue: false, memoryStatus: 'STABLE' },
+        memory: { lastSuccessfulRetentionAt: '2026-01-02T00:00:00Z', retentionDue: false, memoryStatus: 'STABLE', nextReviewAt: null },
         transferDepth: 'NEAR_DEMONSTRATED',
       }),
     );

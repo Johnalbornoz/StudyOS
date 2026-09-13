@@ -143,6 +143,18 @@ function NowCard({
 
   // NO_CANONICAL_ACTION
   const consolidated = now.fallback === 'CONSOLIDATED_NO_ACTION';
+  // LX-9R3-R1 W1/W2: RETAIN stage, but the canonical review isn't due
+  // yet -- no actionable CTA (never "Comprobar que todavía lo recuerdas"
+  // on a check that cannot qualify), only an honest waiting explanation.
+  // `now.nextEligibleReviewAt` is passed through verbatim from the
+  // canonical read boundary -- never computed here.
+  const retentionWaiting = now.fallback === 'RETENTION_WAITING';
+  const retentionWaitingBody = now.nextEligibleReviewAt
+    ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
+        '{date}',
+        new Date(now.nextEligibleReviewAt).toLocaleDateString(locale),
+      )
+    : t['conceptMission.noActionRetentionWaitingBody'];
   return (
     <section
       aria-labelledby="cm-now-title"
@@ -151,12 +163,16 @@ function NowCard({
     >
       <h2 id="cm-now-title" className="label" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t['conceptMission.nowTitle']}</h2>
       <div style={{ fontSize: 18, fontWeight: 650 }}>
-        {consolidated ? t['conceptMission.noActionConsolidatedTitle'] : t['conceptMission.noActionLearnFirstTitle']}
+        {retentionWaiting
+          ? t['conceptMission.noActionRetentionWaitingTitle']
+          : consolidated
+            ? t['conceptMission.noActionConsolidatedTitle']
+            : t['conceptMission.noActionLearnFirstTitle']}
       </div>
       <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-        {consolidated ? t['conceptMission.noActionConsolidatedBody'] : t['conceptMission.noActionLearnFirstBody']}
+        {retentionWaiting ? retentionWaitingBody : consolidated ? t['conceptMission.noActionConsolidatedBody'] : t['conceptMission.noActionLearnFirstBody']}
       </p>
-      {!consolidated && learn.prominence === 'PRIMARY_INLINE' && (
+      {!consolidated && !retentionWaiting && learn.prominence === 'PRIMARY_INLINE' && (
         <div style={{ marginTop: 'var(--space-2)' }}>
           <ConceptExplanationDisclosure
             studentId={studentId}

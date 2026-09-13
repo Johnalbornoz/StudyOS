@@ -424,11 +424,17 @@ describe('LX-9R3 novelty 10-16, performance 22/24/28/29 -- cross-attempt fingerp
  * DIFFICULTY 17-21.                                                   *
  * ================================================================== */
 describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-selected', () => {
-  it('17. difficulty authority is canonical (StudyUS-side default), never sourced from a learner-controlled field at the API boundary', () => {
-    // The client never sends a difficulty; every generation call site
-    // falls back to the SAME fixed canonical default when absent.
-    const fallbackSites = ROUTE_SRC.match(/difficulty: validated\.difficulty \|\| 3/g) ?? [];
-    expect(fallbackSites.length).toBeGreaterThan(0);
+  it('17. difficulty authority is canonical (resolveTargetDifficulty), never a blind static default -- LX-9R3-R1', () => {
+    // The client never sends a difficulty in ordinary canonical flows;
+    // every single-concept fast-path call site now resolves the
+    // canonical target-difficulty authority instead of blindly
+    // defaulting to a static 3. A caller-supplied `validated.difficulty`
+    // (the separately-gated manual/legacy setup path) still overrides
+    // it via `??`, never silently discarded.
+    const canonicalSites = ROUTE_SRC.match(/difficulty: validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3/g) ?? [];
+    expect(canonicalSites.length).toBeGreaterThanOrEqual(3); // quick_check, topic_practice/review, retention_check
+    // No ordinary canonical call site still blindly defaults to a bare `|| 3`.
+    expect(ROUTE_SRC).not.toMatch(/difficulty: validated\.difficulty \|\| 3/);
   });
 
   it("18. the generator receives the resolved difficulty and threads it into the actual generation prompt (never silently dropped)", () => {

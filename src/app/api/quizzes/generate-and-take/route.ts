@@ -60,7 +60,7 @@ import {
 import { generateGatedQuestionBatch } from '@/services/gated-question-generation.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
-import { aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
+import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
@@ -101,6 +101,32 @@ type SingleConceptQuizMode = 'topic_practice' | 'review' | 'quick_check' | 'rete
 const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = ['topic_practice', 'review', 'quick_check', 'retention_check', 'diagnostic_check'];
 function isSingleConceptMode(mode: QuizMode): mode is SingleConceptQuizMode {
   return (SINGLE_CONCEPT_MODES as readonly QuizMode[]).includes(mode);
+}
+
+/**
+ * LX-9R3-R1 OBSERVABILITY: safe, aggregate-only metadata for one
+ * resolveTargetDifficulty decision -- never learner answer/question
+ * content, never raw scores. `masteryState`/`criticalMisconceptionCount`
+ * stand in for "journeyStage"/"supportLevel": this route does not run
+ * the full Phase 4 orchestrator (LearningState/TeachingIntent) per
+ * generation call -- doing so would reintroduce exactly the avoidable
+ * AI/DB topology cost the prior LX-9R3 performance work removed -- so
+ * the actual inputs `resolveTargetDifficulty` consulted (verbatim,
+ * `decision.derivedFrom`) are logged instead of a second, redundant
+ * computation of a coarser view over the SAME facts.
+ */
+function logDifficultyResolution(activityType: string, decision: ReturnType<typeof resolveTargetDifficulty>, knowledgeState: { masteryState: string; criticalMisconceptionCount: number } | null): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[difficulty]', JSON.stringify({
+      activityType,
+      targetDifficulty: decision.level,
+      difficultyReasonCode: decision.reasonCode,
+      derivedFrom: decision.derivedFrom,
+      masteryState: knowledgeState?.masteryState ?? null,
+      criticalMisconceptionCount: knowledgeState?.criticalMisconceptionCount ?? null,
+    }));
+  } catch { /* logging must never break generation */ }
 }
 
 async function resolveLanguageForSubject(subjectId: string, studentId: string) {
@@ -377,6 +403,21 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       source?: string;
       zeroGapMismatch?: boolean;
     } = { status: 'EXECUTION_DEFAULT' };
+    // LX-9R3-R1 D2: the ONE canonical target-difficulty authority for
+    // this request -- resolveTargetDifficulty(activityType, Knowledge
+    // State). `null` only when this isn't a single-concept canonical
+    // flow (multi-concept cumulative/exam paths resolve their own,
+    // per-concept, at their own generation call site below). A caller
+    // that explicitly sends `validated.difficulty` (the pre-existing,
+    // separately-gated manual/legacy setup path -- LX-4's `setup=1`
+    // slider) still overrides this at every call site (`??`, never
+    // silently discarded) -- this authority only replaces the STATIC
+    // `|| 3` fallback for ordinary canonical requests, which never send one.
+    let resolvedDifficulty: ReturnType<typeof resolveTargetDifficulty> | null = null;
+    if (validated.quizMode === 'diagnostic_check') {
+      resolvedDifficulty = resolveTargetDifficulty({ activityType: 'DIAGNOSTIC_CHECK', knowledgeState: null });
+      logDifficultyResolution('DIAGNOSTIC_CHECK', resolvedDifficulty, null);
+    }
     if (
       isSingleConceptMode(validated.quizMode) &&
       validated.conceptId &&
@@ -386,6 +427,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         const activityType = activityTypeForQuizMode(validated.quizMode);
         const policy = await getActiveMasteryPolicy();
         const ks = await getConceptKnowledgeState(validated.studentId, validated.conceptId).catch(() => null);
+        const ksForDifficulty = ks ? { masteryState: ks.masteryState, criticalMisconceptionCount: ks.criticalMisconceptionCount } : null;
+        resolvedDifficulty = resolveTargetDifficulty({ activityType, knowledgeState: ksForDifficulty });
+        logDifficultyResolution(activityType, resolvedDifficulty, ksForDifficulty);
         const requirement = deriveEvidenceRequirement({
           activityType,
           evidenceMode: evidenceModeForQuizMode(validated.quizMode),
@@ -479,14 +523,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
-            difficulty: validated.difficulty || 3,
+            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             language,
             ibContext,
           }).then((qs) => [qs])
         : validated.quizMode === 'topic_practice' || validated.quizMode === 'review'
         ? generatePracticeQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
             count: perConceptCap,
-            difficulty: validated.difficulty || 3,
+            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             guidance: config.guidance,
             language,
             visualAidRate: config.visualAidRate,
@@ -494,7 +538,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           }).then((qs) => [qs])
         : validated.quizMode === 'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT
         ? generateRetentionCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
-            difficulty: validated.difficulty || 3,
+            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             guidance: config.guidance,
             language,
             ibContext,
@@ -508,17 +552,32 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // These are evidence-consequence paths: they get at least the
             // same acceptance standard as assisted Practice. Counts,
             // EvidenceMode and per-concept partial-tolerance are unchanged.
-            conceptIds.map((cId) =>
-              generateGatedQuestionBatch(cId, validated.studentId, validated.subjectId, {
+            // LX-9R3-R1 D2: multi-concept modes (cumulative_assessment /
+            // exam_simulation) resolve their OWN per-concept target
+            // difficulty here -- diagnostic_check and a retention_check
+            // override already have `resolvedDifficulty` set above
+            // (single-concept), so this per-concept fetch is skipped for
+            // them.
+            conceptIds.map(async (cId) => {
+              let perConceptDifficulty = validated.difficulty ?? resolvedDifficulty?.level;
+              if (perConceptDifficulty === undefined) {
+                const batchActivityType = activityTypeForQuizMode(validated.quizMode);
+                const batchKs = await getConceptKnowledgeState(validated.studentId, cId).catch(() => null);
+                const batchKsForDifficulty = batchKs ? { masteryState: batchKs.masteryState, criticalMisconceptionCount: batchKs.criticalMisconceptionCount } : null;
+                const batchDecision = resolveTargetDifficulty({ activityType: batchActivityType, knowledgeState: batchKsForDifficulty });
+                logDifficultyResolution(batchActivityType, batchDecision, batchKsForDifficulty);
+                perConceptDifficulty = batchDecision.level;
+              }
+              return generateGatedQuestionBatch(cId, validated.studentId, validated.subjectId, {
                 count: perConceptCap,
-                difficulty: validated.difficulty || 3,
+                difficulty: perConceptDifficulty,
                 types: ALL_QUESTION_TYPES,
                 guidance: config.guidance,
                 language,
                 visualAidRate: config.visualAidRate,
                 ibContext,
-              })
-            )
+              });
+            })
           ),
       computeAskConfidenceFlags(validated.studentId, conceptIds, validated.quizMode),
     ]);

@@ -45,14 +45,31 @@ describe('LX-1E difficulty semantics & ownership', () => {
   });
 });
 
-describe('LX-1E target difficulty is UNRESOLVED by design', () => {
-  it('resolveTargetDifficulty takes no inputs and returns UNRESOLVED, deferred to LX-4', () => {
-    expect(resolveTargetDifficulty.length).toBe(0);
-    const r = resolveTargetDifficulty();
-    expect(r.status).toBe('UNRESOLVED');
-    expect(r.deferredTo).toBe('LX-4');
-    expect(r.candidateInputsForFutureAuthority).toBe(CANDIDATE_INPUTS_FOR_TARGET_DIFFICULTY_AUTHORITY);
-    expect(r.candidateInputsForFutureAuthority.length).toBeGreaterThan(0);
+describe('LX-9R3-R1 -- target difficulty authority is resolved, canonical, and deterministic', () => {
+  it('is a pure function of ActivityType + Knowledge State -- same input, same decision', () => {
+    const ctx = { activityType: 'PRACTICE' as const, knowledgeState: { masteryState: 'DEVELOPING' as const, criticalMisconceptionCount: 0 } };
+    expect(resolveTargetDifficulty(ctx)).toEqual(resolveTargetDifficulty(ctx));
+  });
+
+  it('every level stays within the 1-5 scale', () => {
+    const activityTypes = ['PRACTICE', 'REVIEW', 'SOLO_CHECK', 'DIAGNOSTIC_CHECK', 'REMEDIATION', 'SOLO_VERIFY', 'TRANSFER', 'RETENTION_CHECK', 'CUMULATIVE_ASSESSMENT', 'MOCK_EXAM'] as const;
+    const masteryStates = ['UNKNOWN', 'LEARNING', 'DEVELOPING', 'PROVISIONAL_MASTERY', 'VALIDATED_MASTERY', 'AT_RISK', 'INTERVENTION_REQUIRED'] as const;
+    for (const activityType of activityTypes) {
+      for (const masteryState of masteryStates) {
+        for (const criticalMisconceptionCount of [0, 1]) {
+          const { level } = resolveTargetDifficulty({ activityType, knowledgeState: { masteryState, criticalMisconceptionCount } });
+          expect(level).toBeGreaterThanOrEqual(1);
+          expect(level).toBeLessThanOrEqual(5);
+        }
+      }
+      const { level } = resolveTargetDifficulty({ activityType, knowledgeState: null });
+      expect(level).toBeGreaterThanOrEqual(1);
+      expect(level).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('the historical candidate-inputs record still documents what this authority was scoped to', () => {
+    expect(CANDIDATE_INPUTS_FOR_TARGET_DIFFICULTY_AUTHORITY.length).toBeGreaterThan(0);
   });
 });
 
@@ -71,7 +88,7 @@ describe('LX-1E evidence-consistency rule (kept)', () => {
   });
 
   it('is deterministic and version-stamped', () => {
-    expect(DIFFICULTY_CONTRACT_VERSION).toBe(2);
+    expect(DIFFICULTY_CONTRACT_VERSION).toBe(3);
     expect(aggregateEvidenceDifficulty([3, 3])).toBe(aggregateEvidenceDifficulty([3, 3]));
   });
 });

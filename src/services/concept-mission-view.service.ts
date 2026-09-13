@@ -190,6 +190,9 @@ export async function getConceptMissionView(
           lastSuccessfulRetentionAt: conceptView.memory.lastSuccessfulRetentionAt,
           retentionDue: conceptView.memory.retentionDue,
           memoryStatus: conceptView.memory.memoryStatus,
+          // LX-9R3-R1 W2: verbatim from the same MemorySignal retentionDue
+          // is already derived from -- no new read, no new computation.
+          nextReviewAt: conceptView.memory.nextReviewAt,
         }
       : null,
     transferDepth: transferDepth ?? null,
