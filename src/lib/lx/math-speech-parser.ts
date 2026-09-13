@@ -31,6 +31,39 @@
  * partial-confidence tier to gloss over an uncertain parse -- callers
  * (see `MathVoiceInput`) show the raw transcript and let the learner
  * correct it by hand instead.
+ *
+ * LX-8R2-R1 R10 -- SUPPORTED GRAMMAR CONTRACT (deliberately NOT
+ * broadened in this repair; documented here so its exact boundary is
+ * visible in code, not just in test coverage):
+ *   - Spoken cardinal numbers: 0-20 by word (`ES_CARDINALS`/
+ *     `EN_CARDINALS` below), plus ANY literal digit string of any
+ *     length (a bare token matching `/^\d+(\.\d+)?$/`, e.g. a transcript
+ *     that already reads "42" or "3.5"). A COMPOUND spoken number
+ *     outside 0-20 (e.g. "twenty-five", "cien") is NOT in the word
+ *     table and is not a bare digit string, so it fails closed --
+ *     either as `UNRECOGNIZED_WORD` (if the word itself isn't in any
+ *     table) or `INCOMPLETE_EXPRESSION` (if two recognized-but-
+ *     unjoinable tokens are produced, e.g. "twenty five" tokenizes as
+ *     two adjacent NUM tokens with no operator between them, which the
+ *     grammar cannot reduce to one expression and therefore rejects
+ *     rather than silently dropping one of them). This is sufficient
+ *     for normal secondary-school algebra (coefficients, exponents,
+ *     equation constants), which rarely speaks compound number words
+ *     inside an expression -- a written "25" is normally read digit-
+ *     by-digit or typed directly, not spoken as one word, in this
+ *     product's actual usage pattern.
+ *   - Everything else in R2's checklist (variables, +/-/times/over,
+ *     fractions, parentheses, powers, square/nth roots, equals/
+ *     inequalities, pi, absolute value) is fully covered for
+ *     secondary-school-level expressions -- see the exhaustive grammar-
+ *     category test coverage in math-speech-parser.test.ts.
+ *   - Expanding vocabulary (e.g. adding compound number words, or a
+ *     new language) is ALWAYS a `GRAMMARS`-table change in this one
+ *     file, never a change to `MathResponseComposer`,
+ *     `MathExpressionEditor`, or `MathVoiceInput` -- none of those
+ *     modules know this grammar's vocabulary, only that
+ *     `parseMathSpeech` returns `{ ok, latex }` or `{ ok: false, reason
+ *     }`.
  */
 import type { Locale } from '@/lib/i18n/messages';
 

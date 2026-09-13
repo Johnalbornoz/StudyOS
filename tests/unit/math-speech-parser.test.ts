@@ -312,6 +312,17 @@ describe('MathSpeechParser -- fails closed rather than guessing (R2/R7)', () => 
     const r = parseMathSpeech('square root x', 'en');
     expect(r.ok).toBe(false);
   });
+
+  it('R10: a compound spoken number outside the supported 0-20 vocabulary (e.g. "twenty five" for 25) fails closed rather than silently dropping a word or misreading it as two separate numbers', () => {
+    const r = parseMathSpeech('twenty five', 'en');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('INCOMPLETE_EXPRESSION'); // both words are individually recognized (20, 5) but cannot be joined into one expression
+  });
+
+  it('R10: a literal digit string of any length (not limited to the 0-20 word vocabulary) still parses -- STT transcribing digits directly is unaffected by the spoken-word range limit', () => {
+    const r = parseMathSpeech('42', 'en');
+    expect(r).toEqual({ ok: true, latex: '42' });
+  });
 });
 
 /* ================================================================ *
