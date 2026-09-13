@@ -36,7 +36,7 @@ import { getSubjectKnowledgeState, type ConceptKnowledgeState } from '@/services
 import { zeroSignalContext } from '@/services/concept-mission-view.service';
 import { rankLearningDecisions, computeLearningState, type LearningDecision } from '@/lib/adaptive-learning-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
-import { deriveLearnerJourneyStage, conceptJourneyFromResult, type ConceptJourney } from './concept-journey';
+import { deriveLearnerJourneyStage, conceptJourneyFromResult, type ConceptJourney, type LearnerJourneyStage } from './concept-journey';
 
 export interface ConceptPathView {
   conceptId: string;
@@ -134,13 +134,35 @@ export async function loadMyPathContext(studentId: string, locale: string): Prom
 }
 
 /**
- * Resolves one concept's journey. `activeActivityType`/decision comes
- * from the caller (the subject's slice of the shared snapshot); when
- * absent, this concept has zero active signals right now, so
- * `computeLearningState` is called with the same zero-signal context
- * Concept Mission's own read boundary uses -- reused verbatim, never
- * re-implemented.
+ * Resolves one concept's canonical LX-1B stage (the full 8-value
+ * `LearnerJourneyStage`, before My Path's own 5-rung collapse).
+ * `activeActivityType`/decision comes from the caller (the subject's
+ * slice of the shared snapshot); when absent, this concept has zero
+ * active signals right now, so `computeLearningState` is called with
+ * the same zero-signal context Concept Mission's own read boundary
+ * uses -- reused verbatim, never re-implemented.
+ *
+ * LX-9R1: exported so any OTHER learner-facing surface needing this
+ * concept's canonical stage (e.g. the Subjects detail page's journey-
+ * based progress percentage, `journey-progress.ts`) reads the EXACT
+ * same authority My Path/Concept Mission already do -- never a second,
+ * independently-derived stage that could disagree (R10).
  */
+export function resolveConceptJourneyStage(
+  conceptId: string,
+  subjectId: string,
+  ks: ConceptKnowledgeState | null,
+  activeDecision: LearningDecision | undefined
+): LearnerJourneyStage {
+  const learningState = activeDecision ? activeDecision.learningState : computeLearningState(zeroSignalContext(conceptId, subjectId, ks));
+  return deriveLearnerJourneyStage({
+    learningState,
+    masteryState: ks?.masteryState ?? null,
+    validationReadiness: ks?.validationReadiness ?? null,
+  }).stage;
+}
+
+/** Adapts `resolveConceptJourneyStage`'s result into My Path's flat rendering line -- unchanged behavior, now expressed in terms of the shared stage resolver above. */
 function resolveConceptJourney(
   conceptId: string,
   subjectId: string,

@@ -9,7 +9,9 @@ import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
 import { getSubjectView } from '@/lib/learner-twin';
 import { getSubjectKnowledgeState, type MasteryState } from '@/services/knowledge-state.service';
 import { getLearningOSSnapshot } from '@/services/learning-os-snapshot.service';
-import { resolveSubjectCurrentDecision } from '@/lib/lx/path-view';
+import { resolveSubjectCurrentDecision, resolveConceptJourneyStage } from '@/lib/lx/path-view';
+import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
+import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
@@ -65,6 +67,26 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   ]);
   const masteryStates: Record<string, MasteryState> = {};
   for (const row of knowledgeStates) masteryStates[row.conceptId] = row.masteryState;
+
+  // LX-9R1: the concept row's PRIMARY progress percentage must be the
+  // canonical LX-1B journey stage, never the raw `mastery_score` this
+  // page used to pass down (that fix lives in HierarchicalConceptList/
+  // ConceptList below). `resolveConceptJourneyStage` is the EXACT same
+  // function `buildSubjectPathView` (My Path) calls per concept -- same
+  // knowledge-state map, same snapshot-derived decision-by-concept map
+  // -- so this page can never disagree with My Path about a concept's
+  // stage (R10). Every concept in the hierarchy gets an entry, including
+  // ones with no active decision and no knowledge-state row yet (those
+  // correctly resolve to NOT_STARTED, never silently omitted -- R7).
+  const ksByConceptId = new Map(knowledgeStates.map((ks) => [ks.conceptId, ks]));
+  const subjectDecisionsForStage = snapshot ? rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === id)) : [];
+  const decisionByConceptId = new Map(subjectDecisionsForStage.map((d) => [d.actionConceptId, d]));
+  const allHierarchyConcepts = [...hierarchy.topics.flatMap((topic) => topic.subtopics.flatMap((s) => s.concepts)), ...hierarchy.unassigned];
+  const journeyStages: Record<string, LearnerJourneyStage> = {};
+  for (const c of allHierarchyConcepts) {
+    journeyStages[c.id] = resolveConceptJourneyStage(c.id, id, ksByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id));
+  }
+
   // LX-7R1: replaces the old `[...concepts].sort((a,b) => a.mastery_score - b.mastery_score)[0]`
   // "Practice weakest" heuristic -- raw mastery is not an action-selection
   // authority. The subject's CTA now surfaces the same canonical decision
@@ -185,7 +207,14 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           {t['subjectDetail.noConceptsBody']}
         </div>
       ) : (
-        <HierarchicalConceptList subjectId={id} studentId={studentId} locale={locale} hierarchy={hierarchy} masteryStates={masteryStates} />
+        <HierarchicalConceptList
+          subjectId={id}
+          studentId={studentId}
+          locale={locale}
+          hierarchy={hierarchy}
+          masteryStates={masteryStates}
+          journeyStages={journeyStages}
+        />
       )}
 
       <UploadPanel subjectId={id} subjectName={subject.name} studentId={studentId} locale={locale} />

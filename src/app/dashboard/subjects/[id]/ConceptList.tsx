@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplanationPanel';
 import type { MasteryState } from '@/services/knowledge-state.service';
-import { masteryStateLabel } from '@/lib/knowledge-state-labels';
+import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
+import { deriveJourneyProgress } from '@/lib/lx/journey-progress';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -17,16 +18,16 @@ function masteryFillClass(score: number) {
 interface ConceptRow {
   conceptId: string;
   label: string;
-  masteryScore: number;
   /**
-   * Step 6L-C2-B1: the already-persisted, canonical MasteryState for
-   * this concept (knowledge-state.service.ts) -- null only when no
-   * knowledge-state row exists yet for it. Rendered via the existing,
-   * certified `masteryStateLabel` mapping (never a raw enum) as a
-   * small qualifier next to the bare mastery percentage, so a high
-   * mastery_score can never stand alone as if it meant "finished" --
-   * see the 6L-C2-A0 audit's Subjects-list finding.
+   * LX-9R1: the canonical LX-1B journey stage for this concept -- the
+   * ONLY input driving the row's percentage/label now (via
+   * `deriveJourneyProgress`). Replaces the old raw `masteryScore`
+   * (0-100 `mastery_score` percent), which could show a near-zero
+   * number for a concept whose canonical journey had already advanced
+   * to RETAIN/TRANSFER -- exactly the live-QA-reported bug this repairs.
    */
+  journeyStage: LearnerJourneyStage;
+  /** Kept for potential future secondary analytics -- no longer rendered directly on this row (R6: the row's label must agree with the journey stage, not a different axis). */
   masteryState: MasteryState | null;
 }
 
@@ -110,23 +111,25 @@ export default function ConceptList({
               {c.label}
             </Link>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-              <div className="mastery-row">
-                <div className="mastery-bar">
-                  <span className={masteryFillClass(c.masteryScore)} style={{ width: `${c.masteryScore}%` }} />
-                </div>
-                <span className="mastery-pct tabular">{Math.round(c.masteryScore)}%</span>
-              </div>
-              {/* Step 6L-C2-B1: a plain-language qualifier from the
-                  existing, certified MasteryState mapping -- never a
-                  raw enum, never a second percentage -- so a high
-                  mastery_score can't stand alone as "finished" when the
-                  gated classification says otherwise (e.g. still
-                  DEVELOPING despite a green 75%+ bar). Omitted entirely
-                  when no knowledge-state row exists yet -- never a
-                  fabricated qualifier. */}
-              {c.masteryState && (
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{masteryStateLabel(c.masteryState, t)}</span>
-              )}
+              {/* LX-9R1: percentage AND label now come from the SAME
+                  canonical journey-progress projection (never a raw
+                  mastery-score bar paired with a different axis's
+                  qualifier text) -- the fix for the live "2% /
+                  Aprendiendo at RETAIN" report. */}
+              {(() => {
+                const progress = deriveJourneyProgress(c.journeyStage);
+                return (
+                  <>
+                    <div className="mastery-row" title={t['subjectDetail.journeyProgressLabel']} aria-label={t['subjectDetail.journeyProgressLabel']}>
+                      <div className="mastery-bar">
+                        <span className={masteryFillClass(progress.progressPercent)} style={{ width: `${progress.progressPercent}%` }} />
+                      </div>
+                      <span className="mastery-pct tabular">{progress.progressPercent}%</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{t[progress.progressLabelKey]}</span>
+                  </>
+                );
+              })()}
             </div>
             <button
               type="button"

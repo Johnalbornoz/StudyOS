@@ -109,16 +109,27 @@ describe('no formula or raw predictive field is learner-visible (Part 11)', () =
   });
 });
 
-describe('Subjects mastery percentage is no longer shown without contextual qualification (Part 4/5)', () => {
-  it('ConceptList renders masteryStateLabel next to the bare mastery percentage', () => {
+describe('LX-9R1: Subjects percentage IS the canonical journey progress, not a raw mastery-score qualified by a text label (Part 4/5, superseded)', () => {
+  // 6L-C2-B1's own fix (masteryStateLabel next to a bare mastery_score
+  // percentage) was itself a symptom patch, not the root-cause fix: live
+  // QA found a concept whose canonical journey had already reached
+  // RETAIN still rendering "2% / Aprendiendo" on this exact row, because
+  // the PERCENTAGE was still raw mastery_score -- a different axis than
+  // the canonical LEARN->PRACTICE->PROVE->RETAIN->TRANSFER->CONSOLIDATED
+  // journey. LX-9R1 replaces the percentage/label pair with
+  // `deriveJourneyProgress(c.journeyStage)`, sourced from the SAME
+  // `resolveConceptJourneyStage` authority My Path/Concept Mission
+  // already read (never a raw mastery_score, never a second engine).
+  it('ConceptList renders deriveJourneyProgress(c.journeyStage) -- percentage AND label from the SAME canonical projection', () => {
     const source = read(CONCEPT_LIST_PATH);
-    expect(source).toMatch(/import \{ masteryStateLabel \} from '@\/lib\/knowledge-state-labels'/);
-    expect(source).toMatch(/masteryStateLabel\(c\.masteryState, t\)/);
+    expect(source).toMatch(/import \{ deriveJourneyProgress \} from '@\/lib\/lx\/journey-progress'/);
+    expect(source).toMatch(/deriveJourneyProgress\(c\.journeyStage\)/);
+    expect(source).toMatch(/t\[progress\.progressLabelKey\]/);
   });
 
-  it('the qualifier is omitted (never fabricated) when no knowledge-state row exists for a concept', () => {
-    const source = read(CONCEPT_LIST_PATH);
-    expect(source).toMatch(/\{c\.masteryState && \(/);
+  it('every concept row gets a journey-stage percentage -- NEVER omitted for a concept with no knowledge-state row yet (that concept is NOT_STARTED, 0%, not blank -- R7: never silently excluded)', () => {
+    const hierSource = read(HIERARCHICAL_LIST_PATH);
+    expect(hierSource).toMatch(/journeyStage: journeyStages\[c\.id\] \?\? 'NOT_STARTED'/);
   });
 
   it('the qualifier never renders the raw MasteryState enum value directly', () => {
@@ -171,10 +182,10 @@ describe('no composite score, no MasteryState replacement, no new engine (Part 7
     }
   });
 
-  it('mastery_score (masteryScore) is still rendered as its own value, distinct from and alongside the MasteryState qualifier -- neither replaces the other', () => {
+  it('LX-9R1: raw mastery_score is no longer the PRIMARY progress value on this row at all (R11: no raw score leak as the primary journey progress) -- ConceptRow keeps masteryState only as a reserved secondary-analytics field, never rendered directly on this row', () => {
     const source = read(CONCEPT_LIST_PATH);
-    expect(source).toMatch(/c\.masteryScore/);
-    expect(source).toMatch(/c\.masteryState/);
+    expect(source).not.toMatch(/c\.masteryScore/);
+    expect(source).toMatch(/journeyStage: LearnerJourneyStage/); // the ConceptRow field driving the row now
   });
 });
 

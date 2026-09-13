@@ -84,7 +84,7 @@ export type MessageKey =
   | 'subjectNew.isLanguageHelp' | 'subjectNew.targetLanguageLabel'
   | 'subjectNew.quizLanguageLabel' | 'subjectNew.quizLanguageMatch'
   | 'subjectNew.quizLanguageFixed' | 'subjectNew.submit'
-  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.viewMyPath'
+  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.viewMyPath' | 'subjectDetail.journeyProgressLabel'
   | 'subjectDetail.practice' | 'subjectDetail.noConceptsTitle' | 'subjectDetail.noConceptsBody'
   | 'subjectDetail.uploadTitle' | 'subjectDetail.uploadBody' | 'subjectDetail.uploadSubmit'
   | 'subjectDetail.uploading' | 'subjectDetail.statusUploading' | 'subjectDetail.statusProcessing'
@@ -824,6 +824,7 @@ const es: Messages = {
   'subjectNew.submit': 'Crear materia',
   'subjectDetail.conceptCount': 'conceptos',
   'subjectDetail.avgMastery': 'dominio promedio',
+  'subjectDetail.journeyProgressLabel': 'Avance en el recorrido de aprendizaje',
   'subjectDetail.viewMyPath': 'Ver mi ruta',
   'subjectDetail.practice': 'Practicar',
   'subjectDetail.noConceptsTitle': 'Aún no hay conceptos aquí',
@@ -1897,6 +1898,7 @@ const en: Messages = {
   'subjectNew.submit': 'Create subject',
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'average mastery',
+  'subjectDetail.journeyProgressLabel': 'Progress along the learning journey',
   'subjectDetail.viewMyPath': 'View my path',
   'subjectDetail.practice': 'Practice',
   'subjectDetail.noConceptsTitle': 'No concepts yet',
@@ -2970,6 +2972,7 @@ const de: Messages = {
   'subjectNew.submit': 'Fach erstellen',
   'subjectDetail.conceptCount': 'Konzepte',
   'subjectDetail.avgMastery': 'durchschnittliche Beherrschung',
+  'subjectDetail.journeyProgressLabel': 'Fortschritt im Lernweg',
   'subjectDetail.viewMyPath': 'Meinen Weg ansehen',
   'subjectDetail.practice': 'Üben',
   'subjectDetail.noConceptsTitle': 'Noch keine Konzepte',
@@ -4043,6 +4046,7 @@ const fr: Messages = {
   'subjectNew.submit': 'Créer la matière',
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'maîtrise moyenne',
+  'subjectDetail.journeyProgressLabel': "Progression dans le parcours d'apprentissage",
   'subjectDetail.viewMyPath': 'Voir mon parcours',
   'subjectDetail.practice': "S'entraîner",
   'subjectDetail.noConceptsTitle': 'Pas encore de concepts',
@@ -5116,6 +5120,7 @@ const pt: Messages = {
   'subjectNew.submit': 'Criar matéria',
   'subjectDetail.conceptCount': 'conceitos',
   'subjectDetail.avgMastery': 'domínio médio',
+  'subjectDetail.journeyProgressLabel': 'Progresso na jornada de aprendizagem',
   'subjectDetail.viewMyPath': 'Ver minha rota',
   'subjectDetail.practice': 'Praticar',
   'subjectDetail.noConceptsTitle': 'Ainda não há conceitos aqui',

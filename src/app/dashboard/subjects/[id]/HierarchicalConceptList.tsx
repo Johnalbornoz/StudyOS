@@ -5,12 +5,22 @@ import { getMessages, Locale } from '@/lib/i18n/messages';
 import ConceptList from './ConceptList';
 import { SubjectHierarchy, HierarchyConcept } from '@/services/topic-hierarchy.service';
 import type { MasteryState } from '@/services/knowledge-state.service';
+import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
+import { averageJourneyProgress } from '@/lib/lx/journey-progress';
 
 const UNASSIGNED_KEY = '__unassigned__';
 
-function averageMastery(concepts: HierarchyConcept[]): number | null {
-  const scores = concepts.flatMap((c) => (c.masteryScore !== undefined ? [c.masteryScore] : []));
-  return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+/**
+ * LX-9R1: topic/subtopic/subject aggregates are now the mean of each
+ * concept's canonical journey progress percentage (R7) -- never an
+ * average of the raw `mastery_score` values `averageMastery` used to
+ * compute. Every concept in the group counts, including ones with no
+ * active decision/knowledge-state yet (those resolve to NOT_STARTED,
+ * 0% -- never silently excluded to inflate the aggregate).
+ */
+function averageGroupJourneyProgress(concepts: HierarchyConcept[], journeyStages: Record<string, LearnerJourneyStage>): number | null {
+  const stages = concepts.map((c) => journeyStages[c.id] ?? 'NOT_STARTED');
+  return averageJourneyProgress(stages);
 }
 
 function averageRetention(concepts: HierarchyConcept[]): number | null {
@@ -89,7 +99,7 @@ function AccordionHeader({
   label,
   count,
   countLabel,
-  masteryScore,
+  progressPercent,
   secondaryLine,
   size = 'lg',
 }: {
@@ -98,7 +108,8 @@ function AccordionHeader({
   label: string;
   count: number;
   countLabel: string;
-  masteryScore: number | null;
+  /** LX-9R1: mean canonical journey progress across the group's concepts (R7) -- never a raw mastery-score average. */
+  progressPercent: number | null;
   secondaryLine?: string | null;
   size?: 'lg' | 'sm';
 }) {
@@ -129,7 +140,7 @@ function AccordionHeader({
           </span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
-          <MiniMastery score={masteryScore} width={size === 'lg' ? 80 : 60} />
+          <MiniMastery score={progressPercent} width={size === 'lg' ? 80 : 60} />
           <span style={{ fontSize: size === 'lg' ? 13 : 12.5, color: 'var(--text-muted)', minWidth: 76, textAlign: 'right' }}>
             {count} {countLabel}
           </span>
@@ -161,6 +172,7 @@ export default function HierarchicalConceptList({
   locale,
   hierarchy,
   masteryStates,
+  journeyStages,
 }: {
   subjectId: string;
   studentId: string;
@@ -169,11 +181,20 @@ export default function HierarchicalConceptList({
   /**
    * Step 6L-C2-B1: conceptId -> the already-persisted, canonical
    * MasteryState (knowledge-state.service.ts) for each concept in this
-   * subject -- fetched once, in bulk, by the server page. Never
-   * recomputed here; a concept absent from this map (no knowledge-
-   * state row yet) simply gets no qualifier, never a fabricated one.
+   * subject -- fetched once, in bulk, by the server page. Kept as a
+   * SECONDARY analytics input only (R8) -- never the primary progress
+   * percentage/label as of LX-9R1.
    */
   masteryStates: Record<string, MasteryState>;
+  /**
+   * LX-9R1: conceptId -> the canonical LX-1B `LearnerJourneyStage`
+   * (`path-view.ts::resolveConceptJourneyStage`, the SAME authority My
+   * Path/Concept Mission read) for each concept in this subject --
+   * fetched/derived once, in bulk, by the server page. This is now the
+   * ONLY input driving the primary progress percentage/label at every
+   * level (concept row, subtopic, topic, unassigned group).
+   */
+  journeyStages: Record<string, LearnerJourneyStage>;
 }) {
   const t = getMessages(locale);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
@@ -201,7 +222,7 @@ export default function HierarchicalConceptList({
         const topicOpen = openTopics.has(topic.id);
         const topicConcepts = topic.subtopics.flatMap((s) => s.concepts);
         const topicConceptCount = topicConcepts.length;
-        const topicMastery = averageMastery(topicConcepts);
+        const topicProgress = averageGroupJourneyProgress(topicConcepts, journeyStages);
 
         return (
           <div key={topic.id} className="card" style={{ padding: 'var(--space-2)' }}>
@@ -211,7 +232,7 @@ export default function HierarchicalConceptList({
               label={topic.name}
               count={topicConceptCount}
               countLabel={t['subjectDetail.conceptCount']}
-              masteryScore={topicMastery}
+              progressPercent={topicProgress}
               secondaryLine={buildSecondaryLine(topicConcepts, t)}
             />
 
@@ -225,7 +246,7 @@ export default function HierarchicalConceptList({
               >
                 {topic.subtopics.map((subtopic) => {
                   const subtopicOpen = openSubtopics.has(subtopic.id);
-                  const subtopicMastery = averageMastery(subtopic.concepts);
+                  const subtopicProgress = averageGroupJourneyProgress(subtopic.concepts, journeyStages);
                   return (
                     <div key={subtopic.id}>
                       <AccordionHeader
@@ -234,7 +255,7 @@ export default function HierarchicalConceptList({
                         label={subtopic.name}
                         count={subtopic.concepts.length}
                         countLabel={t['subjectDetail.conceptCount']}
-                        masteryScore={subtopicMastery}
+                        progressPercent={subtopicProgress}
                         secondaryLine={buildSecondaryLine(subtopic.concepts, t)}
                         size="sm"
                       />
@@ -248,7 +269,7 @@ export default function HierarchicalConceptList({
                             concepts={subtopic.concepts.map((c) => ({
                               conceptId: c.id,
                               label: c.label,
-                              masteryScore: c.masteryScore ?? 0,
+                              journeyStage: journeyStages[c.id] ?? 'NOT_STARTED',
                               masteryState: masteryStates[c.id] ?? null,
                             }))}
                           />
@@ -271,7 +292,7 @@ export default function HierarchicalConceptList({
             label={t['hierarchy.unassigned']}
             count={hierarchy.unassigned.length}
             countLabel={t['subjectDetail.conceptCount']}
-            masteryScore={averageMastery(hierarchy.unassigned)}
+            progressPercent={averageGroupJourneyProgress(hierarchy.unassigned, journeyStages)}
             secondaryLine={buildSecondaryLine(hierarchy.unassigned, t)}
           />
 
@@ -284,7 +305,7 @@ export default function HierarchicalConceptList({
                 concepts={hierarchy.unassigned.map((c) => ({
                   conceptId: c.id,
                   label: c.label,
-                  masteryScore: c.masteryScore ?? 0,
+                  journeyStage: journeyStages[c.id] ?? 'NOT_STARTED',
                   masteryState: masteryStates[c.id] ?? null,
                 }))}
               />
