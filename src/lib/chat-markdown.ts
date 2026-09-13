@@ -7,6 +7,12 @@
  * `$...$` inline, the same convention `@/lib/math-text.ts` already
  * parses for quiz questions/answers -- reused here rather than a second
  * math-delimiter convention).
+ *
+ * LX-9R2: `parseChatBlocks` also tolerates `\(...\)` / `\[...\]` (LaTeX's
+ * own delimiters) and a `$$...$$` block whose delimiters sit on their
+ * own lines -- both normalized deterministically to the canonical
+ * `$...$`/`$$...$$` form by `normalizeMathDelimiters` before any
+ * line-based block parsing runs. See that function's own doc comment.
  */
 
 export type InlineSegment =
@@ -52,6 +58,44 @@ function parseFunctionPlotSpec(raw: string): FunctionPlotSpec | null {
   return null;
 }
 
+/**
+ * LX-9R2: deterministic, zero-AI-cost normalization of Luna's math
+ * output to the ONE canonical delimiter convention this parser (and
+ * `@/lib/math-text.ts`) already understand -- `$...$` inline / `$$...$$`
+ * block -- run on the FULL, unsplit message BEFORE `parseChatBlocks`
+ * splits it into lines. Two live-QA-observed gaps this closes:
+ *
+ *  1. `\(...\)` / `\[...\]` (LaTeX's own inline/block delimiters, which
+ *     a model may reasonably produce instead of dollar signs) were not
+ *     recognized at all and rendered as literal backslash-paren text.
+ *     Converted to `$...$` / `$$...$$` respectively.
+ *  2. A `$$...$$` block whose delimiters sit on their OWN lines, e.g.
+ *       $$
+ *       (a+b)^2=(a+b)(a+b)
+ *       $$
+ *     rendered as three lines of literal text, because `parseChatBlocks`
+ *     parses one line at a time and neither the lone "$$" line nor the
+ *     equation line contains a complete `$$...$$` pair by itself.
+ *     Internal newlines inside any `$$...$$` span are collapsed to a
+ *     single space so the SAME single-line block-math match already
+ *     used below finds it once the message is split into lines.
+ *
+ * Never asks the model to regenerate for a delimiter-style difference --
+ * this tolerates the reasonable alternatives instead. A message using
+ * only the canonical `$...$`/`$$...$$` convention already round-trips
+ * through this function unchanged.
+ */
+export function normalizeMathDelimiters(content: string): string {
+  let out = content;
+  // `\[...\]` -> `$$...$$` and `\(...\)` -> `$...$` FIRST (each can itself
+  // span multiple lines) -- then the newline-collapse pass below applies
+  // uniformly to every `$$...$$` span, whichever delimiter it started as.
+  out = out.replace(/\\\[([\s\S]+?)\\\]/g, (_m, inner: string) => `$$${inner}$$`);
+  out = out.replace(/\\\(([\s\S]+?)\\\)/g, (_m, inner: string) => `$${inner}$`);
+  out = out.replace(/\$\$([\s\S]+?)\$\$/g, (_m, inner: string) => `$$${inner.replace(/\s*\n\s*/g, ' ').trim()}$$`);
+  return out;
+}
+
 const INLINE_RE = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$|\*\*([^*]+?)\*\*|\*([^*\n]+?)\*/g;
 
 /** Display math is checked before inline math (never a stray leftover $), and bold before italic (a `**` pair is never split into two italics), matching @/lib/math-text.ts's own ordering rationale. */
@@ -84,7 +128,7 @@ const UNORDERED_RE = /^[-*]\s+(.*)$/;
 const FENCE_RE = /^```\s*([\w-]*)\s*$/;
 
 export function parseChatBlocks(content: string): ChatBlock[] {
-  const lines = content.split('\n');
+  const lines = normalizeMathDelimiters(content).split('\n');
   const blocks: ChatBlock[] = [];
 
   let paragraphLines: InlineSegment[][] = [];
