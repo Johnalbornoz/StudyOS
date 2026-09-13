@@ -54,6 +54,7 @@
 
 import {
   deriveLearnerJourneyStage,
+  isRetentionWaiting,
   type LearnerJourneyStage,
   type LearnerJourneyIntervention,
 } from './learner-journey-contract';
@@ -357,7 +358,7 @@ function buildNow(
   // (the fixed RETENTION_CHECK-when-due branch, or its not-yet-due
   // REVIEW/PRACTICE fallback) -- neither is a genuinely actionable
   // "next step" while spaced retention hasn't matured.
-  if (journey.status === 'RESOLVED' && journey.stage === 'RETAIN' && memory?.retentionDue === false) {
+  if (journey.status === 'RESOLVED' && isRetentionWaiting(journey.stage, memory?.retentionDue)) {
     return {
       kind: 'NO_CANONICAL_ACTION',
       activityType: null,

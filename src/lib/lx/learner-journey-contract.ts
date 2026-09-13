@@ -162,3 +162,18 @@ export function deriveLearnerJourneyStage(inputs: LearnerJourneyInputs): Learner
   }
   return { stage: 'PRACTICE', intervention: null, reason: 'BUILDING_EVIDENCE', contractVersion: v };
 }
+
+/**
+ * LX-9 FINAL I/J: the ONE canonical check for "RETAIN stage, but the
+ * spaced-retention review genuinely isn't due yet" -- shared by
+ * `concept-mission.ts`'s NOW card (LX-9R3-R1 W1) and
+ * `canonical-learning-progress.ts`'s `waitingReason`, so both read the
+ * exact same fact instead of each re-deriving an equivalent condition
+ * that could quietly drift apart. `retentionDue` must be the
+ * already-canonical Phase 6 fact (`ConceptView.memory.retentionDue`) --
+ * this function computes nothing new, it only names the ONE condition
+ * under which no actionable CTA should be offered for RETAIN.
+ */
+export function isRetentionWaiting(stage: LearnerJourneyStage, retentionDue: boolean | undefined | null): boolean {
+  return stage === 'RETAIN' && retentionDue === false;
+}

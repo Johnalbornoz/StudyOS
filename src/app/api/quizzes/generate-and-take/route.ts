@@ -594,6 +594,21 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
 
     if (questions.length === 0) {
+      // LX-9 FINAL, PART U: safe, aggregate-only observability for a
+      // generation failure -- never learner answer/question content.
+      // No quiz_session is created past this point (Part G).
+      try {
+        // eslint-disable-next-line no-console
+        console.log('[generation]', JSON.stringify({
+          conceptId: primaryConceptId,
+          quizMode: validated.quizMode,
+          targetDifficulty: resolvedDifficulty?.level ?? null,
+          difficultyReasonCode: resolvedDifficulty?.reasonCode ?? null,
+          generationPhase: 'GENERATION_FAILED',
+          sessionCreated: false,
+          errorCode: 'GENERATION_FAILED',
+        }));
+      } catch { /* logging must never break the response */ }
       return NextResponse.json(
         { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }

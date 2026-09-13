@@ -1784,7 +1784,22 @@ function QuizPageContent() {
               type="button"
               className="btn btn-primary"
               style={{ marginTop: 'var(--space-4)' }}
-              onClick={() => { if (studentId) { setGenState('idle'); void generateQuiz(studentId); } }}
+              // LX-9 FINAL: this state was produced by `startCanonicalActivity`'s
+              // own background generation wave failing (genState='error'),
+              // NEVER by `generateQuiz` -- retrying must re-run the SAME
+              // function that actually failed. The previous `generateQuiz(...)`
+              // call here was a different, setup/legacy-flow retry path: it
+              // immediately calls `setPhase('loading')`, so on a second
+              // failure it lands the learner in the unrelated top-level
+              // `phase==='error'` ("Couldn't load the quiz") state instead of
+              // retrying in place -- turning one recoverable failure into a
+              // different, more severe-looking one (the proven live bug:
+              // "Couldn't prepare your practice" -> retry -> "Couldn't load
+              // the quiz"). `startCanonicalActivity` resets its own
+              // `genState`/`error` at its top and stays on `phase==='quiz'`
+              // throughout, so a second failure re-renders this SAME recoverable
+              // card, never a different one.
+              onClick={() => { if (studentId) startCanonicalActivity(studentId); }}
             >
               {at['practice.prepareRetry']}
             </button>

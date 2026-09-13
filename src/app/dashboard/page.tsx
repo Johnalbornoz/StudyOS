@@ -7,7 +7,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
-import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
+import { knowledgeKpis } from '@/lib/knowledge-state-labels';
 
 function masteryFillClass(score: number) {
   if (score >= 75) return 'fill-good';
@@ -184,13 +184,20 @@ export default async function DashboardPage() {
                         <div key={c.conceptId} style={{ borderTop: '1px solid var(--border-default)', paddingTop: 'var(--space-3)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
                             <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label}</span>
+                            {/* LX-9 FINAL, PART M: the row's PRIMARY status is
+                                now the SAME canonical journey stage/percentage
+                                Concept Mission shows for this concept -- the
+                                live-QA-reported "Retener" (Concept Mission) vs
+                                "Aprendiendo" (this badge, from raw MasteryState)
+                                split. MasteryState/evidence dimensions remain
+                                visible below as separate evidence-profile KPIs
+                                (Part N), never as the primary status. */}
                             <span
-                              style={{
-                                fontSize: 12, fontWeight: 650, color: masteryStateColor(c.masteryState),
-                                border: `1px solid ${masteryStateColor(c.masteryState)}`, borderRadius: 999, padding: '2px 9px', flexShrink: 0,
-                              }}
+                              className="tabular"
+                              title={t['subjectDetail.journeyProgressLabel']}
+                              style={{ fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', flexShrink: 0 }}
                             >
-                              {masteryStateLabel(c.masteryState, t)}
+                              {t[c.journeyProgressLabelKey]} · {c.journeyProgressPercent}%
                             </span>
                           </div>
                           <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>

@@ -1336,6 +1336,15 @@ export async function generateRetentionCheckQuestions(
   const language = options.language || 'en';
   const ibContext = options.ibContext ?? null;
 
+  // LX-9 FINAL, PART T/U: one operationId correlates every `[retention]`
+  // line for this single generation call, so a live benchmark run can
+  // group them per launch. `startedAt` gives the total generation
+  // duration on the two events that end this call (ready/insufficient)
+  // -- safe, aggregate-only metadata, never learner content.
+  const operationId = randomUUID();
+  const startedAt = Date.now();
+  const log = (label: string, meta: Record<string, unknown> = {}) => logRetention(label, { operationId, ...meta });
+
   try {
     // LX-9R3 B2/B3: kicked off ALONGSIDE retrieveContext (never
     // serialized in front of it) -- a bounded DB lookup, not another AI
@@ -1451,10 +1460,10 @@ ${shapeExamples}
       }).then((r) => r.result);
     };
 
-    logRetention('RETENTION_GENERATION_STARTED', { conceptId, requestedCount: RETENTION_REQUIRED_COUNT, initialCandidateCount: RETENTION_INITIAL_CANDIDATE_COUNT, recentHistoryQuestionCount: recentHistory.length, noveltyWindowAttempts: RETENTION_NOVELTY_ATTEMPT_WINDOW });
+    log('RETENTION_GENERATION_STARTED', { conceptId, targetDifficulty: difficulty, requestedCount: RETENTION_REQUIRED_COUNT, initialCandidateCount: RETENTION_INITIAL_CANDIDATE_COUNT, recentHistoryQuestionCount: recentHistory.length, noveltyWindowAttempts: RETENTION_NOVELTY_ATTEMPT_WINDOW });
 
     const reportInsufficient = (meta: RetentionInsufficientMeta): GeneratedQuestion[] => {
-      logRetention('RETENTION_BATCH_INSUFFICIENT', { reason: 'RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS', ...meta });
+      log('RETENTION_BATCH_INSUFFICIENT', { reason: 'RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS', totalDurationMs: Date.now() - startedAt, ...meta });
       return [];
     };
 
@@ -1600,7 +1609,7 @@ ${shapeExamples}
     // is never misreported as a same-batch duplicate.
     if (noveltyDedupe.exactDuplicateCount > 0) initialRejectionReasons.CROSS_ATTEMPT_EXACT_DUPLICATE = noveltyDedupe.exactDuplicateCount;
     if (noveltyDedupe.structuralOverlapCount > 0) initialRejectionReasons.CROSS_ATTEMPT_STRUCTURAL_OVERLAP = noveltyDedupe.structuralOverlapCount;
-    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, gatedCount: dedupedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialRejectionReasons });
+    log('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, gatedCount: dedupedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialRejectionReasons });
 
     let replacementGeneratedCount = 0;
     let replacementAcceptedCount = 0;
@@ -1612,8 +1621,8 @@ ${shapeExamples}
       // rejected), never unbounded. See recoveryCandidateCount's own
       // doc comment for the exact, deterministic formula.
       const recoveryCount = recoveryCandidateCount(deficit);
-      logRetention('RETENTION_DEFICIT_IDENTIFIED', { deficit });
-      logRetention('RETENTION_RECOVERY_STARTED', { deficit, recoveryCandidateCount: recoveryCount });
+      log('RETENTION_DEFICIT_IDENTIFIED', { deficit });
+      log('RETENTION_RECOVERY_STARTED', { deficit, recoveryCandidateCount: recoveryCount });
 
       // A4: exactly ONE bounded recovery round -- no loop, no second
       // retry. R1C-R1: the recovery call is Terra. The exclusion note
@@ -1657,10 +1666,10 @@ ${shapeExamples}
         const recoveryRejectionReasons: Record<string, number> = { ...recoveryGate.rejectionReasons };
         if (recoveryDedupe.exactDuplicateCount > 0) recoveryRejectionReasons.DUPLICATE_OF_ACCEPTED = recoveryDedupe.exactDuplicateCount;
         if (recoveryDedupe.structuralOverlapCount > 0) recoveryRejectionReasons.STRUCTURAL_OVERLAP_WITH_ACCEPTED = recoveryDedupe.structuralOverlapCount;
-        logRetention('RETENTION_RECOVERY_GATE_COMPLETE', { generatedCount: mappedRecovery.length, acceptedCount: recoveryGate.accepted.length, rejectedCount: mappedRecovery.length - recoveryGate.accepted.length, rejectionReasons: recoveryRejectionReasons });
+        log('RETENTION_RECOVERY_GATE_COMPLETE', { generatedCount: mappedRecovery.length, acceptedCount: recoveryGate.accepted.length, rejectedCount: mappedRecovery.length - recoveryGate.accepted.length, rejectionReasons: recoveryRejectionReasons });
       }
 
-      logRetention('RETENTION_RECOVERY_COMPLETE', { replacementGeneratedCount, replacementAcceptedCount, finalAcceptedCount: acceptedUnique.length });
+      log('RETENTION_RECOVERY_COMPLETE', { replacementGeneratedCount, replacementAcceptedCount, finalAcceptedCount: acceptedUnique.length });
     }
 
     deficit = RETENTION_REQUIRED_COUNT - acceptedUnique.length;
@@ -1672,7 +1681,7 @@ ${shapeExamples}
       });
     }
 
-    logRetention('RETENTION_BATCH_READY', { finalCount: acceptedUnique.length });
+    log('RETENTION_BATCH_READY', { finalCount: acceptedUnique.length, totalDurationMs: Date.now() - startedAt });
     return acceptedUnique.slice(0, RETENTION_REQUIRED_COUNT); // A5, defensive: never exceed the canonical count
   } catch (error) {
     console.error('Error generating retention_check questions:', error);

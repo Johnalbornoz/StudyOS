@@ -75,7 +75,28 @@ async function deriveLaunchTeachingExperience(
   }
 }
 
+/** LX-9 FINAL, PART U: safe, aggregate-only observability for one continuation resolution -- never learner answer/question content. */
+function logContinuationResolution(conceptId: string, result: ContinuationResolution): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[continuation]', JSON.stringify({
+      conceptId,
+      continuationResult: result.status,
+      reason: result.status === 'RETURN_TO_MISSION' ? result.reason : null,
+      activityType: result.status === 'LAUNCH' ? result.activityType : null,
+      source: result.status === 'LAUNCH' ? result.source : null,
+      sessionCreated: result.status === 'LAUNCH',
+    }));
+  } catch { /* logging must never break continuation */ }
+}
+
 export async function resolveContinuation(input: ResolveContinuationInput): Promise<ContinuationResolution> {
+  const result = await resolveContinuationInner(input);
+  logContinuationResolution(input.conceptId, result);
+  return result;
+}
+
+async function resolveContinuationInner(input: ResolveContinuationInput): Promise<ContinuationResolution> {
   const { studentId, conceptId, subjectId } = input;
 
   // --- 1. Phase 4 canonical decision for this concept ---

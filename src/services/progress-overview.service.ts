@@ -57,7 +57,9 @@ import { getLearningOSSnapshot } from './learning-os-snapshot.service';
 import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
 import { resolveConceptJourneyStage } from '@/lib/lx/path-view';
 import { averageJourneyProgress } from '@/lib/lx/journey-progress';
+import { buildCanonicalLearningProgress } from '@/lib/lx/canonical-learning-progress';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 /** Same shape knowledgeKpis()/ConceptKnowledgeState use, so callers can pass this straight into the existing helper. */
 export interface DimensionScores {
@@ -79,6 +81,19 @@ export interface ConceptProgress {
   label: string;
   masteryPercent: number | null;
   masteryState: MasteryState;
+  /**
+   * LX-9 FINAL, PART I/M: the SAME canonical `LearnerJourneyStage` /
+   * journey-progress percentage every other learner-facing surface
+   * (My Path, Concept Mission, the Subjects detail page) already reads
+   * -- via `buildCanonicalLearningProgress`, never re-derived here.
+   * This is what the Progress dashboard's per-concept row must render
+   * as its PRIMARY status now, replacing the raw `masteryState` label
+   * that could disagree with Concept Mission for the same concept
+   * (the live-QA-reported "Retener" / "Aprendiendo" split).
+   */
+  journeyStage: LearnerJourneyStage;
+  journeyProgressPercent: number;
+  journeyProgressLabelKey: MessageKey;
   dimensions: DimensionScores;
   needsAttention: { description: string; occurrenceCount: number }[];
 }
@@ -184,18 +199,30 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
       );
 
       const withRaw: ConceptWithRawMastery[] = masteryRows.map((row: any) => {
-        const ks = knowledgeStateByConceptId.get(row.concept_id);
+        const ks = knowledgeStateByConceptId.get(row.concept_id) ?? null;
         // tryMasteryScore validates against mastery_records.mastery_score's
         // own [0, 100] domain -- a genuinely out-of-range row degrades to
         // "unknown" (logged), never silently multiplied or clamped. A
         // valid low value like 1.65 is NOT rejected.
         const rawMastery = tryMasteryScore(row.mastery_score, `progress-overview concept ${row.concept_id}`);
+        // LX-9 FINAL, PART I/M: the SAME canonical authority every other
+        // learner-facing surface reads -- never a second stage/percentage
+        // derivation for this row.
+        const canonical = buildCanonicalLearningProgress({
+          conceptId: row.concept_id,
+          subjectId: s.id,
+          knowledgeState: ks,
+          activeDecision: decisionByConceptId.get(row.concept_id),
+        });
         return {
           progress: {
             conceptId: row.concept_id,
             label: row.label,
             masteryPercent: masteryToPercent(rawMastery),
             masteryState: ks?.masteryState ?? 'UNKNOWN',
+            journeyStage: canonical.journeyStage,
+            journeyProgressPercent: canonical.journeyProgressPercent,
+            journeyProgressLabelKey: canonical.journeyProgressLabelKey,
             dimensions: {
               understandingScore: dimensionToPercent(ks?.understandingScore ?? null),
               independenceScore: dimensionToPercent(ks?.independenceScore ?? null),

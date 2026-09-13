@@ -49,9 +49,17 @@ describe('LX-4P-PERF-R1 R3 -- teaching renders without waiting for the question 
     expect(QUIZ).toMatch(/teachingStage === 'questions' && questions\.length === 0 && genState !== 'ready'/);
     expect(QUIZ).toMatch(/t\['practice\.preparing'\]/);
     expect(QUIZ).toMatch(/t\['practice\.prepareRetry'\]/);
-    // retry re-runs generation; it does not navigate away / to Concept Mission
-    const block = QUIZ.slice(QUIZ.indexOf("t['practice.prepareFailedTitle']"), QUIZ.indexOf("t['practice.prepareFailedTitle']") + 500);
-    expect(block).toMatch(/void generateQuiz\(studentId\)/);
+    // LX-9 FINAL: retry re-runs the SAME function that actually failed
+    // here (startCanonicalActivity's background generation wave, per
+    // genState) -- never `generateQuiz`, a different function that
+    // immediately calls setPhase('loading') and, on a second failure,
+    // moves the learner into the unrelated top-level phase==='error'
+    // state instead of retrying in place (the proven live bug:
+    // "Couldn't prepare your practice" -> retry -> "Couldn't load the
+    // quiz"). It still never navigates away / to Concept Mission.
+    const block = QUIZ.slice(QUIZ.indexOf("t['practice.prepareFailedTitle']"), QUIZ.indexOf("t['practice.prepareFailedTitle']") + 1600);
+    expect(block).toMatch(/startCanonicalActivity\(studentId\)/);
+    expect(block).not.toMatch(/void generateQuiz\(studentId\)/);
     expect(block).not.toMatch(/router\.push|window\.location|conceptMissionPath/);
   });
 });
