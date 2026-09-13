@@ -359,8 +359,8 @@ describe('LX-9 FINAL 34 -- adaptive difficulty unchanged', () => {
 });
 
 describe('LX-9 FINAL 35 -- Results raw mastery leak remains removed', () => {
-  it('the retention_check mastery-block guard is still present', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/quizMode !== 'retention_check' && perConcept\.length === 1 && results\.mastery/);
+  it('LX-9R5: the guard was broadened from retention_check-only to every activity -- the raw single-concept mastery delta is never rendered at all', () => {
+    expect(QUIZ_PAGE_SRC).not.toMatch(/\{at\['quiz\.masteryLabel'\]\}: \{results\.mastery\.previous\}/);
   });
 });
 

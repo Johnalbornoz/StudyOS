@@ -357,7 +357,23 @@ export default async function ConceptDetailPage({
                 </span>
                 {h.learningMode && (
                   <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
-                    {h.learningMode === 'SOLO' ? t['subjectDetail.modeSolo'] : h.learningMode === 'COACH' ? t['subjectDetail.modeCoach'] : h.learningMode}
+                    {/* LX-9R5 PART G/G1: `learningMode` (SOLO/COACH) is
+                        Phase 3A's EvidenceMode classification -- "what
+                        KIND of activity was this," never "did the
+                        learner actually use help." A COACH-mode
+                        (Practice/Review/Remediation) attempt with zero
+                        recorded hints must never be labelled "Con
+                        ayuda" -- that claim is only true when
+                        `h.hintsUsed > 0`. Independent (SOLO) activities
+                        are unaffected: "Solo" is accurate regardless,
+                        since no assistance was ever possible there. */}
+                    {h.learningMode === 'SOLO'
+                      ? t['subjectDetail.modeSolo']
+                      : h.learningMode === 'COACH'
+                        ? h.hintsUsed > 0
+                          ? t['subjectDetail.modeCoach']
+                          : t['subjectDetail.modeCoachNoHelp']
+                        : h.learningMode}
                   </span>
                 )}
                 {h.hintsUsed > 0 && (

@@ -278,7 +278,11 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
   it('the Results score/mastery/verification screen reads `at` throughout (not just the reviewing sub-view)', () => {
     expect(QUIZ).toMatch(/at\['quiz\.results'\]/);
     expect(QUIZ).toMatch(/at\['quiz\.score'\]/);
-    expect(QUIZ).toMatch(/at\['quiz\.masteryLabel'\]/);
+    // LX-9R5 PART K: quiz.masteryLabel ("Dominio del concepto") is no
+    // longer rendered on this screen at all (the raw mastery leak this
+    // phase removed) -- quiz.perConceptResultsTitle is its replacement
+    // for the same localization-coverage purpose this test checks.
+    expect(QUIZ).toMatch(/at\['quiz\.perConceptResultsTitle'\]/);
     expect(QUIZ).toMatch(/at\['quiz\.verificationTitle'\]/);
     expect(QUIZ).toMatch(/at\['quiz\.verificationExplain'\]/);
   });

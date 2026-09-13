@@ -127,6 +127,7 @@ describe('LX-7 tests 10/11 -- cold profile and path read failure', () => {
     snapshot: null,
     snapshotReadFailed: false,
     activeSubjects: [],
+    memorySignals: new Map(),
     ...over,
   });
 
@@ -160,8 +161,15 @@ describe('LX-7 tests 12/13 -- Today/My Path consistency (R20)', () => {
     expect(TODAY_SRC).toMatch(/nextExecutableItem/);
   });
 
-  it('current.activityType is a verbatim pass-through of best.decision.activityType -- never re-selected', () => {
-    expect(PATH_VIEW_SRC).toMatch(/activityType:\s*best\.decision\.activityType/);
+  it('LX-9R5 PART A1: current.activityType is null unless actionState is EXECUTABLE -- never an unconditional pass-through of best.decision.activityType', () => {
+    // The decision's own activityType is never re-selected, but it is
+    // also never trusted blindly: a LearningDecision can exist for a
+    // concept whose canonical obligation (RETAIN) isn't due yet, and
+    // exposing that decision's activityType as "the next action" was
+    // the exact live My Path bug this phase fixed (stage RETAIN,
+    // "Practicar" offered anyway).
+    expect(PATH_VIEW_SRC).toMatch(/activityType:\s*actionState === 'EXECUTABLE' \? best\.decision\.activityType : null/);
+    expect(PATH_VIEW_SRC).not.toMatch(/activityType:\s*best\.decision\.activityType,/);
   });
 
   it('a concept with an active decision uses decision.learningState verbatim, never a re-derived one', () => {

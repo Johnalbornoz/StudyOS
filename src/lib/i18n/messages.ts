@@ -127,7 +127,7 @@ export type MessageKey =
   | 'subjectDetail.historyToggle' | 'subjectDetail.historyEmpty' | 'subjectDetail.sourceGuidedExercise'
   | 'subjectDetail.sourceTopicAssessment' | 'subjectDetail.sourceRealExam' | 'subjectDetail.resultCorrect'
   | 'subjectDetail.resultPartial' | 'subjectDetail.resultIncorrect' | 'subjectDetail.modeSolo'
-  | 'subjectDetail.modeCoach' | 'subjectDetail.hintsShort' | 'subjectDetail.viewConceptDetail'
+  | 'subjectDetail.modeCoach' | 'subjectDetail.modeCoachNoHelp' | 'subjectDetail.hintsShort' | 'subjectDetail.viewConceptDetail'
   | 'dashboard.confidenceCalibration'
   | 'conceptDetail.yourLearning' | 'conceptDetail.mastery' | 'conceptDetail.confidence' | 'conceptDetail.evidenceStrength'
   | 'conceptDetail.transfer'
@@ -211,7 +211,7 @@ export type MessageKey =
   | 'errorType.CONCEPTUAL' | 'errorType.PROCEDURAL' | 'errorType.CARELESS' | 'errorType.INCOMPLETE' | 'errorType.MISREADING'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
   | 'quiz.generating' | 'quiz.loadError' | 'quiz.retentionLoadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
-  | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
+  | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel' | 'quiz.perConceptResultsTitle'
   | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity' | 'practice.preparing' | 'practice.prepareFailedTitle' | 'practice.prepareFailedBody' | 'practice.prepareRetry'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
@@ -500,7 +500,10 @@ export type MessageKey =
   | 'continuation.reinforce.continue'
   | 'continuation.continue'
   | 'continuation.backToConcept'
-  | 'continuation.resolveFailed';
+  | 'continuation.resolveFailed'
+  | 'continuation.waitingHeadline'
+  | 'continuation.waitingBody'
+  | 'continuation.waitingBodyWithDate';
 
 type Messages = Record<MessageKey, string>;
 
@@ -626,6 +629,7 @@ const es: Messages = {
   'subjectDetail.resultIncorrect': 'Incorrecto',
   'subjectDetail.modeSolo': 'Solo',
   'subjectDetail.modeCoach': 'Con ayuda',
+  'subjectDetail.modeCoachNoHelp': 'Sin ayuda utilizada',
   'subjectDetail.hintsShort': '{count} pista(s)',
   'subjectDetail.viewConceptDetail': 'Haz clic para ver el detalle del concepto',
   'dashboard.confidenceCalibration': 'Calibración de confianza',
@@ -1074,6 +1078,7 @@ const es: Messages = {
   'quiz.score': 'Puntaje de esta actividad',
   'quiz.correctOf': 'correctas',
   'quiz.masteryLabel': 'Dominio del concepto',
+  'quiz.perConceptResultsTitle': 'Resultados por concepto',
   'quiz.confidenceQuestion': '¿Qué tan seguro estás?',
   'quiz.confidenceLow': 'No estoy seguro',
   'quiz.confidenceMedium': 'Algo seguro',
@@ -1571,6 +1576,9 @@ const es: Messages = {
   'continuation.continue': 'Continuar',
   'continuation.backToConcept': 'Volver al concepto',
   'continuation.resolveFailed': 'No se pudo determinar el siguiente paso. Puedes volver al concepto.',
+  'continuation.waitingHeadline': 'Buen trabajo',
+  'continuation.waitingBody': 'Por ahora no necesitas otra actividad.',
+  'continuation.waitingBodyWithDate': 'Por ahora no necesitas otra actividad. Tu próxima comprobación de memoria estará disponible el {date}.',
   'quiz.langSwitch.title': '¿Cambiar el idioma de las preguntas?',
   'quiz.langSwitch.body': 'Empezarás una nueva sesión de práctica en {lang} y se perderá tu progreso en esta actividad. El idioma de la interfaz de StudyUS no cambia.',
   'quiz.langSwitch.cancel': 'Cancelar',
@@ -1706,6 +1714,7 @@ const en: Messages = {
   'subjectDetail.resultIncorrect': 'Incorrect',
   'subjectDetail.modeSolo': 'Solo',
   'subjectDetail.modeCoach': 'With help',
+  'subjectDetail.modeCoachNoHelp': 'No help used',
   'subjectDetail.hintsShort': '{count} hint(s)',
   'subjectDetail.viewConceptDetail': 'Click to view concept detail',
   'dashboard.confidenceCalibration': 'Confidence calibration',
@@ -2154,6 +2163,7 @@ const en: Messages = {
   'quiz.score': "This activity's score",
   'quiz.correctOf': 'correct',
   'quiz.masteryLabel': 'Concept mastery',
+  'quiz.perConceptResultsTitle': 'Results by concept',
   'quiz.confidenceQuestion': 'How confident are you?',
   'quiz.confidenceLow': 'Not sure',
   'quiz.confidenceMedium': 'Somewhat sure',
@@ -2651,6 +2661,9 @@ const en: Messages = {
   'continuation.continue': 'Continue',
   'continuation.backToConcept': 'Back to the concept',
   'continuation.resolveFailed': 'Couldn\'t work out the next step. You can go back to the concept.',
+  'continuation.waitingHeadline': 'Well done',
+  'continuation.waitingBody': 'You don\'t need another activity right now.',
+  'continuation.waitingBodyWithDate': 'You don\'t need another activity right now. Your next memory check will be available on {date}.',
   'quiz.langSwitch.title': 'Change the question language?',
   'quiz.langSwitch.body': 'You\'ll start a new practice session in {lang} and lose your progress in this activity. The StudyUS interface language does not change.',
   'quiz.langSwitch.cancel': 'Cancel',
@@ -2786,6 +2799,7 @@ const de: Messages = {
   'subjectDetail.resultIncorrect': 'Falsch',
   'subjectDetail.modeSolo': 'Allein',
   'subjectDetail.modeCoach': 'Mit Hilfe',
+  'subjectDetail.modeCoachNoHelp': 'Ohne Hilfe genutzt',
   'subjectDetail.hintsShort': '{count} Hinweis(e)',
   'subjectDetail.viewConceptDetail': 'Klicken, um das Konzeptdetail zu sehen',
   'dashboard.confidenceCalibration': 'Selbsteinschätzung',
@@ -3234,6 +3248,7 @@ const de: Messages = {
   'quiz.score': 'Ergebnis dieser Aktivität',
   'quiz.correctOf': 'richtig',
   'quiz.masteryLabel': 'Konzeptbeherrschung',
+  'quiz.perConceptResultsTitle': 'Ergebnisse pro Konzept',
   'quiz.confidenceQuestion': 'Wie sicher bist du dir?',
   'quiz.confidenceLow': 'Nicht sicher',
   'quiz.confidenceMedium': 'Etwas sicher',
@@ -3731,6 +3746,9 @@ const de: Messages = {
   'continuation.continue': 'Weiter',
   'continuation.backToConcept': 'Zurück zum Konzept',
   'continuation.resolveFailed': 'Der nächste Schritt ließ sich nicht ermitteln. Du kannst zum Konzept zurück.',
+  'continuation.waitingHeadline': 'Gut gemacht',
+  'continuation.waitingBody': 'Im Moment brauchst du keine weitere Aktivität.',
+  'continuation.waitingBodyWithDate': 'Im Moment brauchst du keine weitere Aktivität. Deine nächste Gedächtnisprüfung ist ab dem {date} verfügbar.',
   'quiz.langSwitch.title': 'Sprache der Fragen ändern?',
   'quiz.langSwitch.body': 'Du startest eine neue Übungssitzung auf {lang} und verlierst deinen Fortschritt in dieser Aktivität. Die Sprache der StudyUS-Oberfläche ändert sich nicht.',
   'quiz.langSwitch.cancel': 'Abbrechen',
@@ -3866,6 +3884,7 @@ const fr: Messages = {
   'subjectDetail.resultIncorrect': 'Incorrect',
   'subjectDetail.modeSolo': 'Seul(e)',
   'subjectDetail.modeCoach': 'Avec aide',
+  'subjectDetail.modeCoachNoHelp': 'Sans aide utilisée',
   'subjectDetail.hintsShort': '{count} indice(s)',
   'subjectDetail.viewConceptDetail': 'Cliquer pour voir le détail du concept',
   'dashboard.confidenceCalibration': 'Calibration de la confiance',
@@ -4314,6 +4333,7 @@ const fr: Messages = {
   'quiz.score': 'Score de cette activité',
   'quiz.correctOf': 'correctes',
   'quiz.masteryLabel': 'Maîtrise du concept',
+  'quiz.perConceptResultsTitle': 'Résultats par concept',
   'quiz.confidenceQuestion': 'À quel point es-tu sûr(e) ?',
   'quiz.confidenceLow': 'Pas sûr(e)',
   'quiz.confidenceMedium': 'Assez sûr(e)',
@@ -4811,6 +4831,9 @@ const fr: Messages = {
   'continuation.continue': 'Continuer',
   'continuation.backToConcept': 'Revenir au concept',
   'continuation.resolveFailed': 'Impossible de déterminer l\'étape suivante. Tu peux revenir au concept.',
+  'continuation.waitingHeadline': 'Bien joué',
+  'continuation.waitingBody': 'Tu n\'as pas besoin d\'une autre activité pour le moment.',
+  'continuation.waitingBodyWithDate': 'Tu n\'as pas besoin d\'une autre activité pour le moment. Ta prochaine vérification de mémoire sera disponible le {date}.',
   'quiz.langSwitch.title': 'Changer la langue des questions ?',
   'quiz.langSwitch.body': 'Tu vas commencer une nouvelle session d\'entraînement en {lang} et perdre ta progression dans cette activité. La langue de l\'interface StudyUS ne change pas.',
   'quiz.langSwitch.cancel': 'Annuler',
@@ -4946,6 +4969,7 @@ const pt: Messages = {
   'subjectDetail.resultIncorrect': 'Incorreto',
   'subjectDetail.modeSolo': 'Sozinho',
   'subjectDetail.modeCoach': 'Com ajuda',
+  'subjectDetail.modeCoachNoHelp': 'Sem ajuda utilizada',
   'subjectDetail.hintsShort': '{count} dica(s)',
   'subjectDetail.viewConceptDetail': 'Clique para ver o detalhe do conceito',
   'dashboard.confidenceCalibration': 'Calibração de confiança',
@@ -5394,6 +5418,7 @@ const pt: Messages = {
   'quiz.score': 'Pontuação desta atividade',
   'quiz.correctOf': 'corretas',
   'quiz.masteryLabel': 'Domínio do conceito',
+  'quiz.perConceptResultsTitle': 'Resultados por conceito',
   'quiz.confidenceQuestion': 'Quão confiante você está?',
   'quiz.confidenceLow': 'Não tenho certeza',
   'quiz.confidenceMedium': 'Um pouco confiante',
@@ -5891,6 +5916,9 @@ const pt: Messages = {
   'continuation.continue': 'Continuar',
   'continuation.backToConcept': 'Voltar ao conceito',
   'continuation.resolveFailed': 'Não foi possível determinar o próximo passo. Você pode voltar ao conceito.',
+  'continuation.waitingHeadline': 'Muito bem',
+  'continuation.waitingBody': 'Por enquanto você não precisa de outra atividade.',
+  'continuation.waitingBodyWithDate': 'Por enquanto você não precisa de outra atividade. Sua próxima verificação de memória estará disponível em {date}.',
   'quiz.langSwitch.title': 'Mudar o idioma das perguntas?',
   'quiz.langSwitch.body': 'Você vai começar uma nova sessão de prática em {lang} e perder o seu progresso nesta atividade. O idioma da interface do StudyUS não muda.',
   'quiz.langSwitch.cancel': 'Cancelar',

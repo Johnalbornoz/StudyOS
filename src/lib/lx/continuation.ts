@@ -77,6 +77,19 @@ export type ContinuationResolution =
       teachingExperience?: TeachingExperienceView | null;
     }
   | {
+      /**
+       * LX-9R5 PART C: a genuine, dated canonical obligation exists
+       * (RETAIN) but isn't due yet -- an explicit, honest outcome,
+       * never rendered as an error and never silently converted into
+       * launching a different activity (e.g. a residual Practice
+       * fallthrough) just because Retention itself isn't actionable.
+       */
+      status: 'WAITING';
+      waitingReason: 'RETENTION_NOT_DUE';
+      /** Verbatim from canonical Phase 6 memory (`memory.nextReviewAt`). `null` only when no date exists yet. */
+      nextEligibleAt: string | null;
+    }
+  | {
       /** No canonical next action -- return to the Concept Mission with an honest "nothing to do right now" state. */
       status: 'RETURN_TO_MISSION';
       reason:

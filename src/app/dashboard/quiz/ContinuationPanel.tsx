@@ -60,6 +60,10 @@ export default function ContinuationPanel({
   const cp = checkpointFor(from);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // LX-9R5 PART C: a canonical WAITING outcome is rendered in place --
+  // never a navigation, never the `failed` error state. `null` means
+  // "not currently showing the waiting result."
+  const [waitingResult, setWaitingResult] = useState<{ nextEligibleAt: string | null } | null>(null);
   const headingRef = useRef<HTMLParagraphElement>(null);
   // LX-5R1 R6/R13: a navigation that "succeeds" here (router.push called
   // with no thrown error) can still fail to actually take the learner
@@ -92,6 +96,7 @@ export default function ContinuationPanel({
   async function onContinue() {
     setBusy(true);
     setFailed(false);
+    setWaitingResult(null);
     mark('CONTINUATION_REQUEST_STARTED', { conceptId, from });
     try {
       const res = await fetch('/api/learning/continue', {
@@ -146,6 +151,15 @@ export default function ContinuationPanel({
         router.push(target);
         return;
       }
+      if (c?.status === 'WAITING') {
+        // LX-9R5 PART C: rendered in place -- never a navigation, never
+        // the error state. A genuine, dated canonical obligation is not
+        // "cannot determine the next step."
+        mark('CONTINUATION_WAITING', { conceptId, waitingReason: c.waitingReason });
+        setBusy(false);
+        setWaitingResult({ nextEligibleAt: c.nextEligibleAt });
+        return;
+      }
       // RETURN_TO_MISSION (any reason) -> the Concept Mission.
       mark('CONTINUATION_NAVIGATED', { conceptId, sameRoute: false });
       armStuckBackstop();
@@ -171,26 +185,30 @@ export default function ContinuationPanel({
         className="label"
         style={{ color: 'var(--brand-ink)', margin: 0 }}
       >
-        {t[cp.headlineKey as keyof typeof t]}
+        {waitingResult ? t['continuation.waitingHeadline'] : t[cp.headlineKey as keyof typeof t]}
       </p>
       <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-        {t[cp.bodyKey as keyof typeof t]}
+        {waitingResult
+          ? waitingResult.nextEligibleAt
+            ? t['continuation.waitingBodyWithDate'].replace('{date}', new Date(waitingResult.nextEligibleAt).toLocaleDateString(locale))
+            : t['continuation.waitingBody']
+          : t[cp.bodyKey as keyof typeof t]}
       </p>
-      {note && (
+      {note && !waitingResult && (
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{note}</p>
       )}
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-        {!failed ? (
-          <button type="button" className="btn btn-primary" onClick={onContinue} disabled={busy} aria-busy={busy}>
-            {busy ? '…' : t[cp.continueKey as keyof typeof t]}
-          </button>
-        ) : (
+        {waitingResult || failed ? (
           <a href={missionHref} className="btn btn-primary">
             {t['continuation.backToConcept']}
           </a>
+        ) : (
+          <button type="button" className="btn btn-primary" onClick={onContinue} disabled={busy} aria-busy={busy}>
+            {busy ? '…' : t[cp.continueKey as keyof typeof t]}
+          </button>
         )}
-        {!failed && (
+        {!failed && !waitingResult && (
           <a href={missionHref} className="btn btn-ghost">
             {t['continuation.backToConcept']}
           </a>

@@ -25,6 +25,7 @@ import {
   type LearningPlanItem,
 } from '@/lib/learning-execution-policy';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
+import { getTwinMemorySignal } from './memory-read.service';
 
 export interface ConceptDisplayInfo {
   label: string;
@@ -38,6 +39,22 @@ export interface LearningOSSnapshot {
   decisions: LearningDecision[];
   dailyPlan: DailyLearningPlan;
   nextExecutableItem: LearningPlanItem | null;
+  /**
+   * LX-9R5 PART A/B/D: whether `nextExecutableItem` is a genuine
+   * RETENTION obligation that isn't due yet -- computed ONCE here (the
+   * one canonical snapshot boundary Today AND My Path already share) so
+   * every consumer agrees without adding its own memory read. `false`
+   * whenever `nextExecutableItem` is null or its `activityType` is
+   * anything other than a not-yet-due retention obligation. Keyed off
+   * `learningState === 'RETENTION_RISK'` (deriveLearnerJourneyStage's
+   * own rule for journey stage RETAIN) -- by construction this is
+   * never simultaneously MISCONCEPTION_BLOCKED/PREREQUISITE_BLOCKED/
+   * NEEDS_REPAIR, so a genuine REINFORCE-justified action (Part D's
+   * explicit exception) can never be suppressed by this flag.
+   */
+  nextExecutableItemWaiting: boolean;
+  /** The canonical next-eligible-review date, verbatim from Phase 6 memory, when `nextExecutableItemWaiting` is true and a date exists. `null` otherwise. */
+  nextExecutableItemNextEligibleAt: string | null;
   /** Presentation-only: concept id -> display label/subject name. Never a priority field, never used for ordering. */
   conceptLabels: Map<string, ConceptDisplayInfo>;
 }
@@ -94,6 +111,16 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
   const dailyPlan = buildDailyLearningPlan(studentId, decisions, { availableMinutes, now });
   const nextExecutableItem = selectExecutableNextAction(dailyPlan);
 
+  let nextExecutableItemWaiting = false;
+  let nextExecutableItemNextEligibleAt: string | null = null;
+  if (nextExecutableItem && nextExecutableItem.decision.learningState === 'RETENTION_RISK') {
+    const memorySignal = await getTwinMemorySignal(db, studentId, nextExecutableItem.decision.actionConceptId, now).catch(() => null);
+    if (memorySignal?.retentionDue === false) {
+      nextExecutableItemWaiting = true;
+      nextExecutableItemNextEligibleAt = memorySignal.nextReviewAt;
+    }
+  }
+
   const conceptIds = decisions.flatMap((d) => [d.actionConceptId, ...d.targetConceptIds]);
   const conceptLabels = await loadConceptLabels(conceptIds, preferredLanguage);
 
@@ -103,6 +130,8 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     decisions,
     dailyPlan,
     nextExecutableItem,
+    nextExecutableItemWaiting,
+    nextExecutableItemNextEligibleAt,
     conceptLabels,
   };
 }

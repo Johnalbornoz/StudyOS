@@ -74,22 +74,25 @@ export default async function DashboardPage() {
         <div>
           <h1>{t['progress.title']}{firstName ? `, ${firstName}` : ''}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['progress.subtitle']}</p>
-          {/* LX-9R1-R1: the PRIMARY learner-wide number is now canonical
-              journey progress (concept-weighted mean of every concept's
-              LearnerJourneyStage across every active subject) -- never
-              raw mastery_score. overallMasteryPercent moves to a
-              secondary, explicitly-labeled line below. */}
+          {/* LX-9R5 PART H: the PRIMARY (and ONLY) learner-wide number
+              shown here is canonical journey progress (concept-weighted
+              mean of every concept's LearnerJourneyStage across every
+              active subject). LX-9R1-R1 had demoted raw
+              `overallMasteryPercent` to a secondary, explicitly-labeled
+              line -- still confusing in live QA ("Avance general del
+              recorrido: 73%" beside "Dominio general: 1%"), so it is
+              removed from this learner-facing page entirely. The metric
+              itself is NOT deleted -- `overview.overallMasteryPercent`
+              is still computed and returned by
+              `getStudentProgressOverview` for admin/analytics/debug
+              consumers; only this primary learner surface stops
+              rendering it. */}
           <p style={{ color: 'var(--text-muted)', margin: '10px 0 0', fontSize: 14 }}>
             {t['progress.overallJourneyLabel']}:{' '}
             <strong className="tabular" style={{ color: 'var(--text-primary)' }}>
               {overview.overallJourneyProgressPercent !== null ? `${overview.overallJourneyProgressPercent}%` : t['dashboard.notEnoughEvidence']}
             </strong>
           </p>
-          {overview.overallMasteryPercent !== null && (
-            <p style={{ color: 'var(--text-muted)', margin: '2px 0 0', fontSize: 12.5 }}>
-              {t['progress.overallMasteryLabel']}: <span className="tabular">{overview.overallMasteryPercent}%</span>
-            </p>
-          )}
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>

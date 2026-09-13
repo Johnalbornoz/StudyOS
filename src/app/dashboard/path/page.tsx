@@ -118,7 +118,7 @@ export default async function MyPathPage() {
 
       {overview.state === 'READY' && (
         <>
-          {overview.current ? (
+          {overview.current && overview.current.actionState === 'EXECUTABLE' && overview.current.activityType ? (
             <div
               className="card"
               style={{ marginBottom: 'var(--space-8)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-6)' }}
@@ -147,6 +147,29 @@ export default async function MyPathPage() {
                   launchMark="MY_PATH_ACTION_LAUNCHED"
                 />
               </div>
+            </div>
+          ) : overview.current && overview.current.actionState === 'WAITING' ? (
+            // LX-9R5 PART A2: WAITING is a valid canonical result, never
+            // an error -- reuses the SAME copy Concept Mission's own NOW
+            // card already shows for this exact condition (LX-9R3-R1 W1),
+            // never a second wording for the same fact.
+            <div className="card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)' }}>
+              <div className="label" style={{ color: 'var(--text-muted)', marginBottom: 10 }}>{overview.current.subjectTitle}</div>
+              <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                {overview.current.conceptTitle}
+              </h2>
+              <div style={{ margin: 'var(--space-4) 0' }}>
+                <JourneyStrip journey={overview.current.journey} t={t} />
+              </div>
+              <strong style={{ fontSize: 15.5 }}>{t['conceptMission.noActionRetentionWaitingTitle']}</strong>
+              <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '52ch' }}>
+                {overview.current.nextEligibleAt
+                  ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
+                      '{date}',
+                      new Date(overview.current.nextEligibleAt).toLocaleDateString(locale),
+                    )
+                  : t['conceptMission.noActionRetentionWaitingBody']}
+              </p>
             </div>
           ) : (
             <div className="card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)' }}>

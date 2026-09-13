@@ -31,6 +31,8 @@ import { getCurriculumEligibleConcepts } from '@/services/curriculum-eligibility
 import { bootstrapNotStartedLearningDecision, hasLiveDecisionForConcept } from '@/lib/curriculum-progression-bootstrap';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { db } from '@/lib/db';
+import { getTwinMemorySignal } from '@/services/memory-read.service';
 import type { ContinuationResolution } from '@/lib/lx/continuation';
 
 export interface ResolveContinuationInput {
@@ -85,6 +87,7 @@ function logContinuationResolution(conceptId: string, result: ContinuationResolu
       reason: result.status === 'RETURN_TO_MISSION' ? result.reason : null,
       activityType: result.status === 'LAUNCH' ? result.activityType : null,
       source: result.status === 'LAUNCH' ? result.source : null,
+      waitingReason: result.status === 'WAITING' ? result.waitingReason : null,
       sessionCreated: result.status === 'LAUNCH',
     }));
   } catch { /* logging must never break continuation */ }
@@ -111,6 +114,23 @@ async function resolveContinuationInner(input: ResolveContinuationInput): Promis
   }
 
   if (phase4Decision) {
+    // LX-9R5 PART C: a RETENTION_RISK decision whose review isn't due
+    // yet is a genuine, dated, canonical WAITING outcome -- checked
+    // BEFORE ever launching, so a residual activityType fallthrough
+    // from the Learning Engine's own activity-selection policy (Part
+    // D's own root cause) can never be launched as if it were the
+    // required next action, and so this is never a silent
+    // RETURN_TO_MISSION or an error either. `learningState ===
+    // 'RETENTION_RISK'` is, by construction, never simultaneously
+    // MISCONCEPTION_BLOCKED/PREREQUISITE_BLOCKED/NEEDS_REPAIR -- a
+    // genuine REINFORCE intervention (Part D's explicit exception) is
+    // therefore never suppressed by this check.
+    if (phase4Decision.learningState === 'RETENTION_RISK') {
+      const memorySignal = await getTwinMemorySignal(db, studentId, conceptId).catch(() => null);
+      if (memorySignal?.retentionDue === false) {
+        return { status: 'WAITING', waitingReason: 'RETENTION_NOT_DUE', nextEligibleAt: memorySignal.nextReviewAt };
+      }
+    }
     try {
       const session = await startLearningSession({ studentId, learningDecision: phase4Decision });
       if (session.launchStatus === 'READY' && session.launchTarget) {

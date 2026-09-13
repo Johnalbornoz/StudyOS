@@ -167,6 +167,13 @@ export default async function TodayPage() {
 
   const best = snapshot?.nextExecutableItem ?? null;
   const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
+  // LX-9R5 PART A1/B1/D: never trust `best.decision.activityType` on its
+  // own -- the exact live My Path bug (stage RETAIN, "Practicar" offered
+  // anyway) reads from this SAME shared snapshot, so Today can show the
+  // identical contradiction unless it applies the same gate. Both flags
+  // are computed ONCE inside `getLearningOSSnapshot` itself (never a
+  // second memory read added here -- Today stays presentation-only).
+  const bestWaiting = !!best && !!snapshot?.nextExecutableItemWaiting;
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
   const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
 
@@ -235,7 +242,31 @@ export default async function TodayPage() {
           {/* LX-6 R5/R9/R16: the ONE dominant learning action -- an editorial
               stack (eyebrow, heading, "why this now," CTA), not an icon+row
               SaaS card. Everything below this is deliberately smaller/quieter. */}
-          {best && (
+          {best && (bestWaiting ? (
+        // LX-9R5 PART A2: WAITING is a valid canonical result, never an
+        // error -- reuses the SAME copy Concept Mission's own NOW card
+        // already shows for this exact condition (LX-9R3-R1 W1).
+        <div
+          className="card"
+          style={{ marginBottom: 'var(--space-9)', padding: 'var(--space-6) var(--space-6)' }}
+        >
+          <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
+            {bestLabel?.label ?? best.decision.actionConceptId}
+          </h2>
+          <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 6 }}>{bestLabel?.subjectName}</div>
+          <strong style={{ fontSize: 16.5, display: 'block', marginTop: 'var(--space-4)' }}>
+            {t['conceptMission.noActionRetentionWaitingTitle']}
+          </strong>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '4px 0 0', maxWidth: '52ch' }}>
+            {snapshot?.nextExecutableItemNextEligibleAt
+              ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
+                  '{date}',
+                  new Date(snapshot.nextExecutableItemNextEligibleAt).toLocaleDateString(locale),
+                )
+              : t['conceptMission.noActionRetentionWaitingBody']}
+          </p>
+        </div>
+      ) : (
         <div
           className="card"
           style={{
@@ -284,7 +315,7 @@ export default async function TodayPage() {
             />
           </div>
         </div>
-      )}
+      ))}
 
       {isEmpty ? (
         <div className="card empty-state">

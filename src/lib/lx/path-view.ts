@@ -29,14 +29,17 @@
  * Concept Mission itself calls.
  */
 
-import { query } from '@/lib/db';
+import { db, query } from '@/lib/db';
 import { getLearningOSSnapshot, loadConceptLabels, type LearningOSSnapshot } from '@/services/learning-os-snapshot.service';
 import { getSubjectHierarchy, type SubjectHierarchy, type HierarchyConcept } from '@/services/topic-hierarchy.service';
 import { getSubjectKnowledgeState, type ConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { zeroSignalContext } from '@/services/concept-mission-view.service';
+import { getTwinMemorySignalsForStudent, type TwinMemorySignal } from '@/services/memory-read.service';
 import { rankLearningDecisions, computeLearningState, type LearningDecision } from '@/lib/adaptive-learning-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
 import { deriveLearnerJourneyStage, conceptJourneyFromResult, type ConceptJourney, type LearnerJourneyStage } from './concept-journey';
+import { isRetentionWaiting } from './learner-journey-contract';
+import type { CanonicalActionState, CanonicalWaitingReason } from './canonical-learning-progress';
 
 export interface ConceptPathView {
   conceptId: string;
@@ -77,13 +80,24 @@ export interface CurrentPosition {
   subjectTitle: string;
   conceptId: string;
   conceptTitle: string;
-  activityType: ActivityType;
+  /**
+   * LX-9R5 PART A1: `null` whenever `actionState !== 'EXECUTABLE'`.
+   * Stage RETAIN never implies "offer Practice" -- a LearningDecision
+   * can exist for a concept whose canonical obligation (retention)
+   * isn't due yet, and this field must never surface THAT decision's
+   * own activityType as if it were the required next action.
+   */
+  activityType: ActivityType | null;
   estimatedMinutes: number;
   /** Provenance only (R30) -- never rendered to the learner. */
   reasonCode: string;
   decision: LearningDecision;
   /** Same ConceptJourney already computed for this concept inside its SubjectPathView -- never recomputed a second time. */
   journey: ConceptJourney;
+  /** LX-9R5 PART B/A1: the canonical actionability of this concept, right now -- the ONE field My Path branches on before ever reading `activityType`. */
+  actionState: CanonicalActionState;
+  waitingReason: CanonicalWaitingReason | null;
+  nextEligibleAt: string | null;
 }
 
 export type MyPathState = 'READY' | 'COLD' | 'NO_ACTIVE_SUBJECTS' | 'UNRESOLVED';
@@ -108,6 +122,8 @@ export interface MyPathContext {
   snapshot: LearningOSSnapshot | null;
   snapshotReadFailed: boolean;
   activeSubjects: { id: string; name: string }[];
+  /** LX-9R5 PART A/B: one batched read for the whole student -- the SAME canonical Phase 6 memory facts Concept Mission's NOW card already gates its Retention CTA on (`isRetentionWaiting`). Never one query per concept. */
+  memorySignals: Map<string, TwinMemorySignal>;
 }
 
 /** One shared read boundary for both the overview page and a subject page -- never called twice per render (mirrors Today's own single-snapshot discipline). */
@@ -130,7 +146,12 @@ export async function loadMyPathContext(studentId: string, locale: string): Prom
     console.error('[my-path] subject list read failed:', err instanceof Error ? err.message : String(err));
   }
 
-  return { studentId, locale, snapshot, snapshotReadFailed, activeSubjects };
+  const memorySignals = await getTwinMemorySignalsForStudent(db, studentId).catch((err) => {
+    console.error('[my-path] memory signal read failed:', err instanceof Error ? err.message : String(err));
+    return new Map<string, TwinMemorySignal>();
+  });
+
+  return { studentId, locale, snapshot, snapshotReadFailed, activeSubjects, memorySignals };
 }
 
 /**
@@ -148,18 +169,49 @@ export async function loadMyPathContext(studentId: string, locale: string): Prom
  * same authority My Path/Concept Mission already do -- never a second,
  * independently-derived stage that could disagree (R10).
  */
+/**
+ * LX-9R5 PART B: the one shared computation both `resolveConceptJourneyStage`
+ * and `resolveConceptJourney` already ran independently (byte-identical
+ * duplicated logic) -- factored out so a THIRD caller
+ * (`canonical-learning-progress.ts`) can get the FULL result (including
+ * `.intervention`) without a third copy of this exact composition.
+ */
+function resolveJourneyResult(
+  conceptId: string,
+  subjectId: string,
+  ks: ConceptKnowledgeState | null,
+  activeDecision: LearningDecision | undefined
+) {
+  const learningState = activeDecision ? activeDecision.learningState : computeLearningState(zeroSignalContext(conceptId, subjectId, ks));
+  return deriveLearnerJourneyStage({
+    learningState,
+    masteryState: ks?.masteryState ?? null,
+    validationReadiness: ks?.validationReadiness ?? null,
+  });
+}
+
 export function resolveConceptJourneyStage(
   conceptId: string,
   subjectId: string,
   ks: ConceptKnowledgeState | null,
   activeDecision: LearningDecision | undefined
 ): LearnerJourneyStage {
-  const learningState = activeDecision ? activeDecision.learningState : computeLearningState(zeroSignalContext(conceptId, subjectId, ks));
-  return deriveLearnerJourneyStage({
-    learningState,
-    masteryState: ks?.masteryState ?? null,
-    validationReadiness: ks?.validationReadiness ?? null,
-  }).stage;
+  return resolveJourneyResult(conceptId, subjectId, ks, activeDecision).stage;
+}
+
+/**
+ * LX-9R5 PART B: exported so `canonical-learning-progress.ts` can read
+ * `.intervention` alongside `.stage` without re-deriving either --
+ * the exact same authority `resolveConceptJourneyStage` above and
+ * Concept Mission's own `deriveLearnerJourneyStage` call already use.
+ */
+export function resolveConceptJourneyResult(
+  conceptId: string,
+  subjectId: string,
+  ks: ConceptKnowledgeState | null,
+  activeDecision: LearningDecision | undefined
+) {
+  return resolveJourneyResult(conceptId, subjectId, ks, activeDecision);
 }
 
 /** Adapts `resolveConceptJourneyStage`'s result into My Path's flat rendering line -- unchanged behavior, now expressed in terms of the shared stage resolver above. */
@@ -169,13 +221,7 @@ function resolveConceptJourney(
   ks: ConceptKnowledgeState | null,
   activeDecision: LearningDecision | undefined
 ): ConceptJourney {
-  const learningState = activeDecision ? activeDecision.learningState : computeLearningState(zeroSignalContext(conceptId, subjectId, ks));
-  const result = deriveLearnerJourneyStage({
-    learningState,
-    masteryState: ks?.masteryState ?? null,
-    validationReadiness: ks?.validationReadiness ?? null,
-  });
-  return conceptJourneyFromResult(result);
+  return conceptJourneyFromResult(resolveJourneyResult(conceptId, subjectId, ks, activeDecision));
 }
 
 function summarize(concepts: ConceptPathView[]): SubjectPathSummary {
@@ -288,16 +334,34 @@ export async function buildMyPathOverview(context: MyPathContext): Promise<MyPat
     const heroConcept = subjectViews
       .flatMap((v) => [...v.topics.flatMap((t) => t.concepts), ...v.unassigned])
       .find((c) => c.conceptId === best.decision.actionConceptId);
+    const journey = heroConcept?.journey ?? resolveConceptJourney(best.decision.actionConceptId, best.decision.subjectId, null, best.decision);
+    // LX-9R5 PART A1/D: never trust `best.decision.activityType` on its
+    // own -- a LearningDecision can exist (and be genuinely the "best"
+    // ranked one) for a concept whose canonical obligation (RETAIN)
+    // isn't due yet; `selectActivityType`'s own residual fallthrough can
+    // independently resolve to PRACTICE for that same concept with no
+    // awareness that it isn't actionable. Gate on the SAME
+    // `isRetentionWaiting` check Concept Mission's NOW card already
+    // uses. An active REINFORCE intervention is the ONE explicit,
+    // canonical exception (Part D) -- a blocking misconception/
+    // prerequisite/repair genuinely makes Practice/Remediation
+        // executable even though it can co-occur with other stage facts.
+    const memorySignal = context.memorySignals.get(best.decision.actionConceptId);
+    const waiting = !journey.intervention && isRetentionWaiting(journey.currentStage, memorySignal?.retentionDue);
+    const actionState: CanonicalActionState = journey.consolidated ? 'CONSOLIDATED' : waiting ? 'WAITING' : 'EXECUTABLE';
     current = {
       subjectId: best.decision.subjectId,
       subjectTitle: subject?.name ?? label?.subjectName ?? '',
       conceptId: best.decision.actionConceptId,
       conceptTitle: label?.label ?? best.decision.actionConceptId,
-      activityType: best.decision.activityType,
+      activityType: actionState === 'EXECUTABLE' ? best.decision.activityType : null,
       estimatedMinutes: best.estimatedMinutes,
       reasonCode: best.decision.reasonCode,
       decision: best.decision,
-      journey: heroConcept?.journey ?? resolveConceptJourney(best.decision.actionConceptId, best.decision.subjectId, null, best.decision),
+      journey,
+      actionState,
+      waitingReason: actionState === 'WAITING' ? 'RETENTION_NOT_DUE' : null,
+      nextEligibleAt: actionState === 'WAITING' ? memorySignal?.nextReviewAt ?? null : null,
     };
   }
 

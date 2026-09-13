@@ -474,8 +474,8 @@ describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-se
  * RESULTS 31-34.                                                      *
  * ================================================================== */
 describe('LX-9R3 results 31-34 -- no raw mastery leak in the primary learner experience', () => {
-  it('31. the raw mastery-delta block is suppressed for retention_check results', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/quizMode !== 'retention_check' && perConcept\.length === 1 && results\.mastery/);
+  it('31. the raw mastery-delta block is suppressed for retention_check results (LX-9R5: since broadened to every activity, not just retention_check)', () => {
+    expect(QUIZ_PAGE_SRC).not.toMatch(/\{at\['quiz\.masteryLabel'\]\}: \{results\.mastery\.previous\}/);
   });
 
   it('32. a canonical, truthful accomplishment message replaces the raw percentage for retention_check', () => {

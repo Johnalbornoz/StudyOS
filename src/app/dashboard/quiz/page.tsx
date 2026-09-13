@@ -1510,26 +1510,29 @@ function QuizPageContent() {
             </div>
           )}
 
-          {/* LX-9R3 Part E: retention_check is an evidence pass/fail
-              check (durable retrieval), not a mastery-building activity
-              -- raw mastery_score confidence is no longer the PRIMARY
-              feedback here (that would be exactly the reported
-              "Dominio del concepto: 2.91% -> 3.56%" leak, inconsistent
-              with LX-9R1's canonical journey model). `messageText`
-              below already carries the real, canonical outcome
-              (RETAINED milestone, or the honest "too soon" notice). */}
-          {quizMode !== 'retention_check' && perConcept.length === 1 && results.mastery && (
-            <p style={{ fontSize: 14, marginTop: 'var(--space-3)' }}>
-              {at['quiz.masteryLabel']}: {results.mastery.previous}% → <strong>{results.mastery.current}%</strong>{' '}
-              <span style={{ color: results.mastery.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
-                ({results.mastery.delta >= 0 ? '+' : ''}{results.mastery.delta})
-              </span>
-            </p>
-          )}
+          {/* LX-9R5 PART K: broadened from LX-9R3's retention_check-only
+              guard -- raw mastery_score confidence is never the PRIMARY
+              learner-facing feedback for ANY activity now (the reported
+              "Dominio del concepto: 3.57% -> 3.75%" leak on an ordinary
+              Practice result, inconsistent with LX-9R1's canonical
+              journey model). No new percentage is invented to replace
+              it -- `messageText` below and the ContinuationPanel's own
+              canonical next-action already carry the real, meaningful
+              feedback. The raw value itself is NOT deleted from the
+              API response (`results.mastery` still exists for
+              admin/analytics/debug consumers); only this learner-facing
+              render is removed. */}
 
+          {/* LX-9R5 PART K: the per-concept raw mastery delta
+              (previousMastery% -> newMastery%) is removed for the same
+              reason as the single-concept block above -- never deleted
+              from the underlying data, just not rendered as the
+              learner-facing per-concept summary here. The evidence-
+              strength chip (already canonical, never a raw score)
+              remains. */}
           {perConcept.length > 1 && (
             <div style={{ marginTop: 'var(--space-4)' }}>
-              <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['quiz.masteryLabel']}</p>
+              <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['quiz.perConceptResultsTitle']}</p>
               {perConcept.map((p: any) => (
                 <div key={p.conceptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5, marginBottom: 4, gap: 8 }}>
                   <span>
@@ -1543,12 +1546,6 @@ function QuizPageContent() {
                         {evidenceStrengthLabel(p.evidenceQualification.strength)}
                       </span>
                     )}
-                  </span>
-                  <span className="tabular">
-                    {p.previousMastery}% → {p.newMastery}%{' '}
-                    <span style={{ color: p.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
-                      ({p.delta >= 0 ? '+' : ''}{p.delta})
-                    </span>
                   </span>
                 </div>
               ))}
