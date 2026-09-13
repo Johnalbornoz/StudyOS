@@ -19,7 +19,8 @@ import { getConceptIntelligenceBatch } from './learner-model.service';
 import { getCanonicalMemorySignalsForStudent } from './memory-read.service';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 
 export interface HierarchyConcept {
   id: string;
@@ -48,17 +49,27 @@ export interface SubjectHierarchy {
   unassigned: HierarchyConcept[];
 }
 
+/**
+ * LX-9 B3/B32: CLASSIFICATION routes through the central Luna/Terra
+ * authority like every other canonical service -- this call site (both
+ * `classifySubjectHierarchy` and `classifySingleConcept` share it) used
+ * to hardcode `claude-sonnet-5` directly, with no comment anywhere
+ * justifying Sonnet over the already-declared CLASSIFICATION->Luna
+ * routing. The prompt is already object-rooted ({"topics": [...]}), so
+ * no schema change is needed for OpenAI's json_object response mode.
+ */
 async function callClaudeForHierarchy(systemPrompt: string, userPrompt: string, maxTokens: number = 4000): Promise<any> {
   const prompt = getPrompt('topic_hierarchy.classification');
+  const route = resolveModels(prompt.capability);
   const { result } = await executeAI({
     capability: prompt.capability,
     risk: 'LOW_RISK', // purely organizational -- mastery/quiz/RAG all operate per-concept regardless of this outline
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: route.provider,
+    model: route.primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
-    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
-    validate: (raw) => validateJson({ text: raw.text || '{}' }, (parsed) => ({ value: parsed, errors: [] })),
+    call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens, system: systemPrompt, user: userPrompt }, signal),
+    validate: (raw) => validateJson(raw, (parsed) => ({ value: parsed, errors: [] })),
   });
   return result;
 }

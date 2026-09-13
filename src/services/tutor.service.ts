@@ -10,6 +10,7 @@
  * follow-ups about a different part of the material.
  */
 
+import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -17,8 +18,11 @@ import { buildCompactTutorContext } from './tutor-strategy.service';
 import { getTeachingIntentForConcept } from './adaptive-teaching.service';
 import { buildTeachingConstraintsBlock, toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 import { getActiveRestrictedEvidenceForStudent } from './active-evidence-guard.service';
-import { executeAI, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { executeAI, getPrompt, AIExecutionFailure } from '@/lib/ai';
+import { callModel, parseCallModelUsage } from '@/lib/ai/adapters/call-model';
+import { resolveModels, TERRA } from '@/lib/ai/model-routing';
+import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
+import { recordRuntimeEvent, buildRuntimeEvent } from '@/lib/ai/runtime-event';
 
 /**
  * Phase 5-R2 S7: the smallest safe product behavior -- a real,
@@ -175,7 +179,13 @@ export async function sendMessage(
     const context = await retrieveContext(studentId, conv.subject_id, { query: userMessage, limit: 5 }).catch(
       () => ({ chunks: [] as any[] })
     );
-    contextChunks = context.chunks.map((c: any) => c.text);
+    // LX-9 B5: previously inserted verbatim with no char budget --
+    // `fitContextChunks` is the same bounded-truncation authority every
+    // other RAG-grounded capability already uses (question generation,
+    // concept explanation, guided practice), applied here for the first
+    // time. Keeps whole chunks, never splits mid-chunk, never drops
+    // below one chunk.
+    contextChunks = fitContextChunks(context.chunks, budgetFor('tutor_reply').maxContextChars).map((c: any) => c.text);
   }
 
   const languageName = LOCALE_FULL_NAME[language] || language;
@@ -234,21 +244,122 @@ Formatting:
 
 Write your entire response in ${languageName}.`;
 
-  const messages = [...history.map((h: any) => ({ role: h.role, content: h.content })), { role: 'user', content: userMessage }];
+  // history/messages are only meaningful to Anthropic's multi-turn
+  // `messages` shape; the OpenAI path below folds them into one `user`
+  // turn (callModel's own contract: one system + one user string) since
+  // Luna/Terra are reached through the same provider-neutral entry
+  // point every other canonical capability uses.
+  const historyText = history
+    .map((h: any) => `${h.role === 'user' ? 'Student' : 'Tutor'}: ${h.content}`)
+    .join('\n\n');
+  const userTurn = historyText ? `${historyText}\n\nStudent: ${userMessage}` : userMessage;
 
+  // LX-9 B3/B19/B32: TUTOR routes through the central Luna/Terra
+  // authority -- this call site used to hardcode `claude-sonnet-5`
+  // directly, bypassing `CAPABILITY_ROUTING.TUTOR`'s OWN already-
+  // declared "Luna first" intent (model-routing.ts), with no comment
+  // anywhere justifying Sonnet over it. `plainText: true` opts out of
+  // callModel's default Structured-Output JSON mode, since a tutor
+  // reply is prose/LaTeX/fenced code, never JSON. One bounded Terra
+  // retry on outright failure mirrors the same "Luna first, one Terra
+  // fallback, never a third attempt" shape used everywhere else in the
+  // canonical runtime (quiz generation, retention, the Question Quality
+  // Gate) -- never a silent Anthropic/Sonnet fallback.
   const prompt = getPrompt('tutor.chat_reply');
-  const { result: replyText } = await executeAI({
+  const route = resolveModels(prompt.capability);
+  const budget = budgetFor('tutor_reply');
+  // LX-9 B23/B29 observability item 32: correlates this turn's (up to
+  // two) [ai-runtime] events with each other, matching the same
+  // operationId convention gated-question-generation.service.ts already
+  // established for its own Luna/Terra attempt pairs.
+  const operationId = randomUUID();
+  const baseCallArgs = {
     capability: prompt.capability,
-    risk: 'LOW_RISK', // conversational reply, not a graded/state-changing output
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    risk: 'LOW_RISK' as const, // conversational reply, not a graded/state-changing output
     promptId: prompt.id,
     promptVersion: prompt.version,
     context: { studentId, subjectId: conv.subject_id ?? undefined, conceptId, sourceComponent: 'tutor.service.ts:sendMessage', sourceId: conversationId },
-    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 2048, system: systemPrompt, messages }, signal),
+    parseUsage: parseCallModelUsage,
     // Free text, not JSON -- the only structural contract is "the provider answered with something".
-    validate: (raw) => ({ valid: true, value: raw.text }),
-  });
+    validate: (raw: { text: string }) => ({ valid: true as const, value: raw.text }),
+  };
+
+  let replyText: string;
+  try {
+    const { result, execution } = await executeAI({
+      ...baseCallArgs,
+      provider: route.provider,
+      model: route.primary,
+      call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: systemPrompt, user: userTurn, plainText: true }, signal),
+    });
+    replyText = result;
+    recordRuntimeEvent(
+      buildRuntimeEvent({
+        capability: prompt.capability,
+        provider: route.provider,
+        model: route.primary,
+        promptId: prompt.id,
+        promptVersion: prompt.version,
+        inputTokens: execution.inputTokens ?? null,
+        cachedInputTokens: execution.cachedInputTokens ?? null,
+        outputTokens: execution.outputTokens ?? null,
+        latencyMs: execution.durationMs,
+        fallbackUsed: false,
+        qualityGateResult: 'NOT_RUN',
+        operationId,
+      }),
+    );
+  } catch (err) {
+    if (!(err instanceof AIExecutionFailure)) throw err;
+    const fallbackReason = `luna: ${err.code}`;
+    // B22 fallback economics: the FAILED Luna attempt gets its own event
+    // too (via the AIExecutionFailure's own carried `execution`
+    // metadata) -- otherwise a fallbackRate computed from these events
+    // would silently undercount how many Luna attempts actually
+    // happened, matching the same "telemeter every attempt, not just
+    // the winning one" convention gated-question-generation.service.ts
+    // already uses for its own Luna/Terra pairs.
+    recordRuntimeEvent(
+      buildRuntimeEvent({
+        capability: prompt.capability,
+        provider: route.provider,
+        model: route.primary,
+        promptId: prompt.id,
+        promptVersion: prompt.version,
+        inputTokens: err.execution.inputTokens ?? null,
+        cachedInputTokens: err.execution.cachedInputTokens ?? null,
+        outputTokens: err.execution.outputTokens ?? null,
+        latencyMs: err.execution.durationMs,
+        fallbackUsed: false,
+        qualityGateResult: 'REJECTED',
+        operationId,
+      }),
+    );
+    const { result, execution } = await executeAI({
+      ...baseCallArgs,
+      provider: route.provider,
+      model: TERRA,
+      call: (signal) => callModel({ provider: route.provider, model: TERRA, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: systemPrompt, user: userTurn, plainText: true }, signal),
+    });
+    replyText = result;
+    recordRuntimeEvent(
+      buildRuntimeEvent({
+        capability: prompt.capability,
+        provider: route.provider,
+        model: TERRA,
+        promptId: prompt.id,
+        promptVersion: prompt.version,
+        inputTokens: execution.inputTokens ?? null,
+        cachedInputTokens: execution.cachedInputTokens ?? null,
+        outputTokens: execution.outputTokens ?? null,
+        latencyMs: execution.durationMs,
+        fallbackUsed: true,
+        fallbackReason,
+        qualityGateResult: 'NOT_RUN',
+        operationId,
+      }),
+    );
+  }
 
   return persistAssistantReply(conversationId, userMessage, replyText);
 }

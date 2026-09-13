@@ -28,8 +28,11 @@ vi.mock('@/services/active-evidence-guard.service', () => ({
   getActiveRestrictedEvidenceForStudent: (...a: any[]) => getActiveRestrictedEvidenceForStudentMock(...a),
 }));
 
-const callAnthropicMessagesMock = vi.fn().mockResolvedValue({ text: 'AI reply text' });
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn().mockResolvedValue({ text: 'AI reply text', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
+vi.mock('@/lib/ai/adapters/call-model', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/ai/adapters/call-model')>();
+  return { ...actual, callModel: (...a: any[]) => callModelMock(...a) };
+});
 
 import { sendMessage } from '@/services/tutor.service';
 
@@ -61,7 +64,7 @@ beforeEach(() => {
   buildCompactTutorContextMock.mockReset().mockResolvedValue(null);
   getTeachingIntentForConceptMock.mockReset().mockResolvedValue(INTENT);
   getActiveRestrictedEvidenceForStudentMock.mockReset().mockResolvedValue(ALLOWED_STATE);
-  callAnthropicMessagesMock.mockClear();
+  callModelMock.mockClear();
 });
 
 describe('Phase 5-R4 S5: the gate call site takes ONLY studentId -- structurally cannot be scoped by subject or concept', () => {
@@ -98,14 +101,14 @@ describe('release tests 12-13: server authority -- direct service/API call canno
   it('a direct sendMessage call (equivalent to a direct service/API call) is blocked identically -- there is no separate route-level enforcement to skip', async () => {
     getActiveRestrictedEvidenceForStudentMock.mockResolvedValue(BLOCKED_STATE);
     await sendMessage('conv-1', STUDENT, 'help me', 'en'); // no conceptId, simulating a bare/direct call
-    expect(callAnthropicMessagesMock).not.toHaveBeenCalled();
+    expect(callModelMock).not.toHaveBeenCalled();
   });
 
   it('a guard lookup failure fails CLOSED (blocks), never reopening the bypass on a transient error', async () => {
     getActiveRestrictedEvidenceForStudentMock.mockRejectedValue(new Error('db down'));
     await sendMessage('conv-1', STUDENT, 'help me', 'en', CONCEPT);
     expect(getTeachingIntentForConceptMock).not.toHaveBeenCalled();
-    expect(callAnthropicMessagesMock).not.toHaveBeenCalled();
+    expect(callModelMock).not.toHaveBeenCalled();
   });
 });
 
@@ -125,7 +128,7 @@ describe('release tests 19-21: a blocked request produces no adaptive teaching, 
   it('never calls the AI provider when blocked (release test 21)', async () => {
     getActiveRestrictedEvidenceForStudentMock.mockResolvedValue(BLOCKED_STATE);
     await sendMessage('conv-1', STUDENT, 'help me', 'en', CONCEPT);
-    expect(callAnthropicMessagesMock).not.toHaveBeenCalled();
+    expect(callModelMock).not.toHaveBeenCalled();
   });
 
   it('returns a safe, non-empty reply with no misconception-specific content leaking through (S7)', async () => {
@@ -149,13 +152,13 @@ describe('release test 23: allowed adaptive Tutor behavior (Phase 5-R) remains i
     getActiveRestrictedEvidenceForStudentMock.mockResolvedValue(ALLOWED_STATE);
     await sendMessage('conv-1', STUDENT, 'help me', 'en', CONCEPT);
     expect(getTeachingIntentForConceptMock).toHaveBeenCalledWith(STUDENT, CONCEPT);
-    expect(callAnthropicMessagesMock).toHaveBeenCalled();
+    expect(callModelMock).toHaveBeenCalled();
   });
 
   it('the misconception-specific adaptive block still reaches the actual system prompt when allowed', async () => {
     getActiveRestrictedEvidenceForStudentMock.mockResolvedValue(ALLOWED_STATE);
     await sendMessage('conv-1', STUDENT, 'why is this wrong?', 'en', CONCEPT);
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('FORCE_ALONG_VELOCITY');
   });
 });

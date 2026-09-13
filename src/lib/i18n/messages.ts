@@ -216,6 +216,7 @@ export type MessageKey =
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
   | 'quiz.confidenceQuestion' | 'quiz.confidenceLow' | 'quiz.confidenceMedium' | 'quiz.confidenceHigh'
   | 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'
+  | 'progression.milestoneStarted' | 'progression.milestoneProved' | 'progression.milestoneRetained' | 'progression.milestoneTransferred' | 'progression.milestoneConsolidated'
   | 'quiz.modeQuickCheck' | 'quiz.modeTopicPractice' | 'quiz.modeCumulative' | 'quiz.modeExamSim'
   | 'quiz.modeQuickCheckDesc' | 'quiz.modeTopicPracticeDesc' | 'quiz.modeCumulativeDesc' | 'quiz.modeExamSimDesc'
   | 'quiz.modeDiagnosticCheck' | 'quiz.modeDiagnosticCheckDesc'
@@ -251,7 +252,7 @@ export type MessageKey =
   | 'nav.studyPlan'
   | 'home.tagline' | 'home.signIn' | 'home.signUp'
   | 'lang.switcherLabel'
-  | 'streak.label' | 'streak.days' | 'streak.dashboardTitle' | 'streak.dashboardSubtitle' | 'streak.dashboardEmpty'
+  | 'streak.label' | 'streak.days' | 'streak.dashboardTitle' | 'streak.dashboardSubtitle' | 'streak.dashboardEmpty' | 'streak.thisWeekLabel'
   | 'nav.tutor'
   | 'tutor.title' | 'tutor.subtitle' | 'tutor.newConversation' | 'tutor.noSubject' | 'tutor.noConversations'
   | 'tutor.emptyState' | 'tutor.inputPlaceholder' | 'tutor.send' | 'tutor.thinking'
@@ -1083,6 +1084,11 @@ const es: Messages = {
   'quiz.msgExcellent': '¡Excelente! Gran progreso.',
   'quiz.msgGood': 'Buen esfuerzo. Sigue practicando.',
   'quiz.msgKeepGoing': 'Sigue trabajando en este concepto.',
+  'progression.milestoneStarted': 'Has comenzado este concepto.',
+  'progression.milestoneProved': 'Lo demostraste de forma independiente.',
+  'progression.milestoneRetained': 'Todavía lo recuerdas después de un tiempo.',
+  'progression.milestoneTransferred': 'Lo aplicaste en un contexto nuevo.',
+  'progression.milestoneConsolidated': 'Has consolidado este concepto.',
   'quiz.modeQuickCheck': 'Solo Check',
   'quiz.modeTopicPractice': 'Práctica del tema',
   'quiz.modeCumulative': 'Evaluación acumulativa',
@@ -1291,6 +1297,7 @@ const es: Messages = {
   'streak.dashboardTitle': 'Racha actual',
   'streak.dashboardSubtitle': 'días seguidos estudiando',
   'streak.dashboardEmpty': 'practica hoy para empezar',
+  'streak.thisWeekLabel': 'días de aprendizaje esta semana',
   'nav.tutor': 'Tutor IA',
   'tutor.title': 'Tutor IA',
   'tutor.subtitle': 'Pregunta lo que quieras sobre tu material de estudio',
@@ -2150,6 +2157,11 @@ const en: Messages = {
   'quiz.msgExcellent': 'Excellent! Great progress.',
   'quiz.msgGood': 'Good effort. Keep practicing.',
   'quiz.msgKeepGoing': 'Keep working on this concept.',
+  'progression.milestoneStarted': "You've started this concept.",
+  'progression.milestoneProved': 'You demonstrated this independently.',
+  'progression.milestoneRetained': 'You still remember this after time.',
+  'progression.milestoneTransferred': 'You applied this in a new context.',
+  'progression.milestoneConsolidated': "You've consolidated this concept.",
   'quiz.modeQuickCheck': 'Solo Check',
   'quiz.modeTopicPractice': 'Topic practice',
   'quiz.modeCumulative': 'Cumulative assessment',
@@ -2358,6 +2370,7 @@ const en: Messages = {
   'streak.dashboardTitle': 'Current streak',
   'streak.dashboardSubtitle': 'days studying in a row',
   'streak.dashboardEmpty': 'practice today to start one',
+  'streak.thisWeekLabel': 'learning days this week',
   'nav.tutor': 'AI Tutor',
   'tutor.title': 'AI Tutor',
   'tutor.subtitle': 'Ask anything about your study material',
@@ -3217,6 +3230,11 @@ const de: Messages = {
   'quiz.msgExcellent': 'Ausgezeichnet! Großer Fortschritt.',
   'quiz.msgGood': 'Gute Leistung. Übe weiter.',
   'quiz.msgKeepGoing': 'Arbeite weiter an diesem Konzept.',
+  'progression.milestoneStarted': 'Du hast mit diesem Konzept begonnen.',
+  'progression.milestoneProved': 'Du hast das eigenständig gezeigt.',
+  'progression.milestoneRetained': 'Du erinnerst dich auch nach einiger Zeit noch daran.',
+  'progression.milestoneTransferred': 'Du hast das in einem neuen Zusammenhang angewendet.',
+  'progression.milestoneConsolidated': 'Du hast dieses Konzept gefestigt.',
   'quiz.modeQuickCheck': 'Solo Check',
   'quiz.modeTopicPractice': 'Themenübung',
   'quiz.modeCumulative': 'Kumulative Prüfung',
@@ -3425,6 +3443,7 @@ const de: Messages = {
   'streak.dashboardTitle': 'Aktuelle Serie',
   'streak.dashboardSubtitle': 'Tage in Folge gelernt',
   'streak.dashboardEmpty': 'übe heute, um eine zu starten',
+  'streak.thisWeekLabel': 'Lerntage diese Woche',
   'nav.tutor': 'KI-Tutor',
   'tutor.title': 'KI-Tutor',
   'tutor.subtitle': 'Frag alles zu deinem Lernmaterial',
@@ -4284,6 +4303,11 @@ const fr: Messages = {
   'quiz.msgExcellent': 'Excellent ! Bon progrès.',
   'quiz.msgGood': 'Bon effort. Continuez à vous entraîner.',
   'quiz.msgKeepGoing': 'Continuez à travailler ce concept.',
+  'progression.milestoneStarted': 'Tu as commencé ce concept.',
+  'progression.milestoneProved': 'Tu l\'as démontré de façon autonome.',
+  'progression.milestoneRetained': 'Tu t\'en souviens encore après un certain temps.',
+  'progression.milestoneTransferred': 'Tu l\'as appliqué dans un nouveau contexte.',
+  'progression.milestoneConsolidated': 'Tu as consolidé ce concept.',
   'quiz.modeQuickCheck': 'Solo Check',
   'quiz.modeTopicPractice': 'Entraînement sur le sujet',
   'quiz.modeCumulative': 'Évaluation cumulative',
@@ -4492,6 +4516,7 @@ const fr: Messages = {
   'streak.dashboardTitle': 'Série actuelle',
   'streak.dashboardSubtitle': "jours d'affilée",
   'streak.dashboardEmpty': "pratiquez aujourd'hui pour en démarrer une",
+  'streak.thisWeekLabel': "jours d'apprentissage cette semaine",
   'nav.tutor': 'Tuteur IA',
   'tutor.title': 'Tuteur IA',
   'tutor.subtitle': 'Pose toutes tes questions sur ton matériel d\'étude',
@@ -5351,6 +5376,11 @@ const pt: Messages = {
   'quiz.msgExcellent': 'Excelente! Ótimo progresso.',
   'quiz.msgGood': 'Bom esforço. Continue praticando.',
   'quiz.msgKeepGoing': 'Continue trabalhando neste conceito.',
+  'progression.milestoneStarted': 'Você começou este conceito.',
+  'progression.milestoneProved': 'Você demonstrou isso de forma independente.',
+  'progression.milestoneRetained': 'Você ainda se lembra disso depois de um tempo.',
+  'progression.milestoneTransferred': 'Você aplicou isso em um novo contexto.',
+  'progression.milestoneConsolidated': 'Você consolidou este conceito.',
   'quiz.modeQuickCheck': 'Solo Check',
   'quiz.modeTopicPractice': 'Prática do tema',
   'quiz.modeCumulative': 'Avaliação cumulativa',
@@ -5559,6 +5589,7 @@ const pt: Messages = {
   'streak.dashboardTitle': 'Sequência atual',
   'streak.dashboardSubtitle': 'dias seguidos estudando',
   'streak.dashboardEmpty': 'pratique hoje para começar uma',
+  'streak.thisWeekLabel': 'dias de aprendizado esta semana',
   'nav.tutor': 'Tutor de IA',
   'tutor.title': 'Tutor de IA',
   'tutor.subtitle': 'Pergunte o que quiser sobre seu material de estudo',

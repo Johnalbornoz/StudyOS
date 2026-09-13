@@ -40,7 +40,6 @@ import {
   CreditCard,
   ShieldCheck,
   GraduationCap,
-  Flame,
   Menu,
   X,
 } from 'lucide-react';
@@ -143,9 +142,15 @@ function Footer({ displayName, streak, streakLabel, localeSwitcher }: { displayN
         <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {displayName}
         </div>
+        {/* LX-9 A5: a calm "N learning days this week" count, bounded to
+            [0,7] and reset every Monday by construction -- deliberately
+            NOT a flame/consecutive-streak visual, which reads as
+            loss-aversion pressure precisely because it grows into a big
+            number worth "protecting". A calendar glyph plus a small,
+            neutral-toned count instead. */}
         {streak > 0 && (
-          <div title={streakLabel} style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--warning)' }}>
-            <Flame size={14} strokeWidth={2.2} aria-hidden fill="currentColor" />
+          <div title={streakLabel} style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>
+            <CalendarDays size={14} strokeWidth={2.2} aria-hidden />
             <span className="tabular">{streak}</span>
           </div>
         )}

@@ -26,8 +26,11 @@ vi.mock('@/services/adaptive-teaching.service', () => ({ getTeachingIntentForCon
 const getActiveRestrictedEvidenceForStudentMock = vi.fn();
 vi.mock('@/services/active-evidence-guard.service', () => ({ getActiveRestrictedEvidenceForStudent: (...a: any[]) => getActiveRestrictedEvidenceForStudentMock(...a) }));
 
-const callAnthropicMessagesMock = vi.fn().mockResolvedValue({ text: 'AI reply text' });
-vi.mock('@/lib/ai/adapters/anthropic', () => ({ callAnthropicMessages: (...a: any[]) => callAnthropicMessagesMock(...a) }));
+const callModelMock = vi.fn().mockResolvedValue({ text: 'AI reply text', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
+vi.mock('@/lib/ai/adapters/call-model', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/ai/adapters/call-model')>();
+  return { ...actual, callModel: (...a: any[]) => callModelMock(...a) };
+});
 
 import { sendMessage } from '@/services/tutor.service';
 
@@ -53,7 +56,7 @@ beforeEach(() => {
   buildCompactTutorContextMock.mockReset().mockResolvedValue(null);
   getTeachingIntentForConceptMock.mockReset().mockResolvedValue(null);
   getActiveRestrictedEvidenceForStudentMock.mockReset().mockResolvedValue({ allowed: true, reason: 'NO_ACTIVE_RESTRICTED_EVIDENCE', activityType: null, evidenceMode: null, sessionId: null });
-  callAnthropicMessagesMock.mockClear();
+  callModelMock.mockClear();
 });
 
 describe('sendMessage -- prefers the canonical TeachingIntent over the legacy strategy pick', () => {
@@ -67,7 +70,7 @@ describe('sendMessage -- prefers the canonical TeachingIntent over the legacy st
   it('the actual system prompt sent to the provider carries the misconception-specific adaptive block', async () => {
     getTeachingIntentForConceptMock.mockResolvedValue(INTENT);
     await sendMessage('conv-1', 's1', 'why is this wrong?', 'en', 'c1');
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('FORCE_ALONG_VELOCITY');
     expect(params.system).toMatch(/contrast/i);
   });
@@ -77,7 +80,7 @@ describe('sendMessage -- prefers the canonical TeachingIntent over the legacy st
     buildCompactTutorContextMock.mockResolvedValue({ strategy: 'EXPLAIN', instruction: 'Give a clear explanation.', summary: 'Mastery 40%' });
     await sendMessage('conv-1', 's1', 'help me understand', 'en', 'c1');
     expect(buildCompactTutorContextMock).toHaveBeenCalledWith('s1', 'c1');
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('Mastery 40%');
   });
 
@@ -90,7 +93,7 @@ describe('sendMessage -- prefers the canonical TeachingIntent over the legacy st
   it('grounding (retrieved source material) is preserved alongside the adaptive block (release test 15)', async () => {
     getTeachingIntentForConceptMock.mockResolvedValue(INTENT);
     await sendMessage('conv-1', 's1', 'why is this wrong?', 'en', 'c1');
-    const [params] = callAnthropicMessagesMock.mock.calls[0];
+    const [params] = callModelMock.mock.calls[0];
     expect(params.system).toContain('Source material chunk.');
   });
 

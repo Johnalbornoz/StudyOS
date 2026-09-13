@@ -28,6 +28,8 @@ export const TOKEN_BUDGETS = {
   contextual_help: { maxOutputTokens: 700, maxContextChars: 3000, reasoningEffort: 'minimal' },
   question_localization: { maxOutputTokens: 2000, maxContextChars: 0, reasoningEffort: 'minimal' },
   semantic_verification: { maxOutputTokens: 900, maxContextChars: 0, reasoningEffort: 'low' },
+  /** LX-9 B6/B19: tutor conversational replies -- previously unbounded (a bare `maxTokens: 2048` literal, uncapped RAG context). */
+  tutor_reply: { maxOutputTokens: 2048, maxContextChars: 6000, reasoningEffort: 'low' },
 } as const satisfies Record<string, TokenBudget>;
 
 export type TokenBudgetKey = keyof typeof TOKEN_BUDGETS;

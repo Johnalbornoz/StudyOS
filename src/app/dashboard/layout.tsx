@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/services/admin.service';
 import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
-import { getStudentStreak } from '@/services/gamification.service';
+import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -25,21 +25,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let notifCount = 0;
   let debtCount = 0;
-  let streak = 0;
+  // LX-9 A5: renamed from a raw consecutive-day "streak" to a bounded,
+  // non-punitive "learning days this week" count -- see
+  // gamification.service.ts::getLearningDaysThisWeek's own doc comment.
+  let learningDaysThisWeek = 0;
   let locale: Awaited<ReturnType<typeof getInterfaceLanguage>> = 'es';
 
   if (clerkUserId) {
     const studentId = await getOrCreateStudentId(clerkUserId);
-    const [notifications, debts, lang, streakCount] = await Promise.all([
+    const [notifications, debts, lang, daysThisWeek] = await Promise.all([
       getUnreadNotifications(studentId).catch(() => []),
       getActiveDebts(studentId).catch(() => []),
       getInterfaceLanguage(studentId).catch(() => 'es' as const),
-      getStudentStreak(studentId).catch(() => 0),
+      getLearningDaysThisWeek(studentId).catch(() => 0),
     ]);
     notifCount = notifications.length;
     debtCount = debts.length;
     locale = lang;
-    streak = streakCount;
+    learningDaysThisWeek = daysThisWeek;
   }
 
   const t = getMessages(locale);
@@ -66,8 +69,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <LearnerShell
       groups={navGroups}
       displayName={displayName}
-      streak={streak}
-      streakLabel={`${streak} ${t['streak.days']} ${t['streak.label']}`}
+      streak={learningDaysThisWeek}
+      streakLabel={`${learningDaysThisWeek} ${t['streak.thisWeekLabel']}`}
       menuLabel={t['nav.menu']}
       closeLabel={t['nav.closeMenu']}
       navLabel={t['nav.primary']}

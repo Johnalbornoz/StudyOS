@@ -11,6 +11,7 @@
  * All questions are grounded in student's actual content
  */
 
+import { randomUUID } from 'crypto';
 import { retrieveContext } from './rag.service';
 import { normalizeText } from './content-chunking.service';
 import { db } from '@/lib/db';
@@ -2275,6 +2276,42 @@ export interface GradeAnswerResult {
   aiExecution: AIProvenance;
 }
 
+/** Strict bare-number parse -- no units, no fractions, no expressions. Anything else (including a genuinely equivalent but differently-formatted answer) is deliberately left for AI grading, never guessed at deterministically. */
+function parseBareNumber(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^[-+]?\d+(\.\d+)?$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * LX-9 B17/B18: a `numeric_problem` answer that is JUST a bare number
+ * (no shown work) and matches the correct numeric answer within the
+ * same tight tolerance the Question Quality Gate already uses
+ * (`tryRecomputeNumeric`, question-quality-contract.ts) needs no AI
+ * judgment call -- there is no method/reasoning to evaluate, so the
+ * grade is unambiguous (matches the grading prompt's own rule: "For
+ * question types with no visible reasoning/work to judge, set
+ * reasoningValid equal to correct"). Returns null (defer to the
+ * existing AI grading path) for EVERYTHING else: shown work, a
+ * mismatch, a non-numeric answer, or a non-numeric_problem type --
+ * this only ever skips AI when the outcome is already certain, never
+ * makes grading more lenient than AI already would, and never grades a
+ * wrong or ambiguous answer deterministically.
+ */
+function tryDeterministicNumericGrade(
+  question: { type: string; correctAnswer: string },
+  studentAnswer: string,
+): Omit<GradeAnswerResult, 'aiExecution'> | null {
+  if (question.type !== 'numeric_problem') return null;
+  const studentNum = parseBareNumber(studentAnswer);
+  const correctNum = parseBareNumber(question.correctAnswer);
+  if (studentNum === null || correctNum === null) return null;
+  const tolerance = Math.max(1e-6, Math.abs(correctNum) * 1e-4);
+  if (Math.abs(studentNum - correctNum) > tolerance) return null;
+  return { correct: true, score: 1, feedback: 'Correct.', confidence: 1, errorType: null, reasoningValid: true };
+}
+
 /**
  * Grade a free-text answer using Claude for semantic understanding.
  * HIGH_RISK (Phase 0E1): this result feeds directly into
@@ -2291,6 +2328,25 @@ export async function gradeAnswer(
   /** Phase 0E2 Step 11: optional, purely additive -- enriches the persisted ai_execution_events row when the caller has it. */
   context?: { studentId?: string; subjectId?: string }
 ): Promise<GradeAnswerResult> {
+  // LX-9 B17/B18: a bare-number numeric_problem answer that already,
+  // deterministically, exactly matches is graded with zero AI calls --
+  // see tryDeterministicNumericGrade's own doc comment for exactly how
+  // narrow this is (anything showing work, wrong, or non-numeric still
+  // goes through the unchanged AI path below).
+  const deterministic = tryDeterministicNumericGrade(question, studentAnswer);
+  if (deterministic) {
+    return {
+      ...deterministic,
+      aiExecution: {
+        aiExecutionId: randomUUID(),
+        aiProvider: GRADE_ROUTE.provider,
+        aiModel: 'deterministic-numeric-match', // no provider call was made -- see tryDeterministicNumericGrade
+        aiPromptId: 'quiz.free_text_grading',
+        aiPromptVersion: 'deterministic',
+      },
+    };
+  }
+
   const prompt = getPrompt('quiz.free_text_grading');
   const systemPrompt = `You are an educational grader. Evaluate student answers on their merits, not on matching exact wording:
 - short_answer/fill_blank: accept equivalent phrasing/values, partial credit if partially right

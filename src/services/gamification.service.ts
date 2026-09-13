@@ -58,3 +58,33 @@ export async function getStudentStreak(studentId: string): Promise<number> {
   const dates: string[] = result.rows.map((r) => r.activity_date);
   return calculateStreak(dates);
 }
+
+/**
+ * LX-9 A5: a calm, non-punitive alternative to a raw consecutive-day
+ * streak number -- "3 learning days this week" rather than a big
+ * cumulative count that implicitly invites loss-aversion pressure as it
+ * grows ("Don't lose your 87-day streak!"). Counts DISTINCT calendar
+ * days (in the student's own timezone, same `mastery_events` source
+ * `getStudentStreak` already uses) with real learning activity within
+ * the CURRENT calendar week (Monday-Sunday, matching Postgres's own
+ * ISO-8601 `date_trunc('week', ...)`). Bounded to [0, 7] by
+ * construction -- it can never grow into a large number, and a week
+ * with zero days is simply 0, never implying anything was lost:
+ * competence/mastery are computed entirely elsewhere and are never
+ * touched by this count.
+ */
+export async function getLearningDaysThisWeek(studentId: string): Promise<number> {
+  const result = await db.query(
+    `
+    SELECT COUNT(DISTINCT (me.created_at AT TIME ZONE COALESCE(s.timezone, 'UTC'))::date) AS days
+    FROM mastery_events me
+    JOIN mastery_records mr ON mr.id = me.mastery_id
+    JOIN students s ON s.id = mr.student_id
+    WHERE mr.student_id = $1
+      AND (me.created_at AT TIME ZONE COALESCE(s.timezone, 'UTC'))::date
+          >= date_trunc('week', (NOW() AT TIME ZONE COALESCE(s.timezone, 'UTC'))::date)::date
+    `,
+    [studentId]
+  );
+  return Number(result.rows[0]?.days ?? 0);
+}

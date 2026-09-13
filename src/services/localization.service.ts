@@ -13,7 +13,8 @@ import { db } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 
 interface TranslateItem {
   id: string;
@@ -35,17 +36,23 @@ Output ONLY a JSON object, no markdown fences: { "translations": [{ "id": "<id>"
   // before with under-scaled max_tokens on batch AI calls.
   const maxTokens = Math.min(16000, 1000 + items.length * 90);
 
+  // LX-9 B3/B32: CONTENT_GENERATION routes through the central Luna/
+  // Terra authority like every other canonical service -- this call
+  // site used to hardcode `claude-sonnet-5` directly, with no comment
+  // anywhere justifying Sonnet over the already-declared routing. The
+  // prompt is already object-rooted, so no schema change is needed.
   const prompt = getPrompt('localization.batch_translate');
+  const route = resolveModels(prompt.capability);
   const { result: parsed } = await executeAI({
     capability: prompt.capability,
     risk: 'LOW_RISK', // display text only (topic/subtopic/concept names)
-    provider: 'anthropic',
-    model: 'claude-sonnet-5',
+    provider: route.provider,
+    model: route.primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
-    call: (signal) => callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+    call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens, system: systemPrompt, user: userPrompt }, signal),
     validate: (raw) =>
-      validateJson<{ translations: { id: string; text: string }[] }>({ text: raw.text || '{}' }, (v) => ({ value: v, errors: [] })),
+      validateJson<{ translations: { id: string; text: string }[] }>(raw, (v) => ({ value: v, errors: [] })),
   });
 
   const map: Record<string, string> = {};

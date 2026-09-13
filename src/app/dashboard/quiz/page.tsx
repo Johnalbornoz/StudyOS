@@ -39,6 +39,7 @@ const UnifiedResponseComposer = dynamic(() => import('@/components/UnifiedRespon
 import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/interaction-contract';
 import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
+import { milestoneFeedbackKey, type MilestoneType } from '@/lib/lx/progression-milestones';
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
@@ -1349,7 +1350,24 @@ function QuizPageContent() {
   }
 
   if (results) {
-    const messageText = at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
+    // LX-9 A8/A9: a genuine SOLO/independent-evidence pass (retention_check
+    // or quick_check, never a mid-tier "good" Practice score) gets ONE
+    // calm, evidence-specific line instead of the generic score-tier
+    // message -- reusing `results.messageKey`'s own existing pass/fail
+    // signal (never a new score computed here) and `quizMode`, which is
+    // already the SAME authority `QUIZ_SUPPORT_CONTEXT`/
+    // `coarseEvidenceModeForQuizMode` use elsewhere in this file. A
+    // Practice pass never gets this copy (A9: correct answer != achievement) --
+    // only the two quizMode values that are themselves already independent
+    // no-help checks qualify.
+    const passedIndependentCheck = results.messageKey !== 'keep_going';
+    const milestone: MilestoneType | null =
+      quizMode === 'retention_check' && passedIndependentCheck
+        ? 'RETAINED'
+        : quizMode === 'quick_check' && passedIndependentCheck
+          ? 'PROVED'
+          : null;
+    const messageText = milestone ? at[milestoneFeedbackKey(milestone)] : at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
     const perConcept = results.perConceptResults || [];
 
     if (reviewing) {

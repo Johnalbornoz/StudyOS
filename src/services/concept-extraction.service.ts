@@ -12,7 +12,8 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { classifySubjectHierarchy, classifySingleConcept } from './topic-hierarchy.service';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
-import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
+import { callModel } from '@/lib/ai/adapters/call-model';
+import { resolveModels } from '@/lib/ai/model-routing';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -67,7 +68,7 @@ For each concept, provide:
 
 IMPORTANT: The source text below may be written in a different language than ${languageName}. Regardless of what language the source text is in, the "label" and "description" fields MUST be written in ${languageName} -- translate them if the source text is in another language. Only the canonicalId stays in uppercase English-style identifiers, since it is language-independent.
 
-Output ONLY valid JSON array, no markdown.`;
+Output ONLY this JSON object, no markdown: {"concepts": [...]}`;
 
     const userPrompt = `Extract all learning concepts from this text:
 
@@ -75,8 +76,8 @@ Output ONLY valid JSON array, no markdown.`;
 ${chunkText}
 </text>
 
-Return JSON array of concepts, with "label" and "description" written in ${languageName} even if the text above is in a different language:
-[
+Return a JSON object with a "concepts" array, with "label" and "description" written in ${languageName} even if the text above is in a different language:
+{"concepts": [
   {
     "canonicalId": "MATH_ALG_LINEAR_EQ",
     "label": "<concept name, in ${languageName}>",
@@ -85,24 +86,34 @@ Return JSON array of concepts, with "label" and "description" written in ${langu
     "description": "<short description, in ${languageName}>",
     "prerequisites": ["MATH_ALG_VARIABLES", "MATH_ARITH_OPERATIONS"]
   }
-]`;
+]}`;
 
-    // Call Claude API through the shared AI gateway (Phase 0E1)
+    // LX-9 B3/B32: CLASSIFICATION routes through the central Luna/Terra
+    // authority like every other canonical service -- this call site
+    // used to hardcode `claude-sonnet-5` directly (never consulting
+    // `resolveModels`), which is exactly the "no subjective Terra/Sonnet
+    // feels safer" pattern LX-9 B3 forbids: no comment anywhere
+    // justified Sonnet over the already-declared CLASSIFICATION->Luna
+    // routing. The response is now object-rooted ({"concepts": [...]})
+    // to satisfy OpenAI's json_object response format (which requires
+    // an object at the root, unlike Anthropic's plain-text completion).
     const prompt = getPrompt('concept.extraction');
+    const route = resolveModels(prompt.capability);
     const { result: concepts } = await executeAI({
       capability: prompt.capability,
       risk: 'HIGH_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: route.provider,
+      model: route.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       context: { ...context, sourceComponent: 'concept-extraction.service.ts:extractConceptsFromChunk' },
       call: (signal) =>
-        callAnthropicMessages({ model: 'claude-sonnet-5', maxTokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }, signal),
+        callModel({ provider: route.provider, model: route.primary, maxTokens: 4096, system: systemPrompt, user: userPrompt }, signal),
       validate: (raw) =>
         validateJson<ExtractedConcept[]>(raw, (parsed) => {
-          if (!Array.isArray(parsed)) return { value: null as any, errors: ['Response was not a JSON array'] };
-          return { value: parsed, errors: [] };
+          const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.concepts) ? parsed.concepts : null;
+          if (!arr) return { value: null as any, errors: ['Response was not a JSON object with a "concepts" array'] };
+          return { value: arr, errors: [] };
         }),
       fallback: () => [] as ExtractedConcept[],
     });
@@ -411,33 +422,36 @@ export async function suggestConceptNames(
   const languageName = LOCALE_FULL_NAME[language] || language;
 
   try {
+    // LX-9 B3/B32: OTHER routes through the central Luna/Terra authority
+    // like every other canonical service -- this call site used to
+    // hardcode `claude-sonnet-5` directly, with no comment anywhere
+    // justifying Sonnet over the already-declared routing table. Object-
+    // rooted response ({"suggestions": [...]}) for OpenAI compatibility.
     const prompt = getPrompt('concept.name_suggestions');
+    const route = resolveModels(prompt.capability);
     const { result } = await executeAI({
       capability: prompt.capability,
       risk: 'LOW_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      provider: route.provider,
+      model: route.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
       call: (signal) =>
-        callAnthropicMessages(
+        callModel(
           {
-            model: 'claude-sonnet-5',
+            provider: route.provider,
+            model: route.primary,
             maxTokens: 300,
-            system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY a JSON array of strings, no markdown, no explanation.`,
-            messages: [
-              {
-                role: 'user',
-                content: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON array of strings.`,
-              },
-            ],
+            system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY this JSON object, no markdown, no explanation: {"suggestions": [...]}`,
+            user: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON object: {"suggestions": ["...", ...]}.`,
           },
           signal
         ),
       validate: (raw) =>
-        validateJson<string[]>({ text: raw.text || '[]' }, (parsed) => {
-          if (!Array.isArray(parsed)) return { value: [], errors: [] };
-          return { value: parsed.filter((s) => typeof s === 'string').slice(0, 5), errors: [] };
+        validateJson<string[]>(raw, (parsed) => {
+          const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.suggestions) ? parsed.suggestions : null;
+          if (!arr) return { value: [], errors: [] };
+          return { value: arr.filter((s: unknown) => typeof s === 'string').slice(0, 5), errors: [] };
         }),
       fallback: () => [] as string[],
     });

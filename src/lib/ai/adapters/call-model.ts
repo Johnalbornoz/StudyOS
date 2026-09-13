@@ -21,6 +21,18 @@ export interface CallModelParams {
   jsonSchema?: OpenAIJsonSchema;
   promptCacheKey?: string;
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
+  /**
+   * LX-9 B3/B32: without `jsonSchema`, OpenAI calls default to
+   * `response_format: json_object` (see below) -- correct for the
+   * structured-classification/extraction callers this was built for,
+   * but wrong for a genuinely conversational reply (prose, LaTeX,
+   * fenced code blocks) that is never valid JSON. Set `plainText: true`
+   * to opt OUT of that default and get the model's raw text back, the
+   * same free-form contract Anthropic calls have always had. Ignored by
+   * Anthropic (never forces a response format) and by any call that
+   * also passes `jsonSchema` (schema always wins).
+   */
+  plainText?: boolean;
 }
 
 export interface CallModelResult {
@@ -40,7 +52,7 @@ export async function callModel(p: CallModelParams, signal: AbortSignal): Promis
           { role: 'user' as const, content: p.user },
         ],
         jsonSchema: p.jsonSchema,
-        responseFormatJson: !p.jsonSchema,
+        responseFormatJson: !p.jsonSchema && !p.plainText,
         maxTokens: p.maxTokens,
         promptCacheKey: p.promptCacheKey,
         reasoningEffort: p.reasoningEffort,

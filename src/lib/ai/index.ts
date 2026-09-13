@@ -38,4 +38,7 @@ export type { BillableCallUsage, AggregatedCost } from './usage-aggregation';
 export { generateWithQualityGate } from './quality-runtime';
 export type { GatedGenerationSpec, GatedGenerationResult, GatedGenerationRouting } from './quality-runtime';
 export { postgresAIExecutionAuditSink, noopAIExecutionAuditSink, setAIExecutionAuditSink, getAIExecutionAuditSink } from './audit';
-export type { AIExecutionAuditSink, AIExecutionAuditEntry } from './audit';
+export type { AIExecutionAuditEntry, AIExecutionAuditSink } from './audit';
+// LX-9 B33 -- AI performance dashboard read contract (types + pure aggregation, no UI/DB layer yet).
+export { summarizeByCapability, groupByOperation, detectWastedOperations } from './performance-dashboard-contract';
+export type { CapabilityPerformanceSummary, OperationCallGraphEntry, WastedCallFinding } from './performance-dashboard-contract';
