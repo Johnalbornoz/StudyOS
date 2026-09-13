@@ -52,9 +52,9 @@ describe('LX-8R2 R16 -- quality bar: the math answer surface is a real structure
     expect(EDITOR_SRC).not.toMatch(/<textarea/);
   });
 
-  it('the quiz page uses UnifiedResponseComposer (not the retired MathAnswerEditor) for the text-answer surface, math-enabled via isMathAnswerContext', () => {
+  it('the quiz page uses UnifiedResponseComposer (not the retired MathAnswerEditor) for the text-answer surface, math-enabled via isMathCapableContext (LX-8R4: a pure subject/domain capability signal, no kind parameter)', () => {
     expect(QUIZ_PAGE_SRC).toMatch(/<UnifiedResponseComposer/);
-    expect(QUIZ_PAGE_SRC).toMatch(/mathEnabled=\{isMathAnswerContext\(subjectName, responseContract\.kind\)\}/);
+    expect(QUIZ_PAGE_SRC).toMatch(/mathEnabled=\{isMathCapableContext\(subjectName\)\}/);
   });
 
   it('toolbar buttons manipulate the editor MODEL via structured LaTeX templates (insert), never plain string concatenation into a value prop', () => {
@@ -146,19 +146,25 @@ describe('LX-8R2 R7 -- voice-to-math pipeline never silently guesses, always req
  * "separate math-answer box + separate reasoning box" design this    *
  * block originally verified: ResponseEvidenceContract.kind now maps  *
  * to the ONE UnifiedResponseComposer's single instruction line       *
- * (responseInstructionKey), and math eligibility (isMathAnswerContext)*
- * gates only whether a math block/keyboard is offered WITHIN that     *
- * one surface -- never which of two composers renders.               *
+ * (responseInstructionKey). LX-8R4 REPAIR: math capability            *
+ * (isMathCapableContext) is now a PURE subject/domain signal, no      *
+ * longer gated on `kind` at all -- Live QA proved that coupling wrong *
+ * (a JUSTIFY-kind math question was silently denied its math          *
+ * keyboard). See tests/unit/lx8r4-math-affordance-consistency.test.ts *
+ * for the full LX-8R4 required-test coverage; this block is updated   *
+ * in place to describe the CURRENT (correct) decoupled behavior.      *
  * ================================================================ */
-describe('LX-8R2/LX-8R3 R8 -- reuses the existing ResponseEvidenceContract, no second authority, no second box', () => {
-  it('isMathAnswerContext is gated on responseContract.kind -- the SAME contract already driving the composer\'s instruction line, not a new independent check', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/isMathAnswerContext\(subjectName, responseContract\.kind\)/);
+describe('LX-8R2/LX-8R3/LX-8R4 R8 -- reuses the existing ResponseEvidenceContract, no second authority, no second box', () => {
+  it('isMathCapableContext takes ONLY subjectName -- kind never gates math capability (LX-8R4 A2)', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/isMathCapableContext\(subjectName\)/);
     expect(QUIZ_PAGE_SRC).toMatch(/responseKind=\{responseContract\.kind\}/);
+    expect(CONTRACT_SRC).toMatch(/export function isMathCapableContext\(subjectName: string \| undefined\): boolean \{/);
   });
 
-  it('EXPLAIN and JUSTIFY kinds are excluded from the structured math editor -- an EXPLAIN/JUSTIFY ask keeps the prose surface (isMathAnswerContext lives in the shared math-response-contract.ts, not page-local)', () => {
-    const fnSrc = CONTRACT_SRC.slice(CONTRACT_SRC.indexOf('export function isMathAnswerContext'), CONTRACT_SRC.indexOf('export function isMathAnswerContext') + 400);
-    expect(fnSrc).toMatch(/kind !== 'EXPLAIN' && kind !== 'JUSTIFY'/);
+  it('LX-8R4: no EvidenceRequirementKind is excluded from math capability -- ANSWER_ONLY/SHOW_WORK/JUSTIFY/EXPLAIN all get the SAME math affordance in a math-capable subject', () => {
+    const fnSrc = CONTRACT_SRC.slice(CONTRACT_SRC.indexOf('export function isMathCapableContext'), CONTRACT_SRC.indexOf('export function isMathCapableContext') + 300);
+    expect(fnSrc).not.toMatch(/kind/);
+    expect(fnSrc).toMatch(/return subject === 'mathematics' \|\| subject === 'physics';/);
   });
 
   it('LX-8R3: there is no longer a separate reasoning box at all -- the old requiresWork||requiresJustification-gated second MathAnswerEditor was retired; SHOW_WORK/JUSTIFY content lives as additional blocks inside the SAME ResponseDocument', () => {

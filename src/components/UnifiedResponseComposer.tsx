@@ -62,11 +62,22 @@ import type { ActivityLanguageContext } from '@/lib/lx/activity-language';
  * R15/R16: this component performs no solving/simplification/
  * completion/suggestion/hint generation anywhere, and takes
  * `mathEnabled`/`voiceEnabled` as INPUTS from the caller (its own
- * `isMathAnswerContext`/`InteractionContract` decisions) -- it never
+ * `isMathCapableContext`/`InteractionContract` decisions) -- it never
  * re-derives modality eligibility, mastery, EvidenceMode, SupportLevel,
  * grading, or correctness itself, so it is reusable, unmodified,
  * across Practice/Prove/Retention/verification, including with
  * `mathEnabled={false}` for a prose-only route.
+ *
+ * LX-8R4 A2/A7: `mathEnabled` is a pure CAPABILITY signal (is
+ * mathematical notation appropriate for this subject/context?), NEVER
+ * derived from `responseKind` -- ANSWER_ONLY/SHOW_WORK/JUSTIFY/EXPLAIN
+ * must never independently disable the math affordance in a
+ * math-capable context (Live QA found a JUSTIFY-kind question wrongly
+ * losing its math keyboard). Integrity modes (Retention/Prove/
+ * verification) may remove HELP; they must never remove notation
+ * tools -- this component takes no `integrityMode`/`quizMode` input at
+ * all, so there is no way for one to leak into the math-affordance
+ * decision here.
  */
 export interface UnifiedResponseComposerProps {
   /** JSON-serialized ResponseDocument (response-document.ts) -- or a legacy plain string, which deserializes into a single paragraph/math block. */
@@ -77,7 +88,7 @@ export interface UnifiedResponseComposerProps {
   activityLanguageContext: ActivityLanguageContext;
   /** The caller's own InteractionContract.inputModes.includes('VOICE') decision. */
   voiceEnabled: boolean;
-  /** The caller's own isMathAnswerContext decision (math-response-contract.ts) -- when false, no math block/keyboard affordance is ever offered (R16: the same composer operates prose-only). */
+  /** The caller's own isMathCapableContext decision (math-response-contract.ts) -- a pure subject/domain capability signal, never derived from responseKind (LX-8R4 A2). When false, no math block/keyboard affordance is ever offered (R16: the same composer operates prose-only). */
   mathEnabled: boolean;
   studentId?: string | null;
   conceptId?: string;

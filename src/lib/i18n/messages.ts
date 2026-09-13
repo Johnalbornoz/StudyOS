@@ -210,7 +210,7 @@ export type MessageKey =
   | 'debt.sectionActiveRepairs' | 'debt.activeRepairsSubtitle' | 'debt.stepOf' | 'debt.continueRepair'
   | 'errorType.CONCEPTUAL' | 'errorType.PROCEDURAL' | 'errorType.CARELESS' | 'errorType.INCOMPLETE' | 'errorType.MISREADING'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
-  | 'quiz.generating' | 'quiz.loadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
+  | 'quiz.generating' | 'quiz.loadError' | 'quiz.retentionLoadError' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel'
   | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity' | 'practice.preparing' | 'practice.prepareFailedTitle' | 'practice.prepareFailedBody' | 'practice.prepareRetry'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
@@ -1060,6 +1060,7 @@ const es: Messages = {
   'notifications.emptyBody': 'Aquí verás avisos sobre repasos pendientes y progreso reciente.',
   'quiz.generating': 'Generando preguntas con IA…',
   'quiz.loadError': 'No se pudo cargar el quiz',
+  'quiz.retentionLoadError': 'No pudimos preparar este repaso de memoria.',
   'quiz.backToDashboard': 'Volver al panel',
   'quiz.backToSubject': 'Volver a la materia',
   'quiz.results': 'Resultados',
@@ -2126,6 +2127,7 @@ const en: Messages = {
   'notifications.emptyBody': "You'll see alerts about pending reviews and recent progress here.",
   'quiz.generating': 'Generating questions with AI…',
   'quiz.loadError': "Couldn't load the quiz",
+  'quiz.retentionLoadError': "Couldn't prepare this memory check.",
   'quiz.backToDashboard': 'Back to dashboard',
   'quiz.backToSubject': 'Back to subject',
   'quiz.results': 'Results',
@@ -3192,6 +3194,7 @@ const de: Messages = {
   'notifications.emptyBody': 'Hier siehst du Hinweise zu ausstehenden Wiederholungen und Fortschritt.',
   'quiz.generating': 'Fragen werden mit KI generiert…',
   'quiz.loadError': 'Quiz konnte nicht geladen werden',
+  'quiz.retentionLoadError': 'Diese Gedächtnisprüfung konnte nicht vorbereitet werden.',
   'quiz.backToDashboard': 'Zurück zur Übersicht',
   'quiz.backToSubject': 'Zurück zum Fach',
   'quiz.results': 'Ergebnisse',
@@ -4258,6 +4261,7 @@ const fr: Messages = {
   'notifications.emptyBody': 'Vous verrez ici les alertes de révision et vos progrès récents.',
   'quiz.generating': "Génération des questions par l'IA…",
   'quiz.loadError': 'Impossible de charger le quiz',
+  'quiz.retentionLoadError': "Nous n'avons pas pu préparer ce contrôle de mémorisation.",
   'quiz.backToDashboard': 'Retour au tableau de bord',
   'quiz.backToSubject': 'Retour à la matière',
   'quiz.results': 'Résultats',
@@ -5324,6 +5328,7 @@ const pt: Messages = {
   'notifications.emptyBody': 'Aqui você verá avisos sobre revisões pendentes e progresso recente.',
   'quiz.generating': 'Gerando perguntas com IA…',
   'quiz.loadError': 'Não foi possível carregar o quiz',
+  'quiz.retentionLoadError': 'Não conseguimos preparar esta verificação de memória.',
   'quiz.backToDashboard': 'Voltar ao painel',
   'quiz.backToSubject': 'Voltar à matéria',
   'quiz.results': 'Resultados',

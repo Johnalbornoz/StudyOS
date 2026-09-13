@@ -39,7 +39,7 @@ const UnifiedResponseComposer = dynamic(() => import('@/components/UnifiedRespon
 import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/interaction-contract';
 import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
-import { isMathAnswerContext } from '@/lib/lx/math-response-contract';
+import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
@@ -1194,7 +1194,7 @@ function QuizPageContent() {
                       responseKind={resumeContract.kind}
                       activityLanguageContext={activityLanguageContext}
                       voiceEnabled={resumeIc.inputModes.includes('VOICE')}
-                      mathEnabled={isMathAnswerContext(subjectName, resumeContract.kind)}
+                      mathEnabled={isMathCapableContext(subjectName)}
                       studentId={studentId}
                       conceptId={conceptId ?? undefined}
                       activityType="retention_verification"
@@ -1313,15 +1313,37 @@ function QuizPageContent() {
   }
 
   if (phase === 'error') {
+    // RET-R3 B9: a bounded-generation failure (e.g. Retention closing
+    // insufficient after a full recovery attempt, per RETENTION_INSUFFICIENT_ACCEPTED_QUESTIONS)
+    // is a RECOVERABLE, learner-safe state, not a dead end -- the raw
+    // technical error string (e.g. "Failed to generate quiz questions")
+    // is never shown to the learner; ONE calm, mode-aware headline is,
+    // matching the SAME copy pattern `modeLabel`/`modeDesc` already use
+    // elsewhere in this file (no separate Retention error design/
+    // component -- this is the SAME error card every quiz-generation
+    // failure already used, just with mode-aware copy and an added
+    // retry). "Try again" reuses the pre-existing, previously-unused
+    // `activeLearning.tryAgain` label and simply re-invokes the SAME
+    // `generateQuiz` this page already calls from four other places --
+    // no new generation path. Nothing implies prior learner progress
+    // was lost, because none was: this failure can only occur before
+    // the first question is ever shown.
+    const isRetentionFailure = quizMode === 'retention_check';
     return (
       <div>
         <div className="card empty-state" style={{ color: 'var(--error)' }}>
-          <strong>{at['quiz.loadError']}</strong>
-          {error}
+          <strong>{isRetentionFailure ? at['quiz.retentionLoadError'] : at['quiz.loadError']}</strong>
         </div>
-        <Link href="/dashboard" className="btn btn-secondary" style={{ marginTop: 'var(--space-4)' }}>
-          {at['quiz.backToDashboard']}
-        </Link>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+          {studentId && (
+            <button className="btn btn-primary" onClick={() => generateQuiz(studentId)}>
+              {at['activeLearning.tryAgain']}
+            </button>
+          )}
+          <Link href="/dashboard" className="btn btn-secondary">
+            {at['quiz.backToDashboard']}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -1580,7 +1602,7 @@ function QuizPageContent() {
                           responseKind={vContract.kind}
                           activityLanguageContext={activityLanguageContext}
                           voiceEnabled={vIc.inputModes.includes('VOICE')}
-                          mathEnabled={isMathAnswerContext(subjectName, vContract.kind)}
+                          mathEnabled={isMathCapableContext(subjectName)}
                           studentId={studentId}
                           conceptId={v.conceptId}
                           activityType="assessment_verification"
@@ -2022,28 +2044,32 @@ function QuizPageContent() {
 
         {q.answerFormat === 'text' && (
           <div>
-            {/* LX-8R3 R1/R7: ONE response surface -- prose, structured
-                math, or any mix, in the order the learner writes them --
-                replacing the old "math final-answer box PLUS a separate
-                reasoning box" two-editor UX. `responseContract.kind`
-                selects the ONE instruction line (R7); it is never used
-                to render two boxes. `textAnswer` now holds the FULL
-                serialized ResponseDocument (response-document.ts),
-                still the one string `encodeCurrentAnswer`/`canProceed`
-                read -- `mathEnabled` (isMathAnswerContext, the ONE
-                shared classifier) decides only whether a math block/
-                keyboard is ever offered within this same composer,
-                never which of two composers renders (R16: the same
-                component operates prose-only when false). Voice
-                eligibility remains the ONE interactionContract
-                authority (ic.inputModes). */}
+            {/* LX-8R3/LX-8R4 R1/R7/A2: ONE response surface -- prose,
+                structured math, or any mix, in the order the learner
+                writes them -- replacing the old "math final-answer box
+                PLUS a separate reasoning box" two-editor UX.
+                `responseContract.kind` selects the ONE instruction line
+                (R7) only -- it is NEVER used to decide math capability
+                (LX-8R4 A2: evidence kind and math-entry capability are
+                separate axes; a JUSTIFY/EXPLAIN ask in a math subject
+                still gets the math affordance). `textAnswer` now holds
+                the FULL serialized ResponseDocument (response-
+                document.ts), still the one string
+                `encodeCurrentAnswer`/`canProceed` read --
+                `isMathCapableContext` (the ONE shared capability
+                classifier, subject-only, no kind parameter) decides
+                only whether a math block/keyboard is ever offered
+                within this same composer, never which of two composers
+                renders (R16: the same component operates prose-only
+                when false). Voice eligibility remains the ONE
+                interactionContract authority (ic.inputModes). */}
             <UnifiedResponseComposer
               value={textAnswer}
               onChange={setTextAnswer}
               responseKind={responseContract.kind}
               activityLanguageContext={activityLanguageContext}
               voiceEnabled={ic.inputModes.includes('VOICE')}
-              mathEnabled={isMathAnswerContext(subjectName, responseContract.kind)}
+              mathEnabled={isMathCapableContext(subjectName)}
               studentId={studentId}
               conceptId={conceptId ?? undefined}
               activityType={quizMode}

@@ -5,7 +5,7 @@
  * test in this suite) covering the original required 24-item test
  * matrix: every learner-facing surface that offers a mathematical
  * final answer renders the SAME canonical composer, gated by the SAME
- * shared isMathAnswerContext classifier, with no route-specific math
+ * shared isMathCapableContext classifier, with no route-specific math
  * eligibility or serialization duplicated anywhere.
  *
  * LX-8R3 superseded this phase's OWN composer (`MathResponseComposer`,
@@ -90,15 +90,15 @@ describe('LX-8R2-R1/LX-8R3 R2 -- UnifiedResponseComposer is the one canonical co
  * R3 -- MIGRATE RETENTION/VERIFICATION.                              *
  * ================================================================ */
 describe('LX-8R2-R1 R3 -- Retention resume and Assessment verification are migrated, no eligibility logic duplicated', () => {
-  it('required test 2: the Retention resume-verification branch renders UnifiedResponseComposer, math-enabled via isMathAnswerContext', () => {
+  it('required test 2: the Retention resume-verification branch renders UnifiedResponseComposer, math-enabled via isMathCapableContext (subject-only, LX-8R4)', () => {
     const resumeBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf('if (resumeVerifyAttemptId)'), QUIZ_PAGE_SRC.indexOf("if (phase === 'setup' && isCanonicalFlow)"));
-    expect(resumeBlock).toMatch(/mathEnabled=\{isMathAnswerContext\(subjectName, resumeContract\.kind\)\}/);
+    expect(resumeBlock).toMatch(/mathEnabled=\{isMathCapableContext\(subjectName\)\}/);
     expect(resumeBlock).toMatch(/<UnifiedResponseComposer/);
   });
 
-  it('required test 3: the inline post-quiz Assessment verification list renders UnifiedResponseComposer, math-enabled via isMathAnswerContext', () => {
+  it('required test 3: the inline post-quiz Assessment verification list renders UnifiedResponseComposer, math-enabled via isMathCapableContext (subject-only, LX-8R4)', () => {
     const verifyBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf('results.verificationNeeded ||'), QUIZ_PAGE_SRC.indexOf('results.verificationNeeded ||') + 5000);
-    expect(verifyBlock).toMatch(/mathEnabled=\{isMathAnswerContext\(subjectName, vContract\.kind\)\}/);
+    expect(verifyBlock).toMatch(/mathEnabled=\{isMathCapableContext\(subjectName\)\}/);
     expect(verifyBlock).toMatch(/<UnifiedResponseComposer/);
   });
 
@@ -111,9 +111,9 @@ describe('LX-8R2-R1 R3 -- Retention resume and Assessment verification are migra
     expect(verifyBlock).toMatch(/buildInteractionContract\(\{/);
   });
 
-  it('required test 18: no route-specific math-eligibility duplication -- isMathAnswerContext is imported once from the shared module, never re-declared in quiz/page.tsx', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/import \{ isMathAnswerContext \} from '@\/lib\/lx\/math-response-contract'/);
-    expect(QUIZ_PAGE_SRC).not.toMatch(/function isMathAnswerContext/);
+  it('required test 18: no route-specific math-eligibility duplication -- isMathCapableContext is imported once from the shared module, never re-declared in quiz/page.tsx', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/import \{ isMathCapableContext \} from '@\/lib\/lx\/math-response-contract'/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/function isMathCapableContext/);
   });
 
   it('required test 22/23: RET-R2 is untouched -- the canonical Retention published count remains exactly 6', () => {
@@ -167,9 +167,9 @@ describe('LX-8R2-R1/LX-8R3 R6 -- ResponseEvidenceContract remains the sole autho
     expect(textBlock.match(/<UnifiedResponseComposer/g)?.length).toBe(1);
   });
 
-  it('isMathAnswerContext excludes EXPLAIN -- prose response unless the canonical question explicitly requires a mathematical final answer via a stronger kind (ANSWER_ONLY/SHOW_WORK)', () => {
-    const fnSrc = CONTRACT_SRC.slice(CONTRACT_SRC.indexOf('export function isMathAnswerContext'), CONTRACT_SRC.indexOf('export function isMathAnswerContext') + 400);
-    expect(fnSrc).toMatch(/kind !== 'EXPLAIN'/);
+  it('LX-8R4: isMathCapableContext no longer excludes any kind -- it is a pure subject/domain signal with no kind parameter at all', () => {
+    const fnSrc = CONTRACT_SRC.slice(CONTRACT_SRC.indexOf('export function isMathCapableContext'), CONTRACT_SRC.indexOf('export function isMathCapableContext') + 300);
+    expect(fnSrc).not.toMatch(/kind/);
   });
 });
 
@@ -217,16 +217,16 @@ describe('LX-8R2-R1 R8 -- one canonical MathResponse serialization across every 
 /* ================================================================ *
  * R9 -- SOURCE AUTHORITY for "is this math?"                        *
  * ================================================================ */
-describe('LX-8R2-R1 R9 -- isMathAnswerContext is the ONE shared classifier, documented as presentation only', () => {
-  it('required test 17: isMathAnswerContext is defined exactly once, in math-response-contract.ts', () => {
-    expect(CONTRACT_SRC.match(/export function isMathAnswerContext/g)?.length).toBe(1);
-    expect(QUIZ_PAGE_SRC).not.toMatch(/function isMathAnswerContext/);
+describe('LX-8R2-R1 R9 -- isMathCapableContext is the ONE shared classifier, documented as presentation capability only', () => {
+  it('required test 17: isMathCapableContext is defined exactly once, in math-response-contract.ts', () => {
+    expect(CONTRACT_SRC.match(/export function isMathCapableContext/g)?.length).toBe(1);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/function isMathCapableContext/);
   });
 
   it('documented explicitly as presentation classification, not pedagogical authority', () => {
     const rawContractSrc = read('src/lib/lx/math-response-contract.ts');
-    const fnDoc = rawContractSrc.slice(rawContractSrc.indexOf('LX-8R2-R1 R9 --'), rawContractSrc.indexOf('export function isMathAnswerContext'));
-    expect(fnDoc).toMatch(/PRESENTATION CLASSIFICATION ONLY/);
+    const fnDoc = rawContractSrc.slice(rawContractSrc.indexOf('LX-8R4 A1-A4 --'), rawContractSrc.indexOf('export function isMathCapableContext'));
+    expect(fnDoc).toMatch(/PRESENTATION CAPABILITY CLASSIFICATION ONLY/);
   });
 
   it('still gated on inferMathToolbarSubject -- no additional/parallel subject-detection heuristic was introduced', () => {
@@ -234,7 +234,7 @@ describe('LX-8R2-R1 R9 -- isMathAnswerContext is the ONE shared classifier, docu
   });
 
   it('all three quiz-page call sites (main quiz, resume, inline verification) import and call the SAME function -- never three copies', () => {
-    expect(QUIZ_PAGE_SRC.match(/isMathAnswerContext\(subjectName,/g)?.length).toBe(3);
+    expect(QUIZ_PAGE_SRC.match(/isMathCapableContext\(subjectName\)/g)?.length).toBe(3);
   });
 });
 
@@ -258,7 +258,7 @@ describe('LX-8R2-R1 R10 -- parser grammar contract is visible in code and fails 
 describe('LX-8R2-R1 -- remaining required-test items', () => {
   it('required test 1: main quiz mathematical ANSWER_ONLY uses UnifiedResponseComposer with mathEnabled true (same gate as SHOW_WORK/JUSTIFY, applies regardless of quizMode/PRACTICE vs Prove)', () => {
     const block = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
-    expect(block).toMatch(/mathEnabled=\{isMathAnswerContext\(subjectName, responseContract\.kind\)\}/);
+    expect(block).toMatch(/mathEnabled=\{isMathCapableContext\(subjectName\)\}/);
     // Not gated by PRACTICE_EVIDENCE_MODES/quizMode at all -- applies identically whether the
     // active attempt is Practice or Prove (isProveMode), satisfying required test 5.
     expect(block).not.toMatch(/PRACTICE_EVIDENCE_MODES/);

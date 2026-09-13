@@ -201,43 +201,58 @@ describe('RET-R2 tests 5-6 -- every published question passed the universal gate
 });
 
 /* ================================================================ *
- * 7 -- duplicate candidates never inflate the count.                *
+ * 7 -- duplicate candidates never inflate the count, AND (RET-R3 B4) *
+ * never take an unrelated, unique sibling down with them.            *
  * ================================================================ */
-describe('RET-R2 test 7 -- an exact duplicate between the two initial chunks never inflates or double-publishes a question', () => {
-  it('7. chunk A/B share a duplicate question -> whole Chunk B is discarded (pre-gate, RET-R1-established rule, unchanged by RET-R2), Chunk A retained, deficit covered by surplus-sized recovery, final published set contains the shared text only once', async () => {
+describe('RET-R2/RET-R3 test 7 -- an exact duplicate between the two initial chunks is filtered per-question, never inflates the count, and never discards an unrelated unique sibling', () => {
+  it('7. chunk A/B share ONE duplicate question out of 8 -> only that one candidate is dropped (RET-R3 B4: never the whole chunk); the other 7 unique candidates all survive, comfortably covering 6 with no recovery call at all', async () => {
     const chunkA = batch([fakeQuestion(0, { question: 'Duplicate text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
     const chunkB = batch([fakeQuestion(10, { question: 'Duplicate text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
-    // Chunk A (4) retained whole; deficit = 6 - 4 = 2 -> recoveryCandidateCount(2) === 4.
-    const recovery = cleanChunkText(20, 4);
-    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: recovery }]);
+    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }]);
     const result = await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
+    expect(executeAIMock).toHaveBeenCalledTimes(2); // no recovery -- 7 unique already clears the deficit
     expect(result).toHaveLength(6);
     const texts = result.map((q) => q.question);
-    expect(texts.filter((t) => t === 'Duplicate text')).toHaveLength(1);
-    // None of discarded Chunk B's other (non-colliding) questions leak into the final set either -- the whole chunk is gone.
-    expect(texts).not.toContain('Q11');
+    expect(texts.filter((t) => t === 'Duplicate text')).toHaveLength(1); // never published twice
+    // RET-R3 B4 fix, in contrast to the old whole-chunk-discard rule: Chunk B's
+    // OTHER (non-colliding) questions DO survive -- the whole chunk is never gone.
+    expect(texts).toContain('Q11');
   });
 });
 
 /* ================================================================ *
- * 8-9 -- deficit is computed strictly from the retained/gated set,  *
- * not from the raw 8-candidate request volume.                     *
+ * 8-9 -- deficit is computed strictly from the retained/gated/       *
+ * deduped set, not from the raw 8-candidate request volume, and      *
+ * (RET-R3 B4) the gate always sees the TRUE merged candidate volume  *
+ * -- never an artificially-reduced pre-gate chunk discard.           *
  * ================================================================ */
-describe('RET-R2 tests 8-9 -- deficit reflects the actually-retained, gated candidate count, never the raw 8-candidate request volume', () => {
-  it('8. a chunk-level collision discards Chunk B entirely -- deficit is computed from Chunk A alone (4), not from the 8 originally requested', async () => {
+describe('RET-R2/RET-R3 tests 8-9 -- deficit reflects the actually-accepted-and-deduped count; the gate itself always sees the full merged pool', () => {
+  it('8. a single cross-chunk collision does not discard anything pre-gate -- the gate sees all 8 merged candidates, and one post-gate duplicate leaves 7 unique accepted, no deficit at all', async () => {
     const chunkA = batch([fakeQuestion(0, { question: 'Duplicate text' }), fakeQuestion(1), fakeQuestion(2), fakeQuestion(3)]);
     const chunkB = batch([fakeQuestion(10, { question: 'Duplicate text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
-    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }, { text: cleanChunkText(20, 4) }]);
+    wireRealisticExecuteAI([{ text: chunkA }, { text: chunkB }]);
     await generateRetentionCheckQuestions('c1', 's1', 'subj1', {});
     const gateEvent = retentionEvents().find((e) => e.label === 'RETENTION_INITIAL_GATE_COMPLETE')!;
-    expect(gateEvent.generatedCount).toBe(4); // Chunk A alone, never the raw 8 requested
-    const deficitEvent = retentionEvents().find((e) => e.label === 'RETENTION_DEFICIT_IDENTIFIED')!;
-    expect(deficitEvent.deficit).toBe(2);
+    expect(gateEvent.generatedCount).toBe(8); // RET-R3 B4: both chunks merged whole, never a pre-gate discard down to 4
+    expect(gateEvent.acceptedCount).toBe(7); // 8 gated, minus the 1 post-gate exact-duplicate collapse
+    expect((gateEvent.rejectionReasons as Record<string, number>).DUPLICATE_OF_ACCEPTED).toBe(1); // safe, named category -- never conflated with a semantic/schema rejection
+    expect(retentionEvents().some((e) => e.label === 'RETENTION_DEFICIT_IDENTIFIED')).toBe(false); // 7 unique already clears 6
   });
 
-  it('9. a recovery candidate that exactly duplicates an already-accepted (retained) question is filtered by dedupeAgainstAccepted, never inflating the final set past 6', async () => {
-    const chunkA = batch([fakeQuestion(0, { question: 'Duplicate text' }), fakeQuestion(1, { question: 'Kept unique question' }), fakeQuestion(2), fakeQuestion(3)]);
-    const chunkB = batch([fakeQuestion(10, { question: 'Duplicate text' }), fakeQuestion(11), fakeQuestion(12), fakeQuestion(13)]);
+  it('9. when enough collisions DO produce a real deficit, a recovery candidate that exactly duplicates an already-accepted (retained) question is filtered by dedupeAgainstAccepted, never inflating the final set past 6', async () => {
+    // All 4 pairs collide (RET-R3 B4's own reproduction pattern) -> 4 unique accepted, deficit = 2.
+    const chunkA = batch([
+      fakeQuestion(0, { question: 'Group 1' }),
+      fakeQuestion(1, { question: 'Kept unique question' }),
+      fakeQuestion(2, { question: 'Group 3' }),
+      fakeQuestion(3, { question: 'Group 4' }),
+    ]);
+    const chunkB = batch([
+      fakeQuestion(10, { question: 'Group 1' }),
+      fakeQuestion(11, { question: 'Kept unique question' }),
+      fakeQuestion(12, { question: 'Group 3' }),
+      fakeQuestion(13, { question: 'Group 4' }),
+    ]);
     // deficit = 2 -> recoveryCandidateCount(2) === 4; one of the 4 recovery candidates duplicates a retained Chunk-A question exactly.
     const recovery = batch([
       fakeQuestion(20, { question: 'Kept unique question' }), // filtered: duplicates an already-accepted question

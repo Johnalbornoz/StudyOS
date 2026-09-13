@@ -18,20 +18,23 @@
  * supplies exactly that string; this module adds no new grading path
  * and does not touch `gradeAnswer`/`gradeStructuredAnswer` themselves.
  *
- * LX-8R2-R1 -- moved here from quiz/page.tsx: `isMathAnswerContext`
- * (the ONE shared "should this final-answer surface be the structured
- * math composer?" classifier) and the storage-string wrap/unwrap
- * helpers, so every learner-facing surface (main quiz, Retention
- * resume, inline Assessment verification, and any future one) imports
- * the SAME functions instead of each re-deriving its own copy. This
- * module still owns NO pedagogical authority: `isMathAnswerContext`
- * decides which INPUT WIDGET renders, nothing about correctness,
- * mastery, EvidenceMode, or SupportLevel (those stay entirely with
- * ResponseEvidenceContract / activity-taxonomy / adaptive-teaching-
- * policy, untouched by this file).
+ * LX-8R2-R1 -- moved here from quiz/page.tsx: `isMathCapableContext`
+ * (LX-8R4: renamed from `isMathAnswerContext` -- see that function's
+ * own doc comment for why) (the ONE shared "is math notation an
+ * appropriate input capability here?" classifier) and the
+ * storage-string wrap/unwrap helpers, so every learner-facing surface
+ * (main quiz, Retention resume, inline Assessment verification, and
+ * any future one) imports the SAME functions instead of each
+ * re-deriving its own copy. This module still owns NO pedagogical
+ * authority: `isMathCapableContext` decides which INPUT AFFORDANCE is
+ * offered, nothing about correctness, mastery, EvidenceMode, or
+ * SupportLevel (those stay entirely with ResponseEvidenceContract /
+ * activity-taxonomy / adaptive-teaching-policy, untouched by this
+ * file) -- and, as of LX-8R4, nothing about what evidence KIND the
+ * question demands either (math capability and evidence requirement
+ * are separate axes; see `isMathCapableContext`'s own comment).
  */
 import { inferMathToolbarSubject } from '@/lib/math-toolbar-config';
-import type { EvidenceRequirementKind } from './response-evidence-contract';
 
 /**
  * `latex` is the ONE authoritative representation -- what the
@@ -68,36 +71,50 @@ export function isEmptyMathResponse(response: MathResponse | null | undefined): 
 }
 
 /**
- * LX-8R2-R1 R9 -- THE ONE shared classifier for "should this
- * final-answer box be the structured Math Response Composer instead of
- * a plain prose editor?" Gated on the SAME pre-existing, non-adaptive
+ * LX-8R4 A1-A4 -- THE ONE shared MATH-CAPABILITY authority: "is
+ * structured mathematical notation an appropriate INPUT CAPABILITY for
+ * this question/context?" Gated on the SAME pre-existing, non-adaptive
  * subject heuristic `inferMathToolbarSubject` already used (since
  * before LX-8R2) to prioritize toolbar buttons -- never a new
  * classifier, never a second copy of this decision anywhere else in
- * the codebase. Every learner-facing surface that offers a
- * mathematical final answer (main quiz, Retention resume,
+ * the codebase. Every learner-facing surface that offers `mathEnabled`
+ * to `UnifiedResponseComposer` (main quiz, Retention resume,
  * verification) must import and call THIS function, never re-derive
  * its own version.
  *
- * This is PRESENTATION CLASSIFICATION ONLY -- it decides which INPUT
- * WIDGET renders. It has no bearing on, and must never be extended to
- * decide, correctness, mastery, EvidenceMode, SupportLevel, or which
- * activity comes next. Those stay entirely owned by
- * ResponseEvidenceContract / activity-taxonomy / adaptive-teaching-
- * policy.
+ * This is PRESENTATION CAPABILITY CLASSIFICATION ONLY -- it decides
+ * whether the math block/keyboard affordance is OFFERED. It has no
+ * bearing on, and must never be extended to decide, correctness,
+ * mastery, EvidenceMode, SupportLevel, or which activity comes next.
+ * Those stay entirely owned by ResponseEvidenceContract /
+ * activity-taxonomy / adaptive-teaching-policy.
  *
- * Excludes EXPLAIN/JUSTIFY-kind questions (case_study, scenario,
- * comparison, justification, error_detection, prediction, open_ended)
- * even in a math subject, since those ask for verbal reasoning/defense
- * of a claim, not a computed expression -- a math-only structured
- * field cannot hold flowing prose. Matches the LX-8R2 spec's own R8/R6
- * examples: ANSWER_ONLY/SHOW_WORK/JUSTIFY get the math composer;
- * EXPLAIN keeps prose (which may still use the plain-text editor's own
- * inline math-symbol toolbar for an occasional inline expression).
+ * LX-8R4 A1/A2 ROOT-CAUSE REPAIR (do not reintroduce): this function
+ * used to also take the question's `ResponseEvidenceContract.kind` and
+ * deny math capability for EXPLAIN/JUSTIFY, on the theory that those
+ * "ask for prose, not a computed expression." Live QA proved this
+ * wrong: a JUSTIFY-kind question in a math subject ("identify the
+ * error in this exponent expression and explain the correct
+ * simplification") is EXACTLY the kind of question where a learner
+ * needs to write both an expression and prose -- denying math there
+ * silently forced the mathematical part of the answer into plain text.
+ * MATHEMATICAL-ENTRY CAPABILITY and EVIDENCE REQUIREMENT are separate
+ * axes (A2): `kind` may change what instruction text
+ * `UnifiedResponseComposer` shows (`responseInstructionKey`) and what
+ * the grader ultimately requires, but it must NEVER gate whether math
+ * notation is available to express that answer. This function
+ * therefore reads ONLY the subject/domain signal -- no `kind`
+ * parameter exists, so there is no way to reintroduce this coupling by
+ * accident at a call site.
+ *
+ * No stronger question-level math-domain signal exists on
+ * `GeneratedQuestion` today (audited: no `subjectDomain`/math flag) --
+ * `inferMathToolbarSubject`'s subject-name heuristic remains the best
+ * available signal (A4) and is reused here rather than replaced.
  */
-export function isMathAnswerContext(subjectName: string | undefined, kind: EvidenceRequirementKind): boolean {
+export function isMathCapableContext(subjectName: string | undefined): boolean {
   const subject = inferMathToolbarSubject(subjectName);
-  return (subject === 'mathematics' || subject === 'physics') && kind !== 'EXPLAIN' && kind !== 'JUSTIFY';
+  return subject === 'mathematics' || subject === 'physics';
 }
 
 /**

@@ -1179,24 +1179,13 @@ export function computeRetentionStructuralFingerprint(
   const shape = spans.map(retentionSymbolicShape).sort().join('||');
   return [conceptId, question.type ?? '?', shape, question.cognitiveLevel ?? '?', question.questionIntent ?? '?'].join('::');
 }
-function retentionStructuralOverlapGroupCount(questions: any[], conceptId: string): number {
-  const groups = new Map<string, number>();
-  for (const q of questions) {
-    const key = computeRetentionStructuralFingerprint(q, conceptId);
-    if (key === null) continue;
-    groups.set(key, (groups.get(key) || 0) + 1);
-  }
-  return [...groups.values()].filter((n) => n > 1).length;
-}
-function retentionHasExactDuplicate(questions: any[]): boolean {
-  const seen = new Set<string>();
-  for (const q of questions) {
-    const key = normalizeText(q.question).toLowerCase();
-    if (seen.has(key)) return true;
-    seen.add(key);
-  }
-  return false;
-}
+// RET-R3 B4: the whole-chunk collision functions that used to live here
+// (`retentionHasExactDuplicate`/`retentionStructuralOverlapGroupCount`,
+// which decided "discard ALL of Chunk B" on a single collision) were
+// REMOVED -- see `dedupeAgainstAccepted` below, now applied per-question
+// to the MERGED initial candidate pool instead. Deleted, not merely
+// unused: keeping a dead whole-chunk-discard code path around would
+// invite it being wired back in by accident.
 /** Only the retained chunk's own question text -- never correctAnswer, explanation, or any learner/evidence/mastery data. */
 function buildRetentionExclusionNote(retainedQuestions: any[]): string {
   return `Generate a different set of questions, examples, and mathematical structures from the ones already selected below for this same retention check -- do not repeat the same problem, example, structure, or wording as any of these:\n${retainedQuestions
@@ -1204,32 +1193,59 @@ function buildRetentionExclusionNote(retainedQuestions: any[]): string {
     .join('\n')}`;
 }
 
+/** RET-R3 B2: safe aggregate counts of what `dedupeAgainstAccepted` dropped and why -- never question text. */
+export interface RetentionDedupeResult {
+  kept: GeneratedQuestion[];
+  /** Candidates dropped for exactly matching (after normalization) the text of something already accepted/kept. */
+  exactDuplicateCount: number;
+  /** Candidates dropped for sharing a structural fingerprint with something already accepted/kept (same shape, different surface numbers). */
+  structuralOverlapCount: number;
+}
+
 /**
- * RET-R1: per-question dedup of candidate replacements against the
- * questions already accepted (and against each other) -- the SAME
- * retention fingerprint/exact-text authority used everywhere else in
- * this fast path (`normalizeText` + `computeRetentionStructuralFingerprint`),
- * just applied per question instead of as a whole-chunk group count. A
- * candidate that duplicates (exactly or structurally) anything already
- * accepted is dropped; it never causes a sibling candidate that IS
- * unique to be discarded too.
+ * RET-R1, extended RET-R3 B4/B5: per-question dedup of candidates
+ * against the questions already accepted (and against each other) --
+ * the SAME retention fingerprint/exact-text authority used everywhere
+ * else in this fast path (`normalizeText` +
+ * `computeRetentionStructuralFingerprint`). A candidate that duplicates
+ * (exactly or structurally) anything already accepted is dropped; it
+ * NEVER causes a sibling candidate that IS unique to be discarded too
+ * (RET-R3 B4: this replaced the old whole-chunk-discard rule, which
+ * could throw away 3-4 otherwise-valid candidates over a single
+ * collision -- see `generateRetentionCheckQuestions`'s own comment on
+ * its initial-wave merge for where this is now applied).
+ *
+ * Order matters for reproducibility (RET-R2 R3's "existing
+ * deterministic order" requirement, unchanged): `candidates` are
+ * scanned in their given order, and only the FIRST occurrence of a
+ * given text/fingerprint is kept -- so which of two colliding
+ * candidates survives is a pure function of input order, never a
+ * content-based or random choice.
  */
-function dedupeAgainstAccepted(candidates: GeneratedQuestion[], accepted: GeneratedQuestion[], conceptId: string): GeneratedQuestion[] {
+function dedupeAgainstAccepted(candidates: GeneratedQuestion[], accepted: GeneratedQuestion[], conceptId: string): RetentionDedupeResult {
   const usedTextKeys = new Set(accepted.map((q) => normalizeText(q.question).toLowerCase()));
   const usedFingerprints = new Set(
     accepted.map((q) => computeRetentionStructuralFingerprint(q, conceptId)).filter((f): f is string => f !== null)
   );
   const kept: GeneratedQuestion[] = [];
+  let exactDuplicateCount = 0;
+  let structuralOverlapCount = 0;
   for (const q of candidates) {
     const textKey = normalizeText(q.question).toLowerCase();
-    if (usedTextKeys.has(textKey)) continue;
+    if (usedTextKeys.has(textKey)) {
+      exactDuplicateCount += 1;
+      continue;
+    }
     const fingerprint = computeRetentionStructuralFingerprint(q, conceptId);
-    if (fingerprint !== null && usedFingerprints.has(fingerprint)) continue;
+    if (fingerprint !== null && usedFingerprints.has(fingerprint)) {
+      structuralOverlapCount += 1;
+      continue;
+    }
     usedTextKeys.add(textKey);
     if (fingerprint !== null) usedFingerprints.add(fingerprint);
     kept.push(q);
   }
-  return kept;
+  return { kept, exactDuplicateCount, structuralOverlapCount };
 }
 
 /** RET-R1 A9: safe, learner/question-content-free observability -- one line per retention generation event. */
@@ -1398,14 +1414,31 @@ ${shapeExamples}
       });
     }
 
-    // RET-R1: which RAW chunk(s) to gate, and -- only if a recovery
-    // round later turns out to be needed -- which note/slot that
-    // recovery call should use. The two ALL-OR-NOTHING cases below (a
-    // chunk that never generated at all, or two chunks whose raw
-    // text/structure collide) are UNCHANGED from before this repair:
-    // collision-driven whole-chunk discarding was never the live bug
-    // (see A1) -- Quality Gate rejection discarding an otherwise-valid
-    // sibling question was.
+    // RET-R1, REPAIRED RET-R3 B4: which RAW chunk(s) to gate, and --
+    // only if a recovery round later turns out to be needed -- which
+    // note/slot that recovery call should use.
+    //
+    // RET-R3 B4 ROOT-CAUSE REPAIR (do not reintroduce): this used to
+    // ALSO classify "both chunks valid" candidates for an exact
+    // duplicate or structural overlap BETWEEN the two chunks and, on
+    // any single collision, discard the ENTIRE losing chunk (3-4
+    // otherwise-valid candidates) to keep the other one whole. Audited
+    // as the most likely remaining cause of live "Couldn't load the
+    // quiz" failures: with RET-R2's 4-candidates-per-chunk sizing, one
+    // collision between the two chunks (plausible for a concept with a
+    // small number of natural problem shapes, even with the
+    // diversification notes) silently cut the effective candidate pool
+    // from 8 to 4 -- destroying most of RET-R2's own surplus before the
+    // Quality Gate even ran. Per RET-R1's own founding principle
+    // ("preserve good questions; remove only bad/duplicate ones"),
+    // extended here to duplicates: a duplicate/overlapping candidate
+    // must never take an unrelated, unique sibling down with it. Both
+    // chunks (when both succeed) are therefore always MERGED whole;
+    // per-question dedup (`dedupeAgainstAccepted`, RET-R1's existing
+    // recovery-wave authority, now reused here) runs AFTER the Quality
+    // Gate below (RET-R3 B5: gate first, dedupe second -- the existing
+    // canonical order, unchanged) and drops only the specific
+    // colliding candidate(s), never a whole chunk.
     let rawBaseline: any[];
     let recoveryNote: string;
     let recoverySlotIndex: 0 | 1;
@@ -1423,20 +1456,15 @@ ${shapeExamples}
         recoverySlotIndex = 1;
       }
     } else {
-      // Both chunks valid -- classify in order: exact duplicate, then
-      // strict structural overlap.
-      const merged = [...chunkA.questions, ...chunkB.questions];
-      if (retentionHasExactDuplicate(merged) || retentionStructuralOverlapGroupCount(merged, conceptId) > 0) {
-        // Rule 6A, deterministic: always keep Chunk A, always
-        // regenerate Chunk B -- never by content or learner data.
-        rawBaseline = chunkA.questions;
-        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
-        recoverySlotIndex = 1;
-      } else {
-        rawBaseline = merged;
-        recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
-        recoverySlotIndex = 1;
-      }
+      // Both chunks valid -- always merge whole; collisions (if any)
+      // are resolved per-question, post-gate, below -- never by
+      // discarding one entire chunk. The recovery note/slot for this
+      // branch is a fixed, deterministic default (never content- or
+      // collision-derived) since there is no longer a single "losing
+      // chunk" to target a replacement at.
+      rawBaseline = [...chunkA.questions, ...chunkB.questions];
+      recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
+      recoverySlotIndex = 1;
     }
 
     const mappedBaseline = mapRawQuestionsToGenerated(rawBaseline, conceptId, language);
@@ -1456,10 +1484,31 @@ ${shapeExamples}
     // removes only that one question -- an accepted sibling from the
     // same chunk is never discarded merely because another failed.
     const initialGate = await retentionApplyGate(mappedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
-    const acceptedUnique: GeneratedQuestion[] = [...initialGate.accepted];
+    // RET-R3 B4/B5: gate FIRST (above, unchanged authority), THEN
+    // per-question dedupe against an empty "already accepted" set --
+    // i.e. dedupe the gate's own accepted candidates against EACH
+    // OTHER (a duplicate/overlap can only ever exist between the two
+    // initial chunks now that both are always merged whole). Preserves
+    // every unique accepted candidate; only the specific colliding
+    // one(s) are dropped, never a whole chunk (B4). `dedupeAgainstAccepted`
+    // scans in the gate's own accepted order (Chunk A's accepted
+    // candidates first, then Chunk B's), so which of two colliding
+    // candidates survives is deterministic -- the SAME "existing
+    // deterministic order" guarantee RET-R2 R3 already established.
+    const initialDedupe = dedupeAgainstAccepted(initialGate.accepted, [], conceptId);
+    const acceptedUnique: GeneratedQuestion[] = [...initialDedupe.kept];
     const initialAcceptedCount = acceptedUnique.length;
     const initialRejectedCount = mappedBaseline.length - initialAcceptedCount;
-    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialGate.rejectionReasons });
+    // RET-R3 B2/B3: the gate's own rejectionReasons (accurate per-
+    // candidate classification, carried forward from the real decision
+    // authority -- never reconstructed) merged with the SEPARATE
+    // duplicate/structural-overlap counts this dedupe pass just
+    // computed, under their OWN distinct category names so a duplicate
+    // is never misreported as a semantic or schema rejection (B3).
+    const initialRejectionReasons: Record<string, number> = { ...initialGate.rejectionReasons };
+    if (initialDedupe.exactDuplicateCount > 0) initialRejectionReasons.DUPLICATE_OF_ACCEPTED = initialDedupe.exactDuplicateCount;
+    if (initialDedupe.structuralOverlapCount > 0) initialRejectionReasons.STRUCTURAL_OVERLAP_WITH_ACCEPTED = initialDedupe.structuralOverlapCount;
+    logRetention('RETENTION_INITIAL_GATE_COMPLETE', { generatedCount: mappedBaseline.length, acceptedCount: initialAcceptedCount, rejectedCount: initialRejectedCount, rejectionReasons: initialRejectionReasons });
 
     let replacementGeneratedCount = 0;
     let replacementAcceptedCount = 0;
@@ -1495,13 +1544,19 @@ ${shapeExamples}
         // unrelated, unique one (A3).
         const mappedRecovery = mapRawQuestionsToGenerated(recoveryOutcome.questions, conceptId, language);
         const recoveryGate = await retentionApplyGate(mappedRecovery, conceptId, language, studentId, subjectId, TERRA, true);
-        const uniqueReplacements = dedupeAgainstAccepted(recoveryGate.accepted, acceptedUnique, conceptId);
-        for (const q of uniqueReplacements) {
+        const recoveryDedupe = dedupeAgainstAccepted(recoveryGate.accepted, acceptedUnique, conceptId);
+        for (const q of recoveryDedupe.kept) {
           if (acceptedUnique.length >= RETENTION_REQUIRED_COUNT) break; // A5: never exceed the canonical count
           acceptedUnique.push(q);
         }
         replacementAcceptedCount = acceptedUnique.length - initialAcceptedCount;
-        logRetention('RETENTION_RECOVERY_GATE_COMPLETE', { generatedCount: mappedRecovery.length, acceptedCount: recoveryGate.accepted.length, rejectedCount: mappedRecovery.length - recoveryGate.accepted.length, rejectionReasons: recoveryGate.rejectionReasons });
+        // RET-R3 B2/B3: same merge as the initial-gate telemetry above --
+        // the gate's own accurate per-candidate reasons plus this
+        // dedupe pass's OWN duplicate/overlap counts, never conflated.
+        const recoveryRejectionReasons: Record<string, number> = { ...recoveryGate.rejectionReasons };
+        if (recoveryDedupe.exactDuplicateCount > 0) recoveryRejectionReasons.DUPLICATE_OF_ACCEPTED = recoveryDedupe.exactDuplicateCount;
+        if (recoveryDedupe.structuralOverlapCount > 0) recoveryRejectionReasons.STRUCTURAL_OVERLAP_WITH_ACCEPTED = recoveryDedupe.structuralOverlapCount;
+        logRetention('RETENTION_RECOVERY_GATE_COMPLETE', { generatedCount: mappedRecovery.length, acceptedCount: recoveryGate.accepted.length, rejectedCount: mappedRecovery.length - recoveryGate.accepted.length, rejectionReasons: recoveryRejectionReasons });
       }
 
       logRetention('RETENTION_RECOVERY_COMPLETE', { replacementGeneratedCount, replacementAcceptedCount, finalAcceptedCount: acceptedUnique.length });
