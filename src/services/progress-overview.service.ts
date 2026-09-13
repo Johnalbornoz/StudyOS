@@ -45,6 +45,19 @@ import {
   averageMasteryScore,
   type MasteryScore,
 } from '@/lib/mastery-format';
+// LX-9R1-R1: the SAME canonical journey authority the Subjects detail
+// page (subjects/[id]/page.tsx) and My Path (path-view.ts) already use
+// -- never a second stage/percentage engine. getSubjectHierarchy is the
+// concept UNIVERSE for a subject (every concept, regardless of whether
+// it has a mastery_records row yet -- unlike getStudentMastery below,
+// which only returns concepts that already have one and would silently
+// under-count a truly untouched concept out of the denominator).
+import { getSubjectHierarchy } from './topic-hierarchy.service';
+import { getLearningOSSnapshot } from './learning-os-snapshot.service';
+import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
+import { resolveConceptJourneyStage } from '@/lib/lx/path-view';
+import { averageJourneyProgress } from '@/lib/lx/journey-progress';
+import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 
 /** Same shape knowledgeKpis()/ConceptKnowledgeState use, so callers can pass this straight into the existing helper. */
 export interface DimensionScores {
@@ -74,6 +87,16 @@ export interface SubjectProgress {
   subjectId: string;
   subjectName: string;
   avgMasteryPercent: number | null;
+  /**
+   * LX-9R1-R1: the PRIMARY subject-level progress number -- the mean of
+   * this subject's EVERY concept's canonical LearnerJourneyStage
+   * (`resolveConceptJourneyStage` + `averageJourneyProgress`), never raw
+   * mastery. Denominator is every concept in the subject's hierarchy
+   * (`getSubjectHierarchy`), including ones with no mastery_records row
+   * yet (NOT_STARTED, 0%) -- never silently excluded. `avgMasteryPercent`
+   * above is UNCHANGED and remains available as a secondary metric.
+   */
+  journeyProgressPercent: number | null;
   conceptCount: number;
   validatedCount: number;
   concepts: ConceptProgress[];
@@ -88,6 +111,15 @@ export interface NeedsAttentionItem {
 
 export interface ProgressOverview {
   overallMasteryPercent: number | null;
+  /**
+   * LX-9R1-R1: the PRIMARY learner-wide progress number -- concept-
+   * weighted mean of EVERY concept's canonical journey stage across
+   * every active subject (never a mean of per-subject percentages,
+   * which would let a 1-concept subject weigh the same as a 20-concept
+   * one). `overallMasteryPercent` above is UNCHANGED and remains
+   * available as a secondary metric.
+   */
+  overallJourneyProgressPercent: number | null;
   capabilities: DimensionScores;
   achievements: AchievementCounts;
   subjects: SubjectProgress[];
@@ -110,10 +142,13 @@ interface ConceptWithRawMastery {
 }
 
 export async function getStudentProgressOverview(studentId: string, locale: string = 'en'): Promise<ProgressOverview> {
-  const [subjectsResult, policy, recurringMisconceptions] = await Promise.all([
+  const [subjectsResult, policy, recurringMisconceptions, snapshot] = await Promise.all([
     db.query(`SELECT id, name FROM subjects WHERE student_id = $1 AND status = 'active' ORDER BY created_at DESC`, [studentId]),
     getActiveMasteryPolicy(),
     getRecurringMisconceptions(studentId).catch(() => [] as RecurringMisconception[]),
+    // LX-9R1-R1: the SAME Phase 3E snapshot Today/My Path/the Subjects
+    // detail page already read -- never a subject-specific recomputation.
+    getLearningOSSnapshot(studentId, { preferredLanguage: locale }).catch(() => null),
   ]);
 
   const misconceptionsByConceptId = new Map<string, RecurringMisconception[]>();
@@ -123,14 +158,30 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
     misconceptionsByConceptId.set(m.conceptId, list);
   }
 
-  const subjectRows: { subject: SubjectProgress; rawMasteryScores: MasteryScore[] }[] = await Promise.all(
+  const subjectRows: { subject: SubjectProgress; rawMasteryScores: MasteryScore[]; journeyStages: LearnerJourneyStage[] }[] = await Promise.all(
     subjectsResult.rows.map(async (s: { id: string; name: string }) => {
-      const [masteryRows, knowledgeStates] = await Promise.all([
+      const [masteryRows, knowledgeStates, hierarchy] = await Promise.all([
         getStudentMastery(studentId, s.id, locale).catch(() => []),
         getSubjectKnowledgeState(studentId, s.id).catch(() => [] as ConceptKnowledgeState[]),
+        // LX-9R1-R1: the concept UNIVERSE for this subject -- every
+        // concept, including ones with no mastery_records row yet.
+        // getStudentMastery above (mastery_records-joined) would silently
+        // exclude a truly untouched concept from the denominator.
+        getSubjectHierarchy(s.id, studentId, locale).catch(() => ({ topics: [], unassigned: [] })),
       ]);
 
       const knowledgeStateByConceptId = new Map(knowledgeStates.map((k) => [k.conceptId, k]));
+
+      // LX-9R1-R1: this subject's canonical journey stage, one per
+      // concept in the FULL hierarchy (never the narrower mastery_records
+      // set) -- the exact same resolveConceptJourneyStage authority the
+      // Subjects detail page and My Path already call.
+      const subjectDecisions = snapshot ? rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === s.id)) : [];
+      const decisionByConceptId = new Map(subjectDecisions.map((d) => [d.actionConceptId, d]));
+      const allHierarchyConcepts = [...hierarchy.topics.flatMap((topic) => topic.subtopics.flatMap((sub) => sub.concepts)), ...hierarchy.unassigned];
+      const journeyStages: LearnerJourneyStage[] = allHierarchyConcepts.map((c) =>
+        resolveConceptJourneyStage(c.id, s.id, knowledgeStateByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id))
+      );
 
       const withRaw: ConceptWithRawMastery[] = masteryRows.map((row: any) => {
         const ks = knowledgeStateByConceptId.get(row.concept_id);
@@ -169,11 +220,13 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
           subjectId: s.id,
           subjectName: s.name,
           avgMasteryPercent: masteryToPercent(averageMasteryScore(rawMasteryScores)),
+          journeyProgressPercent: averageJourneyProgress(journeyStages),
           conceptCount: concepts.length,
           validatedCount: concepts.filter((c) => c.masteryState === 'VALIDATED_MASTERY').length,
           concepts,
         },
         rawMasteryScores,
+        journeyStages,
       };
     })
   );
@@ -181,8 +234,14 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
   const subjects = subjectRows.map((r) => r.subject);
   const allConcepts = subjects.flatMap((s) => s.concepts);
   const allRawMasteryScores = subjectRows.flatMap((r) => r.rawMasteryScores);
+  // LX-9R1-R1 R4: concept-weighted -- every concept across every active
+  // subject contributes ONE entry to this flat array, so a 1-concept
+  // subject never weighs the same as a 20-concept one (never a mean of
+  // per-subject percentages).
+  const allJourneyStages = subjectRows.flatMap((r) => r.journeyStages);
 
   const overallMasteryPercent = masteryToPercent(averageMasteryScore(allRawMasteryScores));
+  const overallJourneyProgressPercent = averageJourneyProgress(allJourneyStages);
 
   const capabilities: DimensionScores = {
     understandingScore: averageOf(allConcepts, 'understandingScore'),
@@ -220,5 +279,5 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
     severity: row.severity,
   }));
 
-  return { overallMasteryPercent, capabilities, achievements, subjects, needsAttention };
+  return { overallMasteryPercent, overallJourneyProgressPercent, capabilities, achievements, subjects, needsAttention };
 }

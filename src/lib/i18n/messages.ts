@@ -84,7 +84,7 @@ export type MessageKey =
   | 'subjectNew.isLanguageHelp' | 'subjectNew.targetLanguageLabel'
   | 'subjectNew.quizLanguageLabel' | 'subjectNew.quizLanguageMatch'
   | 'subjectNew.quizLanguageFixed' | 'subjectNew.submit'
-  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.viewMyPath' | 'subjectDetail.journeyProgressLabel'
+  | 'subjectDetail.conceptCount' | 'subjectDetail.avgMastery' | 'subjectDetail.viewMyPath' | 'subjectDetail.journeyProgressLabel' | 'subjectDetail.journeyProgressShort'
   | 'subjectDetail.practice' | 'subjectDetail.noConceptsTitle' | 'subjectDetail.noConceptsBody'
   | 'subjectDetail.uploadTitle' | 'subjectDetail.uploadBody' | 'subjectDetail.uploadSubmit'
   | 'subjectDetail.uploading' | 'subjectDetail.statusUploading' | 'subjectDetail.statusProcessing'
@@ -343,7 +343,7 @@ export type MessageKey =
   // replacing the old technical scorecard. Reuses knowledgeState.* and
   // dashboard.* keys wherever the copy is identical; these are only
   // the genuinely new labels.
-  | 'progress.title' | 'progress.subtitle' | 'progress.overallMasteryLabel'
+  | 'progress.title' | 'progress.subtitle' | 'progress.overallMasteryLabel' | 'progress.overallJourneyLabel'
   | 'progress.achievementsTitle' | 'progress.achievementValidatedMastery'
   | 'progress.achievementRetention' | 'progress.achievementIndependent'
   | 'progress.capabilitiesTitle' | 'progress.subjectsTitle'
@@ -825,6 +825,7 @@ const es: Messages = {
   'subjectDetail.conceptCount': 'conceptos',
   'subjectDetail.avgMastery': 'dominio promedio',
   'subjectDetail.journeyProgressLabel': 'Avance en el recorrido de aprendizaje',
+  'subjectDetail.journeyProgressShort': 'Avance del recorrido',
   'subjectDetail.viewMyPath': 'Ver mi ruta',
   'subjectDetail.practice': 'Practicar',
   'subjectDetail.noConceptsTitle': 'Aún no hay conceptos aquí',
@@ -978,6 +979,7 @@ const es: Messages = {
   'progress.title': 'Progreso',
   'progress.subtitle': 'Lo que lograste, cómo aprendés y qué sigue.',
   'progress.overallMasteryLabel': 'Dominio general',
+  'progress.overallJourneyLabel': 'Avance general del recorrido',
   'progress.achievementsTitle': 'Qué he logrado',
   'progress.achievementValidatedMastery': 'conceptos con aprendizaje validado',
   'progress.achievementRetention': 'conceptos con retención demostrada',
@@ -1899,6 +1901,7 @@ const en: Messages = {
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'average mastery',
   'subjectDetail.journeyProgressLabel': 'Progress along the learning journey',
+  'subjectDetail.journeyProgressShort': 'Journey progress',
   'subjectDetail.viewMyPath': 'View my path',
   'subjectDetail.practice': 'Practice',
   'subjectDetail.noConceptsTitle': 'No concepts yet',
@@ -2052,6 +2055,7 @@ const en: Messages = {
   'progress.title': 'Progress',
   'progress.subtitle': "What you've achieved, how you're learning, and what's next.",
   'progress.overallMasteryLabel': 'Overall mastery',
+  'progress.overallJourneyLabel': 'Overall journey progress',
   'progress.achievementsTitle': "What you've achieved",
   'progress.achievementValidatedMastery': 'concepts with validated learning',
   'progress.achievementRetention': 'concepts with demonstrated retention',
@@ -2973,6 +2977,7 @@ const de: Messages = {
   'subjectDetail.conceptCount': 'Konzepte',
   'subjectDetail.avgMastery': 'durchschnittliche Beherrschung',
   'subjectDetail.journeyProgressLabel': 'Fortschritt im Lernweg',
+  'subjectDetail.journeyProgressShort': 'Fortschritt im Lernweg',
   'subjectDetail.viewMyPath': 'Meinen Weg ansehen',
   'subjectDetail.practice': 'Üben',
   'subjectDetail.noConceptsTitle': 'Noch keine Konzepte',
@@ -3126,6 +3131,7 @@ const de: Messages = {
   'progress.title': 'Fortschritt',
   'progress.subtitle': 'Was du erreicht hast, wie du lernst und was als Nächstes kommt.',
   'progress.overallMasteryLabel': 'Gesamtbeherrschung',
+  'progress.overallJourneyLabel': 'Gesamtfortschritt im Lernweg',
   'progress.achievementsTitle': 'Was du erreicht hast',
   'progress.achievementValidatedMastery': 'Konzepte mit bestätigtem Lernerfolg',
   'progress.achievementRetention': 'Konzepte mit nachgewiesener Merkfähigkeit',
@@ -4047,6 +4053,7 @@ const fr: Messages = {
   'subjectDetail.conceptCount': 'concepts',
   'subjectDetail.avgMastery': 'maîtrise moyenne',
   'subjectDetail.journeyProgressLabel': "Progression dans le parcours d'apprentissage",
+  'subjectDetail.journeyProgressShort': 'Progression du parcours',
   'subjectDetail.viewMyPath': 'Voir mon parcours',
   'subjectDetail.practice': "S'entraîner",
   'subjectDetail.noConceptsTitle': 'Pas encore de concepts',
@@ -4200,6 +4207,7 @@ const fr: Messages = {
   'progress.title': 'Progrès',
   'progress.subtitle': "Ce que tu as accompli, comment tu apprends, et la suite.",
   'progress.overallMasteryLabel': 'Maîtrise globale',
+  'progress.overallJourneyLabel': "Progression générale du parcours",
   'progress.achievementsTitle': 'Ce que tu as accompli',
   'progress.achievementValidatedMastery': 'concepts avec apprentissage validé',
   'progress.achievementRetention': 'concepts avec rétention démontrée',
@@ -5121,6 +5129,7 @@ const pt: Messages = {
   'subjectDetail.conceptCount': 'conceitos',
   'subjectDetail.avgMastery': 'domínio médio',
   'subjectDetail.journeyProgressLabel': 'Progresso na jornada de aprendizagem',
+  'subjectDetail.journeyProgressShort': 'Progresso da jornada',
   'subjectDetail.viewMyPath': 'Ver minha rota',
   'subjectDetail.practice': 'Praticar',
   'subjectDetail.noConceptsTitle': 'Ainda não há conceitos aqui',
@@ -5274,6 +5283,7 @@ const pt: Messages = {
   'progress.title': 'Progresso',
   'progress.subtitle': 'O que você conquistou, como está aprendendo e o que vem a seguir.',
   'progress.overallMasteryLabel': 'Domínio geral',
+  'progress.overallJourneyLabel': 'Progresso geral da jornada',
   'progress.achievementsTitle': 'O que você conquistou',
   'progress.achievementValidatedMastery': 'conceitos com aprendizado validado',
   'progress.achievementRetention': 'conceitos com retenção demonstrada',

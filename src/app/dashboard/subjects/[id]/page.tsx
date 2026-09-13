@@ -11,6 +11,7 @@ import { getSubjectKnowledgeState, type MasteryState } from '@/services/knowledg
 import { getLearningOSSnapshot } from '@/services/learning-os-snapshot.service';
 import { resolveSubjectCurrentDecision, resolveConceptJourneyStage } from '@/lib/lx/path-view';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
+import { averageJourneyProgress } from '@/lib/lx/journey-progress';
 import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -86,6 +87,12 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   for (const c of allHierarchyConcepts) {
     journeyStages[c.id] = resolveConceptJourneyStage(c.id, id, ksByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id));
   }
+  // LX-9R1-R1: the subject HEADER's primary percentage -- the mean of
+  // the SAME per-concept journeyStages map above (every concept in the
+  // hierarchy, NOT_STARTED counts as 0%, never excluded). Replaces the
+  // old learnerModel.avgMasteryPercent ("dominio promedio") as the
+  // PRIMARY number; that raw metric moves to the secondary line below.
+  const subjectJourneyProgressPercent = averageJourneyProgress(Object.values(journeyStages));
 
   // LX-7R1: replaces the old `[...concepts].sort((a,b) => a.mastery_score - b.mastery_score)[0]`
   // "Practice weakest" heuristic -- raw mastery is not an action-selection
@@ -119,9 +126,12 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
             {concepts.length} {t['subjectDetail.conceptCount']}
-            {learnerModel.avgMasteryPercent !== null ? ` · ${t['subjectDetail.avgMastery']} ${learnerModel.avgMasteryPercent}%` : ''}
+            {subjectJourneyProgressPercent !== null
+              ? ` · ${t['subjectDetail.journeyProgressShort']}: ${subjectJourneyProgressPercent}%`
+              : ''}
           </p>
-          {(learnerModel.avgRetentionScore !== null ||
+          {(learnerModel.avgMasteryPercent !== null ||
+            learnerModel.avgRetentionScore !== null ||
             learnerModel.avgIndependentMastery !== null ||
             learnerModel.avgConfidenceCalibration !== null ||
             learnerModel.evidenceCoverage !== null ||
@@ -129,6 +139,9 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             learnerModel.atRiskCount > 0) && (
             <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>
               {[
+                // LX-9R1-R1: raw avg mastery moves to secondary analytics,
+                // explicitly labeled -- no longer the primary number above.
+                learnerModel.avgMasteryPercent !== null ? `${t['subjectDetail.avgMastery']} ${learnerModel.avgMasteryPercent}%` : null,
                 learnerModel.avgRetentionScore !== null ? `${t['subjectDetail.freshness']} ${learnerModel.avgRetentionScore}%` : null,
                 learnerModel.avgIndependentMastery !== null
                   ? `${t['subjectDetail.independentMastery']} ${learnerModel.avgIndependentMastery}%`

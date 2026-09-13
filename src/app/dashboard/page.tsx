@@ -74,12 +74,22 @@ export default async function DashboardPage() {
         <div>
           <h1>{t['progress.title']}{firstName ? `, ${firstName}` : ''}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['progress.subtitle']}</p>
+          {/* LX-9R1-R1: the PRIMARY learner-wide number is now canonical
+              journey progress (concept-weighted mean of every concept's
+              LearnerJourneyStage across every active subject) -- never
+              raw mastery_score. overallMasteryPercent moves to a
+              secondary, explicitly-labeled line below. */}
           <p style={{ color: 'var(--text-muted)', margin: '10px 0 0', fontSize: 14 }}>
-            {t['progress.overallMasteryLabel']}:{' '}
+            {t['progress.overallJourneyLabel']}:{' '}
             <strong className="tabular" style={{ color: 'var(--text-primary)' }}>
-              {overview.overallMasteryPercent !== null ? `${overview.overallMasteryPercent}%` : t['dashboard.notEnoughEvidence']}
+              {overview.overallJourneyProgressPercent !== null ? `${overview.overallJourneyProgressPercent}%` : t['dashboard.notEnoughEvidence']}
             </strong>
           </p>
+          {overview.overallMasteryPercent !== null && (
+            <p style={{ color: 'var(--text-muted)', margin: '2px 0 0', fontSize: 12.5 }}>
+              {t['progress.overallMasteryLabel']}: <span className="tabular">{overview.overallMasteryPercent}%</span>
+            </p>
+          )}
         </div>
         <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
       </div>
@@ -154,11 +164,16 @@ export default async function DashboardPage() {
                     {s.validatedCount}/{s.conceptCount} {t['progress.validatedLabel']}
                   </span>
                 </Link>
-                <div className="mastery-row" style={{ marginTop: 10 }}>
+                {/* LX-9R1-R1: subject card primary progress is canonical
+                    journey progress -- the SAME value shown as the
+                    subject detail page's own header ("Avance del
+                    recorrido"), never an independently-calculated
+                    percentage (R5). */}
+                <div className="mastery-row" style={{ marginTop: 10 }} title={t['subjectDetail.journeyProgressLabel']}>
                   <div className="mastery-bar">
-                    <span className={masteryFillClass(s.avgMasteryPercent ?? 0)} style={{ width: `${s.avgMasteryPercent ?? 0}%` }} />
+                    <span className={masteryFillClass(s.journeyProgressPercent ?? 0)} style={{ width: `${s.journeyProgressPercent ?? 0}%` }} />
                   </div>
-                  <span className="mastery-pct tabular">{s.avgMasteryPercent !== null ? `${s.avgMasteryPercent}%` : '—'}</span>
+                  <span className="mastery-pct tabular">{s.journeyProgressPercent !== null ? `${s.journeyProgressPercent}%` : '—'}</span>
                 </div>
 
                 {s.concepts.length > 0 && (
