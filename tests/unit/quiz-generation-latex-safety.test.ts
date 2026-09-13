@@ -287,16 +287,47 @@ describe('quick_check: any corrupted slot fails the WHOLE generation (all-or-not
   });
 });
 
-describe('practice/review chunking: a corrupted question within a chunk reduces the final count, never fails the whole quiz (partial tolerance preserved)', () => {
-  it('one corrupted question among several in a chunk is filtered out, the rest still delivered', async () => {
+describe('practice/review chunking: a corrupted question within a chunk reduces the CANDIDATE pool -- LX-9R6-R1 C2/C3 then closes any resulting deficit or fails closed, never publishes short', () => {
+  // LX-9R6-R1: before this phase, a corrupted item being filtered out of
+  // one or more chunks could leave the FINAL published count below the
+  // requested `count` -- "partial tolerance" was the celebrated design.
+  // The standing product invariant is now the opposite: StudyUS decides
+  // the exact number of questions in a valid activity. A corrupted item
+  // being filtered still reduces the CANDIDATE pool exactly as before
+  // (LaTeX safety itself is unchanged) -- but the resulting deficit is
+  // now either closed by one bounded recovery round, or the whole
+  // generation fails closed ([]) rather than ever publishing fewer than
+  // `count`.
+  it('every chunk (and its own bounded recovery round) repeatedly yields the SAME corrupted-then-filtered pair -- the deficit can never close, so generation fails closed ([]), never a shorter quiz', async () => {
     executeAIMock.mockImplementation(async (opts: any) => {
       const text = `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean 1","difficulty":3,"question":"Q1"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Q2"}]}`;
       const validation = opts.validate({ text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
       return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
     });
-    const result = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 6 }); // count=6 -> 2 chunks
-    expect(result.length).toBeGreaterThan(0);
-    expect(result.length).toBeLessThan(4); // fewer than the 4 "clean" questions across 2 chunks -- proves at least one corrupted item was filtered, not everything discarded
+    const result = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 6 }); // count=6 -> 2 chunks, each contributing only "Q1" (Q2 is corrupted and filtered) -- a cross-chunk AND cross-recovery duplicate that can never reach 6.
+    expect(result).toEqual([]);
+  });
+
+  it('a corrupted item in one chunk is filtered, but a DISTINCT recovery candidate closes the deficit -- exact count still published', async () => {
+    let call = 0;
+    executeAIMock.mockImplementation(async (opts: any) => {
+      const i = call++;
+      // Chunk 0: one clean + one corrupted (filtered) -> contributes 1.
+      // Chunk 1: three clean, distinct questions -> contributes 3.
+      // Deficit against count=6 is 2; the bounded recovery call (i===2)
+      // supplies 2 more DISTINCT clean questions, closing it exactly.
+      const text =
+        i === 0
+          ? `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Chunk0-Clean"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"$x \\neq y$","difficulty":3,"question":"Chunk0-Corrupted"}]}`
+          : i === 1
+            ? `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Chunk1-A"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Chunk1-B"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Chunk1-C"}]}`
+            : `{"questions":[{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Recovery-A"},{"type":"multiple_choice","options":[{"id":"A","text":"a"},{"id":"B","text":"b"}],"correctAnswer":"A","explanation":"clean","difficulty":3,"question":"Recovery-B"}]}`;
+      const validation = opts.validate({ text, raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
+      return { result: validation.valid ? validation.value : opts.fallback(new Error('invalid')), execution: {} as any, provenance: {} as any };
+    });
+    const result = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 6 });
+    expect(result).toHaveLength(6);
+    expect(result.some((q) => q.question === 'Chunk0-Corrupted')).toBe(false); // still filtered
   });
 
   it('final result never exceeds requestedCount even with corruption filtering in play', async () => {

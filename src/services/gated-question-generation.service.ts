@@ -39,6 +39,19 @@ export interface GatedPracticeOptions {
   ibContext?: any;
   /** cumulative / exam / diagnostic pass the full catalog; canonical Practice leaves it default. */
   types?: any;
+  /** LX-9R6-R1 O1/O3: safe, aggregate-only observability context -- never required, never affects generation. */
+  activityType?: string;
+  quizMode?: string;
+  /** LX-9R6-R1 O3: when this call is one unit of a multi-concept parent request (cumulative_assessment/exam_simulation), the caller's own operationId -- correlates every per-concept `[gated_batch]` line with the parent request without inventing a second identity for the same operation. */
+  parentOperationId?: string;
+}
+
+/** LX-9R6-R1 O1: safe, aggregate-only observability for one gated-batch generation call -- same shape/intent as logRetention/logQuickCheck, never learner answer/question content. */
+function logGatedBatch(label: string, meta: Record<string, unknown> = {}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[gated_batch]', JSON.stringify({ label, ...meta }));
+  } catch { /* logging must never break generation */ }
 }
 
 export interface QualityGateReq {
@@ -229,6 +242,8 @@ export interface GateUnitResult {
   terraRejected: number;
   fallbackUsed: boolean;
   fallbackReason?: string;
+  /** LX-9R6-R1 C2: true iff `accepted.length < req.targetCount` even after any Terra fallback -- the ONE signal every caller now checks to fail closed rather than publish a shorter-than-required unit. */
+  insufficientCount: boolean;
 }
 
 /**
@@ -301,6 +316,7 @@ export async function gateUnitWithTerraFallback(
       terraAccepted: 0,
       terraRejected: 0,
       fallbackUsed: false,
+      insufficientCount: g1.accepted.length < req.targetCount,
     };
   }
 
@@ -348,16 +364,24 @@ export async function gateUnitWithTerraFallback(
     terraRejected,
     fallbackUsed: true,
     fallbackReason,
+    insufficientCount: merged.length < req.targetCount,
   };
 }
 
 /**
  * The general gated single-batch path: Luna `generateQuestionsForConcept`
- * -> gate -> if empty, ONE Terra regeneration -> gate -> `[]`.
+ * -> gate -> if SHORT of `count` (LX-9R6-R1 C2/C4: not just fully
+ * empty), ONE Terra regeneration of the whole unit -> gate -> merge ->
+ * publish exactly `count` or fail closed with `QUESTION_COUNT_INSUFFICIENT`.
  *
  * `count` stays whatever the caller resolved (canonical Evidence
- * Sufficiency for Practice; per-concept cap for cumulative / exam) --
- * this never restores 20-question Practice and never changes a count.
+ * Sufficiency for Practice; per-concept cap for cumulative / exam /
+ * diagnostic) -- this never restores 20-question Practice and never
+ * changes a count; it only makes THIS count reliable: StudyUS decides
+ * the exact number of questions in a valid activity, never the
+ * provider. `[]` (never a shorter-than-`count` array) is the ONE
+ * recoverable "couldn't prepare" signal every caller (route.ts's
+ * `questions.length === 0` gate) already understands.
  */
 export async function generateGatedQuestionBatch(
   conceptId: string,
@@ -381,30 +405,74 @@ export async function generateGatedQuestionBatch(
   // to two) [ai-runtime] events with each other, and each generation
   // call's REAL usage is captured via onUsage as it happens (survives
   // whatever the Quality Gate later decides about the questions).
+  // LX-9R6-R1 O1/O3: the SAME operationId also correlates this call's
+  // `[gated_batch]` telemetry lines, and (when this is one unit of a
+  // multi-concept cumulative/exam request) `opts.parentOperationId`
+  // correlates every per-concept call back to the ONE parent request.
   const operationId = randomUUID();
+  const startedAt = Date.now();
+  const log = (label: string, meta: Record<string, unknown> = {}) =>
+    logGatedBatch(label, { operationId, parentOperationId: opts.parentOperationId ?? null, activityType: opts.activityType ?? null, quizMode: opts.quizMode ?? null, conceptCount: 1, targetDifficulty: opts.difficulty ?? null, requiredQuestionCount: target, ...meta });
   const lunaGenerationCalls: BillableCallUsage[] = [];
   const terraGenerationCalls: BillableCallUsage[] = [];
 
-  const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
-    ...baseGenOpts,
-    onUsage: (usage) => {
-      lunaGenerationCalls.push({ model: QGEN_ROUTE.primary, usage });
-    },
-  }).catch(() => [] as GeneratedQuestion[]);
-  const result = await gateUnitWithTerraFallback(
-    luna,
-    { conceptId, language: opts.language, context: ctx, targetCount: target, fallbackWhen: 'EMPTY' },
-    () =>
-      generateQuestionsForConcept(conceptId, studentId, subjectId, {
-        ...baseGenOpts,
-        modelOverride: TERRA,
-        onUsage: (usage) => {
-          terraGenerationCalls.push({ model: TERRA, usage });
-        },
-      }).catch(() => [] as GeneratedQuestion[]),
-    { lunaGenerationCalls, terraGenerationCalls, operationId },
-  );
-  return result.accepted;
+  try {
+    log('GATED_BATCH_GENERATION_STARTED');
+
+    const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
+      ...baseGenOpts,
+      onUsage: (usage) => {
+        lunaGenerationCalls.push({ model: QGEN_ROUTE.primary, usage });
+      },
+    }).catch(() => [] as GeneratedQuestion[]);
+    log('GATED_BATCH_INITIAL_GENERATION_COMPLETE', { candidateCount: luna.length });
+
+    const result = await gateUnitWithTerraFallback(
+      luna,
+      { conceptId, language: opts.language, context: ctx, targetCount: target, fallbackWhen: 'SHORT' },
+      () => {
+        log('GATED_BATCH_RECOVERY_STARTED', { candidateCount: luna.length });
+        return generateQuestionsForConcept(conceptId, studentId, subjectId, {
+          ...baseGenOpts,
+          modelOverride: TERRA,
+          onUsage: (usage) => {
+            terraGenerationCalls.push({ model: TERRA, usage });
+          },
+        }).catch(() => [] as GeneratedQuestion[]);
+      },
+      { lunaGenerationCalls, terraGenerationCalls, operationId },
+    );
+    if (result.fallbackUsed) {
+      log('GATED_BATCH_RECOVERY_COMPLETE', { acceptedCount: result.accepted.length, lunaAccepted: result.lunaAccepted, terraAccepted: result.terraAccepted });
+    }
+
+    const totalGenerationCalls = 1 + (result.fallbackUsed ? 1 : 0);
+    if (result.insufficientCount) {
+      log('GATED_BATCH_GENERATION_INSUFFICIENT', {
+        errorCode: 'QUESTION_COUNT_INSUFFICIENT',
+        publishedCount: result.accepted.length,
+        acceptedCount: result.accepted.length,
+        generationCalls: totalGenerationCalls,
+        recoveryCalls: result.fallbackUsed ? 1 : 0,
+        durationMs: Date.now() - startedAt,
+        success: false,
+      });
+      return [];
+    }
+    log('GATED_BATCH_GENERATION_SUCCEEDED', {
+      publishedCount: result.accepted.length,
+      acceptedCount: result.accepted.length,
+      generationCalls: totalGenerationCalls,
+      recoveryCalls: result.fallbackUsed ? 1 : 0,
+      durationMs: Date.now() - startedAt,
+      success: true,
+    });
+    return result.accepted;
+  } catch (error) {
+    log('GATED_BATCH_GENERATION_INSUFFICIENT', { errorCode: 'UNEXPECTED_GENERATION_ERROR', durationMs: Date.now() - startedAt, success: false });
+    console.error('Error in generateGatedQuestionBatch:', error);
+    return [];
+  }
 }
 
 /** Back-compat alias -- the canonical ~3-question Practice path. */

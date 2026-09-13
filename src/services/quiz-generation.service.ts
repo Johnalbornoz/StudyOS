@@ -891,12 +891,19 @@ export function planChunks(requestedCount: number, maxPerChunk: number = MAX_QUE
  *     is byte-identical to the legacy path's "Generate UP TO N
  *     questions..." wording, just with N = that chunk's own size), run
  *     concurrently.
- *   - PRACTICE semantics (unlike quick_check's all-or-nothing):  a
- *     chunk that times out, errors, or comes back short still lets the
- *     other chunks' valid questions through -- only a fully empty
- *     merged result (every chunk failed, or every question was a
- *     cross-chunk duplicate of another) returns [], the same signal
- *     every other generation path already surfaces as GENERATION_FAILED.
+ *   - a chunk that times out, errors, or comes back short no longer
+ *     silently degrades the FINAL published count (LX-9R6-R1 C2/C3):
+ *     each chunk still tolerates its own shortfall internally (a
+ *     healthy chunk's questions are never held hostage by a struggling
+ *     sibling), but once every initial chunk (plus its own per-chunk
+ *     Terra fallback, unchanged) is merged and deduped, an AGGREGATE
+ *     deficit against `count` triggers exactly ONE bounded recovery
+ *     request for the missing amount (+ a small safe surplus) before
+ *     this function will ever return. If that one recovery round still
+ *     cannot close the gap, this returns `[]` (`QUESTION_COUNT_INSUFFICIENT`)
+ *     -- StudyUS decides the exact number of questions in a valid
+ *     Practice/Review activity; a shorter-than-requested quiz is never
+ *     published.
  *   - Deterministic, AI-free duplicate protection after merging:
  *     normalizeText + case-fold on each question's text (never
  *     evaluateVariantEquivalence, which checks metadata equivalence,
@@ -905,6 +912,14 @@ export function planChunks(requestedCount: number, maxPerChunk: number = MAX_QUE
  *   - Final result is capped at `count` -- never exceeds requestedCount
  *     even if a chunk's own model call disobeyed its "up to" bound.
  */
+/** LX-9R6-R1 O1/O2: safe, aggregate-only observability for one Practice/Review chunked generation call -- same shape/intent as logRetention/logQuickCheck/logGatedBatch, never learner answer/question content. */
+function logPractice(label: string, meta: Record<string, unknown> = {}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[practice]', JSON.stringify({ label, ...meta }));
+  } catch { /* logging must never break generation */ }
+}
+
 export async function generatePracticeQuestions(
   conceptId: string,
   studentId: string,
@@ -916,6 +931,10 @@ export async function generatePracticeQuestions(
     language?: string;
     visualAidRate?: number;
     ibContext?: IBContext | null;
+    /** LX-9R6-R1 O1: safe, aggregate-only observability context -- never required, never affects generation. */
+    activityType?: string;
+    quizMode?: string;
+    parentOperationId?: string;
   } = {}
 ): Promise<GeneratedQuestion[]> {
   const count = Math.max(1, Math.min(20, options.count || 20));
@@ -925,7 +944,8 @@ export async function generatePracticeQuestions(
     // LX-4P-PERF-R1C C7: the canonical small-count Practice path no longer
     // falls through to a bare generator call -- it goes through the
     // Luna-first Quality Gate (deterministic contract + semantic verify +
-    // one Terra fallback). Lazy import avoids a require cycle.
+    // one Terra fallback, now also enforcing the exact-count contract --
+    // see generateGatedQuestionBatch). Lazy import avoids a require cycle.
     const { generateGatedPracticeBatch } = await import('@/services/gated-question-generation.service');
     return generateGatedPracticeBatch(conceptId, studentId, subjectId, {
       count,
@@ -934,6 +954,9 @@ export async function generatePracticeQuestions(
       language: options.language,
       visualAidRate: options.visualAidRate,
       ibContext: options.ibContext,
+      activityType: options.activityType,
+      quizMode: options.quizMode,
+      parentOperationId: options.parentOperationId,
     });
   }
 
@@ -943,7 +966,13 @@ export async function generatePracticeQuestions(
   const visualAidRate = options.visualAidRate ?? 0;
   const ibContext = options.ibContext ?? null;
 
+  const operationId = randomUUID();
+  const startedAt = Date.now();
+  const log = (label: string, meta: Record<string, unknown> = {}) =>
+    logPractice(label, { operationId, parentOperationId: options.parentOperationId ?? null, activityType: options.activityType ?? null, quizMode: options.quizMode ?? null, conceptCount: 1, targetDifficulty: difficulty, requiredQuestionCount: count, ...meta });
+
   try {
+    log('PRACTICE_GENERATION_STARTED', { chunkPlan: plan });
     const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
 
     let conceptContext: { label: string; subjectName: string } | null = null;
@@ -960,6 +989,7 @@ export async function generatePracticeQuestions(
       );
       const row = conceptRow.rows[0];
       if (!row) {
+        log('PRACTICE_GENERATION_INSUFFICIENT', { errorCode: 'INVALID_GENERATION_CONTRACT', reason: 'CONCEPT_NOT_FOUND', durationMs: Date.now() - startedAt, success: false });
         console.warn(`Concept ${conceptId} not found`);
         return [];
       }
@@ -1028,15 +1058,18 @@ ${shapeExamples}
     };
 
     const chunkResults = await Promise.all(plan.map((chunkSize) => requestChunk(chunkSize)));
+    log('PRACTICE_INITIAL_GENERATION_COMPLETE', { candidateCount: chunkResults.reduce((s, r) => s + r.length, 0) });
 
     // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate. Every
     // parallel chunk is gated in parallel (deterministic contract +
     // semantic verify where required); a chunk whose gated Luna output
     // is EMPTY triggers ONE narrow Terra regeneration of THAT chunk only
-    // -- never a whole-batch Terra rerun. PRACTICE stays partial-
-    // tolerant: a chunk that still yields nothing contributes nothing,
-    // it never fails the whole quiz.
-    const { gateUnitWithTerraFallback } = await import('@/services/gated-question-generation.service');
+    // -- never a whole-batch Terra rerun. A chunk that still yields
+    // nothing after that contributes nothing to this chunk's own slice
+    // -- the AGGREGATE deficit (if any) is closed once, below, rather
+    // than per chunk, so a healthy chunk's questions are never held
+    // hostage by a struggling sibling's own retry.
+    const { gateUnitWithTerraFallback, applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
     const gateReq = { conceptId, language, context: { studentId, subjectId } };
     const gatedChunks = await Promise.all(
       plan.map((chunkSize, i) => {
@@ -1070,15 +1103,55 @@ ${shapeExamples}
     if (duplicatesRemoved > 0) {
       console.warn(`generatePracticeQuestions: removed ${duplicatesRemoved} duplicate question(s) across chunks for concept ${conceptId}`);
     }
+    log('PRACTICE_QUALITY_GATE_COMPLETE', { acceptedCount: deduped.length, duplicatesRemoved });
 
-    // PRACTICE semantics: never fail the whole quiz over a removed
-    // duplicate or a short/failed chunk -- only a fully empty result
-    // (every chunk failed, or every question collided as a duplicate)
-    // surfaces as a failure, via the same [] contract every other
-    // generation path already uses (route.ts's questions.length === 0
-    // -> GENERATION_FAILED check, unchanged).
-    return deduped.slice(0, count); // never exceed requestedCount
+    // LX-9R6-R1 C2/C3: StudyUS decides the exact number of questions in
+    // a valid Practice/Review activity -- a per-chunk shortfall or a
+    // cross-chunk duplicate must never silently degrade the PUBLISHED
+    // count below `count`. If the aggregate result (after every chunk's
+    // own, unchanged per-chunk Terra fallback above) is still short,
+    // exactly ONE bounded recovery request closes the gap: sized to the
+    // remaining deficit plus a small safe surplus (never unbounded,
+    // capped at MAX_QUESTIONS_PER_CHUNK*2 -- a single extra Terra call,
+    // not a second chunk plan). If that one recovery round still can't
+    // reach `count`, this fails closed -- it never publishes a shorter
+    // quiz than the caller asked for.
+    let published = deduped;
+    if (published.length < count) {
+      const deficit = count - published.length;
+      const recoverySize = Math.min(MAX_QUESTIONS_PER_CHUNK * 2, deficit + 1);
+      log('PRACTICE_RECOVERY_STARTED', { deficit, recoverySize });
+      const recoveryRaw = await requestChunk(recoverySize, TERRA).catch(() => [] as any[]);
+      const recoveryMapped = mapRawQuestionsToGenerated(recoveryRaw, conceptId, language);
+      const recoveryGate = await applyQuestionQualityGate(recoveryMapped, gateReq);
+      const newlyAccepted: GeneratedQuestion[] = [];
+      for (const q of recoveryGate.accepted) {
+        const key = normalizeText(q.question).toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        newlyAccepted.push(q);
+        if (published.length + newlyAccepted.length >= count) break;
+      }
+      published = [...published, ...newlyAccepted];
+      log('PRACTICE_RECOVERY_COMPLETE', { recoveredCount: newlyAccepted.length, acceptedCount: published.length });
+    }
+
+    if (published.length < count) {
+      log('PRACTICE_GENERATION_INSUFFICIENT', {
+        errorCode: 'QUESTION_COUNT_INSUFFICIENT',
+        publishedCount: published.length,
+        acceptedCount: published.length,
+        durationMs: Date.now() - startedAt,
+        success: false,
+      });
+      console.error(`generatePracticeQuestions: only ${published.length}/${count} questions survived generation + one bounded recovery round -- returning no questions rather than a shorter quiz`);
+      return [];
+    }
+
+    log('PRACTICE_GENERATION_SUCCEEDED', { publishedCount: count, acceptedCount: published.length, durationMs: Date.now() - startedAt, success: true });
+    return published.slice(0, count); // never exceed requestedCount
   } catch (error) {
+    log('PRACTICE_GENERATION_INSUFFICIENT', { errorCode: 'UNEXPECTED_GENERATION_ERROR', durationMs: Date.now() - startedAt, success: false });
     console.error('Error generating practice/review questions:', error);
     return [];
   }

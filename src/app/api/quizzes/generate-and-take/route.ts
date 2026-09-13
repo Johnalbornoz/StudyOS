@@ -40,6 +40,7 @@
  * }
  */
 
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -504,6 +505,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     }
 
     const perConceptCap = Math.max(1, Math.ceil(maxQuestions / conceptIds.length));
+    // LX-9R6-R1 O1/O3: ONE operationId for this whole generation request,
+    // threaded into every generator call below so every per-concept
+    // `[practice]`/`[gated_batch]` line (there can be more than one for
+    // cumulative_assessment/exam_simulation) is correlatable back to the
+    // SAME top-level request. quick_check/retention_check mint their own
+    // operationId internally (unchanged from LX-9R6) since they are
+    // always single-concept, single-operation calls.
+    const parentOperationId = randomUUID();
 
     // STABILIZATION QUIZ PERFORMANCE Step 9/14/22: quick_check,
     // topic_practice/review, and retention_check (count===6 only) each
@@ -535,6 +544,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             language,
             visualAidRate: config.visualAidRate,
             ibContext,
+            activityType: activityTypeForQuizMode(validated.quizMode),
+            quizMode: validated.quizMode,
+            parentOperationId,
           }).then((qs) => [qs])
         : validated.quizMode === 'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT
         ? generateRetentionCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -548,10 +560,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // cumulative_assessment / exam_simulation / diagnostic_check
             // (and retention_check with a non-6 override) go through the
             // gated batch (Luna -> deterministic contract + semantic
-            // verify where required -> one Terra regeneration if empty).
-            // These are evidence-consequence paths: they get at least the
-            // same acceptance standard as assisted Practice. Counts,
-            // EvidenceMode and per-concept partial-tolerance are unchanged.
+            // verify where required -> one Terra regeneration if SHORT of
+            // the per-concept target). These are evidence-consequence
+            // paths: they get at least the same acceptance standard as
+            // Practice. LX-9R6-R1 C4: each concept's own batch is now
+            // exact-`perConceptCap`-or-empty (generateGatedQuestionBatch's
+            // own bounded recovery) -- per-concept partial tolerance is
+            // gone; a concept whose bounded recovery still falls short
+            // contributes nothing, and the aggregate insufficiency gate
+            // below then fails the WHOLE request closed rather than
+            // silently publishing fewer than `maxQuestions`.
             // LX-9R3-R1 D2: multi-concept modes (cumulative_assessment /
             // exam_simulation) resolve their OWN per-concept target
             // difficulty here -- diagnostic_check and a retention_check
@@ -576,6 +594,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
                 language,
                 visualAidRate: config.visualAidRate,
                 ibContext,
+                activityType: activityTypeForQuizMode(validated.quizMode),
+                quizMode: validated.quizMode,
+                parentOperationId,
               });
             })
           ),
@@ -593,6 +614,38 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
 
     const questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
 
+    // LX-9R6-R1 C2/C4: the ONE choke point every mode's result converges
+    // on. Every generator now either publishes exactly its own required
+    // count or `[]` -- but a multi-concept gated batch (cumulative_
+    // assessment/exam_simulation) can still fall short in aggregate if
+    // one concept's OWN bounded recovery genuinely couldn't reach its
+    // per-concept target (that concept contributes nothing, the others
+    // still contribute their own exact share). A non-empty but
+    // short-of-`maxQuestions` result must never silently reach the
+    // learner as a shorter quiz -- fail the WHOLE request closed instead
+    // of publishing it, same as the already-empty case just below.
+    if (questions.length > 0 && questions.length < maxQuestions) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log('[generation]', JSON.stringify({
+          conceptId: primaryConceptId,
+          quizMode: validated.quizMode,
+          parentOperationId,
+          targetDifficulty: resolvedDifficulty?.level ?? null,
+          difficultyReasonCode: resolvedDifficulty?.reasonCode ?? null,
+          requiredQuestionCount: maxQuestions,
+          publishedCount: questions.length,
+          generationPhase: 'GENERATION_INSUFFICIENT',
+          sessionCreated: false,
+          errorCode: 'QUESTION_COUNT_INSUFFICIENT',
+        }));
+      } catch { /* logging must never break the response */ }
+      return NextResponse.json(
+        { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+        { status: 500 }
+      );
+    }
+
     if (questions.length === 0) {
       // LX-9 FINAL, PART U: safe, aggregate-only observability for a
       // generation failure -- never learner answer/question content.
@@ -602,6 +655,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         console.log('[generation]', JSON.stringify({
           conceptId: primaryConceptId,
           quizMode: validated.quizMode,
+          parentOperationId,
           targetDifficulty: resolvedDifficulty?.level ?? null,
           difficultyReasonCode: resolvedDifficulty?.reasonCode ?? null,
           generationPhase: 'GENERATION_FAILED',

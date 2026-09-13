@@ -214,7 +214,9 @@ describe('LX-9R5 11 -- a genuine REINFORCE intervention is never suppressed by t
  * ================================================================== */
 describe('LX-9R5 13 -- initial generation failure logs an exact errorCode', () => {
   it('the [generation] failure log carries conceptId/quizMode/targetDifficulty/errorCode', () => {
-    const block = ROUTE_SRC.slice(ROUTE_SRC.indexOf("if (questions.length === 0)"), ROUTE_SRC.indexOf("if (questions.length === 0)") + 700);
+    // LX-9R6-R1: window widened from 700 -- this block now also carries
+    // a `parentOperationId` field (universal generation telemetry).
+    const block = ROUTE_SRC.slice(ROUTE_SRC.indexOf("if (questions.length === 0)"), ROUTE_SRC.indexOf("if (questions.length === 0)") + 800);
     expect(block).toMatch(/\[generation\]/);
     expect(block).toMatch(/errorCode: 'GENERATION_FAILED'/);
     expect(block).toMatch(/targetDifficulty: resolvedDifficulty\?\.level/);
