@@ -45,12 +45,25 @@ describe('LX-8R1 R1 tests 1-6 -- quiz/page.tsx consumes, never recreates, the in
     expect(QUIZ_PAGE_SRC).toMatch(/const ic = interactionContract!;/);
   });
 
-  it('2. no duplicate VOICE eligibility logic remains -- VoiceInputButton is gated by ic.inputModes, never a raw answerFormat check of its own', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/\{ic\.inputModes\.includes\('VOICE'\) && \(/);
-    // the render block between that gate and the VoiceInputButton element itself never re-checks answerFormat -- the OUTER answerFormat === 'text' switch (a pre-existing, unrelated answer-SURFACE router, not a modality-eligibility rule) is not repeated here.
-    const gateIdx = QUIZ_PAGE_SRC.indexOf("ic.inputModes.includes('VOICE')");
-    const voiceButtonBlock = QUIZ_PAGE_SRC.slice(gateIdx, QUIZ_PAGE_SRC.indexOf('VoiceInputButton', gateIdx) + 20);
-    expect(voiceButtonBlock).not.toMatch(/answerFormat === 'text'/);
+  it('2. no duplicate VOICE eligibility logic remains -- the ONE composer is gated by ic.inputModes, never a raw answerFormat check of its own', () => {
+    // LX-8R3: voice eligibility for the main quiz's text answer is now
+    // passed as the `voiceEnabled` PROP to UnifiedResponseComposer
+    // (which itself never re-derives modality eligibility -- see
+    // tests/unit/lx8r2-r1-universal-math-surface.test.ts /
+    // UnifiedResponseComposer's own doc comment) rather than wrapping a
+    // JSX conditional around a directly-rendered VoiceInputButton --
+    // same ONE authority (ic.inputModes), a different (still single,
+    // still non-duplicated) expression of it.
+    expect(QUIZ_PAGE_SRC).toMatch(/voiceEnabled=\{ic\.inputModes\.includes\('VOICE'\)\}/);
+    // Find the SPECIFIC composer call using the main flow's own `ic`
+    // (not `resumeIc`/`vIc`, the two verification surfaces' own inline-
+    // derived contracts) and confirm its render is never re-gated by a
+    // second, redundant answerFormat check.
+    const gateIdx = QUIZ_PAGE_SRC.indexOf("voiceEnabled={ic.inputModes.includes('VOICE')}");
+    const composerCallStart = QUIZ_PAGE_SRC.lastIndexOf('<UnifiedResponseComposer', gateIdx);
+    const composerCallBlock = QUIZ_PAGE_SRC.slice(composerCallStart, QUIZ_PAGE_SRC.indexOf('/>', gateIdx));
+    expect(composerCallBlock).not.toMatch(/answerFormat === 'text'/);
+    expect(composerCallBlock).toMatch(/voiceEnabled=\{ic\.inputModes\.includes\('VOICE'\)\}/);
   });
 
   it('3. no duplicate AUDIO eligibility logic remains -- ReadAloudButton is gated by ic.outputModes; the page’s own speechSynthesis capability check feeds DETECTION (an allowed input), never a second ELIGIBILITY decision of its own', () => {
@@ -182,11 +195,18 @@ describe('LX-8R1 R4 tests 17-23 -- response packaging audit', () => {
     expect(mc.requiresWork || mc.requiresJustification).toBe(false);
   });
 
-  it('18. SHOW_WORK renders the required reasoning/work capability', () => {
+  it('18. SHOW_WORK renders the required reasoning/work capability (LX-8R3: via the ONE composer\'s per-kind instruction, never a separate boolean-gated box)', () => {
     const c = deriveResponseEvidenceContract({ type: 'step_by_step' }, 'PRACTICE');
     expect(c.kind).toBe('SHOW_WORK');
     expect(c.requiresWork).toBe(true);
-    expect(QUIZ_PAGE_SRC).toMatch(/responseContract\.requiresWork \|\| responseContract\.requiresJustification/);
+    // The page no longer branches on requiresWork/requiresJustification
+    // at all -- it passes the whole `kind` through to
+    // UnifiedResponseComposer, which maps SHOW_WORK to its own distinct
+    // instruction line (responseInstructionKey, response-evidence-
+    // contract.ts, exhaustively tested in
+    // tests/unit/lx1-response-evidence-contract.test.ts).
+    expect(QUIZ_PAGE_SRC).toMatch(/responseKind=\{responseContract\.kind\}/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/responseContract\.requiresWork \|\| responseContract\.requiresJustification/);
   });
 
   it('19. JUSTIFY renders the justification capability', () => {
@@ -207,13 +227,17 @@ describe('LX-8R1 R4 tests 17-23 -- response packaging audit', () => {
     expect(canProceedBlock).not.toMatch(/explanationAnswer/);
   });
 
-  it('22. the learner-facing reasoning label is read from activity-language messages (at[...]), never hardcoded', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/at\['multimodal\.reasoningLabel'\]/);
-    expect(QUIZ_PAGE_SRC).not.toMatch(/placeholder="Explain your reasoning"/);
+  it('22. the learner-facing response instruction is read from activity-language messages, never hardcoded (LX-8R3: the ONE instruction line lives inside UnifiedResponseComposer, resolved via responseInstructionKey + getMessages, replacing the old separate "reasoning label")', () => {
+    const composerSrc = strip(read('src/components/UnifiedResponseComposer.tsx'));
+    expect(composerSrc).toMatch(/const t = getMessages\(activityLanguageContext\.activityLanguage\)/);
+    expect(composerSrc).toMatch(/t\[instructionKey\]/);
+    expect(composerSrc).not.toMatch(/Explain your reasoning"/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/multimodal\.reasoningLabel/); // the old per-box label is gone, not merely relocated
   });
 
-  it('23. the grader receives deterministic, unambiguous packaging -- a fixed language-neutral marker precedes the localized label', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/\$\{textAnswer\}\\n\\n---\\n\$\{at\['multimodal\.reasoningLabel'\]\}: \$\{explanationAnswer\}/);
+  it('23. the grader receives deterministic, unambiguous packaging (LX-8R3: toGraderText\'s blank-line block-joining, response-document.ts -- replacing the old fixed "---" string marker, itself exhaustively tested in tests/unit/response-document.test.ts)', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/return toGraderText\(deserializeResponseDocument\(textAnswer\)\);/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/\\n\\n---\\n/); // the old ad hoc marker is gone, not merely relocated
   });
 });
 

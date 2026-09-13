@@ -120,11 +120,17 @@ describe('LX-8 VOICE 7-15', () => {
     expect(VOICE_INPUT_SRC).toMatch(/transcriptionFailedLabel/);
   });
 
-  it('12. mic permission denied -> typed fallback remains available (VoiceInputButton is additive, never replaces MathAnswerEditor)', () => {
+  it('12. mic permission denied -> typed fallback remains available (voice is additive, never replaces the response composer)', () => {
     expect(VOICE_INPUT_SRC).toMatch(/permissionDeniedLabel/);
+    // LX-8R3: the text-answer surface is the ONE UnifiedResponseComposer,
+    // which internally renders VoiceInputButton (prose context) as a
+    // strictly additive control -- typing/editing the response document
+    // is always available regardless of mic permission state.
     const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
-    expect(textBlock).toMatch(/<MathAnswerEditor/);
-    expect(textBlock).toMatch(/<VoiceInputButton/);
+    expect(textBlock).toMatch(/<UnifiedResponseComposer/);
+    const composerSrc = strip(read('src/components/UnifiedResponseComposer.tsx'));
+    expect(composerSrc).toMatch(/<VoiceInputButton/);
+    expect(composerSrc).toMatch(/voiceEnabled &&/); // voice rendering is conditional/additive, never required
   });
 
   it('13. voice is offered in Independent activities too (pure input, evidenceMode-independent) -- RETENTION_CHECK/TRANSFER/SOLO_VERIFY all get VOICE for a text answer', () => {
@@ -190,23 +196,27 @@ describe('LX-8 TTS 16-19', () => {
  * MATH 20-24                                                      *
  * ============================================================== */
 describe('LX-8 MATH 20-24', () => {
-  it('20. the canonical MathAnswerEditor is still the text-answer surface, untouched', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/<MathAnswerEditor\s*\n\s*value=\{textAnswer\}\s*\n\s*onChange=\{setTextAnswer\}/);
+  it('20. the canonical UnifiedResponseComposer is now the text-answer surface (LX-8R3 retired MathAnswerEditor -- zero remaining callers, deleted)', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/<UnifiedResponseComposer\s*\n\s*value=\{textAnswer\}\s*\n\s*onChange=\{setTextAnswer\}/);
   });
 
-  it('21. the math toolbar (MathAnswerEditor) is not gated by quizMode -- available in Independent/Assessment too', () => {
+  it('21. the response composer is not gated by quizMode -- available in Independent/Assessment too', () => {
     const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("{q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("{q.answerFormat === 'matching'"));
-    expect(textBlock).not.toMatch(/PRACTICE_EVIDENCE_MODES\.includes\(quizMode\)\s*&&\s*\(?\s*<MathAnswerEditor/);
+    expect(textBlock).not.toMatch(/PRACTICE_EVIDENCE_MODES\.includes\(quizMode\)\s*&&\s*\(?\s*<UnifiedResponseComposer/);
   });
 
-  it('22. SHOW_WORK/JUSTIFY questions get a separate reasoning surface alongside the main answer', () => {
+  it('22. SHOW_WORK/JUSTIFY questions still get their own instruction line and permit mixed content in the ONE composer -- never a second, separately-rendered reasoning box (LX-8R3 R1/R7)', () => {
     const stepByStep = deriveResponseEvidenceContract({ type: 'step_by_step' }, 'PRACTICE');
     expect(stepByStep.kind).toBe('SHOW_WORK');
     expect(stepByStep.requiresWork).toBe(true);
     const justification = deriveResponseEvidenceContract({ type: 'justification' }, 'PRACTICE');
     expect(justification.kind).toBe('JUSTIFY');
     expect(justification.requiresJustification).toBe(true);
-    expect(QUIZ_PAGE_SRC).toMatch(/responseContract\.requiresWork \|\| responseContract\.requiresJustification/);
+    // The kind is passed straight through to the ONE composer as `responseKind` --
+    // never forked into a second, separately-rendered "reasoning" element.
+    expect(QUIZ_PAGE_SRC).toMatch(/responseKind=\{responseContract\.kind\}/);
+    const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
+    expect(textBlock.match(/<UnifiedResponseComposer/g)?.length).toBe(1); // exactly one composer, never two boxes
   });
 
   it('23. ANSWER_ONLY questions never demand work -- requiresWork/requiresJustification both false', () => {
@@ -218,8 +228,8 @@ describe('LX-8 MATH 20-24', () => {
     expect(numeric.kind).toBe('ANSWER_ONLY'); // unless a PROCEDURAL tag tightens it -- untouched existing rule
   });
 
-  it('24. the existing MathAnswerEditor mobile-overflow handling is unmodified', () => {
-    const editorSrc = strip(read('src/components/MathAnswerEditor.tsx'));
+  it('24. mobile-overflow handling exists on the live math-entry surface (MathExpressionEditor, owned by UnifiedResponseComposer) -- the equivalent of MathAnswerEditor\'s retired overflow handling', () => {
+    const editorSrc = strip(read('src/components/MathExpressionEditor.tsx'));
     expect(editorSrc).toMatch(/overflowX:\s*'auto'/);
   });
 });
@@ -282,10 +292,20 @@ describe('LX-8 VISUAL 25-30', () => {
  * LANGUAGE 31-33                                                  *
  * ============================================================== */
 describe('LX-8 LANGUAGE 31-33', () => {
-  it('31. TTS/STT locale in the quiz page comes from the interactionContract, itself built from quizLanguage (activity language), never getInterfaceLanguage', () => {
+  it('31. TTS/STT locale in the quiz page comes from the interactionContract/activityLanguageContext, itself built from quizLanguage (activity language), never getInterfaceLanguage', () => {
     expect(QUIZ_PAGE_SRC).toMatch(/buildActivityLanguageContext\(quizLanguage\)/);
     expect(QUIZ_PAGE_SRC).toMatch(/activityLanguage=\{ic\.activityLanguage\}/);
-    expect(QUIZ_PAGE_SRC).toMatch(/expectedResponseLanguage=\{ic\.expectedResponseLanguage\}/);
+    // LX-8R3: VoiceInputButton/MathVoiceInput are no longer called
+    // directly from the quiz page (they moved inside
+    // UnifiedResponseComposer, which reads
+    // `activityLanguageContext.expectedResponseLanguage` itself --
+    // numerically the SAME value as `ic.expectedResponseLanguage`,
+    // since buildInteractionContract sets its own field verbatim from
+    // the same activityLanguageContext passed in). The quiz page's own
+    // job is only to pass that ONE activityLanguageContext object
+    // through to the composer -- never a separate expectedResponseLanguage
+    // prop of its own.
+    expect(QUIZ_PAGE_SRC).toMatch(/activityLanguageContext=\{activityLanguageContext\}/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/activityLanguage:\s*.*[Ii]nterface/);
   });
 
@@ -365,7 +385,7 @@ describe('LX-8 FALLBACK 40-42', () => {
 
   it('42. optional modality controls (TTS/voice) unavailable still leaves the core answer surfaces intact', () => {
     const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
-    expect(textBlock).toMatch(/<MathAnswerEditor/);
+    expect(textBlock).toMatch(/<UnifiedResponseComposer/);
   });
 });
 

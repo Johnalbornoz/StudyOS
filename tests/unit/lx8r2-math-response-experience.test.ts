@@ -23,20 +23,23 @@ const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\
 
 const QUIZ_PAGE_SRC = strip(read('src/app/dashboard/quiz/page.tsx'));
 const EDITOR_SRC = strip(read('src/components/MathExpressionEditor.tsx'));
-const COMPOSER_SRC = strip(read('src/components/MathResponseComposer.tsx'));
+const COMPOSER_SRC = strip(read('src/components/UnifiedResponseComposer.tsx'));
 const VOICE_INPUT_SRC = strip(read('src/app/dashboard/MathVoiceInput.tsx'));
 const PARSER_SRC = strip(read('src/lib/lx/math-speech-parser.ts'));
 const CONTRACT_SRC = strip(read('src/lib/lx/math-response-contract.ts'));
+const DOC_SRC = strip(read('src/lib/lx/response-document.ts'));
 const OBS_SRC = strip(read('src/lib/lx/multimodal-observability.ts'));
 const PACKAGE_JSON = JSON.parse(read('package.json'));
 
 /**
- * LX-8R2-R1: MathExpressionEditor/MathVoiceInput are no longer imported
- * directly by any page -- they are implementation details owned by
- * MathResponseComposer (see tests/unit/lx8r2-r1-universal-math-
- * surface.test.ts for the full extraction/migration coverage). The
- * assertions below are updated in place to read from the NEW
- * architecture rather than re-describe the pre-extraction one.
+ * LX-8R2-R1/LX-8R3: MathExpressionEditor/MathVoiceInput are no longer
+ * imported directly by any page -- they are implementation details
+ * owned by `UnifiedResponseComposer` (LX-8R3's ONE canonical response
+ * surface, which retired LX-8R2-R1's `MathResponseComposer` -- see
+ * tests/unit/lx8r2-r1-universal-math-surface.test.ts for the full
+ * extraction/migration coverage, since updated in place for the
+ * unified surface). The assertions below are updated in place to read
+ * from the CURRENT architecture rather than re-describe a retired one.
  */
 
 /* ================================================================ *
@@ -49,8 +52,9 @@ describe('LX-8R2 R16 -- quality bar: the math answer surface is a real structure
     expect(EDITOR_SRC).not.toMatch(/<textarea/);
   });
 
-  it('the quiz page uses MathResponseComposer (not MathAnswerEditor) for a math-context final answer', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/isMathAnswerContext\(subjectName, responseContract\.kind\) \? \(\s*<MathResponseComposer/);
+  it('the quiz page uses UnifiedResponseComposer (not the retired MathAnswerEditor) for the text-answer surface, math-enabled via isMathAnswerContext', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/<UnifiedResponseComposer/);
+    expect(QUIZ_PAGE_SRC).toMatch(/mathEnabled=\{isMathAnswerContext\(subjectName, responseContract\.kind\)\}/);
   });
 
   it('toolbar buttons manipulate the editor MODEL via structured LaTeX templates (insert), never plain string concatenation into a value prop', () => {
@@ -85,8 +89,8 @@ describe('LX-8R2 R1 -- STT/math-interpretation separation', () => {
  * R4 -- SSR safety.                                                  *
  * ================================================================ */
 describe('LX-8R2 R4 -- SSR-safe integration', () => {
-  it('the quiz page loads the ONE canonical MathResponseComposer with ssr:false, same pattern as every other browser-only modality control -- it never imports MathExpressionEditor/MathVoiceInput directly', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/const MathResponseComposer = dynamic\(\(\) => import\('@\/components\/MathResponseComposer'\), \{ ssr: false \}\)/);
+  it('the quiz page loads the ONE canonical UnifiedResponseComposer with ssr:false, same pattern as every other browser-only modality control -- it never imports MathExpressionEditor/MathVoiceInput/VoiceInputButton directly for a response surface', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/const UnifiedResponseComposer = dynamic\(\(\) => import\('@\/components\/UnifiedResponseComposer'\), \{ ssr: false \}\)/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/import\(.@\/components\/MathExpressionEditor.\)/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/import\(.*MathVoiceInput.\)/);
   });
@@ -138,36 +142,33 @@ describe('LX-8R2 R7 -- voice-to-math pipeline never silently guesses, always req
 });
 
 /* ================================================================ *
- * R8 -- response-contract integration: math answer + reasoning box   *
- * combine per the SAME already-canonical ResponseEvidenceContract,   *
- * never a duplicated/second surface, never both boxes unnecessarily. *
+ * R8 -- response-contract integration. LX-8R3 superseded the         *
+ * "separate math-answer box + separate reasoning box" design this    *
+ * block originally verified: ResponseEvidenceContract.kind now maps  *
+ * to the ONE UnifiedResponseComposer's single instruction line       *
+ * (responseInstructionKey), and math eligibility (isMathAnswerContext)*
+ * gates only whether a math block/keyboard is offered WITHIN that     *
+ * one surface -- never which of two composers renders.               *
  * ================================================================ */
-describe('LX-8R2 R8 -- reuses the existing ResponseEvidenceContract, no second authority', () => {
-  it('isMathAnswerContext is gated on responseContract.kind -- the SAME contract already driving the reasoning-box visibility, not a new independent check', () => {
+describe('LX-8R2/LX-8R3 R8 -- reuses the existing ResponseEvidenceContract, no second authority, no second box', () => {
+  it('isMathAnswerContext is gated on responseContract.kind -- the SAME contract already driving the composer\'s instruction line, not a new independent check', () => {
     expect(QUIZ_PAGE_SRC).toMatch(/isMathAnswerContext\(subjectName, responseContract\.kind\)/);
+    expect(QUIZ_PAGE_SRC).toMatch(/responseKind=\{responseContract\.kind\}/);
   });
 
-  it('EXPLAIN and JUSTIFY kinds are excluded from the structured math editor -- an EXPLAIN/JUSTIFY ask keeps the prose surface (isMathAnswerContext now lives in the shared math-response-contract.ts, not page-local)', () => {
+  it('EXPLAIN and JUSTIFY kinds are excluded from the structured math editor -- an EXPLAIN/JUSTIFY ask keeps the prose surface (isMathAnswerContext lives in the shared math-response-contract.ts, not page-local)', () => {
     const fnSrc = CONTRACT_SRC.slice(CONTRACT_SRC.indexOf('export function isMathAnswerContext'), CONTRACT_SRC.indexOf('export function isMathAnswerContext') + 400);
     expect(fnSrc).toMatch(/kind !== 'EXPLAIN' && kind !== 'JUSTIFY'/);
   });
 
-  it('the reasoning/work box (requiresWork || requiresJustification) is never switched to the math editor -- stays the prose MathAnswerEditor unconditionally', () => {
-    const reasoningBlock = QUIZ_PAGE_SRC.slice(
-      QUIZ_PAGE_SRC.indexOf('responseContract.requiresWork || responseContract.requiresJustification'),
-      QUIZ_PAGE_SRC.indexOf('responseContract.requiresWork || responseContract.requiresJustification') + 500,
-    );
-    expect(reasoningBlock).toMatch(/<MathAnswerEditor/);
-    expect(reasoningBlock).not.toMatch(/MathResponseComposer/);
+  it('LX-8R3: there is no longer a separate reasoning box at all -- the old requiresWork||requiresJustification-gated second MathAnswerEditor was retired; SHOW_WORK/JUSTIFY content lives as additional blocks inside the SAME ResponseDocument', () => {
+    expect(QUIZ_PAGE_SRC).not.toMatch(/responseContract\.requiresWork \|\| responseContract\.requiresJustification/);
+    const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
+    expect(textBlock.match(/<UnifiedResponseComposer/g)?.length).toBe(1); // exactly one response surface, never two
   });
 
-  it('the main quiz\'s final-answer/reasoning pair is never both math-structured at once -- only the final-answer box is conditionally structured', () => {
-    // The reasoning box slice above proves it is always MathAnswerEditor
-    // for the main quiz's q.answerFormat === 'text' block; combined with
-    // the final-answer conditional test elsewhere, at most one box (the
-    // final answer) is ever the structured composer within that block.
-    const textBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'text' && ("), QUIZ_PAGE_SRC.indexOf("q.answerFormat === 'matching'"));
-    expect(textBlock.match(/<MathResponseComposer/g)?.length).toBe(1);
+  it('responseInstructionKey (response-evidence-contract.ts) is the ONE mapping from kind to instruction copy -- exhaustively tested in tests/unit/lx1-response-evidence-contract.test.ts', () => {
+    expect(COMPOSER_SRC).toMatch(/responseInstructionKey\(responseKind\)/);
   });
 });
 
@@ -175,16 +176,22 @@ describe('LX-8R2 R8 -- reuses the existing ResponseEvidenceContract, no second a
  * R9/R10 -- grader compatibility: dedicated file exists (math-       *
  * response-contract.test.ts); here we assert the WIRING uses it.     *
  * ================================================================ */
-describe('LX-8R2 R9/R10 -- the canonical serialization is fed to the grader, never a toolbar/DOM-scraped value', () => {
-  it('MathResponseComposer (the ONE place that talks to MathExpressionEditor/MathVoiceInput) reads their output via toGraderString, never response.plainText or a raw DOM read; the quiz page itself never touches toGraderString/plainText directly', () => {
-    expect(COMPOSER_SRC).toMatch(/toGraderString\(next\)/);
-    expect(COMPOSER_SRC).toMatch(/toGraderString\(response\)/);
+describe('LX-8R2/LX-8R3 R9/R10 -- the canonical serialization is fed to the grader, never a toolbar/DOM-scraped value', () => {
+  it('UnifiedResponseComposer reads each math block\'s output via MathResponse.latex directly (never response.plainText, never a raw DOM read) -- the $-wrapping for the grader happens once, at the DOCUMENT level, in response-document.ts\'s toGraderText, never per-keystroke inside the composer', () => {
+    expect(COMPOSER_SRC).toMatch(/updateMath\(i, next\.latex\)/);
+    expect(COMPOSER_SRC).toMatch(/updateMath\(activeIndex, response\.latex\)/);
     expect(COMPOSER_SRC).not.toMatch(/\.plainText/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/toGraderString/);
   });
 
-  it('the stored answer string is wrapped in the SAME $...$ convention MathText already renders, so Review needs zero changes -- wrap/unwrap now live once in the shared math-response-contract.ts, never duplicated per page', () => {
+  it('the ONE grader-facing transform is toGraderText (response-document.ts), called exactly once, from encodeCurrentAnswer\'s text case -- never duplicated per page or per component', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/return toGraderText\(deserializeResponseDocument\(textAnswer\)\);/);
+    expect(DOC_SRC).toMatch(/export function toGraderText\(doc: ResponseDocument\): string/);
+  });
+
+  it('math blocks are wrapped in the SAME $...$ convention MathText already renders, so Review needs zero changes -- wrap/unwrap live once in the shared math-response-contract.ts, reused by response-document.ts, never duplicated per page', () => {
     expect(CONTRACT_SRC).toMatch(/export function wrapMathForStorage\(latex: string\): string \{\s*return latex \? `\$\$\{latex\}\$` : ''/);
+    expect(DOC_SRC).toMatch(/wrapMathForStorage\(b\.latex\)/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/function wrapMathForStorage/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/function unwrapMathFromStorage/);
   });
@@ -217,8 +224,9 @@ describe('LX-8R2 R13 -- accessibility', () => {
     expect(EDITOR_SRC).toMatch(/aria-label=\{t\[b\.labelKey/);
   });
 
-  it('the activity remains completable without a microphone -- voice is rendered only inside the existing ic.inputModes.includes(\'VOICE\') gate, never required', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/ic\.inputModes\.includes\('VOICE'\) && \(/);
+  it('the activity remains completable without a microphone -- voice is offered only when voiceEnabled (still sourced from the ONE ic.inputModes.includes(\'VOICE\') authority) is true, never required', () => {
+    expect(QUIZ_PAGE_SRC).toMatch(/voiceEnabled=\{ic\.inputModes\.includes\('VOICE'\)\}/);
+    expect(COMPOSER_SRC).toMatch(/voiceEnabled &&/);
   });
 });
 

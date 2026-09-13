@@ -38,6 +38,14 @@ import { getMessages, Locale } from '@/lib/i18n/messages';
  * microphone -- voice is wired in by the caller (`MathVoiceInput`) as
  * a strictly additional, optional input path, never a replacement for
  * typing/toolbar use.
+ *
+ * LX-8R3 R4 -- `showToolbar` (default `true`, preserving this
+ * component's exact prior behavior for any existing caller) lets
+ * `UnifiedResponseComposer` render a bare mathfield with NO custom
+ * button row at all, relying entirely on MathLive's own professional
+ * virtual keyboard (`window.mathVirtualKeyboard`, opened by the
+ * composer's own single keyboard icon) -- "one math keyboard," never
+ * two competing input systems for the same expression.
  */
 export interface MathExpressionEditorProps {
   value: MathResponse;
@@ -47,6 +55,14 @@ export interface MathExpressionEditorProps {
   conceptId?: string;
   activityType?: string;
   placeholder?: string;
+  /** LX-8R3 R4: default true. Pass false to render only the bare mathfield -- no custom toolbar rows. */
+  showToolbar?: boolean;
+  /** LX-8R3 R9: fires when this mathfield gains focus, so a caller composing multiple blocks (UnifiedResponseComposer) can track which one is "active" for voice/keyboard routing. */
+  onFocus?: () => void;
+  /** LX-8R3 R6: focuses this mathfield once, right after it mounts -- used when a new math block is inserted at the cursor and should be immediately editable. */
+  autoFocus?: boolean;
+  /** LX-8R3: submits the current Enter-in-math-block behavior to the caller instead of doing nothing -- UnifiedResponseComposer commits the block and creates the next one (R3). Never fires for Shift+Enter. */
+  onEnter?: () => void;
 }
 
 /** Minimal shape this component needs from the MathLive custom element -- avoids a hard TS dependency on the library's full type surface at the call sites below. */
@@ -91,6 +107,10 @@ export default function MathExpressionEditor({
   conceptId,
   activityType,
   placeholder,
+  showToolbar = true,
+  onFocus,
+  autoFocus,
+  onEnter,
 }: MathExpressionEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<MathfieldLike | null>(null);
@@ -131,15 +151,36 @@ export default function MathExpressionEditor({
       };
       field.addEventListener('input', handleInput);
 
+      const handleFocus = () => onFocus?.();
+      if (onFocus) field.addEventListener('focus', handleFocus);
+
+      // LX-8R3 R3: Enter commits this math block and hands control back
+      // to the caller (UnifiedResponseComposer creates/focuses the next
+      // block) instead of doing nothing -- never a form submit. Only a
+      // bare Enter is intercepted; Shift+Enter and every other key pass
+      // through to MathLive's own handling unchanged.
+      const handleKeydown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey && onEnter) {
+          e.preventDefault();
+          onEnter();
+        }
+      };
+      if (onEnter) field.addEventListener('keydown', handleKeydown);
+
       container.appendChild(field);
       fieldRef.current = field;
       setReady(true);
+      if (autoFocus) field.focus();
       if (!hasLoggedReady.current) {
         hasLoggedReady.current = true;
         logInteraction('MATH_EDITOR_READY', { conceptId, activityType, language: locale });
       }
 
-      return () => field.removeEventListener('input', handleInput);
+      return () => {
+        field.removeEventListener('input', handleInput);
+        if (onFocus) field.removeEventListener('focus', handleFocus);
+        if (onEnter) field.removeEventListener('keydown', handleKeydown);
+      };
     });
 
     return () => {
@@ -176,51 +217,55 @@ export default function MathExpressionEditor({
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 6, overflowX: 'auto', paddingBottom: 2, alignItems: 'center' }}>
-        {MATH_PRIMARY_BUTTONS.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            onClick={() => insertTemplate(b)}
-            disabled={!ready}
-            title={t[b.labelKey as keyof typeof t]}
-            aria-label={t[b.labelKey as keyof typeof t]}
-            style={toolbarButtonStyle}
-          >
-            {b.display}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => setShowMore((s) => !s)}
-          aria-expanded={showMore}
-          aria-label={t['mathExpression.moreLabel']}
-          style={{
-            height: 30, fontSize: 12, padding: '0 10px', flexShrink: 0, borderRadius: 'var(--radius-sm)', border: 'none',
-            background: showMore ? 'var(--brand)' : 'var(--bg-subtle)', color: showMore ? '#fff' : 'var(--text-secondary)',
-            marginLeft: 4,
-          }}
-        >
-          {t['mathExpression.moreLabel']}
-        </button>
-      </div>
-
-      {showMore && (
-        <div role="group" aria-label={t['mathExpression.moreLabel']} style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
-          {MATH_MORE_BUTTONS.map((b) => (
+      {showToolbar && (
+        <>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 6, overflowX: 'auto', paddingBottom: 2, alignItems: 'center' }}>
+            {MATH_PRIMARY_BUTTONS.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => insertTemplate(b)}
+                disabled={!ready}
+                title={t[b.labelKey as keyof typeof t]}
+                aria-label={t[b.labelKey as keyof typeof t]}
+                style={toolbarButtonStyle}
+              >
+                {b.display}
+              </button>
+            ))}
             <button
-              key={b.id}
               type="button"
-              onClick={() => insertTemplate(b)}
-              disabled={!ready}
-              title={t[b.labelKey as keyof typeof t]}
-              aria-label={t[b.labelKey as keyof typeof t]}
-              style={toolbarButtonStyle}
+              onClick={() => setShowMore((s) => !s)}
+              aria-expanded={showMore}
+              aria-label={t['mathExpression.moreLabel']}
+              style={{
+                height: 30, fontSize: 12, padding: '0 10px', flexShrink: 0, borderRadius: 'var(--radius-sm)', border: 'none',
+                background: showMore ? 'var(--brand)' : 'var(--bg-subtle)', color: showMore ? '#fff' : 'var(--text-secondary)',
+                marginLeft: 4,
+              }}
             >
-              {b.display}
+              {t['mathExpression.moreLabel']}
             </button>
-          ))}
-        </div>
+          </div>
+
+          {showMore && (
+            <div role="group" aria-label={t['mathExpression.moreLabel']} style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
+              {MATH_MORE_BUTTONS.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => insertTemplate(b)}
+                  disabled={!ready}
+                  title={t[b.labelKey as keyof typeof t]}
+                  aria-label={t[b.labelKey as keyof typeof t]}
+                  style={toolbarButtonStyle}
+                >
+                  {b.display}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div ref={containerRef} />

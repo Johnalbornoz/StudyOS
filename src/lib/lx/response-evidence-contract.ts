@@ -215,3 +215,29 @@ export function contractPermitsGradingOn(
 ): boolean {
   return contract.partialCreditDimensions.includes(axis);
 }
+
+/**
+ * LX-8R3 R7 -- maps the canonical `kind` to the ONE instruction line
+ * shown above the single `UnifiedResponseComposer`, replacing the
+ * separate "type your answer" / "explain your reasoning" copy that
+ * used to label two different boxes. Returns an i18n KEY, never a
+ * resolved string -- this module stays free of any i18n/React
+ * dependency, exactly like the rest of this file; the caller resolves
+ * it via `getMessages`. This mapping decides PRESENTATION COPY only --
+ * it has no effect on `partialCreditDimensions`/grading, which remain
+ * entirely governed by the `kind`-derived fields above.
+ */
+export function responseInstructionKey(
+  kind: EvidenceRequirementKind,
+): 'response.instructionAnswerOnly' | 'response.instructionShowWork' | 'response.instructionJustify' | 'response.instructionExplain' {
+  switch (kind) {
+    case 'ANSWER_ONLY':
+      return 'response.instructionAnswerOnly';
+    case 'SHOW_WORK':
+      return 'response.instructionShowWork';
+    case 'JUSTIFY':
+      return 'response.instructionJustify';
+    case 'EXPLAIN':
+      return 'response.instructionExplain';
+  }
+}

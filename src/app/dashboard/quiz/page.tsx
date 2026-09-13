@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import LearningSupportStatus, { type LearningSupportContext } from '../LearningSupportStatus';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
-import MathAnswerEditor from '@/components/MathAnswerEditor';
 import MathText from '@/components/MathText';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-generation.service';
@@ -25,20 +24,23 @@ import ContinuationPanel from './ContinuationPanel';
 // quiz bundle. Each component already renders nothing until it has
 // confirmed browser support, so `ssr: false` costs no extra flicker.
 const ReadAloudButton = dynamic(() => import('../ReadAloudButton'), { ssr: false });
-const VoiceInputButton = dynamic(() => import('../VoiceInputButton'), { ssr: false });
-// LX-8R2-R1: the ONE canonical Math Response Composer for every
-// learner-facing mathematical final answer (main quiz, Retention
-// resume, Assessment verification) -- mounts a real DOM custom element
-// (<math-field>, from the `mathlive` package) that does not exist
-// server-side, so ssr:false, same pattern as every other browser-only
-// modality control above. Never import MathExpressionEditor/
-// MathVoiceInput directly from a page -- they are implementation
-// details MathResponseComposer owns.
-const MathResponseComposer = dynamic(() => import('@/components/MathResponseComposer'), { ssr: false });
+// LX-8R3: the ONE canonical unified response surface for every
+// learner-facing open response (main quiz, Retention resume,
+// Assessment verification) -- mixed prose/math blocks, a single mic,
+// and MathLive's own keyboard, replacing the old two-box (math answer
+// + separate reasoning) UX (LX-8R2-R1's `MathResponseComposer`,
+// retired). Mounts a real DOM custom element (<math-field>, from the
+// `mathlive` package) for any math block, so ssr:false, same pattern
+// as every other browser-only modality control above. Never import
+// MathExpressionEditor/MathVoiceInput/VoiceInputButton directly for a
+// response surface from a page -- they are implementation details this
+// ONE composer owns.
+const UnifiedResponseComposer = dynamic(() => import('@/components/UnifiedResponseComposer'), { ssr: false });
 import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/interaction-contract';
 import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
 import { isMathAnswerContext } from '@/lib/lx/math-response-contract';
+import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
 type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
@@ -278,14 +280,13 @@ function QuizPageContent() {
 
   const [singleChoice, setSingleChoice] = useState<string | null>(null);
   const [multiChoice, setMultiChoice] = useState<string[]>([]);
+  // LX-8R3 R1/R2/R8: the ONE unified response document (JSON-serialized
+  // via response-document.ts) for a free-text answer -- prose and math
+  // blocks together, never a second "reasoning" state field. `kind`
+  // (ResponseEvidenceContract) still governs the ONE instruction line
+  // shown above the composer (R7); it no longer forks into two
+  // separately-tracked pieces of state.
   const [textAnswer, setTextAnswer] = useState('');
-  // LX-8 R13: a SEPARATE reasoning surface, shown only when the
-  // already-canonical ResponseEvidenceContract (below) says this
-  // question requires work/justification alongside a final answer --
-  // never a new evidence rule, purely a presentation split of the one
-  // free-text answer the grader already receives (see
-  // encodeCurrentAnswer's 'text' case).
-  const [explanationAnswer, setExplanationAnswer] = useState('');
   const [matchingAnswer, setMatchingAnswer] = useState<Record<string, string>>({});
   const [orderingAnswer, setOrderingAnswer] = useState<string[]>([]);
   const [classificationAnswer, setClassificationAnswer] = useState<Record<string, string>>({});
@@ -682,7 +683,6 @@ function QuizPageContent() {
     setSingleChoice(null);
     setMultiChoice([]);
     setTextAnswer('');
-    setExplanationAnswer('');
     setMatchingAnswer({});
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
@@ -835,15 +835,14 @@ function QuizPageContent() {
       case 'multi_choice':
         return multiChoice.join(',');
       case 'text':
-        // LX-8 R13/R38, LX-8R1 R4: when the reasoning surface was shown,
-        // fold it into the SAME single string the grader already
-        // receives -- no grader change, no new evidence field.
-        // Presentation-only. A fixed, language-neutral "---" marker
-        // precedes the (localized) reasoning label so the boundary
-        // between answer and reasoning is unambiguous to the grader
-        // regardless of activity language, never relying on the label
-        // text alone to signal the split.
-        return explanationAnswer.trim() ? `${textAnswer}\n\n---\n${at['multimodal.reasoningLabel']}: ${explanationAnswer}` : textAnswer;
+        // LX-8R3 R8: `textAnswer` now holds the ONE unified
+        // ResponseDocument (response-document.ts) -- prose and math
+        // blocks in whatever order the learner wrote them, never a
+        // separate "final answer" + "reasoning" pair. `toGraderText`
+        // is the ONE deterministic transform to the plain string the
+        // EXISTING grader receives -- no grader change, no new
+        // evidence field.
+        return toGraderText(deserializeResponseDocument(textAnswer));
       case 'matching':
         return JSON.stringify(matchingAnswer);
       case 'ordering':
@@ -861,7 +860,7 @@ function QuizPageContent() {
       case 'multi_choice':
         return multiChoice.length > 0;
       case 'text':
-        return textAnswer.trim().length > 0;
+        return !isEmptyResponseDocument(deserializeResponseDocument(textAnswer));
       case 'matching':
         return (q.matchingLeft || []).every((l) => !!matchingAnswer[l]);
       case 'ordering':
@@ -956,7 +955,11 @@ function QuizPageContent() {
           studentId,
           quizId,
           conceptId,
-          answer: verificationAnswers[conceptId] || '',
+          // LX-8R3 R8: see submitResumeVerification's identical comment --
+          // a lossless no-op for a bare single_choice option id, the ONE
+          // canonical grader-facing transform for a serialized
+          // ResponseDocument free-text answer.
+          answer: toGraderText(deserializeResponseDocument(verificationAnswers[conceptId] || '')),
           language: quizLanguage,
           questionPresentedAt: verificationPresentedAtRef.current[conceptId],
           answerSubmittedAt,
@@ -1025,7 +1028,13 @@ function QuizPageContent() {
           studentId,
           quizId: resumeQuizId,
           conceptId,
-          answer: resumeAnswer,
+          // LX-8R3 R8: `resumeAnswer` may hold a serialized ResponseDocument
+          // (a free-text answer) or a bare option id (single_choice) --
+          // toGraderText(deserializeResponseDocument(...)) is a lossless
+          // no-op for the latter (a plain string round-trips as itself
+          // through a single paragraph block) and the ONE canonical
+          // grader-facing transform for the former. No grader change.
+          answer: toGraderText(deserializeResponseDocument(resumeAnswer)),
           language: quizLanguage,
           questionPresentedAt: resumePresentedAtRef.current || undefined,
           answerSubmittedAt,
@@ -1148,10 +1157,10 @@ function QuizPageContent() {
                 </div>
               ) : (
                 (() => {
-                  // LX-8R2-R1 R3/R6/R9: a resumed Assessment verification
-                  // question is a GeneratedQuestion (server-persisted,
-                  // includes type/expectedReasoningType) -- the SAME
-                  // canonical deriveResponseEvidenceContract/
+                  // LX-8R2-R1/LX-8R3 R3/R6/R9/R16: a resumed Assessment
+                  // verification question is a GeneratedQuestion (server-
+                  // persisted, includes type/expectedReasoningType) -- the
+                  // SAME canonical deriveResponseEvidenceContract/
                   // buildInteractionContract authorities the main quiz
                   // flow already uses, computed inline here since this
                   // early-return branch predates that flow's own
@@ -1163,7 +1172,11 @@ function QuizPageContent() {
                   // `activityLanguageContext` are the SAME state/value
                   // already computed above (before this early return) for
                   // the main flow -- no second capability-detection
-                  // effect, no second language context.
+                  // effect, no second language context. The SAME
+                  // UnifiedResponseComposer as the main quiz renders here
+                  // (R16: no route-specific input experience) -- its own
+                  // `mathEnabled` prop decides whether a math block/
+                  // keyboard is offered, never a second composer.
                   const resumeContract = deriveResponseEvidenceContract(
                     { type: resumeQuestion.type, expectedReasoningType: resumeQuestion.expectedReasoningType ?? null },
                     'ASSESSMENT',
@@ -1174,25 +1187,18 @@ function QuizPageContent() {
                     activityLanguage: activityLanguageContext,
                     capabilities: modalityCapabilities,
                   });
-                  return isMathAnswerContext(subjectName, resumeContract.kind) ? (
-                    <MathResponseComposer
+                  return (
+                    <UnifiedResponseComposer
                       value={resumeAnswer}
                       onChange={setResumeAnswer}
+                      responseKind={resumeContract.kind}
                       activityLanguageContext={activityLanguageContext}
                       voiceEnabled={resumeIc.inputModes.includes('VOICE')}
+                      mathEnabled={isMathAnswerContext(subjectName, resumeContract.kind)}
                       studentId={studentId}
                       conceptId={conceptId ?? undefined}
                       activityType="retention_verification"
                       placeholder={at['quiz.typeAnswer']}
-                    />
-                  ) : (
-                    <MathAnswerEditor
-                      value={resumeAnswer}
-                      onChange={setResumeAnswer}
-                      placeholder={at['quiz.typeAnswer']}
-                      subjectName={subjectName}
-                      studentId={studentId}
-                      locale={quizLanguage}
                     />
                   );
                 })()
@@ -1549,13 +1555,14 @@ function QuizPageContent() {
                     </div>
                   ) : (
                     (() => {
-                      // LX-8R2-R1 R3/R6/R9: same reasoning as the standalone
-                      // resume-verification branch above -- an inline
-                      // post-quiz Assessment verification question is also
-                      // a persisted GeneratedQuestion, so the SAME
+                      // LX-8R2-R1/LX-8R3 R3/R6/R9/R16: same reasoning as the
+                      // standalone resume-verification branch above -- an
+                      // inline post-quiz Assessment verification question is
+                      // also a persisted GeneratedQuestion, so the SAME
                       // canonical contracts are computed inline, reusing
                       // the SAME activityLanguageContext/modalityCapabilities
-                      // already in scope for the main flow.
+                      // already in scope for the main flow, rendering the
+                      // SAME UnifiedResponseComposer as every other surface.
                       const vContract = deriveResponseEvidenceContract(
                         { type: v.question.type, expectedReasoningType: v.question.expectedReasoningType ?? null },
                         'ASSESSMENT',
@@ -1566,25 +1573,18 @@ function QuizPageContent() {
                         activityLanguage: activityLanguageContext,
                         capabilities: modalityCapabilities,
                       });
-                      return isMathAnswerContext(subjectName, vContract.kind) ? (
-                        <MathResponseComposer
+                      return (
+                        <UnifiedResponseComposer
                           value={verificationAnswers[v.conceptId] || ''}
                           onChange={(val) => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: val }))}
+                          responseKind={vContract.kind}
                           activityLanguageContext={activityLanguageContext}
                           voiceEnabled={vIc.inputModes.includes('VOICE')}
+                          mathEnabled={isMathAnswerContext(subjectName, vContract.kind)}
                           studentId={studentId}
                           conceptId={v.conceptId}
                           activityType="assessment_verification"
                           placeholder={at['quiz.typeAnswer']}
-                        />
-                      ) : (
-                        <MathAnswerEditor
-                          value={verificationAnswers[v.conceptId] || ''}
-                          onChange={(val) => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: val }))}
-                          placeholder={at['quiz.typeAnswer']}
-                          subjectName={subjectName}
-                          studentId={studentId}
-                          locale={quizLanguage}
                         />
                       );
                     })()
@@ -2022,93 +2022,33 @@ function QuizPageContent() {
 
         {q.answerFormat === 'text' && (
           <div>
-            {/* LX-8R2-R1 R2/R8: the FINAL-ANSWER box only -- the ONE
-                canonical MathResponseComposer (structured editor +
-                voice-to-math, both owned internally) when this is a
-                math-subject, non-EXPLAIN/JUSTIFY ask
-                (isMathAnswerContext, imported from
-                math-response-contract.ts -- never a page-local copy),
-                otherwise the unchanged prose MathAnswerEditor. The
-                reasoning/justification box below is NEVER switched --
-                it stays the prose editor regardless (R6/R8's
-                "[reasoning/work]"/"[justification]" are text surfaces,
-                distinct from the "[math answer]" box). `textAnswer`
-                remains the one string every existing consumer reads;
-                the composer just writes canonical LaTeX into it,
-                $-wrapped so Review's existing MathText rendering of
-                r.studentAnswer picks it up with no changes there.
-                Voice eligibility is still the ONE interactionContract
-                authority (ic.inputModes) -- the composer itself never
-                re-derives it; it is simply told whether voice applies
-                via `voiceEnabled`. */}
-            {isMathAnswerContext(subjectName, responseContract.kind) ? (
-              <MathResponseComposer
-                value={textAnswer}
-                onChange={setTextAnswer}
-                activityLanguageContext={activityLanguageContext}
-                voiceEnabled={ic.inputModes.includes('VOICE')}
-                studentId={studentId}
-                conceptId={conceptId ?? undefined}
-                activityType={quizMode}
-                placeholder={at['quiz.typeAnswer']}
-              />
-            ) : (
-              <>
-                <MathAnswerEditor
-                  value={textAnswer}
-                  onChange={setTextAnswer}
-                  placeholder={at['quiz.typeAnswer']}
-                  subjectName={subjectName}
-                  studentId={studentId}
-                  locale={quizLanguage}
-                />
-                {/* LX-8 R3/R4/R6: voice is a pure INPUT method for this
-                    same free-text surface -- offered regardless of
-                    quizMode (assistance gating is a completely separate
-                    axis), never auto-submitted (VoiceInputButton
-                    requires explicit review + accept before it ever
-                    touches textAnswer). LX-8R1 R1: gated by the ONE
-                    interactionContract authority (ic.inputModes) --
-                    never a second "VOICE allowed because answerFormat
-                    === text" check here. LX-8R1 R3: recognition locale
-                    is ic.expectedResponseLanguage, never
-                    ic.activityLanguage directly. */}
-                {ic.inputModes.includes('VOICE') && (
-                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <VoiceInputButton
-                      expectedResponseLanguage={ic.expectedResponseLanguage}
-                      onAccept={(transcript) => setTextAnswer(transcript)}
-                      micLabel={at['multimodal.speakAnswer']}
-                      stopLabel={at['multimodal.stopRecording']}
-                      reviewTitle={at['multimodal.reviewTranscript']}
-                      useThisLabel={at['multimodal.useThisAnswer']}
-                      reRecordLabel={at['multimodal.recordAgain']}
-                      discardLabel={at['multimodal.discard']}
-                      permissionDeniedLabel={at['multimodal.micPermissionDenied']}
-                      transcriptionFailedLabel={at['multimodal.transcriptionFailed']}
-                      conceptId={conceptId ?? undefined}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-            {/* LX-8 R13: a SEPARATE reasoning surface -- only when the
-                already-canonical ResponseEvidenceContract says this
-                question asks for work/justification alongside a final
-                answer. Never rendered for a plain ANSWER_ONLY/EXPLAIN-only ask. */}
-            {(responseContract.requiresWork || responseContract.requiresJustification) && (
-              <div style={{ marginTop: 'var(--space-4)' }}>
-                <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['multimodal.reasoningLabel']}</p>
-                <MathAnswerEditor
-                  value={explanationAnswer}
-                  onChange={setExplanationAnswer}
-                  placeholder={at['multimodal.reasoningPlaceholder']}
-                  subjectName={subjectName}
-                  studentId={studentId}
-                  locale={quizLanguage}
-                />
-              </div>
-            )}
+            {/* LX-8R3 R1/R7: ONE response surface -- prose, structured
+                math, or any mix, in the order the learner writes them --
+                replacing the old "math final-answer box PLUS a separate
+                reasoning box" two-editor UX. `responseContract.kind`
+                selects the ONE instruction line (R7); it is never used
+                to render two boxes. `textAnswer` now holds the FULL
+                serialized ResponseDocument (response-document.ts),
+                still the one string `encodeCurrentAnswer`/`canProceed`
+                read -- `mathEnabled` (isMathAnswerContext, the ONE
+                shared classifier) decides only whether a math block/
+                keyboard is ever offered within this same composer,
+                never which of two composers renders (R16: the same
+                component operates prose-only when false). Voice
+                eligibility remains the ONE interactionContract
+                authority (ic.inputModes). */}
+            <UnifiedResponseComposer
+              value={textAnswer}
+              onChange={setTextAnswer}
+              responseKind={responseContract.kind}
+              activityLanguageContext={activityLanguageContext}
+              voiceEnabled={ic.inputModes.includes('VOICE')}
+              mathEnabled={isMathAnswerContext(subjectName, responseContract.kind)}
+              studentId={studentId}
+              conceptId={conceptId ?? undefined}
+              activityType={quizMode}
+              placeholder={at['quiz.typeAnswer']}
+            />
           </div>
         )}
 

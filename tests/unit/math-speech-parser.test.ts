@@ -357,3 +357,143 @@ describe('MathSpeechParser -- Spanish accented and unaccented STT spellings both
     expect(latex('raiz cuadrada de equis', 'es')).toBe(latex('raíz cuadrada de equis', 'es'));
   });
 });
+
+/* ================================================================ *
+ * LX-8R3 R10 -- the exact live-failure phrase, both raw-symbol and   *
+ * fully-spoken forms, in both languages.                             *
+ * ================================================================ */
+describe('LX-8R3 R10 -- the live-failure phrase now parses: "3/5 + 8/4 todo elevado al cuadrado"', () => {
+  const target = '(\\frac{3}{5}+\\frac{8}{4})^{2}';
+
+  it('exact live phrase (raw slash fractions + literal "+" symbol + Spanish whole-group exponent)', () => {
+    expect(latex('3/5 + 8/4 todo elevado al cuadrado', 'es')).toBe(target);
+  });
+
+  it('spoken "sobre" (over) fractions, same phrase', () => {
+    expect(latex('3 sobre 5 más 8 sobre 4 todo elevado al cuadrado', 'es')).toBe(target);
+  });
+
+  it('spoken plural-fraction words inside explicit parentheses (no "todo" needed since scope is already explicit)', () => {
+    expect(latex('abre paréntesis tres quintos más ocho cuartos cierra paréntesis al cuadrado', 'es')).toBe(target);
+  });
+
+  it('English: "three fifths plus eight fourths all squared"', () => {
+    expect(latex('three fifths plus eight fourths all squared', 'en')).toBe(target);
+  });
+
+  it('English: "three over five plus eight over four all squared"', () => {
+    expect(latex('three over five plus eight over four all squared', 'en')).toBe(target);
+  });
+
+  it('English: raw slash fractions + literal "+" + "all squared"', () => {
+    expect(latex('3/5 + 8/4 all squared', 'en')).toBe(target);
+  });
+});
+
+/* ================================================================ *
+ * LX-8R3 R12 -- raw STT symbol normalization (slash fractions,      *
+ * literal operator characters) converges with the fully-spoken form.*
+ * ================================================================ */
+describe('LX-8R3 R12 -- raw STT symbol forms normalize to the same structure as the spoken form', () => {
+  it('"3/5" (no spaces) and "3 / 5" (spaced) and "three fifths" (spoken) all produce the same fraction', () => {
+    const a = latex('3/5', 'en');
+    const b = latex('3 / 5', 'en');
+    const c = latex('three fifths', 'en');
+    expect(new Set([a, b, c]).size).toBe(1);
+    expect(a).toBe('\\frac{3}{5}');
+  });
+
+  it('"3 divided by 5" also converges to the same fraction', () => {
+    expect(latex('3 divided by 5', 'en')).toBe('\\frac{3}{5}');
+  });
+
+  it('literal "+" and "-" symbols behave identically to their spoken-word equivalents', () => {
+    expect(latex('2 + 3', 'en')).toBe(latex('two plus three', 'en'));
+    expect(latex('2 - 3', 'en')).toBe(latex('two minus three', 'en'));
+  });
+
+  it('literal "^" converges with "squared"/"to the" phrasing: "x^2", "x squared", and "x to the second" all agree', () => {
+    const a = latex('x^2', 'en');
+    const b = latex('x squared', 'en');
+    const c = latex('x to the second', 'en');
+    expect(new Set([a, b, c]).size).toBe(1);
+    expect(a).toBe('x^{2}');
+  });
+
+  it('literal "=" converges with "equals"', () => {
+    expect(latex('x = 5', 'en')).toBe(latex('x equals five', 'en'));
+  });
+
+  it('normalization never solves or simplifies -- "3/5 + 8/4" stays an unevaluated sum of two fractions, never a computed decimal or combined fraction', () => {
+    expect(latex('3/5 + 8/4', 'en')).toBe('\\frac{3}{5}+\\frac{8}{4}');
+  });
+});
+
+/* ================================================================ *
+ * LX-8R3 R10 -- plural fraction words as a standalone leaf, distinct *
+ * from the existing singular "half of X" divisor pattern.           *
+ * ================================================================ */
+describe('LX-8R3 R10 -- plural fraction words (self-contained, never followed by "of")', () => {
+  it('English plural fractions: thirds, fourths, fifths, sixths, eighths, tenths', () => {
+    expect(latex('two thirds', 'en')).toBe('\\frac{2}{3}');
+    expect(latex('three fourths', 'en')).toBe('\\frac{3}{4}');
+    expect(latex('four fifths', 'en')).toBe('\\frac{4}{5}');
+    expect(latex('five sixths', 'en')).toBe('\\frac{5}{6}');
+    expect(latex('seven eighths', 'en')).toBe('\\frac{7}{8}');
+    expect(latex('nine tenths', 'en')).toBe('\\frac{9}{10}');
+  });
+
+  it('Spanish plural fractions: tercios, cuartos, quintos, sextos, octavos, decimos', () => {
+    expect(latex('dos tercios', 'es')).toBe('\\frac{2}{3}');
+    expect(latex('tres cuartos', 'es')).toBe('\\frac{3}{4}');
+    expect(latex('cuatro quintos', 'es')).toBe('\\frac{4}{5}');
+    expect(latex('cinco sextos', 'es')).toBe('\\frac{5}{6}');
+    expect(latex('siete octavos', 'es')).toBe('\\frac{7}{8}');
+    expect(latex('nueve decimos', 'es')).toBe('\\frac{9}{10}');
+  });
+
+  it('a plural fraction can itself carry a power suffix: "three fourths squared"', () => {
+    expect(latex('three fourths squared', 'en')).toBe('\\frac{3}{4}^{2}');
+  });
+
+  it('the existing singular FRACTION_WORD rule ("one half of x") is unaffected by the new plural rule', () => {
+    expect(latex('one half of x', 'en')).toBe('\\frac{x}{2}');
+    expect(latex('un medio de equis', 'es')).toBe('\\frac{x}{2}');
+  });
+});
+
+/* ================================================================ *
+ * LX-8R3 R11 -- whole-group exponent phrases, unambiguous placement *
+ * only (trailing); any other placement fails closed.                *
+ * ================================================================ */
+describe('LX-8R3 R11 -- whole-group exponent phrases apply only to the unambiguous trailing position', () => {
+  it('"todo eso al cubo" (Spanish) applies the cube to everything parsed so far', () => {
+    expect(latex('equis más uno todo eso al cubo', 'es')).toBe('(x+1)^{3}');
+  });
+
+  it('"the whole thing cubed" (English) applies the cube to everything parsed so far', () => {
+    expect(latex('x plus one the whole thing cubed', 'en')).toBe('(x+1)^{3}');
+  });
+
+  it('a trivial (non-sum) expression followed by "all squared" needs no extra grouping parens', () => {
+    expect(latex('x all squared', 'en')).toBe('x^{2}');
+    expect(latex('equis todo al cuadrado', 'es')).toBe('x^{2}');
+  });
+
+  it('generic "all to the <N>" / "todo elevado a <N>" also wraps the whole expression', () => {
+    expect(latex('x plus one all to the four', 'en')).toBe('(x+1)^{4}');
+    expect(latex('equis más uno todo elevado a cuatro', 'es')).toBe('(x+1)^{4}');
+  });
+
+  it('an explicitly-parenthesized group already has unambiguous scope -- the ordinary SQUARED/CUBED suffix is used instead, no "all"/"todo" needed', () => {
+    expect(latex('open parenthesis x plus one close parenthesis squared', 'en')).toBe('(x+1)^{2}');
+  });
+
+  it('a whole-group phrase in a non-trailing (mid-expression) position is not a recognized grammar placement and fails closed rather than guessing its scope', () => {
+    // "all squared" followed by more expression content has no defined
+    // meaning in this grammar (R11: only the trailing position is
+    // unambiguous) -- the trailing "plus one" is left unconsumed.
+    const r = parseMathSpeech('two plus three all squared plus one', 'en');
+    expect(r.ok).toBe(false);
+  });
+});

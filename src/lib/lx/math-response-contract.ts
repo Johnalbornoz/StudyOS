@@ -109,8 +109,9 @@ export function isMathAnswerContext(subjectName: string | undefined, kind: Evide
  * real typeset math via the EXISTING `<MathText>` component with zero
  * changes there, and the AI grader (already reading AI-authored
  * $-delimited LaTeX in the question/model-answer) sees the same
- * convention back. `MathResponseComposer` is the only thing that calls
- * these two functions; no other component should need to.
+ * convention back. LX-8R3: also reused by `response-document.ts`'s
+ * `toGraderText` for a math BLOCK within a unified response document
+ * (`UnifiedResponseComposer`) -- the same convention, one authority.
  */
 export function wrapMathForStorage(latex: string): string {
   return latex ? `$${latex}$` : '';

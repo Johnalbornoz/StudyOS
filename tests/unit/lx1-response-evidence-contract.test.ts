@@ -9,6 +9,7 @@ import { join } from 'path';
 import {
   deriveResponseEvidenceContract,
   contractPermitsGradingOn,
+  responseInstructionKey,
   RESPONSE_EVIDENCE_CONTRACT_VERSION,
 } from '@/lib/lx/response-evidence-contract';
 import { evidenceModeForActivity } from '@/lib/activity-taxonomy';
@@ -105,5 +106,27 @@ describe('LX-1C grader whitelist invariant (preserved)', () => {
         'derivedFrom',
       ].sort(),
     );
+  });
+});
+
+/* ================================================================ *
+ * LX-8R3 R7 -- responseInstructionKey maps kind to the ONE           *
+ * instruction line shown above the unified composer.                 *
+ * ================================================================ */
+describe('LX-8R3 R7 -- responseInstructionKey maps every kind to a distinct instruction, presentation-only', () => {
+  it('each kind maps to its own i18n key', () => {
+    expect(responseInstructionKey('ANSWER_ONLY')).toBe('response.instructionAnswerOnly');
+    expect(responseInstructionKey('SHOW_WORK')).toBe('response.instructionShowWork');
+    expect(responseInstructionKey('JUSTIFY')).toBe('response.instructionJustify');
+    expect(responseInstructionKey('EXPLAIN')).toBe('response.instructionExplain');
+  });
+
+  it('all four keys are distinct', () => {
+    const keys = (['ANSWER_ONLY', 'SHOW_WORK', 'JUSTIFY', 'EXPLAIN'] as const).map(responseInstructionKey);
+    expect(new Set(keys).size).toBe(4);
+  });
+
+  it('this module remains free of any i18n/React dependency -- it returns a KEY, never a resolved string', () => {
+    expect(SRC).not.toMatch(/getMessages|from ['"]react['"]/);
   });
 });

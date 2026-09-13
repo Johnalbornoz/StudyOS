@@ -59,11 +59,50 @@
  *     category test coverage in math-speech-parser.test.ts.
  *   - Expanding vocabulary (e.g. adding compound number words, or a
  *     new language) is ALWAYS a `GRAMMARS`-table change in this one
- *     file, never a change to `MathResponseComposer`,
+ *     file, never a change to `UnifiedResponseComposer`,
  *     `MathExpressionEditor`, or `MathVoiceInput` -- none of those
  *     modules know this grammar's vocabulary, only that
  *     `parseMathSpeech` returns `{ ok, latex }` or `{ ok: false, reason
  *     }`.
+ *
+ * LX-8R3 R10/R11/R12 -- GRAMMAR EXPANSION (fraction phrasing + raw STT
+ * symbol forms + unambiguous whole-group exponent phrases), added
+ * WITHOUT any AI/LLM call and without changing the parser algorithm
+ * shape above -- every addition below is either a new GRAMMARS table
+ * entry or a small, deterministic pre-normalization pass:
+ *   - R12 raw-symbol normalization: a literal `<digit>/<digit>` run
+ *     (as some browsers' STT emits for a spoken fraction, e.g. "3/5")
+ *     is re-spaced to `<digit> / <digit>` BEFORE word-splitting, so the
+ *     existing DIVIDE-to-`\frac` transform picks it up like any other
+ *     spoken "divided by" -- this is a representation normalization
+ *     only (R12: "never solve or simplify"), never a numeric operation.
+ *     Bare `+ - * / = ^` symbols are also recognized as their own
+ *     word-tokens (PLUS/MINUS/TIMES/DIVIDE/EQUALS/TO_THE respectively)
+ *     in both languages, so a transcript that already reads
+ *     symbolically converges on the same AST as one read as words.
+ *   - R10 "over"/"sobre" join the existing DIVIDE vocabulary (reuses
+ *     the SAME `\frac` transform "divided by"/"dividido entre" already
+ *     used -- no new AST node).
+ *   - R10 PLURAL fraction words ("three fifths"/"tres quintos") are a
+ *     NEW leaf grammar rule -- `<cardinal> <plural-fraction-word>` --
+ *     distinct from the existing singular `FRACTION_WORD` rule ("half
+ *     of X" -> X/2): a plural fraction word never expects a following
+ *     "of", it completes a self-contained fraction on its own
+ *     (reduces to the SAME `frac` AST node the DIVIDE transform uses).
+ *   - R11 whole-group exponent phrases ("all squared"/"todo elevado al
+ *     cuadrado"/"todo eso al cubo"/"the whole thing cubed") are
+ *     recognized ONLY as a TRAILING modifier on the complete top-level
+ *     expression parsed so far (checked once, in `parseTop`, after the
+ *     additive chain and before any relational operator) -- this is
+ *     the one placement where the phrase's scope is unambiguous by
+ *     construction (R11: "only when scope is unambiguous... if
+ *     ambiguous: fail closed"). Any OTHER placement (e.g. genuinely
+ *     mid-expression) is not a recognized grammar position, so the
+ *     leftover token(s) surface as the ordinary `INCOMPLETE_EXPRESSION`
+ *     fail-closed path -- this parser makes no attempt to guess a
+ *     mid-expression scope. Reduces to the SAME `pow`/`group` AST nodes
+ *     the existing explicit-parentheses-plus-suffix path already uses,
+ *     so no serializer change was needed either.
  */
 import type { Locale } from '@/lib/i18n/messages';
 
@@ -108,6 +147,8 @@ type Token =
   | { type: 'ABS' }
   | { type: 'OF' }
   | { type: 'FRACTION_WORD'; n: string } // "half"/"medio" etc, always followed by OF
+  | { type: 'PLURAL_FRACTION_WORD'; n: string } // "fifths"/"quintos" etc -- a self-contained "<NUM> <this>" fraction, never followed by OF
+  | { type: 'ALL_SQUARED' | 'ALL_CUBED' | 'ALL_TO_THE' } // "all squared"/"todo elevado al cuadrado" -- LX-8R3 R11, trailing-only
   | { type: 'EQUALS' | 'LT' | 'GT' | 'LEQ' | 'GEQ' };
 
 interface LanguageGrammar {
@@ -119,19 +160,50 @@ interface LanguageGrammar {
   cardinals: Record<string, string>;
   /** Ordinal words used after "to the"/generic exponent phrasing (English) -- Spanish uses cardinals after "elevado a". */
   ordinals?: Record<string, string>;
+  /** LX-8R3 R10: plural fraction-denominator words -- "fifths"/"quintos" etc. */
+  pluralFractions: Record<string, string>;
 }
 
 function stripDiacritics(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+/**
+ * LX-8R3 R12: re-space bare operator/exponent symbols (`+ - * / ^ =`)
+ * that some browsers' STT emits glued directly to a digit/letter (e.g.
+ * "3/5", "x^2") into their own whitespace-delimited word (`3 / 5`,
+ * `x ^ 2`), so they tokenize identically to the same symbol already
+ * surrounded by spaces, or to the fully-spoken form ("x squared").
+ * Representation only -- the surrounding digits/letters are never
+ * touched, computed, or evaluated.
+ */
+function normalizeRawSymbols(transcript: string): string {
+  return transcript.replace(/([+\-*/^=])/g, ' $1 ');
+}
+
 /** Tokenizes on already-lowercased, diacritic-stripped words -- table keys below are written in that same normalized form. */
 function normalizeWords(transcript: string): string[] {
-  return stripDiacritics(transcript.toLowerCase())
+  return stripDiacritics(normalizeRawSymbols(transcript).toLowerCase())
     .replace(/[.,;:!?¿¡]/g, ' ')
     .split(/\s+/)
     .filter(Boolean);
 }
+
+/**
+ * LX-8R3 R12: literal ASCII operator symbols, recognized identically
+ * in both languages, so a transcript that already reads symbolically
+ * ("x ^ 2", "3 + 4") converges on the same AST as one read as words
+ * ("x squared"/"x al cuadrado", "three plus four"). Merged into every
+ * language's own `words` table below.
+ */
+const SYMBOL_WORDS: Record<string, Token> = {
+  '+': { type: 'PLUS' },
+  '-': { type: 'MINUS' },
+  '*': { type: 'TIMES' },
+  '/': { type: 'DIVIDE' },
+  '=': { type: 'EQUALS' },
+  '^': { type: 'TO_THE' },
+};
 
 const ES_CARDINALS: Record<string, string> = {
   cero: '0', uno: '1', una: '1', un: '1', dos: '2', tres: '3', cuatro: '4', cinco: '5', seis: '6',
@@ -148,6 +220,14 @@ const EN_CARDINALS: Record<string, string> = {
 const EN_ORDINALS: Record<string, string> = {
   first: '1', second: '2', third: '3', fourth: '4', fifth: '5', sixth: '6', seventh: '7', eighth: '8',
   ninth: '9', tenth: '10',
+};
+
+/** LX-8R3 R10: plural fraction-denominator words -- "three FIFTHS" (a self-contained 3/5), distinct from the singular "FRACTION_WORD" rule ("half OF x" -> x/2). */
+const ES_PLURAL_FRACTIONS: Record<string, string> = {
+  medios: '2', tercios: '3', cuartos: '4', quintos: '5', sextos: '6', septimos: '7', octavos: '8', novenos: '9', decimos: '10',
+};
+const EN_PLURAL_FRACTIONS: Record<string, string> = {
+  halves: '2', thirds: '3', fourths: '4', fifths: '5', sixths: '6', sevenths: '7', eighths: '8', ninths: '9', tenths: '10',
 };
 
 const GRAMMARS: Partial<Record<Locale, LanguageGrammar>> = {
@@ -177,15 +257,26 @@ const GRAMMARS: Partial<Record<Locale, LanguageGrammar>> = {
       { words: ['un', 'cuarto'], token: { type: 'FRACTION_WORD', n: '4' } },
       { words: ['un', 'quinto'], token: { type: 'FRACTION_WORD', n: '5' } },
       { words: ['y', 'griega'], token: { type: 'VAR', name: 'y' } },
+      // LX-8R3 R11: whole-group exponent phrases -- trailing-only (see the module doc comment above).
+      { words: ['todo', 'elevado', 'al', 'cuadrado'], token: { type: 'ALL_SQUARED' } },
+      { words: ['todo', 'al', 'cuadrado'], token: { type: 'ALL_SQUARED' } },
+      { words: ['todo', 'eso', 'al', 'cuadrado'], token: { type: 'ALL_SQUARED' } },
+      { words: ['todo', 'elevado', 'al', 'cubo'], token: { type: 'ALL_CUBED' } },
+      { words: ['todo', 'al', 'cubo'], token: { type: 'ALL_CUBED' } },
+      { words: ['todo', 'eso', 'al', 'cubo'], token: { type: 'ALL_CUBED' } },
+      { words: ['todo', 'elevado', 'a'], token: { type: 'ALL_TO_THE' } },
     ],
     words: {
+      ...SYMBOL_WORDS,
       mas: { type: 'PLUS' }, menos: { type: 'MINUS' }, por: { type: 'TIMES' }, entre: { type: 'DIVIDE' },
+      sobre: { type: 'DIVIDE' }, // LX-8R3 R10: "3 sobre 5" = 3/5, reuses the existing DIVIDE-to-\frac transform
       pi: { type: 'PI' },
       equis: { type: 'VAR', name: 'x' }, ye: { type: 'VAR', name: 'y' }, zeta: { type: 'VAR', name: 'z' },
       ene: { type: 'VAR', name: 'n' }, eme: { type: 'VAR', name: 'm' },
       de: { type: 'OF' },
     },
     cardinals: ES_CARDINALS,
+    pluralFractions: ES_PLURAL_FRACTIONS,
   },
   en: {
     phrases: [
@@ -211,14 +302,23 @@ const GRAMMARS: Partial<Record<Locale, LanguageGrammar>> = {
       { words: ['one', 'quarter'], token: { type: 'FRACTION_WORD', n: '4' } },
       { words: ['one', 'fourth'], token: { type: 'FRACTION_WORD', n: '4' } },
       { words: ['one', 'fifth'], token: { type: 'FRACTION_WORD', n: '5' } },
+      // LX-8R3 R11: whole-group exponent phrases -- trailing-only (see the module doc comment above).
+      { words: ['the', 'whole', 'thing', 'squared'], token: { type: 'ALL_SQUARED' } },
+      { words: ['the', 'whole', 'thing', 'cubed'], token: { type: 'ALL_CUBED' } },
+      { words: ['all', 'squared'], token: { type: 'ALL_SQUARED' } },
+      { words: ['all', 'cubed'], token: { type: 'ALL_CUBED' } },
+      { words: ['all', 'to', 'the'], token: { type: 'ALL_TO_THE' } },
     ],
     words: {
+      ...SYMBOL_WORDS,
       plus: { type: 'PLUS' }, minus: { type: 'MINUS' }, times: { type: 'TIMES' },
       equals: { type: 'EQUALS' }, pi: { type: 'PI' }, of: { type: 'OF' },
       squared: { type: 'SQUARED' }, cubed: { type: 'CUBED' },
+      over: { type: 'DIVIDE' }, // LX-8R3 R10: "three over five" = 3/5, reuses the existing DIVIDE-to-\frac transform
     },
     cardinals: EN_CARDINALS,
     ordinals: EN_ORDINALS,
+    pluralFractions: EN_PLURAL_FRACTIONS,
   },
 };
 
@@ -254,6 +354,11 @@ function tokenize(words: string[], g: LanguageGrammar): Token[] {
     }
     if (g.cardinals[w] !== undefined) {
       tokens.push({ type: 'NUM', value: g.cardinals[w] });
+      i += 1;
+      continue;
+    }
+    if (g.pluralFractions[w] !== undefined) {
+      tokens.push({ type: 'PLURAL_FRACTION_WORD', n: g.pluralFractions[w] });
       i += 1;
       continue;
     }
@@ -308,7 +413,23 @@ class Parser {
   }
 
   parseTop(): Node {
-    const left = this.parseAdditive();
+    let left = this.parseAdditive();
+
+    // LX-8R3 R11: a trailing whole-group exponent phrase ("all
+    // squared"/"todo elevado al cuadrado"/"todo eso al cubo") wraps
+    // EVERYTHING parsed so far -- the one placement where its scope is
+    // unambiguous (see the module doc comment). Only wraps in an
+    // (explicit) group when the accumulated expression is actually a
+    // sum/difference (`bin`) -- a single atom/pow/frac needs no extra
+    // parens (e.g. "x all squared" is just x^2, not (x)^2).
+    const allPowerTok = this.peek();
+    if (allPowerTok && (allPowerTok.type === 'ALL_SQUARED' || allPowerTok.type === 'ALL_CUBED' || allPowerTok.type === 'ALL_TO_THE')) {
+      this.next();
+      const exp = allPowerTok.type === 'ALL_SQUARED' ? '2' : allPowerTok.type === 'ALL_CUBED' ? '3' : this.expect('NUM').value;
+      const base: Node = left.kind === 'bin' ? { kind: 'group', inner: left } : left;
+      left = { kind: 'pow', base, exp };
+    }
+
     const t = this.peek();
     if (t && (t.type === 'EQUALS' || t.type === 'LT' || t.type === 'GT' || t.type === 'LEQ' || t.type === 'GEQ')) {
       this.next();
@@ -345,6 +466,16 @@ class Parser {
     if (t?.type === 'NUM') {
       this.next();
       const nextTok = this.peek();
+      // LX-8R3 R10: "<NUM> <plural-fraction-word>" ("three fifths"/"tres
+      // quintos") is a SELF-CONTAINED fraction, not a coefficient*base --
+      // checked before the coefficient-juxtaposition case below, since
+      // it is a strictly narrower, more specific match on the same
+      // leading NUM token.
+      if (nextTok?.type === 'PLURAL_FRACTION_WORD') {
+        this.next();
+        const fracNode: Node = { kind: 'frac', num: { kind: 'num', value: t.value }, den: { kind: 'num', value: nextTok.n } };
+        return this.applyPowerSuffix(fracNode);
+      }
       if (nextTok && (nextTok.type === 'VAR' || nextTok.type === 'OPEN_PAREN' || nextTok.type === 'PI' || nextTok.type === 'SQRT' || nextTok.type === 'CBRT' || nextTok.type === 'NTH_ROOT' || nextTok.type === 'ABS')) {
         const base = this.parseBaseWithPower();
         return { kind: 'coeff', num: t.value, base };

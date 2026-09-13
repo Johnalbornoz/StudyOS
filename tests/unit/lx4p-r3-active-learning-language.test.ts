@@ -33,7 +33,8 @@ import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const QUIZ = read('src/app/dashboard/quiz/page.tsx');
 const LEARNING_SUPPORT = read('src/app/dashboard/LearningSupportStatus.tsx');
-const MATH_EDITOR = read('src/components/MathAnswerEditor.tsx');
+/** LX-8R3: MathAnswerEditor was deleted (zero remaining callers, retired by UnifiedResponseComposer) -- MathExpressionEditor is the live math-entry surface now. */
+const MATH_EXPRESSION_EDITOR = read('src/components/MathExpressionEditor.tsx');
 const TEACH = read('src/app/dashboard/quiz/TeachingIntro.tsx');
 const HELP = read('src/app/dashboard/quiz/ContextualHelp.tsx');
 const LAYOUT = read('src/app/dashboard/layout.tsx');
@@ -52,21 +53,26 @@ describe('LX-4P-R3 R1/R2 -- one canonical activity-language authority, no indepe
     expect(QUIZ).toMatch(/<TeachingIntro[\s\S]*?locale=\{quizLanguage\}/);
     expect(QUIZ).toMatch(/<ContextualHelp[^>]*locale=\{quizLanguage\}/);
     expect(QUIZ).toMatch(/<ContinuationPanel[\s\S]*?locale=\{quizLanguage\}/);
-    // (4) no MathAnswerEditor call site in the active-learning surface still reads the interface locale
-    const mathEditorCalls = QUIZ.match(/<MathAnswerEditor[\s\S]{0,450}?\/>/g) ?? [];
-    expect(mathEditorCalls.length).toBeGreaterThanOrEqual(3);
-    for (const call of mathEditorCalls) {
-      expect(call).toMatch(/locale=\{quizLanguage\}/);
+    // (4) LX-8R3: MathAnswerEditor was retired entirely (deleted) when
+    // the response surface was unified into UnifiedResponseComposer --
+    // every UnifiedResponseComposer call site must receive
+    // `activityLanguageContext` (built from quizLanguage below, never a
+    // raw `locale`/interface-language prop of its own).
+    expect(QUIZ).toMatch(/const activityLanguageContext = buildActivityLanguageContext\(quizLanguage\);/);
+    const composerCalls = QUIZ.match(/<UnifiedResponseComposer[\s\S]{0,900}?\/>/g) ?? [];
+    expect(composerCalls.length).toBeGreaterThanOrEqual(3);
+    for (const call of composerCalls) {
+      expect(call).toMatch(/activityLanguageContext=\{activityLanguageContext\}/);
       expect(call).not.toMatch(/locale=\{locale\}/);
     }
   });
 
-  it('LearningSupportStatus, MathAnswerEditor, TeachingIntro, ContextualHelp all take locale/t as PROPS -- none reads a global source itself', () => {
-    for (const src of [LEARNING_SUPPORT, MATH_EDITOR, TEACH, HELP]) {
+  it('LearningSupportStatus, MathExpressionEditor, TeachingIntro, ContextualHelp all take locale/t as PROPS -- none reads a global source itself', () => {
+    for (const src of [LEARNING_SUPPORT, MATH_EXPRESSION_EDITOR, TEACH, HELP]) {
       expect(src).not.toMatch(/getInterfaceLanguage|getLocale\(\)|cookies\(\)\.get\(['"]locale/);
     }
     expect(LEARNING_SUPPORT).toMatch(/t: Messages/); // receives the resolved messages object, doesn't derive one
-    expect(MATH_EDITOR).toMatch(/locale: Locale/);
+    expect(MATH_EXPRESSION_EDITOR).toMatch(/locale: Locale/);
     expect(TEACH).toMatch(/locale: Locale/);
     expect(HELP).toMatch(/locale: Locale/);
   });
@@ -170,30 +176,41 @@ describe('LX-4P-R3 R6 -- confidence UI follows activity language; gating logic i
 
 /* ======================================================================
  * R7 -- math input chrome
+ *
+ * LX-8R3 R4/R7 note: the category-tabbed Unicode-symbol toolbar this
+ * block originally verified belonged to `MathAnswerEditor`, which LX-8R3
+ * retired entirely (deleted -- zero remaining callers) when the
+ * learner-facing math/reasoning surface was unified into
+ * `UnifiedResponseComposer` (no custom toolbar at all; MathLive's own
+ * professional keyboard is the one math-entry palette). The
+ * `mathToolbar.category*` i18n keys remain in messages.ts (still read
+ * by `math-toolbar-config.ts`'s now-dormant category config, kept
+ * rather than churned out) but are no longer rendered by any live
+ * component, so the "component resolves them from its locale prop"
+ * assertions below are replaced with the equivalent, now-true
+ * assertion for the surface that actually renders in the browser
+ * today: `MathExpressionEditor` (owned by `UnifiedResponseComposer`)
+ * resolves ITS OWN button labels from the given `locale` prop, and
+ * every UnifiedResponseComposer call site passes the activity locale.
  * ==================================================================== */
-describe('LX-4P-R3 R7 -- math-toolbar category labels follow activity language; symbols/insertion unchanged', () => {
-  it('(8) MathAnswerEditor is now called with the ACTIVITY locale everywhere it appears in the active surface', () => {
-    const calls = QUIZ.match(/<MathAnswerEditor[\s\S]{0,450}?\/>/g) ?? [];
+describe('LX-4P-R3 R7 -- the live math-entry surface (MathExpressionEditor, inside UnifiedResponseComposer) follows activity language; symbol/structure insertion unchanged', () => {
+  it('(8) UnifiedResponseComposer -- and therefore the MathExpressionEditor it owns -- is called with the ACTIVITY language context everywhere it appears in the active surface', () => {
+    const calls = QUIZ.match(/<UnifiedResponseComposer[\s\S]{0,900}?\/>/g) ?? [];
     expect(calls.length).toBeGreaterThanOrEqual(3);
-    for (const call of calls) expect(call).toMatch(/locale=\{quizLanguage\}/);
+    for (const call of calls) expect(call).toMatch(/activityLanguageContext=\{activityLanguageContext\}/);
   });
 
-  it('MathAnswerEditor itself resolves its own category/button labels purely from the given locale prop', () => {
-    expect(MATH_EDITOR).toMatch(/const t = getMessages\(locale\);/);
-    expect(MATH_EDITOR).toMatch(/mathToolbar\.categoryBasic/);
-    expect(MATH_EDITOR).toMatch(/mathToolbar\.categoryStructures/);
-    expect(MATH_EDITOR).toMatch(/mathToolbar\.categoryGreek/);
-    expect(MATH_EDITOR).toMatch(/mathToolbar\.categoryPhysics/);
-    expect(MATH_EDITOR).toMatch(/mathToolbar\.categoryMore/);
+  it('MathExpressionEditor resolves its own toolbar/aria labels purely from the given locale prop, passed through from activityLanguageContext.activityLanguage, never a global interface locale', () => {
+    expect(MATH_EXPRESSION_EDITOR).toMatch(/const t = getMessages\(locale\);/);
+    expect(MATH_EXPRESSION_EDITOR).not.toMatch(/getInterfaceLanguage|getLocale\(\)|cookies\(\)\.get\(['"]locale/);
   });
 
-  it('(9) symbol insertion behavior (insertAtCursor, cursor placement) is untouched -- this repair is presentation only', () => {
-    expect(MATH_EDITOR).toMatch(/function insertAtCursor\(button: MathButton\)/);
-    expect(MATH_EDITOR).toMatch(/onChange\(next\);/);
-    expect(MATH_EDITOR).toMatch(/button\.insertText/);
+  it('(9) structural template insertion behavior (insertTemplate, MathLive placeholder-based cursor placement) is untouched -- this repair is presentation only', () => {
+    expect(MATH_EXPRESSION_EDITOR).toMatch(/function insertTemplate\(button: MathTemplateButton\)/);
+    expect(MATH_EXPRESSION_EDITOR).toMatch(/fieldRef\.current\?\.insert\(button\.insertLatex/);
   });
 
-  it('"Básico" / "Estructuras" / "Griego" / "Física" / "Más" all resolve to distinct, non-Spanish English labels', () => {
+  it('the retired mathToolbar.category* i18n keys still resolve to distinct, non-Spanish English labels (kept as inert i18n-table entries, not re-verified against any live component)', () => {
     for (const [key, es] of [
       ['mathToolbar.categoryBasic', 'Básico'],
       ['mathToolbar.categoryStructures', 'Estructuras'],
