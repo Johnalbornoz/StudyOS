@@ -32,14 +32,25 @@ export type AIRiskLevel = 'LOW_RISK' | 'MEDIUM_RISK' | 'HIGH_RISK';
 /** Providers actually used by StudyUs today. Do not add hypothetical providers (Step 5). */
 export type AIProvider = 'anthropic' | 'openai';
 
-/** Normalized error categories every provider-specific failure collapses into (Step 8). */
+/**
+ * Normalized error categories every provider-specific failure collapses
+ * into (Step 8). LX-9R7 PART D: this is also the retryability boundary
+ * -- `INVALID_REQUEST` (HTTP 400/404: a deterministically malformed
+ * request or an invalid model/endpoint) and `CONFIGURATION_ERROR`
+ * (HTTP 401/403: auth/permission) can NEVER succeed on retry with a
+ * different model, since the SAME malformed request shape is what would
+ * be sent again -- see `isRetryableAIError`. `PROVIDER_ERROR` is
+ * reserved for genuinely transient provider-side failures (5xx, network)
+ * and `RATE_LIMIT`/`TIMEOUT` are retryable by definition.
+ */
 export type AIErrorCode =
   | 'TIMEOUT'
   | 'PROVIDER_ERROR'
   | 'RATE_LIMIT'
   | 'INVALID_RESPONSE'
   | 'VALIDATION_ERROR'
-  | 'CONFIGURATION_ERROR';
+  | 'CONFIGURATION_ERROR'
+  | 'INVALID_REQUEST';
 
 /**
  * Execution metadata made available for every AI call (Step 3). Never
@@ -76,6 +87,19 @@ export interface AIExecutionMetadata {
   estimatedCostUSD?: number | null;
   /** true only when every figure needed to compute estimatedCostUSD was known -- never fabricated as complete. */
   costComplete?: boolean;
+  /**
+   * LX-9R7 PART A -- present only when this execution failed with a
+   * provider HTTP error. Safe, structured fields parsed from the
+   * provider's own JSON error body: never the API key, never
+   * authorization headers, never the prompt/question content, never
+   * student PII. `providerErrorMessage` is the PROVIDER's own error
+   * description (e.g. "Unknown parameter: 'foo'"), not StudyUS content.
+   */
+  providerHttpStatus?: number;
+  providerErrorType?: string | null;
+  providerErrorCode?: string | null;
+  providerErrorParam?: string | null;
+  providerErrorMessage?: string | null;
 }
 
 /** The safe, DB-storable subset of execution metadata -- what's allowed into learning_evidence.metadata (Step 18). */

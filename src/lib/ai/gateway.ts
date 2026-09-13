@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { AICapability, AIRiskLevel, AIProvider, AIExecutionMetadata, AIExecutionOutcome, AIValidationResult, AIExecutionContext } from './types';
 import { AIExecutionError, normalizeProviderError } from './errors';
-import { logAIExecution } from './logging';
+import { logAIExecution, logAIProviderError } from './logging';
 import { getAIExecutionAuditSink } from './audit';
 import type { ProviderUsage } from './usage';
 import { estimateCostUSD } from './pricing';
@@ -99,11 +99,25 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
   let usage: ProviderUsage | null = null;
   let cost: ReturnType<typeof estimateCostUSD> | null = null;
 
-  const finish = (partial: Pick<AIExecutionMetadata, 'success' | 'validationStatus' | 'fallbackUsed' | 'errorCode'>): AIExecutionMetadata => ({
+  const finish = (
+    partial: Pick<AIExecutionMetadata, 'success' | 'validationStatus' | 'fallbackUsed' | 'errorCode'>,
+    aiErr?: AIExecutionError,
+  ): AIExecutionMetadata => ({
     ...baseMeta,
     durationMs: Date.now() - startedAtMs,
     ...(usage ? { inputTokens: usage.inputTokens, cachedInputTokens: usage.cachedInputTokens, outputTokens: usage.outputTokens } : {}),
     ...(cost ? { estimatedCostUSD: cost.usd, costComplete: cost.complete } : {}),
+    // LX-9R7 PART A -- safe, structured provider error detail, present
+    // only when this failure came from a provider HTTP error.
+    ...(aiErr?.providerDetail
+      ? {
+          providerHttpStatus: aiErr.providerDetail.status,
+          providerErrorType: aiErr.providerDetail.type,
+          providerErrorCode: aiErr.providerDetail.code,
+          providerErrorParam: aiErr.providerDetail.param,
+          providerErrorMessage: aiErr.providerDetail.message,
+        }
+      : {}),
     ...partial,
   });
   const provenanceFor = (): AIExecutionOutcome<TResult>['provenance'] => ({
@@ -142,11 +156,27 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
     aiErr: AIExecutionError,
     validationStatus: AIExecutionMetadata['validationStatus']
   ): Promise<AIExecutionOutcome<TResult>> => {
+    // LX-9R7 PART A -- one dedicated, safe, structured line for a
+    // provider HTTP error, logged unconditionally (regardless of
+    // whether a fallback absorbs it) so a 400/401/403/etc. is never
+    // silently swallowed by a caller's own `fallback: () => null`.
+    if (aiErr.providerDetail) {
+      logAIProviderError({
+        operationId: executionId,
+        capability: opts.capability,
+        model: opts.model,
+        status: aiErr.providerDetail.status,
+        providerErrorType: aiErr.providerDetail.type,
+        providerErrorCode: aiErr.providerDetail.code,
+        providerErrorParam: aiErr.providerDetail.param,
+        providerErrorMessage: aiErr.providerDetail.message,
+      });
+    }
     if (opts.fallback) {
-      const execution = await emit(finish({ success: false, validationStatus, fallbackUsed: true, errorCode: aiErr.code }));
+      const execution = await emit(finish({ success: false, validationStatus, fallbackUsed: true, errorCode: aiErr.code }, aiErr));
       return { result: opts.fallback(aiErr), execution, provenance: provenanceFor() };
     }
-    const execution = await emit(finish({ success: false, validationStatus, fallbackUsed: false, errorCode: aiErr.code }));
+    const execution = await emit(finish({ success: false, validationStatus, fallbackUsed: false, errorCode: aiErr.code }, aiErr));
     throw new AIExecutionFailure(aiErr, execution);
   };
 

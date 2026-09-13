@@ -26,6 +26,7 @@
 import { randomUUID } from 'crypto';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { recordRuntimeEvent, buildRuntimeEvent, buildAggregateRuntimeEvent, type BillableCallUsage } from '@/lib/ai/runtime-event';
+import type { AIErrorCode } from '@/lib/ai/types';
 import { checkQuestionQualityDeterministic } from '@/lib/lx/question-quality-contract';
 import { verifyQuestionQuality, verifyQuestionQualityBatch, evaluateQuestionQualityVerdict, type QuestionQualityVerdict } from '@/services/question-quality-verifier.service';
 import { generateQuestionsForConcept, type GeneratedQuestion } from '@/services/quiz-generation.service';
@@ -419,13 +420,36 @@ export async function generateGatedQuestionBatch(
   try {
     log('GATED_BATCH_GENERATION_STARTED');
 
+    // LX-9R7 PART D: captured, not thrown -- generateQuestionsForConcept
+    // still returns its existing [] contract on ANY failure; this ONLY
+    // tells us whether that [] came from a non-retryable provider error
+    // (a malformed request/auth failure that would be rejected again,
+    // identically, on Terra) so the Terra regeneration below can be
+    // skipped entirely rather than repeating the same rejected request.
+    let nonRetryableCode: AIErrorCode | null = null;
     const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
       ...baseGenOpts,
       onUsage: (usage) => {
         lunaGenerationCalls.push({ model: QGEN_ROUTE.primary, usage });
       },
+      onNonRetryableError: (code) => {
+        nonRetryableCode = code;
+      },
     }).catch(() => [] as GeneratedQuestion[]);
     log('GATED_BATCH_INITIAL_GENERATION_COMPLETE', { candidateCount: luna.length });
+
+    if (nonRetryableCode) {
+      log('GATED_BATCH_GENERATION_INSUFFICIENT', {
+        errorCode: nonRetryableCode,
+        reason: 'NON_RETRYABLE_PROVIDER_ERROR',
+        publishedCount: 0,
+        generationCalls: 1,
+        recoveryCalls: 0,
+        durationMs: Date.now() - startedAt,
+        success: false,
+      });
+      return [];
+    }
 
     const result = await gateUnitWithTerraFallback(
       luna,

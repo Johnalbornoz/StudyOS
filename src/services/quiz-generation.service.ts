@@ -19,6 +19,8 @@ import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { commandTermsForDifficulty, IB_SUBJECT_GROUPS, MYP_CRITERIA } from '@/lib/ib';
 import { executeAI, validateJson, checks, clamp, getPrompt, type AIProvenance, type AIExecutionContext } from '@/lib/ai';
+import { isRetryableAIError } from '@/lib/ai/errors';
+import type { AIErrorCode } from '@/lib/ai/types';
 import { callModel, parseCallModelUsage, type CallModelResult } from '@/lib/ai/adapters/call-model';
 import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
@@ -383,6 +385,18 @@ export async function generateQuestionsForConcept(
      * callers that don't pass it see no change.
      */
     onUsage?: (usage: ProviderUsage) => void;
+    /**
+     * LX-9R7 PART D: optional -- fires when this call's generation
+     * request itself failed with a NON-retryable provider error
+     * (`INVALID_REQUEST`/`CONFIGURATION_ERROR` -- a malformed request or
+     * an auth/permission failure, which will fail again identically on
+     * ANY model). Purely additive, like `onUsage` -- existing callers
+     * that don't pass it see no change. A caller that DOES pass it
+     * (generateGatedQuestionBatch) uses this to skip its own Terra
+     * regeneration entirely rather than repeating the same rejected
+     * request on a different model.
+     */
+    onNonRetryableError?: (code: AIErrorCode) => void;
   } = {}
 ): Promise<GeneratedQuestion[]> {
   const genModel = options.modelOverride || QGEN_ROUTE.primary;
@@ -530,7 +544,15 @@ ${shapeExamples}
       // runs -- so this call's real usage survives regardless of whether
       // `validate` accepts, rejects, or the batch falls back to `[]`.
       parseUsage: (raw) => parseCallModelUsage(raw),
-      fallback: () => [],
+      // LX-9R7 PART D: a non-retryable failure (malformed request/auth)
+      // is reported to the caller via onNonRetryableError -- the SAME
+      // request would be rejected again on Terra, so this function still
+      // returns [] (its existing, unchanged partial-tolerant contract)
+      // but the caller now knows NOT to spend a pointless Terra call.
+      fallback: (error) => {
+        if (!isRetryableAIError(error.code)) options.onNonRetryableError?.(error.code);
+        return [];
+      },
     });
 
     options.onUsage?.({
@@ -654,6 +676,14 @@ export async function generateQuickCheckQuestions(
     );
     const prompt = getPrompt('quiz.question_generation');
 
+    // LX-9R7 PART D: populated by a slot's own `fallback` below whenever
+    // that slot's generation call failed with a NON-retryable provider
+    // error (a malformed request/auth failure that would be rejected
+    // again, identically, on Terra) -- checked before ever attempting
+    // the Terra recovery wave, so a deterministic bad request never
+    // wastes 6 pointless Terra calls the way the live SOLO_CHECK
+    // incident did (Luna 400 x6 -> Terra 400 x6).
+    const nonRetryableSlotErrors = new Map<number, AIErrorCode>();
     const requestSlot = (slotIndex: number, model: string = QUICK_CHECK_MODEL): Promise<any | null> => {
       const assignedType = QUICK_CHECK_TYPES[slotIndex % QUICK_CHECK_TYPES.length];
       const shapeExample = jsonShapeExample(assignedType, false);
@@ -717,7 +747,10 @@ ${shapeExample}
         // Strict sentinel, not [] -- distinguishes "this slot failed" from
         // "this slot legitimately returned nothing," so the all-or-nothing
         // check below can never mistake one for the other.
-        fallback: () => null,
+        fallback: (error) => {
+          if (!isRetryableAIError(error.code)) nonRetryableSlotErrors.set(slotIndex, error.code);
+          return null;
+        },
       }).then((r) => r.result);
     };
 
@@ -728,6 +761,25 @@ ${shapeExample}
 
     let slots: (any | null)[] = initialSlots;
     if (initialFailedIndices.length > 0) {
+      // LX-9R7 PART D: a non-retryable failure on even ONE slot means
+      // the request itself was rejected before inference -- every slot
+      // shares the identical systemPrompt/schema/model, so the other 5
+      // would fail identically on Terra too. Fail fast, preserve the
+      // exact provider-classified errorCode, never spend a single
+      // pointless Terra call.
+      const nonRetryableIndex = initialFailedIndices.find((i) => nonRetryableSlotErrors.has(i));
+      if (nonRetryableIndex !== undefined) {
+        const errorCode = nonRetryableSlotErrors.get(nonRetryableIndex)!;
+        log('QUICK_CHECK_GENERATION_INSUFFICIENT', {
+          reason: 'NON_RETRYABLE_PROVIDER_ERROR',
+          errorCode,
+          failedSlotCount: initialFailedIndices.length,
+          totalDurationMs: Date.now() - startedAt,
+        });
+        console.error(`quick_check fast path: slot ${nonRetryableIndex} failed with a non-retryable provider error (${errorCode}) -- skipping Terra recovery entirely`);
+        return [];
+      }
+
       // LX-9R6 PART B/K: a slot's initial call can fail for reasons that
       // have nothing to do with question QUALITY -- a timeout, a
       // refusal, a malformed/corrupted JSON response -- exactly the
@@ -1004,7 +1056,11 @@ export async function generatePracticeQuestions(
     const prompt = getPrompt('quiz.question_generation');
     const aiContext = { studentId, subjectId, conceptId, sourceComponent: 'quiz-generation.service.ts:generatePracticeQuestions' };
 
-    const requestChunk = (chunkSize: number, model: string = PRACTICE_CHUNK_MODEL): Promise<any[]> => {
+    const requestChunk = (
+      chunkSize: number,
+      model: string = PRACTICE_CHUNK_MODEL,
+      onNonRetryable?: (code: AIErrorCode) => void,
+    ): Promise<any[]> => {
       const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
       const maxTokens = Math.min(16000, 900 * chunkSize + 1500);
       const userMessage = `Generate UP TO ${chunkSize} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${chunkSize}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
@@ -1053,11 +1109,21 @@ ${shapeExamples}
         // PRACTICE semantics: a failed/timed-out chunk contributes
         // nothing rather than failing the whole quiz -- the other
         // chunks' valid questions are still used (see the contract doc above).
-        fallback: () => [],
+        // LX-9R7 PART D: a non-retryable failure is additionally reported
+        // via onNonRetryable so the caller can skip THIS chunk's own
+        // per-chunk Terra regeneration -- the same rejected request would
+        // fail again, identically, on Terra.
+        fallback: (error) => {
+          if (!isRetryableAIError(error.code)) onNonRetryable?.(error.code);
+          return [];
+        },
       }).then((r) => r.result);
     };
 
-    const chunkResults = await Promise.all(plan.map((chunkSize) => requestChunk(chunkSize)));
+    const chunkNonRetryable: (AIErrorCode | null)[] = plan.map(() => null);
+    const chunkResults = await Promise.all(
+      plan.map((chunkSize, i) => requestChunk(chunkSize, PRACTICE_CHUNK_MODEL, (code) => { chunkNonRetryable[i] = code; })),
+    );
     log('PRACTICE_INITIAL_GENERATION_COMPLETE', { candidateCount: chunkResults.reduce((s, r) => s + r.length, 0) });
 
     // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate. Every
@@ -1074,6 +1140,16 @@ ${shapeExamples}
     const gatedChunks = await Promise.all(
       plan.map((chunkSize, i) => {
         const lunaMapped = mapRawQuestionsToGenerated(chunkResults[i], conceptId, language);
+        // LX-9R7 PART D: this chunk's OWN initial call already failed
+        // with a non-retryable provider error and produced nothing --
+        // regenerating it on Terra would send the identical rejected
+        // request shape again. Skip it; the chunk simply contributes
+        // nothing (unchanged partial-tolerant semantics), and the
+        // aggregate recovery/insufficiency logic below still applies.
+        if (chunkNonRetryable[i] && lunaMapped.length === 0) {
+          log('PRACTICE_CHUNK_NON_RETRYABLE_ERROR', { chunkIndex: i, errorCode: chunkNonRetryable[i] });
+          return Promise.resolve([] as GeneratedQuestion[]);
+        }
         return gateUnitWithTerraFallback(
           lunaMapped,
           { ...gateReq, targetCount: chunkSize, fallbackWhen: 'EMPTY' },
@@ -1447,7 +1523,13 @@ export interface RetentionInsufficientMeta {
   remainingDeficit: number;
 }
 
-type RetentionChunkOutcome = { ok: true; questions: any[] } | { ok: false; reason: 'TIMEOUT' | 'CHUNK_FAILURE' | 'VALIDATION' };
+type RetentionChunkOutcome =
+  | { ok: true; questions: any[] }
+  // LX-9R7 PART D: `NON_RETRYABLE` (with the exact provider-classified
+  // code preserved) is distinct from `CHUNK_FAILURE` -- it means this
+  // exact request shape was rejected before inference and would be
+  // rejected again, identically, on Terra.
+  | { ok: false; reason: 'TIMEOUT' | 'CHUNK_FAILURE' | 'VALIDATION' | 'NON_RETRYABLE'; code?: AIErrorCode };
 
 export async function generateRetentionCheckQuestions(
   conceptId: string,
@@ -1582,9 +1664,15 @@ ${shapeExamples}
         // Never throws -- classifies the failure via the gateway's own
         // normalized error code so recovery (below) can pick the right
         // action without re-deriving TIMEOUT vs VALIDATION itself.
+        // LX-9R7 PART D: a non-retryable provider error (malformed
+        // request/auth) is classified FIRST and separately, preserving
+        // the exact code -- the recovery logic below skips retrying it.
         fallback: (error) => ({
           ok: false,
-          reason: error.code === 'TIMEOUT' ? 'TIMEOUT' : error.code === 'VALIDATION_ERROR' || error.code === 'INVALID_RESPONSE' ? 'VALIDATION' : 'CHUNK_FAILURE',
+          reason: !isRetryableAIError(error.code)
+            ? 'NON_RETRYABLE'
+            : error.code === 'TIMEOUT' ? 'TIMEOUT' : error.code === 'VALIDATION_ERROR' || error.code === 'INVALID_RESPONSE' ? 'VALIDATION' : 'CHUNK_FAILURE',
+          code: error.code,
         }),
       }).then((r) => r.result);
     };
@@ -1604,6 +1692,12 @@ ${shapeExamples}
     if (!chunkA.ok && !chunkB.ok) {
       // Rule 6C: both chunks failed -- no recovery call can make more
       // than one AI call, so there is nothing left to attempt.
+      // LX-9R7 PART D/G: if either failed non-retryably, that's the
+      // precise, preserved reason (never a generic CHUNK_FAILURE).
+      const nonRetryableCode = chunkA.reason === 'NON_RETRYABLE' ? chunkA.code : chunkB.reason === 'NON_RETRYABLE' ? chunkB.code : null;
+      if (nonRetryableCode) {
+        log('RETENTION_BATCH_INSUFFICIENT', { reason: 'NON_RETRYABLE_PROVIDER_ERROR', errorCode: nonRetryableCode, totalDurationMs: Date.now() - startedAt });
+      }
       console.error('retention_check fast path: both initial chunks failed -- returning no questions rather than a partial set');
       return reportInsufficient({
         requestedCount: RETENTION_REQUIRED_COUNT, initialGeneratedCount: 0, initialAcceptedCount: 0, initialRejectedCount: 0,
@@ -1639,6 +1733,10 @@ ${shapeExamples}
     let rawBaseline: any[];
     let recoveryNote: string;
     let recoverySlotIndex: 0 | 1;
+    // LX-9R7 PART D: set only when Rule 6B's failed chunk failed
+    // NON-retryably -- checked below, before the recovery call, so a
+    // deterministically-rejected request is never resent to Terra.
+    let failedChunkNonRetryableCode: AIErrorCode | null = null;
 
     if (!chunkA.ok || !chunkB.ok) {
       // Rule 6B: exactly one chunk failed -- keep the valid one,
@@ -1647,10 +1745,12 @@ ${shapeExamples}
         rawBaseline = (chunkB as { ok: true; questions: any[] }).questions;
         recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_B;
         recoverySlotIndex = 0;
+        if (chunkA.reason === 'NON_RETRYABLE') failedChunkNonRetryableCode = chunkA.code ?? 'INVALID_REQUEST';
       } else {
         rawBaseline = (chunkA as { ok: true; questions: any[] }).questions;
         recoveryNote = RETENTION_VARIANT_B_NOTE_CHUNK_A;
         recoverySlotIndex = 1;
+        if (!chunkB.ok && chunkB.reason === 'NON_RETRYABLE') failedChunkNonRetryableCode = chunkB.code ?? 'INVALID_REQUEST';
       }
     } else {
       // Both chunks valid -- always merge whole; collisions (if any)
@@ -1743,6 +1843,21 @@ ${shapeExamples}
     let replacementGeneratedCount = 0;
     let replacementAcceptedCount = 0;
     let deficit = RETENTION_REQUIRED_COUNT - acceptedUnique.length;
+
+    if (deficit > 0 && failedChunkNonRetryableCode) {
+      // LX-9R7 PART D: the deficit traces back to Rule 6B's failed
+      // chunk, and that chunk failed with a NON-retryable provider
+      // error -- the recovery call below would resend the identical
+      // rejected request (same schema/model routing, just Terra
+      // instead of Luna) and fail again. Skip it; fail closed with the
+      // exact code preserved.
+      log('RETENTION_RECOVERY_SKIPPED_NON_RETRYABLE', { deficit, errorCode: failedChunkNonRetryableCode });
+      console.error(`retention_check fast path: skipping bounded recovery -- the failed chunk's error (${failedChunkNonRetryableCode}) is non-retryable`);
+      return reportInsufficient({
+        requestedCount: RETENTION_REQUIRED_COUNT, initialGeneratedCount: mappedBaseline.length, initialAcceptedCount, initialRejectedCount,
+        replacementGeneratedCount: 0, replacementAcceptedCount: 0, remainingDeficit: deficit,
+      });
+    }
 
     if (deficit > 0) {
       // RET-R2 R4: bounded candidate SURPLUS for the recovery call --
