@@ -582,6 +582,14 @@ export const QUICK_CHECK_TYPES: QuestionType[] = ['multiple_choice', 'true_false
 const QUICK_CHECK_SLOT_COUNT = 6;
 const QUICK_CHECK_MODEL = QGEN_ROUTE.primary;
 
+/** LX-9R6 PART O: safe, aggregate-only observability for one quick_check (SOLO_CHECK) generation call -- same shape/intent as logRetention, never learner answer/question content. */
+function logQuickCheck(label: string, meta: Record<string, unknown> = {}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[quick_check]', JSON.stringify({ label, ...meta }));
+  } catch { /* logging must never break generation */ }
+}
+
 export async function generateQuickCheckQuestions(
   conceptId: string,
   studentId: string,
@@ -597,8 +605,15 @@ export async function generateQuickCheckQuestions(
   const ibContext = options.ibContext ?? null;
   const guidance =
     'A fast, low-friction confidence check. Prefer quick-to-answer types (multiple_choice, true_false, yes_no, short_answer) -- avoid long multi-step or open-ended types here.';
+  // LX-9R6 PART O: one operationId correlates every `[quick_check]` line
+  // for this generation call, the same correlation pattern already
+  // proven for `[retention]` -- see generateRetentionCheckQuestions.
+  const operationId = randomUUID();
+  const startedAt = Date.now();
+  const log = (label: string, meta: Record<string, unknown> = {}) => logQuickCheck(label, { operationId, ...meta });
 
   try {
+    log('QUICK_CHECK_GENERATION_STARTED', { conceptId, targetDifficulty: difficulty, requestedCount: QUICK_CHECK_SLOT_COUNT });
     const context = await retrieveContext(studentId, subjectId, { conceptId, limit: 5 });
 
     let conceptContext: { label: string; subjectName: string } | null = null;
@@ -615,6 +630,7 @@ export async function generateQuickCheckQuestions(
       );
       const row = conceptRow.rows[0];
       if (!row) {
+        log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'CONCEPT_NOT_FOUND', totalDurationMs: Date.now() - startedAt });
         console.warn(`Concept ${conceptId} not found`);
         return [];
       }
@@ -705,10 +721,41 @@ ${shapeExample}
       }).then((r) => r.result);
     };
 
-    const slots = await Promise.all(Array.from({ length: QUICK_CHECK_SLOT_COUNT }, (_, i) => requestSlot(i)));
-    if (slots.some((q) => q === null)) {
-      console.error('quick_check fast path: at least one of 6 slots failed -- returning no questions rather than a partial set');
-      return [];
+    const initialSlots = await Promise.all(Array.from({ length: QUICK_CHECK_SLOT_COUNT }, (_, i) => requestSlot(i)));
+    const initialFailedIndices = initialSlots
+      .map((q, i) => (q === null ? i : -1))
+      .filter((i) => i >= 0);
+
+    let slots: (any | null)[] = initialSlots;
+    if (initialFailedIndices.length > 0) {
+      // LX-9R6 PART B/K: a slot's initial call can fail for reasons that
+      // have nothing to do with question QUALITY -- a timeout, a
+      // refusal, a malformed/corrupted JSON response -- exactly the
+      // class of transient failure generateRetentionCheckQuestions's
+      // Rule 6B/6C already recovers from (see its own doc comment).
+      // Before this fix, quick_check had no recovery for THIS failure
+      // class at all: the Terra regeneration path further below only
+      // ever ran for a slot that generated successfully but then failed
+      // the QUALITY GATE, so a single transient generation failure in
+      // any of the 6 independent parallel calls failed the entire
+      // SOLO_CHECK activity outright with zero retry -- the live,
+      // reproducible root cause of "Couldn't prepare this activity" on
+      // an otherwise perfectly executable canonical SOLO_CHECK action.
+      // The retry below reruns the SAME canonical request (Part K: same
+      // slotIndex/assignedType/difficulty/context/prompt) on Terra,
+      // exactly like the existing gate-failure recovery already does.
+      log('QUICK_CHECK_SLOT_RECOVERY_STARTED', { failedSlotCount: initialFailedIndices.length, failedSlotIndexes: initialFailedIndices });
+      const recovered = await Promise.all(initialFailedIndices.map((i) => requestSlot(i, TERRA)));
+      if (recovered.some((r) => r === null)) {
+        log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'INITIAL_SLOT_FAILURE_UNRECOVERED', failedSlotCount: initialFailedIndices.length, totalDurationMs: Date.now() - startedAt });
+        console.error('quick_check fast path: a slot failed initial generation and its Terra recovery -- returning no questions rather than a partial set');
+        return [];
+      }
+      slots = [...initialSlots];
+      initialFailedIndices.forEach((slotIndex, k) => {
+        slots[slotIndex] = recovered[k];
+      });
+      log('QUICK_CHECK_SLOT_RECOVERY_SUCCEEDED', { recoveredSlotCount: initialFailedIndices.length });
     }
 
     const storedQuestions = mapRawQuestionsToGenerated(slots as any[], conceptId, language);
@@ -717,6 +764,7 @@ ${shapeExample}
     // entry even after `validate` accepted it (e.g. a future edit to
     // either function). Never let a partial set slip through silently.
     if (storedQuestions.length !== QUICK_CHECK_SLOT_COUNT) {
+      log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'MAPPING_MISMATCH', expected: QUICK_CHECK_SLOT_COUNT, got: storedQuestions.length, totalDurationMs: Date.now() - startedAt });
       console.error(`quick_check fast path: expected ${QUICK_CHECK_SLOT_COUNT} mapped questions, got ${storedQuestions.length} -- returning no questions rather than a partial set`);
       return [];
     }
@@ -743,7 +791,10 @@ ${shapeExample}
 
     const g1 = await applyQuestionQualityGate(storedQuestions, qcGateReq);
     emitQc(QUICK_CHECK_MODEL, false, g1.accepted.length, g1.deterministicRejected + g1.semanticRejected);
-    if (g1.accepted.length === QUICK_CHECK_SLOT_COUNT) return g1.accepted;
+    if (g1.accepted.length === QUICK_CHECK_SLOT_COUNT) {
+      log('QUICK_CHECK_GENERATION_SUCCEEDED', { publishedQuestions: g1.accepted.length, recoveredInitialSlots: initialFailedIndices.length, gateRecoveredSlots: 0, totalDurationMs: Date.now() - startedAt });
+      return g1.accepted;
+    }
 
     const acceptedSet = new Set(g1.accepted);
     const failedSlots = storedQuestions.map((_, i) => i).filter((i) => !acceptedSet.has(storedQuestions[i]));
@@ -751,10 +802,12 @@ ${shapeExample}
     if (replacements.some((r) => r === null)) {
       console.error('quick_check fast path: a Terra slot regeneration failed -- returning no questions rather than a partial set');
       emitQc(TERRA, true, 0, failedSlots.length, 'a slot regeneration failed');
+      log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'GATE_RECOVERY_SLOT_FAILURE', failedSlotCount: failedSlots.length, totalDurationMs: Date.now() - startedAt });
       return [];
     }
     const replMapped = mapRawQuestionsToGenerated(replacements as any[], conceptId, language);
     if (replMapped.length !== failedSlots.length) {
+      log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'GATE_RECOVERY_MAPPING_MISMATCH', failedSlotCount: failedSlots.length, totalDurationMs: Date.now() - startedAt });
       emitQc(TERRA, true, 0, failedSlots.length, 'replacement mapping short');
       return [];
     }
@@ -762,14 +815,17 @@ ${shapeExample}
     emitQc(TERRA, true, g2.accepted.length, g2.deterministicRejected + g2.semanticRejected, 'luna slot(s) failed the gate');
     if (g2.accepted.length !== failedSlots.length) {
       console.error('quick_check fast path: a regenerated slot still failed the quality gate -- returning no questions rather than a partial set');
+      log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'GATE_RECOVERY_QUALITY_GATE_FAILED', failedSlotCount: failedSlots.length, totalDurationMs: Date.now() - startedAt });
       return [];
     }
     const stitched = [...storedQuestions];
     failedSlots.forEach((slot, k) => {
       stitched[slot] = g2.accepted[k];
     });
+    log('QUICK_CHECK_GENERATION_SUCCEEDED', { publishedQuestions: stitched.length, recoveredInitialSlots: initialFailedIndices.length, gateRecoveredSlots: failedSlots.length, totalDurationMs: Date.now() - startedAt });
     return stitched;
   } catch (error) {
+    log('QUICK_CHECK_GENERATION_INSUFFICIENT', { reason: 'UNEXPECTED_EXCEPTION', totalDurationMs: Date.now() - startedAt });
     console.error('Error generating quick_check questions:', error);
     return [];
   }

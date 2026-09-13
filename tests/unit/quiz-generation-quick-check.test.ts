@@ -110,10 +110,15 @@ describe('generateQuickCheckQuestions: 6 parallel calls, Haiku, deterministic ty
     });
     await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
     const messages = callModelMock.mock.calls.map((c) => c[0].user as string);
-    expect(messages).toHaveLength(6);
     const expectedTypesInOrder = ['multiple_choice', 'true_false', 'yes_no', 'short_answer', 'multiple_choice', 'true_false'];
-    messages.forEach((msg, i) => {
-      expect(msg).toContain(`Generate EXACTLY 1 question of type "${expectedTypesInOrder[i]}"`);
+    // LX-9R6 PART B/K: every slot returns null here (simulating an
+    // initial-call failure), so all 6 now get exactly one Terra recovery
+    // retry each (see the "strict count" describe block below) -- the
+    // SAME slotIndex/assignedType is retried, so the prompt sequence is
+    // the initial 6 followed by one identical repeat cycle, 12 total.
+    expect(messages).toHaveLength(12);
+    [...expectedTypesInOrder, ...expectedTypesInOrder].forEach((expectedType, i) => {
+      expect(messages[i]).toContain(`Generate EXACTLY 1 question of type "${expectedType}"`);
     });
     // No slot's prompt ever asks for a type outside the allowed 4.
     expect(messages.join('\n')).not.toContain('open_ended');
@@ -129,7 +134,19 @@ describe('generateQuickCheckQuestions: 6 parallel calls, Haiku, deterministic ty
 });
 
 describe('generateQuickCheckQuestions: strict count -- all-or-nothing, no partial quiz ever reaches the caller', () => {
-  it('one failed slot (fallback fires) makes the WHOLE result [] -- never a 5-question quiz', async () => {
+  // LX-9R6 PART B/K: before this phase, a single slot's initial
+  // generation call failing (fallback fires -- timeout, refusal,
+  // malformed JSON) had NO recovery path at all and failed the whole
+  // activity outright, with zero retry -- the live, reproducible root
+  // cause of the "Couldn't prepare this activity" SOLO_CHECK failure on
+  // an otherwise perfectly executable canonical action (e.g. Fuerza
+  // centrípeta's PROVE-stage Comprobación individual). This is now
+  // recovered exactly like a quality-gate rejection already was: ONE
+  // Terra retry of the SAME slot (same slotIndex/assignedType), before
+  // ever giving up. The final contract is still strictly all-or-nothing
+  // (0 or 6) -- what changed is that a transient single-slot failure no
+  // longer skips straight to giving up.
+  it('one failed initial slot is recovered via a single Terra retry -- produces a full 6-question set, not []', async () => {
     let call = 0;
     executeAIMock.mockReset().mockImplementation(async (opts: any) => {
       const i = call++;
@@ -141,8 +158,26 @@ describe('generateQuickCheckQuestions: strict count -- all-or-nothing, no partia
       return { result: fakeQuestionOfType(assignedType, i), execution: {} as any, provenance: {} as any };
     });
     const questions = await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
-    expect(executeAIMock).toHaveBeenCalledTimes(6); // all 6 still dispatched concurrently
-    expect(questions).toEqual([]); // but the result is strictly all-or-nothing
+    // 6 initial dispatches + 1 Terra recovery retry for the one failed slot.
+    expect(executeAIMock).toHaveBeenCalledTimes(7);
+    expect(questions).toHaveLength(6);
+  });
+
+  it('a slot that fails BOTH its initial call and its Terra recovery retry still makes the WHOLE result [] -- never a 5-question quiz', async () => {
+    let call = 0;
+    executeAIMock.mockReset().mockImplementation(async (opts: any) => {
+      const i = call++;
+      // Slot 2's initial call (i===2) AND its one recovery retry
+      // (the 7th dispatch, i===6) both fail -- genuinely unrecoverable.
+      if (i === 2 || i === 6) {
+        return { result: opts.fallback(new Error('slot failed')), execution: {} as any, provenance: {} as any };
+      }
+      const assignedType = QUICK_CHECK_TYPES[i % QUICK_CHECK_TYPES.length];
+      return { result: fakeQuestionOfType(assignedType, i), execution: {} as any, provenance: {} as any };
+    });
+    const questions = await generateQuickCheckQuestions('c1', 's1', 'subj1', {});
+    expect(executeAIMock).toHaveBeenCalledTimes(7); // initial 6 + exactly one recovery retry, never unbounded
+    expect(questions).toEqual([]); // still strictly all-or-nothing once recovery is genuinely exhausted
   });
 
   it('a slot returning the WRONG type (model disobeyed) is treated as a failure via validate, not silently accepted', async () => {
