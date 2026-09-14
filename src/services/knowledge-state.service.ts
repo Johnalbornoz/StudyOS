@@ -187,7 +187,28 @@ export interface MisconceptionState {
   recurringCount: number;
 }
 
-/** Priority order matters: a critical misconception blocks validation before anything else is even checked. */
+/**
+ * Priority order matters: a critical misconception blocks validation
+ * before anything else is even checked.
+ *
+ * UX/CANON-R1 ROOT CAUSE FIX: retention is checked BEFORE transfer,
+ * matching the canonical journey's own order (LEARN -> PRACTICE ->
+ * PROVE -> RETAIN -> TRANSFER -> CONSOLIDATED) and
+ * `computeLearningState`'s own documented precedence (retention >
+ * transfer). Before this fix, a concept with NEITHER retention NOR
+ * transfer evidence yet (`scores.retention === null && scores.transfer
+ * === null` -- exactly the state right after PROVE completes) resolved
+ * to `TRANSFER_REQUIRED` because that check ran first, silently masking
+ * the equally-true `WAITING_FOR_RETENTION` fact underneath it. Every
+ * downstream canonical authority (`computeLearningState`,
+ * `selectActivityType`, `deriveLearnerJourneyStage`, and therefore
+ * Today/My Path/Concept Mission/continuation, which all faithfully
+ * mirror this one upstream value) inherited the wrong answer -- this is
+ * the exact, provable live incident: Transfer became the selected
+ * ActivityType and TRANSFER the journey stage while Retention had never
+ * been satisfied, because this function told them retention was a
+ * non-issue when it had simply never been asked about it yet.
+ */
 export function determineValidationReadiness(
   scores: DimensionScores,
   misconceptions: MisconceptionState,
@@ -196,8 +217,8 @@ export function determineValidationReadiness(
 ): ValidationReadiness {
   if (misconceptions.criticalCount > policy.maximumCriticalMisconceptions) return 'ACTIVE_CRITICAL_MISCONCEPTION';
   if (!sufficiency.passed) return 'INSUFFICIENT_EVIDENCE';
-  if (policy.requiresTransfer && scores.transfer === null) return 'TRANSFER_REQUIRED';
   if (scores.retention === null) return 'WAITING_FOR_RETENTION';
+  if (policy.requiresTransfer && scores.transfer === null) return 'TRANSFER_REQUIRED';
   return 'READY';
 }
 

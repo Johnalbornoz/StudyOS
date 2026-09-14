@@ -249,16 +249,26 @@ describe('LX-3 -- goal comes from canonical content, never invented', () => {
 /* ================================================================= */
 
 describe('LX-3 -- journey milestones: no thresholds, no invented completion history', () => {
-  it('stage is independent of evidence counts; only `demonstrated` reflects them', () => {
+  it('stage is independent of evidence counts; `demonstrated` reflects them ONLY for a rung already reached (PASSED/CURRENT), never an UPCOMING one', () => {
     const withEvidence = buildConceptMissionView(base({ journeyInput: RESOLVED('DEVELOPING'), knowledgeState: ks('DEVELOPING', 'INSUFFICIENT_EVIDENCE', 12, 4) }));
     const withoutEvidence = buildConceptMissionView(base({ journeyInput: RESOLVED('DEVELOPING'), knowledgeState: ks('DEVELOPING', 'INSUFFICIENT_EVIDENCE', 0, 0) }));
     if (withEvidence.journey.status !== 'RESOLVED' || withoutEvidence.journey.status !== 'RESOLVED') throw new Error('expected RESOLVED');
-    expect(withEvidence.journey.stage).toBe(withoutEvidence.journey.stage);
+    expect(withEvidence.journey.stage).toBe(withoutEvidence.journey.stage); // stage is 'PRACTICE' either way
     const m = (v: typeof withEvidence, rung: string) =>
       v.journey.status === 'RESOLVED' ? v.journey.milestones.find((x) => x.rung === rung)! : null!;
+    // LEARN is PASSED (behind the current PRACTICE stage) -- evidence
+    // for an already-reached rung correctly still shows as demonstrated.
+    expect(m(withEvidence, 'LEARN').position).toBe('PASSED');
     expect(m(withEvidence, 'LEARN').demonstrated).toBe(true);
-    expect(m(withEvidence, 'PROVE').demonstrated).toBe(true);
     expect(m(withoutEvidence, 'LEARN').demonstrated).toBe(false);
+    // UX/CANON-R1 PART L: PROVE is UPCOMING here (ahead of the current
+    // PRACTICE stage) -- independentEvidenceCount alone must NEVER mark
+    // an upcoming rung as demonstrated; that is exactly the live defect
+    // (Transfer evidence rendering the Transfer milestone as complete
+    // while RETAIN was still current). A premature independent-evidence
+    // row existing does not mean PROVE was canonically reached.
+    expect(m(withEvidence, 'PROVE').position).toBe('UPCOMING');
+    expect(m(withEvidence, 'PROVE').demonstrated).toBe(false);
     expect(m(withoutEvidence, 'PROVE').demonstrated).toBe(false);
   });
 

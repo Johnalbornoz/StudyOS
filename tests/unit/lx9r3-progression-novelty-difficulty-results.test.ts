@@ -467,11 +467,18 @@ describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-se
   });
 
   it('21. the learner-facing quiz UI has no difficulty selector control -- StudyUS decides difficulty, never the learner', () => {
-    // LX-4J's own removal note is still in force: no intrinsic
-    // learner-visible 1-5 difficulty control was reintroduced.
-    expect(QUIZ_PAGE_SRC).toMatch(/there\s*\n?\s*is no canonical learner-relative difficulty authority/);
+    // UX/CANON-R1: LX-4J's removal note no longer applies verbatim --
+    // StudyUS now DOES canonically determine difficulty
+    // (resolveTargetDifficulty), so LX-4J's premise ("no canonical
+    // authority exists") is no longer true, and the value is now shown
+    // (DifficultyBadge, SYSTEM-DEFINED/LEARNER-VISIBLE). What remains
+    // invariant, and is re-asserted here, is that it is still NEVER
+    // editable: no selector, no onChange-driven control, no slider.
+    expect(QUIZ_PAGE_SRC).toMatch(/NOT LEARNER-EDITABLE/);
+    expect(QUIZ_PAGE_SRC).toMatch(/<DifficultyBadge difficulty=\{q\.difficulty\} t=\{at\} \/>/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/<select[^>]*difficulty/i);
     expect(QUIZ_PAGE_SRC).not.toMatch(/onChange.*setDifficulty/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/type=["']range["'][^>]*difficulty/i);
   });
 });
 

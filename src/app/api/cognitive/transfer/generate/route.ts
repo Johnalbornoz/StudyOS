@@ -18,6 +18,7 @@ import {
   resolveKnownConceptIds,
 } from '@/services/transfer-task-instance.service';
 import { getConceptTransferDepth } from '@/services/transfer-read.service';
+import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { authorizeRequestedTransferDistance } from '@/lib/transfer-distance-authorization';
 import { db } from '@/lib/db';
 import {
@@ -89,6 +90,26 @@ export async function POST(request: NextRequest) {
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
     const language = validated.language || 'en';
+
+    // UX/CANON-R1 PART H/I -- CANONICAL TRANSFER PRECONDITION, enforced
+    // here as a server-side backstop before ANY AI call. The primary
+    // fix is upstream (knowledge-state.service.ts:determineValidationReadiness
+    // now checks retention before transfer, so selectActivityType/
+    // computeLearningState never offer TRANSFER while retention is
+    // unresolved) -- this is defense in depth against a client that
+    // reaches this route directly (a stale CTA, a manual URL, a race)
+    // rather than through the canonical decision. Reads the SAME shared
+    // authority (ConceptKnowledgeState.validationReadiness) every other
+    // surface consults -- never a second, route-local eligibility rule.
+    const ksForTransferGate = await getConceptKnowledgeState(validated.studentId, validated.conceptId).catch(() => null);
+    if (ksForTransferGate?.validationReadiness === 'WAITING_FOR_RETENTION') {
+      logOperationalWarning({
+        subsystem: 'transfer',
+        operation: 'POST /api/cognitive/transfer/generate.canonicalPrecondition',
+        context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
+      });
+      return NextResponse.json({ error: 'RETENTION_REQUIRED_BEFORE_TRANSFER' }, { status: 409 });
+    }
 
     // Phase 7 (7E2): the browser is NOT authoritative for NEAR/MID/FAR.
     // Clamp the requested distance to what canonical

@@ -308,7 +308,17 @@ function buildMilestones(
           : i === currentIdx
             ? 'CURRENT'
             : 'UPCOMING';
-    const demonstratedBy = demonstratedFor(rung, inputs);
+    // UX/CANON-R1 PART L: raw evidence for a rung the learner hasn't
+    // canonically REACHED yet (position UPCOMING) must never render as
+    // "demonstrated" -- that would visually mark a future stage
+    // complete purely because premature evidence exists (the exact live
+    // incident: Transfer evidence recorded while RETAIN was still the
+    // current canonical stage, yet the Transfer milestone rendered a
+    // checkmark). The evidence itself is never hidden or deleted --
+    // Results/history still show it (PART K) -- only this canonical
+    // journey milestone's own "demonstrated" signal is withheld until
+    // the rung is legitimately reached (position PASSED or CURRENT).
+    const demonstratedBy = position === 'UPCOMING' ? null : demonstratedFor(rung, inputs);
     const milestone: ConceptMissionMilestone = {
       rung,
       position,

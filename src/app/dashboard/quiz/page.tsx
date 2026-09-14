@@ -17,6 +17,8 @@ import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
 import ContinuationPanel from './ContinuationPanel';
+import DifficultyBadge from './DifficultyBadge';
+import { formatDifficultyWorked } from '@/lib/lx/difficulty-presentation';
 // LX-8 R33: optional modality controls are never on the critical
 // rendering path -- both use browser-only APIs (speechSynthesis /
 // SpeechRecognition) and are irrelevant to the very first paint of a
@@ -1477,6 +1479,19 @@ function QuizPageContent() {
             {results.results.correctCount} / {results.results.totalQuestions} {at['quiz.correctOf']}
           </p>
 
+          {/* UX/CANON-R1 PART D: canonical difficulty this activity was
+              generated at -- the session's own targetDifficulty when
+              every question shares it (the ordinary case), or a range
+              when they legitimately differ. Never a new average metric. */}
+          {questions.length > 0 && (
+            <p style={{ color: 'var(--text-muted)', fontSize: 12.5, marginTop: 2 }}>
+              {formatDifficultyWorked(at, {
+                min: Math.min(...questions.map((q) => q.difficulty)),
+                max: Math.max(...questions.map((q) => q.difficulty)),
+              })}
+            </p>
+          )}
+
           {results.diagnosticOutcome && (
             <div
               style={{
@@ -1930,12 +1945,17 @@ function QuizPageContent() {
             />
           );
         })()}
-        {/* LX-4J: the intrinsic 1-5 difficulty dots were removed -- there
-            is no canonical learner-relative difficulty authority (target
-            challenge is UNRESOLVED), so showing a five-level scale
-            implied one. The calculator affordance stays: it is a
-            functional constraint, not a metric. */}
+        {/* UX/CANON-R1 PART A-C: LX-4J removed the intrinsic 1-5
+            difficulty dots because, at the time, there was no canonical
+            learner-relative difficulty authority -- showing a
+            five-level scale would have implied one that didn't exist.
+            StudyUS now DOES canonically determine difficulty
+            (resolveTargetDifficulty), so showing it is no longer a
+            false claim -- it is SYSTEM-DEFINED, LEARNER-VISIBLE, and
+            NOT LEARNER-EDITABLE: no selector, no slider, no
+            preference, StudyUS remains the sole authority. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <DifficultyBadge difficulty={q.difficulty} t={at} />
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
               title={q.calculatorAllowed ? at['quiz.calculatorAllowed'] : at['quiz.calculatorNotAllowed']}
