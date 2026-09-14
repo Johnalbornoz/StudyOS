@@ -130,6 +130,38 @@ ${groundingRequirement}
 ${closingNote}`;
 }
 
+const ANSWER_FORMAT_BY_TYPE: Record<string, string> = {
+  multiple_choice: 'single_choice', true_false: 'single_choice', yes_no: 'single_choice',
+  multi_select: 'multi_choice', matching: 'matching', ordering: 'ordering', classification: 'classification',
+  short_answer: 'text', open_ended: 'text', fill_blank: 'text', numeric_problem: 'text', step_by_step: 'text',
+  case_study: 'text', scenario: 'text', error_detection: 'text', justification: 'text', comparison: 'text', prediction: 'text',
+};
+
+// Verbatim copy of jsonShapeExample (quiz-generation.service.ts).
+function jsonShapeExample(type: string, withVisual: boolean): string {
+  const base: Record<string, string> = {
+    type: `"${type}"`,
+    question: '"..."',
+    difficulty: '3',
+    explanation: '"..."',
+    correctAnswer: '"..."',
+    cognitiveLevel: '"RECALL"|"COMPREHENSION"|"APPLICATION"|"ANALYSIS"|"SYNTHESIS"|"EVALUATION"',
+    questionIntent: '"CHECK_UNDERSTANDING"|"CHECK_APPLICATION"|"CHECK_TRANSFER"|"DIAGNOSTIC_PROBE"',
+    expectedReasoningType: '"FACTUAL"|"PROCEDURAL"|"CONCEPTUAL"|"METACOGNITIVE"',
+  };
+  const format = ANSWER_FORMAT_BY_TYPE[type];
+  if (format === 'single_choice' || format === 'multi_choice') base.options = '[{"id":"A","text":"..."}, {"id":"B","text":"..."}]';
+  if (type === 'matching') base.matchingPairs = '[{"left":"...","right":"..."}]';
+  if (type === 'ordering') base.orderingItems = '["step 1", "step 2"]';
+  if (type === 'classification') { base.classificationCategories = '["category A", "category B"]'; base.classificationItems = '[{"item":"...","category":"category A"}]'; }
+  if (type === 'numeric_problem' || type === 'step_by_step') base.calculatorAllowed = 'true or false';
+  if (withVisual) {
+    base.visualAid = '{"kind":"diagram"|"chart","svg":"<svg ...>...</svg>" (only if kind=diagram),"chartData":{"chartType":"line"|"bar","labels":["..."],"values":[0],"xLabel":"...","yLabel":"..."} (only if kind=chart),"caption":"..."}';
+  }
+  const fields = Object.entries(base).map(([k, v]) => `    "${k}": ${v}`).join(',\n');
+  return `  {\n${fields}\n  }`;
+}
+
 // A representative retrieved-context chunk -- ~900 chars, typical of one
 // RAG chunk of student material (paragraph-length excerpt).
 const SAMPLE_CHUNK = {
@@ -138,6 +170,72 @@ const SAMPLE_CHUNK = {
 
 function estimateTokens(s: string): number {
   return Math.ceil(s.length / 4);
+}
+
+// ===================================================================
+// LX-10R1 -- the NEW (post-restructure) prompt, verbatim copy of the
+// real src/services/quiz-generation.service.ts implementation as of
+// this phase, for a direct before/after comparison.
+// ===================================================================
+function buildQuestionGenerationPromptV2(
+  types: readonly string[],
+  difficulty: number,
+  language: string,
+  chunks: Array<{ text: string }>,
+  guidance: string,
+): string {
+  const typeInstructions = types.map((t) => `- ${typeInstruction(t)}`).join('\n');
+  const difficultyDesc = describeDifficultyTier(difficulty);
+  const languageName = 'English';
+  const visualInstruction = '';
+  const usingGeneralKnowledge = chunks.length === 0;
+  const contextBlock = usingGeneralKnowledge
+    ? `CONCEPT (no uploaded material found for it -- use accurate, well-established general knowledge of it; do not fabricate facts that aren't genuinely true of it):\n"Centripetal Force", in the subject "Physics".`
+    : `CONTEXT (student's actual materials -- use ONLY this material, never invent facts outside it):\n${chunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n\n')}`;
+
+  const stablePrefix = `You are an expert educator creating assessment questions.
+
+LANGUAGE: Write EVERYTHING in ${languageName} -- the question text, every
+option/pair/item, and the explanation. Do not mix in any other language,
+even if the source material below is in a different language.
+
+QUESTION TYPES AVAILABLE -- for EACH question, choose whichever type genuinely fits that specific piece of content best. Don't force every question into the same type, and don't use a type just because it's on the list if it doesn't suit what you're testing here:
+${typeInstructions}
+
+QUIZ PURPOSE: ${guidance}
+${visualInstruction}
+
+REQUIREMENTS:
+1. Difficulty level (${difficulty}/5): ${difficultyDesc}
+2. Questions should test understanding, not just recall
+3. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material. Be as concise as full correctness and clarity allow -- expand into a multi-step worked explanation only when the difficulty genuinely demands it.
+4. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
+5. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps. Your entire response is a JSON document. Every backslash inside your LaTeX must itself be escaped for JSON: write it as two backslashes in the raw JSON for every one backslash LaTeX needs. For example: to display \\frac{a}{b}, write \\\\frac{a}{b} in your JSON output (not \\frac{a}{b}); to display \\times, write \\\\times; to display \\sqrt{x}, write \\\\sqrt{x}. A single backslash immediately before a letter is invalid JSON, or worse, silently corrupts your output into an unreadable control character -- never emit one. Do not use any math delimiter other than "$...$" or "$$...$$".
+6. Tag EVERY question with "cognitiveLevel", "questionIntent" and "expectedReasoningType" so they accurately describe what THIS SPECIFIC question demands -- never a value that merely sounds appropriate for the concept's general difficulty, and never the same value for every question just because it's convenient:
+   - "cognitiveLevel" (Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
+   - "questionIntent" (what this question is primarily evidence of): "CHECK_UNDERSTANDING" (does the student grasp the concept itself), "CHECK_APPLICATION" (can the student use it in a concrete case), "CHECK_TRANSFER" (can the student use it in an unfamiliar context or combined with other concepts), "DIAGNOSTIC_PROBE" (designed to reveal a specific likely misconception rather than just pass/fail).
+   - "expectedReasoningType" (what a COMPLETE correct response must actually demonstrate -- this sets what the student is told to provide and what the grader is allowed to score): "FACTUAL" (recall/state the answer; no working or explanation is expected), "PROCEDURAL" (a method/derivation must be shown, not only the final value -- e.g. a multi-step calculation where the working is the point), "CONCEPTUAL" (the response must explain WHY, in the student's own words, not just give a result), "METACOGNITIVE" (the student must reflect on or justify their own choice/confidence/approach). Choose FACTUAL for a plain numeric or short-answer question that only needs the answer; choose PROCEDURAL only when the working genuinely must be assessed. At difficulty 4-5 specifically, make sure these three tags reflect the ACTUAL multi-step reasoning or context transfer the question demands -- not just the concept's inherent difficulty.
+   - For any choice-format question, every distractor must reflect a genuine, specific misconception or common error for this concept -- never an option that is obviously wrong, absurd, or a near-duplicate of another option merely to fill the required count.`;
+
+  return `${stablePrefix}\n\n${contextBlock}`;
+}
+
+function buildShapeExamplesBlockV2(types: readonly string[], withVisual: boolean): string {
+  const groups = new Map<string, { example: string; types: string[] }>();
+  for (const t of types) {
+    const example = jsonShapeExample(t, withVisual);
+    const signature = example.replace(/"type":\s*"[^"]*"/, '"type": "<TYPE>"');
+    const group = groups.get(signature);
+    if (group) group.types.push(t);
+    else groups.set(signature, { example, types: [t] });
+  }
+  return [...groups.values()]
+    .map(({ example, types: groupTypes }) =>
+      groupTypes.length > 1
+        ? `  // shape for "type" in {${groupTypes.join(', ')}} -- identical fields, only "type" differs:\n${example}`
+        : example,
+    )
+    .join(',\n');
 }
 
 console.log('=== LX-10 PART I -- QUESTION_GENERATION prompt size measurement (estimated, chars/4) ===\n');
@@ -178,3 +276,27 @@ console.log(`\n--- Breakdown ---`);
 console.log(`Static boilerplate (REQUIREMENTS 1-8, LaTeX/JSON escaping rule, cognitive-level/questionIntent/expectedReasoningType taxonomy) is embedded inline, not separable from the template without a source refactor.`);
 console.log(`Context chunk contributes: ${SAMPLE_CHUNK.text.length} chars (~${estimateTokens(SAMPLE_CHUNK.text)} tokens) of the ${qcSystemWithContext.length}-char total when material exists.`);
 console.log(`Type instructions (4 types) contribute: ${QUICK_CHECK_TYPES.map(typeInstruction).join('\n').length} chars.`);
+
+// ===================================================================
+// LX-10R1 BEFORE/AFTER -- REVIEW/requiredCount=1 shape: 18 types,
+// difficulty 4, 1 realistic context chunk, count=1 (matching the live
+// baseline trace exactly: REVIEW, requiredQuestionCount=1, difficulty=4).
+// ===================================================================
+console.log(`\n\n=== LX-10R1 BEFORE/AFTER -- REVIEW/requiredCount=1, difficulty=4, 1 context chunk ===\n`);
+
+const beforeSystem = buildQuestionGenerationPrompt(ALL_QUESTION_TYPES, 4, 'en', [SAMPLE_CHUNK], 'Everyday practice on this concept. Use a natural mix of types that fit the material -- don\'t default to only multiple_choice.');
+const beforeShapeExamples = ALL_QUESTION_TYPES.map((t) => jsonShapeExample(t, false)).join(',\n');
+const beforeUser = `Generate UP TO 1 questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach 1; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.\n\nOutput a JSON object (no markdown fences) with this exact shape -- a "questions" array, one element per question, each element's shape depending on its "type":\n{"questions": [\n${beforeShapeExamples}\n]}`;
+const beforeSchemaChars = 2813; // measured separately above (GENERATED_QUESTION_BATCH_SCHEMA + name/strict wrapper)
+const beforeTotal = beforeSystem.length + beforeUser.length + beforeSchemaChars;
+
+const afterSystem = buildQuestionGenerationPromptV2(ALL_QUESTION_TYPES, 4, 'en', [SAMPLE_CHUNK], 'Everyday practice on this concept. Use a natural mix of types that fit the material -- don\'t default to only multiple_choice.');
+const afterShapeExamples = buildShapeExamplesBlockV2(ALL_QUESTION_TYPES, false);
+const afterUser = `Generate UP TO 1 questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach 1; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.\n\nOutput a JSON object (no markdown fences) with this exact shape -- a "questions" array, one element per question, each element's shape depending on its "type":\n{"questions": [\n${afterShapeExamples}\n]}`;
+const afterSchemaChars = 2813; // schema itself is UNCHANGED by this phase
+const afterTotal = afterSystem.length + afterUser.length + afterSchemaChars;
+
+console.log(`BEFORE: system=${beforeSystem.length} chars, user=${beforeUser.length} chars, schema=${beforeSchemaChars} chars, TOTAL=${beforeTotal} chars (~${Math.ceil(beforeTotal / 4)} estTokens)`);
+console.log(`AFTER:  system=${afterSystem.length} chars, user=${afterUser.length} chars, schema=${afterSchemaChars} chars, TOTAL=${afterTotal} chars (~${Math.ceil(afterTotal / 4)} estTokens)`);
+console.log(`REDUCTION: ${beforeTotal - afterTotal} chars (${(100 * (1 - afterTotal / beforeTotal)).toFixed(1)}%), ~${Math.ceil((beforeTotal - afterTotal) / 4)} estTokens`);
+console.log(`\nLive baseline (real tokenizer, not this chars/4 estimate): inputTokens=6473. This script's chars/4 estimate for the BEFORE shape is ~${Math.ceil(beforeTotal / 4)} -- the gap is expected (a real tokenizer counts JSON punctuation/quotes less efficiently than chars/4 assumes); the REDUCTION PERCENTAGE is the honest, reproducible claim, not an exact predicted post-change token count.`);

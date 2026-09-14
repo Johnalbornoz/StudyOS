@@ -285,6 +285,44 @@ function jsonShapeExample(type: QuestionType, withVisual: boolean): string {
 }
 
 /**
+ * LX-10R1 PART D/G -- one worked JSON example per DISTINCT shape, not
+ * per type. Live measurement (LX-10R1 PART A) proved that for a
+ * REVIEW/requiredCount=1 request (the default `types` catalog, all 18),
+ * the 18 separate `jsonShapeExample` calls alone contributed ~2200
+ * estimated input tokens to the user message -- yet 9 of those 18 types
+ * (short_answer/open_ended/fill_blank/case_study/scenario/
+ * error_detection/justification/comparison/prediction) produce a
+ * BYTE-IDENTICAL example (same fields, same order -- only the literal
+ * "type" string differs), and multiple_choice/true_false/yes_no/
+ * multi_select share another identical shape. Showing the same worked
+ * example 9 times conveys zero additional shape information beyond the
+ * first occurrence -- typeInstruction()'s own prose (unchanged) still
+ * carries every type's cardinality/semantic rules. Grouping by the
+ * ACTUAL computed shape (never by a hand-maintained type list, so this
+ * can never silently drift if a shape changes) and annotating each
+ * group with the type names it covers preserves the SAME information
+ * the model needs at a fraction of the size. Never changes what shape
+ * is shown for any individual type -- only removes literal duplicates.
+ */
+function buildShapeExamplesBlock(types: QuestionType[], withVisual: boolean): string {
+  const groups = new Map<string, { example: string; types: QuestionType[] }>();
+  for (const t of types) {
+    const example = jsonShapeExample(t, withVisual);
+    const signature = example.replace(/"type":\s*"[^"]*"/, '"type": "<TYPE>"');
+    const group = groups.get(signature);
+    if (group) group.types.push(t);
+    else groups.set(signature, { example, types: [t] });
+  }
+  return [...groups.values()]
+    .map(({ example, types: groupTypes }) =>
+      groupTypes.length > 1
+        ? `  // shape for "type" in {${groupTypes.join(', ')}} -- identical fields, only "type" differs:\n${example}`
+        : example,
+    )
+    .join(',\n');
+}
+
+/**
  * Maps the AI's raw per-question JSON objects into GeneratedQuestion
  * records. Shared by generateQuestionsForConcept (batch path) and
  * generateQuickCheckQuestions (quick_check fast path) so the two never
@@ -456,7 +494,7 @@ export async function generateQuestionsForConcept(
       conceptContext
     );
 
-    const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
+    const shapeExamples = buildShapeExamplesBlock(types, visualAidRate > 0);
 
     const maxTokens = Math.min(16000, 900 * count + 1500);
     const prompt = getPrompt('quiz.question_generation');
@@ -494,6 +532,18 @@ export async function generateQuestionsForConcept(
             provider: QGEN_ROUTE.provider,
             model: genModel,
             maxTokens,
+            // LX-10R1 PART G: this call site previously sent no
+            // reasoning-effort hint at all (relying on the provider's
+            // own undocumented default) even though
+            // question_generation_practice's budget already declared
+            // 'low' for exactly this purpose -- now wired through.
+            reasoningEffort: budgetFor('question_generation_practice').reasoningEffort,
+            // LX-10R1 PART E: safe, content-only cache-routing hint --
+            // see questionGenerationCacheKey's own doc comment for what
+            // it can and can never contain.
+            promptCacheKey: questionGenerationCacheKey({
+              promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: visualAidRate > 0,
+            }),
             jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
             system: systemPrompt,
             user: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
@@ -708,6 +758,12 @@ ${shapeExample}
               provider: QGEN_ROUTE.provider, model,
               maxTokens: budgetFor('question_generation_slot').maxOutputTokens,
               reasoningEffort: budgetFor('question_generation_slot').reasoningEffort,
+              // LX-10R1 PART E: keyed on QUICK_CHECK_TYPES (what
+              // systemPrompt above was actually built from, shared
+              // across all 6 slots), never the per-slot assignedType.
+              promptCacheKey: questionGenerationCacheKey({
+                promptId: prompt.id, promptVersion: prompt.version, types: QUICK_CHECK_TYPES, difficulty, language, hasVisualAid: false,
+              }),
               jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
               system: systemPrompt, user: userMessage,
             },
@@ -1064,7 +1120,7 @@ export async function generatePracticeQuestions(
       model: string = PRACTICE_CHUNK_MODEL,
       onNonRetryable?: (code: AIErrorCode) => void,
     ): Promise<any[]> => {
-      const shapeExamples = types.map((t) => jsonShapeExample(t, visualAidRate > 0)).join(',\n');
+      const shapeExamples = buildShapeExamplesBlock(types, visualAidRate > 0);
       const maxTokens = Math.min(16000, 900 * chunkSize + 1500);
       const userMessage = `Generate UP TO ${chunkSize} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${chunkSize}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
@@ -1082,7 +1138,14 @@ ${shapeExamples}
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage }, signal),
+          callModel({
+            provider: QGEN_ROUTE.provider, model, maxTokens,
+            reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort,
+            promptCacheKey: questionGenerationCacheKey({
+              promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: visualAidRate > 0,
+            }),
+            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage,
+          }, signal),
         validate: (raw) => {
           // LX-4P-PERF-R1F: same object-root boundary as every other
           // QUESTION_GENERATION call site. This chunk path already
@@ -1616,7 +1679,7 @@ export async function generateRetentionCheckQuestions(
       exclusionNote?: string,
       model: string = RETENTION_CHUNK_MODEL,
     ): Promise<RetentionChunkOutcome> => {
-      const shapeExamples = types.map((t) => jsonShapeExample(t, false)).join(',\n');
+      const shapeExamples = buildShapeExamplesBlock(types, false);
       const maxTokens = Math.min(16000, 900 * count + 1500);
       const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT} for this retention check. Generate EXACTLY ${count} CANDIDATE questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. Candidates are quality-reviewed after generation; StudyUS will select the best ${RETENTION_REQUIRED_COUNT} across both chunks, so not every candidate you write will necessarily be used -- write every one to the same high standard regardless. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
 
@@ -1634,7 +1697,16 @@ ${shapeExamples}
         timeoutMs: 30_000,
         context: aiContext,
         call: (signal) =>
-          callModel({ provider: QGEN_ROUTE.provider, model, maxTokens, reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort, jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage }, signal),
+          callModel({
+            provider: QGEN_ROUTE.provider, model, maxTokens,
+            reasoningEffort: budgetFor('question_generation_chunk').reasoningEffort,
+            // visualAidRate is always 0 for retention_check (see the
+            // doc comment above -- matches QUIZ_MODE_CONFIG.retention_check).
+            promptCacheKey: questionGenerationCacheKey({
+              promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: false,
+            }),
+            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage,
+          }, signal),
         validate: (raw) => {
           // LX-4P-PERF-R1F: same object-root boundary as every other
           // QUESTION_GENERATION call site.
@@ -2841,6 +2913,43 @@ export function describeDifficultyTier(difficulty: number): string {
 }
 
 /**
+ * LX-10R1 PART E -- a stable, content-addressable cache-routing hint
+ * for a QUESTION_GENERATION request. `buildQuestionGenerationPrompt`'s
+ * STABLE PREFIX (PART B, above) is byte-identical for every request
+ * that shares (types, difficulty, language, visualAidRate>0-shape) --
+ * this key never varies for a request sharing that shape, and always
+ * varies when any of those dimensions differ, so OpenAI can route
+ * semantically-compatible requests to the same cache partition without
+ * ever conflating two materially different generation contracts.
+ *
+ * Deliberately NEVER includes studentId, a learner's name, concept
+ * text, retrieved context, an answer, or any other private/dynamic
+ * content -- only the request SHAPE, which is public configuration
+ * (the same for every learner requesting this exact combination).
+ *
+ * `promptId`/`promptVersion` are included so a future prompt-contract
+ * change (e.g. quiz.question_generation v4) automatically gets a fresh
+ * key, never silently reusing a stale cache partition keyed to the old
+ * wording. `activity family` (per-quizMode guidance) and a "generation
+ * contract version" are deliberately NOT separate key dimensions here:
+ * `guidance` text is already a fixed, quizMode-keyed constant (never
+ * per-request dynamic), and this codebase has no separately-versioned
+ * "generation contract" beyond `promptVersion` -- adding either would
+ * only fragment the cache without changing what gets cached.
+ */
+function questionGenerationCacheKey(params: {
+  promptId: string;
+  promptVersion: string;
+  types: QuestionType[];
+  difficulty: number;
+  language: string;
+  hasVisualAid: boolean;
+}): string {
+  const typeKey = [...params.types].sort().join('.');
+  return `qgen:${params.promptId}:${params.promptVersion}:t=${typeKey}:d=${params.difficulty}:l=${params.language}:v=${params.hasVisualAid ? 1 : 0}`;
+}
+
+/**
  * Build augmented prompt with context
  */
 function buildQuestionGenerationPrompt(
@@ -2884,48 +2993,56 @@ IB ALIGNMENT: This subject is tagged as IB ${ibContext.programme}${ibContext.lev
 
   const usingGeneralKnowledge = chunks.length === 0 && !!conceptContext;
 
+  // LX-10R1 PART C: the grounding rule now lives ONCE, folded directly
+  // into the CONTEXT/CONCEPT block's own framing -- before this phase
+  // the SAME instruction ("stay grounded in the material / general
+  // knowledge, don't invent facts") was stated a second time as
+  // REQUIREMENTS item 2 and a third time as a trailing "IMPORTANT"
+  // closing note. Removing the two restatements changes nothing the
+  // model is told; it only removes the repetition.
   const contextBlock = usingGeneralKnowledge
-    ? `CONCEPT (no uploaded material found for it -- use accurate general knowledge instead):
+    ? `CONCEPT (no uploaded material found for it -- use accurate, well-established general knowledge of it; do not fabricate facts that aren't genuinely true of it):
 "${conceptContext!.label}", in the subject "${conceptContext!.subjectName}".`
-    : `CONTEXT (student's actual materials):
+    : `CONTEXT (student's actual materials -- use ONLY this material, never invent facts outside it):
 ${chunks.map((c, i) => `[${i + 1}] ${c.text}`).join('\n\n')}`;
 
-  const groundingRequirement = usingGeneralKnowledge
-    ? `2. No student material was found for this concept -- use accurate, well-established general knowledge of it instead. Do not fabricate facts that aren't genuinely true of this concept.`
-    : `2. Use ONLY the provided context above -- do not invent facts outside it`;
-
-  const closingNote = usingGeneralKnowledge
-    ? `IMPORTANT: Every question must be genuinely answerable from correct general knowledge of "${conceptContext!.label}" -- do not invent details, statistics, or claims that aren't actually true of it.`
-    : `IMPORTANT: Do not invent content. Every question must be answerable from the provided material.`;
-
-  return `You are an expert educator creating assessment questions.
+  // LX-10R1 PART B -- STABLE PREFIX: identical for every request that
+  // shares (types, difficulty, language, guidance, visualAidRate>0),
+  // i.e. identical for whatever this call's promptCacheKey (PART E)
+  // already scopes to. The LX-10 audit found the genuinely per-request
+  // content (the concept's retrieved material, IB alignment) placed
+  // BEFORE this large, repeated block, which meant OpenAI's own
+  // prefix-based caching could never match it -- the dynamic content is
+  // now appended AFTER the stable prefix instead.
+  const stablePrefix = `You are an expert educator creating assessment questions.
 
 LANGUAGE: Write EVERYTHING in ${languageName} -- the question text, every
 option/pair/item, and the explanation. Do not mix in any other language,
 even if the source material below is in a different language.
 
-${contextBlock}
-
 QUESTION TYPES AVAILABLE -- for EACH question, choose whichever type genuinely fits that specific piece of content best. Don't force every question into the same type, and don't use a type just because it's on the list if it doesn't suit what you're testing here:
 ${typeInstructions}
 
 QUIZ PURPOSE: ${guidance}
-${visualInstruction}${ibInstruction}
+${visualInstruction}
 
 REQUIREMENTS:
 1. Difficulty level (${difficulty}/5): ${difficultyDesc}
-${groundingRequirement}
-3. Every field in your JSON output must be written in ${languageName}
-4. Questions should test understanding, not just recall
-5. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material
-6. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
-7. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps. Your entire response is a JSON document. Every backslash inside your LaTeX must itself be escaped for JSON: write it as two backslashes in the raw JSON for every one backslash LaTeX needs. For example: to display \\frac{a}{b}, write \\\\frac{a}{b} in your JSON output (not \\frac{a}{b}); to display \\times, write \\\\times; to display \\sqrt{x}, write \\\\sqrt{x}. A single backslash immediately before a letter is invalid JSON, or worse, silently corrupts your output into an unreadable control character -- never emit one. Do not use any math delimiter other than "$...$" or "$$...$$".
-8. Tag EVERY question with "cognitiveLevel", "questionIntent" and "expectedReasoningType", judged honestly against what the question actually demands -- never default to the same value for every question just because it's convenient:
-   - "cognitiveLevel" (the cognitive demand genuinely required to answer, Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
+2. Questions should test understanding, not just recall
+3. Every question must include a clear, complete "explanation" of the correct answer/solution -- this is shown to the student during review, so it should stand on its own even without seeing the source material. Be as concise as full correctness and clarity allow -- expand into a multi-step worked explanation only when the difficulty genuinely demands it.
+4. For ANY question (regardless of type) that requires numerical calculation to answer, include "calculatorAllowed": true or false, matching real exam convention for this kind of problem (e.g. a quick estimation or simple arithmetic step is typically no-calculator; multi-step or decimal-heavy computation typically allows one). Omit "calculatorAllowed" entirely for questions that involve no calculation at all.
+5. MATH NOTATION: whenever a question, option, correctAnswer, or explanation contains a mathematical expression (fractions, exponents, limits, integrals, roots, Greek letters, subscripts, etc.), write it as LaTeX wrapped in dollar delimiters -- "$$...$$" for a standalone/display equation on its own (e.g. a limit being evaluated), "$...$" for a short expression inline within a sentence (e.g. "the radius $r$"). Never write a standalone equation as plain ASCII (e.g. "lim x->2 (x^2-4)/(x-2)") or describe it only in words -- the app renders "$$...$$"/"$...$" with real math typesetting, so use it for every formula, in the question text AND the explanation's worked steps. Your entire response is a JSON document. Every backslash inside your LaTeX must itself be escaped for JSON: write it as two backslashes in the raw JSON for every one backslash LaTeX needs. For example: to display \\frac{a}{b}, write \\\\frac{a}{b} in your JSON output (not \\frac{a}{b}); to display \\times, write \\\\times; to display \\sqrt{x}, write \\\\sqrt{x}. A single backslash immediately before a letter is invalid JSON, or worse, silently corrupts your output into an unreadable control character -- never emit one. Do not use any math delimiter other than "$...$" or "$$...$$".
+6. Tag EVERY question with "cognitiveLevel", "questionIntent" and "expectedReasoningType" so they accurately describe what THIS SPECIFIC question demands -- never a value that merely sounds appropriate for the concept's general difficulty, and never the same value for every question just because it's convenient:
+   - "cognitiveLevel" (Bloom's taxonomy): "RECALL" (state a fact/definition from memory), "COMPREHENSION" (explain or restate an idea in one's own words), "APPLICATION" (use the concept to solve a new, concrete problem), "ANALYSIS" (break a situation down into its parts or identify relationships/causes), "SYNTHESIS" (combine ideas into something new -- a plan, a design, an original argument), "EVALUATION" (make and justify a judgment against criteria).
    - "questionIntent" (what this question is primarily evidence of): "CHECK_UNDERSTANDING" (does the student grasp the concept itself), "CHECK_APPLICATION" (can the student use it in a concrete case), "CHECK_TRANSFER" (can the student use it in an unfamiliar context or combined with other concepts), "DIAGNOSTIC_PROBE" (designed to reveal a specific likely misconception rather than just pass/fail).
-   - "expectedReasoningType" (what a COMPLETE correct response must actually demonstrate -- this sets what the student is told to provide and what the grader is allowed to score): "FACTUAL" (recall/state the answer; no working or explanation is expected -- typical for a definition or a single-value lookup), "PROCEDURAL" (a method/derivation must be shown, not only the final value -- e.g. a multi-step calculation where the working is the point), "CONCEPTUAL" (the response must explain WHY, in the student's own words, not just give a result), "METACOGNITIVE" (the student must reflect on or justify their own choice/confidence/approach). Choose FACTUAL for a plain numeric or short-answer question that only needs the answer; choose PROCEDURAL only when the working genuinely must be assessed.
+   - "expectedReasoningType" (what a COMPLETE correct response must actually demonstrate -- this sets what the student is told to provide and what the grader is allowed to score): "FACTUAL" (recall/state the answer; no working or explanation is expected), "PROCEDURAL" (a method/derivation must be shown, not only the final value -- e.g. a multi-step calculation where the working is the point), "CONCEPTUAL" (the response must explain WHY, in the student's own words, not just give a result), "METACOGNITIVE" (the student must reflect on or justify their own choice/confidence/approach). Choose FACTUAL for a plain numeric or short-answer question that only needs the answer; choose PROCEDURAL only when the working genuinely must be assessed. At difficulty 4-5 specifically, make sure these three tags reflect the ACTUAL multi-step reasoning or context transfer the question demands -- not just the concept's inherent difficulty.
+   - For any choice-format question, every distractor must reflect a genuine, specific misconception or common error for this concept -- never an option that is obviously wrong, absurd, or a near-duplicate of another option merely to fill the required count.`;
 
-${closingNote}`;
+  // LX-10R1 PART B: the dynamic, per-request content -- appended AFTER
+  // the stable prefix above, never before it.
+  return `${stablePrefix}
+
+${contextBlock}${ibInstruction}`;
 }
 
 /**

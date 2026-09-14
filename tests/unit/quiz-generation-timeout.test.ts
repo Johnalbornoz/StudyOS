@@ -137,9 +137,15 @@ describe('generateQuestionsForConcept: model, timeout, and prompt provenance pin
       return { result: [], execution: {} as any, provenance: {} as any };
     });
     await generateQuestionsForConcept('c1', 's1', 'subj1', { count: 6 });
+    // LX-10R1 PART D/G: types that share an IDENTICAL generated-question
+    // shape (case_study/error_detection among them) are now named in a
+    // grouped comment above ONE worked example, rather than each getting
+    // its own separate, byte-identical example -- the catalog itself is
+    // unchanged (both names are still present in the message), only the
+    // redundant repetition of the same JSON shape was removed.
     const msg = callModelMock.mock.calls[0][0].user as string;
-    expect(msg).toContain('"case_study"');
-    expect(msg).toContain('"error_detection"');
+    expect(msg).toContain('case_study');
+    expect(msg).toContain('error_detection');
   });
 
   it('fallback behavior is unchanged -- a failed call still resolves to an empty array, never throws', async () => {

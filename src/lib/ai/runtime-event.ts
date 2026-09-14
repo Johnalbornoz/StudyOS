@@ -61,11 +61,18 @@ export interface AIRuntimeEvent {
 }
 
 /**
- * A single-call runtime event (unchanged since R1B/R1C) -- computes cost
- * for exactly ONE model from the raw token counts given.
+ * A single-call runtime event -- computes cost for exactly ONE model
+ * from the raw token counts given. LX-10R1 PART J: also computes
+ * `cacheHitRatio` (cachedInputTokens/inputTokens, the SAME formula
+ * `aggregateCost` already uses for the multi-call variant below) when
+ * both are known and inputTokens > 0 -- previously only the aggregate
+ * event path populated this field, so a single-call QUESTION_GENERATION
+ * attempt (the common case) never reported cache effectiveness at all.
+ * Never inferred from latency or any other proxy -- null whenever
+ * either token count is unknown.
  */
 export function buildRuntimeEvent(
-  base: Omit<AIRuntimeEvent, 'estimatedCostUSD' | 'costComplete'>,
+  base: Omit<AIRuntimeEvent, 'estimatedCostUSD' | 'costComplete' | 'cacheHitRatio'>,
 ): AIRuntimeEvent {
   const cost = estimateCostUSD({
     model: base.model,
@@ -73,7 +80,11 @@ export function buildRuntimeEvent(
     cachedInputTokens: base.cachedInputTokens,
     outputTokens: base.outputTokens,
   });
-  return { ...base, estimatedCostUSD: cost.usd, costComplete: cost.complete };
+  const cacheHitRatio =
+    base.inputTokens !== null && base.inputTokens > 0 && base.cachedInputTokens !== null
+      ? base.cachedInputTokens / base.inputTokens
+      : null;
+  return { ...base, estimatedCostUSD: cost.usd, costComplete: cost.complete, cacheHitRatio };
 }
 
 /**
