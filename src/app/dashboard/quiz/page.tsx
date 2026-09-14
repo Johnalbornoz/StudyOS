@@ -337,6 +337,19 @@ function QuizPageContent() {
   const [localizeFailedFallback, setLocalizeFailedFallback] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // RELEASE-R1 PART D: set only for a canonical-state MISMATCH
+  // (INVALID_GENERATION_CONTRACT/ZERO_GAP_PRACTICE_MISMATCH) -- never for
+  // a genuine generation/provider failure. Drives a DIFFERENT recovery
+  // UX in the 'error' phase render below (never the generic
+  // "couldn't prepare this activity" message for a KNOWN canonical
+  // mismatch).
+  const [errorReason, setErrorReason] = useState<string | null>(null);
+  // RELEASE-R1 PART D: the SAME reason-tracking as `errorReason` above,
+  // but for `startCanonicalActivity`'s own background generation wave
+  // (genState), which is a genuinely different failure/retry path (see
+  // the LX-9 FINAL note at its retry button) and must not be conflated
+  // with the top-level `phase==='error'` state.
+  const [genErrorReason, setGenErrorReason] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
   const [reviewing, setReviewing] = useState(false);
 
@@ -535,6 +548,7 @@ function QuizPageContent() {
     async (sid: string, languageOverride?: Locale) => {
       setPhase('loading');
       setError(null);
+      setErrorReason(null);
       try {
         const genRes = await fetch('/api/quizzes/generate-and-take', {
           method: 'POST',
@@ -542,7 +556,20 @@ function QuizPageContent() {
           body: JSON.stringify(genBody(sid, languageOverride)),
         });
         const body = await genRes.json();
-        if (!genRes.ok) throw new Error(body.message || 'Could not generate the quiz');
+        if (!genRes.ok) {
+          // RELEASE-R1 PART D: a canonical-state mismatch (the server's
+          // ZERO_GAP backstop fired -- canonical authority no longer
+          // considers this activity executable, most likely a stale
+          // client CTA or a race with a just-completed activity) is NOT
+          // a generation failure. Never the generic "couldn't prepare
+          // this activity" message for this known, machine-readable case.
+          if (body.error === 'INVALID_GENERATION_CONTRACT' && body.reason === 'ZERO_GAP_PRACTICE_MISMATCH') {
+            setErrorReason(body.reason);
+            setPhase('error');
+            return;
+          }
+          throw new Error(body.message || 'Could not generate the quiz');
+        }
 
         applyGenResult(body.data);
         setGenState('ready');
@@ -579,6 +606,7 @@ function QuizPageContent() {
   const startCanonicalActivity = useCallback(
     (sid: string) => {
       setError(null);
+      setGenErrorReason(null);
       perfMark('T0_start');
 
       // wave A -- canonical Teaching Experience, no quiz session needed.
@@ -613,7 +641,15 @@ function QuizPageContent() {
       })
         .then(async (r) => {
           const b = await r.json();
-          if (!r.ok) throw new Error(b.message || 'Could not generate the quiz');
+          if (!r.ok) {
+            // RELEASE-R1 PART D: same distinction as generateQuiz above --
+            // a canonical-state mismatch is never a generic generation
+            // failure, and "retry the same request" is useless for it
+            // (canonical state, not the provider, rejected it).
+            const err = new Error(b.message || 'Could not generate the quiz') as Error & { reason?: string };
+            if (b.error === 'INVALID_GENERATION_CONTRACT' && b.reason === 'ZERO_GAP_PRACTICE_MISMATCH') err.reason = b.reason;
+            throw err;
+          }
           return b.data;
         });
 
@@ -624,8 +660,9 @@ function QuizPageContent() {
           perfMark('T5_gen_ready');
           perfMark('QUESTION_GEN_READY');
         })
-        .catch(() => {
+        .catch((err: Error & { reason?: string }) => {
           setGenState('error'); // recoverable at the Practice transition
+          setGenErrorReason(err?.reason ?? null);
           perfMark('QUESTION_GEN_FAILED');
         });
 
@@ -1331,6 +1368,28 @@ function QuizPageContent() {
     // no new generation path. Nothing implies prior learner progress
     // was lost, because none was: this failure can only occur before
     // the first question is ever shown.
+    // RELEASE-R1 PART D: a canonical-state mismatch is a DIFFERENT
+    // recovery shape entirely -- never "Try again" (the SAME request
+    // would fail again identically; canonical state, not the provider,
+    // rejected it), never the raw generic error copy. Route the learner
+    // back to Concept Mission, where fresh canonical state (and whatever
+    // IS actually next) is shown -- never a dead end, never a repeated
+    // invalid request.
+    if (errorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
+      return (
+        <div>
+          <div className="card empty-state">
+            <strong>{at['quiz.canonicalStateChanged']}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+            <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
+              {at['continuation.backToConcept']}
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     const isRetentionFailure = quizMode === 'retention_check';
     return (
       <div>
@@ -1783,9 +1842,28 @@ function QuizPageContent() {
   }
 
   // LX-4P-PERF-R1 R3/R25: teaching is done but the background question
-  // batch isn't ready yet -- a brief recoverable state, never a dead end
-  // and never a return to Concept Mission.
+  // batch isn't ready yet -- a brief recoverable state, never a dead end.
+  // RELEASE-R1 PART D: "never a return to Concept Mission" no longer
+  // holds unconditionally -- it is still correct for a genuine
+  // generation failure (retry in place, exactly as before), but a
+  // canonical-state MISMATCH (genErrorReason set) is the ONE exception:
+  // retrying the identical request would fail again identically
+  // (canonical state, not the provider, rejected it), so THAT case
+  // routes to Concept Mission instead, matching `generateQuiz`'s own
+  // `errorReason` handling above.
   if (phase === 'quiz' && teachingStage === 'questions' && questions.length === 0 && genState !== 'ready') {
+    if (genErrorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
+      return (
+        <div className="card empty-state" style={{ textAlign: 'center' }}>
+          <strong>{at['quiz.canonicalStateChanged']}</strong>
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
+              {at['continuation.backToConcept']}
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="card empty-state" style={{ textAlign: 'center' }}>
         {genState === 'error' ? (

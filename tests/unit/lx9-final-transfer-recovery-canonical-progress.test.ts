@@ -171,8 +171,15 @@ describe('LX-9 FINAL 12-13, 17 -- a session is never launchable until valid', ()
     // applyGenResult (which sets quizId/questions client-side) is only
     // ever called from the SUCCESS branch of the generation promise
     // chain, never from a .catch()/error branch.
+    // RELEASE-R1 PART D: the failure branch now also tags a
+    // canonical-mismatch reason onto the thrown error (so the .catch()
+    // below can distinguish it) -- it still always throws before ever
+    // reaching `return b.data`, so applyGenResult can still never be
+    // called on failure.
     const genPBlock = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf('const genP = fetch'), QUIZ_PAGE_SRC.indexOf('const applyGen = genP') + 300);
-    expect(genPBlock).toMatch(/if \(!r\.ok\) throw new Error/);
+    expect(genPBlock).toMatch(/if \(!r\.ok\) \{/);
+    expect(genPBlock).toMatch(/throw err;/);
+    expect(genPBlock.indexOf('throw err;')).toBeLessThan(genPBlock.indexOf('return b.data;'));
   });
 });
 
@@ -187,8 +194,12 @@ describe('LX-9 FINAL 14-16 -- retry never changes failure layer', () => {
   });
 
   it('15. retry after a top-level load failure (phase==="error") retries load -- calls generateQuiz, the function that actually manages `phase`', () => {
+    // RELEASE-R1 PART D: this window widened -- a canonical-state
+    // mismatch branch (routes to Concept Mission, never "Try again") was
+    // inserted ahead of the generic-failure "Try again" button this test
+    // checks for.
     const start = QUIZ_PAGE_SRC.indexOf("if (phase === 'error')");
-    const block = QUIZ_PAGE_SRC.slice(start, start + 2200);
+    const block = QUIZ_PAGE_SRC.slice(start, start + 3200);
     expect(block).toMatch(/generateQuiz\(studentId\)/);
   });
 

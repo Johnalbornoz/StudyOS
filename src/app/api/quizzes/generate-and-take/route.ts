@@ -472,9 +472,18 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
                 errorCode: 'INVALID_GENERATION_CONTRACT',
                 reason: 'ZERO_GAP_PRACTICE_MISMATCH',
               }));
+              // RELEASE-R1 PART D: this is a canonical-state MISMATCH, not
+              // a generation failure -- the machine-readable `reason` is
+              // now surfaced in the response body itself (previously only
+              // in the server log), so the client can distinguish it from
+              // a genuine AI/provider failure and show the correct
+              // "your next step changed" recovery UX instead of a
+              // generic "couldn't prepare this activity" error screen.
+              // 409 (not 500): the request itself is well-formed: it is
+              // canonical STATE that no longer permits it.
               return NextResponse.json(
-                { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
-                { status: 500 }
+                { error: 'INVALID_GENERATION_CONTRACT', reason: 'ZERO_GAP_PRACTICE_MISMATCH', message: 'This activity is no longer your next canonical step.' },
+                { status: 409 }
               );
             }
             // R8: a genuine REINFORCE signal justifies running the

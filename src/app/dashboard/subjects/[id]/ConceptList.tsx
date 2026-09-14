@@ -146,7 +146,21 @@ export default function ConceptList({
             >
               {t['quiz.modeQuickCheck']}
             </Link>
-            <Link href={`/dashboard/quiz?subjectId=${subjectId}&conceptId=${c.conceptId}`} className="btn btn-ghost">
+            {/*
+              RELEASE-R1 PART A/C: this used to be a bare
+              `/dashboard/quiz?subjectId=...&conceptId=...` link with NO
+              mode -- quiz/page.tsx's own `modeParam` fallback then
+              defaulted an unspecified mode to 'topic_practice'
+              UNCONDITIONALLY, for every concept row, regardless of
+              canonical actionState. This is the EXACT proven root cause
+              of the live ZERO_GAP_PRACTICE_MISMATCH incident (a concept
+              whose canonical evidence gap was already 0 still offered
+              this button). Routed to Concept Mission instead -- the ONE
+              place a canonical, actionState-gated CTA for this concept
+              already exists (StartSessionButton, buildNow()) -- never a
+              second, ungated launch path duplicating that logic here.
+            */}
+            <Link href={`/dashboard/subjects/${subjectId}/concepts/${c.conceptId}`} className="btn btn-ghost">
               {t['subjectDetail.practice']}
             </Link>
             <button

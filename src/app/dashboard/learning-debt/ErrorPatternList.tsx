@@ -107,10 +107,20 @@ export default function ErrorPatternList({
                   data={guidance[key]}
                   headerLabel={t['debt.guidanceLabel']}
                 />
+                {/*
+                  RELEASE-R1 PART A/C: this used to be a bare
+                  `/dashboard/quiz?subjectId=...&conceptId=...` link with
+                  NO mode -- the exact same proven defect class as
+                  ConceptList.tsx's own "Practicar" link (quiz/page.tsx
+                  defaults an unspecified mode to 'topic_practice'
+                  unconditionally). Routed to Concept Mission instead,
+                  where the canonical, actionState-gated CTA already
+                  exists -- never a second, ungated launch path.
+                */}
                 {guidance[key] && p.topConceptId && (
                   <div style={{ marginTop: 'var(--space-3)', textAlign: 'right' }}>
                     <Link
-                      href={`/dashboard/quiz?subjectId=${p.subjectId}&conceptId=${p.topConceptId}`}
+                      href={`/dashboard/subjects/${p.subjectId}/concepts/${p.topConceptId}`}
                       className="btn btn-ghost"
                       style={{ fontSize: 13 }}
                     >
