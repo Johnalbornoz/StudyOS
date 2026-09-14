@@ -1,4 +1,5 @@
 import { AIExecutionError, providerHttpError } from '../errors';
+import { resolveReasoningEffort, logReasoningEffortCompat, type ReasoningEffort } from '../model-compatibility';
 
 const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_EMBEDDINGS_ENDPOINT = 'https://api.openai.com/v1/embeddings';
@@ -26,8 +27,8 @@ export interface OpenAIChatParams {
   maxTokens?: number;
   /** B8: stable prefix cache key so a shared system/schema prefix is billed once. */
   promptCacheKey?: string;
-  /** B7: reasoning-effort hint for models that accept it. */
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
+  /** B7: reasoning-effort hint for models that accept it. LX-9R9: must be a canonical, model-validated value -- see model-compatibility.ts. */
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface OpenAIChatResult {
@@ -43,9 +44,37 @@ function requireOpenAIKey(): string {
   return apiKey;
 }
 
+/**
+ * LX-9R9 PART E -- the shared provider boundary validates the requested
+ * reasoning effort against the SPECIFIC model being called before ever
+ * building the request body: unchanged when already supported,
+ * normalized (with a `[ai-model-compat]` log line) when a known-safe
+ * alias exists, or a local `CONFIGURATION_ERROR` (never retried, never
+ * a wasted provider request) when no safe mapping exists. This is
+ * defense in depth on top of PART D's canonical budget fix -- the
+ * budgets themselves should never configure an unsupported value, but
+ * this guard is what makes that a provable invariant rather than a
+ * hope.
+ */
+function resolveOpenAIReasoningEffort(model: string, requestedEffort: ReasoningEffort | undefined): ReasoningEffort | undefined {
+  const resolution = resolveReasoningEffort({ model, requestedEffort });
+  if (resolution.status === 'UNRESOLVABLE') {
+    throw new AIExecutionError(
+      'CONFIGURATION_ERROR',
+      `reasoning_effort "${resolution.requestedValue}" has no safe mapping for model "${model}": ${resolution.reason}`,
+    );
+  }
+  if (resolution.status === 'NORMALIZED') {
+    logReasoningEffortCompat(model, resolution);
+    return resolution.value;
+  }
+  return resolution.value;
+}
+
 /** The one place StudyUs constructs a request to OpenAI's Chat Completions API. */
 export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSignal): Promise<OpenAIChatResult> {
   const apiKey = requireOpenAIKey();
+  const reasoningEffort = resolveOpenAIReasoningEffort(params.model, params.reasoningEffort);
 
   const responseFormat = params.jsonSchema
     ? { response_format: { type: 'json_schema', json_schema: { name: params.jsonSchema.name, strict: true, schema: params.jsonSchema.schema } } }
@@ -65,7 +94,7 @@ export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSign
       ...responseFormat,
       ...(typeof params.maxTokens === 'number' ? { max_completion_tokens: params.maxTokens } : {}),
       ...(params.promptCacheKey ? { prompt_cache_key: params.promptCacheKey } : {}),
-      ...(params.reasoningEffort ? { reasoning_effort: params.reasoningEffort } : {}),
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
     }),
     signal,
   });

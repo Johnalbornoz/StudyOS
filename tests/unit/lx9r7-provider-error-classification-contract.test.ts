@@ -142,7 +142,10 @@ describe('7. QUESTION_GENERATION outbound payload matches current adapter contra
         messages: [{ role: 'system', content: 'sys' }, { role: 'user', content: 'user' }],
         jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
         maxTokens: 2400,
-        reasoningEffort: 'minimal',
+        // LX-9R9: 'minimal' was the live root cause of a real HTTP 400
+        // (gpt-5.6-luna does not support it) -- this contract test now
+        // exercises the CORRECTED, canonical value.
+        reasoningEffort: 'none',
       },
       ac(),
     );
@@ -154,7 +157,7 @@ describe('7. QUESTION_GENERATION outbound payload matches current adapter contra
       json_schema: { name: GENERATED_QUESTION_BATCH_SCHEMA.name, strict: true, schema: GENERATED_QUESTION_BATCH_SCHEMA.schema },
     });
     expect(sent.max_completion_tokens).toBe(2400);
-    expect(sent.reasoning_effort).toBe('minimal');
+    expect(sent.reasoning_effort).toBe('none');
     // No legacy Chat Completions field this adapter doesn't itself send, and no Responses-API-only field.
     expect(sent).not.toHaveProperty('input');
     expect(sent).not.toHaveProperty('text');

@@ -10,6 +10,7 @@ import { callAnthropicMessages } from './anthropic';
 import { callOpenAIChat, type OpenAIJsonSchema } from './openai';
 import type { AIProvider } from '../types';
 import { parseProviderUsage, type ProviderUsage } from '../usage';
+import type { ReasoningEffort } from '../model-compatibility';
 
 export interface CallModelParams {
   provider: AIProvider;
@@ -20,7 +21,7 @@ export interface CallModelParams {
   /** OpenAI Structured Outputs. Ignored by Anthropic (its adapter has no strict-schema mode) -- callers still validate. */
   jsonSchema?: OpenAIJsonSchema;
   promptCacheKey?: string;
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
+  reasoningEffort?: ReasoningEffort;
   /**
    * LX-9 B3/B32: without `jsonSchema`, OpenAI calls default to
    * `response_format: json_object` (see below) -- correct for the

@@ -24,6 +24,9 @@ export { callModel, parseCallModelUsage } from './adapters/call-model';
 export type { CallModelParams, CallModelResult } from './adapters/call-model';
 export { CAPABILITY_ROUTING, resolveModels, isAnthropicModel, LUNA, TERRA } from './model-routing';
 export type { CapabilityRoute } from './model-routing';
+// LX-9R9 -- the shared model/reasoning-effort compatibility authority.
+export { REASONING_EFFORT_LEVELS, resolveReasoningEffort, logReasoningEffortCompat } from './model-compatibility';
+export type { ReasoningEffort, ReasoningEffortResolution } from './model-compatibility';
 export { TOKEN_BUDGETS, budgetFor, fitContextChunks } from './token-budgets';
 export type { TokenBudget, TokenBudgetKey } from './token-budgets';
 export { parseProviderUsage } from './usage';
