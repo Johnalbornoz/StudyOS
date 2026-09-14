@@ -368,6 +368,8 @@ export type MessageKey =
   | 'conceptMission.nowTitle'
   | 'conceptMission.noActionConsolidatedTitle'
   | 'conceptMission.noActionConsolidatedBody'
+  | 'conceptMission.noActionZeroGapTitle'
+  | 'conceptMission.noActionZeroGapBody'
   | 'conceptMission.noActionLearnFirstTitle'
   | 'conceptMission.noActionLearnFirstBody'
   | 'conceptMission.noActionRetentionWaitingTitle'
@@ -1443,6 +1445,8 @@ const es: Messages = {
   'conceptMission.nowTitle': 'Ahora',
   'conceptMission.noActionConsolidatedTitle': 'Consolidado',
   'conceptMission.noActionConsolidatedBody': 'Ahora mismo no hace falta nada. StudyUS te lo volverá a proponer para un repaso de retención cuando toque.',
+  'conceptMission.noActionZeroGapTitle': 'Ya has practicado suficiente',
+  'conceptMission.noActionZeroGapBody': 'No hace falta más práctica en este concepto ahora mismo.',
   'conceptMission.noActionLearnFirstTitle': 'Empieza por entenderlo',
   'conceptMission.noActionLearnFirstBody': 'Lee la explicación de abajo para formarte una idea clara; después StudyUS te guiará en el siguiente paso.',
   'conceptMission.noActionRetentionWaitingTitle': 'Ya lo demostraste por tu cuenta',
@@ -2528,6 +2532,8 @@ const en: Messages = {
   'conceptMission.nowTitle': 'Now',
   'conceptMission.noActionConsolidatedTitle': 'Consolidated',
   'conceptMission.noActionConsolidatedBody': 'Nothing is needed right now. StudyUS will bring this back for a retention check when it\'s due.',
+  'conceptMission.noActionZeroGapTitle': 'You\'ve practiced enough',
+  'conceptMission.noActionZeroGapBody': 'No more practice is needed on this concept right now.',
   'conceptMission.noActionLearnFirstTitle': 'Start by understanding it',
   'conceptMission.noActionLearnFirstBody': 'Read the explanation below to build a clear picture, then StudyUS will guide your next step.',
   'conceptMission.noActionRetentionWaitingTitle': 'You\'ve already proven it on your own',
@@ -3613,6 +3619,8 @@ const de: Messages = {
   'conceptMission.nowTitle': 'Jetzt',
   'conceptMission.noActionConsolidatedTitle': 'Gefestigt',
   'conceptMission.noActionConsolidatedBody': 'Im Moment ist nichts nötig. StudyUS legt dir das Konzept wieder vor, wenn eine Behaltensprüfung ansteht.',
+  'conceptMission.noActionZeroGapTitle': 'Du hast genug geübt',
+  'conceptMission.noActionZeroGapBody': 'Für dieses Konzept ist gerade keine weitere Übung nötig.',
   'conceptMission.noActionLearnFirstTitle': 'Beginne damit, es zu verstehen',
   'conceptMission.noActionLearnFirstBody': 'Lies die Erklärung unten, um dir ein klares Bild zu machen; danach führt dich StudyUS zum nächsten Schritt.',
   'conceptMission.noActionRetentionWaitingTitle': 'Du hast es bereits eigenständig nachgewiesen',
@@ -4698,6 +4706,8 @@ const fr: Messages = {
   'conceptMission.nowTitle': 'Maintenant',
   'conceptMission.noActionConsolidatedTitle': 'Consolidé',
   'conceptMission.noActionConsolidatedBody': 'Rien n\'est nécessaire pour l\'instant. StudyUS te le représentera pour un contrôle de mémorisation le moment venu.',
+  'conceptMission.noActionZeroGapTitle': 'Tu as assez pratiqué',
+  'conceptMission.noActionZeroGapBody': 'Aucun entraînement supplémentaire n\'est nécessaire sur ce concept pour l\'instant.',
   'conceptMission.noActionLearnFirstTitle': 'Commence par le comprendre',
   'conceptMission.noActionLearnFirstBody': 'Lis l\'explication ci-dessous pour te faire une idée claire, puis StudyUS te guidera vers l\'étape suivante.',
   'conceptMission.noActionRetentionWaitingTitle': 'Tu l\'as déjà démontré par toi-même',
@@ -5783,6 +5793,8 @@ const pt: Messages = {
   'conceptMission.nowTitle': 'Agora',
   'conceptMission.noActionConsolidatedTitle': 'Consolidado',
   'conceptMission.noActionConsolidatedBody': 'Nada é necessário agora. O StudyUS trará isto de volta para uma verificação de retenção quando for a hora.',
+  'conceptMission.noActionZeroGapTitle': 'Já praticaste o suficiente',
+  'conceptMission.noActionZeroGapBody': 'Não é preciso mais prática neste conceito agora.',
   'conceptMission.noActionLearnFirstTitle': 'Comece por entendê-lo',
   'conceptMission.noActionLearnFirstBody': 'Leia a explicação abaixo para formar uma ideia clara; depois o StudyUS guiará o seu próximo passo.',
   'conceptMission.noActionRetentionWaitingTitle': 'Você já provou isso por conta própria',

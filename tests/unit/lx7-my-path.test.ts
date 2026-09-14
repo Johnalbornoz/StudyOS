@@ -111,8 +111,13 @@ describe('LX-7 tests 8/9 -- future concepts are neutral pending, never locked', 
   });
 
   it('9. no LOCKED state exists anywhere in the journey/path-view source -- R14 forbids inventing prerequisite locking', () => {
+    // LX-9R8: word-boundary-anchored so the pre-existing, unrelated
+    // CanonicalActionState value 'BLOCKED' (added to path-view.ts's own
+    // zero-gap-mismatch check) is never a false positive -- "BLOCKED"
+    // contains "LOCKED" as a substring but is not a prerequisite-lock
+    // concept.
     for (const src of [CONCEPT_JOURNEY_SRC, PATH_VIEW_SRC, OVERVIEW_PAGE_SRC, SUBJECT_PAGE_SRC, JOURNEY_STRIP_SRC]) {
-      expect(src).not.toMatch(/LOCKED|prerequisite.?lock|isLocked/i);
+      expect(src).not.toMatch(/\bLOCKED\b|prerequisite.?lock|isLocked/i);
     }
   });
 });
@@ -169,7 +174,14 @@ describe('LX-7 tests 12/13 -- Today/My Path consistency (R20)', () => {
     // the exact live My Path bug this phase fixed (stage RETAIN,
     // "Practicar" offered anyway).
     expect(PATH_VIEW_SRC).toMatch(/activityType:\s*actionState === 'EXECUTABLE' \? best\.decision\.activityType : null/);
-    expect(PATH_VIEW_SRC).not.toMatch(/activityType:\s*best\.decision\.activityType,/);
+    // LX-9R8: scoped to the `current = {...}` object literal specifically
+    // -- isZeroGapPracticeMismatch's own call (added by this phase, used
+    // to COMPUTE actionState in the first place) legitimately passes
+    // `activityType: best.decision.activityType` as one of its named
+    // arguments, which is not the unconditional-pass-through pattern
+    // this check forbids.
+    const currentBlock = PATH_VIEW_SRC.slice(PATH_VIEW_SRC.indexOf('current = {'), PATH_VIEW_SRC.indexOf('current = {') + 400);
+    expect(currentBlock).not.toMatch(/activityType:\s*best\.decision\.activityType,/);
   });
 
   it('a concept with an active decision uses decision.learningState verbatim, never a re-derived one', () => {

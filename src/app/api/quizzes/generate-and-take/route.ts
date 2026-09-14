@@ -450,13 +450,38 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         if (resolved.status === 'DETERMINED' && requirement.questionCount.status === 'DETERMINED') {
           const gap = requirement.questionCount.pedagogicalRequirement;
           const zeroGapMismatch = gap === 0;
-          if (zeroGapMismatch) {
-            // R8: do NOT silently run one question to fill an execution
-            // minimum when canonical policy says no further evidence is
-            // needed. Surface the authority mismatch; still generate the
-            // execution minimum (0 questions is not a runnable activity).
+          if (zeroGapMismatch && (activityType === 'PRACTICE' || activityType === 'REVIEW')) {
+            // LX-9R8 PART A1/C: this is no longer a mere count anomaly --
+            // a zero-gap PRACTICE/REVIEW request is NOT an executable
+            // canonical action at all, unless a REINFORCE-justified
+            // reason (misconception/prerequisite/repair) explains it.
+            // route.ts has no full LearningDecision/signals here (only
+            // the already-fetched KnowledgeState), so this is a
+            // deliberately CONSERVATIVE, KnowledgeState-only backstop --
+            // the primary prevention is upstream (My Path/Today/Concept
+            // Mission/continuation, LX-9R8 Parts A5-A8), which never
+            // offer this CTA in the first place. This check exists so a
+            // client bypass can never still reach Luna/Terra.
+            const hasReinforceSignal = !!ks && (ks.criticalMisconceptionCount > 0 || ks.masteryState === 'INTERVENTION_REQUIRED');
+            if (!hasReinforceSignal) {
+              console.log('[generation]', JSON.stringify({
+                conceptId: validated.conceptId,
+                quizMode: validated.quizMode,
+                generationPhase: 'INVALID_GENERATION_CONTRACT',
+                sessionCreated: false,
+                errorCode: 'INVALID_GENERATION_CONTRACT',
+                reason: 'ZERO_GAP_PRACTICE_MISMATCH',
+              }));
+              return NextResponse.json(
+                { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+                { status: 500 }
+              );
+            }
+            // R8: a genuine REINFORCE signal justifies running the
+            // execution minimum anyway (0 questions is not a runnable
+            // activity) -- surface the authority mismatch, never silent.
             console.warn(
-              `[LX-4R R8] question-count authority mismatch: canonical evidence gap for concept ${validated.conceptId} (${validated.quizMode}) is 0, but Phase 3C selected this activity. Running executionMinimum ${requirement.questionCount.executionMinimum}; not treated as a pedagogical requirement.`,
+              `[LX-4R R8] question-count authority mismatch: canonical evidence gap for concept ${validated.conceptId} (${validated.quizMode}) is 0, but a REINFORCE signal justifies running this activity. Running executionMinimum ${requirement.questionCount.executionMinimum}; not treated as a pedagogical requirement.`,
             );
           }
           maxQuestions = resolved.count;

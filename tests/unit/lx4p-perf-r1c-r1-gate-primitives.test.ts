@@ -38,6 +38,10 @@ vi.mock('@/services/question-quality-verifier.service', () => ({
   verifyQuestionQuality: (...a: any[]) => h.verify(...a),
   verifyQuestionQualityBatch: (a: any) => h.verifyBatch(a),
   evaluateQuestionQualityVerdict: (...a: any[]) => h.evalV(...a),
+  // LX-9R8 PART B3: the gate's own rejection-histogram logging calls
+  // this directly -- this file's fixtures don't assert on reason codes,
+  // so a fixed empty classification is sufficient here.
+  classifyQualityRejectionReasons: () => [],
 }));
 vi.mock('@/lib/ai/runtime-event', () => ({
   recordRuntimeEvent: (...a: any[]) => h.record(...a),

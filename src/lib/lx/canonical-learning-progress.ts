@@ -32,8 +32,9 @@
 import { resolveConceptJourneyResult } from './path-view';
 import { deriveJourneyProgress } from './journey-progress';
 import { isRetentionWaiting, type LearnerJourneyStage, type LearnerJourneyIntervention } from './learner-journey-contract';
+import { isZeroGapPracticeMismatch } from './evidence-sufficiency-contract';
 import type { MessageKey } from '@/lib/i18n/messages';
-import type { ConceptKnowledgeState } from '@/services/knowledge-state.service';
+import type { ConceptKnowledgeState, MasteryPolicy } from '@/services/knowledge-state.service';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 
@@ -117,6 +118,14 @@ export interface CanonicalLearningProgressInput {
   memory?: { retentionDue: boolean; nextReviewAt: string | null } | null;
   /** See `CanonicalLearningProgress.assistanceUsed`'s own doc comment. Omit unless this call is describing one specific completed attempt. */
   assistanceUsed?: boolean | null;
+  /**
+   * LX-9R8 PART A1/A3: the active mastery policy -- required to detect a
+   * zero-gap PRACTICE/REVIEW authority mismatch (`isZeroGapPracticeMismatch`).
+   * Optional only for backward compatibility with a caller that hasn't
+   * fetched it; omitting it means this read model CANNOT catch a
+   * zero-gap mismatch for that call, so every caller should supply it.
+   */
+  masteryPolicy?: MasteryPolicy;
 }
 
 /**
@@ -129,14 +138,39 @@ export interface CanonicalLearningProgressInput {
  * facts every canonical authority already produces.
  */
 export function buildCanonicalLearningProgress(input: CanonicalLearningProgressInput): CanonicalLearningProgress {
-  const { conceptId, subjectId, knowledgeState, activeDecision, memory, assistanceUsed } = input;
+  const { conceptId, subjectId, knowledgeState, activeDecision, memory, assistanceUsed, masteryPolicy } = input;
   const journeyResult = resolveConceptJourneyResult(conceptId, subjectId, knowledgeState, activeDecision);
   const journeyStage = journeyResult.stage;
   const progress = deriveJourneyProgress(journeyStage);
   const waiting = isRetentionWaiting(journeyStage, memory?.retentionDue);
 
+  // LX-9R8 PART A1/A3: a PRACTICE/REVIEW decision whose canonical
+  // evidence gap is already 0, with no REINFORCE intervention, is NOT
+  // an executable canonical action -- selectActivityType's qualitative
+  // fallthrough (masteryState/understandingScore) never checked the
+  // quantitative evidence count. Checked BEFORE ever reporting
+  // EXECUTABLE, so no learner-facing surface built on this read model
+  // can offer a zero-gap Practice CTA.
+  const zeroGapMismatch =
+    !!activeDecision &&
+    !!masteryPolicy &&
+    isZeroGapPracticeMismatch({
+      activityType: activeDecision.activityType,
+      hasReinforceIntervention: journeyResult.intervention === 'REINFORCE',
+      currentSufficiency: knowledgeState
+        ? {
+            evidenceCount: knowledgeState.evidenceCount,
+            independentEvidenceCount: knowledgeState.independentEvidenceCount,
+            passed:
+              knowledgeState.evidenceCount >= masteryPolicy.minimumEvidenceCount &&
+              knowledgeState.independentEvidenceCount >= masteryPolicy.minimumIndependentEvidenceCount,
+          }
+        : null,
+      masteryPolicy,
+    });
+
   const actionState: CanonicalActionState =
-    journeyStage === 'CONSOLIDATED' ? 'CONSOLIDATED' : waiting ? 'WAITING' : activeDecision ? 'EXECUTABLE' : 'BLOCKED';
+    journeyStage === 'CONSOLIDATED' ? 'CONSOLIDATED' : waiting ? 'WAITING' : activeDecision && !zeroGapMismatch ? 'EXECUTABLE' : 'BLOCKED';
   const nextCanonicalAction = actionState === 'EXECUTABLE' ? activeDecision!.activityType : null;
 
   return {

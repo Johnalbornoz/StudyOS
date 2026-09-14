@@ -337,8 +337,13 @@ describe('23. required semantic checks cannot be skipped', () => {
 describe('24. malformed semantic response fails candidate closed / 25. batch-verifier isolation remains correct', () => {
   it('a missing/malformed verdict for one candidate id rejects ONLY that candidate -- evaluateQuestionQualityVerdict defaults a null/missing verdict to fail, never approves', () => {
     const body = GATED_SRC.slice(GATED_SRC.indexOf('if (needsSemantic.length > 1)'), GATED_SRC.indexOf('} else if (needsSemantic.length === 1)'));
-    expect(body).toMatch(/evaluateQuestionQualityVerdict\(verdictsById\.get\(id\) \?\? null\)\.pass/);
-    expect(body).toMatch(/else semanticRejected\+\+;/);
+    // LX-9R8 PART B3: `verdict` is now extracted into its own variable
+    // (also fed to the new per-candidate rejection logger) -- the SAME
+    // `?? null` fail-closed default and the SAME semanticRejected++ on
+    // any non-passing verdict, just no longer a single expression.
+    expect(body).toMatch(/const verdict = verdictsById\.get\(id\) \?\? null;/);
+    expect(body).toMatch(/evaluateQuestionQualityVerdict\(verdict\)\.pass/);
+    expect(body).toMatch(/semanticRejected\+\+;/);
   });
 
   it('a batch call that throws entirely is caught and degrades to an empty verdict map -- every candidate in that batch fails closed individually, none silently accepted', () => {

@@ -828,7 +828,10 @@ ${shapeExample}
     // still fails, the whole set is [] (never a partial quick_check).
     const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
     const { recordRuntimeEvent, buildRuntimeEvent } = await import('@/lib/ai/runtime-event');
-    const qcGateReq = { conceptId, language, context: { studentId, subjectId } };
+    // LX-9R8 PART B/B3: threading operationId/activityType through so a
+    // rejected candidate's log line is correlatable back to this
+    // generation operation.
+    const qcGateReq = { conceptId, language, context: { studentId, subjectId }, operationId, activityType: 'SOLO_CHECK' };
     const emitQc = (model: string, fallbackUsed: boolean, acc: number, rej: number, reason?: string) =>
       recordRuntimeEvent(
         buildRuntimeEvent({
@@ -1136,7 +1139,10 @@ ${shapeExamples}
     // than per chunk, so a healthy chunk's questions are never held
     // hostage by a struggling sibling's own retry.
     const { gateUnitWithTerraFallback, applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
-    const gateReq = { conceptId, language, context: { studentId, subjectId } };
+    // LX-9R8 PART B/B3: threading operationId/activityType through so a
+    // rejected candidate's log line is correlatable back to this
+    // generation operation.
+    const gateReq = { conceptId, language, context: { studentId, subjectId }, operationId, activityType: options.activityType ?? 'PRACTICE' };
     const gatedChunks = await Promise.all(
       plan.map((chunkSize, i) => {
         const lunaMapped = mapRawQuestionsToGenerated(chunkResults[i], conceptId, language);
@@ -1805,7 +1811,7 @@ ${shapeExamples}
     // rejection removes only that one question -- an accepted sibling
     // from the same chunk is never discarded merely because another
     // failed.
-    const initialGate = await retentionApplyGate(dedupedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false);
+    const initialGate = await retentionApplyGate(dedupedBaseline, conceptId, language, studentId, subjectId, RETENTION_CHUNK_MODEL, false, operationId);
     // RET-R3 B4/B5: gate FIRST (above, unchanged authority), THEN
     // per-question dedupe against an empty "already accepted" set --
     // i.e. dedupe the gate's own accepted candidates against EACH
@@ -1894,7 +1900,7 @@ ${shapeExamples}
         // per question so ONE colliding replacement never discards an
         // unrelated, unique one (A3).
         const mappedRecovery = mapRawQuestionsToGenerated(recoveryOutcome.questions, conceptId, language);
-        const recoveryGate = await retentionApplyGate(mappedRecovery, conceptId, language, studentId, subjectId, TERRA, true);
+        const recoveryGate = await retentionApplyGate(mappedRecovery, conceptId, language, studentId, subjectId, TERRA, true, operationId);
         // LX-9R3 B4: recovery candidates are also checked against the
         // bounded recent-attempt history, not just this attempt's own
         // accepted set.
@@ -1978,10 +1984,14 @@ async function retentionApplyGate(
   subjectId: string,
   model: string,
   fallbackUsed: boolean,
+  operationId?: string,
 ): Promise<{ accepted: GeneratedQuestion[]; rejectionReasons: Record<string, number> }> {
   const { applyQuestionQualityGate } = await import('@/services/gated-question-generation.service');
   const { recordRuntimeEvent, buildRuntimeEvent } = await import('@/lib/ai/runtime-event');
-  const g = await applyQuestionQualityGate(mapped, { conceptId, language, context: { studentId, subjectId } });
+  // LX-9R8 PART B/B3: threading operationId/activityType through so a
+  // rejected candidate's log line is correlatable back to this
+  // generation operation.
+  const g = await applyQuestionQualityGate(mapped, { conceptId, language, context: { studentId, subjectId }, operationId, activityType: 'RETENTION_CHECK' });
   const rejected = g.deterministicRejected + g.semanticRejected;
   recordRuntimeEvent(
     buildRuntimeEvent({
@@ -2806,6 +2816,31 @@ Respond with JSON (no markdown):
 }
 
 /**
+ * LX-9R8 PART B1: the ONE canonical description of what each 1-5
+ * difficulty tier structurally demands -- extracted so the QUESTION
+ * GENERATOR (below) and the semantic QUALITY VERIFIER
+ * (question-quality-verifier.service.ts) can never independently drift
+ * on what "difficulty 2" means. Before this phase, the verifier had NO
+ * difficulty context at all (it wasn't even in its prompt payload) --
+ * it judged every candidate's rigor/ambiguity/distractor-plausibility
+ * against an unstated, undifferentiated standard, with no way to
+ * calibrate down for a deliberately simple, low-difficulty PRACTICE
+ * question. LX-9R3 C2: difficulty must describe a real, testable
+ * cognitive demand -- not a vague adjective tier. LOWER = direct recall
+ * or a single familiar-form application step; HIGHER = multi-step
+ * reasoning, diagnosing an error in someone else's work, a less
+ * familiar representation, transfer to an unfamiliar context, combined
+ * operations, or greater abstraction.
+ */
+export function describeDifficultyTier(difficulty: number): string {
+  if (difficulty <= 1) return 'direct recall or the single most familiar, textbook-form application of the concept -- no combined operations, no unfamiliar representation, no multi-step reasoning';
+  if (difficulty === 2) return 'one clear application step in a familiar representation -- still no multi-step reasoning, error diagnosis, or context transfer required';
+  if (difficulty === 3) return "combines two related steps, or requires translating between two equivalent representations of the same idea (e.g. word problem ↔ symbolic form, graph ↔ equation) -- genuine but bounded reasoning, not yet transfer to an unfamiliar context";
+  if (difficulty === 4) return "multi-step reasoning across several steps, a less familiar representation or context than the textbook default, or diagnosing an error in someone else's reasoning/work -- more than one idea must be coordinated to answer";
+  return 'transfer to a genuinely unfamiliar context, combining multiple operations or concepts in one question, or reasoning at a higher level of abstraction (e.g. explaining why a method works, generalizing a pattern, or judging between competing approaches) -- not merely a longer version of an easier question';
+}
+
+/**
  * Build augmented prompt with context
  */
 function buildQuestionGenerationPrompt(
@@ -2820,21 +2855,7 @@ function buildQuestionGenerationPrompt(
 ): string {
   const typeInstructions = types.map((t) => `- ${typeInstruction(t)}`).join('\n');
 
-  // LX-9R3 C2: difficulty must describe a real, testable cognitive
-  // demand -- not a vague adjective tier. LOWER = direct recall or a
-  // single familiar-form application step; HIGHER = multi-step
-  // reasoning, diagnosing an error in someone else's work, a less
-  // familiar representation, transfer to an unfamiliar context,
-  // combined operations, or greater abstraction. Each tier below names
-  // concretely what must be true of the question's structure, not just
-  // an adjective, so a generated question's structural demand can
-  // actually be checked against its assigned tier.
-  let difficultyDesc = '';
-  if (difficulty <= 1) difficultyDesc = 'direct recall or the single most familiar, textbook-form application of the concept -- no combined operations, no unfamiliar representation, no multi-step reasoning';
-  else if (difficulty === 2) difficultyDesc = 'one clear application step in a familiar representation -- still no multi-step reasoning, error diagnosis, or context transfer required';
-  else if (difficulty === 3) difficultyDesc = "combines two related steps, or requires translating between two equivalent representations of the same idea (e.g. word problem ↔ symbolic form, graph ↔ equation) -- genuine but bounded reasoning, not yet transfer to an unfamiliar context";
-  else if (difficulty === 4) difficultyDesc = "multi-step reasoning across several steps, a less familiar representation or context than the textbook default, or diagnosing an error in someone else's reasoning/work -- more than one idea must be coordinated to answer";
-  else difficultyDesc = 'transfer to a genuinely unfamiliar context, combining multiple operations or concepts in one question, or reasoning at a higher level of abstraction (e.g. explaining why a method works, generalizing a pattern, or judging between competing approaches) -- not merely a longer version of an easier question';
+  const difficultyDesc = describeDifficultyTier(difficulty);
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 

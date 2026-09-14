@@ -17,7 +17,7 @@ import { resolveModels } from '@/lib/ai/model-routing';
 import { budgetFor } from '@/lib/ai/token-budgets';
 import { QUESTION_QUALITY_VERDICT_SCHEMA, QUESTION_QUALITY_VERDICT_BATCH_SCHEMA } from '@/lib/ai/schemas';
 import { parseAIJson } from '@/lib/ai-json';
-import type { GeneratedQuestion } from '@/services/quiz-generation.service';
+import { describeDifficultyTier, type GeneratedQuestion } from '@/services/quiz-generation.service';
 import type { SemanticVerdict } from '@/lib/ai/quality-runtime';
 import type { ProviderUsage } from '@/lib/ai/usage';
 
@@ -35,6 +35,38 @@ export interface QuestionQualityVerdict {
 
 export const QUALITY_VERIFY_MIN_CONFIDENCE = 0.7;
 
+/**
+ * LX-9R8 PART B/B3: stable, normalized reason codes for each dimension
+ * a semantic verdict can fail on -- the ONE taxonomy every rejection log
+ * (per-candidate and the aggregate histogram) reads from, so a rejected
+ * candidate's cause is always one of these exact strings, never a
+ * free-form sentence. Reflects this verifier's own actual criteria
+ * (never invented labels unrelated to what it checks).
+ */
+export type QualityRejectionReasonCode =
+  | 'OUT_OF_SCOPE' // conceptAligned false
+  | 'ANSWER_INCORRECT'
+  | 'AMBIGUOUS'
+  | 'REASONING_MISMATCH' // reasoningConsistent false -- doesn't match its own cognitiveLevel/expectedReasoningType/difficulty tags
+  | 'WEAK_DISTRACTORS'
+  | 'SCENARIO_INAPPROPRIATE'
+  | 'VISUAL_INCONSISTENT'
+  | 'LOW_CONFIDENCE'
+  | 'VERIFY_ERROR'; // malformed/missing verdict -- fails closed, never approved
+
+/** Pure: which dimensions a well-formed verdict failed, as stable reason codes (never a free-form string). `[]` when every dimension passed. */
+export function classifyQualityRejectionReasons(v: QuestionQualityVerdict): QualityRejectionReasonCode[] {
+  const failed: QualityRejectionReasonCode[] = [];
+  if (!v.conceptAligned) failed.push('OUT_OF_SCOPE');
+  if (!v.answerCorrect) failed.push('ANSWER_INCORRECT');
+  if (!v.unambiguous) failed.push('AMBIGUOUS');
+  if (!v.reasoningConsistent) failed.push('REASONING_MISMATCH');
+  if (!v.distractorsPlausible) failed.push('WEAK_DISTRACTORS');
+  if (!v.scenarioAppropriate) failed.push('SCENARIO_INAPPROPRIATE');
+  if (!v.visualConsistent) failed.push('VISUAL_INCONSISTENT');
+  return failed;
+}
+
 /** Pure: a verdict passes only if every dimension holds with real confidence. */
 export function evaluateQuestionQualityVerdict(v: QuestionQualityVerdict | null | undefined): SemanticVerdict {
   if (
@@ -46,20 +78,23 @@ export function evaluateQuestionQualityVerdict(v: QuestionQualityVerdict | null 
   ) {
     return { pass: false, reason: 'QUALITY_VERIFY_ERROR' };
   }
-  const failed: string[] = [];
-  if (!v.conceptAligned) failed.push('concept-misaligned');
-  if (!v.answerCorrect) failed.push('answer-incorrect');
-  if (!v.unambiguous) failed.push('ambiguous');
-  if (!v.reasoningConsistent) failed.push('reasoning-inconsistent');
-  if (!v.distractorsPlausible) failed.push('weak-distractors');
-  if (!v.scenarioAppropriate) failed.push('scenario-inappropriate');
-  if (!v.visualConsistent) failed.push('visual-inconsistent');
+  const failed = classifyQualityRejectionReasons(v);
   if (failed.length > 0) return { pass: false, reason: `SEMANTIC_QUALITY_FAIL: ${failed.join(',')}` };
   if (v.confidence < QUALITY_VERIFY_MIN_CONFIDENCE) return { pass: false, reason: 'QUALITY_LOW_CONFIDENCE' };
   return { pass: true, reason: '' };
 }
 
 function buildPrompt(q: GeneratedQuestion, requestedLanguage: string, hasVisual: boolean): { system: string; user: string } {
+  // LX-9R8 PART B1/B2: `targetDifficultyNote` calibrates rigor against
+  // the SAME tier description the generator itself was given
+  // (describeDifficultyTier, quiz-generation.service.ts) -- before this
+  // phase, this verifier had NO difficulty context at all, so it judged
+  // every candidate's ambiguity/reasoning/distractor-plausibility
+  // against an unstated, undifferentiated standard. A genuinely
+  // low-difficulty question (deliberately simple, one clear step) is
+  // NOT a defect -- it is only a defect if it fails to even meet ITS
+  // OWN assigned tier.
+  const targetDifficultyNote = `\n\nTARGET DIFFICULTY (${q.difficulty}/5): this question was generated to be ${describeDifficultyTier(q.difficulty)} -- judge unambiguous/reasoningConsistent/distractorsPlausible/scenarioAppropriate against THIS assigned tier, not against a harder question you might expect at a different difficulty. A deliberately simple, low-difficulty question is correct, not a defect, as long as it is unambiguous and genuinely tests the concept at its own assigned level.`;
   const system = `You VERIFY the quality of one generated exam question. You do NOT rewrite, fix or improve it -- you only judge, on the dimensions below. Any "false" must be explained in "issues".
 
 - conceptAligned: does the question genuinely test the stated concept (not a tangential fact)?
@@ -69,6 +104,7 @@ function buildPrompt(q: GeneratedQuestion, requestedLanguage: string, hasVisual:
 - distractorsPlausible: (choice questions) are the wrong options plausible-but-wrong, not obviously absurd or duplicative?
 - scenarioAppropriate: (scenario/case/justification/etc.) is the scenario realistic and pedagogically sound for this level?
 - visualConsistent: (if a visual is present) does the visual's data agree with the stem and not contradict it? If no visual, return true.
+${targetDifficultyNote}
 
 Output ONLY this JSON: {"conceptAligned":<bool>,"answerCorrect":<bool>,"unambiguous":<bool>,"reasoningConsistent":<bool>,"distractorsPlausible":<bool>,"scenarioAppropriate":<bool>,"visualConsistent":<bool>,"issues":["..."],"confidence":<0..1>}
 Be strict. If unsure, lower the confidence rather than guessing "true".`;
@@ -76,6 +112,7 @@ Be strict. If unsure, lower the confidence rather than guessing "true".`;
   const payload = {
     requestedLanguage,
     type: q.type,
+    difficulty: q.difficulty,
     cognitiveLevel: q.cognitiveLevel ?? null,
     expectedReasoningType: q.expectedReasoningType ?? null,
     question: q.question,
@@ -93,6 +130,7 @@ function questionPayload(id: string, q: GeneratedQuestion, requestedLanguage: st
     id,
     requestedLanguage,
     type: q.type,
+    difficulty: q.difficulty,
     cognitiveLevel: q.cognitiveLevel ?? null,
     expectedReasoningType: q.expectedReasoningType ?? null,
     question: q.question,
@@ -104,6 +142,17 @@ function questionPayload(id: string, q: GeneratedQuestion, requestedLanguage: st
 }
 
 function buildBatchPrompt(candidates: QuestionQualityBatchCandidate[], requestedLanguage: string): { system: string; user: string } {
+  // LX-9R8 PART B1/B2: each candidate below carries its OWN "difficulty"
+  // field -- calibrate its unambiguous/reasoningConsistent/
+  // distractorsPlausible/scenarioAppropriate verdict against THAT
+  // candidate's own assigned tier (never a fixed, undifferentiated
+  // standard, and never against another candidate's tier in the same
+  // batch). See describeDifficultyTier (quiz-generation.service.ts) --
+  // the SAME tier meanings the generator itself was given: difficulty 1
+  // is direct recall / one familiar step; 5 is transfer to an
+  // unfamiliar context. A deliberately simple, low-difficulty question
+  // is correct, not a defect, as long as it is unambiguous and
+  // genuinely tests the concept at its own assigned level.
   const system = `You VERIFY the quality of MULTIPLE generated exam questions in one pass. Judge EACH one ENTIRELY ON ITS OWN merits -- one candidate's content, quality, or issues must NEVER influence another candidate's verdict. You do NOT rewrite, fix, or improve any of them -- you only judge each one, on the dimensions below. Any "false" for a candidate must be explained in THAT candidate's own "issues".
 
 - conceptAligned: does the question genuinely test the stated concept (not a tangential fact)?
@@ -113,6 +162,8 @@ function buildBatchPrompt(candidates: QuestionQualityBatchCandidate[], requested
 - distractorsPlausible: (choice questions) are the wrong options plausible-but-wrong, not obviously absurd or duplicative?
 - scenarioAppropriate: (scenario/case/justification/etc.) is the scenario realistic and pedagogically sound for this level?
 - visualConsistent: (if a visual is present) does the visual's data agree with the stem and not contradict it? If no visual, return true.
+
+TARGET DIFFICULTY: each candidate below carries its OWN "difficulty" (1-5). Judge that candidate's rigor against ITS OWN assigned tier, never against a harder question you might expect at a different difficulty, and never against another candidate's tier in the same batch. difficulty 1 = direct recall or the single most familiar application; difficulty 2 = one clear application step in a familiar representation; difficulty 3 = combines two related steps or two equivalent representations; difficulty 4 = multi-step reasoning or diagnosing an error in someone else's work; difficulty 5 = transfer to a genuinely unfamiliar context. A deliberately simple, low-difficulty question is correct, not a defect.
 
 Output ONLY this JSON object: {"verdicts": [{"id":"<the exact id given for that candidate>","conceptAligned":<bool>,"answerCorrect":<bool>,"unambiguous":<bool>,"reasoningConsistent":<bool>,"distractorsPlausible":<bool>,"scenarioAppropriate":<bool>,"visualConsistent":<bool>,"issues":["..."],"confidence":<0..1>}, ...]} -- EXACTLY one verdict per candidate given, each carrying that candidate's OWN "id" back verbatim, in any order.
 Be strict. If unsure about a candidate, lower THAT candidate's own confidence rather than guessing "true" -- never let uncertainty about one candidate lower another's.`;

@@ -284,7 +284,7 @@ describe('LX-9 FINAL 23-26 -- identical stage and percentage across surfaces for
         knowledgeState: { masteryState: ks.masteryState, validationReadiness: ks.validationReadiness, evidenceCount: ks.evidenceCount, independentEvidenceCount: ks.independentEvidenceCount },
         journeyInput: (learningState ? { kind: 'RESOLVED', learningState, source: 'LEARNING_DECISION' } : { kind: 'RESOLVED', learningState: computeLearningState(makeContext([], ks)), source: 'CANONICAL_POLICY_NO_SIGNALS' }) as ConceptMissionJourneyInput,
         learningDecision: decision ? { activityType: decision.activityType, actionConceptId: 'c1', learningState: decision.learningState, facts: [] } : null,
-        memory: null, transferDepth: null, hasCachedExplanation: false,
+        memory: null, transferDepth: null, hasCachedExplanation: false, masteryPolicy: null,
       });
       if (missionView.journey.status !== 'RESOLVED') throw new Error('expected RESOLVED');
       expect(missionView.journey.stage).toBe(expectedStage);

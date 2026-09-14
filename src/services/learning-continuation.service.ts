@@ -29,7 +29,11 @@ import { deriveTeachingExperience, type TeachingExperienceView } from '@/lib/lx/
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { getCurriculumEligibleConcepts } from '@/services/curriculum-eligibility-read.service';
 import { bootstrapNotStartedLearningDecision, hasLiveDecisionForConcept } from '@/lib/curriculum-progression-bootstrap';
-import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
+import { getConceptKnowledgeState, getActiveMasteryPolicy } from '@/services/knowledge-state.service';
+import { isZeroGapPracticeMismatch } from '@/lib/lx/evidence-sufficiency-contract';
+
+/** The SAME three LearningState values deriveLearnerJourneyStage's own REINFORCE rule keys off -- never inferred from mastery/understanding alone (LX-9R8 PART A2). */
+const REINFORCE_LEARNING_STATES = new Set(['MISCONCEPTION_BLOCKED', 'PREREQUISITE_BLOCKED', 'NEEDS_REPAIR']);
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { db } from '@/lib/db';
 import { getTwinMemorySignal } from '@/services/memory-read.service';
@@ -129,6 +133,37 @@ async function resolveContinuationInner(input: ResolveContinuationInput): Promis
       const memorySignal = await getTwinMemorySignal(db, studentId, conceptId).catch(() => null);
       if (memorySignal?.retentionDue === false) {
         return { status: 'WAITING', waitingReason: 'RETENTION_NOT_DUE', nextEligibleAt: memorySignal.nextReviewAt };
+      }
+    }
+    // LX-9R8 PART A1/A8: a PRACTICE/REVIEW decision whose canonical
+    // evidence gap is already 0, with no REINFORCE-justified reason to
+    // keep practicing, is NOT executable -- never launched. Checked
+    // BEFORE startLearningSession, same discipline as the WAITING check
+    // above.
+    if (
+      (phase4Decision.activityType === 'PRACTICE' || phase4Decision.activityType === 'REVIEW') &&
+      !REINFORCE_LEARNING_STATES.has(phase4Decision.learningState)
+    ) {
+      const [ks, policy] = await Promise.all([
+        getConceptKnowledgeState(studentId, conceptId).catch(() => null),
+        getActiveMasteryPolicy().catch(() => null),
+      ]);
+      if (policy) {
+        const zeroGapMismatch = isZeroGapPracticeMismatch({
+          activityType: phase4Decision.activityType,
+          hasReinforceIntervention: false,
+          currentSufficiency: ks
+            ? {
+                evidenceCount: ks.evidenceCount,
+                independentEvidenceCount: ks.independentEvidenceCount,
+                passed: ks.evidenceCount >= policy.minimumEvidenceCount && ks.independentEvidenceCount >= policy.minimumIndependentEvidenceCount,
+              }
+            : null,
+          masteryPolicy: policy,
+        });
+        if (zeroGapMismatch) {
+          return { status: 'RETURN_TO_MISSION', reason: 'ZERO_GAP_MISMATCH' };
+        }
       }
     }
     try {

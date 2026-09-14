@@ -174,6 +174,15 @@ export default async function TodayPage() {
   // are computed ONCE inside `getLearningOSSnapshot` itself (never a
   // second memory read added here -- Today stays presentation-only).
   const bestWaiting = !!best && !!snapshot?.nextExecutableItemWaiting;
+  // LX-9R8 PART A1/A5: a PRACTICE/REVIEW decision whose canonical
+  // evidence gap is already 0, with no REINFORCE-justified reason to
+  // keep practicing, is NOT executable -- computed ONCE inside
+  // getLearningOSSnapshot (never a second policy/memory read added
+  // here). Unlike WAITING (a genuine obligation, just not due), this is
+  // a contradiction that should never have reached the learner, so it
+  // is treated as "no primary action" (routes to the existing
+  // CONSOLIDATED state below), never a distinct card of its own.
+  const bestZeroGapBlocked = !!best && !!snapshot?.nextExecutableItemZeroGapBlocked;
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
   const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
 
@@ -192,7 +201,7 @@ export default async function TodayPage() {
         .catch(() => false)
     : false;
 
-  const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: !!best, isColdProfile: isCold });
+  const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: !!best && !bestZeroGapBlocked, isColdProfile: isCold });
   if (todayState === 'NEXT_ACTION_AVAILABLE' && best) {
     logToday('TODAY_PRIMARY_ACTION_RENDERED', {
       activityType: best.decision.activityType,
@@ -242,7 +251,7 @@ export default async function TodayPage() {
           {/* LX-6 R5/R9/R16: the ONE dominant learning action -- an editorial
               stack (eyebrow, heading, "why this now," CTA), not an icon+row
               SaaS card. Everything below this is deliberately smaller/quieter. */}
-          {best && (bestWaiting ? (
+          {best && (bestZeroGapBlocked ? null : bestWaiting ? (
         // LX-9R5 PART A2: WAITING is a valid canonical result, never an
         // error -- reuses the SAME copy Concept Mission's own NOW card
         // already shows for this exact condition (LX-9R3-R1 W1).

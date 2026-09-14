@@ -95,7 +95,16 @@ export type ContinuationResolution =
       reason:
         | 'NO_CANONICAL_ACTION'
         | 'DECISION_UNAVAILABLE'
-        | 'RESOLVE_FAILED';
+        | 'RESOLVE_FAILED'
+        /**
+         * LX-9R8 PART A1/A8: the canonical decision was PRACTICE/REVIEW
+         * but the canonical evidence gap was already 0, with no
+         * REINFORCE-justified reason to keep practicing -- never
+         * launched. Renders identically to any other RETURN_TO_MISSION
+         * reason (the panel does not branch on it); Concept Mission
+         * itself shows the ZERO_GAP_MISMATCH card on arrival.
+         */
+        | 'ZERO_GAP_MISMATCH';
     };
 
 export interface ContinuationCheckpoint {

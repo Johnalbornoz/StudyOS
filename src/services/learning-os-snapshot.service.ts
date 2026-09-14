@@ -26,6 +26,11 @@ import {
 } from '@/lib/learning-execution-policy';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { getTwinMemorySignal } from './memory-read.service';
+import { getConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
+import { isZeroGapPracticeMismatch } from '@/lib/lx/evidence-sufficiency-contract';
+
+/** The SAME three LearningState values deriveLearnerJourneyStage's own REINFORCE rule keys off -- never inferred from mastery/understanding alone (LX-9R8 PART A2). */
+const REINFORCE_LEARNING_STATES = new Set(['MISCONCEPTION_BLOCKED', 'PREREQUISITE_BLOCKED', 'NEEDS_REPAIR']);
 
 export interface ConceptDisplayInfo {
   label: string;
@@ -55,6 +60,17 @@ export interface LearningOSSnapshot {
   nextExecutableItemWaiting: boolean;
   /** The canonical next-eligible-review date, verbatim from Phase 6 memory, when `nextExecutableItemWaiting` is true and a date exists. `null` otherwise. */
   nextExecutableItemNextEligibleAt: string | null;
+  /**
+   * LX-9R8 PART A1/A5: true when `nextExecutableItem` is a PRACTICE/
+   * REVIEW decision whose canonical evidence gap is already 0, with no
+   * REINFORCE-justified reason (misconception/prerequisite/repair) to
+   * keep practicing -- `selectActivityType`'s qualitative fallthrough
+   * (masteryState/understandingScore) never checked the quantitative
+   * evidence count. Computed ONCE here (the same shared snapshot
+   * boundary `nextExecutableItemWaiting` already uses) so Today can
+   * never offer this CTA.
+   */
+  nextExecutableItemZeroGapBlocked: boolean;
   /** Presentation-only: concept id -> display label/subject name. Never a priority field, never used for ordering. */
   conceptLabels: Map<string, ConceptDisplayInfo>;
 }
@@ -121,6 +137,32 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     }
   }
 
+  let nextExecutableItemZeroGapBlocked = false;
+  if (
+    nextExecutableItem &&
+    (nextExecutableItem.decision.activityType === 'PRACTICE' || nextExecutableItem.decision.activityType === 'REVIEW') &&
+    !REINFORCE_LEARNING_STATES.has(nextExecutableItem.decision.learningState)
+  ) {
+    const [ks, policy] = await Promise.all([
+      getConceptKnowledgeState(studentId, nextExecutableItem.decision.actionConceptId).catch(() => null),
+      getActiveMasteryPolicy().catch(() => null),
+    ]);
+    if (policy) {
+      nextExecutableItemZeroGapBlocked = isZeroGapPracticeMismatch({
+        activityType: nextExecutableItem.decision.activityType,
+        hasReinforceIntervention: false,
+        currentSufficiency: ks
+          ? {
+              evidenceCount: ks.evidenceCount,
+              independentEvidenceCount: ks.independentEvidenceCount,
+              passed: ks.evidenceCount >= policy.minimumEvidenceCount && ks.independentEvidenceCount >= policy.minimumIndependentEvidenceCount,
+            }
+          : null,
+        masteryPolicy: policy,
+      });
+    }
+  }
+
   const conceptIds = decisions.flatMap((d) => [d.actionConceptId, ...d.targetConceptIds]);
   const conceptLabels = await loadConceptLabels(conceptIds, preferredLanguage);
 
@@ -132,6 +174,7 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     nextExecutableItem,
     nextExecutableItemWaiting,
     nextExecutableItemNextEligibleAt,
+    nextExecutableItemZeroGapBlocked,
     conceptLabels,
   };
 }

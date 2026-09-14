@@ -149,6 +149,11 @@ function NowCard({
   // `now.nextEligibleReviewAt` is passed through verbatim from the
   // canonical read boundary -- never computed here.
   const retentionWaiting = now.fallback === 'RETENTION_WAITING';
+  // LX-9R8 PART A1/A7: a canonical PRACTICE/REVIEW decision whose
+  // evidence gap was already 0 -- never a distinct "error," just a
+  // calm "nothing more needed here right now," same tone as
+  // CONSOLIDATED but without implying the whole concept is finished.
+  const zeroGapMismatch = now.fallback === 'ZERO_GAP_MISMATCH';
   const retentionWaitingBody = now.nextEligibleReviewAt
     ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
         '{date}',
@@ -165,14 +170,22 @@ function NowCard({
       <div style={{ fontSize: 18, fontWeight: 650 }}>
         {retentionWaiting
           ? t['conceptMission.noActionRetentionWaitingTitle']
-          : consolidated
-            ? t['conceptMission.noActionConsolidatedTitle']
-            : t['conceptMission.noActionLearnFirstTitle']}
+          : zeroGapMismatch
+            ? t['conceptMission.noActionZeroGapTitle']
+            : consolidated
+              ? t['conceptMission.noActionConsolidatedTitle']
+              : t['conceptMission.noActionLearnFirstTitle']}
       </div>
       <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-        {retentionWaiting ? retentionWaitingBody : consolidated ? t['conceptMission.noActionConsolidatedBody'] : t['conceptMission.noActionLearnFirstBody']}
+        {retentionWaiting
+          ? retentionWaitingBody
+          : zeroGapMismatch
+            ? t['conceptMission.noActionZeroGapBody']
+            : consolidated
+              ? t['conceptMission.noActionConsolidatedBody']
+              : t['conceptMission.noActionLearnFirstBody']}
       </p>
-      {!consolidated && !retentionWaiting && learn.prominence === 'PRIMARY_INLINE' && (
+      {!consolidated && !retentionWaiting && !zeroGapMismatch && learn.prominence === 'PRIMARY_INLINE' && (
         <div style={{ marginTop: 'var(--space-2)' }}>
           <ConceptExplanationDisclosure
             studentId={studentId}

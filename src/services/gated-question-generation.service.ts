@@ -28,7 +28,14 @@ import { resolveModels, TERRA } from '@/lib/ai/model-routing';
 import { recordRuntimeEvent, buildRuntimeEvent, buildAggregateRuntimeEvent, type BillableCallUsage } from '@/lib/ai/runtime-event';
 import type { AIErrorCode } from '@/lib/ai/types';
 import { checkQuestionQualityDeterministic } from '@/lib/lx/question-quality-contract';
-import { verifyQuestionQuality, verifyQuestionQualityBatch, evaluateQuestionQualityVerdict, type QuestionQualityVerdict } from '@/services/question-quality-verifier.service';
+import {
+  verifyQuestionQuality,
+  verifyQuestionQualityBatch,
+  evaluateQuestionQualityVerdict,
+  classifyQualityRejectionReasons,
+  type QuestionQualityVerdict,
+  type QualityRejectionReasonCode,
+} from '@/services/question-quality-verifier.service';
 import { generateQuestionsForConcept, type GeneratedQuestion } from '@/services/quiz-generation.service';
 
 export interface GatedPracticeOptions {
@@ -59,6 +66,73 @@ export interface QualityGateReq {
   conceptId: string;
   language?: string;
   context?: { studentId?: string; subjectId?: string };
+  /** LX-9R8 PART B/B3: safe, aggregate-only observability context for a rejected candidate's log line -- never required, never affects the gate's decision. */
+  operationId?: string;
+  activityType?: string;
+}
+
+/** LX-9R8 PART B/B3: one safe, structured line per SEMANTICALLY rejected candidate -- operationId/candidateId/activityType/difficulty/verdict/reasonCode only, NEVER question text, correct answer, or student data. */
+function logSemanticRejection(meta: {
+  operationId?: string;
+  candidateId: string;
+  activityType?: string;
+  difficulty: number;
+  verdict: 'SEMANTIC_FAIL' | 'VERIFY_ERROR';
+  reasonCodes: QualityRejectionReasonCode[];
+}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[quality_gate_rejection]', JSON.stringify({
+      operationId: meta.operationId ?? null,
+      candidateId: meta.candidateId,
+      activityType: meta.activityType ?? null,
+      difficulty: meta.difficulty,
+      verdict: meta.verdict,
+      reasonCode: meta.reasonCodes,
+    }));
+  } catch { /* logging must never break generation */ }
+}
+
+/** LX-9R8 PART B3: aggregate rejection-reason histogram for one gate call -- e.g. { AMBIGUOUS: 1, WEAK_DISTRACTORS: 0, ... }. Every code in the taxonomy is always present (0 when unseen), so a caller can diff two runs without missing-key ambiguity. */
+function emptyRejectionHistogram(): Record<QualityRejectionReasonCode, number> {
+  return {
+    OUT_OF_SCOPE: 0, ANSWER_INCORRECT: 0, AMBIGUOUS: 0, REASONING_MISMATCH: 0,
+    WEAK_DISTRACTORS: 0, SCENARIO_INAPPROPRIATE: 0, VISUAL_INCONSISTENT: 0,
+    LOW_CONFIDENCE: 0, VERIFY_ERROR: 0,
+  };
+}
+
+/**
+ * LX-9R8 PART B3: one safe, structured aggregate-count line per
+ * `applyQuestionQualityGate` call, emitted from the ONE shared gate
+ * authority so EVERY caller (quick_check/practice/retention/gated_batch/
+ * variant) reports it identically, without each caller re-deriving its
+ * own aggregate. Never question/answer/student content -- counts and the
+ * already-computed rejection histogram only.
+ */
+function logQualityGateSummary(meta: {
+  operationId?: string;
+  activityType?: string;
+  generatedCandidates: number;
+  semanticChecked: number;
+  semanticAccepted: number;
+  semanticRejected: number;
+  deterministicRejected: number;
+  rejectionHistogram: Record<QualityRejectionReasonCode, number>;
+}): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[quality_gate_summary]', JSON.stringify({
+      operationId: meta.operationId ?? null,
+      activityType: meta.activityType ?? null,
+      generatedCandidates: meta.generatedCandidates,
+      semanticChecked: meta.semanticChecked,
+      semanticAccepted: meta.semanticAccepted,
+      semanticRejected: meta.semanticRejected,
+      deterministicRejected: meta.deterministicRejected,
+      rejectionHistogram: meta.rejectionHistogram,
+    }));
+  } catch { /* logging must never break generation */ }
 }
 
 /** Normalised text key for cheap, AI-free cross-source dedup of merged units. */
@@ -88,6 +162,8 @@ export async function applyQuestionQualityGate(
    * generation call that produced the questions being verified.
    */
   semanticCalls: BillableCallUsage[];
+  /** LX-9R8 PART B3: aggregate rejection-reason histogram across every SEMANTICALLY rejected candidate in this gate call. Every taxonomy code always present (0 when unseen). Deterministic rejections are NOT included here -- they have their own, separate, already-audited contract (question-quality-contract.ts). */
+  semanticRejectionHistogram: Record<QualityRejectionReasonCode, number>;
 }> {
   let deterministicRejected = 0;
   const needsSemantic: GeneratedQuestion[] = [];
@@ -123,6 +199,27 @@ export async function applyQuestionQualityGate(
   const semanticCalls: BillableCallUsage[] = [];
   let semanticRejected = 0;
   const semanticSurvivors: GeneratedQuestion[] = [];
+  const semanticRejectionHistogram = emptyRejectionHistogram();
+
+  // LX-9R8 PART B/B3: one safe, structured log line per rejected
+  // candidate -- reasonCode(s) from the SAME taxonomy the histogram
+  // tallies, never question text/answer/student data.
+  const recordRejection = (candidateId: string, q: GeneratedQuestion, verdict: QuestionQualityVerdict | null) => {
+    const reasonCodes: QualityRejectionReasonCode[] = verdict
+      ? classifyQualityRejectionReasons(verdict).length > 0
+        ? classifyQualityRejectionReasons(verdict)
+        : ['LOW_CONFIDENCE'] // every dimension passed but confidence was still below QUALITY_VERIFY_MIN_CONFIDENCE
+      : ['VERIFY_ERROR']; // missing/malformed verdict -- fails closed
+    for (const code of reasonCodes) semanticRejectionHistogram[code]++;
+    logSemanticRejection({
+      operationId: req.operationId,
+      candidateId,
+      activityType: req.activityType,
+      difficulty: q.difficulty,
+      verdict: verdict ? 'SEMANTIC_FAIL' : 'VERIFY_ERROR',
+      reasonCodes,
+    });
+  };
 
   if (needsSemantic.length > 1) {
     const candidates = needsSemantic.map((q, i) => ({ id: String(i), question: q }));
@@ -135,8 +232,13 @@ export async function applyQuestionQualityGate(
       },
     }).catch(() => new Map<string, QuestionQualityVerdict | null>());
     for (const { id, question } of candidates) {
-      if (evaluateQuestionQualityVerdict(verdictsById.get(id) ?? null).pass) semanticSurvivors.push(question);
-      else semanticRejected++;
+      const verdict = verdictsById.get(id) ?? null;
+      if (evaluateQuestionQualityVerdict(verdict).pass) {
+        semanticSurvivors.push(question);
+      } else {
+        semanticRejected++;
+        recordRejection(id, question, verdict);
+      }
     }
   } else if (needsSemantic.length === 1) {
     const q = needsSemantic[0];
@@ -148,14 +250,32 @@ export async function applyQuestionQualityGate(
         semanticCalls.push({ model, usage });
       },
     }).catch(() => null);
-    if (evaluateQuestionQualityVerdict(verdict).pass) semanticSurvivors.push(q);
-    else semanticRejected++;
+    if (evaluateQuestionQualityVerdict(verdict).pass) {
+      semanticSurvivors.push(q);
+    } else {
+      semanticRejected++;
+      recordRejection('0', q, verdict);
+    }
   }
 
   // Preserve the caller's original ordering.
   const kept = new Set<GeneratedQuestion>([...passed, ...semanticSurvivors]);
   const accepted = questions.filter((q) => kept.has(q));
-  return { accepted, deterministicRejected, semanticRejected, semanticCalls };
+
+  // LX-9R8 PART B3: one aggregate summary line per gate call, from the
+  // single shared authority so every caller reports it identically.
+  logQualityGateSummary({
+    operationId: req.operationId,
+    activityType: req.activityType,
+    generatedCandidates: questions.length,
+    semanticChecked: needsSemantic.length,
+    semanticAccepted: semanticSurvivors.length,
+    semanticRejected,
+    deterministicRejected,
+    rejectionHistogram: semanticRejectionHistogram,
+  });
+
+  return { accepted, deterministicRejected, semanticRejected, semanticCalls, semanticRejectionHistogram };
 }
 
 const QGEN_ROUTE = resolveModels('QUESTION_GENERATION');
@@ -453,7 +573,10 @@ export async function generateGatedQuestionBatch(
 
     const result = await gateUnitWithTerraFallback(
       luna,
-      { conceptId, language: opts.language, context: ctx, targetCount: target, fallbackWhen: 'SHORT' },
+      // LX-9R8 PART B/B3: threading operationId/activityType through so
+      // a rejected candidate's log line is correlatable back to this
+      // generation operation.
+      { conceptId, language: opts.language, context: ctx, targetCount: target, fallbackWhen: 'SHORT', operationId, activityType: opts.activityType },
       () => {
         log('GATED_BATCH_RECOVERY_STARTED', { candidateCount: luna.length });
         return generateQuestionsForConcept(conceptId, studentId, subjectId, {

@@ -32,13 +32,14 @@
 import { db, query } from '@/lib/db';
 import { getLearningOSSnapshot, loadConceptLabels, type LearningOSSnapshot } from '@/services/learning-os-snapshot.service';
 import { getSubjectHierarchy, type SubjectHierarchy, type HierarchyConcept } from '@/services/topic-hierarchy.service';
-import { getSubjectKnowledgeState, type ConceptKnowledgeState } from '@/services/knowledge-state.service';
+import { getSubjectKnowledgeState, getConceptKnowledgeState, getActiveMasteryPolicy, type ConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { zeroSignalContext } from '@/services/concept-mission-view.service';
 import { getTwinMemorySignalsForStudent, type TwinMemorySignal } from '@/services/memory-read.service';
 import { rankLearningDecisions, computeLearningState, type LearningDecision } from '@/lib/adaptive-learning-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
 import { deriveLearnerJourneyStage, conceptJourneyFromResult, type ConceptJourney, type LearnerJourneyStage } from './concept-journey';
 import { isRetentionWaiting } from './learner-journey-contract';
+import { isZeroGapPracticeMismatch } from './evidence-sufficiency-contract';
 import type { CanonicalActionState, CanonicalWaitingReason } from './canonical-learning-progress';
 
 export interface ConceptPathView {
@@ -348,7 +349,34 @@ export async function buildMyPathOverview(context: MyPathContext): Promise<MyPat
         // executable even though it can co-occur with other stage facts.
     const memorySignal = context.memorySignals.get(best.decision.actionConceptId);
     const waiting = !journey.intervention && isRetentionWaiting(journey.currentStage, memorySignal?.retentionDue);
-    const actionState: CanonicalActionState = journey.consolidated ? 'CONSOLIDATED' : waiting ? 'WAITING' : 'EXECUTABLE';
+    // LX-9R8 PART A1/A5: a PRACTICE/REVIEW decision whose canonical
+    // evidence gap is already 0, with no REINFORCE intervention, is NOT
+    // executable -- selectActivityType's qualitative fallthrough
+    // (masteryState/understandingScore) never checked the quantitative
+    // evidence count. Checked here, alongside the existing WAITING gate,
+    // before My Path can ever offer this CTA.
+    const [zeroGapKs, zeroGapPolicy] = await Promise.all([
+      getConceptKnowledgeState(context.studentId, best.decision.actionConceptId).catch(() => null),
+      getActiveMasteryPolicy().catch(() => null),
+    ]);
+    const zeroGapMismatch =
+      !waiting &&
+      !!zeroGapPolicy &&
+      isZeroGapPracticeMismatch({
+        activityType: best.decision.activityType,
+        hasReinforceIntervention: journey.intervention === 'REINFORCE',
+        currentSufficiency: zeroGapKs
+          ? {
+              evidenceCount: zeroGapKs.evidenceCount,
+              independentEvidenceCount: zeroGapKs.independentEvidenceCount,
+              passed:
+                zeroGapKs.evidenceCount >= zeroGapPolicy.minimumEvidenceCount &&
+                zeroGapKs.independentEvidenceCount >= zeroGapPolicy.minimumIndependentEvidenceCount,
+            }
+          : null,
+        masteryPolicy: zeroGapPolicy,
+      });
+    const actionState: CanonicalActionState = journey.consolidated ? 'CONSOLIDATED' : waiting ? 'WAITING' : zeroGapMismatch ? 'BLOCKED' : 'EXECUTABLE';
     current = {
       subjectId: best.decision.subjectId,
       subjectTitle: subject?.name ?? label?.subjectName ?? '',

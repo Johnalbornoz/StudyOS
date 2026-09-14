@@ -319,7 +319,10 @@ describe('RET-R3 required test 27 -- systematic generation-prompt defect (B6/B7)
  * ================================================================ */
 describe('RET-R3 required test 28 -- the Question Quality Gate itself is untouched', () => {
   it('28. retentionApplyGate still calls the SAME applyQuestionQualityGate with no bypass/override flag added -- the gate authority is unchanged by RET-R3', () => {
-    expect(SERVICE_SRC).toMatch(/const g = await applyQuestionQualityGate\(mapped, \{ conceptId, language, context: \{ studentId, subjectId \} \}\);/);
+    // LX-9R8 PART B/B3: the call now also threads operationId/activityType
+    // through for rejection-log correlation -- logging-only context, never
+    // a bypass/override, and the gate authority itself is unchanged.
+    expect(SERVICE_SRC).toMatch(/const g = await applyQuestionQualityGate\(mapped, \{ conceptId, language, context: \{ studentId, subjectId \}, operationId, activityType: 'RETENTION_CHECK' \}\);/);
     expect(SERVICE_SRC).not.toMatch(/skipGate|bypassGate|gateOverride|disableQualityGate/);
   });
 });

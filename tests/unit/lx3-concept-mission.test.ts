@@ -47,6 +47,7 @@ function base(over: Partial<ConceptMissionInputs> = {}): ConceptMissionInputs {
     memory: null,
     transferDepth: null,
     hasCachedExplanation: false,
+    masteryPolicy: null,
     ...over,
   };
 }

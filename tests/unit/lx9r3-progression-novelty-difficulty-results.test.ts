@@ -164,7 +164,7 @@ function missionBase(over: Partial<ConceptMissionInputs> = {}): ConceptMissionIn
     conceptName: 'Potenciación', subjectId: 'subj-1', subjectName: 'Math', conceptDescription: null,
     goalFallbackText: 'Understand it and apply it correctly and on your own.',
     knowledgeState: null, journeyInput: RESOLVED('DEVELOPING'), learningDecision: null, memory: null,
-    transferDepth: null, hasCachedExplanation: false, ...over,
+    transferDepth: null, hasCachedExplanation: false, masteryPolicy: null, ...over,
   };
 }
 
@@ -443,13 +443,18 @@ describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-se
   });
 
   it('19. the printed difficulty label and the generated difficultyDesc come from the SAME resolved value -- never two independently-drifting numbers', () => {
+    // LX-9R8 PART B1: describeDifficultyTier(difficulty) is now the ONE
+    // shared tier authority, called with the SAME `difficulty` the
+    // prompt itself prints a few lines later -- and reused verbatim by
+    // question-quality-verifier.service.ts so generator and verifier
+    // can never independently drift on what a tier means.
     const block = QG_SRC.slice(QG_SRC.indexOf('function buildQuestionGenerationPrompt'), QG_SRC.indexOf('const languageName = LOCALE_FULL_NAME'));
-    expect(block).toMatch(/if \(difficulty <= 1\) difficultyDesc/);
+    expect(block).toMatch(/const difficultyDesc = describeDifficultyTier\(difficulty\);/);
     expect(QG_SRC).toMatch(/Difficulty level \(\$\{difficulty\}\/5\): \$\{difficultyDesc\}/);
   });
 
   it('20. higher difficulty tiers demand a structurally different cognitive load in the prompt text -- not just a bigger adjective', () => {
-    const block = QG_SRC.slice(QG_SRC.indexOf('let difficultyDesc'), QG_SRC.indexOf('const languageName = LOCALE_FULL_NAME'));
+    const block = QG_SRC.slice(QG_SRC.indexOf('export function describeDifficultyTier'), QG_SRC.indexOf('function buildQuestionGenerationPrompt('));
     // LOW tiers: explicitly no multi-step/combined/unfamiliar/transfer demand.
     expect(block).toMatch(/direct recall.*no combined operations, no unfamiliar representation, no multi-step reasoning/);
     // HIGH tiers: the concrete cognitive-demand vocabulary the spec requires.

@@ -213,6 +213,7 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
           subjectId: s.id,
           knowledgeState: ks,
           activeDecision: decisionByConceptId.get(row.concept_id),
+          masteryPolicy: policy,
         });
         return {
           progress: {

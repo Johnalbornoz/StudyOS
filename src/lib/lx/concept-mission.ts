@@ -58,8 +58,9 @@ import {
   type LearnerJourneyStage,
   type LearnerJourneyIntervention,
 } from './learner-journey-contract';
+import { isZeroGapPracticeMismatch } from './evidence-sufficiency-contract';
 import type { LearningState, LearningFact } from '@/lib/adaptive-learning-policy';
-import type { MasteryState, ValidationReadiness } from '@/services/knowledge-state.service';
+import type { MasteryState, ValidationReadiness, MasteryPolicy } from '@/services/knowledge-state.service';
 import type { MemoryStatus } from '@/lib/memory-policy';
 import type { TransferDepth } from '@/lib/transfer-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
@@ -135,6 +136,8 @@ export interface ConceptMissionInputs {
   transferDepth: TransferDepth | null;
   /** Whether a concept_explanations row already exists for this locale -- drives "Read" vs "Review" copy only. */
   hasCachedExplanation: boolean;
+  /** LX-9R8 PART A1/A7: the active mastery policy -- required to detect a zero-gap PRACTICE/REVIEW authority mismatch. `null` only when the read boundary's own fetch failed (degrades to trusting the decision, same as before this phase -- never blocks the Mission on a read failure). */
+  masteryPolicy: MasteryPolicy | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -191,7 +194,14 @@ export type ConceptMissionNowKind = 'CANONICAL_ACTION' | 'NO_CANONICAL_ACTION';
  * next action" is exactly the proven live infinite-loop shape this
  * phase closes).
  */
-export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION' | 'RETENTION_WAITING';
+/**
+ * LX-9R8 PART A1/A7: `ZERO_GAP_MISMATCH` added -- the canonical decision
+ * is PRACTICE/REVIEW but the canonical evidence gap is already 0, with
+ * no REINFORCE-justified reason to keep practicing. The Learning
+ * Engine's own qualitative activity-selection fallthrough never checked
+ * this quantitative gap; the Mission must not offer this CTA regardless.
+ */
+export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION' | 'RETENTION_WAITING' | 'ZERO_GAP_MISMATCH';
 
 export interface ConceptMissionNow {
   kind: ConceptMissionNowKind;
@@ -347,6 +357,8 @@ function buildNow(
   journey: ConceptMissionJourney,
   decision: ConceptMissionLearningDecision | null,
   memory: ConceptMissionMemory | null,
+  knowledgeState: ConceptMissionKnowledgeState | null,
+  masteryPolicy: MasteryPolicy | null,
 ): ConceptMissionNow {
   // LX-9R3-R1 W1: RETAIN stage but the review genuinely isn't due yet.
   // `retentionDue` is the SAME already-canonical fact `buildJourney`
@@ -369,6 +381,43 @@ function buildNow(
     };
   }
   if (decision) {
+    // LX-9R8 PART A1/A7: a PRACTICE/REVIEW decision whose canonical
+    // evidence gap is already 0, with no REINFORCE-justified reason to
+    // keep practicing, is NOT executable -- the Learning Engine's own
+    // qualitative activity-selection fallthrough never checked this
+    // quantitative gap. `journey.intervention` is the SAME fact
+    // `buildJourney` already resolved -- never re-derived. The
+    // evidence-count comparison below is not a new pedagogical
+    // threshold: `isZeroGapPracticeMismatch` (evidence-sufficiency-
+    // contract.ts) is the ONE canonical authority that owns it, reused
+    // verbatim -- this file only assembles its already-fetched inputs.
+    const hasReinforceIntervention = journey.status === 'RESOLVED' && journey.intervention === 'REINFORCE';
+    const zeroGapMismatch =
+      !!masteryPolicy &&
+      isZeroGapPracticeMismatch({
+        activityType: decision.activityType,
+        hasReinforceIntervention,
+        currentSufficiency: knowledgeState
+          ? {
+              evidenceCount: knowledgeState.evidenceCount,
+              independentEvidenceCount: knowledgeState.independentEvidenceCount,
+              passed:
+                knowledgeState.evidenceCount >= masteryPolicy.minimumEvidenceCount &&
+                knowledgeState.independentEvidenceCount >= masteryPolicy.minimumIndependentEvidenceCount,
+            }
+          : null,
+        masteryPolicy,
+      });
+    if (zeroGapMismatch) {
+      return {
+        kind: 'NO_CANONICAL_ACTION',
+        activityType: null,
+        actionConceptId: null,
+        facts: [],
+        fallback: 'ZERO_GAP_MISMATCH',
+        nextEligibleReviewAt: null,
+      };
+    }
     return {
       kind: 'CANONICAL_ACTION',
       activityType: decision.activityType,
@@ -417,7 +466,7 @@ export function buildConceptMissionView(inputs: ConceptMissionInputs): ConceptMi
     },
     goal: buildGoal(inputs),
     journey,
-    now: buildNow(journey, inputs.learningDecision, inputs.memory),
+    now: buildNow(journey, inputs.learningDecision, inputs.memory, inputs.knowledgeState, inputs.masteryPolicy),
     learn: buildLearn(journey, inputs.hasCachedExplanation),
     contractVersion: CONCEPT_MISSION_VIEW_VERSION,
   };

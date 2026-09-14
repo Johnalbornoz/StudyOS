@@ -38,7 +38,7 @@
  */
 import { db, query } from '@/lib/db';
 import { getConceptView } from '@/lib/learner-twin';
-import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
+import { getConceptKnowledgeState, getActiveMasteryPolicy } from '@/services/knowledge-state.service';
 import { getBestLearningDecisionForConcept } from '@/services/adaptive-teaching.service';
 import { getConceptTransferDepth } from '@/services/transfer-read.service';
 import { computeLearningState, type ConceptDecisionContext } from '@/lib/adaptive-learning-policy';
@@ -125,7 +125,7 @@ export async function getConceptMissionView(
   const row = conceptRow.rows[0];
   if (!row) return { status: 'NOT_FOUND' };
 
-  const [conceptView, knowledgeState, decisionRead, transferDepth, explanationRow] = await Promise.all([
+  const [conceptView, knowledgeState, decisionRead, transferDepth, explanationRow, masteryPolicy] = await Promise.all([
     getConceptView(studentId, conceptId).catch(() => null),
     getConceptKnowledgeState(studentId, conceptId).catch(() => null),
     // The decision read's SUCCESS vs FAILURE is load-bearing (LX-3R):
@@ -139,6 +139,9 @@ export async function getConceptMissionView(
       `SELECT 1 FROM concept_explanations WHERE concept_id = $1 AND language = $2 LIMIT 1`,
       [conceptId, locale],
     ).catch(() => ({ rows: [] as unknown[] })),
+    // LX-9R8 PART A1/A7: required to detect a zero-gap PRACTICE/REVIEW
+    // authority mismatch before ever offering the NOW card's CTA.
+    getActiveMasteryPolicy().catch(() => null),
   ]);
 
   const learningDecision = decisionRead.status === 'OK' ? decisionRead.decision : null;
@@ -197,6 +200,7 @@ export async function getConceptMissionView(
       : null,
     transferDepth: transferDepth ?? null,
     hasCachedExplanation: (explanationRow.rows?.length ?? 0) > 0,
+    masteryPolicy: masteryPolicy ?? null,
   });
 
   return { status: 'OK', view };

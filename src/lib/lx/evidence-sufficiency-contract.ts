@@ -27,7 +27,7 @@
  *   - Grade, generate, read the DB, or become a mastery engine.
  */
 
-import type { ActivityType, EvidenceMode } from '@/lib/activity-taxonomy';
+import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TargetDimension } from '@/lib/adaptive-learning-policy';
 import type { MasteryPolicy, EvidenceSufficiency } from '@/services/knowledge-state.service';
 import type { EvidenceDimension } from '@/services/quiz-generation.service';
@@ -317,4 +317,47 @@ export function resolveQuestionCount(requirement: EvidenceRequirement): Resolved
     count,
     note: `max(executionMinimum ${d.executionMinimum}, canonicalGap ${d.pedagogicalRequirement}) clamped to [${range.min},${range.max}]`,
   };
+}
+
+/**
+ * LX-9R8 PART A1 -- the ONE canonical check for "is a PRACTICE/REVIEW
+ * decision a zero-gap authority mismatch." `selectActivityType`
+ * (adaptive-learning-policy.ts) picks PRACTICE/REVIEW from QUALITATIVE
+ * signals (masteryState/understandingScore) that are an entirely
+ * separate axis from the QUANTITATIVE canonical evidence gap this
+ * module owns (`minimumEvidenceCount - evidenceCount`) -- the two can
+ * disagree: a learner whose evidence COUNT has already reached the
+ * canonical minimum can still read as `masteryState: 'LEARNING'`
+ * (confidence/understanding not yet promoted), and `selectActivityType`
+ * falls through to PRACTICE on that qualitative signal alone, with zero
+ * awareness of the gap. Before this phase, that mismatch was treated as
+ * a mere COUNT anomaly (`countAuthority.zeroGapMismatch`, LX-4R R8) --
+ * generation still ran (`executionMinimum` questions), and every
+ * learner-facing surface still offered the CTA. This function is the
+ * shared authority every surface (My Path/Today/Concept Mission/
+ * continuation/canonical-learning-progress, and the generation route's
+ * own defense-in-depth check) now consults BEFORE treating such a
+ * PRACTICE/REVIEW decision as executable: a genuine `REINFORCE`
+ * intervention (misconception/prerequisite/repair -- Part A2) is the
+ * ONLY thing that can justify offering it anyway, never inferred from
+ * low mastery/understanding alone. Pure, given already-fetched inputs.
+ */
+export function isZeroGapPracticeMismatch(params: {
+  activityType: ActivityType;
+  /** True only when a REINFORCE-justified intervention (misconception/prerequisite/repair) is explicitly active -- never inferred from masteryState/understandingScore. */
+  hasReinforceIntervention: boolean;
+  currentSufficiency: EvidenceSufficiency | null;
+  masteryPolicy: MasteryPolicy;
+}): boolean {
+  const { activityType, hasReinforceIntervention, currentSufficiency, masteryPolicy } = params;
+  if (activityType !== 'PRACTICE' && activityType !== 'REVIEW') return false;
+  if (hasReinforceIntervention) return false;
+  const requirement = deriveEvidenceRequirement({
+    activityType,
+    evidenceMode: evidenceModeForActivity(activityType),
+    targetDimension: 'UNDERSTANDING',
+    masteryPolicy,
+    currentSufficiency,
+  });
+  return requirement.questionCount.status === 'DETERMINED' && requirement.questionCount.pedagogicalRequirement === 0;
 }

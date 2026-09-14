@@ -234,7 +234,9 @@ describe('15. no mastery/evidence write is introduced by difficulty selection', 
  * ================================================================== */
 describe("13. difficulty level changes the prompt's required cognitive demand", () => {
   it('each of the five tiers names a distinct, concrete cognitive-demand requirement', () => {
-    const block = QG_SRC.slice(QG_SRC.indexOf('let difficultyDesc'), QG_SRC.indexOf('const languageName = LOCALE_FULL_NAME'));
+    // LX-9R8 PART B1: the tier vocabulary now lives in describeDifficultyTier
+    // (exported, shared with question-quality-verifier.service.ts).
+    const block = QG_SRC.slice(QG_SRC.indexOf('export function describeDifficultyTier'), QG_SRC.indexOf('function buildQuestionGenerationPrompt('));
     expect(block).toMatch(/direct recall/);
     expect(block).toMatch(/one clear application step/);
     expect(block).toMatch(/combines two related steps/);
@@ -266,7 +268,7 @@ function missionBase(over: Partial<ConceptMissionInputs> = {}): ConceptMissionIn
     journeyInput: { kind: 'RESOLVED', learningState: 'RETENTION_RISK', source: 'LEARNING_DECISION' } as ConceptMissionJourneyInput,
     learningDecision: { activityType: 'REVIEW', actionConceptId: 'c1', learningState: 'RETENTION_RISK', facts: [] },
     memory: { lastSuccessfulRetentionAt: '2026-01-01T00:00:00Z', retentionDue: false, memoryStatus: 'STABLE', nextReviewAt: null },
-    transferDepth: null, hasCachedExplanation: false,
+    transferDepth: null, hasCachedExplanation: false, masteryPolicy: null,
     ...over,
   };
 }
