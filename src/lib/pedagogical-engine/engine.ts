@@ -37,9 +37,12 @@ import type {
   PedagogicalStage,
   QualifiedEvidenceSummary,
   RawEvidenceItem,
+  RecognitionRejectionReason,
+  RecognizedRequirement,
   RequirementResult,
   RollbackCase,
   RollbackDecision,
+  SatisfactionBasis,
 } from './types';
 
 type Stage = Exclude<PedagogicalStage, 'CONSOLIDATED'>;
@@ -72,6 +75,23 @@ function sortEvidence(evidence: RawEvidenceItem[]): RawEvidenceItem[] {
 }
 
 /**
+ * CANON-R4R1 Part 11 -- an invalid `recognizedRequirements` input is
+ * rejected in its ENTIRETY, never partially applied and never
+ * gap-filled. Valid sets are exactly the contiguous prefixes of
+ * `STAGE_ORDER` starting at LEARN (`{}`, `{LEARN}`,
+ * `{LEARN,PRACTICE}`, ...) with no duplicate requirement.
+ */
+function validateRecognitionSet(recognized: RecognizedRequirement[] | undefined): RecognitionRejectionReason | null {
+  if (!recognized || recognized.length === 0) return null;
+  const requirements = recognized.map((r) => r.requirement);
+  if (new Set(requirements).size !== requirements.length) return 'DUPLICATE_REQUIREMENT_IN_RECOGNITION_SET';
+  const set = new Set(requirements);
+  const expectedPrefix = STAGE_ORDER.slice(0, requirements.length);
+  const isContiguousPrefix = expectedPrefix.every((s) => set.has(s)) && set.size === requirements.length;
+  return isContiguousPrefix ? null : 'NON_CONTIGUOUS_RECOGNITION_SET';
+}
+
+/**
  * Runs the full chronological replay. Returns the final satisfaction
  * state per stage, the per-stage evidence tallies, the evidence-derived
  * difficulty facts CANON-R2R1 needs (the highest sustained qualifying
@@ -82,7 +102,7 @@ function sortEvidence(evidence: RawEvidenceItem[]): RawEvidenceItem[] {
  * later qualifying attempt is not reported, since it is no longer the
  * reason the learner is where they are).
  */
-function replay(evidence: RawEvidenceItem[]) {
+function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, RecognizedRequirement> | null) {
   const sorted = sortEvidence(evidence);
 
   const acc: Record<Stage, StageAccumulator> = {
@@ -93,16 +113,65 @@ function replay(evidence: RawEvidenceItem[]) {
     TRANSFER: newAccumulator(),
   };
 
+  // CANON-R4R1 -- recognition seeds the STARTING baseline exactly once,
+  // before any evidence is processed. It is never re-applied mid-replay:
+  // once a boolean below is reset to `false` by the engine's own
+  // existing rollback logic (unchanged this phase), only a NEW
+  // qualifying REAL v1 item -- never the recognition again -- can set it
+  // back to `true`. This is precisely "newer v1 failure/rollback state >
+  // legacy recognition" (Part 14), achieved with zero special-cased
+  // invalidation logic: the existing reset-on-failure code already does
+  // the whole job.
   let learnSatisfied = false;
+  let learnBasis: SatisfactionBasis = null;
   let practiceSatisfied = false;
+  let practiceBasis: SatisfactionBasis = null;
   let proveSatisfied = false;
+  let proveBasis: SatisfactionBasis = null;
   let proveQualifyingAt: string | null = null;
   let proveQualifyingDifficulty: number | null = null;
   let retainSatisfied = false;
+  let retainBasis: SatisfactionBasis = null;
   let retainQualifyingScore: number | null = null;
   let transferSatisfied = false;
+  let transferBasis: SatisfactionBasis = null;
   let highestQualifyingPracticeDifficulty: number | null = null;
   let lastRollback: RollbackDecision | null = null;
+
+  if (recognizedByStage) {
+    const learn = recognizedByStage.get('LEARN');
+    if (learn) {
+      learnSatisfied = true;
+      learnBasis = learn.basis;
+    }
+    const practice = recognizedByStage.get('PRACTICE');
+    if (practice) {
+      practiceSatisfied = true;
+      practiceBasis = practice.basis;
+    }
+    const prove = recognizedByStage.get('PROVE');
+    if (prove) {
+      proveSatisfied = true;
+      proveBasis = prove.basis;
+      // No real administered timestamp/difficulty exists for a
+      // recognition-only Prove -- `recognizedAt` is used ONLY as the
+      // conservative anchor Retention's 3-day wait counts from; the
+      // difficulty stays `null` (never fabricated), which
+      // `resolveRetentionDifficulty`/`resolveTransferDifficulty` already
+      // handle gracefully via their own documented defaults.
+      proveQualifyingAt = prove.recognizedAt;
+    }
+    const retain = recognizedByStage.get('RETAIN');
+    if (retain) {
+      retainSatisfied = true;
+      retainBasis = retain.basis;
+    }
+    const transfer = recognizedByStage.get('TRANSFER');
+    if (transfer) {
+      transferSatisfied = true;
+      transferBasis = transfer.basis;
+    }
+  }
 
   function makeRollback(
     triggeredBy: RollbackDecision['triggeredBy'],
@@ -124,6 +193,7 @@ function replay(evidence: RawEvidenceItem[]) {
     const verdict = qualifyEvidence(item, { targetStage: 'LEARN', prerequisiteSatisfied: true });
     if (verdict.result === 'QUALIFIES') {
       learnSatisfied = true;
+      learnBasis = 'V1_EVIDENCE';
       acc.LEARN.qualifyingCount++;
       acc.LEARN.qualifyingIds.push(item.id);
     } else {
@@ -139,6 +209,7 @@ function replay(evidence: RawEvidenceItem[]) {
       acc.PRACTICE.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
         practiceSatisfied = true;
+        practiceBasis = 'V1_EVIDENCE';
         acc.PRACTICE.qualifyingCount++;
         acc.PRACTICE.qualifyingIds.push(item.id);
         highestQualifyingPracticeDifficulty =
@@ -158,6 +229,7 @@ function replay(evidence: RawEvidenceItem[]) {
       acc.PROVE.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
         proveSatisfied = true;
+        proveBasis = 'V1_EVIDENCE';
         proveQualifyingAt = item.timestamp;
         proveQualifyingDifficulty = item.difficulty;
         acc.PROVE.qualifyingCount++;
@@ -172,11 +244,17 @@ function replay(evidence: RawEvidenceItem[]) {
         // A genuine (non-premature) failed attempt -- never a premature
         // or malformed one -- triggers repair: PROVE spec's own rule,
         // "failure returns to PRACTICE with NEW Prove required after
-        // repair, never just repeats."
+        // repair, never just repeats." CANON-R4R1 Part 12: this ALSO
+        // permanently invalidates any recognition-seeded PROVE/PRACTICE
+        // basis for the rest of this replay -- newer v1 failure beats
+        // legacy recognition -- simply by resetting the same booleans a
+        // pre-CANON-R4R1 failure already reset.
         if (verdict.reasonCode === 'FAILED_ATTEMPT') {
           proveSatisfied = false;
+          proveBasis = null;
           proveQualifyingDifficulty = null;
           practiceSatisfied = false;
+          practiceBasis = null;
           lastRollback = makeRollback('PROVE', 'PROVE_FAILURE_RETURN_TO_PRACTICE', 'PRACTICE', ['FAILED_ATTEMPT']);
         }
       }
@@ -188,6 +266,7 @@ function replay(evidence: RawEvidenceItem[]) {
       acc.RETAIN.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
         retainSatisfied = true;
+        retainBasis = 'V1_EVIDENCE';
         retainQualifyingScore = item.scorePercent;
         acc.RETAIN.qualifyingCount++;
         acc.RETAIN.qualifyingIds.push(item.id);
@@ -198,10 +277,16 @@ function replay(evidence: RawEvidenceItem[]) {
           // Retention spec's own rule: "failure rolls back to PROVE and
           // a NEW successful Prove creates a NEW retention window --
           // never reuses old due date." Invalidate the prior qualifying
-          // Prove entirely so a fresh one is required.
+          // Prove entirely so a fresh one is required. CANON-R4R1 Part
+          // 12: a recognition-seeded PROVE basis is permanently
+          // invalidated here too -- the learner must produce a NEW real
+          // v1 Prove; legacy recognition can never instantly re-satisfy
+          // it (Part 12's own forbidden example).
           retainSatisfied = false;
+          retainBasis = null;
           retainQualifyingScore = null;
           proveSatisfied = false;
+          proveBasis = null;
           proveQualifyingAt = null;
           proveQualifyingDifficulty = null;
           lastRollback = makeRollback('RETAIN', 'RETENTION_FAILURE_RETURN_TO_PROVE', 'PROVE', ['FAILED_ATTEMPT']);
@@ -216,6 +301,7 @@ function replay(evidence: RawEvidenceItem[]) {
         acc.TRANSFER.qualifyingCount++;
         acc.TRANSFER.qualifyingIds.push(item.id);
         transferSatisfied = true;
+        transferBasis = 'V1_EVIDENCE';
         // A qualifying Transfer resolves a Case A (application-weak)
         // rollback -- the retry succeeded, no REINFORCE remains active.
         if (lastRollback?.rolledBackTo === 'TRANSFER') lastRollback = null;
@@ -227,17 +313,24 @@ function replay(evidence: RawEvidenceItem[]) {
           // the misconception. Documented CANON-R2R1 decision: treated
           // as foundational -- rolls all the way back to PRACTICE, since
           // a critical misconception undermines every stage built on
-          // top of it, not just Transfer itself.
+          // top of it, not just Transfer itself. CANON-R4R1: this
+          // permanently invalidates any recognition-seeded basis for
+          // every one of these stages, for the rest of this replay.
           practiceSatisfied = false;
+          practiceBasis = null;
           proveSatisfied = false;
+          proveBasis = null;
           proveQualifyingAt = null;
           proveQualifyingDifficulty = null;
           retainSatisfied = false;
+          retainBasis = null;
           retainQualifyingScore = null;
           transferSatisfied = false;
+          transferBasis = null;
           lastRollback = makeRollback('TRANSFER', 'CASE_C_CRITICAL_MISCONCEPTION', 'PRACTICE', ['CRITICAL_MISCONCEPTION']);
         } else if (verdict.reasonCode === 'FAILED_ATTEMPT' || verdict.reasonCode === 'MISSING_REQUIRED_REASONING') {
           transferSatisfied = false;
+          transferBasis = null;
           // CANON-R2R1 Part 2: qualification (did this attempt pass?)
           // and rollback DIAGNOSIS (why, and how far back?) are now
           // fully separate. A low -- even a zero -- per-challenge score
@@ -254,10 +347,13 @@ function replay(evidence: RawEvidenceItem[]) {
             // (the earliest requirement a genuine foundational failure
             // plausibly invalidates).
             practiceSatisfied = false;
+            practiceBasis = null;
             proveSatisfied = false;
+            proveBasis = null;
             proveQualifyingAt = null;
             proveQualifyingDifficulty = null;
             retainSatisfied = false;
+            retainBasis = null;
             retainQualifyingScore = null;
             lastRollback = makeRollback('TRANSFER', 'CASE_B_FOUNDATIONAL_FAILURE', 'PRACTICE', [verdict.reasonCode]);
           } else {
@@ -274,13 +370,18 @@ function replay(evidence: RawEvidenceItem[]) {
   return {
     sorted,
     learnSatisfied,
+    learnBasis,
     practiceSatisfied,
+    practiceBasis,
     proveSatisfied,
+    proveBasis,
     proveQualifyingAt,
     proveQualifyingDifficulty,
     retainSatisfied,
+    retainBasis,
     retainQualifyingScore,
     transferSatisfied,
+    transferBasis,
     highestQualifyingPracticeDifficulty,
     acc,
     lastRollback,
@@ -291,6 +392,7 @@ function buildRequirementResult(
   stage: Stage,
   status: RequirementResult['status'],
   a: StageAccumulator,
+  satisfactionBasis: SatisfactionBasis,
   waitingUntil: string | null = null,
 ): RequirementResult {
   return {
@@ -302,6 +404,11 @@ function buildRequirementResult(
     nonQualifyingEvidenceIds: [...a.nonQualifyingIds],
     reasonCodes: [...a.reasonCodes],
     waitingUntil,
+    // Never reported unless actually SATISFIED -- a stage reset to
+    // UNSATISFIED/LOCKED by a rollback also had its basis reset to
+    // `null` at the exact same point (see `replay`), so this is never
+    // stale.
+    satisfactionBasis: status === 'SATISFIED' ? satisfactionBasis : null,
   };
 }
 
@@ -362,22 +469,39 @@ function computeCanonicalRevision(input: PedagogicalEngineInput, policyVersion: 
 
 export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): CanonicalPedagogicalDecision {
   const policyVersion = input.policyVersion ?? CANONICAL_POLICY.version;
-  const state = replay(input.evidence);
+
+  // CANON-R4R1 Part 11 -- an invalid recognition input is rejected in
+  // its ENTIRETY: the decision proceeds exactly as if `recognizedRequirements`
+  // had been omitted, and the rejection is reported explicitly rather
+  // than silently gap-filled.
+  const recognitionRejected = validateRecognitionSet(input.recognizedRequirements);
+  const recognizedByStage: Map<Stage, RecognizedRequirement> | null =
+    !recognitionRejected && input.recognizedRequirements && input.recognizedRequirements.length > 0
+      ? new Map(input.recognizedRequirements.map((r) => [r.requirement, r]))
+      : null;
+
+  const state = replay(input.evidence, recognizedByStage);
 
   const requirements: RequirementResult[] = [];
 
-  requirements.push(buildRequirementResult('LEARN', state.learnSatisfied ? 'SATISFIED' : 'UNSATISFIED', state.acc.LEARN));
+  requirements.push(buildRequirementResult('LEARN', state.learnSatisfied ? 'SATISFIED' : 'UNSATISFIED', state.acc.LEARN, state.learnBasis));
 
   requirements.push(
     buildRequirementResult(
       'PRACTICE',
       !state.learnSatisfied ? 'LOCKED' : state.practiceSatisfied ? 'SATISFIED' : 'UNSATISFIED',
       state.acc.PRACTICE,
+      state.practiceBasis,
     ),
   );
 
   requirements.push(
-    buildRequirementResult('PROVE', !state.practiceSatisfied ? 'LOCKED' : state.proveSatisfied ? 'SATISFIED' : 'UNSATISFIED', state.acc.PROVE),
+    buildRequirementResult(
+      'PROVE',
+      !state.practiceSatisfied ? 'LOCKED' : state.proveSatisfied ? 'SATISFIED' : 'UNSATISFIED',
+      state.acc.PROVE,
+      state.proveBasis,
+    ),
   );
 
   let retainStatus: RequirementResult['status'];
@@ -395,13 +519,14 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
       retainStatus = 'UNSATISFIED';
     }
   }
-  requirements.push(buildRequirementResult('RETAIN', retainStatus, state.acc.RETAIN, retainWaitingUntil));
+  requirements.push(buildRequirementResult('RETAIN', retainStatus, state.acc.RETAIN, state.retainBasis, retainWaitingUntil));
 
   requirements.push(
     buildRequirementResult(
       'TRANSFER',
       !state.retainSatisfied ? 'LOCKED' : state.transferSatisfied ? 'SATISFIED' : 'UNSATISFIED',
       state.acc.TRANSFER,
+      state.transferBasis,
     ),
   );
 
@@ -534,6 +659,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     qualifyingEvidenceIds: r.qualifyingEvidenceIds,
     nonQualifyingEvidenceIds: r.nonQualifyingEvidenceIds,
     reasonCodes: r.reasonCodes,
+    satisfactionBasis: r.satisfactionBasis,
   }));
 
   const canonicalRevision = computeCanonicalRevision(input, policyVersion, state.sorted);
@@ -557,6 +683,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     reasonCodes: [...new Set(reasonCodes)],
     journeyProgressPercent: STAGE_PROGRESS_PERCENT[stage],
     computedAt: input.now,
+    recognitionRejected,
   };
 }
 
@@ -577,6 +704,7 @@ export function rebuildConceptCanonicalState(args: {
   activeCriticalMisconception: boolean;
   now: string;
   policyVersion?: string;
+  recognizedRequirements?: RecognizedRequirement[];
 }): CanonicalPedagogicalDecision {
   return evaluateCanonicalLearningState(args);
 }

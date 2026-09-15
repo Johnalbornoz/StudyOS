@@ -110,6 +110,37 @@ export interface RawEvidenceItem {
   transferFoundationalFailureIndicated?: boolean;
 }
 
+/**
+ * CANON-R4R1 Part 9 -- the MINIMUM possible engine input extension
+ * resolving CANON-R4's own documented `ENGINE_INTERFACE_EXTENSION_REQUIRED`
+ * finding. A `RecognizedRequirement` is never converted into a
+ * `RawEvidenceItem` -- the engine consumes it as a wholly separate
+ * satisfaction basis (see `RequirementResult.satisfactionBasis`) so
+ * legacy/migration provenance and real v1 evidence stay distinguishable
+ * all the way through the decision (CANON-R4 Part 18).
+ */
+export type RecognizedRequirementBasis = 'LEGACY_MIGRATION_BASELINE' | 'LEGACY_POLICY_RECOGNITION';
+
+export interface RecognizedRequirement {
+  requirement: Exclude<PedagogicalStage, 'CONSOLIDATED'>;
+  basis: RecognizedRequirementBasis;
+  /** Opaque foreign key into the caller's own recognition-persistence layer (e.g. a `pedagogical_requirement_recognition` row id) -- never learner content, never interpreted by this engine. */
+  recognitionId: string;
+  reasonCode: string;
+  /**
+   * When this recognition was established (e.g. at migration). Used
+   * ONLY as a conservative anchor for a temporal gate (Retention's
+   * 3-day minimum wait) when no REAL v1 evidence timestamp exists yet
+   * for the prerequisite stage it recognizes -- never treated as a real
+   * administered difficulty/score event, and never read from the
+   * system clock internally (caller-injected, like `now`).
+   */
+  recognizedAt: string;
+}
+
+/** CANON-R4R1 Part 11 -- why an entire `recognizedRequirements` input was rejected outright (never partially applied, never silently gap-filled). */
+export type RecognitionRejectionReason = 'NON_CONTIGUOUS_RECOGNITION_SET' | 'DUPLICATE_REQUIREMENT_IN_RECOGNITION_SET';
+
 export interface PedagogicalEngineInput {
   conceptId: string;
   studentId: string;
@@ -127,7 +158,27 @@ export interface PedagogicalEngineInput {
    */
   activeCriticalMisconception: boolean;
   policyVersion?: string;
+  /**
+   * CANON-R4R1 -- optional. Omitting this field (every pre-existing
+   * caller and test) produces BYTE-IDENTICAL behavior to before this
+   * extension existed. When present, MUST form a contiguous prefix of
+   * `STAGE_ORDER` (LEARN, or LEARN+PRACTICE, or LEARN+PRACTICE+PROVE,
+   * ...) with no duplicate requirement -- an invalid set is rejected in
+   * its entirety (never partially applied, never gap-filled; see
+   * `CanonicalPedagogicalDecision.recognitionRejected`). A requirement
+   * present here establishes only the STARTING baseline the
+   * chronological replay begins from -- any REAL v1 evidence that would
+   * roll that requirement back (or a downstream one) through the
+   * engine's own existing rollback rules overrides it permanently for
+   * the rest of that replay (CANON-R4R1 Part 12-14: "newer v1
+   * failure/rollback state > legacy recognition"). Recognition is never
+   * re-applied mid-replay -- it seeds the initial state exactly once.
+   */
+  recognizedRequirements?: RecognizedRequirement[];
 }
+
+/** CANON-R4R1 Part 15 -- exposed explicitly so a caller never has to guess WHY a requirement is SATISFIED. `null` whenever `status !== 'SATISFIED'`. */
+export type SatisfactionBasis = 'V1_EVIDENCE' | RecognizedRequirementBasis | null;
 
 export interface RequirementResult {
   stage: Exclude<PedagogicalStage, 'CONSOLIDATED'>;
@@ -140,6 +191,8 @@ export interface RequirementResult {
   reasonCodes: EvidenceQualificationReasonCode[];
   /** Present only when status === 'WAITING'. */
   waitingUntil: string | null;
+  /** CANON-R4R1 Part 15. `null` unless status === 'SATISFIED'. */
+  satisfactionBasis: SatisfactionBasis;
 }
 
 /**
@@ -235,6 +288,7 @@ export interface QualifiedEvidenceSummary {
   qualifyingEvidenceIds: string[];
   nonQualifyingEvidenceIds: string[];
   reasonCodes: EvidenceQualificationReasonCode[];
+  satisfactionBasis: SatisfactionBasis;
 }
 
 export interface CanonicalPedagogicalDecision {
@@ -271,4 +325,11 @@ export interface CanonicalPedagogicalDecision {
   /** CANON-R2R1 Part 27 -- the already-approved fixed stage-anchor percentage (mirrored from `src/lib/lx/journey-progress.ts`'s own anchors, not imported -- see MODULE DEPENDENCY RULES). Follows `stage` exactly; premature evidence can never raise it. */
   journeyProgressPercent: number;
   computedAt: string;
+  /**
+   * CANON-R4R1 Part 11 -- `null` when `recognizedRequirements` was
+   * omitted, empty, or valid. Non-null means the ENTIRE input set was
+   * rejected and ignored (never partially applied) -- the decision
+   * proceeds exactly as if no recognition had been supplied at all.
+   */
+  recognitionRejected: RecognitionRejectionReason | null;
 }

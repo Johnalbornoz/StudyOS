@@ -13,7 +13,7 @@
  * Nothing here fabricates evidence, rewrites history, or grants the new
  * engine authority over any learner-facing behavior.
  */
-import type { EvidenceQualificationReasonCode, PedagogicalStage } from '@/lib/pedagogical-engine';
+import type { EvidenceQualificationReasonCode, PedagogicalStage, RecognizedRequirementBasis } from '@/lib/pedagogical-engine';
 
 /** CANON-R4 Part 3/29 -- the ONE version label new pedagogical evidence may ever carry once cutover is active. */
 export const V1_POLICY_VERSION = 'studyus-canonical-v1' as const;
@@ -48,20 +48,35 @@ export type LegacyRecognitionReasonCode =
   | 'LEGACY_EVIDENCE_INSUFFICIENT'
   | 'LEGACY_CRITICAL_MISCONCEPTION_BLOCKS_RECOGNITION'
   | 'LEGACY_PREREQUISITE_NOT_RECOGNIZED'
-  | 'LEGACY_STATE_UNAVAILABLE';
+  | 'LEGACY_STATE_UNAVAILABLE'
+  /** CANON-R4R1 Part 6 -- the one-time, LEARN-only automatic migration baseline reason, distinct from every `LEGACY_POLICY_RECOGNITION`-basis reason above (which are all earned through old-model dimension checks, never granted merely for existing). */
+  | 'PREEXISTING_LEARNER_CONCEPT_BEFORE_V1';
 
 /**
- * CANON-R4 Part 1 -- ONE requirement's migration recognition record.
- * `basis` is always `'LEGACY_POLICY_RECOGNITION'` here (a
- * `RequirementRecognition` is never produced for a v1-evidence-satisfied
- * requirement -- that case needs no recognition record at all, since the
- * frozen engine already reports it directly).
+ * CANON-R4 Part 1 / CANON-R4R1 Part 6 -- ONE requirement's migration
+ * recognition record. `basis` is `'LEGACY_POLICY_RECOGNITION'` for every
+ * requirement `evaluateLegacyRecognition` grants (old-model dimension
+ * checks) and `'LEGACY_MIGRATION_BASELINE'` ONLY for the one-time,
+ * LEARN-only automatic baseline CANON-R4R1 introduces for preexisting
+ * learner-concept pairs (`reasonCode: 'PREEXISTING_LEARNER_CONCEPT_BEFORE_V1'`)
+ * -- never produced for a v1-evidence-satisfied requirement, since the
+ * frozen engine already reports that directly via
+ * `RequirementResult.satisfactionBasis: 'V1_EVIDENCE'`.
  */
 export interface RequirementRecognition {
+  /**
+   * CANON-R4R1 -- opaque identifier for this recognition (maps 1:1 to a
+   * `pedagogical_requirement_recognition` row's own primary key once
+   * persisted). Deterministically derived from
+   * `(studentId, conceptId, requirement, migrationVersion)` so building
+   * the same recognition twice always yields the SAME id -- the
+   * foundation of idempotent persistence (Part 32).
+   */
+  id: string;
   requirement: Exclude<PedagogicalStage, 'CONSOLIDATED'>;
   status: 'SATISFIED';
-  basis: 'LEGACY_POLICY_RECOGNITION';
-  /** Opaque `learning_evidence.id` values only, when traceable -- never learner content. May be empty when the recognition is grounded in an aggregate old-model authority (Concept Knowledge State) that does not itself carry row-level ids (Part 9's own preference: "old canonical state/evidence decisions where available" -- the DECISION is authoritative, not necessarily every contributing row). */
+  basis: RecognizedRequirementBasis;
+  /** Opaque `learning_evidence.id` values only, when traceable -- never learner content. May be empty when the recognition is grounded in an aggregate old-model authority (Concept Knowledge State) that does not itself carry row-level ids (Part 9's own preference: "old canonical state/evidence decisions where available" -- the DECISION is authoritative, not necessarily every contributing row), or when grounded in mere preexistence (`LEGACY_MIGRATION_BASELINE`), which by definition has no per-row evidence basis. */
   sourceEvidenceIds: string[];
   legacyPolicyVersion: typeof LEGACY_UNVERSIONED;
   recognizedAtMigration: string;

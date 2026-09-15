@@ -25,6 +25,7 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const MIGRATION_DIR = 'src/lib/pedagogical-migration';
 const MIGRATION_FILES = readdirSync(join(process.cwd(), MIGRATION_DIR)).filter((f) => f.endsWith('.ts'));
 const CLI_SCRIPT = 'scripts/canon-r4-migration-dry-run.ts';
+const R4R1_CLI_SCRIPT = 'scripts/canon-r4r1-pre-v1-learn-baseline.ts';
 
 const POLICY: MasteryPolicy = {
   version: 1,
@@ -68,68 +69,74 @@ function ks(overrides: Partial<ConceptKnowledgeState> = {}): ConceptKnowledgeSta
 }
 
 const NOW = '2026-02-01T00:00:00.000Z';
+// CANON-R4R1: these CANON-R4 tests are deliberately isolated from the
+// NEW automatic LEARN baseline (`isPreexistingLearnerConcept`) -- they
+// test ONLY the pre-existing higher-stage recognition ladder, unchanged
+// from CANON-R4, so every call below passes `isPreexistingLearnerConcept:
+// false` explicitly.
+const MIGRATION_VERSION = 'studyus-canonical-v1-initial-migration';
 
 describe('CANON-R4 Part 47 -- Legacy Recognition tests (1-15)', () => {
   it('1. arbitrary legacy activity (raw evidence existing) does not by itself satisfy Learn -- only a legitimate old-policy PRACTICE gate does', () => {
     const state = ks({ masteryState: 'LEARNING', evidenceCount: 5, understandingScore: 40 }); // evidence exists, but understanding never passed threshold
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'LEARN')).toBe(false);
   });
 
   it('2. a valid old higher-stage achievement (Practice legitimately satisfied) recognizes Learn', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'LEARN')).toBe(true);
     expect(recognitions.find((r) => r.requirement === 'LEARN')?.reasonCode).toBe('LEGACY_HIGHER_STAGE_IMPLIES_LEARN');
   });
 
   it('3. a failed/insufficient Practice history does not recognize Practice', () => {
     const state = ks({ masteryState: 'LEARNING', evidenceCount: 1, understandingScore: 30 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'PRACTICE')).toBe(false);
   });
 
   it('4. a legitimate old Practice completion (evidence sufficiency + understanding threshold) recognizes Practice', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'PRACTICE')).toBe(true);
   });
 
   it('5. a valid old 6-question Prove (independence dimension legitimately passing) is migration-recognized', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'PROVE')).toBe(true);
   });
 
   it('6. a migration-recognized legacy Prove is never rewritten as 10 questions -- the recognition record carries no itemCount field at all', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     const proveRecognition = recognitions.find((r) => r.requirement === 'PROVE');
     expect(proveRecognition && 'itemCount' in proveRecognition).toBe(false);
   });
 
   it('7. a valid old Retention (retention dimension legitimately passing) is migration-recognized', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'RETAIN')).toBe(true);
   });
 
   it('8. a migration-recognized legacy Retention is never rewritten as 10 questions', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     const r = recognitions.find((r) => r.requirement === 'RETAIN');
     expect(r && 'itemCount' in r).toBe(false);
   });
 
   it('9. a failed Transfer (mastery never fully validated) cannot recognize Transfer', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: 85, transferScore: 20, applicationScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(false);
   });
 
   it('10. a premature Transfer attempt (retention never satisfied) cannot recognize Transfer', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: null, transferScore: 90 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(false);
   });
 
@@ -143,34 +150,34 @@ describe('CANON-R4 Part 47 -- Legacy Recognition tests (1-15)', () => {
       retentionScore: 90,
       transferScore: 90,
     });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(true);
     expect(recognitions.map((r) => r.requirement).sort()).toEqual(['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'].sort());
   });
 
   it('12. a partial old state (Practice satisfied, Prove not) does not over-recognize downstream stages', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 20 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(recognitions.map((r) => r.requirement)).toEqual(['LEARN', 'PRACTICE']);
   });
 
   it('13. migration recognition records retain source evidence IDs (empty array, never invented, when grounded solely in aggregate old-model authority)', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85 });
-    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     for (const r of recognitions) expect(Array.isArray(r.sourceEvidenceIds)).toBe(true);
   });
 
   it('14. migration recognition is deterministic', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
-    const a = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
-    const b = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const a = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
+    const b = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
     expect(a).toEqual(b);
   });
 
   it('15. migration recognition is idempotent -- rerunning the baseline builder on the same input never creates duplicate recognitions', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85 });
-    const first = buildPedagogicalMigrationBaseline({ conceptId: 'c1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
-    const second = buildPedagogicalMigrationBaseline({ conceptId: 'c1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const first = buildPedagogicalMigrationBaseline({ conceptId: 'c1', studentId: 'student-1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION, isPreexistingLearnerConcept: false });
+    const second = buildPedagogicalMigrationBaseline({ conceptId: 'c1', studentId: 'student-1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION, isPreexistingLearnerConcept: false });
     expect(first).toEqual(second);
     expect(first.recognizedRequirements.length).toBe(new Set(first.recognizedRequirements.map((r) => r.requirement)).size);
   });
@@ -267,7 +274,7 @@ describe('CANON-R4 Part 49 -- New Capture Contract tests (24-31)', () => {
 });
 
 describe('CANON-R4 Part 50 -- Safety tests (32-41)', () => {
-  const allFiles = [...MIGRATION_FILES.map((f) => join(MIGRATION_DIR, f)), CLI_SCRIPT];
+  const allFiles = [...MIGRATION_FILES.map((f) => join(MIGRATION_DIR, f)), CLI_SCRIPT, R4R1_CLI_SCRIPT];
 
   it('32. the frozen engine is unchanged -- no file in this phase imports past the engine\'s own public barrel into its internals', () => {
     for (const f of allFiles) {
@@ -281,9 +288,13 @@ describe('CANON-R4 Part 50 -- Safety tests (32-41)', () => {
     }
   });
 
-  it('34. no Production writes -- no INSERT/UPDATE/DELETE statement anywhere', () => {
+  it('34. no write ever targets any table other than the one sanctioned pedagogical_requirement_recognition insert (CANON-R4R1 supersedes CANON-R4\'s original "zero writes anywhere" assertion, which predates the approved, guarded Part 19 apply path -- the real, still-load-bearing invariant is that learning_evidence and every other table remain untouched)', () => {
     for (const f of allFiles) {
-      expect(read(f)).not.toMatch(/INSERT INTO|UPDATE\s+\w+\s+SET|DELETE FROM/i);
+      const src = read(f);
+      const writeMatches = src.match(/(?:INSERT INTO|UPDATE\s+\w+\s+SET|DELETE FROM)\s+(\w+)/gi) ?? [];
+      for (const m of writeMatches) {
+        expect(m.toLowerCase()).toMatch(/pedagogical_requirement_recognition/);
+      }
     }
   });
 
@@ -293,10 +304,12 @@ describe('CANON-R4 Part 50 -- Safety tests (32-41)', () => {
     expect(src).toMatch(/READ-ONLY/);
   });
 
-  it('36. no migration apply path exists in this phase -- no --write/--apply flag is parsed anywhere', () => {
-    for (const f of allFiles) {
-      expect(read(f)).not.toMatch(/--write|--apply/);
-    }
+  it('36. the one sanctioned migration apply path (CANON-R4R1 Part 19, superseding CANON-R4\'s original "no apply path exists" assertion) is explicitly gated behind BOTH --apply and --confirm-preview, and the write function itself independently refuses a non-Preview guard', () => {
+    const cliSrc = read('scripts/canon-r4r1-pre-v1-learn-baseline.ts');
+    expect(cliSrc).toMatch(/--confirm-preview/);
+    expect(cliSrc).toMatch(/apply && !confirmPreview/);
+    const adapterSrc = read(join(MIGRATION_DIR, 'recognition-persistence-adapter.ts'));
+    expect(adapterSrc).toMatch(/guard\.environment !== 'preview'/);
   });
 
   it('37. no UI integration -- no React import anywhere in the compatibility layer', () => {
@@ -333,7 +346,7 @@ describe('CANON-R4 Part 50 -- Safety tests (32-41)', () => {
 describe('CANON-R4 end-to-end migration composition (supplementary)', () => {
   it('composes a migration-recognized concept into an effective v1 starting state without touching the frozen engine\'s own decision', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
-    const baseline = buildPedagogicalMigrationBaseline({ conceptId: 'c1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const baseline = buildPedagogicalMigrationBaseline({ conceptId: 'c1', studentId: 'student-1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION, isPreexistingLearnerConcept: false });
     const engineDecision = evaluateCanonicalLearningState({ conceptId: 'c1', studentId: 's1', now: NOW, evidence: [], activeCriticalMisconception: false });
     const effective = composeEffectiveMigratedDecision({
       conceptId: 'c1',
@@ -351,7 +364,7 @@ describe('CANON-R4 end-to-end migration composition (supplementary)', () => {
 
   it('a concept with a critical misconception currently active is never advanced past PRACTICE by migration recognition alone', () => {
     const state = ks({ masteryState: 'VALIDATED_MASTERY', evidenceCount: 10, understandingScore: 90, independenceScore: 90, applicationScore: 90, retentionScore: 90, transferScore: 90 });
-    const baseline = buildPedagogicalMigrationBaseline({ conceptId: 'c1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW });
+    const baseline = buildPedagogicalMigrationBaseline({ conceptId: 'c1', studentId: 'student-1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION, isPreexistingLearnerConcept: false });
     const engineDecision = evaluateCanonicalLearningState({ conceptId: 'c1', studentId: 's1', now: NOW, evidence: [], activeCriticalMisconception: true });
     const effective = composeEffectiveMigratedDecision({
       conceptId: 'c1',

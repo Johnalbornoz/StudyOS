@@ -32,6 +32,12 @@ export interface LegacyRecognitionInput {
   masteryPolicy: MasteryPolicy;
   /** Injected, never read from the system clock -- determinism. */
   recognizedAtMigration: string;
+  /** CANON-R4R1 -- part of this recognition's deterministic id, so building the same recognition twice (idempotency, Part 32) always yields the same `RequirementRecognition.id`. */
+  migrationVersion: string;
+}
+
+function makeRecognitionId(studentId: string, conceptId: string, requirement: string, migrationVersion: string): string {
+  return `${studentId}:${conceptId}:${requirement}:${migrationVersion}`;
 }
 
 /**
@@ -41,7 +47,7 @@ export interface LegacyRecognitionInput {
  * own convention of only reporting what qualifies).
  */
 export function evaluateLegacyRecognition(input: LegacyRecognitionInput): RequirementRecognition[] {
-  const { knowledgeState: ks, masteryPolicy: p, recognizedAtMigration } = input;
+  const { knowledgeState: ks, masteryPolicy: p, recognizedAtMigration, migrationVersion } = input;
   if (!ks || ks.masteryState === 'UNKNOWN') return [];
 
   const criticalOk = ks.criticalMisconceptionCount <= p.maximumCriticalMisconceptions;
@@ -55,6 +61,7 @@ export function evaluateLegacyRecognition(input: LegacyRecognitionInput): Requir
   const recognitions: RequirementRecognition[] = [];
   const record = (requirement: RequirementRecognition['requirement'], reasonCode: LegacyRecognitionReasonCode) => {
     recognitions.push({
+      id: makeRecognitionId(ks.studentId, ks.conceptId, requirement, migrationVersion),
       requirement,
       status: 'SATISFIED',
       basis: 'LEGACY_POLICY_RECOGNITION',
