@@ -14,6 +14,15 @@
  * consistent with the closed-loop principle that priority is always
  * recomputed fresh, never trusted stale from the client.
  *
+ * CANON-R5 Part 12 -- "the most important integration": when
+ * `CANONICAL_ENGINE_V1_ENABLED` is on (Preview only), this endpoint
+ * calls `getCanonicalPedagogicalDecision` FRESH for `actionConceptId`
+ * instead of the legacy Phase 3C path, and enforces its `actionState`
+ * server-side -- the client still supplies only `{studentId,
+ * actionConceptId}`, never a mode/stage, so there is nothing here for a
+ * client to override. A canonical read failure returns a controlled
+ * error (Part 28) rather than silently falling back to Phase 3C.
+ *
  * Request body:
  *   { studentId: string (uuid), actionConceptId: string (uuid) }
  */
@@ -24,6 +33,13 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getLearningDecisions } from '@/services/adaptive-learning-orchestrator.service';
 import { startLearningSession } from '@/services/learning-session-engine.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+  resolveCanonicalLaunch,
+  resolveConceptSubjectForStudent,
+} from '@/lib/pedagogical-decision';
 
 const StartSessionSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -48,6 +64,39 @@ export async function POST(request: NextRequest) {
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'You do not have permission to start a session for this student' }, { status: 403 });
+    }
+
+    if (isCanonicalEngineV1Enabled()) {
+      const owned = await resolveConceptSubjectForStudent(validated.actionConceptId, validated.studentId);
+      if (!owned) {
+        return NextResponse.json(
+          { error: 'NOT_FOUND', message: 'Concept does not belong to this student.' },
+          { status: 404 }
+        );
+      }
+
+      let decisionResult;
+      try {
+        decisionResult = await getCanonicalPedagogicalDecision({ studentId: validated.studentId, conceptId: validated.actionConceptId });
+      } catch (error) {
+        if (error instanceof CanonicalDecisionUnavailableError) {
+          // Part 28 fail-safe: never fall back to the legacy Phase 3C
+          // authority here -- a controlled error is the honest answer.
+          console.error('Canonical decision unavailable for session start:', error, error.cause);
+          return NextResponse.json(
+            { error: 'CANONICAL_DECISION_UNAVAILABLE', message: 'The canonical pedagogical decision could not be computed.' },
+            { status: 503 }
+          );
+        }
+        throw error;
+      }
+
+      const session = resolveCanonicalLaunch({
+        subjectId: owned.subjectId,
+        conceptId: validated.actionConceptId,
+        decision: decisionResult.decision,
+      });
+      return NextResponse.json({ success: true, data: { session, authority: 'CANONICAL_ENGINE_V1' } });
     }
 
     const preferredLanguage = await getInterfaceLanguage(validated.studentId);

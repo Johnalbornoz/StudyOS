@@ -28,6 +28,13 @@ import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 import { getTwinMemorySignal } from './memory-read.service';
 import { getConceptKnowledgeState, getActiveMasteryPolicy } from './knowledge-state.service';
 import { isZeroGapPracticeMismatch } from '@/lib/lx/evidence-sufficiency-contract';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  resolveCanonicalLaunch,
+  CanonicalDecisionUnavailableError,
+  type CanonicalLearningSession,
+} from '@/lib/pedagogical-decision';
 
 /** The SAME three LearningState values deriveLearnerJourneyStage's own REINFORCE rule keys off -- never inferred from mastery/understanding alone (LX-9R8 PART A2). */
 const REINFORCE_LEARNING_STATES = new Set(['MISCONCEPTION_BLOCKED', 'PREREQUISITE_BLOCKED', 'NEEDS_REPAIR']);
@@ -71,6 +78,22 @@ export interface LearningOSSnapshot {
    * never offer this CTA.
    */
   nextExecutableItemZeroGapBlocked: boolean;
+  /**
+   * CANON-R5 Part 9 -- when the feature gate is on and `nextExecutableItem`
+   * exists, a FRESH canonical decision for that one concept (never for
+   * the whole ranked list -- the ranking itself is Phase 3C/3D's, not
+   * the engine's, per Part 9's own framing: "the concept shown" is still
+   * legacy-selected, only "the action" for it must be canonical). `null`
+   * when the gate is off, there is no `nextExecutableItem`, or the
+   * canonical read itself failed (Part 28: a failed canonical read never
+   * silently reverts Today to trusting the legacy activityType/waiting
+   * flags below as if they were still authoritative for THIS item --
+   * callers must treat `canonicalOverride === null` under a truthy gate
+   * as "unknown," never as "legacy is fine").
+   */
+  canonicalOverride: CanonicalLearningSession | null;
+  /** True only when the gate is on AND the canonical override read failed for `nextExecutableItem` -- see `canonicalOverride`'s own doc comment. */
+  canonicalOverrideReadFailed: boolean;
   /** Presentation-only: concept id -> display label/subject name. Never a priority field, never used for ordering. */
   conceptLabels: Map<string, ConceptDisplayInfo>;
 }
@@ -166,6 +189,26 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
   const conceptIds = decisions.flatMap((d) => [d.actionConceptId, ...d.targetConceptIds]);
   const conceptLabels = await loadConceptLabels(conceptIds, preferredLanguage);
 
+  let canonicalOverride: CanonicalLearningSession | null = null;
+  let canonicalOverrideReadFailed = false;
+  if (nextExecutableItem && isCanonicalEngineV1Enabled()) {
+    try {
+      const { decision } = await getCanonicalPedagogicalDecision({
+        studentId,
+        conceptId: nextExecutableItem.decision.actionConceptId,
+        now: now.toISOString(),
+      });
+      canonicalOverride = resolveCanonicalLaunch({
+        subjectId: nextExecutableItem.decision.subjectId,
+        conceptId: nextExecutableItem.decision.actionConceptId,
+        decision,
+      });
+    } catch (error) {
+      canonicalOverrideReadFailed = true;
+      if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
+    }
+  }
+
   return {
     studentId,
     generatedAt: now.toISOString(),
@@ -175,6 +218,8 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     nextExecutableItemWaiting,
     nextExecutableItemNextEligibleAt,
     nextExecutableItemZeroGapBlocked,
+    canonicalOverride,
+    canonicalOverrideReadFailed,
     conceptLabels,
   };
 }

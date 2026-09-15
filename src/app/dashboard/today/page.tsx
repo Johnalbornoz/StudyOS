@@ -173,7 +173,17 @@ export default async function TodayPage() {
   // identical contradiction unless it applies the same gate. Both flags
   // are computed ONCE inside `getLearningOSSnapshot` itself (never a
   // second memory read added here -- Today stays presentation-only).
-  const bestWaiting = !!best && !!snapshot?.nextExecutableItemWaiting;
+  // CANON-R5 Part 9/28 -- when the canonical engine gate is on,
+  // `canonicalOverride` (a FRESH per-item decision, see
+  // learning-os-snapshot.service.ts) is authoritative for whether this
+  // item is actually actionable right now; the legacy
+  // nextExecutableItemWaiting/ZeroGapBlocked flags are used only as a
+  // fallback when the gate is off. A failed canonical read
+  // (`canonicalOverrideReadFailed`) never falls back to trusting the
+  // legacy flags as if they were still authoritative -- it blocks the
+  // hero instead (the same safe default as an explicit BLOCKED result).
+  const canonicalOverride = snapshot?.canonicalOverride ?? null;
+  const bestWaiting = !!best && (canonicalOverride ? canonicalOverride.launchStatus === 'WAITING' : !!snapshot?.nextExecutableItemWaiting);
   // LX-9R8 PART A1/A5: a PRACTICE/REVIEW decision whose canonical
   // evidence gap is already 0, with no REINFORCE-justified reason to
   // keep practicing, is NOT executable -- computed ONCE inside
@@ -182,7 +192,12 @@ export default async function TodayPage() {
   // a contradiction that should never have reached the learner, so it
   // is treated as "no primary action" (routes to the existing
   // CONSOLIDATED state below), never a distinct card of its own.
-  const bestZeroGapBlocked = !!best && !!snapshot?.nextExecutableItemZeroGapBlocked;
+  const bestZeroGapBlocked = !!best && (
+    canonicalOverride
+      ? canonicalOverride.launchStatus !== 'READY' && canonicalOverride.launchStatus !== 'WAITING'
+      : !!snapshot?.nextExecutableItemZeroGapBlocked || !!snapshot?.canonicalOverrideReadFailed
+  );
+  const bestNextEligibleAt = canonicalOverride?.nextEligibleAt ?? snapshot?.nextExecutableItemNextEligibleAt ?? null;
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
   const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
 
@@ -267,10 +282,10 @@ export default async function TodayPage() {
             {t['conceptMission.noActionRetentionWaitingTitle']}
           </strong>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '4px 0 0', maxWidth: '52ch' }}>
-            {snapshot?.nextExecutableItemNextEligibleAt
+            {bestNextEligibleAt
               ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
                   '{date}',
-                  new Date(snapshot.nextExecutableItemNextEligibleAt).toLocaleDateString(locale),
+                  new Date(bestNextEligibleAt).toLocaleDateString(locale),
                 )
               : t['conceptMission.noActionRetentionWaitingBody']}
           </p>

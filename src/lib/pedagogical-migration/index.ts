@@ -10,6 +10,7 @@
  * docs/CANON_R4R1_PRE_V1_LEARN_BASELINE.md.
  */
 export { V1_POLICY_VERSION, LEGACY_UNVERSIONED } from './types';
+export { INITIAL_MIGRATION_VERSION } from './migration-version';
 export type {
   EffectiveMigratedState,
   EffectiveRequirementView,

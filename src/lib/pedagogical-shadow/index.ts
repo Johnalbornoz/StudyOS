@@ -7,6 +7,7 @@
 export { mapStudyUSEvidenceToPedagogicalEvidence, normalizeScorePercent, fingerprintEvidenceRows } from './evidence-adapter';
 export { fnv1aHex } from './fingerprint';
 export { buildOldCanonicalSnapshot, fetchOldCanonicalSnapshot, type OldCanonicalSnapshotInput } from './old-canonical-snapshot';
+export { fetchStudyUSEvidenceRows } from './evidence-fetch';
 export { buildNewCanonicalSnapshot } from './new-canonical-snapshot';
 export { compareCanonicalDecisions, type ComparatorAdapterMetadata } from './comparator';
 export { buildShadowComparisonRecord } from './shadow-record';

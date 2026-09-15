@@ -100,6 +100,14 @@ export default async function ConceptDetailPage({
     getConceptKnowledgeState(studentId, conceptId),
   ]);
   if (missionResult.status === 'NOT_FOUND') notFound();
+  // CANON-R5 Part 28 fail-safe: the canonical engine gate is on but a
+  // fresh decision could not be computed -- this is deliberately NOT
+  // notFound() (the concept exists) and never silently falls through to
+  // rendering stale/legacy next-action data as if it were still
+  // authoritative. The nearest error boundary renders instead.
+  if (missionResult.status === 'CANONICAL_DECISION_UNAVAILABLE') {
+    throw new Error('CANONICAL_DECISION_UNAVAILABLE');
+  }
   const missionView = missionResult.view;
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 

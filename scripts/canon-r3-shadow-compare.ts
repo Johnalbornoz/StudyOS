@@ -30,10 +30,10 @@ import { getMisconceptionCountsForConcept } from '@/services/misconception.servi
 import {
   mapStudyUSEvidenceToPedagogicalEvidence,
   fetchOldCanonicalSnapshot,
+  fetchStudyUSEvidenceRows,
   buildNewCanonicalSnapshot,
   compareCanonicalDecisions,
   buildShadowComparisonRecord,
-  type StudyUSEvidenceRow,
 } from '@/lib/pedagogical-shadow';
 
 function arg(name: string): string | undefined {
@@ -41,55 +41,12 @@ function arg(name: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-/**
- * Read-only. One SELECT against `learning_evidence`, LEFT JOINed
- * against `decision_events` for the ONE place a real, historical item
- * count (`reason_details->>'sampleSize'`) is actually persisted (see
- * src/services/mastery.service.ts's own `recordDecisionEvent` call --
- * `learning_evidence` itself has no item-count column). Never writes.
- */
-async function loadEvidenceRows(studentId: string, conceptId: string): Promise<StudyUSEvidenceRow[]> {
-  const result = await db.query(
-    `
-    SELECT
-      le.id,
-      le.source_type,
-      le.result,
-      le.score_percent,
-      le.difficulty,
-      le.timestamp,
-      le.hints_used,
-      le.ai_assistance_type,
-      le.metadata->>'activityType' AS activity_type,
-      de.reason_details->>'sampleSize' AS sample_size
-    FROM learning_evidence le
-    LEFT JOIN decision_events de
-      ON de.source_event_type = 'learning_evidence'
-      AND de.source_event_id = le.id
-      AND de.decision_type = 'MASTERY_UPDATED'
-    WHERE le.student_id = $1 AND le.concept_id = $2
-    ORDER BY le.timestamp ASC
-    `,
-    [studentId, conceptId],
-  );
-  return result.rows.map(
-    (row: any): StudyUSEvidenceRow => ({
-      id: row.id,
-      sourceType: row.source_type,
-      result: row.result,
-      scorePercent: row.score_percent !== null ? Number(row.score_percent) : null,
-      difficulty: Number(row.difficulty),
-      timestamp: new Date(row.timestamp).toISOString(),
-      hintsUsed: row.hints_used ?? 0,
-      aiAssistanceType: row.ai_assistance_type ?? 'NONE',
-      activityType: row.activity_type ?? null,
-      itemCount: row.sample_size != null ? Number(row.sample_size) : undefined,
-    }),
-  );
-}
-
 async function compareOneConceptForStudent(studentId: string, conceptId: string, subjectId: string, now: string) {
-  const rows = await loadEvidenceRows(studentId, conceptId);
+  // CANON-R5 Part 7: relocated (byte-identical query) to
+  // `pedagogical-shadow/evidence-fetch.ts` so the canonical decision
+  // service can share the exact same one real-evidence fetch -- no
+  // second mapping from `learning_evidence` was created.
+  const rows = await fetchStudyUSEvidenceRows(studentId, conceptId);
   const adapterResult = mapStudyUSEvidenceToPedagogicalEvidence(rows);
 
   const misconceptionCounts = await getMisconceptionCountsForConcept(studentId, conceptId);

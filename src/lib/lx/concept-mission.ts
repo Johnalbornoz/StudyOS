@@ -89,7 +89,14 @@ export interface ConceptMissionLearningDecision {
   facts: LearningFact[];
 }
 
-export type ConceptMissionJourneySource = 'LEARNING_DECISION' | 'CANONICAL_POLICY_NO_SIGNALS';
+/**
+ * CANON-R5 Part 2/10: `CANONICAL_ENGINE_V1` added -- purely additive
+ * (never produced by this file's own `buildConceptMissionView`, only by
+ * the read-boundary service's post-hoc canonical override, when the
+ * feature gate is on). Names which authority actually decided the
+ * journey the learner sees, per Part 2's ONE AUTHORITY RULE.
+ */
+export type ConceptMissionJourneySource = 'LEARNING_DECISION' | 'CANONICAL_POLICY_NO_SIGNALS' | 'CANONICAL_ENGINE_V1';
 
 /**
  * How the read boundary resolved the canonical learning state. The
@@ -201,7 +208,19 @@ export type ConceptMissionNowKind = 'CANONICAL_ACTION' | 'NO_CANONICAL_ACTION';
  * Engine's own qualitative activity-selection fallthrough never checked
  * this quantitative gap; the Mission must not offer this CTA regardless.
  */
-export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION' | 'RETENTION_WAITING' | 'ZERO_GAP_MISMATCH';
+/**
+ * CANON-R5 Part 10/28: `CANONICAL_ACTION_UNAVAILABLE` added -- purely
+ * additive (no existing code path ever produces it; every `===`
+ * comparison against the other three values in `ConceptMission.tsx`
+ * stays false and safely falls through to that component's own generic
+ * "nothing available" rendering, so legacy behavior is byte-identical).
+ * The canonical decision authority (Part 2) uses this when the fresh
+ * `CanonicalPedagogicalDecision.actionState` is `LOCKED`/`BLOCKED`, or
+ * when it is `EXECUTABLE` but the required v1 generation contract isn't
+ * ready yet (see `pedagogical-decision/activity-launch-readiness.ts`) --
+ * neither has an honest equivalent among the pre-existing values above.
+ */
+export type ConceptMissionNowFallback = 'LEARN_FIRST' | 'CONSOLIDATED_NO_ACTION' | 'RETENTION_WAITING' | 'ZERO_GAP_MISMATCH' | 'CANONICAL_ACTION_UNAVAILABLE';
 
 export interface ConceptMissionNow {
   kind: ConceptMissionNowKind;

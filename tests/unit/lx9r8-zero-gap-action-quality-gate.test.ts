@@ -200,7 +200,13 @@ describe('LX-9R8 5 -- Today cannot offer a zero-gap Practice CTA', () => {
   });
 
   it("Today reads that flag and suppresses the hero CTA -- never re-derives the check itself", () => {
-    expect(TODAY_SRC).toMatch(/bestZeroGapBlocked = !!best && !!snapshot\?\.nextExecutableItemZeroGapBlocked/);
+    // CANON-R5 Part 9: when the canonical engine gate is on and a fresh
+    // per-item override exists, ITS launchStatus is authoritative
+    // instead (see canonicalOverride's own doc comment) -- but with the
+    // gate off (or no override), this is still byte-identical to the
+    // original LX-9R8 computation: `!!snapshot?.nextExecutableItemZeroGapBlocked`.
+    expect(TODAY_SRC).toMatch(/const bestZeroGapBlocked = !!best && \(/);
+    expect(TODAY_SRC).toMatch(/!!snapshot\?\.nextExecutableItemZeroGapBlocked \|\| !!snapshot\?\.canonicalOverrideReadFailed/);
     expect(TODAY_SRC).toMatch(/hasPrimaryAction: !!best && !bestZeroGapBlocked/);
     expect(TODAY_SRC).toMatch(/\{best && \(bestZeroGapBlocked \? null : bestWaiting \?/);
     // Closeout B boundary: Today itself never imports isZeroGapPracticeMismatch -- the computation lives in the service.

@@ -48,10 +48,18 @@ import {
   type ConceptMissionJourneyInput,
   type ConceptMissionView,
 } from '@/lib/lx/concept-mission';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  overrideConceptMissionViewWithCanonicalDecision,
+  CanonicalDecisionUnavailableError,
+} from '@/lib/pedagogical-decision';
 
 export type ConceptMissionViewResult =
   | { status: 'NOT_FOUND' }
-  | { status: 'OK'; view: ConceptMissionView };
+  | { status: 'OK'; view: ConceptMissionView }
+  /** CANON-R5 Part 28 fail-safe: the gate is on but the canonical decision could not be computed -- never silently rendered with the legacy `view` as if it still had next-action authority. */
+  | { status: 'CANONICAL_DECISION_UNAVAILABLE' };
 
 type DecisionRead =
   | { status: 'OK'; decision: Awaited<ReturnType<typeof getBestLearningDecisionForConcept>> }
@@ -202,6 +210,24 @@ export async function getConceptMissionView(
     hasCachedExplanation: (explanationRow.rows?.length ?? 0) > 0,
     masteryPolicy: masteryPolicy ?? null,
   });
+
+  // CANON-R5 Part 2/10 -- ONE AUTHORITY RULE. The legacy `view` above is
+  // still fully computed (Part 3: kept for comparison/diagnostics), but
+  // once the gate is on, next-pedagogical-action authority for this
+  // concept comes from a FRESH Pedagogical Engine v1 decision, never
+  // from the legacy journey/NOW computation above.
+  if (isCanonicalEngineV1Enabled()) {
+    try {
+      const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId });
+      return { status: 'OK', view: overrideConceptMissionViewWithCanonicalDecision(view, decision) };
+    } catch (error) {
+      if (error instanceof CanonicalDecisionUnavailableError) {
+        console.error('[concept-mission] canonical decision unavailable:', error, error.cause);
+        return { status: 'CANONICAL_DECISION_UNAVAILABLE' };
+      }
+      throw error;
+    }
+  }
 
   return { status: 'OK', view };
 }
