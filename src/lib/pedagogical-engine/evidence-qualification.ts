@@ -17,8 +17,16 @@ import type {
   RawEvidenceItem,
 } from './types';
 
-/** Which declared activity type a given stage's qualifying evidence must carry. LEARN has no dedicated quiz-shaped activity in this engine (see ActivityContract's own doc comment) so it is intentionally absent here. */
+/**
+ * Which declared activity type a given stage's qualifying evidence must
+ * carry. CANON-R2R1 Part 4: LEARN now requires its own dedicated
+ * `LEARN_CHECK` activity -- arbitrary evidence (a Practice attempt, a
+ * premature Transfer attempt, a failed Prove) can never satisfy it
+ * merely by existing, superseding CANON-R2's original "any activity
+ * type qualifies LEARN" behavior.
+ */
 const ACTIVITY_TYPE_FOR_STAGE: Partial<Record<PedagogicalStage, PedagogicalActivityType>> = {
+  LEARN: 'LEARN_CHECK',
   PRACTICE: 'PRACTICE',
   PROVE: 'PROVE',
   RETAIN: 'RETENTION_CHECK',
@@ -64,8 +72,17 @@ export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext
   }
 
   switch (targetStage) {
-    case 'LEARN':
+    case 'LEARN': {
+      // CANON-R2R1 Part 3/5: a comprehension checkpoint, never mere
+      // activity existence. The bar is EXCLUSIVE -- exactly 80% still
+      // fails; only a score strictly greater than 80 qualifies.
+      // Assistance is explicitly allowed (no independence check here).
+      const p = CANONICAL_POLICY.learn;
+      if (item.scorePercent <= p.minimumScorePercentExclusive) {
+        return { result: 'DOES_NOT_QUALIFY', reasonCode: 'INSUFFICIENT_SCORE' };
+      }
       return { result: 'QUALIFIES', reasonCode: 'PASSING_SCORE' };
+    }
 
     case 'PRACTICE': {
       const p = CANONICAL_POLICY.practice;
@@ -129,9 +146,17 @@ export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext
       if (item.reasoningProvided === false) {
         return { result: 'DOES_NOT_QUALIFY', reasonCode: 'MISSING_REQUIRED_REASONING' };
       }
-      const hasCompleteFailure = item.perChallengeScores.some((s) => s < p.perChallengeFailureFloor);
+      // CANON-R2R1 Part 1: FINAL product decision, superseding the
+      // implementation-created <50% floor. Every challenge must
+      // independently reach 70% -- no compensation by a stronger
+      // challenge elsewhere -- AND the overall average independently
+      // meets 80%. Neither check alone is sufficient (the spec's own
+      // 100/75/70 example: overall 81.67% >= 80 AND every challenge
+      // >= 70% -> PASS; a 70/70/70 ledger meets the per-challenge floor
+      // but its 70% overall average still FAILS).
+      const hasChallengeBelowFloor = item.perChallengeScores.some((s) => s < p.perChallengeMinimumScorePercent);
       const overall = item.perChallengeScores.reduce((a, b) => a + b, 0) / item.perChallengeScores.length;
-      if (hasCompleteFailure || overall < p.minimumOverallScorePercent) {
+      if (hasChallengeBelowFloor || overall < p.minimumOverallScorePercent) {
         return { result: 'DOES_NOT_QUALIFY', reasonCode: 'FAILED_ATTEMPT' };
       }
       return { result: 'QUALIFIES', reasonCode: 'PASSING_SCORE' };

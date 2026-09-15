@@ -93,6 +93,21 @@ export interface RawEvidenceItem {
   reasoningProvided?: boolean;
   /** RETENTION_CHECK attempts only: whether the item set was genuinely novel (never previously seen by this learner) -- required for a Retention attempt to even be eligible for qualification. */
   novel?: boolean;
+  /**
+   * CANON-R2R1 Part 2 -- TRANSFER attempts only. An EXPLICIT diagnostic
+   * signal, never inferred by this engine from `perChallengeScores`
+   * alone, that the underlying Prove/Retention-level competency is no
+   * longer demonstrated (a foundational procedural/conceptual failure,
+   * not merely a weak application of intact knowledge). Produced by
+   * evidence dimensions outside a bare per-challenge score pattern --
+   * e.g. procedural-correctness sub-scoring from a diagnostic evaluator
+   * -- which is out of scope for this isolated engine to compute itself.
+   * Absent or `false` defaults to the more conservative Case A
+   * (application-weak) diagnosis; see `engine.ts`'s Transfer rollback
+   * handling and the CANON-R2R1 report's TRANSFER FAILURE DIAGNOSIS
+   * section for why a numeric score alone must never drive this.
+   */
+  transferFoundationalFailureIndicated?: boolean;
 }
 
 export interface PedagogicalEngineInput {
@@ -119,6 +134,9 @@ export interface RequirementResult {
   status: RequirementStatus;
   qualifyingEvidenceCount: number;
   nonQualifyingEvidenceCount: number;
+  /** CANON-R2R1 Part 28: opaque `RawEvidenceItem.id` values only -- never learner answer text, question text, or other free-form content. */
+  qualifyingEvidenceIds: string[];
+  nonQualifyingEvidenceIds: string[];
   reasonCodes: EvidenceQualificationReasonCode[];
   /** Present only when status === 'WAITING'. */
   waitingUntil: string | null;
@@ -145,38 +163,112 @@ export interface RollbackDecision {
   reasonCodes: EvidenceQualificationReasonCode[];
 }
 
+/**
+ * CANON-R2R1 Part 13/16 -- the closed vocabulary every evidence-driven
+ * difficulty decision cites. Naming may evolve; the DISTINCTIONS below
+ * (default vs. increase vs. maintained vs. decrease vs.
+ * misconception-driven, and their Prove/Retention/Transfer/Reinforce
+ * analogs) must never collapse into a single generic code -- a consumer
+ * (and this module's own tests) must be able to tell WHY a target was
+ * chosen, not just what it is.
+ */
+export type DifficultyReasonCode =
+  | 'LEARN_UNDERSTANDING_ONLY'
+  | 'PRACTICE_DEFAULT_DIFFICULTY'
+  | 'PRACTICE_SUCCESS_DIFFICULTY_INCREASE'
+  | 'PRACTICE_DIFFICULTY_MAINTAINED'
+  | 'PRACTICE_LOW_PERFORMANCE_DIFFICULTY_DECREASE'
+  | 'PRACTICE_MISCONCEPTION_REINFORCEMENT'
+  | 'PROVE_DIFFICULTY_FROM_QUALIFYING_PRACTICE'
+  | 'RETENTION_MATCHES_QUALIFYING_PROVE_DIFFICULTY'
+  | 'TRANSFER_BASE_DIFFICULTY'
+  | 'TRANSFER_ADVANCED_DIFFICULTY_SUPPORTED'
+  | 'REINFORCE_DERIVED_FROM_PRACTICE_GAP';
+
 export interface DifficultyDecision {
   target: number;
   min: number;
   max: number;
-  reasonCode: string;
+  reasonCode: DifficultyReasonCode;
 }
 
 export interface ActivityContract {
   activityType: PedagogicalActivityType;
-  /** null for LEARN (an explanation surface, not a scored evidence-producing quiz) and CONSOLIDATED (no activity). */
+  /** null for LEARN (no canonical item-count authority exists for the comprehension check -- never an invented number) and CONSOLIDATED (no activity). */
   itemCount: { min: number; max: number } | null;
   difficulty: DifficultyDecision;
   independence: boolean;
   supportLevel: 'ASSISTED' | 'NONE';
-  /** null for LEARN. */
+  /** null only for CONSOLIDATED. LEARN's own bar (80, EXCLUSIVE -- see `qualifyEvidence`) is still reported numerically here for the generation system's benefit; the exclusivity itself lives in the qualification logic, not this field. */
   minimumScorePercent: number | null;
   evidenceContract: string;
   noveltyRequirements?: 'NOVEL_ITEMS_REQUIRED';
   transferDepth?: TransferChallengeDepth[];
 }
 
+/**
+ * CANON-R2R1 Part 21 -- a closed enum every consumer can branch on
+ * directly; never inferred from `stage` alone (a RETAIN stage might be
+ * WAITING or EXECUTABLE, and consumers must not have to know that).
+ */
+export type ActionState = 'EXECUTABLE' | 'WAITING' | 'LOCKED' | 'CONSOLIDATED' | 'BLOCKED';
+
+/** CANON-R2R1 Part 22 -- a semantic pedagogical action only. Never a URL, API route, or React navigation target -- routing stays entirely external to this engine. */
+export type NextCanonicalAction = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETENTION_CHECK' | 'TRANSFER' | 'NONE';
+
+/** CANON-R2R1 Part 23. */
+export type WaitingReason = 'RETENTION_MINIMUM_INTERVAL_NOT_REACHED';
+
+/**
+ * CANON-R2R1 Part 28 -- a safe, serializable evidence-qualification
+ * summary per requirement. Deliberately the SAME data already carried on
+ * `RequirementResult` (qualification is qualification -- there is no
+ * second, independently-computed notion of "qualified evidence" this
+ * engine tracks); exposed under its own name because the spec calls for
+ * both `requirements` and `qualifiedEvidence` as named output fields.
+ * Never includes learner answer text, question text, or other free-form
+ * content -- only opaque evidence ids and reason codes.
+ */
+export interface QualifiedEvidenceSummary {
+  requirement: Exclude<PedagogicalStage, 'CONSOLIDATED'>;
+  status: RequirementStatus;
+  qualifyingEvidenceIds: string[];
+  nonQualifyingEvidenceIds: string[];
+  reasonCodes: EvidenceQualificationReasonCode[];
+}
+
 export interface CanonicalPedagogicalDecision {
   policyVersion: string;
+  /**
+   * CANON-R2R1 Part 25 -- a deterministic fingerprint of the exact
+   * pedagogical input state that produced this decision (policyVersion,
+   * conceptId, studentId, a normalized evidence fingerprint,
+   * activeCriticalMisconception, and the injected `now`). Never a random
+   * UUID, never persisted by this module, never containing learner
+   * answer/question text or other PII (Part 26) -- see `engine.ts`'s
+   * `computeCanonicalRevision`.
+   */
+  canonicalRevision: string;
   conceptId: string;
   studentId: string;
+  /** The first unsatisfied requirement, or CONSOLIDATED when every requirement is SATISFIED and no critical misconception blocks it. */
+  stage: PedagogicalStage;
+  /** @deprecated Compatibility alias for `stage` (identical value) -- kept because CANON-R2 code and its own tests already reference `currentStage`. Prefer `stage` in new code. */
+  currentStage: PedagogicalStage;
+  actionState: ActionState;
+  nextCanonicalAction: NextCanonicalAction;
   /** Ordered LEARN..TRANSFER -- always all five, regardless of stage reached. */
   requirements: RequirementResult[];
-  /** The first unsatisfied requirement, or CONSOLIDATED when every requirement is SATISFIED and no critical misconception blocks it. */
-  currentStage: PedagogicalStage;
+  qualifiedEvidence: QualifiedEvidenceSummary[];
   activityContract: ActivityContract | null;
+  /** Present only when actionState === 'WAITING'. */
+  waitingReason: WaitingReason | null;
+  /** Present only when actionState === 'WAITING' and a temporal gate produced a concrete date. */
+  nextEligibleAt: string | null;
   intervention: 'REINFORCE' | null;
   rollback: RollbackDecision | null;
   reasonCodes: EvidenceQualificationReasonCode[];
+  /** CANON-R2R1 Part 27 -- the already-approved fixed stage-anchor percentage (mirrored from `src/lib/lx/journey-progress.ts`'s own anchors, not imported -- see MODULE DEPENDENCY RULES). Follows `stage` exactly; premature evidence can never raise it. */
+  journeyProgressPercent: number;
   computedAt: string;
 }

@@ -1,26 +1,38 @@
 /**
- * CANON-R2 -- ActivityContractPolicy: the ONE authority that turns "what
- * stage/intervention is the learner at" into the numeric contract the
- * (existing, unmodified) generation system must honor. This module
- * NEVER decides how to generate a question, which model to call, or
- * how to grade one -- it only states the contract those systems consume
- * (Performance Firewall / Prompt Firewall -- see CANON_R2 report).
+ * CANON-R2 / CANON-R2R1 -- ActivityContractPolicy: the ONE authority
+ * that turns "what stage/intervention is the learner at, plus their
+ * evidence-derived difficulty" into the contract the (existing,
+ * unmodified) generation system must honor. This module NEVER decides
+ * how to generate a question, which model to call, or how to grade one
+ * -- it only states the contract those systems consume (Performance
+ * Firewall / Prompt Firewall -- see the CANON-R2/CANON-R2R1 reports).
+ *
+ * CANON-R2R1 Part 18: difficulty is no longer computed here as a static
+ * stage-only midpoint -- the caller (`engine.ts`) resolves it from
+ * evidence via `difficulty-policy.ts` and passes the resolution in. This
+ * module's own job stays unchanged: item counts, independence,
+ * support level, minimum score, and the evidence contract label.
  */
 import { CANONICAL_POLICY } from './policy';
 import type { ActivityContract, PedagogicalStage } from './types';
+import type { DifficultyResolution } from './difficulty-policy';
 
-function mid(min: number, max: number): number {
-  return Math.round((min + max) / 2);
-}
+/** Pure. Deterministic. `intervention` always wins when active -- REINFORCE is an overlay, never a journey stage (see engine.ts). `difficulty` is always the caller's already-resolved, evidence-driven decision -- this function never derives one of its own. */
+export function buildActivityContract(
+  stage: PedagogicalStage,
+  intervention: 'REINFORCE' | null,
+  difficulty: DifficultyResolution,
+): ActivityContract | null {
+  if (intervention !== 'REINFORCE' && stage === 'CONSOLIDATED') return null;
 
-/** Pure. Deterministic. `intervention` always wins when active -- REINFORCE is an overlay, never a journey stage (see engine.ts). */
-export function buildActivityContract(stage: PedagogicalStage, intervention: 'REINFORCE' | null): ActivityContract | null {
+  const d = CANONICAL_POLICY[intervention === 'REINFORCE' ? 'reinforce' : stageDifficultyKey(stage)].difficulty;
+  const difficultyDecision = { target: difficulty.target, min: d.min, max: d.max, reasonCode: difficulty.reasonCode };
+
   if (intervention === 'REINFORCE') {
-    const d = CANONICAL_POLICY.reinforce.difficulty;
     return {
       activityType: 'REINFORCE',
       itemCount: { min: CANONICAL_POLICY.practice.minItems, max: CANONICAL_POLICY.practice.maxItems },
-      difficulty: { target: mid(d.min, d.max), min: d.min, max: d.max, reasonCode: 'REINFORCE_INTERVENTION' },
+      difficulty: difficultyDecision,
       independence: false,
       supportLevel: 'ASSISTED',
       minimumScorePercent: CANONICAL_POLICY.practice.minimumScorePercent,
@@ -29,24 +41,26 @@ export function buildActivityContract(stage: PedagogicalStage, intervention: 'RE
   }
 
   switch (stage) {
-    case 'LEARN': {
-      const d = CANONICAL_POLICY.learn.difficulty;
+    case 'LEARN':
       return {
         activityType: 'LEARN_CHECK',
+        // No canonical item-count authority exists for the comprehension
+        // check -- never an invented number (matches this codebase's
+        // established "UNRESOLVED, not a manufactured count" principle,
+        // e.g. evidence-sufficiency-contract.ts).
         itemCount: null,
-        difficulty: { target: mid(d.min, d.max), min: d.min, max: d.max, reasonCode: 'LEARN_UNDERSTANDING_ONLY' },
+        difficulty: difficultyDecision,
         independence: false,
         supportLevel: 'ASSISTED',
-        minimumScorePercent: null,
-        evidenceContract: 'UNDERSTANDING_ONLY_NOT_MASTERY',
+        minimumScorePercent: CANONICAL_POLICY.learn.minimumScorePercentExclusive,
+        evidenceContract: 'LEARN_COMPREHENSION_CHECK_SCORE_EXCLUSIVE_ABOVE_80',
       };
-    }
     case 'PRACTICE': {
       const p = CANONICAL_POLICY.practice;
       return {
         activityType: 'PRACTICE',
         itemCount: { min: p.minItems, max: p.maxItems },
-        difficulty: { target: mid(p.difficulty.min, p.difficulty.max), min: p.difficulty.min, max: p.difficulty.max, reasonCode: 'PRACTICE_ADAPTIVE' },
+        difficulty: difficultyDecision,
         independence: false,
         supportLevel: 'ASSISTED',
         minimumScorePercent: p.minimumScorePercent,
@@ -58,7 +72,7 @@ export function buildActivityContract(stage: PedagogicalStage, intervention: 'RE
       return {
         activityType: 'PROVE',
         itemCount: { min: p.itemCount, max: p.itemCount },
-        difficulty: { target: mid(p.difficulty.min, p.difficulty.max), min: p.difficulty.min, max: p.difficulty.max, reasonCode: 'PROVE_INDEPENDENT_DEMONSTRATION' },
+        difficulty: difficultyDecision,
         independence: true,
         supportLevel: 'NONE',
         minimumScorePercent: p.minimumScorePercent,
@@ -70,7 +84,7 @@ export function buildActivityContract(stage: PedagogicalStage, intervention: 'RE
       return {
         activityType: 'RETENTION_CHECK',
         itemCount: { min: p.itemCount, max: p.itemCount },
-        difficulty: { target: mid(p.difficulty.min, p.difficulty.max), min: p.difficulty.min, max: p.difficulty.max, reasonCode: 'RETENTION_COMPARABLE_TO_QUALIFYING_PROVE' },
+        difficulty: difficultyDecision,
         independence: true,
         supportLevel: 'NONE',
         minimumScorePercent: p.minimumScorePercent,
@@ -83,16 +97,40 @@ export function buildActivityContract(stage: PedagogicalStage, intervention: 'RE
       return {
         activityType: 'TRANSFER',
         itemCount: { min: p.challengeCount, max: p.challengeCount },
-        difficulty: { target: mid(p.difficulty.min, p.difficulty.max), min: p.difficulty.min, max: p.difficulty.max, reasonCode: 'TRANSFER_STRUCTURED_CHALLENGES' },
+        difficulty: difficultyDecision,
         independence: true,
         supportLevel: 'NONE',
         minimumScorePercent: p.minimumOverallScorePercent,
-        evidenceContract: 'TRANSFER_NO_COMPLETE_CHALLENGE_FAILURE',
+        evidenceContract: 'TRANSFER_NO_COMPLETE_CHALLENGE_FAILURE_EACH_CHALLENGE_MIN_70',
         transferDepth: [...p.depths],
       };
     }
     case 'CONSOLIDATED':
       return null;
+    default: {
+      const _exhaustive: never = stage;
+      return _exhaustive;
+    }
+  }
+}
+
+function stageDifficultyKey(stage: PedagogicalStage): 'learn' | 'practice' | 'prove' | 'retention' | 'transfer' | 'reinforce' {
+  switch (stage) {
+    case 'LEARN':
+      return 'learn';
+    case 'PRACTICE':
+      return 'practice';
+    case 'PROVE':
+      return 'prove';
+    case 'RETAIN':
+      return 'retention';
+    case 'TRANSFER':
+      return 'transfer';
+    case 'CONSOLIDATED':
+      // CONSOLIDATED never reaches the difficulty lookup (buildActivityContract
+      // returns null for it before any contract is built) -- 'reinforce' is
+      // an arbitrary but harmless placeholder to keep this function total.
+      return 'reinforce';
     default: {
       const _exhaustive: never = stage;
       return _exhaustive;

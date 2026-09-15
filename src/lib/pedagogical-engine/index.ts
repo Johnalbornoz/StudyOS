@@ -21,21 +21,36 @@ export type { EvidenceQualificationVerdict, QualificationContext } from './evide
 
 export { buildActivityContract } from './activity-contract';
 
+export {
+  resolveLearnDifficulty,
+  resolvePracticeDifficulty,
+  resolveProveDifficulty,
+  resolveReinforceDifficulty,
+  resolveRetentionDifficulty,
+  resolveTransferDifficulty,
+} from './difficulty-policy';
+export type { DifficultyResolution } from './difficulty-policy';
+
 export { evaluateCanonicalLearningState, rebuildConceptCanonicalState, STAGE_ORDER } from './engine';
 
 export type {
+  ActionState,
   ActivityContract,
   CanonicalPedagogicalDecision,
   DifficultyDecision,
+  DifficultyReasonCode,
   EvidenceQualificationReasonCode,
   EvidenceQualificationResult,
+  NextCanonicalAction,
   PedagogicalActivityType,
   PedagogicalEngineInput,
   PedagogicalStage,
+  QualifiedEvidenceSummary,
   RawEvidenceItem,
   RequirementResult,
   RequirementStatus,
   RollbackCase,
   RollbackDecision,
   TransferChallengeDepth,
+  WaitingReason,
 } from './types';

@@ -3,6 +3,26 @@
  * matrix (10 categories, ~80 tests) from the CANON-R2 spec. Every test
  * exercises the REAL, unmocked engine (`src/lib/pedagogical-engine/`) --
  * no DB, no React, no Next.js, no AI provider, no browser.
+ *
+ * CANON-R2R1 UPDATE: two CANON-R2 product rules were superseded by
+ * CANON-R2R1's final product decisions, and this file's fixtures/
+ * assertions are updated accordingly (never mechanically weakened --
+ * see each inline comment for the specific reasoning):
+ *   - LEARN no longer qualifies from arbitrary evidence (any activity
+ *     type). It now requires a dedicated `LEARN_CHECK` attempt scoring
+ *     strictly above 80%. Every fixture that previously relied on a bare
+ *     Practice/Prove/Transfer attempt to also satisfy LEARN now
+ *     explicitly includes a `learnCheckItem(...)` in its evidence.
+ *   - Transfer's per-challenge floor moved from an implementation-created
+ *     <50% "complete failure" threshold to a final product decision:
+ *     every challenge must independently score >=70%. The Case B
+ *     (foundational failure) diagnosis is no longer inferred from that
+ *     floor at all -- it now requires an explicit, non-score-based
+ *     `transferFoundationalFailureIndicated: true` signal (CANON-R2R1
+ *     Part 2); a low score alone defaults to the more conservative
+ *     Case A.
+ * The full CANON-R2R1-specific test matrix (Parts 29-33 of that spec)
+ * lives in its own file, tests/unit/canon-r2r1-engine-contract-closure.test.ts.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
@@ -14,10 +34,18 @@ import {
   POLICY_VERSION,
   qualifyEvidence,
   buildActivityContract,
+  resolveLearnDifficulty,
+  resolvePracticeDifficulty,
+  resolveProveDifficulty,
+  resolveRetentionDifficulty,
+  resolveTransferDifficulty,
+  resolveReinforceDifficulty,
   STAGE_ORDER,
   type RawEvidenceItem,
   type PedagogicalEngineInput,
   type CanonicalPedagogicalDecision,
+  type PedagogicalStage,
+  type DifficultyResolution,
 } from '@/lib/pedagogical-engine';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
@@ -49,6 +77,14 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
     ...overrides,
   };
 }
+
+/** CANON-R2R1 Part 3/4: the ONE activity type that can satisfy LEARN. */
+function learnCheckItem(ts: string, score = 90): RawEvidenceItem {
+  return item({ activityType: 'LEARN_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 1.5, independent: false });
+}
+
+/** A single shared, reused, never-mutated LEARN_CHECK evidence item, dated safely before every other fixture's own timeline (2025-12-31) so it never disturbs existing day-numbering in this file. Prepend it to any evidence array that needs PRACTICE (and beyond) reachable. */
+const LEARNED_ITEM = learnCheckItem('2025-12-31T00:00:00.000Z', 90);
 
 function practiceItem(ts: string, score = 90): RawEvidenceItem {
   return item({ activityType: 'PRACTICE', timestamp: ts, itemCount: 3, correctCount: Math.round((score / 100) * 3), scorePercent: score, difficulty: 3, independent: false });
@@ -97,15 +133,33 @@ function transferItem(ts: string, perChallengeScores: number[], opts: Partial<Ra
   });
 }
 
-/** A fully-qualified progression up to (and including) a passing Prove, anchored at day 0. Used as a shared starting ledger for RETAIN/TRANSFER tests. */
+/** A fully-qualified progression -- LEARN, then Practice, then a passing Prove, anchored at day 0. Used as a shared starting ledger for RETAIN/TRANSFER tests. */
 function provenLedger(): RawEvidenceItem[] {
-  return [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90)];
+  return [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90)];
 }
 
 function requirement(decision: CanonicalPedagogicalDecision, stage: string) {
   const r = decision.requirements.find((x) => x.stage === stage);
   if (!r) throw new Error(`no requirement for ${stage}`);
   return r;
+}
+
+/** Real, correctly-ranged difficulty resolutions per stage, for the Difficulty Authority tests below -- never a placeholder target that could fall outside that stage's own [min,max] (which would make Test 56 meaningless). */
+function difficultyFor(stage: PedagogicalStage): DifficultyResolution {
+  switch (stage) {
+    case 'LEARN':
+      return resolveLearnDifficulty();
+    case 'PRACTICE':
+      return resolvePracticeDifficulty([]);
+    case 'PROVE':
+      return resolveProveDifficulty(null);
+    case 'RETAIN':
+      return resolveRetentionDifficulty(null);
+    case 'TRANSFER':
+      return resolveTransferDifficulty({ qualifyingProveDifficulty: null, qualifyingRetentionScore: null, activeCriticalMisconception: false });
+    case 'CONSOLIDATED':
+      return resolveLearnDifficulty();
+  }
 }
 
 describe('CANON-R2 Engine Isolation (1-7)', () => {
@@ -147,7 +201,7 @@ describe('CANON-R2 Engine Isolation (1-7)', () => {
   });
 
   it('6. is deterministic: identical input produces a deep-equal decision across repeated calls', () => {
-    const input = baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] });
+    const input = baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)] });
     const a = evaluateCanonicalLearningState(input);
     const b = evaluateCanonicalLearningState(input);
     expect(a).toEqual(b);
@@ -167,33 +221,33 @@ describe('CANON-R2 Practice (8-13)', () => {
     expect(decision.currentStage).toBe('LEARN');
   });
 
-  it('9. a single qualifying Practice attempt (score >= 80, difficulty in [2,4]) satisfies PRACTICE', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+  it('9. a single qualifying Practice attempt (score >= 80, difficulty in [2,4]) satisfies PRACTICE, once LEARN is satisfied', () => {
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
     expect(requirement(decision, 'PRACTICE').status).toBe('SATISFIED');
     expect(decision.currentStage).toBe('PROVE');
   });
 
   it('10. a below-threshold Practice score does not qualify', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 60)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 60)] }));
     expect(requirement(decision, 'PRACTICE').status).toBe('UNSATISFIED');
     expect(requirement(decision, 'PRACTICE').reasonCodes).toContain('INSUFFICIENT_SCORE');
   });
 
   it('11. a Practice attempt outside the canonical difficulty range [2,4] does not qualify', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 95), item({ activityType: 'PRACTICE', difficulty: 5, scorePercent: 95 })] }));
-    // the second, out-of-range item never becomes the ONLY evidence; verify a purely out-of-range ledger fails alone
-    const onlyOutOfRange = evaluateCanonicalLearningState(baseInput({ evidence: [item({ activityType: 'PRACTICE', difficulty: 1, scorePercent: 95 })] }));
+    const onlyOutOfRange = evaluateCanonicalLearningState(
+      baseInput({ evidence: [LEARNED_ITEM, item({ activityType: 'PRACTICE', difficulty: 1, scorePercent: 95 })] }),
+    );
     expect(requirement(onlyOutOfRange, 'PRACTICE').status).toBe('UNSATISFIED');
   });
 
   it('12. Practice allows assistance (independent: false) -- it is never required to be independent', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 85)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 85)] }));
     expect(requirement(decision, 'PRACTICE').status).toBe('SATISFIED');
   });
 
   it('13. only qualifying Practice attempts count toward qualifyingEvidenceCount -- non-qualifying attempts are tallied separately, never discarded', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 50), practiceItem('2026-01-02T00:00:00.000Z', 90)] }),
+      baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 50), practiceItem('2026-01-02T00:00:00.000Z', 90)] }),
     );
     const r = requirement(decision, 'PRACTICE');
     expect(r.qualifyingEvidenceCount).toBe(1);
@@ -204,13 +258,13 @@ describe('CANON-R2 Practice (8-13)', () => {
 
 describe('CANON-R2 Prove (14-22)', () => {
   it('14. PROVE is LOCKED while PRACTICE is unsatisfied', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 50)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 50)] }));
     expect(requirement(decision, 'PROVE').status).toBe('LOCKED');
   });
 
   it('15. a Prove attempt with fewer than 10 items is UNRESOLVED, never silently treated as a pass or fail', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90, { itemCount: 8 })] }),
+      baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90, { itemCount: 8 })] }),
     );
     expect(requirement(decision, 'PROVE').status).toBe('UNSATISFIED');
     expect(requirement(decision, 'PROVE').reasonCodes).toContain('UNRESOLVED_POLICY');
@@ -218,7 +272,9 @@ describe('CANON-R2 Prove (14-22)', () => {
 
   it('16. Prove requires independence -- an assisted attempt never qualifies regardless of score', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 100, { independent: false })] }),
+      baseInput({
+        evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 100, { independent: false })],
+      }),
     );
     expect(requirement(decision, 'PROVE').status).toBe('UNSATISFIED');
     expect(requirement(decision, 'PROVE').reasonCodes).toContain('ASSISTED_WHEN_INDEPENDENCE_REQUIRED');
@@ -226,14 +282,14 @@ describe('CANON-R2 Prove (14-22)', () => {
 
   it('17. Prove requires difficulty in [3,4]', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 2 })] }),
+      baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 2 })] }),
     );
     expect(requirement(decision, 'PROVE').status).toBe('UNSATISFIED');
   });
 
   it('18. exactly 8/10 (80%) qualifies as a passing Prove', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 80)] }),
+      baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 80)] }),
     );
     expect(requirement(decision, 'PROVE').status).toBe('SATISFIED');
     expect(decision.currentStage).toBe('RETAIN');
@@ -241,7 +297,7 @@ describe('CANON-R2 Prove (14-22)', () => {
 
   it('19. exactly 7/10 (70%) is a FAILED_ATTEMPT and rolls back to PRACTICE', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 70)] }),
+      baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 70)] }),
     );
     // PROVE is LOCKED (not merely UNSATISFIED) because its own
     // prerequisite -- PRACTICE -- was just invalidated by this failure.
@@ -256,6 +312,7 @@ describe('CANON-R2 Prove (14-22)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         evidence: [
+          LEARNED_ITEM,
           practiceItem('2026-01-01T00:00:00.000Z', 90),
           proveItem('2026-01-02T00:00:00.000Z', 70),
           // A second Prove immediately after the failure, before any repair Practice, must NOT qualify -- PRACTICE is unsatisfied again.
@@ -271,6 +328,7 @@ describe('CANON-R2 Prove (14-22)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         evidence: [
+          LEARNED_ITEM,
           practiceItem('2026-01-01T00:00:00.000Z', 90),
           proveItem('2026-01-02T00:00:00.000Z', 70),
           practiceItem('2026-01-03T00:00:00.000Z', 90),
@@ -291,7 +349,7 @@ describe('CANON-R2 Prove (14-22)', () => {
 
 describe('CANON-R2 Retention (23-33)', () => {
   it('23. RETAIN is LOCKED without a qualified Prove', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
     expect(requirement(decision, 'RETAIN').status).toBe('LOCKED');
   });
 
@@ -412,15 +470,16 @@ describe('CANON-R2 Transfer (34-43)', () => {
     expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
   });
 
-  it('38. the spec\'s own 100/100/20 example FAILS Transfer (a single complete challenge failure fails the attempt even though the average alone might seem borderline)', () => {
+  it("38. CANON-R2R1: the spec's own 100/100/20 example still FAILS Transfer under the new 70% per-challenge floor (a single challenge below 70% fails the attempt regardless of the overall average) -- it now defaults to Case A (application-weak) rather than the superseded automatic Case B, since no explicit foundational-failure signal was supplied", () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [100, 100, 20])], now: '2026-01-10T00:00:00.000Z' }),
     );
     expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
     expect(requirement(decision, 'TRANSFER').reasonCodes).toContain('FAILED_ATTEMPT');
+    expect(decision.rollback?.case).toBe('CASE_A_TRANSFER_APPLICATION_WEAK');
   });
 
-  it('39. an overall >=80% attempt with no challenge below the failure floor SATISFIES Transfer and reaches CONSOLIDATED', () => {
+  it('39. an overall >=80% attempt with every challenge >=70% SATISFIES Transfer and reaches CONSOLIDATED', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 85, 80])], now: '2026-01-10T00:00:00.000Z' }),
     );
@@ -439,7 +498,7 @@ describe('CANON-R2 Transfer (34-43)', () => {
     expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
   });
 
-  it('41. Case A (application-weak, knowledge intact): a partial failure keeps Prove/Retention valid and only requires a Transfer-focused retry', () => {
+  it('41. Case A (application-weak, knowledge intact) is the DEFAULT diagnosis for any Transfer failure with no explicit foundational signal: Prove/Retention remain valid and only a Transfer-focused retry is required', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 55, 90])], now: '2026-01-10T00:00:00.000Z' }),
     );
@@ -450,14 +509,26 @@ describe('CANON-R2 Transfer (34-43)', () => {
     expect(decision.intervention).toBe('REINFORCE');
   });
 
-  it('42. Case B (foundational failure): every challenge below the failure floor rolls all the way back to PRACTICE, invalidating Prove and Retention', () => {
+  it('42. CANON-R2R1 Part 2: Case B (foundational failure) is superseded from an automatic "<50% on every challenge" inference -- it now requires an EXPLICIT `transferFoundationalFailureIndicated` signal, never a numeric score pattern alone, before rolling all the way back to PRACTICE', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10])], now: '2026-01-10T00:00:00.000Z' }),
+      baseInput({
+        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10], { transferFoundationalFailureIndicated: true })],
+        now: '2026-01-10T00:00:00.000Z',
+      }),
     );
     expect(decision.rollback?.case).toBe('CASE_B_FOUNDATIONAL_FAILURE');
     expect(requirement(decision, 'PROVE').status).toBe('LOCKED');
     expect(requirement(decision, 'RETAIN').status).toBe('LOCKED');
     expect(decision.currentStage).toBe('PRACTICE');
+  });
+
+  it('42b. CANON-R2R1 Part 2 regression guard: that SAME [20,30,10] score pattern WITHOUT the explicit foundational signal defaults to Case A -- proving low scores alone never imply foundational rollback', () => {
+    const decision = evaluateCanonicalLearningState(
+      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10])], now: '2026-01-10T00:00:00.000Z' }),
+    );
+    expect(decision.rollback?.case).toBe('CASE_A_TRANSFER_APPLICATION_WEAK');
+    expect(requirement(decision, 'PROVE').status).toBe('SATISFIED');
+    expect(requirement(decision, 'RETAIN').status).toBe('SATISFIED');
   });
 
   it('43. Case C (critical misconception during Transfer) rolls back to the first invalidated requirement (PRACTICE)', () => {
@@ -475,7 +546,7 @@ describe('CANON-R2 Transfer (34-43)', () => {
 
 describe('CANON-R2 Journey (44-50)', () => {
   it('44. currentStage is always the first unsatisfied requirement, in canonical order', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
     expect(decision.currentStage).toBe('PROVE');
   });
 
@@ -511,61 +582,66 @@ describe('CANON-R2 Journey (44-50)', () => {
   it('48. REINFORCE never appears as a value of currentStage -- it is an intervention overlay only', () => {
     const decisions = [
       evaluateCanonicalLearningState(baseInput()),
-      evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 70)] })),
+      evaluateCanonicalLearningState(
+        baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 70)] }),
+      ),
     ];
     for (const d of decisions) {
       expect(['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER', 'CONSOLIDATED']).toContain(d.currentStage);
     }
+    // The second decision specifically exercises a genuine Prove failure
+    // and rollback (LEARN satisfied via LEARNED_ITEM) -- confirm REINFORCE
+    // shows up only as `intervention`, never as `currentStage`.
+    expect(decisions[1].intervention).toBe('REINFORCE');
+    expect(decisions[1].currentStage).toBe('PRACTICE');
   });
 
-  it('49. premature evidence (an attempt for a not-yet-reached stage) never advances currentStage past what real progress supports, and is recorded as PREMATURE_STAGE_EVIDENCE, not deleted', () => {
+  it("49. CANON-R2R1 Part 3: premature Transfer evidence can NO LONGER satisfy LEARN's own trivial bar (superseding CANON-R2's original 'any evidence satisfies LEARN' behavior) -- with no LEARN_CHECK attempt anywhere in the ledger, currentStage correctly stays at LEARN itself, and the premature Transfer attempt is still recorded (PREMATURE_STAGE_EVIDENCE), never deleted", () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [transferItem('2026-01-01T00:00:00.000Z', [100, 100, 100])] }),
     );
-    // The premature Transfer attempt is still real engagement (LEARN's
-    // own trivial bar), so LEARN is satisfied by it -- but it can never
-    // itself satisfy TRANSFER, PROVE, or RETAIN: currentStage correctly
-    // lands on PRACTICE, five stages away from the attempted TRANSFER.
-    expect(decision.currentStage).toBe('PRACTICE');
+    expect(decision.currentStage).toBe('LEARN');
+    expect(requirement(decision, 'LEARN').status).toBe('UNSATISFIED');
+    expect(requirement(decision, 'LEARN').reasonCodes).toContain('WRONG_ACTIVITY_TYPE');
     expect(requirement(decision, 'TRANSFER').status).toBe('LOCKED');
     expect(requirement(decision, 'TRANSFER').reasonCodes).toContain('PREMATURE_STAGE_EVIDENCE');
     expect(requirement(decision, 'TRANSFER').nonQualifyingEvidenceCount).toBe(1);
   });
 
   it('50. the evidence ledger passed in is never mutated by the engine', () => {
-    const evidence = Object.freeze([practiceItem('2026-01-01T00:00:00.000Z', 90)]);
+    const evidence = Object.freeze([LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)]);
     expect(() => evaluateCanonicalLearningState(baseInput({ evidence: evidence as RawEvidenceItem[] }))).not.toThrow();
   });
 });
 
 describe('CANON-R2 Difficulty Authority (51-56)', () => {
   it('51. LEARN contract difficulty range is [1,2]', () => {
-    const c = buildActivityContract('LEARN', null);
+    const c = buildActivityContract('LEARN', null, difficultyFor('LEARN'));
     expect(c?.difficulty).toMatchObject({ min: 1, max: 2 });
   });
 
   it('52. PRACTICE contract difficulty range is [2,4]', () => {
-    const c = buildActivityContract('PRACTICE', null);
+    const c = buildActivityContract('PRACTICE', null, difficultyFor('PRACTICE'));
     expect(c?.difficulty).toMatchObject({ min: 2, max: 4 });
   });
 
   it('53. PROVE and RETAIN contract difficulty ranges are both [3,4]', () => {
-    expect(buildActivityContract('PROVE', null)?.difficulty).toMatchObject({ min: 3, max: 4 });
-    expect(buildActivityContract('RETAIN', null)?.difficulty).toMatchObject({ min: 3, max: 4 });
+    expect(buildActivityContract('PROVE', null, difficultyFor('PROVE'))?.difficulty).toMatchObject({ min: 3, max: 4 });
+    expect(buildActivityContract('RETAIN', null, difficultyFor('RETAIN'))?.difficulty).toMatchObject({ min: 3, max: 4 });
   });
 
   it('54. TRANSFER contract difficulty range is [4,5]', () => {
-    expect(buildActivityContract('TRANSFER', null)?.difficulty).toMatchObject({ min: 4, max: 5 });
+    expect(buildActivityContract('TRANSFER', null, difficultyFor('TRANSFER'))?.difficulty).toMatchObject({ min: 4, max: 5 });
   });
 
   it('55. REINFORCE contract difficulty range is [1,3], regardless of which stage triggered it', () => {
-    expect(buildActivityContract('PRACTICE', 'REINFORCE')?.difficulty).toMatchObject({ min: 1, max: 3 });
-    expect(buildActivityContract('PROVE', 'REINFORCE')?.difficulty).toMatchObject({ min: 1, max: 3 });
+    expect(buildActivityContract('PRACTICE', 'REINFORCE', resolveReinforceDifficulty(2))?.difficulty).toMatchObject({ min: 1, max: 3 });
+    expect(buildActivityContract('PROVE', 'REINFORCE', resolveReinforceDifficulty(4))?.difficulty).toMatchObject({ min: 1, max: 3 });
   });
 
   it('56. every contract difficulty target lies within its own [min,max]', () => {
     for (const stage of ['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'] as const) {
-      const c = buildActivityContract(stage, null);
+      const c = buildActivityContract(stage, null, difficultyFor(stage));
       expect(c!.difficulty.target).toBeGreaterThanOrEqual(c!.difficulty.min);
       expect(c!.difficulty.target).toBeLessThanOrEqual(c!.difficulty.max);
     }
@@ -574,26 +650,26 @@ describe('CANON-R2 Difficulty Authority (51-56)', () => {
 
 describe('CANON-R2 Cross-Surface Consistency (57-63)', () => {
   it('57. evaluateCanonicalLearningState and rebuildConceptCanonicalState produce identical output for equivalent input', () => {
-    const args = { conceptId: 'c1', studentId: 's1', evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)], activeCriticalMisconception: false, now: '2026-01-01T00:00:00.000Z' };
+    const args = { conceptId: 'c1', studentId: 's1', evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)], activeCriticalMisconception: false, now: '2026-01-01T00:00:00.000Z' };
     expect(rebuildConceptCanonicalState(args)).toEqual(evaluateCanonicalLearningState(args));
   });
 
   it('58. the decision is stable under JSON serialization (every surface reading the same payload sees the same truth)', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
     expect(JSON.parse(JSON.stringify(decision))).toEqual(decision);
   });
 
-  it('59. two different (conceptId, studentId) pairs with identical evidence produce structurally identical decisions apart from the id fields', () => {
-    const evidence = [practiceItem('2026-01-01T00:00:00.000Z', 90)];
+  it('59. two different (conceptId, studentId) pairs with identical evidence produce structurally identical decisions apart from the id/canonicalRevision fields', () => {
+    const evidence = [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)];
     const a = evaluateCanonicalLearningState(baseInput({ conceptId: 'concept-A', studentId: 'student-A', evidence }));
     const b = evaluateCanonicalLearningState(baseInput({ conceptId: 'concept-B', studentId: 'student-B', evidence }));
-    const { conceptId: _a, studentId: _sa, ...restA } = a;
-    const { conceptId: _b, studentId: _sb, ...restB } = b;
+    const { conceptId: _a, studentId: _sa, canonicalRevision: _ra, ...restA } = a;
+    const { conceptId: _b, studentId: _sb, canonicalRevision: _rb, ...restB } = b;
     expect(restA).toEqual(restB);
   });
 
   it('60. evidence order in the input array does not affect the decision -- the engine sorts by timestamp itself', () => {
-    const evidence = [proveItem('2026-01-02T00:00:00.000Z', 90), practiceItem('2026-01-01T00:00:00.000Z', 90)];
+    const evidence = [proveItem('2026-01-02T00:00:00.000Z', 90), LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90)];
     const forward = evaluateCanonicalLearningState(baseInput({ evidence }));
     const reversed = evaluateCanonicalLearningState(baseInput({ evidence: [...evidence].reverse() }));
     expect(forward).toEqual(reversed);
@@ -673,10 +749,11 @@ describe('CANON-R2 Recalculation (73-80)', () => {
     expect(ev).toEqual(snapshot);
   });
 
-  it("75. Radicación regression case: history TRANSFER 0%, PRACTICE 0%, PRACTICE 0%, PRACTICE 33% resolves to PRACTICE as the first unresolved requirement, never RETAIN or TRANSFER", () => {
+  it("75. Radicación regression case: history TRANSFER 0%, PRACTICE 0%, PRACTICE 0%, PRACTICE 33% resolves to PRACTICE as the first unresolved requirement, never RETAIN or TRANSFER (a plausible prior LEARN_CHECK pass is included -- CANON-R2R1's stricter Learn policy requires one explicitly, and nothing in the reported symptom contradicts the student having passed initial comprehension before these Practice attempts)", () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         evidence: [
+          LEARNED_ITEM,
           // A premature Transfer attempt exists in history -- it can
           // never itself satisfy Transfer (Invariant), and Retain/Prove
           // were never even attempted.
@@ -716,7 +793,7 @@ describe('CANON-R2 Recalculation (73-80)', () => {
   });
 
   it('79. a large, mixed evidence ledger (200 items) completes and produces a consistent, well-formed decision', () => {
-    const evidence: RawEvidenceItem[] = [];
+    const evidence: RawEvidenceItem[] = [LEARNED_ITEM];
     for (let i = 0; i < 200; i++) {
       evidence.push(practiceItem(new Date(2026, 0, 1 + i).toISOString(), i % 2 === 0 ? 90 : 40));
     }
@@ -726,9 +803,21 @@ describe('CANON-R2 Recalculation (73-80)', () => {
   });
 
   it('80. adding a new, later PROVE attempt does not change the already-settled PRACTICE tally -- incremental recalculation only affects downstream state', () => {
-    const before = evaluateCanonicalLearningState(baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+    // A fixed id so "before" and "after" reference the identical Practice
+    // attempt object, not two randomly-id'd lookalikes.
+    const stablePractice = item({
+      id: 'stable-practice-1',
+      activityType: 'PRACTICE',
+      timestamp: '2026-01-01T00:00:00.000Z',
+      itemCount: 3,
+      correctCount: 3,
+      scorePercent: 90,
+      difficulty: 3,
+      independent: false,
+    });
+    const before = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED_ITEM, stablePractice] }));
     const after = evaluateCanonicalLearningState(
-      baseInput({ evidence: [practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90)] }),
+      baseInput({ evidence: [LEARNED_ITEM, stablePractice, proveItem('2026-01-02T00:00:00.000Z', 90)] }),
     );
     expect(after.requirements.find((r) => r.stage === 'PRACTICE')).toEqual(before.requirements.find((r) => r.stage === 'PRACTICE'));
   });

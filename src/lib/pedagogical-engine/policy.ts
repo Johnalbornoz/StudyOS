@@ -18,6 +18,16 @@ export const CANONICAL_POLICY = {
   version: POLICY_VERSION,
   learn: {
     difficulty: { min: 1, max: 2 } as DifficultyRange,
+    /**
+     * CANON-R2R1: LEARN is a comprehension checkpoint (a passed LEARN
+     * check quiz), never mere activity existence. The bar is EXCLUSIVE
+     * -- exactly 80% still fails, only a score strictly greater than 80
+     * qualifies (product decision, CANON-R2R1 Part 5). Named
+     * `...Exclusive` rather than reusing `minimumScorePercent` so the
+     * comparison operator (`>`, never `>=`) is never ambiguous at a call
+     * site.
+     */
+    minimumScorePercentExclusive: 80,
   },
   practice: {
     minItems: 2,
@@ -45,8 +55,15 @@ export const CANONICAL_POLICY = {
     depths: ['NEAR', 'CONTEXTUAL', 'HIGHER'] as const,
     difficulty: { min: 4, max: 5 } as DifficultyRange,
     minimumOverallScorePercent: 80,
-    /** Below this on any single challenge, the challenge counts as a complete failure regardless of the overall average (documented policy decision -- CANON-R2 report §TRANSFER, the spec's own 100/100/20 example). */
-    perChallengeFailureFloor: 50,
+    /**
+     * CANON-R2R1 Part 1 -- FINAL product decision, superseding CANON-R2's
+     * implementation-created 50% floor. Every one of the 3 challenges
+     * must independently score >=70%; no challenge may be compensated
+     * below 70% by stronger performance elsewhere, and the >=80% overall
+     * average is checked independently and in addition to this
+     * per-challenge floor -- neither check alone is sufficient.
+     */
+    perChallengeMinimumScorePercent: 70,
     independenceRequired: true,
   },
   reinforce: {
