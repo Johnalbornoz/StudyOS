@@ -34,16 +34,18 @@ export function buildPedagogicalMigrationBaseline(params: {
   recognizedAtMigration: string;
   migrationVersion: string;
   /**
-   * CANON-R4R1 Part 0/5/6 -- the FINAL product decision's own gate:
-   * true only when authoritative StudyUS data shows this EXACT
-   * (studentId, conceptId) pair already existed in the learner's
-   * history/state before the v1 cutover (Part 5's own population
-   * query -- never "the concept exists in the global content
-   * catalog"). Deliberately a SEPARATE input from `knowledgeState`
-   * (which drives the higher-stage ladder, Parts 9-16, unchanged from
-   * CANON-R4): a pair can be "preexisting" via raw
-   * `learning_evidence` even in an edge case where no Concept
-   * Knowledge State projection exists for some other reason.
+   * CANON-R4R1A -- the FINAL product decision's own gate (corrected):
+   * true only when this EXACT (studentId, conceptId) pair's `concepts`
+   * row was already loaded/assigned for the learner (via its owning
+   * `subjects.student_id`) before the v1 cutover -- REGARDLESS of
+   * whether any `learning_evidence` exists for it (see
+   * `preexisting-learner-concept.ts`'s own module header for the full
+   * schema grounding). `learning_evidence` plays NO role in this
+   * determination. Deliberately a SEPARATE input from `knowledgeState`
+   * (which still drives the unchanged higher-stage ladder, Parts 9-16
+   * from CANON-R4) -- a concept can be "preexisting" (LEARN-eligible)
+   * with a completely null `knowledgeState` (zero evidence ever
+   * recorded), which is precisely CANON-R4R1A's own corrected case.
    */
   isPreexistingLearnerConcept: boolean;
   /** True only when the OLD canonical read itself failed for a concept known to have activity -- distinct from a concept that was legitimately never attempted (Part 39's DATA_GAP vs. NO_RECOGNITION_REQUIRED). */

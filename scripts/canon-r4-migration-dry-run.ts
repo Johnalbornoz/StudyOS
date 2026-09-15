@@ -46,12 +46,20 @@ function arg(name: string): string | undefined {
 }
 
 async function dryRunOneConcept(studentId: string, conceptId: string, now: string, migrationVersion: string, cutoverAt: string) {
-  const [knowledgeState, masteryPolicy, earliestRow] = await Promise.all([
+  // CANON-R4R1A: "loaded for this learner" is `concepts.created_at`
+  // (via the concept's own owning subject -- see
+  // preexisting-learner-concept.ts's module header for the full schema
+  // grounding), NEVER `learning_evidence` -- a concept the student has
+  // never attempted must still be found here.
+  const [knowledgeState, masteryPolicy, loadedRow] = await Promise.all([
     getConceptKnowledgeState(studentId, conceptId),
     getActiveMasteryPolicy(),
-    db.query(`SELECT MIN(timestamp) AS earliest FROM learning_evidence WHERE student_id = $1 AND concept_id = $2`, [studentId, conceptId]),
+    db.query(
+      `SELECT c.created_at AS loaded_at FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE c.id = $1 AND s.student_id = $2`,
+      [conceptId, studentId],
+    ),
   ]);
-  const earliestEvidenceAt: string | null = earliestRow.rows[0]?.earliest ? new Date(earliestRow.rows[0].earliest).toISOString() : null;
+  const loadedAt: string | null = loadedRow.rows[0]?.loaded_at ? new Date(loadedRow.rows[0].loaded_at).toISOString() : null;
 
   const baseline = buildPedagogicalMigrationBaseline({
     conceptId,
@@ -60,7 +68,7 @@ async function dryRunOneConcept(studentId: string, conceptId: string, now: strin
     masteryPolicy,
     recognizedAtMigration: now,
     migrationVersion,
-    isPreexistingLearnerConcept: isPreexistingLearnerConcept(earliestEvidenceAt, cutoverAt),
+    isPreexistingLearnerConcept: isPreexistingLearnerConcept(loadedAt, cutoverAt),
   });
 
   // No real v1-qualifying evidence is fabricated or assumed here -- an
@@ -123,7 +131,12 @@ async function main() {
   }
 
   if (allConcepts) {
-    const concepts = await db.query(`SELECT DISTINCT concept_id FROM learning_evidence WHERE student_id = $1`, [studentId]);
+    // CANON-R4R1A: enumerate from `concepts JOIN subjects` (the real
+    // loaded-for-learner population), NEVER from `learning_evidence` --
+    // the old `DISTINCT concept_id FROM learning_evidence` enumeration
+    // would silently skip every concept this student has loaded but
+    // never attempted, exactly the bug this phase fixes.
+    const concepts = await db.query(`SELECT c.id AS concept_id FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE s.student_id = $1`, [studentId]);
     const results = [];
     for (const row of concepts.rows) {
       results.push(await dryRunOneConcept(studentId, row.concept_id, now, migrationVersion, cutoverAt));

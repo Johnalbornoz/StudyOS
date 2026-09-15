@@ -77,8 +77,22 @@ async function main() {
   console.log(`  cutoverAt          ${cutoverAt}`);
   console.log(`  migrationVersion   ${migrationVersion}`);
 
-  const pairs: PreexistingLearnerConceptPair[] = await loadPreexistingLearnerConceptPairs(cutoverAt, studentId);
-  console.log(`  preexistingPairs   ${pairs.length}`);
+  // CANON-R4R1A Part 13/17: population source is `concepts JOIN
+  // subjects` (loaded-for-learner), NEVER `learning_evidence` -- see
+  // preexisting-learner-concept.ts's own module header. `includeEvidenceFlag:
+  // true` additionally annotates each pair for the required zero-evidence
+  // breakdown below, for reporting only -- it never affects eligibility.
+  const pairs: PreexistingLearnerConceptPair[] = await loadPreexistingLearnerConceptPairs(cutoverAt, studentId, true);
+  const withEvidence = pairs.filter((p) => p.hasHistoricalEvidence === true).length;
+  const zeroEvidence = pairs.length - withEvidence;
+  const distinctLearners = new Set(pairs.map((p) => p.studentId)).size;
+  const distinctConcepts = new Set(pairs.map((p) => p.conceptId)).size;
+
+  console.log(`  totalSnapshotPairs      ${pairs.length}`);
+  console.log(`  pairsWithEvidence       ${withEvidence}`);
+  console.log(`  pairsWithZeroEvidence   ${zeroEvidence}`);
+  console.log(`  distinctLearners        ${distinctLearners}`);
+  console.log(`  distinctConcepts        ${distinctConcepts}`);
 
   const existingKeys = await loadExistingRecognitionKeys(migrationVersion);
 
