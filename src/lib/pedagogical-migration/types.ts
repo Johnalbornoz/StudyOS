@@ -35,8 +35,18 @@ export interface MigrationPolicy {
   cutoverAt: string | null;
 }
 
-/** CANON-R4 Part 18 -- kept structurally distinct from `EvidenceQualificationReasonCode` (the pure engine's own vocabulary) so a consumer can never confuse "this requirement was satisfied by real qualifying v1 evidence" with "this requirement was recognized from legacy history." */
-export type QualificationBasis = 'V1_EVIDENCE' | 'LEGACY_POLICY_RECOGNITION';
+/**
+ * CANON-R4 Part 18 -- kept structurally distinct from
+ * `EvidenceQualificationReasonCode` (the pure engine's own vocabulary)
+ * so a consumer can never confuse "this requirement was satisfied by
+ * real qualifying v1 evidence" with "this requirement was recognized
+ * from legacy history." CANON-R4R1B: widened to include
+ * `LEGACY_MIGRATION_BASELINE` (CANON-R4R1's own one-time preexisting-pair
+ * LEARN basis) -- this type had predated that basis value and was
+ * silently collapsing it into `LEGACY_POLICY_RECOGNITION` wherever a
+ * consumer used it (see `effective-decision.ts`'s own fix).
+ */
+export type QualificationBasis = 'V1_EVIDENCE' | 'LEGACY_MIGRATION_BASELINE' | 'LEGACY_POLICY_RECOGNITION';
 
 /** CANON-R4 Part 1 -- the ONE explicit vocabulary for why a legacy requirement was (or was not) recognized. Never a bespoke ad hoc string. */
 export type LegacyRecognitionReasonCode =

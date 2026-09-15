@@ -40,17 +40,24 @@ export function composeEffectiveMigratedDecision(params: {
   activeCriticalMisconception: boolean;
 }): EffectiveMigratedState {
   const { conceptId, studentId, engineDecision, migrationBaseline, activeCriticalMisconception } = params;
-  const recognizedSet = new Set(migrationBaseline.recognizedRequirements.map((r) => r.requirement));
+  // CANON-R4R1B fix: keyed by requirement -> the recognition's OWN
+  // record (not merely a membership Set) so its REAL `basis` field
+  // (`LEGACY_MIGRATION_BASELINE` or `LEGACY_POLICY_RECOGNITION`) is
+  // preserved verbatim, never collapsed into one hardcoded legacy
+  // value -- the exact bug a live Preview validation of Radicación
+  // exposed (a real `LEGACY_MIGRATION_BASELINE` DB row was reported
+  // here as `LEGACY_POLICY_RECOGNITION`).
+  const recognitionByRequirement = new Map(migrationBaseline.recognizedRequirements.map((r) => [r.requirement, r]));
 
   const perRequirement: EffectiveRequirementView[] = STAGE_ORDER.map((requirement) => {
     const engineRequirement = engineDecision.requirements.find((r) => r.stage === requirement);
     const satisfiedByV1Evidence = engineRequirement?.status === 'SATISFIED';
-    const satisfiedByLegacyRecognition = recognizedSet.has(requirement);
-    const satisfied = satisfiedByV1Evidence || satisfiedByLegacyRecognition;
+    const legacyRecognition = recognitionByRequirement.get(requirement);
+    const satisfied = satisfiedByV1Evidence || legacyRecognition != null;
     return {
       requirement,
       satisfied,
-      basis: satisfiedByV1Evidence ? 'V1_EVIDENCE' : satisfiedByLegacyRecognition ? 'LEGACY_POLICY_RECOGNITION' : null,
+      basis: satisfiedByV1Evidence ? 'V1_EVIDENCE' : legacyRecognition ? legacyRecognition.basis : null,
     };
   });
 
