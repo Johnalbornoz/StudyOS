@@ -111,8 +111,20 @@ export function shouldAskConfidence(input: {
   // on a specific mode string other than cumulative/exam (line below),
   // so this is a pure type-widening with zero behavior change; Prove
   // gets the exact same confidence-calibration treatment quick_check
-  // (its own independent-check sibling) already gets.
-  quizMode: 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'canonical_prove';
+  // (its own independent-check sibling) already gets. CANON-V2-ARCH-CLEANUP:
+  // 'canonical_retain'/'canonical_transfer'/'canonical_learn_check' added
+  // for the identical reason.
+  quizMode:
+    | 'topic_practice'
+    | 'review'
+    | 'quick_check'
+    | 'retention_check'
+    | 'cumulative_assessment'
+    | 'exam_simulation'
+    | 'canonical_prove'
+    | 'canonical_retain'
+    | 'canonical_transfer'
+    | 'canonical_learn_check';
   hasExistingMasteryRecord: boolean;
   masteryScore: number | null;
   independentMastery: number | null;

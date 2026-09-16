@@ -29,7 +29,30 @@ export type QuizMode =
    * (`verifyV1PracticeLaunchMarker`); no legitimate legacy caller ever
    * requests it.
    */
-  | 'canonical_prove';
+  | 'canonical_prove'
+  /**
+   * CANON-V2-ARCH-CLEANUP -- the distinct, server-only mode for the
+   * exact-10, independent, NOVEL canonical v1 Retain check. Never an
+   * alias for legacy `retention_check` (which stays fixed at 6 items,
+   * completely untouched) -- same "new distinct mode, same
+   * ActivityType/EvidenceMode, new server-only generation path" pattern
+   * `canonical_prove` already established for Prove.
+   */
+  | 'canonical_retain'
+  /**
+   * CANON-V2-ARCH-CLEANUP -- the ONE canonical v1 Transfer mode: exactly
+   * 3 structured challenges (NEAR/CONTEXTUAL/HIGHER), D4-5, independent.
+   * No legacy Transfer mode exists to alias -- this is a wholly new,
+   * server-only generation path.
+   */
+  | 'canonical_transfer'
+  /**
+   * CANON-V2-ARCH-CLEANUP -- the ONE canonical v1 LEARN comprehension
+   * checkpoint: a dedicated, assisted quiz whose ONLY purpose is
+   * verifying genuine understanding (>80% exclusive), never a generic
+   * practice/quiz relabeled after the fact.
+   */
+  | 'canonical_learn_check';
 
 /**
  * Phase 3A: the Quiz/Activity Engine's own Activity Type per quiz
@@ -58,6 +81,14 @@ export const ACTIVITY_TYPE_BY_QUIZ_MODE: Record<QuizMode, ActivityType> = {
   exam_simulation: 'MOCK_EXAM',
   diagnostic_check: 'DIAGNOSTIC_CHECK',
   canonical_prove: 'SOLO_CHECK',
+  // CANON-V2-ARCH-CLEANUP: canonical_retain reuses the SAME
+  // RETENTION_CHECK ActivityType (EvidenceMode INDEPENDENT) legacy
+  // retention_check already uses -- new mode, new item count, same
+  // ActivityType/EvidenceMode/AI-permission rule, exactly the
+  // canonical_prove precedent.
+  canonical_retain: 'RETENTION_CHECK',
+  canonical_transfer: 'TRANSFER',
+  canonical_learn_check: 'LEARN_CHECK',
 };
 
 export function activityTypeForQuizMode(quizMode: QuizMode): ActivityType {

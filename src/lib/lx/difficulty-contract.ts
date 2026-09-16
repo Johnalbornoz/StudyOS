@@ -180,7 +180,16 @@ export type ActivityTypeLike =
   | 'TRANSFER'
   | 'RETENTION_CHECK'
   | 'CUMULATIVE_ASSESSMENT'
-  | 'MOCK_EXAM';
+  | 'MOCK_EXAM'
+  /**
+   * CANON-V2-ARCH-CLEANUP: this LEGACY authority is never actually
+   * consulted for a genuinely v1-authorized canonical_learn_check
+   * request (the server-derived v1EffectiveDifficulty override always
+   * wins downstream, same as every other canonical_* mode) -- included
+   * here only so this union stays total; falls through to this
+   * function's own `default` branch (LEGACY_GENERATION_DIFFICULTY_DEFAULT).
+   */
+  | 'LEARN_CHECK';
 
 export type TargetDifficultyReasonCode =
   | 'REMEDIATION_REBUILD'

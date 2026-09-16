@@ -41,7 +41,7 @@ export const EVIDENCE_SUFFICIENCY_CONTRACT_VERSION = 2 as const;
  * new taxonomy; only used to name which canonical authority owns the
  * count when it is UNRESOLVED.
  */
-export type EvidencePurpose = 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER' | 'DIAGNOSE' | 'ASSESS';
+export type EvidencePurpose = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER' | 'DIAGNOSE' | 'ASSESS';
 
 export function evidencePurposeForActivity(activityType: ActivityType): EvidencePurpose {
   switch (activityType) {
@@ -61,6 +61,8 @@ export function evidencePurposeForActivity(activityType: ActivityType): Evidence
     case 'CUMULATIVE_ASSESSMENT':
     case 'MOCK_EXAM':
       return 'ASSESS';
+    case 'LEARN_CHECK':
+      return 'LEARN';
     default: {
       const _exhaustive: never = activityType;
       return _exhaustive;
@@ -100,7 +102,8 @@ export type UnresolvedCountOwner =
   | 'PHASE_6_RETENTION'
   | 'PHASE_7_TRANSFER'
   | 'COGNITIVE_DIAGNOSIS'
-  | 'ASSESSMENT_BLUEPRINT';
+  | 'ASSESSMENT_BLUEPRINT'
+  | 'PEDAGOGICAL_ENGINE_V1';
 
 export type QuestionCountDecision =
   | {
@@ -261,6 +264,22 @@ export function deriveEvidenceRequirement(inputs: EvidenceRequirementInputs): Ev
           'No canonical topic x weight assessment blueprint exists (LX-0 / LX-1). Assessment question structure requires an assessment-blueprint authority (LX-10). `conceptCount x 2` was an invented heuristic and has been removed.',
       };
       rationale.push('assess: UNRESOLVED -- no assessment blueprint authority exists');
+      break;
+    }
+    case 'LEARN': {
+      // CANON-V2-ARCH-CLEANUP: the Pedagogical Engine v1 itself owns
+      // LEARN's own item-count authority, and deliberately reports none
+      // (`ActivityContract.itemCount: null` for LEARN -- "no canonical
+      // item-count authority exists for the comprehension check, never
+      // an invented number"). This legacy authority never invents one
+      // either.
+      questionCount = {
+        status: 'UNRESOLVED',
+        owner: 'PEDAGOGICAL_ENGINE_V1',
+        reason:
+          'The canonical Pedagogical Engine v1 owns LEARN and deliberately reports no item count for its comprehension checkpoint (ActivityContract.itemCount: null) -- no count is invented here either.',
+      };
+      rationale.push('learn: UNRESOLVED -- the canonical engine states no count');
       break;
     }
     default: {

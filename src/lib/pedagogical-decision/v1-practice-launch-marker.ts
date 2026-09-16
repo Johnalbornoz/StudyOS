@@ -34,7 +34,7 @@
  * constants).
  */
 import { V1_POLICY_VERSION } from '@/lib/pedagogical-migration';
-import type { PedagogicalStage } from '@/lib/pedagogical-engine';
+import type { PedagogicalStage, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import { getCanonicalPedagogicalDecision, CanonicalDecisionUnavailableError } from './canonical-decision.service';
 import { resolveV1PracticeEligibility, resolveAuthorizedItemCount } from './canonical-session-launch';
 
@@ -60,7 +60,7 @@ export interface V1PracticeLaunchMarker {
   pedagogicalPolicyVersion: typeof V1_POLICY_VERSION;
   canonicalRevision: string;
   canonicalStage: PedagogicalStage;
-  canonicalActivityType: 'PRACTICE' | 'REINFORCE' | 'PROVE';
+  canonicalActivityType: PedagogicalActivityType | 'REINFORCE';
   /** Directly from `activityContract.itemCount` -- `max` is the deterministic single value the server requests from the generator (resolveAuthorizedItemCount). */
   itemCount: { min: number; max: number; authorized: number };
   /** Directly from `activityContract.difficulty` -- `target` is the value the server sends to the generator; `min`/`max` bound what an ACTUAL administered attempt may fall within (Part 10/12). */
@@ -123,10 +123,11 @@ export async function verifyV1PracticeLaunchMarker(params: {
     independence: contract.independence,
     supportLevel: contract.supportLevel,
     // `ActivityContract.minimumScorePercent` is `number | null` only for
-    // LEARN/CONSOLIDATED (neither ever reaches here -- eligibility above
-    // already restricts to PRACTICE/REINFORCE/PROVE, both of which
-    // always carry a real value) -- 80 is a defensive fallback only,
-    // never a value this code path can actually need in practice.
+    // CONSOLIDATED (never reaches here -- CONSOLIDATED's actionState is
+    // never 'EXECUTABLE', already filtered above) -- every other
+    // reachable canonical activity type, LEARN_CHECK included, always
+    // carries a real value. 80 is a defensive fallback only, never a
+    // value this code path can actually need in practice.
     minimumScorePercent: contract.minimumScorePercent ?? 80,
   };
 }

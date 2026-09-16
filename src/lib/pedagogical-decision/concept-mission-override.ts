@@ -105,18 +105,26 @@ function buildCanonicalJourney(decision: CanonicalPedagogicalDecision): ConceptM
 }
 
 /**
- * PRACTICE, the REINFORCE overlay, and (as of CANON-R6) PROVE reach a
- * real v1 launch today (activity-launch-readiness.ts). PRACTICE/REINFORCE
- * present as the existing 'PRACTICE' ActivityType (the same shape
- * REINFORCE already rendered pre-CANON-R5); PROVE presents as
- * 'SOLO_CHECK' -- the SAME legacy ActivityType `quick_check` already
- * uses for an independent check, and the SAME mapping CANON-R3's own
- * evidence adapter already treats as PROVE's real-world analog. Never
+ * CANON-V2-ARCH-CLEANUP -- every canonical activity type now has a real
+ * v1 launch (canonical-implementation-registry.ts is total). PRACTICE
+ * and the REINFORCE overlay present as the existing 'PRACTICE'
+ * ActivityType (the same shape REINFORCE already rendered pre-CANON-R5);
+ * PROVE presents as 'SOLO_CHECK' -- the SAME legacy ActivityType
+ * `quick_check` already uses for an independent check, and the SAME
+ * mapping CANON-R3's own evidence adapter already treats as PROVE's
+ * real-world analog. RETENTION_CHECK/TRANSFER/LEARN_CHECK present as
+ * their own identically-named `ActivityType` (a 1:1 mapping already
+ * exists for these three -- no legacy relabeling needed). Never
  * hardcoded to 'PRACTICE' regardless of the real activity, which would
- * mislabel a genuine independent Prove CTA as an assisted Practice one.
+ * mislabel a genuine independent/Transfer/Retain CTA as an assisted
+ * Practice one.
  */
 function toLegacyActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): ActivityType {
-  return activityType === 'PROVE' ? 'SOLO_CHECK' : 'PRACTICE';
+  if (activityType === 'PROVE') return 'SOLO_CHECK';
+  if (activityType === 'RETENTION_CHECK') return 'RETENTION_CHECK';
+  if (activityType === 'TRANSFER') return 'TRANSFER';
+  if (activityType === 'LEARN_CHECK') return 'LEARN_CHECK';
+  return 'PRACTICE';
 }
 
 function buildCanonicalNow(decision: CanonicalPedagogicalDecision): ConceptMissionNow {
@@ -133,12 +141,14 @@ function buildCanonicalNow(decision: CanonicalPedagogicalDecision): ConceptMissi
   // actionState === 'EXECUTABLE'.
   const activityType = decision.intervention === 'REINFORCE' ? 'REINFORCE' : decision.activityContract?.activityType;
   if (!activityType || !resolveV1ActivityLaunchReadiness(activityType).ready) {
-    // Either no contract at all (should not occur for EXECUTABLE), or a
-    // real v1 activity the existing generation infra cannot yet honor
-    // (Prove/Retention exact-10, Transfer's 3-challenge structure,
-    // LEARN_CHECK) -- Part 18/33's own "never silently fall back to a
-    // legacy activity" rule, applied here to presentation as well as to
-    // session start.
+    // No contract at all (should not occur for EXECUTABLE), or the
+    // impossible-configuration case (CANONICAL_IMPLEMENTATION_MISSING --
+    // see activity-launch-readiness.ts) -- never a normal learner state
+    // today, since canonical-implementation-registry.ts is total over
+    // every real PedagogicalActivityType | 'REINFORCE' value. Kept as a
+    // fail-closed backstop, matching Part 18/33's own "never silently
+    // fall back to a legacy activity" rule, applied here to presentation
+    // as well as to session start.
     return { kind: 'NO_CANONICAL_ACTION', activityType: null, actionConceptId: null, facts: [], fallback: 'CANONICAL_ACTION_UNAVAILABLE', nextEligibleReviewAt: null };
   }
 

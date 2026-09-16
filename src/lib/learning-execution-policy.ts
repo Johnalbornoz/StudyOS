@@ -71,6 +71,7 @@ const ACTIVITY_DURATION_MINUTES: Record<ActivityType, number> = {
   RETENTION_CHECK: 6,
   CUMULATIVE_ASSESSMENT: 20,
   MOCK_EXAM: 30,
+  LEARN_CHECK: 5,
 };
 
 export function estimateActivityMinutes(activityType: ActivityType): number {

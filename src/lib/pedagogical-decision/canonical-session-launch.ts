@@ -36,6 +36,7 @@
  */
 import type { CanonicalPedagogicalDecision, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import { resolveV1ActivityLaunchReadiness, type V1ActivityNotReadyReason } from './activity-launch-readiness';
+import { resolveCanonicalImplementation, type CanonicalQuizMode } from './canonical-implementation-registry';
 
 export type CanonicalLaunchStatus = 'READY' | 'WAITING' | 'LOCKED' | 'CONSOLIDATED' | 'BLOCKED' | 'NOT_READY';
 
@@ -56,42 +57,43 @@ export interface CanonicalLearningSession {
 }
 
 /**
- * CANON-R6 Part 4/6 -- exact-10 canonical PROVE gets its OWN, distinct
- * server-recognized quiz_mode, never inferred from -- or aliased onto
- * -- legacy `quick_check` (Part 1: "Do not repurpose legacy quick_check
- * globally"). PRACTICE and its REINFORCE overlay keep using
- * `topic_practice`, exactly as CANON-R5R1 established.
+ * CANON-V2-ARCH-CLEANUP -- delegates entirely to the ONE canonical
+ * implementation registry (Section 6 of this phase's own spec) --
+ * never a second, locally-maintained mode-guessing switch. Every
+ * `PedagogicalActivityType | 'REINFORCE'` value resolves to a real
+ * quiz mode; there is no "not yet mapped" branch left to fall through.
  */
-function v1QuizModeForActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): 'topic_practice' | 'canonical_prove' {
-  return activityType === 'PROVE' ? 'canonical_prove' : 'topic_practice';
+function v1QuizModeForActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): CanonicalQuizMode {
+  // The registry is total over this exact union (canonical-implementation-registry.ts)
+  // -- a `null` result here is the same impossible-configuration case
+  // `resolveV1ActivityLaunchReadiness` already guards against, so by
+  // the time this is called (only after that readiness check passed)
+  // it cannot actually happen. The fallback is defensive only.
+  return resolveCanonicalImplementation(activityType)?.quizMode ?? 'topic_practice';
 }
 
 export type V1PracticeEligibility =
-  | { eligible: true; activityType: 'PRACTICE' | 'REINFORCE' | 'PROVE' }
+  | { eligible: true; activityType: PedagogicalActivityType | 'REINFORCE' }
   | { eligible: false };
 
 /**
- * CANON-R5R1/R6 Part 2/20/12 -- THE ONE eligibility check for "is this
- * fresh decision a real, launchable v1 activity right now" -- widened in
- * CANON-R6 to also recognize PROVE, now that `activity-launch-readiness.ts`
- * reports it READY. Name kept as-is (Part 12: "generalize carefully...
- * do not over-generalize") -- Retention/Transfer/Learn are deliberately
- * NOT added here; `resolveV1ActivityLaunchReadiness` still reports them
- * NOT_READY, so widening this function's own `!== 'PRACTICE' &&
- * ... 'REINFORCE'` guard to also list them would have no effect anyway
- * until their own generation paths are separately reviewed and built.
- * Shared by `resolveCanonicalLaunch` (session start) and
- * `verifyV1PracticeLaunchMarker` (the independent, generation-time
- * re-verification `/api/quizzes/generate-and-take` performs before ever
- * trusting a client's `v1Launch` intent flag) so both call sites agree
- * by construction, never by coincidence.
+ * CANON-R5R1/R6/CANON-V2-ARCH-CLEANUP Part 2/20/12 -- THE ONE
+ * eligibility check for "is this fresh decision a real, launchable v1
+ * activity right now." Now recognizes every canonical activity type --
+ * LEARN_CHECK, PRACTICE/REINFORCE, PROVE, RETENTION_CHECK, and TRANSFER
+ * -- since `canonical-implementation-registry.ts` is total over all of
+ * them (Section 1/7: "NOT_READY must NOT be part of the normal
+ * canonical learner journey"). Shared by `resolveCanonicalLaunch`
+ * (session start) and `verifyV1PracticeLaunchMarker` (the independent,
+ * generation-time re-verification `/api/quizzes/generate-and-take`
+ * performs before ever trusting a client's `v1Launch` intent flag) so
+ * both call sites agree by construction, never by coincidence.
  */
 export function resolveV1PracticeEligibility(decision: CanonicalPedagogicalDecision): V1PracticeEligibility {
   if (decision.actionState !== 'EXECUTABLE') return { eligible: false };
   const activityType = decision.intervention === 'REINFORCE' ? 'REINFORCE' : (decision.activityContract?.activityType ?? null);
   if (!activityType) return { eligible: false };
   if (!resolveV1ActivityLaunchReadiness(activityType).ready) return { eligible: false };
-  if (activityType !== 'PRACTICE' && activityType !== 'REINFORCE' && activityType !== 'PROVE') return { eligible: false };
   return { eligible: true, activityType };
 }
 

@@ -290,6 +290,16 @@ async function resolveLaunch(studentId: string, decision: LearningDecision): Pro
       return remediationLaunch(studentId, decision);
     case 'TRANSFER':
       return transferLaunch(decision, ownership.label);
+    case 'LEARN_CHECK':
+      // CANON-V2-ARCH-CLEANUP: LEARN_CHECK is a NEW ActivityType this
+      // legacy (pre-canonical) LearningDecision engine never produces --
+      // the canonical v1 LEARN_CHECK launch path is
+      // resolveCanonicalLaunch/generate-and-take's own v1Marker
+      // authorization, not this legacy engine. No legacy caller can
+      // reach this branch today; kept explicit (never folded into
+      // `default`) so a future legacy LEARN_CHECK decision fails loudly
+      // rather than silently matching an unrelated `default` case.
+      return unavailable('LEARN_CHECK has no legacy launch path -- use the canonical v1 authorization flow.');
     default:
       return unavailable(`No executable launch path implemented for ActivityType ${decision.activityType satisfies never}.`);
   }

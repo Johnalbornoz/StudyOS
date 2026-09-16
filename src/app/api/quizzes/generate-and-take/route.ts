@@ -127,8 +127,27 @@ import {
 
 // Phase 3A: single-concept quiz modes -- every other mode spans several
 // concepts and is selected via selectConceptsForQuizMode/conceptIds instead.
-type SingleConceptQuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'diagnostic_check' | 'canonical_prove';
-const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = ['topic_practice', 'review', 'quick_check', 'retention_check', 'diagnostic_check', 'canonical_prove'];
+type SingleConceptQuizMode =
+  | 'topic_practice'
+  | 'review'
+  | 'quick_check'
+  | 'retention_check'
+  | 'diagnostic_check'
+  | 'canonical_prove'
+  | 'canonical_retain'
+  | 'canonical_transfer'
+  | 'canonical_learn_check';
+const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = [
+  'topic_practice',
+  'review',
+  'quick_check',
+  'retention_check',
+  'diagnostic_check',
+  'canonical_prove',
+  'canonical_retain',
+  'canonical_transfer',
+  'canonical_learn_check',
+];
 function isSingleConceptMode(mode: QuizMode): mode is SingleConceptQuizMode {
   return (SINGLE_CONCEPT_MODES as readonly QuizMode[]).includes(mode);
 }
@@ -270,6 +289,38 @@ const QUIZ_MODE_CONFIG: Record<
     visualAidRate: 0,
     evidenceSource: 'SOLO_VERIFICATION',
   },
+  // CANON-V2-ARCH-CLEANUP -- the exact-10, independent, NOVEL canonical
+  // v1 Retain check. `defaultMax` is never actually consulted for a
+  // genuinely v1-authorized request (same reasoning as canonical_prove
+  // above).
+  canonical_retain: {
+    guidance:
+      'This is an independent retention check -- verify the student still genuinely remembers this concept, unaided, using NEW questions they have never seen before (never a repeat of a prior practice/prove/retain question, even reworded). Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess. Keep each question tightly focused on the core idea of this concept.',
+    defaultMax: 10,
+    visualAidRate: 0,
+    evidenceSource: 'SOLO_VERIFICATION',
+  },
+  // CANON-V2-ARCH-CLEANUP -- the ONE canonical Transfer mode: exactly 3
+  // structured, independent challenges. `defaultMax` is never consulted
+  // (canonical-transfer-generation.service.ts always requests exactly
+  // 3) -- present only so this Record stays total.
+  canonical_transfer: {
+    guidance:
+      'This is an independent Transfer check -- the student must apply this concept, unaided, in contexts progressively further from how it was originally taught. Every challenge requires the student to show their reasoning, not just a final answer.',
+    defaultMax: 3,
+    visualAidRate: 0,
+    evidenceSource: 'SOLO_VERIFICATION',
+  },
+  // CANON-V2-ARCH-CLEANUP -- the ONE canonical LEARN comprehension
+  // checkpoint: assisted, small, focused entirely on verifying genuine
+  // understanding (never a generic practice quiz relabeled).
+  canonical_learn_check: {
+    guidance:
+      'This is a comprehension checkpoint, not a practice drill -- verify the student genuinely understands the core idea of this concept (assistance/hints are allowed; the goal is confirming understanding, not testing independence). Prefer types that reveal genuine comprehension rather than pattern-matching (short_answer, error_detection, justification).',
+    defaultMax: 5,
+    visualAidRate: 0,
+    evidenceSource: 'PRACTICE_QUESTION',
+  },
 };
 
 const GenerateQuizSchema = z.object({
@@ -277,7 +328,19 @@ const GenerateQuizSchema = z.object({
   subjectId: z.string().uuid(),
   conceptId: z.string().uuid().optional(),
   conceptIds: z.array(z.string().uuid()).optional(), // manual topic selection for cumulative_assessment/exam_simulation
-  quizMode: z.enum(['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check', 'canonical_prove']).default('topic_practice'),
+  quizMode: z.enum([
+    'topic_practice',
+    'review',
+    'quick_check',
+    'retention_check',
+    'cumulative_assessment',
+    'exam_simulation',
+    'diagnostic_check',
+    'canonical_prove',
+    'canonical_retain',
+    'canonical_transfer',
+    'canonical_learn_check',
+  ]).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),

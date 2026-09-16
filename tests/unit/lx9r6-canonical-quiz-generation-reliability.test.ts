@@ -121,10 +121,19 @@ describe('2. unsupported ActivityType fails closed', () => {
   });
 
   it('generate-and-take rejects an unsupported quizMode with a 400 BEFORE any AI/DB work (Zod enum validated first in handleGenerateQuiz)', () => {
-    // CANON-R6: 'canonical_prove' added to the closed enum -- still a
-    // closed, exhaustive list; an unsupported string is still rejected
-    // by Zod before any AI/DB work, unchanged.
-    expect(ROUTE_SRC).toMatch(/quizMode:\s*z\.enum\(\['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check', 'canonical_prove'\]\)/);
+    // CANON-R6: 'canonical_prove' added to the closed enum. CANON-V2-ARCH-CLEANUP:
+    // 'canonical_retain'/'canonical_transfer'/'canonical_learn_check' added too --
+    // still a closed, exhaustive list; an unsupported string is still
+    // rejected by Zod before any AI/DB work, unchanged.
+    const enumIdx = ROUTE_SRC.indexOf('quizMode: z.enum([');
+    expect(enumIdx).toBeGreaterThan(-1);
+    const enumBlock = ROUTE_SRC.slice(enumIdx, ROUTE_SRC.indexOf(']).default', enumIdx));
+    for (const mode of [
+      'topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment',
+      'exam_simulation', 'diagnostic_check', 'canonical_prove', 'canonical_retain', 'canonical_transfer', 'canonical_learn_check',
+    ]) {
+      expect(enumBlock).toContain(`'${mode}'`);
+    }
     expect(ROUTE_SRC).toMatch(/const validated = GenerateQuizSchema\.parse\(body\);/);
   });
 });

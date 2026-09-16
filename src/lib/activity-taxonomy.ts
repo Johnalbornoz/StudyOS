@@ -30,7 +30,15 @@ export type ActivityType =
   | 'TRANSFER'
   | 'RETENTION_CHECK'
   | 'CUMULATIVE_ASSESSMENT'
-  | 'MOCK_EXAM';
+  | 'MOCK_EXAM'
+  /**
+   * CANON-V2-ARCH-CLEANUP -- the dedicated LEARN comprehension
+   * checkpoint (Policy V2 Section 2: "only a dedicated LEARN_CHECK
+   * activity may satisfy LEARN"). Assistance is explicitly allowed
+   * (EvidenceMode PRACTICE) -- this is a checkpoint on understanding,
+   * not an independence test.
+   */
+  | 'LEARN_CHECK';
 
 /**
  * Review has two cognitive purposes that are deliberately split into
@@ -52,6 +60,7 @@ const EVIDENCE_MODE_BY_ACTIVITY: Record<ActivityType, EvidenceMode> = {
   RETENTION_CHECK: 'INDEPENDENT',
   CUMULATIVE_ASSESSMENT: 'ASSESSMENT',
   MOCK_EXAM: 'ASSESSMENT',
+  LEARN_CHECK: 'PRACTICE',
 };
 
 export function evidenceModeForActivity(activityType: ActivityType): EvidenceMode {

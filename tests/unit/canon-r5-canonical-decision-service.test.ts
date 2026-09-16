@@ -179,9 +179,9 @@ describe('Parts 15-19/33/34 -- resolveV1ActivityLaunchReadiness (grounded in the
     expect(resolveV1ActivityLaunchReadiness('REINFORCE')).toEqual({ ready: true });
   });
 
-  it('LEARN_CHECK is not ready -- no quiz_mode/ActivityType represents it today', () => {
+  it('LEARN_CHECK is ready as of CANON-V2-ARCH-CLEANUP -- a dedicated canonical_learn_check mode implements the comprehension checkpoint', () => {
     const r = resolveV1ActivityLaunchReadiness('LEARN_CHECK');
-    expect(r).toMatchObject({ ready: false, reason: 'V1_LEARN_CHECK_GENERATION_NOT_READY' });
+    expect(r).toEqual({ ready: true });
   });
 
   it('PROVE is ready as of CANON-R6 -- a distinct canonical_prove mode routes through the existing exact-count-or-fail-closed generateGatedQuestionBatch, never repurposing quick_check\'s own fixed 6', () => {
@@ -189,17 +189,26 @@ describe('Parts 15-19/33/34 -- resolveV1ActivityLaunchReadiness (grounded in the
     expect(r).toEqual({ ready: true });
   });
 
-  it('RETENTION_CHECK is not ready -- RETENTION_REQUIRED_COUNT is hardcoded to 6, not the required 10', () => {
+  it('RETENTION_CHECK is ready as of CANON-V2-ARCH-CLEANUP -- a distinct canonical_retain mode (exact-10, never repurposing legacy retention_check\'s own fixed 6) implements it', () => {
     const r = resolveV1ActivityLaunchReadiness('RETENTION_CHECK');
-    expect(r).toMatchObject({ ready: false, reason: 'V1_RETENTION_GENERATION_NOT_READY' });
+    expect(r).toEqual({ ready: true });
   });
 
-  it('TRANSFER is not ready -- real Transfer evidence is per-task, never a 3-challenge batch', () => {
+  it('TRANSFER is ready as of CANON-V2-ARCH-CLEANUP -- a distinct canonical_transfer mode (exactly 3 NEAR/CONTEXTUAL/HIGHER challenges) implements it', () => {
     const r = resolveV1ActivityLaunchReadiness('TRANSFER');
-    expect(r).toMatchObject({ ready: false, reason: 'V1_TRANSFER_GENERATION_NOT_READY' });
+    expect(r).toEqual({ ready: true });
   });
 
-  it('the two concrete grounding facts this module cites are actually true in the real generation source (never a stale claim)', () => {
+  it('every real PedagogicalActivityType | REINFORCE value resolves ready -- CANON-V2-ARCH-CLEANUP Section 1/7: NOT_READY is not part of the normal canonical learner journey', () => {
+    const allTypes: Array<Parameters<typeof resolveV1ActivityLaunchReadiness>[0]> = [
+      'LEARN_CHECK', 'PRACTICE', 'REINFORCE', 'PROVE', 'RETENTION_CHECK', 'TRANSFER',
+    ];
+    for (const t of allTypes) {
+      expect(resolveV1ActivityLaunchReadiness(t)).toEqual({ ready: true });
+    }
+  });
+
+  it('legacy quick_check/retention_check stay fixed at 6 -- the new canonical_prove/canonical_retain modes are distinct, never a repurposing of the tuned legacy generators', () => {
     const genRoute = readFileSync(join(process.cwd(), 'src/app/api/quizzes/generate-and-take/route.ts'), 'utf-8');
     expect(genRoute).toMatch(/quick_check:\s*\{[\s\S]*?defaultMax:\s*6/);
     const genService = readFileSync(join(process.cwd(), 'src/services/quiz-generation.service.ts'), 'utf-8');
@@ -300,34 +309,37 @@ describe('Part 12-19 -- resolveCanonicalLaunch (session-start enforcement bounda
     expect(s.launchTarget).toContain('difficulty=3');
   });
 
-  it('EXECUTABLE RETENTION_CHECK is refused NOT_READY', () => {
+  it('EXECUTABLE RETENTION_CHECK launches READY as of CANON-V2-ARCH-CLEANUP -- into the distinct canonical_retain mode, never legacy retention_check', () => {
     const s = resolveCanonicalLaunch({
       subjectId: 'subj1',
       conceptId: CONCEPT,
       decision: decision({ stage: 'RETAIN', nextCanonicalAction: 'RETENTION_CHECK', activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 } } }),
     });
-    expect(s.launchStatus).toBe('NOT_READY');
-    expect(s.notReadyReason).toBe('V1_RETENTION_GENERATION_NOT_READY');
+    expect(s.launchStatus).toBe('READY');
+    expect(s.launchTarget).toContain('mode=canonical_retain');
+    expect(s.launchTarget).not.toContain('mode=retention_check');
+    expect(s.launchTarget).toContain('maxQuestions=10');
   });
 
-  it('EXECUTABLE TRANSFER is refused NOT_READY -- Part 18\'s own "never silently fall back to legacy Transfer" rule', () => {
+  it('EXECUTABLE TRANSFER launches READY as of CANON-V2-ARCH-CLEANUP -- into the distinct canonical_transfer mode, never a legacy Transfer path', () => {
     const s = resolveCanonicalLaunch({
       subjectId: 'subj1',
       conceptId: CONCEPT,
       decision: decision({ stage: 'TRANSFER', nextCanonicalAction: 'TRANSFER', activityContract: { ...decision().activityContract!, activityType: 'TRANSFER', itemCount: { min: 3, max: 3 } } }),
     });
-    expect(s.launchStatus).toBe('NOT_READY');
-    expect(s.notReadyReason).toBe('V1_TRANSFER_GENERATION_NOT_READY');
+    expect(s.launchStatus).toBe('READY');
+    expect(s.launchTarget).toContain('mode=canonical_transfer');
+    expect(s.launchTarget).toContain('maxQuestions=3');
   });
 
-  it('EXECUTABLE LEARN (post-cutover, no recognition yet) is refused NOT_READY -- Part 34\'s own cutover blocker', () => {
+  it('EXECUTABLE LEARN_CHECK (post-cutover, no recognition yet) launches READY as of CANON-V2-ARCH-CLEANUP -- into the dedicated canonical_learn_check mode', () => {
     const s = resolveCanonicalLaunch({
       subjectId: 'subj1',
       conceptId: CONCEPT,
       decision: decision({ stage: 'LEARN', nextCanonicalAction: 'LEARN', requirements: decision().requirements.map((r) => (r.stage === 'LEARN' ? { ...r, status: 'UNRESOLVED', satisfactionBasis: null } : r)), activityContract: { ...decision().activityContract!, activityType: 'LEARN_CHECK', itemCount: null, independence: false } }),
     });
-    expect(s.launchStatus).toBe('NOT_READY');
-    expect(s.notReadyReason).toBe('V1_LEARN_CHECK_GENERATION_NOT_READY');
+    expect(s.launchStatus).toBe('READY');
+    expect(s.launchTarget).toContain('mode=canonical_learn_check');
   });
 
   it('never chooses a different stage/action than the one the decision already computed -- pure passthrough', () => {
@@ -390,13 +402,13 @@ describe('Part 10 -- overrideConceptMissionViewWithCanonicalDecision', () => {
     expect(overridden.now.fallback).toBe('CONSOLIDATED_NO_ACTION');
   });
 
-  it('an EXECUTABLE stage the real generation infra still cannot yet honor (e.g. RETENTION_CHECK) renders CANONICAL_ACTION_UNAVAILABLE, never a broken CTA', () => {
+  it('CANON-V2-ARCH-CLEANUP: an EXECUTABLE RETENTION_CHECK now renders a real CANONICAL_ACTION -- the implementation registry is total, so RETENTION_CHECK is never a broken/unavailable CTA', () => {
     const overridden = overrideConceptMissionViewWithCanonicalDecision(
       legacyView(),
       decision({ stage: 'RETAIN', activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true } }),
     );
-    expect(overridden.now.kind).toBe('NO_CANONICAL_ACTION');
-    expect(overridden.now.fallback).toBe('CANONICAL_ACTION_UNAVAILABLE');
+    expect(overridden.now.kind).toBe('CANONICAL_ACTION');
+    expect(overridden.now.activityType).toBe('RETENTION_CHECK');
   });
 
   it('CANON-R6: an EXECUTABLE PROVE stage now renders a real CANONICAL_ACTION (the concept-mission-override doesn\'t hardcode PRACTICE -- toLegacyActivityType maps every ready v1 activity type, including PROVE, to a real actionable CTA)', () => {

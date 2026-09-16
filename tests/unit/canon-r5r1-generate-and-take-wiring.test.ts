@@ -203,14 +203,14 @@ describe('Part 26/27 -- no widening of Prove/Retention/Transfer/Learn readiness,
     expect(importBlock).not.toMatch(/generatePracticeQuestions|generateQuickCheckQuestions|generateRetentionCheckQuestions/);
   });
 
-  it('activity-launch-readiness.ts still keeps Retention/Transfer/Learn NOT_READY -- CANON-R6 deliberately widened ONLY Prove, per its own explicit scope', () => {
+  it('activity-launch-readiness.ts no longer keeps Retention/Transfer/Learn NOT_READY -- CANON-V2-ARCH-CLEANUP Section 1/7 supersedes CANON-R6\'s narrower "widen only Prove" scope: every canonical stage now has a real implementation, delegated to the one implementation registry', () => {
     const src = read('src/lib/pedagogical-decision/activity-launch-readiness.ts');
-    expect(src).not.toMatch(/V1_PROVE_GENERATION_NOT_READY/);
-    expect(src).toMatch(/V1_RETENTION_GENERATION_NOT_READY/);
-    expect(src).toMatch(/V1_TRANSFER_GENERATION_NOT_READY/);
-    expect(src).toMatch(/V1_LEARN_CHECK_GENERATION_NOT_READY/);
-    expect(src).toMatch(/case 'PRACTICE':\n    case 'REINFORCE':\n      return \{ ready: true \};/);
-    expect(src).toMatch(/case 'PROVE':\n      return \{ ready: true \};/);
+    // The 3 old reasons are no longer a LIVE type member / return value --
+    // only their names may still appear in a historical doc-comment note
+    // (the type itself is now a closed single-member union).
+    expect(src).toMatch(/export type V1ActivityNotReadyReason = 'CANONICAL_IMPLEMENTATION_MISSING';/);
+    expect(src).toMatch(/CANONICAL_IMPLEMENTATION_MISSING/);
+    expect(src).toMatch(/resolveCanonicalImplementation/);
   });
 });
 
