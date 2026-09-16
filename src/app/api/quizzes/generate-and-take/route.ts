@@ -499,7 +499,26 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // offer this CTA in the first place. This check exists so a
             // client bypass can never still reach Luna/Terra.
             const hasReinforceSignal = !!ks && (ks.criticalMisconceptionCount > 0 || ks.masteryState === 'INTERVENTION_REQUIRED');
-            if (!hasReinforceSignal) {
+            // CANON-R5R1B Part 0/4 -- ONE AUTHORITY RULE. `v1Marker`
+            // (computed above, BEFORE this block, from a FRESH
+            // `getCanonicalPedagogicalDecision` + `resolveV1PracticeEligibility`
+            // re-verification -- never from the client's own `v1Launch`
+            // claim alone) is the sole pedagogical authority for this
+            // exact (studentId, conceptId) pair once it exists. This
+            // legacy, KnowledgeState-only zero-gap backstop may still run
+            // and log for diagnostics, but it must never VETO a request
+            // the fresh canonical decision already authorized as
+            // EXECUTABLE Practice -- that was the live Preview defect
+            // this phase fixes (session/start returns PRACTICE/EXECUTABLE,
+            // then generate-and-take's own independent re-verification
+            // agrees and sets `v1Marker`, yet this 409 fired anyway).
+            // `v1Marker` is `null` for every other case (gate off, no
+            // `v1Launch` intent, wrong quizMode, wrong canonical stage,
+            // WAITING/BLOCKED, or a re-verification that itself failed
+            // or disagreed) -- so a forged/stale `v1Launch` alone can
+            // never reach this branch; only a genuine, fresh,
+            // independently-confirmed authorization can.
+            if (!hasReinforceSignal && !v1Marker) {
               console.log('[generation]', JSON.stringify({
                 conceptId: validated.conceptId,
                 quizMode: validated.quizMode,
@@ -522,12 +541,28 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
                 { status: 409 }
               );
             }
-            // R8: a genuine REINFORCE signal justifies running the
-            // execution minimum anyway (0 questions is not a runnable
-            // activity) -- surface the authority mismatch, never silent.
-            console.warn(
-              `[LX-4R R8] question-count authority mismatch: canonical evidence gap for concept ${validated.conceptId} (${validated.quizMode}) is 0, but a REINFORCE signal justifies running this activity. Running executionMinimum ${requirement.questionCount.executionMinimum}; not treated as a pedagogical requirement.`,
-            );
+            if (v1Marker && !hasReinforceSignal) {
+              // CANON-R5R1B: diagnostics only -- generation continues
+              // under canonical v1 authority; R5R1A's own override
+              // (later in this function) still forces the actual
+              // maxQuestions/difficulty from `v1Marker`'s contract, so
+              // nothing about the legacy `resolved.count`/`countAuthority`
+              // computed just below this block is ever actually used for
+              // a v1-authorized request.
+              console.log('[canon-r5r1b]', JSON.stringify({
+                conceptId: validated.conceptId,
+                quizMode: validated.quizMode,
+                reason: 'ZERO_GAP_LEGACY_AUTHORITY_BYPASSED_BY_V1',
+                canonicalRevision: v1Marker.canonicalRevision,
+              }));
+            } else {
+              // R8: a genuine REINFORCE signal justifies running the
+              // execution minimum anyway (0 questions is not a runnable
+              // activity) -- surface the authority mismatch, never silent.
+              console.warn(
+                `[LX-4R R8] question-count authority mismatch: canonical evidence gap for concept ${validated.conceptId} (${validated.quizMode}) is 0, but a REINFORCE signal justifies running this activity. Running executionMinimum ${requirement.questionCount.executionMinimum}; not treated as a pedagogical requirement.`,
+              );
+            }
           }
           maxQuestions = resolved.count;
           countAuthority = {

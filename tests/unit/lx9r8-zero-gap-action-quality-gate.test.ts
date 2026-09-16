@@ -298,7 +298,13 @@ describe('LX-9R8 9 -- the generation route fails BEFORE any AI call for a zero-g
 
   it('a genuine REINFORCE signal (critical misconception / INTERVENTION_REQUIRED) still runs the activity -- never silently suppressed', () => {
     expect(SRC).toMatch(/hasReinforceSignal = !!ks && \(ks\.criticalMisconceptionCount > 0 \|\| ks\.masteryState === 'INTERVENTION_REQUIRED'\)/);
-    expect(SRC).toMatch(/if \(!hasReinforceSignal\) \{/);
+    // CANON-R5R1B: the 409 short-circuit is now ALSO conditioned on
+    // `!v1Marker` (a trusted, freshly-verified v1 Practice authorization
+    // bypasses this legacy guard entirely -- see
+    // canon-r5r1b-zero-gap-authority-bypass.test.ts) -- the REINFORCE
+    // condition itself, and its own suppression-prevention guarantee,
+    // are unchanged.
+    expect(SRC).toMatch(/if \(!hasReinforceSignal && !v1Marker\) \{/);
   });
 });
 

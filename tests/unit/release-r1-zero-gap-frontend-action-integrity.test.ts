@@ -260,7 +260,12 @@ describe('RELEASE-R1 12 -- canonical mismatch shows the correct recovery UX, nev
   it('the server response is now machine-readable (error + reason), not just a generic GENERATION_FAILED', () => {
     const SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
     expect(SRC).toMatch(/error: 'INVALID_GENERATION_CONTRACT', reason: 'ZERO_GAP_PRACTICE_MISMATCH'/);
-    expect(SRC).toMatch(/status: 409 \}\s*\n\s*\);\s*\n\s*\}\s*\n\s*\/\/ R8:/);
+    // CANON-R5R1B: a v1-authorized-bypass branch (`if (v1Marker && ...)`)
+    // now sits between the 409 return and the pre-existing `// R8:`
+    // REINFORCE-signal comment -- the 409 response shape itself, and the
+    // REINFORCE comment/behavior after it, are both still present.
+    expect(SRC).toMatch(/status: 409 \}\s*\n\s*\);\s*\n\s*\}/);
+    expect(SRC).toMatch(/\/\/ R8: a genuine REINFORCE signal justifies running the/);
   });
 
   it('generateQuiz (the top-level phase==="error" path) detects the reason and shows quiz.canonicalStateChanged, never quiz.loadError, for this case', () => {
