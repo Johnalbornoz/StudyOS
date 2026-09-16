@@ -61,8 +61,18 @@ export interface V1PracticeLaunchMarker {
   canonicalRevision: string;
   canonicalStage: PedagogicalStage;
   canonicalActivityType: PedagogicalActivityType | 'REINFORCE';
-  /** Directly from `activityContract.itemCount` -- `max` is the deterministic single value the server requests from the generator (resolveAuthorizedItemCount). */
-  itemCount: { min: number; max: number; authorized: number };
+  /**
+   * Directly from `activityContract.itemCount` -- `max` is the
+   * deterministic single value the server requests from the generator
+   * (resolveAuthorizedItemCount). `null` ONLY for LEARN_CHECK
+   * (CANON-V2-ARCH-CLEANUP): the Pedagogical Engine v1 deliberately
+   * reports no canonical item-count authority for the comprehension
+   * checkpoint (evidence-sufficiency-contract.ts's own `EvidencePurpose
+   * 'LEARN'` case) -- a caller sees this as "no canonical override,
+   * fall back to the execution default," never as an uncontracted
+   * activity to reject.
+   */
+  itemCount: { min: number; max: number; authorized: number } | null;
   /** Directly from `activityContract.difficulty` -- `target` is the value the server sends to the generator; `min`/`max` bound what an ACTUAL administered attempt may fall within (Part 10/12). */
   difficulty: { min: number; max: number; target: number };
   /** `!activityContract.independence` -- Practice allows AI assistance (hints/Tutor); this is a pass-through of the engine's own `supportLevel`/`independence` fields, never a new AI behavior. */
@@ -101,23 +111,35 @@ export async function verifyV1PracticeLaunchMarker(params: {
   if (!eligibility.eligible) return null;
 
   const contract = decision.activityContract;
-  if (!contract || !contract.itemCount) {
-    // EXECUTABLE PRACTICE/REINFORCE with no item-count contract should
-    // not occur (buildActivityContract always sets one for these two
-    // cases) -- fail closed rather than authorizing an uncontracted
-    // activity (Part 0's Primary Invariant).
+  if (!contract) {
+    // EXECUTABLE with no activityContract at all should not occur --
+    // fail closed rather than authorizing an uncontracted activity
+    // (Part 0's Primary Invariant).
     return null;
   }
 
-  const authorizedItemCount = resolveAuthorizedItemCount(contract.itemCount);
-  if (authorizedItemCount == null) return null;
+  // CANON-V2-ARCH-CLEANUP -- `contract.itemCount === null` is the
+  // EXPECTED, deliberate shape for LEARN_CHECK (Section 2/8.A: "no
+  // canonical item-count authority exists for the comprehension
+  // check"), never a defect to fail closed on. Every OTHER reachable
+  // activity type's contract always carries a real itemCount
+  // (buildActivityContract's own invariant) -- for those, a `null`
+  // here really would mean "uncontracted," so this still fails closed
+  // exactly as before for everything except LEARN_CHECK.
+  let authorizedItemCount: number | null = null;
+  if (contract.itemCount) {
+    authorizedItemCount = resolveAuthorizedItemCount(contract.itemCount);
+    if (authorizedItemCount == null) return null;
+  } else if (eligibility.activityType !== 'LEARN_CHECK') {
+    return null;
+  }
 
   return {
     pedagogicalPolicyVersion: V1_POLICY_VERSION,
     canonicalRevision: decision.canonicalRevision,
     canonicalStage: decision.stage,
     canonicalActivityType: eligibility.activityType,
-    itemCount: { min: contract.itemCount.min, max: contract.itemCount.max, authorized: authorizedItemCount },
+    itemCount: contract.itemCount && authorizedItemCount != null ? { min: contract.itemCount.min, max: contract.itemCount.max, authorized: authorizedItemCount } : null,
     difficulty: { min: contract.difficulty.min, max: contract.difficulty.max, target: contract.difficulty.target },
     assistanceAllowed: !contract.independence,
     independence: contract.independence,
@@ -153,6 +175,11 @@ export interface V1ContractComplianceResult {
  * authorization always has `independence: false`, so this new check is
  * unconditionally skipped for every Practice call, exactly preserving
  * R5R1A's original two-check (item count, difficulty) behavior.
+ *
+ * CANON-V2-ARCH-CLEANUP -- `authorization.itemCount === null`
+ * (LEARN_CHECK only) skips the item-count range check entirely: there
+ * is no canonical item-count contract to violate for an activity whose
+ * own authority deliberately reports none.
  */
 export function checkV1ActivityContractCompliance(params: {
   authorization: Pick<V1PracticeLaunchMarker, 'itemCount' | 'difficulty' | 'independence'>;
@@ -162,7 +189,7 @@ export function checkV1ActivityContractCompliance(params: {
   actualAiAssistanceType?: string;
 }): V1ContractComplianceResult {
   const { authorization, actualItemCount, actualDifficulty, actualHintsUsed, actualAiAssistanceType } = params;
-  if (actualItemCount < authorization.itemCount.min || actualItemCount > authorization.itemCount.max) {
+  if (authorization.itemCount && (actualItemCount < authorization.itemCount.min || actualItemCount > authorization.itemCount.max)) {
     return {
       compliant: false,
       reason: V1_ACTIVITY_CONTRACT_VIOLATION,

@@ -203,8 +203,10 @@ describe('4/6 -- GENERATION MODE: canonical_prove is a distinct, server-only mod
 
 describe('6/7/9 -- exact-10 requested and administered, via the real exact-count-or-fail generator', () => {
   it('maxQuestions is forced from v1Marker.itemCount.authorized (10 for Prove) before perConceptCap/conceptIds are resolved -- the same override mechanism R5R1A already established for Practice, generalized', () => {
-    const idx = ROUTE_SRC.indexOf('if (v1Marker) {\n      maxQuestions = v1Marker.itemCount.authorized;');
+    const idx = ROUTE_SRC.indexOf('if (v1Marker) {');
     expect(idx).toBeGreaterThan(-1);
+    const block = ROUTE_SRC.slice(idx, idx + 500);
+    expect(block).toMatch(/if \(v1Marker\.itemCount\) maxQuestions = v1Marker\.itemCount\.authorized;/);
   });
 
   it('the multi-concept/gated-batch branch\'s own perConceptDifficulty ALSO prefers v1EffectiveDifficulty first -- the exact branch canonical_prove (a single-concept mode) falls through to', () => {
@@ -453,7 +455,10 @@ describe('31/32/33 -- RESULTS: canonical re-fetch and the new Results UI wiring'
 
 describe('34/35/36/37/38/39 -- REGRESSION: Practice v1, legacy topic_practice/quick_check, and the remaining NOT_READY gates', () => {
   it('34/35. Practice\'s own server-derived override block is untouched (still forces itemCount.authorized/difficulty.target for topic_practice requests)', () => {
-    expect(ROUTE_SRC).toMatch(/if \(v1Marker\) \{\s*\n\s*maxQuestions = v1Marker\.itemCount\.authorized;\s*\n\s*v1EffectiveDifficulty = v1Marker\.difficulty\.target;/);
+    const idx = ROUTE_SRC.indexOf('if (v1Marker) {');
+    expect(idx).toBeGreaterThan(-1);
+    const block = ROUTE_SRC.slice(idx, idx + 500);
+    expect(block).toMatch(/if \(v1Marker\.itemCount\) maxQuestions = v1Marker\.itemCount\.authorized;\s*\n\s*v1EffectiveDifficulty = v1Marker\.difficulty\.target;/);
   });
 
   it('36. legacy quick_check\'s dedicated fast path (generateQuickCheckQuestions) and its fixed 6-question contract are byte-unchanged', () => {

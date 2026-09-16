@@ -80,9 +80,11 @@ describe('3. v1Launch alone never bypasses -- v1Marker requires a full, independ
 describe('8/9/10 -- R5R1A\'s server-derived contract override is untouched and still runs after this block', () => {
   it('the maxQuestions/difficulty override block still exists, still gated on v1Marker, still positioned after the legacy LX-4R block finishes', () => {
     const legacyBlockEnd = ROUTE_SRC.indexOf("console.error('[LX-4R R8] evidence-requirement resolution failed, using execution default:', e);");
-    const overrideIdx = ROUTE_SRC.indexOf('if (v1Marker) {\n      maxQuestions = v1Marker.itemCount.authorized;');
+    const overrideIdx = ROUTE_SRC.indexOf('if (v1Marker) {');
     expect(legacyBlockEnd).toBeGreaterThan(-1);
     expect(overrideIdx).toBeGreaterThan(legacyBlockEnd);
+    const block = ROUTE_SRC.slice(overrideIdx, overrideIdx + 500);
+    expect(block).toMatch(/if \(v1Marker\.itemCount\) maxQuestions = v1Marker\.itemCount\.authorized;/);
   });
 });
 
@@ -171,8 +173,9 @@ describe('9 -- the LIVE Preview fixture (Part 9: IDs are a test fixture only, ne
 });
 
 describe('6/7 -- WAITING and BLOCKED canonical states never produce a bypassable authorization', () => {
-  it('a concept with no recognition and no evidence (LEARN, not PRACTICE) never authorizes -- v1Marker stays null, so the legacy guard\'s original behavior is fully preserved', async () => {
+  it('a concept with no recognition and no evidence (LEARN, not PRACTICE) never authorizes AS PRACTICE -- CANON-V2-ARCH-CLEANUP: verifyV1PracticeLaunchMarker now returns a real LEARN_CHECK marker for it, but route.ts\'s own mode-matching (requestedActivityType must equal the marker\'s canonicalActivityType, tested in canon-r5r1-generate-and-take-wiring.test.ts) still means a topic_practice request never gets treated as v1 here -- the zero-gap PRACTICE bypass guard\'s original behavior for a topic_practice request is preserved', async () => {
     const auth = await verifyV1PracticeLaunchMarker({ studentId: 's1', conceptId: 'c1' });
-    expect(auth).toBeNull();
+    expect(auth?.canonicalActivityType).toBe('LEARN_CHECK');
+    expect(auth?.canonicalActivityType).not.toBe('PRACTICE');
   });
 });

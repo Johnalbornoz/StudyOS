@@ -50,10 +50,12 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
 
 describe('Section 10 investigation: Practice difficulty consistency', () => {
-  it('the v1 override is unconditional whenever v1Marker exists -- maxQuestions and difficulty are BOTH always overwritten, never conditionally merged with the legacy/client value', () => {
-    expect(ROUTE_SRC).toMatch(
-      /if \(v1Marker\) \{\s*\n\s*maxQuestions = v1Marker\.itemCount\.authorized;\s*\n\s*v1EffectiveDifficulty = v1Marker\.difficulty\.target;\s*\n\s*\}/,
-    );
+  it('the v1 difficulty override is unconditional whenever v1Marker exists, never conditionally merged with the legacy/client value; the itemCount override is unconditional too EXCEPT for LEARN_CHECK (CANON-V2-ARCH-CLEANUP), which deliberately has no canonical item-count authority to overwrite with', () => {
+    const idx = ROUTE_SRC.indexOf('if (v1Marker) {');
+    expect(idx).toBeGreaterThan(-1);
+    const block = ROUTE_SRC.slice(idx, idx + 500);
+    expect(block).toMatch(/if \(v1Marker\.itemCount\) maxQuestions = v1Marker\.itemCount\.authorized;/);
+    expect(block).toMatch(/v1EffectiveDifficulty = v1Marker\.difficulty\.target;/);
   });
 
   it('every generator call site reads v1EffectiveDifficulty FIRST in its fallback chain -- the legacy resolvedDifficulty value can only ever be reached when v1EffectiveDifficulty is undefined (a genuinely non-v1 request)', () => {

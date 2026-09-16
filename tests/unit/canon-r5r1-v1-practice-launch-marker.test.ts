@@ -56,9 +56,16 @@ describe('verifyV1PracticeLaunchMarker -- trust model', () => {
     expect(typeof marker?.canonicalRevision).toBe('string');
   });
 
-  it('returns null for a concept genuinely at LEARN (no recognition, no evidence) -- never forced into a marker', async () => {
+  it('CANON-V2-ARCH-CLEANUP: a concept genuinely at LEARN (no recognition, no evidence) now authorizes a real LEARN_CHECK marker -- Section 1/7 of that phase: LEARN is the FIRST canonical stage, and NOT_READY is no longer part of the normal journey for any Policy V2 stage', async () => {
     const marker = await verifyV1PracticeLaunchMarker({ studentId: STUDENT, conceptId: CONCEPT });
-    expect(marker).toBeNull();
+    expect(marker).not.toBeNull();
+    expect(marker?.canonicalActivityType).toBe('LEARN_CHECK');
+    expect(marker?.canonicalStage).toBe('LEARN');
+    // LEARN_CHECK deliberately has no canonical item-count authority
+    // (evidence-sufficiency-contract.ts) -- the marker's itemCount is
+    // null, never an invented count.
+    expect(marker?.itemCount).toBeNull();
+    expect(marker?.assistanceAllowed).toBe(true);
   });
 
   it('returns null when the fresh decision is WAITING (e.g. Retention not due) -- Part 20 Server Trust Test analog: a forged claim for a non-Practice concept never produces a marker', async () => {

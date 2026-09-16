@@ -820,7 +820,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // no-op for every one of them -- Part 8's "legacy flow unchanged."
     let v1EffectiveDifficulty: number | undefined;
     if (v1Marker) {
-      maxQuestions = v1Marker.itemCount.authorized;
+      // CANON-V2-ARCH-CLEANUP -- `itemCount` is `null` only for
+      // LEARN_CHECK (the engine deliberately reports no canonical
+      // item-count authority for the comprehension checkpoint): leave
+      // `maxQuestions` exactly as the execution-default/canonical-gap
+      // logic above already resolved it, never invent a count here.
+      if (v1Marker.itemCount) maxQuestions = v1Marker.itemCount.authorized;
       v1EffectiveDifficulty = v1Marker.difficulty.target;
     }
 
@@ -939,7 +944,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           (async () => {
             const preparedContract: PreparedActivityContractSnapshot = {
               canonicalActivityType: v1Marker!.canonicalActivityType,
-              itemCount: v1Marker!.itemCount,
+              // Non-null: this whole branch only ever runs for
+              // canonical_prove, whose contract always carries a real
+              // itemCount (CANON-V2-ARCH-CLEANUP's `null` case is
+              // LEARN_CHECK-only, a different quizMode entirely).
+              itemCount: v1Marker!.itemCount!,
               difficulty: v1Marker!.difficulty,
               independence: v1Marker!.independence,
               supportLevel: v1Marker!.supportLevel,

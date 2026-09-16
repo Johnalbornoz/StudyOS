@@ -57,9 +57,13 @@ describe('Part 0/1/18/19 -- the authorization is built directly from the fresh d
     ]);
     const auth = await verifyV1PracticeLaunchMarker({ studentId: STUDENT, conceptId: CONCEPT });
     expect(auth).not.toBeNull();
-    expect(auth?.itemCount.min).toBe(2);
-    expect(auth?.itemCount.max).toBe(3);
-    expect(auth?.itemCount.authorized).toBe(3);
+    // Practice's own contract always carries a real itemCount (only
+    // LEARN_CHECK's marker ever has `itemCount: null` --
+    // CANON-V2-ARCH-CLEANUP).
+    expect(auth?.itemCount).not.toBeNull();
+    expect(auth?.itemCount?.min).toBe(2);
+    expect(auth?.itemCount?.max).toBe(3);
+    expect(auth?.itemCount?.authorized).toBe(3);
     expect(auth?.difficulty.min).toBe(2);
     expect(auth?.difficulty.max).toBe(4);
     expect(typeof auth?.difficulty.target).toBe('number');
@@ -138,8 +142,10 @@ describe('Part 3/4/7/15 -- server-derived maxQuestions/difficulty override clien
   });
 
   it('is gated on v1Marker (null for every non-authorized request) -- a legacy request never has maxQuestions/difficulty reassigned by this block', () => {
-    const idx = ROUTE_SRC.indexOf('if (v1Marker) {\n      maxQuestions = v1Marker.itemCount.authorized;');
+    const idx = ROUTE_SRC.indexOf('if (v1Marker) {');
     expect(idx).toBeGreaterThan(-1);
+    const block = ROUTE_SRC.slice(idx, idx + 500);
+    expect(block).toMatch(/if \(v1Marker\.itemCount\) maxQuestions = v1Marker\.itemCount\.authorized;/);
   });
 });
 
@@ -164,8 +170,9 @@ describe('Part 6/17 -- mode enforcement: a client cannot turn canonical PRACTICE
 });
 
 describe('Part 16 -- wrong-stage / WAITING / BLOCKED never produce an authorization (extends canon-r5r1-v1-practice-launch-marker.test.ts coverage)', () => {
-  it('a concept with no recognitions and no evidence (genuinely LEARN) never authorizes Practice', async () => {
+  it('a concept with no recognitions and no evidence (genuinely LEARN) never authorizes Practice -- CANON-V2-ARCH-CLEANUP: it now authorizes its own real LEARN_CHECK marker instead, never PRACTICE', async () => {
     const auth = await verifyV1PracticeLaunchMarker({ studentId: STUDENT, conceptId: CONCEPT });
-    expect(auth).toBeNull();
+    expect(auth?.canonicalActivityType).toBe('LEARN_CHECK');
+    expect(auth?.canonicalActivityType).not.toBe('PRACTICE');
   });
 });

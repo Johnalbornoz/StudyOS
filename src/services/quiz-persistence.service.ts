@@ -117,7 +117,8 @@ export interface QuizSessionV1Marker {
   canonicalRevision: string;
   canonicalStage: string;
   canonicalActivityType: string;
-  itemCount: { min: number; max: number; authorized: number };
+  /** `null` only for a `canonical_learn_check` session -- see V1PracticeLaunchMarker.itemCount's own doc comment. */
+  itemCount: { min: number; max: number; authorized: number } | null;
   difficulty: { min: number; max: number; target: number };
   assistanceAllowed: boolean;
   /** CANON-R6 -- additive; `false` for every pre-R6 Practice marker still round-tripping through this same JSONB shape. */
