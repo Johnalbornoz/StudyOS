@@ -202,10 +202,11 @@ describe('STABILIZATION QUIZ PERFORMANCE Step 14/22 -- mode isolation: diagnosti
     return fs.readFileSync(path.join(process.cwd(), 'src/app/api/quizzes/generate-and-take/route.ts'), 'utf8');
   };
 
-  it('the route\'s topic_practice/review branch is the ONLY caller of generatePracticeQuestions (single call site)', async () => {
+  it('generatePracticeQuestions has exactly 2 call sites -- topic_practice/review, and (CANON-V2-ARCH-CLEANUP) canonical_learn_check, which deliberately reuses the SAME generic, mature primitive rather than a new AI-generation call (LEARN_CHECK is assisted with no independence/novelty/exact-count requirement, exactly Practice\'s own generation shape) -- never any other mode', async () => {
     const routeSrc = await readRouteSrc();
     const occurrences = routeSrc.match(/generatePracticeQuestions\(/g) ?? [];
-    expect(occurrences).toHaveLength(1);
+    expect(occurrences).toHaveLength(2);
+    expect(routeSrc).toContain("validated.quizMode === 'canonical_learn_check'");
   });
 
   it('the route\'s retention_check branch is the ONLY caller of generateRetentionCheckQuestions (single call site)', async () => {

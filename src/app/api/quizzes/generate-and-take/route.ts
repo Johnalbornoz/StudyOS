@@ -914,6 +914,31 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             quizMode: validated.quizMode,
             parentOperationId,
           }).then((qs) => [qs])
+        : validated.quizMode === 'canonical_learn_check'
+        ? // CANON-V2-ARCH-CLEANUP Section 8.A -- the dedicated LEARN
+          // comprehension checkpoint. Reuses the SAME generic, mature
+          // generatePracticeQuestions primitive topic_practice/review
+          // already use (no new AI-generation call needed -- LEARN_CHECK
+          // is assisted, has no independence/novelty/exact-count
+          // requirement, exactly Practice's own generation shape) --
+          // but as its OWN distinct quizMode/session/activityType,
+          // never a relabeled topic_practice request (Section 13: no
+          // canonical LEARN_CHECK -> generic quiz substitution). No
+          // canonical item-count authority exists for this activity
+          // (evidence-sufficiency-contract.ts) -- `perConceptCap` here
+          // is always the EXECUTION default (QUIZ_MODE_CONFIG.canonical_learn_check.defaultMax),
+          // never a fabricated canonical count.
+          generatePracticeQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
+            count: perConceptCap,
+            difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 2,
+            guidance: config.guidance,
+            language,
+            visualAidRate: config.visualAidRate,
+            ibContext,
+            activityType: activityTypeForQuizMode(validated.quizMode),
+            quizMode: validated.quizMode,
+            parentOperationId,
+          }).then((qs) => [qs])
         : validated.quizMode === 'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT
         ? generateRetentionCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
             // CANON-R5R1A: v1EffectiveDifficulty (set only for a
