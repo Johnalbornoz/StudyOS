@@ -192,6 +192,16 @@ export interface GeneratedQuestion {
   cognitiveLevel?: CognitiveLevel;
   expectedReasoningType?: ExpectedReasoningType;
   learningObjectiveId?: string;
+
+  /**
+   * CANON-V2-ARCH-CLEANUP Section 9 -- set ONLY on a canonical Transfer
+   * challenge (`canonical-transfer-generation.service.ts`'s own output).
+   * Tags which of the 3 required challenges (NEAR/CONTEXTUAL/HIGHER)
+   * this question represents -- `undefined` for every other question
+   * this service ever generates. Never inferred from `type`/`difficulty`
+   * by any consumer; always this explicit, generation-time tag.
+   */
+  transferDepth?: 'NEAR' | 'CONTEXTUAL' | 'HIGHER';
 }
 
 export const ALL_QUESTION_TYPES: QuestionType[] = [

@@ -64,6 +64,8 @@ import {
 } from '@/services/gated-question-generation.service';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
+import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
+import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
 import {
   prepareCanonicalProveActivity,
   findActivePreparedActivity,
@@ -524,6 +526,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   // feature, CANON-R6-PERF-R2, out of scope here; every canonical_retain
   // request always runs the live generator below).
   let retainGenerationResult: CanonicalRetainGenerationResult | null = null;
+  // CANON-V2-ARCH-CLEANUP Section 9 -- captured only for a
+  // canonical_transfer request. No prepared-activity cache exists for
+  // Transfer either (Prove-only performance feature) -- always a live
+  // generation call.
+  let transferGenerationResult: CanonicalTransferGenerationResult | null = null;
 
   try {
     const validated = GenerateQuizSchema.parse(body);
@@ -1029,6 +1036,28 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             retainGenerationResult = retainGen;
             return [retainGen.questions];
           })()
+        : validated.quizMode === 'canonical_transfer'
+        ? // CANON-V2-ARCH-CLEANUP Section 9/28 -- the ONE certified
+          // canonical Transfer generation path: exactly 3
+          // NEAR/CONTEXTUAL/HIGHER challenges (generateCanonicalTransferChallenges),
+          // each an ordinary free-text GeneratedQuestion tagged with
+          // transferDepth. `maxQuestions` is always exactly 3 for a
+          // v1-authorized request (v1Marker.itemCount, forced above) --
+          // this branch never generates a different count.
+          (async () => {
+            const transferGen = await generateCanonicalTransferChallenges({
+              conceptId: conceptIds[0],
+              studentId: validated.studentId,
+              subjectId: validated.subjectId,
+              difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 4,
+              guidance: config.guidance,
+              language,
+              visualAidRate: config.visualAidRate,
+              ibContext,
+            });
+            transferGenerationResult = transferGen;
+            return [transferGen.questions];
+          })()
         : Promise.all(
             // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate --
             // cumulative_assessment / exam_simulation / diagnostic_check
@@ -1248,6 +1277,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
+          : validated.quizMode === 'canonical_transfer'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
           : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
@@ -1277,6 +1308,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
+          : validated.quizMode === 'canonical_transfer'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
           : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
@@ -1706,9 +1739,37 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // the task itself, so there's nothing to map.
     const learningMode: 'SOLO' | 'COACH' = quizSession.evidenceMode === 'PRACTICE' ? 'COACH' : 'SOLO';
 
+    // CANON-V2-ARCH-CLEANUP Section 10/11 -- canonical Transfer's own
+    // grading authority. Computed once, up front (Transfer is always
+    // single-concept -- exactly one `byConcept` bucket) from the 3
+    // graded challenges' own `transferDepth` tag, score, and errorType.
+    // `null` for every other quizMode, and also `null` if this session
+    // somehow lacks all 3 depths (the universal exact-count guard at
+    // generation time already prevents that for a real request -- this
+    // is a defensive fallback, never expected to fire).
+    const transferChallengeGrades = graded
+      .filter((g): g is NonNullable<typeof g> => g !== null && !!g.question.transferDepth)
+      .map((g) => ({
+        depth: g.question.transferDepth!,
+        scorePercent: Math.round(g.gradeResult.score * 100),
+        errorType: (g.gradeResult as any).errorType ?? null,
+        reasoningProvided: g.rawAnswer.trim().length > 0,
+      }));
+    const transferGrading =
+      quizSession.quizMode === 'canonical_transfer' && transferChallengeGrades.length === 3
+        ? gradeCanonicalTransferAttempt(transferChallengeGrades)
+        : null;
+
     const perConceptResults = await Promise.all(
       Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
-        const conceptScore = Math.round((bucket.correct / bucket.total) * 100);
+        // CANON-V2-ARCH-CLEANUP Section 10 -- for canonical_transfer,
+        // the evidence score IS transferGrading.overallScore (the mean
+        // of the 3 independently-persisted per-challenge scores), never
+        // the generic correct-count percentage (which would conflate
+        // "2 of 3 challenges passed" with "all 3 individually >= 70" --
+        // exactly the masking Section 10's own per-challenge floor
+        // exists to prevent).
+        const conceptScore = transferGrading ? transferGrading.overallScore : Math.round((bucket.correct / bucket.total) * 100);
         // LX-4J / LX-1R evidence-consistency contract: the actual mean
         // generated difficulty of this concept's questions, never a
         // hardcoded constant. CANON-R5R1A: this SAME real value is also
@@ -1716,7 +1777,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // second, independently-recomputed difficulty.
         const actualDifficulty = aggregateEvidenceDifficulty(bucket.questionDifficulties);
         const evidence: LearningEvidence = {
-          result: conceptScore >= 70 ? 'correct' : conceptScore >= 50 ? 'partial' : 'incorrect',
+          result: transferGrading ? (transferGrading.passed ? 'correct' : 'incorrect') : conceptScore >= 70 ? 'correct' : conceptScore >= 50 ? 'partial' : 'incorrect',
           difficulty: actualDifficulty,
           sourceType: config.evidenceSource,
           confidenceWeight: 0.9,
@@ -1823,6 +1884,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     canonicalActivityType: quizSession.v1Marker!.canonicalActivityType,
                     itemCount: bucket.total,
                     correctCount: bucket.correct,
+                  }
+                : {}),
+              // CANON-V2-ARCH-CLEANUP Section 9/10/11 -- the REAL,
+              // independently-graded 3-challenge Transfer breakdown
+              // (StudyUSTransferChallengeScore[], evidence-adapter.ts's
+              // own required shape) plus, only on failure, the ONE
+              // explicit non-misconception diagnostic
+              // (CRITICAL_MISCONCEPTION is never decided here -- see
+              // canonical-transfer-grading.ts's own doc comment). Only
+              // ever present for a v1Qualifies canonical_transfer
+              // submission; every other quizMode's metadata is
+              // byte-identical to before this phase.
+              ...(v1Qualifies && transferGrading
+                ? {
+                    transferChallenges: transferChallengeGrades.map((c) => ({
+                      depth: c.depth,
+                      scorePercent: c.scorePercent,
+                      reasoningProvided: c.reasoningProvided,
+                    })),
+                    ...(transferGrading.passed ? {} : { transferFailureDiagnostic: transferGrading.diagnostic }),
                   }
                 : {}),
               // CANON-R5R1A Part 11 -- an explicit, traceable diagnostic
