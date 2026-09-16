@@ -65,12 +65,13 @@ describe('Part 3/4 -- ordering and the ONE AUTHORITY RULE (source audit)', () =>
 });
 
 describe('3. v1Launch alone never bypasses -- v1Marker requires a full, independently-verified chain', () => {
-  it('the v1Marker guard condition requires the feature gate, the intent flag, the exact quizMode, a conceptId, AND a successful fresh re-verification -- not v1Launch by itself', () => {
-    const idx = ROUTE_SRC.indexOf('const v1Marker =');
+  it('the rawV1Marker guard condition requires the feature gate, the intent flag, a resolvable requestedActivityType (topic_practice/canonical_prove only, CANON-R6), a conceptId, AND a successful fresh re-verification -- not v1Launch by itself', () => {
+    const idx = ROUTE_SRC.indexOf('const rawV1Marker =');
+    expect(idx).toBeGreaterThan(-1);
     const slice = ROUTE_SRC.slice(idx, idx + 300);
     expect(slice).toMatch(/validated\.v1Launch === true/);
     expect(slice).toMatch(/isCanonicalEngineV1Enabled\(\)/);
-    expect(slice).toMatch(/validated\.quizMode === 'topic_practice'/);
+    expect(slice).toMatch(/requestedActivityType/);
     expect(slice).toMatch(/validated\.conceptId/);
     expect(slice).toMatch(/verifyV1PracticeLaunchMarker\(/);
   });
@@ -93,7 +94,7 @@ describe('11/12/13 -- persistence, compliance validation, and policy-version sta
   });
 
   it('checkV1ActivityContractCompliance is still called at submission, before any v1 stamping', () => {
-    expect(ROUTE_SRC).toMatch(/checkV1ActivityContractCompliance\(\{ authorization: quizSession\.v1Marker!, actualItemCount: bucket\.total, actualDifficulty \}\)/);
+    expect(ROUTE_SRC).toMatch(/checkV1ActivityContractCompliance\(\{\s*\n\s*authorization: quizSession\.v1Marker!,\s*\n\s*actualItemCount: bucket\.total,\s*\n\s*actualDifficulty,/);
   });
 
   it('v1 metadata stamping is still gated on v1Qualifies (contract-compliant AND authorized), unchanged from R5R1A', () => {

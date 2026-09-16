@@ -1,7 +1,8 @@
 /**
- * CANON-R5R1/R5R1A -- v1 EVIDENCE PERSISTENCE & CANONICAL PRACTICE
- * CONTRACT ENFORCEMENT: the trusted, server-only authorization for a
- * Canonical-Engine-created Practice quiz session.
+ * CANON-R5R1/R5R1A/R6 -- v1 EVIDENCE PERSISTENCE & CANONICAL
+ * PRACTICE/PROVE CONTRACT ENFORCEMENT: the trusted, server-only
+ * authorization for a Canonical-Engine-created Practice or (as of
+ * CANON-R6) Prove quiz session.
  *
  * TRUST MODEL (Part 1/2/14): a client's `v1Launch: true` request field
  * is never, by itself, sufficient to stamp a quiz session as v1, and it
@@ -38,22 +39,40 @@ import { getCanonicalPedagogicalDecision, CanonicalDecisionUnavailableError } fr
 import { resolveV1PracticeEligibility, resolveAuthorizedItemCount } from './canonical-session-launch';
 
 /**
- * CANON-R5R1A Part 18 -- the full trusted authorization: not just "this
- * concept is at canonical PRACTICE" (R5R1's `V1PracticeLaunchMarker`),
- * but the EXACT generation parameters the server must use, derived
- * directly from `decision.activityContract`.
+ * CANON-R5R1A/R6 Part 18 -- the full trusted authorization: not just
+ * "this concept is at canonical PRACTICE/PROVE" (R5R1's original
+ * `V1PracticeLaunchMarker`), but the EXACT generation parameters the
+ * server must use, derived directly from `decision.activityContract`.
+ *
+ * CANON-R6 Part 12: widened, IN PLACE (name kept -- "generalize
+ * carefully... do not over-generalize"), to also cover PROVE alongside
+ * PRACTICE/REINFORCE. Every existing R5R1/R5R1A field
+ * (`assistanceAllowed`, `itemCount`, `difficulty`) is unchanged; three
+ * fields are newly added (`independence`, `supportLevel`,
+ * `minimumScorePercent`), all additive and all pass-throughs of the
+ * SAME `activityContract` fields already on the engine's own frozen
+ * output -- Practice's own values (`independence: false, supportLevel:
+ * 'ASSISTED', minimumScorePercent: 80`) are unchanged from before this
+ * phase, verified by the full pre-existing R5R1A test suite passing
+ * unmodified.
  */
 export interface V1PracticeLaunchMarker {
   pedagogicalPolicyVersion: typeof V1_POLICY_VERSION;
   canonicalRevision: string;
   canonicalStage: PedagogicalStage;
-  canonicalActivityType: 'PRACTICE' | 'REINFORCE';
+  canonicalActivityType: 'PRACTICE' | 'REINFORCE' | 'PROVE';
   /** Directly from `activityContract.itemCount` -- `max` is the deterministic single value the server requests from the generator (resolveAuthorizedItemCount). */
   itemCount: { min: number; max: number; authorized: number };
   /** Directly from `activityContract.difficulty` -- `target` is the value the server sends to the generator; `min`/`max` bound what an ACTUAL administered attempt may fall within (Part 10/12). */
   difficulty: { min: number; max: number; target: number };
   /** `!activityContract.independence` -- Practice allows AI assistance (hints/Tutor); this is a pass-through of the engine's own `supportLevel`/`independence` fields, never a new AI behavior. */
   assistanceAllowed: boolean;
+  /** CANON-R6 -- `activityContract.independence` verbatim (the engine's own field; `assistanceAllowed` above is its negation, kept for R5R1A backward compatibility). `true` for PROVE, `false` for PRACTICE/REINFORCE. */
+  independence: boolean;
+  /** CANON-R6 -- `activityContract.supportLevel` verbatim ('ASSISTED' for Practice/Reinforce, 'NONE' for Prove). */
+  supportLevel: 'ASSISTED' | 'NONE';
+  /** CANON-R6 -- `activityContract.minimumScorePercent` verbatim (80 for both Practice and Prove today). */
+  minimumScorePercent: number;
 }
 
 /**
@@ -101,6 +120,14 @@ export async function verifyV1PracticeLaunchMarker(params: {
     itemCount: { min: contract.itemCount.min, max: contract.itemCount.max, authorized: authorizedItemCount },
     difficulty: { min: contract.difficulty.min, max: contract.difficulty.max, target: contract.difficulty.target },
     assistanceAllowed: !contract.independence,
+    independence: contract.independence,
+    supportLevel: contract.supportLevel,
+    // `ActivityContract.minimumScorePercent` is `number | null` only for
+    // LEARN/CONSOLIDATED (neither ever reaches here -- eligibility above
+    // already restricts to PRACTICE/REINFORCE/PROVE, both of which
+    // always carry a real value) -- 80 is a defensive fallback only,
+    // never a value this code path can actually need in practice.
+    minimumScorePercent: contract.minimumScorePercent ?? 80,
   };
 }
 
@@ -114,17 +141,26 @@ export interface V1ContractComplianceResult {
 }
 
 /**
- * CANON-R5R1A Part 10 -- verifies the ACTUAL administered activity
- * (real item count, real aggregate difficulty) against the authorization
- * that was persisted at generation time. Pure, no IO. Never clamps,
- * never fabricates -- a violation is reported, not silently corrected.
+ * CANON-R5R1A/R6 Part 10/13 -- verifies the ACTUAL administered activity
+ * against the authorization that was persisted at generation time. Pure,
+ * no IO. Never clamps, never fabricates -- a violation is reported, not
+ * silently corrected.
+ *
+ * CANON-R6: `actualHintsUsed`/`actualAiAssistanceType` are additive,
+ * optional inputs -- checked ONLY when `authorization.independence` is
+ * true (PROVE) AND the caller actually supplies them. Practice's own
+ * authorization always has `independence: false`, so this new check is
+ * unconditionally skipped for every Practice call, exactly preserving
+ * R5R1A's original two-check (item count, difficulty) behavior.
  */
 export function checkV1ActivityContractCompliance(params: {
-  authorization: Pick<V1PracticeLaunchMarker, 'itemCount' | 'difficulty'>;
+  authorization: Pick<V1PracticeLaunchMarker, 'itemCount' | 'difficulty' | 'independence'>;
   actualItemCount: number;
   actualDifficulty: number;
+  actualHintsUsed?: number;
+  actualAiAssistanceType?: string;
 }): V1ContractComplianceResult {
-  const { authorization, actualItemCount, actualDifficulty } = params;
+  const { authorization, actualItemCount, actualDifficulty, actualHintsUsed, actualAiAssistanceType } = params;
   if (actualItemCount < authorization.itemCount.min || actualItemCount > authorization.itemCount.max) {
     return {
       compliant: false,
@@ -138,6 +174,22 @@ export function checkV1ActivityContractCompliance(params: {
       reason: V1_ACTIVITY_CONTRACT_VIOLATION,
       detail: `actual difficulty ${actualDifficulty} is outside the authorized range [${authorization.difficulty.min}, ${authorization.difficulty.max}]`,
     };
+  }
+  if (authorization.independence) {
+    if (actualHintsUsed !== undefined && actualHintsUsed > 0) {
+      return {
+        compliant: false,
+        reason: V1_ACTIVITY_CONTRACT_VIOLATION,
+        detail: `an independent (no-assistance) contract requires hintsUsed === 0; actual was ${actualHintsUsed}`,
+      };
+    }
+    if (actualAiAssistanceType !== undefined && actualAiAssistanceType !== 'NONE') {
+      return {
+        compliant: false,
+        reason: V1_ACTIVITY_CONTRACT_VIOLATION,
+        detail: `an independent (no-assistance) contract requires aiAssistanceType === 'NONE'; actual was ${actualAiAssistanceType}`,
+      };
+    }
   }
   return { compliant: true, reason: null };
 }

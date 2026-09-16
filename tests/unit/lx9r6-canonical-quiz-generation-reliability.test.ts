@@ -121,7 +121,10 @@ describe('2. unsupported ActivityType fails closed', () => {
   });
 
   it('generate-and-take rejects an unsupported quizMode with a 400 BEFORE any AI/DB work (Zod enum validated first in handleGenerateQuiz)', () => {
-    expect(ROUTE_SRC).toMatch(/quizMode:\s*z\.enum\(\['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check'\]\)/);
+    // CANON-R6: 'canonical_prove' added to the closed enum -- still a
+    // closed, exhaustive list; an unsupported string is still rejected
+    // by Zod before any AI/DB work, unchanged.
+    expect(ROUTE_SRC).toMatch(/quizMode:\s*z\.enum\(\['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check', 'canonical_prove'\]\)/);
     expect(ROUTE_SRC).toMatch(/const validated = GenerateQuizSchema\.parse\(body\);/);
   });
 });
@@ -281,7 +284,14 @@ describe('17. published count equals required count / 20. zero accepted question
   it('route.ts only calls storeQuiz when questions.length > 0 -- a zero-question result never reaches persistence for ANY mode', () => {
     expect(ROUTE_SRC).toMatch(/if \(questions\.length === 0\) \{/);
     const afterCheck = ROUTE_SRC.slice(ROUTE_SRC.indexOf('if (questions.length === 0)'));
-    expect(afterCheck).toMatch(/return NextResponse\.json\(\s*\{ error: 'GENERATION_FAILED'/);
+    // CANON-R6: the response is now a ternary (a canonical_prove-specific
+    // V1_PROVE_GENERATION_INCOMPLETE reason vs. the original generic
+    // shape for every other mode) -- both branches still return
+    // `error: 'GENERATION_FAILED'`, and storeQuiz is still unreachable
+    // from this branch either way.
+    expect(afterCheck).toMatch(/return NextResponse\.json\(\s*\n\s*validated\.quizMode === 'canonical_prove'/);
+    expect(afterCheck).toMatch(/error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE'/);
+    expect(afterCheck).toMatch(/: \{ error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' \}/);
     expect(afterCheck.indexOf('const quizId = await storeQuiz(')).toBeGreaterThan(afterCheck.indexOf("error: 'GENERATION_FAILED'"));
   });
 });

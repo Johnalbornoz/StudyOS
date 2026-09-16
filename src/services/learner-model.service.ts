@@ -107,7 +107,12 @@ export function computeAverageConfidence(levels: ConfidenceLevel[]): number | nu
  *     trigger the other rules
  */
 export function shouldAskConfidence(input: {
-  quizMode: 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation';
+  // CANON-R6: 'canonical_prove' added -- none of the rules below branch
+  // on a specific mode string other than cumulative/exam (line below),
+  // so this is a pure type-widening with zero behavior change; Prove
+  // gets the exact same confidence-calibration treatment quick_check
+  // (its own independent-check sibling) already gets.
+  quizMode: 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'canonical_prove';
   hasExistingMasteryRecord: boolean;
   masteryScore: number | null;
   independentMastery: number | null;

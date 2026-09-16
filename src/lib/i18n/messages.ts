@@ -221,6 +221,9 @@ export type MessageKey =
   | 'quiz.modeQuickCheckDesc' | 'quiz.modeTopicPracticeDesc' | 'quiz.modeCumulativeDesc' | 'quiz.modeExamSimDesc'
   | 'quiz.modeDiagnosticCheck' | 'quiz.modeDiagnosticCheckDesc'
   | 'quiz.modeReview' | 'quiz.modeReviewDesc' | 'quiz.modeRetentionCheck' | 'quiz.modeRetentionCheckDesc'
+  // CANON-R6 Part 21 -- Results UI, canonical-decision-driven next step
+  // (v1 attempts only; legacy Results copy above is unchanged).
+  | 'quiz.canonicalNextStepTitle' | 'quiz.canonicalNextPractice' | 'quiz.canonicalNextProve' | 'quiz.canonicalNextConsolidated' | 'quiz.canonicalContractViolation'
   | 'quiz.verificationTitle' | 'quiz.verificationExplain' | 'quiz.verificationSubmit'
   | 'quiz.verificationConfirmed' | 'quiz.verificationContradicted' | 'quiz.verificationInconclusive'
   | 'quiz.verificationNotPending'
@@ -1118,6 +1121,11 @@ const es: Messages = {
   'quiz.modeCumulative': 'Evaluación acumulativa',
   'quiz.modeExamSim': 'Simulacro de examen',
   'quiz.modeQuickCheckDesc': 'Comprueba que puedes hacerlo tú solo -- pocas preguntas, sin pistas de IA.',
+  'quiz.canonicalNextStepTitle': 'Tu siguiente paso',
+  'quiz.canonicalNextPractice': 'Vuelve a practicar antes de intentarlo de nuevo por tu cuenta.',
+  'quiz.canonicalNextProve': 'Siguiente: demuéstralo por tu cuenta (Prove).',
+  'quiz.canonicalNextConsolidated': 'Has consolidado este concepto.',
+  'quiz.canonicalContractViolation': 'Este intento no se pudo validar como una comprobación independiente completa. Tu progreso no se perdió; puedes intentarlo de nuevo.',
   'quiz.modeTopicPracticeDesc': 'Práctica normal sobre este concepto.',
   'quiz.modeCumulativeDesc': 'Preguntas que cubren varios conceptos de la materia, priorizando los más débiles.',
   'quiz.modeExamSimDesc': 'Simula el examen real: cubre los temas de tu próximo examen (o toda la materia si no tienes uno agendado) con mayor variedad y exigencia.',
@@ -2215,6 +2223,11 @@ const en: Messages = {
   'quiz.modeCumulative': 'Cumulative assessment',
   'quiz.modeExamSim': 'Exam simulation',
   'quiz.modeQuickCheckDesc': 'Check that you can do it on your own -- a few questions, no AI hints.',
+  'quiz.canonicalNextStepTitle': 'Your next step',
+  'quiz.canonicalNextPractice': 'Go back to Practice before trying this on your own again.',
+  'quiz.canonicalNextProve': "Next: prove it on your own.",
+  'quiz.canonicalNextConsolidated': "You've consolidated this concept.",
+  'quiz.canonicalContractViolation': "This attempt couldn't be validated as a complete independent check. Your progress wasn't lost -- you can try again.",
   'quiz.modeTopicPracticeDesc': 'Regular practice on this concept.',
   'quiz.modeCumulativeDesc': 'Questions spanning several concepts in this subject, weighted toward the weaker ones.',
   'quiz.modeExamSimDesc': "Simulates the real exam: covers your next exam's topics (or the whole subject if none is scheduled) with more variety and rigor.",
@@ -3312,6 +3325,11 @@ const de: Messages = {
   'quiz.modeCumulative': 'Kumulative Prüfung',
   'quiz.modeExamSim': 'Prüfungssimulation',
   'quiz.modeQuickCheckDesc': 'Prüfe, ob du es allein kannst -- wenige Fragen, keine KI-Hinweise.',
+  'quiz.canonicalNextStepTitle': 'Dein nächster Schritt',
+  'quiz.canonicalNextPractice': 'Übe erneut, bevor du es wieder alleine versuchst.',
+  'quiz.canonicalNextProve': 'Weiter: Beweise es eigenständig.',
+  'quiz.canonicalNextConsolidated': 'Du hast dieses Konzept gefestigt.',
+  'quiz.canonicalContractViolation': 'Dieser Versuch konnte nicht als vollständige eigenständige Prüfung bestätigt werden. Dein Fortschritt ist nicht verloren -- du kannst es erneut versuchen.',
   'quiz.modeTopicPracticeDesc': 'Normales Üben zu diesem Konzept.',
   'quiz.modeCumulativeDesc': 'Fragen zu mehreren Konzepten des Fachs, mit Schwerpunkt auf den schwächeren.',
   'quiz.modeExamSimDesc': 'Simuliert die echte Prüfung: deckt die Themen deiner nächsten Prüfung ab (oder das ganze Fach, falls keine geplant ist) mit mehr Vielfalt und Anspruch.',
@@ -4409,6 +4427,11 @@ const fr: Messages = {
   'quiz.modeCumulative': 'Évaluation cumulative',
   'quiz.modeExamSim': "Simulation d'examen",
   'quiz.modeQuickCheckDesc': 'Vérifiez que vous pouvez le faire seul -- quelques questions, sans indices IA.',
+  'quiz.canonicalNextStepTitle': 'Votre prochaine étape',
+  'quiz.canonicalNextPractice': "Retournez à l'entraînement avant de réessayer seul.",
+  'quiz.canonicalNextProve': 'Suivant : prouvez-le par vous-même.',
+  'quiz.canonicalNextConsolidated': 'Vous avez consolidé ce concept.',
+  'quiz.canonicalContractViolation': "Cette tentative n'a pas pu être validée comme une vérification indépendante complète. Votre progression n'est pas perdue -- vous pouvez réessayer.",
   'quiz.modeTopicPracticeDesc': 'Entraînement normal sur ce concept.',
   'quiz.modeCumulativeDesc': 'Questions couvrant plusieurs concepts de la matière, en priorisant les plus faibles.',
   'quiz.modeExamSimDesc': "Simule l'examen réel : couvre les sujets de votre prochain examen (ou toute la matière si aucun n'est prévu) avec plus de variété et d'exigence.",
@@ -5506,6 +5529,11 @@ const pt: Messages = {
   'quiz.modeCumulative': 'Avaliação cumulativa',
   'quiz.modeExamSim': 'Simulado de prova',
   'quiz.modeQuickCheckDesc': 'Confirme que você consegue sozinho -- poucas perguntas, sem dicas de IA.',
+  'quiz.canonicalNextStepTitle': 'Seu próximo passo',
+  'quiz.canonicalNextPractice': 'Volte a praticar antes de tentar sozinho novamente.',
+  'quiz.canonicalNextProve': 'Próximo: prove por conta própria.',
+  'quiz.canonicalNextConsolidated': 'Você consolidou este conceito.',
+  'quiz.canonicalContractViolation': 'Esta tentativa não pôde ser validada como uma verificação independente completa. Seu progresso não foi perdido -- você pode tentar novamente.',
   'quiz.modeTopicPracticeDesc': 'Prática normal sobre este conceito.',
   'quiz.modeCumulativeDesc': 'Perguntas que cobrem vários conceitos da matéria, priorizando os mais fracos.',
   'quiz.modeExamSimDesc': 'Simula a prova real: cobre os temas da sua próxima prova (ou toda a matéria, se você não tiver uma agendada) com mais variedade e exigência.',

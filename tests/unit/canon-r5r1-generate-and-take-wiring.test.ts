@@ -27,15 +27,32 @@ describe('Part 2/6/20 -- v1Launch is an intent signal only, independently re-ver
     expect(schemaBlock).toMatch(/v1Launch:\s*z\.boolean\(\)\.optional\(\)/);
   });
 
-  it('the v1 marker is computed only when v1Launch===true AND the feature gate is on AND the mode is topic_practice AND a conceptId is present', () => {
+  it('the raw v1 marker is fetched only when v1Launch===true AND the feature gate is on AND the mode requests a real v1-eligible activity AND a conceptId is present (CANON-R6: topic_practice OR canonical_prove, via requestedActivityType)', () => {
+    const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
+    expect(idx).toBeGreaterThan(-1);
+    const slice = ROUTE_SRC.slice(idx, idx + 600);
+    expect(slice).toMatch(/validated\.quizMode === 'topic_practice' \? 'PRACTICE' : validated\.quizMode === 'canonical_prove' \? 'PROVE' : null/);
+    expect(slice).toMatch(/validated\.v1Launch === true/);
+    expect(slice).toMatch(/isCanonicalEngineV1Enabled\(\)/);
+    expect(slice).toMatch(/requestedActivityType/);
+    expect(slice).toMatch(/validated\.conceptId/);
+    expect(slice).toMatch(/verifyV1PracticeLaunchMarker\(/);
+  });
+
+  it('CANON-R6 Part 25: the raw marker is only honored (v1Marker non-null) when its OWN canonicalActivityType matches requestedActivityType -- wrong stage/mode never authorizes', () => {
     const idx = ROUTE_SRC.indexOf('const v1Marker =');
     expect(idx).toBeGreaterThan(-1);
     const slice = ROUTE_SRC.slice(idx, idx + 400);
-    expect(slice).toMatch(/validated\.v1Launch === true/);
-    expect(slice).toMatch(/isCanonicalEngineV1Enabled\(\)/);
-    expect(slice).toMatch(/validated\.quizMode === 'topic_practice'/);
-    expect(slice).toMatch(/validated\.conceptId/);
-    expect(slice).toMatch(/verifyV1PracticeLaunchMarker\(/);
+    expect(slice).toMatch(/rawV1Marker\.canonicalActivityType === requestedActivityType/);
+    expect(slice).toMatch(/requestedActivityType === 'PRACTICE' && rawV1Marker\.canonicalActivityType === 'REINFORCE'/);
+  });
+
+  it('CANON-R6 Part 24/29: a canonical_prove request that fails to authorize is refused outright, never silently generated with that mode\'s own generic defaults', () => {
+    const idx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove' && !v1Marker");
+    expect(idx).toBeGreaterThan(-1);
+    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    expect(slice).toMatch(/V1_PROVE_AUTHORIZATION_FAILED/);
+    expect(slice).toMatch(/status: 403/);
   });
 
   it('the marker computation NEVER reads a client-supplied policyVersion/canonicalStage/canonicalRevision -- it is derived exclusively from verifyV1PracticeLaunchMarker\'s own fresh decision call', () => {
@@ -68,7 +85,7 @@ describe('Part 6 -- legacy Practice sessions are never v1-stamped', () => {
   it('the metadata stamping block is gated on v1Qualifies (true only for the authorized concept AND a contract-compliant actual attempt) -- a session created without a marker, or one that failed contract compliance, never adds the v1 fields', () => {
     const authIdx = ROUTE_SRC.indexOf('isAuthorizedConcept = !!quizSession.v1Marker && conceptId === quizSession.conceptId');
     expect(authIdx).toBeGreaterThan(-1);
-    expect(ROUTE_SRC.slice(authIdx, authIdx + 450)).toMatch(/const v1Qualifies = isAuthorizedConcept && v1Compliance!\.compliant/);
+    expect(ROUTE_SRC.slice(authIdx, authIdx + 700)).toMatch(/const v1Qualifies = isAuthorizedConcept && v1Compliance!\.compliant/);
 
     const metadataIdx = ROUTE_SRC.indexOf('...(v1Qualifies');
     expect(metadataIdx).toBeGreaterThan(authIdx);
@@ -81,9 +98,15 @@ describe('Part 6 -- legacy Practice sessions are never v1-stamped', () => {
 });
 
 describe('Part 10/11 -- actual-vs-authorized contract compliance', () => {
-  it('checkV1ActivityContractCompliance is called with the REAL bucket.total/aggregate difficulty for the exact authorized concept, before any v1 stamping decision is made', () => {
-    const idx = ROUTE_SRC.indexOf('checkV1ActivityContractCompliance({ authorization: quizSession.v1Marker!, actualItemCount: bucket.total, actualDifficulty })');
+  it('checkV1ActivityContractCompliance is called with the REAL bucket.total/aggregate difficulty (and, for an independent contract, the real hintsUsed/aiAssistanceType) for the exact authorized concept, before any v1 stamping decision is made', () => {
+    const idx = ROUTE_SRC.indexOf('checkV1ActivityContractCompliance({');
     expect(idx).toBeGreaterThan(-1);
+    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    expect(slice).toMatch(/authorization: quizSession\.v1Marker!/);
+    expect(slice).toMatch(/actualItemCount: bucket\.total/);
+    expect(slice).toMatch(/actualDifficulty,/);
+    expect(slice).toMatch(/actualHintsUsed: hintsUsed/);
+    expect(slice).toMatch(/actualAiAssistanceType/);
   });
 
   it('a contract violation is logged with the closed V1_ACTIVITY_CONTRACT_VIOLATION reason, never silenced', () => {
@@ -177,13 +200,14 @@ describe('Part 26/27 -- no widening of Prove/Retention/Transfer/Learn readiness,
     expect(importBlock).not.toMatch(/generatePracticeQuestions|generateQuickCheckQuestions|generateRetentionCheckQuestions/);
   });
 
-  it('activity-launch-readiness.ts (Prove/Retention/Transfer/Learn NOT_READY gates) is untouched by this phase -- still the frozen CANON-R5 grounding', () => {
+  it('activity-launch-readiness.ts still keeps Retention/Transfer/Learn NOT_READY -- CANON-R6 deliberately widened ONLY Prove, per its own explicit scope', () => {
     const src = read('src/lib/pedagogical-decision/activity-launch-readiness.ts');
-    expect(src).toMatch(/V1_PROVE_GENERATION_NOT_READY/);
+    expect(src).not.toMatch(/V1_PROVE_GENERATION_NOT_READY/);
     expect(src).toMatch(/V1_RETENTION_GENERATION_NOT_READY/);
     expect(src).toMatch(/V1_TRANSFER_GENERATION_NOT_READY/);
     expect(src).toMatch(/V1_LEARN_CHECK_GENERATION_NOT_READY/);
     expect(src).toMatch(/case 'PRACTICE':\n    case 'REINFORCE':\n      return \{ ready: true \};/);
+    expect(src).toMatch(/case 'PROVE':\n      return \{ ready: true \};/);
   });
 });
 
@@ -208,8 +232,9 @@ describe('Part 3 -- the v1Launch intent signal travels end to end: session start
 });
 
 describe('Part 25 -- feature gate parity', () => {
-  it('with the gate off, v1Marker is always null regardless of v1Launch (short-circuited by isCanonicalEngineV1Enabled() in the same && chain)', () => {
-    const idx = ROUTE_SRC.indexOf('const v1Marker =');
+  it('with the gate off, rawV1Marker (and therefore v1Marker) is always null regardless of v1Launch (short-circuited by isCanonicalEngineV1Enabled() in the same && chain)', () => {
+    const idx = ROUTE_SRC.indexOf('const rawV1Marker =');
+    expect(idx).toBeGreaterThan(-1);
     const slice = ROUTE_SRC.slice(idx, idx + 300);
     // isCanonicalEngineV1Enabled() must appear in the same guarding
     // expression as v1Launch -- both are required, neither alone suffices.

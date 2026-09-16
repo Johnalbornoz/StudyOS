@@ -184,9 +184,9 @@ describe('Parts 15-19/33/34 -- resolveV1ActivityLaunchReadiness (grounded in the
     expect(r).toMatchObject({ ready: false, reason: 'V1_LEARN_CHECK_GENERATION_NOT_READY' });
   });
 
-  it('PROVE is not ready -- quick_check is fixed at 6 items, not the required 10', () => {
+  it('PROVE is ready as of CANON-R6 -- a distinct canonical_prove mode routes through the existing exact-count-or-fail-closed generateGatedQuestionBatch, never repurposing quick_check\'s own fixed 6', () => {
     const r = resolveV1ActivityLaunchReadiness('PROVE');
-    expect(r).toMatchObject({ ready: false, reason: 'V1_PROVE_GENERATION_NOT_READY' });
+    expect(r).toEqual({ ready: true });
   });
 
   it('RETENTION_CHECK is not ready -- RETENTION_REQUIRED_COUNT is hardcoded to 6, not the required 10', () => {
@@ -287,15 +287,17 @@ describe('Part 12-19 -- resolveCanonicalLaunch (session-start enforcement bounda
     expect(s.activityType).toBe('REINFORCE');
   });
 
-  it('EXECUTABLE PROVE is refused NOT_READY -- never silently routed through legacy quick_check', () => {
+  it('EXECUTABLE PROVE (CANON-R6) launches READY into the DISTINCT canonical_prove mode -- never legacy quick_check -- with the exact-10 contract in the URL', () => {
     const s = resolveCanonicalLaunch({
       subjectId: 'subj1',
       conceptId: CONCEPT,
-      decision: decision({ stage: 'PROVE', nextCanonicalAction: 'PROVE', activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, independence: true, supportLevel: 'NONE' } }),
+      decision: decision({ stage: 'PROVE', nextCanonicalAction: 'PROVE', activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, difficulty: { target: 3, min: 3, max: 4, reasonCode: 'DEFAULT_STAGE_MIDPOINT' as any }, independence: true, supportLevel: 'NONE' } }),
     });
-    expect(s.launchStatus).toBe('NOT_READY');
-    expect(s.notReadyReason).toBe('V1_PROVE_GENERATION_NOT_READY');
-    expect(s.launchTarget).toBeNull();
+    expect(s.launchStatus).toBe('READY');
+    expect(s.launchTarget).toContain('mode=canonical_prove');
+    expect(s.launchTarget).not.toContain('mode=quick_check');
+    expect(s.launchTarget).toContain('maxQuestions=10');
+    expect(s.launchTarget).toContain('difficulty=3');
   });
 
   it('EXECUTABLE RETENTION_CHECK is refused NOT_READY', () => {
@@ -388,13 +390,21 @@ describe('Part 10 -- overrideConceptMissionViewWithCanonicalDecision', () => {
     expect(overridden.now.fallback).toBe('CONSOLIDATED_NO_ACTION');
   });
 
-  it('an EXECUTABLE stage the real generation infra cannot yet honor (PROVE) renders CANONICAL_ACTION_UNAVAILABLE, never a broken CTA', () => {
+  it('an EXECUTABLE stage the real generation infra still cannot yet honor (e.g. RETENTION_CHECK) renders CANONICAL_ACTION_UNAVAILABLE, never a broken CTA', () => {
     const overridden = overrideConceptMissionViewWithCanonicalDecision(
       legacyView(),
-      decision({ stage: 'PROVE', activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, independence: true } }),
+      decision({ stage: 'RETAIN', activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true } }),
     );
     expect(overridden.now.kind).toBe('NO_CANONICAL_ACTION');
     expect(overridden.now.fallback).toBe('CANONICAL_ACTION_UNAVAILABLE');
+  });
+
+  it('CANON-R6: an EXECUTABLE PROVE stage now renders a real CANONICAL_ACTION (the concept-mission-override doesn\'t hardcode PRACTICE -- toLegacyActivityType maps every ready v1 activity type, including PROVE, to a real actionable CTA)', () => {
+    const overridden = overrideConceptMissionViewWithCanonicalDecision(
+      legacyView(),
+      decision({ stage: 'PROVE', activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, difficulty: { target: 3, min: 3, max: 4, reasonCode: 'DEFAULT_STAGE_MIDPOINT' as any }, independence: true, supportLevel: 'NONE' } }),
+    );
+    expect(overridden.now.kind).toBe('CANONICAL_ACTION');
   });
 
   it('an EXECUTABLE PRACTICE stage renders a real CANONICAL_ACTION', () => {

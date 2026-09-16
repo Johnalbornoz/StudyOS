@@ -106,8 +106,8 @@ import {
 
 // Phase 3A: single-concept quiz modes -- every other mode spans several
 // concepts and is selected via selectConceptsForQuizMode/conceptIds instead.
-type SingleConceptQuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'diagnostic_check';
-const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = ['topic_practice', 'review', 'quick_check', 'retention_check', 'diagnostic_check'];
+type SingleConceptQuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'diagnostic_check' | 'canonical_prove';
+const SINGLE_CONCEPT_MODES: readonly SingleConceptQuizMode[] = ['topic_practice', 'review', 'quick_check', 'retention_check', 'diagnostic_check', 'canonical_prove'];
 function isSingleConceptMode(mode: QuizMode): mode is SingleConceptQuizMode {
   return (SINGLE_CONCEPT_MODES as readonly QuizMode[]).includes(mode);
 }
@@ -224,6 +224,24 @@ const QUIZ_MODE_CONFIG: Record<
     visualAidRate: 0,
     evidenceSource: 'DIAGNOSTIC',
   },
+  // CANON-R6 -- the exact-10, independent canonical v1 Prove check.
+  // `defaultMax` is never actually consulted for a genuinely
+  // v1-authorized request (the server-derived override below always
+  // forces exactly `v1Marker.itemCount.authorized`, 10 today) -- it
+  // exists only so this Record stays total and so an unauthorized
+  // `canonical_prove` request (rejected before generation, see the
+  // v1Marker guard) never needs to reach this value at all. Reuses the
+  // SAME question-type catalog and generation prompt shape as
+  // quick_check (no new prompt template) -- guidance text differs only
+  // to reflect the higher item count and higher stakes; no AI provider,
+  // routing, or Quality Gate code was touched.
+  canonical_prove: {
+    guidance:
+      'This is an independent mastery check -- the student demonstrates they can do this ALONE, with no help. Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess, the same rigor as a diagnostic check but across a full independent set. Keep each question tightly focused on the core idea of this concept.',
+    defaultMax: 10,
+    visualAidRate: 0,
+    evidenceSource: 'SOLO_VERIFICATION',
+  },
 };
 
 const GenerateQuizSchema = z.object({
@@ -231,7 +249,7 @@ const GenerateQuizSchema = z.object({
   subjectId: z.string().uuid(),
   conceptId: z.string().uuid().optional(),
   conceptIds: z.array(z.string().uuid()).optional(), // manual topic selection for cumulative_assessment/exam_simulation
-  quizMode: z.enum(['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check']).default('topic_practice'),
+  quizMode: z.enum(['topic_practice', 'review', 'quick_check', 'retention_check', 'cumulative_assessment', 'exam_simulation', 'diagnostic_check', 'canonical_prove']).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
@@ -392,22 +410,52 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       );
     }
 
-    // CANON-R5R1 Part 2/6/20 -- the client's `v1Launch` flag is only an
-    // INTENT signal (set exclusively by resolveCanonicalLaunch's own
-    // launch URL). It is never trusted on its own: only when the gate is
-    // on, the flag is present, AND a FRESH canonical decision
+    // CANON-R5R1/R6 Part 2/6/20/24/25 -- the client's `v1Launch` flag is
+    // only an INTENT signal (set exclusively by resolveCanonicalLaunch's
+    // own launch URL). It is never trusted on its own: only when the
+    // gate is on, the flag is present, AND a FRESH canonical decision
     // independently confirms this exact (studentId, conceptId) pair is
-    // genuinely an EXECUTABLE v1 Practice/Reinforce activity right now
-    // does this session get stamped v1. Any other case (flag absent, gate
-    // off, or re-verification fails) yields `null` and this request
-    // proceeds through the existing, unmodified legacy generation path --
-    // a v1-ineligible request is never blocked, only never labeled v1
-    // (Part 6: "Only canonical-engine-created Practice session -> v1
-    // evidence. Legacy Practice route -> remains legacy.").
-    const v1Marker =
-      validated.v1Launch === true && isCanonicalEngineV1Enabled() && validated.quizMode === 'topic_practice' && validated.conceptId
+    // genuinely an EXECUTABLE v1 activity matching the REQUESTED mode
+    // does this session get stamped v1. `requestedActivityType` is
+    // derived purely from the request's own `quizMode` (never from any
+    // client-claimed stage) -- `topic_practice` requests PRACTICE (or
+    // its REINFORCE overlay), `canonical_prove` requests PROVE ONLY.
+    // A request for `canonical_prove` whose fresh decision resolves to
+    // anything else (wrong stage: PRACTICE/RETAIN/LEARN/TRANSFER, or a
+    // non-EXECUTABLE actionState) is REJECTED, never silently downgraded
+    // or upgraded to whatever the true stage is (Part 25: "No
+    // downgrade/upgrade"). Any other case (flag absent, gate off, wrong
+    // mode/stage, or re-verification fails) yields `v1Marker: null`.
+    const requestedActivityType: 'PRACTICE' | 'PROVE' | null =
+      validated.quizMode === 'topic_practice' ? 'PRACTICE' : validated.quizMode === 'canonical_prove' ? 'PROVE' : null;
+    const rawV1Marker =
+      validated.v1Launch === true && isCanonicalEngineV1Enabled() && requestedActivityType && validated.conceptId
         ? await verifyV1PracticeLaunchMarker({ studentId: validated.studentId, conceptId: validated.conceptId })
         : null;
+    // A REINFORCE overlay is presented as an ordinary Practice-shaped
+    // activity -- it satisfies a `topic_practice` request; PROVE never
+    // satisfies anything but a `canonical_prove` request, and vice versa.
+    const v1Marker =
+      rawV1Marker &&
+      (rawV1Marker.canonicalActivityType === requestedActivityType ||
+        (requestedActivityType === 'PRACTICE' && rawV1Marker.canonicalActivityType === 'REINFORCE'))
+        ? rawV1Marker
+        : null;
+
+    // CANON-R6 Part 24/29 -- `canonical_prove` has NO legitimate legacy
+    // meaning (unlike `topic_practice`, which is also a real legacy
+    // mode): a request for it that fails verification/matching above is
+    // refused outright, never silently generated with this mode's own
+    // generic `defaultMax`/guidance as if it were some other kind of
+    // activity (that would be exactly "relabel an incomplete/unauthorized
+    // quiz as legacy quick_check after session authorization," Part 29's
+    // own prohibition, generalized to canonical_prove itself).
+    if (validated.quizMode === 'canonical_prove' && !v1Marker) {
+      return NextResponse.json(
+        { error: 'V1_PROVE_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for an independent Prove check.' },
+        { status: 403 }
+      );
+    }
 
     const language = isLocale(validated.language)
       ? validated.language
@@ -716,7 +764,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // (single-concept), so this per-concept fetch is skipped for
             // them.
             conceptIds.map(async (cId) => {
-              let perConceptDifficulty = validated.difficulty ?? resolvedDifficulty?.level;
+              // CANON-R6: this is the exact branch a `canonical_prove`
+              // request falls through to (it matches none of the three
+              // named-mode conditions above) -- `v1EffectiveDifficulty`
+              // must win here too, for the identical reason it already
+              // wins at every other call site above.
+              let perConceptDifficulty = v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level;
               if (perConceptDifficulty === undefined) {
                 const batchActivityType = activityTypeForQuizMode(validated.quizMode);
                 const batchKs = await getConceptKnowledgeState(validated.studentId, cId).catch(() => null);
@@ -779,8 +832,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'QUESTION_COUNT_INSUFFICIENT',
         }));
       } catch { /* logging must never break the response */ }
+      // CANON-R6 Part 5/29 -- a v1 Prove request may NEVER silently
+      // administer fewer than the authorized exact-10 count; this
+      // pre-existing universal guard already fails the whole request
+      // closed before storeQuiz is ever called (LX-9-FINAL Part G) --
+      // this only adds the closed, Prove-specific reason code, additive
+      // to the generic error shape every other mode already gets.
       return NextResponse.json(
-        { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+        validated.quizMode === 'canonical_prove'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
     }
@@ -803,7 +864,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         }));
       } catch { /* logging must never break the response */ }
       return NextResponse.json(
-        { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+        validated.quizMode === 'canonical_prove'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
     }
@@ -1175,19 +1238,37 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           sampleSize: bucket.total,
         };
 
-        // CANON-R5R1A Part 0/10/11/13 -- PRIMARY INVARIANT: canonical
-        // STAGE verification alone (R5R1) is insufficient. Before this
-        // concept's evidence may ever be labeled `studyus-canonical-v1`,
-        // the ACTUALLY administered activity (real item count, real
-        // aggregate difficulty) must satisfy the AUTHORIZED contract
-        // that was persisted at generation time (never re-derived here,
-        // never trusted from this request). A violation is reported,
-        // never silently clamped/fabricated/erased -- the row is simply
-        // never labeled v1 (falls through as ordinary, unversioned
-        // evidence, exactly like any other legacy attempt).
+        const hintsUsed = bucket.questionIndexes.filter((i) => quizSession.hintsUsedQuestions.includes(i)).length;
+        // CANON-R5R1A Part 0/10/11/13, CANON-R6 Part 13 -- PRIMARY
+        // INVARIANT: canonical STAGE verification alone (R5R1) is
+        // insufficient. Before this concept's evidence may ever be
+        // labeled `studyus-canonical-v1`, the ACTUALLY administered
+        // activity must satisfy the AUTHORIZED contract persisted at
+        // generation time (never re-derived here, never trusted from
+        // this request): real item count, real aggregate difficulty,
+        // and -- for an independent contract (PROVE) -- zero hints used.
+        // `aiAssistanceType` mirrors `mastery.service.ts`'s own
+        // `computedAiAssistanceType` derivation (hintsUsed > 0 implies
+        // some assistance was recorded) rather than a second, competing
+        // computation -- for a genuine v1 Prove session this should be
+        // structurally unreachable anyway, since `canUseAI` already
+        // denies every hint/Tutor request for an INDEPENDENT
+        // (SOLO_CHECK) evidenceMode session at the source (Part 8/9) --
+        // this check is defense-in-depth, never the only enforcement.
+        // A violation is reported, never silently clamped/fabricated/
+        // erased -- the row is simply never labeled v1 (falls through as
+        // ordinary, unversioned evidence, exactly like any other legacy
+        // attempt).
+        const actualAiAssistanceType = hintsUsed > 0 ? (hintsUsed > 1 ? 'MULTIPLE_HINTS' : 'HINT') : 'NONE';
         const isAuthorizedConcept = !!quizSession.v1Marker && conceptId === quizSession.conceptId;
         const v1Compliance = isAuthorizedConcept
-          ? checkV1ActivityContractCompliance({ authorization: quizSession.v1Marker!, actualItemCount: bucket.total, actualDifficulty })
+          ? checkV1ActivityContractCompliance({
+              authorization: quizSession.v1Marker!,
+              actualItemCount: bucket.total,
+              actualDifficulty,
+              actualHintsUsed: hintsUsed,
+              actualAiAssistanceType,
+            })
           : null;
         const v1Qualifies = isAuthorizedConcept && v1Compliance!.compliant;
         if (isAuthorizedConcept && !v1Compliance!.compliant) {
@@ -1198,8 +1279,6 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             conceptId,
           }));
         }
-
-        const hintsUsed = bucket.questionIndexes.filter((i) => quizSession.hintsUsedQuestions.includes(i)).length;
         const masteryResult = await updateMastery({
           studentId: validated.studentId,
           conceptId,
@@ -1246,6 +1325,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     pedagogicalPolicyVersion: quizSession.v1Marker!.pedagogicalPolicyVersion,
                     canonicalRevision: quizSession.v1Marker!.canonicalRevision,
                     canonicalStage: quizSession.v1Marker!.canonicalStage,
+                    // CANON-R6 Part 18: additive -- previously implied
+                    // only by `activityType` (already 'SOLO_CHECK' or
+                    // 'PRACTICE' at the top level); persisted here too so
+                    // the canonical stage/activity pairing is explicit
+                    // and auditable directly from `metadata` alone.
+                    canonicalActivityType: quizSession.v1Marker!.canonicalActivityType,
                     itemCount: bucket.total,
                     correctCount: bucket.correct,
                   }

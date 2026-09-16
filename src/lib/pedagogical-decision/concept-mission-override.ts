@@ -104,9 +104,19 @@ function buildCanonicalJourney(decision: CanonicalPedagogicalDecision): ConceptM
   };
 }
 
-/** Only PRACTICE and the REINFORCE overlay ever reach a real v1 launch today (activity-launch-readiness.ts) -- both present to the learner as the existing 'PRACTICE' ActivityType, the same shape REINFORCE already rendered as pre-CANON-R5. */
-function toLegacyActivityType(_activityType: PedagogicalActivityType | 'REINFORCE'): ActivityType {
-  return 'PRACTICE';
+/**
+ * PRACTICE, the REINFORCE overlay, and (as of CANON-R6) PROVE reach a
+ * real v1 launch today (activity-launch-readiness.ts). PRACTICE/REINFORCE
+ * present as the existing 'PRACTICE' ActivityType (the same shape
+ * REINFORCE already rendered pre-CANON-R5); PROVE presents as
+ * 'SOLO_CHECK' -- the SAME legacy ActivityType `quick_check` already
+ * uses for an independent check, and the SAME mapping CANON-R3's own
+ * evidence adapter already treats as PROVE's real-world analog. Never
+ * hardcoded to 'PRACTICE' regardless of the real activity, which would
+ * mislabel a genuine independent Prove CTA as an assisted Practice one.
+ */
+function toLegacyActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): ActivityType {
+  return activityType === 'PROVE' ? 'SOLO_CHECK' : 'PRACTICE';
 }
 
 function buildCanonicalNow(decision: CanonicalPedagogicalDecision): ConceptMissionNow {

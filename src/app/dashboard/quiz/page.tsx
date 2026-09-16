@@ -45,7 +45,7 @@ import { milestoneFeedbackKey, type MilestoneType } from '@/lib/lx/progression-m
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
-type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check';
+type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check' | 'canonical_prove';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
 // vs. INDEPENDENT/ASSESSMENT (no AI assistance) -- mirrors
 // src/lib/activity-taxonomy.ts's fixed Activity Type -> Evidence Mode
@@ -80,6 +80,7 @@ const QUIZ_SUPPORT_CONTEXT: Record<QuizMode, LearningSupportContext> = {
   cumulative_assessment: 'ASSESSMENT',
   exam_simulation: 'ASSESSMENT',
   diagnostic_check: 'DIAGNOSTIC',
+  canonical_prove: 'SOLO',
 };
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
@@ -140,6 +141,11 @@ const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   cumulative_assessment: 20,
   exam_simulation: 20,
   diagnostic_check: 3,
+  // Never actually used: canonical_prove is always isCanonicalFlow (a
+  // concept + this single-concept mode), so maxQuestions is omitted
+  // from the request entirely (see genBody) and the server's own v1
+  // authorization forces exactly 10 regardless of this default.
+  canonical_prove: 10,
 };
 
 const RESULT_MESSAGE_KEY: Record<string, 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'> = {
@@ -262,7 +268,7 @@ function QuizPageContent() {
   // actual next action regardless of this.
   const continuationKind: LearningActivityKind = remediationStepId
     ? 'REINFORCE'
-    : modeParam === 'quick_check'
+    : modeParam === 'quick_check' || modeParam === 'canonical_prove'
       ? 'PROVE'
       : modeParam === 'retention_check'
         ? 'RETAIN'
@@ -1112,8 +1118,12 @@ function QuizPageContent() {
       ? at['quiz.evidenceStrengthContradicted']
       : at['quiz.evidenceStrengthLow'];
 
+  // canonical_prove never actually reaches these (isCanonicalFlow always
+  // shows the loading state instead of this setup form for it -- see
+  // below), but both fall back to the SAME quick_check copy defensively
+  // rather than mislabeling it "Practice" if ever reached.
   const modeLabel = (mode: QuizMode) =>
-    mode === 'quick_check'
+    mode === 'quick_check' || mode === 'canonical_prove'
       ? t['quiz.modeQuickCheck']
       : mode === 'retention_check'
       ? t['quiz.modeRetentionCheck']
@@ -1128,7 +1138,7 @@ function QuizPageContent() {
       : t['quiz.modeTopicPractice'];
 
   const modeDesc = (mode: QuizMode) =>
-    mode === 'quick_check'
+    mode === 'quick_check' || mode === 'canonical_prove'
       ? t['quiz.modeQuickCheckDesc']
       : mode === 'retention_check'
       ? t['quiz.modeRetentionCheckDesc']
@@ -1638,6 +1648,40 @@ function QuizPageContent() {
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
               {at['quiz.examReadinessCalibrationLabel']}: {results.examReadinessCalibration.predictedReadiness}% → {results.examReadinessCalibration.actualPerformance}%
             </p>
+          )}
+
+          {/* CANON-R6 Part 21 -- for a v1 attempt, `canonicalResults`
+              (a FRESH getCanonicalPedagogicalDecision, computed by the
+              server strictly after the evidence write) is the SOLE
+              next-step authority -- never inferred from score/quizMode/
+              mastery deltas here. Legacy (non-v1) Results are completely
+              unaffected: this block renders only when
+              `canonicalResultsStatus` is one of the two v1-specific
+              values below; every other attempt still shows only the
+              existing `messageText` line beneath it, exactly as before
+              this phase. */}
+          {results.canonicalResultsStatus === 'OK' && results.canonicalResults && (
+            <div className="card" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-5)' }}>
+              <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.canonicalNextStepTitle']}</p>
+              <p style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+                {results.canonicalResults.actionState === 'WAITING'
+                  ? (results.canonicalResults.nextEligibleAt
+                      ? at['conceptMission.noActionRetentionWaitingBodyWithDate'].replace('{date}', new Date(results.canonicalResults.nextEligibleAt).toLocaleDateString(quizLanguage))
+                      : at['conceptMission.noActionRetentionWaitingBody'])
+                  : results.canonicalResults.stage === 'PROVE'
+                    ? at['quiz.canonicalNextProve']
+                    : results.canonicalResults.stage === 'PRACTICE'
+                      ? at['quiz.canonicalNextPractice']
+                      : results.canonicalResults.stage === 'CONSOLIDATED'
+                        ? at['quiz.canonicalNextConsolidated']
+                        : null}
+              </p>
+            </div>
+          )}
+          {results.canonicalResultsStatus === 'V1_ACTIVITY_CONTRACT_VIOLATION' && (
+            <div className="card empty-state" style={{ marginTop: 'var(--space-4)' }}>
+              <p style={{ margin: 0 }}>{at['quiz.canonicalContractViolation']}</p>
+            </div>
           )}
 
           <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>

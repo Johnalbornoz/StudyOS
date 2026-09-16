@@ -144,16 +144,16 @@ describe('Part 3/4/7/15 -- server-derived maxQuestions/difficulty override clien
 });
 
 describe('Part 6/17 -- mode enforcement: a client cannot turn canonical PRACTICE into a different quizMode', () => {
-  it('v1Marker can only ever be computed for quizMode === topic_practice -- the guard condition itself enforces this before verifyV1PracticeLaunchMarker is even called', () => {
-    const idx = ROUTE_SRC.indexOf("validated.quizMode === 'topic_practice' && validated.conceptId");
+  it('requestedActivityType (and therefore the raw v1 marker fetch) can only ever resolve for quizMode topic_practice or canonical_prove -- the guard itself enforces this before verifyV1PracticeLaunchMarker is even called (CANON-R6 widened this from a single literal to the closed requestedActivityType mapping)', () => {
+    const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
     expect(idx).toBeGreaterThan(-1);
+    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    expect(slice).toMatch(/validated\.quizMode === 'topic_practice' \? 'PRACTICE' : validated\.quizMode === 'canonical_prove' \? 'PROVE' : null/);
   });
 
-  it('a client-requested quick_check/retention_check/review with v1Launch=true never reaches verifyV1PracticeLaunchMarker at all (structurally impossible, not merely unauthorized)', () => {
-    // The && chain requires quizMode === 'topic_practice' literally --
-    // no other quizMode string can short-circuit past it to the call.
-    const conditionLine = ROUTE_SRC.split('const v1Marker =')[1].split('?')[0];
-    expect(conditionLine).toMatch(/validated\.quizMode === 'topic_practice'/);
+  it('a client-requested quick_check/retention_check/review with v1Launch=true never reaches verifyV1PracticeLaunchMarker at all (structurally impossible, not merely unauthorized) -- requestedActivityType resolves to null for every mode other than topic_practice/canonical_prove', () => {
+    const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
+    const conditionLine = ROUTE_SRC.slice(idx, idx + 300);
     expect(conditionLine).not.toMatch(/quick_check|retention_check|review/);
   });
 });

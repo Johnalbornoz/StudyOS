@@ -17,7 +17,18 @@ export type QuizMode =
   | 'retention_check'
   | 'cumulative_assessment'
   | 'exam_simulation'
-  | 'diagnostic_check';
+  | 'diagnostic_check'
+  /**
+   * CANON-R6 Part 1/4/6 -- the ONE distinct, server-only mode for
+   * exact-10, independent, canonical v1 Prove. NEVER an alias for
+   * `quick_check` (which stays fixed at 6 items for every legacy
+   * caller, completely untouched by this addition) -- a session can
+   * only ever be CREATED in this mode by generate-and-take's own
+   * independently-re-verified v1 authorization
+   * (`verifyV1PracticeLaunchMarker`); no legitimate legacy caller ever
+   * requests it.
+   */
+  | 'canonical_prove';
 
 /**
  * Phase 3A: the Quiz/Activity Engine's own Activity Type per quiz
@@ -28,6 +39,14 @@ export type QuizMode =
  * happened to reuse that mode for a "prove it alone" moment
  * (Concept Detail's soloCheck CTA did exactly that; it's fixed
  * alongside this).
+ *
+ * CANON-R6: `canonical_prove` reuses the SAME `SOLO_CHECK` ActivityType
+ * as `quick_check` -- CANON-R3's own evidence adapter already maps
+ * SOLO_CHECK evidence to the engine's PROVE requirement, and
+ * `SOLO_CHECK`'s EvidenceMode (`INDEPENDENT`) already denies every
+ * AI-assistance feature via the existing, unmodified `canUseAI` policy
+ * -- no new ActivityType, no new EvidenceMode, no new AI-permission
+ * rule was needed.
  */
 export const ACTIVITY_TYPE_BY_QUIZ_MODE: Record<QuizMode, ActivityType> = {
   topic_practice: 'PRACTICE',
@@ -37,6 +56,7 @@ export const ACTIVITY_TYPE_BY_QUIZ_MODE: Record<QuizMode, ActivityType> = {
   cumulative_assessment: 'CUMULATIVE_ASSESSMENT',
   exam_simulation: 'MOCK_EXAM',
   diagnostic_check: 'DIAGNOSTIC_CHECK',
+  canonical_prove: 'SOLO_CHECK',
 };
 
 export function activityTypeForQuizMode(quizMode: QuizMode): ActivityType {
@@ -68,6 +88,10 @@ export interface QuizSessionV1Marker {
   itemCount: { min: number; max: number; authorized: number };
   difficulty: { min: number; max: number; target: number };
   assistanceAllowed: boolean;
+  /** CANON-R6 -- additive; `false` for every pre-R6 Practice marker still round-tripping through this same JSONB shape. */
+  independence: boolean;
+  supportLevel: 'ASSISTED' | 'NONE';
+  minimumScorePercent: number;
 }
 
 export interface QuizSession {
@@ -136,6 +160,9 @@ export async function storeQuiz(
           itemCount: v1Marker.itemCount,
           difficulty: v1Marker.difficulty,
           assistanceAllowed: v1Marker.assistanceAllowed,
+          independence: v1Marker.independence,
+          supportLevel: v1Marker.supportLevel,
+          minimumScorePercent: v1Marker.minimumScorePercent,
         })
       : null;
 
@@ -303,6 +330,14 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
         itemCount: contract.itemCount,
         difficulty: contract.difficulty,
         assistanceAllowed: contract.assistanceAllowed,
+        // CANON-R6: `?? false`/`?? 'ASSISTED'`/`?? 80` are backward-compat
+        // defaults ONLY for a hypothetical pre-R6 stored contract that
+        // predates these three fields -- every row this session's own
+        // code ever writes always includes them (storeQuiz always
+        // persists a full, current-shape v1Marker).
+        independence: contract.independence ?? false,
+        supportLevel: contract.supportLevel ?? 'ASSISTED',
+        minimumScorePercent: contract.minimumScorePercent ?? 80,
       };
     }
 

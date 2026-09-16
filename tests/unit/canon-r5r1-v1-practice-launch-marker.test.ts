@@ -140,11 +140,11 @@ describe('resolveV1PracticeEligibility -- the ONE shared check session-start and
     expect(resolveV1PracticeEligibility(decision({ actionState: 'CONSOLIDATED', activityContract: null }))).toEqual({ eligible: false });
   });
 
-  it('EXECUTABLE PROVE is never eligible (generation not ready)', () => {
+  it('EXECUTABLE PROVE is eligible as of CANON-R6 (generation now ready via the distinct canonical_prove mode)', () => {
     expect(
       resolveV1PracticeEligibility(
         decision({ stage: 'PROVE', activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, independence: true } }),
       ),
-    ).toEqual({ eligible: false });
+    ).toEqual({ eligible: true, activityType: 'PROVE' });
   });
 });

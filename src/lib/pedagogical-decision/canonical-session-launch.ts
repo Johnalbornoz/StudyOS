@@ -10,19 +10,23 @@
  *     WAITING -> zero AI generation) generalizes to every non-EXECUTABLE
  *     state here, not just Retention.
  *   - An EXECUTABLE decision whose `activityContract` the existing
- *     generation route cannot yet honor (Prove/Retention exact-10,
- *     Transfer's 3-challenge structure, LEARN_CHECK) is refused with a
- *     controlled `NOT_READY` result and a closed reason code -- NEVER
- *     silently routed through the nearest legacy quiz_mode (Part 18: "Do
- *     not silently fall back to legacy Transfer" -- generalized to every
+ *     generation route cannot yet honor (Retention exact-10, Transfer's
+ *     3-challenge structure, LEARN_CHECK) is refused with a controlled
+ *     `NOT_READY` result and a closed reason code -- NEVER silently
+ *     routed through the nearest legacy quiz_mode (Part 18: "Do not
+ *     silently fall back to legacy Transfer" -- generalized to every
  *     stage this phase found unready, per `activity-launch-readiness.ts`'s
  *     own grounding).
- *   - Only PRACTICE and the REINFORCE overlay reach a real `READY` launch
- *     today -- into the EXISTING, unmodified `/dashboard/quiz` flow
- *     (`topic_practice` quiz_mode), with `maxQuestions`/`difficulty`
- *     forced from `activityContract` rather than that mode's own
- *     defaults (Part 14: "Do not independently choose question
- *     count/difficulty... the engine defines the pedagogical contract").
+ *   - PRACTICE, its REINFORCE overlay, and (as of CANON-R6) PROVE all
+ *     reach a real `READY` launch -- into the EXISTING, unmodified
+ *     `/dashboard/quiz` flow, with `maxQuestions`/`difficulty` forced
+ *     from `activityContract` rather than that mode's own defaults
+ *     (Part 14: "Do not independently choose question count/difficulty...
+ *     the engine defines the pedagogical contract"). PRACTICE/REINFORCE
+ *     use `topic_practice`; PROVE uses its OWN distinct, server-only
+ *     `canonical_prove` quiz_mode (`v1QuizModeForActivityType`) -- never
+ *     legacy `quick_check`, which stays fixed at 6 items for every other
+ *     caller (CANON-R6 Part 1).
  *
  * Never chooses a DIFFERENT stage/action than the one the fresh decision
  * already computed, and never accepts a client-supplied stage/mode as an
@@ -51,16 +55,32 @@ export interface CanonicalLearningSession {
   notReadyReason: V1ActivityNotReadyReason | null;
 }
 
-const V1_QUIZ_MODE = 'topic_practice' as const;
+/**
+ * CANON-R6 Part 4/6 -- exact-10 canonical PROVE gets its OWN, distinct
+ * server-recognized quiz_mode, never inferred from -- or aliased onto
+ * -- legacy `quick_check` (Part 1: "Do not repurpose legacy quick_check
+ * globally"). PRACTICE and its REINFORCE overlay keep using
+ * `topic_practice`, exactly as CANON-R5R1 established.
+ */
+function v1QuizModeForActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): 'topic_practice' | 'canonical_prove' {
+  return activityType === 'PROVE' ? 'canonical_prove' : 'topic_practice';
+}
 
 export type V1PracticeEligibility =
-  | { eligible: true; activityType: 'PRACTICE' | 'REINFORCE' }
+  | { eligible: true; activityType: 'PRACTICE' | 'REINFORCE' | 'PROVE' }
   | { eligible: false };
 
 /**
- * CANON-R5R1 Part 2/20 -- THE ONE eligibility check for "is this fresh
- * decision a real, launchable v1 Practice/Reinforce activity right
- * now." Shared by `resolveCanonicalLaunch` (session start) and
+ * CANON-R5R1/R6 Part 2/20/12 -- THE ONE eligibility check for "is this
+ * fresh decision a real, launchable v1 activity right now" -- widened in
+ * CANON-R6 to also recognize PROVE, now that `activity-launch-readiness.ts`
+ * reports it READY. Name kept as-is (Part 12: "generalize carefully...
+ * do not over-generalize") -- Retention/Transfer/Learn are deliberately
+ * NOT added here; `resolveV1ActivityLaunchReadiness` still reports them
+ * NOT_READY, so widening this function's own `!== 'PRACTICE' &&
+ * ... 'REINFORCE'` guard to also list them would have no effect anyway
+ * until their own generation paths are separately reviewed and built.
+ * Shared by `resolveCanonicalLaunch` (session start) and
  * `verifyV1PracticeLaunchMarker` (the independent, generation-time
  * re-verification `/api/quizzes/generate-and-take` performs before ever
  * trusting a client's `v1Launch` intent flag) so both call sites agree
@@ -71,7 +91,7 @@ export function resolveV1PracticeEligibility(decision: CanonicalPedagogicalDecis
   const activityType = decision.intervention === 'REINFORCE' ? 'REINFORCE' : (decision.activityContract?.activityType ?? null);
   if (!activityType) return { eligible: false };
   if (!resolveV1ActivityLaunchReadiness(activityType).ready) return { eligible: false };
-  if (activityType !== 'PRACTICE' && activityType !== 'REINFORCE') return { eligible: false };
+  if (activityType !== 'PRACTICE' && activityType !== 'REINFORCE' && activityType !== 'PROVE') return { eligible: false };
   return { eligible: true, activityType };
 }
 
@@ -111,7 +131,7 @@ function buildPracticeLaunch(
   const params: Record<string, string> = {
     subjectId,
     conceptId,
-    mode: V1_QUIZ_MODE,
+    mode: v1QuizModeForActivityType(activityType),
     difficulty,
     // CANON-R5R1 Part 2/3 -- the one durable INTENT signal that this
     // launch came from the canonical engine, never authoritative on its

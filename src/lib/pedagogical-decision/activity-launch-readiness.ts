@@ -1,6 +1,6 @@
 /**
- * CANON-R5 Parts 15-19/33/34 -- WHICH v1 activity contracts the EXISTING
- * generation infrastructure (`/api/quizzes/generate-and-take`,
+ * CANON-R5/R6 Parts 15-19/33/34 -- WHICH v1 activity contracts the
+ * EXISTING generation infrastructure (`/api/quizzes/generate-and-take`,
  * `quiz-generation.service.ts`) can actually honor TODAY, without any
  * change to AI routing, providers, prompt construction, or performance
  * work (this phase's own firewall, Part 30). This is a closed,
@@ -19,14 +19,19 @@
  *     the identical reason as PRACTICE above.
  *
  *   PROVE (exactly 10 items, independent, no hints/tutor/worked
- *     examples): NOT READY. The real independent-evidence analog,
- *     `quick_check`, has a fixed `defaultMax: 6`
- *     (generate-and-take/route.ts's `QUIZ_MODE_CONFIG`) with no
- *     documented, reviewed path to force exactly 10 without either
- *     changing that shared config (which would also change quick_check's
- *     behavior for every OTHER, non-v1 caller) or adding a new
- *     quiz_mode -- out of scope for this phase's own AI/generation
- *     firewall (Part 30).
+ *     examples): READY as of CANON-R6. `quick_check`'s own dedicated
+ *     fast path (`generateQuickCheckQuestions`, fixed at 6) is
+ *     deliberately NOT reused or repurposed -- a new, distinct
+ *     server-only `canonical_prove` quiz_mode instead routes through
+ *     the EXISTING, already-exact-count-or-fail-closed
+ *     `generateGatedQuestionBatch` (the same universal-count-contract
+ *     generator `cumulative_assessment`/`exam_simulation`/
+ *     `diagnostic_check` already use -- LX-9R6-R1's own "every generator
+ *     now either publishes exactly its own required count or `[]`"
+ *     guarantee), requested with `count: 10`. No AI provider, prompt
+ *     template, or Quality Gate code was touched -- this is a routing
+ *     change only. `quick_check`'s own `defaultMax: 6` is completely
+ *     unmodified and untouched by any v1 Prove request.
  *
  *   RETENTION_CHECK (exactly 10 NEW items, independent, 3-day wait):
  *     NOT READY. `RETENTION_REQUIRED_COUNT` (quiz-generation.service.ts)
@@ -64,7 +69,6 @@ import type { PedagogicalActivityType } from '@/lib/pedagogical-engine';
 
 export type V1ActivityNotReadyReason =
   | 'V1_LEARN_CHECK_GENERATION_NOT_READY'
-  | 'V1_PROVE_GENERATION_NOT_READY'
   | 'V1_RETENTION_GENERATION_NOT_READY'
   | 'V1_TRANSFER_GENERATION_NOT_READY';
 
@@ -84,11 +88,7 @@ export function resolveV1ActivityLaunchReadiness(activityType: PedagogicalActivi
         detail: 'StudyUS has no quiz_mode or ActivityType producing a dedicated LEARN comprehension checkpoint today (CANON-R3 adapter audit: LEARN_CHECK_SOURCE_UNAVAILABLE).',
       };
     case 'PROVE':
-      return {
-        ready: false,
-        reason: 'V1_PROVE_GENERATION_NOT_READY',
-        detail: "quick_check's real generation contract is fixed at 6 items (QUIZ_MODE_CONFIG.quick_check.defaultMax, generate-and-take/route.ts) -- the frozen v1 Prove contract requires exactly 10.",
-      };
+      return { ready: true };
     case 'RETENTION_CHECK':
       return {
         ready: false,

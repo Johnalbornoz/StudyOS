@@ -26,6 +26,10 @@ const FULL_MARKER: QuizSessionV1Marker = {
   itemCount: { min: 2, max: 3, authorized: 3 },
   difficulty: { min: 2, max: 4, target: 3 },
   assistanceAllowed: true,
+  // CANON-R6: additive fields, widened onto this same marker shape.
+  independence: false,
+  supportLevel: 'ASSISTED',
+  minimumScorePercent: 80,
 };
 
 beforeEach(() => {
@@ -56,11 +60,14 @@ describe('storeQuiz -- persists the v1 authorization only when the caller suppli
       itemCount: { min: 2, max: 3, authorized: 3 },
       difficulty: { min: 2, max: 4, target: 3 },
       assistanceAllowed: true,
+      independence: false,
+      supportLevel: 'ASSISTED',
+      minimumScorePercent: 80,
     });
   });
 
   it('the INSERT column list names all four v1 columns explicitly (source audit)', () => {
-    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 2500);
+    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 3200);
     expect(fn).toMatch(/pedagogical_policy_version, canonical_revision, canonical_stage,\s*\n\s*canonical_activity_contract/);
   });
 });
@@ -108,6 +115,9 @@ describe('getQuizSession -- reloads the trusted authorization from the persisted
             itemCount: { min: 2, max: 3, authorized: 3 },
             difficulty: { min: 2, max: 4, target: 3 },
             assistanceAllowed: true,
+            independence: false,
+            supportLevel: 'ASSISTED',
+            minimumScorePercent: 80,
           }),
         }),
       ],
