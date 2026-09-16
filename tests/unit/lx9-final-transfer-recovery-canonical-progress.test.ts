@@ -162,11 +162,12 @@ describe('LX-9 FINAL 12-13, 17 -- a session is never launchable until valid', ()
   });
 
   it('storeQuiz is a single INSERT statement -- atomic by construction, no partial row possible', () => {
-    // CANON-R5R1: storeQuiz gained a documented `v1Marker` parameter --
-    // the window is widened (was 1200) to comfortably still include the
-    // one real INSERT INTO further into the function body; the
-    // assertion itself (exactly one INSERT) is unchanged.
-    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 2000);
+    // CANON-R5R1/R5R1A: storeQuiz gained documented `v1Marker` handling
+    // (including the JSONB contract serialization) -- the window is
+    // widened further (was 1200, then 2000) to comfortably still
+    // include the one real INSERT INTO further into the function body;
+    // the assertion itself (exactly one INSERT) is unchanged.
+    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 2800);
     const inserts = fn.match(/INSERT INTO/g) ?? [];
     expect(inserts.length).toBe(1);
   });

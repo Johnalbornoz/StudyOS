@@ -65,12 +65,47 @@ describe('Part 12/20 -- SubmitQuizSchema cannot carry a forged v1 claim', () => 
 });
 
 describe('Part 6 -- legacy Practice sessions are never v1-stamped', () => {
-  it('the metadata stamping block is gated on quizSession.v1Marker being non-null -- a session created without one (any legacy caller, or a v1Launch request that failed re-verification) never adds the v1 fields', () => {
-    const idx = ROUTE_SRC.indexOf('quizSession.v1Marker && conceptId === quizSession.conceptId');
-    const slice = ROUTE_SRC.slice(idx - 50, idx + 500);
-    expect(slice).toMatch(/pedagogicalPolicyVersion: quizSession\.v1Marker\.pedagogicalPolicyVersion/);
-    expect(slice).toMatch(/canonicalRevision: quizSession\.v1Marker\.canonicalRevision/);
-    expect(slice).toMatch(/canonicalStage: quizSession\.v1Marker\.canonicalStage/);
+  it('the metadata stamping block is gated on v1Qualifies (true only for the authorized concept AND a contract-compliant actual attempt) -- a session created without a marker, or one that failed contract compliance, never adds the v1 fields', () => {
+    const authIdx = ROUTE_SRC.indexOf('isAuthorizedConcept = !!quizSession.v1Marker && conceptId === quizSession.conceptId');
+    expect(authIdx).toBeGreaterThan(-1);
+    expect(ROUTE_SRC.slice(authIdx, authIdx + 450)).toMatch(/const v1Qualifies = isAuthorizedConcept && v1Compliance!\.compliant/);
+
+    const metadataIdx = ROUTE_SRC.indexOf('...(v1Qualifies');
+    expect(metadataIdx).toBeGreaterThan(authIdx);
+    const slice = ROUTE_SRC.slice(metadataIdx, metadataIdx + 500);
+    expect(slice).toMatch(/\?\s*\{/);
+    expect(slice).toMatch(/pedagogicalPolicyVersion: quizSession\.v1Marker!\.pedagogicalPolicyVersion/);
+    expect(slice).toMatch(/canonicalRevision: quizSession\.v1Marker!\.canonicalRevision/);
+    expect(slice).toMatch(/canonicalStage: quizSession\.v1Marker!\.canonicalStage/);
+  });
+});
+
+describe('Part 10/11 -- actual-vs-authorized contract compliance', () => {
+  it('checkV1ActivityContractCompliance is called with the REAL bucket.total/aggregate difficulty for the exact authorized concept, before any v1 stamping decision is made', () => {
+    const idx = ROUTE_SRC.indexOf('checkV1ActivityContractCompliance({ authorization: quizSession.v1Marker!, actualItemCount: bucket.total, actualDifficulty })');
+    expect(idx).toBeGreaterThan(-1);
+  });
+
+  it('a contract violation is logged with the closed V1_ACTIVITY_CONTRACT_VIOLATION reason, never silenced', () => {
+    expect(ROUTE_SRC).toMatch(/console\.warn\('\[canon-r5r1a\]'/);
+  });
+
+  it('a contract violation is persisted as an explicit, traceable v1ActivityContractViolation diagnostic -- never fabricated compliance, never erased', () => {
+    const idx = ROUTE_SRC.indexOf('v1ActivityContractViolation: {');
+    expect(idx).toBeGreaterThan(-1);
+    const slice = ROUTE_SRC.slice(idx, idx + 400);
+    expect(slice).toMatch(/authorizedItemCount: quizSession\.v1Marker!\.itemCount/);
+    expect(slice).toMatch(/actualItemCount: bucket\.total/);
+    expect(slice).toMatch(/authorizedDifficulty: quizSession\.v1Marker!\.difficulty/);
+  });
+
+  it('a violating attempt never has its itemCount silently clamped -- the persisted itemCount for a violation is still the real bucket.total, unmodified', () => {
+    // The v1 metadata block (itemCount: bucket.total) only ever fires
+    // inside the v1Qualifies branch; the violation branch never writes
+    // an `itemCount` field at all -- there is exactly one `itemCount:`
+    // assignment site in the whole metadata object.
+    const occurrences = (ROUTE_SRC.match(/itemCount: bucket\.total/g) ?? []).length;
+    expect(occurrences).toBe(1);
   });
 });
 
@@ -94,8 +129,13 @@ describe('Part 13/15/22 -- Results reconciliation: fresh, after the write, fail-
     expect(refetchIdx).toBeGreaterThan(perConceptIdx);
   });
 
-  it('the re-fetch is gated on quizSession.v1Marker -- a legacy attempt never triggers it, never returns a canonicalResults value', () => {
-    const idx = ROUTE_SRC.indexOf('if (quizSession.v1Marker && quizSession.conceptId) {');
+  it('the re-fetch is gated on the ACTUAL submission having qualified as v1 (authorizedResult?.v1Qualifies), not merely on a marker having existed at generation time -- a legacy attempt, or a contract-violating v1-marked attempt, never triggers it', () => {
+    const idx = ROUTE_SRC.indexOf('quizSession.v1Marker && authorizedResult?.v1Qualifies && quizSession.conceptId');
+    expect(idx).toBeGreaterThan(-1);
+  });
+
+  it('a contract-violating attempt gets its own distinct canonicalResultsStatus (V1_ACTIVITY_CONTRACT_VIOLATION), never OK and never a silent NOT_V1', () => {
+    const idx = ROUTE_SRC.indexOf("canonicalResultsStatus = 'V1_ACTIVITY_CONTRACT_VIOLATION';");
     expect(idx).toBeGreaterThan(-1);
   });
 

@@ -66,11 +66,19 @@ describe('LX-4I -- the learner does not configure a canonical Practice/Prove act
 
 describe('LX-4J -- evidence difficulty is the actual generated difficulty, not a constant', () => {
   it('the hardcoded `difficulty: 3` evidence write is gone', () => {
+    // CANON-R5R1A: `aggregateEvidenceDifficulty(bucket.questionDifficulties)`
+    // is now assigned to a named `actualDifficulty` const one line above
+    // `const evidence: LearningEvidence` (reused by the new
+    // contract-compliance check), rather than being called inline inside
+    // the evidence object literal -- the underlying source of truth is
+    // unchanged, only where the call site is.
+    const declIdx = ROUTE.indexOf('const actualDifficulty = aggregateEvidenceDifficulty(bucket.questionDifficulties)');
+    expect(declIdx).toBeGreaterThan(-1);
     const at = ROUTE.indexOf('const evidence: LearningEvidence');
-    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(declIdx);
     const evidenceBlock = ROUTE.slice(at, at + 500);
-    expect(evidenceBlock).not.toMatch(/difficulty: 3/);
-    expect(evidenceBlock).toMatch(/difficulty: aggregateEvidenceDifficulty\(bucket\.questionDifficulties\)/);
+    expect(evidenceBlock).not.toMatch(/difficulty: 3\b/);
+    expect(evidenceBlock).toMatch(/difficulty: actualDifficulty/);
     // and no other `difficulty: 3` evidence write anywhere -- only the
     // generation-input compat default `validated.difficulty || 3` may remain
     for (const m of ROUTE.match(/difficulty: 3\b/g) ?? []) expect(m).toBeUndefined();

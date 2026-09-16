@@ -1,0 +1,36 @@
+-- CANON-R5R1A: the persisted v1 Practice AUTHORIZATION, widened beyond
+-- CANON-R5R1's simple three-column marker.
+--
+-- Fully additive: ONE new NULLABLE JSONB column on the existing
+-- quiz_sessions table, no changes to any other table, no data rewrite,
+-- no backfill (every pre-existing row -- including R5R1's own, if any
+-- were ever written in a live environment -- simply has this column
+-- NULL, matching its already-NULL pedagogical_policy_version for a
+-- legacy session).
+--
+-- Written at generation time (storeQuiz) from an independently-verified
+-- fresh canonical decision's own `activityContract` -- never from a
+-- client claim -- and read back at submission time
+-- (getQuizSession/checkV1ActivityContractCompliance) to verify the
+-- ACTUAL administered activity (real item count, real aggregate
+-- difficulty) against what was authorized, before ever stamping
+-- learning_evidence as valid v1 Practice evidence.
+--
+-- Structured content (mirrors this repository's own established
+-- precedent, `learning_evidence.metadata`, for optional structured
+-- data -- never a fifth/sixth/seventh discrete column):
+--   { canonicalActivityType: 'PRACTICE' | 'REINFORCE',
+--     itemCount: { min, max, authorized },
+--     difficulty: { min, max, target },
+--     assistanceAllowed: boolean }
+--
+-- This migration is NOT applied by this phase -- no live DB access in
+-- this environment (see docs/CANON_R5R1A_CANONICAL_PRACTICE_CONTRACT_ENFORCEMENT.md's
+-- STATUS section). It is written and reviewed so a future
+-- Preview-connected session can run `npm run db:migrate` and have it
+-- applied automatically, to PREVIEW ONLY -- Production cutover remains
+-- unconfigured.
+-- ---------------------------------------------------------------------
+
+ALTER TABLE quiz_sessions
+  ADD COLUMN IF NOT EXISTS canonical_activity_contract JSONB;

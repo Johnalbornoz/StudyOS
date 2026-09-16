@@ -48,17 +48,26 @@ export function evidenceModeForQuizMode(quizMode: QuizMode): EvidenceMode {
 }
 
 /**
- * CANON-R5R1 -- the trusted, server-persisted v1 launch marker for this
- * session, written ONCE at generation time (storeQuiz) from an
- * independently-verified `getCanonicalPedagogicalDecision` call -- never
- * from a client claim. `null` for every legacy/non-canonical session
- * (the overwhelming majority). See
+ * CANON-R5R1/R5R1A -- the trusted, server-persisted v1 launch
+ * AUTHORIZATION for this session, written ONCE at generation time
+ * (storeQuiz) from an independently-verified
+ * `getCanonicalPedagogicalDecision` call -- never from a client claim.
+ * `null` for every legacy/non-canonical session (the overwhelming
+ * majority). Carries not just "this concept was at canonical PRACTICE"
+ * (R5R1) but the EXACT contract (item count / difficulty / assistance)
+ * that authorized generation (R5R1A) -- so submission-time compliance
+ * checking (`checkV1ActivityContractCompliance`) never has to guess
+ * what was authorized. See
  * src/lib/pedagogical-decision/v1-practice-launch-marker.ts.
  */
 export interface QuizSessionV1Marker {
   pedagogicalPolicyVersion: string;
   canonicalRevision: string;
   canonicalStage: string;
+  canonicalActivityType: string;
+  itemCount: { min: number; max: number; authorized: number };
+  difficulty: { min: number; max: number; target: number };
+  assistanceAllowed: boolean;
 }
 
 export interface QuizSession {
@@ -114,14 +123,31 @@ export async function storeQuiz(
     const activityType = activityTypeForQuizMode(quizMode);
     const evidenceMode = evidenceModeForActivity(activityType);
 
+    // CANON-R5R1A Part 9/24 -- the cheap, top-level auditable fields
+    // (policy version/revision/stage) stay as plain TEXT columns
+    // (unchanged from R5R1); the richer, structured contract this phase
+    // adds (item count range, difficulty range/target, assistance) goes
+    // into ONE additive JSONB column, matching this schema's own
+    // established precedent (`learning_evidence.metadata`) for
+    // structured-but-optional data rather than five more discrete columns.
+    const canonicalActivityContract = v1Marker
+      ? JSON.stringify({
+          canonicalActivityType: v1Marker.canonicalActivityType,
+          itemCount: v1Marker.itemCount,
+          difficulty: v1Marker.difficulty,
+          assistanceAllowed: v1Marker.assistanceAllowed,
+        })
+      : null;
+
     await db.query(
       `
       INSERT INTO quiz_sessions (
         id, student_id, concept_id, subject_id,
         questions, language, status, created_at, expires_at,
         quiz_mode, concept_ids, activity_type, evidence_mode,
-        pedagogical_policy_version, canonical_revision, canonical_stage
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        pedagogical_policy_version, canonical_revision, canonical_stage,
+        canonical_activity_contract
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       `,
       [
         quizId,
@@ -140,6 +166,7 @@ export async function storeQuiz(
         v1Marker?.pedagogicalPolicyVersion ?? null,
         v1Marker?.canonicalRevision ?? null,
         v1Marker?.canonicalStage ?? null,
+        canonicalActivityContract,
       ]
     );
 
@@ -237,7 +264,8 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       SELECT id, student_id, concept_id, subject_id,
              questions, language, status, created_at, expires_at,
              quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
-             pedagogical_policy_version, canonical_revision, canonical_stage
+             pedagogical_policy_version, canonical_revision, canonical_stage,
+             canonical_activity_contract
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -256,12 +284,27 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     // historical attempts as mode-less.
     const activityType: ActivityType = row.activity_type || activityTypeForQuizMode(quizMode);
     const evidenceMode: EvidenceMode = row.evidence_mode || evidenceModeForActivity(activityType);
-    // CANON-R5R1 -- a row with NO persisted policy version is an
-    // ordinary legacy session, `v1Marker: null` -- never reconstructed
-    // or guessed from quiz_mode/current canonical stage at read time.
-    const v1Marker: QuizSessionV1Marker | null = row.pedagogical_policy_version
-      ? { pedagogicalPolicyVersion: row.pedagogical_policy_version, canonicalRevision: row.canonical_revision, canonicalStage: row.canonical_stage }
-      : null;
+    // CANON-R5R1A -- a v1 marker is trusted ONLY when BOTH the simple
+    // top-level fields (policy version/revision/stage) AND the
+    // structured contract JSONB are present. A row with one but not the
+    // other (e.g. a hypothetical pre-R5R1A row stamped before this
+    // phase's contract column existed) is treated as `v1Marker: null` --
+    // never reconstructed, never guessed, never trusted with a partial
+    // authorization (Part 0's Primary Invariant: stage-only verification
+    // is insufficient).
+    let v1Marker: QuizSessionV1Marker | null = null;
+    if (row.pedagogical_policy_version && row.canonical_activity_contract) {
+      const contract = typeof row.canonical_activity_contract === 'string' ? JSON.parse(row.canonical_activity_contract) : row.canonical_activity_contract;
+      v1Marker = {
+        pedagogicalPolicyVersion: row.pedagogical_policy_version,
+        canonicalRevision: row.canonical_revision,
+        canonicalStage: row.canonical_stage,
+        canonicalActivityType: contract.canonicalActivityType,
+        itemCount: contract.itemCount,
+        difficulty: contract.difficulty,
+        assistanceAllowed: contract.assistanceAllowed,
+      };
+    }
 
     return {
       id: row.id,

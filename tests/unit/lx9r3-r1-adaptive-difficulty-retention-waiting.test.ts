@@ -48,7 +48,12 @@ function resolve(activityType: TargetDifficultyContext['activityType'], masteryS
 describe('1. canonical flows no longer default blindly to difficulty 3', () => {
   it('the single-concept fast paths resolve the canonical authority, never a bare `|| 3`', () => {
     expect(ROUTE_SRC).not.toMatch(/difficulty: validated\.difficulty \|\| 3/);
-    const sites = ROUTE_SRC.match(/difficulty: validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3/g) ?? [];
+    // CANON-R5R1A: v1EffectiveDifficulty (the frozen engine's own
+    // activityContract.difficulty.target, for a verified v1 request
+    // only -- `undefined` otherwise) now sits ahead of
+    // validated.difficulty in the `??` chain; every other precedence
+    // link this test protects is unchanged.
+    const sites = ROUTE_SRC.match(/difficulty: v1EffectiveDifficulty \?\? validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3/g) ?? [];
     expect(sites.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -248,8 +253,15 @@ describe("13. difficulty level changes the prompt's required cognitive demand", 
 
   it('the resolved canonical difficulty is what actually reaches the generator (threaded, not dropped)', () => {
     expect(QG_SRC).toMatch(/buildQuestionGenerationPrompt\(types, difficulty, language, contextChunks/);
+    // CANON-R5R1A added an explanatory comment ahead of the `difficulty:`
+    // line at each call site (between the opening `{`/`count:` and
+    // `difficulty:`) -- `[\s\S]{0,400}?` tolerates that without weakening
+    // the assertion: each site must still resolve to the SAME `??` chain,
+    // reasonably close to its own call, never a dropped/rewritten value.
     for (const site of ['generateQuickCheckQuestions', 'generatePracticeQuestions', 'generateRetentionCheckQuestions']) {
-      expect(ROUTE_SRC).toMatch(new RegExp(`${site}\\(conceptIds\\[0\\], validated\\.studentId, validated\\.subjectId, \\{\\s*\\n?\\s*(count: perConceptCap,\\s*\\n?\\s*)?difficulty: validated\\.difficulty \\?\\? resolvedDifficulty\\?\\.level \\?\\? 3`));
+      expect(ROUTE_SRC).toMatch(
+        new RegExp(`${site}\\(conceptIds\\[0\\], validated\\.studentId, validated\\.subjectId, \\{[\\s\\S]{0,400}?difficulty: v1EffectiveDifficulty \\?\\? validated\\.difficulty \\?\\? resolvedDifficulty\\?\\.level \\?\\? 3`),
+      );
     }
   });
 });

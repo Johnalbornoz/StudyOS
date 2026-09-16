@@ -430,8 +430,14 @@ describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-se
     // canonical target-difficulty authority instead of blindly
     // defaulting to a static 3. A caller-supplied `validated.difficulty`
     // (the separately-gated manual/legacy setup path) still overrides
-    // it via `??`, never silently discarded.
-    const canonicalSites = ROUTE_SRC.match(/difficulty: validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3/g) ?? [];
+    // it via `??`, never silently discarded. CANON-R5R1A: a genuinely
+    // v1-authorized request's own `v1EffectiveDifficulty` (the frozen
+    // Pedagogical Engine v1's own activityContract.difficulty.target --
+    // itself the highest, most specific canonical authority) is checked
+    // FIRST, ahead of both -- `undefined` for every non-v1 request, so
+    // this is a strict widening, never a regression of the LX-9R3-R1
+    // authority chain this test protects.
+    const canonicalSites = ROUTE_SRC.match(/difficulty: v1EffectiveDifficulty \?\? validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3/g) ?? [];
     expect(canonicalSites.length).toBeGreaterThanOrEqual(3); // quick_check, topic_practice/review, retention_check
     // No ordinary canonical call site still blindly defaults to a bare `|| 3`.
     expect(ROUTE_SRC).not.toMatch(/difficulty: validated\.difficulty \|\| 3/);

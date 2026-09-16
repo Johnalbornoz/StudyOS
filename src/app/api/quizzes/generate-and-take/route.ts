@@ -98,6 +98,7 @@ import { z } from 'zod';
 import {
   isCanonicalEngineV1Enabled,
   verifyV1PracticeLaunchMarker,
+  checkV1ActivityContractCompliance,
   getCanonicalPedagogicalDecision,
   CanonicalDecisionUnavailableError,
   type CanonicalDecisionResult,
@@ -542,6 +543,25 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
+    // CANON-R5R1A Part 0/3/4/7 -- PRIMARY INVARIANT: for a genuinely
+    // authorized v1 Practice session, the server's own canonical
+    // `activityContract` REPLACES whatever count/difficulty the legacy
+    // LX-4R evidence-gap logic above (or any client-supplied value)
+    // computed -- never merged, never deferred to. This is the ONLY
+    // place `maxQuestions`/the difficulty actually sent to the generator
+    // are finalized for a v1-authorized request; every generator call
+    // site below reads `v1EffectiveDifficulty ?? validated.difficulty ??
+    // resolvedDifficulty?.level ?? 3`, so a v1-authorized request's
+    // client-supplied `difficulty` (or the legacy LX-4R target) is never
+    // reached. `v1Marker` is `null` for every legacy/non-Practice/
+    // ineligible request (computed above), so this block is a total
+    // no-op for every one of them -- Part 8's "legacy flow unchanged."
+    let v1EffectiveDifficulty: number | undefined;
+    if (v1Marker) {
+      maxQuestions = v1Marker.itemCount.authorized;
+      v1EffectiveDifficulty = v1Marker.difficulty.target;
+    }
+
     let conceptIds: string[];
     let primaryConceptId: string | null;
 
@@ -601,14 +621,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
-            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
+            // CANON-R5R1A: v1EffectiveDifficulty (set only for a
+            // verified v1 Practice request) always wins over the
+            // client-supplied validated.difficulty -- see its own doc
+            // comment above. `undefined` for every other mode/request,
+            // so this is byte-identical to before this phase there.
+            difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             language,
             ibContext,
           }).then((qs) => [qs])
         : validated.quizMode === 'topic_practice' || validated.quizMode === 'review'
         ? generatePracticeQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
             count: perConceptCap,
-            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
+            // CANON-R5R1A: v1EffectiveDifficulty (set only for a
+            // verified v1 Practice request) always wins over the
+            // client-supplied validated.difficulty -- see its own doc
+            // comment above. `undefined` for every other mode/request,
+            // so this is byte-identical to before this phase there.
+            difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             guidance: config.guidance,
             language,
             visualAidRate: config.visualAidRate,
@@ -619,7 +649,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           }).then((qs) => [qs])
         : validated.quizMode === 'retention_check' && maxQuestions === RETENTION_REQUIRED_COUNT
         ? generateRetentionCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
-            difficulty: validated.difficulty ?? resolvedDifficulty?.level ?? 3,
+            // CANON-R5R1A: v1EffectiveDifficulty (set only for a
+            // verified v1 Practice request) always wins over the
+            // client-supplied validated.difficulty -- see its own doc
+            // comment above. `undefined` for every other mode/request,
+            // so this is byte-identical to before this phase there.
+            difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
             guidance: config.guidance,
             language,
             ibContext,
@@ -1086,12 +1121,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     const perConceptResults = await Promise.all(
       Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
         const conceptScore = Math.round((bucket.correct / bucket.total) * 100);
+        // LX-4J / LX-1R evidence-consistency contract: the actual mean
+        // generated difficulty of this concept's questions, never a
+        // hardcoded constant. CANON-R5R1A: this SAME real value is also
+        // what contract-compliance checking below validates -- never a
+        // second, independently-recomputed difficulty.
+        const actualDifficulty = aggregateEvidenceDifficulty(bucket.questionDifficulties);
         const evidence: LearningEvidence = {
           result: conceptScore >= 70 ? 'correct' : conceptScore >= 50 ? 'partial' : 'incorrect',
-          // LX-4J / LX-1R evidence-consistency contract: the actual mean
-          // generated difficulty of this concept's questions, never a
-          // hardcoded constant.
-          difficulty: aggregateEvidenceDifficulty(bucket.questionDifficulties),
+          difficulty: actualDifficulty,
           sourceType: config.evidenceSource,
           confidenceWeight: 0.9,
           // The real score and how many questions backed it -- a 15/15
@@ -1101,6 +1139,31 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           scorePercent: conceptScore,
           sampleSize: bucket.total,
         };
+
+        // CANON-R5R1A Part 0/10/11/13 -- PRIMARY INVARIANT: canonical
+        // STAGE verification alone (R5R1) is insufficient. Before this
+        // concept's evidence may ever be labeled `studyus-canonical-v1`,
+        // the ACTUALLY administered activity (real item count, real
+        // aggregate difficulty) must satisfy the AUTHORIZED contract
+        // that was persisted at generation time (never re-derived here,
+        // never trusted from this request). A violation is reported,
+        // never silently clamped/fabricated/erased -- the row is simply
+        // never labeled v1 (falls through as ordinary, unversioned
+        // evidence, exactly like any other legacy attempt).
+        const isAuthorizedConcept = !!quizSession.v1Marker && conceptId === quizSession.conceptId;
+        const v1Compliance = isAuthorizedConcept
+          ? checkV1ActivityContractCompliance({ authorization: quizSession.v1Marker!, actualItemCount: bucket.total, actualDifficulty })
+          : null;
+        const v1Qualifies = isAuthorizedConcept && v1Compliance!.compliant;
+        if (isAuthorizedConcept && !v1Compliance!.compliant) {
+          console.warn('[canon-r5r1a]', JSON.stringify({
+            reason: v1Compliance!.reason,
+            detail: v1Compliance!.detail,
+            quizId: validated.quizId,
+            conceptId,
+          }));
+        }
+
         const hintsUsed = bucket.questionIndexes.filter((i) => quizSession.hintsUsedQuestions.includes(i)).length;
         const masteryResult = await updateMastery({
           studentId: validated.studentId,
@@ -1136,21 +1199,38 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               // in this concept's evidence -- additive, doesn't change the
               // meaning of any existing metadata field.
               ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
-              // CANON-R5R1 Part 5/9/10 -- only when THIS quiz session
-              // carries a trusted, server-persisted v1 marker (loaded from
-              // quiz_sessions at submission time, never from the request
-              // body) AND this bucket is the exact concept that marker
-              // authorized. itemCount/correctCount are the REAL
-              // administered/graded counts for this attempt, never the
-              // originally-requested maxQuestions (Part 7/21) -- directly
-              // in `metadata`, not buried solely in decision_events.
-              ...(quizSession.v1Marker && conceptId === quizSession.conceptId
+              // CANON-R5R1/R5R1A -- ONLY when this bucket is the exact
+              // concept a trusted, server-persisted v1 marker authorized
+              // (loaded from quiz_sessions, never the request body) AND
+              // the actually-administered activity satisfied that
+              // marker's own contract (v1Qualifies, computed above).
+              // itemCount/correctCount are the REAL administered/graded
+              // counts, never the originally-requested maxQuestions.
+              ...(v1Qualifies
                 ? {
-                    pedagogicalPolicyVersion: quizSession.v1Marker.pedagogicalPolicyVersion,
-                    canonicalRevision: quizSession.v1Marker.canonicalRevision,
-                    canonicalStage: quizSession.v1Marker.canonicalStage,
+                    pedagogicalPolicyVersion: quizSession.v1Marker!.pedagogicalPolicyVersion,
+                    canonicalRevision: quizSession.v1Marker!.canonicalRevision,
+                    canonicalStage: quizSession.v1Marker!.canonicalStage,
                     itemCount: bucket.total,
                     correctCount: bucket.correct,
+                  }
+                : {}),
+              // CANON-R5R1A Part 11 -- an explicit, traceable diagnostic
+              // for an authorized-but-violating attempt: NEVER fabricated
+              // v1 compliance, NEVER erased, NEVER silently clamped --
+              // the row simply carries no policyVersion/canonicalRevision/
+              // canonicalStage at all (falls through as ordinary,
+              // unversioned evidence), plus this marker documenting why.
+              ...(isAuthorizedConcept && !v1Qualifies
+                ? {
+                    v1ActivityContractViolation: {
+                      reason: v1Compliance!.reason,
+                      detail: v1Compliance!.detail,
+                      authorizedItemCount: quizSession.v1Marker!.itemCount,
+                      actualItemCount: bucket.total,
+                      authorizedDifficulty: quizSession.v1Marker!.difficulty,
+                      actualDifficulty,
+                    },
                   }
                 : {}),
             },
@@ -1171,6 +1251,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           previousMastery: masteryResult.oldMastery,
           newMastery: masteryResult.newMastery,
           delta: masteryResult.delta,
+          // CANON-R5R1A -- threaded out so the Results canonical
+          // re-fetch below (which only ever concerns the ONE concept a
+          // v1 marker could ever authorize) knows whether THIS
+          // submission's evidence actually qualified as v1, rather than
+          // merely whether a marker existed at generation time.
+          v1Qualifies,
           // Phase 2B: true when THIS concept bucket's evidence was
           // already applied by an earlier request for the same quizId
           // -- lets quiz-level (not concept-scoped) side effects below
@@ -1488,8 +1574,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       policyVersion: string;
       canonicalRevision: string;
     } | null = null;
-    let canonicalResultsStatus: 'NOT_V1' | 'OK' | 'CANONICAL_RESULTS_UNAVAILABLE' = 'NOT_V1';
-    if (quizSession.v1Marker && quizSession.conceptId) {
+    let canonicalResultsStatus: 'NOT_V1' | 'OK' | 'CANONICAL_RESULTS_UNAVAILABLE' | 'V1_ACTIVITY_CONTRACT_VIOLATION' = 'NOT_V1';
+    // CANON-R5R1A -- gated on whether THIS submission's evidence
+    // actually qualified as v1 (contract-compliant), not merely whether
+    // a marker existed at generation time (R5R1's own gate). A
+    // contract-violating attempt is never treated as a valid v1
+    // attempt for Results purposes -- no re-fetch, an explicit status
+    // instead (Part 21: "this phase only strengthens whether an attempt
+    // is eligible to be stamped as v1" -- the re-fetch's own ordering
+    // and fail-safe behavior are otherwise unchanged from R5R1).
+    const authorizedResult = quizSession.v1Marker ? perConceptResults.find((r) => r.conceptId === quizSession.conceptId) : undefined;
+    if (quizSession.v1Marker && authorizedResult && !authorizedResult.v1Qualifies) {
+      canonicalResultsStatus = 'V1_ACTIVITY_CONTRACT_VIOLATION';
+    } else if (quizSession.v1Marker && authorizedResult?.v1Qualifies && quizSession.conceptId) {
       try {
         const fresh: CanonicalDecisionResult = await getCanonicalPedagogicalDecision({
           studentId: validated.studentId,

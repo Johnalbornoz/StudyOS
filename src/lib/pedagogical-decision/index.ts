@@ -23,6 +23,7 @@ export { resolveV1ActivityLaunchReadiness, type V1ActivityLaunchReadiness, type 
 export {
   resolveCanonicalLaunch,
   resolveV1PracticeEligibility,
+  resolveAuthorizedItemCount,
   type CanonicalLearningSession,
   type CanonicalLaunchStatus,
   type V1PracticeEligibility,
@@ -32,4 +33,10 @@ export { resolveConceptSubjectForStudent } from './resolve-concept-subject';
 
 export { overrideConceptMissionViewWithCanonicalDecision } from './concept-mission-override';
 
-export { verifyV1PracticeLaunchMarker, type V1PracticeLaunchMarker } from './v1-practice-launch-marker';
+export {
+  verifyV1PracticeLaunchMarker,
+  checkV1ActivityContractCompliance,
+  V1_ACTIVITY_CONTRACT_VIOLATION,
+  type V1PracticeLaunchMarker,
+  type V1ContractComplianceResult,
+} from './v1-practice-launch-marker';

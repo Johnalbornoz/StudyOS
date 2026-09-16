@@ -75,6 +75,22 @@ export function resolveV1PracticeEligibility(decision: CanonicalPedagogicalDecis
   return { eligible: true, activityType };
 }
 
+/**
+ * CANON-R5R1A Part 3/19 -- THE ONE deterministic choice of "which single
+ * item count to request from the generator" given a `{min,max}` range --
+ * shared by the launch-URL builder below (a presentation hint only) and
+ * `verifyV1PracticeAuthorization`'s real, enforced server override
+ * (`v1-practice-launch-marker.ts`), so both agree on the SAME derived
+ * value from the SAME contract rather than picking independently. The
+ * frozen engine's `ActivityContract.itemCount` has no separate `target`
+ * field (only `min`/`max`) -- `max` is the deterministic, documented
+ * choice (never a random/heuristic pick).
+ */
+export function resolveAuthorizedItemCount(itemCount: { min: number; max: number } | null): number | null {
+  if (!itemCount) return null;
+  return itemCount.max ?? itemCount.min;
+}
+
 function buildPracticeLaunch(
   subjectId: string,
   conceptId: string,
@@ -89,7 +105,8 @@ function buildPracticeLaunch(
     // rather than launching an uncontracted activity.
     return { launchStatus: 'BLOCKED', launchTarget: null, launchParams: {}, notReadyReason: null };
   }
-  const itemCount = contract.itemCount ? String(contract.itemCount.max ?? contract.itemCount.min) : undefined;
+  const resolvedItemCount = resolveAuthorizedItemCount(contract.itemCount);
+  const itemCount = resolvedItemCount != null ? String(resolvedItemCount) : undefined;
   const difficulty = String(Math.max(1, Math.min(5, Math.round(contract.difficulty.target))));
   const params: Record<string, string> = {
     subjectId,
