@@ -47,6 +47,20 @@ export function evidenceModeForQuizMode(quizMode: QuizMode): EvidenceMode {
   return evidenceModeForActivity(activityTypeForQuizMode(quizMode));
 }
 
+/**
+ * CANON-R5R1 -- the trusted, server-persisted v1 launch marker for this
+ * session, written ONCE at generation time (storeQuiz) from an
+ * independently-verified `getCanonicalPedagogicalDecision` call -- never
+ * from a client claim. `null` for every legacy/non-canonical session
+ * (the overwhelming majority). See
+ * src/lib/pedagogical-decision/v1-practice-launch-marker.ts.
+ */
+export interface QuizSessionV1Marker {
+  pedagogicalPolicyVersion: string;
+  canonicalRevision: string;
+  canonicalStage: string;
+}
+
 export interface QuizSession {
   id: string;
   studentId: string;
@@ -62,6 +76,7 @@ export interface QuizSession {
   expiresAt: Date;
   status: 'active' | 'completed' | 'expired';
   hintsUsedQuestions: number[];
+  v1Marker: QuizSessionV1Marker | null;
 }
 
 /**
@@ -78,7 +93,14 @@ export async function storeQuiz(
   questions: GeneratedQuestion[],
   language: string = 'en',
   quizMode: QuizMode = 'topic_practice',
-  conceptIds: string[] = []
+  conceptIds: string[] = [],
+  /**
+   * CANON-R5R1 -- the ALREADY-INDEPENDENTLY-VERIFIED v1 marker (see
+   * verifyV1PracticeLaunchMarker), or `null`/omitted for every ordinary
+   * (legacy) session. This function never verifies eligibility itself
+   * -- it only persists what the caller already confirmed.
+   */
+  v1Marker: QuizSessionV1Marker | null = null
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -97,8 +119,9 @@ export async function storeQuiz(
       INSERT INTO quiz_sessions (
         id, student_id, concept_id, subject_id,
         questions, language, status, created_at, expires_at,
-        quiz_mode, concept_ids, activity_type, evidence_mode
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        quiz_mode, concept_ids, activity_type, evidence_mode,
+        pedagogical_policy_version, canonical_revision, canonical_stage
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       `,
       [
         quizId,
@@ -114,6 +137,9 @@ export async function storeQuiz(
         conceptIds.length > 0 ? conceptIds : questions.map((q) => q.conceptId),
         activityType,
         evidenceMode,
+        v1Marker?.pedagogicalPolicyVersion ?? null,
+        v1Marker?.canonicalRevision ?? null,
+        v1Marker?.canonicalStage ?? null,
       ]
     );
 
@@ -210,7 +236,8 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       `
       SELECT id, student_id, concept_id, subject_id,
              questions, language, status, created_at, expires_at,
-             quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode
+             quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
+             pedagogical_policy_version, canonical_revision, canonical_stage
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -229,6 +256,12 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     // historical attempts as mode-less.
     const activityType: ActivityType = row.activity_type || activityTypeForQuizMode(quizMode);
     const evidenceMode: EvidenceMode = row.evidence_mode || evidenceModeForActivity(activityType);
+    // CANON-R5R1 -- a row with NO persisted policy version is an
+    // ordinary legacy session, `v1Marker: null` -- never reconstructed
+    // or guessed from quiz_mode/current canonical stage at read time.
+    const v1Marker: QuizSessionV1Marker | null = row.pedagogical_policy_version
+      ? { pedagogicalPolicyVersion: row.pedagogical_policy_version, canonicalRevision: row.canonical_revision, canonicalStage: row.canonical_stage }
+      : null;
 
     return {
       id: row.id,
@@ -245,6 +278,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       expiresAt: new Date(row.expires_at),
       status: row.status,
       hintsUsedQuestions: row.hints_used_questions || [],
+      v1Marker,
     };
   } catch (error) {
     console.error('Error getting quiz session:', error);
@@ -288,6 +322,10 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
         expiresAt: new Date(row.expires_at),
         status: row.status,
         hintsUsedQuestions: [],
+        // This listing query doesn't select the v1 marker columns --
+        // callers of getStudentActiveQuizzes never need submission
+        // authority, only getQuizSession (the real reload path) does.
+        v1Marker: null,
       };
     });
   } catch (error) {

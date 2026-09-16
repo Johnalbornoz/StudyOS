@@ -53,6 +53,28 @@ export interface CanonicalLearningSession {
 
 const V1_QUIZ_MODE = 'topic_practice' as const;
 
+export type V1PracticeEligibility =
+  | { eligible: true; activityType: 'PRACTICE' | 'REINFORCE' }
+  | { eligible: false };
+
+/**
+ * CANON-R5R1 Part 2/20 -- THE ONE eligibility check for "is this fresh
+ * decision a real, launchable v1 Practice/Reinforce activity right
+ * now." Shared by `resolveCanonicalLaunch` (session start) and
+ * `verifyV1PracticeLaunchMarker` (the independent, generation-time
+ * re-verification `/api/quizzes/generate-and-take` performs before ever
+ * trusting a client's `v1Launch` intent flag) so both call sites agree
+ * by construction, never by coincidence.
+ */
+export function resolveV1PracticeEligibility(decision: CanonicalPedagogicalDecision): V1PracticeEligibility {
+  if (decision.actionState !== 'EXECUTABLE') return { eligible: false };
+  const activityType = decision.intervention === 'REINFORCE' ? 'REINFORCE' : (decision.activityContract?.activityType ?? null);
+  if (!activityType) return { eligible: false };
+  if (!resolveV1ActivityLaunchReadiness(activityType).ready) return { eligible: false };
+  if (activityType !== 'PRACTICE' && activityType !== 'REINFORCE') return { eligible: false };
+  return { eligible: true, activityType };
+}
+
 function buildPracticeLaunch(
   subjectId: string,
   conceptId: string,
@@ -74,6 +96,14 @@ function buildPracticeLaunch(
     conceptId,
     mode: V1_QUIZ_MODE,
     difficulty,
+    // CANON-R5R1 Part 2/3 -- the one durable INTENT signal that this
+    // launch came from the canonical engine, never authoritative on its
+    // own: /api/quizzes/generate-and-take independently re-verifies via
+    // a fresh getCanonicalPedagogicalDecision call before ever stamping
+    // v1 evidence (Part 6: a legacy caller that never sets this flag can
+    // never become v1-stamped, however its own concept's canonical stage
+    // happens to read).
+    v1Launch: '1',
   };
   if (itemCount) params.maxQuestions = itemCount;
   const qs = new URLSearchParams(params).toString();

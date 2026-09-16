@@ -20,8 +20,16 @@ export {
 
 export { resolveV1ActivityLaunchReadiness, type V1ActivityLaunchReadiness, type V1ActivityNotReadyReason } from './activity-launch-readiness';
 
-export { resolveCanonicalLaunch, type CanonicalLearningSession, type CanonicalLaunchStatus } from './canonical-session-launch';
+export {
+  resolveCanonicalLaunch,
+  resolveV1PracticeEligibility,
+  type CanonicalLearningSession,
+  type CanonicalLaunchStatus,
+  type V1PracticeEligibility,
+} from './canonical-session-launch';
 
 export { resolveConceptSubjectForStudent } from './resolve-concept-subject';
 
 export { overrideConceptMissionViewWithCanonicalDecision } from './concept-mission-override';
+
+export { verifyV1PracticeLaunchMarker, type V1PracticeLaunchMarker } from './v1-practice-launch-marker';

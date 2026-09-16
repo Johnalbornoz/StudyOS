@@ -18,13 +18,20 @@ beforeEach(() => {
 });
 
 describe('Phase 3A -- Activity Type/Evidence Mode are fixed at attempt creation and persisted', () => {
-  it('storeQuiz stamps the derived activity_type/evidence_mode as the final two INSERT parameters', async () => {
+  it('storeQuiz stamps the derived activity_type/evidence_mode, followed by CANON-R5R1\'s v1 marker columns (all null for an ordinary session)', async () => {
     queryMock.mockResolvedValueOnce({ rows: [] });
     await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'quick_check');
 
     const params = queryMock.mock.calls[0][1] as any[];
-    expect(params[params.length - 2]).toBe('SOLO_CHECK'); // activity_type
-    expect(params[params.length - 1]).toBe('INDEPENDENT'); // evidence_mode
+    // CANON-R5R1 appended three more INSERT columns (pedagogical_policy_version,
+    // canonical_revision, canonical_stage) after evidence_mode -- activity_type/
+    // evidence_mode are no longer the LAST two params, but are still adjacent,
+    // immediately before the (here, all-null) v1 marker columns.
+    expect(params[params.length - 5]).toBe('SOLO_CHECK'); // activity_type
+    expect(params[params.length - 4]).toBe('INDEPENDENT'); // evidence_mode
+    expect(params[params.length - 3]).toBeNull(); // pedagogical_policy_version
+    expect(params[params.length - 2]).toBeNull(); // canonical_revision
+    expect(params[params.length - 1]).toBeNull(); // canonical_stage
   });
 
   it('quick_check produces SOLO_CHECK/INDEPENDENT -- never CUMULATIVE_ASSESSMENT/ASSESSMENT (the fixed legacy bug)', () => {

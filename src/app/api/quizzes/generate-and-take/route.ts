@@ -95,6 +95,13 @@ import {
 import { calculateExamReadiness } from '@/services/exam-readiness.service';
 import { getConceptAttribution } from '@/services/exam-result.service';
 import { z } from 'zod';
+import {
+  isCanonicalEngineV1Enabled,
+  verifyV1PracticeLaunchMarker,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+  type CanonicalDecisionResult,
+} from '@/lib/pedagogical-decision';
 
 // Phase 3A: single-concept quiz modes -- every other mode spans several
 // concepts and is selected via selectConceptsForQuizMode/conceptIds instead.
@@ -227,6 +234,17 @@ const GenerateQuizSchema = z.object({
   maxQuestions: z.number().int().min(1).max(20).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
+  /**
+   * CANON-R5R1 -- an INTENT signal only, set exclusively by
+   * `resolveCanonicalLaunch`'s own launch URL (session start), never
+   * authoritative by itself: `handleGenerateQuiz` always independently
+   * re-verifies via a fresh `getCanonicalPedagogicalDecision` call
+   * before ever stamping v1 evidence (see
+   * verifyV1PracticeLaunchMarker's own doc comment). A legacy caller
+   * that never sets this flag can never become v1-stamped, whatever its
+   * concept's current canonical stage happens to be.
+   */
+  v1Launch: z.boolean().optional(),
 });
 
 const SubmitQuizSchema = z.object({
@@ -372,6 +390,23 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         { status: 400 }
       );
     }
+
+    // CANON-R5R1 Part 2/6/20 -- the client's `v1Launch` flag is only an
+    // INTENT signal (set exclusively by resolveCanonicalLaunch's own
+    // launch URL). It is never trusted on its own: only when the gate is
+    // on, the flag is present, AND a FRESH canonical decision
+    // independently confirms this exact (studentId, conceptId) pair is
+    // genuinely an EXECUTABLE v1 Practice/Reinforce activity right now
+    // does this session get stamped v1. Any other case (flag absent, gate
+    // off, or re-verification fails) yields `null` and this request
+    // proceeds through the existing, unmodified legacy generation path --
+    // a v1-ineligible request is never blocked, only never labeled v1
+    // (Part 6: "Only canonical-engine-created Practice session -> v1
+    // evidence. Legacy Practice route -> remains legacy.").
+    const v1Marker =
+      validated.v1Launch === true && isCanonicalEngineV1Enabled() && validated.quizMode === 'topic_practice' && validated.conceptId
+        ? await verifyV1PracticeLaunchMarker({ studentId: validated.studentId, conceptId: validated.conceptId })
+        : null;
 
     const language = isLocale(validated.language)
       ? validated.language
@@ -710,7 +745,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       questions,
       language,
       validated.quizMode,
-      conceptIds
+      conceptIds,
+      v1Marker
     );
 
     if (validated.quizMode === 'diagnostic_check') {
@@ -1100,6 +1136,23 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               // in this concept's evidence -- additive, doesn't change the
               // meaning of any existing metadata field.
               ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
+              // CANON-R5R1 Part 5/9/10 -- only when THIS quiz session
+              // carries a trusted, server-persisted v1 marker (loaded from
+              // quiz_sessions at submission time, never from the request
+              // body) AND this bucket is the exact concept that marker
+              // authorized. itemCount/correctCount are the REAL
+              // administered/graded counts for this attempt, never the
+              // originally-requested maxQuestions (Part 7/21) -- directly
+              // in `metadata`, not buried solely in decision_events.
+              ...(quizSession.v1Marker && conceptId === quizSession.conceptId
+                ? {
+                    pedagogicalPolicyVersion: quizSession.v1Marker.pedagogicalPolicyVersion,
+                    canonicalRevision: quizSession.v1Marker.canonicalRevision,
+                    canonicalStage: quizSession.v1Marker.canonicalStage,
+                    itemCount: bucket.total,
+                    correctCount: bucket.correct,
+                  }
+                : {}),
             },
             toResponseTimingEntries(bucket.responseTimings)
           ),
@@ -1411,12 +1464,65 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
+    // CANON-R5R1 Part 13/15/22 -- Results reconciliation. ONLY for a
+    // genuinely v1-stamped attempt (quizSession.v1Marker, loaded from the
+    // persisted session, never re-derived from this submission's own
+    // score/mode), and only AFTER the evidence writes above have already
+    // completed -- never a pre-quiz decision, never the final authority
+    // before the write. A failed re-fetch NEVER rolls back or discards
+    // the evidence already written; it returns a controlled, closed
+    // `CANONICAL_RESULTS_UNAVAILABLE` status instead (Part 15) -- the
+    // legacy next-action authority (proveSufficiency, mastery deltas
+    // above) is still present in the response for the learner to see
+    // their outcome, but is never substituted as "the next step" for a
+    // v1 attempt.
+    let canonicalResults: {
+      stage: string;
+      actionState: string;
+      nextCanonicalAction: string;
+      requirements: unknown;
+      journeyProgressPercent: number;
+      nextEligibleAt: string | null;
+      waitingReason: string | null;
+      reasonCodes: string[];
+      policyVersion: string;
+      canonicalRevision: string;
+    } | null = null;
+    let canonicalResultsStatus: 'NOT_V1' | 'OK' | 'CANONICAL_RESULTS_UNAVAILABLE' = 'NOT_V1';
+    if (quizSession.v1Marker && quizSession.conceptId) {
+      try {
+        const fresh: CanonicalDecisionResult = await getCanonicalPedagogicalDecision({
+          studentId: validated.studentId,
+          conceptId: quizSession.conceptId,
+        });
+        canonicalResults = {
+          stage: fresh.decision.stage,
+          actionState: fresh.decision.actionState,
+          nextCanonicalAction: fresh.decision.nextCanonicalAction,
+          requirements: fresh.decision.requirements,
+          journeyProgressPercent: fresh.decision.journeyProgressPercent,
+          nextEligibleAt: fresh.decision.nextEligibleAt,
+          waitingReason: fresh.decision.waitingReason,
+          reasonCodes: fresh.decision.reasonCodes,
+          policyVersion: fresh.decision.policyVersion,
+          canonicalRevision: fresh.decision.canonicalRevision,
+        };
+        canonicalResultsStatus = 'OK';
+      } catch (error) {
+        if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
+        canonicalResultsStatus = 'CANONICAL_RESULTS_UNAVAILABLE';
+        console.error('[canon-r5r1] canonical results re-fetch failed:', error, error.cause);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         quizId: validated.quizId,
         results: { score, correctCount, incorrectCount, totalQuestions },
         proveSufficiency,
+        canonicalResults,
+        canonicalResultsStatus,
         mastery: primaryMastery
           ? { previous: primaryMastery.previousMastery, current: primaryMastery.newMastery, delta: primaryMastery.delta }
           : undefined,

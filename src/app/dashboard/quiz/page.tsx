@@ -239,6 +239,13 @@ function QuizPageContent() {
   const conceptId = searchParams.get('conceptId');
   const diagnosisId = searchParams.get('diagnosisId'); // only used for mode=diagnostic_check
   const remediationStepId = searchParams.get('remediationStepId'); // only used when launched from a Repair Path step
+  // CANON-R5R1 -- set ONLY by resolveCanonicalLaunch's own session-start
+  // launch URL. An INTENT signal only, forwarded verbatim to
+  // generate-and-take, which independently re-verifies it against a
+  // fresh canonical decision before ever trusting it -- see
+  // v1-practice-launch-marker.ts's own doc comment. Absent from every
+  // legacy/manual launch (My Path, Today's older item rows, ?setup=1).
+  const v1Launch = searchParams.get('v1Launch') === '1';
   const modeParam = (searchParams.get('mode') as QuizMode | null) || (conceptId ? 'topic_practice' : 'cumulative_assessment');
   // LX-4K: a canonical learning launch (Concept Mission / LearningDecision
   // -> session/start) always arrives with a concept + a single-concept
@@ -540,8 +547,9 @@ function QuizPageContent() {
       // count. Legacy/manual setup still passes the slider value.
       ...(isCanonicalFlow ? {} : { maxQuestions }),
       ...(languageOverride ? { language: languageOverride } : {}),
+      ...(v1Launch ? { v1Launch: true } : {}),
     }),
-    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions],
+    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions, v1Launch],
   );
 
   const generateQuiz = useCallback(
