@@ -160,10 +160,18 @@ describe('4/6 -- GENERATION MODE: canonical_prove is a distinct, server-only mod
     expect(src).toMatch(/canonical_prove:\s*'SOLO_CHECK'/);
   });
 
-  it('canonical_prove is NOT a fast-path mode (quick_check/topic_practice/review/retention_check) -- it structurally falls through to the SAME universal, exact-count-or-fail generateGatedQuestionBatch path cumulative_assessment/exam_simulation/diagnostic_check already use', () => {
-    const idx = ROUTE_SRC.indexOf("validated.quizMode === 'quick_check'\n        ? generateQuickCheckQuestions");
-    const fastPathBlock = ROUTE_SRC.slice(idx, ROUTE_SRC.indexOf('Promise.all(', idx));
-    expect(fastPathBlock).not.toMatch(/canonical_prove/);
+  it('canonical_prove is NOT one of quick_check/topic_practice/review/retention_check\'s own dedicated fast paths, NOR does it share the generic multi-concept generateGatedQuestionBatch branch cumulative_assessment/exam_simulation/diagnostic_check use -- CANON-R6-PERF-R1 gives it its own dedicated concurrent-chunked branch instead', () => {
+    const quickCheckIdx = ROUTE_SRC.indexOf("validated.quizMode === 'quick_check'\n        ? generateQuickCheckQuestions");
+    const canonicalProveIdx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove'\n        ?");
+    const genericMultiConceptIdx = ROUTE_SRC.indexOf('Promise.all(', canonicalProveIdx);
+    // canonical_prove's own branch is distinct from, and precedes, the
+    // generic multi-concept branch -- it is never inside it.
+    expect(quickCheckIdx).toBeGreaterThan(-1);
+    expect(canonicalProveIdx).toBeGreaterThan(quickCheckIdx);
+    expect(genericMultiConceptIdx).toBeGreaterThan(canonicalProveIdx);
+    const canonicalProveBlock = ROUTE_SRC.slice(canonicalProveIdx, genericMultiConceptIdx);
+    expect(canonicalProveBlock).toMatch(/generateConcurrentChunkedBatch\(/);
+    expect(canonicalProveBlock).not.toMatch(/generateGatedQuestionBatch\(/);
   });
 
   it('5. quick_check\'s own dedicated fast path is completely untouched -- still fixed, never conditioned on canonical_prove or v1Marker', () => {

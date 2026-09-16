@@ -36,7 +36,7 @@ import {
   type QuestionQualityVerdict,
   type QualityRejectionReasonCode,
 } from '@/services/question-quality-verifier.service';
-import { generateQuestionsForConcept, type GeneratedQuestion } from '@/services/quiz-generation.service';
+import { generateQuestionsForConcept, planChunks, type GeneratedQuestion } from '@/services/quiz-generation.service';
 
 export interface GatedPracticeOptions {
   count?: number;
@@ -776,6 +776,190 @@ export async function generateGatedQuestionBatch(
     });
     return [];
   }
+}
+
+export interface ConcurrentChunkedBatchResult {
+  accepted: GeneratedQuestion[];
+  chunkPlan: number[];
+  chunkDiagnostics: GatedBatchInvocationDiagnostics[];
+}
+
+/**
+ * CANON-R6-PERF-R1 -- N CONCURRENT, quality-gated generation chunks for
+ * one concept, generalizing the SAME chunk-then-gate-then-cross-chunk-
+ * dedup pattern `generatePracticeQuestions`'s own >4-question path has
+ * used since LX-4P-PERF-R1C-R1: a balanced chunk plan (`planChunks`,
+ * reused unchanged), one concurrent raw-generation round
+ * (`Promise.all`), one concurrent EMPTY-tolerant gate round per chunk
+ * (`gateUnitWithTerraFallback` with `fallbackWhen: 'EMPTY'` -- a chunk's
+ * own narrow Terra fallback fires only if THAT chunk came back
+ * completely empty, never merely short of its own chunk target, so 3
+ * small chunks never each pay a full SHORT-fallback chain the way one
+ * monolithic exact-10 unit did), then AI-free cross-chunk exact-text
+ * dedup.
+ *
+ * Deliberately does NOT reuse `generateGatedQuestionBatch` itself for
+ * each chunk -- that function's own contract is all-or-nothing
+ * (`fallbackWhen: 'SHORT'`, discards to `[]` on any shortfall), which
+ * is the WRONG semantics for a partial-tolerant chunk (a chunk that
+ * returns 3 of its own 4 requested questions must still contribute
+ * those 3, never be discarded). Calls the same lower-level primitives
+ * `generateGatedQuestionBatch` itself uses
+ * (`generateQuestionsForConcept`, `gateUnitWithTerraFallback`)
+ * directly instead, matching `generatePracticeQuestions`'s own existing
+ * precedent of NOT routing its chunked path through
+ * `generateGatedQuestionBatch` either.
+ *
+ * Deliberately activity-agnostic: no notion of a canonical item-count
+ * contract, novelty, or an aggregate-recovery policy -- those stay the
+ * CALLER's concern (route.ts, for canonical_prove today) so this
+ * function can be reused by any future caller needing "N concurrent
+ * quality-gated chunks, aggregated" for any canonical activity.
+ */
+export async function generateConcurrentChunkedBatch(
+  conceptId: string,
+  studentId: string,
+  subjectId: string,
+  opts: GatedPracticeOptions,
+): Promise<ConcurrentChunkedBatchResult> {
+  const target = Math.max(1, opts.count ?? 1);
+  const chunkPlan = planChunks(target);
+  const baseGenOpts = {
+    difficulty: opts.difficulty,
+    guidance: opts.guidance,
+    language: opts.language,
+    visualAidRate: opts.visualAidRate,
+    ibContext: opts.ibContext ?? null,
+    ...(opts.types ? { types: opts.types } : {}),
+  };
+  const ctx = { studentId, subjectId };
+
+  const chunkResults = await Promise.all(
+    chunkPlan.map(async (chunkSize): Promise<{ accepted: GeneratedQuestion[]; diagnostics: GatedBatchInvocationDiagnostics }> => {
+      const operationId = randomUUID();
+      const startedAt = Date.now();
+      const lunaGenerationCalls: BillableCallUsage[] = [];
+      const terraGenerationCalls: BillableCallUsage[] = [];
+      const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
+        ...baseGenOpts,
+        count: chunkSize,
+        onUsage: (usage) => { lunaGenerationCalls.push({ model: QGEN_ROUTE.primary, usage }); },
+      }).catch(() => [] as GeneratedQuestion[]);
+      const result = await gateUnitWithTerraFallback(
+        luna,
+        { conceptId, language: opts.language, context: ctx, targetCount: chunkSize, fallbackWhen: 'EMPTY', operationId, activityType: opts.activityType },
+        () =>
+          generateQuestionsForConcept(conceptId, studentId, subjectId, {
+            ...baseGenOpts,
+            count: chunkSize,
+            modelOverride: TERRA,
+            onUsage: (usage) => { terraGenerationCalls.push({ model: TERRA, usage }); },
+          }).catch(() => [] as GeneratedQuestion[]),
+        { lunaGenerationCalls, terraGenerationCalls, operationId },
+      );
+      const generationCalls = 1 + (result.fallbackUsed ? 1 : 0);
+      return {
+        accepted: result.accepted,
+        diagnostics: {
+          requestedCount: chunkSize,
+          acceptedCount: result.accepted.length,
+          durationMs: Date.now() - startedAt,
+          fallbackUsed: result.fallbackUsed,
+          fallbackReasonCode: result.fallbackReasonCode,
+          generationCalls,
+          recoveryCalls: result.fallbackUsed ? 1 : 0,
+          semanticVerificationUsed: result.semanticVerificationUsed,
+          semanticCallCount: result.semanticCallCount,
+          semanticCandidateCount: result.semanticCandidateCount,
+          semanticAcceptedCount: result.semanticAcceptedCount,
+          semanticRejectedCount: result.semanticRejectedCount,
+          externalAiCallCount: generationCalls + result.semanticCallCount,
+          insufficientCount: result.insufficientCount,
+          operationId,
+          parentOperationId: opts.parentOperationId ?? null,
+        },
+      };
+    }),
+  );
+
+  // AI-free, cross-chunk exact-text dedup -- the same technique
+  // generatePracticeQuestions's own chunked path already uses
+  // (normalizeText-based); reuses this module's own textKey helper,
+  // the same one gateUnitWithTerraFallback's own Luna/Terra merge dedup
+  // already relies on.
+  const seen = new Set<string>();
+  const accepted: GeneratedQuestion[] = [];
+  for (const { accepted: chunkAccepted } of chunkResults) {
+    for (const q of chunkAccepted) {
+      const key = textKey(q);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      accepted.push(q);
+    }
+  }
+
+  return { accepted, chunkPlan, chunkDiagnostics: chunkResults.map((r) => r.diagnostics) };
+}
+
+/**
+ * CANON-R6-PERF-R1 -- ONE bounded recovery generation + ONE quality
+ * gate pass, deliberately with NO further internal fallback (never a
+ * nested Terra-of-Terra chain) -- the exact "one Terra call, one gate,
+ * take what survives" shape `generatePracticeQuestions`'s own chunked
+ * path already uses for its own aggregate deficit recovery. Always
+ * routes to Terra directly (the stronger model): a recovery round only
+ * ever runs after the cheaper concurrent-chunk round already came up
+ * short, so escalating immediately (rather than trying Luna again
+ * first) matches that existing precedent.
+ */
+export async function generateBoundedRecoveryBatch(
+  conceptId: string,
+  studentId: string,
+  subjectId: string,
+  opts: GatedPracticeOptions,
+): Promise<{ accepted: GeneratedQuestion[]; diagnostics: GatedBatchInvocationDiagnostics }> {
+  const requestedCount = Math.max(1, opts.count ?? 1);
+  const operationId = randomUUID();
+  const startedAt = Date.now();
+  const luna = await generateQuestionsForConcept(conceptId, studentId, subjectId, {
+    difficulty: opts.difficulty,
+    guidance: opts.guidance,
+    language: opts.language,
+    visualAidRate: opts.visualAidRate,
+    ibContext: opts.ibContext ?? null,
+    ...(opts.types ? { types: opts.types } : {}),
+    count: requestedCount,
+    modelOverride: TERRA,
+  }).catch(() => [] as GeneratedQuestion[]);
+  const gate = await applyQuestionQualityGate(luna, {
+    conceptId,
+    language: opts.language,
+    context: { studentId, subjectId },
+    operationId,
+    activityType: opts.activityType,
+  });
+  const semanticCallCount = gate.semanticCandidateCount > 0 ? 1 : 0;
+  return {
+    accepted: gate.accepted,
+    diagnostics: {
+      requestedCount,
+      acceptedCount: gate.accepted.length,
+      durationMs: Date.now() - startedAt,
+      fallbackUsed: false,
+      fallbackReasonCode: null,
+      generationCalls: 1,
+      recoveryCalls: 0,
+      semanticVerificationUsed: semanticCallCount > 0,
+      semanticCallCount,
+      semanticCandidateCount: gate.semanticCandidateCount,
+      semanticAcceptedCount: gate.semanticAccepted,
+      semanticRejectedCount: gate.semanticRejected,
+      externalAiCallCount: 1 + semanticCallCount,
+      insufficientCount: gate.accepted.length < requestedCount,
+      operationId,
+      parentOperationId: opts.parentOperationId ?? null,
+    },
+  };
 }
 
 /** Back-compat alias -- the canonical ~3-question Practice path. */

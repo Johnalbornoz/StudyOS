@@ -1,13 +1,27 @@
 /**
- * CANON-R6-PERF-I1 -- CANONICAL PROVE GENERATION OBSERVABILITY.
+ * CANON-R6-PERF-I1/R1 -- CANONICAL PROVE GENERATION OBSERVABILITY.
  *
  * Instrumentation only. This module makes NO generation, quality-gate,
  * novelty, or fallback decisions -- it only records, in one structured
  * event, what already happened during one `canonical_prove`
- * `generate-and-take` request, so CANON-R6-PERF-DIAG's own open
- * question (was the live 4-external-call trace a single gated-batch
- * Terra fallback, or an initial batch plus a novelty refill?) can be
- * answered directly from the next Preview run's logs, without guessing.
+ * `generate-and-take` request.
+ *
+ * CANON-R6-PERF-I1's own summary line confirmed the live 48-64s
+ * latency was ONE monolithic exact-10 `generateGatedQuestionBatch`
+ * invocation's own serial Luna -> semantic-verify -> Terra-SHORT-
+ * fallback -> semantic-verify chain (never a novelty refill). CANON-
+ * R6-PERF-R1 replaces that single invocation with N CONCURRENT,
+ * smaller chunks (`generateConcurrentChunkedBatch`) plus at most ONE
+ * bounded aggregate recovery round (`generateBoundedRecoveryBatch`) --
+ * this module's own shape evolves to describe THAT flow: `invocations`
+ * now holds one `CHUNK` record per concurrent chunk (tagged by
+ * `chunkIndex`) plus, at most, one `AGGREGATE_RECOVERY` record, instead
+ * of the old single `PRIMARY`/`NOVELTY_REFILL_1`/`NOVELTY_REFILL_2`
+ * shape. Fields that no longer have a direct equivalent
+ * (`generationPrimaryMs`, `noveltyRefill1Ms`, `noveltyRefill2Ms`) are
+ * KEPT on the summary type for schema continuity but always reported
+ * `null` going forward -- superseded by `chunkPlan`/`chunkCount`,
+ * `generationConcurrentMs`, and `aggregateRecoveryMs` respectively.
  *
  * Never logs question text, prompts, or the student's real id -- only
  * counts, durations, and a one-way hash for correlating a specific test
@@ -15,9 +29,20 @@
  */
 import { createHash } from 'crypto';
 
-/** One `generateGatedQuestionBatch` invocation's own diagnostics, tagged with WHICH invocation this was in the request (the route decides this label -- the generator itself has no notion of "primary" vs "refill"). */
+/**
+ * One generation invocation's own diagnostics within the request --
+ * either one of the N concurrent initial chunks (`CHUNK`, with its own
+ * `chunkIndex`), or the single bounded aggregate-recovery round
+ * (`AGGREGATE_RECOVERY`, `chunkIndex: null`) that runs at most once,
+ * only if the concurrent chunks' own aggregate (after novelty
+ * filtering) still fell short of the target. The route decides this
+ * label -- neither `generateConcurrentChunkedBatch` nor
+ * `generateBoundedRecoveryBatch` has any notion of "chunk index" or
+ * "recovery" themselves.
+ */
 export interface CanonicalProveGenerationInvocationRecord {
-  invocationType: 'PRIMARY' | 'NOVELTY_REFILL_1' | 'NOVELTY_REFILL_2';
+  invocationType: 'CHUNK' | 'AGGREGATE_RECOVERY';
+  chunkIndex: number | null;
   requestedCount: number;
   acceptedCount: number;
   durationMs: number;
@@ -36,9 +61,9 @@ export interface CanonicalProveGenerationInvocationRecord {
   parentOperationId: string | null;
 }
 
-/** One novelty-filter pass's own diagnostics (Part 7) -- lets a reader see exactly how many questions were rejected as exact duplicates on each pass, and how many remained needed afterward. */
+/** One novelty-filter pass's own diagnostics (Part 7) -- lets a reader see exactly how many questions were rejected as exact duplicates on each pass, and how many remained needed afterward. `INITIAL` filters the concurrent chunks' own aggregate; `RECOVERY` (at most once) filters the aggregate-recovery round's own output. */
 export interface CanonicalProveNoveltyPassRecord {
-  noveltyPass: 'INITIAL' | 'REFILL_1' | 'REFILL_2';
+  noveltyPass: 'INITIAL' | 'RECOVERY';
   candidateCount: number;
   acceptedCount: number;
   rejectedExactDuplicateCount: number;
@@ -56,16 +81,34 @@ export interface CanonicalProveGenerationSummary {
   difficultyTarget: number | null;
   canonicalAuthorizationMs: number | null;
   priorHistoryMs: number | null;
+  /** @deprecated CANON-R6-PERF-R1 -- no single "primary" invocation exists once generation is chunked; always `null` now. Superseded by `chunkPlan`/`chunkCount` and `generationConcurrentMs`. Kept for summary schema continuity. */
   generationPrimaryMs: number | null;
+  /** CANON-R6-PERF-R1 -- wall-clock time of the N-concurrent-chunk round (the `Promise.all` itself), i.e. what replaced the old single serial `generationPrimaryMs`. */
+  generationConcurrentMs: number | null;
+  /** CANON-R6-PERF-R1 -- the balanced chunk sizes `planChunks` produced for this request's target count (e.g. `[4, 3, 3]` for 10). */
+  chunkPlan: number[];
+  /** CANON-R6-PERF-R1 -- `chunkPlan.length`, for convenience. */
+  chunkCount: number;
   noveltyFilterMs: number | null;
+  /** @deprecated CANON-R6-PERF-R1 -- the up-to-2-refill mechanism this represented no longer exists (replaced by at most ONE aggregate recovery round); always `null` now. Superseded by `aggregateRecoveryMs`. Kept for summary schema continuity. */
   noveltyRefill1Ms: number | null;
+  /** @deprecated CANON-R6-PERF-R1 -- see `noveltyRefill1Ms`; always `null` now. */
   noveltyRefill2Ms: number | null;
+  /** CANON-R6-PERF-R1 -- how many novel (post-fingerprint-filter) questions the concurrent chunk round alone produced, BEFORE any aggregate recovery. */
+  initialAcceptedCount: number;
+  /** CANON-R6-PERF-R1 -- true iff the concurrent chunks' own novelty-filtered aggregate fell short of the target, triggering the one bounded recovery round. */
+  aggregateRecoveryUsed: boolean;
+  /** CANON-R6-PERF-R1 -- how many questions the (at most one) recovery round was asked to generate; `null` when `aggregateRecoveryUsed` is false. */
+  aggregateRecoveryRequestedCount: number | null;
+  /** CANON-R6-PERF-R1 -- the recovery round's own wall-clock duration; `null` when `aggregateRecoveryUsed` is false. */
+  aggregateRecoveryMs: number | null;
   persistenceMs: number | null;
   totalMs: number;
   generationInvocationCount: number;
   externalAiCallCount: number;
   fallbackCount: number;
   semanticVerificationCount: number;
+  /** CANON-R6-PERF-R1 -- 0 or 1: whether the bounded aggregate recovery round fired (same underlying "did an extra generation round beyond the first happen" concept the old multi-refill count represented, now bounded to at most 1). */
   noveltyRefillCount: number;
   priorPracticeFingerprintCount: number | null;
   rejectedExactDuplicateCount: number | null;

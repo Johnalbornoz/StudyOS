@@ -258,7 +258,9 @@ describe('16. prompt/schema/parser contract matches for every generator', () => 
   });
 
   it('the gated batch path (cumulative/exam/diagnostic) calls generateQuestionsForConcept -- the SAME base generator/schema, not a second implementation', () => {
-    expect(GATED_SRC).toMatch(/import \{ generateQuestionsForConcept, type GeneratedQuestion \} from '@\/services\/quiz-generation\.service';/);
+    // CANON-R6-PERF-R1: also imports planChunks (reused for canonical_prove's
+    // own concurrent-chunk generation), same generateQuestionsForConcept import line.
+    expect(GATED_SRC).toMatch(/import \{ generateQuestionsForConcept, planChunks, type GeneratedQuestion \} from '@\/services\/quiz-generation\.service';/);
     expect(GATED_SRC).toMatch(/generateQuestionsForConcept\(conceptId, studentId, subjectId, \{/);
   });
 });

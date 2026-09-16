@@ -356,26 +356,32 @@ describe('route wiring -- request correlation, per-phase timers, single summary 
     expect(slice).toMatch(/parentOperationId,/);
   });
 
-  it('2. all required route timers exist: canonicalAuthorizationMs, priorHistoryMs, generationPrimaryMs (via the PRIMARY invocation), noveltyFilterMs, novelty_refill_1_ms/2_ms, persistenceMs, totalMs', () => {
+  it('2. all required route timers exist: canonicalAuthorizationMs, priorHistoryMs, generationConcurrentMs (CANON-R6-PERF-R1, superseding generationPrimaryMs), noveltyFilterMs, aggregateRecoveryMs (superseding the old refill timers), persistenceMs, totalMs', () => {
     expect(ROUTE_SRC).toMatch(/canonicalAuthorizationMs = Date\.now\(\) - canonicalAuthorizationStartedAt;/);
     expect(ROUTE_SRC).toMatch(/priorHistoryMs = Date\.now\(\) - priorHistoryStartedAt;/);
     expect(ROUTE_SRC).toMatch(/noveltyFilterMs \+= Date\.now\(\) - noveltyFilterStartedAt;/);
-    expect(ROUTE_SRC).toMatch(/novelty_refill_1_ms = diag\.durationMs;/);
-    expect(ROUTE_SRC).toMatch(/novelty_refill_2_ms = diag\.durationMs;/);
+    expect(ROUTE_SRC).toMatch(/generationConcurrentMs = Date\.now\(\) - chunkStartedAt;/);
+    expect(ROUTE_SRC).toMatch(/aggregateRecoveryMs = Date\.now\(\) - recoveryStartedAt;/);
     expect(ROUTE_SRC).toMatch(/persistenceMs = Date\.now\(\) - persistenceStartedAt;/);
     expect(ROUTE_SRC).toMatch(/totalMs: Date\.now\(\) - requestStartedAt,/);
-    expect(ROUTE_SRC).toMatch(/generationPrimaryMs: primaryInvocation\?\.durationMs \?\? null,/);
+    // generationPrimaryMs is kept on the summary type for schema
+    // continuity but is always emitted null now -- no PRIMARY invocation exists.
+    expect(ROUTE_SRC).toMatch(/generationPrimaryMs: null, \/\/ CANON-R6-PERF-R1/);
   });
 
-  it('3/4. each generateGatedQuestionBatch invocation site (primary + both refills) threads onInvocationDiagnostics, tagged PRIMARY/NOVELTY_REFILL_1/NOVELTY_REFILL_2', () => {
-    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\{ invocationType: 'PRIMARY', \.\.\.diag \}\);/);
-    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\{ invocationType: refillInvocationType, \.\.\.diag \}\);/);
-    expect(ROUTE_SRC).toMatch(/const refillInvocationType = attempt === 0 \? 'NOVELTY_REFILL_1' : 'NOVELTY_REFILL_2';/);
+  it('3/4. CANON-R6-PERF-R1: each concurrent chunk AND the at-most-one aggregate recovery round push a diagnostics record tagged CHUNK (with chunkIndex) / AGGREGATE_RECOVERY', () => {
+    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\s*\n\s*\.\.\.chunked\.chunkDiagnostics\.map\(\(diag, chunkIndex\) => \(\{ invocationType: 'CHUNK' as const, chunkIndex, \.\.\.diag \}\)\),\s*\n\s*\);/);
+    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\{ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, \.\.\.recovery\.diagnostics \}\);/);
   });
 
-  it('2. legacy quick_check does not receive the new canonical-prove summary -- onInvocationDiagnostics is spread ONLY when quizMode === canonical_prove at the primary call site', () => {
-    const idx = ROUTE_SRC.indexOf('...(validated.quizMode === \'canonical_prove\'\n                  ? {\n                      onInvocationDiagnostics:');
-    expect(idx).toBeGreaterThan(-1);
+  it('2. legacy quick_check/topic_practice/review/retention_check/cumulative_assessment/exam_simulation/diagnostic_check never reference onInvocationDiagnostics or the observability module -- canonical_prove has its OWN dedicated generation branch now, not a conditional spread inside a shared branch', () => {
+    const canonicalProveIdx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove'\n        ?");
+    expect(canonicalProveIdx).toBeGreaterThan(-1);
+    const genericMultiConceptBranchStart = ROUTE_SRC.indexOf('Promise.all(', canonicalProveIdx);
+    const genericMultiConceptBranchEnd = ROUTE_SRC.indexOf('computeAskConfidenceFlags(', genericMultiConceptBranchStart);
+    const genericBlock = ROUTE_SRC.slice(genericMultiConceptBranchStart, genericMultiConceptBranchEnd);
+    expect(genericBlock).not.toMatch(/onInvocationDiagnostics/);
+    expect(genericBlock).not.toMatch(/canonical-prove-generation-observability/);
   });
 
   it('3. Practice behavior unchanged -- emitCanonicalProveSummary itself is a no-op for any non-canonical_prove quizMode', () => {

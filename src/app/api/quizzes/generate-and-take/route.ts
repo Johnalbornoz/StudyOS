@@ -55,10 +55,16 @@ import {
   GeneratedQuestion,
   ALL_QUESTION_TYPES,
   IBContext,
+  MAX_QUESTIONS_PER_CHUNK,
   type QuestionType,
   type ExpectedReasoningType,
 } from '@/services/quiz-generation.service';
-import { generateGatedQuestionBatch, type GatedBatchInvocationDiagnostics } from '@/services/gated-question-generation.service';
+import {
+  generateGatedQuestionBatch,
+  generateConcurrentChunkedBatch,
+  generateBoundedRecoveryBatch,
+  type GatedBatchInvocationDiagnostics,
+} from '@/services/gated-question-generation.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
@@ -427,6 +433,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   let persistenceMs: number | null = null;
   const generationInvocations: CanonicalProveGenerationInvocationRecord[] = [];
   const noveltyPasses: CanonicalProveNoveltyPassRecord[] = [];
+  // CANON-R6-PERF-R1 -- concurrent-chunking observability state.
+  let chunkPlan: number[] = [];
+  let generationConcurrentMs: number | null = null;
+  let aggregateRecoveryUsed = false;
+  let aggregateRecoveryRequestedCount: number | null = null;
+  let aggregateRecoveryMs: number | null = null;
 
   try {
     const validated = GenerateQuizSchema.parse(body);
@@ -782,6 +794,47 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             language,
             ibContext,
           }).then((qs) => [qs])
+        : validated.quizMode === 'canonical_prove'
+        ? // CANON-R6-PERF-R1 -- canonical_prove no longer falls through to
+          // the generic multi-concept gated-batch branch below (which
+          // requested one MONOLITHIC exact-10 unit -- confirmed by
+          // CANON-R6-PERF-DIAG/PERF-I1's own live evidence to be the
+          // actual latency source: one ~64s serial Luna -> semantic-
+          // verify -> Terra-SHORT-fallback -> semantic-verify chain).
+          // Instead: N CONCURRENT, smaller chunks
+          // (generateConcurrentChunkedBatch, reusing the SAME
+          // planChunks/gateUnitWithTerraFallback primitives
+          // generatePracticeQuestions's own >4-question chunked path
+          // already uses) -- one chunk's own provider latency never
+          // serially blocks another's. `v1EffectiveDifficulty` is
+          // always defined here (the earlier `v1Marker` guard already
+          // rejected any canonical_prove request without one) -- the
+          // `?? validated.difficulty ?? resolvedDifficulty?.level ?? 3`
+          // fallback is purely defensive, matching every other call
+          // site's own style, and is never actually reached for a
+          // genuinely authorized request (Part 9: client difficulty
+          // stays irrelevant).
+          (async () => {
+            const chunkStartedAt = Date.now();
+            const chunked = await generateConcurrentChunkedBatch(conceptIds[0], validated.studentId, validated.subjectId, {
+              count: perConceptCap,
+              difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
+              types: ALL_QUESTION_TYPES,
+              guidance: config.guidance,
+              language,
+              visualAidRate: config.visualAidRate,
+              ibContext,
+              activityType: activityTypeForQuizMode(validated.quizMode),
+              quizMode: validated.quizMode,
+              parentOperationId,
+            });
+            generationConcurrentMs = Date.now() - chunkStartedAt;
+            chunkPlan = chunked.chunkPlan;
+            generationInvocations.push(
+              ...chunked.chunkDiagnostics.map((diag, chunkIndex) => ({ invocationType: 'CHUNK' as const, chunkIndex, ...diag })),
+            );
+            return [chunked.accepted];
+          })()
         : Promise.all(
             // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate --
             // cumulative_assessment / exam_simulation / diagnostic_check
@@ -804,11 +857,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // (single-concept), so this per-concept fetch is skipped for
             // them.
             conceptIds.map(async (cId) => {
-              // CANON-R6: this is the exact branch a `canonical_prove`
-              // request falls through to (it matches none of the three
-              // named-mode conditions above) -- `v1EffectiveDifficulty`
-              // must win here too, for the identical reason it already
-              // wins at every other call site above.
               let perConceptDifficulty = v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level;
               if (perConceptDifficulty === undefined) {
                 const batchActivityType = activityTypeForQuizMode(validated.quizMode);
@@ -829,20 +877,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
                 activityType: activityTypeForQuizMode(validated.quizMode),
                 quizMode: validated.quizMode,
                 parentOperationId,
-                // CANON-R6-PERF-I1 -- observability only, canonical_prove
-                // ONLY (this branch is also the multi-concept path for
-                // cumulative_assessment/exam_simulation/diagnostic_check/
-                // a retention_check override, none of which pass this
-                // key -- their own options object is byte-identical to
-                // before this phase). canonical_prove is always
-                // single-concept, so this callback fires exactly once.
-                ...(validated.quizMode === 'canonical_prove'
-                  ? {
-                      onInvocationDiagnostics: (diag: GatedBatchInvocationDiagnostics) => {
-                        generationInvocations.push({ invocationType: 'PRIMARY', ...diag });
-                      },
-                    }
-                  : {}),
               });
             })
           ),
@@ -878,56 +912,55 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // -- Part 11's "no session should have been persisted as valid
     // Prove" is satisfied structurally, with no separate check needed.
     let noveltyDiagnostics: NonNullable<QuizSessionV1Marker['novelty']> | null = null;
-    // CANON-R6-PERF-I1 -- read only by the canonical_prove summary; a
-    // refill's own `generateGatedQuestionBatch` call reports its
-    // diagnostics via `onInvocationDiagnostics` below, tagged
-    // NOVELTY_REFILL_1/NOVELTY_REFILL_2 by which loop iteration
-    // triggered it -- this function itself has no notion of "refill".
-    let novelty_refill_1_ms: number | null = null;
-    let novelty_refill_2_ms: number | null = null;
     if (validated.quizMode === 'canonical_prove') {
       const priorHistoryStartedAt = Date.now();
       const priorFingerprints = await loadPriorPracticeQuestionFingerprints(validated.studentId, primaryConceptId!);
       priorHistoryMs = Date.now() - priorHistoryStartedAt;
-      let excludeFingerprints: ReadonlySet<string> = priorFingerprints;
-      let accepted: GeneratedQuestion[] = [];
-      let rejectedExactDuplicateCount = 0;
-      let candidates: GeneratedQuestion[] = questions;
 
-      // Part 8 -- a BOUNDED retry budget: the initial batch plus at most
-      // 2 additional refill generations (3 total generateGatedQuestionBatch
-      // calls for this concept). Never an unbounded loop.
-      const MAX_NOVELTY_REFILL_ATTEMPTS = 2;
-      for (let attempt = 0; attempt <= MAX_NOVELTY_REFILL_ATTEMPTS; attempt++) {
-        const noveltyFilterStartedAt = Date.now();
-        const filtered = filterExactDuplicates(candidates, excludeFingerprints);
-        noveltyFilterMs += Date.now() - noveltyFilterStartedAt;
-        accepted = accepted.concat(filtered.accepted);
-        rejectedExactDuplicateCount += filtered.rejectedCount;
-        excludeFingerprints = filtered.fingerprints;
-        // CANON-R6-PERF-I1 Part 7 -- attempt 0 filters the INITIAL batch,
-        // attempt 1 filters whatever REFILL_1 produced, attempt 2 (the
-        // last possible iteration) filters whatever REFILL_2 produced.
-        noveltyPasses.push({
-          noveltyPass: attempt === 0 ? 'INITIAL' : attempt === 1 ? 'REFILL_1' : 'REFILL_2',
-          candidateCount: candidates.length,
-          acceptedCount: filtered.accepted.length,
-          rejectedExactDuplicateCount: filtered.rejectedCount,
-          remainingNeeded: Math.max(0, maxQuestions - accepted.length),
-        });
+      // CANON-R6-PERF-R1 Part 6/7/12 -- replaces CANON-R6R1's own
+      // up-to-2-refill loop (each refill re-ran the FULL, expensive
+      // Luna->gate->Terra-SHORT-fallback->gate chain -- confirmed by
+      // CANON-R6-PERF-I1's own live evidence to be unnecessary: the
+      // observed 4-call/~64s trace was ONE monolithic invocation, never
+      // a refill). Now: filter the concurrent chunks' own aggregate
+      // ONCE against prior-Practice fingerprints, and -- ONLY if that
+      // leaves a genuine deficit -- run exactly ONE bounded aggregate
+      // recovery round sized for the true remaining need (Part 7's own
+      // preferred flow: aggregate -> filter -> deficit -> recovery ->
+      // filter recovery -> exactly `maxQuestions` or fail). Never
+      // recursive, never a second recovery round (Part 12).
+      const noveltyFilterStartedAt = Date.now();
+      const initialFiltered = filterExactDuplicates(questions, priorFingerprints);
+      noveltyFilterMs += Date.now() - noveltyFilterStartedAt;
+      let accepted = initialFiltered.accepted;
+      let excludeFingerprints = initialFiltered.fingerprints;
+      let rejectedExactDuplicateCount = initialFiltered.rejectedCount;
+      noveltyPasses.push({
+        noveltyPass: 'INITIAL',
+        candidateCount: questions.length,
+        acceptedCount: initialFiltered.accepted.length,
+        rejectedExactDuplicateCount: initialFiltered.rejectedCount,
+        remainingNeeded: Math.max(0, maxQuestions - accepted.length),
+      });
 
-        if (accepted.length >= maxQuestions || attempt === MAX_NOVELTY_REFILL_ATTEMPTS) break;
-
-        // Refill: ask the SAME gated generator (Part 6 step 6/9 --
-        // "reuse existing retry/fallback mechanics") for exactly the
-        // still-missing slots, then re-filter against prior Practice
-        // fingerprints AND every Prove question already accepted so far
-        // (Part 6 step 7 -- `excludeFingerprints` carries both forward).
-        const needed = maxQuestions - accepted.length;
-        const refillInvocationType = attempt === 0 ? 'NOVELTY_REFILL_1' : 'NOVELTY_REFILL_2';
-        candidates = await generateGatedQuestionBatch(primaryConceptId!, validated.studentId, validated.subjectId, {
-          count: needed,
-          difficulty: v1EffectiveDifficulty!,
+      if (accepted.length < maxQuestions) {
+        // Part 6's own worked example ("accepted = 8, needed = 2") sizes
+        // the recovery to the exact deficit; this instead reuses
+        // generatePracticeQuestions's own PROVEN surplus formula
+        // (`deficit + 1`, capped at `MAX_QUESTIONS_PER_CHUNK * 2`) --
+        // that existing recovery step was itself tuned (RET-R2) against
+        // REAL observed Quality-Gate rejection rates, which showed an
+        // unpadded deficit request is materially more likely to still
+        // fall short, and Part 12 allows only ONE recovery round, so
+        // there is no second chance to compensate for under-requesting.
+        const deficit = maxQuestions - accepted.length;
+        const recoveryRequestedCount = Math.min(MAX_QUESTIONS_PER_CHUNK * 2, deficit + 1);
+        aggregateRecoveryUsed = true;
+        aggregateRecoveryRequestedCount = recoveryRequestedCount;
+        const recoveryStartedAt = Date.now();
+        const recovery = await generateBoundedRecoveryBatch(primaryConceptId!, validated.studentId, validated.subjectId, {
+          count: recoveryRequestedCount,
+          difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
           types: ALL_QUESTION_TYPES,
           guidance: config.guidance,
           language,
@@ -936,11 +969,25 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           activityType: activityTypeForQuizMode(validated.quizMode),
           quizMode: validated.quizMode,
           parentOperationId,
-          onInvocationDiagnostics: (diag: GatedBatchInvocationDiagnostics) => {
-            generationInvocations.push({ invocationType: refillInvocationType, ...diag });
-            if (attempt === 0) novelty_refill_1_ms = diag.durationMs;
-            else novelty_refill_2_ms = diag.durationMs;
-          },
+        });
+        aggregateRecoveryMs = Date.now() - recoveryStartedAt;
+        generationInvocations.push({ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, ...recovery.diagnostics });
+
+        // Recovery survivors MUST still clear novelty -- Part 7's own
+        // "filter recovery against the full accumulated fingerprint
+        // set" -- never appended unfiltered.
+        const recoveryFilterStartedAt = Date.now();
+        const recoveryFiltered = filterExactDuplicates(recovery.accepted, excludeFingerprints);
+        noveltyFilterMs += Date.now() - recoveryFilterStartedAt;
+        excludeFingerprints = recoveryFiltered.fingerprints;
+        rejectedExactDuplicateCount += recoveryFiltered.rejectedCount;
+        accepted = accepted.concat(recoveryFiltered.accepted);
+        noveltyPasses.push({
+          noveltyPass: 'RECOVERY',
+          candidateCount: recovery.accepted.length,
+          acceptedCount: recoveryFiltered.accepted.length,
+          rejectedExactDuplicateCount: recoveryFiltered.rejectedCount,
+          remainingNeeded: Math.max(0, maxQuestions - accepted.length),
         });
       }
 
@@ -964,8 +1011,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       const fallbackCount = generationInvocations.filter((inv) => inv.fallbackUsed).length;
       const semanticVerificationCount = generationInvocations.reduce((sum, inv) => sum + inv.semanticCallCount, 0);
       const externalAiCallCount = generationInvocations.reduce((sum, inv) => sum + inv.externalAiCallCount, 0);
-      const noveltyRefillCount = generationInvocations.filter((inv) => inv.invocationType !== 'PRIMARY').length;
-      const primaryInvocation = generationInvocations.find((inv) => inv.invocationType === 'PRIMARY') ?? null;
+      // CANON-R6-PERF-R1 -- initialAcceptedCount is captured at the
+      // INITIAL novelty pass (before any recovery ever ran); a request
+      // with no `noveltyPasses` entry yet (shouldn't happen for
+      // canonical_prove, but defensive) falls back to `finalQuestionCount`.
+      const initialAcceptedCount = noveltyPasses.find((p) => p.noveltyPass === 'INITIAL')?.acceptedCount ?? finalQuestionCount;
       logCanonicalProveGenerationSummary({
         operationId: parentOperationId,
         parentOperationId,
@@ -977,17 +1027,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         difficultyTarget: v1EffectiveDifficulty ?? null,
         canonicalAuthorizationMs,
         priorHistoryMs,
-        generationPrimaryMs: primaryInvocation?.durationMs ?? null,
+        generationPrimaryMs: null, // CANON-R6-PERF-R1: superseded by generationConcurrentMs -- see the type's own doc comment.
+        generationConcurrentMs,
+        chunkPlan,
+        chunkCount: chunkPlan.length,
         noveltyFilterMs,
-        noveltyRefill1Ms: novelty_refill_1_ms,
-        noveltyRefill2Ms: novelty_refill_2_ms,
+        noveltyRefill1Ms: null, // CANON-R6-PERF-R1: the refill mechanism this represented no longer exists -- superseded by aggregateRecoveryMs.
+        noveltyRefill2Ms: null,
+        initialAcceptedCount,
+        aggregateRecoveryUsed,
+        aggregateRecoveryRequestedCount,
+        aggregateRecoveryMs,
         persistenceMs,
         totalMs: Date.now() - requestStartedAt,
         generationInvocationCount: generationInvocations.length,
         externalAiCallCount,
         fallbackCount,
         semanticVerificationCount,
-        noveltyRefillCount,
+        noveltyRefillCount: aggregateRecoveryUsed ? 1 : 0,
         priorPracticeFingerprintCount: noveltyDiagnostics?.priorPracticeFingerprintCount ?? null,
         rejectedExactDuplicateCount: noveltyDiagnostics?.rejectedExactDuplicateCount ?? null,
         acceptedNovelQuestionCount: noveltyDiagnostics?.acceptedNovelQuestionCount ?? null,
@@ -1143,17 +1200,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         difficultyTarget: null,
         canonicalAuthorizationMs,
         priorHistoryMs,
-        generationPrimaryMs: generationInvocations.find((inv) => inv.invocationType === 'PRIMARY')?.durationMs ?? null,
+        generationPrimaryMs: null,
+        generationConcurrentMs,
+        chunkPlan,
+        chunkCount: chunkPlan.length,
         noveltyFilterMs,
         noveltyRefill1Ms: null,
         noveltyRefill2Ms: null,
+        initialAcceptedCount: 0,
+        aggregateRecoveryUsed,
+        aggregateRecoveryRequestedCount,
+        aggregateRecoveryMs,
         persistenceMs,
         totalMs: Date.now() - requestStartedAt,
         generationInvocationCount: generationInvocations.length,
         externalAiCallCount: generationInvocations.reduce((sum, inv) => sum + inv.externalAiCallCount, 0),
         fallbackCount: generationInvocations.filter((inv) => inv.fallbackUsed).length,
         semanticVerificationCount: generationInvocations.reduce((sum, inv) => sum + inv.semanticCallCount, 0),
-        noveltyRefillCount: generationInvocations.filter((inv) => inv.invocationType !== 'PRIMARY').length,
+        noveltyRefillCount: aggregateRecoveryUsed ? 1 : 0,
         priorPracticeFingerprintCount: null,
         rejectedExactDuplicateCount: null,
         acceptedNovelQuestionCount: null,

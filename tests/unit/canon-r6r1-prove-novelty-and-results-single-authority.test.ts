@@ -188,7 +188,7 @@ describe('5/6 -- loadPriorPracticeQuestionFingerprints', () => {
 // ============================================================
 // 10-14, 17 -- PROVE generation flow (source audit)
 // ============================================================
-describe('10-14/17 -- canonical_prove generation flow wires the novelty filter with a bounded refill', () => {
+describe('10-14/17 -- canonical_prove generation flow wires the novelty filter with a bounded aggregate recovery (CANON-R6-PERF-R1 -- supersedes CANON-R6R1\'s own up-to-2-refill loop, which live evidence showed was never actually the latency source)', () => {
   it('the novelty block runs ONLY for canonical_prove, and BEFORE the pre-existing short-of-maxQuestions choke point', () => {
     const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorHistoryStartedAt");
     const chokePointIdx = ROUTE_SRC.indexOf('if (questions.length > 0 && questions.length < maxQuestions) {');
@@ -196,25 +196,32 @@ describe('10-14/17 -- canonical_prove generation flow wires the novelty filter w
     expect(chokePointIdx).toBeGreaterThan(noveltyIdx);
   });
 
-  it('10/12. a bounded retry budget (MAX_NOVELTY_REFILL_ATTEMPTS = 2) gates the refill loop -- never unbounded', () => {
-    expect(ROUTE_SRC).toMatch(/const MAX_NOVELTY_REFILL_ATTEMPTS = 2;/);
-    expect(ROUTE_SRC).toMatch(/for \(let attempt = 0; attempt <= MAX_NOVELTY_REFILL_ATTEMPTS; attempt\+\+\)/);
+  it('10/12. at most ONE aggregate recovery round exists -- no loop, no retry counter, never recursive', () => {
+    const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorHistoryStartedAt");
+    const chokePointIdx = ROUTE_SRC.indexOf('if (questions.length > 0 && questions.length < maxQuestions) {');
+    const block = ROUTE_SRC.slice(noveltyIdx, chokePointIdx);
+    expect(block).not.toMatch(/for \(let attempt/);
+    expect(block).not.toMatch(/MAX_NOVELTY_REFILL_ATTEMPTS/);
+    const recoveryCalls = (block.match(/generateBoundedRecoveryBatch\(/g) ?? []).length;
+    expect(recoveryCalls).toBe(1);
   });
 
-  it('10. when accepted is short of maxQuestions and attempts remain, a refill batch is requested for exactly the missing slots', () => {
-    expect(ROUTE_SRC).toMatch(/const needed = maxQuestions - accepted\.length;/);
-    expect(ROUTE_SRC).toMatch(/candidates = await generateGatedQuestionBatch\(primaryConceptId!, validated\.studentId, validated\.subjectId, \{\s*\n\s*count: needed,/);
+  it('10. when the initial concurrent chunks\' own novelty-filtered aggregate is short of maxQuestions, ONE recovery is requested, sized via the proven deficit+1 surplus formula (capped at 2x the per-chunk max)', () => {
+    expect(ROUTE_SRC).toMatch(/const deficit = maxQuestions - accepted\.length;/);
+    expect(ROUTE_SRC).toMatch(/const recoveryRequestedCount = Math\.min\(MAX_QUESTIONS_PER_CHUNK \* 2, deficit \+ 1\);/);
+    expect(ROUTE_SRC).toMatch(/generateBoundedRecoveryBatch\(primaryConceptId!, validated\.studentId, validated\.subjectId, \{\s*\n\s*count: recoveryRequestedCount,/);
   });
 
-  it('11. the refill loop carries `excludeFingerprints` forward from `filtered.fingerprints` -- so a later batch is filtered against BOTH prior Practice AND everything already accepted', () => {
-    const idx = ROUTE_SRC.indexOf('const filtered = filterExactDuplicates(candidates, excludeFingerprints);');
+  it('11. the recovery round\'s own output is filtered against `excludeFingerprints` carried forward from the initial pass -- filtered against BOTH prior Practice AND everything already accepted, never an isolated exclusion set', () => {
+    const idx = ROUTE_SRC.indexOf('const recoveryFiltered = filterExactDuplicates(recovery.accepted, excludeFingerprints);');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 500);
-    expect(slice).toMatch(/excludeFingerprints = filtered\.fingerprints;/);
+    const initialFilterIdx = ROUTE_SRC.indexOf('const initialFiltered = filterExactDuplicates(questions, priorFingerprints);');
+    expect(initialFilterIdx).toBeGreaterThan(-1);
+    expect(idx).toBeGreaterThan(initialFilterIdx);
   });
 
-  it('13/14. the loop stops at exactly maxQuestions accepted OR the retry budget exhausted -- there is no other exit, and the result feeds the pre-existing fail-closed guard (so a short result never reaches storeQuiz)', () => {
-    const idx = ROUTE_SRC.indexOf('if (accepted.length >= maxQuestions || attempt === MAX_NOVELTY_REFILL_ATTEMPTS) break;');
+  it('13/14. after at most one recovery round, the result feeds the pre-existing fail-closed guard unchanged (so a short result never reaches storeQuiz) -- never a second recovery attempt regardless of outcome', () => {
+    const idx = ROUTE_SRC.indexOf('if (accepted.length < maxQuestions) {');
     expect(idx).toBeGreaterThan(-1);
     const storeQuizIdx = ROUTE_SRC.indexOf('const quizId = await storeQuiz(');
     const chokePointIdx = ROUTE_SRC.indexOf('if (questions.length > 0 && questions.length < maxQuestions) {');
@@ -222,6 +229,12 @@ describe('10-14/17 -- canonical_prove generation flow wires the novelty filter w
     expect(chokePointIdx).toBeGreaterThan(idx);
     expect(emptyGuardIdx).toBeGreaterThan(chokePointIdx);
     expect(storeQuizIdx).toBeGreaterThan(emptyGuardIdx);
+    // exactly one `if (accepted.length < maxQuestions)` deficit check in
+    // the whole novelty block -- not inside any loop, never re-entered.
+    const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorHistoryStartedAt");
+    const block = ROUTE_SRC.slice(noveltyIdx, chokePointIdx);
+    const deficitChecks = (block.match(/if \(accepted\.length < maxQuestions\)/g) ?? []).length;
+    expect(deficitChecks).toBe(1);
   });
 
   it('17. novelty diagnostics (priorPracticeFingerprintCount/rejectedExactDuplicateCount/acceptedNovelQuestionCount/noveltyPolicy) are computed and merged into the persisted marker as `v1MarkerToPersist`, never mutating the original `v1Marker`', () => {
