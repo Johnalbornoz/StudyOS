@@ -58,6 +58,12 @@ import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
 import { resolveConceptJourneyStage } from '@/lib/lx/path-view';
 import { averageJourneyProgress } from '@/lib/lx/journey-progress';
 import { buildCanonicalLearningProgress } from '@/lib/lx/canonical-learning-progress';
+import { deriveJourneyProgress } from '@/lib/lx/journey-progress';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+} from '@/lib/pedagogical-decision';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import type { MessageKey } from '@/lib/i18n/messages';
 
@@ -198,7 +204,7 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
         resolveConceptJourneyStage(c.id, s.id, knowledgeStateByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id))
       );
 
-      const withRaw: ConceptWithRawMastery[] = masteryRows.map((row: any) => {
+      const withRaw: ConceptWithRawMastery[] = await Promise.all(masteryRows.map(async (row: any) => {
         const ks = knowledgeStateByConceptId.get(row.concept_id) ?? null;
         // tryMasteryScore validates against mastery_records.mastery_score's
         // own [0, 100] domain -- a genuinely out-of-range row degrades to
@@ -215,15 +221,40 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
           activeDecision: decisionByConceptId.get(row.concept_id),
           masteryPolicy: policy,
         });
+        // CANON-V2-REMEDIATION Part 8 (AUDIT-006 closed): ONE AUTHORITY
+        // RULE -- the legacy `canonical` view above is still fully
+        // computed (kept for the feature-gate-off path, exactly like
+        // ConceptMission/Today), but once the canonical engine v1 gate
+        // is on, journeyStage/journeyProgressPercent/journeyProgressLabelKey
+        // for THIS concept are overridden from a FRESH
+        // `getCanonicalPedagogicalDecision` call -- never from the
+        // legacy `LearnerJourneyStage`/mastery-derived computation above.
+        // A read failure degrades to the legacy view (never throws,
+        // matching this file's own existing `.catch(() => ...)`
+        // discipline elsewhere) -- the Progress page must never break
+        // because of this optional, additive override.
+        let journeyStage = canonical.journeyStage;
+        let journeyProgressPercent = canonical.journeyProgressPercent;
+        let journeyProgressLabelKey = canonical.journeyProgressLabelKey;
+        if (isCanonicalEngineV1Enabled()) {
+          try {
+            const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId: row.concept_id });
+            journeyStage = decision.stage;
+            journeyProgressPercent = decision.journeyProgressPercent;
+            journeyProgressLabelKey = deriveJourneyProgress(decision.stage).progressLabelKey;
+          } catch (error) {
+            if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
+          }
+        }
         return {
           progress: {
             conceptId: row.concept_id,
             label: row.label,
             masteryPercent: masteryToPercent(rawMastery),
             masteryState: ks?.masteryState ?? 'UNKNOWN',
-            journeyStage: canonical.journeyStage,
-            journeyProgressPercent: canonical.journeyProgressPercent,
-            journeyProgressLabelKey: canonical.journeyProgressLabelKey,
+            journeyStage,
+            journeyProgressPercent,
+            journeyProgressLabelKey,
             dimensions: {
               understandingScore: dimensionToPercent(ks?.understandingScore ?? null),
               independenceScore: dimensionToPercent(ks?.independenceScore ?? null),
@@ -238,7 +269,7 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
           },
           rawMastery,
         };
-      });
+      }));
 
       const concepts = withRaw.map((c) => c.progress);
       const rawMasteryScores = withRaw.flatMap((c) => (c.rawMastery !== null ? [c.rawMastery] : []));

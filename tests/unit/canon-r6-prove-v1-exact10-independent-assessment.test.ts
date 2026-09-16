@@ -39,6 +39,17 @@ function practiceEvidence(overrides: Partial<RawEvidenceItem> = {}): RawEvidence
   };
 }
 
+/**
+ * CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the last 3
+ * valid attempts >=80% (AUDIT-001) -- a single qualifying attempt is no
+ * longer sufficient to genuinely satisfy PRACTICE, so any fixture that
+ * needs Prove/Retain to be REACHABLE (not merely premature) supplies
+ * this second attempt alongside `practiceEvidence()`.
+ */
+function practiceEvidence2(overrides: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
+  return practiceEvidence({ id: 'p2', timestamp: '2026-09-20T01:00:00.000Z', ...overrides });
+}
+
 function proveEvidence(overrides: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   return {
     id: 'pr1',
@@ -70,7 +81,7 @@ describe('26/27 -- real-engine PROVE qualification: 8/10 (80%) passes, 7/10 (70%
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
+      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
       activeCriticalMisconception: false,
     });
     const prove = decision.requirements.find((r) => r.stage === 'PROVE');
@@ -124,7 +135,7 @@ describe('28 -- a valid PROVE pass advances to RETAIN, WAITING (the frozen 3-day
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
+      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
       activeCriticalMisconception: false,
     });
     expect(decision.stage).toBe('RETAIN');
@@ -139,10 +150,11 @@ describe('29 -- a valid PROVE fail rolls back to PRACTICE, decided by the frozen
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
+      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
       activeCriticalMisconception: false,
     });
     expect(decision.stage).toBe('PRACTICE');
+    expect(decision.rollback?.case).toBe('PROVE_FAILURE_RETURN_TO_PRACTICE');
   });
 
   it('the route never implements this rollback itself -- it only writes evidence, then re-fetches; no PRACTICE/RETAIN literal assignment exists anywhere near the submission response construction', () => {

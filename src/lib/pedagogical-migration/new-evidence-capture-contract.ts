@@ -22,7 +22,7 @@
  * specifies where a REAL future capture path must source each field
  * from.
  */
-import type { TransferChallengeDepth } from '@/lib/pedagogical-engine';
+import type { TransferChallengeDepth, TransferFailureDiagnostic } from '@/lib/pedagogical-engine';
 import { V1_POLICY_VERSION } from './types';
 
 interface V1EvidenceCaptureCommon {
@@ -91,8 +91,10 @@ export interface V1TransferCapture extends V1EvidenceCaptureCommon {
   activityType: 'TRANSFER';
   independent: true;
   challenges: [V1TransferChallengeCapture, V1TransferChallengeCapture, V1TransferChallengeCapture];
+  /** CANON-V2-REMEDIATION Part 5 -- the simple arithmetic mean of the 3 challenge scores (Policy V2's own frozen product decision), never a separately-weighted value. */
   overallScorePercent: number;
-  transferFoundationalFailureIndicated?: boolean;
+  /** CANON-V2-REMEDIATION Part 4 -- Policy V2 Section 7's 3 non-misconception failure classifications; absent unless a real diagnostic source is available. */
+  transferFailureDiagnostic?: TransferFailureDiagnostic;
   hasCriticalMisconception?: boolean;
 }
 

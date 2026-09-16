@@ -1,20 +1,16 @@
 /**
- * CANONICAL POLICY V2 AUDIT -- AUDIT-ONLY CERTIFICATION TESTS.
+ * CANONICAL POLICY V2 -- AUDIT-001 REMEDIATION VERIFICATION.
  *
- * These tests assert the FROZEN Canonical Policy V2's own PRACTICE
- * consistency rule (Section 3: "PRACTICE is satisfied only when AT
- * LEAST 2 OF THE LAST 3 VALID PRACTICE ATTEMPTS have score >= 80% AND
- * there is no active critical misconception") against the REAL,
- * unmodified engine (`evaluateCanonicalLearningState`) -- never a mock,
- * never a weakened/adjusted expectation.
+ * Was: AUDIT-001 (BLOCKER) -- the pre-remediation engine satisfied
+ * PRACTICE on any single qualifying attempt.
  *
- * DO NOT weaken these assertions to make the current implementation
- * pass. A FAILING test here is the audit finding itself: it proves the
- * current engine still uses its original CANON-R2 "any single qualifying
- * Practice attempt satisfies PRACTICE" rule, which the frozen V2 policy
- * explicitly supersedes. See docs/CANON_AUDIT_REPORT.md finding
- * AUDIT-001 (BLOCKER) for the full analysis. This file is test-only --
- * it changes no production code.
+ * Now: PRACTICE requires 2 of the last 3 valid attempts >=80% (Policy
+ * V2 Section 3), and the window RESETS to a brand-new cycle whenever a
+ * rollback lands back on PRACTICE (the frozen product decision from the
+ * remediation spec's own Part 1A) -- prior Practice evidence remains
+ * immutable History but no longer occupies a window slot for
+ * requalification. These tests assert the CORRECTED behavior end-to-end
+ * against the real, unmodified engine. Test-only.
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -151,26 +147,21 @@ describe('AUDIT-001 (BLOCKER): PRACTICE "2 of last 3" consistency rule -- Policy
       expect(decision.stage).not.toBe('PROVE');
     });
 
-    it('the current engine (documented defect) DOES report PRACTICE satisfied and PROVE unlocked after just one attempt -- recorded here as a pinned "current behavior" fact, not a policy endorsement', () => {
+    it('AUDIT-001 CLOSED: the remediated engine now correctly reports PRACTICE unsatisfied after just one attempt (superseded the pre-remediation "documented defect" pin)', () => {
       const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem(1, 100)] }));
-      // NOTE: this assertion documents ACTUAL current behavior (for the
-      // audit report's evidence trail) and is expected to itself need
-      // deletion/replacement once AUDIT-001 is remediated -- it is not a
-      // policy assertion.
-      expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
-    });
-  });
-
-  describe('intermediate-state divergence: the engine unlocks PROVE one attempt too early even in sequences whose FINAL state happens to match V2', () => {
-    it('[79,80] (prefix of [79,80,80]) -> V2 says still UNSATISFIED (1 of last 2/3 >= 80); current engine already reports SATISFIED', () => {
-      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem(1, 79), practiceItem(2, 80)] }));
-      // Policy-correct expectation:
       expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
     });
   });
 
-  describe('Section 10 real regression sequence: Practice 100, Prove 50 (fail/rollback), Practice 67, Practice 100', () => {
-    it('final PRACTICE status: coincidentally SATISFIED under both the current engine and a correct 2-of-last-3 reading (2 of [100,67,100] pass) -- this specific sequence does NOT by itself prove AUDIT-001, see [100,40,40] above for the decisive proof', () => {
+  describe('AUDIT-001 CLOSED: no more intermediate-state divergence -- the engine no longer unlocks PROVE early', () => {
+    it('[79,80] (prefix of [79,80,80]) -> V2 says still UNSATISFIED (1 of last 2/3 >= 80); the remediated engine agrees', () => {
+      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem(1, 79), practiceItem(2, 80)] }));
+      expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
+    });
+  });
+
+  describe('Section 10 real regression sequence: Practice 100, Prove 50, Practice 67, Practice 100', () => {
+    it('final PRACTICE status: SATISFIED -- and, now that AUDIT-001 is closed, for the CORRECT reason: the single Practice 100 never satisfied PRACTICE on its own, so the Prove 50 submission is PREMATURE (not a genuine failure) and never resets the window -- all 3 real Practice attempts ([100,67,100], 2 of 3 pass) accumulate naturally', () => {
       const evidence = [
         LEARNED,
         practiceItem(1, 100),
@@ -179,9 +170,27 @@ describe('AUDIT-001 (BLOCKER): PRACTICE "2 of last 3" consistency rule -- Policy
         practiceItem(4, 100),
       ];
       const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
+      expect(decision.requirements.find((r) => r.stage === 'PROVE')!.reasonCodes).toContain('PREMATURE_STAGE_EVIDENCE');
+      expect(decision.rollback).toBeNull(); // no genuine Prove failure ever occurred -- nothing to roll back
       expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
       expect(decision.stage).toBe('PROVE');
       expect(decision.actionState).toBe('EXECUTABLE');
+    });
+
+    it('the window RESET rule (frozen decision, Part 1A) proven directly: 2 valid Practices satisfy PRACTICE, a GENUINE Prove failure resets the window, and 1 new Practice alone is then insufficient', () => {
+      const genuinelySatisfied = [LEARNED, practiceItem(1, 90), practiceItem(2, 90)];
+      const afterGenuineFailure = [...genuinelySatisfied, proveItem(3, 50)];
+      const decision = evaluateCanonicalLearningState(baseInput({ evidence: afterGenuineFailure }));
+      expect(decision.rollback?.case).toBe('PROVE_FAILURE_RETURN_TO_PRACTICE'); // this one IS genuine -- Practice was truly satisfied first
+      expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
+
+      const onlyOneNewPractice = [...afterGenuineFailure, practiceItem(4, 90)];
+      const afterOne = evaluateCanonicalLearningState(baseInput({ evidence: onlyOneNewPractice }));
+      expect(afterOne.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED'); // the reset window has only 1 slot filled
+
+      const twoNewPractices = [...onlyOneNewPractice, practiceItem(5, 90)];
+      const afterTwo = evaluateCanonicalLearningState(baseInput({ evidence: twoNewPractices }));
+      expect(afterTwo.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
     });
 
     it('REGRESSION GUARD: qualification of the final Practice 100% attempt depends ONLY on RawEvidenceItem.activityType (== PRACTICE), never on a "canonicalActivityType: REINFORCE" tag -- the engine has no such field and cannot see it, so a REINFORCE-overlay Practice attempt qualifies identically to an ordinary one', () => {
@@ -198,22 +207,16 @@ describe('AUDIT-001 (BLOCKER): PRACTICE "2 of last 3" consistency rule -- Policy
     });
   });
 
-  describe('AMBIGUOUS_SPEC: does the "last 3" window reset after a PROVE-failure rollback, or does it span the full Practice history?', () => {
-    it('documented ambiguity -- not asserted either way; see CANONICAL_GAPS_FOR_REMEDIATION.md AUDIT-001-AMBIGUITY', () => {
-      // The frozen policy's own "valid Practice attempt" checklist
-      // (correct policy version, activity type, item count, contract,
-      // non-duplicate, non-malformed) says nothing about TEMPORAL
-      // position relative to a prior rollback. Two defensible readings
-      // exist:
-      //   (a) the window is drawn from the full chronological Practice
-      //       ledger, including attempts BEFORE the Prove failure that
-      //       triggered the rollback;
-      //   (b) the window resets to empty at the moment of rollback,
-      //       since the whole purpose of the rule is RECENT consistency
-      //       and a Prove failure is itself evidence the prior Practice
-      //       success was not a reliable signal.
-      // This test intentionally asserts nothing -- it exists so the gap
-      // is discoverable by running the suite, not just by reading prose.
+  describe('AUDIT-001-AMBIGUITY RESOLVED: the "last 3" window resets on any rollback to PRACTICE, per the remediation spec\'s own frozen product decision', () => {
+    it('the reset applies identically whether the rollback came from a PROVE failure or a TRANSFER-triggered rollback to PRACTICE (Case C/D) -- see audit-canon-v2-transfer-classification.test.ts for the Transfer-triggered proof', () => {
+      // Documentation anchor: the PROVE-failure reset path is proven
+      // directly above ("the window RESET rule... proven directly");
+      // the TRANSFER-triggered reset path (Case C foundational, Case D
+      // misconception) is proven in audit-canon-v2-transfer-classification.test.ts's
+      // own "Case C: after the rollback, 2 NEW valid Practice attempts"
+      // test -- both share the exact same `practiceWindow = []` reset
+      // point in engine.ts, so there is no separate code path to
+      // duplicate here.
       expect(true).toBe(true);
     });
   });

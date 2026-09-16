@@ -126,6 +126,21 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
   let learnBasis: SatisfactionBasis = null;
   let practiceSatisfied = false;
   let practiceBasis: SatisfactionBasis = null;
+  /**
+   * CANON-V2-REMEDIATION Part 1A -- the CURRENT Practice qualification
+   * cycle's window: one entry per structurally-valid Practice attempt
+   * (right activity type, right stage/prerequisite, right difficulty
+   * range, no blocking misconception -- i.e. every `qualifyEvidence`
+   * verdict whose reasonCode is `PASSING_SCORE` or `INSUFFICIENT_SCORE`,
+   * the two outcomes that only differ by the score bar itself), `true`
+   * when that attempt scored >=80%. Reset to `[]` -- a brand NEW cycle,
+   * per Policy V2's own frozen product decision -- every time a rollback
+   * lands back on PRACTICE (a genuine Prove failure, or a Transfer
+   * foundational/critical-misconception rollback). Historical entries
+   * from a prior cycle are never deleted from `RawEvidenceItem`/History
+   * itself -- only this in-memory replay accumulator forgets them.
+   */
+  let practiceWindow: boolean[] = [];
   let proveSatisfied = false;
   let proveBasis: SatisfactionBasis = null;
   let proveQualifyingAt: string | null = null;
@@ -133,6 +148,14 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
   let retainSatisfied = false;
   let retainBasis: SatisfactionBasis = null;
   let retainQualifyingScore: number | null = null;
+  /**
+   * CANON-V2-REMEDIATION Part 2 -- consecutive Retain failures since the
+   * most recently qualifying Prove (the "current Retain cycle"). Reset
+   * to 0 the instant a NEW Prove qualifies, and also on a qualifying
+   * Retain -- so a stale strike from a prior, already-rebuilt cycle can
+   * never carry over and contaminate a new one.
+   */
+  let retainStrikeCount = 0;
   let transferSatisfied = false;
   let transferBasis: SatisfactionBasis = null;
   let highestQualifyingPracticeDifficulty: number | null = null;
@@ -208,19 +231,37 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       const verdict = qualifyEvidence(item, { targetStage: 'PRACTICE', prerequisiteSatisfied: learnSatisfied });
       acc.PRACTICE.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
-        practiceSatisfied = true;
-        practiceBasis = 'V1_EVIDENCE';
         acc.PRACTICE.qualifyingCount++;
         acc.PRACTICE.qualifyingIds.push(item.id);
         highestQualifyingPracticeDifficulty =
           highestQualifyingPracticeDifficulty == null ? item.difficulty : Math.max(highestQualifyingPracticeDifficulty, item.difficulty);
-        // A qualifying Practice attempt resolves any rollback that sent
-        // the learner back here for repair -- they are no longer in
-        // REINFORCE, just ready to attempt the next stage normally.
-        if (lastRollback?.rolledBackTo === 'PRACTICE') lastRollback = null;
       } else {
         acc.PRACTICE.nonQualifyingCount++;
         acc.PRACTICE.nonQualifyingIds.push(item.id);
+      }
+      // CANON-V2-REMEDIATION Part 1A -- "2 of the last 3 VALID Practice
+      // attempts" (Policy V2 Section 3). A "valid Practice attempt" is
+      // any attempt that survives every check EXCEPT the score bar
+      // itself -- exactly the two reason codes below (PASSING_SCORE and
+      // INSUFFICIENT_SCORE only differ by that bar); WRONG_ACTIVITY_TYPE,
+      // CRITICAL_MISCONCEPTION, PREMATURE_STAGE_EVIDENCE, and NOT_APPLICABLE
+      // (out-of-range difficulty / a malformed contract) never occupy a
+      // window slot at all. REINFORCE is an overlay only -- this engine
+      // has no field distinguishing a REINFORCE-administered Practice
+      // attempt from an ordinary one, so a Practice attempt performed
+      // during REINFORCE counts identically here, by construction.
+      const isWindowEligible = verdict.reasonCode === 'PASSING_SCORE' || verdict.reasonCode === 'INSUFFICIENT_SCORE';
+      if (isWindowEligible) {
+        practiceWindow.push(verdict.result === 'QUALIFIES');
+        const passesInWindow = practiceWindow.slice(-3).filter(Boolean).length;
+        if (!practiceSatisfied && passesInWindow >= 2) {
+          practiceSatisfied = true;
+          practiceBasis = 'V1_EVIDENCE';
+          // A newly-satisfied Practice window resolves any rollback that
+          // sent the learner back here for repair -- they are no longer
+          // in REINFORCE, just ready to attempt the next stage normally.
+          if (lastRollback?.rolledBackTo === 'PRACTICE') lastRollback = null;
+        }
       }
     }
 
@@ -232,6 +273,11 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
         proveBasis = 'V1_EVIDENCE';
         proveQualifyingAt = item.timestamp;
         proveQualifyingDifficulty = item.difficulty;
+        // CANON-V2-REMEDIATION Part 2 -- a NEW qualifying Prove always
+        // opens a brand new Retain cycle: its own two-strike counter
+        // starts back at zero, regardless of any strikes accumulated
+        // against a prior (now-superseded) qualifying Prove.
+        retainStrikeCount = 0;
         acc.PROVE.qualifyingCount++;
         acc.PROVE.qualifyingIds.push(item.id);
         // A fresh qualifying Prove resolves a Retention-triggered
@@ -255,6 +301,12 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
           proveQualifyingDifficulty = null;
           practiceSatisfied = false;
           practiceBasis = null;
+          // CANON-V2-REMEDIATION Part 1A -- the frozen product decision:
+          // a rollback that lands on PRACTICE always starts a brand new
+          // Practice qualification cycle. Prior Practice evidence stays
+          // in History (never mutated) but no longer occupies a window
+          // slot for the NEW requalification.
+          practiceWindow = [];
           lastRollback = makeRollback('PROVE', 'PROVE_FAILURE_RETURN_TO_PRACTICE', 'PRACTICE', ['FAILED_ATTEMPT']);
         }
       }
@@ -268,28 +320,51 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
         retainSatisfied = true;
         retainBasis = 'V1_EVIDENCE';
         retainQualifyingScore = item.scorePercent;
+        // CANON-V2-REMEDIATION Part 2 -- a qualifying Retain closes out
+        // this cycle's strike count (moot for THIS cycle, but keeps the
+        // counter clean for defensive clarity).
+        retainStrikeCount = 0;
         acc.RETAIN.qualifyingCount++;
         acc.RETAIN.qualifyingIds.push(item.id);
+        // Resolves a Transfer-triggered RETENTION_WEAKNESS rollback --
+        // the requalification succeeded, no overlay remains active.
+        if (lastRollback?.rolledBackTo === 'RETAIN') lastRollback = null;
       } else {
         acc.RETAIN.nonQualifyingCount++;
         acc.RETAIN.nonQualifyingIds.push(item.id);
         if (verdict.reasonCode === 'FAILED_ATTEMPT') {
-          // Retention spec's own rule: "failure rolls back to PROVE and
-          // a NEW successful Prove creates a NEW retention window --
-          // never reuses old due date." Invalidate the prior qualifying
-          // Prove entirely so a fresh one is required. CANON-R4R1 Part
-          // 12: a recognition-seeded PROVE basis is permanently
-          // invalidated here too -- the learner must produce a NEW real
-          // v1 Prove; legacy recognition can never instantly re-satisfy
-          // it (Part 12's own forbidden example).
-          retainSatisfied = false;
-          retainBasis = null;
-          retainQualifyingScore = null;
-          proveSatisfied = false;
-          proveBasis = null;
-          proveQualifyingAt = null;
-          proveQualifyingDifficulty = null;
-          lastRollback = makeRollback('RETAIN', 'RETENTION_FAILURE_RETURN_TO_PROVE', 'PROVE', ['FAILED_ATTEMPT']);
+          // CANON-V2-REMEDIATION Part 2 -- Policy V2 Section 6's
+          // two-strike rule: a FIRST Retain failure in this cycle never
+          // touches Prove/Retain satisfaction at all -- it simply
+          // doesn't qualify (already recorded above), leaving RETAIN
+          // immediately re-attemptable (its own eligibility gate is
+          // unaffected, since proveQualifyingAt is untouched) with no
+          // additional 3-day wait. Only the SECOND CONSECUTIVE failure
+          // in this same cycle rolls back to PROVE.
+          retainStrikeCount++;
+          if (retainStrikeCount >= 2) {
+            // Retention spec's own rule: "failure rolls back to PROVE and
+            // a NEW successful Prove creates a NEW retention window --
+            // never reuses old due date." Invalidate the prior qualifying
+            // Prove entirely so a fresh one is required. CANON-R4R1 Part
+            // 12: a recognition-seeded PROVE basis is permanently
+            // invalidated here too -- the learner must produce a NEW real
+            // v1 Prove; legacy recognition can never instantly re-satisfy
+            // it (Part 12's own forbidden example).
+            retainSatisfied = false;
+            retainBasis = null;
+            retainQualifyingScore = null;
+            proveSatisfied = false;
+            proveBasis = null;
+            proveQualifyingAt = null;
+            proveQualifyingDifficulty = null;
+            lastRollback = makeRollback('RETAIN', 'RETENTION_FAILURE_RETURN_TO_PROVE', 'PROVE', ['FAILED_ATTEMPT']);
+            // The next real Prove that qualifies will reset this to 0
+            // again anyway (Part 2 above) -- reset here too so the
+            // in-between state (Prove now unsatisfied, no Prove yet)
+            // never reports a stale nonzero strike count.
+            retainStrikeCount = 0;
+          }
         }
       }
     }
@@ -309,15 +384,19 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
         acc.TRANSFER.nonQualifyingCount++;
         acc.TRANSFER.nonQualifyingIds.push(item.id);
         if (verdict.reasonCode === 'CRITICAL_MISCONCEPTION') {
-          // Case C: rollback to the first requirement invalidated by
-          // the misconception. Documented CANON-R2R1 decision: treated
-          // as foundational -- rolls all the way back to PRACTICE, since
-          // a critical misconception undermines every stage built on
-          // top of it, not just Transfer itself. CANON-R4R1: this
-          // permanently invalidates any recognition-seeded basis for
-          // every one of these stages, for the rest of this replay.
+          // Case D: rollback to the first requirement invalidated by
+          // the misconception. Documented decision: treated as
+          // foundational -- rolls all the way back to PRACTICE, since a
+          // critical misconception undermines every stage built on top
+          // of it, not just Transfer itself. This permanently
+          // invalidates any recognition-seeded basis for every one of
+          // these stages, for the rest of this replay, and -- per
+          // CANON-V2-REMEDIATION Part 1A -- resets the Practice
+          // qualification cycle exactly like any other rollback to
+          // PRACTICE.
           practiceSatisfied = false;
           practiceBasis = null;
+          practiceWindow = [];
           proveSatisfied = false;
           proveBasis = null;
           proveQualifyingAt = null;
@@ -325,29 +404,32 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
           retainSatisfied = false;
           retainBasis = null;
           retainQualifyingScore = null;
+          retainStrikeCount = 0;
           transferSatisfied = false;
           transferBasis = null;
-          lastRollback = makeRollback('TRANSFER', 'CASE_C_CRITICAL_MISCONCEPTION', 'PRACTICE', ['CRITICAL_MISCONCEPTION']);
+          lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION', 'PRACTICE', ['CRITICAL_MISCONCEPTION']);
         } else if (verdict.reasonCode === 'FAILED_ATTEMPT' || verdict.reasonCode === 'MISSING_REQUIRED_REASONING') {
           transferSatisfied = false;
           transferBasis = null;
-          // CANON-R2R1 Part 2: qualification (did this attempt pass?)
-          // and rollback DIAGNOSIS (why, and how far back?) are now
-          // fully separate. A low -- even a zero -- per-challenge score
-          // never by itself implies Case B: only an EXPLICIT diagnostic
-          // signal (`transferFoundationalFailureIndicated`, produced by
-          // evidence dimensions outside this bare score, e.g. a
-          // procedural-correctness sub-check -- out of this isolated
-          // engine's own scope to compute) can trigger it. Absent that
-          // signal, every failure defaults to the more conservative
-          // Case A: the underlying Prove/Retention evidence remains
-          // valid, and only a Transfer-focused retry is required.
-          if (item.transferFoundationalFailureIndicated === true) {
-            // Case B: foundational failure -- rolls back to PRACTICE
-            // (the earliest requirement a genuine foundational failure
-            // plausibly invalidates).
+          // CANON-V2-REMEDIATION Part 4: qualification (did this attempt
+          // pass?) and rollback DIAGNOSIS (why, and how far back?) stay
+          // fully separate. A per-challenge/overall score pattern never
+          // by itself implies any of the three classifications below --
+          // only the EXPLICIT `transferFailureDiagnostic` signal
+          // (produced by evidence dimensions outside this bare score,
+          // out of this isolated engine's own scope to compute) decides.
+          // Absent that signal, every failure defaults to the most
+          // conservative classification: APPLICATION_CONTEXT_WEAKNESS --
+          // the underlying Prove/Retention evidence remains valid, and
+          // only a Transfer-focused retry is required.
+          const diagnostic = item.transferFailureDiagnostic ?? 'APPLICATION_CONTEXT_WEAKNESS';
+          if (diagnostic === 'FOUNDATIONAL_PROCEDURAL_FAILURE') {
+            // Case C: foundational/procedural failure -- rolls back to
+            // the earliest invalidated requirement, normally PRACTICE.
+            // Resets the Practice qualification cycle (Part 1A).
             practiceSatisfied = false;
             practiceBasis = null;
+            practiceWindow = [];
             proveSatisfied = false;
             proveBasis = null;
             proveQualifyingAt = null;
@@ -355,12 +437,28 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
             retainSatisfied = false;
             retainBasis = null;
             retainQualifyingScore = null;
-            lastRollback = makeRollback('TRANSFER', 'CASE_B_FOUNDATIONAL_FAILURE', 'PRACTICE', [verdict.reasonCode]);
+            retainStrikeCount = 0;
+            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE', 'PRACTICE', [verdict.reasonCode]);
+          } else if (diagnostic === 'RETENTION_WEAKNESS') {
+            // Case B (CANON-V2-REMEDIATION, newly implemented): the
+            // learner fails to retrieve previously-demonstrated
+            // knowledge, but there is no explicit foundational/
+            // procedural breakdown and no critical misconception --
+            // PROVE remains valid. Rollback ONLY to RETAIN; its own
+            // eligibility gate is anchored to the UNCHANGED
+            // `proveQualifyingAt`, which is already in the past by the
+            // time a Transfer attempt was even reachable -- so RETAIN
+            // recomputes as immediately EXECUTABLE, never WAITING, with
+            // no new 3-day wait.
+            retainSatisfied = false;
+            retainBasis = null;
+            retainQualifyingScore = null;
+            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_B_RETENTION_WEAKNESS', 'RETAIN', [verdict.reasonCode]);
           } else {
             // Case A: application-weak, knowledge intact -- Prove and
             // Retention remain valid; only a Transfer-focused REINFORCE
             // + a new Transfer attempt is required.
-            lastRollback = makeRollback('TRANSFER', 'CASE_A_TRANSFER_APPLICATION_WEAK', 'TRANSFER', [verdict.reasonCode]);
+            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS', 'TRANSFER', [verdict.reasonCode]);
           }
         }
       }
@@ -454,7 +552,7 @@ function computeCanonicalRevision(input: PedagogicalEngineInput, policyVersion: 
     perChallengeScores: e.perChallengeScores ?? null,
     reasoningProvided: e.reasoningProvided ?? null,
     novel: e.novel ?? null,
-    transferFoundationalFailureIndicated: e.transferFoundationalFailureIndicated ?? null,
+    transferFailureDiagnostic: e.transferFailureDiagnostic ?? null,
   }));
   const fingerprint = JSON.stringify({
     policyVersion,
@@ -535,10 +633,18 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
 
   // Any currently-in-effect rollback (see `replay`'s own doc comment --
   // resolved rollbacks are cleared as soon as the stage they targeted is
-  // re-satisfied) means the learner is under a REINFORCE intervention,
-  // Case A (application-weak Transfer retry) included -- it is still an
-  // overlay on top of the underlying stage, never a journey stage itself.
-  let intervention: 'REINFORCE' | null = state.lastRollback ? 'REINFORCE' : null;
+  // re-satisfied) that lands on PRACTICE, or Case A's own "stay
+  // TRANSFER" retry, means the learner is under a REINFORCE
+  // intervention -- an overlay on top of the underlying stage, never a
+  // journey stage itself. CANON-V2-REMEDIATION Part 2/4: a rollback
+  // that lands on PROVE (Retain's second-strike failure) or RETAIN
+  // (Transfer's Case B) is deliberately EXCLUDED here -- Policy V2
+  // describes both as producing a normal, immediately-executable real
+  // Prove/Retain attempt, never a Practice-shaped remediation overlay.
+  let intervention: 'REINFORCE' | null =
+    state.lastRollback && (state.lastRollback.rolledBackTo === 'PRACTICE' || state.lastRollback.rolledBackTo === 'TRANSFER')
+      ? 'REINFORCE'
+      : null;
 
   // A CURRENT, live critical misconception (not evidence-derived) blocks
   // everything except a journey that has not even started -- mirrors
@@ -551,13 +657,28 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     intervention = 'REINFORCE';
   }
 
+  // CANON-V2-REMEDIATION Part 4 (discovered defect, fixed alongside the
+  // rest of this remediation): REINFORCE's own Practice-shaped contract
+  // (2-3 items, the reinforce difficulty band) must NEVER be substituted
+  // for a DIFFERENT stage's real contract merely because `intervention`
+  // is reported as REINFORCE for observability. The only case where
+  // `intervention === 'REINFORCE'` and `stage !== 'PRACTICE'` is Case A
+  // (stay TRANSFER) -- and Policy V2 Section 7 is explicit that this
+  // administers a real, 3-challenge Transfer retry, not a 2-3 item
+  // Practice drill. `applyReinforceShape` is the ONLY signal
+  // `buildActivityContract` receives for "shape this as REINFORCE" --
+  // decoupled from the top-level `intervention` field reported on the
+  // decision, which still reads REINFORCE for both cases (an unchanged,
+  // already-certified observability fact).
+  const applyReinforceShape = intervention === 'REINFORCE' && stage === 'PRACTICE';
+
   // CANON-R2R1 Part 9-17: DifficultyPolicy -- always evidence-driven,
   // never a static stage-only midpoint. `practiceDifficulty` is computed
   // unconditionally because REINFORCE's own target derives from it
   // regardless of which stage the rollback landed on.
   const practiceDifficulty = resolvePracticeDifficulty(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
   let difficultyResolution: DifficultyResolution;
-  if (intervention === 'REINFORCE') {
+  if (applyReinforceShape) {
     difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.target);
   } else {
     switch (stage) {
@@ -592,7 +713,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     }
   }
 
-  const activityContract = buildActivityContract(stage, intervention, difficultyResolution);
+  const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution);
 
   // CANON-R2R1 Part 21 -- a closed enum, never left for a consumer to
   // infer from `stage` alone.

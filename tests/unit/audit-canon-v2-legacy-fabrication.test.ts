@@ -1,39 +1,30 @@
 /**
- * CANONICAL POLICY V2 AUDIT -- AUDIT-ONLY CERTIFICATION TESTS.
+ * CANONICAL POLICY V2 -- AUDIT-004 REMEDIATION VERIFICATION.
  *
- * Policy V2 Section 14 (LEGACY/MIGRATION) is explicit: "Pre-cutover
- * concepts may receive LEARN through LEGACY_MIGRATION_BASELINE. HIGHER
- * STAGES MUST NOT BE FABRICATED."
+ * Was: AUDIT-004 (BLOCKER) -- `evaluateLegacyRecognition` could grant
+ * PROVE/RETAIN/TRANSFER "SATISFIED" recognition from OLD legacy
+ * mastery-dimension scores alone, with ZERO real v1 evidence
+ * (`sourceEvidenceIds: []`), directly violating Policy V2 Section 14:
+ * "Pre-cutover concepts may receive LEARN through
+ * LEGACY_MIGRATION_BASELINE. Higher stages must not be fabricated."
  *
- * This file proves, with the real `evaluateLegacyRecognition` /
- * `buildPedagogicalMigrationBaseline` functions (pure, no DB) plus a
- * source audit of the one migration/backfill CLI that calls them, that
- * the current migration-recognition layer CAN and DOES fabricate
- * PRACTICE/PROVE/RETAIN/TRANSFER "SATISFIED" recognition purely from
- * OLD legacy mastery-dimension scores -- with ZERO real v1 canonical
- * evidence of any kind. AUDIT-004 (BLOCKER).
- *
- * Mitigating fact, also verified here: the `pedagogical_requirement_recognition`
- * table's own migration has NOT been applied to any environment, and
- * the apply script itself has never been run against live data in this
- * environment (both confirmed by their own header comments) -- so no
- * real student data is corrupted BY THIS PATH today. The finding is
- * that the CODE, if ever run with --apply against real legacy mastery
- * data, would violate the frozen policy the moment it runs -- this must
- * be fixed BEFORE that script is ever executed against Preview or
- * Production. Test-only; no production code is changed here.
+ * Now: `evaluateLegacyRecognition` returns AT MOST a single LEARN
+ * recognition -- the higher-stage cascade has been removed at its
+ * source. A second, independent defensive guard also exists at the
+ * persistence boundary (`applyRecognitions`), rejecting (and logging)
+ * any non-LEARN recognition from ANY future caller, never silently.
+ * These tests assert the CORRECTED behavior. Test-only.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { evaluateLegacyRecognition } from '@/lib/pedagogical-migration/legacy-recognition';
 import { buildPedagogicalMigrationBaseline } from '@/lib/pedagogical-migration/migration-baseline';
-import { evaluateCanonicalLearningState } from '@/lib/pedagogical-engine';
 import type { ConceptKnowledgeState, MasteryPolicy } from '@/services/knowledge-state.service';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const APPLY_SCRIPT_SRC = read('scripts/canon-r4r1-pre-v1-learn-baseline.ts');
-const RECOGNITION_MIGRATION_SRC = read('database/migrations/20260915_1000_canon_r4r1_pedagogical_requirement_recognition.sql');
+const LEGACY_RECOGNITION_SRC = read('src/lib/pedagogical-migration/legacy-recognition.ts');
 
 const STRONG_LEGACY_MASTERY: ConceptKnowledgeState = {
   studentId: 's1',
@@ -61,28 +52,32 @@ const PERMISSIVE_POLICY: MasteryPolicy = {
   maximumCriticalMisconceptions: 0,
 } as unknown as MasteryPolicy;
 
-describe('AUDIT-004 (BLOCKER): legacy recognition can fabricate PROVE/RETAIN/TRANSFER from OLD mastery scores alone -- Policy V2 Section 14', () => {
-  it('evaluateLegacyRecognition grants PROVE/RETAIN/TRANSFER "SATISFIED" recognition from OLD dimension scores alone, with ZERO real v1 PROVE/RETENTION_CHECK/TRANSFER evidence of any kind', () => {
+describe('AUDIT-004 CLOSED: legacy recognition can no longer fabricate PROVE/RETAIN/TRANSFER -- Policy V2 Section 14', () => {
+  it('evaluateLegacyRecognition, even given a MAXIMALLY strong legacy mastery record, grants ONLY LEARN -- never PRACTICE/PROVE/RETAIN/TRANSFER', () => {
     const recognitions = evaluateLegacyRecognition({
       knowledgeState: STRONG_LEGACY_MASTERY,
       masteryPolicy: PERMISSIVE_POLICY,
       recognizedAtMigration: '2026-01-01T00:00:00.000Z',
       migrationVersion: 'test-migration-v1',
     });
-    const byRequirement = new Map(recognitions.map((r) => [r.requirement, r]));
-    expect(byRequirement.get('PROVE')?.status).toBe('SATISFIED');
-    expect(byRequirement.get('PROVE')?.basis).toBe('LEGACY_POLICY_RECOGNITION');
-    expect(byRequirement.get('RETAIN')?.status).toBe('SATISFIED');
-    expect(byRequirement.get('TRANSFER')?.status).toBe('SATISFIED');
-    // This is the policy violation made concrete: `sourceEvidenceIds` is
-    // empty for every one of these -- no real evidence row backs any of
-    // them, contradicting "Higher stages must not be fabricated."
-    expect(byRequirement.get('PROVE')?.sourceEvidenceIds).toEqual([]);
-    expect(byRequirement.get('RETAIN')?.sourceEvidenceIds).toEqual([]);
-    expect(byRequirement.get('TRANSFER')?.sourceEvidenceIds).toEqual([]);
+    expect(recognitions).toHaveLength(1);
+    expect(recognitions[0].requirement).toBe('LEARN');
+    expect(recognitions[0].status).toBe('SATISFIED');
+    expect(recognitions.some((r) => r.requirement !== 'LEARN')).toBe(false);
   });
 
-  it('buildPedagogicalMigrationBaseline (the top-level composer the CLI actually calls) propagates ALL of these higher-stage recognitions, not just LEARN', () => {
+  it('a weak legacy mastery record (understanding below bar) recognizes nothing at all', () => {
+    const weak: ConceptKnowledgeState = { ...STRONG_LEGACY_MASTERY, understandingScore: 40 };
+    const recognitions = evaluateLegacyRecognition({
+      knowledgeState: weak,
+      masteryPolicy: PERMISSIVE_POLICY,
+      recognizedAtMigration: '2026-01-01T00:00:00.000Z',
+      migrationVersion: 'test-migration-v1',
+    });
+    expect(recognitions).toEqual([]);
+  });
+
+  it('buildPedagogicalMigrationBaseline (the top-level composer the CLI actually calls) never propagates a higher-stage recognition, even from a maximally strong legacy record', () => {
     const baseline = buildPedagogicalMigrationBaseline({
       conceptId: 'c1',
       studentId: 's1',
@@ -93,47 +88,65 @@ describe('AUDIT-004 (BLOCKER): legacy recognition can fabricate PROVE/RETAIN/TRA
       isPreexistingLearnerConcept: true,
     });
     const requirements = baseline.recognizedRequirements.map((r) => r.requirement);
-    expect(requirements).toEqual(expect.arrayContaining(['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER']));
+    expect(requirements).toEqual(['LEARN']);
   });
 
-  it('once persisted, the engine\'s own replay treats a PROVE/RETAIN/TRANSFER recognition as SATISFIED with basis LEGACY_POLICY_RECOGNITION, reporting CONSOLIDATED for a concept with literally zero learning_evidence rows', () => {
-    // Exercised via the frozen engine itself, using the SAME
-    // RecognizedRequirement[] shape canonical-decision.service.ts would
-    // pass through verbatim from a real DB read.
-    const decision = evaluateCanonicalLearningState({
-      conceptId: 'c1',
-      studentId: 's1',
-      now: '2026-01-01T00:00:00.000Z',
-      evidence: [],
-      activeCriticalMisconception: false,
-      recognizedRequirements: [
-        { requirement: 'LEARN', basis: 'LEGACY_MIGRATION_BASELINE', recognitionId: 'r1', reasonCode: 'x', recognizedAt: '2026-01-01T00:00:00.000Z' },
-        { requirement: 'PRACTICE', basis: 'LEGACY_POLICY_RECOGNITION', recognitionId: 'r2', reasonCode: 'x', recognizedAt: '2026-01-01T00:00:00.000Z' },
-        { requirement: 'PROVE', basis: 'LEGACY_POLICY_RECOGNITION', recognitionId: 'r3', reasonCode: 'x', recognizedAt: '2026-01-01T00:00:00.000Z' },
-        { requirement: 'RETAIN', basis: 'LEGACY_POLICY_RECOGNITION', recognitionId: 'r4', reasonCode: 'x', recognizedAt: '2026-01-01T00:00:00.000Z' },
-        { requirement: 'TRANSFER', basis: 'LEGACY_POLICY_RECOGNITION', recognitionId: 'r5', reasonCode: 'x', recognizedAt: '2026-01-01T00:00:00.000Z' },
-      ],
-    });
-    expect(decision.stage).toBe('CONSOLIDATED');
+  it('source-level proof: the cascading PRACTICE/PROVE/RETENTION/TRANSFER ladder no longer exists in evaluateLegacyRecognition at all', () => {
+    expect(LEGACY_RECOGNITION_SRC).not.toMatch(/record\('PRACTICE'/);
+    expect(LEGACY_RECOGNITION_SRC).not.toMatch(/record\('PROVE'/);
+    expect(LEGACY_RECOGNITION_SRC).not.toMatch(/record\('RETAIN'/);
+    expect(LEGACY_RECOGNITION_SRC).not.toMatch(/record\('TRANSFER'/);
   });
 
-  it('the apply CLI (canon-r4r1-pre-v1-learn-baseline.ts) passes ALL recognized requirements -- unfiltered -- to applyRecognitions, despite its own name/banner implying "LEARN only"', () => {
-    expect(APPLY_SCRIPT_SRC).toMatch(/applyRecognitions\(\s*baseline\.recognizedRequirements,/);
-    // No filter (e.g. `.filter(r => r.requirement === 'LEARN')`) exists
-    // between computing the baseline and applying it.
-    const applyCallIdx = APPLY_SCRIPT_SRC.indexOf('applyRecognitions(');
-    const beforeApplyCall = APPLY_SCRIPT_SRC.slice(APPLY_SCRIPT_SRC.lastIndexOf('for (const pair of pairs)'), applyCallIdx);
-    expect(beforeApplyCall).not.toMatch(/\.filter\(/);
-  });
-
-  it('the script itself reports (but does not suppress) higher-stage legacy recognitions in its own dry-run counters -- proving this is a known, observed code path, not a theoretical one', () => {
+  it('the CLI\'s own permanent regression sentinel (higherLegacyCounts) is still present and documented to always report zero', () => {
     expect(APPLY_SCRIPT_SRC).toMatch(/higherLegacyCounts\s*=\s*\{\s*PRACTICE:\s*0,\s*PROVE:\s*0,\s*RETAIN:\s*0,\s*TRANSFER:\s*0\s*\}/);
+    expect(APPLY_SCRIPT_SRC).toMatch(/must always be all-zero/);
+  });
+});
+
+describe('AUDIT-004 defense-in-depth: applyRecognitions independently rejects any non-LEARN recognition', () => {
+  const queryMock = vi.fn();
+  beforeEach(() => {
+    queryMock.mockReset();
+    vi.resetModules();
   });
 
-  it('MITIGATING FACT: the pedagogical_requirement_recognition migration itself has not been applied to any environment (confirmed via its own header)', () => {
-    expect(RECOGNITION_MIGRATION_SRC.length).toBeGreaterThan(0); // the file exists...
-    // ...but every script that would write to it says, in its own
-    // header, that it has never been executed in this environment.
-    expect(APPLY_SCRIPT_SRC).toMatch(/NOT EXECUTED in this environment/);
+  it('rejects a PROVE recognition outright -- never issues an INSERT for it, and reports it in rejectedHigherStage', async () => {
+    vi.doMock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
+    queryMock.mockResolvedValue({ rows: [{ id: 'r1' }] });
+    const { applyRecognitions } = await import('@/lib/pedagogical-migration/recognition-persistence-adapter');
+    const result = await applyRecognitions(
+      [
+        { id: 'r1', requirement: 'LEARN', status: 'SATISFIED', basis: 'LEGACY_POLICY_RECOGNITION', sourceEvidenceIds: [], legacyPolicyVersion: 'unversioned', recognizedAtMigration: '2026-01-01T00:00:00.000Z', reasonCode: 'x' },
+        { id: 'r2', requirement: 'PROVE', status: 'SATISFIED', basis: 'LEGACY_POLICY_RECOGNITION', sourceEvidenceIds: [], legacyPolicyVersion: 'unversioned', recognizedAtMigration: '2026-01-01T00:00:00.000Z', reasonCode: 'x' },
+      ] as any,
+      's1',
+      'c1',
+      'test-migration-v1',
+      '2026-01-01T00:00:00.000Z',
+      { environment: 'preview' },
+    );
+    expect(result.rejectedHigherStage).toBe(1);
+    // Only ONE query (the LEARN insert) was ever issued -- the PROVE
+    // recognition never reached the database at all.
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls[0][1]).toContain('LEARN');
+  });
+
+  it('logs the rejection observably (never silently)', async () => {
+    vi.doMock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }));
+    queryMock.mockResolvedValue({ rows: [] });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { applyRecognitions } = await import('@/lib/pedagogical-migration/recognition-persistence-adapter');
+    await applyRecognitions(
+      [{ id: 'r1', requirement: 'TRANSFER', status: 'SATISFIED', basis: 'LEGACY_POLICY_RECOGNITION', sourceEvidenceIds: [], legacyPolicyVersion: 'unversioned', recognizedAtMigration: '2026-01-01T00:00:00.000Z', reasonCode: 'x' }] as any,
+      's1',
+      'c1',
+      'test-migration-v1',
+      '2026-01-01T00:00:00.000Z',
+      { environment: 'preview' },
+    );
+    expect(warnSpy).toHaveBeenCalledWith('legacy_recognition_higher_stage_rejected', expect.stringContaining('TRANSFER'));
+    warnSpy.mockRestore();
   });
 });

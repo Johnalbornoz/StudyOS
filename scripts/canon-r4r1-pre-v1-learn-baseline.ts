@@ -101,9 +101,14 @@ async function main() {
   let proposedLearnCount = 0;
   let alreadyExistingCount = 0;
   let duplicatesSkipped = 0;
+  // CANON-V2-REMEDIATION Part 6 (AUDIT-004 closed): evaluateLegacyRecognition
+  // no longer computes anything beyond LEARN (Policy V2 Section 14: "higher
+  // stages must not be fabricated") -- this counter is kept as a permanent
+  // regression sentinel and MUST always report all zeros.
   const higherLegacyCounts = { PRACTICE: 0, PROVE: 0, RETAIN: 0, TRANSFER: 0 };
   const sampleConceptIds: string[] = [];
   let inserted = 0;
+  let rejectedHigherStageCount = 0;
 
   for (const pair of pairs) {
     const knowledgeState = await getConceptKnowledgeState(pair.studentId, pair.conceptId);
@@ -142,15 +147,17 @@ async function main() {
       );
       inserted += result.inserted;
       duplicatesSkipped += result.alreadyExisted;
+      rejectedHigherStageCount += result.rejectedHigherStage;
     }
   }
 
   console.log(`  proposedLearnCount     ${proposedLearnCount}`);
   console.log(`  alreadyExistingCount   ${alreadyExistingCount}`);
   console.log(`  duplicatesSkipped      ${apply ? duplicatesSkipped : '(dry-run: not computed)'}`);
-  console.log(`  higherLegacyCounts     ${JSON.stringify(higherLegacyCounts)}`);
+  console.log(`  higherLegacyCounts     ${JSON.stringify(higherLegacyCounts)} (must always be all-zero -- CANON-V2-REMEDIATION Part 6)`);
   console.log(`  sampleAffectedConcepts ${JSON.stringify(sampleConceptIds)}`);
   if (apply) console.log(`  rowsInserted           ${inserted}`);
+  if (apply) console.log(`  rejectedHigherStage    ${rejectedHigherStageCount} (defense-in-depth guard -- should always be 0 given the source-level fix above)`);
   console.log(apply ? '\n  >>> APPLY COMPLETE (Preview only).' : '\n  >>> DRY RUN ONLY -- zero writes performed.');
 }
 

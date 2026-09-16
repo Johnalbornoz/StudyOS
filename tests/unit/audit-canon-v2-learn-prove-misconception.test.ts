@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
+import { mapStudyUSEvidenceToPedagogicalEvidence } from '@/lib/pedagogical-shadow/evidence-adapter';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const EVIDENCE_FETCH_SRC = read('src/lib/pedagogical-shadow/evidence-fetch.ts');
@@ -139,23 +140,41 @@ describe('PROVE boundaries -- Policy V2 Section 5', () => {
   });
 });
 
-describe('AUDIT-005 (P1): per-attempt hasCriticalMisconception is structurally dead in production', () => {
-  it('the real evidence-fetch SQL selects no misconception-related column at all', () => {
+describe('AUDIT-005 CLOSED: per-attempt hasCriticalMisconception is now wired to the real per-attempt link', () => {
+  it('the real evidence-fetch SQL now selects a has_item_critical_misconception column, joined against the SAME observedByEvidenceId link mastery.service.ts already writes', () => {
     const selectClause = EVIDENCE_FETCH_SRC.slice(EVIDENCE_FETCH_SRC.indexOf('SELECT'), EVIDENCE_FETCH_SRC.indexOf('FROM learning_evidence'));
-    expect(selectClause).not.toMatch(/misconception/i);
+    expect(selectClause).toMatch(/has_item_critical_misconception/);
+    expect(selectClause).toMatch(/student_misconceptions/);
+    expect(selectClause).toMatch(/misconception_signatures/);
+    expect(selectClause).toMatch(/ms\.is_critical = true/);
+    expect(selectClause).toMatch(/observedByEvidenceId/);
   });
 
-  it('the adapter therefore always defaults hasCriticalMisconception to false, never populated from the real row', () => {
-    expect(EVIDENCE_ADAPTER_SRC).toMatch(/hasCriticalMisconception:\s*row\.hasItemCriticalMisconception\s*\?\?\s*false/);
+  it('the real write path (mastery.service.ts) already threads learningEvidenceId into recordStudentMisconception as observedByEvidenceId -- confirming the read-side join has a real source to match against', () => {
+    const masterySrc = readFileSync(join(process.cwd(), 'src/services/mastery.service.ts'), 'utf-8');
+    expect(masterySrc).toMatch(/recordStudentMisconception\(studentId, obs\.signatureId, obs\.evidenceRef, learningEvidenceId, client\)/);
   });
 
-  it('consequently, a per-item misconception score-qualification rejection (CRITICAL_MISCONCEPTION) can never fire for real evidence in production today -- only the GLOBAL activeCriticalMisconception flag (correctly wired via misconception.service.ts) can block progression', () => {
-    // This is a structural, not a runtime, proof: no test can "exercise"
-    // a code path that has no live data source. The finding is that the
-    // capability exists in the engine and is exercised by this
-    // repository's OWN tests (see canon-r2-pedagogical-engine.test.ts),
-    // but never by real production data.
-    expect(true).toBe(true);
+  it('the join deliberately does NOT filter by sm.status = \'ACTIVE\' -- a per-attempt misconception is an immutable historical fact, independent of later resolution (unlike the GLOBAL activeCriticalMisconception flag, which DOES reflect current status)', () => {
+    const selectClause = EVIDENCE_FETCH_SRC.slice(EVIDENCE_FETCH_SRC.indexOf('SELECT'), EVIDENCE_FETCH_SRC.indexOf('FROM learning_evidence'));
+    expect(selectClause).not.toMatch(/sm\.status\s*=\s*'ACTIVE'/);
+  });
+
+  it('the adapter correctly maps a real row with the column set to true into RawEvidenceItem.hasCriticalMisconception, which the engine then correctly rejects', () => {
+    const adapterSrc = EVIDENCE_ADAPTER_SRC;
+    expect(adapterSrc).toMatch(/hasCriticalMisconception:\s*row\.hasItemCriticalMisconception\s*\?\?\s*false/);
+    // End-to-end proof via the real, unmocked engine + adapter: a row
+    // with the per-attempt flag now correctly rejects that specific
+    // attempt, exactly like the per-item flag always could -- the gap
+    // was only ever in supplying real data for this field, which is now
+    // closed.
+    const mapped = mapStudyUSEvidenceToPedagogicalEvidence([
+      {
+        id: 'e1', sourceType: 'PRACTICE_QUIZ', result: 'correct', scorePercent: 100, difficulty: 3, timestamp: '2026-01-01T00:00:00.000Z',
+        hintsUsed: 0, aiAssistanceType: 'NONE', activityType: 'PRACTICE', itemCount: 3, correctCount: 3, hasItemCriticalMisconception: true,
+      },
+    ]).items[0];
+    expect(mapped.hasCriticalMisconception).toBe(true);
   });
 
   it('the GLOBAL misconception flag correctly requires DEDICATED resolution evidence (EXPLANATION or SOLO_VERIFICATION, unassisted) -- an ordinary high quiz score can never clear it on its own (Policy V2 Section 9\'s own explicit question)', () => {

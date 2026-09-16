@@ -13,7 +13,23 @@
  * It reads, compares, and reports -- it never writes, routes, generates,
  * or grades.
  */
-import type { RawEvidenceItem, CanonicalPedagogicalDecision, PedagogicalStage, ActionState, NextCanonicalAction } from '@/lib/pedagogical-engine';
+import type { RawEvidenceItem, CanonicalPedagogicalDecision, PedagogicalStage, ActionState, NextCanonicalAction, TransferFailureDiagnostic } from '@/lib/pedagogical-engine';
+
+/**
+ * CANON-V2-REMEDIATION Part 5 -- the REAL per-challenge Transfer shape a
+ * future write path must persist (see `new-evidence-capture-contract.ts`'s
+ * `V1TransferChallengeCapture`, which this mirrors exactly). Depth-tagged
+ * (never order-dependent) so a caller can supply the 3 challenges in any
+ * order; the adapter itself re-orders them into the engine's own
+ * NEAR/CONTEXTUAL/HIGHER `perChallengeScores` sequence and fails closed
+ * (`TRANSFER_CHALLENGE_BREAKDOWN_UNAVAILABLE`) if any of the 3 depths is
+ * missing, duplicated, or the array isn't exactly length 3.
+ */
+export interface StudyUSTransferChallengeScore {
+  depth: 'NEAR' | 'CONTEXTUAL' | 'HIGHER';
+  scorePercent: number;
+  reasoningProvided?: boolean;
+}
 
 /** GROUNDING NOTE (verified against database/baseline/STUDYUS_BASELINE_2026_08.sql's real `learning_evidence` DDL and its one write path, src/services/mastery.service.ts / src/app/api/quizzes/generate-and-take/route.ts): every field below is either a REAL column/JSONB path this adapter has confirmed exists, or an explicitly-optional field the adapter documents as NOT reliably available today. Nothing here is invented to make the mapping look more complete than it is. */
 export interface StudyUSEvidenceRow {
@@ -94,28 +110,33 @@ export interface StudyUSEvidenceRow {
    */
   rawTransferDistance?: string;
   /**
-   * GROUNDING NOTE: real Transfer evidence is recorded per INDIVIDUAL
-   * task (`transfer_task_instances`, one row per challenge), aggregated
-   * into `concept_transfer_state`'s running success counts -- there is
-   * no existing record of "3 challenges administered together as one
-   * attempt." This module NEVER synthesizes a 3-element
-   * `perChallengeScores` array from separate individual attempts (Part
-   * 13) -- every Transfer-purpose row is marked
-   * `TRANSFER_CHALLENGE_BREAKDOWN_UNAVAILABLE` unless a caller can
-   * supply this field directly and explicitly.
+   * CANON-V2-REMEDIATION Part 5 -- the REAL, depth-tagged 3-challenge
+   * breakdown for a canonical Transfer attempt (see
+   * `StudyUSTransferChallengeScore` above and
+   * `new-evidence-capture-contract.ts`'s `V1TransferCapture`). GROUNDING
+   * NOTE (unchanged from CANON-R3): real StudyUS Transfer evidence is
+   * still recorded per INDIVIDUAL task (`transfer_task_instances`) today
+   * -- there is no live write path yet that administers and persists 3
+   * challenges together as one canonical attempt (canonical Transfer
+   * generation/session/execution remains explicitly NOT_READY, exactly
+   * like Retention -- see `activity-launch-readiness.ts`). This field
+   * defines the REAL shape such a future write path must populate; this
+   * adapter never synthesizes it from separate individual attempts, and
+   * fails closed (`TRANSFER_CHALLENGE_BREAKDOWN_UNAVAILABLE`) whenever
+   * it is absent, malformed, or not exactly the 3 required depths.
    */
-  perChallengeScores?: number[];
+  transferChallenges?: StudyUSTransferChallengeScore[];
   /** Only mapped when a real response-contract field exists on the source row; `undefined` otherwise (Part 14). */
   reasoningProvided?: boolean;
   /**
-   * CANON-R2R1 Part 2's own diagnostic signal. NEVER inferred from
-   * `perChallengeScores`/`scorePercent` by this adapter (Part 12) --
-   * `undefined`/`false` unless a caller supplies an explicit,
-   * independently-sourced diagnostic flag that reliably means
-   * foundational/procedural competence failed. StudyUS has no such
-   * signal today; documented as an adapter gap, never guessed.
+   * CANON-V2-REMEDIATION Part 4's own diagnostic signal (Policy V2
+   * Section 7's 3 non-misconception Transfer failure classifications).
+   * NEVER inferred from `transferChallenges`/`scorePercent` by this
+   * adapter -- `undefined` unless a caller supplies an explicit,
+   * independently-sourced diagnostic value. StudyUS has no live source
+   * for this yet; documented as an adapter gap, never guessed.
    */
-  transferFoundationalFailureIndicated?: boolean;
+  transferFailureDiagnostic?: TransferFailureDiagnostic;
 }
 
 export type ScoreShape = 'PERCENT_0_100' | 'FRACTION_0_1' | 'RATIO';

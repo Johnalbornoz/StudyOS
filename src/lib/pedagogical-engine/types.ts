@@ -94,21 +94,36 @@ export interface RawEvidenceItem {
   /** RETENTION_CHECK attempts only: whether the item set was genuinely novel (never previously seen by this learner) -- required for a Retention attempt to even be eligible for qualification. */
   novel?: boolean;
   /**
-   * CANON-R2R1 Part 2 -- TRANSFER attempts only. An EXPLICIT diagnostic
-   * signal, never inferred by this engine from `perChallengeScores`
-   * alone, that the underlying Prove/Retention-level competency is no
-   * longer demonstrated (a foundational procedural/conceptual failure,
-   * not merely a weak application of intact knowledge). Produced by
-   * evidence dimensions outside a bare per-challenge score pattern --
-   * e.g. procedural-correctness sub-scoring from a diagnostic evaluator
-   * -- which is out of scope for this isolated engine to compute itself.
-   * Absent or `false` defaults to the more conservative Case A
-   * (application-weak) diagnosis; see `engine.ts`'s Transfer rollback
-   * handling and the CANON-R2R1 report's TRANSFER FAILURE DIAGNOSIS
-   * section for why a numeric score alone must never drive this.
+   * CANON-V2-REMEDIATION Part 4 -- TRANSFER attempts only. The ONE
+   * trusted, EXPLICIT diagnostic signal for a non-qualifying Transfer
+   * attempt, never inferred by this engine from `perChallengeScores` or
+   * any other numeric pattern. A critical misconception is reported
+   * separately via `hasCriticalMisconception` (checked before this
+   * field is ever consulted); this field distinguishes the remaining
+   * three failure modes Policy V2 Section 7 requires:
+   *   - `APPLICATION_CONTEXT_WEAKNESS` -- core knowledge/procedure is
+   *     intact; the learner failed to apply it in the new context.
+   *     Stay TRANSFER, immediate retry, no wait.
+   *   - `RETENTION_WEAKNESS` -- the learner failed to retrieve
+   *     previously-demonstrated knowledge, but there is no explicit
+   *     foundational/procedural breakdown. Rollback to RETAIN only,
+   *     immediate retry, no new 3-day wait -- PROVE remains valid.
+   *   - `FOUNDATIONAL_PROCEDURAL_FAILURE` -- explicit evidence that
+   *     prerequisite reasoning, core procedure, or concept foundation is
+   *     invalid. Rollback to the earliest invalidated requirement
+   *     (normally PRACTICE), resetting the Practice qualification cycle.
+   * Produced by evidence dimensions outside a bare per-challenge score
+   * pattern -- out of scope for this isolated engine to compute itself.
+   * Absent defaults to the most conservative classification,
+   * `APPLICATION_CONTEXT_WEAKNESS` -- see `engine.ts`'s Transfer
+   * rollback handling for why a numeric score alone must never drive
+   * this distinction.
    */
-  transferFoundationalFailureIndicated?: boolean;
+  transferFailureDiagnostic?: TransferFailureDiagnostic;
 }
+
+/** CANON-V2-REMEDIATION Part 4 -- the closed vocabulary for Policy V2 Section 7's non-misconception Transfer failure classifications. Critical misconception is reported through `RawEvidenceItem.hasCriticalMisconception` instead, never through this field. */
+export type TransferFailureDiagnostic = 'APPLICATION_CONTEXT_WEAKNESS' | 'RETENTION_WEAKNESS' | 'FOUNDATIONAL_PROCEDURAL_FAILURE';
 
 /**
  * CANON-R4R1 Part 9 -- the MINIMUM possible engine input extension
@@ -197,17 +212,23 @@ export interface RequirementResult {
 
 /**
  * PROVE_FAILURE / RETENTION_FAILURE follow the spec's own simple,
- * undiagnosed rules ("failure returns to PRACTICE" / "failure rolls
- * back to PROVE"). The three CASE_* diagnoses are reserved for TRANSFER
- * failure specifically, per the spec's explicit three-way diagnosis
- * (application-weak vs. foundational vs. critical-misconception).
+ * undiagnosed rules ("failure returns to PRACTICE" / "second
+ * CONSECUTIVE Retain failure returns to PROVE"). The four
+ * TRANSFER_CASE_* diagnoses are reserved for TRANSFER failure
+ * specifically, per Policy V2 Section 7's explicit four-way
+ * classification -- lettered A/B/C/D to match the policy's own naming
+ * exactly (CANON-V2-REMEDIATION Part 4: the pre-remediation engine's
+ * `CASE_B_FOUNDATIONAL_FAILURE` was a letter-mismatch against the
+ * policy, which reserves B for retention-weakness and C for
+ * foundational/procedural failure -- this rename fixes that).
  */
 export type RollbackCase =
   | 'PROVE_FAILURE_RETURN_TO_PRACTICE'
   | 'RETENTION_FAILURE_RETURN_TO_PROVE'
-  | 'CASE_A_TRANSFER_APPLICATION_WEAK'
-  | 'CASE_B_FOUNDATIONAL_FAILURE'
-  | 'CASE_C_CRITICAL_MISCONCEPTION';
+  | 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS'
+  | 'TRANSFER_CASE_B_RETENTION_WEAKNESS'
+  | 'TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE'
+  | 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION';
 
 export interface RollbackDecision {
   triggeredBy: Exclude<PedagogicalStage, 'CONSOLIDATED' | 'LEARN'>;

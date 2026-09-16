@@ -334,7 +334,10 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       conceptId: 'c1',
       studentId: 's1',
       now: NOW,
-      evidence: [practiceItem('2026-09-10T00:00:00.000Z', 90)],
+      // CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the
+      // last 3 valid attempts (AUDIT-001) -- a single attempt is
+      // insufficient.
+      evidence: [practiceItem('2026-09-10T00:00:00.000Z', 90), practiceItem('2026-09-10T01:00:00.000Z', 90)],
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN')],
     });
@@ -343,12 +346,15 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(decision.requirements.find((r) => r.stage === 'PROVE')?.satisfactionBasis).toBeNull();
   });
 
-  it('19. a v1 Retention FAILURE invalidates legacy-recognized Prove for active progression -- the forbidden shortcut (instant re-satisfaction) never happens', () => {
+  it('19. two CONSECUTIVE v1 Retention FAILUREs invalidate legacy-recognized Prove for active progression -- the forbidden shortcut (instant re-satisfaction) never happens', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
       now: '2026-09-20T00:00:00.000Z',
-      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50)], // real v1 Retention attempt, FAILS
+      // CANON-V2-REMEDIATION Part 2: RETAIN now has a two-strike rule
+      // (AUDIT-002) -- a SINGLE failure never rolls back to PROVE, so
+      // this test uses 2 consecutive real v1 Retention failures.
+      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50), retentionItem('2026-09-10T01:00:00.000Z', 50)],
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION'), recognized('PROVE', 'LEGACY_POLICY_RECOGNITION')],
     });
@@ -367,7 +373,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       conceptId: 'c1',
       studentId: 's1',
       now: '2026-09-20T00:00:00.000Z',
-      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50)],
+      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50), retentionItem('2026-09-10T01:00:00.000Z', 50)],
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION'), recognized('PROVE', 'LEGACY_POLICY_RECOGNITION')],
     });
@@ -423,7 +429,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       ],
     });
     expect(decision.currentStage).toBe('PRACTICE');
-    expect(decision.rollback?.case).toBe('CASE_C_CRITICAL_MISCONCEPTION');
+    expect(decision.rollback?.case).toBe('TRANSFER_CASE_D_CRITICAL_MISCONCEPTION');
   });
 
   it('24. the migration recognition record itself remains historical provenance -- this engine-level test confirms invalidation is a LIVE-STATE effect only; the persistence layer (recognition-persistence-adapter.ts) never deletes a row on invalidation (source audit)', () => {
@@ -535,6 +541,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     await expect(applyRecognitions([], 's1', 'c1', MIGRATION_VERSION, CUTOVER, { environment: 'preview' })).resolves.toEqual({
       inserted: 0,
       alreadyExisted: 0,
+      rejectedHigherStage: 0,
     });
     const src = read(join(MIGRATION_DIR, 'recognition-persistence-adapter.ts'));
     expect(src).toMatch(/guard\.environment !== 'preview'/);
@@ -564,6 +571,9 @@ describe('CANON-R4R1 supplementary -- toEngineRecognizedRequirements mapper', ()
       recognizedRequirements: engineInput,
     });
     expect(decision.recognitionRejected).toBeNull();
-    expect(decision.currentStage).toBe('PROVE');
+    // CANON-V2-REMEDIATION Part 6 (AUDIT-004 closed): the baseline now
+    // recognizes ONLY LEARN -- PRACTICE (and beyond) requires real v1
+    // evidence, so the mapped-through decision stops at PRACTICE.
+    expect(decision.currentStage).toBe('PRACTICE');
   });
 });

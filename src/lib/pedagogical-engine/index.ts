@@ -56,5 +56,6 @@ export type {
   RollbackDecision,
   SatisfactionBasis,
   TransferChallengeDepth,
+  TransferFailureDiagnostic,
   WaitingReason,
 } from './types';

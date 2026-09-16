@@ -182,7 +182,7 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
     expect(baseline.recognizedRequirements).toHaveLength(0);
   });
 
-  it('12. higher-stage CANON-R4 recognition remains unchanged by this fix -- a legitimately-satisfied old Practice/Prove still recognizes normally', () => {
+  it('12. CANON-V2-REMEDIATION Part 6 (AUDIT-004 closed): higher-stage CANON-R4 recognition has been REMOVED (Policy V2 Section 14: "higher stages must not be fabricated") -- even a legitimately-strong old Practice/Prove state now recognizes only LEARN', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
     const baseline = buildPedagogicalMigrationBaseline({
       conceptId: 'c1',
@@ -193,7 +193,7 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
       migrationVersion: MIGRATION_VERSION,
       isPreexistingLearnerConcept: true,
     });
-    expect(baseline.recognizedRequirements.map((r) => r.requirement)).toEqual(['LEARN', 'PRACTICE', 'PROVE']);
+    expect(baseline.recognizedRequirements.map((r) => r.requirement)).toEqual(['LEARN']);
   });
 
   it('13. the engine\'s recognition set contiguity rule is unchanged', () => {

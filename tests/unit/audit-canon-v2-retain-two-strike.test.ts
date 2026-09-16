@@ -1,14 +1,14 @@
 /**
- * CANONICAL POLICY V2 AUDIT -- AUDIT-ONLY CERTIFICATION TESTS.
+ * CANONICAL POLICY V2 -- AUDIT-002 REMEDIATION VERIFICATION.
  *
- * Asserts the FROZEN Policy V2's RETAIN two-strike rule (Section 6):
- * a FIRST Retention failure grants an IMMEDIATE second attempt with new
- * questions and no additional 3-day wait; ONLY a SECOND CONSECUTIVE
- * failure rolls back to PROVE. The current engine
- * (`src/lib/pedagogical-engine/engine.ts`) rolls back to PROVE on ANY
- * single Retention failure -- this file's failing tests are the audit
- * evidence for that gap (AUDIT-002, BLOCKER). Test-only; no production
- * code is changed here.
+ * Was: AUDIT-002 (BLOCKER) -- the pre-remediation engine rolled back to
+ * PROVE on ANY single Retention failure.
+ *
+ * Now: a FIRST Retention failure grants an IMMEDIATE second attempt
+ * with new questions and no additional 3-day wait; ONLY a SECOND
+ * CONSECUTIVE failure rolls back to PROVE (Policy V2 Section 6). These
+ * tests assert the CORRECTED behavior end-to-end against the real,
+ * unmodified engine. Test-only.
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
@@ -48,7 +48,7 @@ const PROVE_QUALIFIED = proveItem('2026-01-01T00:00:00.000Z', 90);
 const RETAIN_ELIGIBLE_DAY1 = '2026-01-04T00:00:00.000Z';
 const RETAIN_ELIGIBLE_DAY1_LATER = '2026-01-04T01:00:00.000Z';
 
-describe('AUDIT-002 (BLOCKER): RETAIN two-strike rule -- Policy V2 Section 6', () => {
+describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () => {
   it('Retain Attempt 1 FAIL, Retain Attempt 2 PASS (new questions, same day, no wait) -> RETAIN must be SATISFIED and PROVE must remain valid (no rebuild required)', () => {
     const evidence = [
       LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
@@ -59,33 +59,25 @@ describe('AUDIT-002 (BLOCKER): RETAIN two-strike rule -- Policy V2 Section 6', (
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
     expect(decision.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
     expect(decision.stage).toBe('TRANSFER');
+    expect(decision.rollback).toBeNull();
   });
 
-  it('CURRENT BEHAVIOR (documented defect): the same sequence instead rolls back to PROVE after attempt 1, and attempt 2 -- now premature -- cannot qualify at all', () => {
-    const evidence = [
-      LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
-      retentionItem(RETAIN_ELIGIBLE_DAY1, 50),
-      retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 90),
-    ];
+  it('strike 1 alone never rolls back -- PROVE stays SATISFIED, RETAIN stays immediately EXECUTABLE, no REINFORCE overlay', () => {
+    const evidence = [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 50)];
     const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
-    // NOTE: pinned to ACTUAL current output for the audit trail, not a
-    // policy endorsement -- expected to need updating once AUDIT-002 is
-    // remediated.
-    // RETAIN itself reports LOCKED (not UNSATISFIED) once PROVE has been
-    // invalidated by the rollback -- RETAIN's own requirement status is
-    // gated on `proveSatisfied`, and the rollback already reset that.
-    expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('LOCKED');
-    expect(decision.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('UNSATISFIED');
-    expect(decision.stage).toBe('PROVE');
-    expect(decision.rollback?.case).toBe('RETENTION_FAILURE_RETURN_TO_PROVE');
-    // The would-be-passing second attempt was rejected as premature,
-    // not accepted -- the single most damaging concrete consequence of
-    // this gap: a learner who should get an immediate second chance is
-    // instead forced to rebuild an entire new Prove.
-    expect(decision.qualifiedEvidence.find((q) => q.requirement === 'RETAIN')!.nonQualifyingEvidenceIds.length).toBe(2);
+    expect(decision.rollback).toBeNull();
+    expect(decision.intervention).toBeNull();
+    expect(decision.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
+    expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('UNSATISFIED');
+    expect(decision.stage).toBe('RETAIN');
+    expect(decision.actionState).toBe('EXECUTABLE');
+    // The real 10-item independent Retain contract -- never a 2-3 item
+    // Practice-shaped one.
+    expect(decision.activityContract?.activityType).toBe('RETENTION_CHECK');
+    expect(decision.activityContract?.itemCount).toEqual({ min: 10, max: 10 });
   });
 
-  it('Retain Attempt 1 FAIL, Retain Attempt 2 FAIL (second CONSECUTIVE failure) -> rollback to PROVE is correct under BOTH the current engine and V2', () => {
+  it('Retain Attempt 1 FAIL, Retain Attempt 2 FAIL (second CONSECUTIVE failure) -> rollback to PROVE', () => {
     const evidence = [
       LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
       retentionItem(RETAIN_ELIGIBLE_DAY1, 50),
@@ -172,11 +164,23 @@ describe('AUDIT-002 (BLOCKER): RETAIN two-strike rule -- Policy V2 Section 6', (
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
     });
 
-    it('a stale earlier Retain failure from a PRIOR (already-rebuilt) Prove cycle must not affect the CURRENT cycle\'s two-strike count', () => {
-      // AMBIGUOUS_SPEC / cannot be asserted without AUDIT-002 remediation
-      // first (the current engine has no per-cycle strike counter at
-      // all to reset). Documented as a gap, not asserted.
-      expect(true).toBe(true);
+    it('a stale earlier Retain failure from a PRIOR (already-rebuilt) Prove cycle must not affect the CURRENT cycle\'s two-strike count: 1 old strike + a NEW Prove + 1 new strike must NOT total "2 consecutive" and roll back', () => {
+      const evidence = [
+        LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
+        retentionItem(RETAIN_ELIGIBLE_DAY1, 50), // strike 1 of the OLD cycle
+        retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 40), // strike 2 -- rolls back to PROVE, cycle ends
+        item({ activityType: 'PRACTICE', timestamp: '2026-01-05T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 }),
+        item({ activityType: 'PRACTICE', timestamp: '2026-01-05T01:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 }),
+        proveItem('2026-01-08T00:00:00.000Z', 90), // NEW qualifying Prove -- opens a brand NEW Retain cycle, strike count back to 0
+        retentionItem('2026-01-11T00:00:00.000Z', 50), // strike 1 of the NEW cycle only
+      ];
+      const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
+      // A single strike in the NEW cycle must never roll back, regardless
+      // of how many strikes an earlier, already-superseded cycle had.
+      expect(decision.rollback).toBeNull();
+      expect(decision.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
+      expect(decision.stage).toBe('RETAIN');
+      expect(decision.actionState).toBe('EXECUTABLE');
     });
   });
 });

@@ -24,7 +24,27 @@ import type {
   EvidenceAdapterResult,
   ScoreShape,
   StudyUSEvidenceRow,
+  StudyUSTransferChallengeScore,
 } from './types';
+
+/**
+ * CANON-V2-REMEDIATION Part 5 -- turns a depth-tagged, order-independent
+ * 3-challenge breakdown into the engine's own strictly-ordered
+ * `[NEAR, CONTEXTUAL, HIGHER]` triple, or `null` if the breakdown is
+ * absent, not exactly length 3, or does not contain exactly one of each
+ * required depth (a duplicate depth, an unknown depth, or a missing one
+ * all fail closed identically -- never a partial/best-effort mapping).
+ */
+function orderTransferChallengeScores(challenges: StudyUSTransferChallengeScore[] | undefined): number[] | null {
+  if (!Array.isArray(challenges) || challenges.length !== 3) return null;
+  const byDepth = new Map(challenges.map((c) => [c.depth, c.scorePercent]));
+  if (byDepth.size !== 3) return null; // a duplicate depth collapsed the map
+  const near = byDepth.get('NEAR');
+  const contextual = byDepth.get('CONTEXTUAL');
+  const higher = byDepth.get('HIGHER');
+  if (near === undefined || contextual === undefined || higher === undefined) return null;
+  return [near, contextual, higher];
+}
 
 /**
  * CANON-R3 Part 5 -- the ONE documented ActivityType/quiz_mode ->
@@ -176,12 +196,16 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     });
   }
 
+  let orderedChallengeScores: number[] | null = null;
   if (resolved === 'TRANSFER') {
-    if (!row.perChallengeScores || row.perChallengeScores.length !== 3) {
+    orderedChallengeScores = orderTransferChallengeScores(row.transferChallenges);
+    if (!orderedChallengeScores) {
       unresolved.push({
         reason: 'TRANSFER_CHALLENGE_BREAKDOWN_UNAVAILABLE',
         evidenceId: row.id,
-        detail: `Real Transfer evidence is recorded per individual task (transfer_task_instances), not as 3 challenges administered together -- this adapter never synthesizes a breakdown from separate attempts.`,
+        detail: row.transferChallenges
+          ? `transferChallenges was supplied but is malformed (must be exactly 3 entries, one each of depth NEAR/CONTEXTUAL/HIGHER, no duplicates) -- got ${JSON.stringify(row.transferChallenges.map((c) => c.depth))}.`
+          : `Real Transfer evidence is recorded per individual task (transfer_task_instances), not as 3 challenges administered together -- this adapter never synthesizes a breakdown from separate attempts; a caller must supply transferChallenges directly and explicitly.`,
       });
     }
     if (row.rawTransferDistance) {
@@ -213,12 +237,17 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     hasCriticalMisconception: row.hasItemCriticalMisconception ?? false,
   };
   if (row.novel !== undefined) item.novel = row.novel;
-  if (row.perChallengeScores) item.perChallengeScores = row.perChallengeScores;
+  // Fail closed (Part 5): NEVER set a partial/malformed breakdown --
+  // either the full, correctly-ordered [NEAR, CONTEXTUAL, HIGHER] triple
+  // is set, or the field is left absent entirely (the engine's own
+  // qualification then reports UNRESOLVED_POLICY, never a fabricated
+  // pass or fail).
+  if (orderedChallengeScores) item.perChallengeScores = orderedChallengeScores;
   if (row.reasoningProvided !== undefined) item.reasoningProvided = row.reasoningProvided;
-  if (row.transferFoundationalFailureIndicated !== undefined) {
-    item.transferFoundationalFailureIndicated = row.transferFoundationalFailureIndicated;
+  if (row.transferFailureDiagnostic !== undefined) {
+    item.transferFailureDiagnostic = row.transferFailureDiagnostic;
   } else if (resolved === 'TRANSFER') {
-    warnings.push(`Row ${row.id}: transferFoundationalFailureIndicated not supplied -- StudyUS has no such signal today; Transfer failures default to Case A per CANON-R2R1 Part 2.`);
+    warnings.push(`Row ${row.id}: transferFailureDiagnostic not supplied -- StudyUS has no live source for this yet; Transfer failures default to APPLICATION_CONTEXT_WEAKNESS per Policy V2 Section 7.`);
   }
 
   return item;

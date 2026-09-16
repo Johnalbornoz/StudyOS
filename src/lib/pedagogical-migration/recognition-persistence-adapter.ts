@@ -65,6 +65,26 @@ export async function loadRecognizedRequirementsForEngine(
 export interface ApplyRecognitionsResult {
   inserted: number;
   alreadyExisted: number;
+  /** CANON-V2-REMEDIATION Part 6 (AUDIT-004 defense-in-depth) -- recognitions this call REFUSED to persist because `requirement !== 'LEARN'`, never silently dropped. */
+  rejectedHigherStage: number;
+}
+
+/**
+ * CANON-V2-REMEDIATION Part 6 -- AUDIT-004's second, independent
+ * defensive guard. `evaluateLegacyRecognition` itself no longer computes
+ * a PRACTICE/PROVE/RETAIN/TRANSFER recognition at all (Part 6), but this
+ * is the ONE write path to `pedagogical_requirement_recognition` in the
+ * whole repository -- so it is also the last line of defense against
+ * Policy V2 Section 14's "higher stages must not be fabricated" for ANY
+ * future caller, not just the one this phase already fixed. A
+ * higher-stage recognition is REJECTED outright (never persisted) and
+ * always observable via `safeLog`, never silently dropped.
+ */
+function safeLog(label: string, meta: Record<string, unknown>): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.warn(label, JSON.stringify(meta));
+  } catch { /* logging must never break the caller */ }
 }
 
 /**
@@ -106,7 +126,19 @@ export async function applyRecognitions(
 
   let inserted = 0;
   let alreadyExisted = 0;
+  let rejectedHigherStage = 0;
   for (const r of recognitions) {
+    // CANON-V2-REMEDIATION Part 6 -- AUDIT-004 defense-in-depth: reject
+    // any non-LEARN recognition outright, regardless of where it came
+    // from. `evaluateLegacyRecognition` itself no longer produces one,
+    // but this guard protects Policy V2 Section 14's "higher stages must
+    // not be fabricated" even against a future caller this phase cannot
+    // see.
+    if (r.requirement !== 'LEARN') {
+      rejectedHigherStage++;
+      safeLog('legacy_recognition_higher_stage_rejected', { studentId, conceptId, requirement: r.requirement, migrationVersion });
+      continue;
+    }
     const result = await client.query(
       `INSERT INTO pedagogical_requirement_recognition (
          id, student_id, concept_id, requirement, recognition_basis, legacy_policy_version,
@@ -131,5 +163,5 @@ export async function applyRecognitions(
     if (result.rows.length > 0) inserted++;
     else alreadyExisted++;
   }
-  return { inserted, alreadyExisted };
+  return { inserted, alreadyExisted, rejectedHigherStage };
 }

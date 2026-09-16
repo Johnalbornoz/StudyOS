@@ -71,7 +71,7 @@ function buildCanonicalMilestones(decision: CanonicalPedagogicalDecision): Conce
  */
 function mapReasonCode(decision: CanonicalPedagogicalDecision): string {
   if (decision.intervention === 'REINFORCE') {
-    return decision.rollback?.case === 'CASE_C_CRITICAL_MISCONCEPTION' ? 'ACTIVE_MISCONCEPTION' : 'REPAIR_IN_PROGRESS';
+    return decision.rollback?.case === 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION' ? 'ACTIVE_MISCONCEPTION' : 'REPAIR_IN_PROGRESS';
   }
   switch (decision.stage) {
     case 'LEARN':

@@ -96,36 +96,35 @@ describe('CANON-R4 Part 47 -- Legacy Recognition tests (1-15)', () => {
     expect(recognitions.some((r) => r.requirement === 'PRACTICE')).toBe(false);
   });
 
-  it('4. a legitimate old Practice completion (evidence sufficiency + understanding threshold) recognizes Practice', () => {
+  it('4. CANON-V2-REMEDIATION Part 6 (AUDIT-004 closed): a legitimate old Practice completion no longer recognizes PRACTICE -- only LEARN, per Policy V2 Section 14 ("higher stages must not be fabricated")', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    expect(recognitions.some((r) => r.requirement === 'PRACTICE')).toBe(true);
+    expect(recognitions.some((r) => r.requirement === 'PRACTICE')).toBe(false);
+    expect(recognitions.map((r) => r.requirement)).toEqual(['LEARN']);
   });
 
-  it('5. a valid old 6-question Prove (independence dimension legitimately passing) is migration-recognized', () => {
+  it('5. CANON-V2-REMEDIATION Part 6: a valid old 6-question Prove (independence dimension legitimately passing) is NO LONGER migration-recognized -- real v1 evidence is required', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    expect(recognitions.some((r) => r.requirement === 'PROVE')).toBe(true);
+    expect(recognitions.some((r) => r.requirement === 'PROVE')).toBe(false);
   });
 
-  it('6. a migration-recognized legacy Prove is never rewritten as 10 questions -- the recognition record carries no itemCount field at all', () => {
+  it('6. CANON-V2-REMEDIATION Part 6: no PROVE recognition exists to even carry an itemCount field -- the fabrication capability itself is gone, not merely its shape', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    const proveRecognition = recognitions.find((r) => r.requirement === 'PROVE');
-    expect(proveRecognition && 'itemCount' in proveRecognition).toBe(false);
+    expect(recognitions.find((r) => r.requirement === 'PROVE')).toBeUndefined();
   });
 
-  it('7. a valid old Retention (retention dimension legitimately passing) is migration-recognized', () => {
+  it('7. CANON-V2-REMEDIATION Part 6: a valid old Retention (retention dimension legitimately passing) is NO LONGER migration-recognized', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: 85 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    expect(recognitions.some((r) => r.requirement === 'RETAIN')).toBe(true);
+    expect(recognitions.some((r) => r.requirement === 'RETAIN')).toBe(false);
   });
 
-  it('8. a migration-recognized legacy Retention is never rewritten as 10 questions', () => {
+  it('8. CANON-V2-REMEDIATION Part 6: no RETAIN recognition exists at all', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90, retentionScore: 85 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    const r = recognitions.find((r) => r.requirement === 'RETAIN');
-    expect(r && 'itemCount' in r).toBe(false);
+    expect(recognitions.find((r) => r.requirement === 'RETAIN')).toBeUndefined();
   });
 
   it('9. a failed Transfer (mastery never fully validated) cannot recognize Transfer', () => {
@@ -140,7 +139,7 @@ describe('CANON-R4 Part 47 -- Legacy Recognition tests (1-15)', () => {
     expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(false);
   });
 
-  it('11. an old consolidated (VALIDATED_MASTERY) state may preserve consolidated recognition (Transfer recognized)', () => {
+  it('11. CANON-V2-REMEDIATION Part 6: even an old consolidated (VALIDATED_MASTERY) state recognizes ONLY LEARN -- never TRANSFER or anything higher, no matter how strong the legacy record', () => {
     const state = ks({
       masteryState: 'VALIDATED_MASTERY',
       evidenceCount: 10,
@@ -151,14 +150,14 @@ describe('CANON-R4 Part 47 -- Legacy Recognition tests (1-15)', () => {
       transferScore: 90,
     });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(true);
-    expect(recognitions.map((r) => r.requirement).sort()).toEqual(['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'].sort());
+    expect(recognitions.some((r) => r.requirement === 'TRANSFER')).toBe(false);
+    expect(recognitions.map((r) => r.requirement)).toEqual(['LEARN']);
   });
 
-  it('12. a partial old state (Practice satisfied, Prove not) does not over-recognize downstream stages', () => {
+  it('12. CANON-V2-REMEDIATION Part 6: a partial old state (Practice-equivalent satisfied, Prove not) still recognizes ONLY LEARN -- "does not over-recognize downstream stages" now means never recognizing PRACTICE either', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 20 });
     const recognitions = evaluateLegacyRecognition({ knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION });
-    expect(recognitions.map((r) => r.requirement)).toEqual(['LEARN', 'PRACTICE']);
+    expect(recognitions.map((r) => r.requirement)).toEqual(['LEARN']);
   });
 
   it('13. migration recognition records retain source evidence IDs (empty array, never invented, when grounded solely in aggregate old-model authority)', () => {
@@ -344,7 +343,7 @@ describe('CANON-R4 Part 50 -- Safety tests (32-41)', () => {
 });
 
 describe('CANON-R4 end-to-end migration composition (supplementary)', () => {
-  it('composes a migration-recognized concept into an effective v1 starting state without touching the frozen engine\'s own decision', () => {
+  it('CANON-V2-REMEDIATION Part 6: composes a migration-recognized concept into an effective v1 starting state without touching the frozen engine\'s own decision -- and, now that higher-stage recognition is closed, that state advances no further than PRACTICE from legacy recognition alone', () => {
     const state = ks({ masteryState: 'PROVISIONAL_MASTERY', evidenceCount: 5, understandingScore: 85, independenceScore: 90 });
     const baseline = buildPedagogicalMigrationBaseline({ conceptId: 'c1', studentId: 'student-1', knowledgeState: state, masteryPolicy: POLICY, recognizedAtMigration: NOW, migrationVersion: MIGRATION_VERSION, isPreexistingLearnerConcept: false });
     const engineDecision = evaluateCanonicalLearningState({ conceptId: 'c1', studentId: 's1', now: NOW, evidence: [], activeCriticalMisconception: false });
@@ -355,11 +354,15 @@ describe('CANON-R4 end-to-end migration composition (supplementary)', () => {
       migrationBaseline: baseline,
       activeCriticalMisconception: false,
     });
-    // Without migration, the engine alone (zero real evidence) would say LEARN. With legacy recognition (Practice+Prove legitimately satisfied historically), the effective starting state advances past those.
+    // Without migration, the engine alone (zero real evidence) would say
+    // LEARN. With legacy recognition (LEARN only, per AUDIT-004's fix),
+    // the effective starting state advances to PRACTICE and NO FURTHER
+    // -- PRACTICE/PROVE/RETAIN/TRANSFER all require real v1 evidence now.
     expect(engineDecision.stage).toBe('LEARN');
-    expect(effective.effectiveStage).toBe('RETAIN');
+    expect(effective.effectiveStage).toBe('PRACTICE');
     expect(effective.engineInterfaceNote).toBe('ENGINE_INTERFACE_EXTENSION_REQUIRED');
-    expect(effective.perRequirement.find((r) => r.requirement === 'PRACTICE')?.basis).toBe('LEGACY_POLICY_RECOGNITION');
+    expect(effective.perRequirement.find((r) => r.requirement === 'LEARN')?.basis).toBe('LEGACY_POLICY_RECOGNITION');
+    expect(effective.perRequirement.find((r) => r.requirement === 'PRACTICE')?.basis).toBeNull();
   });
 
   it('a concept with a critical misconception currently active is never advanced past PRACTICE by migration recognition alone', () => {

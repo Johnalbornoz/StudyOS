@@ -52,7 +52,17 @@ export async function fetchStudyUSEvidenceRows(
       le.ai_assistance_type,
       le.metadata->>'activityType' AS activity_type,
       COALESCE(le.metadata->>'itemCount', de.reason_details->>'sampleSize') AS item_count,
-      le.metadata->>'correctCount' AS correct_count
+      le.metadata->>'correctCount' AS correct_count,
+      le.metadata->'transferChallenges' AS transfer_challenges,
+      le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
+      EXISTS (
+        SELECT 1 FROM student_misconceptions sm
+        JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
+        WHERE sm.student_id = le.student_id
+          AND ms.concept_id = le.concept_id
+          AND ms.is_critical = true
+          AND sm.evidence @> jsonb_build_array(jsonb_build_object('observedByEvidenceId', le.id::text))
+      ) AS has_item_critical_misconception
     FROM learning_evidence le
     LEFT JOIN decision_events de
       ON de.source_event_type = 'learning_evidence'
@@ -76,6 +86,33 @@ export async function fetchStudyUSEvidenceRows(
       activityType: row.activity_type ?? null,
       itemCount: row.item_count != null ? Number(row.item_count) : undefined,
       correctCount: row.correct_count != null ? Number(row.correct_count) : undefined,
+      // CANON-V2-REMEDIATION Part 5 -- additive: NULL for every row until
+      // a real canonical Transfer write path exists (none does yet --
+      // see StudyUSEvidenceRow.transferChallenges's own grounding note).
+      // jsonb columns come back already-parsed from `pg`, but this
+      // codebase's own established defensive pattern (see
+      // canonical-prepared-activity.service.ts's rowToPreparedActivity)
+      // guards against a driver that ever returns the raw string instead.
+      transferChallenges:
+        row.transfer_challenges == null
+          ? undefined
+          : typeof row.transfer_challenges === 'string'
+            ? JSON.parse(row.transfer_challenges)
+            : row.transfer_challenges,
+      transferFailureDiagnostic: row.transfer_failure_diagnostic ?? undefined,
+      // CANON-V2-REMEDIATION Part 7 (AUDIT-005 closed): wired to the
+      // REAL per-attempt link `mastery.service.ts`'s own `updateMastery`
+      // already writes -- `recordStudentMisconception`'s
+      // `observedByEvidenceId` parameter, persisted inside
+      // `student_misconceptions.evidence` (a jsonb array of observation
+      // records) in the SAME transaction as this `learning_evidence` row.
+      // Deliberately NOT filtered by `sm.status = 'ACTIVE'` above: this
+      // is an immutable historical fact ("was a critical misconception
+      // detected DURING this specific attempt"), independent of whether
+      // it was later resolved -- the GLOBAL, current-state gate
+      // (`activeCriticalMisconception`) is what resolution actually
+      // affects, never this per-attempt one.
+      hasItemCriticalMisconception: row.has_item_critical_misconception === true,
     }),
   );
 }

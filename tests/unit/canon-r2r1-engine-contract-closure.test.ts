@@ -67,8 +67,16 @@ function transferItem(ts: string, perChallengeScores: number[], opts: Partial<Ra
   return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: perChallengeScores.filter((s) => s >= 80).length, scorePercent: overall, difficulty: 4.5, independent: true, perChallengeScores, reasoningProvided: true, ...opts });
 }
 
+// CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the last 3
+// valid attempts >=80% (AUDIT-001) -- a single qualifying attempt is no
+// longer sufficient, so this shared ledger now includes 2.
 function provenLedger(): RawEvidenceItem[] {
-  return [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 90)];
+  return [
+    LEARNED,
+    practiceItem('2026-01-01T00:00:00.000Z', 90),
+    practiceItem('2026-01-01T01:00:00.000Z', 90),
+    proveItem('2026-01-02T00:00:00.000Z', 90),
+  ];
 }
 
 function retainedLedger(): RawEvidenceItem[] {
@@ -164,11 +172,11 @@ describe('CANON-R2R1 Part 30 -- Transfer regression tests (9-16)', () => {
     }
   });
 
-  it('13. a low challenge score alone does not automatically trigger foundational (Case B) rollback', () => {
+  it('13. a low challenge score alone does not automatically trigger foundational (Case C) rollback', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [5, 5, 5])], now: '2026-01-10T00:00:00.000Z' }),
     );
-    expect(decision.rollback?.case).toBe('CASE_A_TRANSFER_APPLICATION_WEAK');
+    expect(decision.rollback?.case).toBe('TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS');
   });
 
   it('14. application weakness (Case A) results in a Transfer REINFORCE, not a rollback to an earlier stage', () => {
@@ -180,10 +188,10 @@ describe('CANON-R2R1 Part 30 -- Transfer regression tests (9-16)', () => {
     expect(decision.currentStage).toBe('TRANSFER');
   });
 
-  it('15. explicit foundational evidence (transferFoundationalFailureIndicated) rolls back to the earliest invalidated requirement (PRACTICE)', () => {
+  it('15. explicit foundational evidence (transferFailureDiagnostic: FOUNDATIONAL_PROCEDURAL_FAILURE) rolls back to the earliest invalidated requirement (PRACTICE)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
-        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [10, 10, 10], { transferFoundationalFailureIndicated: true })],
+        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [10, 10, 10], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' })],
         now: '2026-01-10T00:00:00.000Z',
       }),
     );
@@ -191,14 +199,14 @@ describe('CANON-R2R1 Part 30 -- Transfer regression tests (9-16)', () => {
     expect(decision.currentStage).toBe('PRACTICE');
   });
 
-  it('16. a critical misconception during Transfer produces the appropriate earlier rollback (Case C, to PRACTICE)', () => {
+  it('16. a critical misconception during Transfer produces the appropriate earlier rollback (Case D, to PRACTICE)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 90, 90], { hasCriticalMisconception: true })],
         now: '2026-01-10T00:00:00.000Z',
       }),
     );
-    expect(decision.rollback?.case).toBe('CASE_C_CRITICAL_MISCONCEPTION');
+    expect(decision.rollback?.case).toBe('TRANSFER_CASE_D_CRITICAL_MISCONCEPTION');
     expect(decision.rollback?.rolledBackTo).toBe('PRACTICE');
   });
 });
@@ -294,7 +302,13 @@ describe('CANON-R2R1 Part 31 -- Practice difficulty tests (17-26)', () => {
 describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34)', () => {
   it('27. Prove target is derived from the highest qualifying Practice difficulty', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 4 })] }),
+      baseInput({
+        evidence: [
+          LEARNED,
+          practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 4 }),
+          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 4 }),
+        ],
+      }),
     );
     expect(decision.currentStage).toBe('PROVE');
     expect(decision.activityContract?.difficulty.target).toBe(4);
@@ -317,7 +331,14 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
 
   it('30. Retention target matches the qualifying Prove difficulty that opened its window', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 2 }), proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 4 })] }),
+      baseInput({
+        evidence: [
+          LEARNED,
+          practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 2 }),
+          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 2 }),
+          proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 4 }),
+        ],
+      }),
     );
     expect(decision.currentStage).toBe('RETAIN');
     expect(decision.activityContract?.difficulty.target).toBe(4);
@@ -343,6 +364,7 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
         evidence: [
           LEARNED,
           practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 4 }),
+          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 4 }),
           proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 4 }),
           retentionItem('2026-01-06T00:00:00.000Z', 95, { difficulty: 4 }),
         ],
@@ -442,7 +464,7 @@ describe('CANON-R2R1 Part 33 -- Output Contract tests (35-48)', () => {
 
 describe('CANON-R2R1 supplementary -- actionState/nextCanonicalAction across stages', () => {
   it('LOCKED stage reports actionState LOCKED and nextCanonicalAction NONE', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90), practiceItem('2026-01-01T01:00:00.000Z', 90)] }));
     expect(decision.stage).toBe('PROVE');
     expect(decision.actionState).toBe('EXECUTABLE');
     expect(decision.nextCanonicalAction).toBe('PROVE');
@@ -451,7 +473,14 @@ describe('CANON-R2R1 supplementary -- actionState/nextCanonicalAction across sta
 
   it('a REINFORCE intervention reports actionState EXECUTABLE with the underlying stage as nextCanonicalAction', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90), proveItem('2026-01-02T00:00:00.000Z', 70)] }),
+      baseInput({
+        evidence: [
+          LEARNED,
+          practiceItem('2026-01-01T00:00:00.000Z', 90),
+          practiceItem('2026-01-01T01:00:00.000Z', 90),
+          proveItem('2026-01-02T00:00:00.000Z', 70),
+        ],
+      }),
     );
     expect(decision.intervention).toBe('REINFORCE');
     expect(decision.actionState).toBe('EXECUTABLE');
