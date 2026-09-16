@@ -24,10 +24,23 @@
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { db } from '@/lib/db';
-import { sha256, parseMigrationFilename, diffMigrations } from '@/lib/migration-ledger';
+import { sha256, parseMigrationFilename, isValidMigrationFilename, findDuplicateFileVersions, diffMigrations } from '@/lib/migration-ledger';
 
 const MIGRATIONS_DIR = join(process.cwd(), 'database', 'migrations');
 const DRY_RUN = process.argv.includes('--dry-run');
+
+/**
+ * CANON-MIG-R1 Part 10 -- every file on disk must match the canonical
+ * `YYYYMMDD_SEQUENCE_name.sql` shape (audited: all 13 files in this
+ * repository already do). Returns the malformed filenames so the
+ * caller can abort with a clear, specific message rather than silently
+ * falling back to the legacy first-underscore split for just that one
+ * file (which would reintroduce exactly the collision this phase
+ * fixes).
+ */
+function listMalformedFilenames(files: string[]): string[] {
+  return files.filter((f) => !isValidMigrationFilename(f.replace(/\.sql$/, '')));
+}
 
 function listMigrationFiles(): { version: string; name: string; checksum: string; sql: string }[] {
   let files: string[] = [];
@@ -59,12 +72,42 @@ async function main() {
     return;
   }
 
-  const applied = (await db.query(`SELECT version, checksum FROM schema_migrations`)).rows as {
+  let rawFilenames: string[] = [];
+  try {
+    rawFilenames = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql'));
+  } catch {
+    rawFilenames = [];
+  }
+  const malformed = listMalformedFilenames(rawFilenames);
+  if (malformed.length > 0) {
+    console.error('MALFORMED migration filename(s) -- aborting before reading the ledger or applying anything:');
+    for (const f of malformed) console.error(`  ${f} does not match the required YYYYMMDD_SEQUENCE_name.sql shape.`);
+    process.exitCode = 2;
+    return;
+  }
+
+  // CANON-MIG-R1 Part 6: `name` is now selected alongside `version`/
+  // `checksum` -- diffMigrations needs it to recognize (and, in
+  // memory only, normalize) an already-applied legacy-shaped row from
+  // before this phase's composite-version fix. schema_migrations
+  // itself is never written here except via the INSERT below, and
+  // never with the OLD version format (Part 6).
+  const applied = (await db.query(`SELECT version, name, checksum FROM schema_migrations`)).rows as {
     version: string;
+    name: string;
     checksum: string;
   }[];
 
   const files = listMigrationFiles();
+
+  const duplicates = findDuplicateFileVersions(files);
+  if (duplicates.length > 0) {
+    console.error('DUPLICATE canonical version(s) across migration files -- aborting before applying anything:');
+    for (const v of duplicates) console.error(`  ${v} is produced by more than one file.`);
+    process.exitCode = 2;
+    return;
+  }
+
   const { pending, drifted } = diffMigrations(files, applied);
 
   if (drifted.length > 0) {
