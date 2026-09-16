@@ -58,7 +58,7 @@ import {
   type QuestionType,
   type ExpectedReasoningType,
 } from '@/services/quiz-generation.service';
-import { generateGatedQuestionBatch } from '@/services/gated-question-generation.service';
+import { generateGatedQuestionBatch, type GatedBatchInvocationDiagnostics } from '@/services/gated-question-generation.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
@@ -67,6 +67,13 @@ import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/kno
 import { activityTypeForQuizMode, evidenceModeForQuizMode, loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
+import {
+  logCanonicalProveGenerationSummary,
+  hashStudentId,
+  type CanonicalProveGenerationInvocationRecord,
+  type CanonicalProveNoveltyPassRecord,
+  type CanonicalProveGenerationSummary,
+} from '@/lib/lx/canonical-prove-generation-observability';
 import { shuffleArray, toClientQuestion } from '@/lib/quiz/client-question';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
@@ -403,6 +410,24 @@ async function selectConceptsForQuizMode(
 }
 
 async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
+  // CANON-R6-PERF-I1 -- instrumentation-only state. `validated` itself
+  // is NOT hoisted/retyped (it stays a plain `const` inside the try
+  // block below, exactly as before this phase) so every existing
+  // closure in this function that narrows/captures it is completely
+  // unaffected. `rawQuizModeForErrorLogging` is read directly from the
+  // raw, unvalidated `body` only so the outer catch (an unexpected
+  // error, where schema validation may not even have completed) can
+  // still decide whether a best-effort error summary applies to
+  // canonical_prove -- it is NEVER used for anything but that decision.
+  const requestStartedAt = Date.now();
+  const rawQuizModeForErrorLogging: unknown = body?.quizMode;
+  let canonicalAuthorizationMs: number | null = null;
+  let priorHistoryMs: number | null = null;
+  let noveltyFilterMs = 0;
+  let persistenceMs: number | null = null;
+  const generationInvocations: CanonicalProveGenerationInvocationRecord[] = [];
+  const noveltyPasses: CanonicalProveNoveltyPassRecord[] = [];
+
   try {
     const validated = GenerateQuizSchema.parse(body);
 
@@ -434,6 +459,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // or upgraded to whatever the true stage is (Part 25: "No
     // downgrade/upgrade"). Any other case (flag absent, gate off, wrong
     // mode/stage, or re-verification fails) yields `v1Marker: null`.
+    // CANON-R6-PERF-I1 -- times ONLY the canonical re-verification call
+    // (verifyV1PracticeLaunchMarker's own DB reads); the result is read
+    // only by the canonical_prove summary emitted at the bottom of this
+    // function, so this adds two `Date.now()` calls and nothing else
+    // for every other quizMode/request shape.
+    const canonicalAuthorizationStartedAt = Date.now();
     const requestedActivityType: 'PRACTICE' | 'PROVE' | null =
       validated.quizMode === 'topic_practice' ? 'PRACTICE' : validated.quizMode === 'canonical_prove' ? 'PROVE' : null;
     const rawV1Marker =
@@ -449,6 +480,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         (requestedActivityType === 'PRACTICE' && rawV1Marker.canonicalActivityType === 'REINFORCE'))
         ? rawV1Marker
         : null;
+    canonicalAuthorizationMs = Date.now() - canonicalAuthorizationStartedAt;
 
     // CANON-R6 Part 24/29 -- `canonical_prove` has NO legitimate legacy
     // meaning (unlike `topic_practice`, which is also a real legacy
@@ -797,6 +829,20 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
                 activityType: activityTypeForQuizMode(validated.quizMode),
                 quizMode: validated.quizMode,
                 parentOperationId,
+                // CANON-R6-PERF-I1 -- observability only, canonical_prove
+                // ONLY (this branch is also the multi-concept path for
+                // cumulative_assessment/exam_simulation/diagnostic_check/
+                // a retention_check override, none of which pass this
+                // key -- their own options object is byte-identical to
+                // before this phase). canonical_prove is always
+                // single-concept, so this callback fires exactly once.
+                ...(validated.quizMode === 'canonical_prove'
+                  ? {
+                      onInvocationDiagnostics: (diag: GatedBatchInvocationDiagnostics) => {
+                        generationInvocations.push({ invocationType: 'PRIMARY', ...diag });
+                      },
+                    }
+                  : {}),
               });
             })
           ),
@@ -832,8 +878,17 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // -- Part 11's "no session should have been persisted as valid
     // Prove" is satisfied structurally, with no separate check needed.
     let noveltyDiagnostics: NonNullable<QuizSessionV1Marker['novelty']> | null = null;
+    // CANON-R6-PERF-I1 -- read only by the canonical_prove summary; a
+    // refill's own `generateGatedQuestionBatch` call reports its
+    // diagnostics via `onInvocationDiagnostics` below, tagged
+    // NOVELTY_REFILL_1/NOVELTY_REFILL_2 by which loop iteration
+    // triggered it -- this function itself has no notion of "refill".
+    let novelty_refill_1_ms: number | null = null;
+    let novelty_refill_2_ms: number | null = null;
     if (validated.quizMode === 'canonical_prove') {
+      const priorHistoryStartedAt = Date.now();
       const priorFingerprints = await loadPriorPracticeQuestionFingerprints(validated.studentId, primaryConceptId!);
+      priorHistoryMs = Date.now() - priorHistoryStartedAt;
       let excludeFingerprints: ReadonlySet<string> = priorFingerprints;
       let accepted: GeneratedQuestion[] = [];
       let rejectedExactDuplicateCount = 0;
@@ -844,10 +899,22 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       // calls for this concept). Never an unbounded loop.
       const MAX_NOVELTY_REFILL_ATTEMPTS = 2;
       for (let attempt = 0; attempt <= MAX_NOVELTY_REFILL_ATTEMPTS; attempt++) {
+        const noveltyFilterStartedAt = Date.now();
         const filtered = filterExactDuplicates(candidates, excludeFingerprints);
+        noveltyFilterMs += Date.now() - noveltyFilterStartedAt;
         accepted = accepted.concat(filtered.accepted);
         rejectedExactDuplicateCount += filtered.rejectedCount;
         excludeFingerprints = filtered.fingerprints;
+        // CANON-R6-PERF-I1 Part 7 -- attempt 0 filters the INITIAL batch,
+        // attempt 1 filters whatever REFILL_1 produced, attempt 2 (the
+        // last possible iteration) filters whatever REFILL_2 produced.
+        noveltyPasses.push({
+          noveltyPass: attempt === 0 ? 'INITIAL' : attempt === 1 ? 'REFILL_1' : 'REFILL_2',
+          candidateCount: candidates.length,
+          acceptedCount: filtered.accepted.length,
+          rejectedExactDuplicateCount: filtered.rejectedCount,
+          remainingNeeded: Math.max(0, maxQuestions - accepted.length),
+        });
 
         if (accepted.length >= maxQuestions || attempt === MAX_NOVELTY_REFILL_ATTEMPTS) break;
 
@@ -857,6 +924,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         // fingerprints AND every Prove question already accepted so far
         // (Part 6 step 7 -- `excludeFingerprints` carries both forward).
         const needed = maxQuestions - accepted.length;
+        const refillInvocationType = attempt === 0 ? 'NOVELTY_REFILL_1' : 'NOVELTY_REFILL_2';
         candidates = await generateGatedQuestionBatch(primaryConceptId!, validated.studentId, validated.subjectId, {
           count: needed,
           difficulty: v1EffectiveDifficulty!,
@@ -868,6 +936,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           activityType: activityTypeForQuizMode(validated.quizMode),
           quizMode: validated.quizMode,
           parentOperationId,
+          onInvocationDiagnostics: (diag: GatedBatchInvocationDiagnostics) => {
+            generationInvocations.push({ invocationType: refillInvocationType, ...diag });
+            if (attempt === 0) novelty_refill_1_ms = diag.durationMs;
+            else novelty_refill_2_ms = diag.durationMs;
+          },
         });
       }
 
@@ -879,6 +952,52 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
       };
     }
+
+    // CANON-R6-PERF-I1 Part 8 -- the ONE place every canonical_prove
+    // generation outcome (SUCCESS, both INCOMPLETE guards below) emits
+    // its single CANONICAL_PROVE_GENERATION_SUMMARY event. A no-op for
+    // every other quizMode. Reuses `parentOperationId` (already minted
+    // once per request, above) as the request-level correlation id
+    // rather than inventing a second identity for the same request.
+    const emitCanonicalProveSummary = (result: 'SUCCESS' | 'INCOMPLETE', finalQuestionCount: number, errorCode?: string) => {
+      if (validated.quizMode !== 'canonical_prove') return;
+      const fallbackCount = generationInvocations.filter((inv) => inv.fallbackUsed).length;
+      const semanticVerificationCount = generationInvocations.reduce((sum, inv) => sum + inv.semanticCallCount, 0);
+      const externalAiCallCount = generationInvocations.reduce((sum, inv) => sum + inv.externalAiCallCount, 0);
+      const noveltyRefillCount = generationInvocations.filter((inv) => inv.invocationType !== 'PRIMARY').length;
+      const primaryInvocation = generationInvocations.find((inv) => inv.invocationType === 'PRIMARY') ?? null;
+      logCanonicalProveGenerationSummary({
+        operationId: parentOperationId,
+        parentOperationId,
+        studentIdHash: hashStudentId(validated.studentId),
+        conceptId: primaryConceptId ?? 'unknown',
+        quizMode: 'canonical_prove',
+        canonicalStage: v1Marker?.canonicalStage ?? null,
+        targetItemCount: maxQuestions,
+        difficultyTarget: v1EffectiveDifficulty ?? null,
+        canonicalAuthorizationMs,
+        priorHistoryMs,
+        generationPrimaryMs: primaryInvocation?.durationMs ?? null,
+        noveltyFilterMs,
+        noveltyRefill1Ms: novelty_refill_1_ms,
+        noveltyRefill2Ms: novelty_refill_2_ms,
+        persistenceMs,
+        totalMs: Date.now() - requestStartedAt,
+        generationInvocationCount: generationInvocations.length,
+        externalAiCallCount,
+        fallbackCount,
+        semanticVerificationCount,
+        noveltyRefillCount,
+        priorPracticeFingerprintCount: noveltyDiagnostics?.priorPracticeFingerprintCount ?? null,
+        rejectedExactDuplicateCount: noveltyDiagnostics?.rejectedExactDuplicateCount ?? null,
+        acceptedNovelQuestionCount: noveltyDiagnostics?.acceptedNovelQuestionCount ?? null,
+        finalQuestionCount,
+        invocations: generationInvocations,
+        noveltyPasses,
+        result,
+        ...(errorCode ? { errorCode } : {}),
+      });
+    };
 
     // LX-9R6-R1 C2/C4: the ONE choke point every mode's result converges
     // on. Every generator now either publishes exactly its own required
@@ -906,6 +1025,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'QUESTION_COUNT_INSUFFICIENT',
         }));
       } catch { /* logging must never break the response */ }
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
       // CANON-R6 Part 5/29 -- a v1 Prove request may NEVER silently
       // administer fewer than the authorized exact-10 count; this
       // pre-existing universal guard already fails the whole request
@@ -937,6 +1057,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'GENERATION_FAILED',
         }));
       } catch { /* logging must never break the response */ }
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
@@ -953,6 +1074,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       ? { ...v1Marker, novelty: noveltyDiagnostics }
       : null;
 
+    const persistenceStartedAt = Date.now();
     const quizId = await storeQuiz(
       validated.studentId,
       primaryConceptId,
@@ -963,10 +1085,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       conceptIds,
       v1MarkerToPersist
     );
+    persistenceMs = Date.now() - persistenceStartedAt;
 
     if (validated.quizMode === 'diagnostic_check') {
       track(validated.studentId, 'diagnostic_check_started', { quizId, conceptId: primaryConceptId });
     }
+
+    emitCanonicalProveSummary('SUCCESS', questions.length);
 
     return NextResponse.json({
       success: true,
@@ -991,6 +1116,53 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues[0]?.message }, { status: 400 });
+    }
+    // CANON-R6-PERF-I1 Part 9 -- best-effort error summary: an
+    // unexpected error reaching this OUTER catch means something failed
+    // outside generateGatedQuestionBatch's own resilience (which never
+    // throws -- it returns `[]` on any internal failure and always
+    // reports its own diagnostics first). `validated`/`primaryConceptId`/
+    // `parentOperationId`/`v1Marker` are declared inside the try block
+    // above and are genuinely out of scope here (unchanged by this
+    // phase) -- this reads only the raw, unvalidated `body` and the
+    // instrumentation state hoisted above the try block, which still
+    // reflects whatever real work completed before the throw. Never the
+    // raw error message (only a fixed code), matching this file's
+    // existing safe-logging convention elsewhere.
+    if (rawQuizModeForErrorLogging === 'canonical_prove') {
+      const rawStudentId = typeof body?.studentId === 'string' ? body.studentId : null;
+      const rawConceptId = typeof body?.conceptId === 'string' ? body.conceptId : null;
+      logCanonicalProveGenerationSummary({
+        operationId: randomUUID(),
+        parentOperationId: 'UNKNOWN_REQUEST_FAILED_BEFORE_CORRELATION_ID',
+        studentIdHash: rawStudentId ? hashStudentId(rawStudentId) : 'unknown',
+        conceptId: rawConceptId ?? 'unknown',
+        quizMode: 'canonical_prove',
+        canonicalStage: null,
+        targetItemCount: typeof body?.maxQuestions === 'number' ? body.maxQuestions : 0,
+        difficultyTarget: null,
+        canonicalAuthorizationMs,
+        priorHistoryMs,
+        generationPrimaryMs: generationInvocations.find((inv) => inv.invocationType === 'PRIMARY')?.durationMs ?? null,
+        noveltyFilterMs,
+        noveltyRefill1Ms: null,
+        noveltyRefill2Ms: null,
+        persistenceMs,
+        totalMs: Date.now() - requestStartedAt,
+        generationInvocationCount: generationInvocations.length,
+        externalAiCallCount: generationInvocations.reduce((sum, inv) => sum + inv.externalAiCallCount, 0),
+        fallbackCount: generationInvocations.filter((inv) => inv.fallbackUsed).length,
+        semanticVerificationCount: generationInvocations.reduce((sum, inv) => sum + inv.semanticCallCount, 0),
+        noveltyRefillCount: generationInvocations.filter((inv) => inv.invocationType !== 'PRIMARY').length,
+        priorPracticeFingerprintCount: null,
+        rejectedExactDuplicateCount: null,
+        acceptedNovelQuestionCount: null,
+        finalQuestionCount: 0,
+        invocations: generationInvocations,
+        noveltyPasses,
+        result: 'ERROR',
+        errorCode: 'UNEXPECTED_ERROR',
+      });
     }
     throw error;
   }

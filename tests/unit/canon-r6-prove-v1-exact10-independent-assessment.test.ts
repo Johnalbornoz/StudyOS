@@ -200,8 +200,11 @@ describe('8 -- fewer than 10 is rejected, never silently administered as v1 Prov
   });
 
   it('a canonical_prove-specific closed reason (V1_PROVE_GENERATION_INCOMPLETE) is returned instead of the generic message, for both the short-of-target and totally-empty cases', () => {
+    // 2 in the JSON error response bodies + 2 (CANON-R6-PERF-I1) where
+    // the SAME existing code is also passed as the observability
+    // summary's `errorCode` at each of those two guards.
     const occurrences = (ROUTE_SRC.match(/V1_PROVE_GENERATION_INCOMPLETE/g) ?? []).length;
-    expect(occurrences).toBe(2);
+    expect(occurrences).toBe(4);
   });
 });
 

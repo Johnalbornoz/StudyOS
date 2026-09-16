@@ -219,9 +219,11 @@ describe('11. invalid count fails before AI / 12. invalid difficulty fails befor
     expect(ROUTE_SRC).toMatch(/difficulty: z\.number\(\)\.int\(\)\.min\(1\)\.max\(5\)\.optional\(\)/);
   });
 
-  it('a Zod validation failure throws before conceptIds/generators are ever resolved (parse() is the first statement in handleGenerateQuiz)', () => {
-    const body = ROUTE_SRC.slice(ROUTE_SRC.indexOf('async function handleGenerateQuiz'), ROUTE_SRC.indexOf('async function handleGenerateQuiz') + 400);
-    expect(body).toMatch(/const validated = GenerateQuizSchema\.parse\(body\);/);
+  it('a Zod validation failure throws before conceptIds/generators are ever resolved (parse() is the first statement inside handleGenerateQuiz\'s try block -- CANON-R6-PERF-I1 only added hoisted instrumentation-state declarations ABOVE the try block, never anything between it and parse())', () => {
+    const fnStart = ROUTE_SRC.indexOf('async function handleGenerateQuiz');
+    const tryIdx = ROUTE_SRC.indexOf('try {', fnStart);
+    const body = ROUTE_SRC.slice(tryIdx, tryIdx + 100);
+    expect(body).toMatch(/try \{\s*\n\s*const validated = GenerateQuizSchema\.parse\(body\);/);
   });
 });
 

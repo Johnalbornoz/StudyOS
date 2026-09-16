@@ -52,6 +52,58 @@ export interface GatedPracticeOptions {
   quizMode?: string;
   /** LX-9R6-R1 O3: when this call is one unit of a multi-concept parent request (cumulative_assessment/exam_simulation), the caller's own operationId -- correlates every per-concept `[gated_batch]` line with the parent request without inventing a second identity for the same operation. */
   parentOperationId?: string;
+  /**
+   * CANON-R6-PERF-I1 -- optional, purely additive observability hook:
+   * reports exactly what THIS invocation of `generateGatedQuestionBatch`
+   * did (generation/recovery call counts, fallback outcome, semantic-
+   * verification counts, accepted count, duration), once, right before
+   * the function returns -- on every return path (success, insufficient,
+   * non-retryable error, unexpected error). Never affects generation
+   * behavior, never required; every existing caller that doesn't pass
+   * this sees zero change (same pattern as `onUsage`/
+   * `onNonRetryableError` above). The caller supplies its OWN label for
+   * which invocation this is (PRIMARY / a novelty refill / a chunk) --
+   * this function has no notion of that context.
+   */
+  onInvocationDiagnostics?: (diagnostics: GatedBatchInvocationDiagnostics) => void;
+}
+
+/**
+ * CANON-R6-PERF-I1 -- everything needed to reconstruct, from the
+ * caller's side, exactly what one `generateGatedQuestionBatch`
+ * invocation did: how many real external AI calls it made (generation
+ * + semantic verification, combined) and why, without re-deriving any
+ * of it from raw questions/prompts. Never includes question text,
+ * student identity, or any learner content.
+ */
+export interface GatedBatchInvocationDiagnostics {
+  requestedCount: number;
+  acceptedCount: number;
+  /** Wall-clock time for this ENTIRE invocation (all its external calls, serially), matching the existing `[gated_batch]` `durationMs` semantics. */
+  durationMs: number;
+  fallbackUsed: boolean;
+  /** `generateGatedQuestionBatch` always requests `fallbackWhen: 'SHORT'` -- `null` when no fallback fired. Kept as a distinct, closed enum (not the free-form `fallbackReason` message string already used for `[ai-runtime]` events) so a caller never has to parse prose to know why. */
+  fallbackReasonCode: 'SHORT' | 'EMPTY' | null;
+  /** Luna call (1) + Terra regeneration call if the fallback fired (1) -- matches the existing `[gated_batch]` `generationCalls` field exactly. */
+  generationCalls: number;
+  /** 0 or 1 -- matches the existing `[gated_batch]` `recoveryCalls` field exactly (kept alongside `fallbackUsed` for continuity with that log's own naming). */
+  recoveryCalls: number;
+  /** True iff at least one semantic-verification EXTERNAL call fired (primary pass, fallback pass, or both). */
+  semanticVerificationUsed: boolean;
+  /** 0, 1, or 2 -- the exact number of semantic-verification EXTERNAL calls this invocation made (one per gate pass that had >=1 candidate needing a semantic judgment). */
+  semanticCallCount: number;
+  /** Total candidates across every gate pass this invocation ran that needed a semantic judgment (deterministic check returned NOT_DETERMINISTICALLY_VERIFIED). */
+  semanticCandidateCount: number;
+  /** Total semantic-check survivors across every gate pass this invocation ran. */
+  semanticAcceptedCount: number;
+  /** Total semantic-check rejections across every gate pass this invocation ran. */
+  semanticRejectedCount: number;
+  /** `generationCalls + semanticCallCount` -- the total real external AI calls this ONE invocation made (never fabricated; derived from the same counts above). */
+  externalAiCallCount: number;
+  /** True iff `acceptedCount < requestedCount` even after any fallback -- this invocation, alone, could not fill its own request. */
+  insufficientCount: boolean;
+  operationId: string;
+  parentOperationId: string | null;
 }
 
 /** LX-9R6-R1 O1: safe, aggregate-only observability for one gated-batch generation call -- same shape/intent as logRetention/logQuickCheck, never learner answer/question content. */
@@ -164,6 +216,10 @@ export async function applyQuestionQualityGate(
   semanticCalls: BillableCallUsage[];
   /** LX-9R8 PART B3: aggregate rejection-reason histogram across every SEMANTICALLY rejected candidate in this gate call. Every taxonomy code always present (0 when unseen). Deterministic rejections are NOT included here -- they have their own, separate, already-audited contract (question-quality-contract.ts). */
   semanticRejectionHistogram: Record<QualityRejectionReasonCode, number>;
+  /** CANON-R6-PERF-I1 -- additive, purely observational: how many candidates in THIS gate call needed a semantic judgment (deterministic check returned NOT_DETERMINISTICALLY_VERIFIED). 0 means this gate call made no semantic-verification external call at all. */
+  semanticCandidateCount: number;
+  /** CANON-R6-PERF-I1 -- additive: how many of `semanticCandidateCount` survived (== semanticCandidateCount - semanticRejected). */
+  semanticAccepted: number;
 }> {
   let deterministicRejected = 0;
   const needsSemantic: GeneratedQuestion[] = [];
@@ -275,7 +331,15 @@ export async function applyQuestionQualityGate(
     rejectionHistogram: semanticRejectionHistogram,
   });
 
-  return { accepted, deterministicRejected, semanticRejected, semanticCalls, semanticRejectionHistogram };
+  return {
+    accepted,
+    deterministicRejected,
+    semanticRejected,
+    semanticCalls,
+    semanticRejectionHistogram,
+    semanticCandidateCount: needsSemantic.length,
+    semanticAccepted: semanticSurvivors.length,
+  };
 }
 
 const QGEN_ROUTE = resolveModels('QUESTION_GENERATION');
@@ -365,6 +429,18 @@ export interface GateUnitResult {
   fallbackReason?: string;
   /** LX-9R6-R1 C2: true iff `accepted.length < req.targetCount` even after any Terra fallback -- the ONE signal every caller now checks to fail closed rather than publish a shorter-than-required unit. */
   insufficientCount: boolean;
+  /** CANON-R6-PERF-I1 -- additive: `req.fallbackWhen` when `fallbackUsed`, else `null`. A closed enum companion to the free-form `fallbackReason` message above, so a caller never has to parse prose to know why a fallback fired. */
+  fallbackReasonCode: 'SHORT' | 'EMPTY' | null;
+  /** CANON-R6-PERF-I1 -- additive: true iff g1 and/or g2 made a semantic-verification external call. */
+  semanticVerificationUsed: boolean;
+  /** CANON-R6-PERF-I1 -- additive: 0, 1, or 2 -- the exact number of semantic-verification EXTERNAL calls across g1 (+ g2 if the fallback fired). */
+  semanticCallCount: number;
+  /** CANON-R6-PERF-I1 -- additive: g1.semanticCandidateCount (+ g2.semanticCandidateCount if the fallback fired). */
+  semanticCandidateCount: number;
+  /** CANON-R6-PERF-I1 -- additive: g1.semanticAccepted (+ g2.semanticAccepted if the fallback fired). */
+  semanticAcceptedCount: number;
+  /** CANON-R6-PERF-I1 -- additive: g1.semanticRejected (+ g2.semanticRejected if the fallback fired). */
+  semanticRejectedCount: number;
 }
 
 /**
@@ -438,6 +514,12 @@ export async function gateUnitWithTerraFallback(
       terraRejected: 0,
       fallbackUsed: false,
       insufficientCount: g1.accepted.length < req.targetCount,
+      fallbackReasonCode: null,
+      semanticVerificationUsed: g1.semanticCandidateCount > 0,
+      semanticCallCount: g1.semanticCandidateCount > 0 ? 1 : 0,
+      semanticCandidateCount: g1.semanticCandidateCount,
+      semanticAcceptedCount: g1.semanticAccepted,
+      semanticRejectedCount: g1.semanticRejected,
     };
   }
 
@@ -486,6 +568,12 @@ export async function gateUnitWithTerraFallback(
     fallbackUsed: true,
     fallbackReason,
     insufficientCount: merged.length < req.targetCount,
+    fallbackReasonCode: req.fallbackWhen,
+    semanticVerificationUsed: g1.semanticCandidateCount > 0 || g2.semanticCandidateCount > 0,
+    semanticCallCount: (g1.semanticCandidateCount > 0 ? 1 : 0) + (g2.semanticCandidateCount > 0 ? 1 : 0),
+    semanticCandidateCount: g1.semanticCandidateCount + g2.semanticCandidateCount,
+    semanticAcceptedCount: g1.semanticAccepted + g2.semanticAccepted,
+    semanticRejectedCount: g1.semanticRejected + g2.semanticRejected,
   };
 }
 
@@ -536,6 +624,21 @@ export async function generateGatedQuestionBatch(
     logGatedBatch(label, { operationId, parentOperationId: opts.parentOperationId ?? null, activityType: opts.activityType ?? null, quizMode: opts.quizMode ?? null, conceptCount: 1, targetDifficulty: opts.difficulty ?? null, requiredQuestionCount: target, ...meta });
   const lunaGenerationCalls: BillableCallUsage[] = [];
   const terraGenerationCalls: BillableCallUsage[] = [];
+  // CANON-R6-PERF-I1 -- reports this invocation's diagnostics on EVERY
+  // return path (success, insufficient, non-retryable error, unexpected
+  // error), never just the happy path -- a caller reconstructing one
+  // request end-to-end needs to know what happened even when generation
+  // failed. `opts.onInvocationDiagnostics` is optional; when absent this
+  // is a no-op, exactly like every other `on*` hook in this file.
+  const reportInvocationDiagnostics = (partial: Omit<GatedBatchInvocationDiagnostics, 'requestedCount' | 'operationId' | 'parentOperationId' | 'durationMs'>) => {
+    opts.onInvocationDiagnostics?.({
+      requestedCount: target,
+      operationId,
+      parentOperationId: opts.parentOperationId ?? null,
+      durationMs: Date.now() - startedAt,
+      ...partial,
+    });
+  };
 
   try {
     log('GATED_BATCH_GENERATION_STARTED');
@@ -568,6 +671,24 @@ export async function generateGatedQuestionBatch(
         durationMs: Date.now() - startedAt,
         success: false,
       });
+      // The one Luna call was attempted (and failed) -- it still counts
+      // as a real external call; no fallback/semantic verification ever
+      // ran (the Terra regeneration is deliberately skipped for a
+      // non-retryable error -- see the doc comment above).
+      reportInvocationDiagnostics({
+        acceptedCount: 0,
+        fallbackUsed: false,
+        fallbackReasonCode: null,
+        generationCalls: 1,
+        recoveryCalls: 0,
+        semanticVerificationUsed: false,
+        semanticCallCount: 0,
+        semanticCandidateCount: 0,
+        semanticAcceptedCount: 0,
+        semanticRejectedCount: 0,
+        externalAiCallCount: 1,
+        insufficientCount: true,
+      });
       return [];
     }
 
@@ -594,6 +715,20 @@ export async function generateGatedQuestionBatch(
     }
 
     const totalGenerationCalls = 1 + (result.fallbackUsed ? 1 : 0);
+    const invocationDiagnosticsFromResult = {
+      acceptedCount: result.accepted.length,
+      fallbackUsed: result.fallbackUsed,
+      fallbackReasonCode: result.fallbackReasonCode,
+      generationCalls: totalGenerationCalls,
+      recoveryCalls: result.fallbackUsed ? 1 : 0,
+      semanticVerificationUsed: result.semanticVerificationUsed,
+      semanticCallCount: result.semanticCallCount,
+      semanticCandidateCount: result.semanticCandidateCount,
+      semanticAcceptedCount: result.semanticAcceptedCount,
+      semanticRejectedCount: result.semanticRejectedCount,
+      externalAiCallCount: totalGenerationCalls + result.semanticCallCount,
+      insufficientCount: result.insufficientCount,
+    };
     if (result.insufficientCount) {
       log('GATED_BATCH_GENERATION_INSUFFICIENT', {
         errorCode: 'QUESTION_COUNT_INSUFFICIENT',
@@ -604,6 +739,7 @@ export async function generateGatedQuestionBatch(
         durationMs: Date.now() - startedAt,
         success: false,
       });
+      reportInvocationDiagnostics(invocationDiagnosticsFromResult);
       return [];
     }
     log('GATED_BATCH_GENERATION_SUCCEEDED', {
@@ -614,10 +750,30 @@ export async function generateGatedQuestionBatch(
       durationMs: Date.now() - startedAt,
       success: true,
     });
+    reportInvocationDiagnostics(invocationDiagnosticsFromResult);
     return result.accepted;
   } catch (error) {
     log('GATED_BATCH_GENERATION_INSUFFICIENT', { errorCode: 'UNEXPECTED_GENERATION_ERROR', durationMs: Date.now() - startedAt, success: false });
     console.error('Error in generateGatedQuestionBatch:', error);
+    // An unexpected exception could have occurred at any point in the
+    // sequence above -- how many external calls actually completed
+    // before it isn't reliably knowable here without deeper per-line
+    // instrumentation (out of scope for this phase). Reported
+    // conservatively as 0 rather than guessed, never fabricated.
+    reportInvocationDiagnostics({
+      acceptedCount: 0,
+      fallbackUsed: false,
+      fallbackReasonCode: null,
+      generationCalls: 0,
+      recoveryCalls: 0,
+      semanticVerificationUsed: false,
+      semanticCallCount: 0,
+      semanticCandidateCount: 0,
+      semanticAcceptedCount: 0,
+      semanticRejectedCount: 0,
+      externalAiCallCount: 0,
+      insufficientCount: true,
+    });
     return [];
   }
 }

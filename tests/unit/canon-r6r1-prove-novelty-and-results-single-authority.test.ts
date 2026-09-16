@@ -190,7 +190,7 @@ describe('5/6 -- loadPriorPracticeQuestionFingerprints', () => {
 // ============================================================
 describe('10-14/17 -- canonical_prove generation flow wires the novelty filter with a bounded refill', () => {
   it('the novelty block runs ONLY for canonical_prove, and BEFORE the pre-existing short-of-maxQuestions choke point', () => {
-    const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorFingerprints");
+    const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorHistoryStartedAt");
     const chokePointIdx = ROUTE_SRC.indexOf('if (questions.length > 0 && questions.length < maxQuestions) {');
     expect(noveltyIdx).toBeGreaterThan(-1);
     expect(chokePointIdx).toBeGreaterThan(noveltyIdx);
@@ -209,7 +209,7 @@ describe('10-14/17 -- canonical_prove generation flow wires the novelty filter w
   it('11. the refill loop carries `excludeFingerprints` forward from `filtered.fingerprints` -- so a later batch is filtered against BOTH prior Practice AND everything already accepted', () => {
     const idx = ROUTE_SRC.indexOf('const filtered = filterExactDuplicates(candidates, excludeFingerprints);');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    const slice = ROUTE_SRC.slice(idx, idx + 500);
     expect(slice).toMatch(/excludeFingerprints = filtered\.fingerprints;/);
   });
 
@@ -230,8 +230,13 @@ describe('10-14/17 -- canonical_prove generation flow wires the novelty filter w
   });
 
   it('the failure reason for an incomplete novel batch is the SAME pre-existing Prove-specific code (V1_PROVE_GENERATION_INCOMPLETE) -- no new/different failure reason was invented for the novelty case', () => {
+    // 2 occurrences in the JSON error response bodies (unchanged from
+    // CANON-R6) + 2 occurrences (CANON-R6-PERF-I1) where the same,
+    // already-existing code is ALSO passed as the `errorCode` argument
+    // to `emitCanonicalProveSummary` at each of those two guards --
+    // instrumentation reusing the existing reason code, never a new one.
     const occurrences = (ROUTE_SRC.match(/V1_PROVE_GENERATION_INCOMPLETE/g) ?? []).length;
-    expect(occurrences).toBe(2);
+    expect(occurrences).toBe(4);
   });
 });
 
