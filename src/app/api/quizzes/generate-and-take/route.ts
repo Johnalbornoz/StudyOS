@@ -41,7 +41,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
@@ -55,26 +55,32 @@ import {
   GeneratedQuestion,
   ALL_QUESTION_TYPES,
   IBContext,
-  MAX_QUESTIONS_PER_CHUNK,
   type QuestionType,
   type ExpectedReasoningType,
 } from '@/services/quiz-generation.service';
 import {
   generateGatedQuestionBatch,
-  generateConcurrentChunkedBatch,
-  generateBoundedRecoveryBatch,
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
+import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
+import {
+  prepareCanonicalProveActivity,
+  findActivePreparedActivity,
+  revalidatePreparedActivity,
+  consumePreparedActivity,
+  invalidatePreparedActivity,
+  type PreparedActivityContractSnapshot,
+} from '@/services/canonical-prepared-activity.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
-import { activityTypeForQuizMode, evidenceModeForQuizMode, loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
+import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
-import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import {
   logCanonicalProveGenerationSummary,
+  logCanonicalProveCacheSummary,
   hashStudentId,
   type CanonicalProveGenerationInvocationRecord,
   type CanonicalProveNoveltyPassRecord,
@@ -115,6 +121,7 @@ import {
   checkV1ActivityContractCompliance,
   getCanonicalPedagogicalDecision,
   CanonicalDecisionUnavailableError,
+  resolveAuthorizedItemCount,
   type CanonicalDecisionResult,
 } from '@/lib/pedagogical-decision';
 
@@ -254,9 +261,9 @@ const QUIZ_MODE_CONFIG: Record<
     // isolated generation-guidance nudge only (reduces churn/retries);
     // it is NEVER the enforcement mechanism -- exact-duplicate exclusion
     // is a deterministic post-generation server check
-    // (`filterExactDuplicates` in generateAndPersistNovelProveQuestions
-    // below), which runs regardless of whether Claude actually honored
-    // this text.
+    // (`filterExactDuplicates`, run inside
+    // `generateCanonicalProveQuestions` -- CANON-R6-PERF-R1/R2), which
+    // runs regardless of whether Claude actually honored this text.
     guidance:
       'This is an independent mastery check -- the student demonstrates they can do this ALONE, with no help. Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess, the same rigor as a diagnostic check but across a full independent set. Keep each question tightly focused on the core idea of this concept. Write NEW questions -- do not repeat a question the student has already been asked while practicing this concept.',
     defaultMax: 10,
@@ -439,6 +446,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   let aggregateRecoveryUsed = false;
   let aggregateRecoveryRequestedCount: number | null = null;
   let aggregateRecoveryMs: number | null = null;
+  // CANON-R6-PERF-R2 -- prepared-activity cache-path observability state.
+  let preparedLookupMs: number | null = null;
+  let preparedValidationMs: number | null = null;
+  let sessionCreationMs: number | null = null;
+  let preparedCacheStatus: 'HIT' | 'MISS' | 'PREPARING' | 'INVALID' | 'EXPIRED' | 'FAILED' | null = null;
+  let preparedConsumptionCandidateId: string | null = null;
+  let preparedActivityFingerprintCount: number | null = null;
+  let proveGenerationResult: CanonicalProveGenerationResult | null = null;
 
   try {
     const validated = GenerateQuizSchema.parse(body);
@@ -795,31 +810,85 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             ibContext,
           }).then((qs) => [qs])
         : validated.quizMode === 'canonical_prove'
-        ? // CANON-R6-PERF-R1 -- canonical_prove no longer falls through to
-          // the generic multi-concept gated-batch branch below (which
-          // requested one MONOLITHIC exact-10 unit -- confirmed by
-          // CANON-R6-PERF-DIAG/PERF-I1's own live evidence to be the
-          // actual latency source: one ~64s serial Luna -> semantic-
-          // verify -> Terra-SHORT-fallback -> semantic-verify chain).
-          // Instead: N CONCURRENT, smaller chunks
-          // (generateConcurrentChunkedBatch, reusing the SAME
-          // planChunks/gateUnitWithTerraFallback primitives
-          // generatePracticeQuestions's own >4-question chunked path
-          // already uses) -- one chunk's own provider latency never
-          // serially blocks another's. `v1EffectiveDifficulty` is
-          // always defined here (the earlier `v1Marker` guard already
-          // rejected any canonical_prove request without one) -- the
-          // `?? validated.difficulty ?? resolvedDifficulty?.level ?? 3`
-          // fallback is purely defensive, matching every other call
-          // site's own style, and is never actually reached for a
-          // genuinely authorized request (Part 9: client difficulty
-          // stays irrelevant).
+        ? // CANON-R6-PERF-R2 -- FIRST: a cache-hit check against a
+          // background-prepared activity (CANON-R6-PERF-R2's own
+          // pre-generation, triggered after a qualifying Practice
+          // submission -- see handleSubmitQuiz below). The canonical
+          // engine remains the SOLE authority regardless of outcome:
+          // `v1Marker` above was ALREADY independently, freshly
+          // re-verified before this branch is ever reached -- a
+          // prepared activity supplies QUESTIONS only, never canonical
+          // authority, and is re-validated (contract compatibility +
+          // a fresh novelty re-check) before ever being trusted. On any
+          // miss/invalid/expired/still-preparing outcome, falls through
+          // to the SAME certified concurrent-chunk generator
+          // (generateCanonicalProveQuestions, CANON-R6-PERF-R1) as the
+          // cold-cache path -- never a second, cheaper generator.
           (async () => {
-            const chunkStartedAt = Date.now();
-            const chunked = await generateConcurrentChunkedBatch(conceptIds[0], validated.studentId, validated.subjectId, {
-              count: perConceptCap,
+            const preparedContract: PreparedActivityContractSnapshot = {
+              canonicalActivityType: v1Marker!.canonicalActivityType,
+              itemCount: v1Marker!.itemCount,
+              difficulty: v1Marker!.difficulty,
+              independence: v1Marker!.independence,
+              supportLevel: v1Marker!.supportLevel,
+              minimumScorePercent: v1Marker!.minimumScorePercent,
+            };
+
+            const preparedLookupStartedAt = Date.now();
+            const prepared = await findActivePreparedActivity(validated.studentId, primaryConceptId!, 'PROVE').catch(() => null);
+            preparedLookupMs = Date.now() - preparedLookupStartedAt;
+
+            if (prepared?.status === 'READY') {
+              const preparedValidationStartedAt = Date.now();
+              const revalidation = await revalidatePreparedActivity(prepared, preparedContract).catch(
+                () => ({ valid: false, reason: 'NOVELTY_STALE' as const }),
+              );
+              preparedValidationMs = Date.now() - preparedValidationStartedAt;
+              if (revalidation.valid) {
+                const consumeStartedAt = Date.now();
+                // The real quizId isn't minted until storeQuiz runs
+                // below, well after this ternary resolves -- consume
+                // against a provisional id so the atomic UPDATE can
+                // still happen HERE (at the moment of use, closing the
+                // race window as tightly as possible); the real quizId
+                // is reconciled onto the row right after storeQuiz.
+                preparedConsumptionCandidateId = prepared.id;
+                const consumed = await consumePreparedActivity(prepared.id, `pending-${parentOperationId}`).catch(() => null);
+                sessionCreationMs = Date.now() - consumeStartedAt;
+                if (consumed) {
+                  preparedCacheStatus = 'HIT';
+                  preparedActivityFingerprintCount = prepared.priorPracticeFingerprintBasis?.count ?? null;
+                  return [consumed];
+                }
+                // Lost the atomic race (another tab/request consumed it
+                // first) -- fall through to cold generation, never
+                // double-serve the same prepared content.
+                preparedConsumptionCandidateId = null;
+              } else {
+                await invalidatePreparedActivity(prepared.id, revalidation.reason ?? 'INCOMPATIBLE_CONTRACT').catch(() => {});
+                preparedCacheStatus =
+                  revalidation.reason === 'EXPIRED' ? 'EXPIRED' : revalidation.reason === 'NOVELTY_STALE' ? 'INVALID' : 'INVALID';
+              }
+            } else if (prepared?.status === 'PREPARING') {
+              preparedCacheStatus = 'PREPARING';
+            } else {
+              preparedCacheStatus = 'MISS';
+            }
+
+            // CANON-R6-PERF-R1 -- cold-cache path: the SAME certified
+            // concurrent-chunk generator, never a cheaper one.
+            // `v1EffectiveDifficulty` is always defined here (the
+            // earlier `v1Marker` guard already rejected any
+            // canonical_prove request without one) -- the `??
+            // validated.difficulty ?? resolvedDifficulty?.level ?? 3`
+            // fallback is purely defensive, matching every other call
+            // site's own style (Part 9: client difficulty stays irrelevant).
+            const proveGen = await generateCanonicalProveQuestions({
+              conceptId: conceptIds[0],
+              studentId: validated.studentId,
+              subjectId: validated.subjectId,
+              targetCount: perConceptCap,
               difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
-              types: ALL_QUESTION_TYPES,
               guidance: config.guidance,
               language,
               visualAidRate: config.visualAidRate,
@@ -828,12 +897,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
               quizMode: validated.quizMode,
               parentOperationId,
             });
-            generationConcurrentMs = Date.now() - chunkStartedAt;
-            chunkPlan = chunked.chunkPlan;
-            generationInvocations.push(
-              ...chunked.chunkDiagnostics.map((diag, chunkIndex) => ({ invocationType: 'CHUNK' as const, chunkIndex, ...diag })),
-            );
-            return [chunked.accepted];
+            proveGenerationResult = proveGen;
+            return [proveGen.questions];
           })()
         : Promise.all(
             // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate --
@@ -895,109 +960,47 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     let questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
 
     // CANON-R6R1 Part 1/2/6 -- MINIMUM (exact-duplicate-only) novelty
-    // enforcement for v1 Prove, additive and scoped to `canonical_prove`
-    // ONLY (Part 12/13: topic_practice/quick_check generation is
-    // completely untouched by this block). A Prove question must never
-    // be an exact repeat of a question the student already saw in a
-    // prior v1 Practice attempt for this same concept, nor a repeat
-    // within the Prove batch itself. Deliberately NOT semantic novelty
-    // -- see src/lib/lx/exact-duplicate-novelty.ts's own doc comment.
+    // enforcement for v1 Prove, scoped to `canonical_prove` ONLY (Part
+    // 12/13: topic_practice/quick_check generation is completely
+    // untouched). Deliberately NOT semantic novelty -- see
+    // src/lib/lx/exact-duplicate-novelty.ts's own doc comment.
     //
-    // Runs BEFORE the pre-existing "short of maxQuestions" choke point
-    // just below, so it gets that guard's fail-closed behavior for
-    // free: if filtering ever leaves fewer than `maxQuestions` novel
-    // questions after the bounded refill budget is exhausted, the
-    // existing guard already refuses the whole request with its own
-    // Prove-specific closed reason code before storeQuiz is ever called
-    // -- Part 11's "no session should have been persisted as valid
-    // Prove" is satisfied structurally, with no separate check needed.
+    // CANON-R6-PERF-R2 -- on the CACHE-HIT path, novelty was already
+    // fully verified by `revalidatePreparedActivity` (a fresh re-check
+    // against CURRENT prior-Practice fingerprints, Part 8) before the
+    // prepared activity was ever consumed above -- there is nothing
+    // left to filter here. On the COLD-GENERATION path (CANON-R6-PERF-R1),
+    // `generateCanonicalProveQuestions` already ran the full concurrent-
+    // chunk -> novelty-filter -> at-most-one-aggregate-recovery pipeline
+    // itself; this block only copies its diagnostics into this route's
+    // own observability state (never re-filters, never re-generates).
     let noveltyDiagnostics: NonNullable<QuizSessionV1Marker['novelty']> | null = null;
     if (validated.quizMode === 'canonical_prove') {
-      const priorHistoryStartedAt = Date.now();
-      const priorFingerprints = await loadPriorPracticeQuestionFingerprints(validated.studentId, primaryConceptId!);
-      priorHistoryMs = Date.now() - priorHistoryStartedAt;
-
-      // CANON-R6-PERF-R1 Part 6/7/12 -- replaces CANON-R6R1's own
-      // up-to-2-refill loop (each refill re-ran the FULL, expensive
-      // Luna->gate->Terra-SHORT-fallback->gate chain -- confirmed by
-      // CANON-R6-PERF-I1's own live evidence to be unnecessary: the
-      // observed 4-call/~64s trace was ONE monolithic invocation, never
-      // a refill). Now: filter the concurrent chunks' own aggregate
-      // ONCE against prior-Practice fingerprints, and -- ONLY if that
-      // leaves a genuine deficit -- run exactly ONE bounded aggregate
-      // recovery round sized for the true remaining need (Part 7's own
-      // preferred flow: aggregate -> filter -> deficit -> recovery ->
-      // filter recovery -> exactly `maxQuestions` or fail). Never
-      // recursive, never a second recovery round (Part 12).
-      const noveltyFilterStartedAt = Date.now();
-      const initialFiltered = filterExactDuplicates(questions, priorFingerprints);
-      noveltyFilterMs += Date.now() - noveltyFilterStartedAt;
-      let accepted = initialFiltered.accepted;
-      let excludeFingerprints = initialFiltered.fingerprints;
-      let rejectedExactDuplicateCount = initialFiltered.rejectedCount;
-      noveltyPasses.push({
-        noveltyPass: 'INITIAL',
-        candidateCount: questions.length,
-        acceptedCount: initialFiltered.accepted.length,
-        rejectedExactDuplicateCount: initialFiltered.rejectedCount,
-        remainingNeeded: Math.max(0, maxQuestions - accepted.length),
-      });
-
-      if (accepted.length < maxQuestions) {
-        // Part 6's own worked example ("accepted = 8, needed = 2") sizes
-        // the recovery to the exact deficit; this instead reuses
-        // generatePracticeQuestions's own PROVEN surplus formula
-        // (`deficit + 1`, capped at `MAX_QUESTIONS_PER_CHUNK * 2`) --
-        // that existing recovery step was itself tuned (RET-R2) against
-        // REAL observed Quality-Gate rejection rates, which showed an
-        // unpadded deficit request is materially more likely to still
-        // fall short, and Part 12 allows only ONE recovery round, so
-        // there is no second chance to compensate for under-requesting.
-        const deficit = maxQuestions - accepted.length;
-        const recoveryRequestedCount = Math.min(MAX_QUESTIONS_PER_CHUNK * 2, deficit + 1);
-        aggregateRecoveryUsed = true;
-        aggregateRecoveryRequestedCount = recoveryRequestedCount;
-        const recoveryStartedAt = Date.now();
-        const recovery = await generateBoundedRecoveryBatch(primaryConceptId!, validated.studentId, validated.subjectId, {
-          count: recoveryRequestedCount,
-          difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
-          types: ALL_QUESTION_TYPES,
-          guidance: config.guidance,
-          language,
-          visualAidRate: config.visualAidRate,
-          ibContext,
-          activityType: activityTypeForQuizMode(validated.quizMode),
-          quizMode: validated.quizMode,
-          parentOperationId,
-        });
-        aggregateRecoveryMs = Date.now() - recoveryStartedAt;
-        generationInvocations.push({ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, ...recovery.diagnostics });
-
-        // Recovery survivors MUST still clear novelty -- Part 7's own
-        // "filter recovery against the full accumulated fingerprint
-        // set" -- never appended unfiltered.
-        const recoveryFilterStartedAt = Date.now();
-        const recoveryFiltered = filterExactDuplicates(recovery.accepted, excludeFingerprints);
-        noveltyFilterMs += Date.now() - recoveryFilterStartedAt;
-        excludeFingerprints = recoveryFiltered.fingerprints;
-        rejectedExactDuplicateCount += recoveryFiltered.rejectedCount;
-        accepted = accepted.concat(recoveryFiltered.accepted);
-        noveltyPasses.push({
-          noveltyPass: 'RECOVERY',
-          candidateCount: recovery.accepted.length,
-          acceptedCount: recoveryFiltered.accepted.length,
-          rejectedExactDuplicateCount: recoveryFiltered.rejectedCount,
-          remainingNeeded: Math.max(0, maxQuestions - accepted.length),
-        });
+      if (preparedCacheStatus === 'HIT') {
+        noveltyDiagnostics = {
+          priorPracticeFingerprintCount: preparedActivityFingerprintCount ?? 0,
+          rejectedExactDuplicateCount: 0,
+          acceptedNovelQuestionCount: questions.length,
+          noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
+        };
+      } else if (proveGenerationResult !== null) {
+        const g: CanonicalProveGenerationResult = proveGenerationResult;
+        priorHistoryMs = g.priorHistoryMs;
+        noveltyFilterMs = g.noveltyFilterMs;
+        generationConcurrentMs = g.generationConcurrentMs;
+        chunkPlan = g.chunkPlan;
+        aggregateRecoveryUsed = g.aggregateRecoveryUsed;
+        aggregateRecoveryRequestedCount = g.aggregateRecoveryRequestedCount;
+        aggregateRecoveryMs = g.aggregateRecoveryMs;
+        generationInvocations.push(...g.invocations);
+        noveltyPasses.push(...g.noveltyPasses);
+        noveltyDiagnostics = {
+          priorPracticeFingerprintCount: g.priorPracticeFingerprintCount,
+          rejectedExactDuplicateCount: g.rejectedExactDuplicateCount,
+          acceptedNovelQuestionCount: questions.length,
+          noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
+        };
       }
-
-      questions = accepted.slice(0, maxQuestions);
-      noveltyDiagnostics = {
-        priorPracticeFingerprintCount: priorFingerprints.size,
-        rejectedExactDuplicateCount,
-        acceptedNovelQuestionCount: questions.length,
-        noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
-      };
     }
 
     // CANON-R6-PERF-I1 Part 8 -- the ONE place every canonical_prove
@@ -1056,6 +1059,26 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       });
     };
 
+    // CANON-R6-PERF-R2 Part 28 -- the cache-PATH timeline, emitted
+    // alongside (never instead of) the summary above, for EVERY
+    // canonical_prove request regardless of hit/miss/preparing/invalid,
+    // so cache effectiveness (hit rate, waste rate) is directly
+    // computable from these lines.
+    const emitCanonicalProveCacheSummary = () => {
+      if (validated.quizMode !== 'canonical_prove' || !preparedCacheStatus) return;
+      logCanonicalProveCacheSummary({
+        operationId: parentOperationId,
+        studentIdHash: hashStudentId(validated.studentId),
+        conceptId: primaryConceptId ?? 'unknown',
+        preparedCacheStatus,
+        canonicalAuthorizationMs,
+        preparedLookupMs,
+        preparedValidationMs,
+        sessionCreationMs,
+        totalReadyHitMs: preparedCacheStatus === 'HIT' ? Date.now() - requestStartedAt : null,
+      });
+    };
+
     // LX-9R6-R1 C2/C4: the ONE choke point every mode's result converges
     // on. Every generator now either publishes exactly its own required
     // count or `[]` -- but a multi-concept gated batch (cumulative_
@@ -1083,6 +1106,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         }));
       } catch { /* logging must never break the response */ }
       emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveCacheSummary();
       // CANON-R6 Part 5/29 -- a v1 Prove request may NEVER silently
       // administer fewer than the authorized exact-10 count; this
       // pre-existing universal guard already fails the whole request
@@ -1115,6 +1139,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         }));
       } catch { /* logging must never break the response */ }
       emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveCacheSummary();
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
@@ -1144,11 +1169,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     );
     persistenceMs = Date.now() - persistenceStartedAt;
 
+    // CANON-R6-PERF-R2 -- reconcile the just-consumed prepared
+    // activity's `consumed_by_quiz_id` onto the REAL quizId (the
+    // atomic consumption itself already happened above, before
+    // storeQuiz ever ran, using a provisional placeholder -- the real
+    // id wasn't minted yet). Best-effort: a failure here never affects
+    // the learner's quiz, which already exists regardless.
+    if (preparedConsumptionCandidateId) {
+      db.query(`UPDATE canonical_prepared_activity SET consumed_by_quiz_id = $2 WHERE id = $1`, [preparedConsumptionCandidateId, quizId]).catch(
+        (err) => console.error('[canonical-prepared-activity] consumed_by_quiz_id reconciliation failed:', err),
+      );
+    }
+
     if (validated.quizMode === 'diagnostic_check') {
       track(validated.studentId, 'diagnostic_check_started', { quizId, conceptId: primaryConceptId });
     }
 
     emitCanonicalProveSummary('SUCCESS', questions.length);
+    emitCanonicalProveCacheSummary();
 
     return NextResponse.json({
       success: true,
@@ -2043,6 +2081,52 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           canonicalRevision: fresh.decision.canonicalRevision,
         };
         canonicalResultsStatus = 'OK';
+
+        // CANON-R6-PERF-R2 Part 2 -- selective Prove pre-generation
+        // trigger. Fires AFTER this v1-qualifying submission's evidence
+        // was already written AND the fresh canonical decision (just
+        // computed above, the SOLE authority) confirms PROVE/EXECUTABLE.
+        // `after()` (Next.js's own supported mechanism for post-response
+        // background work, backed by Vercel's `waitUntil` in production
+        // -- no queue/job platform exists in this codebase, confirmed by
+        // audit) schedules the ENTIRE preparation pipeline to run once
+        // this response has already been sent -- the learner's own
+        // Practice Results response is never delayed by so much as one
+        // extra await. A background failure is caught entirely inside
+        // `prepareCanonicalProveActivity` itself (Part 14) and can never
+        // surface here or affect this response, which has already
+        // returned by the time it could.
+        if (fresh.decision.stage === 'PROVE' && fresh.decision.actionState === 'EXECUTABLE' && fresh.decision.activityContract) {
+          const contract = fresh.decision.activityContract;
+          const authorizedItemCount = resolveAuthorizedItemCount(contract.itemCount);
+          if (authorizedItemCount != null && contract.minimumScorePercent != null) {
+            const preparedContract: PreparedActivityContractSnapshot = {
+              canonicalActivityType: contract.activityType,
+              itemCount: { min: contract.itemCount!.min, max: contract.itemCount!.max, authorized: authorizedItemCount },
+              difficulty: { min: contract.difficulty.min, max: contract.difficulty.max, target: contract.difficulty.target },
+              independence: contract.independence,
+              supportLevel: contract.supportLevel,
+              minimumScorePercent: contract.minimumScorePercent,
+            };
+            after(() =>
+              prepareCanonicalProveActivity({
+                studentId: validated.studentId,
+                conceptId: quizSession.conceptId!,
+                subjectId: quizSession.subjectId,
+                pedagogicalPolicyVersion: fresh.decision.policyVersion,
+                canonicalRevision: fresh.decision.canonicalRevision,
+                contract: preparedContract,
+                language: quizSession.language,
+                // Reuses the SAME guidance string canonical_prove's own
+                // live generation uses (QUIZ_MODE_CONFIG) -- never a
+                // second, drifted copy.
+                guidance: QUIZ_MODE_CONFIG.canonical_prove.guidance,
+                visualAidRate: QUIZ_MODE_CONFIG.canonical_prove.visualAidRate,
+                ibContext: null,
+              }).catch((err) => console.error('[canon-r6-perf-r2] background Prove preparation failed:', err)),
+            );
+          }
+        }
       } catch (error) {
         if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
         canonicalResultsStatus = 'CANONICAL_RESULTS_UNAVAILABLE';

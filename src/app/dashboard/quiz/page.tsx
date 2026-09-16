@@ -7,6 +7,7 @@ import Link from 'next/link';
 import LearningSupportStatus, { type LearningSupportContext } from '../LearningSupportStatus';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
+import ProveFocusLoading from '@/components/ProveFocusLoading';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
 import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-generation.service';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
@@ -1281,7 +1282,16 @@ function QuizPageContent() {
   // LX-4K: the canonical flow never shows the configurator -- it
   // auto-starts (effect above). While that resolves, show a calm
   // loading state, not the form.
+  // CANON-R6-PERF-R2 Part 15-27 -- canonical_prove ONLY gets the
+  // dedicated focused preparation experience (a cache HIT is typically
+  // fast enough that ProveFocusLoading's own 0-800ms threshold renders
+  // nothing at all; a cold miss gets the full calm, academic waiting
+  // state instead of a bare "generating..." spinner). Every other
+  // canonical mode (topic_practice, etc.) is completely unaffected.
   if (phase === 'setup' && isCanonicalFlow) {
+    if (quizMode === 'canonical_prove') {
+      return <ProveFocusLoading at={at} />;
+    }
     return <div className="card empty-state">{t['quiz.generating']}</div>;
   }
 

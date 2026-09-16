@@ -170,7 +170,11 @@ describe('4/6 -- GENERATION MODE: canonical_prove is a distinct, server-only mod
     expect(canonicalProveIdx).toBeGreaterThan(quickCheckIdx);
     expect(genericMultiConceptIdx).toBeGreaterThan(canonicalProveIdx);
     const canonicalProveBlock = ROUTE_SRC.slice(canonicalProveIdx, genericMultiConceptIdx);
-    expect(canonicalProveBlock).toMatch(/generateConcurrentChunkedBatch\(/);
+    // CANON-R6-PERF-R2: canonical_prove's own branch calls the shared
+    // certified generator (which internally uses
+    // generateConcurrentChunkedBatch, CANON-R6-PERF-R1) -- never the
+    // generic multi-concept branch's own generateGatedQuestionBatch.
+    expect(canonicalProveBlock).toMatch(/generateCanonicalProveQuestions\(/);
     expect(canonicalProveBlock).not.toMatch(/generateGatedQuestionBatch\(/);
   });
 

@@ -25,6 +25,11 @@ import { join } from 'path';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
 const OBSERVABILITY_SRC = read('src/lib/lx/canonical-prove-generation-observability.ts');
+// CANON-R6-PERF-R2: the chunk/recovery timing + diagnostics-tagging
+// logic this file originally audited inside ROUTE_SRC was extracted
+// into this shared service so the live path and background
+// pre-generation path call the identical certified pipeline.
+const GENERATION_SERVICE_SRC = read('src/services/canonical-prove-generation.service.ts');
 
 // ============================================================
 // Whole-module mocks -- same pattern as lx9r8-r1-quality-gate-observability.test.ts
@@ -356,22 +361,30 @@ describe('route wiring -- request correlation, per-phase timers, single summary 
     expect(slice).toMatch(/parentOperationId,/);
   });
 
-  it('2. all required route timers exist: canonicalAuthorizationMs, priorHistoryMs, generationConcurrentMs (CANON-R6-PERF-R1, superseding generationPrimaryMs), noveltyFilterMs, aggregateRecoveryMs (superseding the old refill timers), persistenceMs, totalMs', () => {
+  it('2. all required route timers exist: canonicalAuthorizationMs, priorHistoryMs/noveltyFilterMs/generationConcurrentMs/aggregateRecoveryMs (computed inside the shared generation service and copied into route-local state), persistenceMs, totalMs', () => {
     expect(ROUTE_SRC).toMatch(/canonicalAuthorizationMs = Date\.now\(\) - canonicalAuthorizationStartedAt;/);
-    expect(ROUTE_SRC).toMatch(/priorHistoryMs = Date\.now\(\) - priorHistoryStartedAt;/);
-    expect(ROUTE_SRC).toMatch(/noveltyFilterMs \+= Date\.now\(\) - noveltyFilterStartedAt;/);
-    expect(ROUTE_SRC).toMatch(/generationConcurrentMs = Date\.now\(\) - chunkStartedAt;/);
-    expect(ROUTE_SRC).toMatch(/aggregateRecoveryMs = Date\.now\(\) - recoveryStartedAt;/);
     expect(ROUTE_SRC).toMatch(/persistenceMs = Date\.now\(\) - persistenceStartedAt;/);
     expect(ROUTE_SRC).toMatch(/totalMs: Date\.now\(\) - requestStartedAt,/);
     // generationPrimaryMs is kept on the summary type for schema
     // continuity but is always emitted null now -- no PRIMARY invocation exists.
     expect(ROUTE_SRC).toMatch(/generationPrimaryMs: null, \/\/ CANON-R6-PERF-R1/);
+    // the actual computation of these four timers now lives inside the
+    // shared generation service (CANON-R6-PERF-R2); route.ts only
+    // copies the returned values into its own observability state.
+    expect(GENERATION_SERVICE_SRC).toMatch(/priorHistoryMs = Date\.now\(\) - priorHistoryStartedAt;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/noveltyFilterMs \+= Date\.now\(\) - initialFilterStartedAt;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/const generationConcurrentMs = Date\.now\(\) - chunkStartedAt;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/aggregateRecoveryMs = Date\.now\(\) - recoveryStartedAt;/);
+    expect(ROUTE_SRC).toMatch(/priorHistoryMs = g\.priorHistoryMs;/);
+    expect(ROUTE_SRC).toMatch(/noveltyFilterMs = g\.noveltyFilterMs;/);
+    expect(ROUTE_SRC).toMatch(/generationConcurrentMs = g\.generationConcurrentMs;/);
+    expect(ROUTE_SRC).toMatch(/aggregateRecoveryMs = g\.aggregateRecoveryMs;/);
   });
 
-  it('3/4. CANON-R6-PERF-R1: each concurrent chunk AND the at-most-one aggregate recovery round push a diagnostics record tagged CHUNK (with chunkIndex) / AGGREGATE_RECOVERY', () => {
-    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\s*\n\s*\.\.\.chunked\.chunkDiagnostics\.map\(\(diag, chunkIndex\) => \(\{ invocationType: 'CHUNK' as const, chunkIndex, \.\.\.diag \}\)\),\s*\n\s*\);/);
-    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\{ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, \.\.\.recovery\.diagnostics \}\);/);
+  it('3/4. CANON-R6-PERF-R1/R2: each concurrent chunk AND the at-most-one aggregate recovery round push a diagnostics record tagged CHUNK (with chunkIndex) / AGGREGATE_RECOVERY, inside the shared generation service -- route.ts copies the resulting `invocations` array verbatim', () => {
+    expect(GENERATION_SERVICE_SRC).toMatch(/invocations\.push\(\.\.\.chunked\.chunkDiagnostics\.map\(\(diag, chunkIndex\) => \(\{ invocationType: 'CHUNK' as const, chunkIndex, \.\.\.diag \}\)\)\);/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/invocations\.push\(\{ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, \.\.\.recovery\.diagnostics \}\);/);
+    expect(ROUTE_SRC).toMatch(/generationInvocations\.push\(\.\.\.g\.invocations\);/);
   });
 
   it('2. legacy quick_check/topic_practice/review/retention_check/cumulative_assessment/exam_simulation/diagnostic_check never reference onInvocationDiagnostics or the observability module -- canonical_prove has its OWN dedicated generation branch now, not a conditional spread inside a shared branch', () => {

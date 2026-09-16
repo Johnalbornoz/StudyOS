@@ -144,3 +144,31 @@ export function logCanonicalProveGenerationSummary(summary: CanonicalProveGenera
     console.log('CANONICAL_PROVE_GENERATION_SUMMARY', JSON.stringify(summary));
   } catch { /* logging must never break the response */ }
 }
+
+/**
+ * CANON-R6-PERF-R2 Part 28 -- the cache-PATH timeline, distinct from
+ * (and emitted ALONGSIDE, never instead of) `CANONICAL_PROVE_GENERATION_SUMMARY`,
+ * which continues to describe cold-cache generation exactly as before.
+ * Emitted for EVERY canonical_prove request, hit or miss, so cache
+ * effectiveness (hit rate, waste rate -- Part 30) can be computed
+ * directly from these lines without cross-referencing the generation
+ * summary.
+ */
+export interface CanonicalProveCacheSummary {
+  operationId: string;
+  studentIdHash: string;
+  conceptId: string;
+  preparedCacheStatus: 'HIT' | 'MISS' | 'PREPARING' | 'INVALID' | 'EXPIRED' | 'FAILED';
+  canonicalAuthorizationMs: number | null;
+  preparedLookupMs: number | null;
+  preparedValidationMs: number | null;
+  sessionCreationMs: number | null;
+  totalReadyHitMs: number | null;
+}
+
+export function logCanonicalProveCacheSummary(summary: CanonicalProveCacheSummary): void {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('CANONICAL_PROVE_CACHE_SUMMARY', JSON.stringify(summary));
+  } catch { /* logging must never break the response */ }
+}

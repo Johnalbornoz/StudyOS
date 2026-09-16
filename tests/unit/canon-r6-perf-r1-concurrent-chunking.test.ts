@@ -27,6 +27,10 @@ import { join } from 'path';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
 const GATED_SRC = read('src/services/gated-question-generation.service.ts');
+// CANON-R6-PERF-R2: the orchestration (chunk generation call site,
+// novelty filtering, recovery sizing) this file originally audited
+// inside ROUTE_SRC was extracted into this shared service.
+const GENERATION_SERVICE_SRC = read('src/services/canonical-prove-generation.service.ts');
 
 // ============================================================
 // Whole-module mocks -- same pattern as lx9r8-r1-quality-gate-observability.test.ts
@@ -138,11 +142,12 @@ describe('4 -- every chunk uses the SAME canonical difficulty target, never inde
     expect(difficulties.every((d) => d === 3)).toBe(true);
   });
 
-  it('route.ts passes v1EffectiveDifficulty (never a per-chunk-recomputed value) to generateConcurrentChunkedBatch', () => {
-    const idx = ROUTE_SRC.indexOf('const chunked = await generateConcurrentChunkedBatch(');
+  it('route.ts passes v1EffectiveDifficulty (never a per-chunk-recomputed value) into generateCanonicalProveQuestions, which forwards it unchanged to generateConcurrentChunkedBatch', () => {
+    const idx = ROUTE_SRC.indexOf('const proveGen = await generateCanonicalProveQuestions({');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    const slice = ROUTE_SRC.slice(idx, idx + 400);
     expect(slice).toMatch(/difficulty: v1EffectiveDifficulty \?\? validated\.difficulty \?\? resolvedDifficulty\?\.level \?\? 3,/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/difficulty: params\.difficulty,\s*\n\s*types: ALL_QUESTION_TYPES,/);
   });
 });
 
@@ -220,20 +225,26 @@ describe('13 -- recovery survivors that duplicate an already-accepted (or prior-
 // 5/8/9/10/19/22 -- route-level wiring (source audit)
 // ============================================================
 describe('5 -- prior Practice history is loaded ONCE per request, never per chunk', () => {
-  it('loadPriorPracticeQuestionFingerprints appears exactly once inside the canonical_prove novelty block', () => {
-    const noveltyIdx = ROUTE_SRC.indexOf("if (validated.quizMode === 'canonical_prove') {\n      const priorHistoryStartedAt");
-    const chokePointIdx = ROUTE_SRC.indexOf('if (questions.length > 0 && questions.length < maxQuestions) {');
-    const block = ROUTE_SRC.slice(noveltyIdx, chokePointIdx);
-    const occurrences = (block.match(/loadPriorPracticeQuestionFingerprints\(/g) ?? []).length;
+  it('loadPriorPracticeQuestionFingerprints appears exactly once inside the shared generation service (CANON-R6-PERF-R2 moved the whole novelty+recovery orchestration out of route.ts)', () => {
+    const occurrences = (GENERATION_SERVICE_SRC.match(/loadPriorPracticeQuestionFingerprints\(/g) ?? []).length;
     expect(occurrences).toBe(1);
+    // called AFTER the concurrent chunk round, not once per chunk --
+    // the chunk generation itself never references it.
+    const chunkIdx = GENERATION_SERVICE_SRC.indexOf('const chunked = await generateConcurrentChunkedBatch(');
+    const loadIdx = GENERATION_SERVICE_SRC.indexOf('loadPriorPracticeQuestionFingerprints(');
+    expect(loadIdx).toBeGreaterThan(chunkIdx);
+  });
+
+  it('route.ts itself no longer references loadPriorPracticeQuestionFingerprints directly -- it delegates entirely to the shared service (cold path) or to revalidatePreparedActivity (cache-hit path, CANON-R6-PERF-R2)', () => {
+    expect(ROUTE_SRC).not.toMatch(/loadPriorPracticeQuestionFingerprints/);
   });
 });
 
 describe('8 -- accepted >= target after the initial novelty filter skips the aggregate recovery entirely', () => {
-  it('the recovery block is gated on `if (accepted.length < maxQuestions)` -- structurally unreachable when the initial pass already met the target', () => {
-    const idx = ROUTE_SRC.indexOf('if (accepted.length < maxQuestions) {');
+  it('the recovery block is gated on `if (accepted.length < params.targetCount)` -- structurally unreachable when the initial pass already met the target', () => {
+    const idx = GENERATION_SERVICE_SRC.indexOf('if (accepted.length < params.targetCount) {');
     expect(idx).toBeGreaterThan(-1);
-    const recoveryCallIdx = ROUTE_SRC.indexOf('generateBoundedRecoveryBatch(', idx);
+    const recoveryCallIdx = GENERATION_SERVICE_SRC.indexOf('generateBoundedRecoveryBatch(', idx);
     expect(recoveryCallIdx).toBeGreaterThan(idx);
     expect(recoveryCallIdx).toBeLessThan(idx + 2000);
   });
@@ -258,8 +269,8 @@ describe('9/10 -- recovery sizing formula (deliberately reuses generatePracticeQ
     expect(recoveryRequestedCount).toBe(MAX_QUESTIONS_PER_CHUNK * 2);
   });
 
-  it('source audit: the route\'s own formula matches exactly', () => {
-    expect(ROUTE_SRC).toMatch(/const recoveryRequestedCount = Math\.min\(MAX_QUESTIONS_PER_CHUNK \* 2, deficit \+ 1\);/);
+  it('source audit: the shared generation service\'s own formula matches exactly (CANON-R6-PERF-R2 -- extracted from route.ts, used identically by the live and background pre-generation paths)', () => {
+    expect(GENERATION_SERVICE_SRC).toMatch(/const recoveryRequestedCount = Math\.min\(MAX_QUESTIONS_PER_CHUNK \* 2, deficit \+ 1\);/);
   });
 });
 
