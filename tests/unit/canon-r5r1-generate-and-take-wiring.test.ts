@@ -61,10 +61,13 @@ describe('Part 2/6/20 -- v1Launch is an intent signal only, independently re-ver
     expect(slice).not.toMatch(/validated\.(pedagogicalPolicyVersion|canonicalStage|canonicalRevision)/);
   });
 
-  it('storeQuiz is called with the computed v1Marker as its final argument', () => {
+  it('storeQuiz is called with the computed v1Marker (CANON-R6R1: merged with novelty diagnostics as v1MarkerToPersist) as its final argument', () => {
     const idx = ROUTE_SRC.indexOf('const quizId = await storeQuiz(');
     const slice = ROUTE_SRC.slice(idx, idx + 250);
-    expect(slice).toMatch(/v1Marker\s*\n?\s*\);/);
+    expect(slice).toMatch(/v1MarkerToPersist\s*\n?\s*\);/);
+    // the merged object is still built directly from v1Marker (spread),
+    // never a second, independent construction.
+    expect(ROUTE_SRC).toMatch(/v1MarkerToPersist: QuizSessionV1Marker \| null = v1Marker\s*\n\s*\? \{ \.\.\.v1Marker, novelty: noveltyDiagnostics \}\s*\n\s*: null;/);
   });
 });
 

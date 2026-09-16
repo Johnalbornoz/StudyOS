@@ -9,6 +9,7 @@
 import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
+import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 
 export type QuizMode =
   | 'topic_practice'
@@ -92,6 +93,19 @@ export interface QuizSessionV1Marker {
   independence: boolean;
   supportLevel: 'ASSISTED' | 'NONE';
   minimumScorePercent: number;
+  /**
+   * CANON-R6R1 -- additive; present ONLY for a `canonical_prove` session
+   * (`null`/omitted for Practice/Reinforce, and for any pre-R6R1 Prove
+   * row that predates this field). Diagnostic record of the exact-
+   * duplicate novelty filtering that ran at generation time -- never
+   * full prior-question text, only counts.
+   */
+  novelty?: {
+    priorPracticeFingerprintCount: number;
+    rejectedExactDuplicateCount: number;
+    acceptedNovelQuestionCount: number;
+    noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1';
+  } | null;
 }
 
 export interface QuizSession {
@@ -163,6 +177,9 @@ export async function storeQuiz(
           independence: v1Marker.independence,
           supportLevel: v1Marker.supportLevel,
           minimumScorePercent: v1Marker.minimumScorePercent,
+          // CANON-R6R1 -- additive; `undefined` (omitted from the JSON)
+          // for every non-Prove marker, exactly as before this phase.
+          novelty: v1Marker.novelty ?? undefined,
         })
       : null;
 
@@ -202,6 +219,52 @@ export async function storeQuiz(
     console.error('Error storing quiz:', error);
     throw error;
   }
+}
+
+/**
+ * CANON-R6R1 Part 2/3 -- the REAL, previously-administered v1 Practice
+ * question text for this exact (student, concept) pair, as
+ * exact-novelty fingerprints. This is the strongest real source already
+ * available: `quiz_sessions.questions` holds the actual generated/
+ * administered question payload (not a re-derivation from
+ * `learning_evidence` score rows, which never carry question text).
+ *
+ * Part 3 -- rather than isolating only the single Practice attempt that
+ * currently satisfies the canonical PRACTICE requirement (the schema
+ * has no such marker on a `quiz_sessions` row), this conservatively
+ * excludes EVERY prior v1 `topic_practice` question for this
+ * (student, concept) pair -- excluding more than strictly necessary is
+ * safer than excluding too little, and the spec explicitly permits this
+ * fallback. `pedagogical_policy_version IS NOT NULL` restricts this to
+ * v1-authorized Practice sessions only (never legacy, pre-v1 rows,
+ * which carry no comparable authorization). Unrelated concepts are
+ * never touched: both the SQL filter and the per-question
+ * `q.conceptId === conceptId` check below scope this to the ONE
+ * concept being Proved.
+ */
+export async function loadPriorPracticeQuestionFingerprints(studentId: string, conceptId: string): Promise<Set<string>> {
+  const result = await db.query(
+    `
+    SELECT questions
+    FROM quiz_sessions
+    WHERE student_id = $1
+      AND quiz_mode = 'topic_practice'
+      AND pedagogical_policy_version IS NOT NULL
+      AND $2::uuid = ANY(concept_ids)
+    `,
+    [studentId, conceptId]
+  );
+
+  const fingerprints = new Set<string>();
+  for (const row of result.rows) {
+    const questions: GeneratedQuestion[] = row.questions || [];
+    for (const question of questions) {
+      if (question.conceptId === conceptId && typeof question.question === 'string') {
+        fingerprints.add(fingerprintQuestion(question));
+      }
+    }
+  }
+  return fingerprints;
 }
 
 /**
@@ -338,6 +401,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
         independence: contract.independence ?? false,
         supportLevel: contract.supportLevel ?? 'ASSISTED',
         minimumScorePercent: contract.minimumScorePercent ?? 80,
+        novelty: contract.novelty ?? null,
       };
     }
 

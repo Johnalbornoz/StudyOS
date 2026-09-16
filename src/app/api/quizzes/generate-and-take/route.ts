@@ -64,8 +64,9 @@ import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
-import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
-import { storeQuiz, getQuizSession, completeQuiz, QuizMode } from '@/services/quiz-persistence.service';
+import { activityTypeForQuizMode, evidenceModeForQuizMode, loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
+import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import { shuffleArray, toClientQuestion } from '@/lib/quiz/client-question';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
@@ -236,8 +237,15 @@ const QUIZ_MODE_CONFIG: Record<
   // to reflect the higher item count and higher stakes; no AI provider,
   // routing, or Quality Gate code was touched.
   canonical_prove: {
+    // CANON-R6R1 Part 9 -- the trailing sentence is a lightweight,
+    // isolated generation-guidance nudge only (reduces churn/retries);
+    // it is NEVER the enforcement mechanism -- exact-duplicate exclusion
+    // is a deterministic post-generation server check
+    // (`filterExactDuplicates` in generateAndPersistNovelProveQuestions
+    // below), which runs regardless of whether Claude actually honored
+    // this text.
     guidance:
-      'This is an independent mastery check -- the student demonstrates they can do this ALONE, with no help. Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess, the same rigor as a diagnostic check but across a full independent set. Keep each question tightly focused on the core idea of this concept.',
+      'This is an independent mastery check -- the student demonstrates they can do this ALONE, with no help. Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess, the same rigor as a diagnostic check but across a full independent set. Keep each question tightly focused on the core idea of this concept. Write NEW questions -- do not repeat a question the student has already been asked while practicing this concept.',
     defaultMax: 10,
     visualAidRate: 0,
     evidenceSource: 'SOLO_VERIFICATION',
@@ -804,7 +812,73 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       }
     });
 
-    const questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
+    let questions = shuffleArray(questionArrays.flat()).slice(0, maxQuestions);
+
+    // CANON-R6R1 Part 1/2/6 -- MINIMUM (exact-duplicate-only) novelty
+    // enforcement for v1 Prove, additive and scoped to `canonical_prove`
+    // ONLY (Part 12/13: topic_practice/quick_check generation is
+    // completely untouched by this block). A Prove question must never
+    // be an exact repeat of a question the student already saw in a
+    // prior v1 Practice attempt for this same concept, nor a repeat
+    // within the Prove batch itself. Deliberately NOT semantic novelty
+    // -- see src/lib/lx/exact-duplicate-novelty.ts's own doc comment.
+    //
+    // Runs BEFORE the pre-existing "short of maxQuestions" choke point
+    // just below, so it gets that guard's fail-closed behavior for
+    // free: if filtering ever leaves fewer than `maxQuestions` novel
+    // questions after the bounded refill budget is exhausted, the
+    // existing guard already refuses the whole request with its own
+    // Prove-specific closed reason code before storeQuiz is ever called
+    // -- Part 11's "no session should have been persisted as valid
+    // Prove" is satisfied structurally, with no separate check needed.
+    let noveltyDiagnostics: NonNullable<QuizSessionV1Marker['novelty']> | null = null;
+    if (validated.quizMode === 'canonical_prove') {
+      const priorFingerprints = await loadPriorPracticeQuestionFingerprints(validated.studentId, primaryConceptId!);
+      let excludeFingerprints: ReadonlySet<string> = priorFingerprints;
+      let accepted: GeneratedQuestion[] = [];
+      let rejectedExactDuplicateCount = 0;
+      let candidates: GeneratedQuestion[] = questions;
+
+      // Part 8 -- a BOUNDED retry budget: the initial batch plus at most
+      // 2 additional refill generations (3 total generateGatedQuestionBatch
+      // calls for this concept). Never an unbounded loop.
+      const MAX_NOVELTY_REFILL_ATTEMPTS = 2;
+      for (let attempt = 0; attempt <= MAX_NOVELTY_REFILL_ATTEMPTS; attempt++) {
+        const filtered = filterExactDuplicates(candidates, excludeFingerprints);
+        accepted = accepted.concat(filtered.accepted);
+        rejectedExactDuplicateCount += filtered.rejectedCount;
+        excludeFingerprints = filtered.fingerprints;
+
+        if (accepted.length >= maxQuestions || attempt === MAX_NOVELTY_REFILL_ATTEMPTS) break;
+
+        // Refill: ask the SAME gated generator (Part 6 step 6/9 --
+        // "reuse existing retry/fallback mechanics") for exactly the
+        // still-missing slots, then re-filter against prior Practice
+        // fingerprints AND every Prove question already accepted so far
+        // (Part 6 step 7 -- `excludeFingerprints` carries both forward).
+        const needed = maxQuestions - accepted.length;
+        candidates = await generateGatedQuestionBatch(primaryConceptId!, validated.studentId, validated.subjectId, {
+          count: needed,
+          difficulty: v1EffectiveDifficulty!,
+          types: ALL_QUESTION_TYPES,
+          guidance: config.guidance,
+          language,
+          visualAidRate: config.visualAidRate,
+          ibContext,
+          activityType: activityTypeForQuizMode(validated.quizMode),
+          quizMode: validated.quizMode,
+          parentOperationId,
+        });
+      }
+
+      questions = accepted.slice(0, maxQuestions);
+      noveltyDiagnostics = {
+        priorPracticeFingerprintCount: priorFingerprints.size,
+        rejectedExactDuplicateCount,
+        acceptedNovelQuestionCount: questions.length,
+        noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
+      };
+    }
 
     // LX-9R6-R1 C2/C4: the ONE choke point every mode's result converges
     // on. Every generator now either publishes exactly its own required
@@ -871,6 +945,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       );
     }
 
+    // CANON-R6R1 Part 10 -- novelty diagnostics are attached to a NEW
+    // object rather than mutating `v1Marker` itself, so Practice's own
+    // marker (built once, above, before generation ever ran) is never
+    // touched; `noveltyDiagnostics` is non-null only for canonical_prove.
+    const v1MarkerToPersist: QuizSessionV1Marker | null = v1Marker
+      ? { ...v1Marker, novelty: noveltyDiagnostics }
+      : null;
+
     const quizId = await storeQuiz(
       validated.studentId,
       primaryConceptId,
@@ -879,7 +961,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       language,
       validated.quizMode,
       conceptIds,
-      v1Marker
+      v1MarkerToPersist
     );
 
     if (validated.quizMode === 'diagnostic_check') {

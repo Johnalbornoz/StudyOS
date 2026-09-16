@@ -224,6 +224,10 @@ export type MessageKey =
   // CANON-R6 Part 21 -- Results UI, canonical-decision-driven next step
   // (v1 attempts only; legacy Results copy above is unchanged).
   | 'quiz.canonicalNextStepTitle' | 'quiz.canonicalNextPractice' | 'quiz.canonicalNextProve' | 'quiz.canonicalNextConsolidated' | 'quiz.canonicalContractViolation'
+  // CANON-R6R1 Part 17 -- evidence write succeeded but the canonical
+  // re-fetch failed: a neutral "next step unavailable" message, never
+  // legacy progression copy, never an invented stage.
+  | 'quiz.canonicalResultsUnavailable'
   | 'quiz.verificationTitle' | 'quiz.verificationExplain' | 'quiz.verificationSubmit'
   | 'quiz.verificationConfirmed' | 'quiz.verificationContradicted' | 'quiz.verificationInconclusive'
   | 'quiz.verificationNotPending'
@@ -1126,6 +1130,7 @@ const es: Messages = {
   'quiz.canonicalNextProve': 'Siguiente: demuéstralo por tu cuenta (Prove).',
   'quiz.canonicalNextConsolidated': 'Has consolidado este concepto.',
   'quiz.canonicalContractViolation': 'Este intento no se pudo validar como una comprobación independiente completa. Tu progreso no se perdió; puedes intentarlo de nuevo.',
+  'quiz.canonicalResultsUnavailable': 'Tu resultado se guardó. Tu siguiente paso no está disponible en este momento -- vuelve a consultarlo en un momento.',
   'quiz.modeTopicPracticeDesc': 'Práctica normal sobre este concepto.',
   'quiz.modeCumulativeDesc': 'Preguntas que cubren varios conceptos de la materia, priorizando los más débiles.',
   'quiz.modeExamSimDesc': 'Simula el examen real: cubre los temas de tu próximo examen (o toda la materia si no tienes uno agendado) con mayor variedad y exigencia.',
@@ -2228,6 +2233,7 @@ const en: Messages = {
   'quiz.canonicalNextProve': "Next: prove it on your own.",
   'quiz.canonicalNextConsolidated': "You've consolidated this concept.",
   'quiz.canonicalContractViolation': "This attempt couldn't be validated as a complete independent check. Your progress wasn't lost -- you can try again.",
+  'quiz.canonicalResultsUnavailable': "Your result was saved. Your next step isn't available right now -- check back shortly.",
   'quiz.modeTopicPracticeDesc': 'Regular practice on this concept.',
   'quiz.modeCumulativeDesc': 'Questions spanning several concepts in this subject, weighted toward the weaker ones.',
   'quiz.modeExamSimDesc': "Simulates the real exam: covers your next exam's topics (or the whole subject if none is scheduled) with more variety and rigor.",
@@ -3330,6 +3336,7 @@ const de: Messages = {
   'quiz.canonicalNextProve': 'Weiter: Beweise es eigenständig.',
   'quiz.canonicalNextConsolidated': 'Du hast dieses Konzept gefestigt.',
   'quiz.canonicalContractViolation': 'Dieser Versuch konnte nicht als vollständige eigenständige Prüfung bestätigt werden. Dein Fortschritt ist nicht verloren -- du kannst es erneut versuchen.',
+  'quiz.canonicalResultsUnavailable': 'Dein Ergebnis wurde gespeichert. Dein nächster Schritt ist gerade nicht verfügbar -- schau gleich noch einmal vorbei.',
   'quiz.modeTopicPracticeDesc': 'Normales Üben zu diesem Konzept.',
   'quiz.modeCumulativeDesc': 'Fragen zu mehreren Konzepten des Fachs, mit Schwerpunkt auf den schwächeren.',
   'quiz.modeExamSimDesc': 'Simuliert die echte Prüfung: deckt die Themen deiner nächsten Prüfung ab (oder das ganze Fach, falls keine geplant ist) mit mehr Vielfalt und Anspruch.',
@@ -4432,6 +4439,7 @@ const fr: Messages = {
   'quiz.canonicalNextProve': 'Suivant : prouvez-le par vous-même.',
   'quiz.canonicalNextConsolidated': 'Vous avez consolidé ce concept.',
   'quiz.canonicalContractViolation': "Cette tentative n'a pas pu être validée comme une vérification indépendante complète. Votre progression n'est pas perdue -- vous pouvez réessayer.",
+  'quiz.canonicalResultsUnavailable': "Votre résultat a été enregistré. Votre prochaine étape n'est pas disponible pour le moment -- revenez dans un instant.",
   'quiz.modeTopicPracticeDesc': 'Entraînement normal sur ce concept.',
   'quiz.modeCumulativeDesc': 'Questions couvrant plusieurs concepts de la matière, en priorisant les plus faibles.',
   'quiz.modeExamSimDesc': "Simule l'examen réel : couvre les sujets de votre prochain examen (ou toute la matière si aucun n'est prévu) avec plus de variété et d'exigence.",
@@ -5534,6 +5542,7 @@ const pt: Messages = {
   'quiz.canonicalNextProve': 'Próximo: prove por conta própria.',
   'quiz.canonicalNextConsolidated': 'Você consolidou este conceito.',
   'quiz.canonicalContractViolation': 'Esta tentativa não pôde ser validada como uma verificação independente completa. Seu progresso não foi perdido -- você pode tentar novamente.',
+  'quiz.canonicalResultsUnavailable': 'Seu resultado foi salvo. Seu próximo passo não está disponível no momento -- confira novamente em instantes.',
   'quiz.modeTopicPracticeDesc': 'Prática normal sobre este conceito.',
   'quiz.modeCumulativeDesc': 'Perguntas que cobrem vários conceitos da matéria, priorizando os mais fracos.',
   'quiz.modeExamSimDesc': 'Simula a prova real: cobre os temas da sua próxima prova (ou toda a matéria, se você não tiver uma agendada) com mais variedade e exigência.',

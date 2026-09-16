@@ -289,7 +289,7 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
     expect(typeof auth?.canonicalRevision).toBe('string');
   });
 
-  it('the JSONB persistence blob (storeQuiz) includes independence/supportLevel/minimumScorePercent for a Prove authorization, round-tripped through getQuizSession', async () => {
+  it('the JSONB persistence blob (storeQuiz) includes independence/supportLevel/minimumScorePercent/novelty for a Prove authorization, round-tripped through getQuizSession', async () => {
     const { storeQuiz, getQuizSession } = await import('@/services/quiz-persistence.service');
     const marker = {
       pedagogicalPolicyVersion: 'studyus-canonical-v1',
@@ -302,6 +302,12 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
       independence: true,
       supportLevel: 'NONE' as const,
       minimumScorePercent: 80,
+      novelty: {
+        priorPracticeFingerprintCount: 3,
+        rejectedExactDuplicateCount: 1,
+        acceptedNovelQuestionCount: 10,
+        noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1' as const,
+      },
     };
     MOCK_DB.query.mockResolvedValueOnce({ rows: [] });
     await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'canonical_prove', [], marker);
@@ -310,6 +316,44 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
     expect(contract.independence).toBe(true);
     expect(contract.supportLevel).toBe('NONE');
     expect(contract.minimumScorePercent).toBe(80);
+    expect(contract.novelty).toEqual(marker.novelty);
+
+    MOCK_DB.query.mockReset().mockResolvedValueOnce({
+      rows: [{
+        id: 'quiz-1', student_id: 's1', concept_id: 'c1', subject_id: 'subj1', questions: [], language: 'en',
+        status: 'active', created_at: new Date(), expires_at: new Date(Date.now() + 1000000), quiz_mode: 'canonical_prove',
+        concept_ids: ['c1'], hints_used_questions: [], activity_type: 'SOLO_CHECK', evidence_mode: 'INDEPENDENT',
+        pedagogical_policy_version: marker.pedagogicalPolicyVersion, canonical_revision: marker.canonicalRevision,
+        canonical_stage: marker.canonicalStage, canonical_activity_contract: JSON.stringify({
+          canonicalActivityType: marker.canonicalActivityType, itemCount: marker.itemCount, difficulty: marker.difficulty,
+          assistanceAllowed: marker.assistanceAllowed, independence: marker.independence, supportLevel: marker.supportLevel,
+          minimumScorePercent: marker.minimumScorePercent, novelty: marker.novelty,
+        }),
+      }],
+    });
+    const session = await getQuizSession('quiz-1');
+    expect(session?.v1Marker).toEqual(marker);
+  });
+
+  it('a Prove marker persisted with no novelty diagnostics (a hypothetical pre-R6R1 row) reloads novelty: null -- never reconstructed, never omitted', async () => {
+    const { storeQuiz, getQuizSession } = await import('@/services/quiz-persistence.service');
+    const marker = {
+      pedagogicalPolicyVersion: 'studyus-canonical-v1',
+      canonicalRevision: 'rev-prove-2',
+      canonicalStage: 'PROVE',
+      canonicalActivityType: 'PROVE',
+      itemCount: { min: 10, max: 10, authorized: 10 },
+      difficulty: { min: 3, max: 4, target: 3 },
+      assistanceAllowed: false,
+      independence: true,
+      supportLevel: 'NONE' as const,
+      minimumScorePercent: 80,
+    };
+    MOCK_DB.query.mockResolvedValueOnce({ rows: [] });
+    await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'canonical_prove', [], marker as any);
+    const insertParams = MOCK_DB.query.mock.calls[0][1] as any[];
+    const contract = JSON.parse(insertParams[insertParams.length - 1]);
+    expect(contract.novelty).toBeUndefined();
 
     MOCK_DB.query.mockReset().mockResolvedValueOnce({
       rows: [{
@@ -325,7 +369,7 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
       }],
     });
     const session = await getQuizSession('quiz-1');
-    expect(session?.v1Marker).toEqual(marker);
+    expect(session?.v1Marker?.novelty).toBeNull();
   });
 
   it('canonical_activity_type is stamped into learning_evidence.metadata alongside policyVersion/canonicalRevision/canonicalStage (additive, R6)', () => {

@@ -30,6 +30,12 @@ const FULL_MARKER: QuizSessionV1Marker = {
   independence: false,
   supportLevel: 'ASSISTED',
   minimumScorePercent: 80,
+  // CANON-R6R1: additive, backward-compat default for a marker/row with
+  // no novelty diagnostics (every Practice marker, and any pre-R6R1
+  // Prove row) -- getQuizSession always reads it back as `null`, never
+  // omitted, so round-tripping FULL_MARKER through storeQuiz/
+  // getQuizSession is verbatim.
+  novelty: null,
 };
 
 beforeEach(() => {

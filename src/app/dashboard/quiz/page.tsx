@@ -1464,6 +1464,17 @@ function QuizPageContent() {
         ? at[milestoneFeedbackKey(milestone)]
         : at[RESULT_MESSAGE_KEY[results.messageKey] || 'quiz.msgKeepGoing'];
     const perConcept = results.perConceptResults || [];
+    // CANON-R6R1 Part 14/15 -- for ANY v1 attempt (canonicalResultsStatus
+    // is anything but the default 'NOT_V1'), canonicalResults is the
+    // ONLY displayed next-step authority: the legacy `messageText` line
+    // below is a next-step/progression interpretation
+    // (RESULT_MESSAGE_KEY / milestone feedback), and must never render
+    // alongside it -- whether the v1 status is 'OK', a contract
+    // violation, or an unavailable re-fetch. Factual attempt outcome
+    // (score/correct/incorrect above) is unaffected; only this one
+    // legacy next-step line is suppressed. Legacy (non-v1) attempts
+    // keep rendering it exactly as before this phase.
+    const isV1Result = results.canonicalResultsStatus !== 'NOT_V1';
 
     if (reviewing) {
       const review: (ReviewItem & { errorType?: string | null; reasoningValid?: boolean | null })[] = results.review || [];
@@ -1650,16 +1661,16 @@ function QuizPageContent() {
             </p>
           )}
 
-          {/* CANON-R6 Part 21 -- for a v1 attempt, `canonicalResults`
-              (a FRESH getCanonicalPedagogicalDecision, computed by the
-              server strictly after the evidence write) is the SOLE
-              next-step authority -- never inferred from score/quizMode/
-              mastery deltas here. Legacy (non-v1) Results are completely
-              unaffected: this block renders only when
-              `canonicalResultsStatus` is one of the two v1-specific
-              values below; every other attempt still shows only the
-              existing `messageText` line beneath it, exactly as before
-              this phase. */}
+          {/* CANON-R6/R6R1 Part 14-17 -- for ANY v1 attempt,
+              `canonicalResults` (a FRESH getCanonicalPedagogicalDecision,
+              computed by the server strictly after the evidence write)
+              is the SOLE next-step authority -- never inferred from
+              score/quizMode/mastery deltas here, and never shown
+              alongside the legacy `messageText` next-step line below
+              (which CANON-R6R1 now gates on `!isV1Result`). Legacy
+              (non-v1) Results are completely unaffected: none of these
+              three blocks render when `canonicalResultsStatus` is the
+              default 'NOT_V1'. */}
           {results.canonicalResultsStatus === 'OK' && results.canonicalResults && (
             <div className="card" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-5)' }}>
               <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.canonicalNextStepTitle']}</p>
@@ -1683,8 +1694,21 @@ function QuizPageContent() {
               <p style={{ margin: 0 }}>{at['quiz.canonicalContractViolation']}</p>
             </div>
           )}
+          {/* CANON-R6R1 Part 17 -- evidence write succeeded but the
+              canonical re-fetch failed. The factual score/correct/
+              incorrect card above already shows the attempt outcome;
+              this is only a neutral "next step unavailable right now"
+              notice -- never legacy progression copy, never an invented
+              stage. */}
+          {results.canonicalResultsStatus === 'CANONICAL_RESULTS_UNAVAILABLE' && (
+            <div className="card empty-state" style={{ marginTop: 'var(--space-4)' }}>
+              <p style={{ margin: 0 }}>{at['quiz.canonicalResultsUnavailable']}</p>
+            </div>
+          )}
 
-          <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>
+          {!isV1Result && (
+            <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>
+          )}
         </div>
 
         {(results.verificationNeeded || []).length > 0 && (

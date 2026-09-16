@@ -87,10 +87,10 @@ describe('8/9/10 -- R5R1A\'s server-derived contract override is untouched and s
 });
 
 describe('11/12/13 -- persistence, compliance validation, and policy-version stamping are untouched', () => {
-  it('storeQuiz is still called with the (unmodified) v1Marker', () => {
+  it('storeQuiz is still called with the (unmodified, save for CANON-R6R1\'s additive novelty-diagnostics merge) v1Marker', () => {
     const idx = ROUTE_SRC.indexOf('const quizId = await storeQuiz(');
     const slice = ROUTE_SRC.slice(idx, idx + 250);
-    expect(slice).toMatch(/v1Marker\s*\n?\s*\);/);
+    expect(slice).toMatch(/v1MarkerToPersist\s*\n?\s*\);/);
   });
 
   it('checkV1ActivityContractCompliance is still called at submission, before any v1 stamping', () => {
