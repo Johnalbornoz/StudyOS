@@ -27,11 +27,15 @@ describe('Part 2/6/20 -- v1Launch is an intent signal only, independently re-ver
     expect(schemaBlock).toMatch(/v1Launch:\s*z\.boolean\(\)\.optional\(\)/);
   });
 
-  it('the raw v1 marker is fetched only when v1Launch===true AND the feature gate is on AND the mode requests a real v1-eligible activity AND a conceptId is present (CANON-R6: topic_practice OR canonical_prove, via requestedActivityType)', () => {
+  it('the raw v1 marker is fetched only when v1Launch===true AND the feature gate is on AND the mode requests a real v1-eligible activity AND a conceptId is present (CANON-V2-ARCH-CLEANUP: every canonical_* mode, via requestedActivityType)', () => {
     const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 600);
-    expect(slice).toMatch(/validated\.quizMode === 'topic_practice' \? 'PRACTICE' : validated\.quizMode === 'canonical_prove' \? 'PROVE' : null/);
+    const slice = ROUTE_SRC.slice(idx, idx + 900);
+    expect(slice).toMatch(/validated\.quizMode === 'topic_practice'\s*\n\s*\? 'PRACTICE'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_prove'\s*\n\s*\? 'PROVE'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_retain'\s*\n\s*\? 'RETENTION_CHECK'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_transfer'\s*\n\s*\? 'TRANSFER'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_learn_check'\s*\n\s*\? 'LEARN_CHECK'/);
     expect(slice).toMatch(/validated\.v1Launch === true/);
     expect(slice).toMatch(/isCanonicalEngineV1Enabled\(\)/);
     expect(slice).toMatch(/requestedActivityType/);

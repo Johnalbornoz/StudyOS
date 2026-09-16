@@ -334,7 +334,13 @@ describe('legacy firewall -- quick_check/topic_practice/review/cumulative_assess
   });
 
   it('the generic multi-concept branch (cumulative_assessment/exam_simulation/diagnostic_check/retention_check override) still calls generateGatedQuestionBatch, unchanged', () => {
-    const canonicalProveIdx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove'\n        ?");
+    // CANON-V2-ARCH-CLEANUP -- anchored on the canonical_prove GENERATION
+    // DISPATCH site's own unique comment (not the bare 'canonical_prove'
+    // string, which now also appears earlier in requestedActivityType's
+    // widened ternary chain) so this still lands on the real dispatch
+    // branch, never the outer Promise.all wrapping the whole ternary.
+    const canonicalProveIdx = ROUTE_SRC.indexOf('CANON-R6-PERF-R2 -- FIRST:');
+    expect(canonicalProveIdx).toBeGreaterThan(-1);
     const genericIdx = ROUTE_SRC.indexOf('Promise.all(', canonicalProveIdx);
     const slice = ROUTE_SRC.slice(genericIdx, genericIdx + 2500);
     expect(slice).toMatch(/return generateGatedQuestionBatch\(cId, validated\.studentId, validated\.subjectId, \{/);

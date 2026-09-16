@@ -63,6 +63,7 @@ import {
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
+import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import {
   prepareCanonicalProveActivity,
   findActivePreparedActivity,
@@ -517,6 +518,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   let preparedConsumptionCandidateId: string | null = null;
   let preparedActivityFingerprintCount: number | null = null;
   let proveGenerationResult: CanonicalProveGenerationResult | null = null;
+  // CANON-V2-ARCH-CLEANUP -- the Retain analog of `proveGenerationResult`,
+  // captured only for a `canonical_retain` request (no prepared-activity
+  // cache path exists for Retain -- that is a Prove-only performance
+  // feature, CANON-R6-PERF-R2, out of scope here; every canonical_retain
+  // request always runs the live generator below).
+  let retainGenerationResult: CanonicalRetainGenerationResult | null = null;
 
   try {
     const validated = GenerateQuizSchema.parse(body);
@@ -555,15 +562,31 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // function, so this adds two `Date.now()` calls and nothing else
     // for every other quizMode/request shape.
     const canonicalAuthorizationStartedAt = Date.now();
-    const requestedActivityType: 'PRACTICE' | 'PROVE' | null =
-      validated.quizMode === 'topic_practice' ? 'PRACTICE' : validated.quizMode === 'canonical_prove' ? 'PROVE' : null;
+    // CANON-V2-ARCH-CLEANUP -- widened to every canonical mode this
+    // route now implements (Section 6/7: the implementation registry is
+    // total). Each canonical_* mode requests EXACTLY its own activity
+    // type -- never any other -- same "no downgrade/upgrade" rule
+    // CANON-R6 already established for canonical_prove.
+    const requestedActivityType: 'PRACTICE' | 'PROVE' | 'RETENTION_CHECK' | 'TRANSFER' | 'LEARN_CHECK' | null =
+      validated.quizMode === 'topic_practice'
+        ? 'PRACTICE'
+        : validated.quizMode === 'canonical_prove'
+        ? 'PROVE'
+        : validated.quizMode === 'canonical_retain'
+        ? 'RETENTION_CHECK'
+        : validated.quizMode === 'canonical_transfer'
+        ? 'TRANSFER'
+        : validated.quizMode === 'canonical_learn_check'
+        ? 'LEARN_CHECK'
+        : null;
     const rawV1Marker =
       validated.v1Launch === true && isCanonicalEngineV1Enabled() && requestedActivityType && validated.conceptId
         ? await verifyV1PracticeLaunchMarker({ studentId: validated.studentId, conceptId: validated.conceptId })
         : null;
     // A REINFORCE overlay is presented as an ordinary Practice-shaped
-    // activity -- it satisfies a `topic_practice` request; PROVE never
-    // satisfies anything but a `canonical_prove` request, and vice versa.
+    // activity -- it satisfies a `topic_practice` request; every other
+    // canonical activity type never satisfies anything but its own exact
+    // `canonical_*` request, and vice versa.
     const v1Marker =
       rawV1Marker &&
       (rawV1Marker.canonicalActivityType === requestedActivityType ||
@@ -572,17 +595,36 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         : null;
     canonicalAuthorizationMs = Date.now() - canonicalAuthorizationStartedAt;
 
-    // CANON-R6 Part 24/29 -- `canonical_prove` has NO legitimate legacy
-    // meaning (unlike `topic_practice`, which is also a real legacy
-    // mode): a request for it that fails verification/matching above is
-    // refused outright, never silently generated with this mode's own
-    // generic `defaultMax`/guidance as if it were some other kind of
-    // activity (that would be exactly "relabel an incomplete/unauthorized
-    // quiz as legacy quick_check after session authorization," Part 29's
-    // own prohibition, generalized to canonical_prove itself).
+    // CANON-R6/CANON-V2-ARCH-CLEANUP Part 24/29 -- no `canonical_*` mode
+    // has a legitimate legacy meaning (unlike `topic_practice`, which is
+    // also a real legacy mode): a request for one that fails
+    // verification/matching above is refused outright, never silently
+    // generated with this mode's own generic `defaultMax`/guidance as if
+    // it were some other kind of activity (that would be exactly
+    // "relabel an incomplete/unauthorized quiz as legacy quick_check
+    // after session authorization," Part 29's own prohibition,
+    // generalized to every canonical_* mode).
     if (validated.quizMode === 'canonical_prove' && !v1Marker) {
       return NextResponse.json(
         { error: 'V1_PROVE_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for an independent Prove check.' },
+        { status: 403 }
+      );
+    }
+    if (validated.quizMode === 'canonical_retain' && !v1Marker) {
+      return NextResponse.json(
+        { error: 'V1_RETAIN_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a Retain check.' },
+        { status: 403 }
+      );
+    }
+    if (validated.quizMode === 'canonical_transfer' && !v1Marker) {
+      return NextResponse.json(
+        { error: 'V1_TRANSFER_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a Transfer challenge.' },
+        { status: 403 }
+      );
+    }
+    if (validated.quizMode === 'canonical_learn_check' && !v1Marker) {
+      return NextResponse.json(
+        { error: 'V1_LEARN_CHECK_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a comprehension checkpoint.' },
         { status: 403 }
       );
     }
@@ -963,6 +1005,30 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             proveGenerationResult = proveGen;
             return [proveGen.questions];
           })()
+        : validated.quizMode === 'canonical_retain'
+        ? // CANON-V2-ARCH-CLEANUP Section 8/9 -- the ONE certified
+          // canonical Retain generation path (generateCanonicalRetainQuestions,
+          // mirroring canonical_prove but with the broader Practice+Prove+
+          // Retain novelty base RETAIN's own contract requires). No
+          // prepared-activity cache -- always a live generation call.
+          (async () => {
+            const retainGen = await generateCanonicalRetainQuestions({
+              conceptId: conceptIds[0],
+              studentId: validated.studentId,
+              subjectId: validated.subjectId,
+              targetCount: perConceptCap,
+              difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
+              guidance: config.guidance,
+              language,
+              visualAidRate: config.visualAidRate,
+              ibContext,
+              activityType: activityTypeForQuizMode(validated.quizMode),
+              quizMode: validated.quizMode,
+              parentOperationId,
+            });
+            retainGenerationResult = retainGen;
+            return [retainGen.questions];
+          })()
         : Promise.all(
             // LX-4P-PERF-R1C-R1: the UNIVERSAL Question Quality Gate --
             // cumulative_assessment / exam_simulation / diagnostic_check
@@ -1170,15 +1236,18 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       } catch { /* logging must never break the response */ }
       emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
       emitCanonicalProveCacheSummary();
-      // CANON-R6 Part 5/29 -- a v1 Prove request may NEVER silently
-      // administer fewer than the authorized exact-10 count; this
-      // pre-existing universal guard already fails the whole request
-      // closed before storeQuiz is ever called (LX-9-FINAL Part G) --
-      // this only adds the closed, Prove-specific reason code, additive
-      // to the generic error shape every other mode already gets.
+      // CANON-R6/CANON-V2-ARCH-CLEANUP Part 5/29 -- a v1 Prove/Retain
+      // request may NEVER silently administer fewer than its own
+      // authorized exact count; this pre-existing universal guard
+      // already fails the whole request closed before storeQuiz is ever
+      // called (LX-9-FINAL Part G) -- this only adds the closed,
+      // mode-specific reason code, additive to the generic error shape
+      // every other mode already gets.
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          : validated.quizMode === 'canonical_retain'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
           : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
@@ -1206,6 +1275,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
           ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          : validated.quizMode === 'canonical_retain'
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
           : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
         { status: 500 }
       );

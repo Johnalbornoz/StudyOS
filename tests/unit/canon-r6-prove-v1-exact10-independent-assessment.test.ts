@@ -174,7 +174,11 @@ describe('4/6 -- GENERATION MODE: canonical_prove is a distinct, server-only mod
 
   it('canonical_prove is NOT one of quick_check/topic_practice/review/retention_check\'s own dedicated fast paths, NOR does it share the generic multi-concept generateGatedQuestionBatch branch cumulative_assessment/exam_simulation/diagnostic_check use -- CANON-R6-PERF-R1 gives it its own dedicated concurrent-chunked branch instead', () => {
     const quickCheckIdx = ROUTE_SRC.indexOf("validated.quizMode === 'quick_check'\n        ? generateQuickCheckQuestions");
-    const canonicalProveIdx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove'\n        ?");
+    // CANON-V2-ARCH-CLEANUP -- anchored on the generation-dispatch site's
+    // own unique comment, not the bare 'canonical_prove' string (which
+    // now also appears earlier in requestedActivityType's widened
+    // ternary chain).
+    const canonicalProveIdx = ROUTE_SRC.indexOf('CANON-R6-PERF-R2 -- FIRST:');
     const genericMultiConceptIdx = ROUTE_SRC.indexOf('Promise.all(', canonicalProveIdx);
     // canonical_prove's own branch is distinct from, and precedes, the
     // generic multi-concept branch -- it is never inside it.

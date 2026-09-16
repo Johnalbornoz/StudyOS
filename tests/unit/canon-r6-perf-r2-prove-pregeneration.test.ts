@@ -408,7 +408,12 @@ describe('route wiring -- Part 8/10/11 consumption', () => {
   });
 
   it('legacy modes never reference findActivePreparedActivity/consumePreparedActivity -- pre-generation is canonical_prove only (Part 31)', () => {
-    const canonicalProveIdx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove'\n        ?");
+    // CANON-V2-ARCH-CLEANUP -- anchored on the generation-dispatch site's
+    // own unique comment, not the bare 'canonical_prove' string (which
+    // now also appears earlier in requestedActivityType's widened
+    // ternary chain).
+    const canonicalProveIdx = ROUTE_SRC.indexOf('CANON-R6-PERF-R2 -- FIRST:');
+    expect(canonicalProveIdx).toBeGreaterThan(-1);
     const genericMultiConceptStart = ROUTE_SRC.indexOf('Promise.all(', canonicalProveIdx);
     const genericMultiConceptEnd = ROUTE_SRC.indexOf('computeAskConfidenceFlags(', genericMultiConceptStart);
     const genericBlock = ROUTE_SRC.slice(genericMultiConceptStart, genericMultiConceptEnd);

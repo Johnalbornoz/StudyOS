@@ -299,6 +299,41 @@ export async function loadPriorPracticeQuestionFingerprints(studentId: string, c
 }
 
 /**
+ * CANON-V2-ARCH-CLEANUP -- the REAL, previously-administered question
+ * text this (student, concept) pair has already seen across every
+ * canonical activity RETAIN's own "novel" requirement must be checked
+ * against: Practice (`topic_practice`), Prove (`canonical_prove`), AND
+ * any earlier Retain attempt (`canonical_retain`) itself. Broader than
+ * `loadPriorPracticeQuestionFingerprints` (Prove's own base) on purpose
+ * -- RETAIN's frozen contract requires items the learner has never seen
+ * in ANY prior canonical activity, not just Practice.
+ */
+export async function loadPriorCanonicalQuestionFingerprintsForRetain(studentId: string, conceptId: string): Promise<Set<string>> {
+  const result = await db.query(
+    `
+    SELECT questions
+    FROM quiz_sessions
+    WHERE student_id = $1
+      AND quiz_mode = ANY($3::text[])
+      AND pedagogical_policy_version IS NOT NULL
+      AND $2::uuid = ANY(concept_ids)
+    `,
+    [studentId, conceptId, ['topic_practice', 'canonical_prove', 'canonical_retain']]
+  );
+
+  const fingerprints = new Set<string>();
+  for (const row of result.rows) {
+    const questions: GeneratedQuestion[] = row.questions || [];
+    for (const question of questions) {
+      if (question.conceptId === conceptId && typeof question.question === 'string') {
+        fingerprints.add(fingerprintQuestion(question));
+      }
+    }
+  }
+  return fingerprints;
+}
+
+/**
  * Retrieve quiz questions from database
  */
 export async function getQuiz(quizId: string): Promise<GeneratedQuestion[] | null> {

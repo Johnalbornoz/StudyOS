@@ -144,16 +144,21 @@ describe('Part 3/4/7/15 -- server-derived maxQuestions/difficulty override clien
 });
 
 describe('Part 6/17 -- mode enforcement: a client cannot turn canonical PRACTICE into a different quizMode', () => {
-  it('requestedActivityType (and therefore the raw v1 marker fetch) can only ever resolve for quizMode topic_practice or canonical_prove -- the guard itself enforces this before verifyV1PracticeLaunchMarker is even called (CANON-R6 widened this from a single literal to the closed requestedActivityType mapping)', () => {
+  it('requestedActivityType (and therefore the raw v1 marker fetch) can only ever resolve for a real canonical_* mode -- the guard itself enforces this before verifyV1PracticeLaunchMarker is even called (CANON-V2-ARCH-CLEANUP widened this closed requestedActivityType mapping to every canonical stage)', () => {
     const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 300);
-    expect(slice).toMatch(/validated\.quizMode === 'topic_practice' \? 'PRACTICE' : validated\.quizMode === 'canonical_prove' \? 'PROVE' : null/);
+    const slice = ROUTE_SRC.slice(idx, idx + 900);
+    expect(slice).toMatch(/validated\.quizMode === 'topic_practice'\s*\n\s*\? 'PRACTICE'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_prove'\s*\n\s*\? 'PROVE'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_retain'\s*\n\s*\? 'RETENTION_CHECK'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_transfer'\s*\n\s*\? 'TRANSFER'/);
+    expect(slice).toMatch(/validated\.quizMode === 'canonical_learn_check'\s*\n\s*\? 'LEARN_CHECK'/);
+    expect(slice).toMatch(/: null;/);
   });
 
-  it('a client-requested quick_check/retention_check/review with v1Launch=true never reaches verifyV1PracticeLaunchMarker at all (structurally impossible, not merely unauthorized) -- requestedActivityType resolves to null for every mode other than topic_practice/canonical_prove', () => {
+  it('a client-requested quick_check/retention_check/review with v1Launch=true never reaches verifyV1PracticeLaunchMarker at all (structurally impossible, not merely unauthorized) -- requestedActivityType resolves to null for every mode other than the real canonical_* modes', () => {
     const idx = ROUTE_SRC.indexOf('const requestedActivityType:');
-    const conditionLine = ROUTE_SRC.slice(idx, idx + 300);
+    const conditionLine = ROUTE_SRC.slice(idx, idx + 900);
     expect(conditionLine).not.toMatch(/quick_check|retention_check|review/);
   });
 });
