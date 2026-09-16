@@ -35,6 +35,24 @@ import { ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/se
  */
 export const PREPARED_ACTIVITY_TTL_MS = 2 * 60 * 60 * 1000;
 
+/**
+ * CANON-R6-PERF-R2R1 -- bounded PREPARING lease. A background
+ * preparation is expected to run the certified concurrent-chunked
+ * generator end-to-end (chunks + at most one aggregate recovery round)
+ * -- R1's own live measurement of that full pipeline was
+ * generationConcurrentMs=14.887s + aggregateRecoveryMs=11.809s =
+ * ~27.111s total. 5 minutes (300,000ms) is a >10x margin over that
+ * observed envelope: comfortably longer than any legitimate run
+ * (including cold-start/provider-latency variance), while still
+ * bounded so a background invocation that died before ever reaching
+ * its own READY/FAILED update (e.g. the serverless instance was
+ * recycled mid-generation) cannot block this canonical identity's
+ * unique-index slot indefinitely. This is recovery ONLY for abnormal
+ * termination -- the normal PREPARING -> READY/FAILED transition
+ * (Part 14) is unaffected and always wins the race if it completes.
+ */
+export const PREPARATION_LEASE_MS = 5 * 60 * 1000;
+
 export type PreparedActivityStatus = 'PREPARING' | 'READY' | 'CONSUMED' | 'INVALIDATED' | 'FAILED';
 
 export interface PreparedActivityContractSnapshot {
@@ -136,6 +154,59 @@ export async function prepareCanonicalProveActivity(params: {
   const { studentId, conceptId, subjectId, pedagogicalPolicyVersion, canonicalRevision, contract } = params;
   const id = randomUUID();
   const expiresAt = new Date(Date.now() + PREPARED_ACTIVITY_TTL_MS);
+
+  // CANON-R6-PERF-R2R1 -- retire STALE active rows for this exact
+  // canonical identity BEFORE attempting a new preparation, so an
+  // expired READY or an abandoned PREPARING row can never indefinitely
+  // occupy the partial unique index's slot. Both cleanup statements are
+  // independently atomic and idempotent (their own WHERE clause only
+  // matches a row still in the stale state -- a row a concurrent racer
+  // already transitioned simply fails to match on a second attempt), so
+  // no explicit transaction wrapper is needed: the unique index +
+  // `ON CONFLICT DO NOTHING` below remains the final, unweakened safety
+  // net regardless of how these interleave with a concurrent request.
+  //
+  // Expired READY -- never deleted (Part: "preserve the row for
+  // cost/waste auditing"), just no longer counted as active.
+  try {
+    const expiredResult = await db.query(
+      `
+      UPDATE canonical_prepared_activity
+      SET status = 'INVALIDATED', failure_reason = 'EXPIRED_TTL'
+      WHERE student_id = $1 AND concept_id = $2 AND stage = 'PROVE' AND pedagogical_policy_version = $3
+        AND status = 'READY' AND expires_at <= NOW()
+      RETURNING id
+      `,
+      [studentId, conceptId, pedagogicalPolicyVersion]
+    );
+    if (expiredResult.rows.length > 0) {
+      safeLog('prove_pregeneration_expired_invalidated', { studentId, conceptId, count: expiredResult.rows.length });
+    }
+  } catch (error) {
+    console.error('[canonical-prepared-activity] expired-READY cleanup failed:', error);
+  }
+
+  // Stale PREPARING -- a background invocation that died before ever
+  // reaching its own READY/FAILED transition (Part 14's normal failure
+  // path never ran). Marked FAILED, not INVALIDATED, per the spec's own
+  // explicit preference: the preparation never successfully completed.
+  try {
+    const staleResult = await db.query(
+      `
+      UPDATE canonical_prepared_activity
+      SET status = 'FAILED', failure_reason = 'STALE_PREPARATION_LEASE_EXPIRED'
+      WHERE student_id = $1 AND concept_id = $2 AND stage = 'PROVE' AND pedagogical_policy_version = $3
+        AND status = 'PREPARING' AND created_at < NOW() - ($4 || ' milliseconds')::interval
+      RETURNING id
+      `,
+      [studentId, conceptId, pedagogicalPolicyVersion, String(PREPARATION_LEASE_MS)]
+    );
+    if (staleResult.rows.length > 0) {
+      safeLog('prove_pregeneration_stale_preparing_recovered', { studentId, conceptId, count: staleResult.rows.length });
+    }
+  } catch (error) {
+    console.error('[canonical-prepared-activity] stale-PREPARING cleanup failed:', error);
+  }
 
   // Part 1/5/10 -- the ONE atomicity guarantee: the partial unique
   // index `idx_canonical_prepared_activity_one_active` (student,

@@ -39,6 +39,15 @@
 -- It is written and reviewed so a future Preview-connected session can
 -- run `npm run db:migrate` and have it applied automatically, to
 -- PREVIEW ONLY -- Production cutover remains unconfigured.
+--
+-- CANON-R6-PERF-R2R1 (stale-lock recovery) note: this schema already
+-- supports that phase's own recovery mechanism with NO changes here --
+-- `status` already includes 'INVALIDATED' and 'FAILED', and
+-- `expires_at`/`created_at` already exist. That phase's own two cleanup
+-- UPDATEs (retiring an expired READY row to INVALIDATED, and a stale
+-- PREPARING row past its lease to FAILED) run entirely in application
+-- code, against columns/values this table already has. See
+-- docs/CANON_R6_PERF_R2R1_STALE_PREPARATION_RECOVERY.md.
 -- ---------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS canonical_prepared_activity (

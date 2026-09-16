@@ -128,8 +128,18 @@ describe('isPreparedActivityContractCompatible -- Part 9 compatibility, never ra
 // ============================================================
 // prepareCanonicalProveActivity -- dedup, generation, failure safety
 // ============================================================
+// CANON-R6-PERF-R2R1: every prepareCanonicalProveActivity call now runs
+// TWO stale-row cleanup UPDATEs (expired-READY, stale-PREPARING) before
+// its own INSERT ... ON CONFLICT DO NOTHING. Tests that don't care about
+// the cleanup's own behavior pre-seed both as "no stale rows found".
+function mockNoStaleRows(): void {
+  queryMock.mockResolvedValueOnce({ rows: [] }); // expired-READY cleanup: nothing matched
+  queryMock.mockResolvedValueOnce({ rows: [] }); // stale-PREPARING cleanup: nothing matched
+}
+
 describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
   it('deduplicates via the atomic INSERT ... ON CONFLICT DO NOTHING -- a losing insert (0 rows returned) never proceeds to generation', async () => {
+    mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [] }); // ON CONFLICT DO NOTHING -- another active prep already exists
     await prepareCanonicalProveActivity({
       studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
@@ -137,10 +147,11 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
       language: 'en', guidance: 'g', visualAidRate: 0, ibContext: null,
     });
     expect(generateMock).not.toHaveBeenCalled();
-    expect(queryMock).toHaveBeenCalledTimes(1); // only the insert attempt -- no further writes
+    expect(queryMock).toHaveBeenCalledTimes(3); // 2 cleanup UPDATEs + the insert attempt -- no further writes
   });
 
   it('on a winning insert, calls the SAME certified generateCanonicalProveQuestions pipeline -- never a cheaper one (Part 6)', async () => {
+    mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] }); // won the insert race
     queryMock.mockResolvedValueOnce({ rows: [] }); // the UPDATE ... READY
     generateMock.mockResolvedValue({
@@ -157,11 +168,12 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
     });
     expect(generateMock).toHaveBeenCalledTimes(1);
     expect(generateMock.mock.calls[0][0]).toMatchObject({ conceptId: 'c1', studentId: 's1', targetCount: 10, difficulty: 3 });
-    const updateCall = queryMock.mock.calls[1];
+    const updateCall = queryMock.mock.calls[3];
     expect(updateCall[0]).toMatch(/SET status = 'READY'/);
   });
 
   it('a short generation result (< authorized count) marks the row FAILED, never READY with fewer than the contract requires', async () => {
+    mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
     queryMock.mockResolvedValueOnce({ rows: [] }); // the UPDATE ... FAILED
     generateMock.mockResolvedValue({ questions: [Q('a')], finalQuestionCount: 1, priorPracticeFingerprintCount: 0, aggregateRecoveryUsed: true });
@@ -170,12 +182,13 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
       pedagogicalPolicyVersion: 'v1', canonicalRevision: 'rev1', contract: CONTRACT,
       language: 'en', guidance: 'g', visualAidRate: 0, ibContext: null,
     });
-    const updateCall = queryMock.mock.calls[1];
+    const updateCall = queryMock.mock.calls[3];
     expect(updateCall[0]).toMatch(/SET status = 'FAILED'/);
     expect(updateCall[1]).toContain('GENERATION_INCOMPLETE');
   });
 
   it('Part 14 -- an unexpected error during generation is caught internally and never rethrown to the caller (background failure safety)', async () => {
+    mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
     queryMock.mockResolvedValueOnce({ rows: [] }); // best-effort FAILED update
     generateMock.mockRejectedValue(new Error('boom'));
@@ -189,6 +202,7 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
   });
 
   it('never writes learning_evidence, quiz_sessions, or anything but canonical_prepared_activity -- preparation is never a learner attempt (Part 4)', async () => {
+    mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
     queryMock.mockResolvedValueOnce({ rows: [] });
     generateMock.mockResolvedValue({ questions: Array.from({ length: 10 }, (_, i) => Q(`q${i}`)), finalQuestionCount: 10, priorPracticeFingerprintCount: 0, aggregateRecoveryUsed: false });
