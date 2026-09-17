@@ -46,7 +46,25 @@ import { milestoneFeedbackKey, type MilestoneType } from '@/lib/lx/progression-m
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
-type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' | 'cumulative_assessment' | 'exam_simulation' | 'diagnostic_check' | 'canonical_prove';
+// CANON-V2-FINAL-HARDENING Section 5/12 -- widened to include the 3
+// canonical activities added after canonical_prove (canonical_retain,
+// canonical_transfer, canonical_learn_check) -- the backend
+// (canonical-implementation-registry.ts) has issued real launch URLs
+// with these `mode=` values since that phase; this page's own type/
+// records must recognize them for real UI/backend parity, not silently
+// fall through to a mislabeled default.
+type QuizMode =
+  | 'topic_practice'
+  | 'review'
+  | 'quick_check'
+  | 'retention_check'
+  | 'cumulative_assessment'
+  | 'exam_simulation'
+  | 'diagnostic_check'
+  | 'canonical_prove'
+  | 'canonical_retain'
+  | 'canonical_transfer'
+  | 'canonical_learn_check';
 // Phase 3A: which quiz modes are Evidence Mode PRACTICE (AI hints allowed)
 // vs. INDEPENDENT/ASSESSMENT (no AI assistance) -- mirrors
 // src/lib/activity-taxonomy.ts's fixed Activity Type -> Evidence Mode
@@ -54,7 +72,10 @@ type QuizMode = 'topic_practice' | 'review' | 'quick_check' | 'retention_check' 
 // component and that module is server-only; the source of truth for
 // enforcement is still the server (see /api/quizzes/hint), this only
 // controls whether the Hint button even renders.
-const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review'];
+// CANON-V2-FINAL-HARDENING -- canonical_learn_check is EvidenceMode
+// PRACTICE (assistance explicitly allowed, activity-taxonomy.ts) --
+// same "help/Tutor available" presentation topic_practice/review get.
+const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review', 'canonical_learn_check'];
 // LX-8R1 R1: the ONE place this page derives its coarse, presentation-
 // only EvidenceMode mirror from quizMode -- extracted so it is computed
 // once and fed into buildInteractionContract (interaction-contract.ts)
@@ -82,6 +103,14 @@ const QUIZ_SUPPORT_CONTEXT: Record<QuizMode, LearningSupportContext> = {
   exam_simulation: 'ASSESSMENT',
   diagnostic_check: 'DIAGNOSTIC',
   canonical_prove: 'SOLO',
+  // CANON-V2-FINAL-HARDENING -- RETENTION_CHECK/TRANSFER are both
+  // EvidenceMode INDEPENDENT (activity-taxonomy.ts) -- no assistance,
+  // same SOLO presentation Prove already uses. LEARN_CHECK is
+  // EvidenceMode PRACTICE (assistance explicitly allowed) -- same
+  // presentation as ordinary Practice.
+  canonical_retain: 'SOLO',
+  canonical_transfer: 'SOLO',
+  canonical_learn_check: 'PRACTICE',
 };
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
@@ -147,6 +176,15 @@ const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   // from the request entirely (see genBody) and the server's own v1
   // authorization forces exactly 10 regardless of this default.
   canonical_prove: 10,
+  // Same "never actually used" reasoning as canonical_prove -- these 3
+  // are always isCanonicalFlow too, so maxQuestions is omitted from the
+  // request (see genBody) and the server's own v1 authorization/
+  // execution-default contract decides the real count regardless of
+  // this default. Values mirror QUIZ_MODE_CONFIG's own defaultMax in
+  // generate-and-take/route.ts, purely for documentation consistency.
+  canonical_retain: 10,
+  canonical_transfer: 3,
+  canonical_learn_check: 5,
 };
 
 const RESULT_MESSAGE_KEY: Record<string, 'quiz.msgExcellent' | 'quiz.msgGood' | 'quiz.msgKeepGoing'> = {
@@ -267,13 +305,24 @@ function QuizPageContent() {
   // LX-5D: which finished-activity checkpoint copy to show. Presentation
   // only -- the continuation resolver re-reads canonical truth for the
   // actual next action regardless of this.
+  // CANON-V2-FINAL-HARDENING Section 12/13 -- canonical_retain/
+  // canonical_transfer/canonical_learn_check now map to their own real
+  // checkpoint kind (RETAIN/TRANSFER/LEARN, all already fully supported
+  // by checkpointFor -- continuation.ts) instead of silently falling
+  // through to the generic PRACTICE checkpoint copy, which would have
+  // mislabeled "you just finished a Transfer challenge" as an ordinary
+  // Practice session.
   const continuationKind: LearningActivityKind = remediationStepId
     ? 'REINFORCE'
     : modeParam === 'quick_check' || modeParam === 'canonical_prove'
       ? 'PROVE'
-      : modeParam === 'retention_check'
+      : modeParam === 'retention_check' || modeParam === 'canonical_retain'
         ? 'RETAIN'
-        : 'PRACTICE';
+        : modeParam === 'canonical_transfer'
+          ? 'TRANSFER'
+          : modeParam === 'canonical_learn_check'
+            ? 'LEARN'
+            : 'PRACTICE';
 
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -1119,13 +1168,23 @@ function QuizPageContent() {
       ? at['quiz.evidenceStrengthContradicted']
       : at['quiz.evidenceStrengthLow'];
 
-  // canonical_prove never actually reaches these (isCanonicalFlow always
-  // shows the loading state instead of this setup form for it -- see
-  // below), but both fall back to the SAME quick_check copy defensively
-  // rather than mislabeling it "Practice" if ever reached.
+  // canonical_prove/canonical_retain/canonical_transfer/canonical_learn_check
+  // never actually reach these in the normal canonical flow
+  // (isCanonicalFlow always shows the loading state instead of this
+  // setup form for them -- see below), but each now has its OWN real
+  // copy (Sections 6/8/9/10) rather than falling back to a mislabeling
+  // default if ever reached (e.g. a manual ?setup=1 URL).
   const modeLabel = (mode: QuizMode) =>
-    mode === 'quick_check' || mode === 'canonical_prove'
+    mode === 'quick_check'
       ? t['quiz.modeQuickCheck']
+      : mode === 'canonical_prove'
+      ? t['quiz.modeCanonicalProve']
+      : mode === 'canonical_retain'
+      ? t['quiz.modeCanonicalRetain']
+      : mode === 'canonical_transfer'
+      ? t['quiz.modeCanonicalTransfer']
+      : mode === 'canonical_learn_check'
+      ? t['quiz.modeCanonicalLearnCheck']
       : mode === 'retention_check'
       ? t['quiz.modeRetentionCheck']
       : mode === 'review'
@@ -1139,8 +1198,16 @@ function QuizPageContent() {
       : t['quiz.modeTopicPractice'];
 
   const modeDesc = (mode: QuizMode) =>
-    mode === 'quick_check' || mode === 'canonical_prove'
+    mode === 'quick_check'
       ? t['quiz.modeQuickCheckDesc']
+      : mode === 'canonical_prove'
+      ? t['quiz.modeCanonicalProveDesc']
+      : mode === 'canonical_retain'
+      ? t['quiz.modeCanonicalRetainDesc']
+      : mode === 'canonical_transfer'
+      ? t['quiz.modeCanonicalTransferDesc']
+      : mode === 'canonical_learn_check'
+      ? t['quiz.modeCanonicalLearnCheckDesc']
       : mode === 'retention_check'
       ? t['quiz.modeRetentionCheckDesc']
       : mode === 'review'
@@ -1282,17 +1349,30 @@ function QuizPageContent() {
   // LX-4K: the canonical flow never shows the configurator -- it
   // auto-starts (effect above). While that resolves, show a calm
   // loading state, not the form.
-  // CANON-R6-PERF-R2 Part 15-27 -- canonical_prove ONLY gets the
-  // dedicated focused preparation experience (a cache HIT is typically
-  // fast enough that ProveFocusLoading's own 0-800ms threshold renders
+  // CANON-R6-PERF-R2 Part 15-27 -- canonical_prove gets the dedicated
+  // focused preparation experience (a cache HIT is typically fast
+  // enough that ProveFocusLoading's own 0-800ms threshold renders
   // nothing at all; a cold miss gets the full calm, academic waiting
-  // state instead of a bare "generating..." spinner). Every other
-  // canonical mode (topic_practice, etc.) is completely unaffected.
+  // state instead of a bare "generating..." spinner).
+  // CANON-V2-FINAL-HARDENING Section 8/9/10 -- the other 3 canonical
+  // activities (Retain/Transfer/LearnCheck) each get their OWN
+  // stage-appropriate loading title instead of the bare generic
+  // "generating..." string, so a Transfer/Retain wait never LOOKS like
+  // an ordinary Practice load. Legacy single-concept modes
+  // (topic_practice, quick_check, etc.) are completely unaffected.
   if (phase === 'setup' && isCanonicalFlow) {
     if (quizMode === 'canonical_prove') {
       return <ProveFocusLoading at={at} />;
     }
-    return <div className="card empty-state">{t['quiz.generating']}</div>;
+    const canonicalLoadingTitle =
+      quizMode === 'canonical_retain'
+        ? t['quiz.retainPreparingTitle']
+        : quizMode === 'canonical_transfer'
+        ? t['quiz.transferPreparingTitle']
+        : quizMode === 'canonical_learn_check'
+        ? t['quiz.learnCheckPreparingTitle']
+        : t['quiz.generating'];
+    return <div className="card empty-state">{canonicalLoadingTitle}</div>;
   }
 
   if (phase === 'setup') {
@@ -1671,6 +1751,49 @@ function QuizPageContent() {
             </p>
           )}
 
+          {/* CANON-V2-FINAL-HARDENING Section 10 -- the TRANSFER-specific
+              results breakdown: the 3 challenge scores shown
+              individually (never collapsed into one number the learner
+              can't interpret), then a translated pedagogical
+              interpretation of the diagnostic on failure -- never the
+              raw engine enum (RETENTION_WEAKNESS etc). The CTA the
+              canonical-next-step card below shows is computed from the
+              SAME fresh `canonicalResults` the rollback already ran
+              against server-side -- this block never independently
+              decides where to go next, only explains what just
+              happened. */}
+          {results.transferResult && (
+            <div className="card" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-5)' }}>
+              <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 10 }}>{at['quiz.transferResultTitle']}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span>{at['quiz.transferChallengeNear']}</span>
+                  <span style={{ fontWeight: 600 }}>{results.transferResult.nearScore}%</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span>{at['quiz.transferChallengeContextual']}</span>
+                  <span style={{ fontWeight: 600 }}>{results.transferResult.contextualScore}%</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span>{at['quiz.transferChallengeHigher']}</span>
+                  <span style={{ fontWeight: 600 }}>{results.transferResult.higherScore}%</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid var(--border-default)', paddingTop: 6, marginTop: 4 }}>
+                  <span>{at['quiz.transferOverallLabel']}</span>
+                  <span>{results.transferResult.overallScore}%</span>
+                </div>
+              </div>
+              {!results.transferResult.passed && results.transferResult.diagnostic && (
+                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>
+                  {results.transferResult.diagnostic === 'RETENTION_WEAKNESS'
+                    ? at['quiz.transferDiagnosticRetentionWeakness']
+                    : results.transferResult.diagnostic === 'FOUNDATIONAL_PROCEDURAL_FAILURE'
+                    ? at['quiz.transferDiagnosticFoundationalProceduralFailure']
+                    : at['quiz.transferDiagnosticApplicationContextWeakness']}
+                </p>
+              )}
+            </div>
+          )}
           {/* CANON-R6/R6R1 Part 14-17 -- for ANY v1 attempt,
               `canonicalResults` (a FRESH getCanonicalPedagogicalDecision,
               computed by the server strictly after the evidence write)
@@ -1680,7 +1803,11 @@ function QuizPageContent() {
               (which CANON-R6R1 now gates on `!isV1Result`). Legacy
               (non-v1) Results are completely unaffected: none of these
               three blocks render when `canonicalResultsStatus` is the
-              default 'NOT_V1'. */}
+              default 'NOT_V1'.
+              CANON-V2-FINAL-HARDENING Section 9/10 -- RETAIN and
+              TRANSFER stages now also render their own real next-step
+              copy (previously fell through to `null`, showing nothing
+              at all after a Retain or Transfer attempt). */}
           {results.canonicalResultsStatus === 'OK' && results.canonicalResults && (
             <div className="card" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-5)' }}>
               <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.canonicalNextStepTitle']}</p>
@@ -1693,9 +1820,15 @@ function QuizPageContent() {
                     ? at['quiz.canonicalNextProve']
                     : results.canonicalResults.stage === 'PRACTICE'
                       ? at['quiz.canonicalNextPractice']
-                      : results.canonicalResults.stage === 'CONSOLIDATED'
-                        ? at['quiz.canonicalNextConsolidated']
-                        : null}
+                      : results.canonicalResults.stage === 'RETAIN'
+                        ? at['quiz.canonicalNextRetain']
+                        : results.canonicalResults.stage === 'TRANSFER'
+                          ? at['quiz.canonicalNextTransfer']
+                          : results.canonicalResults.stage === 'LEARN'
+                            ? at['quiz.canonicalNextLearn']
+                            : results.canonicalResults.stage === 'CONSOLIDATED'
+                              ? at['quiz.canonicalNextConsolidated']
+                              : null}
               </p>
             </div>
           )}

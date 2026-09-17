@@ -115,9 +115,13 @@ describe('32. READY transitions directly to the quiz -- no artificial delay, no 
 });
 
 describe('scoping -- canonical_prove ONLY, every other canonical mode unaffected', () => {
-  it('the generic "generating..." fallback still renders unconditionally for every OTHER canonical mode', () => {
+  it('the generic "generating..." fallback still renders for legacy single-concept canonical-flow modes (topic_practice, quick_check, etc) -- CANON-V2-FINAL-HARDENING gave canonical_retain/canonical_transfer/canonical_learn_check their OWN stage-appropriate loading title instead of this same generic fallback (Section 8/9/10), but every OTHER canonical-flow mode is unaffected', () => {
     const idx = QUIZ_PAGE_SRC.indexOf("if (phase === 'setup' && isCanonicalFlow) {");
-    const slice = QUIZ_PAGE_SRC.slice(idx, idx + 400);
-    expect(slice).toMatch(/return <div className="card empty-state">\{t\['quiz\.generating'\]\}<\/div>;/);
+    const slice = QUIZ_PAGE_SRC.slice(idx, idx + 700);
+    expect(slice).toMatch(/: t\['quiz\.generating'\];/);
+    expect(slice).toMatch(/return <div className="card empty-state">\{canonicalLoadingTitle\}<\/div>;/);
+    expect(slice).toMatch(/quiz\.retainPreparingTitle/);
+    expect(slice).toMatch(/quiz\.transferPreparingTitle/);
+    expect(slice).toMatch(/quiz\.learnCheckPreparingTitle/);
   });
 });

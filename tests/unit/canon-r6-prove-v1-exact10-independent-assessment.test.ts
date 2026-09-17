@@ -256,7 +256,12 @@ describe('10/11/12 -- client difficulty/maxQuestions are ignored for a verified 
 
 describe('14/15/16 -- INDEPENDENCE: hints/Tutor are structurally unavailable for canonical_prove, via existing, unmodified infrastructure', () => {
   it('14. the quiz page\'s coarse EvidenceMode mirror defaults to INDEPENDENT for any mode not explicitly PRACTICE/ASSESSMENT -- canonical_prove was never added to PRACTICE_EVIDENCE_MODES, so it falls through to INDEPENDENT automatically', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/const PRACTICE_EVIDENCE_MODES: readonly QuizMode\[\] = \['topic_practice', 'review'\];/);
+    // CANON-V2-FINAL-HARDENING -- canonical_learn_check IS EvidenceMode
+    // PRACTICE (assistance explicitly allowed, activity-taxonomy.ts) and
+    // was deliberately added to this list so its Hint/Tutor UI matches
+    // the server's real permission -- canonical_prove (INDEPENDENT) is
+    // still never in it.
+    expect(QUIZ_PAGE_SRC).toMatch(/const PRACTICE_EVIDENCE_MODES: readonly QuizMode\[\] = \['topic_practice', 'review', 'canonical_learn_check'\];/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/PRACTICE_EVIDENCE_MODES.*canonical_prove/);
   });
 

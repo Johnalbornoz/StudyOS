@@ -2412,6 +2412,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // performance, but memory-policy.ts's own spacing gate means it
         // was never counted as retention evidence).
         retentionCheckQualified: quizSession.activityType === 'RETENTION_CHECK' ? primaryMastery?.retentionCheckQualified : undefined,
+        // CANON-V2-FINAL-HARDENING Section 10 -- the SAME-REQUEST
+        // Transfer breakdown (Section 21: same-request consistency --
+        // the client should never need a second fetch to see what it
+        // just did). Present only for a v1Qualifies canonical_transfer
+        // submission; `undefined` for every other quizMode/request.
+        // Mirrors exactly what was just written to
+        // learning_evidence.metadata (transferChallenges/
+        // transferFailureDiagnostic) -- never a second, independently
+        // recomputed value.
+        transferResult:
+          authorizedResult?.v1Qualifies && transferGrading
+            ? {
+                nearScore: transferGrading.nearScore,
+                contextualScore: transferGrading.contextualScore,
+                higherScore: transferGrading.higherScore,
+                overallScore: transferGrading.overallScore,
+                passed: transferGrading.passed,
+                diagnostic: transferGrading.diagnostic,
+              }
+            : undefined,
         perConceptResults: perConceptResultsWithEvidence,
         review,
         messageKey: score >= 80 ? 'excellent' : score >= 50 ? 'good' : 'keep_going',
