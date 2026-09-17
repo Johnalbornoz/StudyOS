@@ -11,6 +11,7 @@ import {
   validateDifficultyAgainstContract,
   validateIndependenceAgainstContract,
   validateImplementationIdMatch,
+  validateContractVersionMatch,
   validateCanonicalRevisionMatch,
 } from '@/lib/pedagogical-decision/canonical-contract-validator';
 import { checkV1ActivityContractCompliance, V1_ACTIVITY_CONTRACT_VIOLATION } from '@/lib/pedagogical-decision/v1-practice-launch-marker';
@@ -46,9 +47,11 @@ describe('individual structural checks', () => {
     expect(validateIndependenceAgainstContract(true, {})).toBeNull();
   });
 
-  it('validateImplementationIdMatch / validateCanonicalRevisionMatch: identity checks', () => {
+  it('validateImplementationIdMatch / validateContractVersionMatch / validateCanonicalRevisionMatch: identity checks', () => {
     expect(validateImplementationIdMatch('canonical_prove', 'canonical_prove')).toBeNull();
     expect(validateImplementationIdMatch('canonical_prove', 'canonical_retain')).toMatchObject({ field: 'implementationId' });
+    expect(validateContractVersionMatch('v1', 'v1')).toBeNull();
+    expect(validateContractVersionMatch('v1', 'v2')).toMatchObject({ field: 'contractVersion' });
     expect(validateCanonicalRevisionMatch('rev1', 'rev1')).toBeNull();
     expect(validateCanonicalRevisionMatch('rev1', 'rev2')).toMatchObject({ field: 'canonicalRevision' });
   });

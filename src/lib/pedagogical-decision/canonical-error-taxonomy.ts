@@ -56,12 +56,6 @@ export const CANONICAL_ERROR_CODES: readonly CanonicalErrorCode[] = [
   'DEPENDENCY_UNAVAILABLE',
 ];
 
-export interface CanonicalError {
-  code: CanonicalErrorCode;
-  /** Internal diagnostic detail -- never shown to a learner (see canonical-ai-failure-ux.ts for the learner-safe message). */
-  detail: string;
-}
-
 /**
  * Every legacy/route-specific failure identifier this codebase has ever
  * produced, mapped to exactly one canonical code. Keys are matched
@@ -122,8 +116,4 @@ export function toCanonicalErrorCode(legacyCode: string): { code: CanonicalError
   const mapped = LEGACY_TO_CANONICAL[legacyCode];
   if (mapped) return { code: mapped, mapped: true };
   return { code: 'DEPENDENCY_UNAVAILABLE', mapped: false };
-}
-
-export function makeCanonicalError(code: CanonicalErrorCode, detail: string): CanonicalError {
-  return { code, detail };
 }

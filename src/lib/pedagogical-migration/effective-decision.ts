@@ -27,6 +27,23 @@
  * narrowly-reviewed phase (candidate: CANON-R4R1) could propose an
  * actual engine input extension -- that decision is explicitly NOT made
  * here.
+ *
+ * CANON-V2-FINAL-HARDENING Section 14 -- OFFLINE / HISTORICAL-ONLY.
+ * `to-engine-recognized-requirements.ts` (CANON-R4R1) superseded this
+ * function as the LIVE application's own recognition authority --
+ * `canonical-decision.service.ts` (the real, production canonical
+ * decision path) calls `loadRecognizedRequirementsForEngine`, never
+ * this module. `composeEffectiveMigratedDecision` has exactly ONE
+ * remaining real caller: `scripts/canon-r4-migration-dry-run.ts`, a
+ * READ-ONLY, manually-run, offline CLI tool for single-concept
+ * migration inspection against Preview -- it is never imported by any
+ * `src/app` route or by any other live-runtime module (verified: no
+ * caller outside this file, its own tests, and that one script).
+ * Confirmed still needed (Section 14's own "if they must remain"
+ * criteria): the dry-run script it powers is read-only, has no live
+ * caller of its own in the running app, and remains the documented
+ * tool for a future Preview-connected session per Section 17 of this
+ * same phase. Kept, not removed.
  */
 import { STAGE_ORDER, type CanonicalPedagogicalDecision, type PedagogicalStage } from '@/lib/pedagogical-engine';
 import type { EffectiveMigratedState, EffectiveRequirementView, MigrationBaseline } from './types';

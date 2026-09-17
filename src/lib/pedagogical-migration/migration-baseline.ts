@@ -11,6 +11,22 @@
  * returns a structurally identical baseline (same recognition `id`s
  * too, via `evaluateLegacyRecognition`'s own deterministic id
  * derivation); nothing here is randomized or stateful.
+ *
+ * CANON-V2-FINAL-HARDENING Section 14 -- OFFLINE / HISTORICAL-ONLY (from
+ * the LIVE application's perspective). The running app's own canonical
+ * decision path (`canonical-decision.service.ts`) never calls this --
+ * it reads already-persisted recognitions via
+ * `loadRecognizedRequirementsForEngine` instead. This builder's only 2
+ * real callers today are `scripts/canon-r4-migration-dry-run.ts`
+ * (single-concept, read-only inspection) and
+ * `scripts/canon-r4r1-pre-v1-learn-baseline.ts` (population-scale
+ * dry-run, with a separately-guarded, explicit `--apply
+ * --confirm-preview` write path that itself re-checks
+ * `guard.environment === 'preview'` before ever writing) -- both
+ * manually-run, offline CLI tools, never imported by any `src/app`
+ * route. Confirmed still needed: these are exactly the Preview-migration
+ * tools Section 17 of this same phase documents as required for the
+ * next manual rollout step. Kept, not removed.
  */
 import type { ConceptKnowledgeState, MasteryPolicy } from '@/services/knowledge-state.service';
 import { evaluateLegacyRecognition } from './legacy-recognition';

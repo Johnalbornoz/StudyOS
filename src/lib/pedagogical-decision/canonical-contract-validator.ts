@@ -43,7 +43,7 @@ export interface CanonicalContractRange {
 }
 
 export interface CanonicalContractViolation {
-  field: 'itemCount' | 'difficulty' | 'independence' | 'implementationId' | 'policyVersion' | 'canonicalRevision';
+  field: 'itemCount' | 'difficulty' | 'independence' | 'implementationId' | 'contractVersion' | 'policyVersion' | 'canonicalRevision';
   detail: string;
 }
 
@@ -119,6 +119,13 @@ export function validateImplementationIdMatch(expected: string, actual: string):
   return null;
 }
 
+export function validateContractVersionMatch(expected: string, actual: string): CanonicalContractViolation | null {
+  if (expected !== actual) {
+    return { field: 'contractVersion', detail: `expected contractVersion "${expected}", actual "${actual}"` };
+  }
+  return null;
+}
+
 export function validateCanonicalRevisionMatch(expected: string, actual: string): CanonicalContractViolation | null {
   if (expected !== actual) {
     return { field: 'canonicalRevision', detail: `expected canonicalRevision "${expected}", actual "${actual}"` };
@@ -145,6 +152,8 @@ export function validateCanonicalActivityContract(params: {
   actualIndependence?: { hintsUsed?: number; aiAssistanceType?: string };
   expectedImplementationId?: string;
   actualImplementationId?: string;
+  expectedContractVersion?: string;
+  actualContractVersion?: string;
   expectedCanonicalRevision?: string;
   actualCanonicalRevision?: string;
 }): CanonicalContractValidationResult {
@@ -162,6 +171,11 @@ export function validateCanonicalActivityContract(params: {
   if (params.expectedImplementationId !== undefined && params.actualImplementationId !== undefined) {
     const implementationIdViolation = validateImplementationIdMatch(params.expectedImplementationId, params.actualImplementationId);
     if (implementationIdViolation) violations.push(implementationIdViolation);
+  }
+
+  if (params.expectedContractVersion !== undefined && params.actualContractVersion !== undefined) {
+    const contractVersionViolation = validateContractVersionMatch(params.expectedContractVersion, params.actualContractVersion);
+    if (contractVersionViolation) violations.push(contractVersionViolation);
   }
 
   if (params.expectedCanonicalRevision !== undefined && params.actualCanonicalRevision !== undefined) {
