@@ -239,6 +239,7 @@ export type MessageKey =
   // translation (Section 10: never expose the raw engine enum).
   | 'quiz.canonicalNextRetain' | 'quiz.canonicalNextTransfer' | 'quiz.canonicalNextLearn'
   | 'quiz.transferResultTitle' | 'quiz.transferChallengeNear' | 'quiz.transferChallengeContextual' | 'quiz.transferChallengeHigher' | 'quiz.transferOverallLabel'
+  | 'quiz.transferIntroBody' | 'quiz.transferIntroStart'
   | 'quiz.transferDiagnosticApplicationContextWeakness' | 'quiz.transferDiagnosticRetentionWeakness' | 'quiz.transferDiagnosticFoundationalProceduralFailure' | 'quiz.transferDiagnosticCriticalMisconception'
   // CANON-R6R1 Part 17 -- evidence write succeeded but the canonical
   // re-fetch failed: a neutral "next step unavailable" message, never
@@ -1161,6 +1162,8 @@ const es: Messages = {
   'quiz.transferChallengeContextual': 'Nuevo contexto',
   'quiz.transferChallengeHigher': 'Reto avanzado',
   'quiz.transferOverallLabel': 'General',
+  'quiz.transferIntroBody': 'Completarás tres retos distintos, cada uno te pide aplicar el concepto de una forma diferente.',
+  'quiz.transferIntroStart': 'Empezar',
   'quiz.transferDiagnosticApplicationContextWeakness': 'Entiendes el concepto, pero aplicarlo en un contexto distinto todavía necesita práctica.',
   'quiz.transferDiagnosticRetentionWeakness': 'Ya lo habías demostrado antes, pero parte de ese conocimiento no estuvo disponible de forma fiable esta vez. Vamos a comprobar la retención de nuevo.',
   'quiz.transferDiagnosticFoundationalProceduralFailure': 'Encontramos un vacío en el método de base. Reforzar esa base hará que el próximo intento de transferencia sea más sólido.',
@@ -2299,6 +2302,8 @@ const en: Messages = {
   'quiz.transferChallengeContextual': 'New context',
   'quiz.transferChallengeHigher': 'Advanced challenge',
   'quiz.transferOverallLabel': 'Overall',
+  'quiz.transferIntroBody': "You'll complete three different challenges, each asking you to apply the concept in a different way.",
+  'quiz.transferIntroStart': 'Start',
   'quiz.transferDiagnosticApplicationContextWeakness': 'You understand the concept, but applying it in a different context still needs practice.',
   'quiz.transferDiagnosticRetentionWeakness': "You've shown this before, but some of the knowledge wasn't available reliably this time. We'll quickly check retention again.",
   'quiz.transferDiagnosticFoundationalProceduralFailure': 'We found a gap in the underlying method. Strengthening the foundation will make the next transfer attempt more reliable.',
@@ -3437,6 +3442,8 @@ const de: Messages = {
   'quiz.transferChallengeContextual': 'Neuer Kontext',
   'quiz.transferChallengeHigher': 'Fortgeschrittene Herausforderung',
   'quiz.transferOverallLabel': 'Gesamt',
+  'quiz.transferIntroBody': 'Du bearbeitest drei verschiedene Aufgaben, die jeweils verlangen, das Konzept auf eine andere Weise anzuwenden.',
+  'quiz.transferIntroStart': 'Starten',
   'quiz.transferDiagnosticApplicationContextWeakness': 'Du verstehst das Konzept, aber die Anwendung in einem anderen Kontext braucht noch Übung.',
   'quiz.transferDiagnosticRetentionWeakness': 'Du hast das schon einmal gezeigt, aber ein Teil des Wissens stand diesmal nicht zuverlässig zur Verfügung. Wir prüfen die Merkfähigkeit noch einmal.',
   'quiz.transferDiagnosticFoundationalProceduralFailure': 'Wir haben eine Lücke in der zugrunde liegenden Methode gefunden. Diese Grundlage zu stärken macht den nächsten Transferversuch zuverlässiger.',
@@ -4575,6 +4582,8 @@ const fr: Messages = {
   'quiz.transferChallengeContextual': 'Nouveau contexte',
   'quiz.transferChallengeHigher': 'Défi avancé',
   'quiz.transferOverallLabel': 'Global',
+  'quiz.transferIntroBody': 'Vous allez réaliser trois défis différents, chacun vous demandant d\'appliquer le concept d\'une manière différente.',
+  'quiz.transferIntroStart': 'Commencer',
   'quiz.transferDiagnosticApplicationContextWeakness': "Vous comprenez le concept, mais l'appliquer dans un contexte différent demande encore de la pratique.",
   'quiz.transferDiagnosticRetentionWeakness': "Vous l'aviez déjà montré, mais une partie de cette connaissance n'était pas disponible de façon fiable cette fois-ci. Nous allons revérifier la rétention.",
   'quiz.transferDiagnosticFoundationalProceduralFailure': 'Nous avons trouvé une lacune dans la méthode de base. Renforcer cette base rendra le prochain transfert plus fiable.',
@@ -5713,6 +5722,8 @@ const pt: Messages = {
   'quiz.transferChallengeContextual': 'Novo contexto',
   'quiz.transferChallengeHigher': 'Desafio avançado',
   'quiz.transferOverallLabel': 'Geral',
+  'quiz.transferIntroBody': 'Você vai completar três desafios diferentes, cada um pedindo que você aplique o conceito de uma forma diferente.',
+  'quiz.transferIntroStart': 'Começar',
   'quiz.transferDiagnosticApplicationContextWeakness': 'Você entende o conceito, mas aplicá-lo em um contexto diferente ainda precisa de prática.',
   'quiz.transferDiagnosticRetentionWeakness': 'Você já mostrou isso antes, mas parte desse conhecimento não esteve disponível de forma confiável desta vez. Vamos verificar a retenção novamente.',
   'quiz.transferDiagnosticFoundationalProceduralFailure': 'Encontramos uma lacuna no método de base. Fortalecer essa base tornará a próxima tentativa de transferência mais confiável.',

@@ -138,6 +138,9 @@ interface Question {
   calculatorAllowed?: boolean;
   askConfidence?: boolean;
   expectedReasoningType?: string;
+  // CANON-V2-PREVIEW-CERT Section 14 -- present only for a canonical
+  // Transfer challenge; undefined for every other question.
+  transferDepth?: 'NEAR' | 'CONTEXTUAL' | 'HIGHER';
 }
 
 type ConfidenceLevel = 'NOT_SURE' | 'SOMEWHAT_SURE' | 'VERY_SURE';
@@ -428,6 +431,11 @@ function QuizPageContent() {
   // LX-4R: the teach-first phase + canonical support presentation.
   const [teachingExperience, setTeachingExperience] = useState<TeachingExperienceView | null>(null);
   const [teachingStage, setTeachingStage] = useState<'teaching' | 'questions'>('questions');
+  // CANON-V2-PREVIEW-CERT Section 14 -- canonical_transfer's own
+  // one-time pre-execution framing screen (Transfer has no
+  // EXPLAIN/MODEL/GUIDE teaching stage of its own -- it's INDEPENDENT --
+  // so this is a dedicated gate, not a reuse of `teachingStage`).
+  const [transferIntroDismissed, setTransferIntroDismissed] = useState(false);
   const [countAuthority, setCountAuthority] = useState<{ status: string; zeroGapMismatch?: boolean } | null>(null);
 
   // Phase 3B: student verification flow -- one additional confirming
@@ -2138,6 +2146,31 @@ function QuizPageContent() {
     );
   }
 
+  // CANON-V2-PREVIEW-CERT Section 14 -- TRANSFER's own one-time
+  // pre-execution framing screen: makes the 3 challenge types
+  // perceptible (translated into learner language, never the raw
+  // NEAR/CONTEXTUAL/HIGHER enum) BEFORE the learner starts, distinct
+  // from the in-execution challenge-type label (the progress indicator
+  // above) and from the post-completion Results breakdown.
+  if (quizMode === 'canonical_transfer' && questions.length > 0 && !transferIntroDismissed) {
+    return (
+      <div style={{ maxWidth: 560 }}>
+        <div className="card" style={{ padding: 'var(--space-8)' }}>
+          <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.transferResultTitle']}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '6px 0 var(--space-6)' }}>{at['quiz.transferIntroBody']}</p>
+          <ol style={{ margin: '0 0 var(--space-6)', paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeNear']}</li>
+            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeContextual']}</li>
+            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeHigher']}</li>
+          </ol>
+          <button type="button" className="btn btn-primary" onClick={() => setTransferIntroDismissed(true)}>
+            {at['quiz.transferIntroStart']}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const q = questions[current];
   if (!q) return null;
 
@@ -2228,7 +2261,20 @@ function QuizPageContent() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
         <span className="tabular" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-          {current + 1}/{questions.length}
+          {/* CANON-V2-PREVIEW-CERT Section 14 -- Transfer identifies
+              WHICH challenge type the learner is on (translated into
+              learner language, never the raw NEAR/CONTEXTUAL/HIGHER
+              enum) instead of the generic "Question X of Y" every
+              other mode keeps using. */}
+          {quizMode === 'canonical_transfer' && questions[current]?.transferDepth
+            ? `${
+                questions[current].transferDepth === 'NEAR'
+                  ? at['quiz.transferChallengeNear']
+                  : questions[current].transferDepth === 'CONTEXTUAL'
+                  ? at['quiz.transferChallengeContextual']
+                  : at['quiz.transferChallengeHigher']
+              } · ${current + 1}/${questions.length}`
+            : `${current + 1}/${questions.length}`}
         </span>
         <div style={{ flex: 1, height: 5, background: 'var(--border-default)', borderRadius: 999, overflow: 'hidden' }}>
           <div

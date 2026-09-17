@@ -62,5 +62,12 @@ export function toClientQuestion(q: GeneratedQuestion, index: number, opts: ToCl
     // LX-4R R5: the generator's canonical reasoning tag, so the client's
     // "what's being asked" line matches the server grader guard.
     expectedReasoningType: q.expectedReasoningType,
+    // CANON-V2-PREVIEW-CERT Section 14 -- exposed ONLY for a canonical
+    // Transfer challenge (undefined for every other question). Safe to
+    // send to the client: the learner is meant to know which of the 3
+    // challenge types they're on (Section 14's own explicit request) --
+    // the client translates this into learner language (never the raw
+    // NEAR/CONTEXTUAL/HIGHER string) before display.
+    transferDepth: q.transferDepth,
   };
 }
