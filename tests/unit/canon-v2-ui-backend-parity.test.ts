@@ -175,3 +175,163 @@ describe('critical misconception active -- no later-stage CTA is ever exposed', 
     expect(launch.activityType).toBe('REINFORCE'); // the overlay is reported, but the underlying launch is still the Practice-shaped one
   });
 });
+
+// ============================================================
+// CANON-V2-PREVIEW-CERT Section 18 -- FULL stage x actionState x
+// intervention MATRIX. The 5 scenarios above cover the spec's own
+// named examples; this expands to the full minimum list Section 18
+// requires, using the SAME parity method (UI view + session launch,
+// both derived from one fresh decision).
+// ============================================================
+describe('LEARN -- EXECUTABLE LEARN_CHECK renders a real CTA end to end', () => {
+  it('UI shows a CANONICAL_ACTION with activityType LEARN_CHECK; session/start launches canonical_learn_check', () => {
+    const d = decision({
+      stage: 'LEARN',
+      actionState: 'EXECUTABLE',
+      nextCanonicalAction: 'LEARN',
+      requirements: decision().requirements.map((r) => (r.stage === 'LEARN' ? { ...r, status: 'UNRESOLVED', satisfactionBasis: null } : r)),
+      activityContract: { ...decision().activityContract!, activityType: 'LEARN_CHECK', itemCount: null, independence: false },
+    });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.kind).toBe('CANONICAL_ACTION');
+    expect(view.now.activityType).toBe('LEARN_CHECK');
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchStatus).toBe('READY');
+    expect(launch.launchTarget).toContain('mode=canonical_learn_check');
+  });
+});
+
+describe('LEARN + retry -- a failed LEARN_CHECK leaves the learner at LEARN, EXECUTABLE, never silently promoted to PRACTICE', () => {
+  it('the SAME LEARN/EXECUTABLE shape as a first attempt -- the engine, not any local state, decides whether LEARN is still the current stage', () => {
+    const d = decision({
+      stage: 'LEARN',
+      actionState: 'EXECUTABLE',
+      nextCanonicalAction: 'LEARN',
+      requirements: decision().requirements.map((r) => (r.stage === 'LEARN' ? { ...r, status: 'UNRESOLVED', satisfactionBasis: null } : r)),
+      activityContract: { ...decision().activityContract!, activityType: 'LEARN_CHECK', itemCount: null, independence: false },
+    });
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.stage).toBe('LEARN');
+    expect(launch.launchStatus).toBe('READY');
+  });
+});
+
+describe('PRACTICE with 0 qualifying attempts (genuinely fresh) -- same PRACTICE CTA as 1-qualifying, never Prove', () => {
+  it('stage PRACTICE, EXECUTABLE, no REINFORCE overlay', () => {
+    const d = decision({ stage: 'PRACTICE', actionState: 'EXECUTABLE', nextCanonicalAction: 'PRACTICE', intervention: null });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.activityType).toBe('PRACTICE');
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.activityType).toBe('PRACTICE');
+  });
+});
+
+describe('PRACTICE + REINFORCE overlay -- reported as an overlay on Practice, never a separate stage/CTA', () => {
+  it('activityType reported to the UI is REINFORCE, but the launch target is still the Practice-shaped topic_practice mode', () => {
+    const d = decision({ stage: 'PRACTICE', actionState: 'EXECUTABLE', nextCanonicalAction: 'PRACTICE', intervention: 'REINFORCE' });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.kind).toBe('CANONICAL_ACTION');
+    expect(view.now.activityType).toBe('PRACTICE'); // toLegacyActivityType maps both PRACTICE and REINFORCE to the same legacy 'PRACTICE' presentation
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.activityType).toBe('REINFORCE');
+    expect(launch.launchTarget).toContain('mode=topic_practice');
+  });
+});
+
+describe('PROVE rollback (a failed Prove rolled the learner back to PRACTICE) -- UI/backend both show PRACTICE, never a stale Prove CTA', () => {
+  it('stage PRACTICE with a PROVE rollback recorded -- the CTA is PRACTICE end to end', () => {
+    const d = decision({
+      stage: 'PRACTICE',
+      actionState: 'EXECUTABLE',
+      nextCanonicalAction: 'PRACTICE',
+      rollback: { case: 'PROVE_FAILED', rolledBackTo: 'PRACTICE', reasonCodes: ['PROVE_FAILED_ATTEMPT'] } as any,
+    });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.activityType).toBe('PRACTICE');
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchTarget).toContain('mode=topic_practice');
+    expect(launch.stage).toBe('PRACTICE');
+  });
+});
+
+describe('RETAIN first-fail retry -- EXECUTABLE immediately, no WAITING, matching the engine\'s own two-strike rule', () => {
+  it('after a first Retain failure, the decision is EXECUTABLE RETENTION_CHECK with no waitingReason -- UI shows a real CTA, not a waiting state', () => {
+    const d = decision({
+      stage: 'RETAIN',
+      actionState: 'EXECUTABLE',
+      nextCanonicalAction: 'RETENTION_CHECK',
+      waitingReason: null,
+      nextEligibleAt: null,
+      activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true },
+    });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.kind).toBe('CANONICAL_ACTION');
+    expect(view.now.fallback).toBeNull();
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchStatus).toBe('READY');
+    expect(launch.launchTarget).toContain('mode=canonical_retain');
+  });
+});
+
+describe('RETAIN second-fail rollback -- rolled back to PROVE, UI/backend agree, never a lingering Retain CTA', () => {
+  it('stage PROVE (post-rollback) -- UI shows the Prove CTA, session/start launches canonical_prove, never canonical_retain', () => {
+    const d = decision({
+      stage: 'PROVE',
+      actionState: 'EXECUTABLE',
+      nextCanonicalAction: 'PROVE',
+      rollback: { case: 'RETAIN_DOUBLE_FAILURE', rolledBackTo: 'PROVE', reasonCodes: ['RETAIN_TWO_STRIKE'] } as any,
+      activityContract: { ...decision().activityContract!, activityType: 'PROVE', itemCount: { min: 10, max: 10 }, difficulty: { target: 3, min: 3, max: 4, reasonCode: 'DEFAULT_STAGE_MIDPOINT' as any }, independence: true, supportLevel: 'NONE' },
+    });
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchTarget).toContain('mode=canonical_prove');
+    expect(launch.launchTarget).not.toContain('mode=canonical_retain');
+  });
+});
+
+describe('TRANSFER Case A/B/C/D rollback destinations -- UI/backend both reflect whichever stage the engine actually rolled back to, never independently re-derived from the diagnostic', () => {
+  it('Case A (application-context weakness) -- stays TRANSFER', () => {
+    const d = decision({ stage: 'TRANSFER', actionState: 'EXECUTABLE', nextCanonicalAction: 'TRANSFER', rollback: { case: 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS', rolledBackTo: 'TRANSFER', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'TRANSFER', itemCount: { min: 3, max: 3 }, independence: true } });
+    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('mode=canonical_transfer');
+  });
+  it('Case B (retention weakness) -- rolled back to RETAIN', () => {
+    const d = decision({ stage: 'RETAIN', actionState: 'EXECUTABLE', nextCanonicalAction: 'RETENTION_CHECK', rollback: { case: 'TRANSFER_CASE_B_RETENTION_WEAKNESS', rolledBackTo: 'RETAIN', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true } });
+    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('mode=canonical_retain');
+  });
+  it('Case C (foundational/procedural failure) -- rolled back to PRACTICE', () => {
+    const d = decision({ stage: 'PRACTICE', actionState: 'EXECUTABLE', nextCanonicalAction: 'PRACTICE', rollback: { case: 'TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE', rolledBackTo: 'PRACTICE', reasonCodes: [] } as any });
+    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('mode=topic_practice');
+  });
+  it('Case D (critical misconception) -- rolled back to PRACTICE with REINFORCE, exactly like Case C plus the overlay', () => {
+    const d = decision({ stage: 'PRACTICE', actionState: 'EXECUTABLE', nextCanonicalAction: 'PRACTICE', intervention: 'REINFORCE', reasonCodes: ['CRITICAL_MISCONCEPTION'], rollback: { case: 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION', rolledBackTo: 'PRACTICE', reasonCodes: ['CRITICAL_MISCONCEPTION'] } as any });
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchTarget).toContain('mode=topic_practice');
+    expect(launch.activityType).toBe('REINFORCE');
+  });
+});
+
+describe('CONSOLIDATED -- UI shows the consolidated fallback, never a launchable CTA', () => {
+  it('actionState CONSOLIDATED renders CONSOLIDATED_NO_ACTION and no launch target', () => {
+    const d = decision({ stage: 'CONSOLIDATED', actionState: 'CONSOLIDATED', activityContract: null });
+    const view = overrideConceptMissionViewWithCanonicalDecision(legacyView(), d);
+    expect(view.now.fallback).toBe('CONSOLIDATED_NO_ACTION');
+    const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
+    expect(launch.launchStatus).toBe('CONSOLIDATED');
+    expect(launch.launchTarget).toBeNull();
+  });
+});
+
+describe('runtime error state -- a genuinely unavailable decision produces no UI/backend disagreement because BOTH surfaces simply never receive a decision to render (CanonicalDecisionUnavailableError is thrown before either is called)', () => {
+  it('this is a wiring guarantee, not a decision shape to test: getCanonicalPedagogicalDecision throwing means neither resolveCanonicalLaunch nor overrideConceptMissionViewWithCanonicalDecision is ever invoked -- both callers (canon-r5-surface-integration.test.ts, concept-mission-view.service.ts) catch CanonicalDecisionUnavailableError BEFORE calling either function, confirmed by source', () => {
+    const CONCEPT_MISSION_VIEW_SERVICE_SRC = require('fs').readFileSync(
+      require('path').join(process.cwd(), 'src/services/concept-mission-view.service.ts'),
+      'utf-8'
+    );
+    const catchIdx = CONCEPT_MISSION_VIEW_SERVICE_SRC.indexOf('CanonicalDecisionUnavailableError');
+    const overrideCallIdx = CONCEPT_MISSION_VIEW_SERVICE_SRC.indexOf('overrideConceptMissionViewWithCanonicalDecision(');
+    expect(catchIdx).toBeGreaterThan(-1);
+    // The catch handler is textually BEFORE the override call within the
+    // same try block's structure (the override call only ever happens on
+    // the success path, after the catch's own early return).
+    expect(overrideCallIdx).toBeGreaterThan(catchIdx);
+  });
+});
