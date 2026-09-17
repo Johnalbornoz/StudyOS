@@ -33,6 +33,7 @@
  * needed here.
  */
 import { generateQuestionsForConcept, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
+import { validateDifficultyAgainstContract } from '@/lib/pedagogical-decision/canonical-contract-validator';
 
 export interface CanonicalTransferGenerationParams {
   conceptId: string;
@@ -98,7 +99,13 @@ export async function generateCanonicalTransferChallenges(
         ibContext: params.ibContext,
       }).catch(() => [] as GeneratedQuestion[]);
       const candidate = generated[0] ?? null;
-      const difficultyInRange = !!candidate && candidate.difficulty >= minDifficulty && candidate.difficulty <= maxDifficulty;
+      // CANON-V2-FINAL-HARDENING Section 4 -- this post-generation
+      // structural check (checkpoint B: "after generation") now runs
+      // through the ONE centralized contract validator, the same one
+      // checkV1ActivityContractCompliance delegates to at submission
+      // time (checkpoint D), rather than a second, locally-duplicated
+      // range comparison.
+      const difficultyInRange = !!candidate && validateDifficultyAgainstContract({ min: minDifficulty, max: maxDifficulty }, candidate.difficulty) === null;
       return {
         depth: req.depth,
         candidate: candidate && difficultyInRange ? { ...candidate, transferDepth: req.depth } : null,

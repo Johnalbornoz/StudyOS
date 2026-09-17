@@ -37,6 +37,7 @@ import { V1_POLICY_VERSION } from '@/lib/pedagogical-migration';
 import type { PedagogicalStage, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import { getCanonicalPedagogicalDecision, CanonicalDecisionUnavailableError } from './canonical-decision.service';
 import { resolveV1PracticeEligibility, resolveAuthorizedItemCount } from './canonical-session-launch';
+import { validateCanonicalActivityContract } from './canonical-contract-validator';
 
 /**
  * CANON-R5R1A/R6 Part 18 -- the full trusted authorization: not just
@@ -180,6 +181,17 @@ export interface V1ContractComplianceResult {
  * (LEARN_CHECK only) skips the item-count range check entirely: there
  * is no canonical item-count contract to violate for an activity whose
  * own authority deliberately reports none.
+ *
+ * CANON-V2-FINAL-HARDENING Section 4 -- the actual comparisons now
+ * delegate to `canonical-contract-validator.ts`'s
+ * `validateCanonicalActivityContract` (the ONE centralized structural
+ * contract validator, also used directly by
+ * `canonical-transfer-generation.service.ts`'s own post-generation
+ * check) -- this function's own `{compliant, reason, detail}` shape and
+ * closed `V1_ACTIVITY_CONTRACT_VIOLATION` reason code are unchanged, so
+ * every existing caller/test sees byte-identical behavior. Reports only
+ * the FIRST violation found (itemCount, then difficulty, then
+ * independence), exactly the original check-and-return-early ordering.
  */
 export function checkV1ActivityContractCompliance(params: {
   authorization: Pick<V1PracticeLaunchMarker, 'itemCount' | 'difficulty' | 'independence'>;
@@ -189,35 +201,16 @@ export function checkV1ActivityContractCompliance(params: {
   actualAiAssistanceType?: string;
 }): V1ContractComplianceResult {
   const { authorization, actualItemCount, actualDifficulty, actualHintsUsed, actualAiAssistanceType } = params;
-  if (authorization.itemCount && (actualItemCount < authorization.itemCount.min || actualItemCount > authorization.itemCount.max)) {
-    return {
-      compliant: false,
-      reason: V1_ACTIVITY_CONTRACT_VIOLATION,
-      detail: `actual itemCount ${actualItemCount} is outside the authorized range [${authorization.itemCount.min}, ${authorization.itemCount.max}]`,
-    };
-  }
-  if (actualDifficulty < authorization.difficulty.min || actualDifficulty > authorization.difficulty.max) {
-    return {
-      compliant: false,
-      reason: V1_ACTIVITY_CONTRACT_VIOLATION,
-      detail: `actual difficulty ${actualDifficulty} is outside the authorized range [${authorization.difficulty.min}, ${authorization.difficulty.max}]`,
-    };
-  }
-  if (authorization.independence) {
-    if (actualHintsUsed !== undefined && actualHintsUsed > 0) {
-      return {
-        compliant: false,
-        reason: V1_ACTIVITY_CONTRACT_VIOLATION,
-        detail: `an independent (no-assistance) contract requires hintsUsed === 0; actual was ${actualHintsUsed}`,
-      };
-    }
-    if (actualAiAssistanceType !== undefined && actualAiAssistanceType !== 'NONE') {
-      return {
-        compliant: false,
-        reason: V1_ACTIVITY_CONTRACT_VIOLATION,
-        detail: `an independent (no-assistance) contract requires aiAssistanceType === 'NONE'; actual was ${actualAiAssistanceType}`,
-      };
-    }
+  const result = validateCanonicalActivityContract({
+    contractItemCount: authorization.itemCount,
+    contractDifficulty: authorization.difficulty,
+    contractRequiresIndependence: authorization.independence,
+    actualItemCount,
+    actualDifficulty,
+    actualIndependence: { hintsUsed: actualHintsUsed, aiAssistanceType: actualAiAssistanceType },
+  });
+  if (!result.valid) {
+    return { compliant: false, reason: V1_ACTIVITY_CONTRACT_VIOLATION, detail: result.violations[0].detail };
   }
   return { compliant: true, reason: null };
 }
