@@ -304,7 +304,7 @@ describe('17. published count equals required count / 20. zero accepted question
     // from this branch either way.
     expect(afterCheck).toMatch(/return NextResponse\.json\(\s*\n\s*validated\.quizMode === 'canonical_prove'/);
     expect(afterCheck).toMatch(/error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE'/);
-    expect(afterCheck).toMatch(/: \{ error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' \}/);
+    expect(afterCheck).toMatch(/: \{ error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode\('GENERATION_FAILED'\)\.code, message: 'Failed to generate quiz questions' \}/);
     expect(afterCheck.indexOf('const quizId = await storeQuiz(')).toBeGreaterThan(afterCheck.indexOf("error: 'GENERATION_FAILED'"));
   });
 });

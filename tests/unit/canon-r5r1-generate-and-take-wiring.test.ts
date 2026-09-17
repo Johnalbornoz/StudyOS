@@ -54,7 +54,7 @@ describe('Part 2/6/20 -- v1Launch is an intent signal only, independently re-ver
   it('CANON-R6 Part 24/29: a canonical_prove request that fails to authorize is refused outright, never silently generated with that mode\'s own generic defaults', () => {
     const idx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_prove' && !v1Marker");
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    const slice = ROUTE_SRC.slice(idx, idx + 400);
     expect(slice).toMatch(/V1_PROVE_AUTHORIZATION_FAILED/);
     expect(slice).toMatch(/status: 403/);
   });
@@ -179,9 +179,11 @@ describe('Part 13/15/22 -- Results reconciliation: fresh, after the write, fail-
   it('the response always carries canonicalResults + canonicalResultsStatus alongside the existing legacy result fields -- evidence/mastery data is never withheld because canonical re-fetch failed', () => {
     const returnIdx = ROUTE_SRC.lastIndexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
     expect(returnIdx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(returnIdx, returnIdx + 700);
+    const slice = ROUTE_SRC.slice(returnIdx, returnIdx + 1100);
     expect(slice).toMatch(/canonicalResults,/);
     expect(slice).toMatch(/canonicalResultsStatus,/);
+    // CANON-V2-FINAL-HARDENING Section 3 -- additive canonicalErrorCode field.
+    expect(slice).toMatch(/canonicalErrorCode:/);
     expect(slice).toMatch(/mastery:/); // legacy result data still present
   });
 

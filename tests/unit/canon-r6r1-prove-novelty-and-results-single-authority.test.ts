@@ -253,10 +253,13 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
     // 2 occurrences in the JSON error response bodies (unchanged from
     // CANON-R6) + 2 occurrences (CANON-R6-PERF-I1) where the same,
     // already-existing code is ALSO passed as the `errorCode` argument
-    // to `emitCanonicalProveSummary` at each of those two guards --
-    // instrumentation reusing the existing reason code, never a new one.
+    // to `emitCanonicalProveSummary` at each of those two guards, + 2
+    // (CANON-V2-FINAL-HARDENING Section 3) where the same code is ALSO
+    // passed to toCanonicalErrorCode(...) at each guard to derive the
+    // additive canonicalErrorCode field -- instrumentation reusing the
+    // existing reason code, never a new one.
     const occurrences = (ROUTE_SRC.match(/V1_PROVE_GENERATION_INCOMPLETE/g) ?? []).length;
-    expect(occurrences).toBe(4);
+    expect(occurrences).toBe(6);
   });
 });
 

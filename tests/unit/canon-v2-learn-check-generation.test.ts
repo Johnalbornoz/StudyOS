@@ -37,7 +37,7 @@ describe('canonical_learn_check generation dispatch', () => {
   it('canonical_learn_check has no legitimate legacy meaning -- a request that fails v1 authorization is refused outright (403), never silently generated as a generic quiz', () => {
     const idx = ROUTE_SRC.indexOf("validated.quizMode === 'canonical_learn_check' && !v1Marker");
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 300);
+    const slice = ROUTE_SRC.slice(idx, idx + 400);
     expect(slice).toMatch(/V1_LEARN_CHECK_AUTHORIZATION_FAILED/);
     expect(slice).toMatch(/status: 403/);
   });

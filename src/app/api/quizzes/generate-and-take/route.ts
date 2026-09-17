@@ -66,6 +66,7 @@ import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } 
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
 import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
+import { toCanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
 import {
   prepareCanonicalProveActivity,
   findActivePreparedActivity,
@@ -613,25 +614,25 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // generalized to every canonical_* mode).
     if (validated.quizMode === 'canonical_prove' && !v1Marker) {
       return NextResponse.json(
-        { error: 'V1_PROVE_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for an independent Prove check.' },
+        { error: 'V1_PROVE_AUTHORIZATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('V1_PROVE_AUTHORIZATION_FAILED').code, message: 'This concept is not currently authorized for an independent Prove check.' },
         { status: 403 }
       );
     }
     if (validated.quizMode === 'canonical_retain' && !v1Marker) {
       return NextResponse.json(
-        { error: 'V1_RETAIN_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a Retain check.' },
+        { error: 'V1_RETAIN_AUTHORIZATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('V1_RETAIN_AUTHORIZATION_FAILED').code, message: 'This concept is not currently authorized for a Retain check.' },
         { status: 403 }
       );
     }
     if (validated.quizMode === 'canonical_transfer' && !v1Marker) {
       return NextResponse.json(
-        { error: 'V1_TRANSFER_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a Transfer challenge.' },
+        { error: 'V1_TRANSFER_AUTHORIZATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('V1_TRANSFER_AUTHORIZATION_FAILED').code, message: 'This concept is not currently authorized for a Transfer challenge.' },
         { status: 403 }
       );
     }
     if (validated.quizMode === 'canonical_learn_check' && !v1Marker) {
       return NextResponse.json(
-        { error: 'V1_LEARN_CHECK_AUTHORIZATION_FAILED', message: 'This concept is not currently authorized for a comprehension checkpoint.' },
+        { error: 'V1_LEARN_CHECK_AUTHORIZATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('V1_LEARN_CHECK_AUTHORIZATION_FAILED').code, message: 'This concept is not currently authorized for a comprehension checkpoint.' },
         { status: 403 }
       );
     }
@@ -1308,12 +1309,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       // every other mode already gets.
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
-          : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
+          : { error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('GENERATION_FAILED').code, message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
     }
@@ -1339,12 +1340,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       emitCanonicalProveCacheSummary();
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', message: 'Could not generate a complete, novel 10-question Retain check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
-          : { error: 'GENERATION_FAILED', message: 'Failed to generate quiz questions' },
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
+          : { error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('GENERATION_FAILED').code, message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
     }
@@ -2391,6 +2392,16 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         proveSufficiency,
         canonicalResults,
         canonicalResultsStatus,
+        // CANON-V2-FINAL-HARDENING Section 3 -- additive: the SAME
+        // canonical failure category the taxonomy module reports for
+        // every other canonical error path in this route, so a client
+        // can key off ONE vocabulary regardless of which specific
+        // status string produced it. `null` for the two non-error
+        // statuses (NOT_V1, OK).
+        canonicalErrorCode:
+          canonicalResultsStatus === 'OK' || canonicalResultsStatus === 'NOT_V1'
+            ? null
+            : toCanonicalErrorCode(canonicalResultsStatus).code,
         mastery: primaryMastery
           ? { previous: primaryMastery.previousMastery, current: primaryMastery.newMastery, delta: primaryMastery.delta }
           : undefined,
