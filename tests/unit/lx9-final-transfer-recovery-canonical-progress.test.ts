@@ -204,7 +204,7 @@ describe('LX-9 FINAL 14-16 -- retry never changes failure layer', () => {
     // inserted ahead of the generic-failure "Try again" button this test
     // checks for.
     const start = QUIZ_PAGE_SRC.indexOf("if (phase === 'error')");
-    const block = QUIZ_PAGE_SRC.slice(start, start + 3200);
+    const block = QUIZ_PAGE_SRC.slice(start, start + 3800);
     expect(block).toMatch(/generateQuiz\(studentId\)/);
   });
 

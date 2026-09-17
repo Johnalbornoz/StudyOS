@@ -266,7 +266,9 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
   });
 
   it('(12) retry/error states (review screen, load-error screen, verification errors, practice-prepare-failed) read `at`', () => {
-    expect(QUIZ).toMatch(/at\['quiz\.loadError'\]/);
+    // CANON-V2-FINAL-HARDENING -- quiz.loadError is now selected via the
+    // failureMessageKey variable (mode-aware), not an inline literal.
+    expect(QUIZ).toMatch(/at\[failureMessageKey\]/);
     expect(QUIZ).toMatch(/at\['quiz\.backToDashboard'\]/);
     expect(QUIZ).toMatch(/at\['practice\.prepareFailedTitle'\]/);
     expect(QUIZ).toMatch(/at\['practice\.prepareFailedBody'\]/);

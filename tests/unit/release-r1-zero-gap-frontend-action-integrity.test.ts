@@ -287,7 +287,13 @@ describe('RELEASE-R1 12 -- canonical mismatch shows the correct recovery UX, nev
 
   it('the raw generic message is still used for a genuine generation failure -- never removed, only no longer shown for a KNOWN canonical mismatch', () => {
     const SRC = read('src/app/dashboard/quiz/page.tsx');
-    expect(SRC).toMatch(/at\['quiz\.loadError'\]/);
+    // CANON-V2-FINAL-HARDENING -- quiz.loadError is now selected via the
+    // failureMessageKey variable (which also picks a mode-aware key for
+    // canonical_retain/canonical_transfer/canonical_learn_check) rather
+    // than an inline `at['quiz.loadError']` literal -- the key itself is
+    // still the real fallback default, never removed.
+    expect(SRC).toMatch(/: 'quiz\.loadError';/);
+    expect(SRC).toMatch(/at\[failureMessageKey\]/);
     expect(SRC).toMatch(/at\['practice\.prepareFailedTitle'\]/);
   });
 });

@@ -357,10 +357,11 @@ describe('RET-R3 required test 29 -- Retention still fails closed below 6, never
  * 30 -- learner-facing retry UX is recoverable, never implies loss.  *
  * ================================================================ */
 describe('RET-R3 required test 30 -- the Retention failure state is recoverable, never a dead end', () => {
-  it('30. phase === "error" shows quiz.retentionLoadError (not the raw technical error string) and a Try Again button that re-invokes the SAME generateQuiz, specifically for retention_check', () => {
+  it('30. phase === "error" shows quiz.retentionLoadError (not the raw technical error string) and a Try Again button that re-invokes the SAME generateQuiz, specifically for retention_check AND (CANON-V2-FINAL-HARDENING) canonical_retain -- a real gap this phase fixed: canonical_retain previously fell through to the fully generic quiz.loadError instead of this same calm, mode-aware treatment', () => {
     const block = QUIZ_PAGE_SRC.slice(QUIZ_PAGE_SRC.indexOf("if (phase === 'error')"), QUIZ_PAGE_SRC.indexOf("if (results) {"));
-    expect(block).toMatch(/isRetentionFailure = quizMode === 'retention_check'/);
-    expect(block).toMatch(/isRetentionFailure \? at\['quiz\.retentionLoadError'\] : at\['quiz\.loadError'\]/);
+    expect(block).toMatch(/isRetentionFailure = quizMode === 'retention_check' \|\| quizMode === 'canonical_retain'/);
+    expect(block).toMatch(/isRetentionFailure\s*\n\s*\? 'quiz\.retentionLoadError'/);
+    expect(block).toMatch(/at\[failureMessageKey\]/);
     expect(block).toMatch(/onClick=\{\(\) => generateQuiz\(studentId\)\}/);
     expect(block).toMatch(/at\['activeLearning\.tryAgain'\]/);
     // the raw {error} string is never rendered to the learner.

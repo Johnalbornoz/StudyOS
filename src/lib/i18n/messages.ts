@@ -210,7 +210,7 @@ export type MessageKey =
   | 'debt.sectionActiveRepairs' | 'debt.activeRepairsSubtitle' | 'debt.stepOf' | 'debt.continueRepair'
   | 'errorType.CONCEPTUAL' | 'errorType.PROCEDURAL' | 'errorType.CARELESS' | 'errorType.INCOMPLETE' | 'errorType.MISREADING'
   | 'notifications.title' | 'notifications.subtitle' | 'notifications.emptyTitle' | 'notifications.emptyBody'
-  | 'quiz.generating' | 'quiz.loadError' | 'quiz.retentionLoadError' | 'quiz.canonicalStateChanged' | 'quiz.backToDashboard' | 'quiz.backToSubject'
+  | 'quiz.generating' | 'quiz.loadError' | 'quiz.retentionLoadError' | 'quiz.transferLoadError' | 'quiz.learnCheckLoadError' | 'quiz.canonicalStateChanged' | 'quiz.backToDashboard' | 'quiz.backToSubject'
   | 'quiz.results' | 'quiz.score' | 'quiz.correctOf' | 'quiz.masteryLabel' | 'quiz.perConceptResultsTitle'
   | 'quiz.next' | 'quiz.viewResults' | 'quiz.submitting' | 'quiz.breadcrumbQuiz' | 'quiz.languagePickerLabel' | 'quiz.langSwitch.title' | 'quiz.langSwitch.body' | 'quiz.langSwitch.cancel' | 'quiz.langSwitch.confirm' | 'quiz.langSwitch.cantLocalizeTitle' | 'quiz.langSwitch.cantLocalizeBody' | 'quiz.langSwitch.startNewActivity' | 'practice.preparing' | 'practice.prepareFailedTitle' | 'practice.prepareFailedBody' | 'practice.prepareRetry'
   | 'quiz.hintButton' | 'quiz.hintButtonHide' | 'quiz.hintLoading' | 'quiz.hintError'
@@ -1112,6 +1112,8 @@ const es: Messages = {
   'quiz.generating': 'Generando preguntas con IA…',
   'quiz.loadError': 'No se pudo cargar el quiz',
   'quiz.retentionLoadError': 'No pudimos preparar este repaso de memoria.',
+  'quiz.transferLoadError': 'No pudimos preparar tus retos de transferencia.',
+  'quiz.learnCheckLoadError': 'No pudimos preparar tu comprobación de comprensión.',
   'quiz.canonicalStateChanged': 'Tu siguiente paso cambió con tu progreso. StudyUS actualizó tu recorrido.',
   'quiz.backToDashboard': 'Volver al panel',
   'quiz.backToSubject': 'Volver a la materia',
@@ -2248,6 +2250,8 @@ const en: Messages = {
   'quiz.generating': 'Generating questions with AI…',
   'quiz.loadError': "Couldn't load the quiz",
   'quiz.retentionLoadError': "Couldn't prepare this memory check.",
+  'quiz.transferLoadError': "Couldn't prepare your transfer challenges.",
+  'quiz.learnCheckLoadError': "Couldn't prepare your understanding check.",
   'quiz.canonicalStateChanged': 'Your next step changed with your progress. StudyUS updated your path.',
   'quiz.backToDashboard': 'Back to dashboard',
   'quiz.backToSubject': 'Back to subject',
@@ -3384,6 +3388,8 @@ const de: Messages = {
   'quiz.generating': 'Fragen werden mit KI generiert…',
   'quiz.loadError': 'Quiz konnte nicht geladen werden',
   'quiz.retentionLoadError': 'Diese Gedächtnisprüfung konnte nicht vorbereitet werden.',
+  'quiz.transferLoadError': 'Deine Transfer-Herausforderungen konnten nicht vorbereitet werden.',
+  'quiz.learnCheckLoadError': 'Deine Verständnisprüfung konnte nicht vorbereitet werden.',
   'quiz.canonicalStateChanged': 'Dein nächster Schritt hat sich mit deinem Fortschritt geändert. StudyUS hat deinen Lernweg aktualisiert.',
   'quiz.backToDashboard': 'Zurück zur Übersicht',
   'quiz.backToSubject': 'Zurück zum Fach',
@@ -4520,6 +4526,8 @@ const fr: Messages = {
   'quiz.generating': "Génération des questions par l'IA…",
   'quiz.loadError': 'Impossible de charger le quiz',
   'quiz.retentionLoadError': "Nous n'avons pas pu préparer ce contrôle de mémorisation.",
+  'quiz.transferLoadError': "Nous n'avons pas pu préparer vos défis de transfert.",
+  'quiz.learnCheckLoadError': "Nous n'avons pas pu préparer votre vérification de compréhension.",
   'quiz.canonicalStateChanged': "Ta prochaine étape a changé avec tes progrès. StudyUS a mis à jour ton parcours.",
   'quiz.backToDashboard': 'Retour au tableau de bord',
   'quiz.backToSubject': 'Retour à la matière',
@@ -5656,6 +5664,8 @@ const pt: Messages = {
   'quiz.generating': 'Gerando perguntas com IA…',
   'quiz.loadError': 'Não foi possível carregar o quiz',
   'quiz.retentionLoadError': 'Não conseguimos preparar esta verificação de memória.',
+  'quiz.transferLoadError': 'Não conseguimos preparar seus desafios de transferência.',
+  'quiz.learnCheckLoadError': 'Não conseguimos preparar sua verificação de compreensão.',
   'quiz.canonicalStateChanged': 'Seu próximo passo mudou com o seu progresso. O StudyUS atualizou o seu percurso.',
   'quiz.backToDashboard': 'Voltar ao painel',
   'quiz.backToSubject': 'Voltar à matéria',

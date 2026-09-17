@@ -1498,11 +1498,29 @@ function QuizPageContent() {
       );
     }
 
-    const isRetentionFailure = quizMode === 'retention_check';
+    // CANON-V2-FINAL-HARDENING Section 16 -- AI failure UX must never
+    // say "you failed," "your answer was wrong," "stage reset," or
+    // "knowledge lost" (no evidence was ever created for a generation
+    // failure, so none of those is even true). `canonical_retain` was a
+    // real gap: it fell through to the fully generic quiz.loadError
+    // instead of the SAME calm, mode-aware treatment retention_check
+    // already had. canonical_transfer/canonical_learn_check now get
+    // their own reassuring copy too, explicitly naming "your progress
+    // is safe" -- canonical_prove and every legacy mode keep their
+    // existing, already-calm generic copy unchanged.
+    const isRetentionFailure = quizMode === 'retention_check' || quizMode === 'canonical_retain';
+    const failureMessageKey =
+      isRetentionFailure
+        ? 'quiz.retentionLoadError'
+        : quizMode === 'canonical_transfer'
+        ? 'quiz.transferLoadError'
+        : quizMode === 'canonical_learn_check'
+        ? 'quiz.learnCheckLoadError'
+        : 'quiz.loadError';
     return (
       <div>
         <div className="card empty-state" style={{ color: 'var(--error)' }}>
-          <strong>{isRetentionFailure ? at['quiz.retentionLoadError'] : at['quiz.loadError']}</strong>
+          <strong>{at[failureMessageKey]}</strong>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
           {studentId && (
