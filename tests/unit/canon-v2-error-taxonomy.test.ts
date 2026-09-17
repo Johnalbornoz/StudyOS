@@ -84,12 +84,24 @@ describe('same semantic failure -> same canonical code', () => {
 
 describe('the taxonomy is actually wired into generate-and-take/route.ts responses (not just defined and unused)', () => {
   it('the route imports toCanonicalErrorCode from the taxonomy module', () => {
-    expect(ROUTE_SRC).toMatch(/import \{ toCanonicalErrorCode \} from '@\/lib\/pedagogical-decision\/canonical-error-taxonomy';/);
+    expect(ROUTE_SRC).toMatch(/import \{ toCanonicalErrorCode, type CanonicalErrorCode \} from '@\/lib\/pedagogical-decision\/canonical-error-taxonomy';/);
   });
 
   it('every canonical_* authorization-failure response includes a canonicalErrorCode field', () => {
-    const occurrences = (ROUTE_SRC.match(/canonicalErrorCode: toCanonicalErrorCode\(/g) ?? []).length;
-    expect(occurrences).toBeGreaterThanOrEqual(9); // 4 auth guards x1 + 2 generation-incomplete guards x4 (3 modes + generic fallback) = 12, conservatively >=9
+    // CANON-V2-PREVIEW-CERT -- the 6 generation-incomplete branches
+    // (3 modes x 2 guard sites) now prefer a REAL classification
+    // (canonicalGenerationErrorCode, computed from generation
+    // diagnostics) over the blanket toCanonicalErrorCode(...) fallback
+    // -- so those 6 occurrences moved from a direct `canonicalErrorCode:
+    // toCanonicalErrorCode(...)` shape to `canonicalErrorCode:
+    // canonicalGenerationErrorCode ?? toCanonicalErrorCode(...)`. Both
+    // still stamp a real canonicalErrorCode field; this test now checks
+    // the field exists (via either shape) rather than the exact
+    // occurrence count of the literal old expression.
+    const directOccurrences = (ROUTE_SRC.match(/canonicalErrorCode: toCanonicalErrorCode\(/g) ?? []).length;
+    const classifierFallbackOccurrences = (ROUTE_SRC.match(/canonicalErrorCode: canonicalGenerationErrorCode \?\? toCanonicalErrorCode\(/g) ?? []).length;
+    expect(directOccurrences + classifierFallbackOccurrences).toBeGreaterThanOrEqual(9);
+    expect(classifierFallbackOccurrences).toBe(6); // 3 modes x 2 guard sites
   });
 
   it('the Results response derives canonicalErrorCode from canonicalResultsStatus, null only for the two non-error statuses', () => {

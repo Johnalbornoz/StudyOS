@@ -153,7 +153,11 @@ describe('Part 7/8/21 -- the REAL administered/graded counts are persisted, neve
 
 describe('Part 13/15/22 -- Results reconciliation: fresh, after the write, fail-safe', () => {
   it('the canonical results re-fetch happens strictly AFTER perConceptResults (the evidence-writing loop) has already been awaited', () => {
-    const perConceptIdx = ROUTE_SRC.indexOf('const perConceptResults = await Promise.all(');
+    // CANON-V2-PREVIEW-CERT Section 9 -- perConceptResults is now
+    // `let`-declared above its own assignment (wrapped in a try/catch
+    // for EVIDENCE_PERSISTENCE_FAILED); the assignment itself is
+    // `perConceptResults = await Promise.all(...)`.
+    const perConceptIdx = ROUTE_SRC.indexOf('perConceptResults = await Promise.all(');
     const refetchIdx = ROUTE_SRC.indexOf('getCanonicalPedagogicalDecision({\n          studentId: validated.studentId,\n          conceptId: quizSession.conceptId,');
     expect(perConceptIdx).toBeGreaterThan(-1);
     expect(refetchIdx).toBeGreaterThan(perConceptIdx);

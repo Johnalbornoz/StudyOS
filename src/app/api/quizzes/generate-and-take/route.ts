@@ -66,7 +66,8 @@ import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } 
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
 import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
-import { toCanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
+import { toCanonicalErrorCode, type CanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
+import { classifyProveRetainGenerationFailure, classifyTransferGenerationFailure } from '@/lib/lx/canonical-generation-failure-classifier';
 import {
   prepareCanonicalProveActivity,
   findActivePreparedActivity,
@@ -1282,6 +1283,51 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // short-of-`maxQuestions` result must never silently reach the
     // learner as a shorter quiz -- fail the WHOLE request closed instead
     // of publishing it, same as the already-empty case just below.
+    //
+    // CANON-V2-PREVIEW-CERT Section 6/7/8 -- computed ONCE, reused by
+    // both guards below, so "short of target" and "totally empty" both
+    // report the SAME real classification for the SAME underlying
+    // generation attempt. `null` for every non-exact-count mode (the
+    // generic gated-batch/legacy path), which keeps its own existing
+    // generic error shape untouched.
+    let canonicalGenerationErrorCode: CanonicalErrorCode | null = null;
+    if (questions.length < maxQuestions) {
+      try {
+        // CANON-V2-PREVIEW-CERT -- `!== null` (never a truthy `&&`
+        // narrow) matches this file's own established pattern for
+        // reading these closure-assigned `let`s (see the novelty-
+        // diagnostics block above, `else if (proveGenerationResult !== null)`)
+        // -- a bare truthy-check narrow on a `let` only ever reassigned
+        // inside a nested async IIFE is a known TypeScript control-flow
+        // limitation that narrows the read to `never` instead of the
+        // declared type.
+        if (validated.quizMode === 'canonical_prove' && proveGenerationResult !== null) {
+          const proveResult: CanonicalProveGenerationResult = proveGenerationResult;
+          canonicalGenerationErrorCode = classifyProveRetainGenerationFailure({
+            totalSemanticRejectedCount: proveResult.invocations.reduce((sum, inv) => sum + inv.semanticRejectedCount, 0),
+            finalQuestionCount: proveResult.finalQuestionCount,
+            targetCount: maxQuestions,
+          });
+        } else if (validated.quizMode === 'canonical_retain' && retainGenerationResult !== null) {
+          const retainResult: CanonicalRetainGenerationResult = retainGenerationResult;
+          canonicalGenerationErrorCode = classifyProveRetainGenerationFailure({
+            totalSemanticRejectedCount: retainResult.invocations.reduce((sum, inv) => sum + inv.semanticRejectedCount, 0),
+            finalQuestionCount: retainResult.finalQuestionCount,
+            targetCount: maxQuestions,
+          });
+        } else if (validated.quizMode === 'canonical_transfer' && transferGenerationResult !== null) {
+          const transferResultForClassification: CanonicalTransferGenerationResult = transferGenerationResult;
+          canonicalGenerationErrorCode = classifyTransferGenerationFailure(transferResultForClassification.challengeDiagnostics);
+        }
+      } catch {
+        // Defensive only -- the classifiers themselves only throw for a
+        // non-failure input, which cannot happen inside this guard
+        // (already known: questions.length < maxQuestions). Never lets
+        // a classification bug break the error response itself.
+        canonicalGenerationErrorCode = null;
+      }
+    }
+
     if (questions.length > 0 && questions.length < maxQuestions) {
       try {
         // eslint-disable-next-line no-console
@@ -1309,11 +1355,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       // every other mode already gets.
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
           : { error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('GENERATION_FAILED').code, message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
@@ -1340,11 +1386,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       emitCanonicalProveCacheSummary();
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
+          ? { error: 'GENERATION_FAILED', reason: 'V1_TRANSFER_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_TRANSFER_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete set of 3 Transfer challenges (NEAR/CONTEXTUAL/HIGHER).' }
           : { error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode('GENERATION_FAILED').code, message: 'Failed to generate quiz questions' },
         { status: 500 }
       );
@@ -1795,7 +1841,29 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         ? gradeCanonicalTransferAttempt(transferChallengeGrades)
         : null;
 
-    const perConceptResults = await Promise.all(
+    // CANON-V2-PREVIEW-CERT Section 9 -- EVIDENCE_PERSISTENCE_FAILED.
+    // `updateMastery` itself already guarantees transactional
+    // all-or-nothing persistence (BEGIN/COMMIT with a ROLLBACK + re-throw
+    // on any failure, mastery.service.ts) -- so a caught error here
+    // means NO partial evidence state exists in the database; this
+    // catch exists only to turn that re-thrown error into a correctly
+    // labeled, learner-safe response instead of letting it fall through
+    // to the generic outer catch (which has no way to distinguish
+    // "grading/response-shaping bug" from "the evidence write itself
+    // failed"). Never reports success; never advances canonical state.
+    let perConceptResults: Array<{
+      conceptId: string;
+      conceptLabel: string;
+      score: number;
+      previousMastery: number;
+      newMastery: number;
+      delta: number;
+      v1Qualifies: boolean;
+      duplicate: boolean;
+      retentionCheckQualified: boolean | undefined;
+    }>;
+    try {
+      perConceptResults = await Promise.all(
       Array.from(byConcept.entries()).map(async ([conceptId, bucket]) => {
         // CANON-V2-ARCH-CLEANUP Section 10 -- for canonical_transfer,
         // the evidence score IS transferGrading.overallScore (the mean
@@ -1997,7 +2065,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           retentionCheckQualified: masteryResult.retentionCheckQualified,
         };
       })
-    );
+      );
+    } catch (persistenceError) {
+      try {
+        // eslint-disable-next-line no-console
+        console.error('[evidence-persistence]', JSON.stringify({
+          canonicalErrorCode: 'EVIDENCE_PERSISTENCE_FAILED',
+          operationId: validated.quizId,
+          conceptId: quizSession.conceptId,
+          activityType: quizSession.activityType,
+        }));
+      } catch { /* logging must never break the response */ }
+      return NextResponse.json(
+        {
+          error: 'EVIDENCE_PERSISTENCE_FAILED',
+          canonicalErrorCode: toCanonicalErrorCode('EVIDENCE_PERSISTENCE_FAILED').code,
+          message: "We couldn't save this attempt. Your progress has not been updated. Please try again.",
+        },
+        { status: 500 }
+      );
+    }
 
     // Phase 3B: Assessment Verification -- only for Cumulative
     // Assessment/Mock Exam attempts. Evaluates the deterministic

@@ -81,6 +81,23 @@ const LEGACY_TO_CANONICAL: Record<string, CanonicalErrorCode> = {
   // case (see activity-launch-readiness.ts).
   CANONICAL_IMPLEMENTATION_MISSING: 'CANONICAL_IMPLEMENTATION_MISSING',
 
+  // Evidence-write transaction failure (updateMastery's own ROLLBACK +
+  // re-throw, caught at the route boundary -- see generate-and-take/route.ts's
+  // own dedicated try/catch around its perConceptResults Promise.all).
+  EVIDENCE_PERSISTENCE_FAILED: 'EVIDENCE_PERSISTENCE_FAILED',
+
+  // AI generation returned content, but its structure violates the
+  // canonical contract (wrong count/depth/difficulty) -- distinct from
+  // AI_GENERATION_FAILED (nothing usable came back at all) and from
+  // AI_VALIDATION_FAILED (structurally valid, but semantically rejected
+  // by the quality gate).
+  AI_GENERATION_INVALID: 'AI_GENERATION_INVALID',
+
+  // Structurally valid generation rejected by semantic/quality
+  // validation (question-quality-verifier.service.ts's own semantic
+  // gate) -- bounded recovery could not produce enough validated items.
+  AI_VALIDATION_FAILED: 'AI_VALIDATION_FAILED',
+
   // Decision-read failure -- CanonicalDecisionUnavailableError's own
   // string name, for callers that only have the error's constructor
   // name / a serialized code rather than the error instance itself.

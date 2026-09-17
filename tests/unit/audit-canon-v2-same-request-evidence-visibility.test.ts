@@ -66,7 +66,14 @@ describe('Section 9 investigation: same-request canonical re-evaluation ordering
   });
 
   it('the submission route awaits the full per-concept Promise.all (which internally awaits updateMastery) BEFORE ever reaching the canonicalResults block', () => {
-    const writeIdx = ROUTE_SRC.indexOf('const perConceptResults = await Promise.all(');
+    // CANON-V2-PREVIEW-CERT Section 9 -- `perConceptResults` is now
+    // `let`-declared (with an explicit type) a few lines above its own
+    // assignment, so the write itself can be wrapped in a try/catch
+    // that turns any evidence-persistence failure into a labeled
+    // EVIDENCE_PERSISTENCE_FAILED response instead of an unlabeled
+    // exception -- the assignment itself is still `perConceptResults =
+    // await Promise.all(...)`.
+    const writeIdx = ROUTE_SRC.indexOf('perConceptResults = await Promise.all(');
     const canonicalBlockIdx = ROUTE_SRC.indexOf('let canonicalResults:');
     expect(writeIdx).toBeGreaterThan(-1);
     expect(canonicalBlockIdx).toBeGreaterThan(writeIdx);

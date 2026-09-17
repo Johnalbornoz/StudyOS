@@ -321,9 +321,10 @@ describe('SCENARIO J -- AI FAILURE SAFETY (across LEARN_CHECK, PRACTICE, PROVE, 
     expect(occurrences).toBe(2);
   });
 
-  it('every canonical_* generation-incomplete/authorization-failure response carries the SAME standardized canonicalErrorCode (AI_GENERATION_FAILED / ACTIVITY_CONTRACT_MISMATCH) regardless of which activity failed -- proven directly in canon-v2-error-taxonomy.test.ts; this test only confirms the route actually stamps it for all 3 generation-incomplete branches', () => {
-    const occurrences = (ROUTE_SRC.match(/canonicalErrorCode: toCanonicalErrorCode\('V1_(PROVE|RETAIN|TRANSFER)_GENERATION_INCOMPLETE'\)\.code/g) ?? []).length;
+  it('every canonical_* generation-incomplete response carries a real, diagnostics-derived canonicalErrorCode (AI_GENERATION_FAILED / AI_GENERATION_INVALID / AI_VALIDATION_FAILED via classifyProveRetainGenerationFailure/classifyTransferGenerationFailure), falling back to the generic AI_GENERATION_FAILED mapping only when no generation-result diagnostics are available -- proven at the unit level in canon-v2-generation-failure-classifier.test.ts; this test only confirms the route actually wires the classifier in for all 3 generation-incomplete branches', () => {
+    const occurrences = (ROUTE_SRC.match(/canonicalErrorCode: canonicalGenerationErrorCode \?\? toCanonicalErrorCode\('V1_(PROVE|RETAIN|TRANSFER)_GENERATION_INCOMPLETE'\)\.code/g) ?? []).length;
     expect(occurrences).toBe(6); // 3 modes x 2 guard sites (short-of-target, totally-empty)
+    expect(ROUTE_SRC).toMatch(/import \{ classifyProveRetainGenerationFailure, classifyTransferGenerationFailure \} from '@\/lib\/lx\/canonical-generation-failure-classifier';/);
   });
 
   it('no canonical failure path ever calls storeQuiz -- confirmed structurally: the universal guard\'s own early-return always precedes the ONE storeQuiz call site in handleGenerateQuiz', () => {
