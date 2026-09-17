@@ -40,6 +40,7 @@ import {
   resolveCanonicalLaunch,
   resolveConceptSubjectForStudent,
 } from '@/lib/pedagogical-decision';
+import { toCanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
 
 const StartSessionSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -84,7 +85,11 @@ export async function POST(request: NextRequest) {
           // authority here -- a controlled error is the honest answer.
           console.error('Canonical decision unavailable for session start:', error, error.cause);
           return NextResponse.json(
-            { error: 'CANONICAL_DECISION_UNAVAILABLE', message: 'The canonical pedagogical decision could not be computed.' },
+            {
+              error: 'CANONICAL_DECISION_UNAVAILABLE',
+              canonicalErrorCode: toCanonicalErrorCode('CANONICAL_DECISION_UNAVAILABLE').code,
+              message: 'The canonical pedagogical decision could not be computed.',
+            },
             { status: 503 }
           );
         }
