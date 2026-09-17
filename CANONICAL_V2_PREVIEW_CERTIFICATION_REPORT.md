@@ -229,3 +229,13 @@ NOT_READY NORMAL PATHS 0
 BLOCKERS 0/0
 FINAL CANONICAL V2 CERTIFICATION: PASS
 ```
+
+---
+
+## Preview Fixture Cleanup Completed
+
+All disposable Preview certification fixtures from this phase (student `c9d17b8a-201b-45e0-bf28-751277e588f0` / `PREVIEW_CERT_TEST_STUDENT_1789608700701`, subject `1c8ef8bf-2f60-41f8-a965-63a9dff3b583` / `PREVIEW_CERT_TEST_SUBJECT_1789608700701`, concept `0c4c9a93-f29d-4bb5-a4cb-dd07ac025288`) were deleted from the live Preview database in one all-or-nothing transaction, in FK-safe child-to-parent order derived from a full `information_schema` foreign-key map plus an exhaustive read-only sweep of every dependent table. Exactly one fixture identity existed (confirmed by pattern search before deletion); no other student/data was touched.
+
+**Rows deleted (74 total across 17 tables):** `decision_events` 13, `ai_execution_events` 32, `learning_evidence` 6, `mastery_events` 4, `validation_events` 4, `analytics_events` 4, `student_misconceptions` 1, `misconception_signatures` 1, `concept_memory_state` 1, `mastery_records` 1, `concept_knowledge_state` 1, `learning_debt` 1, `validation_cycles` 1, `concepts` 1, `subjects` 1, `profiles` 1, `students` 1. (`learning_debt_events` checked, 0 rows.)
+
+Post-deletion read-only verification confirmed zero rows remain anywhere for this fixture (name/email/clerk_id pattern search, all known IDs, and an extended sweep of 29 additional FK-dependent table/column pairs), and the `students` table is back to its pre-fixture baseline of 11 rows. No Production reference, no migration-apply command, and no non-test data were touched at any point.
