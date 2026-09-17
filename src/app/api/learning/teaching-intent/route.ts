@@ -29,9 +29,19 @@ import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.servic
 import { deriveTeachingExperience } from '@/lib/lx/teaching-experience';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 
+// CANON-V2-PREVIEW-CERT Section 13/18 -- a real bug: canonical_prove/
+// canonical_retain/canonical_transfer/canonical_learn_check were never
+// added here, so a request for any of them silently fell through to
+// the `topic_practice` default below -- meaning `evidenceModeForQuizMode`
+// computed PRACTICE (assisted) even for the 3 INDEPENDENT canonical
+// activities (Prove/Retain/Transfer), a real UI/backend parity defect:
+// this route's own `teachingExperience.helpAvailable` presentation hint
+// could then wrongly imply an independent evidence-collection activity
+// allows assistance.
 const VALID_MODES: ReadonlySet<string> = new Set<QuizMode>([
   'topic_practice', 'review', 'quick_check', 'retention_check',
   'cumulative_assessment', 'exam_simulation', 'diagnostic_check',
+  'canonical_prove', 'canonical_retain', 'canonical_transfer', 'canonical_learn_check',
 ]);
 
 export async function GET(request: NextRequest) {
