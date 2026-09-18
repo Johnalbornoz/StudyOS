@@ -11,6 +11,7 @@ import { updateChunkConceptMappings } from './embedding.service';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { classifySubjectHierarchy, classifySingleConcept } from './topic-hierarchy.service';
+import { ensureCatalogMapping } from '@/lib/catalog/mapping.service';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
@@ -203,7 +204,8 @@ export async function extractConceptsFromSource(
           [subjectId, concept.canonicalId]
         );
         const conceptId = upsertResult.rows[0].id;
-        if (upsertResult.rows[0].inserted) conceptsCreated++;
+        const wasNewConcept = upsertResult.rows[0].inserted;
+        if (wasNewConcept) conceptsCreated++;
 
         // Create localization (if not exists)
         await db.query(
@@ -218,6 +220,17 @@ export async function extractConceptsFromSource(
           `,
           [conceptId, sourceLanguage, concept.label]
         );
+
+        // F4 -- best-effort canonical catalog correspondence (task 18).
+        // Never blocks or fails concept creation: an UNRESOLVED/AMBIGUOUS
+        // outcome, or any error here, is not a reason to fail the
+        // student's upload -- the migration backfill would catch it later
+        // regardless.
+        if (wasNewConcept) {
+          await ensureCatalogMapping(conceptId).catch((err) =>
+            console.error('Error creating catalog mapping for new concept:', err)
+          );
+        }
 
         chunkConceptIds.push(conceptId);
 
@@ -399,6 +412,12 @@ export async function createConceptManually(
   // wait on alongside concept creation + explanation generation.
   classifySingleConcept(subjectId, conceptId, label, language).catch((err) =>
     console.error('Error classifying manually-created concept into hierarchy:', err)
+  );
+
+  // F4 -- best-effort canonical catalog correspondence, same contract as
+  // the AI-extraction path above.
+  ensureCatalogMapping(conceptId).catch((err) =>
+    console.error('Error creating catalog mapping for manually-created concept:', err)
   );
 
   return { conceptId, label };
