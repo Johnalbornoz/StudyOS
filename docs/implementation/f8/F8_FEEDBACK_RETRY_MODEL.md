@@ -28,7 +28,7 @@ interface AttemptFeedback {
 
 function classifyFeedback(params: {
   graderResult: GradeAnswerResult | { correct: boolean; score: number; feedback: string };
-  context: TeachingGenerationContext | null;   // null when no exam/framework context applies
+  context: TeachingContentGenerationContext | null;   // null when no exam/framework context applies
   techniqueValidation: TeachingContentFailureCode[] | null;  // reserved for future response-side technique validation
 }): AttemptFeedback
 ```

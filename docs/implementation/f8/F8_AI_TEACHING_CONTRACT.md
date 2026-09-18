@@ -1,11 +1,13 @@
 # F8 — AI Teaching Contract
 
+**Naming note**: `src/lib/adaptive-teaching-generation.ts` already exports a type literally named `TeachingGenerationContext`, belonging to the legacy Phase 5B `TeachingIntent` pipeline (a `Pick` of `TeachingIntent`'s fields). F8's own, unrelated context type is therefore named `TeachingContentGenerationContext` throughout — a real naming near-collision caught only while checking an actual call site during implementation, not during the original research pass. F8 does not reuse or extend `adaptive-teaching-generation.ts`; per the current-state assessment, F8 deliberately does not wire into the legacy `TeachingIntent`/`PrimaryBarrier` pipeline at all.
+
 ## Generation context (extends F7's `GenerationContext`, never duplicates it)
 
 ```ts
 // src/lib/teaching/ai-teaching-contract.service.ts
 
-interface TeachingGenerationContext {
+interface TeachingContentGenerationContext {
   studentId: string;
   conceptId: string;
   canonicalConceptIds: string[];
@@ -22,12 +24,12 @@ interface TeachingGenerationContext {
   assistanceLevel: string;                             // ai_assistance_type domain value
 }
 
-async function resolveTeachingGenerationContext(params: {
+async function resolveTeachingContentGenerationContext(params: {
   studentId: string; conceptId: string; diagnosisId: string; interventionType: InterventionType;
-}): Promise<TeachingGenerationContext>
+}): Promise<TeachingContentGenerationContext>
 ```
 
-`resolveTeachingGenerationContext` composes existing resolvers only: `resolveFrameworkForStudentExamProfile`, `resolveActivityMetadataForObjective` (when the diagnosis scope carries a `learningObjectiveId`), `resolveCommandTermInterpretation`, and the diagnosis row itself. It performs no AI call and no new database writes.
+`resolveTeachingContentGenerationContext` composes existing resolvers only: `resolveFrameworkForStudentExamProfile`, `resolveActivityMetadataForObjective` (when the diagnosis scope carries a `learningObjectiveId`), `resolveCommandTermInterpretation`, and the diagnosis row itself. It performs no AI call and no new database writes.
 
 ## Output schema
 
@@ -57,7 +59,7 @@ type TeachingContentFailureCode =
   | 'MISSING_REQUIRED_PROCEDURE' | 'EMPTY_CONTENT' | 'STRATEGY_SECTION_MISSING_FOR_FRAMEWORK'
   | 'STRATEGY_SECTION_PRESENT_WITHOUT_FRAMEWORK';
 
-function checkTeachingContentDeterministic(payload: unknown, context: TeachingGenerationContext): { status: 'PASS'|'FAIL'; failures: TeachingContentFailureCode[] }
+function checkTeachingContentDeterministic(payload: unknown, context: TeachingContentGenerationContext): { status: 'PASS'|'FAIL'; failures: TeachingContentFailureCode[] }
 ```
 Checks (all pure structural/value comparisons, same rigor as `validateItemForExamContext`):
 1. Schema shape (required fields present, correct types) → `SCHEMA_INVALID`.

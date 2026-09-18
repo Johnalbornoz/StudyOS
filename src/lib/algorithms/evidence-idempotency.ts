@@ -35,6 +35,9 @@ export const EVIDENCE_OPERATION_TYPES = [
   'TRANSFER',
   'REAL_SCHOOL_EXAM',
   'RECORD_EVIDENCE',
+  // F8: one intervention_attempts row per logical attempt; operationId
+  // is the attempt id minted by session.service.ts before this call.
+  'INTERVENTION_ATTEMPT',
 ] as const;
 
 export type EvidenceOperationType = (typeof EVIDENCE_OPERATION_TYPES)[number];

@@ -65,7 +65,7 @@ Reuses `QuestionType` from `quiz-generation.service.ts` verbatim — no new conc
 
 ## Procedure training (task §18)
 
-`assessment_components.procedure_required` (F7 column, previously unread by any code) is now read by `resolveTeachingGenerationContext` (see `F8_AI_TEACHING_CONTRACT.md`) and threaded into the generation contract as `proceduresRequired: boolean`. When `true`, the generated content must include a `workedExample.steps: string[]` (method/steps/intermediate reasoning), validated deterministically (non-empty steps array) before presentation. When `false`, F8 never fabricates a procedure requirement that the component doesn't actually have (task §18's explicit prohibition).
+`assessment_components.procedure_required` (F7 column, previously unread by any code) is now read by `resolveTeachingContentGenerationContext` (see `F8_AI_TEACHING_CONTRACT.md`) and threaded into the generation contract as `proceduresRequired: boolean`. When `true`, the generated content must include a `workedExample.steps: string[]` (method/steps/intermediate reasoning), validated deterministically (non-empty steps array) before presentation. When `false`, F8 never fabricates a procedure requirement that the component doesn't actually have (task §18's explicit prohibition).
 
 ## Non-duplication guarantee (INV-F8-10/11, AC-F8-11)
 
