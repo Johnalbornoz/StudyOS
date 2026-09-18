@@ -20,6 +20,9 @@ import { recalculateConceptKnowledgeState, getActiveMasteryPolicy } from './know
 import { recordDecisionEvent } from '@/lib/audit';
 import { projectConceptMemoryState } from './memory-projector.service';
 import { projectConceptTransferState } from './transfer-projector.service';
+import { projectSkillStateForNewEvidence } from '@/lib/learner-state/skill-state.service';
+import { projectCompetencyStateForNewEvidence } from '@/lib/learner-state/competency-state.service';
+import { projectTransferAnalyticsForNewEvidence } from '@/lib/learner-state/transfer-analytics.service';
 import { buildOperationKey, type EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
 import { toCanonicalErrorType } from './error-intelligence.service';
 import {
@@ -720,6 +723,18 @@ export async function updateMastery(
       if (evidence.sourceType === 'TRANSFER' && learningEvidenceId) {
         await projectConceptTransferState(client, studentId, conceptId, learningEvidenceId);
       }
+
+      // F5: analytical Learner State (Skill State, Competency State,
+      // Transfer analytics) -- purely additive, never a pedagogical
+      // authority (see docs/implementation/f5/F5_CANONICAL_V2_BOUNDARY.md).
+      // Each call swallows its own errors internally: unlike the Phase
+      // 2.2A/6/7 steps above, a failure here must NEVER roll back this
+      // transaction or affect Mastery/Knowledge State -- these are
+      // descriptive analytics, not part of the cognitive-consistency
+      // contract those steps guarantee.
+      await projectSkillStateForNewEvidence(client, studentId, metadata ?? null);
+      await projectCompetencyStateForNewEvidence(client, studentId, metadata ?? null);
+      await projectTransferAnalyticsForNewEvidence(client, studentId, conceptId, metadata ?? null);
 
       // Phase 2.2A/2.2B, same transactional client (Phase 2B
       // correction): Knowledge State is a projection, never a second
