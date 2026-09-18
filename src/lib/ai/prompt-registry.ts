@@ -250,6 +250,22 @@ export const PROMPT_REGISTRY = {
     description:
       'LX-4P-R2R1: independent VERIFICATION (never translates or rewrites). Given the canonical source question, a candidate localized question, the stored correctAnswer, the question type and option ids, it reports whether the candidate asks the SAME question with the same polarity/negations, comparisons, quantities, units, causal/temporal relations, scenario and requested task -- and whether the stored correctAnswer is still correct for the candidate. Output is a strict {equivalent, correctAnswerStillValid, semanticDifferences[], confidence} verdict; the localization is used only if it passes (fail-closed).',
   }),
+  'f8.teaching_content_generation': definePrompt({
+    id: 'f8.teaching_content_generation',
+    version: 'v1',
+    capability: 'CONTENT_GENERATION',
+    service: 'src/lib/teaching/ai-teaching-contract.service.ts:generateTeachingContent',
+    description:
+      'F8: generates framework-aware teaching content (a framework-agnostic "knowledge" section plus, only when an active framework applies, a distinct framework-specific "strategy" section) for one diagnosed gap + selected intervention type. The prompt itself carries no per-framework branch -- framework flavor comes entirely from the resolved TeachingContentGenerationContext (command term interpretation, question type, procedure requirement) passed as data. Output is never trusted until checkTeachingContentDeterministic and verifyTeachingContentSemantic both pass.',
+  }),
+  'f8.teaching_content_semantic_verify': definePrompt({
+    id: 'f8.teaching_content_semantic_verify',
+    version: 'v1',
+    capability: 'EXPLANATION_EVALUATION',
+    service: 'src/lib/teaching/ai-teaching-contract.service.ts:verifyTeachingContentSemantic',
+    description:
+      'F8: independent semantic verdict on generated teaching content -- the generator cannot self-certify. Checks only what checkTeachingContentDeterministic cannot: whether the knowledge section stays framework-neutral, whether the strategy section (when present) adds framing rather than restating the canonical definition, and factual consistency with the canonical concept. Fail-closed on a malformed or low-confidence verdict, mirroring quiz.question_quality_verify exactly.',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;
