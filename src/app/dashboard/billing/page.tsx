@@ -6,11 +6,17 @@ import { getMessages } from '@/lib/i18n/messages';
 import { getSubscriptionStatus } from '@/services/payment.service';
 import SubscribeButton from './SubscribeButton';
 
+// F3: extended with the 4 new subscription statuses -- see
+// F3_SUBSCRIPTION_STATE_MACHINE.md. Existing 4 keys/values untouched.
 const STATUS_MESSAGE_KEY = {
   active: 'billing.statusActive',
   unpaid: 'billing.statusUnpaid',
   past_due: 'billing.statusPastDue',
   canceled: 'billing.statusCanceled',
+  suspended: 'billing.statusSuspended',
+  reactivated: 'billing.statusReactivated',
+  cancelled_at_period_end: 'billing.statusCancelledAtPeriodEnd',
+  expired: 'billing.statusExpired',
 } as const;
 
 const STATUS_CHIP_CLASS = {
@@ -18,6 +24,10 @@ const STATUS_CHIP_CLASS = {
   unpaid: 'chip-warn',
   past_due: 'chip-critical',
   canceled: 'chip-critical',
+  suspended: 'chip-critical',
+  reactivated: 'chip-warn',
+  cancelled_at_period_end: 'chip-warn',
+  expired: 'chip-critical',
 } as const;
 
 export default async function BillingPage() {
