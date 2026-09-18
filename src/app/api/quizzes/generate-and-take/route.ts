@@ -1594,7 +1594,13 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     }
 
     const quizSession = await getQuizSession(validated.quizId);
-    if (!quizSession) {
+    // F0-S / RR-08: ownership check folded into the same not-found branch
+    // as the sibling routes (hint/verify/contextual-help/teaching-intent/
+    // localize-question) -- a quiz session that exists but belongs to a
+    // different student must be indistinguishable from one that does not
+    // exist at all, never a separate FORBIDDEN response that would
+    // confirm another student's quizId is valid.
+    if (!quizSession || quizSession.studentId !== validated.studentId) {
       return NextResponse.json(
         { error: 'QUIZ_NOT_FOUND', message: 'Quiz expired or not found. Generate a new quiz.' },
         { status: 400 }
