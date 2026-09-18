@@ -87,7 +87,16 @@ export type DecisionType =
   // engine are plain text, no DB CHECK).
   | 'PLAN_CREATED'
   | 'PLAN_REPLANNED'
-  | 'PLAN_ITEM_SUPERSEDED';
+  | 'PLAN_ITEM_SUPERSEDED'
+  // F5: recorded by src/lib/learner-state/*.service.ts ONLY on a genuine
+  // state change (never on an idempotent re-projection that leaves the
+  // row unchanged). These are ANALYTICAL learner-state projections --
+  // never a pedagogical decision, never read by Canonical V2. Same
+  // zero-migration precedent as the Phase 6/7/8 additions above
+  // (decision_type / engine are plain text, no DB CHECK).
+  | 'SKILL_STATE_PROJECTED'
+  | 'COMPETENCY_STATE_PROJECTED'
+  | 'TRANSFER_ANALYTICS_PROJECTED';
 
 /**
  * Which existing deterministic engine produced this decision (Step 8).
@@ -117,7 +126,11 @@ export type DecisionEngine =
   // Phase 8 Step 8B1: learning-plan-projector.service.ts -- see
   // PLAN_CREATED / PLAN_REPLANNED / PLAN_ITEM_SUPERSEDED. engineVersion
   // is String(ORCHESTRATION_POLICY_VERSION).
-  | 'orchestration-engine';
+  | 'orchestration-engine'
+  // F5: src/lib/learner-state/*.service.ts -- see SKILL_STATE_PROJECTED
+  // etc. engineVersion is the aggregation_policy_versions.version that
+  // computed this state, as a string.
+  | 'learner-state-engine';
 
 export interface DecisionEventInput {
   decisionType: DecisionType;
