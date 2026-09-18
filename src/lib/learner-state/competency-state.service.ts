@@ -13,12 +13,12 @@ import type { CompetencyState, QualifyingEvidenceItem, StateExplanation } from '
 
 async function fetchQualifyingEvidence(client: DbExecutor, studentId: string, competencyId: string) {
   const result = await client.query(
-    `SELECT id, result, ai_assistance_type, "timestamp" FROM learning_evidence
+    `SELECT id, result, ai_assistance_type, difficulty, "timestamp" FROM learning_evidence
      WHERE student_id = $1 AND metadata -> 'competencyIds' @> to_jsonb($2::text)
      ORDER BY "timestamp" DESC`,
     [studentId, competencyId]
   );
-  return result.rows as Array<{ id: string; result: string; ai_assistance_type: string; timestamp: string }>;
+  return result.rows as Array<{ id: string; result: string; ai_assistance_type: string; difficulty: number | null; timestamp: string }>;
 }
 
 function toQualifyingItems(rows: Array<{ id: string; result: string; ai_assistance_type: string; timestamp: string }>): QualifyingEvidenceItem[] {
@@ -118,7 +118,7 @@ export async function explainCompetencyState(studentId: string, competencyId: st
     else if (!independent) reason = 'assisted (ai_assistance_type != NONE) -- counted, but excluded from CONSISTENT_INDEPENDENT';
     else if (r.result !== 'correct') reason = 'independent but not correct -- excluded from CONSISTENT_INDEPENDENT';
     else reason = 'independent, correct, within the consistency window';
-    return { id: r.id, occurredAt: r.timestamp, included: true, reason };
+    return { id: r.id, occurredAt: r.timestamp, included: true, reason, difficulty: r.difficulty !== null && r.difficulty !== undefined ? Number(r.difficulty) : null };
   });
 
   return {

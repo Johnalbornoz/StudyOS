@@ -63,6 +63,8 @@ export interface ExplainedEvidence {
   occurredAt: string;
   included: boolean;
   reason: string;
+  /** Preserved for traceability (task 13, AC-F5-07) -- never used to gate NO_EVIDENCE/INSUFFICIENT_EVIDENCE/EMERGING/CONSISTENT_INDEPENDENT in this phase, no validated difficulty-weighting policy exists for these dimensions. */
+  difficulty: number | null;
 }
 
 export interface StateExplanation {

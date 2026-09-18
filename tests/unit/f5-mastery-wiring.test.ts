@@ -75,7 +75,7 @@ const BASE_INPUT = {
   studentId: 's1',
   conceptId: 'c1',
   subjectId: 'subj1',
-  evidence: { result: 'correct' as const, difficulty: 3, sourceType: 'PRACTICE_QUESTION', confidenceWeight: 0.4, scorePercent: 90 },
+  evidence: { result: 'correct' as const, difficulty: 3, sourceType: 'PRACTICE_QUESTION' as const, confidenceWeight: 0.4, scorePercent: 90 },
 };
 
 describe('updateMastery -- F5 wiring is silent for every existing caller (regression safety)', () => {
