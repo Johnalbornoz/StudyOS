@@ -250,16 +250,23 @@ export async function getOrCreateParentId(clerkUserId: string): Promise<string> 
 }
 
 /**
- * Check if teacher can access student
+ * F2: real implementation, replacing the permanent pre-F2 stub that
+ * always returned `false`. Delegates entirely to the canonical
+ * authorization service (src/lib/authorization) -- requires an
+ * APPROVED TEACHER institution_membership AND an ACTIVE
+ * teacher_assignment AND an ACTIVE class_enrollment linking
+ * `studentId` to a class that assignment covers. `teacherId` here is
+ * the Clerk user id, exactly as verifyStudentAccess already passes it
+ * -- the signature/contract of this function is unchanged, only its
+ * body now does real, fail-closed work instead of a hardcoded `false`.
  */
 async function canTeacherAccessStudent(
   teacherId: string,
   studentId: string
 ): Promise<boolean> {
   try {
-    // TODO: Implement after creating teacher-student mapping table
-    // Check if teacherId is assigned to teach studentId
-    return false;
+    const { canTeacherAccessStudentByClerkId } = await import('./authorization');
+    return await canTeacherAccessStudentByClerkId(teacherId, studentId);
   } catch (error) {
     console.error('Error checking teacher access:', error);
     return false;
