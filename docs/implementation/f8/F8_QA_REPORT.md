@@ -26,8 +26,8 @@ AUTHENTICATED_E2E:
   deferred: 6 (Parent accepted/revoked, Teacher active/wrong-class, Entitlement ACTIVE/SUSPENDED -- see F8_AUTHENTICATED_E2E_REPORT.md, IVG-F8-02)
 
 REMOTE_PREVIEW_SMOKE:
-  executed: <filled in after deployment, see F8_PREVIEW_CERTIFICATION.md>
-  passed:   <filled in after deployment>
+  executed: 17 (10 new F8 routes anonymous-401 + 7 F0-S-F7 regression routes, see F8_PREVIEW_CERTIFICATION.md)
+  passed:   17
   failed:   0
 
 AI_REAL_PROVIDER:
