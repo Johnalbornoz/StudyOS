@@ -22,8 +22,8 @@ export async function getObjectiveAlignmentForContentChunk(contentChunkId: strin
     `
     SELECT DISTINCT ocm.learning_objective_id, ocm.canonical_concept_id, ocm.relation_type
     FROM content_chunks cc
-    CROSS JOIN LATERAL unnest(cc.concept_mappings) AS learner_concept_id
-    JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = learner_concept_id AND ccm.status = 'MATCHED'
+    CROSS JOIN LATERAL unnest(cc.concept_mappings) AS mapped(learner_concept_id)
+    JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = mapped.learner_concept_id AND ccm.status = 'MATCHED'
     JOIN objective_concept_mappings ocm ON ocm.canonical_concept_id = ccm.canonical_concept_id AND ocm.status = 'PUBLISHED'
     WHERE cc.id = $1
     `,
