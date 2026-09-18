@@ -13,6 +13,7 @@
     "db:migrate": "tsx --env-file=.env.local scripts/db-migrate.ts",
     "db:repro-test": "bash scripts/db-reproducibility-test.sh",
     "db:migration-test": "bash scripts/db-migration-test.sh",
+    "backfill:identity": "tsx --env-file=.env.local scripts/backfill-unified-identity.ts",
     "backfill:transfer": "tsx --env-file=.env.local scripts/backfill-transfer-state.ts"
   },
   "dependencies": {
