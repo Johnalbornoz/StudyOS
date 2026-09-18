@@ -186,5 +186,9 @@ export function overrideConceptMissionViewWithCanonicalDecision(
     journey: buildCanonicalJourney(decision),
     now: buildCanonicalNow(decision),
     learn: buildCanonicalLearn(decision, hasCachedExplanation),
+    // The canonical authority for "when was this concept last
+    // demonstrated" (a PROVE fact, never RETAIN/memory) -- verbatim from
+    // the fresh decision, never independently recomputed here.
+    evidence: { lastDemonstratedAt: decision.lastQualifyingProveAt },
   };
 }

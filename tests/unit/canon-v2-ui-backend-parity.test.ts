@@ -55,6 +55,7 @@ function decision(overrides: Partial<CanonicalPedagogicalDecision> = {}): Canoni
     journeyProgressPercent: 35,
     computedAt: NOW,
     recognitionRejected: null,
+    lastQualifyingProveAt: null,
     ...overrides,
   } as CanonicalPedagogicalDecision;
 }
@@ -66,6 +67,7 @@ function legacyView(): ConceptMissionView {
     journey: { status: 'RESOLVED', stage: 'RETAIN', intervention: null, reasonCode: 'RETENTION_DUE', milestones: [], source: 'LEARNING_DECISION' },
     now: { kind: 'NO_CANONICAL_ACTION', activityType: null, actionConceptId: null, facts: [], fallback: 'CONSOLIDATED_NO_ACTION', nextEligibleReviewAt: null },
     learn: { available: true, state: 'READ', prominence: 'SECONDARY' },
+    evidence: { lastDemonstratedAt: null },
     contractVersion: 2,
   } as ConceptMissionView;
 }

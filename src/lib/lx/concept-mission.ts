@@ -107,6 +107,21 @@ export type ConceptMissionJourneyInput =
   | { kind: 'RESOLVED'; learningState: LearningState; source: ConceptMissionJourneySource }
   | { kind: 'UNAVAILABLE' };
 
+/**
+ * The canonical PROVE fact -- deliberately separate from
+ * `ConceptMissionMemory` (a RETAIN/memory fact) even though both are
+ * timestamps about "when did the learner demonstrate this concept."
+ * `lastDemonstratedAt` is the timestamp of the PROVE evidence that most
+ * recently demonstrated INDEPENDENT competence -- never a RETAIN
+ * success, never independently derived from History/database here (the
+ * canonical engine, `CanonicalPedagogicalDecision.lastQualifyingProveAt`,
+ * is the one authority; the legacy/gate-off builder below has no
+ * equivalent source and honestly reports `null`).
+ */
+export interface ConceptMissionEvidence {
+  lastDemonstratedAt: string | null;
+}
+
 /** Canonical Phase 6 memory facts (`ConceptView.memory`). `null` when no concept_memory_state row exists yet. */
 export interface ConceptMissionMemory {
   /** A genuine retention-success timestamp -- the only proof that RETAIN was demonstrated. */
@@ -259,6 +274,8 @@ export interface ConceptMissionView {
   journey: ConceptMissionJourney;
   now: ConceptMissionNow;
   learn: ConceptMissionLearn;
+  /** The canonical PROVE-evidence projection -- see `ConceptMissionEvidence`'s own doc. `{ lastDemonstratedAt: null }` on the legacy/gate-off path (no equivalent source exists there); populated from `CanonicalPedagogicalDecision.lastQualifyingProveAt` only by `overrideConceptMissionViewWithCanonicalDecision`. */
+  evidence: ConceptMissionEvidence;
   contractVersion: typeof CONCEPT_MISSION_VIEW_VERSION;
 }
 
@@ -497,6 +514,11 @@ export function buildConceptMissionView(inputs: ConceptMissionInputs): ConceptMi
     journey,
     now: buildNow(journey, inputs.learningDecision, inputs.memory, inputs.knowledgeState, inputs.masteryPolicy),
     learn: buildLearn(journey, inputs.hasCachedExplanation),
+    // Legacy path has no canonical PROVE-timestamp authority to read --
+    // honestly `null`, never derived from History/database here. Only
+    // `overrideConceptMissionViewWithCanonicalDecision` (gate on)
+    // populates a real value, from `decision.lastQualifyingProveAt`.
+    evidence: { lastDemonstratedAt: null },
     contractVersion: CONCEPT_MISSION_VIEW_VERSION,
   };
 }

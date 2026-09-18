@@ -805,6 +805,10 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     journeyProgressPercent: STAGE_PROGRESS_PERCENT[stage],
     computedAt: input.now,
     recognitionRejected,
+    // Verbatim from `state.proveQualifyingAt` -- the SAME value
+    // `retainStatus`'s own `eligibleFrom` computation above already
+    // used. Never independently recomputed.
+    lastQualifyingProveAt: state.proveQualifyingAt,
   };
 }
 

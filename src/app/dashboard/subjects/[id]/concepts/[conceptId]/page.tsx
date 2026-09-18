@@ -128,7 +128,15 @@ export default async function ConceptDetailPage({
       }
     : null;
 
-  const lastPracticed = conceptView?.memory.lastSuccessfulRetentionAt ?? null;
+  // "Last demonstrated" is a PROVE fact (independent competence), never
+  // a RETAIN/memory fact -- sourced from the Concept Mission's own
+  // canonical evidence projection (`missionView.evidence.lastDemonstratedAt`,
+  // populated from `CanonicalPedagogicalDecision.lastQualifyingProveAt`
+  // when the gate is on; `null` on the legacy path, which has no
+  // canonical PROVE-timestamp source to read). `conceptView.memory.lastSuccessfulRetentionAt`
+  // is a genuine RETAIN-success timestamp and stays exactly where it is
+  // used elsewhere on this page (retention/memory context only).
+  const lastDemonstratedAt = missionView.evidence.lastDemonstratedAt;
   const nextReviewDate = conceptView?.memory.nextReviewAt ?? null;
 
   const whyFacts: string[] = [];
@@ -249,7 +257,7 @@ export default async function ConceptDetailPage({
           <div style={{ display: 'flex', gap: 'var(--space-6)', marginBottom: 'var(--space-6)', fontSize: 14 }}>
             <div>
               <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.lastDemonstrated']}</div>
-              <div>{relativeDay(lastPracticed, t)}</div>
+              <div>{relativeDay(lastDemonstratedAt, t)}</div>
             </div>
             <div>
               <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.nextReview']}</div>

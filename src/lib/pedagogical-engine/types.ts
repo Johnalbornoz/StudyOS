@@ -353,4 +353,19 @@ export interface CanonicalPedagogicalDecision {
    * proceeds exactly as if no recognition had been supplied at all.
    */
   recognitionRejected: RecognitionRejectionReason | null;
+  /**
+   * The timestamp of the PROVE evidence that most recently demonstrated
+   * independent competence -- verbatim from `replay`'s own
+   * `state.proveQualifyingAt` (set from either qualifying real V1 PROVE
+   * evidence, or a recognized legacy PROVE's `recognizedAt`; reset to
+   * `null` by the engine's own existing rollback rules). This is a
+   * PROVE fact, never a RETAIN/memory fact -- it is also the exact
+   * anchor `nextEligibleAt`'s own RETAIN-eligibility computation already
+   * uses (`proveQualifyingAt + CANONICAL_POLICY.retention.minimumWaitDays`).
+   * `null` whenever no PROVE currently qualifies. Never independently
+   * recomputed here -- this field only exposes the single existing
+   * internal value, so it can never disagree with the engine's own
+   * RETAIN-eligibility logic.
+   */
+  lastQualifyingProveAt: string | null;
 }
