@@ -1,37 +1,38 @@
 /**
- * CANON-R5 Part 4 -- THE ONE canonical-engine-v1 feature gate.
+ * CANON-R5 Part 4, PROD-PROMOTION Section 7 -- THE ONE
+ * canonical-engine-v1 feature gate.
  *
  * `isCanonicalEngineV1Enabled` is the single place any learner-facing
  * code may ask "does Pedagogical Engine v1 have next-action authority
- * right now?" Two independent conditions, both required:
+ * right now?" ONE explicit, human-set configuration value decides it,
+ * uniformly across every environment:
  *
- *   1. `CANONICAL_ENGINE_V1_ENABLED === 'true'` -- an explicit,
- *      human-set configuration value. Absence, `'false'`, or any other
- *      string all resolve to disabled -- there is no implicit "on by
- *      default" state.
- *   2. `VERCEL_ENV !== 'production'` -- a HARD safety interlock that
- *      cannot be overridden by the config value above. Even if
- *      `CANONICAL_ENGINE_V1_ENABLED=true` were ever set on a Production
- *      deployment (misconfiguration, a copied .env, a bad rollout), this
- *      function still returns `false` there. Part 4's own instruction --
- *      "Do not infer environment from hostname only" -- is honored by
- *      using Vercel's own documented, non-guessable `VERCEL_ENV`
- *      enum (`'production' | 'preview' | 'development'`), never a
- *      hostname substring match.
+ *   `CANONICAL_ENGINE_V1_ENABLED === 'true'` (the exact string) ->
+ *   enabled. Absence, `'false'`, or any other string (`'1'`, `'yes'`,
+ *   mixed case, ...) all resolve to disabled -- there is no implicit
+ *   "on by default" state, in Production or anywhere else.
  *
- * This is a DIFFERENT read of `VERCEL_ENV` than `deployment-version.ts`'s
- * `buildDeploymentVersion` -- that module is explicitly "OPERATIONAL
- * OBSERVABILITY ONLY... nothing in the application may branch on any
- * value this returns." This module is the dedicated, intentional
- * exception the platform needs for exactly one purpose (Part 4's own
- * "introduce an explicit configuration gate") and never calls into
- * `deployment-version.ts` or reuses its output for gating.
+ * PROD-PROMOTION Section 7: during Preview certification, this
+ * function additionally hard-disabled the gate whenever
+ * `VERCEL_ENV === 'production'`, regardless of the flag -- an
+ * intentional, temporary interlock while Canonical V2 had never been
+ * exercised outside Preview. Production promotion is the explicitly
+ * planned next phase that interlock existed for: it is removed here so
+ * `CANONICAL_ENGINE_V1_ENABLED` becomes the SAME explicit opt-in in
+ * every environment, AND the one emergency rollback switch --
+ * un-setting it (or setting it to anything other than `'true'`) in
+ * Production instantly reverts every learner-facing surface to the
+ * legacy pipeline, with no deploy required. This is a deliberate
+ * config-only activation model, not an implicit environment-based one:
+ * Production does not enable Canonical V2 by merely being Production,
+ * nor does Preview/dev disable it by merely being non-Production --
+ * the exact string check is the only thing that matters, everywhere.
  *
- * Pure with respect to its input: takes an explicit env bag (any
- * `{ [k]: string | undefined }`, which `process.env` satisfies) so it is
- * trivially testable without mutating `process.env` globally.
+ * `env` no longer needs to be read here at all (kept only for the
+ * existing testable-injection signature -- `VERCEL_ENV` may still be
+ * passed by a caller, it is simply not consulted by this function
+ * anymore).
  */
 export function isCanonicalEngineV1Enabled(env: Record<string, string | undefined> = process.env): boolean {
-  if (env.VERCEL_ENV === 'production') return false;
   return env.CANONICAL_ENGINE_V1_ENABLED === 'true';
 }

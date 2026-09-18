@@ -38,9 +38,14 @@ import { getTwinMemorySignalsForStudent, type TwinMemorySignal } from '@/service
 import { rankLearningDecisions, computeLearningState, type LearningDecision } from '@/lib/adaptive-learning-policy';
 import type { ActivityType } from '@/lib/activity-taxonomy';
 import { deriveLearnerJourneyStage, conceptJourneyFromResult, type ConceptJourney, type LearnerJourneyStage } from './concept-journey';
-import { isRetentionWaiting } from './learner-journey-contract';
+import { isRetentionWaiting, LEARNER_JOURNEY_CONTRACT_VERSION, type LearnerJourneyResult } from './learner-journey-contract';
 import { isZeroGapPracticeMismatch } from './evidence-sufficiency-contract';
 import type { CanonicalActionState, CanonicalWaitingReason } from './canonical-learning-progress';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+} from '@/lib/pedagogical-decision';
 
 export interface ConceptPathView {
   conceptId: string;
@@ -205,6 +210,15 @@ export function resolveConceptJourneyStage(
  * `.intervention` alongside `.stage` without re-deriving either --
  * the exact same authority `resolveConceptJourneyStage` above and
  * Concept Mission's own `deriveLearnerJourneyStage` call already use.
+ *
+ * PROD-02 REMEDIATION (AUDIT-006 closed for this authority): this
+ * function, and `resolveConceptJourneyStage` above, remain the LEGACY
+ * (pre-Canonical-V2) computation, exactly as before -- unchanged, so
+ * `canonical-learning-progress.ts` and the shadow snapshot
+ * (`old-canonical-snapshot.ts`) keep their existing, pure, synchronous
+ * behavior for the feature-gate-off path. The canonical-aware
+ * authority every LEARNER-FACING caller must use instead is
+ * `resolveConceptJourneyResultAuthoritative` below.
  */
 export function resolveConceptJourneyResult(
   conceptId: string,
@@ -215,14 +229,88 @@ export function resolveConceptJourneyResult(
   return resolveJourneyResult(conceptId, subjectId, ks, activeDecision);
 }
 
-/** Adapts `resolveConceptJourneyStage`'s result into My Path's flat rendering line -- unchanged behavior, now expressed in terms of the shared stage resolver above. */
-function resolveConceptJourney(
+/**
+ * PROD-02 ROOT-CAUSE FIX -- SINGLE SOURCE OF TRUTH for every
+ * LEARNER-FACING journey-stage read in this module (My Path, and the
+ * Subjects detail page via the exported wrapper below).
+ *
+ * When the Canonical V2 gate is on, the legacy computation above
+ * (`resolveJourneyResult` -> `computeLearningState` -> Phase 2.2
+ * Knowledge State's `validationReadiness`) is NEVER consulted for the
+ * learner-facing stage -- exactly the CV2-08 discipline
+ * (`learning-continuation.service.ts`'s `resolveCanonicalContinuation`)
+ * applied here to a second, previously-unwired surface. This is the
+ * confirmed PROD-02 mechanism: a concept with ZERO PROVE/SOLO evidence
+ * can legitimately reach legacy `validationReadiness ===
+ * 'WAITING_FOR_RETENTION'` the moment ordinary PRACTICE evidence
+ * satisfies generic sufficiency and no retention evidence exists yet
+ * (`determineValidationReadiness`'s own documented behavior --
+ * unrelated to whether PROVE ever happened) -- which legacy
+ * `computeLearningState` then reads as `RETENTION_RISK`, and
+ * `deriveLearnerJourneyStage` as `RETAIN`. Reusing the EXISTING
+ * `getCanonicalPedagogicalDecision` engine (never a second
+ * implementation of its rules) guarantees PROVE is only ever reported
+ * satisfied when Canonical V2 itself says so.
+ *
+ * A read failure (`CanonicalDecisionUnavailableError`) degrades to the
+ * legacy result -- never a canonical-looking guess -- matching every
+ * other canonical-aware call site's existing fail-safe discipline.
+ */
+async function resolveJourneyResultAuthoritative(
+  studentId: string,
   conceptId: string,
   subjectId: string,
   ks: ConceptKnowledgeState | null,
   activeDecision: LearningDecision | undefined
-): ConceptJourney {
-  return conceptJourneyFromResult(resolveJourneyResult(conceptId, subjectId, ks, activeDecision));
+): Promise<LearnerJourneyResult> {
+  if (isCanonicalEngineV1Enabled()) {
+    try {
+      const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId });
+      return {
+        // `PedagogicalStage` (LEARN|PRACTICE|PROVE|RETAIN|TRANSFER|CONSOLIDATED)
+        // is a literal subset of `LearnerJourneyStage` -- the SAME
+        // direct assignment `progress-overview.service.ts`'s own
+        // canonical override already uses, never a second mapping
+        // table.
+        stage: decision.stage,
+        intervention: decision.intervention,
+        reason: 'CANONICAL_ENGINE_V1',
+        contractVersion: LEARNER_JOURNEY_CONTRACT_VERSION,
+      };
+    } catch (error) {
+      if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
+    }
+  }
+  return resolveJourneyResult(conceptId, subjectId, ks, activeDecision);
+}
+
+/**
+ * THE authoritative, canonical-aware journey result -- the function
+ * every learner-facing surface needing a concept's stage must call
+ * (Subjects detail page's `HierarchicalConceptList`/journey badges,
+ * and, via `resolveConceptJourneyAuthoritative` below, My Path).
+ * `resolveConceptJourneyResult` above stays legacy-only and untouched
+ * for the two non-learner-facing/gate-off callers that still use it.
+ */
+export async function resolveConceptJourneyResultAuthoritative(
+  studentId: string,
+  conceptId: string,
+  subjectId: string,
+  ks: ConceptKnowledgeState | null,
+  activeDecision: LearningDecision | undefined
+): Promise<LearnerJourneyResult> {
+  return resolveJourneyResultAuthoritative(studentId, conceptId, subjectId, ks, activeDecision);
+}
+
+/** Adapts `resolveConceptJourneyResultAuthoritative`'s result into My Path's flat rendering line -- the canonical-aware replacement for the old, legacy-only `resolveConceptJourney`. */
+async function resolveConceptJourneyAuthoritative(
+  studentId: string,
+  conceptId: string,
+  subjectId: string,
+  ks: ConceptKnowledgeState | null,
+  activeDecision: LearningDecision | undefined
+): Promise<ConceptJourney> {
+  return conceptJourneyFromResult(await resolveJourneyResultAuthoritative(studentId, conceptId, subjectId, ks, activeDecision));
 }
 
 function summarize(concepts: ConceptPathView[]): SubjectPathSummary {
@@ -283,20 +371,30 @@ export async function buildSubjectPathView(context: MyPathContext, subjectId: st
   const decisionByConceptId = new Map(subjectDecisions.map((d) => [d.actionConceptId, d]));
   const currentConceptId = resolveSubjectCurrentDecision(snapshot, subjectId)?.actionConceptId ?? null;
 
-  const toConceptView = (concept: HierarchyConcept): ConceptPathView => ({
+  const toConceptView = async (concept: HierarchyConcept): Promise<ConceptPathView> => ({
     conceptId: concept.id,
     title: concept.label,
-    journey: resolveConceptJourney(concept.id, subjectId, ksByConceptId.get(concept.id) ?? null, decisionByConceptId.get(concept.id)),
+    journey: await resolveConceptJourneyAuthoritative(
+      studentId,
+      concept.id,
+      subjectId,
+      ksByConceptId.get(concept.id) ?? null,
+      decisionByConceptId.get(concept.id)
+    ),
     isCurrent: concept.id === currentConceptId,
     hasEvidence: concept.hasEvidence,
   });
 
-  const topics: TopicPathView[] = hierarchy.topics.map((topic) => ({
-    topicId: topic.id,
-    title: topic.name,
-    concepts: topic.subtopics.flatMap((subtopic) => subtopic.concepts.map(toConceptView)),
-  }));
-  const unassigned = hierarchy.unassigned.map(toConceptView);
+  const topics: TopicPathView[] = await Promise.all(
+    hierarchy.topics.map(async (topic) => ({
+      topicId: topic.id,
+      title: topic.name,
+      concepts: (
+        await Promise.all(topic.subtopics.flatMap((subtopic) => subtopic.concepts.map(toConceptView)))
+      ),
+    }))
+  );
+  const unassigned = await Promise.all(hierarchy.unassigned.map(toConceptView));
 
   const allConcepts = [...topics.flatMap((t) => t.concepts), ...unassigned];
 
@@ -335,7 +433,9 @@ export async function buildMyPathOverview(context: MyPathContext): Promise<MyPat
     const heroConcept = subjectViews
       .flatMap((v) => [...v.topics.flatMap((t) => t.concepts), ...v.unassigned])
       .find((c) => c.conceptId === best.decision.actionConceptId);
-    const journey = heroConcept?.journey ?? resolveConceptJourney(best.decision.actionConceptId, best.decision.subjectId, null, best.decision);
+    const journey =
+      heroConcept?.journey ??
+      (await resolveConceptJourneyAuthoritative(context.studentId, best.decision.actionConceptId, best.decision.subjectId, null, best.decision));
     // LX-9R5 PART A1/D: never trust `best.decision.activityType` on its
     // own -- a LearningDecision can exist (and be genuinely the "best"
     // ranked one) for a concept whose canonical obligation (RETAIN)

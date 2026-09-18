@@ -60,7 +60,7 @@ beforeEach(() => {
   getMisconceptionCountsForConceptMock.mockReset().mockResolvedValue({ activeCount: 0, criticalCount: 0, recurringCount: 0 });
 });
 
-describe('Part 4 -- feature gate', () => {
+describe('Part 4, PROD-PROMOTION Section 7/10 -- feature gate (explicit configuration-based rollout, uniform across every environment)', () => {
   it('disabled by default (no env vars set)', () => {
     expect(isCanonicalEngineV1Enabled({})).toBe(false);
   });
@@ -73,12 +73,40 @@ describe('Part 4 -- feature gate', () => {
     expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'true', VERCEL_ENV: 'preview' })).toBe(true);
   });
 
+  it('disabled on Preview when absent or false', () => {
+    expect(isCanonicalEngineV1Enabled({ VERCEL_ENV: 'preview' })).toBe(false);
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'false', VERCEL_ENV: 'preview' })).toBe(false);
+  });
+
   it('enabled when explicitly "true" with no VERCEL_ENV at all (local dev)', () => {
     expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'true' })).toBe(true);
   });
 
-  it('HARD-disabled on Production regardless of the config value -- never inferred from hostname, always the documented VERCEL_ENV enum', () => {
-    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'true', VERCEL_ENV: 'production' })).toBe(false);
+  it('enabled when explicitly "true" on Development', () => {
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'true', VERCEL_ENV: 'development' })).toBe(true);
+  });
+
+  // PROD-PROMOTION Section 7: the temporary Production hard interlock
+  // is REMOVED -- Production promotion was always the planned next
+  // phase for it. CANONICAL_ENGINE_V1_ENABLED is now the SAME explicit
+  // opt-in AND the emergency rollback switch in every environment,
+  // Production included.
+  it('Production + "true" -> ENABLED (the explicit activation path)', () => {
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'true', VERCEL_ENV: 'production' })).toBe(true);
+  });
+
+  it('Production + "false" -> disabled (the emergency rollback path -- flip this one value, no deploy required)', () => {
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'false', VERCEL_ENV: 'production' })).toBe(false);
+  });
+
+  it('Production + absent -> disabled (never on by default, even in Production)', () => {
+    expect(isCanonicalEngineV1Enabled({ VERCEL_ENV: 'production' })).toBe(false);
+  });
+
+  it('Production + anything other than the exact string "true" -> disabled', () => {
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'yes', VERCEL_ENV: 'production' })).toBe(false);
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: '1', VERCEL_ENV: 'production' })).toBe(false);
+    expect(isCanonicalEngineV1Enabled({ CANONICAL_ENGINE_V1_ENABLED: 'TRUE', VERCEL_ENV: 'production' })).toBe(false);
   });
 
   it('never imports deployment-version.ts (that module is observability-only, never for gating) -- prose mentioning it in a doc comment is fine, an import is not', () => {

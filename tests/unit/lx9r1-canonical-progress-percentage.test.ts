@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { deriveJourneyProgress, averageJourneyProgress } from '@/lib/lx/journey-progress';
-import { resolveConceptJourneyStage } from '@/lib/lx/path-view';
+import { resolveConceptJourneyResultAuthoritative } from '@/lib/lx/path-view';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
 
@@ -125,21 +125,31 @@ describe('LX-9R1 required test 11 -- the label always matches the canonical stag
  * 12-13 -- concept page / subject page agree with My Path.          *
  * ================================================================ */
 describe('LX-9R1 required tests 12-13 -- the Subjects detail page reads the SAME stage authority as My Path/Concept Mission', () => {
-  it('resolveConceptJourneyStage, exported from path-view.ts, is the ONE function subjects/[id]/page.tsx calls -- the same module My Path\'s buildSubjectPathView already imports from', () => {
+  // PROD-PROMOTION: `resolveConceptJourneyStage` (legacy-only, still
+  // used internally by canonical-learning-progress.ts/old-canonical-snapshot.ts)
+  // is no longer what the Subjects detail page calls -- it now calls
+  // `resolveConceptJourneyResultAuthoritative`, the canonical-aware
+  // authority that ALSO defers to `getCanonicalPedagogicalDecision` when
+  // the gate is on (see prod-02-canonical-authority-regression.test.ts).
+  // The underlying intent this test protects -- "the Subjects page can
+  // never read a different stage authority than My Path" -- is
+  // strengthened, not weakened: both now call the exact same new
+  // function.
+  it('resolveConceptJourneyResultAuthoritative, exported from path-view.ts, is the ONE authority subjects/[id]/page.tsx calls -- the same module My Path\'s buildSubjectPathView already uses internally', () => {
     const pageSrc = read('src/app/dashboard/subjects/[id]/page.tsx');
-    expect(pageSrc).toMatch(/import \{ resolveSubjectCurrentDecision, resolveConceptJourneyStage \} from '@\/lib\/lx\/path-view'/);
-    expect(pageSrc).toMatch(/resolveConceptJourneyStage\(c\.id, id, ksByConceptId\.get\(c\.id\) \?\? null, decisionByConceptId\.get\(c\.id\)\)/);
+    expect(pageSrc).toMatch(/import \{ resolveSubjectCurrentDecision, resolveConceptJourneyResultAuthoritative \} from '@\/lib\/lx\/path-view'/);
+    expect(pageSrc).toMatch(/resolveConceptJourneyResultAuthoritative\(studentId, c\.id, id, ksByConceptId\.get\(c\.id\) \?\? null, decisionByConceptId\.get\(c\.id\)\)/);
   });
 
-  it('given identical canonical inputs, resolveConceptJourneyStage returns the exact same stage deriveLearnerJourneyStage would -- no second, independently-derived stage', () => {
+  it('given identical canonical inputs and the gate OFF, resolveConceptJourneyResultAuthoritative returns the exact same stage deriveLearnerJourneyStage would -- no second, independently-derived legacy stage', async () => {
     const decision = { learningState: 'RETENTION_RISK' } as unknown as LearningDecision;
-    const stage = resolveConceptJourneyStage('c1', 'subj1', { conceptId: 'c1', masteryState: 'VALIDATED_MASTERY', validationReadiness: 'READY' } as any, decision);
-    expect(stage).toBe('RETAIN');
+    const result = await resolveConceptJourneyResultAuthoritative('student-1', 'c1', 'subj1', { conceptId: 'c1', masteryState: 'VALIDATED_MASTERY', validationReadiness: 'READY' } as any, decision);
+    expect(result.stage).toBe('RETAIN');
   });
 
-  it('a concept with no active decision and no knowledge-state row resolves to NOT_STARTED -- matching My Path\'s own zero-signal fallback exactly', () => {
-    const stage = resolveConceptJourneyStage('c1', 'subj1', null, undefined);
-    expect(stage).toBe('NOT_STARTED');
+  it('a concept with no active decision and no knowledge-state row resolves to NOT_STARTED (gate off) -- matching My Path\'s own zero-signal fallback exactly', async () => {
+    const result = await resolveConceptJourneyResultAuthoritative('student-1', 'c1', 'subj1', null, undefined);
+    expect(result.stage).toBe('NOT_STARTED');
   });
 });
 
@@ -238,14 +248,25 @@ describe('LX-9R1 required tests 19-21 -- Today, My Path, and Concept Mission are
     expect(src).not.toMatch(/journey-progress|deriveJourneyProgress|resolveConceptJourneyStage/);
   });
 
-  it('20. My Path\'s own resolveConceptJourney (the pre-existing, unexported function used by buildSubjectPathView) is untouched -- LX-9R1 only ADDS a new export (resolveConceptJourneyStage) alongside it, never modifies its behavior', () => {
+  // PROD-PROMOTION: `buildSubjectPathView` now calls
+  // `resolveConceptJourneyAuthoritative`, which falls back to the
+  // ORIGINAL `resolveJourneyResult` composition (still module-private,
+  // still fully present) whenever the canonical gate is off -- so My
+  // Path's gate-off behavior is unchanged. When the gate is on, it now
+  // correctly defers to `getCanonicalPedagogicalDecision` instead of
+  // always reading the legacy `validationReadiness`-derived stage
+  // (this is the PROD-02 fix itself, not a regression).
+  it('20. the legacy resolveJourneyResult composition (originally exposed via resolveConceptJourney) is untouched and still the gate-off fallback -- LX-9R1/PROD-PROMOTION only ADD canonical-aware wrappers around it, never modify its own behavior', () => {
     const src = strip(read('src/lib/lx/path-view.ts'));
-    expect(src).toMatch(/function resolveConceptJourney\(/); // still present, still module-private
-    expect(src).toMatch(/export function resolveConceptJourneyStage\(/); // the new, additive export
-    // buildSubjectPathView still calls the ORIGINAL resolveConceptJourney, not the new stage-only helper.
+    expect(src).toMatch(/function resolveJourneyResult\(/); // still present, still module-private, still the legacy composition
+    expect(src).toMatch(/export async function resolveConceptJourneyResultAuthoritative\(/); // the new, additive canonical-aware export
+    // buildSubjectPathView now calls the canonical-aware wrapper, which itself falls back to resolveJourneyResult when the gate is off.
     const buildFnStart = src.indexOf('export async function buildSubjectPathView');
     const buildFnSrc = src.slice(buildFnStart, buildFnStart + 1500);
-    expect(buildFnSrc).toMatch(/resolveConceptJourney\(concept\.id/);
+    expect(buildFnSrc).toMatch(/resolveConceptJourneyAuthoritative\(/);
+    const authoritativeFnStart = src.indexOf('async function resolveJourneyResultAuthoritative');
+    const authoritativeFnSrc = src.slice(authoritativeFnStart, authoritativeFnStart + 1200);
+    expect(authoritativeFnSrc).toMatch(/return resolveJourneyResult\(conceptId, subjectId, ks, activeDecision\);/);
   });
 
   it('21. Concept Mission (concept-mission.ts) was not touched by this repair', () => {

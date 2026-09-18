@@ -18,13 +18,20 @@
  *      so a genuinely v1-authorized request's difficulty can NEVER fall
  *      through to the legacy `resolvedDifficulty` value. Confirmed by
  *      source audit below.
- *   2. `isCanonicalEngineV1Enabled()` is HARD-DISABLED in Production
+ *   2. AT THE TIME OF THIS AUDIT, `isCanonicalEngineV1Enabled()` was
+ *      HARD-DISABLED in Production regardless of configuration
  *      (confirmed in the prior audit phase, AUDIT-CONTEXT-1) --
- *      `v1Marker` is therefore ALWAYS `null` for every real Production
- *      request today, which means EVERY Practice generation in
- *      Production currently falls through to the pre-existing,
- *      independent LEGACY authority, `resolveTargetDifficulty`
- *      (`src/lib/lx/difficulty-contract.ts`). That legacy authority has
+ *      `v1Marker` was therefore ALWAYS `null` for every real Production
+ *      request then, which meant EVERY Practice generation in
+ *      Production fell through to the pre-existing, independent LEGACY
+ *      authority, `resolveTargetDifficulty`
+ *      (`src/lib/lx/difficulty-contract.ts`). PROD-PROMOTION Section 7
+ *      removed that hard interlock -- `CANONICAL_ENGINE_V1_ENABLED` is
+ *      now the same explicit, uniform gate in every environment
+ *      (Production included), so this specific "D2 vs D1" explanation
+ *      applies only while the flag is off in Production; once it is
+ *      set to `'true'` there, `v1Marker` is populated exactly as it
+ *      already is on Preview. That legacy authority has
  *      its OWN, intentionally different design: a "blocked" learner
  *      (an active critical misconception, or `INTERVENTION_REQUIRED`)
  *      gets `PRACTICE_HIGH_SUPPORT_REBUILD` = level 1, whereas the

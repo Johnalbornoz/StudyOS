@@ -9,7 +9,7 @@ import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
 import { getSubjectView } from '@/lib/learner-twin';
 import { getSubjectKnowledgeState, type MasteryState } from '@/services/knowledge-state.service';
 import { getLearningOSSnapshot } from '@/services/learning-os-snapshot.service';
-import { resolveSubjectCurrentDecision, resolveConceptJourneyStage } from '@/lib/lx/path-view';
+import { resolveSubjectCurrentDecision, resolveConceptJourneyResultAuthoritative } from '@/lib/lx/path-view';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import { averageJourneyProgress } from '@/lib/lx/journey-progress';
 import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
@@ -72,21 +72,31 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   // LX-9R1: the concept row's PRIMARY progress percentage must be the
   // canonical LX-1B journey stage, never the raw `mastery_score` this
   // page used to pass down (that fix lives in HierarchicalConceptList/
-  // ConceptList below). `resolveConceptJourneyStage` is the EXACT same
-  // function `buildSubjectPathView` (My Path) calls per concept -- same
-  // knowledge-state map, same snapshot-derived decision-by-concept map
-  // -- so this page can never disagree with My Path about a concept's
-  // stage (R10). Every concept in the hierarchy gets an entry, including
-  // ones with no active decision and no knowledge-state row yet (those
-  // correctly resolve to NOT_STARTED, never silently omitted -- R7).
+  // ConceptList below). `resolveConceptJourneyResultAuthoritative` is
+  // the EXACT same authority `buildSubjectPathView` (My Path) calls per
+  // concept -- same knowledge-state map, same snapshot-derived
+  // decision-by-concept map -- so this page can never disagree with My
+  // Path about a concept's stage (R10). Every concept in the hierarchy
+  // gets an entry, including ones with no active decision and no
+  // knowledge-state row yet (those correctly resolve to NOT_STARTED,
+  // never silently omitted -- R7).
+  // PROD-02 REMEDIATION: this is now the canonical-aware authority --
+  // when the Canonical V2 gate is on, each concept's stage is a fresh
+  // `getCanonicalPedagogicalDecision` read, never the legacy
+  // `validationReadiness`-derived stage that could show RETAIN without
+  // a genuine qualifying PROVE. Async (one canonical read per concept,
+  // in parallel) because that fresh read is the whole point.
   const ksByConceptId = new Map(knowledgeStates.map((ks) => [ks.conceptId, ks]));
   const subjectDecisionsForStage = snapshot ? rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === id)) : [];
   const decisionByConceptId = new Map(subjectDecisionsForStage.map((d) => [d.actionConceptId, d]));
   const allHierarchyConcepts = [...hierarchy.topics.flatMap((topic) => topic.subtopics.flatMap((s) => s.concepts)), ...hierarchy.unassigned];
   const journeyStages: Record<string, LearnerJourneyStage> = {};
-  for (const c of allHierarchyConcepts) {
-    journeyStages[c.id] = resolveConceptJourneyStage(c.id, id, ksByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id));
-  }
+  await Promise.all(
+    allHierarchyConcepts.map(async (c) => {
+      const result = await resolveConceptJourneyResultAuthoritative(studentId, c.id, id, ksByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id));
+      journeyStages[c.id] = result.stage;
+    })
+  );
   // LX-9R1-R1: the subject HEADER's primary percentage -- the mean of
   // the SAME per-concept journeyStages map above (every concept in the
   // hierarchy, NOT_STARTED counts as 0%, never excluded). Replaces the

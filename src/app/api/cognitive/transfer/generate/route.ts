@@ -20,6 +20,11 @@ import {
 import { getConceptTransferDepth } from '@/services/transfer-read.service';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { authorizeRequestedTransferDistance } from '@/lib/transfer-distance-authorization';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+} from '@/lib/pedagogical-decision';
 import { db } from '@/lib/db';
 import {
   certifyStructuredTransferNovelty,
@@ -92,23 +97,59 @@ export async function POST(request: NextRequest) {
     const language = validated.language || 'en';
 
     // UX/CANON-R1 PART H/I -- CANONICAL TRANSFER PRECONDITION, enforced
-    // here as a server-side backstop before ANY AI call. The primary
-    // fix is upstream (knowledge-state.service.ts:determineValidationReadiness
-    // now checks retention before transfer, so selectActivityType/
-    // computeLearningState never offer TRANSFER while retention is
-    // unresolved) -- this is defense in depth against a client that
-    // reaches this route directly (a stale CTA, a manual URL, a race)
-    // rather than through the canonical decision. Reads the SAME shared
-    // authority (ConceptKnowledgeState.validationReadiness) every other
-    // surface consults -- never a second, route-local eligibility rule.
-    const ksForTransferGate = await getConceptKnowledgeState(validated.studentId, validated.conceptId).catch(() => null);
-    if (ksForTransferGate?.validationReadiness === 'WAITING_FOR_RETENTION') {
-      logOperationalWarning({
-        subsystem: 'transfer',
-        operation: 'POST /api/cognitive/transfer/generate.canonicalPrecondition',
-        context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
-      });
-      return NextResponse.json({ error: 'RETENTION_REQUIRED_BEFORE_TRANSFER' }, { status: 409 });
+    // here as a server-side backstop before ANY AI call -- defense in
+    // depth against a client that reaches this route directly (a stale
+    // CTA, a manual URL, a race) rather than through the canonical
+    // decision.
+    //
+    // PROD-PROMOTION Section 6/13 -- STATIC AUTHORITY AUDIT FIX: this
+    // backstop used to read ONLY the legacy `ConceptKnowledgeState.validationReadiness`,
+    // unconditionally. Legacy `determineValidationReadiness` returns
+    // `WAITING_FOR_RETENTION` the moment generic evidence sufficiency
+    // passes and no retention evidence exists yet (knowledge-state.service.ts's
+    // own documented behavior) -- a condition that can be true even for
+    // a learner Canonical V2 has ALREADY correctly advanced to TRANSFER
+    // (a genuine qualifying RETAIN can exist in canonical evidence while
+    // the legacy `retention_score` dimension field is independently
+    // null). Left unconditional, this backstop could WRONGLY 409 a
+    // legitimate canonical TRANSFER request -- exactly the kind of
+    // legacy override of the canonical journey stage Section 6
+    // prohibits, just in the BLOCKING direction rather than PROD-02's
+    // advancing one.
+    //
+    // Fix: when the canonical gate is on, this backstop defers
+    // EXCLUSIVELY to a fresh `getCanonicalPedagogicalDecision` (the
+    // SAME authority every other learner-facing surface now consults)
+    // -- never the legacy signal. When the gate is off, behavior is
+    // completely unchanged (the original legacy check, still reading
+    // the SAME shared `ConceptKnowledgeState.validationReadiness` every
+    // other legacy surface consults -- never a second, route-local
+    // eligibility rule).
+    if (isCanonicalEngineV1Enabled()) {
+      try {
+        const { decision } = await getCanonicalPedagogicalDecision({ studentId: validated.studentId, conceptId: validated.conceptId });
+        if (!(decision.stage === 'TRANSFER' && decision.actionState === 'EXECUTABLE')) {
+          logOperationalWarning({
+            subsystem: 'transfer',
+            operation: 'POST /api/cognitive/transfer/generate.canonicalPrecondition',
+            context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
+          });
+          return NextResponse.json({ error: 'RETENTION_REQUIRED_BEFORE_TRANSFER' }, { status: 409 });
+        }
+      } catch (error) {
+        if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
+        return NextResponse.json({ error: 'CANONICAL_DECISION_UNAVAILABLE' }, { status: 503 });
+      }
+    } else {
+      const ksForTransferGate = await getConceptKnowledgeState(validated.studentId, validated.conceptId).catch(() => null);
+      if (ksForTransferGate?.validationReadiness === 'WAITING_FOR_RETENTION') {
+        logOperationalWarning({
+          subsystem: 'transfer',
+          operation: 'POST /api/cognitive/transfer/generate.canonicalPrecondition',
+          context: { route: 'POST /api/cognitive/transfer/generate', conceptId: validated.conceptId, subjectId: validated.subjectId },
+        });
+        return NextResponse.json({ error: 'RETENTION_REQUIRED_BEFORE_TRANSFER' }, { status: 409 });
+      }
     }
 
     // Phase 7 (7E2): the browser is NOT authoritative for NEAR/MID/FAR.

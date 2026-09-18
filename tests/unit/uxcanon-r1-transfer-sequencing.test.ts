@@ -229,6 +229,15 @@ vi.mock('@/lib/db', () => ({ db: {} }));
 vi.mock('@/lib/observability/operational-log', () => ({ logOperationalWarning: vi.fn() }));
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 
+const isCanonicalEngineV1EnabledMock = vi.fn();
+const getCanonicalPedagogicalDecisionMock = vi.fn();
+class MockCanonicalDecisionUnavailableError extends Error {}
+vi.mock('@/lib/pedagogical-decision', () => ({
+  isCanonicalEngineV1Enabled: () => isCanonicalEngineV1EnabledMock(),
+  getCanonicalPedagogicalDecision: (...a: any[]) => getCanonicalPedagogicalDecisionMock(...a),
+  CanonicalDecisionUnavailableError: MockCanonicalDecisionUnavailableError,
+}));
+
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
@@ -236,6 +245,10 @@ beforeEach(() => {
   generateStructuredTransferActivityMock.mockReset().mockResolvedValue({
     prompt: 'p', context: 'c', distance: 'NEAR', transferModality: 'text', noveltyDimensions: [], targetConceptIds: [], contextDomain: 'd', generatorPromptVersion: 'v1',
   });
+  // Default: gate off, matching every pre-existing test in this file
+  // (they never set this and always expect the legacy backstop).
+  isCanonicalEngineV1EnabledMock.mockReset().mockReturnValue(false);
+  getCanonicalPedagogicalDecisionMock.mockReset();
 });
 
 function buildRequest(body: unknown) {
@@ -270,6 +283,57 @@ describe('UX/CANON-R1 18-19 -- server-side PART I backstop on /api/cognitive/tra
       conceptId: CONCEPT_ID,
       conceptLabel: 'Fuerza centrípeta',
     }));
+    expect(generateStructuredTransferActivityMock).not.toHaveBeenCalled();
+  });
+});
+
+/* ================================================================= *
+ * PROD-PROMOTION STATIC AUTHORITY AUDIT FIX -- with the canonical    *
+ * gate ON, this backstop must defer EXCLUSIVELY to a fresh canonical *
+ * decision, never the legacy validationReadiness signal (in either   *
+ * direction: it must not wrongly BLOCK a legitimate canonical        *
+ * TRANSFER, and it must still correctly block when canonical itself  *
+ * says TRANSFER is not yet executable).                              *
+ * ================================================================= */
+describe('PROD-PROMOTION -- gate ON: the backstop defers to the canonical decision, never the legacy validationReadiness signal', () => {
+  it('legacy validationReadiness = WAITING_FOR_RETENTION must NOT block a request when canonical itself says TRANSFER/EXECUTABLE -- proves the legacy signal cannot override/demote a legitimate canonical stage', async () => {
+    isCanonicalEngineV1EnabledMock.mockReturnValue(true);
+    getCanonicalPedagogicalDecisionMock.mockResolvedValue({ decision: { stage: 'TRANSFER', actionState: 'EXECUTABLE' } });
+    // The legacy read is never even consulted once the gate is on, but
+    // set it to the exact PROD-02-shaped value anyway to prove it has
+    // no effect if it WERE read.
+    getConceptKnowledgeStateMock.mockResolvedValue(ksState({ validationReadiness: 'WAITING_FOR_RETENTION' }));
+
+    const { POST } = await import('@/app/api/cognitive/transfer/generate/route');
+    const res = await POST(buildRequest({ studentId: STUDENT_ID, conceptId: CONCEPT_ID, conceptLabel: 'Fuerza centrípeta' }));
+
+    expect(res.status).not.toBe(409);
+    expect(generateStructuredTransferActivityMock).toHaveBeenCalled();
+    expect(getConceptKnowledgeStateMock).not.toHaveBeenCalled();
+  });
+
+  it('canonical stage/actionState anything other than TRANSFER/EXECUTABLE still correctly rejects with 409 -- the backstop still works, just from the right authority', async () => {
+    isCanonicalEngineV1EnabledMock.mockReturnValue(true);
+    getCanonicalPedagogicalDecisionMock.mockResolvedValue({ decision: { stage: 'RETAIN', actionState: 'WAITING' } });
+
+    const { POST } = await import('@/app/api/cognitive/transfer/generate/route');
+    const res = await POST(buildRequest({ studentId: STUDENT_ID, conceptId: CONCEPT_ID, conceptLabel: 'Fuerza centrípeta' }));
+
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('RETENTION_REQUIRED_BEFORE_TRANSFER');
+    expect(generateStructuredTransferActivityMock).not.toHaveBeenCalled();
+  });
+
+  it('a CanonicalDecisionUnavailableError returns a controlled 503, never a silent fall-back to the legacy signal', async () => {
+    isCanonicalEngineV1EnabledMock.mockReturnValue(true);
+    getCanonicalPedagogicalDecisionMock.mockRejectedValue(new MockCanonicalDecisionUnavailableError('read failed'));
+
+    const { POST } = await import('@/app/api/cognitive/transfer/generate/route');
+    const res = await POST(buildRequest({ studentId: STUDENT_ID, conceptId: CONCEPT_ID, conceptLabel: 'Fuerza centrípeta' }));
+
+    expect(res.status).toBe(503);
+    expect(getConceptKnowledgeStateMock).not.toHaveBeenCalled();
     expect(generateStructuredTransferActivityMock).not.toHaveBeenCalled();
   });
 });
