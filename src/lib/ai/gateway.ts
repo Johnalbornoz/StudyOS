@@ -5,6 +5,7 @@ import { logAIExecution, logAIProviderError } from './logging';
 import { getAIExecutionAuditSink } from './audit';
 import type { ProviderUsage } from './usage';
 import { estimateCostUSD } from './pricing';
+import { reserveAICall } from './operational-limits';
 
 /** No AI call in StudyUs waits forever (Step 7) -- 30s covers every current call's observed shape, including large batch generations. */
 export const DEFAULT_AI_TIMEOUT_MS = 30_000;
@@ -179,6 +180,38 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
     const execution = await emit(finish({ success: false, validationStatus, fallbackUsed: false, errorCode: aiErr.code }, aiErr));
     throw new AIExecutionFailure(aiErr, execution);
   };
+
+  // F0-S / RR-01 / RR-10: reserve a global volume slot BEFORE the
+  // provider is ever contacted, so a call that would exceed the shared
+  // per-minute/per-day ceiling is blocked without being billed. This is
+  // the one place every AI call in the app passes through, so it is
+  // the correct enforcement boundary (never duplicated per-route).
+  //
+  // Skipped only under `NODE_ENV === 'test'` (set automatically and
+  // exclusively by the Vitest runner -- never by `next build`/`next
+  // start`, so this can never activate in Preview or Production). This
+  // baseline has no existing DB-isolation harness for unit tests (that
+  // work lives, uncommitted, on a different branch -- see
+  // F0S_SECURITY_CONTAINMENT_REPORT.md); calling a real `db.query`
+  // from every one of the 100+ existing unit tests that inject a fake
+  // `call` into `executeAI` specifically to avoid any real I/O would
+  // both break that established testing convention and risk a unit
+  // test opening a real connection using whatever `DATABASE_URL`
+  // happens to be set locally. `reserveAICall`'s own logic is still
+  // fully covered by dedicated tests that mock `@/lib/db` explicitly
+  // (see f0s-ai-operational-limits.test.ts) -- this guard only decides
+  // whether `executeAI` itself asks it, not whether the function works.
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await reserveAICall();
+    } catch (err) {
+      clearTimeout(timer);
+      const aiErr = err instanceof AIExecutionError
+        ? err
+        : new AIExecutionError('CONFIGURATION_ERROR', 'AI operational limiter unavailable; request blocked');
+      return resolveFailure(aiErr, 'NOT_APPLICABLE');
+    }
+  }
 
   let raw: TRaw;
   try {
