@@ -15,10 +15,14 @@
  */
 
 import { db } from '@/lib/db';
+import { getSubscription, transitionSubscriptionStatus } from '@/lib/entitlements/subscription.service';
+import { InvalidSubscriptionTransitionError } from '@/lib/entitlements/subscription-state-machine';
+import { recordPayment } from '@/lib/entitlements/payment.service';
+import type { SubscriptionStatus } from '@/lib/entitlements/types';
 
 const MP_API_BASE = 'https://api.mercadopago.com';
 
-export type SubscriptionStatus = 'unpaid' | 'active' | 'past_due' | 'canceled';
+export type { SubscriptionStatus } from '@/lib/entitlements/types';
 
 export interface Subscription {
   studentId: string;
@@ -159,31 +163,99 @@ function mapMercadoPagoStatus(mpStatus: string): SubscriptionStatus {
  * recommendation, the notification body is never trusted directly --
  * it only carries an id, which is used to re-fetch the real resource
  * from their API before updating anything.
+ *
+ * F3 / §18/19: two event types are handled, each normalized before it
+ * can affect product state:
+ *  - 'subscription_preapproval': updates descriptive metadata
+ *    unconditionally (provider ids, never gated), but the STATUS
+ *    itself only ever changes via the validated state machine
+ *    (transitionSubscriptionStatus) -- an out-of-order or malformed
+ *    provider status that would imply an invalid jump (e.g. a stale
+ *    'cancelled' arriving after we already recorded 'active' in a way
+ *    that isn't a real allowed transition) is logged and skipped,
+ *    never forced through (INV-F3-10/11). The webhook always returns
+ *    200 regardless (Mercado Pago retries aggressively on non-2xx) --
+ *    it just may not have changed anything.
+ *  - 'payment': records ONE normalized payment row, idempotently
+ *    keyed on (provider, provider_reference) -- a duplicate delivery
+ *    of the same payment event can never create a second row or
+ *    double-count anything (§19: "a duplicate payment webhook must
+ *    never duplicate payment").
+ * Any other event type is a controlled no-op.
  */
 export async function handleMercadoPagoWebhook(notification: { type?: string; data?: { id?: string } }): Promise<void> {
   if (!isConfigured()) return;
-  if (notification.type !== 'subscription_preapproval' || !notification.data?.id) return;
+  if (!notification.data?.id) return;
 
-  const response = await fetch(`${MP_API_BASE}/preapproval/${notification.data.id}`, {
-    headers: { Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` },
-  });
-  if (!response.ok) return;
+  if (notification.type === 'subscription_preapproval') {
+    const response = await fetch(`${MP_API_BASE}/preapproval/${notification.data.id}`, {
+      headers: { Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` },
+    });
+    if (!response.ok) return;
 
-  const preapproval = await response.json();
-  const studentId = preapproval.external_reference;
-  if (!studentId) return;
+    const preapproval = await response.json();
+    const studentId = preapproval.external_reference;
+    if (!studentId) return;
 
-  await db.query(
-    `
-    INSERT INTO subscriptions (student_id, status, provider, provider_subscription_id, provider_payer_email)
-    VALUES ($1, $2, 'mercadopago', $3, $4)
-    ON CONFLICT (student_id) DO UPDATE SET
-      status = EXCLUDED.status,
-      provider_subscription_id = EXCLUDED.provider_subscription_id,
-      provider_payer_email = EXCLUDED.provider_payer_email,
-      manually_set_by_admin = false,
-      updated_at = NOW()
-    `,
-    [studentId, mapMercadoPagoStatus(preapproval.status), preapproval.id, preapproval.payer_email]
-  );
+    // Metadata (provider ids) is never state-machine-governed -- safe to update unconditionally.
+    await db.query(
+      `
+      INSERT INTO subscriptions (student_id, status, provider, provider_subscription_id, provider_payer_email)
+      VALUES ($1, 'unpaid', 'mercadopago', $2, $3)
+      ON CONFLICT (student_id) DO UPDATE SET
+        provider_subscription_id = EXCLUDED.provider_subscription_id,
+        provider_payer_email = EXCLUDED.provider_payer_email,
+        manually_set_by_admin = false,
+        updated_at = NOW()
+      `,
+      [studentId, preapproval.id, preapproval.payer_email]
+    );
+
+    const current = await getSubscription(studentId);
+    const target = mapMercadoPagoStatus(preapproval.status);
+    if (current.status !== target) {
+      try {
+        await transitionSubscriptionStatus(studentId, target);
+      } catch (error) {
+        if (error instanceof InvalidSubscriptionTransitionError) {
+          console.warn('[mercadopago-webhook] rejected invalid transition, no state changed', {
+            studentId,
+            from: current.status,
+            to: target,
+          });
+        } else {
+          throw error;
+        }
+      }
+    }
+    return;
+  }
+
+  if (notification.type === 'payment') {
+    const response = await fetch(`${MP_API_BASE}/v1/payments/${notification.data.id}`, {
+      headers: { Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` },
+    });
+    if (!response.ok) return;
+
+    const payment = await response.json();
+    const studentId = payment.external_reference;
+    if (!studentId) return;
+
+    const sub = await getSubscription(studentId);
+    if (!sub.id) return; // no local subscription row to attach this payment to
+
+    const status = payment.status === 'approved' ? 'SUCCEEDED' : payment.status === 'rejected' ? 'FAILED' : 'PENDING';
+    await recordPayment({
+      subscriptionId: sub.id,
+      payerUserId: sub.payerUserId,
+      amountCents: Math.round((payment.transaction_amount ?? 0) * 100),
+      currency: payment.currency_id ?? 'COP',
+      provider: 'mercadopago',
+      providerReference: String(payment.id),
+      status,
+    });
+    return;
+  }
+
+  // Any other event type: controlled no-op.
 }
