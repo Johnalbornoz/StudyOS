@@ -31,6 +31,13 @@ import { getCurriculumEligibleConcepts } from '@/services/curriculum-eligibility
 import { bootstrapNotStartedLearningDecision, hasLiveDecisionForConcept } from '@/lib/curriculum-progression-bootstrap';
 import { getConceptKnowledgeState, getActiveMasteryPolicy } from '@/services/knowledge-state.service';
 import { isZeroGapPracticeMismatch } from '@/lib/lx/evidence-sufficiency-contract';
+import {
+  isCanonicalEngineV1Enabled,
+  getCanonicalPedagogicalDecision,
+  CanonicalDecisionUnavailableError,
+  resolveCanonicalLaunch,
+  resolveConceptSubjectForStudent,
+} from '@/lib/pedagogical-decision';
 
 /** The SAME three LearningState values deriveLearnerJourneyStage's own REINFORCE rule keys off -- never inferred from mastery/understanding alone (LX-9R8 PART A2). */
 const REINFORCE_LEARNING_STATES = new Set(['MISCONCEPTION_BLOCKED', 'PREREQUISITE_BLOCKED', 'NEEDS_REPAIR']);
@@ -105,6 +112,25 @@ export async function resolveContinuation(input: ResolveContinuationInput): Prom
 
 async function resolveContinuationInner(input: ResolveContinuationInput): Promise<ContinuationResolution> {
   const { studentId, conceptId, subjectId } = input;
+
+  // CV2-08 ROOT-CAUSE FIX -- SINGLE SOURCE OF TRUTH: when the Canonical
+  // V2 gate is on, `getCanonicalPedagogicalDecision` (the SAME fresh
+  // call the Results screen already makes, and the SAME authority
+  // `/api/learning/session/start` already enforces via
+  // `resolveCanonicalLaunch`) is the ONE next-action authority here too.
+  // The legacy Phase 4/8 path below is a genuinely separate, older
+  // decision engine (Phase 2.2A Knowledge State + the Adaptive Learning
+  // Orchestrator) that predates Canonical V2 and was never taught to
+  // consult it -- calling both independently is exactly how Results
+  // could say PROVE while Continue said WAITING/RETENTION_NOT_DUE for
+  // the identical persisted state. This is not a second, bespoke
+  // resolver: it reuses the two functions session-start already uses,
+  // unmodified. When the gate is off (Production default), behavior is
+  // completely unchanged -- the legacy path below still runs exactly as
+  // before.
+  if (isCanonicalEngineV1Enabled()) {
+    return resolveCanonicalContinuation({ studentId, conceptId });
+  }
 
   // --- 1. Phase 4 canonical decision for this concept ---
   let phase4Decisions: Awaited<ReturnType<typeof getLearningDecisions>> = [];
@@ -213,4 +239,72 @@ async function resolveContinuationInner(input: ResolveContinuationInput): Promis
 
   // --- 3. No canonical next action ---
   return { status: 'RETURN_TO_MISSION', reason: 'NO_CANONICAL_ACTION' };
+}
+
+/**
+ * CV2-08 FIX -- the canonical-gate branch of `resolveContinuationInner`.
+ * Mirrors `/api/learning/session/start`'s own canonical branch exactly
+ * (ownership re-derived server-side, never trusted from the caller's
+ * `subjectId`; a read failure is a controlled error, never a silent
+ * fall-back to the legacy Phase 4 authority -- Part 28's fail-safe
+ * discipline, reused here rather than re-invented) so the two consumers
+ * can never again read the canonical decision differently.
+ */
+async function resolveCanonicalContinuation(input: { studentId: string; conceptId: string }): Promise<ContinuationResolution> {
+  const { studentId, conceptId } = input;
+
+  const owned = await resolveConceptSubjectForStudent(conceptId, studentId).catch(() => null);
+  if (!owned) {
+    return { status: 'RETURN_TO_MISSION', reason: 'RESOLVE_FAILED' };
+  }
+
+  let decisionResult: Awaited<ReturnType<typeof getCanonicalPedagogicalDecision>>;
+  try {
+    decisionResult = await getCanonicalPedagogicalDecision({ studentId, conceptId });
+  } catch (error) {
+    if (error instanceof CanonicalDecisionUnavailableError) {
+      console.error('Canonical decision unavailable for continuation:', error, error.cause);
+      return { status: 'RETURN_TO_MISSION', reason: 'DECISION_UNAVAILABLE' };
+    }
+    return { status: 'RETURN_TO_MISSION', reason: 'RESOLVE_FAILED' };
+  }
+
+  const session = resolveCanonicalLaunch({
+    subjectId: owned.subjectId,
+    conceptId,
+    decision: decisionResult.decision,
+  });
+
+  if (session.launchStatus === 'READY' && session.launchTarget && session.activityType) {
+    return {
+      status: 'LAUNCH',
+      launchTarget: session.launchTarget,
+      activityType: session.activityType,
+      source: 'CANONICAL_ENGINE_V1',
+      // Best-effort only, matching `deriveLaunchTeachingExperience`'s own
+      // contract: `null` here is a normal, expected outcome (this
+      // canonical path has no `LearningDecision`-shaped input to derive
+      // it from) -- the client already falls back to its own canonical
+      // `/api/learning/teaching-intent` fetch whenever this is absent.
+      teachingExperience: null,
+    };
+  }
+
+  if (session.launchStatus === 'WAITING') {
+    // The ONLY `WaitingReason` the frozen engine currently emits is
+    // `RETENTION_MINIMUM_INTERVAL_NOT_REACHED` (pedagogical-engine/types.ts)
+    // -- mapped to Continuation's own equivalent literal, never invented.
+    return {
+      status: 'WAITING',
+      waitingReason: 'RETENTION_NOT_DUE',
+      nextEligibleAt: session.nextEligibleAt,
+    };
+  }
+
+  // CONSOLIDATED / LOCKED / BLOCKED / NOT_READY (or a READY session
+  // missing its own launchTarget/activityType, structurally unreachable
+  // per `resolveCanonicalLaunch`'s own contract but never assumed here)
+  // -- no canonical action to launch right now, for a real, honest
+  // reason. Never reinterpreted as WAITING or a different stage.
+  return { status: 'RETURN_TO_MISSION', reason: 'CANONICAL_NO_FURTHER_ACTION' };
 }

@@ -1691,6 +1691,13 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       string,
       {
         correct: number;
+        // CV2-07 FIX: the sum of each question's own `gradeResult.score`
+        // (0-1, partial credit included) in this bucket -- the actual
+        // continuous evidence signal `conceptScore` below is meant to
+        // carry ("the real score", per that computation's own long-
+        // standing comment), never a count of how many questions merely
+        // cleared some threshold.
+        scoreSum: number;
         total: number;
         questionIndexes: number[];
         confidenceBeforeAnswer?: ConfidenceLevel;
@@ -1723,11 +1730,27 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       if (!g) continue;
       const { questionIndex, question, rawAnswer, gradeResult, reportedConfidence, timing } = g;
 
-      if (gradeResult.score >= 0.5) correctCount++;
+      // CV2-07 ROOT-CAUSE FIX: `gradeResult.correct` is the grader's OWN
+      // authoritative pass/fail verdict -- the exact same field the
+      // review screen's per-question chip already renders as
+      // chip-good/chip-critical (never a threshold on `score`). A
+      // question graded `correct: false, errorType: 'INCOMPLETE'`
+      // ("Correcto hasta donde llega, pero sin terminar" / CASI) can
+      // legitimately carry a mid-range partial `score` (that's what
+      // `score` is FOR), but it is never "correct" -- counting it as
+      // correct here produced the exact defect this fixes: a review
+      // screen showing one question as CASI/incomplete (chip-critical)
+      // while the aggregate simultaneously claimed "3/3 correctas,
+      // 100%". `score` remains available below for partial-credit
+      // EVIDENCE weighting (`scoreSum` / `conceptScore`), which is a
+      // different, legitimate use -- it must never redefine what counts
+      // as "correct" for a pass/fail tally.
+      if (gradeResult.correct) correctCount++;
       else incorrectCount++;
 
       const bucket = byConcept.get(question.conceptId) || {
         correct: 0,
+        scoreSum: 0,
         total: 0,
         questionIndexes: [],
         questionSemantics: [],
@@ -1738,7 +1761,8 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         responseTimings: [],
       };
       bucket.total++;
-      if (gradeResult.score >= 0.5) bucket.correct++;
+      bucket.scoreSum += gradeResult.score;
+      if (gradeResult.correct) bucket.correct++;
       bucket.questionIndexes.push(questionIndex);
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
@@ -1872,7 +1896,16 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // "2 of 3 challenges passed" with "all 3 individually >= 70" --
         // exactly the masking Section 10's own per-challenge floor
         // exists to prevent).
-        const conceptScore = transferGrading ? transferGrading.overallScore : Math.round((bucket.correct / bucket.total) * 100);
+        // CV2-07 FIX: the mean of each question's own continuous
+        // `gradeResult.score` (0-1, partial credit included), NOT a
+        // count of how many questions cleared some threshold -- this is
+        // the "real score" the field's own comment below already
+        // documented as the intent (e.g. a 15/15 vs. a single lucky
+        // correct answer should move mastery differently), which the
+        // previous `bucket.correct`-based ratio silently defeated by
+        // collapsing every question to a binary hit/miss before
+        // averaging.
+        const conceptScore = transferGrading ? transferGrading.overallScore : Math.round((bucket.scoreSum / bucket.total) * 100);
         // LX-4J / LX-1R evidence-consistency contract: the actual mean
         // generated difficulty of this concept's questions, never a
         // hardcoded constant. CANON-R5R1A: this SAME real value is also

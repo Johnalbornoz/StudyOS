@@ -57,8 +57,21 @@ export type ContinuationResolution =
       launchTarget: string;
       /** The canonical ActivityType being launched (Phase 4 decision, or Phase 8 first-touch PRACTICE). Display only. */
       activityType: string;
-      /** Which canonical authority produced it. Auditable. */
-      source: 'PHASE_4_DECISION' | 'CURRICULUM_FIRST_TOUCH';
+      /**
+       * Which canonical authority produced it. Auditable.
+       * CV2-08 FIX: `'CANONICAL_ENGINE_V1'` -- resolved via the SAME
+       * `getCanonicalPedagogicalDecision` + `resolveCanonicalLaunch`
+       * pair `/api/learning/session/start` already uses, when the
+       * Canonical V2 gate is on. Before this fix, Continue never
+       * consulted this authority at all, even when Results (a fresh
+       * `getCanonicalPedagogicalDecision` call, computed strictly after
+       * the evidence write) had just used it -- the two could disagree
+       * about the next stage because they were two independent
+       * decision engines. The legacy `'PHASE_4_DECISION'` /
+       * `'CURRICULUM_FIRST_TOUCH'` sources are now reached only when
+       * the gate is off (Production default).
+       */
+      source: 'PHASE_4_DECISION' | 'CURRICULUM_FIRST_TOUCH' | 'CANONICAL_ENGINE_V1';
       /**
        * LX-4P-PERF-R1C C12 -- decision de-duplication for the
        * Continue -> teaching-launch handoff. The canonical derived
@@ -104,7 +117,19 @@ export type ContinuationResolution =
          * reason (the panel does not branch on it); Concept Mission
          * itself shows the ZERO_GAP_MISMATCH card on arrival.
          */
-        | 'ZERO_GAP_MISMATCH';
+        | 'ZERO_GAP_MISMATCH'
+        /**
+         * CV2-08 FIX: the canonical engine (gate on) has no executable
+         * action right now for a genuine structural/pedagogical reason
+         * -- `CanonicalLaunchStatus` was `CONSOLIDATED` (everything
+         * required is already validated), `LOCKED`/`BLOCKED` (a
+         * prerequisite gate), or `NOT_READY` (the decided activity type
+         * has no live generation route yet). Renders identically to
+         * any other RETURN_TO_MISSION reason -- this is for audit only,
+         * never invented, never silently reinterpreted as WAITING or a
+         * different stage.
+         */
+        | 'CANONICAL_NO_FURTHER_ACTION';
     };
 
 export interface ContinuationCheckpoint {
