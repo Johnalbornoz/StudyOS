@@ -22,7 +22,7 @@ import { getActiveDebts } from './learning-debt.service';
 import { getUpcomingForStudent } from './assessment.service';
 import { masteryToPercent, tryMasteryScore, averageMasteryScore } from '@/lib/mastery-format';
 
-export type LinkStatus = 'pending' | 'accepted' | 'declined';
+export type LinkStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
 
 export interface LinkedChild {
   studentId: string;
@@ -76,11 +76,38 @@ export async function linkChildByEmail(
   return { studentId: student.id, name: student.name || student.email, email: student.email, status: 'pending' };
 }
 
+/**
+ * F2 / INV-F2-07/08: soft-revoke, never a hard DELETE. The relationship
+ * row (and every fact it carries -- when it was created, when it was
+ * accepted) is preserved with status='revoked' rather than destroyed --
+ * the historical fact that this relationship once existed and was
+ * later revoked must survive. Access is denied immediately regardless
+ * (verifyParentAccess only ever counts status='accepted'), but nothing
+ * about the learner's own Evidence/mastery/history is touched here or
+ * anywhere in this file.
+ */
 export async function unlinkChild(parentId: string, studentId: string): Promise<void> {
   await db.query(
-    `DELETE FROM parent_student_relationships WHERE parent_id = $1 AND student_id = $2`,
+    `UPDATE parent_student_relationships SET status = 'revoked', responded_at = NOW() WHERE parent_id = $1 AND student_id = $2 AND status != 'revoked'`,
     [parentId, studentId]
   );
+}
+
+/**
+ * F2 / §7: the learner's own side of revocation -- a student must be
+ * able to revoke an ACTIVE ('accepted') relationship themselves, not
+ * only accept/reject a pending one. Scoped by `WHERE student_id = $1`
+ * so a caller can never revoke a relationship belonging to a different
+ * student (the caller's own resolved studentId is always used, never
+ * a client-supplied one -- enforced at the route boundary). Same
+ * soft-revoke contract as unlinkChild.
+ */
+export async function revokeRelationshipByStudent(studentId: string, parentId: string): Promise<boolean> {
+  const result = await db.query(
+    `UPDATE parent_student_relationships SET status = 'revoked', responded_at = NOW() WHERE student_id = $1 AND parent_id = $2 AND status = 'accepted' RETURNING parent_id`,
+    [studentId, parentId]
+  );
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]> {
