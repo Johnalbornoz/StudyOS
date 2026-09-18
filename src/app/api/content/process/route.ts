@@ -28,6 +28,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { getOrCreateStudentId, verifyContentSourceAccess } from '@/lib/auth';
 import { processContentForChunking } from '@/services/content-chunking.service';
 import { generateEmbedding, storeChunkWithEmbedding } from '@/services/embedding.service';
 import { db } from '@/lib/db';
@@ -59,7 +60,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Verify authorization - user owns this content source
+    // F0-S / RR-08: the request carries no client-supplied studentId to
+    // (mis)trust here -- the effective learner is resolved entirely from
+    // the authenticated Clerk session, then `contentSourceId` ownership
+    // is verified against that resolved identity before any chunking/
+    // embedding work runs. Fails closed (NOT_FOUND) rather than
+    // confirming a content source exists for a different student.
+    const studentId = await getOrCreateStudentId(userId);
+    const ownsContentSource = await verifyContentSourceAccess(studentId, body.contentSourceId);
+    if (!ownsContentSource) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
 
     // Step 1: Split content into chunks
     const { chunks, totalTokens, estimatedReadingTime } =

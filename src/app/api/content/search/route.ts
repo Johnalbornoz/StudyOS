@@ -29,14 +29,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { verifyAuth, verifyStudentAccess, verifySubjectAccess } from '@/lib/auth';
 import { retrieveContext } from '@/services/rag.service';
 import { generateEmbedding } from '@/services/embedding.service';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const authContext = await verifyAuth();
+    if (!authContext) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -60,7 +60,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Verify authorization
+    // F0-S / RR-08: the client-supplied studentId/subjectId are never
+    // trusted at face value -- reuse the same two canonical ownership
+    // helpers (verifyStudentAccess, verifySubjectAccess) already used by
+    // 49+ other routes in this codebase, rather than inventing a new
+    // authorization mechanism. A student who isn't `studentId`, or a
+    // subject that doesn't belong to `studentId`, both fail closed
+    // without revealing which one was wrong.
+    const canAccessStudent = await verifyStudentAccess(authContext.userId, studentId, authContext.role);
+    if (!canAccessStudent) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    const canAccessSubject = await verifySubjectAccess(studentId, subjectId);
+    if (!canAccessSubject) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
 
     // Generate embedding for query
     const queryEmbedding = await generateEmbedding(query);

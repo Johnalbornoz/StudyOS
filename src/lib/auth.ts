@@ -312,6 +312,38 @@ export async function verifySubjectAccess(
 }
 
 /**
+ * F0-S -- verify content-source ownership (multi-tenancy), same shape
+ * and same fail-closed contract as `verifySubjectAccess` above: a
+ * missing content source, one owned by a different student, or any DB
+ * error all resolve to `false`. `content_sources.student_id` is the
+ * live, direct ownership column (confirmed by `content.service.ts`'s
+ * own `getContentSources`/`deleteContentSource`, which already scope
+ * every query this same way) -- this is not a new authorization model,
+ * just the first shared helper for a check that content routes were
+ * previously skipping entirely.
+ */
+export async function verifyContentSourceAccess(
+  studentId: string,
+  contentSourceId: string
+): Promise<boolean> {
+  try {
+    const result = await db.query(
+      `
+      SELECT 1 FROM content_sources
+      WHERE id = $1 AND student_id = $2
+      LIMIT 1
+      `,
+      [contentSourceId, studentId]
+    );
+
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error verifying content source access:', error);
+    return false;
+  }
+}
+
+/**
  * Middleware helper for API routes
  *
  * Usage in route handlers:
