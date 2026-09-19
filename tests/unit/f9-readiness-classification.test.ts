@@ -97,6 +97,13 @@ describe('summarizeBlueprintCoverage (the real denominator-exclusion logic, INV-
     expect(summary.evidencedFraction).toBeCloseTo(1.0, 5);
   });
 
+  it('case H: UNMAPPED targets are ALSO excluded from the denominator -- a missing curriculum mapping is platform/editorial incompleteness, never a learner evidence gap', () => {
+    const targets = [target('SUPPORTED_AND_EVIDENCED'), target('SUPPORTED_AND_EVIDENCED'), target('UNMAPPED'), target('UNMAPPED')];
+    const summary = summarizeBlueprintCoverage(targets);
+    // denominator = 4 - 0 - 0 - 2 (unmapped) = 2; 2 evidenced / 2 = 1.0, never 2/4 (0.5) and never penalized for the unmapped pair
+    expect(summary.evidencedFraction).toBeCloseTo(1.0, 5);
+  });
+
   it('zero eligible targets (all unsupported) -> null fraction, never zero (never implies "0% ready")', () => {
     const summary = summarizeBlueprintCoverage([target('UNSUPPORTED_BY_PLATFORM'), target('UNSUPPORTED_BY_PLATFORM')]);
     expect(summary.evidencedFraction).toBeNull();

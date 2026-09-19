@@ -62,7 +62,7 @@ All four share one pure classifier (`classifyGapBasedDimension`, `src/lib/readin
 
 ### BLUEPRINT_EVIDENCE_COVERAGE
 
-See `F9_BLUEPRINT_EVIDENCE_COVERAGE.md` in full. `detail = {totalTargets, supportedAndEvidenced, supportedButUnevidenced, unsupportedByPlatform, unmapped, notRequired}`. Status: `STRONG` if `supportedAndEvidenced / (totalTargets - unsupportedByPlatform - notRequired) >= policy.coverage.minimumEvidencedFractionForSimulationReady`; `DEVELOPING` if `>= minimumEvidencedFractionForEarlyPreparation`; else `WEAK` — but WEAK here means "coverage is thin," never "the learner is weak" (INV-F9-05/task §10's own explicit prohibition is enforced by never emitting a reason code that blames the learner for an `UNSUPPORTED_BY_PLATFORM`/`UNMAPPED` target; those are excluded from the fraction's denominator entirely, per the formula above).
+See `F9_BLUEPRINT_EVIDENCE_COVERAGE.md` in full. `detail = {totalTargets, supportedAndEvidenced, supportedButUnevidenced, unsupportedByPlatform, unmapped, notRequired}`. Status: `STRONG` if `supportedAndEvidenced / (totalTargets - unsupportedByPlatform - notRequired - unmapped) >= policy.coverage.minimumEvidencedFractionForSimulationReady`; `DEVELOPING` if `>= minimumEvidencedFractionForEarlyPreparation`; else `WEAK` — but WEAK here means "coverage is thin," never "the learner is weak" (INV-F9-05/task §10's own explicit prohibition is enforced by never emitting a reason code that blames the learner for an `UNSUPPORTED_BY_PLATFORM`/`UNMAPPED` target; those are excluded from the fraction's denominator entirely, per the formula above).
 
 ### SIMULATION_PERFORMANCE
 

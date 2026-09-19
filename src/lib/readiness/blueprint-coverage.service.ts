@@ -66,7 +66,14 @@ export function summarizeBlueprintCoverage(targets: BlueprintTargetCoverage[]): 
   const unmapped = targets.filter((t) => t.status === 'UNMAPPED').length;
   const notRequired = targets.filter((t) => t.status === 'NOT_REQUIRED').length;
 
-  const denominator = targets.length - unsupportedByPlatform - notRequired;
+  // UNMAPPED is excluded from the denominator for the SAME reason as
+  // UNSUPPORTED_BY_PLATFORM (INV-F9-05): a missing curriculum mapping is
+  // platform/content incompleteness, not a fact about learner evidence --
+  // counting it against the learner would misrepresent an editorial gap
+  // as an evidence gap. (Found and fixed during the F9 real-Postgres
+  // certification's own case H -- the original denominator formula only
+  // excluded UNSUPPORTED_BY_PLATFORM/NOT_REQUIRED.)
+  const denominator = targets.length - unsupportedByPlatform - notRequired - unmapped;
   const evidencedFraction = denominator > 0 ? supportedAndEvidenced / denominator : null;
 
   return { totalTargets: targets.length, supportedAndEvidenced, supportedButUnevidenced, unsupportedByPlatform, unmapped, notRequired, evidencedFraction, targets };
