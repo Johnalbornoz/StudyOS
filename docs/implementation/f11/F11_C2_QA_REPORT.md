@@ -2,7 +2,7 @@
 
 Branch: `f11c2/skill-reinforcement-execution`
 Base: `origin/f11c1/concept-reinforcement-execution@f5276260782730ca8fa6e29fb44bead649d38eb0`
-Certified HEAD: see final report §V
+Certified HEAD: `a245eb8c7a7d55624b13766862c88e04ed9ca44c` on `f11c2/skill-reinforcement-execution`
 
 ## Test Layer Matrix (mandatory separate reporting, task §39)
 
