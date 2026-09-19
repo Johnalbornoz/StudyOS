@@ -2,6 +2,7 @@
 
 Branch: `f11c4/exam-reinforcement-execution`
 Base: `origin/f11c3/competency-reinforcement-execution@24648fb1bb4864de284e8a90fab3552019f1d88f`
+Certified HEAD: `9b26e558e0d275f5f02895cb01a58b9b243d1e37` on `f11c4/exam-reinforcement-execution`
 
 ## Test Layer Matrix (mandatory separate reporting, task §63)
 
