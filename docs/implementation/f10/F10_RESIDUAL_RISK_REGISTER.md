@@ -1,0 +1,19 @@
+# F10 — Residual Risk Register
+
+| # | Risk | Severity | Mitigated by | Residual exposure |
+|---|---|---|---|---|
+| 1 | Remote (Preview/Production) database migration state for the whole ledger has never been independently confirmed | Low for F10 specifically (adds no migration) | N/A — nothing new to migrate | Carried forward from F1 (`IVG-F7-01`), unrelated to F10's own changes |
+| 2 | No real multi-session Clerk authentication exercised against live Preview | Low | Full lifecycle proven for real against real Postgres at the service/read-model layer (`F10_AUTHENTICATED_E2E_REPORT.md`); anonymous-401 proven live | `IVG-F10-01`/`IVG-F10-02`, explicitly deferred |
+| 3 | `getChildOverview` (pre-existing, untouched) still transitively surfaces the legacy fabricated readiness percentage | Medium (pre-existing, not introduced by F10) | Contained: zero new F10 code reads it; guard test proves it | Retirement deferred to F13/F14 per task §16 — an explicit, not silent, deferral |
+| 4 | `getSubjectConcepts` has no active/inactive filter, so "total concepts" in `getParentSubjectProgress` may overcount if a subject has retired concepts | Low | Documented in `F10_PARENT_READ_MODEL.md`/`F10_QA_REPORT.md` §6 rather than silently fixed with new, untested business logic | A future phase should either add an active-concept filter to the shared function (benefiting every caller) or accept the current definition as "all mapped concepts" |
+| 5 | The Full Mock platform-vs-learner reason classification (`structuralReadiness.ready`) is a real, certified F9 field, but was only exercised in this certification for the "no active exam profile → null" zero-state, not a populated Full-Mock-ineligible case | Low-medium | The classifier logic itself is a direct, non-fabricated read of F9's own field (no new heuristic invented); F9's own certification already proved `structuralReadiness` behaves correctly | A future IVG pass should seed a real exam profile + exam version with a genuinely ineligible Full Mock to exercise both `PLATFORM_NOT_READY` and `LEARNER_NOT_READY` branches for real, not just by code inspection |
+| 6 | A deployment-target mistake occurred during this phase (first deploy landed on a new project as Production) | Resolved within this phase, before certification was written | Caught immediately, user consulted before any corrective action, stray project deleted, correct project linked, redeploy verified as a real Preview | None outstanding — documented transparently in `F10_PREVIEW_CERTIFICATION.md` §1 rather than omitted |
+| 7 | No new schema/constraint (e.g. a partial unique index limiting a pair to at most one non-terminal relationship state) was added despite the underlying PK allowing exactly one row per `(parent_id, student_id)` for ALL time | Low | The upsert fix makes this row correctly transition through states rather than being a bug; a single-row-per-pair model is actually simpler to reason about than allowing historical duplicate rows | None currently — flagged only as a design note for a future phase if multiple historical relationship "generations" per pair ever need to coexist |
+
+## Explicitly NOT a residual risk (proven, not assumed)
+
+- Parent-role-alone access: proven denied, real Postgres.
+- Cross-child leakage: proven denied, real Postgres, including the specific multi-child-active-context scenario.
+- Revocation latency: proven immediate (no cache layer exists to lag behind it).
+- Parent/Payer coupling: proven independent in both directions, real Postgres.
+- Read-only mutation attempts: proven denied at the authorization-permission level (`LEARNER_INTERVENTION_CREATE`), and structurally absent at the route level (no non-GET handler exists on any new route).
