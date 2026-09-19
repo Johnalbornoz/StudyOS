@@ -2011,6 +2011,13 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               ...(quizSession.targetSkillIds && quizSession.targetSkillIds.length > 0 && conceptId === quizSession.conceptId
                 ? { skillIds: quizSession.targetSkillIds }
                 : {}),
+              // F11-C3: explicit Competency target, same pattern as
+              // F11-C2's Skill line immediately above -- null for every
+              // quiz that predates this phase and every non-Competency
+              // quiz, so this line contributes nothing to their metadata.
+              ...(quizSession.targetCompetencyIds && quizSession.targetCompetencyIds.length > 0 && conceptId === quizSession.conceptId
+                ? { competencyIds: quizSession.targetCompetencyIds }
+                : {}),
               ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
               // Phase 0E1: AI provenance for any free-text-graded question
               // in this concept's evidence -- additive, doesn't change the

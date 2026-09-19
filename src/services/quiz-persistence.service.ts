@@ -164,6 +164,15 @@ export interface QuizSession {
    * Concept->Skill graph after the fact.
    */
   targetSkillIds: string[] | null;
+  /**
+   * F11-C3 -- explicit Competency target(s), set ONLY by
+   * Competency-reinforcement orchestration. Deliberately a SEPARATE
+   * field from `targetSkillIds` (never conflated) -- `null`/absent for
+   * every existing quiz and every Concept/Skill-reinforcement quiz.
+   * Never derived from canonical_concept_competencies/
+   * skill_competencies after the fact.
+   */
+  targetCompetencyIds: string[] | null;
 }
 
 /**
@@ -196,7 +205,14 @@ export async function storeQuiz(
    * graph; only ever passed by Skill-reinforcement orchestration, which
    * already resolved this specific student's own explicit Skill target.
    */
-  targetSkillIds?: string[] | null
+  targetSkillIds?: string[] | null,
+  /**
+   * F11-C3 -- explicit Competency target(s) for a Competency-
+   * reinforcement execution. `undefined`/omitted (the default) for
+   * every existing caller, including F11-C1/F11-C2's own orchestration
+   * -- the column stays NULL, byte-identical to pre-F11-C3 behavior.
+   */
+  targetCompetencyIds?: string[] | null
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -239,8 +255,8 @@ export async function storeQuiz(
         questions, language, status, created_at, expires_at,
         quiz_mode, concept_ids, activity_type, evidence_mode,
         pedagogical_policy_version, canonical_revision, canonical_stage,
-        canonical_activity_contract, target_skill_ids
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        canonical_activity_contract, target_skill_ids, target_competency_ids
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       `,
       [
         quizId,
@@ -261,6 +277,7 @@ export async function storeQuiz(
         v1Marker?.canonicalStage ?? null,
         canonicalActivityContract,
         targetSkillIds && targetSkillIds.length > 0 ? targetSkillIds : null,
+        targetCompetencyIds && targetCompetencyIds.length > 0 ? targetCompetencyIds : null,
       ]
     );
 
@@ -440,7 +457,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
              questions, language, status, created_at, expires_at,
              quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
              pedagogical_policy_version, canonical_revision, canonical_stage,
-             canonical_activity_contract, target_skill_ids
+             canonical_activity_contract, target_skill_ids, target_competency_ids
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -507,6 +524,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       hintsUsedQuestions: row.hints_used_questions || [],
       v1Marker,
       targetSkillIds: row.target_skill_ids && row.target_skill_ids.length > 0 ? row.target_skill_ids : null,
+      targetCompetencyIds: row.target_competency_ids && row.target_competency_ids.length > 0 ? row.target_competency_ids : null,
     };
   } catch (error) {
     console.error('Error getting quiz session:', error);

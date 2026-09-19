@@ -354,7 +354,7 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
     MOCK_DB.query.mockResolvedValueOnce({ rows: [] });
     await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'canonical_prove', [], marker);
     const insertParams = MOCK_DB.query.mock.calls[0][1] as any[];
-    const contract = JSON.parse(insertParams[insertParams.length - 2]); // F11-C2 appended target_skill_ids after canonical_activity_contract
+    const contract = JSON.parse(insertParams[insertParams.length - 3]); // F11-C2/F11-C3 appended target_skill_ids/target_competency_ids after canonical_activity_contract
     expect(contract.independence).toBe(true);
     expect(contract.supportLevel).toBe('NONE');
     expect(contract.minimumScorePercent).toBe(80);
@@ -394,7 +394,7 @@ describe('19-25 -- PERSISTENCE: the full v1 Prove authorization, built from the 
     MOCK_DB.query.mockResolvedValueOnce({ rows: [] });
     await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'canonical_prove', [], marker as any);
     const insertParams = MOCK_DB.query.mock.calls[0][1] as any[];
-    const contract = JSON.parse(insertParams[insertParams.length - 2]); // F11-C2 appended target_skill_ids after canonical_activity_contract
+    const contract = JSON.parse(insertParams[insertParams.length - 3]); // F11-C2/F11-C3 appended target_skill_ids/target_competency_ids after canonical_activity_contract
     expect(contract.novelty).toBeUndefined();
 
     MOCK_DB.query.mockReset().mockResolvedValueOnce({

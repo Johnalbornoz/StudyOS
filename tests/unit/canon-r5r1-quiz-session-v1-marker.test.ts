@@ -49,21 +49,22 @@ describe('storeQuiz -- persists the v1 authorization only when the caller suppli
     const params = queryMock.mock.calls[0][1] as any[];
     // F11-C2 appended one more trailing param (target_skill_ids) after
     // canonical_activity_contract -- every index here shifts by one.
-    expect(params[params.length - 5]).toBeNull(); // pedagogical_policy_version
-    expect(params[params.length - 4]).toBeNull(); // canonical_revision
-    expect(params[params.length - 3]).toBeNull(); // canonical_stage
-    expect(params[params.length - 2]).toBeNull(); // canonical_activity_contract
-    expect(params[params.length - 1]).toBeNull(); // target_skill_ids (F11-C2, omitted here)
+    expect(params[params.length - 6]).toBeNull(); // pedagogical_policy_version
+    expect(params[params.length - 5]).toBeNull(); // canonical_revision
+    expect(params[params.length - 4]).toBeNull(); // canonical_stage
+    expect(params[params.length - 3]).toBeNull(); // canonical_activity_contract
+    expect(params[params.length - 2]).toBeNull(); // target_skill_ids (F11-C2, omitted here)
+    expect(params[params.length - 1]).toBeNull(); // target_competency_ids (F11-C3, omitted here)
   });
 
   it('a caller-supplied v1 authorization is persisted verbatim -- three text columns plus a JSONB contract blob', async () => {
     queryMock.mockResolvedValueOnce({ rows: [] });
     await storeQuiz('s1', 'c1', 'subj1', [{ conceptId: 'c1' } as any], 'en', 'topic_practice', [], FULL_MARKER);
     const params = queryMock.mock.calls[0][1] as any[];
-    expect(params[params.length - 5]).toBe('studyus-canonical-v1');
-    expect(params[params.length - 4]).toBe('rev-abc');
-    expect(params[params.length - 3]).toBe('PRACTICE');
-    const contract = JSON.parse(params[params.length - 2]);
+    expect(params[params.length - 6]).toBe('studyus-canonical-v1');
+    expect(params[params.length - 5]).toBe('rev-abc');
+    expect(params[params.length - 4]).toBe('PRACTICE');
+    const contract = JSON.parse(params[params.length - 3]);
     expect(contract).toEqual({
       canonicalActivityType: 'PRACTICE',
       itemCount: { min: 2, max: 3, authorized: 3 },
@@ -76,7 +77,11 @@ describe('storeQuiz -- persists the v1 authorization only when the caller suppli
   });
 
   it('the INSERT column list names all four v1 columns explicitly (source audit)', () => {
-    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 3200);
+    // F11-C2/F11-C3 each added one more documented trailing parameter
+    // (targetSkillIds, targetCompetencyIds) -- window widened again
+    // (was 1200, 2000, 2800, 3200) to comfortably still include the
+    // INSERT; the assertion itself is unchanged.
+    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 3800);
     expect(fn).toMatch(/pedagogical_policy_version, canonical_revision, canonical_stage,\s*\n\s*canonical_activity_contract/);
   });
 });
