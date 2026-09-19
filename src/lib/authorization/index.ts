@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 import { getCanonicalUserByClerkId, getUserRoles } from '@/lib/identity/canonical-user.service';
-import type { LearnerPermission, InstitutionPermission } from './permissions';
+import type { LearnerPermission, InstitutionPermission, TeacherInterventionPermission } from './permissions';
 
-export type { LearnerPermission, InstitutionPermission } from './permissions';
+export type { LearnerPermission, InstitutionPermission, TeacherInterventionPermission } from './permissions';
 export { getCanonicalUserByClerkId };
 
 /**
@@ -161,6 +161,23 @@ export async function canAccessClass(actorUserId: string, classId: string, permi
   } catch {
     return false;
   }
+}
+
+/**
+ * F11-B -- the ONLY gate for the Teacher Intervention domain. All 3
+ * TeacherInterventionPermission values resolve to the SAME real check
+ * (the permission argument exists for call-site clarity and future
+ * differentiation, not because the three currently diverge) --
+ * deliberately never composed with isOwner/isActiveParentOf. A Parent
+ * or Owner relationship must never satisfy this, no matter which
+ * permission is requested.
+ */
+export async function canTeacherManageIntervention(
+  actorUserId: string,
+  learnerId: string,
+  _permission: TeacherInterventionPermission
+): Promise<boolean> {
+  return canTeacherAccessLearner(actorUserId, learnerId);
 }
 
 /**
