@@ -26,15 +26,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // F10 / INV-F10 account-enumeration fix (task §6): whether or not
+  // `childEmail` matches a real student account, the caller gets the
+  // exact same response. Previously a distinct 404 NO_STUDENT_FOUND vs
+  // 200 success was a live oracle for "does this email have a student
+  // account" -- the non-match case is now logged server-side only.
+  const GENERIC_RESPONSE = {
+    success: true,
+    message: 'If that email belongs to a student account, a request has been sent to them.',
+  };
   try {
-    const child = await linkChildByEmail(parentId, validated.childEmail);
-    return NextResponse.json({ success: true, data: { child } });
+    await linkChildByEmail(parentId, validated.childEmail);
+    return NextResponse.json(GENERIC_RESPONSE);
   } catch (error: any) {
     if (error.message === 'NO_STUDENT_FOUND') {
-      return NextResponse.json(
-        { error: 'NO_STUDENT_FOUND', message: 'No student account exists with that email yet.' },
-        { status: 404 }
-      );
+      console.info('link-child: no matching student for provided email (not disclosed to caller)');
+      return NextResponse.json(GENERIC_RESPONSE);
     }
     console.error('Error linking child:', error);
     return NextResponse.json({ error: 'INTERNAL_ERROR', details: String(error) }, { status: 500 });

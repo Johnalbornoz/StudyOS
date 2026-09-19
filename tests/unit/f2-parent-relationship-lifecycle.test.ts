@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const dbQueryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a) } }));
 
-import { unlinkChild, revokeRelationshipByStudent, verifyParentAccess } from '@/services/parent.service';
+import { unlinkChild, revokeRelationshipByStudent, verifyParentAccess, linkChildByEmail } from '@/services/parent.service';
 
 beforeEach(() => {
   dbQueryMock.mockReset().mockResolvedValue({ rows: [], rowCount: 0 });
@@ -58,5 +58,39 @@ describe('verifyParentAccess -- unaffected by the new revoked state except to de
   it('DENY when the relationship is revoked (the query never matches anything but accepted, so revoked rows are excluded identically to pending/declined)', async () => {
     dbQueryMock.mockResolvedValue({ rows: [], rowCount: 0 });
     expect(await verifyParentAccess('parent-1', 'student-1')).toBe(false);
+  });
+});
+
+/**
+ * F10 fix: the previous `ON CONFLICT DO NOTHING` against the
+ * (parent_id, student_id) primary key meant a declined or revoked
+ * relationship could never be re-requested. The upsert only resets a
+ * row back to 'pending' from 'declined'/'revoked' -- it must never
+ * reset an already-'accepted' or already-'pending' row.
+ */
+describe('linkChildByEmail -- F10 upsert allows re-request after decline/revoke, never resets an active relationship', () => {
+  beforeEach(() => {
+    dbQueryMock.mockReset();
+  });
+
+  it('upserts on (parent_id, student_id), only overwriting declined/revoked status', async () => {
+    dbQueryMock
+      .mockResolvedValueOnce({ rows: [{ id: 'student-1', name: 'Kid', email: 'kid@test.com' }] }) // student lookup
+      .mockResolvedValueOnce({ rows: [] }) // upsert
+      .mockResolvedValueOnce({ rows: [{ full_name: 'Parent' }] }) // parent name lookup
+      .mockResolvedValueOnce({ rows: [] }); // notify insert
+
+    await linkChildByEmail('parent-1', 'kid@test.com');
+
+    const upsertCall = dbQueryMock.mock.calls[1];
+    expect(upsertCall[0]).toMatch(/ON CONFLICT \(parent_id, student_id\) DO UPDATE/);
+    expect(upsertCall[0]).toMatch(/WHERE parent_student_relationships\.status IN \('declined', 'revoked'\)/);
+    expect(upsertCall[0]).not.toMatch(/DO NOTHING/);
+  });
+
+  it('throws NO_STUDENT_FOUND when the email matches no student, without writing to the relationship table', async () => {
+    dbQueryMock.mockResolvedValueOnce({ rows: [] }); // student lookup: no match
+    await expect(linkChildByEmail('parent-1', 'nobody@test.com')).rejects.toThrow('NO_STUDENT_FOUND');
+    expect(dbQueryMock).toHaveBeenCalledTimes(1);
   });
 });

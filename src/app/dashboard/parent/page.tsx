@@ -38,6 +38,7 @@ export default function ParentPage() {
   const [childEmail, setChildEmail] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkNotice, setLinkNotice] = useState<string | null>(null);
   const [children, setChildren] = useState<{ studentId: string; name: string; email: string; status: 'pending' | 'accepted' | 'declined' }[]>([]);
   const [overviews, setOverviews] = useState<Record<string, ChildOverview>>({});
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,7 @@ export default function ParentPage() {
     if (!childEmail.trim()) return;
     setLinking(true);
     setLinkError(null);
+    setLinkNotice(null);
     try {
       const res = await fetch('/api/parent/link-child', {
         method: 'POST',
@@ -85,9 +87,13 @@ export default function ParentPage() {
       });
       const body = await res.json();
       if (!res.ok) {
-        setLinkError(body.error === 'NO_STUDENT_FOUND' ? t['parent.linkErrorNotFound'] : body.message || t['common.error']);
+        setLinkError(body.message || t['common.error']);
         return;
       }
+      // The server responds identically whether or not the email matched
+      // a real student account (no enumeration oracle) -- always show
+      // the same generic confirmation, never a distinct "not found".
+      setLinkNotice(body.message || t['parent.linkRequestSent']);
       setChildEmail('');
       await loadChildren();
     } finally {
@@ -133,6 +139,7 @@ export default function ParentPage() {
           </button>
         </div>
         {linkError && <p style={{ color: 'var(--error)', fontSize: 13, marginTop: 8 }}>{linkError}</p>}
+        {linkNotice && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>{linkNotice}</p>}
       </div>
 
       {!loading && children.length === 0 && (

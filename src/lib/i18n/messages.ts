@@ -195,7 +195,7 @@ export type MessageKey =
   // presented via the existing masteryStateLabel mapping -- no new
   // key/enum needed for the qualifier text itself.
   | 'parent.title' | 'parent.subtitle' | 'parent.linkLabel' | 'parent.linkPlaceholder' | 'parent.linkButton'
-  | 'parent.linkErrorNotFound' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
+  | 'parent.linkRequestSent' | 'parent.noChildren' | 'parent.noChildrenBody' | 'parent.unlink'
   | 'parent.subjects' | 'parent.activeDebt' | 'parent.upcomingExam' | 'parent.noUpcomingExam'
   | 'parent.readiness' | 'parent.avgMastery' | 'parent.concepts'
   | 'parent.statusPending' | 'parent.statusPendingBody' | 'parent.requestsTitle' | 'parent.requestBody'
@@ -1053,7 +1053,7 @@ const es: Messages = {
   'parent.linkLabel': 'Correo del estudiante',
   'parent.linkPlaceholder': 'correo@ejemplo.com',
   'parent.linkButton': 'Vincular',
-  'parent.linkErrorNotFound': 'No existe ninguna cuenta de estudiante con ese correo.',
+  'parent.linkRequestSent': 'Si ese correo pertenece a una cuenta de estudiante, le enviamos una solicitud.',
   'parent.noChildren': 'Aún no has vinculado a nadie',
   'parent.noChildrenBody': 'Ingresa el correo de la cuenta de tu hijo o hija para empezar a ver su progreso.',
   'parent.unlink': 'Desvincular',
@@ -2201,7 +2201,7 @@ const en: Messages = {
   'parent.linkLabel': "Student's email",
   'parent.linkPlaceholder': 'email@example.com',
   'parent.linkButton': 'Link',
-  'parent.linkErrorNotFound': 'No student account exists with that email.',
+  'parent.linkRequestSent': "If that email belongs to a student account, we've sent them a request.",
   'parent.noChildren': "You haven't linked anyone yet",
   'parent.noChildrenBody': "Enter your child's account email to start seeing their progress.",
   'parent.unlink': 'Unlink',
@@ -3349,7 +3349,7 @@ const de: Messages = {
   'parent.linkLabel': 'E-Mail des Kindes',
   'parent.linkPlaceholder': 'email@beispiel.com',
   'parent.linkButton': 'Verknüpfen',
-  'parent.linkErrorNotFound': 'Es existiert kein Schülerkonto mit dieser E-Mail.',
+  'parent.linkRequestSent': 'Falls diese E-Mail zu einem Schülerkonto gehört, haben wir eine Anfrage gesendet.',
   'parent.noChildren': 'Du hast noch niemanden verknüpft',
   'parent.noChildrenBody': 'Gib die E-Mail des Kontos deines Kindes ein, um dessen Fortschritt zu sehen.',
   'parent.unlink': 'Trennen',
@@ -4497,7 +4497,7 @@ const fr: Messages = {
   'parent.linkLabel': "E-mail de l'étudiant",
   'parent.linkPlaceholder': 'email@exemple.com',
   'parent.linkButton': 'Relier',
-  'parent.linkErrorNotFound': "Aucun compte étudiant n'existe avec cet e-mail.",
+  'parent.linkRequestSent': "Si cet e-mail appartient à un compte étudiant, une demande lui a été envoyée.",
   'parent.noChildren': "Vous n'avez encore relié personne",
   'parent.noChildrenBody': "Entrez l'e-mail du compte de votre enfant pour voir ses progrès.",
   'parent.unlink': 'Délier',
@@ -5645,7 +5645,7 @@ const pt: Messages = {
   'parent.linkLabel': 'E-mail do estudante',
   'parent.linkPlaceholder': 'email@exemplo.com',
   'parent.linkButton': 'Vincular',
-  'parent.linkErrorNotFound': 'Não existe nenhuma conta de estudante com esse e-mail.',
+  'parent.linkRequestSent': 'Se esse e-mail pertencer a uma conta de estudante, enviamos uma solicitação.',
   'parent.noChildren': 'Você ainda não vinculou ninguém',
   'parent.noChildrenBody': 'Digite o e-mail da conta do seu filho ou filha para começar a ver o progresso dele(a).',
   'parent.unlink': 'Desvincular',

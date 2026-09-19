@@ -53,6 +53,7 @@
 
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
+import { getOrCreateCanonicalUser } from '@/lib/identity/canonical-user.service';
 
 export type UserRole = 'student' | 'teacher' | 'admin';
 
@@ -232,19 +233,40 @@ export async function upsertStudentFromWebhook(
  * profiles row (user_type='parent') on first use. Separate from
  * getOrCreateStudentId: parents have no legacy `students` table entry,
  * so identity resolution goes through profiles.clerk_id instead.
+ *
+ * F10: also resolves/attaches the F1 canonical `users.id` to
+ * `profiles.user_id`. Before this fix, a parent's profiles row was
+ * created with `user_id` left NULL, which meant F2's own canonical
+ * `isActiveParentOf`/`canAccessLearner` (which require
+ * `profiles.user_id = actorUserId`) could never match a real, accepted
+ * parent relationship -- every existing Parent route worked around this
+ * by checking `parent_student_relationships` directly instead
+ * (`verifyParentAccess`), rather than by fixing the identity gap. Every
+ * call self-repairs a previously-NULL `user_id` on an existing row, the
+ * same self-healing pattern `ensureProfileRows` already uses for
+ * students.
  */
 export async function getOrCreateParentId(clerkUserId: string): Promise<string> {
-  const existing = await db.query(`SELECT id FROM profiles WHERE clerk_id = $1`, [clerkUserId]);
+  const existing = await db.query(`SELECT id, user_id, clerk_id FROM profiles WHERE clerk_id = $1`, [clerkUserId]);
   if (existing.rows.length > 0) {
-    return existing.rows[0].id;
+    const profileId = existing.rows[0].id;
+    if (!existing.rows[0].user_id) {
+      const canonicalUser = await getOrCreateCanonicalUser(clerkUserId);
+      await db.query(`UPDATE profiles SET user_id = $1 WHERE id = $2 AND user_id IS NULL`, [canonicalUser.id, profileId]);
+    }
+    return profileId;
   }
 
   const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || null;
   const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
 
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
+
   const inserted = await db.query(
-    `INSERT INTO profiles (id, user_type, full_name, clerk_id) VALUES (gen_random_uuid(), 'parent', $1, $2) RETURNING id`,
-    [name, clerkUserId]
+    `INSERT INTO profiles (id, user_type, full_name, clerk_id, user_id) VALUES (gen_random_uuid(), 'parent', $1, $2, $3) RETURNING id`,
+    [name, clerkUserId, canonicalUser.id]
   );
   return inserted.rows[0].id;
 }

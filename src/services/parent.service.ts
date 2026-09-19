@@ -45,6 +45,23 @@ async function notify(recipientProfileId: string, notificationType: string, titl
   );
 }
 
+/**
+ * F10: throws NO_STUDENT_FOUND exactly as before -- the enumeration fix
+ * lives at the route boundary (link-child/route.ts), which now returns
+ * the same generic response whether or not this throws, rather than
+ * here. This function's own contract (distinct success/not-found) is
+ * still useful to callers that already hold an authorization context
+ * (e.g. an admin tool), so it isn't changed.
+ *
+ * F10 also fixes a real bug: the previous `ON CONFLICT DO NOTHING`
+ * against the (parent_id, student_id) primary key meant that once ANY
+ * row existed for a pair -- pending, declined, or revoked -- a new
+ * request could never be created again; the function still returned a
+ * fake 'pending' success with no actual write. The upsert below only
+ * resets a row back to 'pending' when it was 'declined' or 'revoked';
+ * an already-'pending' or already-'accepted' row is left untouched
+ * (never silently reset, never a duplicate active relationship).
+ */
 export async function linkChildByEmail(
   parentId: string,
   childEmail: string
@@ -59,7 +76,11 @@ export async function linkChildByEmail(
   }
 
   await db.query(
-    `INSERT INTO parent_student_relationships (parent_id, student_id, status) VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING`,
+    `INSERT INTO parent_student_relationships (parent_id, student_id, status)
+     VALUES ($1, $2, 'pending')
+     ON CONFLICT (parent_id, student_id) DO UPDATE
+       SET status = 'pending', responded_at = NULL
+       WHERE parent_student_relationships.status IN ('declined', 'revoked')`,
     [parentId, student.id]
   );
 
