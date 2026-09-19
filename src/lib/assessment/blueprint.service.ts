@@ -91,3 +91,14 @@ export async function getObjectiveTarget(targetId: string): Promise<BlueprintObj
   const result = await db.query(`SELECT * FROM blueprint_objective_targets WHERE id = $1`, [targetId]);
   return result.rows.length === 0 ? null : toTarget(result.rows[0]);
 }
+
+/** F9: the read-only counterpart to addComponentAllocation, which was write-only until now (see F9_TARGET_READINESS_ARCHITECTURE.md). */
+export async function listComponentAllocations(
+  blueprintId: string
+): Promise<Array<{ assessmentComponentId: string; itemCount: number | null; weight: number | null }>> {
+  const result = await db.query(
+    `SELECT assessment_component_id, item_count, weight FROM blueprint_component_allocations WHERE blueprint_id = $1`,
+    [blueprintId]
+  );
+  return result.rows.map((r) => ({ assessmentComponentId: r.assessment_component_id, itemCount: r.item_count, weight: r.weight }));
+}
