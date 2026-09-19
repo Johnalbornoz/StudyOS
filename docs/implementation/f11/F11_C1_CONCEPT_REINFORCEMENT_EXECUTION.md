@@ -79,4 +79,4 @@ None of these are implemented; `SKILL_PRACTICE`/`COMPETENCY_PRACTICE`/`EXAM_PRAC
 
 ## Commit SHA
 
-Recorded after commit — see final report §N.
+`3f52320` on `f11c1/concept-reinforcement-execution` (implementation + certification + documentation, one commit).
