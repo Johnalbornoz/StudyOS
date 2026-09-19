@@ -96,4 +96,4 @@ F8's `/api/teaching/interventions*`, `intervention_sessions`, `intervention_atte
 
 ## Certified Commit SHA
 
-Recorded after commit — see final report §M.
+`2b57d06` on `f11b/teacher-intervention-domain` (implementation + certification + documentation, one commit).
