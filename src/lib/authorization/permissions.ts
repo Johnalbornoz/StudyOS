@@ -6,7 +6,8 @@
  * extend it rather than hardcode role checks throughout the app.
  */
 export type LearnerPermission = 'LEARNER_PROGRESS_VIEW' | 'LEARNER_PROFILE_VIEW' | 'LEARNER_INTERVENTION_CREATE';
-export type InstitutionPermission = 'INSTITUTION_MEMBER_APPROVE' | 'TEACHER_ASSIGNMENT_MANAGE';
+/** F12 adds INSTITUTION_INTELLIGENCE_VIEW for call-site clarity only -- canAccessInstitution/canAccessClass's actual check (an APPROVED INSTITUTION_ADMIN membership, or for canAccessClass an ACTIVE TEACHER assignment) is unchanged and does not branch on this value, mirroring TeacherInterventionPermission's own precedent. */
+export type InstitutionPermission = 'INSTITUTION_MEMBER_APPROVE' | 'TEACHER_ASSIGNMENT_MANAGE' | 'INSTITUTION_INTELLIGENCE_VIEW';
 
 /**
  * F11-B -- deliberately its OWN type, never added to LearnerPermission.
