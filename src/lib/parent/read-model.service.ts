@@ -14,7 +14,7 @@
  */
 
 import { db } from '@/lib/db';
-import { canAccessLearner } from '@/lib/authorization';
+import { isActiveParentOf } from '@/lib/authorization';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getSubjectConcepts } from '@/services/concept-extraction.service';
@@ -31,8 +31,18 @@ export class ParentAccessDeniedError extends Error {
   }
 }
 
+/**
+ * Deliberately PARENT-ONLY, not the generic canAccessLearner (F10
+ * multi-role certification fix): canAccessLearner composes
+ * Owner/Parent/Teacher as equivalent for LEARNER_PROGRESS_VIEW, which
+ * is correct for F5-F9's routes (any authorized viewer) but wrong here
+ * -- a Parent-labeled route must not grant access through an actor's
+ * separate Teacher relationship to the same learner. Proven by
+ * scripts/operations/f10-multi-role-authorization-check-runner.ts and
+ * tests/unit/f10-parent-multi-role-isolation.test.ts.
+ */
 async function requireAccess(actorUserId: string, studentId: string): Promise<void> {
-  const allowed = await canAccessLearner(actorUserId, studentId, 'LEARNER_PROGRESS_VIEW');
+  const allowed = await isActiveParentOf(actorUserId, studentId);
   if (!allowed) throw new ParentAccessDeniedError(studentId);
 }
 

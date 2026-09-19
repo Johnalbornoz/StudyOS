@@ -24,8 +24,21 @@ export { getCanonicalUserByClerkId };
  * trusts a client-supplied actor id.
  */
 
-/** PARENT: an ACTIVE ('accepted') relationship to this learner. Owner (student themself) also counts. */
-async function isActiveParentOf(actorUserId: string, learnerId: string): Promise<boolean> {
+/**
+ * PARENT relationship ONLY: an ACTIVE ('accepted') row in
+ * parent_student_relationships for this exact actor+learner pair.
+ * Exported (F10 multi-role certification fix) for callers that must
+ * prove Parent semantics specifically and must NOT accept a Teacher
+ * (or any other) relationship as an equivalent substitute -- unlike
+ * `canAccessLearner`, which deliberately composes Owner/Parent/Teacher
+ * as equivalent for a given LearnerPermission, because most callers
+ * (F5-F9's routes) legitimately want "any authorized viewer". The
+ * Parent Read Model (`src/lib/parent/read-model.service.ts`) is not
+ * such a caller: a route that presents itself as Parent-scoped must
+ * not silently grant access through a Teacher relationship just
+ * because the same actor happens to also hold one.
+ */
+export async function isActiveParentOf(actorUserId: string, learnerId: string): Promise<boolean> {
   try {
     const result = await db.query(
       `
