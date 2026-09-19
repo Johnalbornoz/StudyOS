@@ -91,4 +91,9 @@ DATABASE_URL="postgresql://postgres@localhost/$DBNAME?host=$SOCKDIR" \
   "$TSX" "$REPO_ROOT/scripts/operations/f9-lifecycle-cert-runner.ts"
 
 echo ""
+echo "--- running concurrency/idempotency (task §54) and performance baseline (task §53) certification ---"
+DATABASE_URL="postgresql://postgres@localhost/$DBNAME?host=$SOCKDIR" \
+  "$TSX" "$REPO_ROOT/scripts/operations/f9-concurrency-performance-runner.ts"
+
+echo ""
 echo "=== F9 migration + adversarial certification: ALL CHECKS PASSED ==="

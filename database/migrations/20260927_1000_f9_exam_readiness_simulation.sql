@@ -1,15 +1,28 @@
 -- F9 -- Exam Readiness & Simulation.
 --
--- Purely additive. Zero changes to any Canonical V2, F4, F5, F6, F7, or
--- F8 table. simulation_attempts is a 1:1 wrapper around F7's real
--- exam_attempts rather than an ALTER TABLE widening F7's certified
--- status CHECK constraint (see F9_SIMULATION_PLAN_MODEL.md).
+-- Purely additive: every existing caller of every existing table keeps
+-- its exact current behavior. simulation_attempts is a 1:1 wrapper
+-- around F7's real exam_attempts rather than an ALTER TABLE widening
+-- F7's certified status CHECK constraint (see
+-- F9_SIMULATION_PLAN_MODEL.md). The one additive exception is a new,
+-- optional idempotency_key column on F7's own
+-- exam_attempt_item_responses (task §54/AC-F9-28) -- F7 never needed
+-- idempotency for its own callers, but F9's simulation-response
+-- endpoint can receive a genuine client/network retry of the same
+-- logical submission, so it needs the same real protection F5's own
+-- learning_evidence.operation_key already provides for evidence itself.
+-- NULL for every existing/other-caller row; a real UNIQUE index only
+-- applies where it is actually populated.
 --
 -- Readiness computation and simulation planning never write Canonical
 -- V2 stage state directly (INV-F9-01/13/27) -- see src/lib/readiness
 -- and src/lib/simulation, which read learning_evidence/F8 diagnoses
 -- and F7's own exam_attempts machinery, then hand any new Evidence off
 -- to the REAL, UNMODIFIED updateMastery() exactly as F7/F8 already do.
+
+ALTER TABLE public.exam_attempt_item_responses ADD COLUMN IF NOT EXISTS idempotency_key text;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_attempt_item_responses_idempotency
+  ON public.exam_attempt_item_responses (exam_attempt_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 -- --- Readiness policy versioning (mirrors F5/F8's own idiom) ---
 

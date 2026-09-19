@@ -36,7 +36,17 @@ export async function recordSimulationItemResponse(params: {
   question: GeneratedQuestion;
   studentAnswer: string;
   language?: string;
-}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean }> {
+  /**
+   * Task §54/AC-F9-28: a caller-supplied, stable id for THIS logical
+   * submission (minted once, round-tripped unchanged through any
+   * transport retry -- never regenerated per attempt, which would make
+   * every retry look new). When a response already exists for
+   * (examAttemptId, idempotencyKey), that EXISTING response is
+   * returned untouched -- the grader is never re-invoked and NO
+   * duplicate Evidence is ever written.
+   */
+  idempotencyKey?: string;
+}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean }> {
   let evaluation: EvaluationResult;
 
   if (STRUCTURED_FORMATS.has(params.question.answerFormat)) {
@@ -55,13 +65,21 @@ export async function recordSimulationItemResponse(params: {
     };
   }
 
-  const { id } = await recordExamAttemptItemResponse({
+  const { id, duplicate } = await recordExamAttemptItemResponse({
     examAttemptId: params.examAttemptId,
     assessmentComponentId: params.assessmentComponentId,
     learningObjectiveId: params.learningObjectiveId,
     itemSnapshot: params.question as unknown as Record<string, unknown>,
     evaluation,
+    idempotencyKey: params.idempotencyKey,
   });
+
+  if (duplicate) {
+    // The first application already wrote Evidence (if any) -- a retry
+    // must never re-run updateMastery a second time for the same
+    // logical submission.
+    return { responseId: id, evaluation, evidenceWritten: false, duplicate: true };
+  }
 
   let evidenceWritten = false;
   if (params.learningObjectiveId) {
@@ -89,6 +107,7 @@ export async function recordSimulationItemResponse(params: {
             evidence: { sourceType: 'EXAM_SIMULATION', result: evaluation.score >= 1 ? 'correct' : evaluation.score > 0 ? 'partial' : 'incorrect', difficulty: params.question.difficulty, scorePercent: evaluation.maxScore > 0 ? (evaluation.score / evaluation.maxScore) * 100 : 0 },
             telemetry: { activityType: 'EXAM_SIMULATION', learningMode: 'AI_NATIVE', aiAssistanceType: 'NONE' },
             metadata,
+            identity: params.idempotencyKey ? { operationType: 'EXAM_SIMULATION_RESPONSE', operationId: params.idempotencyKey, conceptId: studentConceptId } : undefined,
           });
           evidenceWritten = true;
         }
@@ -96,7 +115,7 @@ export async function recordSimulationItemResponse(params: {
     }
   }
 
-  return { responseId: id, evaluation, evidenceWritten };
+  return { responseId: id, evaluation, evidenceWritten, duplicate: false };
 }
 
 export async function getSimulationScoreSummary(examAttemptId: string): Promise<{ rawScore: number; maxScore: number; byComponent: Record<string, { score: number; maxScore: number }> }> {

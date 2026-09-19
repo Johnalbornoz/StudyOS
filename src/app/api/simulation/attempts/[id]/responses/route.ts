@@ -21,6 +21,10 @@ const ResponseSchema = z.object({
   question: z.record(z.string(), z.unknown()),
   studentAnswer: z.string(),
   language: z.string().optional(),
+  // Task §54: the client mints this ONCE per logical submission and
+  // resends the SAME value on any retry -- never a fresh value per
+  // attempt, which would defeat the whole point.
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const { responseId, evaluation, evidenceWritten } = await recordSimulationItemResponse({
+  const { responseId, evaluation, evidenceWritten, duplicate } = await recordSimulationItemResponse({
     examAttemptId: attempt.examAttemptId,
     studentId: attempt.studentId,
     examVersionId: attempt.examVersionId,
@@ -55,7 +59,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     question: validated.question as any,
     studentAnswer: validated.studentAnswer,
     language: validated.language,
+    idempotencyKey: validated.idempotencyKey,
   });
 
-  return NextResponse.json({ success: true, data: { responseId, evaluation, evidenceWritten } });
+  return NextResponse.json({ success: true, data: { responseId, evaluation, evidenceWritten, duplicate } });
 }
