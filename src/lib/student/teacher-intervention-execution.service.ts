@@ -22,6 +22,11 @@ import { isOwner } from '@/lib/authorization';
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { storeQuiz, getQuizSession } from '@/services/quiz-persistence.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
+import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
+import { getExamVersion, getPublishedExamVersion } from '@/lib/assessment/exam-definition.service';
+import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
+import { startSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import type { SimulationType } from '@/lib/simulation/types';
 
 export class StudentInterventionAccessDeniedError extends Error {
   constructor(message: string) {
@@ -129,22 +134,36 @@ export async function getStudentPendingTeacherInterventions(studentId: string): 
  * reference a real `quiz_sessions` row identically, so the SAME
  * reconciliation logic applies unchanged; this is a widened filter, not
  * a second reconciliation path.
+ *
+ * F11-C4: EXAM_PRACTICE executions reference a real F9
+ * `simulation_attempts` row instead of a `quiz_sessions` row -- a
+ * genuinely different canonical completion source, so this function
+ * branches by execution_type rather than trying to force one lookup to
+ * fit both shapes. Completion is still observed the exact same way in
+ * spirit: read the REAL, unmodified F9/F7 canonical status back
+ * (`getSimulationAttempt`, never a second "exam completed" truth of
+ * F11's own) -- the Student's own real `/api/simulation/attempts/[id]/
+ * complete` flow (scoring, F8 post-exam diagnosis, F9 readiness
+ * recomputation) is never called into or duplicated from here.
  */
 async function reconcileCompletionsForStudent(studentId: string): Promise<void> {
   const activeExecutions = await db.query(
     `
-    SELECT tie.id AS execution_id, tie.execution_reference, tie.teacher_intervention_id
+    SELECT tie.id AS execution_id, tie.execution_reference, tie.teacher_intervention_id, tie.execution_type
     FROM teacher_intervention_executions tie
     JOIN teacher_interventions ti ON ti.id = tie.teacher_intervention_id
     WHERE ti.student_id = $1 AND ti.status = 'IN_PROGRESS'
-      AND tie.execution_type IN ('TOPIC_PRACTICE', 'SKILL_PRACTICE', 'COMPETENCY_PRACTICE') AND tie.status = 'ACTIVE'
+      AND tie.execution_type IN ('TOPIC_PRACTICE', 'SKILL_PRACTICE', 'COMPETENCY_PRACTICE', 'EXAM_PRACTICE') AND tie.status = 'ACTIVE'
     `,
     [studentId]
   );
 
   for (const row of activeExecutions.rows) {
-    const quizSession = await getQuizSession(row.execution_reference).catch(() => null);
-    if (quizSession?.status !== 'completed') continue;
+    const isCompleted =
+      row.execution_type === 'EXAM_PRACTICE'
+        ? (await getSimulationAttempt(row.execution_reference).catch(() => null))?.status === 'COMPLETED'
+        : (await getQuizSession(row.execution_reference).catch(() => null))?.status === 'completed';
+    if (!isCompleted) continue;
 
     const client = await db.connect();
     try {
@@ -570,16 +589,170 @@ export async function startCompetencyReinforcementExecution(
 }
 
 /**
- * F11-C2/F11-C3 -- the single dispatch entry point the Student start
- * ROUTE calls (task's own explicit instruction: reuse the same route,
- * dispatch by intervention type -- never a second route/registry/
- * lifecycle). `startConceptReinforcementExecution` (F11-C1) is
+ * F11-C4 -- Exam Reinforcement Execution. Orchestrates existing,
+ * certified F7/F9 assessment/simulation machinery ONLY -- never a
+ * second Assessment Engine, Simulation Engine, scoring engine, or
+ * Readiness Engine. Same lock, same isOwner-only gate, same
+ * effective-status gate, same idempotency-key semantics as
+ * Concept/Skill/Competency -- but the concurrency model is
+ * deliberately STRONGER here (task §31): `buildSimulationPlan` and
+ * `startExamAttempt` (via `startSimulationAttempt`) are pure DB
+ * work with no AI/external call, unlike Practice's
+ * `generatePracticeQuestions` -- so the ENTIRE claim-and-create
+ * sequence runs INSIDE the same row-locked transaction that guards
+ * the idempotency check, not after releasing it. A concurrent second
+ * caller's `SELECT ... FOR UPDATE` on the SAME intervention blocks
+ * until the first caller fully commits (including its
+ * `teacher_intervention_executions` insert), so it is structurally
+ * impossible for two real F9 attempts to ever be created for one
+ * (interventionId, idempotencyKey) pair -- not merely a harmless
+ * orphan, an eliminated race (see F11_C4_CONCURRENCY_REPORT.md).
+ *
+ * Exam context (the exam profile, its exam version, and -- depending
+ * on `simulation_type` -- a learning objective or academic subject)
+ * comes ENTIRELY from the Teacher's own explicit intervention target
+ * (`exam_profile_id`/`simulation_type`/`learning_objective_id`/
+ * `academic_subject_id`, F11-C4's own additive columns) -- never
+ * inferred, never client-resupplied at start time. Full Mock Guard
+ * (F7's `canFullMockBeOffered`, wrapped by F9's
+ * `getFullMockEligibility`) is NEVER special-cased or bypassed here:
+ * `getSimulationEligibility` is called unconditionally for every
+ * simulation_type, and its `eligible` boolean is the ONLY gate --
+ * exactly the same real function the existing
+ * `POST /api/simulation/attempts` route itself calls, so a
+ * Teacher-assigned Full Mock is rejected by the identical guard a
+ * Student-initiated one would be.
+ */
+async function startExamReinforcementExecution(
+  actorUserId: string,
+  interventionId: string,
+  idempotencyKey: string
+): Promise<StartExecutionResult> {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const interventionRow = await client.query(`SELECT * FROM teacher_interventions WHERE id = $1 FOR UPDATE`, [interventionId]);
+    if (interventionRow.rows.length === 0) {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotFoundError(interventionId);
+    }
+    const intervention = interventionRow.rows[0];
+
+    const ownsIntervention = await isOwner(actorUserId, intervention.student_id);
+    if (!ownsIntervention) {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionAccessDeniedError('actor does not own this intervention (Teacher and Parent relationships never authorize execution)');
+    }
+
+    const effectiveStatus = getEffectiveStatus(intervention.status, intervention.due_at ? new Date(intervention.due_at).toISOString() : null);
+    if (effectiveStatus !== 'ASSIGNED' && effectiveStatus !== 'IN_PROGRESS') {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotStartableError(`intervention effective status is ${effectiveStatus}, not startable`);
+    }
+
+    if (intervention.intervention_type !== 'EXAM_PRACTICE' || intervention.target_type !== 'EXAM' || !intervention.exam_profile_id || !intervention.simulation_type) {
+      await client.query('COMMIT');
+      return { outcome: 'NOT_EXECUTABLE_YET', interventionType: intervention.intervention_type };
+    }
+
+    const existing = await client.query(
+      `SELECT id, execution_reference FROM teacher_intervention_executions WHERE teacher_intervention_id = $1 AND idempotency_key = $2`,
+      [interventionId, idempotencyKey]
+    );
+    if (existing.rows.length > 0) {
+      await client.query('COMMIT');
+      return { outcome: 'RECOVERED', executionId: existing.rows[0].id, executionReference: existing.rows[0].execution_reference };
+    }
+
+    // Exam profile ownership (task §7): re-validated here, defense in
+    // depth, never trusting F11-B's own assignment-time check alone --
+    // the same discipline as re-checking Skill/Competency ACTIVE status
+    // at start time even though F11-B already FK-validated existence.
+    const profile = await getStudentExamProfile(intervention.exam_profile_id);
+    if (!profile || profile.studentId !== intervention.student_id) {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotStartableError(`exam profile ${intervention.exam_profile_id} does not belong to student ${intervention.student_id}`);
+    }
+
+    // Exam Version (task §8): resolved from the profile (never
+    // duplicated onto teacher_interventions), falling back to the
+    // exam definition's currently PUBLISHED version only when the
+    // profile itself does not pin one. Only a PUBLISHED version may
+    // be started -- a RETIRED/SUPERSEDED/DRAFT version is a controlled
+    // rejection (Case B), never silently substituted.
+    const examVersionId = profile.examVersionId ?? (await getPublishedExamVersion(profile.examDefinitionId))?.id ?? null;
+    if (!examVersionId) {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotStartableError(`no resolvable exam version for exam profile ${intervention.exam_profile_id}`);
+    }
+    const examVersion = await getExamVersion(examVersionId);
+    if (!examVersion || examVersion.status !== 'PUBLISHED') {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotStartableError(`exam version ${examVersionId} is invalid or not PUBLISHED`);
+    }
+
+    const simulationType = intervention.simulation_type as SimulationType;
+    const learningObjectiveId: string | undefined = intervention.learning_objective_id ?? undefined;
+    const academicSubjectId: string | undefined = intervention.academic_subject_id ?? undefined;
+
+    // Full Mock Guard / structural eligibility (task §10/11): the ONLY
+    // gate, called unconditionally for every simulation_type -- never
+    // special-cased, never bypassed because a Teacher assigned it.
+    const eligibility = await getSimulationEligibility({ studentId: intervention.student_id, examVersionId, simulationType, learningObjectiveId, academicSubjectId });
+    if (!eligibility.eligible) {
+      await client.query('ROLLBACK');
+      throw new StudentInterventionNotStartableError(`simulation not eligible: ${eligibility.reasons.join(', ')}`);
+    }
+
+    // Real F9 attempt creation -- pure DB work, no AI/external call, so
+    // it safely runs INSIDE this same lock (see function docstring):
+    // this is what makes the concurrency guarantee below stronger than
+    // Concept/Skill/Competency's own "insert-after-generation, UNIQUE
+    // constraint as the final guard" pattern.
+    const { simulationAttempt } = await startSimulationAttempt({
+      studentId: intervention.student_id,
+      examProfileId: intervention.exam_profile_id,
+      examVersionId,
+      simulationType,
+      timingMode: 'UNTIMED',
+      learningObjectiveId,
+      academicSubjectId,
+      language: 'en',
+    });
+
+    const insertResult = await client.query(
+      `
+      INSERT INTO teacher_intervention_executions (teacher_intervention_id, execution_type, execution_reference, idempotency_key, status)
+      VALUES ($1, 'EXAM_PRACTICE', $2, $3, 'ACTIVE')
+      RETURNING id
+      `,
+      [interventionId, simulationAttempt.id, idempotencyKey]
+    );
+    await client.query(
+      `UPDATE teacher_interventions SET status = 'IN_PROGRESS', updated_at = now() WHERE id = $1 AND status = 'ASSIGNED'`,
+      [interventionId]
+    );
+    await client.query('COMMIT');
+    return { outcome: 'STARTED', executionId: insertResult.rows[0].id, executionReference: simulationAttempt.id };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * F11-C2/F11-C3/F11-C4 -- the single dispatch entry point the Student
+ * start ROUTE calls (task's own explicit instruction: reuse the same
+ * route, dispatch by intervention type -- never a second route/
+ * registry/lifecycle). `startConceptReinforcementExecution` (F11-C1) is
  * completely unchanged and remains the handler for
- * CONCEPT_REINFORCEMENT (and continues to return NOT_EXECUTABLE_YET for
- * EXAM_PRACTICE, which F11-C3 does not implement). SKILL_PRACTICE routes
- * to `startSkillReinforcementExecution` (F11-C2, also unchanged);
+ * CONCEPT_REINFORCEMENT. SKILL_PRACTICE routes to
+ * `startSkillReinforcementExecution` (F11-C2, also unchanged);
  * COMPETENCY_PRACTICE routes to `startCompetencyReinforcementExecution`
- * (F11-C3, new).
+ * (F11-C3, also unchanged); EXAM_PRACTICE routes to
+ * `startExamReinforcementExecution` (F11-C4, new).
  */
 export async function startTeacherInterventionExecution(
   actorUserId: string,
@@ -594,6 +767,9 @@ export async function startTeacherInterventionExecution(
   }
   if (typeRow.rows[0].intervention_type === 'COMPETENCY_PRACTICE') {
     return startCompetencyReinforcementExecution(actorUserId, interventionId, idempotencyKey);
+  }
+  if (typeRow.rows[0].intervention_type === 'EXAM_PRACTICE') {
+    return startExamReinforcementExecution(actorUserId, interventionId, idempotencyKey);
   }
   return startConceptReinforcementExecution(actorUserId, interventionId, idempotencyKey);
 }

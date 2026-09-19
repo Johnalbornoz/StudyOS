@@ -16,6 +16,8 @@
  */
 import { db } from '@/lib/db';
 import { canAccessClass, canTeacherManageIntervention } from '@/lib/authorization';
+import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
+import type { SimulationType } from '@/lib/simulation/types';
 
 export class TeacherInterventionAccessDeniedError extends Error {
   constructor(message: string) {
@@ -39,6 +41,14 @@ export class TeacherInterventionInvalidTargetError extends Error {
   }
 }
 
+/** F11-C4 (task §7): the supplied examProfileId is real but belongs to a DIFFERENT student -- never silently reassigned, never a raw FK/500. */
+export class TeacherInterventionExamProfileMismatchError extends Error {
+  constructor(examProfileId: string, studentId: string) {
+    super(`exam profile ${examProfileId} does not belong to student ${studentId}`);
+    this.name = 'TeacherInterventionExamProfileMismatchError';
+  }
+}
+
 const PG_FOREIGN_KEY_VIOLATION = '23503';
 
 export type TeacherInterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE';
@@ -48,7 +58,12 @@ export type TeacherInterventionTarget =
   | { targetType: 'CONCEPT'; conceptId: string }
   | { targetType: 'SKILL'; skillId: string }
   | { targetType: 'COMPETENCY'; competencyId: string }
-  | { targetType: 'LEARNING_OBJECTIVE'; learningObjectiveId: string };
+  | { targetType: 'LEARNING_OBJECTIVE'; learningObjectiveId: string }
+  | (
+      | { targetType: 'EXAM'; examProfileId: string; simulationType: 'TOPIC_EXAM'; learningObjectiveId: string }
+      | { targetType: 'EXAM'; examProfileId: string; simulationType: 'DOMAIN_EXAM'; academicSubjectId: string }
+      | { targetType: 'EXAM'; examProfileId: string; simulationType: 'MINI_MOCK' | 'FULL_MOCK' }
+    );
 
 export interface AssignTeacherInterventionParams {
   classId: string;
@@ -71,6 +86,9 @@ export interface TeacherIntervention {
   skillId: string | null;
   competencyId: string | null;
   learningObjectiveId: string | null;
+  examProfileId: string | null;
+  simulationType: SimulationType | null;
+  academicSubjectId: string | null;
   interventionType: TeacherInterventionType;
   reason: string | null;
   instructions: string | null;
@@ -94,6 +112,9 @@ function toIntervention(row: any): TeacherIntervention {
     skillId: row.skill_id,
     competencyId: row.competency_id,
     learningObjectiveId: row.learning_objective_id,
+    examProfileId: row.exam_profile_id,
+    simulationType: row.simulation_type,
+    academicSubjectId: row.academic_subject_id,
     interventionType: row.intervention_type,
     reason: row.reason,
     instructions: row.instructions,
@@ -145,7 +166,29 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
   const conceptId = params.target.targetType === 'CONCEPT' ? params.target.conceptId : null;
   const skillId = params.target.targetType === 'SKILL' ? params.target.skillId : null;
   const competencyId = params.target.targetType === 'COMPETENCY' ? params.target.competencyId : null;
-  const learningObjectiveId = params.target.targetType === 'LEARNING_OBJECTIVE' ? params.target.learningObjectiveId : null;
+  const learningObjectiveId =
+    params.target.targetType === 'LEARNING_OBJECTIVE'
+      ? params.target.learningObjectiveId
+      : params.target.targetType === 'EXAM' && params.target.simulationType === 'TOPIC_EXAM'
+        ? params.target.learningObjectiveId
+        : null;
+  const examProfileId = params.target.targetType === 'EXAM' ? params.target.examProfileId : null;
+  const simulationType = params.target.targetType === 'EXAM' ? params.target.simulationType : null;
+  const academicSubjectId = params.target.targetType === 'EXAM' && params.target.simulationType === 'DOMAIN_EXAM' ? params.target.academicSubjectId : null;
+
+  // F11-C4 (task §7): a Student Exam Profile is a per-student resource --
+  // its existence alone (checked below via FK) is not enough; it must
+  // ALSO genuinely belong to the student this intervention targets.
+  // Never inferred from the id being merely well-formed or Teacher-
+  // supplied, and re-validated again at start time (defense in depth,
+  // matching this codebase's convention of never trusting an earlier
+  // layer alone for a security-relevant check).
+  if (examProfileId) {
+    const profile = await getStudentExamProfile(examProfileId);
+    if (!profile || profile.studentId !== params.studentId) {
+      throw new TeacherInterventionExamProfileMismatchError(examProfileId, params.studentId);
+    }
+  }
 
   try {
     const result = await db.query(
@@ -153,8 +196,9 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
       INSERT INTO teacher_interventions (
         assigned_by_user_id, institution_id, class_id, student_id,
         target_type, concept_id, skill_id, competency_id, learning_objective_id,
+        exam_profile_id, simulation_type, academic_subject_id,
         intervention_type, reason, instructions, due_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
       `,
       [
@@ -167,6 +211,9 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         skillId,
         competencyId,
         learningObjectiveId,
+        examProfileId,
+        simulationType,
+        academicSubjectId,
         params.interventionType,
         params.reason ?? null,
         params.instructions ?? null,
