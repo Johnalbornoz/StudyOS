@@ -3,6 +3,13 @@
  * surface. The orchestration service's own authorization logic
  * (isOwner) is exercised for real against real Postgres in the F11-C1
  * certification run (mirrors F10/F11-A/F11-B's own division).
+ *
+ * F11-C2 update: the route now calls the generic dispatcher
+ * (`startTeacherInterventionExecution`) instead of the Concept-only
+ * function directly (F11-C2 extends the same route to also dispatch
+ * Skill executions) -- this file's mock target is renamed to match;
+ * every assertion and the route's actual request/response contract are
+ * otherwise unchanged.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -20,13 +27,13 @@ const { StudentInterventionAccessDeniedError, StudentInterventionNotFoundError, 
 }));
 
 const getStudentPendingTeacherInterventionsMock = vi.fn();
-const startConceptReinforcementExecutionMock = vi.fn();
+const startTeacherInterventionExecutionMock = vi.fn();
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({
   StudentInterventionAccessDeniedError,
   StudentInterventionNotFoundError,
   StudentInterventionNotStartableError,
   getStudentPendingTeacherInterventions: (...a: any[]) => getStudentPendingTeacherInterventionsMock(...a),
-  startConceptReinforcementExecution: (...a: any[]) => startConceptReinforcementExecutionMock(...a),
+  startTeacherInterventionExecution: (...a: any[]) => startTeacherInterventionExecutionMock(...a),
 }));
 
 import { GET as listGET } from '@/app/api/student/teacher-interventions/route';
@@ -50,7 +57,7 @@ beforeEach(() => {
   getOrCreateStudentIdMock.mockReset().mockResolvedValue(STUDENT_ID);
   getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
   getStudentPendingTeacherInterventionsMock.mockReset().mockResolvedValue([]);
-  startConceptReinforcementExecutionMock.mockReset().mockResolvedValue({ outcome: 'STARTED', executionId: 'exec-1', executionReference: 'quiz-1' });
+  startTeacherInterventionExecutionMock.mockReset().mockResolvedValue({ outcome: 'STARTED', executionId: 'exec-1', executionReference: 'quiz-1' });
 });
 
 describe('ANONYMOUS: every F11-C1 route denies before touching the orchestration service', () => {
@@ -65,25 +72,25 @@ describe('ANONYMOUS: every F11-C1 route denies before touching the orchestration
     verifyAuthMock.mockResolvedValue(null);
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(401);
-    expect(startConceptReinforcementExecutionMock).not.toHaveBeenCalled();
+    expect(startTeacherInterventionExecutionMock).not.toHaveBeenCalled();
   });
 });
 
 describe('AUTHENTICATED but denied by the orchestration service: 403/404/409, never 500', () => {
   it('start: FORBIDDEN', async () => {
-    startConceptReinforcementExecutionMock.mockRejectedValue(new StudentInterventionAccessDeniedError('denied'));
+    startTeacherInterventionExecutionMock.mockRejectedValue(new StudentInterventionAccessDeniedError('denied'));
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(403);
   });
 
   it('start: NOT_FOUND', async () => {
-    startConceptReinforcementExecutionMock.mockRejectedValue(new StudentInterventionNotFoundError(INTERVENTION_ID));
+    startTeacherInterventionExecutionMock.mockRejectedValue(new StudentInterventionNotFoundError(INTERVENTION_ID));
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(404);
   });
 
   it('start: NOT_STARTABLE (cancelled/completed/expired)', async () => {
-    startConceptReinforcementExecutionMock.mockRejectedValue(new StudentInterventionNotStartableError('not startable'));
+    startTeacherInterventionExecutionMock.mockRejectedValue(new StudentInterventionNotStartableError('not startable'));
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(409);
   });
@@ -93,7 +100,7 @@ describe('start: missing idempotencyKey is rejected before the orchestration ser
   it('returns 400', async () => {
     const res: any = await startPOST(jsonReq({}), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(400);
-    expect(startConceptReinforcementExecutionMock).not.toHaveBeenCalled();
+    expect(startTeacherInterventionExecutionMock).not.toHaveBeenCalled();
   });
 });
 
@@ -107,13 +114,13 @@ describe('AUTHENTICATED with access: routes resolve identity and pass params thr
   it('start passes the resolved actor id, the route param id, and the idempotency key through', async () => {
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     expect(res.status).toBe(200);
-    expect(startConceptReinforcementExecutionMock).toHaveBeenCalledWith('actor-1', INTERVENTION_ID, 'k1');
+    expect(startTeacherInterventionExecutionMock).toHaveBeenCalledWith('actor-1', INTERVENTION_ID, 'k1');
   });
 });
 
 describe('NOT_EXECUTABLE_YET is a clean 200 domain result, never an error', () => {
   it('returns success:true with the NOT_EXECUTABLE_YET outcome', async () => {
-    startConceptReinforcementExecutionMock.mockResolvedValue({ outcome: 'NOT_EXECUTABLE_YET', interventionType: 'SKILL_PRACTICE' });
+    startTeacherInterventionExecutionMock.mockResolvedValue({ outcome: 'NOT_EXECUTABLE_YET', interventionType: 'SKILL_PRACTICE' });
     const res: any = await startPOST(jsonReq({ idempotencyKey: 'k1' }), withIdParams(INTERVENTION_ID));
     const body = await res.json();
     expect(res.status).toBe(200);

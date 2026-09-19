@@ -1,19 +1,24 @@
 /**
- * F11-C1 -- POST /api/student/teacher-interventions/[id]/start
+ * F11-C1/F11-C2 -- POST /api/student/teacher-interventions/[id]/start
  *
  * Requires a client-supplied idempotencyKey (minted once by the client
  * when the student clicks "Start", resent unchanged on any retry).
- * Authorization is Student/Owner ONLY, resolved inside
- * startConceptReinforcementExecution via isOwner -- this route performs
- * no independent authorization logic and never falls back to Teacher
- * or Parent access.
+ * Authorization is Student/Owner ONLY, resolved inside the orchestration
+ * dispatcher via isOwner -- this route performs no independent
+ * authorization logic and never falls back to Teacher or Parent access.
+ *
+ * F11-C2: this route is unchanged except for calling the new generic
+ * dispatcher (`startTeacherInterventionExecution`) instead of the
+ * Concept-only function directly -- reusing the same route for every
+ * intervention type, per the task's own explicit instruction, rather
+ * than adding a second Student execution route.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import {
-  startConceptReinforcementExecution,
+  startTeacherInterventionExecution,
   StudentInterventionAccessDeniedError,
   StudentInterventionNotFoundError,
   StudentInterventionNotStartableError,
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
-    const result = await startConceptReinforcementExecution(actor.id, id, validated.idempotencyKey);
+    const result = await startTeacherInterventionExecution(actor.id, id, validated.idempotencyKey);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof StudentInterventionAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });

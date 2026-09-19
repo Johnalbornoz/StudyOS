@@ -25,15 +25,18 @@ describe('Phase 3A -- Activity Type/Evidence Mode are fixed at attempt creation 
     const params = queryMock.mock.calls[0][1] as any[];
     // CANON-R5R1 appended pedagogical_policy_version/canonical_revision/
     // canonical_stage after evidence_mode; CANON-R5R1A appended ONE more
-    // (canonical_activity_contract, JSONB) after those -- activity_type/
-    // evidence_mode are no longer the LAST two params, but are still
-    // adjacent, immediately before the (here, all-null) v1 columns.
-    expect(params[params.length - 6]).toBe('SOLO_CHECK'); // activity_type
-    expect(params[params.length - 5]).toBe('INDEPENDENT'); // evidence_mode
-    expect(params[params.length - 4]).toBeNull(); // pedagogical_policy_version
-    expect(params[params.length - 3]).toBeNull(); // canonical_revision
-    expect(params[params.length - 2]).toBeNull(); // canonical_stage
-    expect(params[params.length - 1]).toBeNull(); // canonical_activity_contract
+    // (canonical_activity_contract, JSONB) after those; F11-C2 appended
+    // ONE more still (target_skill_ids, null for an ordinary session) --
+    // activity_type/evidence_mode are no longer the LAST two params, but
+    // are still adjacent, immediately before the (here, all-null) v1 +
+    // Skill-targeting columns.
+    expect(params[params.length - 7]).toBe('SOLO_CHECK'); // activity_type
+    expect(params[params.length - 6]).toBe('INDEPENDENT'); // evidence_mode
+    expect(params[params.length - 5]).toBeNull(); // pedagogical_policy_version
+    expect(params[params.length - 4]).toBeNull(); // canonical_revision
+    expect(params[params.length - 3]).toBeNull(); // canonical_stage
+    expect(params[params.length - 2]).toBeNull(); // canonical_activity_contract
+    expect(params[params.length - 1]).toBeNull(); // target_skill_ids (F11-C2, omitted here)
   });
 
   it('quick_check produces SOLO_CHECK/INDEPENDENT -- never CUMULATIVE_ASSESSMENT/ASSESSMENT (the fixed legacy bug)', () => {

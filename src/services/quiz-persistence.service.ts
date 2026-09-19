@@ -156,6 +156,14 @@ export interface QuizSession {
   status: 'active' | 'completed' | 'expired';
   hintsUsedQuestions: number[];
   v1Marker: QuizSessionV1Marker | null;
+  /**
+   * F11-C2 -- explicit Skill target(s) this quiz was generated for, set
+   * ONLY by Skill-reinforcement orchestration. `null`/absent for every
+   * ordinary, student-initiated Practice quiz and every F11-C1
+   * TOPIC_PRACTICE Concept-reinforcement quiz -- never derived from the
+   * Concept->Skill graph after the fact.
+   */
+  targetSkillIds: string[] | null;
 }
 
 /**
@@ -179,7 +187,16 @@ export async function storeQuiz(
    * (legacy) session. This function never verifies eligibility itself
    * -- it only persists what the caller already confirmed.
    */
-  v1Marker: QuizSessionV1Marker | null = null
+  v1Marker: QuizSessionV1Marker | null = null,
+  /**
+   * F11-C2 -- explicit Skill target(s) for a Skill-reinforcement
+   * execution. `undefined`/omitted (the default) for every existing
+   * caller -- the column stays NULL, byte-identical to pre-F11-C2
+   * behavior. Never populated by inferring from the Concept->Skill
+   * graph; only ever passed by Skill-reinforcement orchestration, which
+   * already resolved this specific student's own explicit Skill target.
+   */
+  targetSkillIds?: string[] | null
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -222,8 +239,8 @@ export async function storeQuiz(
         questions, language, status, created_at, expires_at,
         quiz_mode, concept_ids, activity_type, evidence_mode,
         pedagogical_policy_version, canonical_revision, canonical_stage,
-        canonical_activity_contract
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        canonical_activity_contract, target_skill_ids
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       `,
       [
         quizId,
@@ -243,6 +260,7 @@ export async function storeQuiz(
         v1Marker?.canonicalRevision ?? null,
         v1Marker?.canonicalStage ?? null,
         canonicalActivityContract,
+        targetSkillIds && targetSkillIds.length > 0 ? targetSkillIds : null,
       ]
     );
 
@@ -422,7 +440,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
              questions, language, status, created_at, expires_at,
              quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
              pedagogical_policy_version, canonical_revision, canonical_stage,
-             canonical_activity_contract
+             canonical_activity_contract, target_skill_ids
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -488,6 +506,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       status: row.status,
       hintsUsedQuestions: row.hints_used_questions || [],
       v1Marker,
+      targetSkillIds: row.target_skill_ids && row.target_skill_ids.length > 0 ? row.target_skill_ids : null,
     };
   } catch (error) {
     console.error('Error getting quiz session:', error);

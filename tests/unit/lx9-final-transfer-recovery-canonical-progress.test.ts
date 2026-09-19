@@ -163,11 +163,12 @@ describe('LX-9 FINAL 12-13, 17 -- a session is never launchable until valid', ()
 
   it('storeQuiz is a single INSERT statement -- atomic by construction, no partial row possible', () => {
     // CANON-R5R1/R5R1A: storeQuiz gained documented `v1Marker` handling
-    // (including the JSONB contract serialization) -- the window is
-    // widened further (was 1200, then 2000) to comfortably still
-    // include the one real INSERT INTO further into the function body;
-    // the assertion itself (exactly one INSERT) is unchanged.
-    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 2800);
+    // (including the JSONB contract serialization); F11-C2 added a
+    // further documented `targetSkillIds` parameter -- the window is
+    // widened further (was 1200, then 2000, then 2800) to comfortably
+    // still include the one real INSERT INTO further into the function
+    // body; the assertion itself (exactly one INSERT) is unchanged.
+    const fn = QUIZ_PERSISTENCE_SRC.slice(QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz'), QUIZ_PERSISTENCE_SRC.indexOf('export async function storeQuiz') + 3200);
     const inserts = fn.match(/INSERT INTO/g) ?? [];
     expect(inserts.length).toBe(1);
   });
