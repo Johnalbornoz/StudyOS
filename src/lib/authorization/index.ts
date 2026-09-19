@@ -55,7 +55,17 @@ export async function isActiveParentOf(actorUserId: string, learnerId: string): 
   }
 }
 
-async function isOwner(actorUserId: string, learnerId: string): Promise<boolean> {
+/**
+ * OWNER relationship ONLY: the actor IS this learner (students.user_id
+ * match). Exported (F11-C1) for the same reason isActiveParentOf was
+ * exported in F10: a caller that must prove Student/Owner execution
+ * authority specifically -- and must NOT accept a Teacher or Parent
+ * relationship as an equivalent substitute -- needs this narrow check,
+ * not the generic canAccessLearner composition. A Teacher-assigned
+ * intervention does not authorize the Teacher to execute it; only the
+ * real learner can.
+ */
+export async function isOwner(actorUserId: string, learnerId: string): Promise<boolean> {
   try {
     const result = await db.query(`SELECT 1 FROM students WHERE id = $1 AND user_id = $2 LIMIT 1`, [learnerId, actorUserId]);
     return result.rows.length > 0;
