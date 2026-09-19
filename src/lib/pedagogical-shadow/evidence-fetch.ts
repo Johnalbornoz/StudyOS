@@ -52,6 +52,15 @@ export async function fetchStudyUSEvidenceRows(
       le.ai_assistance_type,
       le.metadata->>'activityType' AS activity_type,
       COALESCE(le.metadata->>'itemCount', de.reason_details->>'sampleSize') AS item_count,
+      CASE
+        WHEN qs.quiz_mode = 'canonical_retain'
+          AND qs.canonical_activity_contract->'novelty'->>'noveltyPolicy' = 'EXACT_DUPLICATE_EXCLUSION_V1'
+          AND COALESCE(NULLIF(qs.canonical_activity_contract->'novelty'->>'acceptedNovelQuestionCount', '')::integer, 0)
+              >= COALESCE(NULLIF(le.metadata->>'itemCount', '')::integer, 0)
+        THEN true
+        WHEN qs.quiz_mode = 'canonical_retain' THEN false
+        ELSE NULL
+      END AS novel,
       le.metadata->>'correctCount' AS correct_count,
       le.metadata->'transferChallenges' AS transfer_challenges,
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
@@ -64,6 +73,9 @@ export async function fetchStudyUSEvidenceRows(
           AND sm.evidence @> jsonb_build_array(jsonb_build_object('observedByEvidenceId', le.id::text))
       ) AS has_item_critical_misconception
     FROM learning_evidence le
+    LEFT JOIN quiz_sessions qs
+      ON split_part(le.operation_key, '::', 2) = qs.id
+      AND qs.concept_id = le.concept_id
     LEFT JOIN decision_events de
       ON de.source_event_type = 'learning_evidence'
       AND de.source_event_id = le.id
@@ -86,6 +98,9 @@ export async function fetchStudyUSEvidenceRows(
       activityType: row.activity_type ?? null,
       itemCount: row.item_count != null ? Number(row.item_count) : undefined,
       correctCount: row.correct_count != null ? Number(row.correct_count) : undefined,
+      // Retain evidence is novel only when the session's server-persisted
+      // exact-duplicate filter recorded enough accepted novel items.
+      novel: row.novel === true ? true : row.novel === false ? false : undefined,
       // CANON-V2-REMEDIATION Part 5 -- additive: NULL for every row until
       // a real canonical Transfer write path exists (none does yet --
       // see StudyUSEvidenceRow.transferChallenges's own grounding note).

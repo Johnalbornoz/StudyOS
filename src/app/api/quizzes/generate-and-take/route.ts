@@ -1195,6 +1195,27 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
         };
       }
+    } else if (validated.quizMode === 'canonical_retain' && retainGenerationResult !== null) {
+      // Canonical Retain accepts only items that passed its deterministic
+      // exact-duplicate filter. Persist that fact on the trusted session
+      // marker so the evidence adapter can prove the later Retain attempt
+      // was novel instead of treating it as unknown.
+      const g: CanonicalRetainGenerationResult = retainGenerationResult;
+      priorHistoryMs = g.priorHistoryMs;
+      noveltyFilterMs = g.noveltyFilterMs;
+      generationConcurrentMs = g.generationConcurrentMs;
+      chunkPlan = g.chunkPlan;
+      aggregateRecoveryUsed = g.aggregateRecoveryUsed;
+      aggregateRecoveryRequestedCount = g.aggregateRecoveryRequestedCount;
+      aggregateRecoveryMs = g.aggregateRecoveryMs;
+      generationInvocations.push(...g.invocations);
+      noveltyPasses.push(...g.noveltyPasses);
+      noveltyDiagnostics = {
+        priorPracticeFingerprintCount: g.priorCanonicalFingerprintCount,
+        rejectedExactDuplicateCount: g.rejectedExactDuplicateCount,
+        acceptedNovelQuestionCount: questions.length,
+        noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
+      };
     }
 
     // CANON-R6-PERF-I1 Part 8 -- the ONE place every canonical_prove
