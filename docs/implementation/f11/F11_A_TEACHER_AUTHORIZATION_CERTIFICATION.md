@@ -131,4 +131,4 @@ Neither `intervention_sessions` nor the `LEARNER_INTERVENTION_CREATE` permission
 
 ## 12. Certified Commit SHA
 
-Recorded after the commit is made — see the final report's §M.
+`5bc984d` on `f11/teacher-authorization-read-model` (implementation + certification + documentation, one commit).
