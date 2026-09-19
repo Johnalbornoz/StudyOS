@@ -2,6 +2,7 @@
 
 Branch: `f12/institution-intelligence`
 Base: `origin/f11/integrated-certification@fa21298cac0cf2eac2030baedc506473bae79309`
+Certified HEAD: `fb51f5843d4b19a6542961686e09d1dae1cc3053` on `f12/institution-intelligence`
 
 ## Test Layer Matrix (mandatory separate reporting, task §59)
 
