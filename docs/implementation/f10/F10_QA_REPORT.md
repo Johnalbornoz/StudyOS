@@ -2,15 +2,15 @@
 
 Branch: `f10/parent-experience-2`
 Base: `origin/f9/exam-readiness-simulation` @ `c8699950c848dcf6831276c08ad82111f0d02809`
-Certified HEAD: `17bdb56dbf8ff4b725e84aa3db3407e5ac26edd0`
-Date: 2026-09-19
+Certified HEAD: `78fb15d` (supersedes `17bdb56`/`870f1a6` — see §8, a real authorization bug was found and fixed by a targeted post-certification check)
+Date: 2026-09-19 (updated same day after the multi-role authorization certification check)
 
 ## Test Layer Matrix (task §65, mandatory format)
 
 ```
 AUTOMATED_DOMAIN_UNIT:
-  executed: 5509
-  passed:   5509
+  executed: 5512
+  passed:   5512
   failed:   0
   skipped:  0
   environment: vitest, in-process, no database
@@ -25,12 +25,11 @@ REAL_POSTGRES:
   environment: ephemeral local Postgres (unix socket, never Neon/Preview/Production)
 
 AUTHENTICATED_LOCAL_E2E:
-  executed: 8 of 9 task-§53-required scenarios (real service/read-model calls against real Postgres
-             with real resolved actor identities)
-  passed:   8
+  executed: 9
+  passed:   9
   failed:   0
-  deferred: 1 (multi-role Parent/Teacher -- F2's own unmodified logic, not re-tested; see F10_AUTHENTICATED_E2E_REPORT.md)
-  environment: ephemeral local Postgres, real canAccessLearner/read-model functions, no mocks
+  deferred: 0
+  environment: ephemeral local Postgres, real isActiveParentOf/canTeacherAccessLearner/read-model functions, no mocks
 
 REMOTE_AUTHENTICATED_E2E:
   executed: 0
@@ -75,8 +74,8 @@ IVG_DEFERRED:
 
 | Suite | Result |
 |---|---|
-| Full repository suite (`npx vitest run`, no filter), 337 files | 5509/5509 PASS |
-| F10's own new/extended suites (`f10-*.test.ts` x4, extended `f2-parent-relationship-lifecycle.test.ts`) | 36/36 PASS |
+| Full repository suite (`npx vitest run`, no filter), 338 files | 5512/5512 PASS |
+| F10's own new/extended suites (`f10-*.test.ts` x5, extended `f2-parent-relationship-lifecycle.test.ts`) | 39/39 PASS |
 | `tsc --noEmit` | Clean, zero errors |
 | `next build` | Compiled successfully, zero errors, all 6 new routes present |
 
@@ -86,7 +85,7 @@ IVG_DEFERRED:
 
 ## 3. Authenticated E2E
 
-See `F10_AUTHENTICATED_E2E_REPORT.md`. 8 of 9 task §53 scenarios directly re-proven for F10's own new code; the 9th is F2's pre-existing, unmodified multi-role logic. Remote authenticated E2E honestly deferred (`IVG-F10-01`/`IVG-F10-02`), never simulated or upgraded to PASS.
+See `F10_AUTHENTICATED_E2E_REPORT.md`. All 9 task §53 scenarios directly re-proven for F10's own new code, including the multi-role Parent/Teacher case (§8 below — this one was NOT trivially true; it required a real code fix). Remote authenticated E2E honestly deferred (`IVG-F10-01`/`IVG-F10-02`), never simulated or upgraded to PASS.
 
 ## 4. AI real-provider certification
 
@@ -104,4 +103,12 @@ Not applicable — F10 adds zero new AI call sites (see `F10_IVG_DEFERRED_TEST_R
 
 ## 7. Overall QA verdict
 
-**PASS**, with the deferrals above explicitly registered and none silently upgraded to PASS. Zero regressions across 5509 total automated tests, zero TypeScript errors, a clean production build, a real-PostgreSQL adversarial + concurrency + performance certification covering every INV-F10 invariant that could be exercised in this environment, and a corrected, verified Preview deployment.
+**PASS**, with the deferrals above explicitly registered and none silently upgraded to PASS. Zero regressions across 5512 total automated tests, zero TypeScript errors, a clean production build, a real-PostgreSQL adversarial + concurrency + performance certification covering every INV-F10 invariant that could be exercised in this environment, and a corrected, verified Preview deployment.
+
+## 8. Post-certification finding: multi-role authorization check (found a real bug, fixed)
+
+Per a targeted follow-up request, `F10_MULTI_ROLE_AUTHORIZATION_CHECK.md` executed the previously-deferred multi-role Parent/Teacher isolation scenario for real against ephemeral Postgres. **It failed on the first run**: the Parent Read Model's `requireAccess()` called the generic `canAccessLearner(..., 'LEARNER_PROGRESS_VIEW')`, which by design treats Owner/Parent/Teacher as equivalent — correct for F5-F9's routes, wrong for a route presenting itself as Parent-scoped. A user with an accepted Parent relationship to Child A and a separate, real Teacher assignment to Student B's class could view Student B through the Parent routes via the Teacher relationship alone.
+
+Fixed by exporting F2's existing `isActiveParentOf` (previously module-private) and calling it directly instead of the generic composition — no new authorization primitive invented. Re-run: all 3 tests pass. Full F10 real-Postgres certification and F2 regression re-run unchanged and passing. Certified HEAD is now `78fb15d`, not `870f1a6`.
+
+**AC-F10-16 (Multi-role semantics preserved): PASS** (post-fix).

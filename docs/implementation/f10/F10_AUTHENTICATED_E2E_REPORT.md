@@ -7,16 +7,20 @@ Per the same convention F9 established (`F9_QA_REPORT.md` §3): "authenticated l
 | Required scenario | Executed | Result |
 |---|---|---|
 | Parent P, no child → zero data | Yes | `getParentLearners` → `[]` |
-| Pending Child A → denied | Yes | `canAccessLearner` false, read model throws |
+| Pending Child A → denied | Yes | `isActiveParentOf` false, read model throws |
 | Child A accepts → Parent P Child A overview ALLOW | Yes | overview returned, correct student |
 | Parent P Child B (no relationship) DENY | Yes | denied |
 | Child A revokes → Parent P Child A overview DENY afterward | Yes | denied immediately |
 | Parent P with accepted A and C, switching A→C returns correct isolated data | Yes | distinct subjects (`Mathematics` vs `Biology`) proven non-merged |
-| Multi-role Parent/Teacher retains Parent semantics | **Not separately re-executed** | F10 introduces no new multi-role interaction; `canAccessLearner`'s per-permission-type check (`OWNER_PERMISSIONS`/`PARENT_PERMISSIONS`/`TEACHER_PERMISSIONS` evaluated independently) is F2's own unmodified logic, already certified there |
+| Multi-role Parent/Teacher retains Parent semantics | **Yes** (added after a targeted follow-up request — see below) | ALLOW for the accepted Parent child, DENY for a Teacher-only student, ALLOW for that same student via the Teacher path (fixture-validity check) |
 | Payer-without-relationship DENY | Yes | denied learner view, allowed billing |
 | Relationship-without-payer ALLOW | Yes | allowed learner view, denied billing |
 
-Executed count: **8 of 9** required scenarios directly re-proven for F10's own code paths; the 9th (multi-role Parent/Teacher) is F2's pre-existing, unmodified logic and not re-tested here (would be redundant with F2's own certification, since F10 adds no code that touches that interaction).
+Executed count: **9 of 9** required scenarios directly re-proven for F10's own code paths.
+
+### Correction: the multi-role row above was originally marked "not separately re-executed"
+
+This report originally reasoned that F2's `canAccessLearner` per-permission-type composition was "F2's own unmodified logic," so a multi-role Parent+Teacher scenario didn't need separate re-testing. **That reasoning was incomplete.** `canAccessLearner`'s composition is correct and unmodified — the actual risk was in F10's OWN code: the Parent Read Model's `requireAccess()` called that generic composed check directly, which meant a real Teacher relationship could satisfy a Parent-labeled route's authorization. A later, explicitly requested certification check (`F10_MULTI_ROLE_AUTHORIZATION_CHECK.md`) executed this scenario for real, found it FAILED on the first run, and the fix (calling F2's `isActiveParentOf` directly instead) is what makes the row above now correctly say "Yes." The lesson generalizes: "this reuses an already-certified primitive" is not the same claim as "this scenario has been tested against this specific new call site" — the two were conflated in the original version of this report.
 
 ## What this is NOT
 
