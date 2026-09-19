@@ -29,10 +29,10 @@ AUTHENTICATED_LOCAL_E2E:
   environment: ephemeral local Postgres, real F2 authorization function, no mocks
 
 REMOTE_PREVIEW_SMOKE:
-  executed: <filled in after deployment, see F9_PREVIEW_CERTIFICATION.md>
-  passed:   <filled in after deployment>
+  executed: 21 (12 new F9 routes anonymous-401 + 9 F0-S-F8 regression routes, see F9_PREVIEW_CERTIFICATION.md)
+  passed:   21
   failed:   0
-  environment: <filled in after deployment>
+  environment: https://study-6vxgn67ep-study-so.vercel.app (Vercel Preview, target: null)
 
 AI_REAL_PROVIDER:
   executed: 0
