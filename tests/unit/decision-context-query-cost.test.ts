@@ -107,6 +107,7 @@ afterEach(() => {
   vi.resetModules();
   vi.doUnmock('@/lib/db');
   vi.doUnmock('@/lib/learner-twin/metrics');
+  vi.useRealTimers();
 });
 
 describe('Step 7: getDecisionContext calls the derived-metric READER FUNCTIONS only when requested', () => {
@@ -212,6 +213,12 @@ describe('Step 1: instrumented query-count measurement (real readers, no reader-
 
 describe('Phase 2D/2E: interventionState/validationState follow the exact same MetricProjection contract', () => {
   it('default (no options): both are {requested: false}, carrying real, populated values only when actually requested', async () => {
+    // The fixture's validation_deadline ('2026-09-20') is meant to be in the
+    // future relative to "now" so the derived status reads OPEN, not OVERDUE.
+    // Pin the clock instead of relying on the real clock staying behind that
+    // fixed fixture date.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-10T00:00:00.000Z'));
     const query = buildFullFixtureQuery();
     vi.doMock('@/lib/db', () => ({ db: { query } }));
     const { getDecisionContext } = await import('@/lib/learner-twin/service');

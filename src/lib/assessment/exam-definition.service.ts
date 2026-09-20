@@ -87,3 +87,13 @@ export async function getPublishedExamVersion(examDefinitionId: string): Promise
   const result = await db.query(`SELECT * FROM exam_versions WHERE exam_definition_id = $1 AND status = 'PUBLISHED'`, [examDefinitionId]);
   return result.rows.length === 0 ? null : toVersion(result.rows[0]);
 }
+
+/**
+ * F14 -- the Student Exam Prep UX needs the definition's own display
+ * name (task section 4); no reader for a single definition existed
+ * yet, only the create/write path.
+ */
+export async function getExamDefinition(examDefinitionId: string, client: DbExecutor = db): Promise<ExamDefinition | null> {
+  const result = await client.query(`SELECT * FROM exam_definitions WHERE id = $1`, [examDefinitionId]);
+  return result.rows.length === 0 ? null : toDefinition(result.rows[0]);
+}

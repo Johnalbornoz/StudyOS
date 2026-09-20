@@ -35,6 +35,36 @@ export interface AssignInterventionLabels {
   typeSkill: string;
   typeCompetency: string;
   typeExam: string;
+  /** F14 -- per-reason human-readable guidance (task section 8's "Backend decision -> reasonCode -> UI presentation mapping -> human-readable guidance"). Falls back to `error` for any code not covered here. */
+  errorForbidden?: string;
+  errorInvalidTarget?: string;
+  errorExamProfileMismatch?: string;
+  errorInvalidInput?: string;
+}
+
+/**
+ * F14 Workstream E -- maps the real, specific error codes
+ * `POST /api/teacher/interventions` actually returns to distinct,
+ * human-readable guidance, instead of one generic message for every
+ * rejection reason (F13's own documented residual gap,
+ * `F13_RESIDUAL_RISK_REGISTER.md` #8). Presentation mapping ONLY: it
+ * never re-derives WHY the server rejected the request, it only
+ * chooses which already-written label to show for a code the server
+ * already decided.
+ */
+function describeAssignError(code: string | undefined, serverMessage: string | undefined, labels: AssignInterventionLabels): string {
+  switch (code) {
+    case 'FORBIDDEN':
+      return labels.errorForbidden || labels.error;
+    case 'INVALID_TARGET':
+      return labels.errorInvalidTarget || labels.error;
+    case 'EXAM_PROFILE_MISMATCH':
+      return labels.errorExamProfileMismatch || labels.error;
+    case 'INVALID_INPUT':
+      return serverMessage || labels.errorInvalidInput || labels.error;
+    default:
+      return labels.error;
+  }
 }
 
 export function AssignInterventionForm({
@@ -57,6 +87,7 @@ export function AssignInterventionForm({
   const [academicSubjectId, setAcademicSubjectId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function buildTarget() {
     switch (targetType) {
@@ -96,12 +127,15 @@ export function AssignInterventionForm({
         }),
       });
       if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setErrorMessage(describeAssignError(body?.error, body?.message, labels));
         setResult('error');
         return;
       }
       setResult('success');
       router.refresh();
     } catch {
+      setErrorMessage(labels.error);
       setResult('error');
     } finally {
       setSubmitting(false);
@@ -177,7 +211,7 @@ export function AssignInterventionForm({
       {result === 'success' && <p style={{ color: 'var(--success)', fontSize: 13 }}>{labels.success}</p>}
       {result === 'error' && (
         <p role="alert" style={{ color: 'var(--error)', fontSize: 13 }}>
-          {labels.error}
+          {errorMessage || labels.error}
         </p>
       )}
     </form>

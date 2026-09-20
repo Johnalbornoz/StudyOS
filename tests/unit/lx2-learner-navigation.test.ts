@@ -12,10 +12,10 @@ import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
 const nav = (over = {}) => buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0, ...over });
 
 describe('LX-2E buildLearnerNav', () => {
-  it('primary group is exactly Today / My Path / Progress, in that order', () => {
+  it('primary group is exactly Today / My Path / Progress / Exam Prep / Assignments, in that order (F14: Workstream A/B added the missing Student-facing Exam Prep and Assignment surfaces to the primary nav)', () => {
     const primary = nav().find((g) => g.kind === 'PRIMARY')!;
-    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress']);
-    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard']);
+    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep', 'assignments']);
+    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments']);
   });
 
   it('LX-7: My Path now has its own real implementation -- no temporary stand-in mapping remains', () => {

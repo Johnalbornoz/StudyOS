@@ -56,6 +56,27 @@ export function toneForInterventionStatus(status: 'ASSIGNED' | 'IN_PROGRESS' | '
   }
 }
 
+/**
+ * F14 -- F9's per-dimension status (readiness.service.ts's
+ * `DimensionStatus`). Deliberately never 'critical': a WEAK dimension
+ * is real, actionable signal, not a platform failure (same discipline
+ * as `toneForReadinessStatus`'s own INSUFFICIENT_EVIDENCE handling).
+ */
+export function toneForDimensionStatus(status: 'STRONG' | 'DEVELOPING' | 'WEAK' | 'INSUFFICIENT_EVIDENCE' | 'NOT_APPLICABLE' | string): StatusTone {
+  switch (status) {
+    case 'STRONG':
+      return 'good';
+    case 'DEVELOPING':
+      return 'info';
+    case 'WEAK':
+      return 'warn';
+    case 'INSUFFICIENT_EVIDENCE':
+    case 'NOT_APPLICABLE':
+    default:
+      return 'neutral';
+  }
+}
+
 export function toneForReadinessStatus(status: string): StatusTone {
   switch (status) {
     case 'FULL_MOCK_ELIGIBLE':

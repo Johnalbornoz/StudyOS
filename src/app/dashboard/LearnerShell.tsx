@@ -44,6 +44,8 @@ import {
   X,
   School,
   Building2,
+  ClipboardCheck,
+  ClipboardList,
 } from 'lucide-react';
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
 
@@ -57,6 +59,8 @@ const FOCUS_MODE_PREFIXES = [
   '/dashboard/remediation',
   '/dashboard/cognitive/explain',
   '/dashboard/cognitive/transfer',
+  '/dashboard/assignments/practice',
+  '/dashboard/exam-prep/attempt',
 ] as const;
 
 const ICONS: Record<string, ReactNode> = {
@@ -74,6 +78,8 @@ const ICONS: Record<string, ReactNode> = {
   GraduationCap: <GraduationCap size={16} strokeWidth={2} aria-hidden />,
   School: <School size={16} strokeWidth={2} aria-hidden />,
   Building2: <Building2 size={16} strokeWidth={2} aria-hidden />,
+  ClipboardCheck: <ClipboardCheck size={16} strokeWidth={2} aria-hidden />,
+  ClipboardList: <ClipboardList size={16} strokeWidth={2} aria-hidden />,
 };
 
 /** Nav groups with labels already resolved (server passes plain strings). */

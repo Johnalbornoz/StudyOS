@@ -13,13 +13,28 @@ export function InstitutionSubNav({
   labels,
 }: {
   institutionId: string;
-  active: 'overview' | 'learners' | 'interventions' | 'attention';
-  labels: { overview: string; learners: string; interventions: string; attention: string };
+  active: 'overview' | 'grades' | 'classes' | 'teachers' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
+  labels: {
+    overview: string;
+    grades: string;
+    classes: string;
+    teachers: string;
+    learners: string;
+    coverage: string;
+    readiness: string;
+    interventions: string;
+    attention: string;
+  };
 }) {
   const base = `/dashboard/institution/${institutionId}`;
   const items: Array<{ key: typeof active; href: string; label: string }> = [
     { key: 'overview', href: base, label: labels.overview },
+    { key: 'grades', href: `${base}/grades`, label: labels.grades },
+    { key: 'classes', href: `${base}/classes`, label: labels.classes },
+    { key: 'teachers', href: `${base}/teachers`, label: labels.teachers },
     { key: 'learners', href: `${base}/learners`, label: labels.learners },
+    { key: 'coverage', href: `${base}/coverage`, label: labels.coverage },
+    { key: 'readiness', href: `${base}/readiness`, label: labels.readiness },
     { key: 'interventions', href: `${base}/interventions`, label: labels.interventions },
     { key: 'attention', href: `${base}/attention`, label: labels.attention },
   ];

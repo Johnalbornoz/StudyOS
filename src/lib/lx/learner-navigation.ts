@@ -45,6 +45,8 @@ export interface LearnerNavInputs {
   isAdmin: boolean;
   debtCount: number;
   notifCount: number;
+  /** F14 -- pending Teacher-assigned interventions, badge count only (never a domain decision). */
+  assignmentCount?: number;
 }
 
 export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
@@ -59,6 +61,8 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
         iconKey: 'Route',
       },
       { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard' },
+      { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
+      { key: 'assignments', href: '/dashboard/assignments', labelKey: 'nav.assignments', iconKey: 'ClipboardList', badge: inputs.assignmentCount },
     ],
   };
 

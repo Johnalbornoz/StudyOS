@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import { StatusBadge, toneForDimensionStatus } from '@/components/ui/StatusBadge';
 
 interface SubjectSummary {
   subjectId: string;
@@ -16,7 +17,6 @@ interface UpcomingExam {
   subjectName?: string;
   scheduledDate: string;
   daysUntil: number;
-  examReadiness: number | null;
 }
 
 interface ChildOverview {
@@ -25,6 +25,23 @@ interface ChildOverview {
   subjects: SubjectSummary[];
   totalActiveDebt: number;
   upcomingExams: UpcomingExam[];
+}
+
+/**
+ * F14 Workstream C -- canonical F9 replacement for the legacy
+ * `assessment_occurrences.exam_readiness` percentage this page used to
+ * render (see F14_PARENT_READINESS_MIGRATION.md). Sourced from F10's
+ * own, already-built, already F9-exclusive
+ * `getParentExamPreparation`/`/api/parent/learners/[studentId]/exam-prep`
+ * -- this page had simply never called it. `null` is a real, valid
+ * "no active Exam Profile" state, never mapped to zero or hidden.
+ */
+interface ParentExamPrepView {
+  examName: string;
+  examDate: string | null;
+  dimensions: Array<{ dimension: string; status: string }>;
+  scoreProjectionAvailability: string;
+  fullMock: { eligible: boolean; reasonCategory: 'PLATFORM_NOT_READY' | 'LEARNER_NOT_READY' | null; reasons: string[] };
 }
 
 function masteryFillClass(score: number) {
@@ -41,6 +58,7 @@ export default function ParentPage() {
   const [linkNotice, setLinkNotice] = useState<string | null>(null);
   const [children, setChildren] = useState<{ studentId: string; name: string; email: string; status: 'pending' | 'accepted' | 'declined' }[]>([]);
   const [overviews, setOverviews] = useState<Record<string, ChildOverview>>({});
+  const [examPrep, setExamPrep] = useState<Record<string, ParentExamPrepView | null>>({});
   const [loading, setLoading] = useState(true);
 
   const t = getMessages(locale);
@@ -56,16 +74,25 @@ export default function ParentPage() {
     const list = body.data?.children || [];
     setChildren(list);
 
+    const accepted = list.filter((c: any) => c.status === 'accepted');
     const entries = await Promise.all(
-      list
-        .filter((c: any) => c.status === 'accepted')
-        .map(async (c: any) => {
-          const res = await fetch(`/api/parent/child-overview?studentId=${c.studentId}`);
-          const overviewBody = await res.json();
-          return [c.studentId, overviewBody.data] as const;
-        })
+      accepted.map(async (c: any) => {
+        const res = await fetch(`/api/parent/child-overview?studentId=${c.studentId}`);
+        const overviewBody = await res.json();
+        return [c.studentId, overviewBody.data] as const;
+      })
     );
     setOverviews(Object.fromEntries(entries));
+
+    const examPrepEntries = await Promise.all(
+      accepted.map(async (c: any) => {
+        const res = await fetch(`/api/parent/learners/${c.studentId}/exam-prep`);
+        if (!res.ok) return [c.studentId, null] as const;
+        const body = await res.json();
+        return [c.studentId, body.data as ParentExamPrepView | null] as const;
+      })
+    );
+    setExamPrep(Object.fromEntries(examPrepEntries));
     setLoading(false);
   }
 
@@ -188,9 +215,6 @@ export default function ParentPage() {
                         {overview.upcomingExams.slice(0, 1).map((e) => (
                           <span key={e.subjectId}>
                             {e.subjectName} — {e.scheduledDate} ({e.daysUntil}d)
-                            {e.examReadiness !== null && (
-                              <> · {t['parent.readiness']}: <strong>{Math.round(e.examReadiness)}%</strong></>
-                            )}
                           </span>
                         ))}
                       </div>
@@ -198,6 +222,39 @@ export default function ParentPage() {
                       <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{t['parent.noUpcomingExam']}</div>
                     )}
                   </div>
+                </div>
+
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <div className="label" style={{ color: 'var(--text-muted)', marginBottom: 8 }}>{t['parent.examPrepReadiness']}</div>
+                  {examPrep[child.studentId] ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>
+                        {examPrep[child.studentId]!.examName}
+                        {examPrep[child.studentId]!.examDate && ` — ${examPrep[child.studentId]!.examDate}`}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                        {examPrep[child.studentId]!.dimensions.map((d) => (
+                          <StatusBadge key={d.dimension} label={d.dimension} tone={toneForDimensionStatus(d.status)} />
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                        {t['parent.fullMock']}:{' '}
+                        {examPrep[child.studentId]!.fullMock.eligible
+                          ? t['parent.fullMock.eligible']
+                          : examPrep[child.studentId]!.fullMock.reasonCategory === 'PLATFORM_NOT_READY'
+                            ? t['parent.fullMock.platformNotReady']
+                            : t['parent.fullMock.learnerNotReady']}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {t['parent.scoreProjection']}:{' '}
+                        {examPrep[child.studentId]!.scoreProjectionAvailability === 'AVAILABLE'
+                          ? t['examPrep.scoreProjection.available']
+                          : t[`examPrep.scoreProjection.${examPrep[child.studentId]!.scoreProjectionAvailability}` as keyof typeof t] ?? examPrep[child.studentId]!.scoreProjectionAvailability}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{t['parent.noActiveExamProfile']}</div>
+                  )}
                 </div>
 
                 <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 8 }}>{t['parent.subjects']}</p>

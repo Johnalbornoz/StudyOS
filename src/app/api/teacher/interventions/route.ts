@@ -11,7 +11,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { assignTeacherIntervention, TeacherInterventionAccessDeniedError, TeacherInterventionInvalidTargetError } from '@/lib/teacher/intervention.service';
+import {
+  assignTeacherIntervention,
+  TeacherInterventionAccessDeniedError,
+  TeacherInterventionInvalidTargetError,
+  TeacherInterventionExamProfileMismatchError,
+} from '@/lib/teacher/intervention.service';
 
 // F13: this schema was never extended when F11-C4 added the EXAM
 // target branch to assignTeacherIntervention's own real
@@ -69,6 +74,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof TeacherInterventionAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     if (error instanceof TeacherInterventionInvalidTargetError) return NextResponse.json({ error: 'INVALID_TARGET', message: error.message }, { status: 400 });
+    // F14 -- this branch (F11-C4's own EXAM-profile-ownership re-check,
+    // intervention.service.ts line ~189) was never mapped to a clean
+    // response: it fell through to `throw error`, producing a raw 500
+    // with a stack trace instead of a controlled rejection (task §27:
+    // "no stack traces"). A real, previously-unguarded bug, found while
+    // building F14's Teacher exam-intervention error-mapping work.
+    if (error instanceof TeacherInterventionExamProfileMismatchError) return NextResponse.json({ error: 'EXAM_PROFILE_MISMATCH', message: error.message }, { status: 400 });
     throw error;
   }
 }

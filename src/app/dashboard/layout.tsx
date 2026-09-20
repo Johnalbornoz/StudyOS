@@ -6,6 +6,7 @@ import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
+import { countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
 import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, type Workspace } from '@/lib/identity';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -45,6 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let notifCount = 0;
   let debtCount = 0;
+  let assignmentCount = 0;
   // LX-9 A5: renamed from a raw consecutive-day "streak" to a bounded,
   // non-punitive "learning days this week" count -- see
   // gamification.service.ts::getLearningDaysThisWeek's own doc comment.
@@ -72,16 +74,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (activeWorkspace === 'STUDENT') {
       const studentId = await getOrCreateStudentId(clerkUserId);
-      const [notifications, debts, lang, daysThisWeek] = await Promise.all([
+      const [notifications, debts, lang, daysThisWeek, pendingAssignments] = await Promise.all([
         getUnreadNotifications(studentId).catch(() => []),
         getActiveDebts(studentId).catch(() => []),
         getInterfaceLanguage(studentId).catch(() => 'es' as const),
         getLearningDaysThisWeek(studentId).catch(() => 0),
+        countPendingTeacherInterventionsForStudent(studentId).catch(() => 0),
       ]);
       notifCount = notifications.length;
       debtCount = debts.length;
       locale = lang;
       learningDaysThisWeek = daysThisWeek;
+      assignmentCount = pendingAssignments;
     } else {
       // `getUnreadNotifications`/`getActiveDebts` are Student-domain
       // concepts (queried by `students.id`) that have not been
@@ -114,7 +118,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     // shell's own nav (ADMIN's console link already lives inside it,
     // gated by isAdminEmail exactly as before F13) -- a dedicated Admin
     // nav group set is deferred (see F13_NEXT_PHASE_HANDOFF.md).
-    : buildLearnerNav({ isAdmin, debtCount, notifCount });
+    : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
 
   // LX-2E: navigation organised around learner intent
   // (Today / My Path / Progress), resolved to plain strings for the

@@ -72,6 +72,18 @@ export async function getStudentExamProfile(profileId: string): Promise<StudentE
   return result.rows.length === 0 ? null : toProfile(result.rows[0]);
 }
 
+/**
+ * F14 -- the same read `GET /api/exam-profiles?studentId=` already
+ * performs inline, extracted into a reusable function so a Server
+ * Component (the new Student Exam Prep page) can call it directly
+ * rather than making a self-HTTP-call, matching every other F13/F14
+ * page's own established pattern.
+ */
+export async function listStudentExamProfiles(studentId: string): Promise<StudentExamProfile[]> {
+  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]);
+  return result.rows.map(toProfile);
+}
+
 export async function listGoalsForProfile(profileId: string): Promise<PreparationGoal[]> {
   const result = await db.query(`SELECT * FROM preparation_goals WHERE student_exam_profile_id = $1`, [profileId]);
   return result.rows.map(toGoal);

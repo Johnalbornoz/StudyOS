@@ -75,6 +75,40 @@ export type MessageKey =
   | 'status.unavailable' | 'status.notReady' | 'status.platformNotReady' | 'status.pending' | 'status.revoked'
   // F13 -- shared empty/error states
   | 'empty.noData' | 'empty.smallCohortSuppressed' | 'error.generic' | 'error.forbidden' | 'error.notFound'
+  // F14 -- global nav additions (Exam Prep / Assignments)
+  | 'nav.examPrep' | 'nav.assignments'
+  // F14 -- Student Exam Prep
+  | 'examPrep.title' | 'examPrep.subtitle' | 'examPrep.empty' | 'examPrep.emptyBody'
+  | 'examPrep.noExamDateSet' | 'examPrep.noExamVersion' | 'examPrep.noSnapshotYet' | 'examPrep.detailSubtitle'
+  | 'examPrep.overallStatus' | 'examPrep.scoreProjection' | 'examPrep.scoreProjection.available'
+  | 'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION' | 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA' | 'examPrep.scoreProjection.NOT_APPLICABLE'
+  | 'examPrep.dimensions' | 'examPrep.limitations' | 'examPrep.platformNotSupported'
+  | 'examPrep.dimension.knowledge' | 'examPrep.dimension.skill' | 'examPrep.dimension.examTechnique'
+  | 'examPrep.dimension.speedFluency' | 'examPrep.dimension.blueprintCoverage'
+  | 'examPrep.dimension.simulationPerformance' | 'examPrep.dimension.evidenceSufficiency'
+  | 'examPrep.dimensionStatus.STRONG' | 'examPrep.dimensionStatus.DEVELOPING' | 'examPrep.dimensionStatus.WEAK'
+  | 'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE' | 'examPrep.dimensionStatus.NOT_APPLICABLE'
+  | 'examPrep.status.INSUFFICIENT_EVIDENCE' | 'examPrep.status.EARLY_PREPARATION' | 'examPrep.status.DEVELOPING'
+  | 'examPrep.status.SIMULATION_READY' | 'examPrep.status.FULL_MOCK_ELIGIBLE'
+  | 'examPrep.start.title' | 'examPrep.start.simulationTypeLabel' | 'examPrep.start.timingModeLabel'
+  | 'examPrep.start.learningObjectiveIdLabel' | 'examPrep.start.academicSubjectIdLabel'
+  | 'examPrep.start.submit' | 'examPrep.start.submitting' | 'examPrep.start.notEligible' | 'examPrep.start.error'
+  | 'examPrep.attempt.title' | 'examPrep.attempt.timingMode' | 'examPrep.attempt.deferredNotice'
+  | 'examPrep.attempt.pause' | 'examPrep.attempt.resume' | 'examPrep.attempt.abandon' | 'examPrep.attempt.error'
+  | 'examPrep.attempt.status.ACTIVE' | 'examPrep.attempt.status.PAUSED' | 'examPrep.attempt.status.COMPLETED' | 'examPrep.attempt.status.ABANDONED'
+  // F14 -- Student Assignment Experience
+  | 'assignments.title' | 'assignments.subtitle' | 'assignments.empty' | 'assignments.emptyBody' | 'assignments.due'
+  | 'assignments.start' | 'assignments.continue' | 'assignments.starting' | 'assignments.error' | 'assignments.notExecutableYet'
+  | 'assignments.status.ASSIGNED' | 'assignments.status.IN_PROGRESS' | 'assignments.status.COMPLETED'
+  | 'assignments.status.CANCELLED' | 'assignments.status.EXPIRED'
+  | 'assignments.practice.title' | 'assignments.practice.loading' | 'assignments.practice.loadError'
+  | 'assignments.practice.submit' | 'assignments.practice.submitting' | 'assignments.practice.submitError'
+  | 'assignments.practice.resultsTitle' | 'assignments.practice.score' | 'assignments.practice.alreadyCompleted'
+  // F14 Workstream E -- Teacher exam-intervention error-code mapping (replaces one generic message for every rejection reason)
+  | 'teacher.assign.error.forbidden' | 'teacher.assign.error.invalidTarget' | 'teacher.assign.error.examProfileMismatch' | 'teacher.assign.error.invalidInput'
+  // F14 -- Parent Readiness Migration (F9-sourced, replaces the legacy assessment_occurrences.exam_readiness display)
+  | 'parent.examPrepReadiness' | 'parent.fullMock' | 'parent.fullMock.eligible'
+  | 'parent.fullMock.platformNotReady' | 'parent.fullMock.learnerNotReady' | 'parent.scoreProjection' | 'parent.noActiveExamProfile'
   | 'dashboard.eyebrow' | 'dashboard.greeting' | 'dashboard.subtitle'
   | 'dashboard.createSubject' | 'dashboard.conceptsAtRisk' | 'dashboard.needReview'
   | 'dashboard.avgMastery' | 'dashboard.avgMasterySubtitle' | 'dashboard.avgMasteryEmpty'
@@ -598,6 +632,33 @@ const es: Messages = {
   'status.notStarted': 'Sin iniciar', 'status.inProgress': 'En curso', 'status.completed': 'Completado', 'status.needsMoreEvidence': 'Necesita más evidencia', 'status.needsAttention': 'Necesita atención',
   'status.unavailable': 'No disponible', 'status.notReady': 'Aún no disponible', 'status.platformNotReady': 'StudyUS aún no cubre esto', 'status.pending': 'Pendiente', 'status.revoked': 'Revocado',
   'empty.noData': 'Todavía no hay datos aquí.', 'empty.smallCohortSuppressed': 'Grupo demasiado pequeño para mostrar de forma segura.', 'error.generic': 'Ocurrió un error. Intenta de nuevo.', 'error.forbidden': 'No tienes acceso a esto.', 'error.notFound': 'No se encontró.',
+  'nav.examPrep': 'Preparación de examen', 'nav.assignments': 'Mis tareas',
+  'examPrep.title': 'Preparación de examen', 'examPrep.subtitle': 'Tu preparación real, según la evidencia registrada.', 'examPrep.empty': 'Todavía no tienes un perfil de examen', 'examPrep.emptyBody': 'Cuando configures un examen objetivo, tu preparación aparecerá aquí.',
+  'examPrep.noExamDateSet': 'Sin fecha de examen', 'examPrep.noExamVersion': 'Este examen aún no tiene una versión publicada configurada.', 'examPrep.noSnapshotYet': 'Todavía no hay suficiente evidencia para calcular tu preparación.', 'examPrep.detailSubtitle': 'Estado de preparación calculado por la plataforma, nunca inventado.',
+  'examPrep.overallStatus': 'Estado general', 'examPrep.scoreProjection': 'Proyección de puntaje', 'examPrep.scoreProjection.available': 'Disponible',
+  'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION': 'No disponible: falta calibración', 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA': 'No disponible: evidencia insuficiente', 'examPrep.scoreProjection.NOT_APPLICABLE': 'No aplica',
+  'examPrep.dimensions': 'Dimensiones de preparación', 'examPrep.limitations': 'Limitaciones', 'examPrep.platformNotSupported': 'La plataforma aún no puede evaluar esto',
+  'examPrep.dimension.knowledge': 'Conocimiento', 'examPrep.dimension.skill': 'Habilidad', 'examPrep.dimension.examTechnique': 'Técnica de examen',
+  'examPrep.dimension.speedFluency': 'Velocidad y fluidez', 'examPrep.dimension.blueprintCoverage': 'Cobertura del temario',
+  'examPrep.dimension.simulationPerformance': 'Desempeño en simulacros', 'examPrep.dimension.evidenceSufficiency': 'Suficiencia de evidencia',
+  'examPrep.dimensionStatus.STRONG': 'Sólido', 'examPrep.dimensionStatus.DEVELOPING': 'En desarrollo', 'examPrep.dimensionStatus.WEAK': 'Débil',
+  'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE': 'Evidencia insuficiente', 'examPrep.dimensionStatus.NOT_APPLICABLE': 'No aplica',
+  'examPrep.status.INSUFFICIENT_EVIDENCE': 'Evidencia insuficiente', 'examPrep.status.EARLY_PREPARATION': 'Preparación inicial', 'examPrep.status.DEVELOPING': 'En desarrollo',
+  'examPrep.status.SIMULATION_READY': 'Listo para simulacro', 'examPrep.status.FULL_MOCK_ELIGIBLE': 'Elegible para examen completo',
+  'examPrep.start.title': 'Iniciar una práctica de examen', 'examPrep.start.simulationTypeLabel': 'Tipo de simulacro', 'examPrep.start.timingModeLabel': 'Modo de tiempo',
+  'examPrep.start.learningObjectiveIdLabel': 'ID del objetivo de aprendizaje', 'examPrep.start.academicSubjectIdLabel': 'ID de la materia',
+  'examPrep.start.submit': 'Comenzar', 'examPrep.start.submitting': 'Comenzando…', 'examPrep.start.notEligible': 'Todavía no disponible', 'examPrep.start.error': 'No se pudo iniciar el simulacro.',
+  'examPrep.attempt.title': 'Intento de simulacro', 'examPrep.attempt.timingMode': 'Modo de tiempo', 'examPrep.attempt.deferredNotice': 'La experiencia de preguntas paso a paso llegará en una fase futura. Aquí puedes pausar, reanudar o abandonar este intento.',
+  'examPrep.attempt.pause': 'Pausar', 'examPrep.attempt.resume': 'Reanudar', 'examPrep.attempt.abandon': 'Abandonar', 'examPrep.attempt.error': 'No se pudo completar la acción.',
+  'examPrep.attempt.status.ACTIVE': 'En curso', 'examPrep.attempt.status.PAUSED': 'Pausado', 'examPrep.attempt.status.COMPLETED': 'Completado', 'examPrep.attempt.status.ABANDONED': 'Abandonado',
+  'assignments.title': 'Mis tareas', 'assignments.subtitle': 'Tareas que tu docente te asignó.', 'assignments.empty': 'No tienes tareas pendientes', 'assignments.emptyBody': 'Cuando tu docente te asigne una tarea, aparecerá aquí.', 'assignments.due': 'Vence',
+  'assignments.start': 'Comenzar', 'assignments.continue': 'Continuar', 'assignments.starting': 'Comenzando…', 'assignments.error': 'No se pudo iniciar la tarea.', 'assignments.notExecutableYet': 'Esta tarea todavía no se puede realizar.',
+  'assignments.status.ASSIGNED': 'Asignada', 'assignments.status.IN_PROGRESS': 'En curso', 'assignments.status.COMPLETED': 'Completada', 'assignments.status.CANCELLED': 'Cancelada', 'assignments.status.EXPIRED': 'Vencida',
+  'assignments.practice.title': 'Práctica asignada', 'assignments.practice.loading': 'Cargando preguntas…', 'assignments.practice.loadError': 'No se pudo cargar la práctica.',
+  'assignments.practice.submit': 'Enviar respuestas', 'assignments.practice.submitting': 'Enviando…', 'assignments.practice.submitError': 'No se pudieron enviar las respuestas.',
+  'assignments.practice.resultsTitle': 'Resultados', 'assignments.practice.score': 'Puntaje', 'assignments.practice.alreadyCompleted': 'Esta práctica ya fue completada.',
+  'teacher.assign.error.forbidden': 'No tienes permiso para asignar esta intervención.', 'teacher.assign.error.invalidTarget': 'El elemento indicado no existe.', 'teacher.assign.error.examProfileMismatch': 'Ese perfil de examen no pertenece a este estudiante.', 'teacher.assign.error.invalidInput': 'Revisa los datos ingresados.',
+  'parent.examPrepReadiness': 'Preparación de examen', 'parent.fullMock': 'Examen completo', 'parent.fullMock.eligible': 'Disponible', 'parent.fullMock.platformNotReady': 'La plataforma aún no puede ofrecerlo', 'parent.fullMock.learnerNotReady': 'Tu hijo/a aún no tiene suficiente evidencia', 'parent.scoreProjection': 'Proyección de puntaje', 'parent.noActiveExamProfile': 'Sin perfil de examen activo',
   'nav.groupLearning': 'Aprendizaje',
   'nav.groupAccount': 'Cuenta',
   'nav.groupSystem': 'Sistema',
@@ -1767,6 +1828,33 @@ const en: Messages = {
   'status.notStarted': 'Not started', 'status.inProgress': 'In progress', 'status.completed': 'Completed', 'status.needsMoreEvidence': 'Needs more evidence', 'status.needsAttention': 'Needs attention',
   'status.unavailable': 'Unavailable', 'status.notReady': 'Not ready yet', 'status.platformNotReady': "StudyUS doesn't cover this yet", 'status.pending': 'Pending', 'status.revoked': 'Revoked',
   'empty.noData': 'No data here yet.', 'empty.smallCohortSuppressed': 'Cohort too small to show safely.', 'error.generic': 'Something went wrong. Please try again.', 'error.forbidden': "You don't have access to this.", 'error.notFound': 'Not found.',
+  'nav.examPrep': 'Exam Prep', 'nav.assignments': 'My Assignments',
+  'examPrep.title': 'Exam Prep', 'examPrep.subtitle': 'Your real preparation, based on recorded evidence.', 'examPrep.empty': "You don't have an Exam Profile yet", 'examPrep.emptyBody': 'Once you set up a target exam, your preparation will show up here.',
+  'examPrep.noExamDateSet': 'No exam date set', 'examPrep.noExamVersion': 'This exam does not have a published version configured yet.', 'examPrep.noSnapshotYet': 'Not enough evidence yet to calculate your readiness.', 'examPrep.detailSubtitle': 'Readiness computed by the platform, never fabricated.',
+  'examPrep.overallStatus': 'Overall status', 'examPrep.scoreProjection': 'Score projection', 'examPrep.scoreProjection.available': 'Available',
+  'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION': 'Not available: calibration missing', 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA': 'Not available: insufficient evidence', 'examPrep.scoreProjection.NOT_APPLICABLE': 'Not applicable',
+  'examPrep.dimensions': 'Readiness dimensions', 'examPrep.limitations': 'Limitations', 'examPrep.platformNotSupported': 'The platform cannot yet assess this',
+  'examPrep.dimension.knowledge': 'Knowledge', 'examPrep.dimension.skill': 'Skill', 'examPrep.dimension.examTechnique': 'Exam technique',
+  'examPrep.dimension.speedFluency': 'Speed & fluency', 'examPrep.dimension.blueprintCoverage': 'Blueprint coverage',
+  'examPrep.dimension.simulationPerformance': 'Simulation performance', 'examPrep.dimension.evidenceSufficiency': 'Evidence sufficiency',
+  'examPrep.dimensionStatus.STRONG': 'Strong', 'examPrep.dimensionStatus.DEVELOPING': 'Developing', 'examPrep.dimensionStatus.WEAK': 'Weak',
+  'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE': 'Insufficient evidence', 'examPrep.dimensionStatus.NOT_APPLICABLE': 'Not applicable',
+  'examPrep.status.INSUFFICIENT_EVIDENCE': 'Insufficient evidence', 'examPrep.status.EARLY_PREPARATION': 'Early preparation', 'examPrep.status.DEVELOPING': 'Developing',
+  'examPrep.status.SIMULATION_READY': 'Simulation ready', 'examPrep.status.FULL_MOCK_ELIGIBLE': 'Full Mock eligible',
+  'examPrep.start.title': 'Start an exam practice', 'examPrep.start.simulationTypeLabel': 'Simulation type', 'examPrep.start.timingModeLabel': 'Timing mode',
+  'examPrep.start.learningObjectiveIdLabel': 'Learning objective ID', 'examPrep.start.academicSubjectIdLabel': 'Academic subject ID',
+  'examPrep.start.submit': 'Start', 'examPrep.start.submitting': 'Starting…', 'examPrep.start.notEligible': 'Not yet available', 'examPrep.start.error': 'Could not start the simulation.',
+  'examPrep.attempt.title': 'Simulation attempt', 'examPrep.attempt.timingMode': 'Timing mode', 'examPrep.attempt.deferredNotice': 'The full item-by-item experience is coming in a future phase. Here you can pause, resume, or abandon this attempt.',
+  'examPrep.attempt.pause': 'Pause', 'examPrep.attempt.resume': 'Resume', 'examPrep.attempt.abandon': 'Abandon', 'examPrep.attempt.error': 'Could not complete the action.',
+  'examPrep.attempt.status.ACTIVE': 'Active', 'examPrep.attempt.status.PAUSED': 'Paused', 'examPrep.attempt.status.COMPLETED': 'Completed', 'examPrep.attempt.status.ABANDONED': 'Abandoned',
+  'assignments.title': 'My Assignments', 'assignments.subtitle': 'Assignments your teacher gave you.', 'assignments.empty': "You don't have any pending assignments", 'assignments.emptyBody': 'When your teacher assigns you something, it will show up here.', 'assignments.due': 'Due',
+  'assignments.start': 'Start', 'assignments.continue': 'Continue', 'assignments.starting': 'Starting…', 'assignments.error': 'Could not start the assignment.', 'assignments.notExecutableYet': "This assignment can't be started yet.",
+  'assignments.status.ASSIGNED': 'Assigned', 'assignments.status.IN_PROGRESS': 'In progress', 'assignments.status.COMPLETED': 'Completed', 'assignments.status.CANCELLED': 'Cancelled', 'assignments.status.EXPIRED': 'Expired',
+  'assignments.practice.title': 'Assigned practice', 'assignments.practice.loading': 'Loading questions…', 'assignments.practice.loadError': 'Could not load this practice.',
+  'assignments.practice.submit': 'Submit answers', 'assignments.practice.submitting': 'Submitting…', 'assignments.practice.submitError': 'Could not submit your answers.',
+  'assignments.practice.resultsTitle': 'Results', 'assignments.practice.score': 'Score', 'assignments.practice.alreadyCompleted': 'This practice was already completed.',
+  'teacher.assign.error.forbidden': "You don't have permission to assign this intervention.", 'teacher.assign.error.invalidTarget': "The specified item doesn't exist.", 'teacher.assign.error.examProfileMismatch': "That exam profile doesn't belong to this student.", 'teacher.assign.error.invalidInput': 'Please check the entered values.',
+  'parent.examPrepReadiness': 'Exam prep readiness', 'parent.fullMock': 'Full Mock', 'parent.fullMock.eligible': 'Available', 'parent.fullMock.platformNotReady': 'The platform cannot offer this yet', 'parent.fullMock.learnerNotReady': "Your child doesn't have enough evidence yet", 'parent.scoreProjection': 'Score projection', 'parent.noActiveExamProfile': 'No active exam profile',
   'nav.groupLearning': 'Learning',
   'nav.groupAccount': 'Account',
   'nav.groupSystem': 'System',
@@ -2936,6 +3024,33 @@ const de: Messages = {
   'status.notStarted': 'Nicht begonnen', 'status.inProgress': 'In Bearbeitung', 'status.completed': 'Abgeschlossen', 'status.needsMoreEvidence': 'Mehr Nachweise erforderlich', 'status.needsAttention': 'Erfordert Aufmerksamkeit',
   'status.unavailable': 'Nicht verfügbar', 'status.notReady': 'Noch nicht bereit', 'status.platformNotReady': 'StudyUS deckt dies noch nicht ab', 'status.pending': 'Ausstehend', 'status.revoked': 'Widerrufen',
   'empty.noData': 'Hier gibt es noch keine Daten.', 'empty.smallCohortSuppressed': 'Gruppe zu klein für sichere Anzeige.', 'error.generic': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', 'error.forbidden': 'Du hast keinen Zugriff darauf.', 'error.notFound': 'Nicht gefunden.',
+  'nav.examPrep': 'Prüfungsvorbereitung', 'nav.assignments': 'Meine Aufgaben',
+  'examPrep.title': 'Prüfungsvorbereitung', 'examPrep.subtitle': 'Deine tatsächliche Vorbereitung, basierend auf erfassten Nachweisen.', 'examPrep.empty': 'Du hast noch kein Prüfungsprofil', 'examPrep.emptyBody': 'Sobald du eine Zielprüfung einrichtest, erscheint deine Vorbereitung hier.',
+  'examPrep.noExamDateSet': 'Kein Prüfungstermin festgelegt', 'examPrep.noExamVersion': 'Für diese Prüfung ist noch keine veröffentlichte Version konfiguriert.', 'examPrep.noSnapshotYet': 'Noch nicht genug Nachweise, um deine Bereitschaft zu berechnen.', 'examPrep.detailSubtitle': 'Von der Plattform berechnete Bereitschaft, niemals erfunden.',
+  'examPrep.overallStatus': 'Gesamtstatus', 'examPrep.scoreProjection': 'Punktzahlprognose', 'examPrep.scoreProjection.available': 'Verfügbar',
+  'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION': 'Nicht verfügbar: Kalibrierung fehlt', 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA': 'Nicht verfügbar: unzureichende Nachweise', 'examPrep.scoreProjection.NOT_APPLICABLE': 'Nicht zutreffend',
+  'examPrep.dimensions': 'Bereitschaftsdimensionen', 'examPrep.limitations': 'Einschränkungen', 'examPrep.platformNotSupported': 'Die Plattform kann dies noch nicht bewerten',
+  'examPrep.dimension.knowledge': 'Wissen', 'examPrep.dimension.skill': 'Fertigkeit', 'examPrep.dimension.examTechnique': 'Prüfungstechnik',
+  'examPrep.dimension.speedFluency': 'Geschwindigkeit & Flüssigkeit', 'examPrep.dimension.blueprintCoverage': 'Lehrplanabdeckung',
+  'examPrep.dimension.simulationPerformance': 'Leistung in Simulationen', 'examPrep.dimension.evidenceSufficiency': 'Ausreichende Nachweise',
+  'examPrep.dimensionStatus.STRONG': 'Stark', 'examPrep.dimensionStatus.DEVELOPING': 'In Entwicklung', 'examPrep.dimensionStatus.WEAK': 'Schwach',
+  'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE': 'Unzureichende Nachweise', 'examPrep.dimensionStatus.NOT_APPLICABLE': 'Nicht zutreffend',
+  'examPrep.status.INSUFFICIENT_EVIDENCE': 'Unzureichende Nachweise', 'examPrep.status.EARLY_PREPARATION': 'Frühe Vorbereitung', 'examPrep.status.DEVELOPING': 'In Entwicklung',
+  'examPrep.status.SIMULATION_READY': 'Bereit für Simulation', 'examPrep.status.FULL_MOCK_ELIGIBLE': 'Für vollständige Simulationsprüfung berechtigt',
+  'examPrep.start.title': 'Prüfungsübung starten', 'examPrep.start.simulationTypeLabel': 'Simulationstyp', 'examPrep.start.timingModeLabel': 'Zeitmodus',
+  'examPrep.start.learningObjectiveIdLabel': 'ID des Lernziels', 'examPrep.start.academicSubjectIdLabel': 'ID des Fachs',
+  'examPrep.start.submit': 'Starten', 'examPrep.start.submitting': 'Wird gestartet…', 'examPrep.start.notEligible': 'Noch nicht verfügbar', 'examPrep.start.error': 'Simulation konnte nicht gestartet werden.',
+  'examPrep.attempt.title': 'Simulationsversuch', 'examPrep.attempt.timingMode': 'Zeitmodus', 'examPrep.attempt.deferredNotice': 'Die vollständige Aufgabe-für-Aufgabe-Erfahrung kommt in einer späteren Phase. Hier kannst du diesen Versuch pausieren, fortsetzen oder abbrechen.',
+  'examPrep.attempt.pause': 'Pausieren', 'examPrep.attempt.resume': 'Fortsetzen', 'examPrep.attempt.abandon': 'Abbrechen', 'examPrep.attempt.error': 'Aktion konnte nicht abgeschlossen werden.',
+  'examPrep.attempt.status.ACTIVE': 'Aktiv', 'examPrep.attempt.status.PAUSED': 'Pausiert', 'examPrep.attempt.status.COMPLETED': 'Abgeschlossen', 'examPrep.attempt.status.ABANDONED': 'Abgebrochen',
+  'assignments.title': 'Meine Aufgaben', 'assignments.subtitle': 'Aufgaben, die dir deine Lehrkraft gegeben hat.', 'assignments.empty': 'Du hast keine ausstehenden Aufgaben', 'assignments.emptyBody': 'Sobald dir deine Lehrkraft etwas zuweist, erscheint es hier.', 'assignments.due': 'Fällig',
+  'assignments.start': 'Starten', 'assignments.continue': 'Fortsetzen', 'assignments.starting': 'Wird gestartet…', 'assignments.error': 'Aufgabe konnte nicht gestartet werden.', 'assignments.notExecutableYet': 'Diese Aufgabe kann noch nicht gestartet werden.',
+  'assignments.status.ASSIGNED': 'Zugewiesen', 'assignments.status.IN_PROGRESS': 'In Bearbeitung', 'assignments.status.COMPLETED': 'Abgeschlossen', 'assignments.status.CANCELLED': 'Storniert', 'assignments.status.EXPIRED': 'Abgelaufen',
+  'assignments.practice.title': 'Zugewiesene Übung', 'assignments.practice.loading': 'Fragen werden geladen…', 'assignments.practice.loadError': 'Übung konnte nicht geladen werden.',
+  'assignments.practice.submit': 'Antworten senden', 'assignments.practice.submitting': 'Wird gesendet…', 'assignments.practice.submitError': 'Antworten konnten nicht gesendet werden.',
+  'assignments.practice.resultsTitle': 'Ergebnisse', 'assignments.practice.score': 'Punktzahl', 'assignments.practice.alreadyCompleted': 'Diese Übung wurde bereits abgeschlossen.',
+  'teacher.assign.error.forbidden': 'Du hast keine Berechtigung, diese Intervention zuzuweisen.', 'teacher.assign.error.invalidTarget': 'Das angegebene Element existiert nicht.', 'teacher.assign.error.examProfileMismatch': 'Dieses Prüfungsprofil gehört nicht zu diesem Schüler.', 'teacher.assign.error.invalidInput': 'Bitte überprüfe die eingegebenen Werte.',
+  'parent.examPrepReadiness': 'Prüfungsvorbereitungsstand', 'parent.fullMock': 'Vollständige Simulationsprüfung', 'parent.fullMock.eligible': 'Verfügbar', 'parent.fullMock.platformNotReady': 'Die Plattform kann dies noch nicht anbieten', 'parent.fullMock.learnerNotReady': 'Dein Kind hat noch nicht genug Nachweise', 'parent.scoreProjection': 'Punktzahlprognose', 'parent.noActiveExamProfile': 'Kein aktives Prüfungsprofil',
   'nav.groupLearning': 'Lernen',
   'nav.groupAccount': 'Konto',
   'nav.groupSystem': 'System',
@@ -4105,6 +4220,33 @@ const fr: Messages = {
   'status.notStarted': 'Non commencé', 'status.inProgress': 'En cours', 'status.completed': 'Terminé', 'status.needsMoreEvidence': 'Nécessite plus de preuves', 'status.needsAttention': "Nécessite de l'attention",
   'status.unavailable': 'Indisponible', 'status.notReady': 'Pas encore prêt', 'status.platformNotReady': 'StudyUS ne couvre pas encore ceci', 'status.pending': 'En attente', 'status.revoked': 'Révoqué',
   'empty.noData': "Aucune donnée pour l'instant.", 'empty.smallCohortSuppressed': 'Groupe trop petit pour un affichage sûr.', 'error.generic': "Une erreur s'est produite. Veuillez réessayer.", 'error.forbidden': "Vous n'avez pas accès à ceci.", 'error.notFound': 'Introuvable.',
+  'nav.examPrep': "Préparation à l'examen", 'nav.assignments': 'Mes devoirs',
+  'examPrep.title': "Préparation à l'examen", 'examPrep.subtitle': 'Ta préparation réelle, fondée sur les preuves enregistrées.', 'examPrep.empty': "Tu n'as pas encore de profil d'examen", 'examPrep.emptyBody': 'Une fois un examen cible configuré, ta préparation apparaîtra ici.',
+  'examPrep.noExamDateSet': "Pas de date d'examen définie", 'examPrep.noExamVersion': "Cet examen n'a pas encore de version publiée configurée.", 'examPrep.noSnapshotYet': 'Pas encore assez de preuves pour calculer ta préparation.', 'examPrep.detailSubtitle': 'Préparation calculée par la plateforme, jamais inventée.',
+  'examPrep.overallStatus': "État général", 'examPrep.scoreProjection': 'Projection de score', 'examPrep.scoreProjection.available': 'Disponible',
+  'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION': 'Non disponible : calibration manquante', 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA': 'Non disponible : preuves insuffisantes', 'examPrep.scoreProjection.NOT_APPLICABLE': 'Non applicable',
+  'examPrep.dimensions': 'Dimensions de préparation', 'examPrep.limitations': 'Limites', 'examPrep.platformNotSupported': 'La plateforme ne peut pas encore évaluer ceci',
+  'examPrep.dimension.knowledge': 'Connaissances', 'examPrep.dimension.skill': 'Compétence', 'examPrep.dimension.examTechnique': "Technique d'examen",
+  'examPrep.dimension.speedFluency': 'Vitesse et aisance', 'examPrep.dimension.blueprintCoverage': 'Couverture du programme',
+  'examPrep.dimension.simulationPerformance': 'Performance en simulation', 'examPrep.dimension.evidenceSufficiency': 'Suffisance des preuves',
+  'examPrep.dimensionStatus.STRONG': 'Solide', 'examPrep.dimensionStatus.DEVELOPING': 'En développement', 'examPrep.dimensionStatus.WEAK': 'Faible',
+  'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE': 'Preuves insuffisantes', 'examPrep.dimensionStatus.NOT_APPLICABLE': 'Non applicable',
+  'examPrep.status.INSUFFICIENT_EVIDENCE': 'Preuves insuffisantes', 'examPrep.status.EARLY_PREPARATION': 'Préparation initiale', 'examPrep.status.DEVELOPING': 'En développement',
+  'examPrep.status.SIMULATION_READY': 'Prêt pour la simulation', 'examPrep.status.FULL_MOCK_ELIGIBLE': 'Éligible à l\'examen blanc complet',
+  'examPrep.start.title': "Commencer une pratique d'examen", 'examPrep.start.simulationTypeLabel': 'Type de simulation', 'examPrep.start.timingModeLabel': 'Mode chronométré',
+  'examPrep.start.learningObjectiveIdLabel': "ID de l'objectif d'apprentissage", 'examPrep.start.academicSubjectIdLabel': 'ID de la matière',
+  'examPrep.start.submit': 'Commencer', 'examPrep.start.submitting': 'Démarrage…', 'examPrep.start.notEligible': 'Pas encore disponible', 'examPrep.start.error': 'Impossible de démarrer la simulation.',
+  'examPrep.attempt.title': 'Tentative de simulation', 'examPrep.attempt.timingMode': 'Mode chronométré', 'examPrep.attempt.deferredNotice': "L'expérience complète question par question arrivera dans une phase future. Tu peux ici mettre en pause, reprendre ou abandonner cette tentative.",
+  'examPrep.attempt.pause': 'Mettre en pause', 'examPrep.attempt.resume': 'Reprendre', 'examPrep.attempt.abandon': 'Abandonner', 'examPrep.attempt.error': "Impossible de terminer l'action.",
+  'examPrep.attempt.status.ACTIVE': 'En cours', 'examPrep.attempt.status.PAUSED': 'En pause', 'examPrep.attempt.status.COMPLETED': 'Terminé', 'examPrep.attempt.status.ABANDONED': 'Abandonné',
+  'assignments.title': 'Mes devoirs', 'assignments.subtitle': "Devoirs donnés par ton enseignant.", 'assignments.empty': "Tu n'as aucun devoir en attente", 'assignments.emptyBody': "Quand ton enseignant t'assigne quelque chose, cela apparaît ici.", 'assignments.due': 'À rendre',
+  'assignments.start': 'Commencer', 'assignments.continue': 'Continuer', 'assignments.starting': 'Démarrage…', 'assignments.error': 'Impossible de démarrer le devoir.', 'assignments.notExecutableYet': 'Ce devoir ne peut pas encore être commencé.',
+  'assignments.status.ASSIGNED': 'Assigné', 'assignments.status.IN_PROGRESS': 'En cours', 'assignments.status.COMPLETED': 'Terminé', 'assignments.status.CANCELLED': 'Annulé', 'assignments.status.EXPIRED': 'Expiré',
+  'assignments.practice.title': 'Exercice assigné', 'assignments.practice.loading': 'Chargement des questions…', 'assignments.practice.loadError': "Impossible de charger l'exercice.",
+  'assignments.practice.submit': 'Envoyer les réponses', 'assignments.practice.submitting': 'Envoi…', 'assignments.practice.submitError': "Impossible d'envoyer les réponses.",
+  'assignments.practice.resultsTitle': 'Résultats', 'assignments.practice.score': 'Score', 'assignments.practice.alreadyCompleted': 'Cet exercice a déjà été terminé.',
+  'teacher.assign.error.forbidden': "Tu n'as pas la permission d'assigner cette intervention.", 'teacher.assign.error.invalidTarget': "L'élément indiqué n'existe pas.", 'teacher.assign.error.examProfileMismatch': "Ce profil d'examen n'appartient pas à cet élève.", 'teacher.assign.error.invalidInput': 'Vérifie les valeurs saisies.',
+  'parent.examPrepReadiness': "Préparation à l'examen", 'parent.fullMock': 'Examen blanc complet', 'parent.fullMock.eligible': 'Disponible', 'parent.fullMock.platformNotReady': 'La plateforme ne peut pas encore proposer ceci', 'parent.fullMock.learnerNotReady': "Ton enfant n'a pas encore assez de preuves", 'parent.scoreProjection': 'Projection de score', 'parent.noActiveExamProfile': "Aucun profil d'examen actif",
   'nav.groupLearning': 'Apprentissage',
   'nav.groupAccount': 'Compte',
   'nav.groupSystem': 'Système',
@@ -5274,6 +5416,33 @@ const pt: Messages = {
   'status.notStarted': 'Não iniciado', 'status.inProgress': 'Em andamento', 'status.completed': 'Concluído', 'status.needsMoreEvidence': 'Precisa de mais evidência', 'status.needsAttention': 'Precisa de atenção',
   'status.unavailable': 'Indisponível', 'status.notReady': 'Ainda não disponível', 'status.platformNotReady': 'O StudyUS ainda não cobre isso', 'status.pending': 'Pendente', 'status.revoked': 'Revogado',
   'empty.noData': 'Ainda não há dados aqui.', 'empty.smallCohortSuppressed': 'Grupo pequeno demais para exibir com segurança.', 'error.generic': 'Algo deu errado. Tente novamente.', 'error.forbidden': 'Você não tem acesso a isto.', 'error.notFound': 'Não encontrado.',
+  'nav.examPrep': 'Preparação para exame', 'nav.assignments': 'Minhas tarefas',
+  'examPrep.title': 'Preparação para exame', 'examPrep.subtitle': 'Sua preparação real, com base nas evidências registradas.', 'examPrep.empty': 'Você ainda não tem um perfil de exame', 'examPrep.emptyBody': 'Quando você configurar um exame-alvo, sua preparação aparecerá aqui.',
+  'examPrep.noExamDateSet': 'Sem data de exame definida', 'examPrep.noExamVersion': 'Este exame ainda não tem uma versão publicada configurada.', 'examPrep.noSnapshotYet': 'Ainda não há evidências suficientes para calcular sua preparação.', 'examPrep.detailSubtitle': 'Preparação calculada pela plataforma, nunca inventada.',
+  'examPrep.overallStatus': 'Status geral', 'examPrep.scoreProjection': 'Projeção de pontuação', 'examPrep.scoreProjection.available': 'Disponível',
+  'examPrep.scoreProjection.NOT_AVAILABLE_NO_CALIBRATION': 'Não disponível: falta calibração', 'examPrep.scoreProjection.NOT_AVAILABLE_INSUFFICIENT_DATA': 'Não disponível: evidências insuficientes', 'examPrep.scoreProjection.NOT_APPLICABLE': 'Não aplicável',
+  'examPrep.dimensions': 'Dimensões de preparação', 'examPrep.limitations': 'Limitações', 'examPrep.platformNotSupported': 'A plataforma ainda não consegue avaliar isto',
+  'examPrep.dimension.knowledge': 'Conhecimento', 'examPrep.dimension.skill': 'Habilidade', 'examPrep.dimension.examTechnique': 'Técnica de exame',
+  'examPrep.dimension.speedFluency': 'Velocidade e fluência', 'examPrep.dimension.blueprintCoverage': 'Cobertura do currículo',
+  'examPrep.dimension.simulationPerformance': 'Desempenho em simulados', 'examPrep.dimension.evidenceSufficiency': 'Suficiência de evidências',
+  'examPrep.dimensionStatus.STRONG': 'Forte', 'examPrep.dimensionStatus.DEVELOPING': 'Em desenvolvimento', 'examPrep.dimensionStatus.WEAK': 'Fraco',
+  'examPrep.dimensionStatus.INSUFFICIENT_EVIDENCE': 'Evidências insuficientes', 'examPrep.dimensionStatus.NOT_APPLICABLE': 'Não aplicável',
+  'examPrep.status.INSUFFICIENT_EVIDENCE': 'Evidências insuficientes', 'examPrep.status.EARLY_PREPARATION': 'Preparação inicial', 'examPrep.status.DEVELOPING': 'Em desenvolvimento',
+  'examPrep.status.SIMULATION_READY': 'Pronto para simulado', 'examPrep.status.FULL_MOCK_ELIGIBLE': 'Elegível para exame completo',
+  'examPrep.start.title': 'Iniciar uma prática de exame', 'examPrep.start.simulationTypeLabel': 'Tipo de simulado', 'examPrep.start.timingModeLabel': 'Modo de tempo',
+  'examPrep.start.learningObjectiveIdLabel': 'ID do objetivo de aprendizagem', 'examPrep.start.academicSubjectIdLabel': 'ID da disciplina',
+  'examPrep.start.submit': 'Iniciar', 'examPrep.start.submitting': 'Iniciando…', 'examPrep.start.notEligible': 'Ainda não disponível', 'examPrep.start.error': 'Não foi possível iniciar o simulado.',
+  'examPrep.attempt.title': 'Tentativa de simulado', 'examPrep.attempt.timingMode': 'Modo de tempo', 'examPrep.attempt.deferredNotice': 'A experiência completa questão a questão chegará em uma fase futura. Aqui você pode pausar, retomar ou abandonar esta tentativa.',
+  'examPrep.attempt.pause': 'Pausar', 'examPrep.attempt.resume': 'Retomar', 'examPrep.attempt.abandon': 'Abandonar', 'examPrep.attempt.error': 'Não foi possível concluir a ação.',
+  'examPrep.attempt.status.ACTIVE': 'Ativo', 'examPrep.attempt.status.PAUSED': 'Pausado', 'examPrep.attempt.status.COMPLETED': 'Concluído', 'examPrep.attempt.status.ABANDONED': 'Abandonado',
+  'assignments.title': 'Minhas tarefas', 'assignments.subtitle': 'Tarefas que seu professor atribuiu a você.', 'assignments.empty': 'Você não tem tarefas pendentes', 'assignments.emptyBody': 'Quando seu professor atribuir algo, aparecerá aqui.', 'assignments.due': 'Prazo',
+  'assignments.start': 'Iniciar', 'assignments.continue': 'Continuar', 'assignments.starting': 'Iniciando…', 'assignments.error': 'Não foi possível iniciar a tarefa.', 'assignments.notExecutableYet': 'Esta tarefa ainda não pode ser iniciada.',
+  'assignments.status.ASSIGNED': 'Atribuída', 'assignments.status.IN_PROGRESS': 'Em andamento', 'assignments.status.COMPLETED': 'Concluída', 'assignments.status.CANCELLED': 'Cancelada', 'assignments.status.EXPIRED': 'Expirada',
+  'assignments.practice.title': 'Prática atribuída', 'assignments.practice.loading': 'Carregando perguntas…', 'assignments.practice.loadError': 'Não foi possível carregar a prática.',
+  'assignments.practice.submit': 'Enviar respostas', 'assignments.practice.submitting': 'Enviando…', 'assignments.practice.submitError': 'Não foi possível enviar as respostas.',
+  'assignments.practice.resultsTitle': 'Resultados', 'assignments.practice.score': 'Pontuação', 'assignments.practice.alreadyCompleted': 'Esta prática já foi concluída.',
+  'teacher.assign.error.forbidden': 'Você não tem permissão para atribuir esta intervenção.', 'teacher.assign.error.invalidTarget': 'O item indicado não existe.', 'teacher.assign.error.examProfileMismatch': 'Esse perfil de exame não pertence a este aluno.', 'teacher.assign.error.invalidInput': 'Verifique os valores informados.',
+  'parent.examPrepReadiness': 'Preparação para exame', 'parent.fullMock': 'Exame completo', 'parent.fullMock.eligible': 'Disponível', 'parent.fullMock.platformNotReady': 'A plataforma ainda não pode oferecer isto', 'parent.fullMock.learnerNotReady': 'Seu filho/a ainda não tem evidências suficientes', 'parent.scoreProjection': 'Projeção de pontuação', 'parent.noActiveExamProfile': 'Sem perfil de exame ativo',
   'nav.groupLearning': 'Aprendizado',
   'nav.groupAccount': 'Conta',
   'nav.groupSystem': 'Sistema',

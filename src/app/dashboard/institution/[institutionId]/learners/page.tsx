@@ -47,7 +47,12 @@ export default async function InstitutionLearnersPage({ params }: { params: Prom
 
   const subNavLabels = {
     overview: t['institution.overview.title'],
+    grades: t['institution.grades.title'],
+    classes: t['institution.classes.title'],
+    teachers: t['institution.teachers.title'],
     learners: t['institution.learners.title'],
+    coverage: t['institution.coverage.title'],
+    readiness: t['institution.readiness.title'],
     interventions: t['institution.interventions.title'],
     attention: t['institution.attention.title'],
   };

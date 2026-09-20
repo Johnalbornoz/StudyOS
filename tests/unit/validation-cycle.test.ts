@@ -626,6 +626,12 @@ describe('Phase 2E: getConceptValidationState -- read-only, never mutates a cycl
   });
 
   it("'OPEN' (not yet overdue) reports the real deadline/days remaining and the prior CLOSED cycle's outcome, independently", async () => {
+    // getConceptValidationState derives overdue-ness from the real clock
+    // (isValidationCycleOverdue's `now` default). Pin the clock so this
+    // fixture's deadline ('2026-09-20') reliably reads as still-open,
+    // instead of depending on the real clock staying behind that date.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-10T00:00:00.000Z'));
     queryMock.mockResolvedValueOnce({
       rows: [{ id: 'cyc-2', student_id: 's1', concept_id: 'c1', subject_id: 'subj1', trigger_type: 'LOW_BASELINE', started_at: '2026-09-01', validation_deadline: '2026-09-20T00:00:00.000Z', status: 'OPEN', mastery_policy_version: 1, validated_at: null, closed_at: null, final_outcome: null, outcome_reason: null, reopened_from_cycle_id: null }],
     });

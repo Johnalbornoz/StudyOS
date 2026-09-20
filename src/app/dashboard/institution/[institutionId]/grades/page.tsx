@@ -1,20 +1,21 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { getInstitutionOverview, getInstitutionAttentionAreas, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
+import { getInstitutionOverview, getInstitutionGrades, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionSubNav } from '../InstitutionSubNav';
 
 /**
- * F13 -- Institution Attention Areas (task section 19/35). Every card
- * cites its own source metric id and the real numbers behind it (F12's
- * own deterministic output, rendered verbatim) -- never an opaque
- * "risk" flag with no explanation.
+ * F14 Workstream D -- Institution Grades (task section 7). Consumes
+ * F12's already-certified `getInstitutionGrades` (roster.service.ts) --
+ * a real backend function with zero prior UI, exactly like the other
+ * four F13 Institution pages before it.
  */
-export default async function InstitutionAttentionPage({ params }: { params: Promise<{ institutionId: string }> }) {
+export default async function InstitutionGradesPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
@@ -24,12 +25,10 @@ export default async function InstitutionAttentionPage({ params }: { params: Pro
   const t = getMessages(locale);
 
   let overview;
-  let areas;
+  let grades;
   try {
-    [overview, areas] = await Promise.all([
-      getInstitutionOverview(actor.id, institutionId),
-      getInstitutionAttentionAreas(actor.id, institutionId),
-    ]);
+    overview = await getInstitutionOverview(actor.id, institutionId);
+    grades = await getInstitutionGrades(actor.id, institutionId);
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
     throw error;
@@ -49,21 +48,19 @@ export default async function InstitutionAttentionPage({ params }: { params: Pro
 
   return (
     <div>
-      <PageHeader title={overview.institutionName} subtitle={t['institution.attention.title']} />
-      <InstitutionSubNav institutionId={institutionId} active="attention" labels={subNavLabels} />
+      <PageHeader title={overview.institutionName} subtitle={t['institution.grades.title']} />
+      <InstitutionSubNav institutionId={institutionId} active="grades" labels={subNavLabels} />
 
-      {areas.length === 0 ? (
-        <EmptyState title={t['institution.attention.empty']} />
+      {grades.length === 0 ? (
+        <EmptyState title={t['empty.noData']} />
       ) : (
         <ul className="list-card card">
-          {areas.map((a, i) => (
-            <li key={i} className="list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-              <div className="row-title">{a.reasonCode}</div>
-              <div className="row-sub">{a.detail}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {a.citedMetricId}: {a.citedNumerator}
-                {a.citedDenominator !== null ? ` / ${a.citedDenominator}` : ''}
-              </div>
+          {grades.map((g) => (
+            <li key={g.id} className="list-row">
+              <Link href={`/dashboard/institution/${institutionId}/classes?gradeId=${g.id}`} className="row-main" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="row-title">{g.name}</div>
+              </Link>
+              <div className="tabular" style={{ fontWeight: 700 }}>{g.classCount}</div>
             </li>
           ))}
         </ul>

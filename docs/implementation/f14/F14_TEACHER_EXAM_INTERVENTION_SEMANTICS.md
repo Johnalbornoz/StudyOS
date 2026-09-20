@@ -1,0 +1,21 @@
+# F14 — Teacher Exam Intervention Semantics (Workstream E)
+
+## Correcting the task's own assumption (found by inspection, not assumed)
+
+The task frames this workstream as "map F9's `reasonCodes` in the Teacher exam-assignment error response." Direct inspection of `assignTeacherIntervention` (`src/lib/teacher/intervention.service.ts`, F11-B) shows it performs **no eligibility check of any kind** at assignment time — by explicit design, documented in the file's own header: "pedagogical intent + assignment ONLY, never the execution itself." `getSimulationEligibility` (F9) is called only later, inside `startExamReinforcementExecution`, at *Student start time* — and that rejection message is already the real `reasons.join(', ')`, not a generic string (confirmed by reading `StudentInterventionNotStartableError`'s construction). F14's own Workstream B `StartAssignmentButton` (built this same phase) already surfaces that message verbatim.
+
+So the literal task as framed ("map reasonCodes at assignment time") does not apply to real code — there is no assignment-time eligibility rejection to map. What the residual risk actually described (`F13_RESIDUAL_RISK_REGISTER.md` #8: "The Teacher Exam-assignment form shows one generic error message for every rejection reason") was real, but for a **different** class of rejection: the ones `assignTeacherIntervention` genuinely can produce (authorization, invalid target, exam-profile ownership mismatch) — and the Teacher's own `AssignInterventionForm` discarded the server's real response for every one of them, always rendering one hard-coded string.
+
+## What was actually broken, and fixed
+
+1. **`AssignInterventionForm.tsx` discarded the server's response body.** `onSubmit`'s `!res.ok` branch called `setResult('error')` and always rendered `labels.error`, regardless of *why* the server rejected the request. Fixed: the form now reads the JSON body and calls a new `describeAssignError(code, message, labels)` mapping function — `FORBIDDEN` → a specific "you don't have permission" message, `INVALID_TARGET` → a specific "that item doesn't exist" message, `EXAM_PROFILE_MISMATCH` → a specific "that exam profile doesn't belong to this student" message, `INVALID_INPUT` → the server's own Zod validation message. This is a real instance of the architecture the task asked for: **Backend decision → error code → UI presentation mapping → human-readable guidance**, never a client-side re-derivation of *why*.
+
+2. **A real, previously-unguarded bug**: `TeacherInterventionExamProfileMismatchError` (thrown by `assignTeacherIntervention` when a Teacher targets an exam profile belonging to a *different* student — F11-C4's own re-validation, "defense in depth, never trusting F11-B's own assignment-time check alone") was **never caught** by `POST /api/teacher/interventions`'s error-mapping block — it fell through to `throw error`, which Next.js turns into a raw 500 with a stack trace, violating task §27 ("no stack traces"). Fixed: added an explicit `instanceof TeacherInterventionExamProfileMismatchError` branch returning a clean `400 EXAM_PROFILE_MISMATCH`. Found purely as a byproduct of building this workstream's real error-mapping work — the same kind of value F13's own EXAM-schema-gap discovery demonstrated.
+
+## Architecture preserved
+
+No readiness/eligibility computation exists in `AssignInterventionForm.tsx` or the route — both remain pure: the route delegates entirely to `assignTeacherIntervention`'s own authorization/validation chain, and the form only chooses which already-written label to display for a code the server already decided. Regression-guarded by `tests/unit/f14-experience-completion-source-guard.test.ts`.
+
+## Residual
+
+`IVG-F13-07` (live drill-down of F9 `reasonCodes` in a Teacher-visible error) is now understood to not apply to assignment time as originally framed; it is superseded by this document's own finding and closed with evidence here, with a new, more precisely-scoped item registered: `IVG-F14-03` — live verification that a Student's own Exam-start rejection (which DOES carry real F9/structural reasons) is legible end-to-end in a real browser, deferred for the same environment-safety reason as every other live-authenticated check this phase.

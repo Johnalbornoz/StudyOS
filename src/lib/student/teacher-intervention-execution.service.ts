@@ -109,6 +109,26 @@ function toStudentIntervention(row: any): StudentTeacherIntervention {
  * startConceptReinforcementExecution) so the student can see it was
  * missed, not silently hidden.
  */
+/**
+ * F14 -- a cheap, read-only nav-badge count for the global shell,
+ * deliberately WITHOUT calling `reconcileCompletionsForStudent` (a
+ * write path) -- unlike `getStudentPendingTeacherInterventions`, this
+ * runs on every Student page load (the shell's own nav badge), so it
+ * must never perform a reconciliation UPDATE on every navigation. Not
+ * effective-status-aware (an EXPIRED row may be counted once extra
+ * until the real Assignments page's own reconciling read catches up) --
+ * an approximate hint, exactly like the existing debt/notification
+ * badge counts already are, never the assignments page's own source of
+ * truth.
+ */
+export async function countPendingTeacherInterventionsForStudent(studentId: string): Promise<number> {
+  const result = await db.query(
+    `SELECT COUNT(*)::int AS n FROM teacher_interventions WHERE student_id = $1 AND status IN ('ASSIGNED', 'IN_PROGRESS')`,
+    [studentId]
+  );
+  return result.rows[0]?.n ?? 0;
+}
+
 export async function getStudentPendingTeacherInterventions(studentId: string): Promise<StudentTeacherIntervention[]> {
   await reconcileCompletionsForStudent(studentId);
   const result = await db.query(
