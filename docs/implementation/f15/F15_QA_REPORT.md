@@ -2,6 +2,7 @@
 
 Branch: `f15/pilot-readiness-production-hardening`
 Base: `origin/f14/experience-completion-readiness@e3d23a44d0657b6ccf9fedf08aa8e8d454839d41`
+Certified HEAD: `642aa0267ef9d15b4da323d8b89d7ff64dedc1fa`
 
 ## Full Technical Validation
 
