@@ -1,0 +1,52 @@
+# 16 — Traceability Matrix
+
+`requisito → fase → implementación → migración → tests → certificación → riesgo residual → estado final`
+
+| Requisito | Fase | Implementación | Migración | Tests | Certificación | Riesgo residual | Estado final |
+|---|---|---|---|---|---|---|---|
+| Límites globales de IA / contención de seguridad | F0-S | `src/lib/ai/operational-limits.ts` | `20260918_1000_f0s_ai_global_limits.sql` | Unit | F0S QA (289/289) | Ninguno nuevo | **IMPLEMENTED, TESTED** |
+| Identidad unificada (`users`/`user_roles`) | F1 | `src/services/identity-backfill.service.ts` | `20260919_1000_f1_unified_identity.sql` | Unit + real-Postgres | `f1-identity-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** (Preview, 2026-09-20) |
+| Instituciones/relaciones/permisos | F2 | `src/lib/authorization/` | `20260920_1000_f2_institutions_relationships_permissions.sql` | Unit + real-Postgres | `f2-authorization-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** (schema present in Preview) |
+| Suscripción/entitlement | F3 | `subscriptions`/`price_book` | `20260921_1000_f3_subscription_entitlement_foundation.sql` | Unit + real-Postgres | `f3-entitlement-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** (schema present) |
+| Catálogo canónico v2 | F4 | `canonical_concepts` y relacionadas | `20260922_1000_f4_learning_architecture_2.sql` | Unit + real-Postgres | `f4-learning-architecture-migration-cert.sh` | `/api/concepts/extract` sin chequeo de subject-ownership (pre-existente, no regresión) | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Evidencia/estado del aprendiz v2 | F5 | `learning_evidence`, `mastery_records` | `20260923_1000_f5_evidence_learner_state_2.sql` | Unit + real-Postgres | `f5-learner-state-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Mapeo de currículo/estándares | F6 | `structure_nodes`/`structure_versions` | `20260924_1000_f6_curriculum_standards_mapping.sql` | Unit + real-Postgres | `f6-curriculum-mapping-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Motor de framework de evaluación | F7 | `assessment_blueprints`, `exam_definitions` | `20260925_1000_f7_assessment_framework_engine.sql` | Unit + real-Postgres (14 casos) | `f7-assessment-framework-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Enseñanza/skills conscientes del framework | F8 | `command_terms`, políticas de diagnóstico | `20260926_1000_f8_framework_aware_teaching_exam_skills.sql` | Unit + real-Postgres (17 casos) | `f8-assessment-framework-migration-cert.sh` | Deferrals explícitamente registrados (F8) | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Simulación de preparación para examen | F9 | `simulation_plans`, `readiness_snapshots` | `20260927_1000_f9_exam_readiness_simulation.sql` | Unit + real-Postgres (adversarial+concurrencia+performance) | `f9-exam-readiness-simulation-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Experiencia de Padre | F10 | Read-model sobre `parent_student_relationships` | (sin migración propia nueva) | Unit + real-Postgres | `f10-parent-experience-migration-cert.sh` | Ninguno (bug de multi-rol encontrado y corregido) | **IMPLEMENTED, TESTED**; live E2E **BLOCKED, en progreso** |
+| Dominio de intervención docente | F11-B | `teacher_interventions` | `20260928_1000_f11b_teacher_intervention_domain.sql` | Unit + real-Postgres | `f11b-teacher-intervention-migration-cert.sh` | Reconciliación perezosa (por diseño, no bug) | **IMPLEMENTED, TESTED, LIVE VERIFIED** (schema present) |
+| Ejecución de refuerzo (concepto/skill/competencia/examen) | F11-C1–C4 | `teacher_intervention_executions` | `20260929`–`20261002_*` (4 archivos) | Unit + real-Postgres | `f11c1`–`f11c4-*-migration-cert.sh` | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Inteligencia institucional + MIN_COHORT_POLICY | F12 / F15 | Agregados con supresión de cohorte | `20261003_1000_f12_institution_intelligence.sql`, `20261010_1000_f15_min_cohort_policy.sql` | Unit + real-Postgres | `f12-institution-intelligence-migration-cert.sh` | Picker de estructura/versión ausente (`IVG-F14-02`) | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Consolidación de UX / navegación global | F13 | Design system, `ItemRunner` precursors | — | Unit | Suite completa | Verificación remota/live diferida en su momento (ahora resuelta) | **IMPLEMENTED, TESTED** |
+| Experiencia de examen completa (item-by-item) | F14 / F15 | `item-resolution.service.ts`, `ItemRunner.tsx` | — | 11 unit tests | Suite completa + regresiones F9 | Modos cronometrados no aplicados (R4) | **IMPLEMENTED, TESTED**; live E2E **BLOCKED, en progreso** |
+| Estado de migración de la base de datos de Preview | F7 (abierto) → F15-C1 (cerrado) | `scripts/db-migrate.ts`, ruta de diagnóstico temporal | Las 17 migraciones pendientes (`f0s`→`f15`) | 12 unit tests de la ruta de diagnóstico | Consulta en vivo, dos veces | Ninguno — `IVG-F7-01`/`IVG-F12-02` resueltos | **LIVE VERIFIED** (32/32, 0 drift, integridad 0 anomalías) |
+| Configuración de Clerk en Preview | F15 (encontrado) → F15-C1 (cerrado) | Variables de entorno Preview-scope en Vercel | N/A | N/A | Observación en vivo, 3 despliegues | Ninguno — `IVG-F15-02`/R2 resueltos | **LIVE VERIFIED** |
+| Rotación de credenciales expuestas | F14 (encontrado) → en curso | Auditoría de alcance + runbook (`compare-credential-scope.sh`) | N/A | N/A | N/A — ninguna rotación puede certificarse sin ejecutarla | `IVG-F14-06`/`IVG-F15-01`/R1 | **OPEN — `OPERATOR_ACTION_REQUIRED` — único hard gate restante** |
+| `/api/health` | F15-C1 | `src/app/api/health/route.ts` | N/A | 3 unit tests | N/A (ruta simple) | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Matriz E2E autenticada completa | F15 (bloqueada) → F15-C1 (en progreso) | Protocolo de login asistido por operador | N/A | N/A | Real, en vivo, por identidad | `IVG-F15-03`/R3 | **BLOCKED pending operator login** (ver estado en vivo abajo) |
+| Backup/restore + RPO/RTO | Nunca construido | N/A | N/A | N/A | N/A | `IVG-F15-10`/R6 | **DEFERRED** |
+| Rate limiting distribuido | Nunca construido | `checkRateLimit` (per-process) | N/A | N/A | N/A | R5 | **DEFERRED** |
+| Correlation ID end-to-end | Utilidad existe, no conectada | Parcial | N/A | N/A | N/A | `IVG-F15-05` | **DEFERRED** |
+
+## Estado final en vivo (se actualiza al concluir cada bloque; no se declara PASS sin ejecución real)
+
+```
+Deployed code SHA:        754057f42bc346d5fb16c1edb69c2deeffd4c63b  (branch f15-c1/pilot-gate-closure)
+Deployment:                dpl_Ets57qwU4z1MLtwzYrbLeFBYd1Uj (study-dbmvv2hh9-study-so.vercel.app), target: preview
+Documentation SHA:          registrado en el commit que añade docs/final/ a este mismo branch (ver git log)
+Production:                 no modificada en ningún momento de F15 ni F15-C1
+
+READY FOR PILOT:                        NO  (bloqueado únicamente por rotación de credenciales + E2E pendiente)
+READY FOR PRODUCTION:                   NO  (ver 14_PRODUCTION_RELEASE_CHECKLIST.md — múltiples gates abiertos)
+READY FOR PRODUCTION RELEASE PROCESS:   YES (arquitectura y disciplina de certificación suficientes para iniciar el proceso una vez cerrados los gates)
+```
+
+Bloqueadores reales restantes para `READY FOR PILOT: YES`:
+
+| Bloqueador | Owner | Acción exacta | Evidencia necesaria para cerrar |
+|---|---|---|---|
+| Rotación de credenciales (5 valores) | Operador | Rotar en cada consola de proveedor, coordinando las 2 compartidas (Anthropic/OpenAI) como un solo cambio; luego eliminar `f0s-security/.env.local` | Confirmación del operador de rotación/revocación verificada por proveedor |
+| Matriz E2E autenticada | QA (este agente) + Operador (login) | Ejecutar los 13 casos de `13_PILOT_RUNBOOK.md` con el protocolo de login asistido | Reporte caso-por-caso con evidencia real (no estructural) |
+
+Este documento se actualizará con el resultado real de la ejecución E2E en cuanto el operador responda `READY` y la sesión concluya — no antes.
