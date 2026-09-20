@@ -2,6 +2,39 @@
 
 No secret value appears anywhere in this document. This phase attempted safe, read-only follow-up on F14's finding (a real, credential-bearing `.env.local` in the sibling `f0s-security` scratchpad worktree) and hit a hard tooling boundary, which is itself reported honestly below rather than worked around.
 
+## F15-C1 addendum (2026-09-20): scope audit, consumers, rotation order
+
+Covers `IVG-F14-06`, `IVG-F15-01`, `R1` — still **OPEN, `OPERATOR_ACTION_REQUIRED`**. Nothing below rotates, prints, or materializes any secret value; this is a scoping exercise so the operator's actual rotation work is safe and doesn't risk a Production outage.
+
+### What is exposed, and where
+
+`f0s-security/.env.local` (a sibling scratchpad worktree from an already-completed phase, never committed to git — re-confirmed this sub-phase, still zero git history hits) holds 5 credentials by variable name: `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `DATABASE_URL`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`.
+
+### Consumers (from `src/` grep, not assumed)
+
+| Credential | Read by | Environment scope in Vercel (confirmed via `vercel env ls`, F15) |
+|---|---|---|
+| `CLERK_SECRET_KEY` | Clerk SDK server-side (webhooks, session verification) | **Separate Preview and Production values** |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk SDK client-side (auto-consumed, not explicitly grepped) | **Separate Preview and Production values** |
+| `CLERK_WEBHOOK_SECRET` | Clerk webhook signature verification | **Production only** — no Preview value exists at all |
+| `DATABASE_URL` | `src/lib/db.ts` (`pg.Pool`), read by every route/service | **Separate Preview and Production values** (independently re-confirmed this sub-phase via the diagnostic route's fingerprint, which differs from both the operator's local dev DB and would differ again from Production's) |
+| `ANTHROPIC_API_KEY` | `src/lib/ai/adapters/anthropic.ts` | **SHARED across Preview and Production** — the one credential category where a rotation mistake could break both environments at once |
+| `OPENAI_API_KEY` | `src/lib/ai/adapters/openai.ts` | **SHARED across Preview and Production** — same coordination risk as above |
+
+### Is `f0s-security/.env.local`'s copy even the SAME value Vercel currently uses?
+
+**Unknown — this agent cannot determine this without reading a secret, which it will not do.** A safe way to check without exposing either value: compare one-way SHA-256 digests (same non-reversible-fingerprint pattern already used and accepted in this program for the database-fingerprint diagnostic), never the values themselves. A ready-to-run script for the operator: `compare-credential-scope.sh` (delivered alongside this report, not committed to the repo since it's an operator-run utility, not application code). It pulls each Vercel-scoped value into a throwaway temp file, hashes it, deletes the temp file immediately, and prints only 12-hex-char digests. Matching digests mean "same credential, already in Vercel — rotating it must be coordinated with a Vercel env update"; non-matching means "already-orphaned local copy — safe to rotate/delete independently, since Vercel isn't using it."
+
+### Recommended safe rotation order (once the operator runs the scope check above)
+
+1. **`DATABASE_URL`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_WEBHOOK_SECRET` first** — each is either Preview-only, Production-only, or independently-scoped per environment (never shared), so rotating any one of them cannot break the other environment. If the scope check shows `f0s-security`'s copy doesn't match either Vercel value, these can simply be revoked/rotated at the provider console with no Vercel change needed at all.
+2. **`ANTHROPIC_API_KEY`/`OPENAI_API_KEY` last, and only as a coordinated pair-update**: because these ARE shared between Preview and Production in Vercel today, rotating the underlying provider key requires, in the same short window: (a) generate the new key at the provider console, (b) update the Vercel env var (both environments, since it's one shared var) via `vercel env rm`/`vercel env add` or the dashboard, (c) revoke the old key only after confirming the new one works (a live, low-risk request through the app's own existing AI gateway allowlist/timeout controls, not a raw provider call), (d) never leave a window where neither key is valid. This is the only credential category in this audit where an uncoordinated rotation could interrupt Production, per the task's own explicit caution.
+3. **Delete `f0s-security/.env.local`** once every credential in it is confirmed rotated or confirmed already-orphaned (not the live Vercel value).
+
+### What this agent will not do
+
+Run `compare-credential-scope.sh` itself (its middle step, `vercel env pull`, materializes a real secret to a local file — the same boundary already established for why this agent never runs that command directly), rotate or revoke any credential at any provider console, or apply any Vercel env change as part of this rotation. All of this remains **`OPERATOR_ACTION_REQUIRED`**; this gate is not closed until the operator reports back verified rotation (or verified-orphaned status) for each of the 5 credentials.
+
 ## What was attempted
 
 A safe, prefix-only characterization of the credential values (first ~12 characters of each, e.g. to distinguish a Clerk `sk_test_`/`sk_live_` prefix without exposing the secret) was attempted via a read-only shell command. **This was refused by this environment's own safety controls** ("Credential Materialization" classifier), before any value was displayed. This is a genuine, reportable finding about the boundary of what this agent can safely do here — not a workaround target.
