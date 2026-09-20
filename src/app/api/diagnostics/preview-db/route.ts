@@ -35,6 +35,7 @@ import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { buildDeploymentVersion } from '@/lib/deployment-version';
+import { getCounts as getIdentityCounts } from '@/services/identity-backfill.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -109,6 +110,55 @@ export async function GET() {
 
   const { commitSha } = buildDeploymentVersion(process.env);
 
+  // Identity integrity: reuses the SAME certified getCounts() query set
+  // the F1 backfill service itself uses to report before/after state --
+  // never a second, ad hoc implementation of these facts.
+  let identityCounts = null;
+  let institutionsCount: number | null = null;
+  let duplicateClerkIds = 0;
+  let duplicateUserRoles = 0;
+  let studentBrokenLinks = 0;
+  let profileBrokenLinks = 0;
+  let userRolesByRole: Array<{ role: string; count: number }> = [];
+
+  if (usersTableExists && userRolesTableExists) {
+    const [
+      counts,
+      dupClerkIds,
+      dupUserRoles,
+      studentBroken,
+      profileBroken,
+      rolesBreakdown,
+    ] = await Promise.all([
+      getIdentityCounts(),
+      db.query(
+        `SELECT COUNT(*)::int AS c FROM (SELECT clerk_id FROM users GROUP BY clerk_id HAVING COUNT(*) > 1) t`
+      ),
+      db.query(
+        `SELECT COUNT(*)::int AS c FROM (SELECT user_id, role FROM user_roles GROUP BY user_id, role HAVING COUNT(*) > 1) t`
+      ),
+      db.query(
+        `SELECT COUNT(*)::int AS c FROM students s WHERE s.user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = s.user_id)`
+      ),
+      db.query(
+        `SELECT COUNT(*)::int AS c FROM profiles p WHERE p.user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = p.user_id)`
+      ),
+      db.query(`SELECT role, COUNT(*)::int AS c FROM user_roles GROUP BY role ORDER BY role`),
+    ]);
+
+    identityCounts = counts;
+    duplicateClerkIds = dupClerkIds.rows[0].c;
+    duplicateUserRoles = dupUserRoles.rows[0].c;
+    studentBrokenLinks = studentBroken.rows[0].c;
+    profileBrokenLinks = profileBroken.rows[0].c;
+    userRolesByRole = rolesBreakdown.rows.map((r: { role: string; c: number }) => ({ role: r.role, count: r.c }));
+  }
+
+  if (institutionsTableExists) {
+    const institutionsResult = await db.query(`SELECT COUNT(*)::int AS c FROM institutions`);
+    institutionsCount = institutionsResult.rows[0].c;
+  }
+
   return NextResponse.json({
     environment: 'preview',
     deploymentSha: commitSha,
@@ -126,5 +176,12 @@ export async function GET() {
     studentsTableExists,
     institutionsTableExists,
     schemaMigrationsTableExists,
+    identityCounts,
+    institutionsCount,
+    duplicateClerkIds,
+    duplicateUserRoles,
+    studentBrokenLinks,
+    profileBrokenLinks,
+    userRolesByRole,
   });
 }

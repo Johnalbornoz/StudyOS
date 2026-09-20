@@ -28,14 +28,55 @@ const ALLOWED_KEYS = [
   'studentsTableExists',
   'institutionsTableExists',
   'schemaMigrationsTableExists',
+  'identityCounts',
+  'institutionsCount',
+  'duplicateClerkIds',
+  'duplicateUserRoles',
+  'studentBrokenLinks',
+  'profileBrokenLinks',
+  'userRolesByRole',
 ].sort();
+
+const DEFAULT_IDENTITY_COUNTS = {
+  studentsTotal: 11,
+  profilesTotal: 15,
+  profilesParentTotal: 4,
+  profilesStudentTotal: 11,
+  usersTotal: 11,
+  userRolesTotal: 15,
+  studentsWithUserId: 11,
+  profilesWithUserId: 15,
+  orphanedStudentProfiles: 0,
+};
 
 // Order matches the route's own Promise.all + follow-up queries:
 // users, schema_migrations(ledger), user_roles, students, institutions,
 // current_schema(), search_path, information_schema.tables,
-// then (if ledger exists) COUNT(*) and the ordered migrationIds SELECT.
-function mockHappyPathQueries(overrides: Partial<{ ledgerExists: boolean; tableNames: string[]; migrationRows: Array<{ version: string; name: string; applied_at: string }> }> = {}) {
+// then (if ledger exists) COUNT(*) and the ordered migrationIds SELECT,
+// then (if users+user_roles exist) the 9 getIdentityCounts() queries in
+// their own declared order, then dupClerkIds/dupUserRoles/studentBroken/
+// profileBroken/rolesBreakdown, then (if institutions exists) its COUNT(*).
+function mockHappyPathQueries(
+  overrides: Partial<{
+    ledgerExists: boolean;
+    tableNames: string[];
+    migrationRows: Array<{ version: string; name: string; applied_at: string }>;
+    usersExists: boolean;
+    userRolesExists: boolean;
+    institutionsExists: boolean;
+    identityCounts: typeof DEFAULT_IDENTITY_COUNTS;
+    duplicateClerkIds: number;
+    duplicateUserRoles: number;
+    studentBrokenLinks: number;
+    profileBrokenLinks: number;
+    userRolesByRole: Array<{ role: string; c: number }>;
+    institutionsCount: number;
+  }> = {}
+) {
   const ledgerExists = overrides.ledgerExists ?? true;
+  const usersExists = overrides.usersExists ?? true;
+  const userRolesExists = overrides.userRolesExists ?? true;
+  const institutionsExists = overrides.institutionsExists ?? true;
   const tableNames = overrides.tableNames ?? ['users', 'schema_migrations', 'students', 'institutions'];
   const migrationRows =
     overrides.migrationRows ??
@@ -44,13 +85,18 @@ function mockHappyPathQueries(overrides: Partial<{ ledgerExists: boolean; tableN
       name: string;
       applied_at: string;
     }>);
+  const identityCounts = overrides.identityCounts ?? DEFAULT_IDENTITY_COUNTS;
+  const userRolesByRole = overrides.userRolesByRole ?? [
+    { role: 'PARENT', c: 4 },
+    { role: 'STUDENT', c: 11 },
+  ];
 
   queryMock
-    .mockResolvedValueOnce({ rows: [{ exists: true }] }) // users
+    .mockResolvedValueOnce({ rows: [{ exists: usersExists }] }) // users
     .mockResolvedValueOnce({ rows: [{ exists: ledgerExists }] }) // schema_migrations
-    .mockResolvedValueOnce({ rows: [{ exists: true }] }) // user_roles
+    .mockResolvedValueOnce({ rows: [{ exists: userRolesExists }] }) // user_roles
     .mockResolvedValueOnce({ rows: [{ exists: true }] }) // students
-    .mockResolvedValueOnce({ rows: [{ exists: true }] }) // institutions
+    .mockResolvedValueOnce({ rows: [{ exists: institutionsExists }] }) // institutions
     .mockResolvedValueOnce({ rows: [{ schema: 'public' }] }) // current_schema()
     .mockResolvedValueOnce({ rows: [{ search_path: '"$user", public' }] }) // search_path
     .mockResolvedValueOnce({ rows: tableNames.map((table_name) => ({ table_name })) }); // information_schema.tables
@@ -59,6 +105,28 @@ function mockHappyPathQueries(overrides: Partial<{ ledgerExists: boolean; tableN
     queryMock
       .mockResolvedValueOnce({ rows: [{ c: migrationRows.length }] }) // COUNT(*)
       .mockResolvedValueOnce({ rows: migrationRows }); // ordered migrationIds
+  }
+
+  if (usersExists && userRolesExists) {
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.studentsTotal }] }) // getCounts: studentsTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.profilesTotal }] }) // profilesTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.profilesParentTotal }] }) // profilesParentTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.profilesStudentTotal }] }) // profilesStudentTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.usersTotal }] }) // usersTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.userRolesTotal }] }) // userRolesTotal
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.studentsWithUserId }] }) // studentsWithUserId
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.profilesWithUserId }] }) // profilesWithUserId
+      .mockResolvedValueOnce({ rows: [{ c: identityCounts.orphanedStudentProfiles }] }) // orphanedStudentProfiles
+      .mockResolvedValueOnce({ rows: [{ c: overrides.duplicateClerkIds ?? 0 }] }) // dupClerkIds
+      .mockResolvedValueOnce({ rows: [{ c: overrides.duplicateUserRoles ?? 0 }] }) // dupUserRoles
+      .mockResolvedValueOnce({ rows: [{ c: overrides.studentBrokenLinks ?? 0 }] }) // studentBroken
+      .mockResolvedValueOnce({ rows: [{ c: overrides.profileBrokenLinks ?? 0 }] }) // profileBroken
+      .mockResolvedValueOnce({ rows: userRolesByRole }); // rolesBreakdown
+  }
+
+  if (institutionsExists) {
+    queryMock.mockResolvedValueOnce({ rows: [{ c: overrides.institutionsCount ?? 0 }] }); // institutionsCount
   }
 }
 
@@ -244,5 +312,46 @@ describe('GET /api/diagnostics/preview-db', () => {
     for (const entry of body.migrationIds) {
       expect(Object.keys(entry).sort()).toEqual(['appliedAt', 'name', 'version']);
     }
+  });
+
+  it('I. identityCounts/institutionsCount/duplicate/broken-link fields are safe aggregate numbers, reusing the certified getCounts() shape', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://someuser:supersecretpw@real-preview-host.example.com:5432/verceldb';
+    mockHappyPathQueries();
+
+    const { GET } = await import('@/app/api/diagnostics/preview-db/route');
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.identityCounts).toEqual(DEFAULT_IDENTITY_COUNTS);
+    expect(body.institutionsCount).toBe(0);
+    expect(body.duplicateClerkIds).toBe(0);
+    expect(body.duplicateUserRoles).toBe(0);
+    expect(body.studentBrokenLinks).toBe(0);
+    expect(body.profileBrokenLinks).toBe(0);
+    expect(body.userRolesByRole).toEqual([
+      { role: 'PARENT', count: 4 },
+      { role: 'STUDENT', count: 11 },
+    ]);
+
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain('supersecretpw');
+    expect(serialized).not.toContain('real-preview-host.example.com');
+  });
+
+  it('J. identityCounts/institutionsCount are null when users/user_roles/institutions do not exist (never guesses)', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://u:p@host.example.com:5432/db';
+    mockHappyPathQueries({ usersExists: false, userRolesExists: false, institutionsExists: false });
+
+    const { GET } = await import('@/app/api/diagnostics/preview-db/route');
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.identityCounts).toBeNull();
+    expect(body.institutionsCount).toBeNull();
+    expect(body.duplicateClerkIds).toBe(0);
+    expect(body.duplicateUserRoles).toBe(0);
+    expect(body.userRolesByRole).toEqual([]);
   });
 });

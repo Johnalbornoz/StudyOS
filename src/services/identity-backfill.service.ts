@@ -45,7 +45,7 @@ export interface IdentityBackfillResult {
   orphanedProfileIds: string[];
 }
 
-async function getCounts(): Promise<IdentityBackfillCounts> {
+export async function getCounts(): Promise<IdentityBackfillCounts> {
   const [
     studentsTotal,
     profilesTotal,
