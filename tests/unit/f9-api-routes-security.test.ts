@@ -14,7 +14,7 @@ const isAdminEmailMock = vi.fn();
 vi.mock('@/services/admin.service', () => ({ isAdminEmail: (...a: any[]) => isAdminEmailMock(...a) }));
 
 const verifyAuthMock = vi.fn();
-vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock() }));
+vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock(), checkRateLimit: () => true }));
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
 const canAccessLearnerMock = vi.fn();

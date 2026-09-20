@@ -8,10 +8,20 @@
  * lifecycle interpretation (INV-F12-22). No Teacher performance score,
  * ranking, or quality metric is computed anywhere in this file
  * (task section 23/INV-F12-13/14) -- only operational counts.
+ *
+ * F15 -- `getInstitutionInterventionSummary`'s status/type distribution
+ * is a per-student outcome breakdown (the same re-identification risk
+ * class as Learning/Readiness/Diagnostics), now cohort-suppressible via
+ * the MIN_COHORT_POLICY resolved in ADR-F15-MIN-COHORT-POLICY.md -- a
+ * real gap this phase found. `getTeacherOperationalSummary` is
+ * DELIBERATELY left unsuppressed: it is a single, individually-
+ * authorized Teacher's own operational counts (task section 23), not a
+ * cohort aggregate, and carries no per-student outcome distribution.
  */
 import { db } from '@/lib/db';
 import { requireInstitutionAccess, requireClassInInstitution } from './authorization';
 import { getEffectiveStatus, type TeacherInterventionStatus } from '@/lib/student/teacher-intervention-execution.service';
+import { getActiveAnalyticsPolicy, applyCohortSuppression, type SuppressibleAggregate } from './policy.service';
 import { buildMetric, nowIso, type AnalyticsScope, type MetricEnvelope } from './types';
 
 export type InterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE';
@@ -37,14 +47,16 @@ async function fetchInterventionRows(institutionId: string, filters?: { classId?
     params.push(filters.sinceDays);
     clauses.push(`assigned_at >= now() - ($${params.length} || ' days')::interval`);
   }
-  const result = await db.query(`SELECT status, due_at, intervention_type FROM teacher_interventions WHERE ${clauses.join(' AND ')}`, params);
-  return result.rows as Array<{ status: TeacherInterventionStatus; due_at: Date | null; intervention_type: InterventionType }>;
+  const result = await db.query(`SELECT status, due_at, intervention_type, student_id FROM teacher_interventions WHERE ${clauses.join(' AND ')}`, params);
+  return result.rows as Array<{ status: TeacherInterventionStatus; due_at: Date | null; intervention_type: InterventionType; student_id: string }>;
 }
 
 export interface InstitutionInterventionSummary {
   scope: AnalyticsScope;
   timeWindowDescription: string;
-  distribution: MetricEnvelope<InterventionStatusDistribution>;
+  cohort: SuppressibleAggregate<{
+    distribution: MetricEnvelope<InterventionStatusDistribution>;
+  }>;
 }
 
 /**
@@ -61,15 +73,18 @@ export async function getInstitutionInterventionSummary(
 ): Promise<InstitutionInterventionSummary> {
   await requireInstitutionAccess(actorUserId, institutionId);
   if (filters?.classId) await requireClassInInstitution(actorUserId, institutionId, filters.classId);
+  const policy = await getActiveAnalyticsPolicy();
 
   const rows = await fetchInterventionRows(institutionId, filters);
   const byStatus: Record<string, number> = { ASSIGNED: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0, EXPIRED: 0 };
   const byType: Record<string, number> = { CONCEPT_REINFORCEMENT: 0, SKILL_PRACTICE: 0, COMPETENCY_PRACTICE: 0, EXAM_PRACTICE: 0 };
+  const distinctStudents = new Set<string>();
 
   for (const row of rows) {
     const effectiveStatus = getEffectiveStatus(row.status, row.due_at ? row.due_at.toISOString() : null);
     byStatus[effectiveStatus] = (byStatus[effectiveStatus] ?? 0) + 1;
     byType[row.intervention_type] = (byType[row.intervention_type] ?? 0) + 1;
+    distinctStudents.add(row.student_id);
   }
 
   const scope: AnalyticsScope = filters?.classId ? { type: 'CLASS', id: filters.classId } : { type: 'INSTITUTION', id: institutionId };
@@ -77,9 +92,7 @@ export async function getInstitutionInterventionSummary(
     ? { type: 'ROLLING_DAYS' as const, days: filters.sinceDays, asOf: nowIso() }
     : { type: 'LIFETIME' as const, asOf: nowIso() };
 
-  return {
-    scope,
-    timeWindowDescription: filters?.sinceDays ? `assigned_at within the last ${filters.sinceDays} days` : 'all time (lifetime)',
+  const inner = {
     distribution: buildMetric({
       metricId: 'INTERVENTION_STATUS_DISTRIBUTION', name: 'Teacher Intervention Status/Type Distribution', scope, timeWindow,
       populationDescription: 'teacher_interventions rows in scope', populationCount: rows.length,
@@ -90,6 +103,12 @@ export async function getInstitutionInterventionSummary(
       ],
       value: { byStatus: byStatus as Record<TeacherInterventionStatus, number>, byType: byType as Record<InterventionType, number>, total: rows.length },
     }),
+  };
+
+  return {
+    scope,
+    timeWindowDescription: filters?.sinceDays ? `assigned_at within the last ${filters.sinceDays} days` : 'all time (lifetime)',
+    cohort: applyCohortSuppression(distinctStudents.size, policy, inner),
   };
 }
 

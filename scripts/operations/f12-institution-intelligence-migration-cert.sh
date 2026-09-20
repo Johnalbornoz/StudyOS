@@ -64,9 +64,16 @@ echo "  OK -- second application produced no error (idempotent)"
 
 echo "--- verifying target schema objects exist ---"
 $PSQL -tAc "SELECT to_regclass('public.institution_analytics_policy_versions')" | grep -q institution_analytics_policy_versions
+# F15 -- ADR-F15-MIN-COHORT-POLICY.md resolved IVG-F12-04: the table is
+# no longer seeded with zero rows. Migration 20261010_1000_f15_min_cohort_policy.sql
+# inserts the real, versioned, ACTIVE product policy (minimumCohortSize=10).
+# This assertion is updated from F12's own original "zero rows/OPEN_DECISION"
+# expectation to the real, now-resolved state.
 POLICY_ROW_COUNT=$($PSQL -tAc "SELECT COUNT(*) FROM institution_analytics_policy_versions")
-[ "$POLICY_ROW_COUNT" -eq 0 ]
-echo "  OK -- institution_analytics_policy_versions exists and is seeded with ZERO rows (MIN_COHORT_POLICY: OPEN_DECISION until a real product policy is inserted)"
+[ "$POLICY_ROW_COUNT" -eq 1 ]
+ACTIVE_POLICY_COHORT_SIZE=$($PSQL -tAc "SELECT rules->>'minimumCohortSize' FROM institution_analytics_policy_versions WHERE status = 'ACTIVE'")
+[ "$ACTIVE_POLICY_COHORT_SIZE" -eq 10 ]
+echo "  OK -- institution_analytics_policy_versions exists and carries the real F15 ACTIVE policy (minimumCohortSize=10, resolves IVG-F12-04, see ADR-F15-MIN-COHORT-POLICY.md)"
 
 echo "--- required base data: a mastery_policies row (updateMastery's real dependency) ---"
 $PSQL -c "

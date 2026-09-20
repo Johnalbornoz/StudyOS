@@ -3,8 +3,9 @@ import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { getInstitutionOverview, getInstitutionInterventionSummary, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
+import { getInstitutionOverview, getInstitutionInterventionSummary, InstitutionIntelligenceAccessDeniedError, NoActiveAnalyticsPolicyError } from '@/lib/institution-intelligence';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { InstitutionSubNav } from '../InstitutionSubNav';
 
@@ -25,14 +26,17 @@ export default async function InstitutionInterventionsPage({ params }: { params:
 
   let overview;
   let summary;
+  let policyOpenDecision = false;
   try {
-    [overview, summary] = await Promise.all([
-      getInstitutionOverview(actor.id, institutionId),
-      getInstitutionInterventionSummary(actor.id, institutionId),
-    ]);
+    overview = await getInstitutionOverview(actor.id, institutionId);
+    summary = await getInstitutionInterventionSummary(actor.id, institutionId);
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
-    throw error;
+    if (error instanceof NoActiveAnalyticsPolicyError) {
+      policyOpenDecision = true;
+    } else {
+      throw error;
+    }
   }
 
   const subNavLabels = {
@@ -47,28 +51,36 @@ export default async function InstitutionInterventionsPage({ params }: { params:
     attention: t['institution.attention.title'],
   };
 
-  const statuses = Object.entries(summary.distribution.value.byStatus) as Array<[keyof typeof summary.distribution.value.byStatus, number]>;
-
   return (
     <div>
-      <PageHeader title={overview.institutionName} subtitle={t['institution.interventions.title']} />
+      <PageHeader title={overview?.institutionName ?? ''} subtitle={t['institution.interventions.title']} />
       <InstitutionSubNav institutionId={institutionId} active="interventions" labels={subNavLabels} />
 
-      <ul className="list-card card">
-        {statuses.map(([status, count]) => (
-          <li key={status} className="list-row">
-            <div className="row-main">
-              <StatusBadge label={status} tone={toneForInterventionStatus(status)} />
-            </div>
-            <div className="tabular" style={{ fontWeight: 700 }}>
-              {count}
-            </div>
-          </li>
-        ))}
-      </ul>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
-        {summary.distribution.limitations.join(' ')}
-      </p>
+      {policyOpenDecision && <EmptyState title={t['empty.smallCohortSuppressed']} />}
+
+      {summary && !summary.cohort.suppressed && (
+        <>
+          <ul className="list-card card">
+            {(Object.entries(summary.cohort.value.distribution.value.byStatus) as Array<[keyof typeof summary.cohort.value.distribution.value.byStatus, number]>).map(
+              ([status, count]) => (
+                <li key={status} className="list-row">
+                  <div className="row-main">
+                    <StatusBadge label={status} tone={toneForInterventionStatus(status)} />
+                  </div>
+                  <div className="tabular" style={{ fontWeight: 700 }}>
+                    {count}
+                  </div>
+                </li>
+              )
+            )}
+          </ul>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+            {summary.cohort.value.distribution.limitations.join(' ')}
+          </p>
+        </>
+      )}
+
+      {summary && summary.cohort.suppressed && <EmptyState title={t['institution.learners.suppressedSmallCohort']} />}
     </div>
   );
 }

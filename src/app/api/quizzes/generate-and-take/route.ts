@@ -42,7 +42,7 @@
 
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
-import { verifyAuth, verifyStudentAccess, type UserRole } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
   generateQuickCheckQuestions,
@@ -404,6 +404,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (!body.quizId) {
+      // F15 -- this is the single highest AI-cost endpoint in the app
+      // (real generation per call); every other route in this codebase
+      // that mutates/spends AI budget already rate-limits per user
+      // (see record-evidence/route.ts) -- this one previously did not.
+      // 30/min is generous for real usage (a student moving between
+      // concepts/quiz modes) while bounding a scripted abuse loop.
+      if (!checkRateLimit(authContext.userId, '/api/quizzes/generate-and-take:generate', 30, 60)) {
+        return NextResponse.json({ error: 'RATE_LIMITED', message: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
       return await handleGenerateQuiz(body, authContext.userId, authContext.role);
     } else {
       return await handleSubmitQuiz(body, authContext.userId, authContext.role);

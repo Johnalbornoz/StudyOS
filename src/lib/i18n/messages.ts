@@ -93,9 +93,16 @@ export type MessageKey =
   | 'examPrep.start.title' | 'examPrep.start.simulationTypeLabel' | 'examPrep.start.timingModeLabel'
   | 'examPrep.start.learningObjectiveIdLabel' | 'examPrep.start.academicSubjectIdLabel'
   | 'examPrep.start.submit' | 'examPrep.start.submitting' | 'examPrep.start.notEligible' | 'examPrep.start.error'
-  | 'examPrep.attempt.title' | 'examPrep.attempt.timingMode' | 'examPrep.attempt.deferredNotice'
+  | 'examPrep.attempt.title' | 'examPrep.attempt.timingMode'
   | 'examPrep.attempt.pause' | 'examPrep.attempt.resume' | 'examPrep.attempt.abandon' | 'examPrep.attempt.error'
   | 'examPrep.attempt.status.ACTIVE' | 'examPrep.attempt.status.PAUSED' | 'examPrep.attempt.status.COMPLETED' | 'examPrep.attempt.status.ABANDONED'
+  // F15 -- item-by-item exam-taking (resolves IVG-F14-01)
+  | 'examPrep.attempt.itemLoading' | 'examPrep.attempt.itemSubmit' | 'examPrep.attempt.itemSubmitting' | 'examPrep.attempt.progress'
+  | 'examPrep.attempt.itemUnavailable' | 'examPrep.attempt.itemUnavailable.noCurriculumMapping'
+  | 'examPrep.attempt.itemUnavailable.conceptNotMatched' | 'examPrep.attempt.itemUnavailable.noItemGenerated'
+  | 'examPrep.attempt.skip' | 'examPrep.attempt.skipping' | 'examPrep.attempt.complete' | 'examPrep.attempt.completeBody'
+  | 'examPrep.attempt.finalize' | 'examPrep.attempt.finalizing' | 'examPrep.attempt.finalizeError' | 'examPrep.attempt.lastFeedback'
+  | 'examPrep.attempt.pausedBody' | 'examPrep.attempt.abandonedBody'
   // F14 -- Student Assignment Experience
   | 'assignments.title' | 'assignments.subtitle' | 'assignments.empty' | 'assignments.emptyBody' | 'assignments.due'
   | 'assignments.start' | 'assignments.continue' | 'assignments.starting' | 'assignments.error' | 'assignments.notExecutableYet'
@@ -648,7 +655,12 @@ const es: Messages = {
   'examPrep.start.title': 'Iniciar una práctica de examen', 'examPrep.start.simulationTypeLabel': 'Tipo de simulacro', 'examPrep.start.timingModeLabel': 'Modo de tiempo',
   'examPrep.start.learningObjectiveIdLabel': 'ID del objetivo de aprendizaje', 'examPrep.start.academicSubjectIdLabel': 'ID de la materia',
   'examPrep.start.submit': 'Comenzar', 'examPrep.start.submitting': 'Comenzando…', 'examPrep.start.notEligible': 'Todavía no disponible', 'examPrep.start.error': 'No se pudo iniciar el simulacro.',
-  'examPrep.attempt.title': 'Intento de simulacro', 'examPrep.attempt.timingMode': 'Modo de tiempo', 'examPrep.attempt.deferredNotice': 'La experiencia de preguntas paso a paso llegará en una fase futura. Aquí puedes pausar, reanudar o abandonar este intento.',
+  'examPrep.attempt.title': 'Intento de simulacro', 'examPrep.attempt.timingMode': 'Modo de tiempo',
+  'examPrep.attempt.itemLoading': 'Preparando la siguiente pregunta…', 'examPrep.attempt.itemSubmit': 'Enviar respuesta', 'examPrep.attempt.itemSubmitting': 'Enviando…', 'examPrep.attempt.progress': 'Pregunta {n} de {total}',
+  'examPrep.attempt.itemUnavailable': 'La plataforma no pudo preparar esta parte todavía.', 'examPrep.attempt.itemUnavailable.noCurriculumMapping': 'Esta parte del examen aún no está vinculada al plan de estudios.', 'examPrep.attempt.itemUnavailable.conceptNotMatched': 'Todavía no se encontró un concepto equivalente para ti.', 'examPrep.attempt.itemUnavailable.noItemGenerated': 'No se pudo generar una pregunta para esta parte.',
+  'examPrep.attempt.skip': 'Omitir esta parte', 'examPrep.attempt.skipping': 'Omitiendo…', 'examPrep.attempt.complete': 'Simulacro completado', 'examPrep.attempt.completeBody': 'Respondiste todas las preguntas disponibles. Finaliza para ver tu puntaje y tu preparación actualizada.',
+  'examPrep.attempt.finalize': 'Finalizar', 'examPrep.attempt.finalizing': 'Finalizando…', 'examPrep.attempt.finalizeError': 'No se pudo finalizar el intento.', 'examPrep.attempt.lastFeedback': 'Comentario',
+  'examPrep.attempt.pausedBody': 'Este intento está en pausa. Reanúdalo para continuar respondiendo.', 'examPrep.attempt.abandonedBody': 'Este intento fue abandonado.',
   'examPrep.attempt.pause': 'Pausar', 'examPrep.attempt.resume': 'Reanudar', 'examPrep.attempt.abandon': 'Abandonar', 'examPrep.attempt.error': 'No se pudo completar la acción.',
   'examPrep.attempt.status.ACTIVE': 'En curso', 'examPrep.attempt.status.PAUSED': 'Pausado', 'examPrep.attempt.status.COMPLETED': 'Completado', 'examPrep.attempt.status.ABANDONED': 'Abandonado',
   'assignments.title': 'Mis tareas', 'assignments.subtitle': 'Tareas que tu docente te asignó.', 'assignments.empty': 'No tienes tareas pendientes', 'assignments.emptyBody': 'Cuando tu docente te asigne una tarea, aparecerá aquí.', 'assignments.due': 'Vence',
@@ -1844,7 +1856,12 @@ const en: Messages = {
   'examPrep.start.title': 'Start an exam practice', 'examPrep.start.simulationTypeLabel': 'Simulation type', 'examPrep.start.timingModeLabel': 'Timing mode',
   'examPrep.start.learningObjectiveIdLabel': 'Learning objective ID', 'examPrep.start.academicSubjectIdLabel': 'Academic subject ID',
   'examPrep.start.submit': 'Start', 'examPrep.start.submitting': 'Starting…', 'examPrep.start.notEligible': 'Not yet available', 'examPrep.start.error': 'Could not start the simulation.',
-  'examPrep.attempt.title': 'Simulation attempt', 'examPrep.attempt.timingMode': 'Timing mode', 'examPrep.attempt.deferredNotice': 'The full item-by-item experience is coming in a future phase. Here you can pause, resume, or abandon this attempt.',
+  'examPrep.attempt.title': 'Simulation attempt', 'examPrep.attempt.timingMode': 'Timing mode',
+  'examPrep.attempt.itemLoading': 'Preparing the next question…', 'examPrep.attempt.itemSubmit': 'Submit answer', 'examPrep.attempt.itemSubmitting': 'Submitting…', 'examPrep.attempt.progress': 'Question {n} of {total}',
+  'examPrep.attempt.itemUnavailable': 'The platform could not prepare this part yet.', 'examPrep.attempt.itemUnavailable.noCurriculumMapping': 'This part of the exam is not yet linked to the curriculum.', 'examPrep.attempt.itemUnavailable.conceptNotMatched': "A matching concept hasn't been found for you yet.", 'examPrep.attempt.itemUnavailable.noItemGenerated': 'A question could not be generated for this part.',
+  'examPrep.attempt.skip': 'Skip this part', 'examPrep.attempt.skipping': 'Skipping…', 'examPrep.attempt.complete': 'Simulation complete', 'examPrep.attempt.completeBody': 'You answered every available question. Finalize to see your score and updated readiness.',
+  'examPrep.attempt.finalize': 'Finalize', 'examPrep.attempt.finalizing': 'Finalizing…', 'examPrep.attempt.finalizeError': 'Could not finalize the attempt.', 'examPrep.attempt.lastFeedback': 'Feedback',
+  'examPrep.attempt.pausedBody': 'This attempt is paused. Resume it to keep answering.', 'examPrep.attempt.abandonedBody': 'This attempt was abandoned.',
   'examPrep.attempt.pause': 'Pause', 'examPrep.attempt.resume': 'Resume', 'examPrep.attempt.abandon': 'Abandon', 'examPrep.attempt.error': 'Could not complete the action.',
   'examPrep.attempt.status.ACTIVE': 'Active', 'examPrep.attempt.status.PAUSED': 'Paused', 'examPrep.attempt.status.COMPLETED': 'Completed', 'examPrep.attempt.status.ABANDONED': 'Abandoned',
   'assignments.title': 'My Assignments', 'assignments.subtitle': 'Assignments your teacher gave you.', 'assignments.empty': "You don't have any pending assignments", 'assignments.emptyBody': 'When your teacher assigns you something, it will show up here.', 'assignments.due': 'Due',
@@ -3040,7 +3057,12 @@ const de: Messages = {
   'examPrep.start.title': 'Prüfungsübung starten', 'examPrep.start.simulationTypeLabel': 'Simulationstyp', 'examPrep.start.timingModeLabel': 'Zeitmodus',
   'examPrep.start.learningObjectiveIdLabel': 'ID des Lernziels', 'examPrep.start.academicSubjectIdLabel': 'ID des Fachs',
   'examPrep.start.submit': 'Starten', 'examPrep.start.submitting': 'Wird gestartet…', 'examPrep.start.notEligible': 'Noch nicht verfügbar', 'examPrep.start.error': 'Simulation konnte nicht gestartet werden.',
-  'examPrep.attempt.title': 'Simulationsversuch', 'examPrep.attempt.timingMode': 'Zeitmodus', 'examPrep.attempt.deferredNotice': 'Die vollständige Aufgabe-für-Aufgabe-Erfahrung kommt in einer späteren Phase. Hier kannst du diesen Versuch pausieren, fortsetzen oder abbrechen.',
+  'examPrep.attempt.title': 'Simulationsversuch', 'examPrep.attempt.timingMode': 'Zeitmodus',
+  'examPrep.attempt.itemLoading': 'Nächste Frage wird vorbereitet…', 'examPrep.attempt.itemSubmit': 'Antwort senden', 'examPrep.attempt.itemSubmitting': 'Wird gesendet…', 'examPrep.attempt.progress': 'Frage {n} von {total}',
+  'examPrep.attempt.itemUnavailable': 'Die Plattform konnte diesen Teil noch nicht vorbereiten.', 'examPrep.attempt.itemUnavailable.noCurriculumMapping': 'Dieser Teil der Prüfung ist noch nicht mit dem Lehrplan verknüpft.', 'examPrep.attempt.itemUnavailable.conceptNotMatched': 'Für dich wurde noch kein passendes Konzept gefunden.', 'examPrep.attempt.itemUnavailable.noItemGenerated': 'Für diesen Teil konnte keine Frage erzeugt werden.',
+  'examPrep.attempt.skip': 'Diesen Teil überspringen', 'examPrep.attempt.skipping': 'Wird übersprungen…', 'examPrep.attempt.complete': 'Simulation abgeschlossen', 'examPrep.attempt.completeBody': 'Du hast alle verfügbaren Fragen beantwortet. Schließe ab, um deine Punktzahl und aktualisierte Bereitschaft zu sehen.',
+  'examPrep.attempt.finalize': 'Abschließen', 'examPrep.attempt.finalizing': 'Wird abgeschlossen…', 'examPrep.attempt.finalizeError': 'Der Versuch konnte nicht abgeschlossen werden.', 'examPrep.attempt.lastFeedback': 'Rückmeldung',
+  'examPrep.attempt.pausedBody': 'Dieser Versuch ist pausiert. Setze ihn fort, um weiter zu antworten.', 'examPrep.attempt.abandonedBody': 'Dieser Versuch wurde abgebrochen.',
   'examPrep.attempt.pause': 'Pausieren', 'examPrep.attempt.resume': 'Fortsetzen', 'examPrep.attempt.abandon': 'Abbrechen', 'examPrep.attempt.error': 'Aktion konnte nicht abgeschlossen werden.',
   'examPrep.attempt.status.ACTIVE': 'Aktiv', 'examPrep.attempt.status.PAUSED': 'Pausiert', 'examPrep.attempt.status.COMPLETED': 'Abgeschlossen', 'examPrep.attempt.status.ABANDONED': 'Abgebrochen',
   'assignments.title': 'Meine Aufgaben', 'assignments.subtitle': 'Aufgaben, die dir deine Lehrkraft gegeben hat.', 'assignments.empty': 'Du hast keine ausstehenden Aufgaben', 'assignments.emptyBody': 'Sobald dir deine Lehrkraft etwas zuweist, erscheint es hier.', 'assignments.due': 'Fällig',
@@ -4236,7 +4258,12 @@ const fr: Messages = {
   'examPrep.start.title': "Commencer une pratique d'examen", 'examPrep.start.simulationTypeLabel': 'Type de simulation', 'examPrep.start.timingModeLabel': 'Mode chronométré',
   'examPrep.start.learningObjectiveIdLabel': "ID de l'objectif d'apprentissage", 'examPrep.start.academicSubjectIdLabel': 'ID de la matière',
   'examPrep.start.submit': 'Commencer', 'examPrep.start.submitting': 'Démarrage…', 'examPrep.start.notEligible': 'Pas encore disponible', 'examPrep.start.error': 'Impossible de démarrer la simulation.',
-  'examPrep.attempt.title': 'Tentative de simulation', 'examPrep.attempt.timingMode': 'Mode chronométré', 'examPrep.attempt.deferredNotice': "L'expérience complète question par question arrivera dans une phase future. Tu peux ici mettre en pause, reprendre ou abandonner cette tentative.",
+  'examPrep.attempt.title': 'Tentative de simulation', 'examPrep.attempt.timingMode': 'Mode chronométré',
+  'examPrep.attempt.itemLoading': 'Préparation de la prochaine question…', 'examPrep.attempt.itemSubmit': 'Envoyer la réponse', 'examPrep.attempt.itemSubmitting': 'Envoi…', 'examPrep.attempt.progress': 'Question {n} sur {total}',
+  'examPrep.attempt.itemUnavailable': "La plateforme n'a pas encore pu préparer cette partie.", 'examPrep.attempt.itemUnavailable.noCurriculumMapping': "Cette partie de l'examen n'est pas encore reliée au programme.", 'examPrep.attempt.itemUnavailable.conceptNotMatched': "Aucun concept correspondant n'a encore été trouvé pour toi.", 'examPrep.attempt.itemUnavailable.noItemGenerated': "Une question n'a pas pu être générée pour cette partie.",
+  'examPrep.attempt.skip': 'Passer cette partie', 'examPrep.attempt.skipping': 'Passage en cours…', 'examPrep.attempt.complete': 'Simulation terminée', 'examPrep.attempt.completeBody': 'Tu as répondu à toutes les questions disponibles. Termine pour voir ton score et ta préparation mise à jour.',
+  'examPrep.attempt.finalize': 'Terminer', 'examPrep.attempt.finalizing': 'Finalisation…', 'examPrep.attempt.finalizeError': "Impossible de finaliser la tentative.", 'examPrep.attempt.lastFeedback': 'Retour',
+  'examPrep.attempt.pausedBody': 'Cette tentative est en pause. Reprends-la pour continuer à répondre.', 'examPrep.attempt.abandonedBody': 'Cette tentative a été abandonnée.',
   'examPrep.attempt.pause': 'Mettre en pause', 'examPrep.attempt.resume': 'Reprendre', 'examPrep.attempt.abandon': 'Abandonner', 'examPrep.attempt.error': "Impossible de terminer l'action.",
   'examPrep.attempt.status.ACTIVE': 'En cours', 'examPrep.attempt.status.PAUSED': 'En pause', 'examPrep.attempt.status.COMPLETED': 'Terminé', 'examPrep.attempt.status.ABANDONED': 'Abandonné',
   'assignments.title': 'Mes devoirs', 'assignments.subtitle': "Devoirs donnés par ton enseignant.", 'assignments.empty': "Tu n'as aucun devoir en attente", 'assignments.emptyBody': "Quand ton enseignant t'assigne quelque chose, cela apparaît ici.", 'assignments.due': 'À rendre',
@@ -5432,7 +5459,12 @@ const pt: Messages = {
   'examPrep.start.title': 'Iniciar uma prática de exame', 'examPrep.start.simulationTypeLabel': 'Tipo de simulado', 'examPrep.start.timingModeLabel': 'Modo de tempo',
   'examPrep.start.learningObjectiveIdLabel': 'ID do objetivo de aprendizagem', 'examPrep.start.academicSubjectIdLabel': 'ID da disciplina',
   'examPrep.start.submit': 'Iniciar', 'examPrep.start.submitting': 'Iniciando…', 'examPrep.start.notEligible': 'Ainda não disponível', 'examPrep.start.error': 'Não foi possível iniciar o simulado.',
-  'examPrep.attempt.title': 'Tentativa de simulado', 'examPrep.attempt.timingMode': 'Modo de tempo', 'examPrep.attempt.deferredNotice': 'A experiência completa questão a questão chegará em uma fase futura. Aqui você pode pausar, retomar ou abandonar esta tentativa.',
+  'examPrep.attempt.title': 'Tentativa de simulado', 'examPrep.attempt.timingMode': 'Modo de tempo',
+  'examPrep.attempt.itemLoading': 'Preparando a próxima pergunta…', 'examPrep.attempt.itemSubmit': 'Enviar resposta', 'examPrep.attempt.itemSubmitting': 'Enviando…', 'examPrep.attempt.progress': 'Pergunta {n} de {total}',
+  'examPrep.attempt.itemUnavailable': 'A plataforma ainda não conseguiu preparar esta parte.', 'examPrep.attempt.itemUnavailable.noCurriculumMapping': 'Esta parte do exame ainda não está vinculada ao currículo.', 'examPrep.attempt.itemUnavailable.conceptNotMatched': 'Ainda não foi encontrado um conceito correspondente para você.', 'examPrep.attempt.itemUnavailable.noItemGenerated': 'Não foi possível gerar uma pergunta para esta parte.',
+  'examPrep.attempt.skip': 'Pular esta parte', 'examPrep.attempt.skipping': 'Pulando…', 'examPrep.attempt.complete': 'Simulado concluído', 'examPrep.attempt.completeBody': 'Você respondeu a todas as perguntas disponíveis. Finalize para ver sua pontuação e preparação atualizada.',
+  'examPrep.attempt.finalize': 'Finalizar', 'examPrep.attempt.finalizing': 'Finalizando…', 'examPrep.attempt.finalizeError': 'Não foi possível finalizar a tentativa.', 'examPrep.attempt.lastFeedback': 'Retorno',
+  'examPrep.attempt.pausedBody': 'Esta tentativa está pausada. Retome para continuar respondendo.', 'examPrep.attempt.abandonedBody': 'Esta tentativa foi abandonada.',
   'examPrep.attempt.pause': 'Pausar', 'examPrep.attempt.resume': 'Retomar', 'examPrep.attempt.abandon': 'Abandonar', 'examPrep.attempt.error': 'Não foi possível concluir a ação.',
   'examPrep.attempt.status.ACTIVE': 'Ativo', 'examPrep.attempt.status.PAUSED': 'Pausado', 'examPrep.attempt.status.COMPLETED': 'Concluído', 'examPrep.attempt.status.ABANDONED': 'Abandonado',
   'assignments.title': 'Minhas tarefas', 'assignments.subtitle': 'Tarefas que seu professor atribuiu a você.', 'assignments.empty': 'Você não tem tarefas pendentes', 'assignments.emptyBody': 'Quando seu professor atribuir algo, aparecerá aqui.', 'assignments.due': 'Prazo',

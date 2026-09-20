@@ -136,8 +136,18 @@ async function main() {
   );
 
   console.log('--- TEST POLICY: explicit, versioned, NEVER a silently-invented product default (task section 27) ---');
+  // F15 -- ADR-F15-MIN-COHORT-POLICY.md resolved the real product
+  // default (version 1, minimumCohortSize=10, seeded by migration
+  // 20261010_1000_f15_min_cohort_policy.sql). This cert script tests
+  // the SUPPRESSION MECHANISM itself, not a specific threshold value --
+  // it retires the real migrated policy and installs its own small,
+  // deterministic TEST POLICY as a new version, so its own fixture
+  // cohort sizes (3 learners not-suppressed, 1 learner suppressed) stay
+  // meaningful regardless of what the real product threshold is set to.
+  await db.query(`UPDATE institution_analytics_policy_versions SET status = 'RETIRED' WHERE status = 'ACTIVE'`);
   await db.query(
-    `INSERT INTO institution_analytics_policy_versions (version, rules, status) VALUES (1, $1::jsonb, 'ACTIVE') ON CONFLICT (version) DO NOTHING`,
+    `INSERT INTO institution_analytics_policy_versions (version, rules, status)
+     SELECT COALESCE(MAX(version), 0) + 1, $1::jsonb, 'ACTIVE' FROM institution_analytics_policy_versions`,
     [JSON.stringify({ minimumCohortSize: 3 })]
   );
 
@@ -317,8 +327,17 @@ async function main() {
   const diagnosis = await runDiagnosis({ studentId: studentA1.studentId, conceptId: conceptA1, subjectId: subjectA1 });
   void diagnosis;
   const diagnosticSummary = await getInstitutionDiagnosticSummary(fxA.admin.actorUserId, fxA.institution.id);
-  const totalDiagnoses = Object.values(diagnosticSummary.distribution.value).reduce((a, b) => a + b, 0);
-  assert(totalDiagnoses >= 1, 'Case R: F8\'s real, persisted learner_gap_diagnoses rows are aggregated correctly by primary_gap_type for the institution\'s active learners');
+  // Only studentA1 has been diagnosed at this point in the fixture
+  // timeline (1 distinct student), which is correctly BELOW the TEST
+  // POLICY minimumCohortSize=3 -- this is the SAME suppression
+  // mechanism Case X exercises deliberately, encountered here
+  // incidentally. Both outcomes are handled rather than assumed.
+  if (diagnosticSummary.cohort.suppressed) {
+    console.log('  OK -- Case R: the diagnostic cohort (1 distinct diagnosed student so far) is correctly SUPPRESSED under the TEST POLICY minimumCohortSize=3 -- F8\'s aggregation itself is exercised end-to-end in Case X instead, where the cohort is deliberately grown past the threshold');
+  } else {
+    const totalDiagnoses = Object.values(diagnosticSummary.cohort.value.distribution.value).reduce((a: number, b: number) => a + b, 0);
+    assert(totalDiagnoses >= 1, 'Case R: F8\'s real, persisted learner_gap_diagnoses rows are aggregated correctly by primary_gap_type for the institution\'s active learners');
+  }
 
   console.log('--- CASE S/T: F11 intervention lifecycle aggregation, incorrect performance still counted as completed ---');
   const conceptForIntervention = await seedStudentConcept(subjectA1, 'intervention-concept');
@@ -339,9 +358,31 @@ async function main() {
   // (see F12_INTERVENTION_INTELLIGENCE_MODEL.md).
   await getStudentPendingTeacherInterventions(studentA1.studentId);
 
+  // F15 -- ADR-F15-MIN-COHORT-POLICY.md/the TEST POLICY (minimumCohortSize=3)
+  // now applies here too (a real gap this phase found and fixed --
+  // getInstitutionInterventionSummary previously shipped unsuppressed).
+  // Two more, minimal (ASSIGNED-only, never started) interventions for
+  // studentA2/A3 bring the distinct-student cohort to 3, so this case
+  // continues to exercise the real status/type aggregation instead of
+  // only ever hitting the suppressed branch.
+  const subjectA2 = (await db.query(`INSERT INTO subjects (student_id, name) VALUES ($1, 'F12 Subject A2') RETURNING id`, [studentA2.studentId])).rows[0].id;
+  const subjectA3 = (await db.query(`INSERT INTO subjects (student_id, name) VALUES ($1, 'F12 Subject A3') RETURNING id`, [studentA3.studentId])).rows[0].id;
+  const conceptA2 = await seedStudentConcept(subjectA2, 'intervention-concept-a2');
+  const conceptA3 = await seedStudentConcept(subjectA3, 'intervention-concept-a3');
+  await assignTeacherIntervention(fxA.teacher.actorUserId, {
+    classId: fxA.classA.id, studentId: studentA2.studentId, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId: conceptA2 },
+  });
+  await assignTeacherIntervention(fxA.teacher.actorUserId, {
+    classId: fxA.classA.id, studentId: studentA3.studentId, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId: conceptA3 },
+  });
+
   const interventionSummary = await getInstitutionInterventionSummary(fxA.admin.actorUserId, fxA.institution.id);
-  assert(interventionSummary.distribution.value.byStatus.COMPLETED >= 1, 'Case S: F11\'s real teacher_interventions status is aggregated correctly');
-  assert(interventionSummary.distribution.value.total >= 1, 'Case T: the intervention reached COMPLETED despite an INCORRECT response -- F12 counts it as a completed activity, never an academic judgment (INV-F12-13/14 spirit preserved for interventions too)');
+  assert(!interventionSummary.cohort.suppressed, 'Case S: the intervention cohort now spans 3 distinct students (studentA1/A2/A3), meeting the TEST POLICY minimumCohortSize=3, so it is not suppressed');
+  if (!interventionSummary.cohort.suppressed) {
+    assert(interventionSummary.cohort.value.distribution.value.byStatus.COMPLETED >= 1, 'Case S: F11\'s real teacher_interventions status is aggregated correctly');
+    assert(interventionSummary.cohort.value.distribution.value.byStatus.ASSIGNED >= 2, 'Case S: the two never-started interventions for studentA2/A3 are correctly counted as ASSIGNED');
+    assert(interventionSummary.cohort.value.distribution.value.total >= 3, 'Case T: the intervention reached COMPLETED despite an INCORRECT response -- F12 counts it as a completed activity, never an academic judgment (INV-F12-13/14 spirit preserved for interventions too)');
+  }
 
   const teacherOperational = await getTeacherOperationalSummary(fxA.admin.actorUserId, fxA.institution.id, fxA.membership.id);
   assert(teacherOperational.interventionsCompleted >= 1, 'Teacher operational summary reports the completed intervention count -- purely operational, no quality score');
@@ -362,9 +403,15 @@ async function main() {
 
   console.log('--- CASE Y: time-window boundaries reproducible ---');
   const interventionSummaryWindowed = await getInstitutionInterventionSummary(fxA.admin.actorUserId, fxA.institution.id, { sinceDays: 30 });
-  assert(interventionSummaryWindowed.distribution.timeWindow.type === 'ROLLING_DAYS' && interventionSummaryWindowed.distribution.timeWindow.days === 30, 'Case Y: a ROLLING_DAYS time window is explicit and labeled, never silently mixed with a LIFETIME result');
+  assert(!interventionSummaryWindowed.cohort.suppressed, 'Case Y: the windowed intervention cohort is above the TEST POLICY minimumCohortSize=3, so it is not suppressed');
+  if (!interventionSummaryWindowed.cohort.suppressed) {
+    assert(interventionSummaryWindowed.cohort.value.distribution.timeWindow.type === 'ROLLING_DAYS' && interventionSummaryWindowed.cohort.value.distribution.timeWindow.days === 30, 'Case Y: a ROLLING_DAYS time window is explicit and labeled, never silently mixed with a LIFETIME result');
+  }
   const interventionSummaryLifetime = await getInstitutionInterventionSummary(fxA.admin.actorUserId, fxA.institution.id);
-  assert(interventionSummaryLifetime.distribution.timeWindow.type === 'LIFETIME', 'Case Y: the default (no sinceDays filter) is explicitly labeled LIFETIME, never ambiguous');
+  assert(!interventionSummaryLifetime.cohort.suppressed, 'Case Y: the lifetime intervention cohort is above the TEST POLICY minimumCohortSize=3, so it is not suppressed');
+  if (!interventionSummaryLifetime.cohort.suppressed) {
+    assert(interventionSummaryLifetime.cohort.value.distribution.timeWindow.type === 'LIFETIME', 'Case Y: the default (no sinceDays filter) is explicitly labeled LIFETIME, never ambiguous');
+  }
 
   console.log('--- CASE Z: historical/derived snapshot immutability -- NOT APPLICABLE (documented design decision) ---');
   console.log('  N/A -- F12 computes every metric on read from already-materialized F5/F6/F8/F9/F11 tables; it persists no institutional analytics snapshot of its own in this implementation (see F12_TARGET_INSTITUTION_ARCHITECTURE.md). readiness_snapshots itself (F9, append-only) already independently proves immutability and is unmodified by F12.');

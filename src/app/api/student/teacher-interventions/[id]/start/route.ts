@@ -23,6 +23,7 @@ import {
   StudentInterventionNotFoundError,
   StudentInterventionNotStartableError,
 } from '@/lib/student/teacher-intervention-execution.service';
+import { logPilotEvent } from '@/lib/observability/pilot-events';
 
 const StartSchema = z.object({ idempotencyKey: z.string().min(1) });
 
@@ -41,9 +42,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const result = await startTeacherInterventionExecution(actor.id, id, validated.idempotencyKey);
+    logPilotEvent('assignment_opened', { route: '/api/student/teacher-interventions/start', interventionId: id, outcome: result.outcome });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    if (error instanceof StudentInterventionAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    if (error instanceof StudentInterventionAccessDeniedError) {
+      logPilotEvent('authorization_denied', { route: '/api/student/teacher-interventions/start', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
     if (error instanceof StudentInterventionNotFoundError) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     if (error instanceof StudentInterventionNotStartableError) return NextResponse.json({ error: 'NOT_STARTABLE', message: error.message }, { status: 409 });
     throw error;

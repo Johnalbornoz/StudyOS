@@ -17,6 +17,7 @@ import {
   TeacherInterventionInvalidTargetError,
   TeacherInterventionExamProfileMismatchError,
 } from '@/lib/teacher/intervention.service';
+import { logPilotEvent } from '@/lib/observability/pilot-events';
 
 // F13: this schema was never extended when F11-C4 added the EXAM
 // target branch to assignTeacherIntervention's own real
@@ -70,9 +71,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const intervention = await assignTeacherIntervention(actor.id, validated);
+    logPilotEvent('assignment_created', { route: '/api/teacher/interventions', studentId: validated.studentId, interventionType: validated.interventionType });
     return NextResponse.json({ success: true, data: { intervention } });
   } catch (error) {
-    if (error instanceof TeacherInterventionAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    if (error instanceof TeacherInterventionAccessDeniedError) {
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
     if (error instanceof TeacherInterventionInvalidTargetError) return NextResponse.json({ error: 'INVALID_TARGET', message: error.message }, { status: 400 });
     // F14 -- this branch (F11-C4's own EXAM-profile-ownership re-check,
     // intervention.service.ts line ~189) was never mapped to a clean

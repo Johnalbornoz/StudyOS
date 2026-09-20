@@ -66,9 +66,14 @@ export async function getInstitutionAttentionAreas(actorUserId: string, institut
     }
   }
 
-  if (diagnostics.distribution.population.count > 0) {
-    const total = diagnostics.distribution.population.count;
-    const dist = diagnostics.distribution.value;
+  // F15 -- diagnostics/interventions are now cohort-suppressible
+  // (ADR-F15-MIN-COHORT-POLICY.md); a suppressed cohort's distribution
+  // is never read here, exactly like the pre-existing `learning`
+  // suppression check above -- Attention never overrides or
+  // second-guesses a suppression decision its own sibling metrics made.
+  if (!diagnostics.cohort.suppressed && diagnostics.cohort.value.distribution.population.count > 0) {
+    const total = diagnostics.cohort.value.distribution.population.count;
+    const dist = diagnostics.cohort.value.distribution.value;
     const checks: Array<[AttentionReasonCode, number, number, string]> = [
       ['KNOWLEDGE_GAP_CONCENTRATION', dist.KNOWLEDGE_GAP ?? 0, THRESHOLDS.knowledgeGapFraction, 'KNOWLEDGE_GAP'],
       ['SKILL_GAP_CONCENTRATION', dist.SKILL_GAP ?? 0, THRESHOLDS.skillGapFraction, 'SKILL_GAP'],
@@ -84,13 +89,15 @@ export async function getInstitutionAttentionAreas(actorUserId: string, institut
     }
   }
 
-  const assignedCount = interventions.distribution.value.byStatus.ASSIGNED ?? 0;
-  if (assignedCount >= THRESHOLDS.interventionBacklogAssignedCount) {
-    areas.push({
-      reasonCode: 'INTERVENTION_BACKLOG', scope, citedMetricId: 'INTERVENTION_STATUS_DISTRIBUTION',
-      citedNumerator: assignedCount, citedDenominator: interventions.distribution.population.count, threshold: THRESHOLDS.interventionBacklogAssignedCount,
-      detail: `${assignedCount} teacher_interventions rows remain ASSIGNED (never started) in scope`,
-    });
+  if (!interventions.cohort.suppressed) {
+    const assignedCount = interventions.cohort.value.distribution.value.byStatus.ASSIGNED ?? 0;
+    if (assignedCount >= THRESHOLDS.interventionBacklogAssignedCount) {
+      areas.push({
+        reasonCode: 'INTERVENTION_BACKLOG', scope, citedMetricId: 'INTERVENTION_STATUS_DISTRIBUTION',
+        citedNumerator: assignedCount, citedDenominator: interventions.cohort.value.distribution.population.count, threshold: THRESHOLDS.interventionBacklogAssignedCount,
+        detail: `${assignedCount} teacher_interventions rows remain ASSIGNED (never started) in scope`,
+      });
+    }
   }
 
   return areas;

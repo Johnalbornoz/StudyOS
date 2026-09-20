@@ -5,24 +5,19 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { AttemptControls } from './AttemptControls';
+import { ItemRunner } from './ItemRunner';
 
 /**
- * F14 Workstream A -- Simulation attempt status (task section 4/12).
- * Deliberately status/lifecycle-only: item-by-item exam-taking UI
- * (rendering real assessment items from the frozen SimulationPlan,
- * timing, per-item response capture via
- * `/api/simulation/attempts/[id]/responses`) is a genuinely separate,
- * large surface this phase does not build -- see
- * F14_STUDENT_EXAM_PREP_EXPERIENCE.md's own disclosed scope decision.
- * No "Complete" action is exposed here for exactly that reason: this
- * page never lets a student finalize an attempt with zero real item
- * responses recorded, which would produce a truthful-but-hollow score
- * rather than a fabricated one -- still not something to expose
- * silently. Pause/Resume/Abandon are real, safe, and fully supported
- * by the existing F9 attempt lifecycle regardless.
+ * F15 Workstream A -- completes IVG-F14-01: a real, active attempt now
+ * renders the item-by-item ItemRunner (generation + grading both
+ * delegated to already-certified services -- see
+ * item-resolution.service.ts) instead of a deferred-notice message.
+ * PAUSED/ABANDONED/COMPLETED render their own real, distinct state --
+ * never the item-taking UI for a non-ACTIVE attempt.
  */
 export default async function SimulationAttemptPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = await params;
@@ -36,6 +31,8 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   const attempt = await getSimulationAttempt(attemptId);
   if (!attempt || attempt.studentId !== studentId) notFound();
 
+  const scoreSummary = attempt.status === 'COMPLETED' ? await getSimulationScoreSummary(attempt.examAttemptId) : null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader
@@ -44,28 +41,71 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
         breadcrumb={<Link href={`/dashboard/exam-prep/${attempt.examProfileId}`}>{t['examPrep.title']}</Link>}
       />
 
-      <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <StatusBadge
-            label={t[`examPrep.attempt.status.${attempt.status}`] ?? attempt.status}
-            tone={attempt.status === 'COMPLETED' ? 'good' : attempt.status === 'ABANDONED' ? 'neutral' : attempt.status === 'PAUSED' ? 'warn' : 'info'}
-          />
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t['examPrep.attempt.timingMode']}: {attempt.timingMode}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <StatusBadge
+          label={t[`examPrep.attempt.status.${attempt.status}`] ?? attempt.status}
+          tone={attempt.status === 'COMPLETED' ? 'good' : attempt.status === 'ABANDONED' ? 'neutral' : attempt.status === 'PAUSED' ? 'warn' : 'info'}
+        />
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          {t['examPrep.attempt.timingMode']}: {attempt.timingMode}
+        </span>
+      </div>
+
+      {attempt.status === 'COMPLETED' && scoreSummary && (
+        <div className="card" style={{ padding: 'var(--space-4)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{t['assignments.practice.score']}</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}>
+            {scoreSummary.maxScore > 0 ? Math.round((scoreSummary.rawScore / scoreSummary.maxScore) * 100) : 0}%
+          </div>
         </div>
+      )}
 
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t['examPrep.attempt.deferredNotice']}</p>
-
-        <AttemptControls
+      {attempt.status === 'ACTIVE' && (
+        <ItemRunner
           attemptId={attempt.id}
-          status={attempt.status}
           labels={{
-            pause: t['examPrep.attempt.pause'],
-            resume: t['examPrep.attempt.resume'],
-            abandon: t['examPrep.attempt.abandon'],
-            error: t['examPrep.attempt.error'],
+            loading: t['examPrep.attempt.itemLoading'],
+            loadError: t['examPrep.attempt.error'],
+            submit: t['examPrep.attempt.itemSubmit'],
+            submitting: t['examPrep.attempt.itemSubmitting'],
+            submitError: t['examPrep.attempt.error'],
+            progress: t['examPrep.attempt.progress'],
+            itemUnavailable: t['examPrep.attempt.itemUnavailable'],
+            itemUnavailableReason: {
+              NO_CURRICULUM_MAPPING: t['examPrep.attempt.itemUnavailable.noCurriculumMapping'],
+              CONCEPT_NOT_MATCHED: t['examPrep.attempt.itemUnavailable.conceptNotMatched'],
+              NO_ITEM_GENERATED: t['examPrep.attempt.itemUnavailable.noItemGenerated'],
+            },
+            skip: t['examPrep.attempt.skip'],
+            skipping: t['examPrep.attempt.skipping'],
+            complete: t['examPrep.attempt.complete'],
+            completeBody: t['examPrep.attempt.completeBody'],
+            finalize: t['examPrep.attempt.finalize'],
+            finalizing: t['examPrep.attempt.finalizing'],
+            finalizeError: t['examPrep.attempt.finalizeError'],
+            lastFeedback: t['examPrep.attempt.lastFeedback'],
           }}
         />
-      </div>
+      )}
+
+      {(attempt.status === 'PAUSED' || attempt.status === 'ABANDONED') && (
+        <div className="card" style={{ padding: 'var(--space-4)' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            {attempt.status === 'PAUSED' ? t['examPrep.attempt.pausedBody'] : t['examPrep.attempt.abandonedBody']}
+          </p>
+        </div>
+      )}
+
+      <AttemptControls
+        attemptId={attempt.id}
+        status={attempt.status}
+        labels={{
+          pause: t['examPrep.attempt.pause'],
+          resume: t['examPrep.attempt.resume'],
+          abandon: t['examPrep.attempt.abandon'],
+          error: t['examPrep.attempt.error'],
+        }}
+      />
     </div>
   );
 }

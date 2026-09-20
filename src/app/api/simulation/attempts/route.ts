@@ -8,7 +8,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { verifyAuth } from '@/lib/auth';
+import { verifyAuth, checkRateLimit } from '@/lib/auth';
+import { logPilotEvent } from '@/lib/observability/pilot-events';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { canUseCapability } from '@/lib/entitlements';
@@ -33,6 +34,15 @@ const StartSchema = z.object({
 export async function POST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // F15 -- a resource-consuming, DB-write + downstream-AI-generation
+  // action; bounds a scripted loop while leaving generous headroom for
+  // real exam-prep usage.
+  if (!checkRateLimit(authContext.userId, '/api/simulation/attempts:start', 20, 60)) {
+    logPilotEvent('rate_limited', { route: '/api/simulation/attempts', actorUserId: authContext.userId });
+    return NextResponse.json({ error: 'RATE_LIMITED', message: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
   let validated;
@@ -55,6 +65,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const { examAttempt, simulationAttempt, planId } = await startSimulationAttempt(validated);
+    logPilotEvent('exam_started', { studentId: validated.studentId, route: '/api/simulation/attempts', simulationType: validated.simulationType });
     return NextResponse.json({ success: true, data: { examAttempt, simulationAttempt, planId } });
   } catch (err) {
     if (err instanceof TimingConfigurationError) {

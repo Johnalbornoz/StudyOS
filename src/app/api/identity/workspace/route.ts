@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser, setActiveWorkspace } from '@/lib/identity';
+import { logPilotEvent } from '@/lib/observability/pilot-events';
 
 const Schema = z.object({ workspace: z.enum(['STUDENT', 'PARENT', 'TEACHER', 'INSTITUTION', 'ADMIN']) });
 
@@ -27,9 +28,11 @@ export async function POST(request: NextRequest) {
     const user = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
     const switched = await setActiveWorkspace(user.id, workspace);
     if (!switched) {
+      logPilotEvent('authorization_denied', { route: '/api/identity/workspace', actorUserId: user.id, workspace });
       return NextResponse.json({ error: 'WORKSPACE_UNAVAILABLE' }, { status: 403 });
     }
 
+    logPilotEvent('workspace_switched', { route: '/api/identity/workspace', actorUserId: user.id, workspace });
     return NextResponse.json({ success: true, data: { activeWorkspace: workspace } });
   } catch (error) {
     if (error instanceof z.ZodError) {
