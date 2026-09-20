@@ -13,11 +13,32 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { assignTeacherIntervention, TeacherInterventionAccessDeniedError, TeacherInterventionInvalidTargetError } from '@/lib/teacher/intervention.service';
 
-const TargetSchema = z.discriminatedUnion('targetType', [
-  z.object({ targetType: z.literal('CONCEPT'), conceptId: z.string().uuid() }),
-  z.object({ targetType: z.literal('SKILL'), skillId: z.string().uuid() }),
-  z.object({ targetType: z.literal('COMPETENCY'), competencyId: z.string().uuid() }),
-  z.object({ targetType: z.literal('LEARNING_OBJECTIVE'), learningObjectiveId: z.string().uuid() }),
+// F13: this schema was never extended when F11-C4 added the EXAM
+// target branch to assignTeacherIntervention's own real
+// TeacherInterventionTarget union (src/lib/teacher/intervention.service.ts)
+// -- discovered during F13's inspection. Fixed here so the Exam
+// Reinforcement assignment UI (task section 18) has a real route to
+// call. The three EXAM variants match that union's own three
+// simulation_type-specific shapes exactly (TOPIC_EXAM needs
+// learningObjectiveId, DOMAIN_EXAM needs academicSubjectId, MINI_MOCK/
+// FULL_MOCK need neither). Nested as its own z.discriminatedUnion (on
+// simulationType) and combined via z.union rather than a single flat
+// discriminatedUnion, since Zod's discriminatedUnion requires a unique
+// literal per branch and 'EXAM' would otherwise repeat three times.
+const ExamTargetSchema = z.discriminatedUnion('simulationType', [
+  z.object({ targetType: z.literal('EXAM'), examProfileId: z.string().uuid(), simulationType: z.literal('TOPIC_EXAM'), learningObjectiveId: z.string().uuid() }),
+  z.object({ targetType: z.literal('EXAM'), examProfileId: z.string().uuid(), simulationType: z.literal('DOMAIN_EXAM'), academicSubjectId: z.string().uuid() }),
+  z.object({ targetType: z.literal('EXAM'), examProfileId: z.string().uuid(), simulationType: z.enum(['MINI_MOCK', 'FULL_MOCK']) }),
+]);
+
+const TargetSchema = z.union([
+  z.discriminatedUnion('targetType', [
+    z.object({ targetType: z.literal('CONCEPT'), conceptId: z.string().uuid() }),
+    z.object({ targetType: z.literal('SKILL'), skillId: z.string().uuid() }),
+    z.object({ targetType: z.literal('COMPETENCY'), competencyId: z.string().uuid() }),
+    z.object({ targetType: z.literal('LEARNING_OBJECTIVE'), learningObjectiveId: z.string().uuid() }),
+  ]),
+  ExamTargetSchema,
 ]);
 
 const AssignSchema = z.object({

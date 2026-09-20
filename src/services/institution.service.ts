@@ -88,6 +88,30 @@ export async function getMembershipStatus(institutionId: string, userId: string,
   return result.rows.length > 0 ? toMembership(result.rows[0]) : null;
 }
 
+/**
+ * F13 -- the read F13's Institution workspace UI needs and F12 never
+ * provided (F12 is scoped to "read data WITHIN an already-known,
+ * already-authorized institutionId" -- it has no "which institutions
+ * am I an admin of" roster lookup of its own). A pure roster read,
+ * scoped to the caller's OWN user id -- never returns another actor's
+ * memberships, never grants access to anything itself (the institution
+ * intelligence read model still independently re-authorizes every
+ * call, per F12's own design).
+ */
+export async function getAdministeredInstitutions(userId: string): Promise<Institution[]> {
+  const result = await db.query(
+    `
+    SELECT i.id, i.name, i.status
+    FROM institutions i
+    JOIN institution_memberships im ON im.institution_id = i.id
+    WHERE im.user_id = $1 AND im.membership_role = 'INSTITUTION_ADMIN' AND im.status = 'APPROVED'
+    ORDER BY i.name
+    `,
+    [userId]
+  );
+  return result.rows.map((r: any) => ({ id: r.id, name: r.name, status: r.status }));
+}
+
 export async function listPendingMemberships(institutionId: string): Promise<InstitutionMembership[]> {
   const result = await db.query(
     `SELECT id, institution_id, user_id, membership_role, status FROM institution_memberships WHERE institution_id = $1 AND status = 'PENDING' ORDER BY requested_at ASC`,

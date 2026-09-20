@@ -42,6 +42,8 @@ import {
   GraduationCap,
   Menu,
   X,
+  School,
+  Building2,
 } from 'lucide-react';
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
 
@@ -70,6 +72,8 @@ const ICONS: Record<string, ReactNode> = {
   CreditCard: <CreditCard size={16} strokeWidth={2} aria-hidden />,
   ShieldCheck: <ShieldCheck size={16} strokeWidth={2} aria-hidden />,
   GraduationCap: <GraduationCap size={16} strokeWidth={2} aria-hidden />,
+  School: <School size={16} strokeWidth={2} aria-hidden />,
+  Building2: <Building2 size={16} strokeWidth={2} aria-hidden />,
 };
 
 /** Nav groups with labels already resolved (server passes plain strings). */
@@ -171,6 +175,7 @@ export default function LearnerShell({
   exitHref = '/dashboard/today',
   localeSwitcher,
   chrome = 'full',
+  workspaceSwitcher,
   children,
 }: {
   groups: ResolvedNavGroup[];
@@ -187,6 +192,8 @@ export default function LearnerShell({
   exitHref?: string;
   localeSwitcher: ReactNode;
   chrome?: 'full' | 'minimal';
+  /** F13 -- shows the actor's active workspace and lets a multi-workspace user switch (task section 7). Optional so Focus Mode / any future minimal-chrome caller is unaffected. Rendered in both the desktop sidebar and the mobile drawer, above the Footer, so it is never hidden on a small viewport (INV-F13-22). */
+  workspaceSwitcher?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? '';
@@ -326,6 +333,7 @@ export default function LearnerShell({
       {/* desktop sidebar */}
       <aside className="lx-sidebar">
         {logo}
+        {workspaceSwitcher}
         <NavList groups={groups} pathname={pathname} label={navLabel} />
         <Footer displayName={displayName} streak={streak} streakLabel={streakLabel} localeSwitcher={localeSwitcher} />
       </aside>
@@ -356,6 +364,7 @@ export default function LearnerShell({
                 <X size={20} strokeWidth={2} aria-hidden />
               </button>
             </div>
+            {workspaceSwitcher}
             <NavList groups={groups} pathname={pathname} onNavigate={() => setOpen(false)} label={menuLabel} />
             <Footer displayName={displayName} streak={streak} streakLabel={streakLabel} localeSwitcher={localeSwitcher} />
           </div>

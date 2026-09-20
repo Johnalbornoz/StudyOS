@@ -316,6 +316,69 @@ a { color: inherit; text-decoration: none; }
   margin: var(--space-4) 0 4px;
 }
 
+/* F13 -- workspace switcher (task section 7). Placed directly under the
+   logo, above the nav list, so the active workspace is the first thing
+   a multi-workspace actor sees -- never buried in a settings page. */
+.lx-workspace-indicator {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0 var(--space-3);
+  text-align: center;
+}
+.lx-workspace-switcher { position: relative; margin: var(--space-2) 0 var(--space-3); }
+.lx-workspace-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.lx-workspace-trigger:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.lx-workspace-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+}
+.lx-workspace-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  text-align: left;
+}
+.lx-workspace-option:hover, .lx-workspace-option:focus-visible { background: var(--brand-subtle); color: var(--brand-ink); }
+.lx-workspace-error { color: var(--error); font-size: 12px; margin: var(--space-1) 0 0; }
+
 @media (max-width: 1023px) {
   .lx-shell { grid-template-columns: 1fr; }
   .lx-sidebar { display: none; }

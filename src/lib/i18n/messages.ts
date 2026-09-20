@@ -49,6 +49,32 @@ export type MessageKey =
   | 'common.notAuthenticated' | 'common.signIn' | 'common.back' | 'common.create'
   | 'common.creating' | 'common.loading' | 'common.error'
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
+  // F13 -- workspace switcher
+  | 'workspace.switcherLabel' | 'workspace.student' | 'workspace.parent' | 'workspace.teacher' | 'workspace.institution' | 'workspace.admin'
+  // F13 -- Teacher workspace navigation + surfaces
+  | 'nav.groupTeacher' | 'nav.teacherClasses'
+  | 'nav.groupInstitution' | 'nav.institutionOverview'
+  | 'teacher.classes.title' | 'teacher.classes.subtitle' | 'teacher.classes.empty' | 'teacher.classes.studentsCount'
+  | 'teacher.roster.title' | 'teacher.roster.empty' | 'teacher.roster.viewStudent'
+  | 'teacher.student.overviewTitle' | 'teacher.student.conceptsWithEvidence' | 'teacher.student.attentionAreas'
+  | 'teacher.student.readiness' | 'teacher.student.lastActivity' | 'teacher.student.noActiveExamProfile' | 'teacher.student.never'
+  | 'teacher.interventions.title' | 'teacher.interventions.empty' | 'teacher.interventions.assignCta'
+  | 'teacher.interventions.type.concept' | 'teacher.interventions.type.skill' | 'teacher.interventions.type.competency' | 'teacher.interventions.type.exam'
+  | 'teacher.assign.title' | 'teacher.assign.targetTypeLabel' | 'teacher.assign.conceptIdLabel' | 'teacher.assign.skillIdLabel'
+  | 'teacher.assign.competencyIdLabel' | 'teacher.assign.examProfileIdLabel' | 'teacher.assign.simulationTypeLabel'
+  | 'teacher.assign.submit' | 'teacher.assign.submitting' | 'teacher.assign.success' | 'teacher.assign.error'
+  // F13 -- Institution workspace
+  | 'institution.mine.empty' | 'institution.overview.title' | 'institution.overview.activeTeachers' | 'institution.overview.classes'
+  | 'institution.overview.uniqueLearners' | 'institution.overview.activeEnrollments'
+  | 'institution.grades.title' | 'institution.classes.title' | 'institution.teachers.title' | 'institution.learners.title'
+  | 'institution.learners.noEvidence' | 'institution.learners.withEvidence' | 'institution.learners.suppressedSmallCohort'
+  | 'institution.coverage.title' | 'institution.readiness.title' | 'institution.interventions.title'
+  | 'institution.attention.title' | 'institution.attention.empty'
+  // F13 -- status vocabulary (shared, task section 25)
+  | 'status.notStarted' | 'status.inProgress' | 'status.completed' | 'status.needsMoreEvidence' | 'status.needsAttention'
+  | 'status.unavailable' | 'status.notReady' | 'status.platformNotReady' | 'status.pending' | 'status.revoked'
+  // F13 -- shared empty/error states
+  | 'empty.noData' | 'empty.smallCohortSuppressed' | 'error.generic' | 'error.forbidden' | 'error.notFound'
   | 'dashboard.eyebrow' | 'dashboard.greeting' | 'dashboard.subtitle'
   | 'dashboard.createSubject' | 'dashboard.conceptsAtRisk' | 'dashboard.needReview'
   | 'dashboard.avgMastery' | 'dashboard.avgMasterySubtitle' | 'dashboard.avgMasteryEmpty'
@@ -551,6 +577,27 @@ export type MessageKey =
 type Messages = Record<MessageKey, string>;
 
 const es: Messages = {
+  'workspace.switcherLabel': 'Espacio de trabajo', 'workspace.student': 'Estudiante', 'workspace.parent': 'Padre/Madre', 'workspace.teacher': 'Docente', 'workspace.institution': 'Institución', 'workspace.admin': 'Administración',
+  'nav.groupTeacher': 'Docente', 'nav.teacherClasses': 'Mis clases',
+  'nav.groupInstitution': 'Institución', 'nav.institutionOverview': 'Resumen',
+  'teacher.classes.title': 'Mis clases', 'teacher.classes.subtitle': 'Clases con una asignación activa', 'teacher.classes.empty': 'No tienes clases asignadas todavía.', 'teacher.classes.studentsCount': 'estudiantes',
+  'teacher.roster.title': 'Estudiantes', 'teacher.roster.empty': 'Esta clase no tiene estudiantes activos.', 'teacher.roster.viewStudent': 'Ver detalle',
+  'teacher.student.overviewTitle': 'Resumen del estudiante', 'teacher.student.conceptsWithEvidence': 'Conceptos con evidencia', 'teacher.student.attentionAreas': 'Áreas de atención',
+  'teacher.student.readiness': 'Preparación para el examen', 'teacher.student.lastActivity': 'Última actividad', 'teacher.student.noActiveExamProfile': 'Sin perfil de examen activo', 'teacher.student.never': 'Nunca',
+  'teacher.interventions.title': 'Asignaciones', 'teacher.interventions.empty': 'No hay asignaciones para este estudiante todavía.', 'teacher.interventions.assignCta': 'Nueva asignación',
+  'teacher.interventions.type.concept': 'Concepto', 'teacher.interventions.type.skill': 'Habilidad', 'teacher.interventions.type.competency': 'Competencia', 'teacher.interventions.type.exam': 'Examen',
+  'teacher.assign.title': 'Asignar refuerzo', 'teacher.assign.targetTypeLabel': 'Tipo de objetivo', 'teacher.assign.conceptIdLabel': 'ID del concepto', 'teacher.assign.skillIdLabel': 'ID de la habilidad',
+  'teacher.assign.competencyIdLabel': 'ID de la competencia', 'teacher.assign.examProfileIdLabel': 'ID del perfil de examen', 'teacher.assign.simulationTypeLabel': 'Tipo de simulación',
+  'teacher.assign.submit': 'Asignar', 'teacher.assign.submitting': 'Asignando…', 'teacher.assign.success': 'Asignación creada.', 'teacher.assign.error': 'No se pudo crear la asignación.',
+  'institution.mine.empty': 'No administras ninguna institución todavía.', 'institution.overview.title': 'Resumen de la institución', 'institution.overview.activeTeachers': 'Docentes activos', 'institution.overview.classes': 'Clases',
+  'institution.overview.uniqueLearners': 'Estudiantes únicos', 'institution.overview.activeEnrollments': 'Matrículas activas',
+  'institution.grades.title': 'Grados', 'institution.classes.title': 'Clases', 'institution.teachers.title': 'Docentes', 'institution.learners.title': 'Estudiantes',
+  'institution.learners.noEvidence': 'Sin evidencia', 'institution.learners.withEvidence': 'Con evidencia', 'institution.learners.suppressedSmallCohort': 'Grupo demasiado pequeño para mostrar de forma segura',
+  'institution.coverage.title': 'Cobertura curricular', 'institution.readiness.title': 'Preparación para el examen', 'institution.interventions.title': 'Actividad de asignaciones',
+  'institution.attention.title': 'Áreas de atención', 'institution.attention.empty': 'No se detectaron áreas de atención con los datos actuales.',
+  'status.notStarted': 'Sin iniciar', 'status.inProgress': 'En curso', 'status.completed': 'Completado', 'status.needsMoreEvidence': 'Necesita más evidencia', 'status.needsAttention': 'Necesita atención',
+  'status.unavailable': 'No disponible', 'status.notReady': 'Aún no disponible', 'status.platformNotReady': 'StudyUS aún no cubre esto', 'status.pending': 'Pendiente', 'status.revoked': 'Revocado',
+  'empty.noData': 'Todavía no hay datos aquí.', 'empty.smallCohortSuppressed': 'Grupo demasiado pequeño para mostrar de forma segura.', 'error.generic': 'Ocurrió un error. Intenta de nuevo.', 'error.forbidden': 'No tienes acceso a esto.', 'error.notFound': 'No se encontró.',
   'nav.groupLearning': 'Aprendizaje',
   'nav.groupAccount': 'Cuenta',
   'nav.groupSystem': 'Sistema',
@@ -1699,6 +1746,27 @@ const es: Messages = {
 };
 
 const en: Messages = {
+  'workspace.switcherLabel': 'Workspace', 'workspace.student': 'Student', 'workspace.parent': 'Parent', 'workspace.teacher': 'Teacher', 'workspace.institution': 'Institution', 'workspace.admin': 'Admin',
+  'nav.groupTeacher': 'Teacher', 'nav.teacherClasses': 'My Classes',
+  'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Overview',
+  'teacher.classes.title': 'My Classes', 'teacher.classes.subtitle': 'Classes with an active assignment', 'teacher.classes.empty': "You don't have any assigned classes yet.", 'teacher.classes.studentsCount': 'students',
+  'teacher.roster.title': 'Students', 'teacher.roster.empty': 'This class has no active students.', 'teacher.roster.viewStudent': 'View detail',
+  'teacher.student.overviewTitle': 'Student Overview', 'teacher.student.conceptsWithEvidence': 'Concepts with evidence', 'teacher.student.attentionAreas': 'Attention areas',
+  'teacher.student.readiness': 'Exam readiness', 'teacher.student.lastActivity': 'Last activity', 'teacher.student.noActiveExamProfile': 'No active exam profile', 'teacher.student.never': 'Never',
+  'teacher.interventions.title': 'Assignments', 'teacher.interventions.empty': 'No assignments for this student yet.', 'teacher.interventions.assignCta': 'New assignment',
+  'teacher.interventions.type.concept': 'Concept', 'teacher.interventions.type.skill': 'Skill', 'teacher.interventions.type.competency': 'Competency', 'teacher.interventions.type.exam': 'Exam',
+  'teacher.assign.title': 'Assign Reinforcement', 'teacher.assign.targetTypeLabel': 'Target type', 'teacher.assign.conceptIdLabel': 'Concept ID', 'teacher.assign.skillIdLabel': 'Skill ID',
+  'teacher.assign.competencyIdLabel': 'Competency ID', 'teacher.assign.examProfileIdLabel': 'Exam profile ID', 'teacher.assign.simulationTypeLabel': 'Simulation type',
+  'teacher.assign.submit': 'Assign', 'teacher.assign.submitting': 'Assigning…', 'teacher.assign.success': 'Assignment created.', 'teacher.assign.error': 'Could not create the assignment.',
+  'institution.mine.empty': "You don't administer any institution yet.", 'institution.overview.title': 'Institution Overview', 'institution.overview.activeTeachers': 'Active teachers', 'institution.overview.classes': 'Classes',
+  'institution.overview.uniqueLearners': 'Unique learners', 'institution.overview.activeEnrollments': 'Active enrollments',
+  'institution.grades.title': 'Grades', 'institution.classes.title': 'Classes', 'institution.teachers.title': 'Teachers', 'institution.learners.title': 'Learners',
+  'institution.learners.noEvidence': 'No evidence', 'institution.learners.withEvidence': 'With evidence', 'institution.learners.suppressedSmallCohort': 'Cohort too small to show safely',
+  'institution.coverage.title': 'Curriculum Coverage', 'institution.readiness.title': 'Exam Readiness', 'institution.interventions.title': 'Assignment Activity',
+  'institution.attention.title': 'Attention Areas', 'institution.attention.empty': 'No attention areas detected in the current data.',
+  'status.notStarted': 'Not started', 'status.inProgress': 'In progress', 'status.completed': 'Completed', 'status.needsMoreEvidence': 'Needs more evidence', 'status.needsAttention': 'Needs attention',
+  'status.unavailable': 'Unavailable', 'status.notReady': 'Not ready yet', 'status.platformNotReady': "StudyUS doesn't cover this yet", 'status.pending': 'Pending', 'status.revoked': 'Revoked',
+  'empty.noData': 'No data here yet.', 'empty.smallCohortSuppressed': 'Cohort too small to show safely.', 'error.generic': 'Something went wrong. Please try again.', 'error.forbidden': "You don't have access to this.", 'error.notFound': 'Not found.',
   'nav.groupLearning': 'Learning',
   'nav.groupAccount': 'Account',
   'nav.groupSystem': 'System',
@@ -2847,6 +2915,27 @@ const en: Messages = {
 };
 
 const de: Messages = {
+  'workspace.switcherLabel': 'Arbeitsbereich', 'workspace.student': 'Schüler', 'workspace.parent': 'Elternteil', 'workspace.teacher': 'Lehrkraft', 'workspace.institution': 'Institution', 'workspace.admin': 'Verwaltung',
+  'nav.groupTeacher': 'Lehrkraft', 'nav.teacherClasses': 'Meine Klassen',
+  'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Übersicht',
+  'teacher.classes.title': 'Meine Klassen', 'teacher.classes.subtitle': 'Klassen mit aktiver Zuweisung', 'teacher.classes.empty': 'Dir sind noch keine Klassen zugewiesen.', 'teacher.classes.studentsCount': 'Schüler',
+  'teacher.roster.title': 'Schüler', 'teacher.roster.empty': 'Diese Klasse hat keine aktiven Schüler.', 'teacher.roster.viewStudent': 'Details ansehen',
+  'teacher.student.overviewTitle': 'Schülerübersicht', 'teacher.student.conceptsWithEvidence': 'Konzepte mit Nachweisen', 'teacher.student.attentionAreas': 'Aufmerksamkeitsbereiche',
+  'teacher.student.readiness': 'Prüfungsbereitschaft', 'teacher.student.lastActivity': 'Letzte Aktivität', 'teacher.student.noActiveExamProfile': 'Kein aktives Prüfungsprofil', 'teacher.student.never': 'Nie',
+  'teacher.interventions.title': 'Zuweisungen', 'teacher.interventions.empty': 'Noch keine Zuweisungen für diesen Schüler.', 'teacher.interventions.assignCta': 'Neue Zuweisung',
+  'teacher.interventions.type.concept': 'Konzept', 'teacher.interventions.type.skill': 'Fertigkeit', 'teacher.interventions.type.competency': 'Kompetenz', 'teacher.interventions.type.exam': 'Prüfung',
+  'teacher.assign.title': 'Verstärkung zuweisen', 'teacher.assign.targetTypeLabel': 'Zieltyp', 'teacher.assign.conceptIdLabel': 'Konzept-ID', 'teacher.assign.skillIdLabel': 'Fertigkeits-ID',
+  'teacher.assign.competencyIdLabel': 'Kompetenz-ID', 'teacher.assign.examProfileIdLabel': 'Prüfungsprofil-ID', 'teacher.assign.simulationTypeLabel': 'Simulationstyp',
+  'teacher.assign.submit': 'Zuweisen', 'teacher.assign.submitting': 'Wird zugewiesen…', 'teacher.assign.success': 'Zuweisung erstellt.', 'teacher.assign.error': 'Zuweisung konnte nicht erstellt werden.',
+  'institution.mine.empty': 'Du verwaltest noch keine Institution.', 'institution.overview.title': 'Institutionsübersicht', 'institution.overview.activeTeachers': 'Aktive Lehrkräfte', 'institution.overview.classes': 'Klassen',
+  'institution.overview.uniqueLearners': 'Eindeutige Lernende', 'institution.overview.activeEnrollments': 'Aktive Einschreibungen',
+  'institution.grades.title': 'Jahrgangsstufen', 'institution.classes.title': 'Klassen', 'institution.teachers.title': 'Lehrkräfte', 'institution.learners.title': 'Lernende',
+  'institution.learners.noEvidence': 'Keine Nachweise', 'institution.learners.withEvidence': 'Mit Nachweisen', 'institution.learners.suppressedSmallCohort': 'Gruppe zu klein für sichere Anzeige',
+  'institution.coverage.title': 'Lehrplanabdeckung', 'institution.readiness.title': 'Prüfungsbereitschaft', 'institution.interventions.title': 'Zuweisungsaktivität',
+  'institution.attention.title': 'Aufmerksamkeitsbereiche', 'institution.attention.empty': 'Mit den aktuellen Daten wurden keine Aufmerksamkeitsbereiche erkannt.',
+  'status.notStarted': 'Nicht begonnen', 'status.inProgress': 'In Bearbeitung', 'status.completed': 'Abgeschlossen', 'status.needsMoreEvidence': 'Mehr Nachweise erforderlich', 'status.needsAttention': 'Erfordert Aufmerksamkeit',
+  'status.unavailable': 'Nicht verfügbar', 'status.notReady': 'Noch nicht bereit', 'status.platformNotReady': 'StudyUS deckt dies noch nicht ab', 'status.pending': 'Ausstehend', 'status.revoked': 'Widerrufen',
+  'empty.noData': 'Hier gibt es noch keine Daten.', 'empty.smallCohortSuppressed': 'Gruppe zu klein für sichere Anzeige.', 'error.generic': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', 'error.forbidden': 'Du hast keinen Zugriff darauf.', 'error.notFound': 'Nicht gefunden.',
   'nav.groupLearning': 'Lernen',
   'nav.groupAccount': 'Konto',
   'nav.groupSystem': 'System',
@@ -3995,6 +4084,27 @@ const de: Messages = {
 };
 
 const fr: Messages = {
+  'workspace.switcherLabel': 'Espace de travail', 'workspace.student': 'Élève', 'workspace.parent': 'Parent', 'workspace.teacher': 'Enseignant', 'workspace.institution': 'Établissement', 'workspace.admin': 'Administration',
+  'nav.groupTeacher': 'Enseignant', 'nav.teacherClasses': 'Mes classes',
+  'nav.groupInstitution': 'Établissement', 'nav.institutionOverview': 'Aperçu',
+  'teacher.classes.title': 'Mes classes', 'teacher.classes.subtitle': 'Classes avec une affectation active', 'teacher.classes.empty': "Vous n'avez pas encore de classe assignée.", 'teacher.classes.studentsCount': 'élèves',
+  'teacher.roster.title': 'Élèves', 'teacher.roster.empty': "Cette classe n'a pas d'élève actif.", 'teacher.roster.viewStudent': 'Voir le détail',
+  'teacher.student.overviewTitle': "Aperçu de l'élève", 'teacher.student.conceptsWithEvidence': 'Concepts avec preuves', 'teacher.student.attentionAreas': "Points d'attention",
+  'teacher.student.readiness': "Préparation à l'examen", 'teacher.student.lastActivity': 'Dernière activité', 'teacher.student.noActiveExamProfile': "Aucun profil d'examen actif", 'teacher.student.never': 'Jamais',
+  'teacher.interventions.title': 'Affectations', 'teacher.interventions.empty': "Aucune affectation pour cet élève pour l'instant.", 'teacher.interventions.assignCta': 'Nouvelle affectation',
+  'teacher.interventions.type.concept': 'Concept', 'teacher.interventions.type.skill': 'Compétence pratique', 'teacher.interventions.type.competency': 'Compétence', 'teacher.interventions.type.exam': 'Examen',
+  'teacher.assign.title': 'Assigner un renforcement', 'teacher.assign.targetTypeLabel': 'Type de cible', 'teacher.assign.conceptIdLabel': 'ID du concept', 'teacher.assign.skillIdLabel': 'ID de la compétence pratique',
+  'teacher.assign.competencyIdLabel': 'ID de la compétence', 'teacher.assign.examProfileIdLabel': "ID du profil d'examen", 'teacher.assign.simulationTypeLabel': 'Type de simulation',
+  'teacher.assign.submit': 'Assigner', 'teacher.assign.submitting': 'Affectation en cours…', 'teacher.assign.success': 'Affectation créée.', 'teacher.assign.error': "Impossible de créer l'affectation.",
+  'institution.mine.empty': "Vous n'administrez encore aucun établissement.", 'institution.overview.title': "Aperçu de l'établissement", 'institution.overview.activeTeachers': 'Enseignants actifs', 'institution.overview.classes': 'Classes',
+  'institution.overview.uniqueLearners': 'Élèves uniques', 'institution.overview.activeEnrollments': 'Inscriptions actives',
+  'institution.grades.title': 'Niveaux', 'institution.classes.title': 'Classes', 'institution.teachers.title': 'Enseignants', 'institution.learners.title': 'Élèves',
+  'institution.learners.noEvidence': 'Aucune preuve', 'institution.learners.withEvidence': 'Avec preuves', 'institution.learners.suppressedSmallCohort': 'Groupe trop petit pour un affichage sûr',
+  'institution.coverage.title': 'Couverture du programme', 'institution.readiness.title': "Préparation à l'examen", 'institution.interventions.title': "Activité d'affectation",
+  'institution.attention.title': "Points d'attention", 'institution.attention.empty': "Aucun point d'attention détecté avec les données actuelles.",
+  'status.notStarted': 'Non commencé', 'status.inProgress': 'En cours', 'status.completed': 'Terminé', 'status.needsMoreEvidence': 'Nécessite plus de preuves', 'status.needsAttention': "Nécessite de l'attention",
+  'status.unavailable': 'Indisponible', 'status.notReady': 'Pas encore prêt', 'status.platformNotReady': 'StudyUS ne couvre pas encore ceci', 'status.pending': 'En attente', 'status.revoked': 'Révoqué',
+  'empty.noData': "Aucune donnée pour l'instant.", 'empty.smallCohortSuppressed': 'Groupe trop petit pour un affichage sûr.', 'error.generic': "Une erreur s'est produite. Veuillez réessayer.", 'error.forbidden': "Vous n'avez pas accès à ceci.", 'error.notFound': 'Introuvable.',
   'nav.groupLearning': 'Apprentissage',
   'nav.groupAccount': 'Compte',
   'nav.groupSystem': 'Système',
@@ -5143,6 +5253,27 @@ const fr: Messages = {
 };
 
 const pt: Messages = {
+  'workspace.switcherLabel': 'Espaço de trabalho', 'workspace.student': 'Aluno', 'workspace.parent': 'Responsável', 'workspace.teacher': 'Professor', 'workspace.institution': 'Instituição', 'workspace.admin': 'Administração',
+  'nav.groupTeacher': 'Professor', 'nav.teacherClasses': 'Minhas turmas',
+  'nav.groupInstitution': 'Instituição', 'nav.institutionOverview': 'Visão geral',
+  'teacher.classes.title': 'Minhas turmas', 'teacher.classes.subtitle': 'Turmas com atribuição ativa', 'teacher.classes.empty': 'Você ainda não tem turmas atribuídas.', 'teacher.classes.studentsCount': 'alunos',
+  'teacher.roster.title': 'Alunos', 'teacher.roster.empty': 'Esta turma não tem alunos ativos.', 'teacher.roster.viewStudent': 'Ver detalhe',
+  'teacher.student.overviewTitle': 'Visão geral do aluno', 'teacher.student.conceptsWithEvidence': 'Conceitos com evidência', 'teacher.student.attentionAreas': 'Áreas de atenção',
+  'teacher.student.readiness': 'Preparação para o exame', 'teacher.student.lastActivity': 'Última atividade', 'teacher.student.noActiveExamProfile': 'Sem perfil de exame ativo', 'teacher.student.never': 'Nunca',
+  'teacher.interventions.title': 'Atribuições', 'teacher.interventions.empty': 'Ainda não há atribuições para este aluno.', 'teacher.interventions.assignCta': 'Nova atribuição',
+  'teacher.interventions.type.concept': 'Conceito', 'teacher.interventions.type.skill': 'Habilidade', 'teacher.interventions.type.competency': 'Competência', 'teacher.interventions.type.exam': 'Exame',
+  'teacher.assign.title': 'Atribuir reforço', 'teacher.assign.targetTypeLabel': 'Tipo de alvo', 'teacher.assign.conceptIdLabel': 'ID do conceito', 'teacher.assign.skillIdLabel': 'ID da habilidade',
+  'teacher.assign.competencyIdLabel': 'ID da competência', 'teacher.assign.examProfileIdLabel': 'ID do perfil de exame', 'teacher.assign.simulationTypeLabel': 'Tipo de simulação',
+  'teacher.assign.submit': 'Atribuir', 'teacher.assign.submitting': 'Atribuindo…', 'teacher.assign.success': 'Atribuição criada.', 'teacher.assign.error': 'Não foi possível criar a atribuição.',
+  'institution.mine.empty': 'Você ainda não administra nenhuma instituição.', 'institution.overview.title': 'Visão geral da instituição', 'institution.overview.activeTeachers': 'Professores ativos', 'institution.overview.classes': 'Turmas',
+  'institution.overview.uniqueLearners': 'Alunos únicos', 'institution.overview.activeEnrollments': 'Matrículas ativas',
+  'institution.grades.title': 'Séries', 'institution.classes.title': 'Turmas', 'institution.teachers.title': 'Professores', 'institution.learners.title': 'Alunos',
+  'institution.learners.noEvidence': 'Sem evidência', 'institution.learners.withEvidence': 'Com evidência', 'institution.learners.suppressedSmallCohort': 'Grupo pequeno demais para exibir com segurança',
+  'institution.coverage.title': 'Cobertura curricular', 'institution.readiness.title': 'Preparação para o exame', 'institution.interventions.title': 'Atividade de atribuições',
+  'institution.attention.title': 'Áreas de atenção', 'institution.attention.empty': 'Nenhuma área de atenção detectada com os dados atuais.',
+  'status.notStarted': 'Não iniciado', 'status.inProgress': 'Em andamento', 'status.completed': 'Concluído', 'status.needsMoreEvidence': 'Precisa de mais evidência', 'status.needsAttention': 'Precisa de atenção',
+  'status.unavailable': 'Indisponível', 'status.notReady': 'Ainda não disponível', 'status.platformNotReady': 'O StudyUS ainda não cobre isso', 'status.pending': 'Pendente', 'status.revoked': 'Revogado',
+  'empty.noData': 'Ainda não há dados aqui.', 'empty.smallCohortSuppressed': 'Grupo pequeno demais para exibir com segurança.', 'error.generic': 'Algo deu errado. Tente novamente.', 'error.forbidden': 'Você não tem acesso a isto.', 'error.notFound': 'Não encontrado.',
   'nav.groupLearning': 'Aprendizado',
   'nav.groupAccount': 'Conta',
   'nav.groupSystem': 'Sistema',
