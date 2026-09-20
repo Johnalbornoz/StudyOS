@@ -2,6 +2,7 @@
 
 Branch: `f14/experience-completion-readiness`
 Base: `origin/f13/ux-consolidation@39c825da84e061a0ddf72dfdb61ccf6519ad127f`
+Certified HEAD: `0cae7c477c3e1ec677be96a0a2824fc58ff0cfc3`
 
 ## Test Layer Matrix (mandatory separate reporting)
 
