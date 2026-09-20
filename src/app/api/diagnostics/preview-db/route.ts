@@ -60,17 +60,51 @@ export async function GET() {
 
   const dbFingerprint = createHash('sha256').update(`${hostname}|${databaseName}`).digest('hex').slice(0, 16);
 
-  const [usersResult, ledgerResult] = await Promise.all([
+  const [
+    usersResult,
+    ledgerResult,
+    userRolesResult,
+    studentsResult,
+    institutionsResult,
+    schemaResult,
+    searchPathResult,
+    tablesResult,
+  ] = await Promise.all([
     db.query(`SELECT to_regclass('public.users') IS NOT NULL AS exists`),
     db.query(`SELECT to_regclass('public.schema_migrations') IS NOT NULL AS exists`),
+    db.query(`SELECT to_regclass('public.user_roles') IS NOT NULL AS exists`),
+    db.query(`SELECT to_regclass('public.students') IS NOT NULL AS exists`),
+    db.query(`SELECT to_regclass('public.institutions') IS NOT NULL AS exists`),
+    db.query(`SELECT current_schema() AS schema`),
+    db.query(`SELECT current_setting('search_path') AS search_path`),
+    db.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`),
   ]);
+
   const usersTableExists: boolean = usersResult.rows[0].exists;
   const migrationLedgerExists: boolean = ledgerResult.rows[0].exists;
+  const userRolesTableExists: boolean = userRolesResult.rows[0].exists;
+  const studentsTableExists: boolean = studentsResult.rows[0].exists;
+  const institutionsTableExists: boolean = institutionsResult.rows[0].exists;
+  const schemaMigrationsTableExists: boolean = migrationLedgerExists;
+  const currentSchema: string = schemaResult.rows[0].schema;
+  const searchPath: string = searchPathResult.rows[0].search_path;
+  const publicTableNames: string[] = tablesResult.rows.map((r: { table_name: string }) => r.table_name);
+  const publicTableCount: number = publicTableNames.length;
 
   let appliedMigrationCount = 0;
+  let migrationIds: Array<{ version: string; name: string; appliedAt: string }> = [];
   if (migrationLedgerExists) {
     const countResult = await db.query(`SELECT COUNT(*)::int AS c FROM schema_migrations`);
     appliedMigrationCount = countResult.rows[0].c;
+
+    const idsResult = await db.query(
+      `SELECT version, name, applied_at FROM schema_migrations ORDER BY applied_at ASC`
+    );
+    migrationIds = idsResult.rows.map((r: { version: string; name: string; applied_at: string | Date }) => ({
+      version: r.version,
+      name: r.name,
+      appliedAt: new Date(r.applied_at).toISOString(),
+    }));
   }
 
   const { commitSha } = buildDeploymentVersion(process.env);
@@ -83,5 +117,14 @@ export async function GET() {
     usersTableExists,
     migrationLedgerExists,
     appliedMigrationCount,
+    currentSchema,
+    searchPath,
+    publicTableCount,
+    publicTableNames,
+    migrationIds,
+    userRolesTableExists,
+    studentsTableExists,
+    institutionsTableExists,
+    schemaMigrationsTableExists,
   });
 }
