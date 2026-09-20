@@ -1,5 +1,14 @@
 # F15 — Preview Certification (Workstream D)
 
+## F15-C1 update (2026-09-20): Clerk misconfiguration CLOSED, database migration CLOSED
+
+Both blockers this document originally reported are now resolved, independently re-verified, not merely asserted:
+
+- **Clerk**: the operator corrected the Preview-scope `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`/`CLERK_SECRET_KEY` to StudyOS_App's own Development-instance values (Production untouched). Re-verified live by this agent on the current deployment (`dpl_G0e8ic1c9`, `study-g0e8ic1c9-study-so.vercel.app`, `target: preview`): loading `/sign-in` renders **"Sign in to StudyOS_App"** with the **"Development mode"** badge intact — the correct application, the correct (non-live) instance. `IVG-F15-02` is now marked **RESOLVED**.
+- **Database**: see F15_DATABASE_AND_MIGRATION_READINESS.md's own "VERIFIED this phase" section — the runtime Preview database now has all 32 migrations applied (0 pending, 0 checksum drift), `users`/`user_roles`/`institutions` all exist, and identity integrity checks (11 students, 11 users, 15 profiles, 15 user_roles, 0 broken links, 0 duplicates) are independently confirmed via the temporary diagnostic route, not the operator's word alone.
+
+What remains open: full authenticated E2E (no longer blocked by Clerk — now blocked only by needing an operator-assisted login session, since this agent cannot enter credentials itself) and credential rotation (`IVG-F14-06`/`IVG-F15-01`, unrelated to Clerk, still `OPERATOR_ACTION_REQUIRED`).
+
 ## Status: A REAL PREVIEW WAS ESTABLISHED — a genuine change from F12/F13/F14's own DEFERRED status
 
 ## What was found (corrects F12/F13/F14's own repeated claim of "no Vercel CLI/.vercel linkage available")
@@ -42,12 +51,12 @@ This is a genuinely new, actionable, Preview-specific finding this phase's own r
 
 Even setting the Clerk misconfiguration aside, this agent is categorically prohibited from creating accounts or entering credentials/passwords on the user's behalf (a fixed tool-use boundary, not an environment-safety judgment call). So authenticated E2E on Preview requires BOTH: (1) the operator fixing the Clerk publishable/secret key for the Preview environment, AND (2) either operator-supplied test credentials this agent can use, or the operator executing the authenticated journeys themselves (optionally narrated/guided by this agent).
 
-## Recommendation
+## Recommendation (original F15 text — items 1–2 now DONE, see F15-C1 update above)
 
-1. **Operator action required**: in the Vercel dashboard, under `study-so/study-os` → Settings → Environment Variables, verify `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (and `CLERK_SECRET_KEY`) for the **Preview** environment actually point at StudyUS's own Clerk application, not `own-pmo`'s.
-2. Once corrected, re-run this same `vercel deploy` command (or push this branch, if a Git integration triggers Preview builds automatically) and re-verify `/sign-in` renders "Sign in to StudyUS."
-3. Only then should real authenticated E2E (Workstream E) be attempted, ideally with the operator either supplying disposable test credentials or executing the flows directly.
+~~1. **Operator action required**: in the Vercel dashboard, under `study-so/study-os` → Settings → Environment Variables, verify `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (and `CLERK_SECRET_KEY`) for the **Preview** environment actually point at StudyUS's own Clerk application, not `own-pmo`'s.~~
+~~2. Once corrected, re-run this same `vercel deploy` command (or push this branch, if a Git integration triggers Preview builds automatically) and re-verify `/sign-in` renders "Sign in to StudyUS."~~
+3. Real authenticated E2E (Workstream E) can now be attempted — remaining blocker is solely the need for an operator-assisted login session (this agent cannot enter credentials), not Clerk configuration.
 
 ## IVG registration
 
-`IVG-F15-02`: Preview Clerk misconfiguration must be fixed and re-verified before authenticated E2E can be attempted. `IVG-F13-01` (no Preview) is now **RESOLVED** (a real Preview deployment exists) but superseded in practice by this new, more specific blocker.
+`IVG-F15-02`: **RESOLVED** (F15-C1, 2026-09-20) — Preview Clerk fixed and re-verified live (`/sign-in` renders "Sign in to StudyOS_App", Development mode badge present). `IVG-F13-01` (no Preview) remains **RESOLVED** (a real Preview deployment exists) and is no longer superseded by any Clerk blocker.

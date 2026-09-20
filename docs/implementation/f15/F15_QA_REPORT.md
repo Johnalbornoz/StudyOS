@@ -4,6 +4,16 @@ Branch: `f15/pilot-readiness-production-hardening`
 Base: `origin/f14/experience-completion-readiness@e3d23a44d0657b6ccf9fedf08aa8e8d454839d41`
 Certified HEAD: `642aa0267ef9d15b4da323d8b89d7ff64dedc1fa`
 
+## F15-C1 addendum (branch `f15-c1/pilot-gate-closure`, HEAD `a9b2d8a`, 2026-09-20)
+
+Both hard Pilot gates F15 left open have changed status — one closed, one unchanged:
+
+- **Preview Clerk misconfiguration (bug #7 below): now FIXED and independently re-verified.** The operator corrected the Preview-scope keys; this agent confirmed live that `/sign-in` renders "Sign in to StudyOS_App" with Development mode.
+- **Preview database migration state: now VERIFIED (was previously unknown, see F15_DATABASE_AND_MIGRATION_READINESS.md).** 32/32 migrations applied, identity backfill run twice with zero-change idempotency confirmed on the second run, all integrity checks at 0 anomalies.
+- **Credential rotation: unchanged, still OPERATOR_ACTION_REQUIRED.**
+
+Test suite grew alongside the new temporary diagnostic route: 353 files / 5644 tests / 5644 passed / 0 failed (up from this document's original 352/5632 — 12 new tests for `src/app/api/diagnostics/preview-db/route.ts`). `tsc --noEmit` and `npm run build` re-verified clean on both F15-C1 commits (`fd01e14`, `a9b2d8a`).
+
 ## Full Technical Validation
 
 ```
@@ -64,8 +74,9 @@ This phase's own MIN_COHORT_POLICY migration initially broke `f12-institution-in
 4. Three bugs in the F12 real-Postgres cert script itself, introduced by this phase's own MIN_COHORT_POLICY change, found and fixed (see note above).
 5. A real, previously-narrow rate-limiting gap (only 1 of many high-cost routes was protected) — extended to 3 more.
 6. A real accessibility gap in the new `ItemRunner` (no `aria-live` on question transitions) — found and fixed.
-7. A real Preview-environment configuration defect (Clerk misconfigured to an unrelated application) — found, NOT fixed (outside this agent's access; escalated as a hard Pilot gate).
+7. A real Preview-environment configuration defect (Clerk misconfigured to an unrelated application) — found, NOT fixed (outside this agent's access; escalated as a hard Pilot gate). **[F15-C1 update: fixed by the operator and independently re-verified live — see addendum above.]**
+8. **[F15-C1]** A real Preview database migration gap (runtime database stuck 17 migrations behind, missing `users`/`user_roles`/`institutions` entirely) — found via live diagnostic route, classified as a genuine non-corrupt partial history, repaired by the operator via the same governed `npm run db:migrate` runner, independently re-verified.
 
 ## Overall QA Verdict
 
-**PASS (local/structural + real Preview infrastructure), with two newly-identified hard Pilot gates (credential rotation, Preview Clerk misconfiguration) and honestly registered live-verification gaps.** Full automated suite and all real-Postgres regressions pass with zero known regressions; dependency security is clean; the phase's principal functional blocker (exam-taking) is now architecturally resolved and unit-tested; a real Preview deployment exists for the first time in this program's history; live authenticated verification remains blocked by two independent, clearly-diagnosed causes (a Preview config defect and this agent's own credential-handling boundary), never fabricated as passing.
+**PASS (local/structural + real Preview infrastructure)** — original F15 verdict. **[F15-C1 update, 2026-09-20]: one of the two hard Pilot gates (Preview Clerk misconfiguration) is now RESOLVED and independently re-verified; the Preview database migration gap discovered during this closure work is also RESOLVED and independently re-verified. Only ONE hard Pilot gate remains: credential rotation (`OPERATOR_ACTION_REQUIRED`).** Full automated suite and all real-Postgres regressions pass with zero known regressions; dependency security is clean; the phase's principal functional blocker (exam-taking) is architecturally resolved and unit-tested; a real Preview deployment exists, is correctly authenticated, and is now running on a fully-migrated, integrity-verified database. Full authenticated E2E is unblocked pending an operator-assisted login session — never fabricated as passing.

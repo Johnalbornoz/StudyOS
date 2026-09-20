@@ -2,11 +2,15 @@
 
 Each item has exactly ONE current state (`OPEN` / `RESOLVED` / `SUPERSEDED` / `DEFERRED` / `FAILED`) and one provenance tag. No item is silently dropped from F7–F14's own registers.
 
+## F15-C1 update (2026-09-20)
+
+Three items closed with real, independently-verified evidence this sub-phase: `IVG-F7-01`, `IVG-F12-02`, `IVG-F15-02`. See F15_DATABASE_AND_MIGRATION_READINESS.md and F15_PREVIEW_CERTIFICATION.md for full evidence. Totals below updated accordingly.
+
 ## Carried from F7–F12
 
 | ID | State | Provenance | Requirement |
 |---|---|---|---|
-| IVG-F7-01 | DEFERRED | F7 | Remote Preview database's migration state confirmed before pilot use — still unverified (F15_DATABASE_AND_MIGRATION_READINESS.md) |
+| IVG-F7-01 | **RESOLVED** | F7 → F15-C1 | Remote Preview database's migration state confirmed before pilot use. Evidence: temporary Preview-only diagnostic route, independently queried twice by this agent — 32/32 migrations applied, 0 pending, `dbFingerprint` unchanged across the repair (confirms in-place fix of the real runtime DB, not a repoint) |
 | IVG-F8-02 | DEFERRED | F8, extended F13/F14/F15 | Remote authenticated E2E — now covers every F15 surface too |
 | IVG-F8-03 | DEFERRED | F8 | Live Preview admin accept-path |
 | IVG-F9-01 | DEFERRED | F9 | AI_REAL_PROVIDER certification |
@@ -14,7 +18,7 @@ Each item has exactly ONE current state (`OPEN` / `RESOLVED` / `SUPERSEDED` / `D
 | IVG-F10-01 | DEFERRED | F10 | Live Preview Parent relationship lifecycle via two real Clerk sessions |
 | IVG-F10-02 | DEFERRED | F10 | Remote authenticated E2E for the Parent read-model surface |
 | IVG-F12-01 | DEFERRED | F12, extended F14 | Remote authenticated E2E for the 11 F12 institution-intelligence routes |
-| IVG-F12-02 | DEFERRED | F12 | Confirm F12's migration applies cleanly to the real Preview database |
+| IVG-F12-02 | **RESOLVED** | F12 → F15-C1 | Confirm F12's migration applies cleanly to the real Preview database. Evidence: `migrationIds` from the live diagnostic route includes `20261003_1000 f12_institution_intelligence`, applied successfully as part of the same 17-migration batch, all 16 real-Postgres regressions (including the F12 cert script) still passing |
 | IVG-F12-03 | DEFERRED | F12 | Large-scale F12 performance characterization |
 | IVG-F12-04 | **RESOLVED** | F12 → F15 | MIN_COHORT_POLICY — see ADR-F15-MIN-COHORT-POLICY.md. Evidence: real migration seeding a versioned ACTIVE policy, 7 deterministic unit tests, all 16 real-Postgres regressions re-passing including the updated F12 cert script |
 
@@ -46,8 +50,8 @@ Each item has exactly ONE current state (`OPEN` / `RESOLVED` / `SUPERSEDED` / `D
 | ID | State | Requirement |
 |---|---|---|
 | IVG-F15-01 | OPEN — HARD PILOT GATE | Same substance as `IVG-F14-06`, restated as a hard gate this phase: operator must rotate/verify the exposed credentials before Pilot |
-| IVG-F15-02 | OPEN — HARD PILOT GATE | Preview's Clerk configuration resolves to an unrelated application ("PMO OWN") — found by actually loading the real Preview URL. Must be fixed and re-verified before any authenticated E2E is attempted |
-| IVG-F15-03 | OPEN | Full authenticated E2E matrix (Student/Teacher/Parent/Institution/multi-role/negative-authorization) — blocked by `IVG-F15-02` plus this agent's own categorical no-credential-entry rule; needs operator-supplied test credentials or operator-executed sessions |
+| IVG-F15-02 | **RESOLVED** | F15-C1, 2026-09-20 — Preview's Clerk configuration was fixed by the operator (Preview-scope keys only, Production untouched) and re-verified live by this agent: `/sign-in` on the current deployment renders "Sign in to StudyOS_App" with the Development-mode badge |
+| IVG-F15-03 | OPEN | Full authenticated E2E matrix (Student/Teacher/Parent/Institution/multi-role/negative-authorization) — no longer blocked by `IVG-F15-02` (resolved); still blocked by this agent's own categorical no-credential-entry rule, needs an operator-assisted login session per the established handoff protocol |
 | IVG-F15-04 | OPEN | Real-Postgres regression case for the new exam-taking IDOR matrix (currently unit-tested with mocks only) |
 | IVG-F15-05 | OPEN | Thread a real per-request correlation id through the request lifecycle (utility exists, not yet wired end-to-end) |
 | IVG-F15-06 | OPEN | Real authenticated-flow latency measurement (blocked by `IVG-F15-02`/`IVG-F15-03`) |
@@ -59,19 +63,19 @@ Each item has exactly ONE current state (`OPEN` / `RESOLVED` / `SUPERSEDED` / `D
 | IVG-F15-12 | OPEN | Dedicated feature-flag/kill-switch set beyond the existing `AI_ENABLED` |
 | IVG-F15-13 | OPEN | A dedicated `/api/health` route — none exists |
 
-## Totals
+## Totals (updated F15-C1, 2026-09-20)
 
 ```
 Total known (all provenances, deduplicated):     37
-RESOLVED:                                          4   (IVG-F12-04, IVG-F13-01, IVG-F13-07, IVG-F14-01)
+RESOLVED:                                          7   (IVG-F7-01, IVG-F12-02, IVG-F12-04, IVG-F13-01, IVG-F13-07, IVG-F14-01, IVG-F15-02)
 SUPERSEDED:                                        6   (IVG-F13-02, IVG-F13-03, IVG-F13-04, IVG-F13-06, IVG-F14-04, IVG-F14-05 -- folded into 3 broader F15 items: IVG-F15-03, IVG-F15-06, IVG-F15-09)
-OPEN / DEFERRED:                                  27   (10 carried from F7-F12, 1 from F13, 3 from F14, 13 new this phase)
+OPEN / DEFERRED:                                  24   (8 carried from F7-F12, 1 from F13, 3 from F14, 12 remaining new-this-phase)
 FAILED:                                            0
-New this phase:                                   13   (IVG-F15-01 through IVG-F15-13)
+Closed this sub-phase (F15-C1):                    3   (IVG-F7-01, IVG-F12-02, IVG-F15-02 -- all with independently re-verified live evidence, not operator assertion alone)
 ```
 
 6 items are marked SUPERSEDED, folding into 3 broader F15 items — each superseded item is still listed individually above for traceability, so no history is lost even though the count of *distinct remaining open concerns* is lower than the raw item count.
 
-## Hard Pilot gates among the OPEN items (task's own explicit list, cross-referenced)
+## Hard Pilot gates among the OPEN items (updated F15-C1, 2026-09-20)
 
-`IVG-F14-06`/`IVG-F15-01` (unrotated exposed credentials) and `IVG-F15-02` (Preview auth misconfiguration) are explicitly marked **HARD PILOT GATES** above — these two, and only these two, are severe enough on their own to block a PASS_TO_PILOT recommendation regardless of how well everything else scored. See F15_RESIDUAL_RISK_REGISTER.md and the Final Decision.
+`IVG-F15-02` (Preview auth misconfiguration) is now **RESOLVED** and is no longer a hard gate. `IVG-F14-06`/`IVG-F15-01` (unrotated exposed credentials) remains the **sole hard Pilot gate** — severe enough on its own to keep a PASS_TO_PILOT recommendation at NO regardless of how well everything else scored, until the operator verifies rotation. See F15_RESIDUAL_RISK_REGISTER.md and the Final Decision.
