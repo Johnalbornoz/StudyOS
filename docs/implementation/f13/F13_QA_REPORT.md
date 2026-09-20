@@ -2,6 +2,7 @@
 
 Branch: `f13/ux-consolidation`
 Base: `origin/f12/institution-intelligence@b316eb74914ff51d8f62e0f2fc377aeca9bb310c`
+Certified HEAD: `6872249254462e562a96b59d382213b1d02543e6`
 
 ## Test Layer Matrix (mandatory separate reporting, task §62)
 
