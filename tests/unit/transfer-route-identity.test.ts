@@ -176,3 +176,13 @@ describe('7B1/7C1 -- submit route evidence metadata (atomic, via updateMastery)'
     });
   });
 });
+
+describe('Entitlement gate -- Transfer generation is a paid capability', () => {
+  it('denies with 403 ENTITLEMENT_REQUIRED for a Student with no active license, never calling the AI generator', async () => {
+    canUseCapabilityMock.mockResolvedValue(false);
+    const res = await GENERATE(req({ studentId: STUDENT, conceptId: CONCEPT, conceptLabel: 'Centripetal accel', distance: 'MID' }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('ENTITLEMENT_REQUIRED');
+    expect(generateStructuredTransferActivityMock).not.toHaveBeenCalled();
+  });
+});

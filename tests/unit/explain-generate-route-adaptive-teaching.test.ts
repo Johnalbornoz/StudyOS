@@ -74,4 +74,12 @@ describe('explain/generate route -- TeachingIntent lookup scoped to the request\
     expect(res.status ?? 200).not.toBe(500);
     expect(generateExplainPromptMock).toHaveBeenCalled();
   });
+
+  it('a Student with no active license is denied server-side (403 ENTITLEMENT_REQUIRED), never reaching generation', async () => {
+    canUseCapabilityMock.mockResolvedValue(false);
+    const res: any = await POST(makeRequest({ studentId: STUDENT_ID, subjectId: SUBJECT_ID, conceptId: CONCEPT_ID, conceptLabel: 'X', activityType: 'EXPLAIN' }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('ENTITLEMENT_REQUIRED');
+    expect(generateExplainPromptMock).not.toHaveBeenCalled();
+  });
 });

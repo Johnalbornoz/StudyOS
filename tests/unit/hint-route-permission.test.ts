@@ -161,3 +161,14 @@ describe('Phase 5-R S10 -- deterministic stop condition (release test 19)', () =
     expect(generateQuestionHintMock).toHaveBeenCalled();
   });
 });
+
+describe('Entitlement gate -- a Student with no active license never reaches AI hint generation', () => {
+  it('denies with 403 ENTITLEMENT_REQUIRED before the quiz session is even looked up', async () => {
+    canUseCapabilityMock.mockResolvedValue(false);
+    const res: any = await POST(makeRequest({ studentId: '11111111-1111-4111-8111-111111111111', quizId: 'quiz-1', questionIndex: 0 }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('ENTITLEMENT_REQUIRED');
+    expect(getQuizSessionMock).not.toHaveBeenCalled();
+    expect(generateQuestionHintMock).not.toHaveBeenCalled();
+  });
+});

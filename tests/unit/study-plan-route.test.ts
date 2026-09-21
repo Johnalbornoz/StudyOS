@@ -98,3 +98,20 @@ describe('8G1. Student isolation holds at the route boundary', () => {
     expect(verifyStudentAccessMock).toHaveBeenCalledWith('clerk-a', STUDENT_A, 'student');
   });
 });
+
+describe('Entitlement gate -- rebuilding the full plan is a paid capability', () => {
+  it('POST denies with 403 ENTITLEMENT_REQUIRED for a Student with no active license, never reaching the rebuild', async () => {
+    canUseCapabilityMock.mockResolvedValue(false);
+    const res: any = await POST(postRequest({ studentId: STUDENT_A }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('ENTITLEMENT_REQUIRED');
+    expect(rebuildLearningPlanMock).not.toHaveBeenCalled();
+  });
+
+  it('GET (viewing the existing plan) is unaffected by entitlement status -- history view is never revoked', async () => {
+    canUseCapabilityMock.mockResolvedValue(false);
+    const res: any = await GET(getRequest({ studentId: STUDENT_A }));
+    expect(res.status ?? 200).not.toBe(403);
+    expect(getLegacyShapedCanonicalPlanMock).toHaveBeenCalled();
+  });
+});
