@@ -70,6 +70,11 @@ export type MessageKey =
   | 'institution.learners.noEvidence' | 'institution.learners.withEvidence' | 'institution.learners.suppressedSmallCohort'
   | 'institution.coverage.title' | 'institution.readiness.title' | 'institution.interventions.title'
   | 'institution.attention.title' | 'institution.attention.empty'
+  // Onboarding/authorization rework (2026-09-21) -- coordinator membership requests
+  | 'institution.requests.title' | 'institution.requests.pendingTitle' | 'institution.requests.pendingEmpty'
+  | 'institution.requests.approve' | 'institution.requests.reject' | 'institution.requests.requestedAt'
+  | 'institution.requests.historyTitle' | 'institution.requests.historyEmpty'
+  | 'institution.teachers.revoke' | 'institution.teachers.assign' | 'institution.teachers.assignmentSubjectPlaceholder'
   // F13 -- status vocabulary (shared, task section 25)
   | 'status.notStarted' | 'status.inProgress' | 'status.completed' | 'status.needsMoreEvidence' | 'status.needsAttention'
   | 'status.unavailable' | 'status.notReady' | 'status.platformNotReady' | 'status.pending' | 'status.revoked'
@@ -639,6 +644,10 @@ const es: Messages = {
   'institution.learners.noEvidence': 'Sin evidencia', 'institution.learners.withEvidence': 'Con evidencia', 'institution.learners.suppressedSmallCohort': 'Grupo demasiado pequeño para mostrar de forma segura',
   'institution.coverage.title': 'Cobertura curricular', 'institution.readiness.title': 'Preparación para el examen', 'institution.interventions.title': 'Actividad de asignaciones',
   'institution.attention.title': 'Áreas de atención', 'institution.attention.empty': 'No se detectaron áreas de atención con los datos actuales.',
+  'institution.requests.title': 'Solicitudes', 'institution.requests.pendingTitle': 'Solicitudes pendientes', 'institution.requests.pendingEmpty': 'No hay solicitudes pendientes.',
+  'institution.requests.approve': 'Aprobar', 'institution.requests.reject': 'Rechazar', 'institution.requests.requestedAt': 'Solicitado',
+  'institution.requests.historyTitle': 'Historial de decisiones', 'institution.requests.historyEmpty': 'Todavía no hay decisiones registradas.',
+  'institution.teachers.revoke': 'Revocar', 'institution.teachers.assign': 'Asignar', 'institution.teachers.assignmentSubjectPlaceholder': 'Materia o alcance (opcional)',
   'status.notStarted': 'Sin iniciar', 'status.inProgress': 'En curso', 'status.completed': 'Completado', 'status.needsMoreEvidence': 'Necesita más evidencia', 'status.needsAttention': 'Necesita atención',
   'status.unavailable': 'No disponible', 'status.notReady': 'Aún no disponible', 'status.platformNotReady': 'StudyUS aún no cubre esto', 'status.pending': 'Pendiente', 'status.revoked': 'Revocado',
   'empty.noData': 'Todavía no hay datos aquí.', 'empty.smallCohortSuppressed': 'Grupo demasiado pequeño para mostrar de forma segura.', 'error.generic': 'Ocurrió un error. Intenta de nuevo.', 'error.forbidden': 'No tienes acceso a esto.', 'error.notFound': 'No se encontró.',
@@ -1841,6 +1850,10 @@ const en: Messages = {
   'institution.learners.noEvidence': 'No evidence', 'institution.learners.withEvidence': 'With evidence', 'institution.learners.suppressedSmallCohort': 'Cohort too small to show safely',
   'institution.coverage.title': 'Curriculum Coverage', 'institution.readiness.title': 'Exam Readiness', 'institution.interventions.title': 'Assignment Activity',
   'institution.attention.title': 'Attention Areas', 'institution.attention.empty': 'No attention areas detected in the current data.',
+  'institution.requests.title': 'Requests', 'institution.requests.pendingTitle': 'Pending requests', 'institution.requests.pendingEmpty': 'There are no pending requests.',
+  'institution.requests.approve': 'Approve', 'institution.requests.reject': 'Reject', 'institution.requests.requestedAt': 'Requested',
+  'institution.requests.historyTitle': 'Decision history', 'institution.requests.historyEmpty': 'No decisions recorded yet.',
+  'institution.teachers.revoke': 'Revoke', 'institution.teachers.assign': 'Assign', 'institution.teachers.assignmentSubjectPlaceholder': 'Subject or scope (optional)',
   'status.notStarted': 'Not started', 'status.inProgress': 'In progress', 'status.completed': 'Completed', 'status.needsMoreEvidence': 'Needs more evidence', 'status.needsAttention': 'Needs attention',
   'status.unavailable': 'Unavailable', 'status.notReady': 'Not ready yet', 'status.platformNotReady': "StudyUS doesn't cover this yet", 'status.pending': 'Pending', 'status.revoked': 'Revoked',
   'empty.noData': 'No data here yet.', 'empty.smallCohortSuppressed': 'Cohort too small to show safely.', 'error.generic': 'Something went wrong. Please try again.', 'error.forbidden': "You don't have access to this.", 'error.notFound': 'Not found.',
@@ -3043,6 +3056,10 @@ const de: Messages = {
   'institution.learners.noEvidence': 'Keine Nachweise', 'institution.learners.withEvidence': 'Mit Nachweisen', 'institution.learners.suppressedSmallCohort': 'Gruppe zu klein für sichere Anzeige',
   'institution.coverage.title': 'Lehrplanabdeckung', 'institution.readiness.title': 'Prüfungsbereitschaft', 'institution.interventions.title': 'Zuweisungsaktivität',
   'institution.attention.title': 'Aufmerksamkeitsbereiche', 'institution.attention.empty': 'Mit den aktuellen Daten wurden keine Aufmerksamkeitsbereiche erkannt.',
+  'institution.requests.title': 'Anfragen', 'institution.requests.pendingTitle': 'Ausstehende Anfragen', 'institution.requests.pendingEmpty': 'Es gibt keine ausstehenden Anfragen.',
+  'institution.requests.approve': 'Genehmigen', 'institution.requests.reject': 'Ablehnen', 'institution.requests.requestedAt': 'Angefragt',
+  'institution.requests.historyTitle': 'Entscheidungsverlauf', 'institution.requests.historyEmpty': 'Es sind noch keine Entscheidungen erfasst.',
+  'institution.teachers.revoke': 'Widerrufen', 'institution.teachers.assign': 'Zuweisen', 'institution.teachers.assignmentSubjectPlaceholder': 'Fach oder Bereich (optional)',
   'status.notStarted': 'Nicht begonnen', 'status.inProgress': 'In Bearbeitung', 'status.completed': 'Abgeschlossen', 'status.needsMoreEvidence': 'Mehr Nachweise erforderlich', 'status.needsAttention': 'Erfordert Aufmerksamkeit',
   'status.unavailable': 'Nicht verfügbar', 'status.notReady': 'Noch nicht bereit', 'status.platformNotReady': 'StudyUS deckt dies noch nicht ab', 'status.pending': 'Ausstehend', 'status.revoked': 'Widerrufen',
   'empty.noData': 'Hier gibt es noch keine Daten.', 'empty.smallCohortSuppressed': 'Gruppe zu klein für sichere Anzeige.', 'error.generic': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', 'error.forbidden': 'Du hast keinen Zugriff darauf.', 'error.notFound': 'Nicht gefunden.',
@@ -4245,6 +4262,10 @@ const fr: Messages = {
   'institution.learners.noEvidence': 'Aucune preuve', 'institution.learners.withEvidence': 'Avec preuves', 'institution.learners.suppressedSmallCohort': 'Groupe trop petit pour un affichage sûr',
   'institution.coverage.title': 'Couverture du programme', 'institution.readiness.title': "Préparation à l'examen", 'institution.interventions.title': "Activité d'affectation",
   'institution.attention.title': "Points d'attention", 'institution.attention.empty': "Aucun point d'attention détecté avec les données actuelles.",
+  'institution.requests.title': 'Demandes', 'institution.requests.pendingTitle': 'Demandes en attente', 'institution.requests.pendingEmpty': "Il n'y a aucune demande en attente.",
+  'institution.requests.approve': 'Approuver', 'institution.requests.reject': 'Rejeter', 'institution.requests.requestedAt': 'Demandé',
+  'institution.requests.historyTitle': 'Historique des décisions', 'institution.requests.historyEmpty': "Aucune décision n'a encore été enregistrée.",
+  'institution.teachers.revoke': 'Révoquer', 'institution.teachers.assign': 'Affecter', 'institution.teachers.assignmentSubjectPlaceholder': 'Matière ou portée (optionnel)',
   'status.notStarted': 'Non commencé', 'status.inProgress': 'En cours', 'status.completed': 'Terminé', 'status.needsMoreEvidence': 'Nécessite plus de preuves', 'status.needsAttention': "Nécessite de l'attention",
   'status.unavailable': 'Indisponible', 'status.notReady': 'Pas encore prêt', 'status.platformNotReady': 'StudyUS ne couvre pas encore ceci', 'status.pending': 'En attente', 'status.revoked': 'Révoqué',
   'empty.noData': "Aucune donnée pour l'instant.", 'empty.smallCohortSuppressed': 'Groupe trop petit pour un affichage sûr.', 'error.generic': "Une erreur s'est produite. Veuillez réessayer.", 'error.forbidden': "Vous n'avez pas accès à ceci.", 'error.notFound': 'Introuvable.',
@@ -5447,6 +5468,10 @@ const pt: Messages = {
   'institution.learners.noEvidence': 'Sem evidência', 'institution.learners.withEvidence': 'Com evidência', 'institution.learners.suppressedSmallCohort': 'Grupo pequeno demais para exibir com segurança',
   'institution.coverage.title': 'Cobertura curricular', 'institution.readiness.title': 'Preparação para o exame', 'institution.interventions.title': 'Atividade de atribuições',
   'institution.attention.title': 'Áreas de atenção', 'institution.attention.empty': 'Nenhuma área de atenção detectada com os dados atuais.',
+  'institution.requests.title': 'Solicitações', 'institution.requests.pendingTitle': 'Solicitações pendentes', 'institution.requests.pendingEmpty': 'Não há solicitações pendentes.',
+  'institution.requests.approve': 'Aprovar', 'institution.requests.reject': 'Rejeitar', 'institution.requests.requestedAt': 'Solicitado',
+  'institution.requests.historyTitle': 'Histórico de decisões', 'institution.requests.historyEmpty': 'Ainda não há decisões registradas.',
+  'institution.teachers.revoke': 'Revogar', 'institution.teachers.assign': 'Atribuir', 'institution.teachers.assignmentSubjectPlaceholder': 'Matéria ou escopo (opcional)',
   'status.notStarted': 'Não iniciado', 'status.inProgress': 'Em andamento', 'status.completed': 'Concluído', 'status.needsMoreEvidence': 'Precisa de mais evidência', 'status.needsAttention': 'Precisa de atenção',
   'status.unavailable': 'Indisponível', 'status.notReady': 'Ainda não disponível', 'status.platformNotReady': 'O StudyUS ainda não cobre isso', 'status.pending': 'Pendente', 'status.revoked': 'Revogado',
   'empty.noData': 'Ainda não há dados aqui.', 'empty.smallCohortSuppressed': 'Grupo pequeno demais para exibir com segurança.', 'error.generic': 'Algo deu errado. Tente novamente.', 'error.forbidden': 'Você não tem acesso a isto.', 'error.notFound': 'Não encontrado.',

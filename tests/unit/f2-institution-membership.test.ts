@@ -15,6 +15,7 @@ import {
   createTeacherAssignment,
   endTeacherAssignment,
   inviteInstitutionAdmin,
+  listDecidedMemberships,
 } from '@/services/institution.service';
 
 beforeEach(() => {
@@ -41,6 +42,19 @@ describe('decideMembership -- only transitions an actually-PENDING row', () => {
   it('is a no-op against an already-decided or revoked membership (never re-decides history)', async () => {
     dbQueryMock.mockResolvedValue({ rows: [], rowCount: 0 });
     expect(await decideMembership('m1', 'admin-1', 'APPROVED')).toBe(false);
+  });
+});
+
+describe('listDecidedMemberships -- coordinator audit view, scoped to one institution, excludes PENDING', () => {
+  it('scopes the query to the given institutionId and excludes PENDING rows', async () => {
+    dbQueryMock.mockResolvedValue({
+      rows: [{ id: 'm1', institution_id: 'inst-1', user_id: 'u1', membership_role: 'TEACHER', status: 'APPROVED', requested_at: null, reviewed_at: '2026-09-20T00:00:00Z', reviewed_by_user_id: 'admin-1', user_email: 'teacher@test.com' }],
+    });
+    const rows = await listDecidedMemberships('inst-1');
+    expect(dbQueryMock.mock.calls[0][1]).toEqual(['inst-1']);
+    expect(dbQueryMock.mock.calls[0][0]).toMatch(/status != 'PENDING'/);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 'm1', institutionId: 'inst-1', status: 'APPROVED', userEmail: 'teacher@test.com' });
   });
 });
 

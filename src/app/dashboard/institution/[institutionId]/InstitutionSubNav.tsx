@@ -13,12 +13,13 @@ export function InstitutionSubNav({
   labels,
 }: {
   institutionId: string;
-  active: 'overview' | 'grades' | 'classes' | 'teachers' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
+  active: 'overview' | 'grades' | 'classes' | 'teachers' | 'requests' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
   labels: {
     overview: string;
     grades: string;
     classes: string;
     teachers: string;
+    requests?: string;
     learners: string;
     coverage: string;
     readiness: string;
@@ -32,6 +33,7 @@ export function InstitutionSubNav({
     { key: 'grades', href: `${base}/grades`, label: labels.grades },
     { key: 'classes', href: `${base}/classes`, label: labels.classes },
     { key: 'teachers', href: `${base}/teachers`, label: labels.teachers },
+    { key: 'requests', href: `${base}/requests`, label: labels.requests ?? 'Solicitudes' },
     { key: 'learners', href: `${base}/learners`, label: labels.learners },
     { key: 'coverage', href: `${base}/coverage`, label: labels.coverage },
     { key: 'readiness', href: `${base}/readiness`, label: labels.readiness },

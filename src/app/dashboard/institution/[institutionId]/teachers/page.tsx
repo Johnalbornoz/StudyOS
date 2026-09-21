@@ -9,6 +9,7 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/institution-intelligence/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionSubNav } from '../InstitutionSubNav';
+import { TeacherRowActions } from './TeacherRowActions';
 
 /**
  * F14 Workstream D -- Institution Teachers (task section 7). Consumes
@@ -49,6 +50,7 @@ export default async function InstitutionTeachersPage({
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
     teachers: t['institution.teachers.title'],
+    requests: t['institution.requests.title'],
     learners: t['institution.learners.title'],
     coverage: t['institution.coverage.title'],
     readiness: t['institution.readiness.title'],
@@ -73,9 +75,18 @@ export default async function InstitutionTeachersPage({
               <div className="row-main">
                 <div className="row-title">{teacher.userId}</div>
               </div>
-              <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
                 <span className="tabular">{teacher.activeAssignmentCount}</span>
                 <span className="tabular">{teacher.activeLearnerCount}</span>
+                <TeacherRowActions
+                  institutionId={institutionId}
+                  membershipId={teacher.membershipId}
+                  labels={{
+                    revoke: t['institution.teachers.revoke'],
+                    assign: t['institution.teachers.assign'],
+                    subjectPlaceholder: t['institution.teachers.assignmentSubjectPlaceholder'],
+                  }}
+                />
               </div>
             </li>
           ))}

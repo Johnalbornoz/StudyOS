@@ -29,6 +29,22 @@ export interface InstitutionMembership {
   userId: string;
   membershipRole: MembershipRole;
   status: MembershipStatus;
+  requestedAt?: string;
+  reviewedAt?: string | null;
+  reviewedByUserId?: string | null;
+}
+
+/**
+ * Onboarding/authorization rework (2026-09-21) -- the minimal public
+ * list a Teacher's own self-service membership request needs
+ * ("elige o identifica una institución válida"). Only `id`/`name` of
+ * ACTIVE institutions -- no membership, roster, or other sensitive
+ * data. Never institution-scoped by the caller's own identity (unlike
+ * `getAdministeredInstitutions`) -- this IS the browse-to-select list.
+ */
+export async function listActiveInstitutions(): Promise<Institution[]> {
+  const result = await db.query(`SELECT id, name, status FROM institutions WHERE status = 'ACTIVE' ORDER BY name ASC`);
+  return result.rows.map(toInstitution);
 }
 
 export async function createInstitution(name: string): Promise<Institution> {
@@ -80,6 +96,28 @@ export async function requestTeacherMembership(institutionId: string, userId: st
   return toMembership(result.rows[0]);
 }
 
+/**
+ * Onboarding/authorization rework (2026-09-21) -- a Teacher's own
+ * memberships across EVERY institution they've ever requested at (not
+ * scoped to one institutionId), so the self-service UI can show
+ * PENDING/APPROVED/REJECTED/REVOKED status without the caller needing
+ * to remember which institution they picked. Includes the institution
+ * name (safe, non-sensitive) so the UI never needs a second lookup.
+ */
+export async function getMyTeacherMemberships(userId: string): Promise<Array<InstitutionMembership & { institutionName: string }>> {
+  const result = await db.query(
+    `
+    SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, i.name AS institution_name
+    FROM institution_memberships im
+    JOIN institutions i ON i.id = im.institution_id
+    WHERE im.user_id = $1 AND im.membership_role = 'TEACHER'
+    ORDER BY im.id
+    `,
+    [userId]
+  );
+  return result.rows.map((r: any) => ({ ...toMembership(r), institutionName: r.institution_name }));
+}
+
 export async function getMembershipStatus(institutionId: string, userId: string, role: MembershipRole): Promise<InstitutionMembership | null> {
   const result = await db.query(
     `SELECT id, institution_id, user_id, membership_role, status FROM institution_memberships WHERE institution_id = $1 AND user_id = $2 AND membership_role = $3`,
@@ -114,10 +152,34 @@ export async function getAdministeredInstitutions(userId: string): Promise<Insti
 
 export async function listPendingMemberships(institutionId: string): Promise<InstitutionMembership[]> {
   const result = await db.query(
-    `SELECT id, institution_id, user_id, membership_role, status FROM institution_memberships WHERE institution_id = $1 AND status = 'PENDING' ORDER BY requested_at ASC`,
+    `SELECT id, institution_id, user_id, membership_role, status, requested_at, reviewed_at, reviewed_by_user_id
+     FROM institution_memberships WHERE institution_id = $1 AND status = 'PENDING' ORDER BY requested_at ASC`,
     [institutionId]
   );
   return result.rows.map(toMembership);
+}
+
+/**
+ * Onboarding/authorization rework (2026-09-21) -- the coordinator's
+ * auditable view of every non-pending decision at their institution
+ * (approved/rejected/revoked), most recent first. `institution_memberships`
+ * keeps only the LATEST decision per (institution, user, role) row --
+ * this is a real limitation (a prior rejection is overwritten if the
+ * same person is later approved) documented as a residual risk rather
+ * than solved here with a new history table.
+ */
+export async function listDecidedMemberships(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null }>> {
+  const result = await db.query(
+    `
+    SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, u.email AS user_email
+    FROM institution_memberships im
+    JOIN users u ON u.id = im.user_id
+    WHERE im.institution_id = $1 AND im.status != 'PENDING'
+    ORDER BY im.reviewed_at DESC NULLS LAST
+    `,
+    [institutionId]
+  );
+  return result.rows.map((r: any) => ({ ...toMembership(r), userEmail: r.user_email }));
 }
 
 /**
@@ -233,7 +295,16 @@ function toInstitution(row: any): Institution {
 }
 
 function toMembership(row: any): InstitutionMembership {
-  return { id: row.id, institutionId: row.institution_id, userId: row.user_id, membershipRole: row.membership_role, status: row.status };
+  return {
+    id: row.id,
+    institutionId: row.institution_id,
+    userId: row.user_id,
+    membershipRole: row.membership_role,
+    status: row.status,
+    requestedAt: row.requested_at ? new Date(row.requested_at).toISOString() : undefined,
+    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at).toISOString() : row.reviewed_at === null ? null : undefined,
+    reviewedByUserId: row.reviewed_by_user_id ?? undefined,
+  };
 }
 
 function toAssignment(row: any): TeacherAssignment {
