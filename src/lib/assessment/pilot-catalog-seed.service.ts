@@ -110,6 +110,16 @@ export interface SeedResult {
   blueprintId?: string;
 }
 
+// Dry-run cascade placeholder: the nil UUID, a syntactically valid UUID
+// that can never match a real row. Used ONLY when `write` is false and
+// an entity "would be created" but has no real id yet -- assigning this
+// instead of leaving the variable `undefined` lets every DOWNSTREAM
+// dependent step still evaluate and report what it too would create
+// (any `WHERE parent_id = $1` lookup keyed on this value harmlessly
+// returns zero rows, which is exactly the correct dry-run answer),
+// rather than silently skipping the rest of the chain.
+const PENDING_ID = '00000000-0000-0000-0000-000000000000';
+
 async function getProtectedTableCounts(): Promise<ProtectedTableCounts> {
   const [students, users, profiles, institutions, institutionMemberships] = await Promise.all([
     db.query(`SELECT COUNT(*)::int AS c FROM students`),
@@ -147,6 +157,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
     if (write) {
       org = await createOrganization(ORG_NAME);
       record('academic_organizations', org.id, org.name);
+    } else {
+      org = { id: PENDING_ID, name: ORG_NAME, status: 'ACTIVE' };
     }
   }
 
@@ -167,6 +179,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       if (write) {
         programme = await createProgramme({ organizationId: org.id, name: PROGRAMME_NAME, programmeType: 'ADMISSION_EXAM' });
         record('academic_programmes', programme.id, programme.name);
+      } else {
+        programme = { id: PENDING_ID, organizationId: org.id, name: PROGRAMME_NAME, programmeType: 'ADMISSION_EXAM', stage: null, status: 'ACTIVE' };
       }
     }
   } else if (write) {
@@ -186,6 +200,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         const created = await createSubject({ programmeId: programme.id, name: SUBJECT_NAME });
         subjectId = created.id;
         record('academic_subjects', created.id, created.name);
+      } else {
+        subjectId = PENDING_ID;
       }
     }
   }
@@ -218,6 +234,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
           structureVersionId = created.id;
           await publishStructureVersion(created.id);
           record('structure_versions', created.id, created.versionLabel);
+        } else {
+          structureVersionId = PENDING_ID;
         }
       }
     }
@@ -239,6 +257,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         const created = await createStructureNode({ structureVersionId, nodeType: 'TOPIC', sourceLabel: STRUCTURE_NODE_LABEL, orderIndex: 0 });
         structureNodeId = created.id;
         record('structure_nodes', created.id, created.sourceLabel);
+      } else {
+        structureNodeId = PENDING_ID;
       }
     }
   }
@@ -257,6 +277,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         const created = await createLearningObjective({ structureNodeId, description: OBJECTIVE_DESCRIPTION });
         learningObjectiveId = created.id;
         record('learning_objectives', created.id, created.description);
+      } else {
+        learningObjectiveId = PENDING_ID;
       }
     }
   }
@@ -393,6 +415,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         const created = await createExamDefinition({ academicProgrammeId: programme?.id, name: EXAM_DEFINITION_NAME, examFamily: 'PAA', purpose: EXAM_PURPOSE });
         examDefinitionId = created.id;
         record('exam_definitions', created.id, created.name);
+      } else {
+        examDefinitionId = PENDING_ID;
       }
     }
   }
@@ -443,6 +467,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
           examVersionId = created.id;
           await publishExamVersion(created.id);
           record('exam_versions', created.id, created.versionLabel);
+        } else {
+          examVersionId = PENDING_ID;
         }
       }
     }
@@ -476,6 +502,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         await configureToolRules(created.id, { calculator: 'basic', note: 'Pilot placeholder tool rules -- not an official PAA tool policy.' });
         await markSupported(created.id, true);
         record('assessment_components', created.id, created.name);
+      } else {
+        componentId = PENDING_ID;
       }
     }
   }
@@ -496,6 +524,8 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         blueprintId = created.id;
         blueprintNeedsPublish = true;
         record('assessment_blueprints', created.id, `blueprint for ${EXAM_VERSION_LABEL}`);
+      } else {
+        blueprintId = PENDING_ID;
       }
     }
   }

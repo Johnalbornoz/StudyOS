@@ -374,6 +374,41 @@ describe('runPilotExamCatalogSeed', () => {
     expect(result.mappingPublished).toBe(true);
   });
 
+  it('K. dry-run reports the FULL cascade through Blueprint/allocation/target even when every parent is itself only "would create" -- regression for the real Preview bug where an undefined parent id silently truncated the whole plan', async () => {
+    // Nothing exists anywhere -- the worst case: org, canonical catalog,
+    // exam definition all absent simultaneously (the exact live Preview
+    // state this seed was built against).
+    listOrganizations.mockResolvedValue([]);
+    listCanonicalSubjects.mockResolvedValue([]);
+
+    const result = await runPilotExamCatalogSeed(false);
+
+    const entities = result.plan.map((s) => s.entity);
+    expect(entities).toContain('AcademicOrganization');
+    expect(entities).toContain('AcademicProgramme');
+    expect(entities).toContain('AcademicSubject');
+    expect(entities).toContain('StructureVersion');
+    expect(entities).toContain('StructureNode');
+    expect(entities).toContain('LearningObjective');
+    expect(entities).toContain('CanonicalSubject (operator-authorized minimal create)');
+    expect(entities).toContain('CanonicalConcept (operator-authorized minimal create)');
+    expect(entities).toContain('ObjectiveConceptMapping');
+    expect(entities).toContain('ExamDefinition');
+    expect(entities).toContain('ScoringModel');
+    expect(entities).toContain('ExamVersion');
+    expect(entities).toContain('AssessmentComponent');
+    expect(entities).toContain('AssessmentBlueprint');
+    expect(entities).toContain('BlueprintComponentAllocation');
+    expect(entities).toContain('BlueprintObjectiveTarget');
+    expect(result.plan.every((s) => s.action === 'CREATE')).toBe(true);
+
+    // Still zero writes.
+    expect(createOrganization).not.toHaveBeenCalled();
+    expect(createExamDefinition).not.toHaveBeenCalled();
+    expect(createBlueprint).not.toHaveBeenCalled();
+    expect(addObjectiveTarget).not.toHaveBeenCalled();
+  });
+
   it('J. canonical_subjects non-empty but lacking Math still aborts even under the new authorization (scoped only to a totally empty table)', async () => {
     listCanonicalSubjects.mockResolvedValue([{ id: 'canon-subj-history', name: 'History', status: 'ACTIVE' }]);
 
