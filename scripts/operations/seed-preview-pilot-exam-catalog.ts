@@ -29,7 +29,14 @@ async function main() {
 
   const result = await runPilotExamCatalogSeed(write);
 
-  console.log('Plan:');
+  console.log('protectedTableCountsBefore:', JSON.stringify(result.protectedTableCountsBefore));
+  console.log('canonicalSubjectToCreate:', JSON.stringify(result.canonicalSubjectToCreate));
+  console.log('canonicalConceptToCreate:', JSON.stringify(result.canonicalConceptToCreate));
+  console.log('\npilotExamCatalogEntitiesToCreate:');
+  for (const step of result.pilotExamCatalogEntitiesToCreate) {
+    console.log(`  [${step.action}] ${step.entity}: ${step.detail}`);
+  }
+  console.log('\nFull plan (including canonical-catalog steps):');
   for (const step of result.plan) {
     console.log(`  [${step.action}] ${step.entity}: ${step.detail}`);
   }
@@ -37,9 +44,10 @@ async function main() {
     console.log('\nDry run only -- no rows written. Re-run with --write to apply.');
   } else {
     console.log('\nWrite complete. Re-run without --write (or with --write again) to confirm idempotency (should report EXISTS for everything above and mint zero new rows).');
+    console.log('\nmanifestCreated (this run only):', JSON.stringify(result.manifestCreated, null, 2));
   }
-  console.log(`\nmathCanonicalSubject: "${result.mathCanonicalSubject.name}" (${result.mathCanonicalSubject.id})`);
-  console.log(`canonicalConcept used: "${result.canonicalConceptName}" (${result.canonicalConceptId})`);
+  console.log(`\nmathCanonicalSubject: ${result.mathCanonicalSubject ? `"${result.mathCanonicalSubject.name}" (${result.mathCanonicalSubject.id})` : '(not yet created -- dry run)'}`);
+  console.log(`canonicalConcept used: "${result.canonicalConceptName}" (${result.canonicalConceptId || '(not yet created -- dry run)'})`);
   console.log(`mappingPublished: ${result.mappingPublished}`);
 }
 

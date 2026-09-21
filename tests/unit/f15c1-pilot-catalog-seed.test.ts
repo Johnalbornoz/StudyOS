@@ -45,9 +45,13 @@ vi.mock('@/lib/curriculum/objective.service', () => ({
 
 const listCanonicalSubjects = vi.fn();
 const listCanonicalConcepts = vi.fn();
+const createCanonicalSubject = vi.fn();
+const createCanonicalConcept = vi.fn();
 vi.mock('@/lib/catalog/canonical-catalog.service', () => ({
   listCanonicalSubjects: (...a: any[]) => listCanonicalSubjects(...a),
   listCanonicalConcepts: (...a: any[]) => listCanonicalConcepts(...a),
+  createCanonicalSubject: (...a: any[]) => createCanonicalSubject(...a),
+  createCanonicalConcept: (...a: any[]) => createCanonicalConcept(...a),
 }));
 
 const createMapping = vi.fn();
@@ -152,8 +156,16 @@ function mockEverythingAbsent() {
   listComponentAllocations.mockResolvedValue([]);
   addComponentAllocation.mockResolvedValue(undefined);
   listObjectiveTargets.mockResolvedValue([]);
-  addObjectiveTarget.mockResolvedValue({});
+  addObjectiveTarget.mockResolvedValue({ id: 'tgt-1' });
+  createCanonicalSubject.mockResolvedValue({ id: 'canon-subj-math', name: 'Mathematics', status: 'ACTIVE' });
+  createCanonicalConcept.mockResolvedValue({ id: 'canon-concept-linear', canonicalSubjectId: 'canon-subj-math', name: 'Linear Equations', description: 'x', level: null, status: 'ACTIVE' });
   queryMock.mockImplementation((sql: string) => {
+    // Unconditional COUNT(*) protected-table snapshot -- always answered
+    // with a fixed baseline, distinguished from the actor-lookup SELECT
+    // (which selects `id`, not `COUNT(*)`) on the same `users` table.
+    if (/COUNT\(\*\)/.test(sql) && /FROM (students|users|profiles|institutions|institution_memberships)\b/.test(sql)) {
+      return Promise.resolve({ rows: [{ c: 11 }] });
+    }
     if (/FROM academic_subjects/.test(sql)) return Promise.resolve({ rows: [] });
     if (/FROM structure_versions/.test(sql)) return Promise.resolve({ rows: [] });
     if (/FROM structure_nodes/.test(sql)) return Promise.resolve({ rows: [] });
@@ -161,7 +173,7 @@ function mockEverythingAbsent() {
     if (/FROM scoring_models/.test(sql)) return Promise.resolve({ rows: [] });
     if (/FROM exam_versions/.test(sql)) return Promise.resolve({ rows: [] });
     if (/FROM assessment_components/.test(sql)) return Promise.resolve({ rows: [] });
-    if (/FROM users/.test(sql)) return Promise.resolve({ rows: [{ id: 'user-editor' }, { id: 'user-reviewer' }] });
+    if (/SELECT id FROM users/.test(sql)) return Promise.resolve({ rows: [{ id: 'user-editor' }, { id: 'user-reviewer' }] });
     return Promise.resolve({ rows: [] });
   });
 }
@@ -255,13 +267,16 @@ describe('runPilotExamCatalogSeed', () => {
     listComponentAllocations.mockResolvedValue([{ assessmentComponentId: 'comp-1', itemCount: 10, weight: 1 }]);
     listObjectiveTargets.mockResolvedValue([{ id: 'tgt-1', blueprintId: 'bp-1', learningObjectiveId: 'obj-1', assessmentComponentId: 'comp-1' }]);
     queryMock.mockImplementation((sql: string, params?: any[]) => {
+      if (/COUNT\(\*\)/.test(sql) && /FROM (students|users|profiles|institutions|institution_memberships)\b/.test(sql)) {
+        return Promise.resolve({ rows: [{ c: 11 }] });
+      }
       if (/FROM academic_subjects/.test(sql)) return Promise.resolve({ rows: [{ id: 'subj-1', status: 'ACTIVE' }] });
       if (/FROM structure_nodes/.test(sql)) return Promise.resolve({ rows: [{ id: 'node-1' }] });
       if (/FROM exam_definitions/.test(sql)) return Promise.resolve({ rows: [{ id: 'def-1', status: 'ACTIVE' }] });
       if (/FROM scoring_models/.test(sql)) return Promise.resolve({ rows: [{ id: 'score-1' }] });
       if (/FROM exam_versions/.test(sql) && /status = 'PUBLISHED'/.test(sql)) return Promise.resolve({ rows: [{ id: 'ver-1', version_label: 'Pilot 2026 v1' }] });
       if (/FROM assessment_components/.test(sql)) return Promise.resolve({ rows: [{ id: 'comp-1', support_status: 'SUPPORTED', timing_status: 'CONFIGURED', tool_rule_status: 'CONFIGURED' }] });
-      if (/FROM users/.test(sql)) return Promise.resolve({ rows: [{ id: 'user-editor' }, { id: 'user-reviewer' }] });
+      if (/SELECT id FROM users/.test(sql)) return Promise.resolve({ rows: [{ id: 'user-editor' }, { id: 'user-reviewer' }] });
       return Promise.resolve({ rows: [] });
     });
 
@@ -302,20 +317,67 @@ describe('runPilotExamCatalogSeed', () => {
     expect(createExamDefinition).not.toHaveBeenCalled();
   });
 
-  it('F. never queries or writes students/profiles/users(as identity)/institutions/institution_memberships tables, except the 2 read-only editor/reviewer ids', async () => {
+  it('F. only ever reads students/profiles/users/institutions/institution_memberships via an unconditional read-only COUNT(*) snapshot or the 2-id actor lookup -- never writes, never a WHERE-scoped read, never test.local', async () => {
     await runPilotExamCatalogSeed(true);
 
     for (const call of queryMock.mock.calls) {
       const sql = String(call[0]);
-      expect(sql).not.toMatch(/\bstudents\b/i);
-      expect(sql).not.toMatch(/\bprofiles\b/i);
-      expect(sql).not.toMatch(/\binstitutions\b/i);
-      expect(sql).not.toMatch(/\binstitution_memberships\b/i);
       expect(sql).not.toMatch(/test\.local/i);
-      if (/\busers\b/i.test(sql)) {
+      const touchesProtectedTable = /\b(students|profiles|institutions|institution_memberships)\b/i.test(sql) || (/\busers\b/i.test(sql) && !/curriculum_editorial_grants/i.test(sql));
+      if (touchesProtectedTable) {
         expect(sql.trim().toUpperCase().startsWith('SELECT')).toBe(true);
         expect(sql).not.toMatch(/INSERT|UPDATE|DELETE/i);
+        const isUnconditionalCount = /COUNT\(\*\)/.test(sql) && !/WHERE/i.test(sql);
+        const isActorLookup = /SELECT id FROM users ORDER BY created_at/i.test(sql);
+        expect(isUnconditionalCount || isActorLookup).toBe(true);
       }
     }
+  });
+
+  it('G. protectedTableCountsBefore reflects a real, unconditional read-only snapshot taken before any write', async () => {
+    const result = await runPilotExamCatalogSeed(false);
+    expect(result.protectedTableCountsBefore).toEqual({ students: 11, users: 11, profiles: 11, institutions: 11, institutionMemberships: 11 });
+  });
+
+  it('H. when canonical_subjects is COMPLETELY empty, dry-run reports the authorized minimal canonical create separately and performs zero writes', async () => {
+    listCanonicalSubjects.mockResolvedValue([]);
+
+    const result = await runPilotExamCatalogSeed(false);
+
+    expect(result.canonicalSubjectToCreate).toEqual({ name: 'Mathematics', willCreate: true });
+    expect(result.canonicalConceptToCreate).toEqual({ name: 'Linear Equations', subject: 'Mathematics', willCreate: true });
+    expect(createCanonicalSubject).not.toHaveBeenCalled();
+    expect(createCanonicalConcept).not.toHaveBeenCalled();
+    // The rest of the catalog plan is reported separately from the 2 canonical steps.
+    expect(result.pilotExamCatalogEntitiesToCreate.some((s) => s.entity === 'ExamDefinition')).toBe(true);
+    expect(result.pilotExamCatalogEntitiesToCreate.some((s) => s.entity.startsWith('Canonical'))).toBe(false);
+  });
+
+  it('I. when canonical_subjects is COMPLETELY empty, --write creates exactly one Mathematics subject and one Linear Equations concept, classified in the manifest and in the concept description (no schema change)', async () => {
+    listCanonicalSubjects.mockResolvedValue([]);
+
+    const result = await runPilotExamCatalogSeed(true);
+
+    expect(createCanonicalSubject).toHaveBeenCalledTimes(1);
+    expect(createCanonicalSubject).toHaveBeenCalledWith('Mathematics');
+    expect(createCanonicalConcept).toHaveBeenCalledTimes(1);
+    expect(createCanonicalConcept).toHaveBeenCalledWith(
+      expect.objectContaining({ canonicalSubjectId: 'canon-subj-math', name: 'Linear Equations', description: expect.stringContaining('PILOT_FIXTURE / NON_OFFICIAL / PREVIEW_ONLY') })
+    );
+    expect(result.manifestCreated).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: 'canonical_subjects', id: 'canon-subj-math', name: 'Mathematics', classification: 'PILOT_FIXTURE / NON_OFFICIAL / PREVIEW_ONLY' }),
+        expect.objectContaining({ table: 'canonical_concepts', id: 'canon-concept-linear', name: 'Linear Equations', classification: 'PILOT_FIXTURE / NON_OFFICIAL / PREVIEW_ONLY' }),
+      ])
+    );
+    expect(result.canonicalConceptName).toBe('Linear Equations');
+    expect(result.mappingPublished).toBe(true);
+  });
+
+  it('J. canonical_subjects non-empty but lacking Math still aborts even under the new authorization (scoped only to a totally empty table)', async () => {
+    listCanonicalSubjects.mockResolvedValue([{ id: 'canon-subj-history', name: 'History', status: 'ACTIVE' }]);
+
+    await expect(runPilotExamCatalogSeed(true)).rejects.toThrow(/does not apply/);
+    expect(createCanonicalSubject).not.toHaveBeenCalled();
   });
 });

@@ -60,7 +60,7 @@ import { db } from '@/lib/db';
 import { createOrganization, listOrganizations, createProgramme, listProgrammes, createSubject } from '@/lib/curriculum/organization.service';
 import { createStructureVersion, publishStructureVersion, getPublishedStructureVersion, createStructureNode } from '@/lib/curriculum/structure.service';
 import { createLearningObjective, listObjectivesForNode } from '@/lib/curriculum/objective.service';
-import { listCanonicalSubjects, listCanonicalConcepts } from '@/lib/catalog/canonical-catalog.service';
+import { listCanonicalSubjects, listCanonicalConcepts, createCanonicalSubject, createCanonicalConcept } from '@/lib/catalog/canonical-catalog.service';
 import { createMapping, proposeMapping, beginReview, approveMapping, publishMapping, listMappingsForObjective } from '@/lib/curriculum/mapping.service';
 import { grantEditorialRole, revokeEditorialRole } from '@/lib/curriculum/editorial.service';
 import { createExamDefinition, createScoringModel, createExamVersion, publishExamVersion } from '@/lib/assessment/exam-definition.service';
@@ -82,13 +82,26 @@ export const COMPONENT_NAME = 'Mathematics';
 export const COMPONENT_DURATION_MINUTES = 60;
 
 export type PlanStep = { entity: string; action: 'CREATE' | 'EXISTS'; detail: string };
+export type ManifestEntry = { table: string; id: string; name: string; classification?: string };
+export interface ProtectedTableCounts {
+  students: number;
+  users: number;
+  profiles: number;
+  institutions: number;
+  institutionMemberships: number;
+}
 
 export class AbortSeed extends Error {}
 
 export interface SeedResult {
   write: boolean;
   plan: PlanStep[];
-  mathCanonicalSubject: { id: string; name: string };
+  canonicalSubjectToCreate: { name: string; willCreate: boolean; existingId?: string };
+  canonicalConceptToCreate: { name: string; subject: string; willCreate: boolean; existingId?: string };
+  pilotExamCatalogEntitiesToCreate: PlanStep[];
+  protectedTableCountsBefore: ProtectedTableCounts;
+  manifestCreated: ManifestEntry[];
+  mathCanonicalSubject?: { id: string; name: string };
   canonicalConceptId: string;
   canonicalConceptName: string;
   mappingPublished: boolean;
@@ -97,9 +110,32 @@ export interface SeedResult {
   blueprintId?: string;
 }
 
+async function getProtectedTableCounts(): Promise<ProtectedTableCounts> {
+  const [students, users, profiles, institutions, institutionMemberships] = await Promise.all([
+    db.query(`SELECT COUNT(*)::int AS c FROM students`),
+    db.query(`SELECT COUNT(*)::int AS c FROM users`),
+    db.query(`SELECT COUNT(*)::int AS c FROM profiles`),
+    db.query(`SELECT COUNT(*)::int AS c FROM institutions`),
+    db.query(`SELECT COUNT(*)::int AS c FROM institution_memberships`),
+  ]);
+  return {
+    students: students.rows[0].c,
+    users: users.rows[0].c,
+    profiles: profiles.rows[0].c,
+    institutions: institutions.rows[0].c,
+    institutionMemberships: institutionMemberships.rows[0].c,
+  };
+}
+
 export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResult> {
   const plan: PlanStep[] = [];
+  const manifestCreated: ManifestEntry[] = [];
   const log = (entity: string, action: 'CREATE' | 'EXISTS', detail: string) => plan.push({ entity, action, detail });
+  const record = (table: string, id: string, name: string, classification?: string) => manifestCreated.push({ table, id, name, classification });
+
+  // Snapshot BEFORE any possible write -- read-only, taken identically in
+  // dry-run and --write modes, so a before/after diff is always available.
+  const protectedTableCountsBefore = await getProtectedTableCounts();
 
   // --- 1. Academic organization ---
   const orgs = await listOrganizations();
@@ -108,7 +144,10 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
     log('AcademicOrganization', 'EXISTS', `"${ORG_NAME}" (${org.id})`);
   } else {
     log('AcademicOrganization', 'CREATE', `"${ORG_NAME}"`);
-    if (write) org = await createOrganization(ORG_NAME);
+    if (write) {
+      org = await createOrganization(ORG_NAME);
+      record('academic_organizations', org.id, org.name);
+    }
   }
 
   // --- 2. Programme ---
@@ -125,7 +164,10 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       log('AcademicProgramme', 'EXISTS', `"${PROGRAMME_NAME}" (${programme.id})`);
     } else {
       log('AcademicProgramme', 'CREATE', `"${PROGRAMME_NAME}" under "${ORG_NAME}"`);
-      if (write) programme = await createProgramme({ organizationId: org.id, name: PROGRAMME_NAME, programmeType: 'ADMISSION_EXAM' });
+      if (write) {
+        programme = await createProgramme({ organizationId: org.id, name: PROGRAMME_NAME, programmeType: 'ADMISSION_EXAM' });
+        record('academic_programmes', programme.id, programme.name);
+      }
     }
   } else if (write) {
     throw new AbortSeed('Organization was expected to exist after the CREATE step but does not -- aborting.');
@@ -143,6 +185,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       if (write) {
         const created = await createSubject({ programmeId: programme.id, name: SUBJECT_NAME });
         subjectId = created.id;
+        record('academic_subjects', created.id, created.name);
       }
     }
   }
@@ -174,6 +217,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
           const created = await createStructureVersion({ academicSubjectId: subjectId, versionLabel: STRUCTURE_VERSION_LABEL });
           structureVersionId = created.id;
           await publishStructureVersion(created.id);
+          record('structure_versions', created.id, created.versionLabel);
         }
       }
     }
@@ -194,6 +238,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       if (write) {
         const created = await createStructureNode({ structureVersionId, nodeType: 'TOPIC', sourceLabel: STRUCTURE_NODE_LABEL, orderIndex: 0 });
         structureNodeId = created.id;
+        record('structure_nodes', created.id, created.sourceLabel);
       }
     }
   }
@@ -211,32 +256,87 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       if (write) {
         const created = await createLearningObjective({ structureNodeId, description: OBJECTIVE_DESCRIPTION });
         learningObjectiveId = created.id;
+        record('learning_objectives', created.id, created.description);
       }
     }
   }
 
-  // --- 7. Existing canonical concept lookup -- NEVER created here, only found ---
+  // --- 7. Canonical subject/concept -- operator-authorized minimal creation, 2026-09-21 ---
+  //
+  // By default this seed only ever FINDS an existing canonical concept,
+  // never creates one (canonical concepts are F4's shared, cross-student
+  // catalog, not Pilot fixture data). The operator explicitly authorized
+  // a narrow exception: if `canonical_subjects` is COMPLETELY empty
+  // (not merely missing a Math entry -- the live Preview dry-run showed
+  // it has zero rows of any subject), this seed may create exactly one
+  // canonical subject ("Mathematics") and exactly one canonical concept
+  // ("Linear Equations") under it, Preview-only, non-official. If the
+  // table is NOT empty but simply lacks a Math-compatible entry, the
+  // original behavior still applies: abort and report, never invent.
+  //
+  // `canonical_subjects`/`canonical_concepts` have no metadata/provenance
+  // column (confirmed from the real migration DDL) and this seed will
+  // not alter that schema to add one -- the PILOT_FIXTURE/NON_OFFICIAL/
+  // PREVIEW_ONLY classification is instead recorded in
+  // `canonical_concepts.description` (a real, existing free-text column)
+  // and, exhaustively, in this seed's own manifest/report.
+  const CANONICAL_CLASSIFICATION = 'PILOT_FIXTURE / NON_OFFICIAL / PREVIEW_ONLY';
+  const CANONICAL_SUBJECT_NAME = 'Mathematics';
+  const CANONICAL_CONCEPT_NAME = 'Linear Equations';
+  const CANONICAL_CONCEPT_DESCRIPTION = `${CANONICAL_CLASSIFICATION} -- created by the F15-C1 Preview exam-catalog seed to close a real empty-catalog data gap. Not an official PAA/College Board specification. See docs/implementation/f15/F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md.`;
+
   const canonicalSubjects = await listCanonicalSubjects();
-  const mathCanonicalSubject = canonicalSubjects.find((s) => /math/i.test(s.name));
-  if (!mathCanonicalSubject) {
+  let mathCanonicalSubject = canonicalSubjects.find((s) => /math/i.test(s.name));
+  let canonicalSubjectToCreate: { name: string; willCreate: boolean; existingId?: string } = { name: CANONICAL_SUBJECT_NAME, willCreate: false };
+  let canonicalConceptToCreate: { name: string; subject: string; willCreate: boolean; existingId?: string } = { name: CANONICAL_CONCEPT_NAME, subject: CANONICAL_SUBJECT_NAME, willCreate: false };
+  let canonicalConceptId: string;
+  let canonicalConceptName: string;
+
+  if (mathCanonicalSubject) {
+    // A Math-like canonical subject already exists (whether from prior
+    // real editorial content or a prior run of this same authorization)
+    // -- reuse it exactly as the original, non-authorized path did.
+    canonicalSubjectToCreate = { name: mathCanonicalSubject.name, willCreate: false, existingId: mathCanonicalSubject.id };
+    const mathConcepts = await listCanonicalConcepts(mathCanonicalSubject.id);
+    const linearEquations = mathConcepts.find((c) => c.name.trim().toLowerCase() === CANONICAL_CONCEPT_NAME.toLowerCase());
+    const activeMathConcept = linearEquations ?? mathConcepts.find((c) => c.status === 'ACTIVE') ?? mathConcepts[0];
+    if (!activeMathConcept) {
+      throw new AbortSeed(
+        `Canonical subject "${mathCanonicalSubject.name}" (${mathCanonicalSubject.id}) exists but has zero canonical concepts, and canonical_subjects is NOT completely empty (so the operator's narrow create-authorization does not apply here -- it is scoped only to a totally empty canonical_subjects table). STOPPING. Missing academic data: at least one canonical concept under "${mathCanonicalSubject.name}" must exist first.`
+      );
+    }
+    canonicalConceptId = activeMathConcept.id;
+    canonicalConceptName = activeMathConcept.name;
+    canonicalConceptToCreate = { name: activeMathConcept.name, subject: mathCanonicalSubject.name, willCreate: false, existingId: activeMathConcept.id };
+    log('CanonicalConcept (existing, not created)', 'EXISTS', `"${canonicalConceptName}" (${canonicalConceptId}) under subject "${mathCanonicalSubject.name}"`);
+  } else if (canonicalSubjects.length > 0) {
+    // The table is NOT empty -- just lacks Math. The operator's
+    // authorization is explicitly scoped to a totally empty table, so
+    // the original strict behavior still applies here: abort, never invent.
     throw new AbortSeed(
-      `No existing canonical subject matching "Mathematics" was found among: ${canonicalSubjects.map((s) => s.name).join(', ') || '(none)'}. ` +
-        `Per this seed's own explicit rule, it will not invent a canonical-concept equivalence -- STOPPING. ` +
+      `No existing canonical subject matching "Mathematics" was found among: ${canonicalSubjects.map((s) => s.name).join(', ')}. ` +
+        `canonical_subjects is NOT empty, so the operator's narrow create-authorization (scoped only to a totally empty table) does not apply. STOPPING -- will not invent a canonical-concept equivalence. ` +
         `Missing academic data: a canonical Mathematics subject/concept must be created through the normal F4 canonical-catalog editorial process before this Pilot exam catalog can map to it.`
     );
+  } else {
+    // canonical_subjects is COMPLETELY empty -- the authorized exception applies.
+    canonicalSubjectToCreate = { name: CANONICAL_SUBJECT_NAME, willCreate: true };
+    canonicalConceptToCreate = { name: CANONICAL_CONCEPT_NAME, subject: CANONICAL_SUBJECT_NAME, willCreate: true };
+    log('CanonicalSubject (operator-authorized minimal create)', 'CREATE', `"${CANONICAL_SUBJECT_NAME}" (${CANONICAL_CLASSIFICATION})`);
+    log('CanonicalConcept (operator-authorized minimal create)', 'CREATE', `"${CANONICAL_CONCEPT_NAME}" under "${CANONICAL_SUBJECT_NAME}" (${CANONICAL_CLASSIFICATION})`);
+    if (write) {
+      mathCanonicalSubject = await createCanonicalSubject(CANONICAL_SUBJECT_NAME);
+      record('canonical_subjects', mathCanonicalSubject.id, mathCanonicalSubject.name, CANONICAL_CLASSIFICATION);
+      const concept = await createCanonicalConcept({ canonicalSubjectId: mathCanonicalSubject.id, name: CANONICAL_CONCEPT_NAME, description: CANONICAL_CONCEPT_DESCRIPTION });
+      canonicalConceptId = concept.id;
+      canonicalConceptName = concept.name;
+      record('canonical_concepts', concept.id, concept.name, CANONICAL_CLASSIFICATION);
+    } else {
+      // Dry run: no real id yet -- callers must check canonicalSubjectToCreate/canonicalConceptToCreate.willCreate.
+      canonicalConceptId = '';
+      canonicalConceptName = CANONICAL_CONCEPT_NAME;
+    }
   }
-  const mathConcepts = await listCanonicalConcepts(mathCanonicalSubject.id);
-  const activeMathConcept = mathConcepts.find((c) => c.status === 'ACTIVE') ?? mathConcepts[0];
-  if (!activeMathConcept) {
-    throw new AbortSeed(
-      `Canonical subject "${mathCanonicalSubject.name}" (${mathCanonicalSubject.id}) exists but has zero canonical concepts. ` +
-        `Per this seed's own explicit rule, it will not invent one -- STOPPING. ` +
-        `Missing academic data: at least one canonical concept under "${mathCanonicalSubject.name}" must exist first.`
-    );
-  }
-  const canonicalConceptId = activeMathConcept.id;
-  const canonicalConceptName = activeMathConcept.name;
-  log('CanonicalConcept (existing, not created)', 'EXISTS', `"${canonicalConceptName}" (${canonicalConceptId}) under subject "${mathCanonicalSubject.name}"`);
 
   // --- 8. Objective -> canonical concept mapping, PUBLISHED ---
   let mappingPublished = false;
@@ -267,6 +367,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
           await approveMapping('CONCEPT', reviewerUserId, mapping.id);
           await publishMapping('CONCEPT', reviewerUserId, mapping.id);
           mappingPublished = true;
+          record('objective_concept_mappings', mapping.id, `objective -> ${canonicalConceptName}`);
         } finally {
           await revokeEditorialRole(editorUserId, 'EDITOR');
           await revokeEditorialRole(reviewerUserId, 'REVIEWER');
@@ -291,6 +392,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       if (write) {
         const created = await createExamDefinition({ academicProgrammeId: programme?.id, name: EXAM_DEFINITION_NAME, examFamily: 'PAA', purpose: EXAM_PURPOSE });
         examDefinitionId = created.id;
+        record('exam_definitions', created.id, created.name);
       }
     }
   }
@@ -302,7 +404,10 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       log('ScoringModel', 'EXISTS', `"${SCORING_MODEL_NAME}" (${existing.rows[0].id})`);
     } else {
       log('ScoringModel', 'CREATE', `"${SCORING_MODEL_NAME}" (BINARY, placeholder -- not attached to the exam version, see module header)`);
-      if (write) await createScoringModel({ name: SCORING_MODEL_NAME, scoringType: 'BINARY' });
+      if (write) {
+        const created = await createScoringModel({ name: SCORING_MODEL_NAME, scoringType: 'BINARY' });
+        record('scoring_models', created.id, created.name);
+      }
     }
   }
 
@@ -337,6 +442,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
           const created = await createExamVersion({ examDefinitionId, versionLabel: EXAM_VERSION_LABEL });
           examVersionId = created.id;
           await publishExamVersion(created.id);
+          record('exam_versions', created.id, created.versionLabel);
         }
       }
     }
@@ -369,6 +475,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         await configureTiming(created.id, COMPONENT_DURATION_MINUTES);
         await configureToolRules(created.id, { calculator: 'basic', note: 'Pilot placeholder tool rules -- not an official PAA tool policy.' });
         await markSupported(created.id, true);
+        record('assessment_components', created.id, created.name);
       }
     }
   }
@@ -388,6 +495,7 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
         const created = await createBlueprint(examVersionId);
         blueprintId = created.id;
         blueprintNeedsPublish = true;
+        record('assessment_blueprints', created.id, `blueprint for ${EXAM_VERSION_LABEL}`);
       }
     }
   }
@@ -398,7 +506,10 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       log('BlueprintComponentAllocation', 'EXISTS', `(blueprint ${blueprintId} <-> component ${componentId})`);
     } else {
       log('BlueprintComponentAllocation', 'CREATE', `(blueprint <-> "${COMPONENT_NAME}" component)`);
-      if (write) await addComponentAllocation(blueprintId, componentId, { itemCount: 10, weight: 1 });
+      if (write) {
+        await addComponentAllocation(blueprintId, componentId, { itemCount: 10, weight: 1 });
+        record('blueprint_component_allocations', `${blueprintId}:${componentId}`, `blueprint <-> ${COMPONENT_NAME}`);
+      }
     }
   }
 
@@ -408,7 +519,10 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
       log('BlueprintObjectiveTarget', 'EXISTS', `(objective <-> component)`);
     } else {
       log('BlueprintObjectiveTarget', 'CREATE', `(objective <-> "${COMPONENT_NAME}" component, targetItemCount=10)`);
-      if (write) await addObjectiveTarget({ blueprintId, learningObjectiveId, assessmentComponentId: componentId, targetItemCount: 10 });
+      if (write) {
+        const created = await addObjectiveTarget({ blueprintId, learningObjectiveId, assessmentComponentId: componentId, targetItemCount: 10 });
+        record('blueprint_objective_targets', created.id, `objective <-> ${COMPONENT_NAME}`);
+      }
     }
   }
 
@@ -416,10 +530,22 @@ export async function runPilotExamCatalogSeed(write: boolean): Promise<SeedResul
     await publishBlueprint(blueprintId);
   }
 
+  // The "pilot exam catalog" entities are everything in `plan` EXCEPT the
+  // 2 canonical-catalog steps, which are reported separately above as
+  // their own explicit fields per the operator's verification requirement.
+  const pilotExamCatalogEntitiesToCreate = plan.filter(
+    (s) => s.entity !== 'CanonicalSubject (operator-authorized minimal create)' && s.entity !== 'CanonicalConcept (operator-authorized minimal create)' && s.entity !== 'CanonicalConcept (existing, not created)'
+  );
+
   return {
     write,
     plan,
-    mathCanonicalSubject: { id: mathCanonicalSubject.id, name: mathCanonicalSubject.name },
+    canonicalSubjectToCreate,
+    canonicalConceptToCreate,
+    pilotExamCatalogEntitiesToCreate,
+    protectedTableCountsBefore,
+    manifestCreated,
+    mathCanonicalSubject: mathCanonicalSubject ? { id: mathCanonicalSubject.id, name: mathCanonicalSubject.name } : undefined,
     canonicalConceptId,
     canonicalConceptName,
     mappingPublished,
