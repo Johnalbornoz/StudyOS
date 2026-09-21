@@ -24,6 +24,7 @@
 | Configuración de Clerk en Preview | F15 (encontrado) → F15-C1 (cerrado) | Variables de entorno Preview-scope en Vercel | N/A | N/A | Observación en vivo, 3 despliegues | Ninguno — `IVG-F15-02`/R2 resueltos | **LIVE VERIFIED** |
 | Rotación de credenciales expuestas | F14 (encontrado) → en curso | Auditoría de alcance + runbook (`compare-credential-scope.sh`) | N/A | N/A | N/A — ninguna rotación puede certificarse sin ejecutarla | `IVG-F14-06`/`IVG-F15-01`/R1 | **OPEN — `OPERATOR_ACTION_REQUIRED` — único hard gate restante** |
 | `/api/health` | F15-C1 | `src/app/api/health/route.ts` | N/A | 3 unit tests | N/A (ruta simple) | Ninguno | **IMPLEMENTED, TESTED, LIVE VERIFIED** |
+| Catálogo de examen Pilot (self-service) | F15 (encontrado vacío) → F15-C1 (cerrado) | `src/lib/assessment/pilot-catalog-seed.service.ts` (16 entidades: org/programa/materia/estructura/objetivo/canónico/mapping/definición/scoring/versión/componente/blueprint/allocation/target) | N/A (datos, no schema) | 11 unit tests del seed + 3 de `listAvailableExamOptions` | Dry-run + write + write-repetido (idempotencia probada, ids idénticos) + inspección post-write vía ruta de diagnóstico | Ninguno — catálogo `canonical_subjects` estaba vacío, autorización explícita del operador aplicada solo a ese caso | **LIVE VERIFIED** (activeExamDefinitionCount=1, publishedExamVersionCount=1, publishedBlueprintCount=1, tablas protegidas sin cambios); **PENDING** (click-through UI autenticado) |
 | Matriz E2E autenticada completa | F15 (bloqueada) → F15-C1 (en progreso) | Protocolo de login asistido por operador | N/A | N/A | Real, en vivo, por identidad | `IVG-F15-03`/R3 | **BLOCKED pending operator login** (ver estado en vivo abajo) |
 | Backup/restore + RPO/RTO | Nunca construido | N/A | N/A | N/A | N/A | `IVG-F15-10`/R6 | **DEFERRED** |
 | Rate limiting distribuido | Nunca construido | `checkRateLimit` (per-process) | N/A | N/A | N/A | R5 | **DEFERRED** |
@@ -32,10 +33,13 @@
 ## Estado final en vivo (se actualiza al concluir cada bloque; no se declara PASS sin ejecución real)
 
 ```
-Deployed code SHA:        754057f42bc346d5fb16c1edb69c2deeffd4c63b  (branch f15-c1/pilot-gate-closure)
-Deployment:                dpl_Ets57qwU4z1MLtwzYrbLeFBYd1Uj (study-dbmvv2hh9-study-so.vercel.app), target: preview
-Documentation SHA:          registrado en el commit que añade docs/final/ a este mismo branch (ver git log)
-Production:                 no modificada en ningún momento de F15 ni F15-C1
+Deployed code SHA (clean, sin la ruta temporal de seed):  0588991fc0550a97bca29bfd4b31ebab7969d6e7  (branch f15-c1/pilot-gate-closure)
+Deployment limpio final:                                   dpl_5URUSRGrDDucNV2EWUeFMX7V4JdN (study-5ys7e82mg-study-so.vercel.app), target: preview
+  -- confirmado: la ruta temporal /api/diagnostics/seed-pilot-exam-catalog devuelve 404 en este deployment
+Deployment temporal (usado solo para dry-run/write/idempotencia, ya retirado):
+  dpl_3BMLSCsvJKi3Sg4jbYZEYmDoMmzh (study-6yo9n2kse-study-so.vercel.app)
+Documentation SHA:          registrado en el commit que añade esta actualización (ver git log en este mismo branch)
+Production:                 no modificada en ningún momento de F15, F15-C1, ni durante el cierre del catálogo de examen Pilot
 
 READY FOR PILOT:                        NO  (bloqueado únicamente por rotación de credenciales + E2E pendiente)
 READY FOR PRODUCTION:                   NO  (ver 14_PRODUCTION_RELEASE_CHECKLIST.md — múltiples gates abiertos)

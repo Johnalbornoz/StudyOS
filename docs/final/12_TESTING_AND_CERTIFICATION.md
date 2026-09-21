@@ -3,15 +3,20 @@
 ## Full automated suite (Vitest) — current
 
 ```
-Test files: 355 passed (355)
-Tests:      5651 passed (5651)
+Test files: 357 passed (357)
+Tests:      5668 passed (5668)
 Failed:     0
 Skipped:    0
 ```
 
-Grown from F15's own close (352 files / 5632 tests) by the 12 new
-diagnostic-route tests, 3 new `/api/health` tests, and 4 Exam Profile
-self-service authorization/catalog tests added in F15-C1.
+Grown from F15's own close (352 files / 5632 tests) by, cumulatively:
+15 diagnostic-route tests (Preview DB state + exam-catalog inspection),
+3 new `/api/health` tests, 4 Exam Profile self-service
+authorization/catalog tests, 11 Pilot exam-catalog seed-service tests,
+and 3 `listAvailableExamOptions` tests — all added in F15-C1. (Briefly
+peaked at 358/5676 while a temporary seed-trigger route and its 8 tests
+existed; both were removed once the seed was verified against Preview,
+per that route's own stated temporary lifecycle.)
 
 ## Typecheck and build
 
@@ -65,6 +70,7 @@ Every domain has its own `*-source-guard.test.ts` (e.g. `f12-institution-intelli
 | Preview Clerk resolves to the correct application | Real browser load of `/sign-in`, 3 separate deployments | **LIVE VERIFIED** |
 | Preview database migration state | Real query via temporary diagnostic route, twice (before/after repair) | **LIVE VERIFIED** |
 | `/api/health` | Real `curl` against live Preview | **LIVE VERIFIED** |
+| Pilot exam catalog exists (post-seed) | Real query via the Preview DB diagnostic route, before and after `--write`, twice | **LIVE VERIFIED** — `activeExamDefinitionCount`/`publishedExamVersionCount`/`publishedBlueprintCount` all 1, exam discoverable by name |
 | Authenticated flows (Student/Teacher/Parent/Institution/multi-role) | — | **BLOCKED pending operator-assisted login** |
 | Responsive design, unauthenticated pages | 3 widths, live | **LIVE VERIFIED (unauthenticated only)** |
 | Responsive design, authenticated pages | — | **DEFERRED**, rolls into the E2E session |

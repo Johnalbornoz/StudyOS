@@ -21,6 +21,8 @@ Real routes, grounded in `src/app/dashboard/*` and `src/app/api/*` as they exist
 
 **Exam-taking flow (F15, the phase's own principal functional deliverable)**: `item-resolution.service.ts` wires `SimulationPlanTarget` (F9) to actual question content, `ItemRunner.tsx` renders it, grading is 100% delegated to F9's own already-certified `recordSimulationItemResponse`/`computeReadinessSnapshot` — never re-implemented. **IMPLEMENTED, TESTED** (11 unit tests). **Not yet LIVE VERIFIED** — pending the authenticated E2E session.
 
+**"Define target exam" flow, F15-C1 update (2026-09-21)**: loading this on Preview with Student A confirmed the predicted state live — "no exams published yet," because the real Preview exam catalog was genuinely empty (`activeExamDefinitionCount: 0`), and deeper inspection found `canonical_subjects` completely empty too. Closed via an operator-authorized, idempotent, Preview-only catalog seed (`src/lib/assessment/pilot-catalog-seed.service.ts`) — see [03_DATABASE_SCHEMA_AND_MIGRATIONS.md](03_DATABASE_SCHEMA_AND_MIGRATIONS.md) and `docs/implementation/f15/F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md`. **LIVE VERIFIED (catalog data exists, discoverable by name via the same query `listAvailableExamOptions()` uses); PENDING (the actual authenticated UI click-through — Student A opening the selector, choosing the exam by name, and creating the profile — is the next step in the E2E session, not yet performed).**
+
 ## Teacher
 
 | Page | Path | Purpose |

@@ -8,6 +8,7 @@ Step-by-step operator runbook to actually run the pilot, once the remaining gate
 - [x] Preview Clerk correctly resolves to StudyOS_App — **LIVE VERIFIED**.
 - [x] Preview database fully migrated (32/32) and identity-integrity-verified — **LIVE VERIFIED**.
 - [x] `/api/health` live — **LIVE VERIFIED**.
+- [x] Pilot exam catalog exists (2026-09-21: was completely empty, closed via an operator-authorized seed) — **LIVE VERIFIED** (data-level; UI click-through pending in the E2E matrix below).
 - [ ] Full authenticated E2E matrix executed — **in progress, blocked on operator-assisted login** (this section documents the exact protocol).
 - [ ] Pilot cohort restricted to `UNTIMED` exam attempts only (timed modes not yet built).
 - [ ] Institution admins onboarded with operator assistance (no curriculum/exam-version picker UI yet).
@@ -42,10 +43,13 @@ This tooling **cannot** enter a password, OTP, or any other credential on anyone
 
 ## The full E2E matrix (to be executed and documented, one identity at a time)
 
-1. Student — select a published target exam by name, create an Exam Profile,
-   then exercise self-service navigation, exam start/answer/finish, and
-   readiness update. An empty selector is a Pilot catalog-data blocker and must
-   not be bypassed with arbitrary UUIDs.
+1. Student — select a published target exam by name ("PAA Mathematics
+   (Pilot)", version "Pilot 2026 v1" — confirmed present via the diagnostic
+   route as of 2026-09-21, see [03_DATABASE_SCHEMA_AND_MIGRATIONS.md](03_DATABASE_SCHEMA_AND_MIGRATIONS.md)),
+   create an Exam Profile, then exercise self-service navigation, exam
+   start/answer/finish, and readiness update. An empty selector would be a
+   Pilot catalog-data blocker and must never be bypassed with arbitrary UUIDs
+   — this case is now expected to show a real option, not the empty state.
 2. Student — negative authorization (attempt to access another student's session by ID manipulation).
 3. Teacher — class/student view, create an intervention.
 4. Teacher → Student assignment — full lifecycle including reconciliation.

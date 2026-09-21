@@ -100,6 +100,24 @@ erDiagram
     classes ||--o{ teacher_assignments : "assigned to"
 ```
 
+## Pilot exam catalog seed — **LIVE VERIFIED**, 2026-09-21
+
+A second real data gap was found after the migration/identity work above: `exam_definitions`/`exam_versions` had zero ACTIVE+PUBLISHED rows, and `canonical_subjects` was **completely empty** — blocking Student A's self-service Exam Profile flow entirely. An idempotent, Pilot-only seed (`src/lib/assessment/pilot-catalog-seed.service.ts`) closed this, reusing only already-certified F4/F6/F7 services:
+
+| Metric | Before | After |
+|---|---|---|
+| `activeExamDefinitionCount` | 0 | **1** ("PAA Mathematics (Pilot)") |
+| `publishedExamVersionCount` | 0 | **1** ("Pilot 2026 v1") |
+| `publishedBlueprintCount` | 0 | **1** |
+| `canonical_subjects` rows | 0 | **1** (Mathematics, operator-authorized) |
+| `students`/`users`/`profiles`/`institutions`/`institution_memberships` | 11/11/15/0/0 | **unchanged** |
+
+16 entities created in total (org → programme → subject → structure version/node → learning objective → canonical subject/concept → objective-concept mapping → exam definition → scoring model → exam version → component → blueprint → allocation → target), each looked up by natural key first (idempotent — a second `--write` run created zero new rows, reusing identical ids). Full manifest, operator authorization record, and a documented (never-executed) rollback procedure: `docs/implementation/f15/F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md`.
+
+**A real bug was found and fixed before any write was attempted**: the seed's own dry-run mode silently truncated its reported plan whenever a parent entity didn't exist yet (an `undefined` id caused every downstream step to be skipped without even being logged) — fixed with a cascading placeholder id (the nil UUID), which lets every downstream natural-key check still run safely (matching zero real rows) while correctly reporting what it too would create.
+
+**Deliberately left unattached**: the exam version's `scoring_model_id` — a real, honest fact (no finalized PAA scoring formula exists for this pilot yet) that correctly keeps `FULL_MOCK` reporting `NOT_READY` via the existing, unmodified `canFullMockBeOffered()` guard, while `TOPIC_EXAM`/`DOMAIN_EXAM`/`MINI_MOCK` (which never depend on a scoring model) are genuinely eligible.
+
 ## Pilot data growth (reasoned, not load-tested)
 
 `simulation_attempts.navigation_state` (JSONB) holds the full pending generated-question object during an active exam attempt, cleared on submission — a real but modest per-attempt storage characteristic, not expected to be a capacity concern at pilot scale.
