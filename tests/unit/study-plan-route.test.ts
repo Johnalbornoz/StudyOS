@@ -13,6 +13,11 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
+
 const getInterfaceLanguageMock = vi.fn();
 vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: (...a: any[]) => getInterfaceLanguageMock(...a) }));
 
@@ -47,6 +52,8 @@ const shaped = {
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'clerk-a', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   getInterfaceLanguageMock.mockReset().mockResolvedValue('en');
   rebuildLearningPlanMock.mockReset().mockResolvedValue({ planResult: { planId: 'canon-1' } });
   getLegacyShapedCanonicalPlanMock.mockReset().mockResolvedValue(shaped);

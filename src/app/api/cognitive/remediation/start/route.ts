@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { getDiagnosis } from '@/services/cognitive-diagnosis.service';
 import { startRemediation, remediationStepHref } from '@/services/remediation.service';
 import { db } from '@/lib/db';
@@ -20,6 +22,11 @@ export async function POST(request: NextRequest) {
 
     const canAccess = await verifyStudentAccess(authContext.userId, diagnosis.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const entitled = await canUseCapability(actor.id, diagnosis.studentId, 'LEARNING_FULL_ACCESS');
+    if (!entitled) return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
+
     if (diagnosis.state !== 'CONFIRMED') {
       return NextResponse.json({ error: 'DIAGNOSIS_NOT_CONFIRMED' }, { status: 400 });
     }

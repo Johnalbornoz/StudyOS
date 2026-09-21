@@ -43,6 +43,8 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { db } from '@/lib/db';
 import {
   generateQuickCheckQuestions,
@@ -549,6 +551,15 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const canAccess = await verifyStudentAccess(userId, validated.studentId, role);
     if (!canAccess) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this student' }, { status: 403 });
+    }
+
+    // AI quiz generation is a paid capability -- gated server-side,
+    // never only hidden in the UI. An unlicensed Student's DEMO access
+    // does not include on-demand AI-generated quizzes.
+    const generateActor = await getOrCreateCanonicalUser(userId);
+    const generateEntitled = await canUseCapability(generateActor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+    if (!generateEntitled) {
+      return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
     }
 
     if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {

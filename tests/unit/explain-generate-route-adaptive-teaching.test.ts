@@ -13,6 +13,11 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
+
 const generateExplainPromptMock = vi.fn();
 vi.mock('@/services/explain-defend.service', () => ({ generateExplainPrompt: (...a: any[]) => generateExplainPromptMock(...a) }));
 
@@ -34,6 +39,8 @@ function makeRequest(body: any) {
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   generateExplainPromptMock.mockReset().mockResolvedValue({ activityType: 'EXPLAIN', prompt: 'q', expectedElements: ['a'] });
   getTeachingIntentForConceptMock.mockReset().mockResolvedValue(null);
 });

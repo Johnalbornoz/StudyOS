@@ -7,6 +7,11 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
+
 const getQuizSessionMock = vi.fn();
 const recordHintUsedMock = vi.fn();
 vi.mock('@/services/quiz-persistence.service', () => ({
@@ -39,6 +44,8 @@ function session(overrides: Partial<Record<string, any>> = {}) {
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   getQuizSessionMock.mockReset();
   recordHintUsedMock.mockReset().mockResolvedValue(undefined);
   generateQuestionHintMock.mockReset().mockResolvedValue(['hint text']);

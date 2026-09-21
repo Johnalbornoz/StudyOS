@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { generateStructuredTransferActivity, type TransferDistance } from '@/services/transfer.service';
 import {
   computeTransferPromptFingerprint,
@@ -93,6 +95,10 @@ export async function POST(request: NextRequest) {
     subjectIdForLog = validated.subjectId;
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+    if (!entitled) return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
 
     const language = validated.language || 'en';
 

@@ -24,6 +24,11 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
+
 const generateStructuredTransferActivityMock = vi.fn();
 const evaluateTransferResponseMock = vi.fn();
 vi.mock('@/services/transfer.service', () => ({
@@ -122,6 +127,8 @@ let warnSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   generateStructuredTransferActivityMock.mockReset();
   evaluateTransferResponseMock.mockReset().mockResolvedValue({ result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-1' } });
   updateMasteryMock.mockReset().mockResolvedValue({ duplicate: false, oldMastery: 10, newMastery: 20, delta: 10 });

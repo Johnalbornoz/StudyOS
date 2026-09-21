@@ -17,6 +17,11 @@ vi.mock('@/lib/auth', () => ({
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
 
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
+
 const generateStructuredTransferActivityMock = vi.fn();
 const evaluateTransferResponseMock = vi.fn();
 vi.mock('@/services/transfer.service', () => ({
@@ -48,6 +53,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   generateStructuredTransferActivityMock.mockReset().mockResolvedValue({
     distance: 'MID',
     context: 'a bike on a curve',

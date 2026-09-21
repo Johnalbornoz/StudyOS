@@ -200,6 +200,10 @@ vi.mock('@/lib/auth', () => ({
   verifyAuth: (...a: any[]) => verifyAuthMock(...a),
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
 }));
+const getOrCreateCanonicalUserMock = vi.fn();
+vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
 const getConceptKnowledgeStateMock = vi.fn();
 vi.mock('@/services/knowledge-state.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/knowledge-state.service')>();
@@ -241,6 +245,8 @@ vi.mock('@/lib/pedagogical-decision', () => ({
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'u1', role: 'student' });
   verifyStudentAccessMock.mockReset().mockResolvedValue(true);
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
   getConceptKnowledgeStateMock.mockReset();
   generateStructuredTransferActivityMock.mockReset().mockResolvedValue({
     prompt: 'p', context: 'c', distance: 'NEAR', transferModality: 'text', noveltyDimensions: [], targetConceptIds: [], contextDomain: 'd', generatorPromptVersion: 'v1',

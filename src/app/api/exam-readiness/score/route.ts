@@ -31,6 +31,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import {
   calculateExamReadiness,
   getOverallExamReadiness,
@@ -100,6 +102,13 @@ export async function GET(request: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    // Exam-readiness scoring is a paid capability -- gated server-side.
+    const readinessActor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const readinessEntitled = await canUseCapability(readinessActor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+    if (!readinessEntitled) {
+      return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
     }
 
     let daysUntilExam = typeof validated.daysUntilExam === 'string'

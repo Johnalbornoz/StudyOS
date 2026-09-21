@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { createConversation, getConversations } from '@/services/tutor.service';
 import { z } from 'zod';
+
+// GET (viewing past conversations) is never entitlement-gated -- a
+// Student's own history remains visible regardless of subscription
+// state (LEARNING_HISTORY_VIEW is never revoked). Only POST (starting
+// a new AI tutor conversation) is a paid capability.
 
 export async function GET(request: NextRequest) {
   const authContext = await verifyAuth();
@@ -46,6 +53,12 @@ export async function POST(request: NextRequest) {
   const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+  const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+  if (!entitled) {
+    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
   }
 
   const conversationId = await createConversation(validated.studentId, validated.subjectId);

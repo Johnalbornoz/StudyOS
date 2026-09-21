@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { generateExplainPrompt, type ExplainActivityType } from '@/services/explain-defend.service';
 import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
 import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
@@ -23,6 +25,10 @@ export async function POST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+    if (!entitled) return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
 
     // Phase 5-R S2/S7: `conceptId` here is whatever the caller (a
     // remediation EXPLAIN step, or a freestanding Explain & Defend

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { getQuizSession, recordHintUsed } from '@/services/quiz-persistence.service';
 import { generateQuestionHint } from '@/services/quiz-generation.service';
 import { canUseAI } from '@/lib/ai-permission-policy';
@@ -31,6 +33,15 @@ export async function POST(request: NextRequest) {
   const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  // AI hint generation is a real, billable AI call -- gated server-side
+  // like every other AI-generation entry point, defense-in-depth on top
+  // of the entitlement check already enforced at quiz-generation time.
+  const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+  const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+  if (!entitled) {
+    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
   }
 
   const quizSession = await getQuizSession(validated.quizId);

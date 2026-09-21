@@ -1,11 +1,25 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireStudentId } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { generateQuestion } from '@/services/ai.service';
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // AI quiz generation is a paid capability -- gated server-side.
+  const studentId = await requireStudentId(userId);
+  if (!studentId) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+  const actor = await getOrCreateCanonicalUser(userId);
+  const entitled = await canUseCapability(actor.id, studentId, 'LEARNING_FULL_ACCESS');
+  if (!entitled) {
+    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
   }
 
   try {

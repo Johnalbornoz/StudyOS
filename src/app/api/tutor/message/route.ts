@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { sendMessage, verifyConversationOwnership } from '@/services/tutor.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { z } from 'zod';
@@ -33,6 +35,15 @@ export async function POST(request: NextRequest) {
   const owns = await verifyConversationOwnership(validated.conversationId, validated.studentId);
   if (!owns) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  // The AI tutor is a paid capability -- gated server-side, never only
+  // hidden in the UI. An unlicensed Student's DEMO access does not
+  // include AI-generated tutoring.
+  const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+  const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+  if (!entitled) {
+    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
   }
 
   try {

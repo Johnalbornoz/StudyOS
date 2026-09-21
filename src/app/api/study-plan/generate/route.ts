@@ -18,6 +18,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { rebuildLearningPlan } from '@/services/learning-orchestration.service';
 import { getLegacyShapedCanonicalPlan } from '@/services/legacy-study-plan-compat';
@@ -41,6 +43,9 @@ export async function GET(request: NextRequest) {
   const canAccess = await verifyStudentAccess(authContext.userId, studentId, authContext.role);
   if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
+  // GET (viewing the already-computed plan) is never entitlement-gated
+  // -- like other history/read views, this is not itself a new
+  // AI-generation action. Only POST (rebuilding the full plan) is.
   const preferredLanguage = await getInterfaceLanguage(studentId);
   const shaped = await getLegacyShapedCanonicalPlan(studentId, preferredLanguage);
   return NextResponse.json({ success: true, data: shaped });
@@ -61,6 +66,13 @@ export async function POST(request: NextRequest) {
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'You do not have permission to generate a plan for this student' }, { status: 403 });
+    }
+
+    // "Plan completo" is an explicitly paid capability -- gated server-side.
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
+    if (!entitled) {
+      return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
     }
 
     const preferredLanguage = await getInterfaceLanguage(validated.studentId);
