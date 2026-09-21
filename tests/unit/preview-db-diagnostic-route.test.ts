@@ -35,6 +35,11 @@ const ALLOWED_KEYS = [
   'studentBrokenLinks',
   'profileBrokenLinks',
   'userRolesByRole',
+  'activeExamDefinitionCount',
+  'publishedExamVersionCount',
+  'publishedBlueprintCount',
+  'activeDefinitionNames',
+  'publishedVersionLabels',
 ].sort();
 
 const DEFAULT_IDENTITY_COUNTS = {
@@ -71,6 +76,10 @@ function mockHappyPathQueries(
     profileBrokenLinks: number;
     userRolesByRole: Array<{ role: string; c: number }>;
     institutionsCount: number;
+    examDefinitionsTableExists: boolean;
+    activeDefinitionNames: string[];
+    publishedVersionLabels: string[];
+    publishedBlueprintCount: number;
   }> = {}
 ) {
   const ledgerExists = overrides.ledgerExists ?? true;
@@ -127,6 +136,18 @@ function mockHappyPathQueries(
 
   if (institutionsExists) {
     queryMock.mockResolvedValueOnce({ rows: [{ c: overrides.institutionsCount ?? 0 }] }); // institutionsCount
+  }
+
+  const examDefinitionsTableExists = overrides.examDefinitionsTableExists ?? true;
+  queryMock.mockResolvedValueOnce({ rows: [{ exists: examDefinitionsTableExists }] }); // exam_definitions to_regclass
+
+  if (examDefinitionsTableExists) {
+    const activeDefinitionNames = overrides.activeDefinitionNames ?? [];
+    const publishedVersionLabels = overrides.publishedVersionLabels ?? [];
+    queryMock
+      .mockResolvedValueOnce({ rows: activeDefinitionNames.map((name) => ({ name })) }) // active exam_definitions
+      .mockResolvedValueOnce({ rows: publishedVersionLabels.map((version_label) => ({ version_label })) }) // published exam_versions
+      .mockResolvedValueOnce({ rows: [{ c: overrides.publishedBlueprintCount ?? 0 }] }); // published assessment_blueprints
   }
 }
 
@@ -225,7 +246,8 @@ describe('GET /api/diagnostics/preview-db', () => {
         rows: [
           { version: '20260831_1400_ai_execution_and_decision_audit', name: 'ai_execution_and_decision_audit', applied_at: '2026-08-31T14:00:00.000Z' },
         ],
-      });
+      })
+      .mockResolvedValueOnce({ rows: [{ exists: false }] }); // exam_definitions to_regclass
 
     const { GET } = await import('@/app/api/diagnostics/preview-db/route');
     const res = await GET();
@@ -353,5 +375,57 @@ describe('GET /api/diagnostics/preview-db', () => {
     expect(body.duplicateClerkIds).toBe(0);
     expect(body.duplicateUserRoles).toBe(0);
     expect(body.userRolesByRole).toEqual([]);
+  });
+
+  it('K. exam catalog fields report zero/empty when the catalog is genuinely empty (the real observed Preview state)', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://u:p@host.example.com:5432/db';
+    mockHappyPathQueries({ activeDefinitionNames: [], publishedVersionLabels: [], publishedBlueprintCount: 0 });
+
+    const { GET } = await import('@/app/api/diagnostics/preview-db/route');
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.activeExamDefinitionCount).toBe(0);
+    expect(body.publishedExamVersionCount).toBe(0);
+    expect(body.publishedBlueprintCount).toBe(0);
+    expect(body.activeDefinitionNames).toEqual([]);
+    expect(body.publishedVersionLabels).toEqual([]);
+  });
+
+  it('L. exam catalog fields report real names/labels once a catalog exists', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://u:p@host.example.com:5432/db';
+    mockHappyPathQueries({
+      activeDefinitionNames: ['PAA Mathematics'],
+      publishedVersionLabels: ['Pilot 2026 v1'],
+      publishedBlueprintCount: 1,
+    });
+
+    const { GET } = await import('@/app/api/diagnostics/preview-db/route');
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.activeExamDefinitionCount).toBe(1);
+    expect(body.activeDefinitionNames).toEqual(['PAA Mathematics']);
+    expect(body.publishedExamVersionCount).toBe(1);
+    expect(body.publishedVersionLabels).toEqual(['Pilot 2026 v1']);
+    expect(body.publishedBlueprintCount).toBe(1);
+  });
+
+  it('M. exam catalog fields are all zero/empty when exam_definitions does not exist (never guesses)', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://u:p@host.example.com:5432/db';
+    mockHappyPathQueries({ examDefinitionsTableExists: false });
+
+    const { GET } = await import('@/app/api/diagnostics/preview-db/route');
+    const res = await GET();
+    const body = await res.json();
+
+    expect(body.activeExamDefinitionCount).toBe(0);
+    expect(body.publishedExamVersionCount).toBe(0);
+    expect(body.publishedBlueprintCount).toBe(0);
+    expect(body.activeDefinitionNames).toEqual([]);
+    expect(body.publishedVersionLabels).toEqual([]);
   });
 });

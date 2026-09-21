@@ -159,6 +159,32 @@ export async function GET() {
     institutionsCount = institutionsResult.rows[0].c;
   }
 
+  // Exam catalog state (F15-C1 exam-profile-self-service closure):
+  // whether a student can select ANY real, publishable exam. Catalog
+  // names/version labels are non-sensitive academic metadata, not PII.
+  let activeExamDefinitionCount = 0;
+  let publishedExamVersionCount = 0;
+  let publishedBlueprintCount = 0;
+  let activeDefinitionNames: string[] = [];
+  let publishedVersionLabels: string[] = [];
+
+  const examDefinitionsTableExists: boolean = (
+    await db.query(`SELECT to_regclass('public.exam_definitions') IS NOT NULL AS exists`)
+  ).rows[0].exists;
+
+  if (examDefinitionsTableExists) {
+    const [activeDefs, publishedVersions, publishedBlueprints] = await Promise.all([
+      db.query(`SELECT name FROM exam_definitions WHERE status = 'ACTIVE' ORDER BY name ASC`),
+      db.query(`SELECT version_label FROM exam_versions WHERE status = 'PUBLISHED' ORDER BY version_label ASC`),
+      db.query(`SELECT COUNT(*)::int AS c FROM assessment_blueprints WHERE status = 'PUBLISHED'`),
+    ]);
+    activeDefinitionNames = activeDefs.rows.map((r: { name: string }) => r.name);
+    activeExamDefinitionCount = activeDefinitionNames.length;
+    publishedVersionLabels = publishedVersions.rows.map((r: { version_label: string }) => r.version_label);
+    publishedExamVersionCount = publishedVersionLabels.length;
+    publishedBlueprintCount = publishedBlueprints.rows[0].c;
+  }
+
   return NextResponse.json({
     environment: 'preview',
     deploymentSha: commitSha,
@@ -183,5 +209,10 @@ export async function GET() {
     studentBrokenLinks,
     profileBrokenLinks,
     userRolesByRole,
+    activeExamDefinitionCount,
+    publishedExamVersionCount,
+    publishedBlueprintCount,
+    activeDefinitionNames,
+    publishedVersionLabels,
   });
 }
