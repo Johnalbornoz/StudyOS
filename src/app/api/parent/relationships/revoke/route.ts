@@ -3,8 +3,9 @@
  *
  * The LEARNER'S OWN side of revocation: a student revokes an ACTIVE
  * ('accepted') parent/guardian/coach relationship. `studentId` is
- * always the caller's own resolved identity (`getOrCreateStudentId`
- * from the authenticated Clerk session) -- there is no studentId field
+ * always the caller's own resolved identity (`requireStudentId`, which
+ * 403s rather than provisioning a Student for a non-Student account)
+ * -- there is no studentId field
  * in the request body to manipulate, so a caller can never revoke a
  * relationship belonging to a different student. Soft-revoke only
  * (parent.service.ts::revokeRelationshipByStudent) -- never deletes
@@ -12,7 +13,7 @@
  */
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateStudentId } from '@/lib/auth';
+import { requireStudentId } from '@/lib/auth';
 import { revokeRelationshipByStudent } from '@/services/parent.service';
 import { z } from 'zod';
 
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
+  const studentId = await requireStudentId(clerkUserId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const revoked = await revokeRelationshipByStudent(studentId, validated.parentId);
   if (!revoked) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });

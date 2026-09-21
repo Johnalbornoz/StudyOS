@@ -21,7 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
-import { getOrCreateCanonicalUser, assignSelfServiceRole, resolveDefaultWorkspace, type SelfServiceRole } from '@/lib/identity';
+import { getOrCreateCanonicalUser, assignSelfServiceRole, resolveDefaultWorkspace, setActiveWorkspace, type SelfServiceRole } from '@/lib/identity';
 
 /**
  * Deliberately a literal Zod enum, not built from SELF_SERVICE_ROLES at
@@ -40,7 +40,15 @@ export async function POST(request: NextRequest) {
 
     const user = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
     await assignSelfServiceRole(authContext.userId, user.id, role as SelfServiceRole);
+
+    // The initial selection also becomes the active workspace -- a
+    // brand-new STUDENT/PARENT/TEACHER must land directly in the
+    // matching workspace, never in an unset state that would bounce
+    // them back through another switch step.
     const defaultWorkspace = await resolveDefaultWorkspace(user.id);
+    if (defaultWorkspace) {
+      await setActiveWorkspace(user.id, defaultWorkspace);
+    }
 
     return NextResponse.json({ success: true, data: { role, defaultWorkspace } });
   } catch (error) {

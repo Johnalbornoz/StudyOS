@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateStudentId } from '@/lib/auth';
+import { requireStudentId } from '@/lib/auth';
 import { getPendingRequestsForStudent, respondToRequest } from '@/services/parent.service';
 import { z } from 'zod';
 
@@ -11,7 +11,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
+  const studentId = await requireStudentId(clerkUserId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const requests = await getPendingRequestsForStudent(studentId);
   return NextResponse.json({ success: true, data: { requests } });
 }
@@ -27,7 +28,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
+  const studentId = await requireStudentId(clerkUserId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const body = await request.json();
 
   let validated;

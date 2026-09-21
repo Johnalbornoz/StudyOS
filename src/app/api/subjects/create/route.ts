@@ -1,11 +1,12 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { getOrCreateStudentId } from '@/lib/auth';
+import { requireStudentId } from '@/lib/auth';
 import { isLocale } from '@/lib/i18n/messages';
 
 export async function POST(req: NextRequest) {
-  // Development: Use test UUID, production: require auth
+  // Development: Use test UUID, production: require auth + an ACTIVE
+  // STUDENT role (never silently provisioned -- see requireStudentId).
   let userId = '550e8400-e29b-41d4-a716-446655440000'; // UUID v4 test
   if (process.env.NODE_ENV === 'production') {
     const auth_result = await auth();
@@ -13,7 +14,11 @@ export async function POST(req: NextRequest) {
     if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    userId = await getOrCreateStudentId(clerkUserId);
+    const studentId = await requireStudentId(clerkUserId);
+    if (!studentId) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    userId = studentId;
   }
 
   try {

@@ -90,10 +90,20 @@ export async function setSubscriptionStatusManually(studentId: string, status: S
  * student and returns the checkout URL to redirect them to. Throws
  * PAYMENT_NOT_CONFIGURED if no Mercado Pago account is connected yet.
  */
+/**
+ * `payerUserId` (F1 canonical `users.id`) is recorded on the
+ * subscription row separately from `studentId` -- the license belongs
+ * to the student, but who is actually paying (the student themself, or
+ * a parent renewing an authorized child's license) is tracked
+ * independently, per F3's own `payer_user_id` column. Never inferred:
+ * always the caller's own resolved identity, passed explicitly by the
+ * route that authorized this checkout.
+ */
 export async function createMercadoPagoCheckout(
   studentId: string,
   studentEmail: string,
-  backUrl: string
+  backUrl: string,
+  payerUserId: string
 ): Promise<{ checkoutUrl: string }> {
   if (!isConfigured()) {
     throw new Error('PAYMENT_NOT_CONFIGURED');
@@ -132,14 +142,15 @@ export async function createMercadoPagoCheckout(
 
   await db.query(
     `
-    INSERT INTO subscriptions (student_id, status, provider, provider_subscription_id, provider_payer_email)
-    VALUES ($1, 'unpaid', 'mercadopago', $2, $3)
+    INSERT INTO subscriptions (student_id, status, provider, provider_subscription_id, provider_payer_email, payer_user_id)
+    VALUES ($1, 'unpaid', 'mercadopago', $2, $3, $4)
     ON CONFLICT (student_id) DO UPDATE SET
       provider_subscription_id = EXCLUDED.provider_subscription_id,
       provider_payer_email = EXCLUDED.provider_payer_email,
+      payer_user_id = EXCLUDED.payer_user_id,
       updated_at = NOW()
     `,
-    [studentId, data.id, studentEmail]
+    [studentId, data.id, studentEmail, payerUserId]
   );
 
   return { checkoutUrl: data.init_point };

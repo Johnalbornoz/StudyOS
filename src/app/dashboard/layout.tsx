@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import { auth } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/services/admin.service';
@@ -63,14 +64,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
       resolveAvailableWorkspaces(canonicalUser.id),
       getActiveWorkspace(canonicalUser.id),
     ]);
-    // A user with zero F1 role rows (a pre-F1 legacy account, or one
-    // whose only "role" today is the implicit Student one created below)
-    // resolves to an empty `available` list -- STUDENT remains the
-    // default so this exact pre-F13 login flow never regresses.
-    availableWorkspaces = available.length > 0 ? available : ['STUDENT'];
+
+    // Onboarding model (2026-09-21): a user with zero active F1 role
+    // rows has never completed role selection (or every role they once
+    // held was revoked) and must NEVER see this dashboard -- there is
+    // no implicit Student fallback anymore. This used to default such
+    // an account to `['STUDENT']` and immediately provision a
+    // `students` row via `getOrCreateStudentId` below, which is exactly
+    // the "any authenticated account can silently become a Student"
+    // defect the onboarding rework closes. `/role-select` itself never
+    // redirects back here on its own (it renders unconditionally for an
+    // authenticated caller), so this cannot become a redirect loop.
+    if (available.length === 0) {
+      redirect('/role-select');
+    }
+
+    availableWorkspaces = available;
     activeWorkspace = (storedActive && availableWorkspaces.includes(storedActive) ? storedActive : null)
       ?? (await resolveDefaultWorkspace(canonicalUser.id))
-      ?? 'STUDENT';
+      ?? availableWorkspaces[0];
 
     if (activeWorkspace === 'STUDENT') {
       const studentId = await getOrCreateStudentId(clerkUserId);

@@ -53,7 +53,7 @@
 
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { getOrCreateCanonicalUser } from '@/lib/identity/canonical-user.service';
+import { getOrCreateCanonicalUser, hasRole } from '@/lib/identity/canonical-user.service';
 
 export type UserRole = 'student' | 'teacher' | 'admin';
 
@@ -218,7 +218,11 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
 /**
  * Same as getOrCreateStudentId but for use from the Clerk webhook, where
  * email/name are already available in the event payload (avoids an
- * extra Clerk API call via currentUser()).
+ * extra Clerk API call via currentUser()). No longer called by the
+ * webhook itself (2026-09-21 onboarding rework -- see
+ * src/app/api/webhooks/clerk/route.ts) since `user.created` must never
+ * provision a role on anyone's behalf; kept for any legacy/migration
+ * script that legitimately already knows the caller is a Student.
  */
 export async function upsertStudentFromWebhook(
   clerkUserId: string,
@@ -226,6 +230,25 @@ export async function upsertStudentFromWebhook(
   name: string | null
 ): Promise<string> {
   return upsertStudentRecord(clerkUserId, email, name);
+}
+
+/**
+ * Onboarding model (2026-09-21) -- the role-checked gate every Student-
+ * only route must call INSTEAD of `getOrCreateStudentId` directly.
+ * `getOrCreateStudentId` alone will provision a `students` row for
+ * *any* authenticated caller with no regard for whether they ever
+ * selected STUDENT -- exactly the "any account can silently become a
+ * Student" defect this closes (the Clerk webhook was the other,
+ * already-fixed instance of the same class of bug). Returns `null`
+ * (never throws, never provisions anything) when the caller's
+ * canonical identity has no ACTIVE STUDENT role -- callers must treat
+ * `null` as 403 FORBIDDEN, not as "create one anyway".
+ */
+export async function requireStudentId(clerkUserId: string): Promise<string | null> {
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId);
+  const isStudent = await hasRole(canonicalUser.id, 'STUDENT');
+  if (!isStudent) return null;
+  return getOrCreateStudentId(clerkUserId);
 }
 
 /**

@@ -15,7 +15,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const verifyAuthMock = vi.fn();
 const getOrCreateStudentIdMock = vi.fn();
-vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock(), getOrCreateStudentId: (...a: any[]) => getOrCreateStudentIdMock(...a) }));
+const requireStudentIdMock = vi.fn();
+vi.mock('@/lib/auth', () => ({
+  verifyAuth: () => verifyAuthMock(),
+  getOrCreateStudentId: (...a: any[]) => getOrCreateStudentIdMock(...a),
+  requireStudentId: (...a: any[]) => requireStudentIdMock(...a),
+}));
 
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
@@ -55,6 +60,7 @@ function withIdParams(id: string) {
 beforeEach(() => {
   verifyAuthMock.mockReset().mockResolvedValue({ userId: 'clerk-student-1', email: 'student@studyus.test' });
   getOrCreateStudentIdMock.mockReset().mockResolvedValue(STUDENT_ID);
+  requireStudentIdMock.mockReset().mockResolvedValue(STUDENT_ID);
   getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'actor-1' });
   getStudentPendingTeacherInterventionsMock.mockReset().mockResolvedValue([]);
   startTeacherInterventionExecutionMock.mockReset().mockResolvedValue({ outcome: 'STARTED', executionId: 'exec-1', executionReference: 'quiz-1' });

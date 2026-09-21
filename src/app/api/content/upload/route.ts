@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { createContentSource } from '@/services/content.service';
-import { getOrCreateStudentId } from '@/lib/auth';
+import { requireStudentId } from '@/lib/auth';
 import { extractTextFromFile } from '@/lib/extract-text';
 
 export async function POST(req: NextRequest) {
@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const studentId = await getOrCreateStudentId(clerkUserId);
+    const studentId = await requireStudentId(clerkUserId);
+    if (!studentId) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const subjectId = formData.get('subjectId') as string;

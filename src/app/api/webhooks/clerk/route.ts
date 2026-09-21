@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { upsertStudentFromWebhook } from '@/lib/auth';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -34,11 +34,23 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   if (eventType === 'user.created') {
-    const { id: clerkUserId, email_addresses, first_name, last_name } = evt.data;
-    const email = email_addresses?.[0]?.email_address || `${clerkUserId}@placeholder.local`;
-    const fullName = `${first_name || ''} ${last_name || ''}`.trim() || null;
+    // Onboarding model (2026-09-21): Clerk is authentication ONLY.
+    // A brand-new account must never be silently turned into a
+    // Student (or any other role) here -- it gets exactly one thing,
+    // a bare F1 canonical `users` row, with zero roles and zero
+    // workspace. The FIRST role a person ever holds is granted
+    // exclusively through `/api/identity/roles/select` (self-service
+    // STUDENT/PARENT/TEACHER) after `/role-select`, or through an
+    // explicit invitation (PARENT acceptance, TEACHER institution
+    // approval, INSTITUTION_ADMIN/STUDYUS_ADMIN invite). This route
+    // previously called `upsertStudentFromWebhook`, which created a
+    // `students`+`profiles(user_type='student')` row for every single
+    // signup regardless of what the person actually intended to be --
+    // exactly the "everyone becomes a Student" defect this fixes.
+    const { id: clerkUserId, email_addresses } = evt.data;
+    const email = email_addresses?.[0]?.email_address || null;
 
-    await upsertStudentFromWebhook(clerkUserId, email, fullName);
+    await getOrCreateCanonicalUser(clerkUserId, email);
   }
 
   return new Response('OK', { status: 200 });

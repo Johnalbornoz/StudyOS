@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
-import { getOrCreateStudentId } from '@/lib/auth';
+import { requireStudentId } from '@/lib/auth';
 import { getAcademicProfile, upsertAcademicProfile } from '@/services/academic-profile.service';
 
 const ProfileSchema = z.object({
@@ -19,7 +19,8 @@ export async function GET() {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
+  const studentId = await requireStudentId(clerkUserId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const profile = await getAcademicProfile(studentId);
   return NextResponse.json({ data: profile });
 }
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: parsed.error.issues[0]?.message }, { status: 400 });
   }
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
+  const studentId = await requireStudentId(clerkUserId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const profile = await upsertAcademicProfile(studentId, parsed.data);
   return NextResponse.json({ data: profile });
 }

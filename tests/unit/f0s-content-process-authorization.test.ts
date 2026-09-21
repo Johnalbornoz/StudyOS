@@ -13,10 +13,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const authMock = vi.fn();
 vi.mock('@clerk/nextjs/server', () => ({ auth: () => authMock() }));
 
-const getOrCreateStudentIdMock = vi.fn();
+const requireStudentIdMock = vi.fn();
 const verifyContentSourceAccessMock = vi.fn();
 vi.mock('@/lib/auth', () => ({
-  getOrCreateStudentId: (...a: any[]) => getOrCreateStudentIdMock(...a),
+  requireStudentId: (...a: any[]) => requireStudentIdMock(...a),
   verifyContentSourceAccess: (...a: any[]) => verifyContentSourceAccessMock(...a),
 }));
 
@@ -46,7 +46,7 @@ function makeRequest(body: any) {
 
 beforeEach(() => {
   authMock.mockReset().mockResolvedValue({ userId: 'clerk-user-1' });
-  getOrCreateStudentIdMock.mockReset().mockResolvedValue(OWN_STUDENT);
+  requireStudentIdMock.mockReset().mockResolvedValue(OWN_STUDENT);
   verifyContentSourceAccessMock.mockReset().mockResolvedValue(true);
   processContentForChunkingMock.mockReset().mockReturnValue({
     chunks: [{ content: 'chunk text', metadata: { sequenceOrder: 0 } }],
@@ -62,7 +62,7 @@ describe('F0-S Finding B -- content process authorization', () => {
   it('OWN: an authenticated student processing their own content source succeeds', async () => {
     const res: any = await POST(makeRequest({ contentSourceId: OWN_SOURCE, text: 'some extracted text' }));
     expect(res.status ?? 200).toBe(200);
-    expect(getOrCreateStudentIdMock).toHaveBeenCalledWith('clerk-user-1');
+    expect(requireStudentIdMock).toHaveBeenCalledWith('clerk-user-1');
     expect(verifyContentSourceAccessMock).toHaveBeenCalledWith(OWN_STUDENT, OWN_SOURCE);
     expect(processContentForChunkingMock).toHaveBeenCalled();
   });
@@ -79,12 +79,20 @@ describe('F0-S Finding B -- content process authorization', () => {
     authMock.mockResolvedValue({ userId: null });
     const res: any = await POST(makeRequest({ contentSourceId: OWN_SOURCE, text: 'some extracted text' }));
     expect(res.status).toBe(401);
-    expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
+    expect(requireStudentIdMock).not.toHaveBeenCalled();
+    expect(verifyContentSourceAccessMock).not.toHaveBeenCalled();
+  });
+
+  it('NO ACTIVE STUDENT ROLE: denied before ownership is even resolved, never silently provisioned', async () => {
+    requireStudentIdMock.mockResolvedValue(null);
+    const res: any = await POST(makeRequest({ contentSourceId: OWN_SOURCE, text: 'some extracted text' }));
+    expect(res.status).toBe(403);
     expect(verifyContentSourceAccessMock).not.toHaveBeenCalled();
   });
 
   it('the studentId used for the ownership check is always the server-resolved identity, never anything from the request body', async () => {
     await POST(makeRequest({ contentSourceId: OWN_SOURCE, text: 'x', studentId: 'attacker-supplied-id' } as any));
+    expect(requireStudentIdMock).toHaveBeenCalledWith('clerk-user-1');
     expect(verifyContentSourceAccessMock).toHaveBeenCalledWith(OWN_STUDENT, OWN_SOURCE);
     expect(verifyContentSourceAccessMock).not.toHaveBeenCalledWith('attacker-supplied-id', expect.anything());
   });

@@ -28,7 +28,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getOrCreateStudentId, verifyContentSourceAccess } from '@/lib/auth';
+import { requireStudentId, verifyContentSourceAccess } from '@/lib/auth';
 import { processContentForChunking } from '@/services/content-chunking.service';
 import { generateEmbedding, storeChunkWithEmbedding } from '@/services/embedding.service';
 import { db } from '@/lib/db';
@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
     // is verified against that resolved identity before any chunking/
     // embedding work runs. Fails closed (NOT_FOUND) rather than
     // confirming a content source exists for a different student.
-    const studentId = await getOrCreateStudentId(userId);
+    const studentId = await requireStudentId(userId);
+    if (!studentId) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
     const ownsContentSource = await verifyContentSourceAccess(studentId, body.contentSourceId);
     if (!ownsContentSource) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
