@@ -89,3 +89,5 @@ Institution boundary: an Institution Admin's `INSTITUTION_MEMBER_APPROVE`/`TEACH
 - Identity model, backfill, and F2 permission matrix: **IMPLEMENTED**, **TESTED** (unit + real-Postgres).
 - Live database state (11 users/students, 15 profiles/user_roles, 0 broken links): **LIVE VERIFIED** (see [03_DATABASE_SCHEMA_AND_MIGRATIONS.md](03_DATABASE_SCHEMA_AND_MIGRATIONS.md)).
 - Live authenticated exercise of this authorization matrix (a real logged-in user actually hitting these boundaries): **BLOCKED pending operator-assisted login** — see [13_PILOT_RUNBOOK.md](13_PILOT_RUNBOOK.md).
+
+**[Onboarding rework, 2026-09-21]**: this section's model is unchanged and re-verified, not superseded. What was fixed is *enforcement* of it: the Clerk webhook and the dashboard layout both used to silently default a zero-role account to `STUDENT` rather than actually requiring a `/role-select` decision — that defect (and its fix) is documented in full, with the exact before/after flow, in [`docs/implementation/f15/F15_ONBOARDING_AUTHORIZATION_REWORK.md`](../implementation/f15/F15_ONBOARDING_AUTHORIZATION_REWORK.md). No table, role name, or permission rule described above changed.
