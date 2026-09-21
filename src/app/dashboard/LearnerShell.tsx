@@ -182,6 +182,7 @@ export default function LearnerShell({
   localeSwitcher,
   chrome = 'full',
   workspaceSwitcher,
+  banner,
   children,
 }: {
   groups: ResolvedNavGroup[];
@@ -200,6 +201,8 @@ export default function LearnerShell({
   chrome?: 'full' | 'minimal';
   /** F13 -- shows the actor's active workspace and lets a multi-workspace user switch (task section 7). Optional so Focus Mode / any future minimal-chrome caller is unaffected. Rendered in both the desktop sidebar and the mobile drawer, above the Footer, so it is never hidden on a small viewport (INV-F13-22). */
   workspaceSwitcher?: ReactNode;
+  /** Onboarding/authorization rework (2026-09-21) -- an optional persistent, non-dismissable license-state notice (demo mode / no active license), rendered above page content. Never shown during Focus Mode so it cannot interrupt an in-progress activity; the server-side capability gate on the activity's own route is what actually blocks premium use, this is purely the visible cue. */
+  banner?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? '';
@@ -377,7 +380,10 @@ export default function LearnerShell({
         </>
       )}
 
-      <main className="lx-main">{children}</main>
+      <main className="lx-main">
+        {banner}
+        {children}
+      </main>
     </div>
   );
 }

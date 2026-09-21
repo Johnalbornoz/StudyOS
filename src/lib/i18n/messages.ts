@@ -51,6 +51,7 @@ export type MessageKey =
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
   // F13 -- workspace switcher
   | 'workspace.switcherLabel' | 'workspace.student' | 'workspace.parent' | 'workspace.teacher' | 'workspace.institution' | 'workspace.admin'
+  | 'license.demoBanner' | 'license.demoBannerCta'
   // F13 -- Teacher workspace navigation + surfaces
   | 'nav.groupTeacher' | 'nav.teacherClasses'
   | 'nav.groupInstitution' | 'nav.institutionOverview'
@@ -627,6 +628,7 @@ type Messages = Record<MessageKey, string>;
 
 const es: Messages = {
   'workspace.switcherLabel': 'Espacio de trabajo', 'workspace.student': 'Estudiante', 'workspace.parent': 'Padre/Madre', 'workspace.teacher': 'Docente', 'workspace.institution': 'Institución', 'workspace.admin': 'Administración',
+  'license.demoBanner': 'Estás en modo demostración. Activa una licencia para acceder a todas las funciones.', 'license.demoBannerCta': 'Activar licencia',
   'nav.groupTeacher': 'Docente', 'nav.teacherClasses': 'Mis clases',
   'nav.groupInstitution': 'Institución', 'nav.institutionOverview': 'Resumen',
   'teacher.classes.title': 'Mis clases', 'teacher.classes.subtitle': 'Clases con una asignación activa', 'teacher.classes.empty': 'No tienes clases asignadas todavía.', 'teacher.classes.studentsCount': 'estudiantes',
@@ -1833,6 +1835,7 @@ const es: Messages = {
 
 const en: Messages = {
   'workspace.switcherLabel': 'Workspace', 'workspace.student': 'Student', 'workspace.parent': 'Parent', 'workspace.teacher': 'Teacher', 'workspace.institution': 'Institution', 'workspace.admin': 'Admin',
+  'license.demoBanner': "You're in demo mode. Activate a license to unlock all features.", 'license.demoBannerCta': 'Activate license',
   'nav.groupTeacher': 'Teacher', 'nav.teacherClasses': 'My Classes',
   'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Overview',
   'teacher.classes.title': 'My Classes', 'teacher.classes.subtitle': 'Classes with an active assignment', 'teacher.classes.empty': "You don't have any assigned classes yet.", 'teacher.classes.studentsCount': 'students',
@@ -3039,6 +3042,7 @@ const en: Messages = {
 
 const de: Messages = {
   'workspace.switcherLabel': 'Arbeitsbereich', 'workspace.student': 'Schüler', 'workspace.parent': 'Elternteil', 'workspace.teacher': 'Lehrkraft', 'workspace.institution': 'Institution', 'workspace.admin': 'Verwaltung',
+  'license.demoBanner': 'Du befindest dich im Demomodus. Aktiviere eine Lizenz, um alle Funktionen freizuschalten.', 'license.demoBannerCta': 'Lizenz aktivieren',
   'nav.groupTeacher': 'Lehrkraft', 'nav.teacherClasses': 'Meine Klassen',
   'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Übersicht',
   'teacher.classes.title': 'Meine Klassen', 'teacher.classes.subtitle': 'Klassen mit aktiver Zuweisung', 'teacher.classes.empty': 'Dir sind noch keine Klassen zugewiesen.', 'teacher.classes.studentsCount': 'Schüler',
@@ -4245,6 +4249,7 @@ const de: Messages = {
 
 const fr: Messages = {
   'workspace.switcherLabel': 'Espace de travail', 'workspace.student': 'Élève', 'workspace.parent': 'Parent', 'workspace.teacher': 'Enseignant', 'workspace.institution': 'Établissement', 'workspace.admin': 'Administration',
+  'license.demoBanner': 'Vous êtes en mode démonstration. Activez une licence pour débloquer toutes les fonctionnalités.', 'license.demoBannerCta': 'Activer la licence',
   'nav.groupTeacher': 'Enseignant', 'nav.teacherClasses': 'Mes classes',
   'nav.groupInstitution': 'Établissement', 'nav.institutionOverview': 'Aperçu',
   'teacher.classes.title': 'Mes classes', 'teacher.classes.subtitle': 'Classes avec une affectation active', 'teacher.classes.empty': "Vous n'avez pas encore de classe assignée.", 'teacher.classes.studentsCount': 'élèves',
@@ -5451,6 +5456,7 @@ const fr: Messages = {
 
 const pt: Messages = {
   'workspace.switcherLabel': 'Espaço de trabalho', 'workspace.student': 'Aluno', 'workspace.parent': 'Responsável', 'workspace.teacher': 'Professor', 'workspace.institution': 'Instituição', 'workspace.admin': 'Administração',
+  'license.demoBanner': 'Você está no modo demonstração. Ative uma licença para desbloquear todos os recursos.', 'license.demoBannerCta': 'Ativar licença',
   'nav.groupTeacher': 'Professor', 'nav.teacherClasses': 'Minhas turmas',
   'nav.groupInstitution': 'Instituição', 'nav.institutionOverview': 'Visão geral',
   'teacher.classes.title': 'Minhas turmas', 'teacher.classes.subtitle': 'Turmas com atribuição ativa', 'teacher.classes.empty': 'Você ainda não tem turmas atribuídas.', 'teacher.classes.studentsCount': 'alunos',

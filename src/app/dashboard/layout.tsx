@@ -9,6 +9,8 @@ import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
 import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, type Workspace } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
+import LicenseBanner from './LicenseBanner';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { buildLearnerNav } from '@/lib/lx/learner-navigation';
@@ -55,6 +57,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let locale: Awaited<ReturnType<typeof getInterfaceLanguage>> = 'es';
   let activeWorkspace: Workspace = 'STUDENT';
   let availableWorkspaces: Workspace[] = ['STUDENT'];
+  let hasActiveLicense = true;
 
   if (clerkUserId) {
     const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
@@ -86,18 +89,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (activeWorkspace === 'STUDENT') {
       const studentId = await getOrCreateStudentId(clerkUserId);
-      const [notifications, debts, lang, daysThisWeek, pendingAssignments] = await Promise.all([
+      const [notifications, debts, lang, daysThisWeek, pendingAssignments, fullAccess] = await Promise.all([
         getUnreadNotifications(studentId).catch(() => []),
         getActiveDebts(studentId).catch(() => []),
         getInterfaceLanguage(studentId).catch(() => 'es' as const),
         getLearningDaysThisWeek(studentId).catch(() => 0),
         countPendingTeacherInterventionsForStudent(studentId).catch(() => 0),
+        // Onboarding model (2026-09-21): fails closed to DEMO (banner
+        // shown) if the entitlement check itself errors -- never fails
+        // open into a silent "has license" assumption.
+        canUseCapability(canonicalUser.id, studentId, 'LEARNING_FULL_ACCESS').catch(() => false),
       ]);
       notifCount = notifications.length;
       debtCount = debts.length;
       locale = lang;
       learningDaysThisWeek = daysThisWeek;
       assignmentCount = pendingAssignments;
+      hasActiveLicense = fullAccess;
     } else {
       // `getUnreadNotifications`/`getActiveDebts` are Student-domain
       // concepts (queried by `students.id`) that have not been
@@ -174,6 +182,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           switcherLabel={t['workspace.switcherLabel']}
           errorLabel={t['error.generic']}
         />
+      }
+      banner={
+        activeWorkspace === 'STUDENT' && !hasActiveLicense ? (
+          <LicenseBanner message={t['license.demoBanner']} cta={t['license.demoBannerCta']} />
+        ) : undefined
       }
     >
       {children}

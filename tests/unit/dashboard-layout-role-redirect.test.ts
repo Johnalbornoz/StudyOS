@@ -36,6 +36,10 @@ vi.mock('@/lib/lx/workspace-navigation', () => ({ buildParentNav: vi.fn(() => []
 vi.mock('./LanguageSwitcher', () => ({ default: () => null }));
 vi.mock('./LearnerShell', () => ({ default: ({ children }: any) => children }));
 vi.mock('./WorkspaceSwitcher', () => ({ default: () => null }));
+vi.mock('./LicenseBanner', () => ({ default: () => 'LICENSE_BANNER' }));
+
+const canUseCapabilityMock = vi.fn();
+vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
 
 const getOrCreateStudentIdMock = vi.fn();
 vi.mock('@/lib/auth', () => ({ getOrCreateStudentId: (...a: any[]) => getOrCreateStudentIdMock(...a) }));
@@ -63,6 +67,7 @@ beforeEach(() => {
   resolveAvailableWorkspacesMock.mockReset();
   resolveDefaultWorkspaceMock.mockReset().mockResolvedValue(null);
   getActiveWorkspaceMock.mockReset().mockResolvedValue(null);
+  canUseCapabilityMock.mockReset().mockResolvedValue(true);
 });
 
 describe('DashboardLayout -- zero active roles redirects to /role-select, never renders a Student fallback', () => {
@@ -98,5 +103,44 @@ describe('DashboardLayout -- zero active roles redirects to /role-select, never 
     await DashboardLayout({ children: null as any });
     expect(redirectMock).not.toHaveBeenCalled();
     expect(resolveAvailableWorkspacesMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('DashboardLayout -- demo/no-license banner, visible cue only (server-side entitlement checks are the real gate)', () => {
+  it('shows the license banner for a STUDENT workspace with no active license', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+    canUseCapabilityMock.mockResolvedValue(false);
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(canUseCapabilityMock).toHaveBeenCalledWith('user-1', 'student-1', 'LEARNING_FULL_ACCESS');
+    expect(result.props.banner).toBeTruthy();
+  });
+
+  it('hides the license banner for a STUDENT workspace with an active license', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+    canUseCapabilityMock.mockResolvedValue(true);
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(result.props.banner).toBeUndefined();
+  });
+
+  it('fails closed to showing the banner if the entitlement check itself errors', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+    canUseCapabilityMock.mockRejectedValue(new Error('db unavailable'));
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(result.props.banner).toBeTruthy();
+  });
+
+  it('never shows the license banner (or checks the capability) for a non-STUDENT workspace', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['PARENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('PARENT');
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(canUseCapabilityMock).not.toHaveBeenCalled();
+    expect(result.props.banner).toBeUndefined();
   });
 });
