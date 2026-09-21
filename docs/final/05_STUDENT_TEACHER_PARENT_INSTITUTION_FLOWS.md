@@ -10,6 +10,7 @@ Real routes, grounded in `src/app/dashboard/*` and `src/app/api/*` as they exist
 | Subjects / Path | `src/app/dashboard/subjects/`, `src/app/dashboard/path/` | Concept-level learning path navigation |
 | Quiz | `src/app/dashboard/quiz/` | AI-generated practice quizzes |
 | Exam Prep | `src/app/dashboard/exam-prep/`, `.../[examProfileId]/`, `.../attempt/[attemptId]/` | Formal exam-readiness simulation and item-by-item exam-taking (F15's own new UI) |
+| Define target exam | `src/app/dashboard/exam-prep/CreateExamProfileForm.tsx`, `src/app/api/exam-profiles/route.ts` | Student selects a named active exam with a published version; the server revalidates authorization and catalog compatibility before creating the profile |
 | Assignments | `src/app/dashboard/assignments/`, `.../practice/` | Teacher-assigned reinforcement work |
 | Learning Debt | `src/app/dashboard/learning-debt/` | Concepts flagged as needing review |
 | Remediation | `src/app/dashboard/remediation/[pathId]/` | Guided remediation path for a specific gap |

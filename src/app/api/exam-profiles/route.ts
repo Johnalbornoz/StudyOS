@@ -63,6 +63,25 @@ export async function POST(request: NextRequest) {
   const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_PROFILE_VIEW');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
+  const catalogMatch = await db.query(
+    `SELECT d.id
+       FROM exam_definitions d
+       LEFT JOIN exam_versions v ON v.id = $2
+      WHERE d.id = $1
+        AND d.status = 'ACTIVE'
+        AND ($2::uuid IS NULL OR (
+          v.exam_definition_id = d.id
+          AND v.status = 'PUBLISHED'
+        ))`,
+    [validated.examDefinitionId, validated.examVersionId ?? null]
+  );
+  if (catalogMatch.rows.length === 0) {
+    return NextResponse.json(
+      { error: 'INVALID_EXAM_SELECTION', message: 'The selected exam or version is not available.' },
+      { status: 400 }
+    );
+  }
+
   const profile = await createStudentExamProfile(validated);
   return NextResponse.json({ success: true, data: { profile } });
 }

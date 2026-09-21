@@ -10,7 +10,7 @@
 | Auth | Clerk | `@clerk/nextjs`, `clerkMiddleware()` in `src/middleware.ts`, no custom sign-in/sign-up routes (Clerk's own default catch-all `/sign-in/[[...rest]]`, `/sign-up/[[...rest]]`) |
 | Hosting | Vercel | Project `study-so/study-os`. See [09_DEPLOYMENT_ENVIRONMENTS_AND_RELEASE.md](09_DEPLOYMENT_ENVIRONMENTS_AND_RELEASE.md) |
 | AI providers | Anthropic, OpenAI | `src/lib/ai/adapters/{anthropic,openai}.ts`, routed through a single gateway (`src/lib/ai/gateway.ts`) — see [07_AI_ARCHITECTURE_AND_SAFETY.md](07_AI_ARCHITECTURE_AND_SAFETY.md) |
-| Testing | Vitest | `vitest.config.mts`, 354 test files as of this package |
+| Testing | Vitest | `vitest.config.mts`, 355 test files as of this package |
 | Payments | Mercado Pago | `src/app/api/webhooks/mercadopago/route.ts`, `payments`/`price_book`/`subscriptions` tables |
 
 ## Directory structure (real, top-level)

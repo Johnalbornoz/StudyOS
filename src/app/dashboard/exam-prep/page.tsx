@@ -5,11 +5,12 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
-import { getExamDefinition } from '@/lib/assessment/exam-definition.service';
+import { getExamDefinition, listAvailableExamOptions } from '@/lib/assessment/exam-definition.service';
 import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
+import { CreateExamProfileForm } from './CreateExamProfileForm';
 
 /**
  * F14 Workstream A -- Student Exam Prep landing (task section 4). This
@@ -28,6 +29,7 @@ export default async function ExamPrepPage() {
   const t = getMessages(locale);
 
   const profiles = await listStudentExamProfiles(studentId);
+  const availableExams = await listAvailableExamOptions();
   const rows = await Promise.all(
     profiles.map(async (profile) => {
       const definition = await getExamDefinition(profile.examDefinitionId);
@@ -39,6 +41,24 @@ export default async function ExamPrepPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader title={t['examPrep.title']} subtitle={t['examPrep.subtitle']} />
+
+      <CreateExamProfileForm
+        studentId={studentId}
+        exams={availableExams}
+        labels={{
+          title: t['examPrep.create.title'],
+          exam: t['examPrep.create.exam'],
+          date: t['examPrep.create.date'],
+          purpose: t['examPrep.create.purpose'],
+          programme: t['examPrep.create.programme'],
+          subject: t['examPrep.create.subject'],
+          optional: t['examPrep.create.optional'],
+          submit: t['examPrep.create.submit'],
+          submitting: t['examPrep.create.submitting'],
+          unavailable: t['examPrep.create.unavailable'],
+          error: t['examPrep.create.error'],
+        }}
+      />
 
       {rows.length === 0 ? (
         <EmptyState title={t['examPrep.empty']} body={t['examPrep.emptyBody']} />

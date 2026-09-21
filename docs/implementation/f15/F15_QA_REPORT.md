@@ -12,7 +12,7 @@ Both hard Pilot gates F15 left open have changed status — one closed, one unch
 - **Preview database migration state: now VERIFIED (was previously unknown, see F15_DATABASE_AND_MIGRATION_READINESS.md).** 32/32 migrations applied, identity backfill run twice with zero-change idempotency confirmed on the second run, all integrity checks at 0 anomalies.
 - **Credential rotation: unchanged, still OPERATOR_ACTION_REQUIRED.**
 
-Test suite grew alongside the new temporary diagnostic route: 353 files / 5644 tests / 5644 passed / 0 failed (up from this document's original 352/5632 — 12 new tests for `src/app/api/diagnostics/preview-db/route.ts`). `tsc --noEmit` and `npm run build` re-verified clean on both F15-C1 commits (`fd01e14`, `a9b2d8a`).
+Test suite grew alongside the C1 closure work. Current verified total: 355 files / 5651 tests / 5651 passed / 0 failed. This includes the diagnostic route, `/api/health`, and the Student Exam Profile self-service authorization/catalog contract. `tsc --noEmit` is clean; the webpack production build compiles and generates all routes successfully. Turbopack's internal worker cannot bind a port in the current execution environment, so that environmental failure is not represented as an application build failure.
 
 ## Full Technical Validation
 

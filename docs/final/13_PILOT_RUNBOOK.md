@@ -42,7 +42,10 @@ This tooling **cannot** enter a password, OTP, or any other credential on anyone
 
 ## The full E2E matrix (to be executed and documented, one identity at a time)
 
-1. Student — self-service navigation, exam start/answer/finish, readiness update.
+1. Student — select a published target exam by name, create an Exam Profile,
+   then exercise self-service navigation, exam start/answer/finish, and
+   readiness update. An empty selector is a Pilot catalog-data blocker and must
+   not be bypassed with arbitrary UUIDs.
 2. Student — negative authorization (attempt to access another student's session by ID manipulation).
 3. Teacher — class/student view, create an intervention.
 4. Teacher → Student assignment — full lifecycle including reconciliation.

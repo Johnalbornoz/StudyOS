@@ -3,13 +3,15 @@
 ## Full automated suite (Vitest) — current
 
 ```
-Test files: 354 passed (354)
-Tests:      5647 passed (5647)
+Test files: 355 passed (355)
+Tests:      5651 passed (5651)
 Failed:     0
 Skipped:    0
 ```
 
-Grown from F15's own close (352 files / 5632 tests) by the 12 new diagnostic-route tests plus 3 new `/api/health` tests added this sub-phase (F15-C1).
+Grown from F15's own close (352 files / 5632 tests) by the 12 new
+diagnostic-route tests, 3 new `/api/health` tests, and 4 Exam Profile
+self-service authorization/catalog tests added in F15-C1.
 
 ## Typecheck and build
 

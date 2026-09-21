@@ -12,7 +12,7 @@ The codebase was built through 16 sequential phases (`F0-S`, then `F1` through `
 
 | Gate | Status |
 |---|---|
-| Full automated test suite | **TESTED** — 354 files / 5647 tests passing, 0 failures |
+| Full automated test suite | **TESTED** — 355 files / 5651 tests passing, 0 failures |
 | Real-Postgres certifications | **TESTED** — 18 scripts across F1–F12's own domains, all passing |
 | Dependency security audit | **TESTED** — 0 known vulnerabilities |
 | Preview deployment exists and boots | **LIVE VERIFIED** |

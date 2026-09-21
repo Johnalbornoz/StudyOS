@@ -97,3 +97,42 @@ export async function getExamDefinition(examDefinitionId: string, client: DbExec
   const result = await client.query(`SELECT * FROM exam_definitions WHERE id = $1`, [examDefinitionId]);
   return result.rows.length === 0 ? null : toDefinition(result.rows[0]);
 }
+
+export interface AvailableExamOption {
+  examDefinitionId: string;
+  examDefinitionName: string;
+  examFamily: string;
+  purpose: string | null;
+  examVersionId: string;
+  versionLabel: string;
+}
+
+/**
+ * Student-safe catalog for creating an Exam Profile. Only ACTIVE
+ * definitions with their currently PUBLISHED version are selectable;
+ * internal/draft ids never reach the form.
+ */
+export async function listAvailableExamOptions(client: DbExecutor = db): Promise<AvailableExamOption[]> {
+  const result = await client.query(
+    `SELECT d.id AS exam_definition_id,
+            d.name AS exam_definition_name,
+            d.exam_family,
+            d.purpose,
+            v.id AS exam_version_id,
+            v.version_label
+       FROM exam_definitions d
+       JOIN exam_versions v
+         ON v.exam_definition_id = d.id
+        AND v.status = 'PUBLISHED'
+      WHERE d.status = 'ACTIVE'
+      ORDER BY d.name ASC, v.version_label ASC`
+  );
+  return result.rows.map((r: any) => ({
+    examDefinitionId: r.exam_definition_id,
+    examDefinitionName: r.exam_definition_name,
+    examFamily: r.exam_family,
+    purpose: r.purpose,
+    examVersionId: r.exam_version_id,
+    versionLabel: r.version_label,
+  }));
+}
