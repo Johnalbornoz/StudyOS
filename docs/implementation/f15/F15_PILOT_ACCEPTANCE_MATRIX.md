@@ -2,15 +2,15 @@
 
 The primary certification artifact for this phase. Each row: Requirement → implementation → automated test → integration test → live E2E → evidence → status.
 
-## F15-C1 update (2026-09-20)
+## F15-C1 update (2026-09-20 -- 2026-09-21)
 
-Two rows below change status this sub-phase, both on independently re-verified live evidence (not operator assertion): "Safe official Preview" (auth now correct) and a newly-added "Preview database migration state" row (now fully migrated and integrity-verified). Only one hard-gate row remains failing: credential rotation.
+Two rows changed status on 2026-09-20, both on independently re-verified live evidence (not operator assertion): "Safe official Preview" (auth now correct) and a newly-added "Preview database migration state" row (now fully migrated and integrity-verified). On 2026-09-21, "Student can define target exam without internal IDs" advanced from DEFERRED to PASS (structural + catalog data) after a real empty-exam-catalog blocker was found live, diagnosed, and closed with an operator-authorized, idempotent Pilot-only seed -- see `F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md`. Only one hard-gate row remains failing: credential rotation.
 
 | Requirement | Implementation | Automated test | Integration test | Live E2E | Evidence | Status |
 |---|---|---|---|---|---|---|
 | Exact F14 baseline | Worktree created from `e3d23a4...`, verified `git rev-parse` match | — | — | — | Baseline verification transcript | **PASS** |
 | Full Student exam-taking experience | `item-resolution.service.ts` + `ItemRunner.tsx` + `next-item` route | 11 unit tests | 16/16 real-Postgres (unchanged domains) | Not performed (blocked) | F15_EXAM_TAKING_EXPERIENCE.md | **PASS (structural); DEFERRED (live)** |
-| Student can define target exam without internal IDs | `CreateExamProfileForm.tsx` + server-side active/published catalog validation | Route authorization/catalog tests + source contract | Existing F7/F9 domain services reused | Pending authenticated Preview pass | F15_EXAM_PROFILE_SELF_SERVICE_CLOSURE.md | **PASS (code/build); DEFERRED (live)** |
+| Student can define target exam without internal IDs | `CreateExamProfileForm.tsx` + server-side active/published catalog validation + Pilot-only exam catalog seed (`pilot-catalog-seed.service.ts`) | Route authorization/catalog tests + source contract + 11 seed-service tests + `listAvailableExamOptions` tests | Existing F7/F9 domain services reused | Catalog existence confirmed live via diagnostic route (`activeExamDefinitionCount: 1`, exam discoverable by name); UI click-through with Student A still pending | F15_EXAM_PROFILE_SELF_SERVICE_CLOSURE.md, F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md | **[F15-C1, 2026-09-21] PASS (code/build/data); PENDING (final UI click-through in the authenticated E2E session)** |
 | Canonical F9 readiness | Unchanged; new exam-taking flow reuses F9's own `recordSimulationItemResponse`/`computeReadinessSnapshot` verbatim | Unit tests assert delegation, not re-implementation | F9 cert script (unchanged, PASS) | Not performed | F15_EXAM_TAKING_EXPERIENCE.md | **PASS** |
 | MIN_COHORT_POLICY resolved | Real migration + ADR | 7 unit tests | F12 cert script (updated, PASS) | Not performed | ADR-F15-MIN-COHORT-POLICY.md | **PASS** |
 | Credential/security remediation | Investigated safely; rotation blocked by tooling | — | — | — | F15_SECRET_AND_ENVIRONMENT_HARDENING.md | **FAIL — hard gate, `OPERATOR_ACTION_REQUIRED`** |
@@ -28,7 +28,7 @@ Two rows below change status this sub-phase, both on independently re-verified l
 | Performance baseline | 2 real single-run samples (unauthenticated) + query-shape reasoning | — | — | Partial | F15_PERFORMANCE_BASELINE.md | **PARTIAL** |
 | Security hardening | Dependency fix, rate limiting extended, IDOR tests, error-leakage spot check | 2 new IDOR tests | — | — | F15_SECURITY_HARDENING_REPORT.md | **PASS** |
 | Observability sufficient for Pilot | New pilot-event model, 8 events wired across 6 routes | — | — | — | F15_OBSERVABILITY_MODEL.md | **PASS (minimal, real); PARTIAL (no correlation-id threading yet)** |
-| Full suite PASS | Current C1: 355/355 files, 5651/5651 tests; original F15 close: 352/352, 5632/5632 | — | — | — | F15_QA_REPORT.md; F15_EXAM_PROFILE_SELF_SERVICE_CLOSURE.md | **PASS** |
+| Full suite PASS | Current C1: 357/357 files, 5668/5668 tests (after adding, then removing, the temporary seed-trigger route + its tests); original F15 close: 352/352, 5632/5632 | — | — | — | F15_QA_REPORT.md; F15_EXAM_PROFILE_SELF_SERVICE_CLOSURE.md | **PASS** |
 | Real-Postgres regressions PASS | 16/16, including 3 real bugs found+fixed in the F12 script itself | — | — | — | F15_QA_REPORT.md | **PASS** |
 | IVG reconciliation | 37 items, unambiguous single-state-each | — | — | — | F15_IVG_REGISTER.md | **PASS** |
 | No Critical/High unresolved Pilot blocker | 2 found (credential rotation, Preview auth) — both explicitly hard-gated, neither hidden | — | — | — | F15_RESIDUAL_RISK_REGISTER.md | ~~**FAIL — by design, honestly reported**~~ **[F15-C1] FAIL — 1 remains (credential rotation only; Preview auth resolved)** |

@@ -38,3 +38,37 @@ already existed, but using it required internal UUIDs and API knowledge.
 The UI must still be exercised on Preview with an authenticated Student. If the
 selector is empty, the blocker is Pilot catalog data (no active definition with
 a published version), not another UI or authorization defect.
+
+## F15-C1 update (2026-09-21): the predicted blocker was confirmed, then closed
+
+Loading `/dashboard/exam-prep` on Preview with Student A confirmed exactly the
+predicted state: **"Todavía no hay exámenes publicados disponibles."** A
+read-only inspection proved this was real, not a bug in
+`listAvailableExamOptions()` — Preview genuinely had `activeExamDefinitionCount:
+0`, `publishedExamVersionCount: 0`. The deeper inspection also found
+`canonical_subjects` completely empty, which a Pilot-only seed's own explicit
+rule correctly refused to work around by inventing a canonical-concept
+equivalence — it aborted and reported the missing academic data instead.
+
+The operator explicitly authorized a narrow, Preview-only exception to create
+one canonical `Mathematics` subject and one `Linear Equations` concept. A
+minimal, functional, non-official PAA Mathematics catalog was then seeded
+end to end (org → programme → subject → structure → objective → canonical
+mapping → exam definition → scoring model → exam version → component →
+blueprint → allocation → target), reusing only already-certified F4/F6/F7
+services, idempotently, Preview-only. See
+`F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md` for the full manifest, rollback
+procedure, and verification evidence.
+
+**Live-verified after the seed** (via the existing Preview DB diagnostic
+route, not yet via the UI): `activeExamDefinitionCount: 1`,
+`publishedExamVersionCount: 1`, `publishedBlueprintCount: 1`,
+`activeDefinitionNames: ["PAA Mathematics (Pilot)"]`. Protected tables
+(`students`/`users`/`profiles`/`institutions`/`institution_memberships`) are
+unchanged.
+
+**Still open**: confirming via the actual authenticated UI (Student A opening
+`/dashboard/exam-prep`, selecting the exam by name, creating the profile, and
+starting a supported practice mode) that this closes the blocker end to end —
+this is the next step in the authenticated E2E session, not yet performed.
+This blocker is **not** declared closed until that live UI confirmation lands.

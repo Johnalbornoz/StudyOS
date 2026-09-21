@@ -1,6 +1,10 @@
-# F15-C1 — Technical Debt Triage (2026-09-20)
+# F15-C1 — Technical Debt Triage (2026-09-20, updated 2026-09-21)
 
 Evaluates the remaining open backlog against Pilot readiness specifically, per the explicit instruction not to convert every deferred item into code automatically, and to keep Pilot and Production criteria clearly separate. One item was judged worth implementing now (`/api/health`); everything else is deferred below with an explicit owner and closure criterion — none silently dropped.
+
+## 2026-09-21 update: a new, unplanned item surfaced and was closed
+
+Not part of the original 15-item backlog this document triaged: live E2E preparation surfaced a real empty exam-catalog data gap blocking Student A's self-service Exam Profile flow entirely (`activeExamDefinitionCount: 0`). Unlike the items below, this was **Pilot-blocking on its own** (the flow is unusable with zero exams), not a deferrable enhancement — so it was closed immediately rather than triaged into the table. See `F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md` and `F15_EXAM_PROFILE_SELF_SERVICE_CLOSURE.md`. **Status: catalog data closed and live-verified; final authenticated UI click-through still pending in the E2E session.**
 
 | Item | IVG / Risk | Pilot-blocking? | Production-blocking? | Decision | Owner | Closure criterion |
 |---|---|---|---|---|---|---|

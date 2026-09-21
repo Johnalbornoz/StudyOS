@@ -4,7 +4,7 @@ Branch: `f15/pilot-readiness-production-hardening`
 Base: `origin/f14/experience-completion-readiness@e3d23a44d0657b6ccf9fedf08aa8e8d454839d41`
 Certified HEAD: `642aa0267ef9d15b4da323d8b89d7ff64dedc1fa`
 
-## F15-C1 addendum (branch `f15-c1/pilot-gate-closure`, HEAD `a9b2d8a`, 2026-09-20)
+## F15-C1 addendum (branch `f15-c1/pilot-gate-closure`, HEAD `31b31e1`, 2026-09-20 -- 2026-09-21)
 
 Both hard Pilot gates F15 left open have changed status — one closed, one unchanged:
 
@@ -12,7 +12,9 @@ Both hard Pilot gates F15 left open have changed status — one closed, one unch
 - **Preview database migration state: now VERIFIED (was previously unknown, see F15_DATABASE_AND_MIGRATION_READINESS.md).** 32/32 migrations applied, identity backfill run twice with zero-change idempotency confirmed on the second run, all integrity checks at 0 anomalies.
 - **Credential rotation: unchanged, still OPERATOR_ACTION_REQUIRED.**
 
-Test suite grew alongside the C1 closure work. Current verified total: 355 files / 5651 tests / 5651 passed / 0 failed. This includes the diagnostic route, `/api/health`, and the Student Exam Profile self-service authorization/catalog contract. `tsc --noEmit` is clean; the webpack production build compiles and generates all routes successfully. Turbopack's internal worker cannot bind a port in the current execution environment, so that environmental failure is not represented as an application build failure.
+A ninth real bug (2026-09-21): the real Preview exam catalog was completely empty (`activeExamDefinitionCount: 0`), correctly blocking Student A's live self-service Exam Profile flow. Diagnosed live, closed with an operator-authorized, idempotent Pilot-only seed reusing already-certified F4/F6/F7 services — see `F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md`. A tenth bug was found and fixed **during that same work, before any write was attempted**: the seed's own dry-run mode silently truncated its reported plan when a parent entity didn't exist yet (an `undefined` id skipped every downstream step without logging it) — fixed with a cascading placeholder id, covered by a dedicated regression test.
+
+Test suite grew alongside the C1 closure work. Current verified total: **357 files / 5668 tests / 5668 passed / 0 failed** (peaked at 358/5676 while the temporary seed-trigger route and its 8 tests existed; both were removed once the seed was verified, per that route's own stated temporary lifecycle). This includes the diagnostic route (now also reporting exam-catalog counts), `/api/health`, the Student Exam Profile self-service authorization/catalog contract, and the Pilot exam-catalog seed service. `tsc --noEmit` is clean; the webpack production build compiles and generates all routes successfully. Turbopack's internal worker cannot bind a port in the current execution environment, so that environmental failure is not represented as an application build failure.
 
 ## Full Technical Validation
 
@@ -76,6 +78,8 @@ This phase's own MIN_COHORT_POLICY migration initially broke `f12-institution-in
 6. A real accessibility gap in the new `ItemRunner` (no `aria-live` on question transitions) — found and fixed.
 7. A real Preview-environment configuration defect (Clerk misconfigured to an unrelated application) — found, NOT fixed (outside this agent's access; escalated as a hard Pilot gate). **[F15-C1 update: fixed by the operator and independently re-verified live — see addendum above.]**
 8. **[F15-C1]** A real Preview database migration gap (runtime database stuck 17 migrations behind, missing `users`/`user_roles`/`institutions` entirely) — found via live diagnostic route, classified as a genuine non-corrupt partial history, repaired by the operator via the same governed `npm run db:migrate` runner, independently re-verified.
+9. **[F15-C1, 2026-09-21]** A real empty exam-catalog data gap (`activeExamDefinitionCount: 0`) blocking Student A's live self-service Exam Profile flow — found via live UI load and confirmed via diagnostic route, root-caused to `canonical_subjects` being completely empty, closed via an operator-authorized, idempotent Pilot-only catalog seed. See `F15_PILOT_EXAM_CATALOG_SEED_MANIFEST.md`.
+10. **[F15-C1, 2026-09-21]** A real bug in the seed built for #9, found before any write was attempted: its own dry-run mode silently truncated the reported plan (stopped after 5 of 16 expected steps) whenever a parent entity didn't exist yet, because an `undefined` id caused every downstream step's guard to skip without logging. Fixed with a cascading placeholder id (the nil UUID); a dedicated regression test reproduces the exact failure.
 
 ## Overall QA Verdict
 
