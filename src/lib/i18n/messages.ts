@@ -31,9 +31,11 @@ export type MessageKey =
   | 'admin.colPayment' | 'admin.paymentSection' | 'admin.paymentSave'
   | 'payment.status.unpaid' | 'payment.status.active' | 'payment.status.past_due' | 'payment.status.canceled'
   | 'payment.status.suspended' | 'payment.status.reactivated' | 'payment.status.cancelled_at_period_end' | 'payment.status.expired'
+  | 'payment.status.disputed' | 'payment.status.refunded' | 'payment.status.payment_under_review'
   | 'billing.title' | 'billing.subtitle' | 'billing.subscribeButton' | 'billing.notConfigured'
   | 'billing.statusActive' | 'billing.statusUnpaid' | 'billing.statusPastDue' | 'billing.statusCanceled'
   | 'billing.statusSuspended' | 'billing.statusReactivated' | 'billing.statusCancelledAtPeriodEnd' | 'billing.statusExpired'
+  | 'billing.statusDisputed' | 'billing.statusRefunded' | 'billing.statusPaymentUnderReview'
   | 'billing.checkoutError'
   | 'profile.navLabel' | 'profile.title' | 'profile.subtitle'
   | 'profile.stepCountry' | 'profile.stepCountryQuestion'
@@ -723,6 +725,7 @@ const es: Messages = {
   'payment.status.reactivated': 'Reactivado',
   'payment.status.cancelled_at_period_end': 'Cancelación programada',
   'payment.status.expired': 'Expirado',
+  'payment.status.disputed': 'En disputa', 'payment.status.refunded': 'Reembolsado', 'payment.status.payment_under_review': 'Pago en revisión',
   'billing.title': 'Suscripción',
   'billing.subtitle': 'Gestiona el pago de tu suscripción a StudyUS.',
   'billing.subscribeButton': 'Suscribirme',
@@ -735,6 +738,7 @@ const es: Messages = {
   'billing.statusReactivated': 'Tu suscripción fue reactivada.',
   'billing.statusCancelledAtPeriodEnd': 'Tu suscripción se cancelará al final del período actual. Conservas el acceso hasta esa fecha.',
   'billing.statusExpired': 'Tu suscripción expiró.',
+  'billing.statusDisputed': 'Tu suscripción está en disputa.', 'billing.statusRefunded': 'Tu suscripción fue reembolsada.', 'billing.statusPaymentUnderReview': 'Tu pago está en revisión.',
   'billing.checkoutError': 'No pudimos iniciar el pago. Intenta de nuevo.',
   'profile.navLabel': 'Mi perfil académico',
   'profile.title': 'Tu contexto académico',
@@ -1929,6 +1933,7 @@ const en: Messages = {
   'payment.status.suspended': 'Suspended',
   'payment.status.reactivated': 'Reactivated',
   'payment.status.cancelled_at_period_end': 'Cancellation scheduled',
+  'payment.status.disputed': 'Disputed', 'payment.status.refunded': 'Refunded', 'payment.status.payment_under_review': 'Payment under review',
   'payment.status.expired': 'Expired',
   'billing.title': 'Subscription',
   'billing.subtitle': 'Manage your StudyUS subscription payment.',
@@ -1942,6 +1947,7 @@ const en: Messages = {
   'billing.statusReactivated': 'Your subscription was reactivated.',
   'billing.statusCancelledAtPeriodEnd': 'Your subscription will end at the close of the current period. You keep access until then.',
   'billing.statusExpired': 'Your subscription has expired.',
+  'billing.statusDisputed': 'Your subscription is disputed.', 'billing.statusRefunded': 'Your subscription was refunded.', 'billing.statusPaymentUnderReview': 'Your payment is under review.',
   'billing.checkoutError': 'We couldn\'t start checkout. Please try again.',
   'profile.navLabel': 'My academic profile',
   'profile.title': 'Your academic context',
@@ -3137,6 +3143,7 @@ const de: Messages = {
   'payment.status.reactivated': 'Reaktiviert',
   'payment.status.cancelled_at_period_end': 'Kündigung geplant',
   'payment.status.expired': 'Abgelaufen',
+  'payment.status.disputed': 'Umstritten', 'payment.status.refunded': 'Erstattet', 'payment.status.payment_under_review': 'Zahlung wird geprüft',
   'billing.title': 'Abonnement',
   'billing.subtitle': 'Verwalte die Zahlung deines StudyUS-Abonnements.',
   'billing.subscribeButton': 'Abonnieren',
@@ -3149,6 +3156,7 @@ const de: Messages = {
   'billing.statusReactivated': 'Dein Abonnement wurde reaktiviert.',
   'billing.statusCancelledAtPeriodEnd': 'Dein Abonnement endet am Ende des aktuellen Zeitraums. Bis dahin behältst du den Zugriff.',
   'billing.statusExpired': 'Dein Abonnement ist abgelaufen.',
+  'billing.statusDisputed': 'Dein Abonnement wird angefochten.', 'billing.statusRefunded': 'Dein Abonnement wurde erstattet.', 'billing.statusPaymentUnderReview': 'Deine Zahlung wird geprüft.',
   'billing.checkoutError': 'Die Zahlung konnte nicht gestartet werden. Bitte versuche es erneut.',
   'profile.navLabel': 'Mein schulisches Profil',
   'profile.title': 'Dein schulischer Kontext',
@@ -4344,6 +4352,7 @@ const fr: Messages = {
   'payment.status.reactivated': 'Réactivé',
   'payment.status.cancelled_at_period_end': 'Annulation programmée',
   'payment.status.expired': 'Expiré',
+  'payment.status.disputed': 'En litige', 'payment.status.refunded': 'Remboursé', 'payment.status.payment_under_review': 'Paiement en cours de vérification',
   'billing.title': 'Abonnement',
   'billing.subtitle': 'Gère le paiement de ton abonnement StudyUS.',
   'billing.subscribeButton': "S'abonner",
@@ -4356,6 +4365,7 @@ const fr: Messages = {
   'billing.statusReactivated': 'Ton abonnement a été réactivé.',
   'billing.statusCancelledAtPeriodEnd': 'Ton abonnement se terminera à la fin de la période en cours. Tu gardes l\'accès jusque-là.',
   'billing.statusExpired': 'Ton abonnement a expiré.',
+  'billing.statusDisputed': 'Ton abonnement est en litige.', 'billing.statusRefunded': 'Ton abonnement a été remboursé.', 'billing.statusPaymentUnderReview': 'Ton paiement est en cours de vérification.',
   'billing.checkoutError': "Impossible de démarrer le paiement. Réessaie.",
   'profile.navLabel': 'Mon profil scolaire',
   'profile.title': 'Ton contexte scolaire',
@@ -5551,6 +5561,7 @@ const pt: Messages = {
   'payment.status.reactivated': 'Reativado',
   'payment.status.cancelled_at_period_end': 'Cancelamento agendado',
   'payment.status.expired': 'Expirado',
+  'payment.status.disputed': 'Em disputa', 'payment.status.refunded': 'Reembolsado', 'payment.status.payment_under_review': 'Pagamento em análise',
   'billing.title': 'Assinatura',
   'billing.subtitle': 'Gerencie o pagamento da sua assinatura do StudyUS.',
   'billing.subscribeButton': 'Assinar',
@@ -5563,6 +5574,7 @@ const pt: Messages = {
   'billing.statusReactivated': 'Sua assinatura foi reativada.',
   'billing.statusCancelledAtPeriodEnd': 'Sua assinatura terminará ao final do período atual. Você mantém o acesso até lá.',
   'billing.statusExpired': 'Sua assinatura expirou.',
+  'billing.statusDisputed': 'Sua assinatura está em disputa.', 'billing.statusRefunded': 'Sua assinatura foi reembolsada.', 'billing.statusPaymentUnderReview': 'Seu pagamento está em análise.',
   'billing.checkoutError': 'Não foi possível iniciar o pagamento. Tente novamente.',
   'profile.navLabel': 'Meu perfil acadêmico',
   'profile.title': 'Seu contexto acadêmico',

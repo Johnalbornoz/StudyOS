@@ -159,6 +159,16 @@ export async function listPendingMemberships(institutionId: string): Promise<Ins
   return result.rows.map(toMembership);
 }
 
+/** Professional Admin Console -- the global "Solicitudes pendientes" inbox needs every institution's pending requests at once, unlike the per-institution coordinator view above. STUDYUS_ADMIN only (never exposed to a coordinator, who only ever sees their own institution via the function above). */
+export async function listAllPendingMembershipsAcrossInstitutions(): Promise<Array<InstitutionMembership & { institutionName: string }>> {
+  const result = await db.query(
+    `SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, i.name AS institution_name
+     FROM institution_memberships im JOIN institutions i ON i.id = im.institution_id
+     WHERE im.status = 'PENDING' ORDER BY im.requested_at ASC`
+  );
+  return result.rows.map((r: any) => ({ ...toMembership(r), institutionName: r.institution_name }));
+}
+
 /**
  * Onboarding/authorization rework (2026-09-21) -- the coordinator's
  * auditable view of every non-pending decision at their institution

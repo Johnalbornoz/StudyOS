@@ -4,11 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * Fase 2A -- Mecanismo B: identidad preconfigurada de prueba. Crea una
- * cuenta Clerk real vía la API de administración (nunca el formulario
- * público de /sign-up), marcada TEST desde el primer momento. Las
- * credenciales se muestran UNA sola vez, en pantalla, y nunca se
- * guardan en ningún documento ni registro -- solo el alias se conserva.
+ * Mecanismo B: identidad preconfigurada de prueba, vía la Backend API
+ * de Clerk (nunca el formulario público /sign-up), por lo que no
+ * depende de Cloudflare Turnstile. Las credenciales se muestran una
+ * sola vez y nunca se guardan.
  */
 export default function TestIdentityCreator() {
   const router = useRouter();
@@ -41,15 +40,15 @@ export default function TestIdentityCreator() {
   }
 
   if (!open) {
-    return <button className="btn" onClick={() => setOpen(true)}>Crear identidad de prueba</button>;
+    return <button className="btn" onClick={() => setOpen(true)}>+ Crear identidad de prueba</button>;
   }
 
   if (result) {
     return (
-      <div className="card" style={{ padding: 'var(--space-3)', minWidth: 320, border: '1px solid var(--warning-border, #fdba74)' }}>
+      <div className="card" style={{ padding: 'var(--space-4)', maxWidth: 420, border: '1px solid var(--warning-border, #fdba74)' }}>
         <h3 style={{ fontSize: 14, marginBottom: 'var(--space-2)' }}>Identidad de prueba creada</h3>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>
-          Estas credenciales se muestran una sola vez. No se guardan en ningún registro ni documento — cópialas ahora si necesitas iniciar sesión manualmente.
+          Estas credenciales se muestran una sola vez y no se guardan en ningún registro ni documento.
         </p>
         <p style={{ fontSize: 13, fontFamily: 'monospace', wordBreak: 'break-all' }}>{result.oneTimeEmail}</p>
         <p style={{ fontSize: 13, fontFamily: 'monospace' }}>{result.oneTimePassword}</p>
@@ -61,20 +60,10 @@ export default function TestIdentityCreator() {
   }
 
   return (
-    <div className="card" style={{ padding: 'var(--space-3)', minWidth: 280 }}>
-      <h3 style={{ fontSize: 14, marginBottom: 'var(--space-2)' }}>Crear identidad de prueba (Preview)</h3>
-      <input
-        placeholder="Alias (p. ej. ID-S)"
-        value={alias}
-        onChange={(e) => setAlias(e.target.value)}
-        style={{ width: '100%', padding: 'var(--space-2)', marginBottom: 'var(--space-2)' }}
-      />
-      <input
-        placeholder="Propósito"
-        value={purpose}
-        onChange={(e) => setPurpose(e.target.value)}
-        style={{ width: '100%', padding: 'var(--space-2)', marginBottom: 'var(--space-2)' }}
-      />
+    <div className="card" style={{ padding: 'var(--space-4)', maxWidth: 420 }}>
+      <h3 style={{ fontSize: 14, marginBottom: 'var(--space-2)' }}>Crear identidad de prueba</h3>
+      <input placeholder="Alias (p. ej. ID-S)" value={alias} onChange={(e) => setAlias(e.target.value)} style={{ width: '100%', padding: 'var(--space-2)', marginBottom: 'var(--space-2)' }} />
+      <input placeholder="Propósito" value={purpose} onChange={(e) => setPurpose(e.target.value)} style={{ width: '100%', padding: 'var(--space-2)', marginBottom: 'var(--space-2)' }} />
       <select value={initialRole} onChange={(e) => setInitialRole(e.target.value)} style={{ width: '100%', padding: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
         <option value="">Sin rol inicial</option>
         <option value="STUDENT">Estudiante</option>
@@ -85,7 +74,7 @@ export default function TestIdentityCreator() {
         <button className="btn" disabled={busy || !alias || !purpose} onClick={submit}>Crear</button>
         <button className="btn btn-ghost" onClick={() => setOpen(false)}>Cancelar</button>
       </div>
-      {error && <p style={{ fontSize: 12, color: 'var(--danger, red)', marginTop: 'var(--space-2)' }}>{error}</p>}
+      {error && <p role="alert" style={{ fontSize: 12, color: 'var(--danger, red)', marginTop: 'var(--space-2)' }}>{error}</p>}
     </div>
   );
 }

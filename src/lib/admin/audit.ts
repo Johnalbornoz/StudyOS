@@ -21,7 +21,19 @@ export type AdminAuditAction =
   | 'TEST_IDENTITY_CREATED'
   | 'TEST_IDENTITY_CLEANED_UP'
   | 'SYNC_RECONCILED'
-  | 'SYNC_ERROR_DETECTED';
+  | 'SYNC_ERROR_DETECTED'
+  | 'USER_CREATION_STARTED'
+  | 'USER_DELETED_PERMANENTLY'
+  | 'MEMBERSHIP_APPROVED'
+  | 'PAYMENT_APPROVED'
+  | 'LICENSE_GRANTED'
+  | 'LICENSE_REVOKED'
+  | 'MEMBERSHIP_SUSPENDED'
+  | 'MEMBERSHIP_REACTIVATED'
+  | 'MEMBERSHIP_CANCELLED'
+  | 'REFUND_DISPUTE_RECORDED'
+  | 'MEMBERSHIP_RECONCILED'
+  | 'PASSWORD_CHANGE_CONFIRMED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
@@ -72,6 +84,78 @@ export interface AdminAuditEntry {
   result: string;
   environment: string;
   occurredAt: string;
+}
+
+export interface AuditFilters {
+  actorUserId?: string;
+  targetId?: string;
+  action?: string;
+  result?: 'SUCCESS' | 'FAILURE';
+  fromDate?: string;
+  toDate?: string;
+}
+
+/** Global, filterable audit view for the Auditoría screen. Never returns previous_state/new_state (those can carry request-shaped data not meant for a generic list read) -- only the fields the professional audit table needs. */
+export async function listAuditLog(filters: AuditFilters, page: number, pageSize: number): Promise<{ items: AdminAuditEntry[]; totalCount: number }> {
+  const conditions: string[] = [];
+  const params: any[] = [];
+  let i = 1;
+
+  if (filters.actorUserId) {
+    conditions.push(`actor_user_id = $${i}`);
+    params.push(filters.actorUserId);
+    i++;
+  }
+  if (filters.targetId) {
+    conditions.push(`target_id = $${i}`);
+    params.push(filters.targetId);
+    i++;
+  }
+  if (filters.action) {
+    conditions.push(`action = $${i}`);
+    params.push(filters.action);
+    i++;
+  }
+  if (filters.result) {
+    conditions.push(`result = $${i}`);
+    params.push(filters.result);
+    i++;
+  }
+  if (filters.fromDate) {
+    conditions.push(`occurred_at >= $${i}`);
+    params.push(filters.fromDate);
+    i++;
+  }
+  if (filters.toDate) {
+    conditions.push(`occurred_at <= $${i}`);
+    params.push(filters.toDate);
+    i++;
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (page - 1) * pageSize;
+
+  const countResult = await db.query(`SELECT COUNT(*)::int AS c FROM admin_audit_log ${whereClause}`, params);
+  const rowsResult = await db.query(
+    `SELECT id, actor_user_id, action, target_type, target_id, reason, result, environment, occurred_at
+     FROM admin_audit_log ${whereClause} ORDER BY occurred_at DESC LIMIT $${i} OFFSET $${i + 1}`,
+    [...params, pageSize, offset]
+  );
+
+  return {
+    items: rowsResult.rows.map((r: any) => ({
+      id: r.id,
+      actorUserId: r.actor_user_id,
+      action: r.action,
+      targetType: r.target_type,
+      targetId: r.target_id,
+      reason: r.reason,
+      result: r.result,
+      environment: r.environment,
+      occurredAt: new Date(r.occurred_at).toISOString(),
+    })),
+    totalCount: countResult.rows[0]?.c ?? 0,
+  };
 }
 
 /** History for one target, most recent first. Never returns previous_state/new_state raw blobs to a generic list caller beyond what the UI needs -- callers requiring detail should query explicitly and are responsible for redacting. */
