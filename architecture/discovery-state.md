@@ -205,3 +205,31 @@ Todo el trabajo de esta actualización fue local: un `git mv`, una edición de c
 ### Declaración de no modificación (esta aplicación)
 
 No se otorgó ningún rol. No se creó ninguna cuenta (confirmado: `0` usuarios `is_test`, `0` roles `STUDYUS_ADMIN` tras la aplicación). No se cambió ningún estado de usuario existente. No se llamó a Clerk en ningún momento. No se desplegó la funcionalidad de administración (verificado por build: cero rutas `admin/users` en ambos deployments temporales). Production no fue tocada en ningún momento — ambos deployments se confirmaron `target: preview` antes de cualquier llamada. El worktree principal (`f15-pilot-readiness`) permaneció exactamente igual durante todo el procedimiento — mismo HEAD, mismos 39 archivos sin confirmar, ningún commit realizado.
+
+---
+
+## Actualización — commit, despliegue de la funcionalidad completa a Preview, y punto de bloqueo por login del operador (2026-09-21, mismo día, autorización explícita)
+
+**Commits creados** (los primeros de toda esta sesión — todo el trabajo previo de Fases 0/1/2A/R14 vivía sin confirmar hasta ahora): `a8d9a5f` (Fase 0 + Fase 1), `5d2e2e2` (R14), `5569c15` (Fase 2A), `923e4b7` (este mismo registro). Nota de trazabilidad: el `git mv` del renombrado de R14 se había quedado en el índice de git desde el momento en que se ejecutó (varios turnos antes); al hacer `git add` selectivo por archivo para el primer commit, ese cambio ya estaba en el índice y terminó incluido ahí en vez de en el commit de R14 — impacto nulo (el archivo quedó exactamente igual), documentado aquí por transparencia, no oculto.
+
+**Despliegue**: `vercel deploy` (nunca `--prod`) directamente desde el worktree principal, ya con los 4 commits y árbol de trabajo limpio — `dpl_8edrQyZpBH6dWNDRtLdQAAzwTBJD`, `https://study-qh24uhixb-study-so.vercel.app`, confirmado `target: preview`. Esta es la primera vez que la funcionalidad de administración de usuarios (rutas `/api/admin/users/**`, páginas `/dashboard/admin/users/**`) queda desplegada — confirmado en el propio log de build (rutas listadas explícitamente).
+
+**Verificación de la migración vía ruta de diagnóstico preexistente, ya desplegada desde una fase anterior de este mismo programa** (`src/app/api/diagnostics/preview-db/route.ts`, solo lectura, sin secretos, gateada a Preview): `appliedMigrationCount: 34`, `usersTableExists: true`, `migrationLedgerExists: true`, `admin_audit_log` presente en el listado de 134 tablas públicas. `dbFingerprint: "53d158d5811e7ee0"` (hash no reversible de host+nombre de base, nunca la cadena de conexión). `deploymentSha` devolvió `null` porque este fue un despliegue vía CLI sin integración de Git de por medio (comportamiento conocido, no una duda sobre qué código se desplegó — el SHA desplegado es `923e4b7` por construcción directa: se desplegó desde ese commit exacto con el árbol de trabajo limpio, confirmado antes de desplegar).
+
+**Verificación sin autenticación** (la única parte de las pruebas de autorización negativa que se puede confirmar sin credenciales de nadie): `GET /dashboard/admin/users` sin sesión → `307` a `/sign-in`. `GET /api/admin/users` sin sesión → `401 {"error":"UNAUTHORIZED"}`. Ambas correctas.
+
+**Punto de bloqueo**: el auto-otorgamiento perezoso del rol `STUDYUS_ADMIN` (`requireStudyUSAdmin`, `src/lib/admin/authorization.ts`) solo se dispara cuando la cuenta ya-en-el-allowlist inicia sesión real y visita la superficie de administración — esto requiere la sesión de Clerk real del operador, que este agente no puede ni debe suplantar. Se entrega la guía operativa (`docs/implementation/f15/F15_PHASE2_IDENTITY_TESTING_RUNBOOK.md`) y se detiene aquí, exactamente como exige el procedimiento autorizado.
+
+### Declaración de no modificación (este despliegue)
+
+Se desplegó código ya committeado (autorizado explícitamente para esta activación). No se llamó a Clerk mediante programación en ningún momento — la única interacción con Clerk es la que hará el operador, manualmente, con su propia sesión. No se creó ninguna cuenta, no se otorgó ningún rol, no se cambió ningún estado — todo eso quedará a cargo del propio sistema, disparado únicamente por acciones reales del operador. Production no fue tocada — el deployment se confirmó `target: preview`.
+
+### Estados al cierre de este turno
+
+```
+Fase 2A implementation:       DEPLOYED_TO_PREVIEW
+Fase 2A admin authorization:  BLOCKED_OPERATOR_LOGIN
+Fase 2 identities:            READY_FOR_OPERATOR_CREATION
+Fase 2 role validation:       NOT_STARTED
+Production:                   UNTOUCHED
+```
