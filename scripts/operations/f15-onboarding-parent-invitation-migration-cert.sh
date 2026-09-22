@@ -1,7 +1,7 @@
 #!/bin/bash
 # Onboarding/authorization rework (2026-09-21) -- migration + basic
 # functional certification for
-# database/migrations/20260921_1000_student_initiated_parent_invitation.sql,
+# database/migrations/20260921_1100_student_initiated_parent_invitation.sql,
 # against a REAL, EPHEMERAL, local-only Postgres instance (never Neon/
 # Preview/Production -- mirrors f2-authorization-migration-cert.sh's
 # own safety pattern). Proves the migration applies cleanly on top of
@@ -63,7 +63,7 @@ for f in "$MIGRATIONS_DIR"/*.sql; do
   $PSQL -f "$f" >/dev/null
 done
 
-TARGET_MIGRATION="$MIGRATIONS_DIR/20260921_1000_student_initiated_parent_invitation.sql"
+TARGET_MIGRATION="$MIGRATIONS_DIR/20260921_1100_student_initiated_parent_invitation.sql"
 
 echo "--- idempotency check: re-applying the target migration a second time ---"
 $PSQL -f "$TARGET_MIGRATION" >/dev/null

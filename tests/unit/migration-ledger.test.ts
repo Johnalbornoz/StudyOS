@@ -210,3 +210,27 @@ describe('findDuplicateFileVersions -- CANON-MIG-R1 Part 8/9: no silent Map over
     expect(findDuplicateFileVersions([])).toEqual([]);
   });
 });
+
+describe('R14 regression -- the REAL database/migrations/ directory on disk never has two files sharing a canonical version', () => {
+  it('parses every real migration filename and finds zero duplicate versions', () => {
+    const { readdirSync } = require('fs') as typeof import('fs');
+    const { join } = require('path') as typeof import('path');
+    const dir = join(process.cwd(), 'database', 'migrations');
+    const filenames: string[] = readdirSync(dir).filter((f: string) => f.endsWith('.sql'));
+    const files = filenames.map((f) => ({
+      ...parseMigrationFilename(f.replace(/\.sql$/, '')),
+      checksum: 'n/a', // content is irrelevant to this check -- only version collisions matter
+    }));
+    expect(findDuplicateFileVersions(files)).toEqual([]);
+  });
+
+  it('the two migrations originally filed under the colliding 20260921_1000 version now have distinct versions', () => {
+    const { readdirSync } = require('fs') as typeof import('fs');
+    const { join } = require('path') as typeof import('path');
+    const dir = join(process.cwd(), 'database', 'migrations');
+    const filenames: string[] = readdirSync(dir).filter((f: string) => f.endsWith('.sql'));
+    expect(filenames).toContain('20260921_1000_f3_subscription_entitlement_foundation.sql');
+    expect(filenames).toContain('20260921_1100_student_initiated_parent_invitation.sql');
+    expect(filenames).not.toContain('20260921_1000_student_initiated_parent_invitation.sql');
+  });
+});
