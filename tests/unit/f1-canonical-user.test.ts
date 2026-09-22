@@ -16,9 +16,9 @@ beforeEach(() => {
 
 describe('getOrCreateCanonicalUser', () => {
   it('returns the existing users row when one already exists for this clerk_id', async () => {
-    dbQueryMock.mockResolvedValueOnce({ rows: [{ id: 'u1', clerk_id: 'c1', email: 'a@b.com', status: 'ACTIVE', active_workspace: null }] });
+    dbQueryMock.mockResolvedValueOnce({ rows: [{ id: 'u1', clerk_id: 'c1', email: 'a@b.com', status: 'ACTIVE', active_workspace: null, password_change_required: false }] });
     const user = await getOrCreateCanonicalUser('c1');
-    expect(user).toEqual({ id: 'u1', clerkId: 'c1', email: 'a@b.com', status: 'ACTIVE', activeWorkspace: null });
+    expect(user).toEqual({ id: 'u1', clerkId: 'c1', email: 'a@b.com', status: 'ACTIVE', activeWorkspace: null, passwordChangeRequired: false });
     expect(dbQueryMock).toHaveBeenCalledTimes(1);
   });
 

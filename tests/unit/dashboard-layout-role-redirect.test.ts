@@ -133,6 +133,33 @@ describe('DashboardLayout -- Fase 2A: a SUSPENDED or ARCHIVED account is blocked
   });
 });
 
+describe('DashboardLayout -- Rediseño de consola profesional: a temporary-password account must change it before reaching the dashboard', () => {
+  it('redirects to /account/change-password without resolving workspaces or provisioning a Student, checked in the same position as the status gate', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', activeWorkspace: null, passwordChangeRequired: true });
+
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/account/change-password');
+    expect(resolveAvailableWorkspacesMock).not.toHaveBeenCalled();
+    expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
+  });
+
+  it('an account that already changed its password is never redirected by this check', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', activeWorkspace: null, passwordChangeRequired: false });
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+
+    await DashboardLayout({ children: null as any });
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it('a SUSPENDED account with passwordChangeRequired still true is caught by the status check first (order matters, but both fail closed)', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'SUSPENDED', activeWorkspace: null, passwordChangeRequired: true });
+
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/account-suspended');
+  });
+});
+
 describe('DashboardLayout -- demo/no-license banner, visible cue only (server-side entitlement checks are the real gate)', () => {
   it('shows the license banner for a STUDENT workspace with no active license', async () => {
     resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
