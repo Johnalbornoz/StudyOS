@@ -12,7 +12,7 @@ import type { CanonicalUser, Role, UserRoleGrant, Workspace } from './types';
  */
 export async function getOrCreateCanonicalUser(clerkUserId: string, email?: string | null): Promise<CanonicalUser> {
   const existing = await db.query(
-    `SELECT id, clerk_id, email, status, active_workspace FROM users WHERE clerk_id = $1`,
+    `SELECT id, clerk_id, email, status, active_workspace, password_change_required FROM users WHERE clerk_id = $1`,
     [clerkUserId]
   );
   if (existing.rows.length > 0) {
@@ -22,7 +22,7 @@ export async function getOrCreateCanonicalUser(clerkUserId: string, email?: stri
   const inserted = await db.query(
     `INSERT INTO users (clerk_id, email) VALUES ($1, $2)
      ON CONFLICT (clerk_id) DO UPDATE SET clerk_id = EXCLUDED.clerk_id
-     RETURNING id, clerk_id, email, status, active_workspace`,
+     RETURNING id, clerk_id, email, status, active_workspace, password_change_required`,
     [clerkUserId, email ?? null]
   );
   return toCanonicalUser(inserted.rows[0]);
@@ -30,7 +30,7 @@ export async function getOrCreateCanonicalUser(clerkUserId: string, email?: stri
 
 export async function getCanonicalUserByClerkId(clerkUserId: string): Promise<CanonicalUser | null> {
   const result = await db.query(
-    `SELECT id, clerk_id, email, status, active_workspace FROM users WHERE clerk_id = $1`,
+    `SELECT id, clerk_id, email, status, active_workspace, password_change_required FROM users WHERE clerk_id = $1`,
     [clerkUserId]
   );
   return result.rows.length > 0 ? toCanonicalUser(result.rows[0]) : null;
@@ -64,5 +64,6 @@ function toCanonicalUser(row: any): CanonicalUser {
     email: row.email,
     status: row.status,
     activeWorkspace: row.active_workspace as Workspace | null,
+    passwordChangeRequired: row.password_change_required ?? false,
   };
 }

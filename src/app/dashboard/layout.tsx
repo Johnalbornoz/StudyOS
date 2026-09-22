@@ -73,6 +73,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
       redirect('/account-suspended');
     }
 
+    // Rediseño de consola profesional: una cuenta creada por un
+    // STUDYUS_ADMIN con contraseña temporal debe cambiarla antes de
+    // usar el producto -- verificado server-side en cada solicitud,
+    // en la misma posición que el chequeo de estado anterior, para
+    // que ninguno de los dos pueda evadirse entrando por otra ruta ni
+    // cerrando y reabriendo sesión.
+    if (canonicalUser.passwordChangeRequired) {
+      redirect('/account/change-password');
+    }
+
     const [available, storedActive] = await Promise.all([
       resolveAvailableWorkspaces(canonicalUser.id),
       getActiveWorkspace(canonicalUser.id),

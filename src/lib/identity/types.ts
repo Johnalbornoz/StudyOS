@@ -55,6 +55,8 @@ export interface CanonicalUser {
   email: string | null;
   status: UserAccountStatus;
   activeWorkspace: Workspace | null;
+  /** True only for an admin-created account whose temporary password has not yet been changed by its owner -- see dashboard/layout.tsx and /account/change-password. */
+  passwordChangeRequired: boolean;
 }
 
 export interface UserRoleGrant {
