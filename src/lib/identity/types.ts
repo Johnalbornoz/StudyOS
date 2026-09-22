@@ -46,11 +46,14 @@ export function workspaceForRole(role: Role): Workspace {
 /** Fixed priority for resolveDefaultWorkspace -- lower index wins. */
 export const WORKSPACE_PRIORITY: readonly Workspace[] = ['STUDENT', 'PARENT', 'TEACHER', 'INSTITUTION', 'ADMIN'];
 
+/** Fase 2A -- ARCHIVED added alongside the pre-existing ACTIVE/SUSPENDED (F1). Widens the type to match the widened `users_status_check_v2` DB constraint -- no existing row's value changes. */
+export type UserAccountStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+
 export interface CanonicalUser {
   id: string;
   clerkId: string;
   email: string | null;
-  status: 'ACTIVE' | 'SUSPENDED';
+  status: UserAccountStatus;
   activeWorkspace: Workspace | null;
 }
 

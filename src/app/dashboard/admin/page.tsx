@@ -30,6 +30,9 @@ export default async function AdminPage() {
       <div style={{ marginBottom: 'var(--space-8)' }}>
         <h1>{t['admin.title']}</h1>
         <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['admin.subtitle']}</p>
+        <Link href="/dashboard/admin/users" className="btn" style={{ display: 'inline-block', marginTop: 'var(--space-3)' }}>
+          Administración de usuarios
+        </Link>
       </div>
 
       {students.length === 0 ? (

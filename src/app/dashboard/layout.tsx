@@ -63,6 +63,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
     const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
 
+    // Fase 2A: a SUSPENDED or ARCHIVED account is blocked here, in the
+    // one Server Component every /dashboard/** route renders through --
+    // checked server-side against the DB row itself, never inferred
+    // from hiding the account in a list. This is enforced before any
+    // workspace/role resolution, the same position as the zero-role
+    // redirect below, so neither check can be bypassed by the other.
+    if (canonicalUser.status !== 'ACTIVE') {
+      redirect('/account-suspended');
+    }
+
     const [available, storedActive] = await Promise.all([
       resolveAvailableWorkspaces(canonicalUser.id),
       getActiveWorkspace(canonicalUser.id),

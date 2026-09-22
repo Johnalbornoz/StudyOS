@@ -63,7 +63,7 @@ beforeEach(() => {
   currentUserMock.mockReset().mockResolvedValue({ firstName: 'Ana', primaryEmailAddress: { emailAddress: 'ana@test.com' }, emailAddresses: [] });
   isAdminEmailMock.mockReset().mockReturnValue(false);
   getOrCreateStudentIdMock.mockReset().mockResolvedValue('student-1');
-  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'user-1', activeWorkspace: null });
+  getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'user-1', status: 'ACTIVE', activeWorkspace: null });
   resolveAvailableWorkspacesMock.mockReset();
   resolveDefaultWorkspaceMock.mockReset().mockResolvedValue(null);
   getActiveWorkspaceMock.mockReset().mockResolvedValue(null);
@@ -103,6 +103,33 @@ describe('DashboardLayout -- zero active roles redirects to /role-select, never 
     await DashboardLayout({ children: null as any });
     expect(redirectMock).not.toHaveBeenCalled();
     expect(resolveAvailableWorkspacesMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('DashboardLayout -- Fase 2A: a SUSPENDED or ARCHIVED account is blocked server-side, before any workspace/role resolution', () => {
+  it('redirects a SUSPENDED account to /account-suspended without resolving workspaces or provisioning a Student', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'SUSPENDED', activeWorkspace: null });
+
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/account-suspended');
+    expect(resolveAvailableWorkspacesMock).not.toHaveBeenCalled();
+    expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
+  });
+
+  it('redirects an ARCHIVED account the same way', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ARCHIVED', activeWorkspace: null });
+
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/account-suspended');
+  });
+
+  it('an ACTIVE account is never redirected by this check', async () => {
+    getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', activeWorkspace: null });
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+
+    await DashboardLayout({ children: null as any });
+    expect(redirectMock).not.toHaveBeenCalled();
   });
 });
 
