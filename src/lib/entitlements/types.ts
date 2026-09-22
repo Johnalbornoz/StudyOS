@@ -14,7 +14,14 @@ export type SubscriptionStatus =
   | 'suspended'
   | 'reactivated'
   | 'cancelled_at_period_end'
-  | 'expired';
+  | 'expired'
+  /** Admin Console (2026-09-21) -- widened alongside `subscriptions_status_check_v3`. */
+  | 'disputed'
+  | 'refunded'
+  | 'payment_under_review';
+
+/** Admin Console (2026-09-21) -- how a subscription's active period was funded. Never inferred; always set explicitly at grant/checkout time. */
+export type SubscriptionSource = 'INDIVIDUAL_PAYMENT' | 'PARENT_PAYMENT' | 'INSTITUTIONAL_LICENSE' | 'ADMIN_PROMOTION' | 'TRIAL';
 
 export type Plan = 'MONTHLY' | 'ANNUAL';
 
@@ -37,4 +44,6 @@ export interface SubscriptionRecord {
   payerUserId: string | null;
   currentPeriodEnd: string | null;
   manuallySetByAdmin: boolean;
+  /** Only meaningful when manuallySetByAdmin is true -- an admin grant's own mandatory expiration (distinct from currentPeriodEnd, a paid-plan concept). */
+  grantExpiresAt: string | null;
 }

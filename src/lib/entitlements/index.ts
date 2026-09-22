@@ -1,9 +1,9 @@
 import { db } from '@/lib/db';
-import { getSubscription } from './subscription.service';
+import { getSubscription, getEffectiveSubscription } from './subscription.service';
 import type { Capability, SubscriptionStatus } from './types';
 
 export type { Capability, SubscriptionStatus, Plan, SubscriptionRecord } from './types';
-export { getSubscription, ensureSubscription, transitionSubscriptionStatus } from './subscription.service';
+export { getSubscription, getEffectiveSubscription, ensureSubscription, transitionSubscriptionStatus } from './subscription.service';
 export { isValidTransition, assertValidTransition, InvalidSubscriptionTransitionError } from './subscription-state-machine';
 
 /**
@@ -45,7 +45,10 @@ function isWithinCurrentPeriod(currentPeriodEnd: string | null): boolean {
  */
 async function canUseLearningFullAccess(actorUserId: string, learnerId: string): Promise<boolean> {
   if (!(await isOwner(actorUserId, learnerId))) return false;
-  const sub = await getSubscription(learnerId);
+  // getEffectiveSubscription, never getSubscription directly -- an
+  // admin grant past its own expiration must lose access on THIS
+  // request, not on the next cron run that may never exist (§15).
+  const sub = await getEffectiveSubscription(learnerId);
   if (PAID_ACCESS_STATUSES.includes(sub.status)) return true;
   if (sub.status === 'cancelled_at_period_end') return isWithinCurrentPeriod(sub.currentPeriodEnd);
   return false;

@@ -17,6 +17,10 @@ const STATUS_MESSAGE_KEY = {
   reactivated: 'billing.statusReactivated',
   cancelled_at_period_end: 'billing.statusCancelledAtPeriodEnd',
   expired: 'billing.statusExpired',
+  // Admin Console (2026-09-21) -- 3 new statuses, same pattern as F3's own extension above.
+  disputed: 'billing.statusDisputed',
+  refunded: 'billing.statusRefunded',
+  payment_under_review: 'billing.statusPaymentUnderReview',
 } as const;
 
 const STATUS_CHIP_CLASS = {
@@ -28,6 +32,9 @@ const STATUS_CHIP_CLASS = {
   reactivated: 'chip-warn',
   cancelled_at_period_end: 'chip-warn',
   expired: 'chip-critical',
+  disputed: 'chip-critical',
+  refunded: 'chip-warn',
+  payment_under_review: 'chip-warn',
 } as const;
 
 export default async function BillingPage() {
