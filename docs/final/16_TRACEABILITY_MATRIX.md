@@ -30,6 +30,8 @@
 | Rate limiting distribuido | Nunca construido | `checkRateLimit` (per-process) | N/A | N/A | N/A | R5 | **DEFERRED** |
 | Correlation ID end-to-end | Utilidad existe, no conectada | Parcial | N/A | N/A | N/A | `IVG-F15-05` | **DEFERRED** |
 
+**[FASE 0 FREEZE — 2026-09-21]** Aclaración de alcance para las filas F1–F12 marcadas **LIVE VERIFIED** arriba: esa etiqueta certifica que la migración se aplicó y el esquema/dato existe en Preview (verificado por consulta directa), **no** que el flujo funcional correspondiente (selección de rol, aceptación de invitación de padre, aprobación de profesor, etc.) fue observado funcionando de extremo a extremo con un usuario real autenticado. Ver `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` — matriz de estados Fase 0 — para el estado `NOT_CERTIFIED` correcto de cada uno de esos flujos.
+
 ## Estado final en vivo (se actualiza al concluir cada bloque; no se declara PASS sin ejecución real)
 
 ```
@@ -45,6 +47,13 @@ READY FOR PILOT:                        NO  (bloqueado únicamente por rotación
 READY FOR PRODUCTION:                   NO  (ver 14_PRODUCTION_RELEASE_CHECKLIST.md — múltiples gates abiertos)
 READY FOR PRODUCTION RELEASE PROCESS:   YES (arquitectura y disciplina de certificación suficientes para iniciar el proceso una vez cerrados los gates)
 ```
+
+**[FASE 0 FREEZE — 2026-09-21]** Congelamiento de aceptación, sin cambios de código ni de datos. Ver `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` (reconciliación completa) y `architecture/discovery-state.md` (registro vivo). Resumen de lo que cambia aquí:
+
+- **Fila "Catálogo de examen Pilot" (línea 27) y "Matriz E2E autenticada completa" (línea 28)**: el click-through UI autenticado marcado como `PENDING` **ya se ejecutó** (evidencia manual, 2026-09-21) y **reveló una falla**, no una confirmación pendiente: `MINI_MOCK`, pregunta 1 de 1, "Todavía no se encontró un concepto equivalente para ti", única acción "Omitir esta parte". El seed técnico (`activeExamDefinitionCount=1`, idempotencia) permanece **VERIFIED** tal como está escrito — eso no cambia — pero **no implica** un simulacro académicamente utilizable. Estado correcto ahora: `Exámenes 360: FAILED — ACADEMIC CONTENT / BLUEPRINT INCOMPLETE`. Ver Fase 0 §Evidencia del examen para el detalle completo.
+- **Línea 25 ("único hard gate restante")**: esta afirmación se congela. La rotación de credenciales sigue siendo el único **hard gate de infraestructura/seguridad**, pero no es el único bloqueador de `READY FOR PILOT` — identidad/roles, padre, profesor, institución y cuentas multirrol tampoco tienen evidencia E2E completa (ver matriz Fase 0), y el motor de examen ahora está en `FAILED`, no en `PENDING`.
+- **Línea 44 ("bloqueado únicamente por... + E2E pendiente")**: "E2E pendiente" ya no describe correctamente el estado — parte del E2E se ejecutó y falló. Estado correcto: `Pilot readiness: BLOCKED` por rotación de credenciales, E2E no ejecutado en los flujos de rol/padre/profesor/institución, Y examen 360 en `FAILED`.
+- **Línea 46 ("READY FOR PRODUCTION RELEASE PROCESS: YES")**: esta afirmación se congela mientras dure la Fase 0. No se declara `NO` retroactivamente sin una decisión explícita posterior, pero tampoco puede citarse como vigente hasta que las fases 1–9 del orden de validación (ver documento de congelamiento) cierren. Ver reconciliación fechada en el documento de congelamiento para el razonamiento completo (qué evidencia existía, qué se creía que demostraba, qué reveló la prueba manual, estado correcto, evidencia futura de cierre).
 
 Bloqueadores reales restantes para `READY FOR PILOT: YES`:
 

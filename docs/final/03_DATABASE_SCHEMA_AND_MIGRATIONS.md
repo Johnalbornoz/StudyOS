@@ -118,6 +118,8 @@ A second real data gap was found after the migration/identity work above: `exam_
 
 **Deliberately left unattached**: the exam version's `scoring_model_id` — a real, honest fact (no finalized PAA scoring formula exists for this pilot yet) that correctly keeps `FULL_MOCK` reporting `NOT_READY` via the existing, unmodified `canFullMockBeOffered()` guard, while `TOPIC_EXAM`/`DOMAIN_EXAM`/`MINI_MOCK` (which never depend on a scoring model) are genuinely eligible.
 
+**[FASE 0 FREEZE — 2026-09-21]**: "genuinely eligible" above is correct and unchanged as a statement about the `canFullMockBeOffered()` guard — those three modes are not blocked by the missing scoring model. It is **not** a statement about content sufficiency, and a manual attempt the same day showed it cannot be read that way: `MINI_MOCK` returned only 1 question, with no equivalent concept match and no resolvable content ("Todavía no se encontró un concepto equivalente para ti", skip-only). Being guard-eligible and being academically usable are two different claims; only the first is verified here. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.
+
 ## Pilot data growth (reasoned, not load-tested)
 
 `simulation_attempts.navigation_state` (JSONB) holds the full pending generated-question object during an active exam attempt, cleared on submission — a real but modest per-attempt storage characteristic, not expected to be a capacity concern at pilot scale.

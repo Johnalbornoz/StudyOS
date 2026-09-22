@@ -90,6 +90,8 @@ Exactly one of each required entity exists, discoverable by name — confirming 
 
 The exam version's `scoring_model_id` is deliberately left unset. `canFullMockBeOffered()` (F7, unmodified) reports `ready: false` with reason `NO_SCORING_MODEL_CONFIGURED` whenever a scoring model isn't attached — a real, honest fact (no finalized PAA scoring formula exists for this pilot), not a fabricated blocker. `TOPIC_EXAM`/`DOMAIN_EXAM`/`MINI_MOCK` never depend on a scoring model and remain genuinely eligible once the Mathematics component's timing/tool-rules/support are all configured (which this seed did configure). This will be re-confirmed live during the authenticated E2E session.
 
+**[FASE 0 FREEZE — 2026-09-21]**: that live re-confirmation happened, on `MINI_MOCK`, and **FAILED**: question 1 of 1 returned "no se encontró un concepto equivalente para ti" (`CONCEPT_NOT_MATCHED`), only action "Omitir esta parte" — no usable exam experience resulted. "Genuinely eligible" above described the guard (`canFullMockBeOffered`-adjacent eligibility), correctly, and is not retracted; it never meant "will produce a usable exam" and must not be read that way. Root cause is almost certainly this seed's single canonical concept (`Linear Equations`) not matching whatever concept the item-generation path actually looked for — a content/blueprint-coverage gap, not a code defect. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.
+
 ## Temporary trigger route lifecycle
 
 | Step | Deployment | `target` |

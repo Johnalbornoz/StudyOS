@@ -30,8 +30,11 @@ Every claim of "done" in this package is tagged with exactly one of the followin
 | **DEFERRED** | Deliberately not done yet, with a named owner and an explicit closure criterion (see [15_RESIDUAL_RISKS_AND_IVG.md](15_RESIDUAL_RISKS_AND_IVG.md) and [16_TRACEABILITY_MATRIX.md](16_TRACEABILITY_MATRIX.md)). Not a euphemism for "broken" or "forgotten."
 | **BLOCKED** | Cannot proceed right now for a specific, named reason (a tooling boundary, a missing credential, a required human action). |
 | **OPERATOR_ACTION_REQUIRED** | The blocking reason is specifically that a human with access this system doesn't have (a provider console, a dashboard) must act. Used exclusively for the credential-rotation gate in this package — see [08_SECURITY_AND_PRIVACY.md](08_SECURITY_AND_PRIVACY.md). |
+| **NOT_CERTIFIED** *(added FASE 0 FREEZE, 2026-09-21)* | Code and/or documentation exists, but there is not yet sufficient E2E evidence to state that the complete process actually works for a real user. Distinct from `BLOCKED`: the problem is not a named external blocker preventing progress, it is that the flow has simply never been verified end to end. **Never substitute `BLOCKED` for `NOT_CERTIFIED` when the real issue is "never verified."** See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`. |
 
 **This package never claims LIVE VERIFIED where only structural or unit-test evidence exists.** Where a document says "PASS (structural)" or "PASS (unit-tested)" without "LIVE VERIFIED," read it as exactly that — real, but not yet exercised against a live, deployed, authenticated system.
+
+**[FASE 0 FREEZE — 2026-09-21]**: this package also never claims a role/relationship/licensing/authorization flow, or the exam-taking experience, is functionally certified merely because its underlying database schema, migration, or unit tests are `LIVE VERIFIED`/`TESTED`. `LIVE VERIFIED` on a schema/data-existence check means exactly that check, not the user-facing flow built on top of it. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` for the current frozen acceptance state of every such flow, triggered by a manual exam-taking test that found the seeded Pilot catalog does not produce a usable exam.
 
 ## Document index
 

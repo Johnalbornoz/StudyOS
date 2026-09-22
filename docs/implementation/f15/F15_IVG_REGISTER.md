@@ -62,6 +62,7 @@ Three items closed with real, independently-verified evidence this sub-phase: `I
 | IVG-F15-11 | OPEN | Paging/alerting/incident-communication tooling — none exists |
 | IVG-F15-12 | OPEN | Dedicated feature-flag/kill-switch set beyond the existing `AI_ENABLED` |
 | IVG-F15-13 | OPEN | A dedicated `/api/health` route — none exists |
+| IVG-F15-14 (NEW, FASE 0 FREEZE, 2026-09-21) | OPEN — HARD PILOT GATE | The seeded Pilot exam catalog does not produce a usable exam attempt (`MINI_MOCK`, `CONCEPT_NOT_MATCHED`, skip-only) — see R13 in `F15_RESIDUAL_RISK_REGISTER.md` and `F15_PHASE0_ACCEPTANCE_FREEZE.md`. Closure requires real academic-content/blueprint-coverage work, not a code fix |
 
 ## Totals (updated F15-C1, 2026-09-20)
 
@@ -79,3 +80,5 @@ Closed this sub-phase (F15-C1):                    3   (IVG-F7-01, IVG-F12-02, I
 ## Hard Pilot gates among the OPEN items (updated F15-C1, 2026-09-20)
 
 `IVG-F15-02` (Preview auth misconfiguration) is now **RESOLVED** and is no longer a hard gate. `IVG-F14-06`/`IVG-F15-01` (unrotated exposed credentials) remains the **sole hard Pilot gate** — severe enough on its own to keep a PASS_TO_PILOT recommendation at NO regardless of how well everything else scored, until the operator verifies rotation. See F15_RESIDUAL_RISK_REGISTER.md and the Final Decision.
+
+**[FASE 0 FREEZE — 2026-09-21]**: "sole hard Pilot gate" above is retracted (kept, not deleted, as the honest record of belief at the time — 2026-09-20). `IVG-F15-14` (new, this date) is a second, independent hard Pilot gate: the seeded exam catalog does not produce a usable exam. Totals above (37 total, 24 open/deferred) are now 38 total / 25 open, reflecting the one new item; no other totals-row category changes. Full reconciliation: `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.

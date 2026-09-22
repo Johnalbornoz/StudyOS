@@ -9,6 +9,8 @@ Both blockers this document originally reported are now resolved, independently 
 
 What remains open: full authenticated E2E (no longer blocked by Clerk — now blocked only by needing an operator-assisted login session, since this agent cannot enter credentials itself) and credential rotation (`IVG-F14-06`/`IVG-F15-01`, unrelated to Clerk, still `OPERATOR_ACTION_REQUIRED`).
 
+**[FASE 0 FREEZE — 2026-09-21]**: "blocked only by needing an operator-assisted login session" is retracted for the exam-taking leg specifically — that leg was executed and failed on content (see `F15_PHASE0_ACCEPTANCE_FREEZE.md`, `IVG-F15-14`). The Clerk-configuration finding itself (this document's own subject) is unaffected and remains resolved as documented.
+
 ## Status: A REAL PREVIEW WAS ESTABLISHED — a genuine change from F12/F13/F14's own DEFERRED status
 
 ## What was found (corrects F12/F13/F14's own repeated claim of "no Vercel CLI/.vercel linkage available")

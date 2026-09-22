@@ -72,3 +72,5 @@ unchanged.
 starting a supported practice mode) that this closes the blocker end to end —
 this is the next step in the authenticated E2E session, not yet performed.
 This blocker is **not** declared closed until that live UI confirmation lands.
+
+**[FASE 0 FREEZE — 2026-09-21]**: this confirmation was attempted. It did **not** close the blocker — it surfaced a new, more specific one. The profile/exam were discoverable and an attempt could be started (`MINI_MOCK`), but the attempt itself returned only 1 question with no matched concept and no usable content, only a skip action. This section's own "not declared closed until" discipline is honored here: the blocker remains open, now with a precise root cause (single-concept catalog, not a code defect) rather than an unperformed check. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.

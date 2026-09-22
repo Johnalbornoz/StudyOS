@@ -6,7 +6,7 @@
 
 | ID | Description | Current state | Evidence |
 |---|---|---|---|
-| R1 / `IVG-F14-06` / `IVG-F15-01` | 5 credentials in a local, never-committed `.env.local` remain un-rotated | **OPEN — `OPERATOR_ACTION_REQUIRED` — sole remaining hard gate** | [08_SECURITY_AND_PRIVACY.md](08_SECURITY_AND_PRIVACY.md) |
+| R1 / `IVG-F14-06` / `IVG-F15-01` | 5 credentials in a local, never-committed `.env.local` remain un-rotated | **OPEN — `OPERATOR_ACTION_REQUIRED`** — **[FASE 0 FREEZE, 2026-09-21]: "sole remaining hard gate" is retracted, not merely re-worded.** A manual exam-flow test the same day showed the seeded exam catalog fails to produce a usable exam (`MINI_MOCK`, 1 question, "no equivalent concept found", skip-only) — a second, independent Pilot blocker that exists regardless of credential rotation. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` for the full reconciliation and the newly-frozen `NOT_CERTIFIED` states for roles/student-license/parent/teacher/institution/multi-role. | [08_SECURITY_AND_PRIVACY.md](08_SECURITY_AND_PRIVACY.md) |
 
 ## Resolved (superseded historical findings — preserved, not deleted)
 

@@ -4,12 +4,14 @@ Step-by-step operator runbook to actually run the pilot, once the remaining gate
 
 ## Pre-flight checklist (must all be true before inviting real pilot users)
 
-- [ ] Credential rotation complete and verified (see [08_SECURITY_AND_PRIVACY.md](08_SECURITY_AND_PRIVACY.md)) — **currently OPEN, the sole remaining hard gate**.
+- [ ] Credential rotation complete and verified (see [08_SECURITY_AND_PRIVACY.md](08_SECURITY_AND_PRIVACY.md)) — **currently OPEN, a hard gate** (see 2026-09-21 freeze note below: no longer described as "the sole" one).
 - [x] Preview Clerk correctly resolves to StudyOS_App — **LIVE VERIFIED**.
 - [x] Preview database fully migrated (32/32) and identity-integrity-verified — **LIVE VERIFIED**.
 - [x] `/api/health` live — **LIVE VERIFIED**.
-- [x] Pilot exam catalog exists (2026-09-21: was completely empty, closed via an operator-authorized seed) — **LIVE VERIFIED** (data-level; UI click-through pending in the E2E matrix below).
-- [ ] Full authenticated E2E matrix executed — **in progress, blocked on operator-assisted login** (this section documents the exact protocol).
+- [ ] Pilot exam catalog is a usable exam experience — **FAILED, 2026-09-21** (was: "LIVE VERIFIED (data-level; UI click-through pending)"; the click-through has now been performed and failed — see freeze note below).
+- [ ] Full authenticated E2E matrix executed — **in progress, blocked on operator-assisted login for most flows; the exam-taking flow was executed and revealed a failure, not merely a pending confirmation** (this section documents the exact protocol).
+
+**[FASE 0 FREEZE — 2026-09-21]** Este runbook queda congelado para inicio de Pilot real (no para preparación interna). Evidencia manual: intento de simulacro `MINI_MOCK`, pregunta 1 de 1, "Todavía no se encontró un concepto equivalente para ti", única acción "Omitir esta parte" — no permite diagnóstico, puntuación útil, brechas ni recomendaciones. El seed técnico (idempotente, conteos correctos) sigue siendo válido tal como está documentado; lo que cambia es que "pendiente de click-through" pasa a ser "click-through ejecutado y falló". Ningún pilot cohort real debe invitarse mientras este ítem no pase de `FAILED` a un estado verificado. Detalle completo, matriz de estados y orden de validación posterior: `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.
 - [ ] Pilot cohort restricted to `UNTIMED` exam attempts only (timed modes not yet built).
 - [ ] Institution admins onboarded with operator assistance (no curriculum/exam-version picker UI yet).
 

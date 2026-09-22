@@ -127,6 +127,8 @@ flowchart LR
 Also added `/api/health` (closing `IVG-F15-13`) and triaged the remaining 15-item technical-debt backlog (`docs/implementation/f15/F15_TECHNICAL_DEBT_TRIAGE.md`).
 
 **Result**: the sole remaining hard gate is credential rotation (`IVG-F14-06`/`IVG-F15-01`), still `OPEN`/`OPERATOR_ACTION_REQUIRED`. Authenticated E2E execution was in progress at the time this package was written — see [13_PILOT_RUNBOOK.md](13_PILOT_RUNBOOK.md) and the live-updated final call in [16_TRACEABILITY_MATRIX.md](16_TRACEABILITY_MATRIX.md).
+
+**[FASE 0 FREEZE — 2026-09-21]**: "the sole remaining hard gate" is retracted as a description of the current state, not deleted from the record — at the time this was written it was an honest statement given the evidence then available. Evidence since gathered (a manual exam-taking attempt) shows the exam-taking flow fails independently of credential rotation, and role/parent/teacher/institution flows remain unverified E2E. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`.
 **Docs**: `docs/implementation/f15/` (F15-C1 addenda are inline in the same files, clearly dated and separated from the original F15 text) and this `docs/final/` package.
 
 ## Cross-phase invariants that held throughout (verified, not assumed)

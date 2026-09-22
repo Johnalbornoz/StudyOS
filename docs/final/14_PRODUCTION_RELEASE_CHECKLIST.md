@@ -27,6 +27,8 @@ Production requires a materially higher bar than Pilot. This checklist is intent
 - Full automated test suite and dependency security — both currently clean.
 - Support/incident/rollback/data-strategy model — documented, though not yet exercised on a real incident at Production scale.
 
+**[FASE 0 FREEZE — 2026-09-21]**: "Architecture and identity/authorization model — real, tested, negative-case-covered" (first bullet above) is retained as written — the unit/real-Postgres test coverage described is genuine — but must not be read as "functionally E2E-verified for a real user in each role." A manual test the same day showed the exam-taking flow, despite passing its own unit tests and having a technically valid seed, is not academically usable end-to-end. Role selection, student licensing, parent invitation, teacher approval, and institution/coordinator flows have the same gap: real code and tests, no confirmed E2E. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` for the frozen state of each. This list is not retracted, only scoped: it describes what exists and is tested, not what has been observed working for a real end user.
+
 ## GO/NO-GO decision rule for Production
 
 Production readiness requires **every** row in the gate table above to close, plus everything required for Pilot. This package does not shortcut that by treating "Pilot-ready" as "mostly Production-ready" — the two are evaluated independently, per this program's own standing separation of Pilot and Production bars (see every phase's own Final Report, which has never once flipped `READY FOR PRODUCTION` to YES).

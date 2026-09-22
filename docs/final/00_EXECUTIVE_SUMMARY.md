@@ -36,6 +36,12 @@ READY FOR PRODUCTION RELEASE PROCESS:  YES
 
 **Why YES for entering the Production release process**: the architecture, operational model (support/incident/rollback/data strategy), and engineering discipline (every phase gated on real, re-run regressions; no fabricated certification anywhere in this program's history) are sufficient to begin that process once the items above close — this is a statement about process-readiness, not about Production readiness itself.
 
+**[FASE 0 FREEZE — 2026-09-21]** Congelamiento de aceptación, sin cambios de código, datos, Preview ni Production. Ver `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md` para la reconciliación completa. Resumen:
+
+1. **"one hard gate remains open... only by the need for a human to perform the actual login"** (arriba) se congela: es cierto para el gate de credenciales, pero deja de ser cierto que el login del operador sea el único trabajo pendiente de E2E. Una evidencia manual (2026-09-21) ya ejecutó parte de ese E2E — el simulacro de examen — y **reveló una falla real** (`MINI_MOCK`, 1 pregunta, "no se encontró concepto equivalente", única acción "Omitir"), no una simple confirmación pendiente. Identidad/roles, padre, profesor e institución tampoco tienen evidencia E2E completa todavía; ninguno de los dos es solo cuestión de que el operador inicie sesión.
+2. **`READY FOR PRODUCTION RELEASE PROCESS: YES`** se congela mientras dure esta fase — no se revoca sin una decisión explícita posterior, pero tampoco debe citarse como habilitación vigente hasta que el orden de validación de la Fase 0 (identidad → estudiante/licencia → padre → profesor → institución → exámenes 360 → seguridad cruzada → UX → documentación) cierre.
+3. Estado correcto ahora mismo: `Pilot readiness: BLOCKED`, `Production readiness: BLOCKED`, `Exámenes 360: FAILED — ACADEMIC CONTENT / BLUEPRINT INCOMPLETE`, y los flujos de rol/padre/profesor/institución/multirrol en `NOT_CERTIFIED` (evidencia insuficiente, no necesariamente rotos).
+
 ## What changed most recently (F15-C1, 2026-09-20)
 
 Two of F15's three hard gates closed, both independently re-verified rather than taken on report alone:

@@ -70,8 +70,9 @@ Every domain has its own `*-source-guard.test.ts` (e.g. `f12-institution-intelli
 | Preview Clerk resolves to the correct application | Real browser load of `/sign-in`, 3 separate deployments | **LIVE VERIFIED** |
 | Preview database migration state | Real query via temporary diagnostic route, twice (before/after repair) | **LIVE VERIFIED** |
 | `/api/health` | Real `curl` against live Preview | **LIVE VERIFIED** |
-| Pilot exam catalog exists (post-seed) | Real query via the Preview DB diagnostic route, before and after `--write`, twice | **LIVE VERIFIED** — `activeExamDefinitionCount`/`publishedExamVersionCount`/`publishedBlueprintCount` all 1, exam discoverable by name |
-| Authenticated flows (Student/Teacher/Parent/Institution/multi-role) | — | **BLOCKED pending operator-assisted login** |
+| Pilot exam catalog exists (post-seed) — **row existence only, not exam usability** | Real query via the Preview DB diagnostic route, before and after `--write`, twice | **LIVE VERIFIED** — `activeExamDefinitionCount`/`publishedExamVersionCount`/`publishedBlueprintCount` all 1, exam discoverable by name |
+| Pilot exam catalog is actually answerable/usable (item-by-item) | Real manual attempt, `MINI_MOCK` mode | **[FASE 0 FREEZE, 2026-09-21] FAILED** — question 1 of 1 returned "no se encontró un concepto equivalente para ti", only action "Omitir esta parte"; no diagnosis, score, gap analysis, or recommendation possible. Row existence above must not be read as this. See `docs/implementation/f15/F15_PHASE0_ACCEPTANCE_FREEZE.md`. |
+| Authenticated flows (Student/Teacher/Parent/Institution/multi-role) | — | **BLOCKED pending operator-assisted login** — **[FASE 0 FREEZE]: these are also frozen to `NOT_CERTIFIED`, not merely "blocked," since none has been observed end-to-end even structurally.** |
 | Responsive design, unauthenticated pages | 3 widths, live | **LIVE VERIFIED (unauthenticated only)** |
 | Responsive design, authenticated pages | — | **DEFERRED**, rolls into the E2E session |
 | Accessibility (`aria-live` fix) | Code review + one live structural check | **PASS (code-level); DEFERRED (real assistive-technology confirmation)** |
