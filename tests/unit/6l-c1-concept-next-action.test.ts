@@ -78,8 +78,13 @@ describe('no raw orchestration internals ever reach the learner (Part 4)', () =>
   });
 
   it('every render of the decision goes through the certified activityLabel/activityCta mappers', () => {
-    expect(component).toMatch(/activityLabel\(now\.activityType, t\)/);
-    expect(component).toMatch(/activityCta\(now\.activityType, t\)/);
+    // The Mission delegates the NOW block to the pure presenter, which renders
+    // the decision's ActivityType only through the certified mappers (with
+    // non-empty fallbacks -- the LEARN_CHECK empty-CTA regression).
+    const presenter = read('src/lib/lx/now-presentation.ts');
+    expect(component).toMatch(/resolveNowPresentation\(now, t\)/);
+    expect(presenter).toMatch(/activityLabel\(now\.activityType, t\)/);
+    expect(presenter).toMatch(/activityCta\(now\.activityType, t\)/);
   });
 });
 
@@ -105,13 +110,15 @@ describe('canonical launch routing (Part 6/7) -- StartSessionButton is the only 
 
   it('imports and renders StartSessionButton for the next-action CTA, scoped to this concept', () => {
     expect(component).toMatch(/import StartSessionButton from '@\/app\/dashboard\/StartSessionButton'/);
-    expect(component).toMatch(/<StartSessionButton[\s\S]{0,400}actionConceptId=\{now\.actionConceptId\}/);
+    // the concept id is the decision's own, passed through verbatim by the presenter (validated, never rebuilt)
+    expect(component).toMatch(/<StartSessionButton[\s\S]{0,400}actionConceptId=\{presentation\.actionConceptId\}/);
+    expect(read('src/lib/lx/now-presentation.ts')).toMatch(/actionConceptId: now\.actionConceptId/);
   });
 
   it('never hardcodes a remediation route, a quiz mode URL, or any manual href built from the decision', () => {
     // the CANONICAL_ACTION branch (up to the NO_CANONICAL_ACTION comment)
     const canonicalBranch = component.slice(
-      component.indexOf("now.kind === 'CANONICAL_ACTION'"),
+      component.indexOf("presentation.kind === 'ACTION'"),
       component.indexOf('// NO_CANONICAL_ACTION'),
     );
     expect(canonicalBranch.length).toBeGreaterThan(0);

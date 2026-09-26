@@ -21,8 +21,7 @@ import type {
   ConceptMissionView,
   ConceptMissionMilestone,
 } from '@/lib/lx/concept-mission';
-import { activityLabel } from '@/app/dashboard/activityLabel';
-import { activityCta } from '@/app/dashboard/activityCta';
+import { resolveNowPresentation } from '@/lib/lx/now-presentation';
 import WhyThisV3 from '@/app/dashboard/WhyThisV3';
 import StartSessionButton from '@/app/dashboard/StartSessionButton';
 import ConceptExplanationDisclosure from './ConceptExplanationDisclosure';
@@ -115,8 +114,9 @@ function NowCard({
   t: T;
 }) {
   const { now, learn } = view;
+  const presentation = resolveNowPresentation(now, t);
 
-  if (now.kind === 'CANONICAL_ACTION' && now.activityType && now.actionConceptId) {
+  if (presentation.kind === 'ACTION') {
     return (
       <section
         aria-labelledby="cm-now-title"
@@ -124,14 +124,17 @@ function NowCard({
         style={{ marginBottom: 'var(--space-6)', borderColor: 'var(--brand)', borderWidth: 2, display: 'flex', flexDirection: 'column', gap: 4 }}
       >
         <h2 id="cm-now-title" className="label" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t['conceptMission.nowTitle']}</h2>
-        <div style={{ fontSize: 18, fontWeight: 650 }}>{activityLabel(now.activityType, t)}</div>
+        <div style={{ fontSize: 18, fontWeight: 650 }}>{presentation.title}</div>
         {now.facts.length > 0 && <WhyThisV3 facts={now.facts} t={t} />}
+        {presentation.why && (
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '2px 0 0' }}>{presentation.why}</p>
+        )}
         <div style={{ marginTop: 'var(--space-3)' }}>
           <StartSessionButton
             studentId={studentId}
-            actionConceptId={now.actionConceptId}
-            label={activityCta(now.activityType, t)}
-            accessibleLabel={`${activityCta(now.activityType, t)}: ${activityLabel(now.activityType, t)}`}
+            actionConceptId={presentation.actionConceptId}
+            label={presentation.ctaLabel}
+            accessibleLabel={presentation.accessibleLabel}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
             variant="primary"
@@ -142,18 +145,19 @@ function NowCard({
   }
 
   // NO_CANONICAL_ACTION
-  const consolidated = now.fallback === 'CONSOLIDATED_NO_ACTION';
+  const fallback = presentation.fallback;
+  const consolidated = fallback === 'CONSOLIDATED_NO_ACTION';
   // LX-9R3-R1 W1/W2: RETAIN stage, but the canonical review isn't due
   // yet -- no actionable CTA (never "Comprobar que todavía lo recuerdas"
   // on a check that cannot qualify), only an honest waiting explanation.
   // `now.nextEligibleReviewAt` is passed through verbatim from the
   // canonical read boundary -- never computed here.
-  const retentionWaiting = now.fallback === 'RETENTION_WAITING';
+  const retentionWaiting = fallback === 'RETENTION_WAITING';
   // LX-9R8 PART A1/A7: a canonical PRACTICE/REVIEW decision whose
   // evidence gap was already 0 -- never a distinct "error," just a
   // calm "nothing more needed here right now," same tone as
   // CONSOLIDATED but without implying the whole concept is finished.
-  const zeroGapMismatch = now.fallback === 'ZERO_GAP_MISMATCH';
+  const zeroGapMismatch = fallback === 'ZERO_GAP_MISMATCH';
   const retentionWaitingBody = now.nextEligibleReviewAt
     ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
         '{date}',

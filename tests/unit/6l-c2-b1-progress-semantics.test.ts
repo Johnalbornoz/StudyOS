@@ -310,7 +310,9 @@ describe('Step 28 / 6L-B1 / 6L-C1 / policy protection (Parts 15-18)', () => {
     expect(component).toMatch(/<WhyThisV3 facts=\{now\.facts\} t=\{t\} \/>/);
     expect(component).toMatch(/<StartSessionButton/);
     // the component renders the ActivityType it is handed -- it never selects one
-    expect(component).toMatch(/activityLabel\(now\.activityType, t\)/);
+    // (via the pure NOW presenter, which only maps it through the certified mappers)
+    expect(component).toMatch(/resolveNowPresentation\(now, t\)/);
+    expect(read('src/lib/lx/now-presentation.ts')).toMatch(/activityLabel\(now\.activityType, t\)/);
     expect(component).not.toMatch(/selectActivityType|chooseActivity/);
   });
 
