@@ -6,6 +6,7 @@ import { SITE_URL, buildLanguageAlternates, pickLocaleFromAcceptLanguage } from 
 import { getOrCreateStudentId } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { resolveFirstDestination } from '@/lib/lx/first-destination';
+import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
 
 export const metadata: Metadata = {
   alternates: {
@@ -17,6 +18,11 @@ export const metadata: Metadata = {
 export default async function Home() {
   const { userId } = await auth();
   if (userId) {
+    // A01-LOGIC-03: decide the workspace BEFORE provisioning anything --
+    // only the Student workspace may create a students row here.
+    const entry = await resolveWorkspaceEntry(userId);
+    if (entry.kind === 'REDIRECT') redirect(entry.to);
+
     // LX-2C: deterministic first destination -- a learner with product
     // setup goes to "what should I do now" (Today), never straight onto
     // the KPI-heavy Progress page; a learner with no subject yet goes to

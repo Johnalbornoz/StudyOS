@@ -1,5 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
 import { query } from '@/lib/db';
 import { BookOpen, CheckCircle2, Trophy } from 'lucide-react';
 import { getSubjectAccentColor } from '@/lib/subject-color';
@@ -35,6 +37,11 @@ export default async function DashboardPage() {
       </div>
     );
   }
+
+  // A01-LOGIC-03: a non-Student workspace (e.g. an admin-only account) is
+  // sent to its own home before any Student data is provisioned.
+  const entry = await resolveWorkspaceEntry(clerkUserId);
+  if (entry.kind === 'REDIRECT') redirect(entry.to);
 
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);

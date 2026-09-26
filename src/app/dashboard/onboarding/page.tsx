@@ -6,6 +6,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { onboardingRouteRedirect } from '@/lib/lx/first-destination';
+import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
 
 /**
  * LX-2D -- first-time onboarding. A short, progressive introduction --
@@ -27,6 +28,11 @@ export default async function OnboardingPage() {
       </div>
     );
   }
+
+  // A01-LOGIC-03: a non-Student workspace (e.g. an admin-only account) is
+  // sent to its own home before any Student data is provisioned.
+  const entry = await resolveWorkspaceEntry(clerkUserId);
+  if (entry.kind === 'REDIRECT') redirect(entry.to);
 
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
