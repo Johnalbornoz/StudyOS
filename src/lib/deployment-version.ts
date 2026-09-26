@@ -27,6 +27,12 @@ export interface DeploymentVersion {
   environment: DeploymentEnvironment;
   /** Best-effort build/commit timestamp (ISO), or null when unavailable. Never fabricated. */
   buildTime: string | null;
+  /** Git branch the deployment was built from, or null when unknown. */
+  commitRef: string | null;
+  /** Raw Vercel deployment target (e.g. production, preview, or a custom environment slug such as `dev`). */
+  deploymentTarget: string | null;
+  /** Vercel deployment id -- the unique build identifier of this runtime. */
+  deploymentId: string | null;
 }
 
 function normalizeEnvironment(value: string | undefined): DeploymentEnvironment {
@@ -38,17 +44,42 @@ function nonEmpty(value: string | undefined): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+/** Custom Vercel environment slugs that are StudyOS hosted Development. */
+const DEVELOPMENT_TARGETS = new Set(['dev', 'development']);
+
+/**
+ * Environment identity, most explicit first:
+ *   1. STUDYUS_ENV -- set per environment in hosting config, never inferred;
+ *   2. VERCEL_TARGET_ENV -- distinguishes a custom `dev` environment, which
+ *      Vercel otherwise reports as VERCEL_ENV=preview;
+ *   3. VERCEL_ENV.
+ */
+function resolveEnvironment(env: Record<string, string | undefined>): DeploymentEnvironment {
+  const explicit = env.STUDYUS_ENV;
+  if (explicit === 'production' || explicit === 'preview' || explicit === 'development') return explicit;
+  const target = env.VERCEL_TARGET_ENV;
+  if (target === 'production' || target === 'preview') return target;
+  if (target && DEVELOPMENT_TARGETS.has(target)) return 'development';
+  return normalizeEnvironment(env.VERCEL_ENV);
+}
+
 /**
  * Build the version payload from an env bag. Reads ONLY these keys:
  *   - VERCEL_GIT_COMMIT_SHA  (documented, non-sensitive)
- *   - VERCEL_ENV             (documented, non-sensitive: production|preview|development)
+ *   - STUDYUS_COMMIT_SHA     (non-sensitive fallback for CLI deployments, which carry no git env)
+ *   - VERCEL_GIT_COMMIT_REF  (documented, non-sensitive: branch name)
+ *   - STUDYUS_ENV / VERCEL_TARGET_ENV / VERCEL_ENV (non-sensitive environment identity)
+ *   - VERCEL_DEPLOYMENT_ID   (documented, non-sensitive)
  *   - VERCEL_GIT_COMMIT_AUTHOR_DATE (documented, non-sensitive) -- optional buildTime source
  * No other key is ever read, so no other value can ever be exposed.
  */
 export function buildDeploymentVersion(env: Record<string, string | undefined>): DeploymentVersion {
   return {
-    commitSha: nonEmpty(env.VERCEL_GIT_COMMIT_SHA),
-    environment: normalizeEnvironment(env.VERCEL_ENV),
+    commitSha: nonEmpty(env.VERCEL_GIT_COMMIT_SHA) ?? nonEmpty(env.STUDYUS_COMMIT_SHA),
+    environment: resolveEnvironment(env),
     buildTime: nonEmpty(env.VERCEL_GIT_COMMIT_AUTHOR_DATE),
+    commitRef: nonEmpty(env.VERCEL_GIT_COMMIT_REF),
+    deploymentTarget: nonEmpty(env.VERCEL_TARGET_ENV),
+    deploymentId: nonEmpty(env.VERCEL_DEPLOYMENT_ID),
   };
 }

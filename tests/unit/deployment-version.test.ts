@@ -10,10 +10,10 @@ import { buildDeploymentVersion, type DeploymentVersion } from '@/lib/deployment
  * correct and closed proves the endpoint is.
  */
 
-const ALLOWED_KEYS = ['commitSha', 'environment', 'buildTime'].sort();
+const ALLOWED_KEYS = ['commitSha', 'environment', 'buildTime', 'commitRef', 'deploymentTarget', 'deploymentId'].sort();
 
 describe('buildDeploymentVersion', () => {
-  it('A. returns ONLY the three allowed fields, nothing else', () => {
+  it('A. returns ONLY the allowed fields, nothing else', () => {
     const out = buildDeploymentVersion({
       VERCEL_GIT_COMMIT_SHA: 'abc123',
       VERCEL_ENV: 'production',
@@ -32,6 +32,9 @@ describe('buildDeploymentVersion', () => {
       commitSha: 'ff904948c3a19ee355eeda62f2721af4639af099',
       environment: 'production',
       buildTime: '2026-09-05T19:08:48.000Z',
+      commitRef: null,
+      deploymentTarget: null,
+      deploymentId: null,
     });
   });
 
@@ -62,11 +65,40 @@ describe('buildDeploymentVersion', () => {
 
   it('D. handles an absent commit SHA (and absent buildTime) safely -- null, never undefined, never a throw', () => {
     const out = buildDeploymentVersion({ VERCEL_ENV: 'development' });
-    expect(out).toEqual<DeploymentVersion>({ commitSha: null, environment: 'development', buildTime: null });
+    expect(out).toEqual<DeploymentVersion>({
+      commitSha: null, environment: 'development', buildTime: null, commitRef: null, deploymentTarget: null, deploymentId: null,
+    });
     // empty string is treated as absent, not echoed back
     const out2 = buildDeploymentVersion({ VERCEL_GIT_COMMIT_SHA: '', VERCEL_GIT_COMMIT_AUTHOR_DATE: '' });
     expect(out2.commitSha).toBeNull();
     expect(out2.buildTime).toBeNull();
+  });
+
+  it('F. hosted DEV (custom `dev` target, which Vercel reports as VERCEL_ENV=preview) identifies as development', () => {
+    const out = buildDeploymentVersion({
+      VERCEL_ENV: 'preview',
+      VERCEL_TARGET_ENV: 'dev',
+      VERCEL_GIT_COMMIT_SHA: '934d531560e9608e2a3a8f294536945f3759fffd',
+      VERCEL_GIT_COMMIT_REF: 'develop',
+      VERCEL_DEPLOYMENT_ID: 'dpl_abc',
+    });
+    expect(out.environment).toBe('development');
+    expect(out.deploymentTarget).toBe('dev');
+    expect(out.commitRef).toBe('develop');
+    expect(out.deploymentId).toBe('dpl_abc');
+  });
+
+  it('G. STUDYUS_ENV is the most explicit identity and wins over Vercel inference; invalid values are ignored', () => {
+    expect(buildDeploymentVersion({ STUDYUS_ENV: 'development', VERCEL_ENV: 'preview' }).environment).toBe('development');
+    expect(buildDeploymentVersion({ STUDYUS_ENV: 'bogus', VERCEL_ENV: 'preview' }).environment).toBe('preview');
+    expect(buildDeploymentVersion({ VERCEL_TARGET_ENV: 'production', VERCEL_ENV: 'production' }).environment).toBe('production');
+    expect(buildDeploymentVersion({ VERCEL_TARGET_ENV: 'preview', VERCEL_ENV: 'preview' }).environment).toBe('preview');
+  });
+
+  it('H. CLI deployments (no git env) report STUDYUS_COMMIT_SHA; the git SHA always wins when both exist', () => {
+    expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: 'cli-sha' }).commitSha).toBe('cli-sha');
+    expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: 'cli-sha', VERCEL_GIT_COMMIT_SHA: 'git-sha' }).commitSha).toBe('git-sha');
+    expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: '' }).commitSha).toBeNull();
   });
 
   it('E. is pure -- no DB/network/AI import in the module, no process.env read of its own', async () => {
