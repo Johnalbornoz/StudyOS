@@ -113,7 +113,9 @@ export default function AcademicProfileWizard({
     (step === 'curriculum' && !!curriculum) ||
     (step === 'ibProgramme' && !!ibProgramme) ||
     (step === 'ibYear' && !!ibYear) ||
-    (step === 'academicYear' && true);
+    // Required: the Student onboarding gate treats a profile without an
+    // academic year as incomplete (src/lib/student/onboarding-gate.ts).
+    (step === 'academicYear' && academicYear.trim().length > 0);
 
   const stepNumber = stepIndex + 1;
   const totalSteps = steps.length - 1; // exclude "done" from the count shown to the user
@@ -214,6 +216,11 @@ export default function AcademicProfileWizard({
         <div style={{ textAlign: 'center', padding: 'var(--space-4) 0' }}>
           <h2 style={{ marginBottom: 'var(--space-2)' }}>{t['profile.completedTitle']}</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>{t['profile.completedBody']}</p>
+          {/* Next onboarding step (first subject) or the workspace -- the
+              Student onboarding gate decides where /dashboard leads. */}
+          <a href="/dashboard" className="btn btn-primary" style={{ display: 'inline-block', marginTop: 'var(--space-4)' }}>
+            {t['profile.continue']}
+          </a>
         </div>
       )}
 
@@ -223,7 +230,7 @@ export default function AcademicProfileWizard({
             {t['profile.back']}
           </button>
           {step === 'academicYear' ? (
-            <button className="btn btn-primary" onClick={finish} disabled={saving}>
+            <button className="btn btn-primary" onClick={finish} disabled={!canContinue || saving}>
               {t['profile.finish']}
             </button>
           ) : (
