@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ADMIN_SECTIONS, type AdminSection } from '@/lib/admin/sections';
 
 /**
  * Professional Admin Console -- the differentiated navigation the
@@ -10,18 +11,7 @@ import Link from 'next/link';
  * its own persistent header band so the console reads as its own
  * place, not a page bolted onto the student dashboard.
  */
-export type AdminSection = 'overview' | 'users' | 'invitations' | 'requests' | 'institutions' | 'memberships' | 'test-accounts' | 'audit';
-
-const ITEMS: Array<{ key: AdminSection; href: string; label: string }> = [
-  { key: 'overview', href: '/dashboard/admin/overview', label: 'Resumen' },
-  { key: 'users', href: '/dashboard/admin/users', label: 'Usuarios' },
-  { key: 'invitations', href: '/dashboard/admin/invitations', label: 'Invitaciones' },
-  { key: 'requests', href: '/dashboard/admin/requests', label: 'Solicitudes pendientes' },
-  { key: 'institutions', href: '/dashboard/admin/institutions', label: 'Instituciones' },
-  { key: 'memberships', href: '/dashboard/admin/memberships', label: 'Membresías y pagos' },
-  { key: 'test-accounts', href: '/dashboard/admin/test-accounts', label: 'Cuentas de prueba' },
-  { key: 'audit', href: '/dashboard/admin/audit', label: 'Auditoría' },
-];
+export type { AdminSection };
 
 export function AdminSubNav({ active }: { active: AdminSection }) {
   return (
@@ -51,7 +41,7 @@ export function AdminSubNav({ active }: { active: AdminSection }) {
           paddingBottom: 0,
         }}
       >
-        {ITEMS.map((item) => (
+        {ADMIN_SECTIONS.map((item) => (
           <Link
             key={item.key}
             href={item.href}

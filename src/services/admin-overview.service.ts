@@ -28,9 +28,11 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     testAccounts,
     pendingTeacherRequests,
   ] = await Promise.all([
-    db.query(`SELECT status, COUNT(*)::int AS c FROM users GROUP BY status`),
-    db.query(`SELECT role, COUNT(*)::int AS c FROM user_roles WHERE status = 'ACTIVE' GROUP BY role`),
-    db.query(`SELECT COUNT(*)::int AS c FROM users WHERE is_test = true`),
+    // Technical identities (`is_system`) are not people -- excluded from every human count.
+    db.query(`SELECT status, COUNT(*)::int AS c FROM users WHERE NOT is_system GROUP BY status`),
+    db.query(`SELECT ur.role, COUNT(*)::int AS c FROM user_roles ur JOIN users u ON u.id = ur.user_id
+              WHERE ur.status = 'ACTIVE' AND NOT u.is_system GROUP BY ur.role`),
+    db.query(`SELECT COUNT(*)::int AS c FROM users WHERE is_test = true AND NOT is_system`),
     db.query(`SELECT COUNT(*)::int AS c FROM institution_memberships WHERE membership_role = 'TEACHER' AND status = 'PENDING'`),
   ]);
 

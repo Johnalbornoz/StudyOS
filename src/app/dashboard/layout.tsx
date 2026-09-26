@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { currentUser } from '@clerk/nextjs/server';
 import { auth } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/services/admin.service';
@@ -14,7 +15,9 @@ import LicenseBanner from './LicenseBanner';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { buildLearnerNav } from '@/lib/lx/learner-navigation';
-import { buildParentNav, buildTeacherNav, buildInstitutionNav } from '@/lib/lx/workspace-navigation';
+import { buildParentNav, buildTeacherNav, buildInstitutionNav, buildAdminNav } from '@/lib/lx/workspace-navigation';
+import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
+import { PATHNAME_HEADER, resolveShellContext } from '@/lib/admin/shell-context';
 import LanguageSwitcher from './LanguageSwitcher';
 import LearnerShell, { type ResolvedNavGroup } from './LearnerShell';
 import WorkspaceSwitcher, { type WorkspaceOption } from './WorkspaceSwitcher';
@@ -83,6 +86,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       redirect('/account/change-password');
     }
 
+    // A01-UX-02: the allowlisted Platform Admin holds STUDYUS_ADMIN before
+    // workspaces are resolved, so an admin-only account reaches the
+    // console directly instead of being sent to role selection (and
+    // having to become a Student first). No-op for every other account.
+    await bootstrapStudyUSAdminIfEligible(canonicalUser, email);
+
     const [available, storedActive] = await Promise.all([
       resolveAvailableWorkspaces(canonicalUser.id),
       getActiveWorkspace(canonicalUser.id),
@@ -103,9 +112,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     availableWorkspaces = available;
-    activeWorkspace = (storedActive && availableWorkspaces.includes(storedActive) ? storedActive : null)
-      ?? (await resolveDefaultWorkspace(canonicalUser.id))
-      ?? availableWorkspaces[0];
+    // A01-UX-02/A01-LOGIC-01: the route decides the presented context
+    // under /dashboard/admin/** (Administration, never "Student"); the
+    // stored preference is left untouched for multi-role accounts.
+    const pathname = (await headers()).get(PATHNAME_HEADER);
+    const context = resolveShellContext({
+      pathname,
+      available,
+      stored: storedActive,
+      defaultWorkspace: await resolveDefaultWorkspace(canonicalUser.id),
+    });
+    if (context.redirectTo) {
+      redirect(context.redirectTo);
+    }
+    activeWorkspace = context.workspace;
 
     if (activeWorkspace === 'STUDENT') {
       const studentId = await getOrCreateStudentId(clerkUserId);
@@ -146,7 +166,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const t = getMessages(locale);
-  const displayName = user?.firstName || 'Student';
+  const displayName = user?.firstName || (activeWorkspace === 'ADMIN' ? t['workspace.admin'] : 'Student');
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
   const isAdmin = isAdminEmail(email);
 
@@ -154,10 +174,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     activeWorkspace === 'PARENT' ? buildParentNav()
     : activeWorkspace === 'TEACHER' ? buildTeacherNav()
     : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav()
-    // ADMIN and the STUDENT default both currently render the Student
-    // shell's own nav (ADMIN's console link already lives inside it,
-    // gated by isAdminEmail exactly as before F13) -- a dedicated Admin
-    // nav group set is deferred (see F13_NEXT_PHASE_HANDOFF.md).
+    : activeWorkspace === 'ADMIN' ? buildAdminNav()
     : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
 
   // LX-2E: navigation organised around learner intent
@@ -169,7 +186,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     items: g.items.map((i) => ({
       key: i.key,
       href: i.href,
-      label: t[i.labelKey as keyof typeof t] ?? i.key,
+      label: i.label ?? t[i.labelKey as keyof typeof t] ?? i.key,
       iconKey: i.iconKey,
       badge: i.badge,
     })),

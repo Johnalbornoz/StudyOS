@@ -25,7 +25,14 @@ import { db } from '@/lib/db';
 import { isAdminEmail } from '@/services/admin.service';
 import { getOrCreateCanonicalUser, hasRole, type CanonicalUser } from '@/lib/identity';
 
-async function bootstrapStudyUSAdminIfEligible(user: CanonicalUser, email: string | null): Promise<void> {
+/**
+ * Grants STUDYUS_ADMIN to an allowlisted account that does not hold it
+ * yet (no-op for everyone else). Exported so the dashboard layout can
+ * resolve the Admin workspace before choosing a context -- otherwise an
+ * admin-only account would be sent to role selection and forced to
+ * become a Student first (A01-UX-02).
+ */
+export async function bootstrapStudyUSAdminIfEligible(user: CanonicalUser, email: string | null): Promise<void> {
   if (!isAdminEmail(email)) return;
   const already = await hasRole(user.id, 'STUDYUS_ADMIN');
   if (already) return;

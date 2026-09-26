@@ -13,6 +13,7 @@
  * page/route itself (INV-F13-01/03).
  */
 import type { LearnerNavGroup } from './learner-navigation';
+import { ADMIN_SECTIONS } from '@/lib/admin/sections';
 
 export function buildParentNav(): LearnerNavGroup[] {
   return [
@@ -58,6 +59,26 @@ export function buildInstitutionNav(): LearnerNavGroup[] {
       items: [
         { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell' },
       ],
+    },
+  ];
+}
+
+/**
+ * A01-UX-02 -- Platform Administration gets its own navigation instead of
+ * rendering inside the Student shell's nav. Same sections as the
+ * console's own sub-navigation (`ADMIN_SECTIONS`).
+ */
+export function buildAdminNav(): LearnerNavGroup[] {
+  return [
+    {
+      kind: 'PRIMARY',
+      items: ADMIN_SECTIONS.map((section) => ({
+        key: `admin-${section.key}`,
+        href: section.href,
+        labelKey: 'nav.admin',
+        label: section.label,
+        iconKey: section.key === 'overview' ? 'ShieldCheck' : section.key === 'users' ? 'Users' : section.key === 'memberships' ? 'CreditCard' : section.key === 'institutions' ? 'School' : 'ClipboardList',
+      })),
     },
   ];
 }

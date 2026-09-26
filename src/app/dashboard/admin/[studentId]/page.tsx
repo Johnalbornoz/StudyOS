@@ -30,7 +30,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   return (
     <div>
-      <Link href="/dashboard/admin" style={{ fontSize: 13, color: 'var(--text-muted)' }}>← {t['admin.backToList']}</Link>
+      <Link href="/dashboard/admin/users" style={{ fontSize: 13, color: 'var(--text-muted)' }}>← {t['admin.backToList']}</Link>
 
       <div style={{ margin: 'var(--space-4) 0 var(--space-8)' }}>
         <h1>{student.name || student.email}</h1>

@@ -29,7 +29,7 @@ const HOME_HREF: Record<WorkspaceOption, string> = {
   PARENT: '/dashboard/parent',
   TEACHER: '/dashboard/teacher',
   INSTITUTION: '/dashboard/institution',
-  ADMIN: '/dashboard/admin',
+  ADMIN: '/dashboard/admin/overview',
 };
 
 export default function WorkspaceSwitcher({

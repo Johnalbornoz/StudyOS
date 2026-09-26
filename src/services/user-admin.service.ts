@@ -14,6 +14,8 @@
  * failure, via `recordAdminAction`.
  */
 import { clerkClient } from '@clerk/nextjs/server';
+import { maskEmail } from '@/lib/admin/mask';
+import { findClerkIdsMissingInClerk } from '@/services/identity-reconciliation.service';
 import { db } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getOrCreateCanonicalUser, getUserRoles, hasRole, type Role, type SelfServiceRole } from '@/lib/identity';
@@ -145,7 +147,8 @@ export interface UserListItem {
   roles: string[];
   isTest: boolean;
   hasLicense: boolean;
-  syncState: 'OK' | 'CLERK_MISSING';
+  /** A01-LOGIC-02: CLERK_MISSING = this StudyOS account has no Clerk identity; UNVERIFIED = Clerk unreachable. */
+  syncState: 'OK' | 'CLERK_MISSING' | 'UNVERIFIED';
   createdAt: string;
 }
 
@@ -158,7 +161,8 @@ export interface PendingInvitationItem {
 
 /** Opaque, paginated, search/filter-capable listing. Never returns a raw Clerk id or DB row id to the client beyond the opaque `userId` the rest of this API already treats as an identifier. */
 export async function listUsers(filters: UserListFilters, page: number, pageSize: number): Promise<{ items: UserListItem[]; totalCount: number }> {
-  const conditions: string[] = [];
+  // Technical identities (`is_system`) never appear as user accounts.
+  const conditions: string[] = ['NOT u.is_system'];
   const params: any[] = [];
   let i = 1;
 
@@ -198,11 +202,13 @@ export async function listUsers(filters: UserListFilters, page: number, pageSize
 
   const countResult = await db.query(`SELECT COUNT(*)::int AS c FROM users u ${whereClause}`, params);
   const rowsResult = await db.query(
-    `SELECT u.id, u.email, u.status, u.active_workspace, u.is_test, u.created_at,
+    `SELECT u.id, u.clerk_id, u.email, u.status, u.active_workspace, u.is_test, u.created_at,
             EXISTS (SELECT 1 FROM subscriptions s WHERE s.student_id IN (SELECT id FROM students WHERE user_id = u.id) AND s.status IN ('active','past_due','reactivated')) AS has_license
      FROM users u ${whereClause} ORDER BY u.created_at DESC LIMIT $${i} OFFSET $${i + 1}`,
     [...params, pageSize, offset]
   );
+
+  const missingInClerk = await findClerkIdsMissingInClerk(rowsResult.rows.map((r: any) => r.clerk_id));
 
   const items: UserListItem[] = [];
   for (const row of rowsResult.rows) {
@@ -215,7 +221,7 @@ export async function listUsers(filters: UserListFilters, page: number, pageSize
       roles: roles.map((r) => r.role),
       isTest: row.is_test,
       hasLicense: row.has_license,
-      syncState: 'OK',
+      syncState: missingInClerk === null ? 'UNVERIFIED' : missingInClerk.has(row.clerk_id) ? 'CLERK_MISSING' : 'OK',
       createdAt: new Date(row.created_at).toISOString(),
     });
   }
@@ -223,13 +229,6 @@ export async function listUsers(filters: UserListFilters, page: number, pageSize
   return { items, totalCount: countResult.rows[0]?.c ?? 0 };
 }
 
-function maskEmail(email: string | null): string {
-  if (!email) return '(sin correo)';
-  const [local, domain] = email.split('@');
-  if (!domain) return '***';
-  const visible = local.slice(0, 2);
-  return `${visible}${'*'.repeat(Math.max(local.length - 2, 1))}@${domain}`;
-}
 
 /** Pending Clerk invitations not yet reflected in `users` -- merged into the same list surface by the UI, never inventing a `users` row for them. */
 export async function listPendingInvitations(query?: string): Promise<PendingInvitationItem[]> {

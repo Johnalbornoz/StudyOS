@@ -154,6 +154,12 @@ export default function UsersConsole() {
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                       <Link href={`/dashboard/admin/users/${u.userId}`} style={{ fontWeight: 600 }}>{u.displayLabel}</Link>
                       {u.isTest && <span className="chip chip-warn" style={{ marginLeft: 8, fontSize: 11 }}>PRUEBA</span>}
+                      {u.syncState === 'CLERK_MISSING' && (
+                        <span className="chip chip-critical" style={{ marginLeft: 8, fontSize: 11 }} title="Esta cuenta de StudyOS no tiene identidad en Clerk: no puede iniciar sesión.">SIN CLERK</span>
+                      )}
+                      {u.syncState === 'UNVERIFIED' && (
+                        <span className="chip" style={{ marginLeft: 8, fontSize: 11 }} title="No se pudo consultar Clerk para verificar esta cuenta.">SIN VERIFICAR</span>
+                      )}
                     </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--text-secondary)' }}>
                       {u.roles.length > 0 ? u.roles.map((r) => ROLE_LABELS[r] ?? r).join(', ') : 'Sin rol'}

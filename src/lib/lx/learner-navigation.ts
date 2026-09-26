@@ -19,6 +19,8 @@
  * that is trivially unit-testable.
  */
 
+import { ADMIN_HOME } from '@/lib/admin/sections';
+
 export type NavGroupKind = 'PRIMARY' | 'SECONDARY' | 'UTILITY';
 
 export interface LearnerNavItem {
@@ -26,6 +28,8 @@ export interface LearnerNavItem {
   href: string;
   /** i18n message key for the visible label. */
   labelKey: string;
+  /** literal label, used instead of `labelKey` by surfaces that are not localized (the admin console). */
+  label?: string;
   /** lucide icon name resolved by the shell. */
   iconKey: string;
   /** unread / pending count; falsy hides the badge. */
@@ -85,7 +89,7 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
       { key: 'parent', href: '/dashboard/parent', labelKey: 'nav.parent', iconKey: 'Users' },
       { key: 'billing', href: '/dashboard/billing', labelKey: 'billing.title', iconKey: 'CreditCard' },
       ...(inputs.isAdmin
-        ? [{ key: 'admin', href: '/dashboard/admin', labelKey: 'nav.admin', iconKey: 'ShieldCheck' }]
+        ? [{ key: 'admin', href: ADMIN_HOME, labelKey: 'nav.admin', iconKey: 'ShieldCheck' }]
         : []),
     ],
   };

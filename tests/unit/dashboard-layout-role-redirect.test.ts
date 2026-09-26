@@ -32,7 +32,14 @@ vi.mock('@/services/gamification.service', () => ({ getLearningDaysThisWeek: vi.
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({ countPendingTeacherInterventionsForStudent: vi.fn(async () => 0) }));
 vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: vi.fn(async () => 'es') }));
 vi.mock('@/lib/lx/learner-navigation', () => ({ buildLearnerNav: vi.fn(() => []) }));
-vi.mock('@/lib/lx/workspace-navigation', () => ({ buildParentNav: vi.fn(() => []), buildTeacherNav: vi.fn(() => []), buildInstitutionNav: vi.fn(() => []) }));
+const buildAdminNavMock = vi.fn(() => []);
+vi.mock('@/lib/lx/workspace-navigation', () => ({ buildParentNav: vi.fn(() => []), buildTeacherNav: vi.fn(() => []), buildInstitutionNav: vi.fn(() => []), buildAdminNav: () => buildAdminNavMock() }));
+
+let requestPathname: string | null = '/dashboard';
+vi.mock('next/headers', () => ({ headers: async () => new Headers(requestPathname ? { 'x-studyos-pathname': requestPathname } : {}) }));
+
+const bootstrapAdminMock = vi.fn();
+vi.mock('@/lib/admin/authorization', () => ({ bootstrapStudyUSAdminIfEligible: (...a: any[]) => bootstrapAdminMock(...a) }));
 vi.mock('./LanguageSwitcher', () => ({ default: () => null }));
 vi.mock('./LearnerShell', () => ({ default: ({ children }: any) => children }));
 vi.mock('./WorkspaceSwitcher', () => ({ default: () => null }));
@@ -68,6 +75,9 @@ beforeEach(() => {
   resolveDefaultWorkspaceMock.mockReset().mockResolvedValue(null);
   getActiveWorkspaceMock.mockReset().mockResolvedValue(null);
   canUseCapabilityMock.mockReset().mockResolvedValue(true);
+  bootstrapAdminMock.mockReset().mockResolvedValue(undefined);
+  buildAdminNavMock.mockClear();
+  requestPathname = '/dashboard';
 });
 
 describe('DashboardLayout -- zero active roles redirects to /role-select, never renders a Student fallback', () => {
@@ -196,5 +206,57 @@ describe('DashboardLayout -- demo/no-license banner, visible cue only (server-si
     const result: any = await DashboardLayout({ children: null as any });
     expect(canUseCapabilityMock).not.toHaveBeenCalled();
     expect(result.props.banner).toBeUndefined();
+  });
+});
+
+describe('DashboardLayout -- Admin/Auth reset block: Platform Administration context (A01-UX-02, A01-LOGIC-01)', () => {
+  it('grants the allowlisted admin role before resolving workspaces, so an admin-only account never lands on role selection', async () => {
+    isAdminEmailMock.mockReturnValue(true);
+    resolveAvailableWorkspacesMock.mockResolvedValue(['ADMIN']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('ADMIN');
+    requestPathname = '/dashboard/admin/overview';
+
+    await DashboardLayout({ children: null as any });
+    expect(bootstrapAdminMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'user-1' }), 'ana@test.com');
+    expect(bootstrapAdminMock.mock.invocationCallOrder[0]).toBeLessThan(resolveAvailableWorkspacesMock.mock.invocationCallOrder[0]);
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it('a Student+Admin account on an admin route is shown the Administration context, with no license banner and no Student reads', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT', 'ADMIN']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+    getActiveWorkspaceMock.mockResolvedValue('STUDENT');
+    canUseCapabilityMock.mockResolvedValue(false);
+    requestPathname = '/dashboard/admin/users';
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(result.props.banner).toBeUndefined();
+    expect(buildAdminNavMock).toHaveBeenCalled();
+    expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
+    expect(canUseCapabilityMock).not.toHaveBeenCalled();
+    expect(result.props.workspaceSwitcher.props.active).toBe('ADMIN');
+    expect(result.props.workspaceSwitcher.props.available).toEqual(['STUDENT', 'ADMIN']);
+  });
+
+  it('the same account outside admin routes keeps its Student workspace (and banner)', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['STUDENT', 'ADMIN']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('STUDENT');
+    getActiveWorkspaceMock.mockResolvedValue('STUDENT');
+    canUseCapabilityMock.mockResolvedValue(false);
+    requestPathname = '/dashboard/subjects';
+
+    const result: any = await DashboardLayout({ children: null as any });
+    expect(result.props.workspaceSwitcher.props.active).toBe('STUDENT');
+    expect(result.props.banner).toBeTruthy();
+  });
+
+  it('an admin-only account opening /dashboard is sent to the console instead of provisioning a Student', async () => {
+    resolveAvailableWorkspacesMock.mockResolvedValue(['ADMIN']);
+    resolveDefaultWorkspaceMock.mockResolvedValue('ADMIN');
+    requestPathname = '/dashboard';
+
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/dashboard/admin/overview');
+    expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
   });
 });
