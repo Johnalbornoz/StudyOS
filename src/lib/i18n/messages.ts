@@ -149,7 +149,7 @@ export type MessageKey =
   | 'subjectDetail.aiExplanationLabel' | 'subjectDetail.aiExplanationExamplesLabel'
   | 'subjectDetail.interactiveFormulaLabel'
   | 'ib.programmeLabel' | 'ib.programmeNone' | 'ib.programmeMYP' | 'ib.programmeDP' | 'ib.programmeHelp'
-  | 'ib.subjectGroupLabel' | 'ib.levelLabel' | 'ib.estimatedBand' | 'ib.estimatedGrade' | 'ib.disclaimer'
+  | 'ib.subjectGroupLabel' | 'ib.levelLabel' | 'ib.programmeFromProfile' | 'ib.levelChoose' | 'ib.levelRequired' | 'ib.estimatedBand' | 'ib.estimatedGrade' | 'ib.disclaimer'
   | 'quiz.selectTopicsLabel' | 'quiz.selectTopicsHint' | 'quiz.selectTopicsCount'
   | 'quiz.difficultyLabel' | 'quiz.calculatorAllowed' | 'quiz.calculatorNotAllowed'
   | 'hierarchy.unassigned'
@@ -989,6 +989,9 @@ const es: Messages = {
   'ib.programmeHelp': 'Si activas esto, los quizzes usarán el vocabulario de términos de mando del IB y verás una banda/nota estimada junto al resultado.',
   'ib.subjectGroupLabel': 'Grupo de materia (IB)',
   'ib.levelLabel': 'Nivel',
+  'ib.programmeFromProfile': 'Tomado de Mi perfil académico. Para cambiar el programa o el año, edita tu perfil.',
+  'ib.levelChoose': 'Selecciona HL o SL',
+  'ib.levelRequired': 'Elige el nivel (HL o SL) de esta materia.',
   'ib.estimatedBand': 'Banda estimada',
   'ib.estimatedGrade': 'Nota estimada',
   'ib.disclaimer': 'Estimación orientativa, no una calificación oficial del IB.',
@@ -2198,6 +2201,9 @@ const en: Messages = {
   'ib.programmeHelp': 'Turning this on makes quizzes use IB command-term vocabulary and shows an estimated band/grade alongside your result.',
   'ib.subjectGroupLabel': 'IB subject group',
   'ib.levelLabel': 'Level',
+  'ib.programmeFromProfile': 'From My academic profile. To change the programme or year, edit your profile.',
+  'ib.levelChoose': 'Choose HL or SL',
+  'ib.levelRequired': 'Choose this subject\'s level (HL or SL).',
   'ib.estimatedBand': 'Estimated band',
   'ib.estimatedGrade': 'Estimated grade',
   'ib.disclaimer': 'A rough estimate, not an official IB grade.',
@@ -3407,6 +3413,9 @@ const de: Messages = {
   'ib.programmeHelp': 'Wenn aktiviert, verwenden Quizze das IB-Vokabular für Operatoren und zeigen eine geschätzte Bandbreite/Note neben deinem Ergebnis.',
   'ib.subjectGroupLabel': 'IB-Fachgruppe',
   'ib.levelLabel': 'Niveau',
+  'ib.programmeFromProfile': 'Aus deinem akademischen Profil. Programm oder Jahr änderst du in deinem Profil.',
+  'ib.levelChoose': 'HL oder SL wählen',
+  'ib.levelRequired': 'Wähle das Niveau (HL oder SL) dieses Fachs.',
   'ib.estimatedBand': 'Geschätzte Bandbreite',
   'ib.estimatedGrade': 'Geschätzte Note',
   'ib.disclaimer': 'Eine grobe Schätzung, keine offizielle IB-Note.',
@@ -4616,6 +4625,9 @@ const fr: Messages = {
   'ib.programmeHelp': "Activer ceci fait utiliser aux quiz le vocabulaire des termes de commande de l'IB et affiche une bande/note estimée à côté de votre résultat.",
   'ib.subjectGroupLabel': 'Groupe de matières IB',
   'ib.levelLabel': 'Niveau',
+  'ib.programmeFromProfile': 'Issu de Mon profil académique. Pour changer de programme ou d\'année, modifie ton profil.',
+  'ib.levelChoose': 'Choisis HL ou SL',
+  'ib.levelRequired': 'Choisis le niveau (HL ou SL) de cette matière.',
   'ib.estimatedBand': 'Bande estimée',
   'ib.estimatedGrade': 'Note estimée',
   'ib.disclaimer': "Une estimation approximative, pas une note officielle de l'IB.",
@@ -5825,6 +5837,9 @@ const pt: Messages = {
   'ib.programmeHelp': 'Ativar isso faz os quizzes usarem o vocabulário de termos de comando do IB e mostra uma banda/nota estimada junto ao seu resultado.',
   'ib.subjectGroupLabel': 'Grupo de matéria do IB',
   'ib.levelLabel': 'Nível',
+  'ib.programmeFromProfile': 'Do Meu perfil acadêmico. Para mudar o programa ou o ano, edite seu perfil.',
+  'ib.levelChoose': 'Escolha HL ou SL',
+  'ib.levelRequired': 'Escolha o nível (HL ou SL) desta matéria.',
   'ib.estimatedBand': 'Banda estimada',
   'ib.estimatedGrade': 'Nota estimada',
   'ib.disclaimer': 'Uma estimativa aproximada, não uma nota oficial do IB.',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import StatusToggle from '../StatusToggle';
 import { IBFields } from '../IBFields';
+import type { SubjectAcademicContext } from '@/lib/student/subject-academic-context';
 
 interface ContentSourceRow {
   id: string;
@@ -23,7 +24,7 @@ export default function SubjectSettingsPanel({
   initialQuizLanguageMode,
   contentSources,
   conceptCount,
-  initialIbProgramme,
+  academicContext,
   initialIbSubjectGroup,
   initialIbLevel,
 }: {
@@ -36,7 +37,8 @@ export default function SubjectSettingsPanel({
   initialQuizLanguageMode: string;
   contentSources: ContentSourceRow[];
   conceptCount: number;
-  initialIbProgramme: 'none' | 'MYP' | 'DP';
+  /** Inherited from the student's academic profile -- programme/year are not edited per subject. */
+  academicContext: SubjectAcademicContext;
   initialIbSubjectGroup: string | null;
   initialIbLevel: 'SL' | 'HL' | null;
 }) {
@@ -46,9 +48,8 @@ export default function SubjectSettingsPanel({
   const [name, setName] = useState(initialName);
   const [targetLanguage, setTargetLanguage] = useState<Locale | ''>((initialTargetLanguage as Locale) || '');
   const [quizLanguageMode, setQuizLanguageMode] = useState(initialQuizLanguageMode);
-  const [ibProgramme, setIbProgramme] = useState<'none' | 'MYP' | 'DP'>(initialIbProgramme);
   const [ibSubjectGroup, setIbSubjectGroup] = useState(initialIbSubjectGroup || '');
-  const [ibLevel, setIbLevel] = useState<'SL' | 'HL'>(initialIbLevel || 'SL');
+  const [ibLevel, setIbLevel] = useState<'' | 'SL' | 'HL'>(initialIbLevel || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
@@ -74,9 +75,8 @@ export default function SubjectSettingsPanel({
           name,
           targetLanguage: targetLanguage || null,
           quizLanguageMode,
-          ibProgramme,
-          ibSubjectGroup: ibProgramme !== 'none' ? ibSubjectGroup || null : null,
-          ibLevel: ibProgramme === 'DP' ? ibLevel : null,
+          ibSubjectGroup: academicContext.programme !== 'none' ? ibSubjectGroup || null : null,
+          ibLevel: academicContext.requiresLevel ? ibLevel || null : null,
         }),
       });
       setSaved(true);
@@ -212,8 +212,7 @@ export default function SubjectSettingsPanel({
 
         <IBFields
           locale={locale}
-          programme={ibProgramme}
-          setProgramme={setIbProgramme}
+          context={academicContext}
           subjectGroup={ibSubjectGroup}
           setSubjectGroup={setIbSubjectGroup}
           level={ibLevel}
@@ -221,7 +220,7 @@ export default function SubjectSettingsPanel({
         />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <button type="submit" disabled={saving || !name} className="btn btn-primary">
+          <button type="submit" disabled={saving || !name || (academicContext.requiresLevel && !ibLevel)} className="btn btn-primary">
             {saving ? t['common.creating'] : t['common.save']}
           </button>
           {saved && <span style={{ fontSize: 13, color: 'var(--success)' }}>{t['common.saved']}</span>}

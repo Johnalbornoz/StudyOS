@@ -5,19 +5,28 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import { IBFields } from '../IBFields';
+import { deriveSubjectAcademicContext, type SubjectAcademicContext } from '@/lib/student/subject-academic-context';
 
 export default function NewSubjectPage() {
   const [name, setName] = useState('');
   const [isLanguageSubject, setIsLanguageSubject] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<Locale>('de');
   const [quizLanguageMode, setQuizLanguageMode] = useState<'match_interface' | 'fixed_english'>('match_interface');
-  const [ibProgramme, setIbProgramme] = useState<'none' | 'MYP' | 'DP'>('none');
+  // Programme/year are inherited from the academic profile, never chosen here.
+  const [academicContext, setAcademicContext] = useState<SubjectAcademicContext | null>(null);
   const [ibSubjectGroup, setIbSubjectGroup] = useState('');
-  const [ibLevel, setIbLevel] = useState<'SL' | 'HL'>('SL');
+  const [ibLevel, setIbLevel] = useState<'' | 'SL' | 'HL'>('');
   const [locale, setLocale] = useState<Locale>('es');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/academic-profile')
+      .then((r) => r.json())
+      .then((body) => setAcademicContext(deriveSubjectAcademicContext(body.data ?? null)))
+      .catch(() => setAcademicContext(deriveSubjectAcademicContext(null)));
+  }, []);
 
   useEffect(() => {
     fetch('/api/language')
@@ -41,9 +50,8 @@ export default function NewSubjectPage() {
           name,
           targetLanguage: isLanguageSubject ? targetLanguage : null,
           quizLanguageMode,
-          ibProgramme,
-          ibSubjectGroup: ibSubjectGroup || null,
-          ibLevel: ibProgramme === 'DP' ? ibLevel : null,
+          ibSubjectGroup: academicContext?.programme !== 'none' ? ibSubjectGroup || null : null,
+          ibLevel: academicContext?.requiresLevel ? ibLevel || null : null,
         }),
       });
 
@@ -76,6 +84,8 @@ export default function NewSubjectPage() {
         </label>
         <input
           type="text"
+          name="subjectName"
+          autoComplete="off"
           placeholder={t['subjectNew.namePlaceholder']}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -146,17 +156,22 @@ export default function NewSubjectPage() {
           </div>
         )}
 
+        {academicContext && (
         <IBFields
           locale={locale}
-          programme={ibProgramme}
-          setProgramme={setIbProgramme}
+          context={academicContext}
           subjectGroup={ibSubjectGroup}
           setSubjectGroup={setIbSubjectGroup}
           level={ibLevel}
           setLevel={setIbLevel}
         />
+        )}
 
-        <button type="submit" disabled={loading || !name} className="btn btn-primary">
+        <button
+          type="submit"
+          disabled={loading || !name || !academicContext || (academicContext.requiresLevel && !ibLevel)}
+          className="btn btn-primary"
+        >
           {loading ? t['common.creating'] : t['subjectNew.submit']}
         </button>
         {error && <p style={{ color: 'var(--error)', fontSize: 13.5, marginTop: 'var(--space-3)' }}>{error}</p>}

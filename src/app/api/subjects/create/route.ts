@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireStudentId } from '@/lib/auth';
 import { isLocale } from '@/lib/i18n/messages';
+import { getAcademicProfile } from '@/services/academic-profile.service';
+import { deriveSubjectAcademicContext, resolveSubjectIbFields } from '@/lib/student/subject-academic-context';
 
 export async function POST(req: NextRequest) {
   // Development: Use test UUID, production: require auth + an ACTIVE
@@ -30,9 +32,14 @@ export async function POST(req: NextRequest) {
 
     const resolvedTargetLanguage = isLocale(targetLanguage) ? targetLanguage : null;
     const resolvedQuizMode = quizLanguageMode === 'fixed_english' ? 'fixed_english' : 'match_interface';
-    const resolvedIbProgramme = ['MYP', 'DP'].includes(ibProgramme) ? ibProgramme : 'none';
-    const resolvedIbSubjectGroup = resolvedIbProgramme !== 'none' && typeof ibSubjectGroup === 'string' ? ibSubjectGroup : null;
-    const resolvedIbLevel = resolvedIbProgramme === 'DP' && ['SL', 'HL'].includes(ibLevel) ? ibLevel : null;
+    // The IB programme comes from the student's academic profile, never
+    // from the form; a DP subject needs an explicit HL/SL level.
+    const context = deriveSubjectAcademicContext(await getAcademicProfile(userId));
+    const ib = resolveSubjectIbFields(context, { ibProgramme, ibSubjectGroup, ibLevel });
+    if (!ib.ok) {
+      return NextResponse.json({ error: ib.error }, { status: 400 });
+    }
+    const { ib_programme: resolvedIbProgramme, ib_subject_group: resolvedIbSubjectGroup, ib_level: resolvedIbLevel } = ib.fields;
 
     const result = await query(
       `INSERT INTO subjects (student_id, name, status, target_language, quiz_language_mode, ib_programme, ib_subject_group, ib_level)

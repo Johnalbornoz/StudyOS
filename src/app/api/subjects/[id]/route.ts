@@ -3,6 +3,8 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { db, query } from '@/lib/db';
 import { isLocale } from '@/lib/i18n/messages';
 import { z } from 'zod';
+import { getAcademicProfile } from '@/services/academic-profile.service';
+import { deriveSubjectAcademicContext, resolveSubjectIbFields } from '@/lib/student/subject-academic-context';
 
 const UpdateSchema = z.object({
   studentId: z.string().uuid(),
@@ -35,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const existing = await query(`SELECT id FROM subjects WHERE id = $1 AND student_id = $2`, [
+  const existing = await query(`SELECT id, ib_subject_group, ib_level FROM subjects WHERE id = $1 AND student_id = $2`, [
     id,
     validated.studentId,
   ]);
@@ -63,20 +65,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     sets.push(`status = $${i++}`);
     values.push(validated.status);
   }
-  if (validated.ibProgramme !== undefined) {
-    sets.push(`ib_programme = $${i++}`);
-    values.push(validated.ibProgramme);
-    if (validated.ibProgramme === 'none') {
-      sets.push(`ib_subject_group = NULL`, `ib_level = NULL`);
+  if (validated.ibProgramme !== undefined || validated.ibSubjectGroup !== undefined || validated.ibLevel !== undefined) {
+    // The programme is inherited from the owning student's academic
+    // profile; only the subject group and (for DP) HL/SL are per subject.
+    const current = existing.rows[0];
+    const context = deriveSubjectAcademicContext(await getAcademicProfile(validated.studentId));
+    const ib = resolveSubjectIbFields(context, {
+      ibProgramme: validated.ibProgramme,
+      ibSubjectGroup: validated.ibSubjectGroup !== undefined ? validated.ibSubjectGroup : current.ib_subject_group,
+      ibLevel: validated.ibLevel !== undefined ? validated.ibLevel : current.ib_level,
+    });
+    if (!ib.ok) {
+      return NextResponse.json({ error: ib.error }, { status: 400 });
     }
-  }
-  if (validated.ibSubjectGroup !== undefined && validated.ibProgramme !== 'none') {
-    sets.push(`ib_subject_group = $${i++}`);
-    values.push(validated.ibSubjectGroup);
-  }
-  if (validated.ibLevel !== undefined && validated.ibProgramme !== 'none') {
-    sets.push(`ib_level = $${i++}`);
-    values.push(validated.ibLevel);
+    sets.push(`ib_programme = $${i++}`, `ib_subject_group = $${i++}`, `ib_level = $${i++}`);
+    values.push(ib.fields.ib_programme, ib.fields.ib_subject_group, ib.fields.ib_level);
   }
 
   if (sets.length === 0) {

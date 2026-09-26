@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
+import { getAcademicProfile } from '@/services/academic-profile.service';
+import { deriveSubjectAcademicContext } from '@/lib/student/subject-academic-context';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getContentSources } from '@/services/content.service';
 import { getSubjectHierarchy } from '@/services/topic-hierarchy.service';
@@ -250,7 +252,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
         initialStatus={subject.status}
         initialTargetLanguage={subject.target_language}
         initialQuizLanguageMode={subject.quiz_language_mode}
-        initialIbProgramme={subject.ib_programme}
+        academicContext={deriveSubjectAcademicContext(await getAcademicProfile(studentId).catch(() => null))}
         initialIbSubjectGroup={subject.ib_subject_group}
         initialIbLevel={subject.ib_level}
         conceptCount={concepts.length}
