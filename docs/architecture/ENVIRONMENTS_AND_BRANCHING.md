@@ -54,7 +54,7 @@ the fingerprint before any migration or write.
 | Environment   | Vercel target                      | Stable URL                                        | Deploys from |
 |---------------|------------------------------------|---------------------------------------------------|--------------|
 | Development   | custom environment `dev`           | `https://study-os-env-dev-study-so.vercel.app`    | every push to `develop` (Git integration) |
-| Preview/Stage | `preview`                          | per deployment (`study-<hash>-study-so.vercel.app`) | an exact certified SHA, deployed deliberately |
+| Preview/Stage | `preview`                          | `https://study-os-stage-study-so.vercel.app`      | an exact certified SHA, deployed deliberately |
 | Production    | `production`                       | `https://www.studyus.pro`                         | `main` |
 
 - `dev` has its own variable set (DEV database, Clerk Development keys,
@@ -64,6 +64,20 @@ the fingerprint before any migration or write.
   Protection); `www.studyus.pro` stays public. Automated checks use
   `vercel curl <url>`. Vercel also sends `X-Robots-Tag: noindex` on every
   non-production URL.
+
+### Canonical Preview/Stage
+
+- `study-os-stage-study-so.vercel.app` is the ONLY canonical Preview/Stage
+  reference. Promoting a new certified SHA means deploying it to `preview`
+  and re-pointing this alias (`vercel alias set <deployment> study-os-stage-study-so.vercel.app`).
+- Current certified legacy baseline (INFRA-01D): deployment
+  `dpl_5si5sMo2xMMNLmkZ5smjaihrM9rT`, a redeploy of the 2026-09-21 Preview.
+  Its code is `5569c15` (the following commits up to `ed9f380` are docs
+  only; its 34-row ledger matches that commit's migrations). It predates
+  the traceability fix, so it reports `commitSha: null`; the next promotion
+  from `develop` will report it.
+- Branch aliases such as `study-os-git-main-…`/`study-os-git-develop-…` are
+  Vercel's automatic per-branch aliases, not environment references.
 
 ## Traceability
 
