@@ -6,7 +6,7 @@
  * misconception service -- are mocked), matching the same discipline
  * `canon-r5-canonical-decision-service.test.ts` established for CANON-R5.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const MOCK_DB = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock('@/lib/db', () => ({ db: MOCK_DB }));
@@ -35,6 +35,18 @@ import type { CanonicalPedagogicalDecision } from '@/lib/pedagogical-engine';
 const STUDENT = 's1';
 const CONCEPT = 'c1';
 const NOW = '2026-09-20T00:00:00.000Z';
+
+// The engine reads the real clock; fixtures are stamped at NOW. Freeze the
+// clock just after NOW so retention-window outcomes don't drift with the
+// calendar (only Date is faked -- promise/timer scheduling stays real).
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   MOCK_DB.query.mockReset();
