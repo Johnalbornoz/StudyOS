@@ -45,3 +45,49 @@ the fingerprint before any migration or write.
   same promotion order as code: DEV → Preview/Stage → Production.
 - Secrets live only in untracked `.env*` files (gitignored) or the hosting
   provider's environment settings. Never commit them.
+- Each environment has its own `neondb_owner` password (rotated 2026-09-26).
+  Neon copies role passwords into child branches, so every new branch must get
+  its own password reset before use.
+
+## Hosted environments (Vercel project `study-so/study-os`, INFRA-01C)
+
+| Environment   | Vercel target                      | Stable URL                                        | Deploys from |
+|---------------|------------------------------------|---------------------------------------------------|--------------|
+| Development   | custom environment `dev`           | `https://study-os-env-dev-study-so.vercel.app`    | every push to `develop` (Git integration) |
+| Preview/Stage | `preview`                          | per deployment (`study-<hash>-study-so.vercel.app`) | an exact certified SHA, deployed deliberately |
+| Production    | `production`                       | `https://www.studyus.pro`                         | `main` |
+
+- `dev` has its own variable set (DEV database, Clerk Development keys,
+  `STUDYUS_ENV=development`, conservative `AI_MAX_CALLS_PER_MINUTE`/`AI_MAX_CALLS_PER_DAY`).
+  It never inherits Preview or Production values.
+- Non-production deployments are behind Vercel Authentication (Standard
+  Protection); `www.studyus.pro` stays public. Automated checks use
+  `vercel curl <url>`. Vercel also sends `X-Robots-Tag: noindex` on every
+  non-production URL.
+
+## Traceability
+
+`GET /api/version` reports `commitSha`, `environment`, `commitRef`,
+`deploymentTarget` and `deploymentId`. A certified environment must never
+report `commitSha: null`.
+
+- Git-integration deployments get the SHA automatically.
+- CLI deployments carry no git metadata. Deploy from a clean checkout of the
+  exact SHA and pass it explicitly:
+  `vercel deploy --env STUDYUS_COMMIT_SHA=$(git rev-parse HEAD)`.
+- Environment identity comes from `STUDYUS_ENV`, then `VERCEL_TARGET_ENV`
+  (`dev` → `development`), then `VERCEL_ENV`. Vercel's own platform logs label
+  the `dev` target as `preview`; use the log's `domain`/`branch`/`deploymentId`
+  or the application's structured logs to tell them apart.
+
+## Local development
+
+Use only the `develop` worktree `/Users/jalbornoz/PROYECTOS/studyos-dev`
+(local `.env.local` → DEV database). Other historical checkouts have no
+working database configuration and must not be given one.
+
+## Open items
+
+- `PROD_DB_AUDIT_01`: the Production database ledger appears to contain
+  F-series migrations beyond the 14 that Production code (`main`) ships.
+  Audit read-only before any Production promotion.
