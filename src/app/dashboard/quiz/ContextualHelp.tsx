@@ -10,14 +10,13 @@
  * Nothing here diagnoses.
  */
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useReducer, useRef } from 'react';
 import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
+import { helpReducer, helpRequestBody, initialHelpState, type HelpAction, type HelpResult, type HelpScope } from '@/lib/quiz/help-state';
 
 const HELP_TIMEOUT_MS = 45_000;
-
-type HelpAction = 'HINT' | 'EXAMPLE' | 'REMINDER' | 'ANOTHER_ANGLE' | 'FIRST_STEP';
 
 const ACTION_KEY: Record<HelpAction, string> = {
   HINT: 'help.giveHint',
@@ -26,15 +25,6 @@ const ACTION_KEY: Record<HelpAction, string> = {
   ANOTHER_ANGLE: 'help.explainDifferently',
   FIRST_STEP: 'help.showFirstStep',
 };
-
-interface HelpResult {
-  action: HelpAction;
-  hints?: string[];
-  example?: string;
-  reminder?: string;
-  sections?: { heading: string; body: string }[];
-  firstStep?: { prompt: string; expectedAnswer: string; why: string } | null;
-}
 
 export default function ContextualHelp({
   studentId,
@@ -54,23 +44,39 @@ export default function ContextualHelp({
 }) {
   const t = getMessages(locale);
   const panelId = useId();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState<HelpAction | null>(null);
-  const [error, setError] = useState(false);
-  const [result, setResult] = useState<HelpResult | null>(null);
+  // Help UI state is bound to quizId + questionIndex (help-state.ts): a new
+  // question starts clean and a late reply for the previous one is dropped.
+  // The parent also remounts this component per question (key).
+  const [state, dispatch] = useReducer(helpReducer, { quizId, questionIndex }, initialHelpState);
+  const { open, loading, error, result } = state;
+  const requestSeq = useRef(0);
+  const inFlight = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    dispatch({ type: 'SCOPE_CHANGED', scope: { quizId, questionIndex } });
+    return () => {
+      // leaving this question: cancel its pending help request (UI only --
+      // the server's record that help was used is never undone)
+      inFlight.current?.abort();
+      inFlight.current = null;
+    };
+  }, [quizId, questionIndex]);
 
   async function run(action: HelpAction) {
-    setLoading(action);
-    setError(false);
-    setResult(null);
+    const scope: HelpScope = { quizId, questionIndex };
+    const requestId = Math.max(state.requestId, requestSeq.current) + 1;
+    requestSeq.current = requestId;
+    dispatch({ type: 'REQUEST', action, requestId });
     // Loading always ends: success, error, or the client-side timeout.
+    inFlight.current?.abort();
     const controller = new AbortController();
+    inFlight.current = controller;
     const timer = setTimeout(() => controller.abort(), HELP_TIMEOUT_MS);
     try {
       const res = await fetch('/api/learning/contextual-help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, quizId, questionIndex, action, language: locale }),
+        body: JSON.stringify(helpRequestBody(scope, studentId, action, locale)),
         signal: controller.signal,
       });
       const body = await res.json();
@@ -80,13 +86,13 @@ export default function ContextualHelp({
       if (action === 'HINT' && !(data.hints && data.hints.some((h) => h.trim()))) {
         data.hints = [t['help.hintFallbackData']];
       }
-      setResult(data);
+      dispatch({ type: 'SUCCESS', scope, requestId, result: data });
     } catch {
-      if (action === 'HINT') setResult({ action, hints: [t['help.hintFallbackData']] });
-      else setError(true);
+      if (action === 'HINT') dispatch({ type: 'SUCCESS', scope, requestId, result: { action, hints: [t['help.hintFallbackData']] } });
+      else dispatch({ type: 'FAILURE', scope, requestId });
     } finally {
       clearTimeout(timer);
-      setLoading(null);
+      if (inFlight.current === controller) inFlight.current = null;
     }
   }
 
@@ -97,7 +103,7 @@ export default function ContextualHelp({
         className="btn btn-ghost al-help-trigger"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => dispatch({ type: 'TOGGLE' })}
       >
         {t['activeLearning.needHelp']}
       </button>

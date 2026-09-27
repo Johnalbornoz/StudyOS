@@ -241,14 +241,16 @@ describe('help UI: loading always ends, never an empty box', () => {
   const ui = read('src/app/dashboard/quiz/ContextualHelp.tsx');
 
   it('loading is cleared in finally, with a client timeout that aborts the request', () => {
-    expect(ui).toMatch(/finally \{\s*clearTimeout\(timer\);\s*setLoading\(null\);/);
+    // loading ends through the scoped reducer: every path dispatches SUCCESS or FAILURE, and the timer is cleared
+    expect(ui).toMatch(/dispatch\(\{ type: 'SUCCESS', scope, requestId, result: data \}\)/);
+    expect(ui).toMatch(/else dispatch\(\{ type: 'FAILURE', scope, requestId \}\);\s*\} finally \{\s*clearTimeout\(timer\);/);
     expect(ui).toMatch(/setTimeout\(\(\) => controller\.abort\(\), HELP_TIMEOUT_MS\)/);
     expect(ui).toMatch(/signal: controller\.signal/);
   });
 
   it('an empty or failed hint shows the localized fallback below the help options', () => {
     expect(ui).toMatch(/action === 'HINT' && !\(data\.hints && data\.hints\.some\(\(h\) => h\.trim\(\)\)\)/);
-    expect(ui).toMatch(/if \(action === 'HINT'\) setResult\(\{ action, hints: \[t\['help\.hintFallbackData'\]\] \}\);/);
+    expect(ui).toMatch(/if \(action === 'HINT'\) dispatch\(\{ type: 'SUCCESS', scope, requestId, result: \{ action, hints: \[t\['help\.hintFallbackData'\]\] \} \}\);/);
     // the result renders after the action buttons
     expect(ui.indexOf('al-help-actions')).toBeLessThan(ui.indexOf('data-testid="help-result"'));
   });

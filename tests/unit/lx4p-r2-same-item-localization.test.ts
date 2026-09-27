@@ -240,7 +240,9 @@ describe('LX-4P-PERF-R1 R20 -- the active learning surface (chrome + content) fo
   it('ContextualHelp menu chrome AND help content both follow the activity language', () => {
     expect(HELP).toMatch(/const t = getMessages\(locale\)/);
     expect(HELP).not.toMatch(/uiLocale/);
-    expect(HELP).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, questionIndex, action, language: locale \}\)/);
+    expect(HELP).toMatch(/body: JSON\.stringify\(helpRequestBody\(scope, studentId, action, locale\)\)/);
+    // LEARN_HELP_STATE_RESET: the body is built from the question scope -- same fields, nothing else
+    expect(readFileSync(join(process.cwd(), 'src/lib/quiz/help-state.ts'), 'utf-8')).toMatch(/return \{ studentId, quizId: scope\.quizId, questionIndex: scope\.questionIndex, action, language \};/);
   });
   it('the quiz page passes the activity language (quizLanguage) as the single `locale` prop', () => {
     // LX-4P-PERF-R1E-R1: exitHref now sits between locale and onDone.

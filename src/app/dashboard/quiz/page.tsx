@@ -2464,7 +2464,7 @@ function QuizPageContent() {
             server (/api/learning/contextual-help -> canUseAI) is the
             authority; it is never rendered for Prove / assessment. */}
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && studentId && quizId && (
-          <ContextualHelp studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
+          <ContextualHelp key={`${quizId}:${current}`} studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
         )}
 
         {q.askConfidence && (

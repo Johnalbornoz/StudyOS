@@ -141,7 +141,9 @@ describe('LX-4P-R1 R7 -- MODEL / GUIDE content is fetched from canonical keys, a
 /* ---------- R8: contextual help preserves question identity ---------- */
 describe('LX-4P-R1 R8 -- contextual help never regenerates the active question', () => {
   it('ContextualHelp only posts { quizId, questionIndex, action, language } -- no question mint', () => {
-    expect(HELP).toMatch(/body: JSON\.stringify\(\{ studentId, quizId, questionIndex, action, language: locale \}\)/);
+    expect(HELP).toMatch(/body: JSON\.stringify\(helpRequestBody\(scope, studentId, action, locale\)\)/);
+    // LEARN_HELP_STATE_RESET: the body is built from the question scope -- same fields, nothing else
+    expect(readFileSync(join(process.cwd(), 'src/lib/quiz/help-state.ts'), 'utf-8')).toMatch(/return \{ studentId, quizId: scope\.quizId, questionIndex: scope\.questionIndex, action, language \};/);
     expect(HELP).not.toMatch(/generate-and-take|setQuestions|generateQuiz/);
   });
 });
