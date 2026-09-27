@@ -95,7 +95,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     success: true,
     data: {
       correct: grade.correct,
-      partial: !grade.correct && grade.score > 0,
+      // PEDAGOGICAL_V1: "almost" is the teacher verdict (right mathematics, a missing component or a small slip)
+      partial: grade.pedagogical ? grade.pedagogical.finalJudgment === 'ALMOST' : !grade.correct && grade.score > 0,
       // why the answer does (not) work -- revealing sentences removed
       feedback: grade.correct ? grade.feedback || null : stripAnswerReveals(grade.feedback, guardQuestion),
       direction,

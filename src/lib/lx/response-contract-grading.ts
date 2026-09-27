@@ -22,6 +22,7 @@
 
 import type { ResponseEvidenceContract } from './response-evidence-contract';
 import { contractPermitsGradingOn } from './response-evidence-contract';
+import { finalValuesEquivalent } from '@/lib/grading/math-equivalence';
 
 /** The subset of the existing `GradeAnswerResult` this guard reads/returns. */
 export interface GuardableGrade {
@@ -48,6 +49,10 @@ export function finalAnswersMatch(studentRaw: string, correctRaw: string): boole
   const c = norm(correctRaw);
   if (!s || !c) return null;
   if (s === c) return true;
+
+  // Mathematical equivalence first (PEDAGOGICAL_V1): 40×8/5, (40·8)/5 and 64
+  // are the same final answer; a verified equality is never a mismatch.
+  if (finalValuesEquivalent(studentRaw, correctRaw).status === 'EQUIVALENT') return true;
 
   // numeric equivalence: "4" == "4.0" == "4,0" (decimal comma) == "+4"
   const toNum = (v: string) => {

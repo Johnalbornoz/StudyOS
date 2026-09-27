@@ -50,10 +50,16 @@ export const PROMPT_REGISTRY = {
   }),
   'quiz.free_text_grading': definePrompt({
     id: 'quiz.free_text_grading',
-    version: 'v1',
+    // v2 (PEDAGOGICAL_V1): grades like a teacher -- mathematical
+    // correctness, per-component task completion and reasoning quality
+    // are reported separately under a strict JSON schema, with the
+    // system's deterministic math-equivalence verdict supplied as a fact;
+    // the final CORRECT / ALMOST / INCORRECT decision is composed
+    // deterministically (src/lib/grading/pedagogical-grade.ts).
+    version: 'v2',
     capability: 'GRADING',
     service: 'quiz-generation.service.ts:gradeAnswer',
-    description: 'Grades a free-text quiz answer for correctness, partial credit, error type, and reasoning validity.',
+    description: 'Grades a free-text answer pedagogically: mathematical correctness (notation-independent), completion of each requested component, reasoning quality, and real misconceptions only.',
   }),
   'quiz.question_hint': definePrompt({
     id: 'quiz.question_hint',

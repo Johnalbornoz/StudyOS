@@ -32,6 +32,10 @@ import type { ProviderUsage } from '@/lib/ai/usage';
 const QGEN_ROUTE = resolveModels('QUESTION_GENERATION');
 const GRADE_ROUTE = resolveModels('GRADING');
 import { buildTeachingConstraintsBlock, transferPreparationInstruction, type TeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
+import { composePedagogicalGrade, deterministicEvidence, type GraderAssessment, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
+import { isResultOnly, type TaskRequirementId } from '@/lib/grading/task-requirements';
+import { isBareValue } from '@/lib/grading/math-equivalence';
+import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 
 export interface IBContext {
   programme: 'MYP' | 'DP';
@@ -2711,6 +2715,8 @@ export interface GradeAnswerResult {
   // evaluate (numeric_problem, step_by_step, and similar); defaults to
   // true (matching `correct`) when there's no separate reasoning to judge.
   reasoningValid: boolean;
+  /** PEDAGOGICAL_V1 structured grade (mathematical correctness / task completion / reasoning / final judgment). Absent only on the total-failure fallback. */
+  pedagogical?: PedagogicalGrade;
   /**
    * Phase 0E1 AI provenance -- which execution produced this grade
    * (executionId/provider/model/promptId/promptVersion), including on
@@ -2721,50 +2727,70 @@ export interface GradeAnswerResult {
   aiExecution: AIProvenance;
 }
 
-/** Strict bare-number parse -- no units, no fractions, no expressions. Anything else (including a genuinely equivalent but differently-formatted answer) is deliberately left for AI grading, never guessed at deterministically. */
-function parseBareNumber(text: string): number | null {
-  const trimmed = text.trim();
-  if (!/^[-+]?\d+(\.\d+)?$/.test(trimmed)) return null;
-  const n = Number(trimmed);
-  return Number.isFinite(n) ? n : null;
+const GRADING_REQUIREMENT_DESCRIPTIONS: Record<TaskRequirementId, string> = {
+  final_result: 'gives the final value / answer that was asked for',
+  corrected_result: 'gives the corrected result',
+  identify_error: 'explicitly states WHAT was wrong in the given work (not just "it is wrong")',
+  correct_setup: 'writes a correct proportion / equation / setup',
+  choose_claim: 'says which statement or person is right',
+  justify: 'justifies it with the underlying relationship, not only restating the answer',
+  show_setup: 'shows the setup / method used, not only the number',
+};
+
+const PEDAGOGICAL_GRADE_SCHEMA = {
+  name: 'pedagogical_grade',
+  schema: {
+    type: 'object',
+    properties: {
+      mathematical_correctness: { type: 'string', enum: ['CORRECT', 'MINOR_SLIP', 'INCORRECT', 'NOT_APPLICABLE'] },
+      requirements: {
+        type: 'array',
+        items: { type: 'object', properties: { id: { type: 'string' }, met: { type: 'boolean' } }, required: ['id', 'met'], additionalProperties: false },
+      },
+      reasoning_quality: { type: 'string', enum: ['STRONG', 'ADEQUATE', 'WEAK', 'INVALID', 'ABSENT'] },
+      conceptual_error: { type: 'boolean' },
+      misconception: { type: ['string', 'null'] },
+      error_type: { type: ['string', 'null'], enum: ['CONCEPTUAL', 'PROCEDURAL', 'CARELESS', 'MISREADING', 'ARITHMETIC', 'UNIT', null] },
+      did_well: { type: 'string' },
+      to_fix: { type: 'string' },
+      confidence: { type: 'number' },
+    },
+    required: ['mathematical_correctness', 'requirements', 'reasoning_quality', 'conceptual_error', 'misconception', 'error_type', 'did_well', 'to_fix', 'confidence'],
+    additionalProperties: false,
+  },
+};
+
+const MATH_CHECK_FACT: Record<string, string> = {
+  EQUIVALENT: "VERIFIED by the system: the student's final value is mathematically equal to the expected value (notation, factor order, decimal separator and units already normalized). Do NOT treat it as wrong.",
+  DIFFERENT: "VERIFIED by the system: the student's final value is NOT equal to the expected value.",
+  UNDECIDABLE: 'The system could not verify the final value mathematically -- judge it yourself, by value, never by notation.',
+};
+
+/** The legacy result shape of one grade, derived from the pedagogical grade. */
+function toGradeFields(grade: PedagogicalGrade, feedback: string, confidence: number): Omit<GradeAnswerResult, 'aiExecution'> {
+  return {
+    correct: grade.finalJudgment === 'CORRECT',
+    score: grade.score,
+    feedback,
+    confidence,
+    errorType: grade.errorType as GradingErrorType | null,
+    reasoningValid: grade.learnerSignal !== 'MISCONCEPTION' && grade.reasoningQuality !== 'INVALID',
+    pedagogical: grade,
+  };
 }
 
 /**
- * LX-9 B17/B18: a `numeric_problem` answer that is JUST a bare number
- * (no shown work) and matches the correct numeric answer within the
- * same tight tolerance the Question Quality Gate already uses
- * (`tryRecomputeNumeric`, question-quality-contract.ts) needs no AI
- * judgment call -- there is no method/reasoning to evaluate, so the
- * grade is unambiguous (matches the grading prompt's own rule: "For
- * question types with no visible reasoning/work to judge, set
- * reasoningValid equal to correct"). Returns null (defer to the
- * existing AI grading path) for EVERYTHING else: shown work, a
- * mismatch, a non-numeric answer, or a non-numeric_problem type --
- * this only ever skips AI when the outcome is already certain, never
- * makes grading more lenient than AI already would, and never grades a
- * wrong or ambiguous answer deterministically.
- */
-function tryDeterministicNumericGrade(
-  question: { type: string; correctAnswer: string },
-  studentAnswer: string,
-): Omit<GradeAnswerResult, 'aiExecution'> | null {
-  if (question.type !== 'numeric_problem') return null;
-  const studentNum = parseBareNumber(studentAnswer);
-  const correctNum = parseBareNumber(question.correctAnswer);
-  if (studentNum === null || correctNum === null) return null;
-  const tolerance = Math.max(1e-6, Math.abs(correctNum) * 1e-4);
-  if (Math.abs(studentNum - correctNum) > tolerance) return null;
-  return { correct: true, score: 1, feedback: 'Correct.', confidence: 1, errorType: null, reasoningValid: true };
-}
-
-/**
- * Grade a free-text answer using Claude for semantic understanding.
- * HIGH_RISK (Phase 0E1): this result feeds directly into
- * mastery.service.ts's updateMastery via the caller, so the AI output
- * must be structurally validated before any deterministic logic sees
- * it (Step 11) -- see the `validate` step below. Grading semantics,
- * thresholds, and both existing fallback tiers (parse-failure ->
- * string match, total-failure -> score 0) are preserved exactly.
+ * Grade a free-text answer like a teacher (PEDAGOGICAL_V1, see
+ * src/lib/grading/pedagogical-grade.ts): mathematical correctness, task
+ * completion and reasoning quality are assessed separately, notation is
+ * normalized mathematically BEFORE any AI, and one deterministic rule
+ * turns them into CORRECT / ALMOST / INCORRECT.
+ *
+ * HIGH_RISK (Phase 0E1): the result feeds mastery via the caller, so the
+ * AI output is structurally validated before any deterministic logic
+ * sees it. Both fallback tiers are preserved (parse failure -> value /
+ * string match; transport failure -> score 0), and a legacy-shaped
+ * grader reply is still honored as before.
  */
 export async function gradeAnswer(
   question: GeneratedQuestion,
@@ -2773,19 +2799,21 @@ export async function gradeAnswer(
   /** Phase 0E2 Step 11: optional, purely additive -- enriches the persisted ai_execution_events row when the caller has it. */
   context?: { studentId?: string; subjectId?: string }
 ): Promise<GradeAnswerResult> {
-  // LX-9 B17/B18: a bare-number numeric_problem answer that already,
-  // deterministically, exactly matches is graded with zero AI calls --
-  // see tryDeterministicNumericGrade's own doc comment for exactly how
-  // narrow this is (anything showing work, wrong, or non-numeric still
-  // goes through the unchanged AI path below).
-  const deterministic = tryDeterministicNumericGrade(question, studentAnswer);
-  if (deterministic) {
+  const det = deterministicEvidence(question, studentAnswer, language);
+
+  // A numeric problem whose only requirement is the value, answered with a
+  // bare value (number + optional unit, any decimal notation) that is
+  // mathematically verified, needs no AI judgment. Anything showing work
+  // ("2+2=4", "8×8") still goes to the grader: a right number reached by an
+  // invalid method is not a correct answer.
+  if (question.type === 'numeric_problem' && isResultOnly(det.requirements) && det.result === 'EQUIVALENT' && isBareValue(studentAnswer, language)) {
+    const grade = composePedagogicalGrade(det, { mathematicalCorrectness: 'CORRECT', reasoningQuality: 'ADEQUATE' });
     return {
-      ...deterministic,
+      ...toGradeFields(grade, pedagogicalFeedbackText(grade, language).combined || 'Correct.', 1),
       aiExecution: {
         aiExecutionId: randomUUID(),
         aiProvider: GRADE_ROUTE.provider,
-        aiModel: 'deterministic-numeric-match', // no provider call was made -- see tryDeterministicNumericGrade
+        aiModel: 'deterministic-numeric-match', // no provider call was made
         aiPromptId: 'quiz.free_text_grading',
         aiPromptVersion: 'deterministic',
       },
@@ -2793,40 +2821,39 @@ export async function gradeAnswer(
   }
 
   const prompt = getPrompt('quiz.free_text_grading');
-  const systemPrompt = `You are an educational grader. Evaluate student answers on their merits, not on matching exact wording:
-- short_answer/fill_blank: accept equivalent phrasing/values, partial credit if partially right
-- numeric_problem/step_by_step: check the work and the final result, partial credit for correct method with an arithmetic slip
-- open_ended/case_study/comparison: evaluate the understanding shown against the key points in the model answer
-- scenario/prediction/justification: evaluate the reasoning, not just the final claim
-- error_detection: correct only if the student identifies the actual error (not just "something is wrong")
+  const gradingLanguageName = LOCALE_FULL_NAME[language] || language;
+  const systemPrompt = `You grade a student's answer the way a good teacher does -- by the mathematics and the task, never by string matching.
 
-Be fair but rigorous. Confidence = how sure you are in the grade.
+PRINCIPLES
+- Notation never decides correctness: ×, ·, *, "x" between numbers, ÷ and /, decimal comma or point, equivalent fractions, a different order of factors or terms, and algebraically equivalent expressions or proportions are the SAME answer. Units that convert exactly (1,05 L = 1050 mL) are the same quantity.
+- Judge three things SEPARATELY:
+  1. mathematical_correctness of what the student computed/claimed: CORRECT, MINOR_SLIP (sound method and reasoning, one small arithmetic/transcription/unit slip), INCORRECT (a real mathematical or conceptual error), or NOT_APPLICABLE (no mathematical result is asked).
+  2. requirements: for EACH listed component, whether the answer actually contains it (met true/false). A correct result without the requested explanation is NOT a mathematical error -- it is an unmet component.
+  3. reasoning_quality of the reasoning shown: STRONG, ADEQUATE, WEAK, INVALID (the reasoning is conceptually wrong, even if the final number happens to be right), or ABSENT (none shown).
+- conceptual_error = true ONLY for a real conceptual misunderstanding (e.g. treating a direct proportion as inverse, relating non-corresponding quantities). Never for notation, never for a missing explanation. When true, name it briefly in "misconception"; otherwise misconception = null.
+- error_type: only when mathematical_correctness is MINOR_SLIP or INCORRECT (CONCEPTUAL, PROCEDURAL, MISREADING, ARITHMETIC, CARELESS, UNIT); otherwise null.
+- did_well: one sentence on what the student did right (empty string if nothing). to_fix: one or two sentences on what to correct or add, specific to this answer (empty string if nothing). Encouraging, precise, never mocking.
+- confidence: 0..1, how sure you are.
 
-When the answer is not fully correct, classify why into exactly one errorType:
-- CONCEPTUAL: misunderstood the underlying idea, not just the execution
-- PROCEDURAL: understood the concept but made a mistake applying the method/steps
-- CARELESS: a minor slip (sign error, typo, misread a number) on otherwise correct work
-- INCOMPLETE: correct as far as it goes, but didn't finish the reasoning/answer
-- MISREADING: answered a different question than the one asked
-- ARITHMETIC: the method/formula/setup was correct but a calculation step was wrong (only for numeric_problem/step_by_step-style work)
-- UNIT: the method and calculation were correct but units were wrong, missing, or mis-converted (only for numeric_problem/step_by_step-style work)
-Set errorType to null when correct is true.
+Write did_well, to_fix and misconception in ${gradingLanguageName}.
+Output ONLY the JSON object.`;
+  const requirementList = det.requirements.map((r) => `- ${r.id}: ${GRADING_REQUIREMENT_DESCRIPTIONS[r.id]}`).join('\n');
+  const userPrompt = `Question type: ${question.type}
+Question: ${question.question}
+Model / expected answer: ${question.correctAnswer}
+Student answer: ${studentAnswer}
 
-For numeric_problem/step_by_step and any answer that shows work: also set "reasoningValid" -- true if the underlying method/reasoning was sound (even if the final number is wrong, e.g. ARITHMETIC/UNIT/CARELESS errors), false if the reasoning itself was flawed (e.g. CONCEPTUAL/PROCEDURAL/MISREADING errors, or a correct final answer reached by a method that doesn't actually follow). For question types with no visible reasoning/work to judge, set reasoningValid equal to "correct".
+Requested components (use exactly these ids in "requirements"):
+${requirementList}
 
-Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}.`;
+Mathematical check of the final value: ${MATH_CHECK_FACT[det.result]}`;
 
+  const valueOrStringMatch = () =>
+    det.result === 'EQUIVALENT' || studentAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
   const parseFailureFallback = (): Omit<GradeAnswerResult, 'aiExecution'> => {
     console.error('Failed to parse grading response');
-    const matched = studentAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
-    return {
-      correct: matched,
-      score: matched ? 1 : 0,
-      feedback: 'Please review the explanation above.',
-      confidence: 0.5,
-      errorType: matched ? null : null,
-      reasoningValid: matched,
-    };
+    const matched = valueOrStringMatch();
+    return { correct: matched, score: matched ? 1 : 0, feedback: 'Please review the explanation above.', confidence: 0.5, errorType: null, reasoningValid: matched };
   };
   const totalFailureFallback = (): Omit<GradeAnswerResult, 'aiExecution'> => ({
     correct: false,
@@ -2847,49 +2874,48 @@ Write the "feedback" field entirely in ${LOCALE_FULL_NAME[language] || language}
     context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId: question.conceptId, sourceComponent: 'quiz-generation.service.ts:gradeAnswer' },
     call: (signal) =>
       callModel(
-        {
-          provider: GRADE_ROUTE.provider,
-          model: GRADE_ROUTE.primary,
-          maxTokens: 1536,
-          system: systemPrompt,
-          user: `Grade this answer:
-
-Question type: ${question.type}
-Question: ${question.question}
-Model/expected answer: ${question.correctAnswer}
-Student Answer: ${studentAnswer}
-
-Respond with JSON (no markdown):
-{
-  "correct": true/false,
-  "score": 0.0-1.0,
-  "feedback": "...",
-  "confidence": 0.0-1.0,
-  "errorType": "CONCEPTUAL" | "PROCEDURAL" | "CARELESS" | "INCOMPLETE" | "MISREADING" | "ARITHMETIC" | "UNIT" | null,
-  "reasoningValid": true/false
-}`,
-        },
+        { provider: GRADE_ROUTE.provider, model: GRADE_ROUTE.primary, maxTokens: 1536, system: systemPrompt, user: userPrompt, jsonSchema: PEDAGOGICAL_GRADE_SCHEMA },
         signal
       ),
     validate: (raw) =>
-      validateJson(raw, (gradeResult) => {
-        if (!gradeResult || typeof gradeResult !== 'object' || Array.isArray(gradeResult)) {
+      validateJson(raw, (g) => {
+        if (!g || typeof g !== 'object' || Array.isArray(g)) {
           return { value: null as any, errors: ['Grading response was not a JSON object'] };
         }
-        const value: Omit<GradeAnswerResult, 'aiExecution'> = {
-          correct: gradeResult.correct,
-          score: clamp(Number(gradeResult.score) || 0, 0, 1),
-          feedback: gradeResult.feedback || '',
-          confidence: clamp(Number(gradeResult.confidence) || 0.7, 0, 1),
-          errorType: gradeResult.correct ? null : gradeResult.errorType || null,
-          reasoningValid: typeof gradeResult.reasoningValid === 'boolean' ? gradeResult.reasoningValid : !!gradeResult.correct,
-        };
-        return { value, errors: [] };
+        const structured = typeof g.mathematical_correctness === 'string' || Array.isArray(g.requirements);
+        const assessment: GraderAssessment = structured
+          ? {
+              mathematicalCorrectness: g.mathematical_correctness,
+              requirements: Array.isArray(g.requirements) ? g.requirements.filter((r: any) => r && typeof r.id === 'string') : undefined,
+              reasoningQuality: g.reasoning_quality,
+              conceptualError: g.conceptual_error === true,
+              misconception: typeof g.misconception === 'string' ? g.misconception : null,
+              errorType: typeof g.error_type === 'string' ? g.error_type : null,
+              didWell: typeof g.did_well === 'string' ? g.did_well : null,
+              toFix: typeof g.to_fix === 'string' ? g.to_fix : null,
+            }
+          : { legacyCorrect: g.correct === true, legacyScore: Number(g.score), legacyReasoningValid: typeof g.reasoningValid === 'boolean' ? g.reasoningValid : undefined, toFix: g.feedback || null, errorType: g.errorType ?? null };
+        const confidence = clamp(Number(g.confidence) || 0.7, 0, 1);
+        const grade = composePedagogicalGrade(det, assessment);
+
+        // A legacy-shaped reply with nothing mathematically verifiable keeps
+        // its own verdict exactly as before (clamped) -- the model never
+        // invents a stricter or looser grade from less information.
+        if (!structured && det.result === 'UNDECIDABLE') {
+          const value: Omit<GradeAnswerResult, 'aiExecution'> = {
+            correct: g.correct,
+            score: clamp(Number(g.score) || 0, 0, 1),
+            feedback: g.feedback || '',
+            confidence,
+            errorType: g.correct ? null : g.errorType || null,
+            reasoningValid: typeof g.reasoningValid === 'boolean' ? g.reasoningValid : !!g.correct,
+            pedagogical: grade,
+          };
+          return { value, errors: [] };
+        }
+        const text = pedagogicalFeedbackText(grade, language);
+        return { value: toGradeFields(grade, text.combined || (g.feedback ?? ''), confidence), errors: [] };
       }),
-    // Covers BOTH pre-existing fallback tiers: a parse/validation failure
-    // (INVALID_RESPONSE/VALIDATION_ERROR) uses the string-match fallback
-    // exactly as before; a transport/provider/timeout failure uses the
-    // total-failure fallback exactly as before.
     fallback: (error) =>
       error.code === 'INVALID_RESPONSE' || error.code === 'VALIDATION_ERROR' ? parseFailureFallback() : totalFailureFallback(),
   });

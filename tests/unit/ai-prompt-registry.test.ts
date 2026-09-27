@@ -35,7 +35,7 @@ describe('PROMPT_REGISTRY', () => {
   it('getPrompt returns the exact registered definition for a known id', () => {
     const def = getPrompt('quiz.free_text_grading');
     expect(def.capability).toBe('GRADING');
-    expect(def.version).toBe('v1');
+    expect(def.version).toBe('v2'); // PEDAGOGICAL_V1 grading model
   });
 
   it('getPrompt throws CONFIGURATION_ERROR for an unregistered id', () => {

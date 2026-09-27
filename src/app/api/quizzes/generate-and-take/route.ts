@@ -43,6 +43,8 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
+import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
+import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
@@ -1752,6 +1754,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // produced the grade. Empty for concepts graded only by the
         // deterministic gradeStructuredAnswer path (no AI involved).
         aiGrading: Array<{ questionIndex: number } & AIProvenance>;
+        // PEDAGOGICAL_V1: the structured verdict of each question (no answer
+        // text) -- keeps task incompleteness, minor slips, math errors and real
+        // misconceptions separate in the learner's evidence.
+        pedagogicalGrades: Array<{
+          questionIndex: number;
+          finalJudgment: string;
+          mathematicalCorrectness: string;
+          taskCompletion: string;
+          reasoningQuality: string;
+          missingRequirements: string[];
+          learnerSignal: string;
+          misconception: string | null;
+        }>;
         // Phase 1D: one normalized timing sample per question in this
         // concept's bucket -- never used for grading/mastery, purely
         // carried through to the evidence row's behavioral metadata.
@@ -1791,6 +1806,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         questionTypes: [],
         questionDifficulties: [],
         aiGrading: [],
+        pedagogicalGrades: [],
         responseTimings: [],
       };
       bucket.total++;
@@ -1803,6 +1819,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       bucket.responseTimings.push({ questionIndex, timing });
       if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
         bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
+      }
+      const pedagogical = (gradeResult as { pedagogical?: PedagogicalGrade }).pedagogical;
+      if (pedagogical) {
+        bucket.pedagogicalGrades.push({
+          questionIndex,
+          finalJudgment: pedagogical.finalJudgment,
+          mathematicalCorrectness: pedagogical.mathematicalCorrectness,
+          taskCompletion: pedagogical.taskCompletion,
+          reasoningQuality: pedagogical.reasoningQuality,
+          missingRequirements: pedagogical.missingRequirements,
+          learnerSignal: pedagogical.learnerSignal,
+          misconception: pedagogical.misconception,
+        });
       }
       // Only one question per concept is ever flagged askConfidence, so
       // at most one answer in this bucket carries a reported confidence --
@@ -1840,13 +1869,33 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // it never re-derives a diagnosis.
         errorType: (gradeResult as any).errorType ?? null,
         reasoningValid: typeof (gradeResult as any).reasoningValid === 'boolean' ? (gradeResult as any).reasoningValid : null,
+        // PEDAGOGICAL_V1: the teacher-style verdict and its three parts
+        // (what you did well / what was missing / what to correct).
+        ...(pedagogical
+          ? (() => {
+              const text = pedagogicalFeedbackText(pedagogical, language);
+              return {
+                finalJudgment: pedagogical.finalJudgment,
+                missingRequirements: pedagogical.missingRequirements,
+                feedbackParts: { didWell: text.didWell, missing: text.missing, toFix: text.toFix },
+              };
+            })()
+          : {}),
       });
     }
 
-    // Log each classified mistake for error-pattern detection.
+    // Log each REAL mistake for error-pattern detection. PEDAGOGICAL_V1: an
+    // answer whose mathematics is right but misses a requested component
+    // (TASK_INCOMPLETE) is not an error -- it stays in the evidence's
+    // pedagogicalGrades, never in `errors`, so it can never feed
+    // misconception / prerequisite diagnosis.
     await Promise.all(
       graded
-        .filter((g): g is NonNullable<typeof g> => g !== null && !g.gradeResult.correct && !!(g.gradeResult as any).errorType)
+        .filter((g): g is NonNullable<typeof g> => {
+          if (g === null || g.gradeResult.correct || !(g.gradeResult as any).errorType) return false;
+          const p = (g.gradeResult as { pedagogical?: PedagogicalGrade }).pedagogical;
+          return p ? isRecordableError(p) : true;
+        })
         .map((g) =>
           recordError({
             studentId: validated.studentId,
@@ -2050,6 +2099,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
               // in this concept's evidence -- additive, doesn't change the
               // meaning of any existing metadata field.
               ...(bucket.aiGrading.length > 0 ? { aiGrading: bucket.aiGrading } : {}),
+              ...(bucket.pedagogicalGrades.length > 0 ? { gradingModel: 'PEDAGOGICAL_V1', pedagogicalGrades: bucket.pedagogicalGrades } : {}),
               // CANON-R5R1/R5R1A -- ONLY when this bucket is the exact
               // concept a trusted, server-persisted v1 marker authorized
               // (loaded from quiz_sessions, never the request body) AND

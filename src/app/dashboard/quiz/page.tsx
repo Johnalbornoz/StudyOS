@@ -164,6 +164,9 @@ interface ReviewItem {
   score: number;
   feedback: string;
   explanation: string;
+  /** PEDAGOGICAL_V1 teacher verdict + its three parts (absent on legacy results). */
+  finalJudgment?: 'CORRECT' | 'ALMOST' | 'INCORRECT';
+  feedbackParts?: { didWell: string | null; missing: string[]; toFix: string | null };
 }
 
 const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
@@ -1683,18 +1686,19 @@ function QuizPageContent() {
               // what to change / what now. `errorType` / `reasoningValid`
               // are the CANONICAL grader classification; the UI presents
               // them, it never re-derives a diagnosis.
-              const whatHappened = r.correct
-                ? at['feedback.correct']
-                : r.reasoningValid
-                  ? at['feedback.almost']
-                  : at['feedback.incorrect'];
+              // PEDAGOGICAL_V1: the server's teacher verdict is the verdict;
+              // legacy results fall back to the previous derivation.
+              const judgment = r.finalJudgment ?? (r.correct ? 'CORRECT' : r.reasoningValid ? 'ALMOST' : 'INCORRECT');
+              const whatHappened = judgment === 'CORRECT' ? at['feedback.correct'] : judgment === 'ALMOST' ? at['feedback.almost'] : at['feedback.incorrect'];
+              const chipClass = judgment === 'CORRECT' ? 'chip-good' : judgment === 'ALMOST' ? 'chip-warn' : 'chip-critical';
+              const parts = r.feedbackParts;
               const whyKey = r.errorType ? (`errorTeach.${r.errorType}` as keyof typeof t) : null;
               const why = whyKey && at[whyKey] ? at[whyKey] : r.reasoningValid ? at['feedback.methodSoundNumberOff'] : '';
               return (
                 <div key={r.questionIndex} className="card al-fb" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
                     <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{r.conceptLabel}</span>
-                    <span className={`chip ${r.correct ? 'chip-good' : 'chip-critical'}`}>{whatHappened}</span>
+                    <span className={`chip ${chipClass}`} data-judgment={judgment}>{whatHappened}</span>
                   </div>
                   <p style={{ fontSize: 16, fontWeight: 600, margin: '10px 0' }}>
                     <MathText text={r.question} />
@@ -1709,7 +1713,31 @@ function QuizPageContent() {
                     </div>
                   )}
 
-                  {!r.correct && (why || r.feedback) && (
+                  {parts && judgment !== 'CORRECT' && (parts.didWell || parts.missing.length > 0 || parts.toFix) && (
+                    <div className="al-fb-body" data-testid="pedagogical-feedback">
+                      {parts.didWell && (
+                        <div>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{at['grading.section.didWell']}</p>
+                          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}><MathText text={parts.didWell} /></p>
+                        </div>
+                      )}
+                      {parts.missing.length > 0 && (
+                        <div>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{at['grading.section.missing']}</p>
+                          {parts.missing.map((m, i) => (
+                            <p key={i} style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}>{m}</p>
+                          ))}
+                        </div>
+                      )}
+                      {parts.toFix && (
+                        <div>
+                          <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 2px' }}>{at['grading.section.toFix']}</p>
+                          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)' }}><MathText text={parts.toFix} /></p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!parts && !r.correct && (why || r.feedback) && (
                     <div className="al-fb-body">
                       {why && (
                         <div>

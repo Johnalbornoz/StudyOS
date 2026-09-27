@@ -73,6 +73,8 @@ describe('release test 22 -- every prompt this phase changed has a correctly bum
           'quiz.question_generation',
           'transfer.activity_generation',
           'transfer.response_evaluation',
+          // PEDAGOGICAL_V1 grading model (v2) -- see its own doc comment in prompt-registry.ts
+          'quiz.free_text_grading',
         ].includes(id)
     );
     for (const id of untouchedIds) {
