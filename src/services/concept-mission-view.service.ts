@@ -55,9 +55,12 @@ import {
   CanonicalDecisionUnavailableError,
 } from '@/lib/pedagogical-decision';
 
+import type { CanonicalPedagogicalDecision } from '@/lib/pedagogical-engine/types';
+
 export type ConceptMissionViewResult =
   | { status: 'NOT_FOUND' }
-  | { status: 'OK'; view: ConceptMissionView }
+  /** `canonicalDecision`: the SAME fresh decision the view was overridden with (gate on), for read-only explanation surfaces; absent on the legacy path. */
+  | { status: 'OK'; view: ConceptMissionView; canonicalDecision?: CanonicalPedagogicalDecision }
   /** CANON-R5 Part 28 fail-safe: the gate is on but the canonical decision could not be computed -- never silently rendered with the legacy `view` as if it still had next-action authority. */
   | { status: 'CANONICAL_DECISION_UNAVAILABLE' };
 
@@ -219,7 +222,7 @@ export async function getConceptMissionView(
   if (isCanonicalEngineV1Enabled()) {
     try {
       const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId });
-      return { status: 'OK', view: overrideConceptMissionViewWithCanonicalDecision(view, decision) };
+      return { status: 'OK', view: overrideConceptMissionViewWithCanonicalDecision(view, decision), canonicalDecision: decision };
     } catch (error) {
       if (error instanceof CanonicalDecisionUnavailableError) {
         console.error('[concept-mission] canonical decision unavailable:', error, error.cause);

@@ -77,14 +77,16 @@ describe('LX-3: the situation label survives only as demoted, informational-only
 
   it('is computed from the same canonical conceptSituation() call, with no embedded next-action', () => {
     expect(page).toMatch(/conceptSituation\(knowledgeState\.masteryState, knowledgeState\.validationReadiness,/);
-    const situationBlock = page.match(/\{situation && \(([\s\S]*?)\)\}/);
+    // LEARNER_PROGRESS_EXPLAINABILITY: shown only on the legacy path -- with the canonical
+    // engine on, the canonical stage is the one phase shown (no competing "Retención pendiente").
+    const situationBlock = page.match(/\{!progress && situation && \(([\s\S]*?)\)\}/);
     expect(situationBlock).toBeTruthy();
     expect(situationBlock![1]).not.toMatch(/situationNextLabel|StartSessionButton|activityCta|<Link/);
   });
 
   it('lives inside the "More about my progress" progressive-disclosure block, not the primary flow', () => {
     const detailsIdx = page.indexOf('<details className="cm-more"');
-    const situationIdx = page.indexOf('{situation && (');
+    const situationIdx = page.indexOf('{!progress && situation && (');
     const detailsCloseIdx = page.indexOf('</details>');
     expect(detailsIdx).toBeGreaterThan(-1);
     expect(situationIdx).toBeGreaterThan(detailsIdx);

@@ -43,6 +43,7 @@ import type {
   RollbackCase,
   RollbackDecision,
   SatisfactionBasis,
+  PracticeWindowEntry,
 } from './types';
 
 type Stage = Exclude<PedagogicalStage, 'CONSOLIDATED'>;
@@ -102,6 +103,10 @@ function validateRecognitionSet(recognized: RecognizedRequirement[] | undefined)
  * later qualifying attempt is not reported, since it is no longer the
  * reason the learner is where they are).
  */
+/** CANON-V2-REMEDIATION Part 1A -- "2 of the last 3 VALID Practice attempts" (Policy V2 Section 3). Named here so the decision can explain the window it used; the values are unchanged. */
+const PRACTICE_WINDOW_SIZE = 3;
+const PRACTICE_REQUIRED_PASSES = 2;
+
 function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, RecognizedRequirement> | null) {
   const sorted = sortEvidence(evidence);
 
@@ -140,7 +145,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
    * from a prior cycle are never deleted from `RawEvidenceItem`/History
    * itself -- only this in-memory replay accumulator forgets them.
    */
-  let practiceWindow: boolean[] = [];
+  let practiceWindow: PracticeWindowEntry[] = [];
   let proveSatisfied = false;
   let proveBasis: SatisfactionBasis = null;
   let proveQualifyingAt: string | null = null;
@@ -252,9 +257,9 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       // during REINFORCE counts identically here, by construction.
       const isWindowEligible = verdict.reasonCode === 'PASSING_SCORE' || verdict.reasonCode === 'INSUFFICIENT_SCORE';
       if (isWindowEligible) {
-        practiceWindow.push(verdict.result === 'QUALIFIES');
-        const passesInWindow = practiceWindow.slice(-3).filter(Boolean).length;
-        if (!practiceSatisfied && passesInWindow >= 2) {
+        practiceWindow.push({ evidenceId: item.id, scorePercent: item.scorePercent, passed: verdict.result === 'QUALIFIES', timestamp: item.timestamp });
+        const passesInWindow = practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length;
+        if (!practiceSatisfied && passesInWindow >= PRACTICE_REQUIRED_PASSES) {
           practiceSatisfied = true;
           practiceBasis = 'V1_EVIDENCE';
           // A newly-satisfied Practice window resolves any rollback that
@@ -483,6 +488,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     highestQualifyingPracticeDifficulty,
     acc,
     lastRollback,
+    practiceWindow,
   };
 }
 
@@ -809,6 +815,17 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     // `retainStatus`'s own `eligibleFrom` computation above already
     // used. Never independently recomputed.
     lastQualifyingProveAt: state.proveQualifyingAt,
+    // Read-only explanation of the SAME window the replay above used to
+    // decide PRACTICE -- never a second computation of the rule.
+    practiceProgress: {
+      windowSize: PRACTICE_WINDOW_SIZE,
+      requiredPasses: PRACTICE_REQUIRED_PASSES,
+      minimumScorePercent: CANONICAL_POLICY.practice.minimumScorePercent,
+      difficulty: { ...CANONICAL_POLICY.practice.difficulty },
+      recentValidAttempts: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).map((e) => ({ ...e })),
+      passesInWindow: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length,
+      satisfied: state.practiceSatisfied,
+    },
   };
 }
 

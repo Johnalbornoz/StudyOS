@@ -326,7 +326,8 @@ describe('Step 28 / 6L-B1 / 6L-C1 / policy protection (Parts 15-18)', () => {
     expect(source).not.toMatch(/getBestLearningDecisionForConcept/);
     expect(source).toMatch(/getConceptMissionView\(/);
     // situation label still rendered, still with no embedded next-action, now inside the progress disclosure
-    const situationBlock = source.match(/\{situation && \(([\s\S]*?)\)\}/);
+    // legacy path only (LEARNER_PROGRESS_EXPLAINABILITY): the canonical stage is the one phase shown
+    const situationBlock = source.match(/\{!progress && situation && \(([\s\S]*?)\)\}/);
     expect(situationBlock).toBeTruthy();
     expect(situationBlock![1]).not.toMatch(/situationNextLabel|StartSessionButton|activityCta/);
     expect(source).toMatch(/<details className="cm-more"/);

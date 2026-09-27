@@ -312,6 +312,30 @@ export interface QualifiedEvidenceSummary {
   satisfactionBasis: SatisfactionBasis;
 }
 
+/** One structurally-valid PRACTICE attempt in the current qualification window (opaque id + score only -- never learner content). */
+export interface PracticeWindowEntry {
+  evidenceId: string;
+  scorePercent: number;
+  passed: boolean;
+  timestamp: string;
+}
+
+/**
+ * Read-only explanation of the PRACTICE requirement exactly as the replay
+ * evaluated it: the current cycle's last `windowSize` valid attempts and
+ * how many passed. Presentation only -- the decision is still made by the
+ * replay itself.
+ */
+export interface PracticeProgress {
+  windowSize: number;
+  requiredPasses: number;
+  minimumScorePercent: number;
+  difficulty: { min: number; max: number };
+  recentValidAttempts: PracticeWindowEntry[];
+  passesInWindow: number;
+  satisfied: boolean;
+}
+
 export interface CanonicalPedagogicalDecision {
   policyVersion: string;
   /**
@@ -368,4 +392,6 @@ export interface CanonicalPedagogicalDecision {
    * RETAIN-eligibility logic.
    */
   lastQualifyingProveAt: string | null;
+  /** Explains the PRACTICE window (see `PracticeProgress`). Always set by the engine; optional only so decisions built elsewhere (fixtures, older snapshots) stay valid -- consumers must degrade when absent. */
+  practiceProgress?: PracticeProgress;
 }

@@ -18,6 +18,28 @@ import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 import { getConceptMissionView } from '@/services/concept-mission-view.service';
 import ConceptMission from './ConceptMission';
+import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
+
+const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
+
+/**
+ * One compact learner signal: small label, a modest value, an optional
+ * one-line caption. A missing value is a secondary muted state (never a
+ * headline-sized sentence).
+ */
+function Signal({ label, value, empty, caption }: { label: string; value: string | null; empty: string; caption?: string }) {
+  return (
+    <div className="card" style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 2, boxShadow: 'none' }}>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
+      {value !== null ? (
+        <div className="tabular" style={{ fontSize: 18, fontWeight: 650, lineHeight: 1.2 }}>{value}</div>
+      ) : (
+        <div data-signal-empty style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.3 }}>{empty}</div>
+      )}
+      {caption && <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.35 }}>{caption}</div>}
+    </div>
+  );
+}
 
 function daysBetween(date: Date | string | null): number | null {
   if (!date) return null;
@@ -109,6 +131,10 @@ export default async function ConceptDetailPage({
     throw new Error('CANONICAL_DECISION_UNAVAILABLE');
   }
   const missionView = missionResult.view;
+  // Canonical progress explanation (gate on): the ONE phase + its real requirement.
+  const progress = missionResult.canonicalDecision
+    ? buildProgressExplanation(missionResult.canonicalDecision, (iso) => new Date(iso).toLocaleDateString(locale))
+    : null;
   const debtCriteria = activeDebt.rows.length > 0 ? await getLearningDebtCriteriaProgress(studentId, conceptId) : null;
 
   // Phase 1C: the "More about my progress" numbers -- sourced from the
@@ -190,7 +216,7 @@ export default async function ConceptDetailPage({
     <div style={{ maxWidth: 640 }}>
       <ConceptMission view={missionView} studentId={studentId} conceptId={conceptId} locale={locale} />
 
-      {state && (
+      {(state || progress) && (
         <details className="cm-more" style={{ marginBottom: 'var(--space-6)' }}>
           <summary style={{ cursor: 'pointer', fontSize: 16, fontWeight: 650 }}>
             {t['conceptMission.moreTitle']}
@@ -199,158 +225,230 @@ export default async function ConceptDetailPage({
             {t['conceptMission.moreHint']}
           </p>
 
-          {situation && (
+          {/* Where am I -> what I have -> what's missing -> what happens next.
+              Canonical decision only (progress-explanation.ts); no second rule. */}
+          {progress && (
+            <section data-testid="progress-explainer" className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+              <p style={{ margin: 0, fontSize: 15 }}>
+                <span className="label" style={{ color: 'var(--text-muted)' }}>{t['progress.whereLabel']}:</span>{' '}
+                <strong>{t[`conceptMission.stage.${progress.stage}` as keyof typeof t] ?? progress.stage}</strong>
+              </p>
+              {progress.practice && (
+                <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--text-secondary)' }}>
+                  {t['progress.practiceCompleted']
+                    .replace('{done}', String(Math.min(progress.practice.passes, progress.practice.required)))
+                    .replace('{required}', String(progress.practice.required))}
+                </p>
+              )}
+              <ol data-testid="progress-steps" style={{ listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: '6px 10px', margin: 'var(--space-3) 0 0', padding: 0, fontSize: 13 }}>
+                {progress.steps.map((step, i) => (
+                  <li key={step.stage} data-state={step.state} style={{ display: 'flex', alignItems: 'center', gap: 6, color: step.state === 'UPCOMING' ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: step.state === 'CURRENT' || step.state === 'WAITING' ? 650 : 400 }}>
+                    {i > 0 && <span aria-hidden="true" style={{ color: 'var(--text-muted)' }}>→</span>}
+                    <span>
+                      {t[`conceptMission.stage.${step.stage}` as keyof typeof t]}
+                      {step.state === 'DONE' && <span aria-hidden="true" style={{ color: 'var(--brand)' }}> ✓</span>}
+                      {step.counter && <span className="tabular"> {step.counter.done}/{step.counter.required}</span>}
+                    </span>
+                    <span className="sr-only">
+                      ({step.state === 'DONE' ? t['progress.stepDone'] : step.state === 'CURRENT' ? t['progress.stepCurrent'] : step.state === 'WAITING' ? t['progress.stepWaiting'] : t['progress.stepUpcoming']})
+                    </span>
+                  </li>
+                ))}
+              </ol>
+
+              <h3 style={{ fontSize: 13.5, margin: 'var(--space-4) 0 var(--space-2)' }}>{t['progress.whatsMissingTitle']}</h3>
+              {progress.practice && (
+                <dl data-testid="progress-criteria" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', margin: '0 0 var(--space-3)', fontSize: 13 }}>
+                  <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionPasses']}</dt>
+                  <dd style={{ margin: 0 }}>
+                    <span aria-hidden="true" style={{ letterSpacing: 2, color: 'var(--brand)' }}>
+                      {Array.from({ length: progress.practice.required }, (_, i) => (i < progress!.practice!.passes ? '●' : '○')).join(' ')}
+                    </span>{' '}
+                    <span className="tabular">
+                      {t['progress.criterionPassesValue']
+                        .replace('{done}', String(Math.min(progress.practice.passes, progress.practice.required)))
+                        .replace('{required}', String(progress.practice.required))}
+                    </span>
+                  </dd>
+                  <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionRecent']}</dt>
+                  <dd style={{ margin: 0 }} className="tabular">
+                    {progress.practice.attempts.length === 0
+                      ? t['progress.criterionRecentNone']
+                      : progress.practice.attempts.map((a, i) => (
+                          <span key={i}>
+                            {i > 0 ? ' · ' : ''}
+                            {Math.round(a.scorePercent)}% <span aria-hidden="true">{a.passed ? '✓' : '✗'}</span>
+                            <span className="sr-only">{a.passed ? t['conceptDetail.criterionMet'] : t['conceptDetail.criterionNotMet']}</span>
+                          </span>
+                        ))}
+                  </dd>
+                  <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionTarget']}</dt>
+                  <dd style={{ margin: 0 }}>
+                    {t['progress.criterionTargetValue']
+                      .replace('{min}', String(progress.practice.minimumScorePercent))
+                      .replace('{required}', String(progress.practice.required))
+                      .replace('{window}', String(progress.practice.windowSize))}
+                  </dd>
+                </dl>
+              )}
+              <p data-testid="progress-remaining" style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{fillLine(t, progress.remaining)}</p>
+              {progress.after && <p style={{ margin: '2px 0 0', fontSize: 13.5, color: 'var(--text-secondary)' }}>{fillLine(t, progress.after)}</p>}
+              {progress.reinforcing && <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{t['progress.reinforcing']}</p>}
+              {progress.practice && <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>{t['progress.helpNote']}</p>}
+            </section>
+          )}
+
+          {/* Legacy (non-canonical) path only: the canonical stage above is the one phase shown. */}
+          {!progress && situation && (
             <p style={{ margin: '0 0 var(--space-4)', fontSize: 13.5, color: 'var(--text-secondary)' }}>
               <span className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.situationTitle']}:</span>{' '}
               {conceptSituationLabel(situation, t)}
             </p>
           )}
 
-          <h3 style={{ fontSize: 14, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.yourLearning']}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.mastery']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>{formatMasteryPercent(tryMasteryScore(state.masteryScore, `concept detail ${conceptId}`))}</div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.freshness']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {state.retention !== null ? `${Math.round(state.retention)}%` : t['dashboard.notEnoughEvidence']}
+          {state && (
+            <>
+              <h3 style={{ fontSize: 14, margin: '0 0 2px' }}>{t['conceptDetail.yourLearning']}</h3>
+              <p style={{ margin: '0 0 var(--space-3)', fontSize: 12.5, color: 'var(--text-muted)' }}>{t['progress.signalsNote']}</p>
+              <div data-testid="learning-signals" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <Signal label={t['knowledgeState.understanding']} value={pct(knowledgeState?.understandingScore ?? null)} empty={t['progress.noDataYet']} caption={t['progress.signal.understandingCaption']} />
+                <Signal label={t['knowledgeState.independence']} value={pct(knowledgeState?.independenceScore ?? null)} empty={t['progress.noDataYet']} caption={t['progress.signal.independenceCaption']} />
+                <Signal label={t['progress.signal.hints']} value={String(evidence.hintsUsedTotal)} empty={t['progress.noDataYet']} caption={t['progress.signal.hintsCaption']} />
+                <Signal label={t['conceptDetail.evidenceStrength']} value={state.evidenceStrength ? evidenceStrengthLabel : null} empty={t['progress.noDataYet']} />
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{t['conceptDetail.freshnessCaption']}</div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.independentMastery']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {state.independentMastery !== null ? `${state.independentMastery}%` : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.confidence']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {state.confidence !== null ? `${state.confidence}%` : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['dashboard.confidenceCalibration']}</div>
-              <div className="tabular" style={{ fontSize: 24, fontWeight: 650, lineHeight: 1 }}>
-                {state.confidenceCalibration.score !== null ? `${state.confidenceCalibration.score}%` : t['dashboard.notEnoughEvidence']}
-              </div>
-            </div>
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.evidenceStrength']}</div>
-              <div style={{ fontSize: 20, fontWeight: 650, lineHeight: 1.4 }}>{evidenceStrengthLabel}</div>
-            </div>
-            <div
-              className="card"
-              role="group"
-              aria-label={`${t['conceptDetail.transfer']}: ${transferDepthLabel(transferDepth, t)}`}
-              style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}
-            >
-              <div className="label" style={{ color: 'var(--text-muted)' }} aria-hidden="true">{t['conceptDetail.transfer']}</div>
-              <div style={{ fontSize: 16, fontWeight: 650, lineHeight: 1.35 }} aria-hidden="true">
-                {transferDepthLabel(transferDepth, t)}
-              </div>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: 'var(--space-6)', marginBottom: 'var(--space-6)', fontSize: 14 }}>
-            <div>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.lastDemonstrated']}</div>
-              <div>{relativeDay(lastDemonstratedAt, t)}</div>
-            </div>
-            <div>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.nextReview']}</div>
-              <div>{futureDay(nextReviewDate, t)}</div>
-            </div>
-          </div>
+              <details className="cm-all-details" style={{ marginBottom: 0 }}>
+                <summary style={{ cursor: 'pointer', fontSize: 13.5, fontWeight: 600, marginBottom: 'var(--space-3)' }}>{t['progress.allDetails']}</summary>
 
-          {knowledgeState && (
-            <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-                <h3 style={{ fontSize: 14, margin: 0 }}>{t['knowledgeState.sectionTitle']}</h3>
-                <span
-                  style={{
-                    fontSize: 12.5, fontWeight: 650, color: masteryStateColor(knowledgeState.masteryState),
-                    border: `1px solid ${masteryStateColor(knowledgeState.masteryState)}`, borderRadius: 999, padding: '2px 10px',
-                  }}
-                >
-                  {masteryStateLabel(knowledgeState.masteryState, t)}
-                </span>
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {knowledgeKpis(knowledgeState).map((kpi) => (
-                  <li key={kpi.labelKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5 }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>{t[kpi.labelKey]}</span>
-                    <span className="tabular" style={{ fontWeight: 650, color: kpi.score === null ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-                      {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                  {/* Legacy weighted evidence accumulator (mastery_records) -- NOT the
+                      canonical stage and NOT mastery; named for what it measures. */}
+                  <Signal label={t['conceptDetail.evidenceScore']} value={formatMasteryPercent(tryMasteryScore(state.masteryScore, `concept detail ${conceptId}`))} empty={t['progress.noDataYet']} caption={t['conceptDetail.evidenceScoreCaption']} />
+                  <Signal
+                    label={t['dashboard.freshness']}
+                    value={isFutureStage(progress, 'RETAIN') ? null : state.retention !== null ? `${Math.round(state.retention)}%` : null}
+                    empty={isFutureStage(progress, 'RETAIN') ? t['progress.futureStep'] : t['progress.noDataYet']}
+                    caption={t['conceptDetail.freshnessCaption']}
+                  />
+                  <Signal label={t['dashboard.independentMastery']} value={pct(state.independentMastery)} empty={isFutureStage(progress, 'PROVE') ? t['progress.futureStep'] : t['progress.noDataYet']} />
+                  <Signal label={t['conceptDetail.confidence']} value={pct(state.confidence)} empty={t['progress.noDataYet']} />
+                  <Signal label={t['dashboard.confidenceCalibration']} value={pct(state.confidenceCalibration.score)} empty={t['progress.noDataYet']} />
+                  <Signal
+                    label={t['conceptDetail.transfer']}
+                    value={isFutureStage(progress, 'TRANSFER') ? null : transferDepthLabel(transferDepth, t)}
+                    empty={t['progress.futureStep']}
+                  />
+                </div>
 
-          {whyFacts.length > 0 && (
-            <div className="card" style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)' }}>
-              <h3 style={{ fontSize: 14, marginBottom: 'var(--space-2)' }}>{t['conceptDetail.whyStudyusThinks']}</h3>
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-secondary)' }}>
-                {whyFacts.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+                <div style={{ display: 'flex', gap: 'var(--space-6)', marginBottom: 'var(--space-4)', fontSize: 13.5 }}>
+                  <div>
+                    <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.lastDemonstrated']}</div>
+                    <div>{relativeDay(lastDemonstratedAt, t)}</div>
+                  </div>
+                  <div>
+                    <div className="label" style={{ color: 'var(--text-muted)' }}>{t['conceptDetail.nextReview']}</div>
+                    <div>{futureDay(nextReviewDate, t)}</div>
+                  </div>
+                </div>
 
-          {debtCriteria && (
-            <div className="card" style={{ marginBottom: 0, padding: 'var(--space-4)' }}>
-              <h3 style={{ fontSize: 14, marginBottom: 'var(--space-3)' }}>{t['conceptDetail.debtProgressTitle']}</h3>
-              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-                  <span aria-hidden="true" style={{ color: debtCriteria.masteryAbove85.met ? 'var(--brand)' : 'var(--text-muted)' }}>
-                    {debtCriteria.masteryAbove85.met ? '✓' : '○'}
-                  </span>
-                  <span className="sr-only">{criterionStatusLabel(debtCriteria.masteryAbove85.met, t)}: </span>
-                  {t['conceptDetail.criterionMastery']} — <span className="tabular">{Math.round(debtCriteria.masteryAbove85.current)}%</span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-                  <span aria-hidden="true" style={{ color: debtCriteria.recentScoresAbove80.met ? 'var(--brand)' : 'var(--text-muted)' }}>
-                    {debtCriteria.recentScoresAbove80.met ? '✓' : '○'}
-                  </span>
-                  <span className="sr-only">{criterionStatusLabel(debtCriteria.recentScoresAbove80.met, t)}: </span>
-                  {t['conceptDetail.criterionRecentScores']} —{' '}
-                  {debtCriteria.recentScoresAbove80.current !== null ? (
-                    <span className="tabular">{Math.round(debtCriteria.recentScoresAbove80.current)}%</span>
-                  ) : (
-                    <span>
-                      {debtCriteria.recentScoresAbove80.sampleCount}/{debtCriteria.recentScoresAbove80.requiredSamples} —{' '}
-                      {t['conceptDetail.criterionNotEnoughSamples']}
-                    </span>
-                  )}
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-                  <span aria-hidden="true" style={{ color: debtCriteria.retentionProof.met ? 'var(--brand)' : 'var(--text-muted)' }}>
-                    {debtCriteria.retentionProof.met ? '✓' : '○'}
-                  </span>
-                  <span className="sr-only">{criterionStatusLabel(debtCriteria.retentionProof.met, t)}: </span>
-                  {t['conceptDetail.criterionRetentionProof']} —{' '}
-                  <span className="tabular">
-                    {debtCriteria.retentionProof.daysSinceLastSuccess !== null ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
-                    {t['conceptDetail.criterionDaysUnit']}
-                  </span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
-                  <span aria-hidden="true" style={{ color: debtCriteria.lowForgettingRisk.met ? 'var(--brand)' : 'var(--text-muted)' }}>
-                    {debtCriteria.lowForgettingRisk.met ? '✓' : '○'}
-                  </span>
-                  <span className="sr-only">{criterionStatusLabel(debtCriteria.lowForgettingRisk.met, t)}: </span>
-                  {t['conceptDetail.criterionForgettingRisk']} —{' '}
-                  <span className="tabular">
-                    {debtCriteria.lowForgettingRisk.current !== null ? `${Math.round(debtCriteria.lowForgettingRisk.current)}%` : '—'}
-                  </span>
-                </li>
-              </ul>
-            </div>
+                {knowledgeState && (
+                  <div className="card" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                      <h3 style={{ fontSize: 14, margin: 0 }}>{t['knowledgeState.sectionTitle']}</h3>
+                      <span
+                        style={{
+                          fontSize: 12, fontWeight: 650, color: masteryStateColor(knowledgeState.masteryState),
+                          border: `1px solid ${masteryStateColor(knowledgeState.masteryState)}`, borderRadius: 999, padding: '2px 10px',
+                        }}
+                      >
+                        {masteryStateLabel(knowledgeState.masteryState, t)}
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{t['progress.knowledgeStateCaption']}</p>
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {knowledgeKpis(knowledgeState).map((kpi) => {
+                        const future =
+                          (kpi.labelKey === 'knowledgeState.retention' && isFutureStage(progress, 'RETAIN')) ||
+                          (kpi.labelKey === 'knowledgeState.transfer' && isFutureStage(progress, 'TRANSFER'));
+                        return (
+                          <li key={kpi.labelKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t[kpi.labelKey]}</span>
+                            <span className="tabular" style={{ fontWeight: kpi.score === null || future ? 400 : 650, color: kpi.score === null || future ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                              {future ? t['progress.futureStep'] : kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {whyFacts.length > 0 && (
+                  <div className="card" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)' }}>
+                    <h3 style={{ fontSize: 14, marginBottom: 'var(--space-2)' }}>{t['conceptDetail.whyStudyusThinks']}</h3>
+                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.7, color: 'var(--text-secondary)' }}>
+                      {whyFacts.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {debtCriteria && (
+                  <div className="card" style={{ marginBottom: 0, padding: 'var(--space-4)' }}>
+                    <h3 style={{ fontSize: 14, marginBottom: 2 }}>{t['conceptDetail.debtProgressTitle']}</h3>
+                    <p style={{ margin: '0 0 var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{t['conceptDetail.debtFormalNote']}</p>
+                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <span aria-hidden="true" style={{ color: debtCriteria.masteryAbove85.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                          {debtCriteria.masteryAbove85.met ? '✓' : '○'}
+                        </span>
+                        <span className="sr-only">{criterionStatusLabel(debtCriteria.masteryAbove85.met, t)}: </span>
+                        {t['conceptDetail.evidenceScore']} &gt; 85% — <span className="tabular">{Math.round(debtCriteria.masteryAbove85.current)}%</span>
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <span aria-hidden="true" style={{ color: debtCriteria.recentScoresAbove80.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                          {debtCriteria.recentScoresAbove80.met ? '✓' : '○'}
+                        </span>
+                        <span className="sr-only">{criterionStatusLabel(debtCriteria.recentScoresAbove80.met, t)}: </span>
+                        {t['conceptDetail.criterionRecentScores']} —{' '}
+                        {debtCriteria.recentScoresAbove80.current !== null ? (
+                          <span className="tabular">{Math.round(debtCriteria.recentScoresAbove80.current)}%</span>
+                        ) : (
+                          <span>
+                            {t['progress.criterionPassesValue']
+                              .replace('{done}', String(debtCriteria.recentScoresAbove80.sampleCount))
+                              .replace('{required}', String(debtCriteria.recentScoresAbove80.requiredSamples))}{' '}
+                            {t['conceptDetail.criterionNotEnoughSamples']}
+                          </span>
+                        )}
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <span aria-hidden="true" style={{ color: debtCriteria.retentionProof.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                          {debtCriteria.retentionProof.met ? '✓' : '○'}
+                        </span>
+                        <span className="sr-only">{criterionStatusLabel(debtCriteria.retentionProof.met, t)}: </span>
+                        {t['conceptDetail.criterionRetentionProof']} —{' '}
+                        <span className="tabular">
+                          {debtCriteria.retentionProof.daysSinceLastSuccess !== null ? debtCriteria.retentionProof.daysSinceLastSuccess : '—'}{' '}
+                          {t['conceptDetail.criterionDaysUnit']}
+                        </span>
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                        <span aria-hidden="true" style={{ color: debtCriteria.lowForgettingRisk.met ? 'var(--brand)' : 'var(--text-muted)' }}>
+                          {debtCriteria.lowForgettingRisk.met ? '✓' : '○'}
+                        </span>
+                        <span className="sr-only">{criterionStatusLabel(debtCriteria.lowForgettingRisk.met, t)}: </span>
+                        {t['conceptDetail.criterionForgettingRisk']} —{' '}
+                        <span className="tabular">
+                          {debtCriteria.lowForgettingRisk.current !== null ? `${Math.round(debtCriteria.lowForgettingRisk.current)}%` : '—'}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </details>
+            </>
           )}
         </details>
       )}
