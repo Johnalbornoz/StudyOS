@@ -5,7 +5,10 @@
  *
  * Read-only for learning state: grades one answer with the SAME grader
  * submission uses (src/lib/quiz/grade-question.ts) and returns
- * correct/incorrect, the grader's feedback and the question's key idea.
+ * correct/almost/incorrect plus NON-REVEALING help: why the answer does not
+ * work, a conceptual direction and a progressive scaffold -- never the
+ * answer key (every text passes feedback-leak-guard.ts). The stored
+ * solution/explanation is NOT sent here; only the final review shows it.
  * It writes NO learning evidence, error, misconception or progression --
  * the activity's single evidence write stays the final submission, so an
  * answer is never counted twice. The client locks the answer once checked,
@@ -23,6 +26,8 @@ import { isOwner } from '@/lib/authorization';
 import { canUseCapability } from '@/lib/entitlements';
 import { getQuizSession } from '@/services/quiz-persistence.service';
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
+import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
+import { generateQuestionHint } from '@/services/quiz-generation.service';
 
 const CheckSchema = z.object({
   studentId: z.string().uuid(),
@@ -67,15 +72,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     subjectId: session.subjectId,
   });
 
+  const guardQuestion = { answerFormat: question.answerFormat, correctAnswer: question.correctAnswer, options: question.options, explanation: question.explanation };
+
+  // Wrong/partial: why it does not work + a conceptual direction + a
+  // progressive scaffold, all from non-revealing sources and all filtered
+  // by the leak guard. The hint model is instructed never to state or imply
+  // the answer; the guard enforces it regardless.
+  let direction: string | null = null;
+  let scaffold: string[] = [];
+  if (!grade.correct) {
+    const hints = await generateQuestionHint(question, session.language, undefined, {
+      studentId: body.studentId,
+      subjectId: session.subjectId,
+      conceptId: session.conceptId ?? undefined,
+      sourceId: quizId,
+    }).catch(() => [] as string[]);
+    const safeHints = hints.map((h) => stripAnswerReveals(h, guardQuestion)).filter((h): h is string => !!h);
+    direction = safeHints[0] ?? null;
+    scaffold = safeHints.slice(1);
+  }
+
   return NextResponse.json({
     success: true,
     data: {
       correct: grade.correct,
       partial: !grade.correct && grade.score > 0,
-      // why this answer is (in)correct, in the grader's words
-      feedback: grade.feedback || null,
-      // the question's key idea -- shown to the learner behind an explicit disclosure
-      keyIdea: typeof question.explanation === 'string' && question.explanation.trim() ? question.explanation : null,
+      // why the answer does (not) work -- revealing sentences removed
+      feedback: grade.correct ? grade.feedback || null : stripAnswerReveals(grade.feedback, guardQuestion),
+      direction,
+      scaffold,
     },
   });
 }

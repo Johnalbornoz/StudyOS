@@ -53,7 +53,7 @@ export type MessageKey =
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
   // F13 -- workspace switcher
   | 'workspace.switcherLabel' | 'workspace.student' | 'workspace.parent' | 'workspace.teacher' | 'workspace.institution' | 'workspace.admin'
-  | 'license.demoBanner' | 'license.demoBannerCta' | 'difficulty.levelWord' | 'difficulty.to' | 'difficulty.trendUp' | 'difficulty.trendDown' | 'quiz.checkAnswer' | 'quiz.keyIdeaShow' | 'quiz.checkContinuity' | 'quiz.checkUnavailable' | 'quiz.checkHelpHint' | 'quiz.checkIncorrectGeneric' | 'billing.sourceAdminGrant' | 'billing.validUntil' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
+  | 'license.demoBanner' | 'license.demoBannerCta' | 'difficulty.levelWord' | 'difficulty.to' | 'difficulty.trendUp' | 'difficulty.trendDown' | 'quiz.checkAnswer' | 'quiz.keyIdeaShow' | 'quiz.checkContinuity' | 'quiz.checkUnavailable' | 'quiz.checkHelpHint' | 'quiz.checkIncorrectGeneric' | 'quiz.feedbackDirection' | 'quiz.keyIdeaMore' | 'billing.sourceAdminGrant' | 'billing.validUntil' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
   // F13 -- Teacher workspace navigation + surfaces
   | 'nav.groupTeacher' | 'nav.teacherClasses'
   | 'nav.groupInstitution' | 'nav.institutionOverview'
@@ -635,6 +635,7 @@ const es: Messages = {
   'license.demoBanner': 'Estás en modo demostración. Activa una licencia para acceder a todas las funciones.', 'license.demoBannerCta': 'Activar licencia',
   'quiz.checkAnswer': 'Comprobar respuesta', 'quiz.keyIdeaShow': 'Ver la idea clave', 'quiz.checkContinuity': 'Tu respuesta queda registrada tal como la enviaste. La siguiente pregunta de esta comprobación sigue trabajando el mismo concepto.', 'quiz.checkUnavailable': 'No se pudo comprobar ahora. Tu respuesta se evaluará al final.', 'quiz.checkHelpHint': 'Si no ves por qué, usa la ayuda de esta pregunta antes de continuar.',
   'quiz.checkIncorrectGeneric': 'Esa respuesta no describe correctamente el concepto. Revisa la idea clave antes de continuar.',
+  'quiz.feedbackDirection': 'Piensa en esto:', 'quiz.keyIdeaMore': 'Ver otra pista',
   'billing.sourceAdminGrant': 'Licencia otorgada por la administración.', 'billing.validUntil': 'Válida hasta el {date}.',
   'learning.licenseRequiredTitle': 'Actividad incluida en la licencia', 'learning.licenseRequiredBody': 'Estás en modo demostración. Las actividades de aprendizaje con IA (comprobar, practicar, demostrar, retener y transferir) se activan con una licencia.',
   'nav.groupTeacher': 'Docente', 'nav.teacherClasses': 'Mis clases',
@@ -1858,6 +1859,7 @@ const en: Messages = {
   'license.demoBanner': "You're in demo mode. Activate a license to unlock all features.", 'license.demoBannerCta': 'Activate license',
   'quiz.checkAnswer': 'Check answer', 'quiz.keyIdeaShow': 'Show the key idea', 'quiz.checkContinuity': 'Your answer is recorded as you submitted it. The next question in this check keeps working on the same concept.', 'quiz.checkUnavailable': 'Couldn\'t check this right now. Your answer will be assessed at the end.', 'quiz.checkHelpHint': 'If you don\'t see why, use this question\'s help before continuing.',
   'quiz.checkIncorrectGeneric': 'That answer doesn\'t describe the concept correctly. Review the key idea before continuing.',
+  'quiz.feedbackDirection': 'Think about this:', 'quiz.keyIdeaMore': 'Show another hint',
   'billing.sourceAdminGrant': 'Licence granted by an administrator.', 'billing.validUntil': 'Valid until {date}.',
   'learning.licenseRequiredTitle': 'Included with a licence', 'learning.licenseRequiredBody': 'You\'re in demo mode. AI-powered learning activities (check, practise, prove, retain and transfer) are unlocked with a licence.',
   'nav.groupTeacher': 'Teacher', 'nav.teacherClasses': 'My Classes',
@@ -3081,6 +3083,7 @@ const de: Messages = {
   'license.demoBanner': 'Du befindest dich im Demomodus. Aktiviere eine Lizenz, um alle Funktionen freizuschalten.', 'license.demoBannerCta': 'Lizenz aktivieren',
   'quiz.checkAnswer': 'Antwort prüfen', 'quiz.keyIdeaShow': 'Kernidee anzeigen', 'quiz.checkContinuity': 'Deine Antwort wird so gespeichert, wie du sie abgegeben hast. Die nächste Frage dieser Prüfung arbeitet weiter am selben Konzept.', 'quiz.checkUnavailable': 'Konnte gerade nicht geprüft werden. Deine Antwort wird am Ende bewertet.', 'quiz.checkHelpHint': 'Wenn du nicht siehst, warum, nutze die Hilfe zu dieser Frage, bevor du weitermachst.',
   'quiz.checkIncorrectGeneric': 'Diese Antwort beschreibt das Konzept nicht richtig. Sieh dir die Kernidee an, bevor du weitermachst.',
+  'quiz.feedbackDirection': 'Denk darüber nach:', 'quiz.keyIdeaMore': 'Weiteren Hinweis anzeigen',
   'billing.sourceAdminGrant': 'Lizenz von der Verwaltung vergeben.', 'billing.validUntil': 'Gültig bis {date}.',
   'learning.licenseRequiredTitle': 'In der Lizenz enthalten', 'learning.licenseRequiredBody': 'Du bist im Demo-Modus. KI-gestützte Lernaktivitäten (prüfen, üben, nachweisen, festigen und übertragen) werden mit einer Lizenz freigeschaltet.',
   'nav.groupTeacher': 'Lehrkraft', 'nav.teacherClasses': 'Meine Klassen',
@@ -4304,6 +4307,7 @@ const fr: Messages = {
   'license.demoBanner': 'Vous êtes en mode démonstration. Activez une licence pour débloquer toutes les fonctionnalités.', 'license.demoBannerCta': 'Activer la licence',
   'quiz.checkAnswer': 'Vérifier la réponse', 'quiz.keyIdeaShow': 'Voir l\'idée clé', 'quiz.checkContinuity': 'Ta réponse est enregistrée telle que tu l\'as envoyée. La question suivante de cette vérification continue sur le même concept.', 'quiz.checkUnavailable': 'Impossible de vérifier pour l\'instant. Ta réponse sera évaluée à la fin.', 'quiz.checkHelpHint': 'Si tu ne vois pas pourquoi, utilise l\'aide de cette question avant de continuer.',
   'quiz.checkIncorrectGeneric': 'Cette réponse ne décrit pas correctement le concept. Revois l\'idée clé avant de continuer.',
+  'quiz.feedbackDirection': 'Pense à ceci :', 'quiz.keyIdeaMore': 'Voir un autre indice',
   'billing.sourceAdminGrant': 'Licence accordée par l\'administration.', 'billing.validUntil': 'Valable jusqu\'au {date}.',
   'learning.licenseRequiredTitle': 'Inclus dans la licence', 'learning.licenseRequiredBody': 'Tu es en mode démonstration. Les activités d\'apprentissage avec IA (vérifier, s\'entraîner, démontrer, retenir et transférer) sont débloquées avec une licence.',
   'nav.groupTeacher': 'Enseignant', 'nav.teacherClasses': 'Mes classes',
@@ -5527,6 +5531,7 @@ const pt: Messages = {
   'license.demoBanner': 'Você está no modo demonstração. Ative uma licença para desbloquear todos os recursos.', 'license.demoBannerCta': 'Ativar licença',
   'quiz.checkAnswer': 'Verificar resposta', 'quiz.keyIdeaShow': 'Ver a ideia-chave', 'quiz.checkContinuity': 'Sua resposta fica registrada como você a enviou. A próxima pergunta desta verificação continua trabalhando o mesmo conceito.', 'quiz.checkUnavailable': 'Não foi possível verificar agora. Sua resposta será avaliada no final.', 'quiz.checkHelpHint': 'Se não entender o porquê, use a ajuda desta pergunta antes de continuar.',
   'quiz.checkIncorrectGeneric': 'Essa resposta não descreve o conceito corretamente. Revise a ideia-chave antes de continuar.',
+  'quiz.feedbackDirection': 'Pense nisto:', 'quiz.keyIdeaMore': 'Ver outra dica',
   'billing.sourceAdminGrant': 'Licença concedida pela administração.', 'billing.validUntil': 'Válida até {date}.',
   'learning.licenseRequiredTitle': 'Incluído na licença', 'learning.licenseRequiredBody': 'Você está no modo de demonstração. As atividades de aprendizagem com IA (verificar, praticar, demonstrar, reter e transferir) são liberadas com uma licença.',
   'nav.groupTeacher': 'Professor', 'nav.teacherClasses': 'Minhas turmas',

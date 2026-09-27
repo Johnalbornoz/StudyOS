@@ -352,7 +352,10 @@ function QuizPageContent() {
     correct?: boolean;
     partial?: boolean;
     feedback?: string | null;
-    keyIdea?: string | null;
+    // non-revealing help (never the answer key -- only the final review shows the solution)
+    direction?: string | null;
+    scaffold?: string[];
+    scaffoldShown?: number;
   } | null>(null);
   const [quizLanguage, setQuizLanguage] = useState<Locale>('es');
   // Until the activity reports its canonical language (generation result or
@@ -2680,14 +2683,28 @@ function QuizPageContent() {
                   <p style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={answerCheck.feedback} /></p>
                 ) : !answerCheck.correct ? (
                   // Structured formats carry no grader text: a short, visible "why"
-                  // that does not reveal the right option (that is behind the key idea).
+                  // that does not reveal the right option.
                   <p style={{ margin: '6px 0 0', fontSize: 14 }}>{at['quiz.checkIncorrectGeneric']}</p>
                 ) : null}
-                {!answerCheck.correct && answerCheck.keyIdea && (
-                  <details style={{ marginTop: 'var(--space-2)' }}>
-                    <summary style={{ cursor: 'pointer', fontSize: 13.5 }}>{at['quiz.keyIdeaShow']}</summary>
-                    <p style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={answerCheck.keyIdea} /></p>
-                  </details>
+                {!answerCheck.correct && answerCheck.direction && (
+                  <p data-testid="answer-direction" style={{ margin: '6px 0 0', fontSize: 14 }}>
+                    <strong>{at['quiz.feedbackDirection']}</strong> <MathText text={answerCheck.direction} />
+                  </p>
+                )}
+                {/* Progressive scaffold: one extra hint per click, never the solution. */}
+                {!answerCheck.correct &&
+                  (answerCheck.scaffold ?? []).slice(0, answerCheck.scaffoldShown ?? 0).map((hint, i) => (
+                    <p key={i} data-testid="answer-scaffold" style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={hint} /></p>
+                  ))}
+                {!answerCheck.correct && (answerCheck.scaffoldShown ?? 0) < (answerCheck.scaffold?.length ?? 0) && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ marginTop: 'var(--space-2)', fontSize: 13.5 }}
+                    onClick={() => setAnswerCheck((prev) => (prev ? { ...prev, scaffoldShown: (prev.scaffoldShown ?? 0) + 1 } : prev))}
+                  >
+                    {(answerCheck.scaffoldShown ?? 0) === 0 ? at['quiz.keyIdeaShow'] : at['quiz.keyIdeaMore']}
+                  </button>
                 )}
                 {!answerCheck.correct && (
                   <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{at['quiz.checkHelpHint']}</p>

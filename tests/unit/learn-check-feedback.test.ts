@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
   entitled: vi.fn(),
   getQuizSession: vi.fn(),
   gradeAnswer: vi.fn(),
+  hint: vi.fn(),
   dbQuery: vi.fn(),
 }));
 
@@ -27,6 +28,7 @@ vi.mock('@/lib/db', () => ({ db: { query: h.dbQuery }, query: h.dbQuery }));
 vi.mock('@/services/quiz-generation.service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/services/quiz-generation.service')>()),
   gradeAnswer: h.gradeAnswer,
+  generateQuestionHint: h.hint,
 }));
 
 import { POST } from '@/app/api/quizzes/session/[quizId]/check/route';
@@ -62,15 +64,23 @@ beforeEach(() => {
   h.isOwner.mockResolvedValue(true);
   h.entitled.mockResolvedValue(true);
   h.getQuizSession.mockResolvedValue(session());
+  h.hint.mockResolvedValue(['Think about what each coordinate measures from the pole.', 'Compare with how x and y work.']);
 });
 
 describe('per-question feedback for LEARN_CHECK', () => {
-  it('incorrect answer -> "incorrect", why, and the key idea -- never the raw correct answer field', async () => {
+  it('incorrect answer -> "incorrect", why, a direction and a scaffold -- never the answer key or the solution', async () => {
     const res = await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params);
     expect(res.status).toBe(200);
     const { data } = await res.json();
-    expect(data).toMatchObject({ correct: false, partial: false, keyIdea: MC.explanation });
+    expect(data).toMatchObject({
+      correct: false,
+      partial: false,
+      direction: 'Think about what each coordinate measures from the pole.',
+      scaffold: ['Compare with how x and y work.'],
+    });
     expect(data).not.toHaveProperty('correctAnswer');
+    expect(data).not.toHaveProperty('keyIdea');
+    expect(JSON.stringify(data)).not.toContain(MC.explanation);
     // structured formats carry no grader text; the UI shows a short visible "why" that does not reveal the option
     const quiz = read('src/app/dashboard/quiz/page.tsx');
     expect(quiz).toMatch(/!answerCheck\.correct \? \(\s*\/\/[^\n]*\n[^\n]*\n\s*<p[^>]*>\{at\['quiz\.checkIncorrectGeneric'\]\}/);
@@ -87,6 +97,7 @@ describe('per-question feedback for LEARN_CHECK', () => {
     const { data } = await (await POST(req({ studentId: STUDENT, questionIndex: 1, answer: 'r is distance' }), params)).json();
     expect(h.gradeAnswer).toHaveBeenCalledWith(OPEN, 'r is distance', 'es', { studentId: STUDENT, subjectId: 'sub-1' });
     expect(data).toMatchObject({ correct: false, partial: true, feedback: 'You named r but not θ.' });
+    expect(h.hint).toHaveBeenCalledTimes(1);
   });
 
   it('no duplicate evidence: checking writes nothing (no evidence, error, misconception or progression)', async () => {
