@@ -249,7 +249,9 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
     // request, or from the consumed prepared activity's own basis on a
     // cache hit (CANON-R6-PERF-R2) -- either way, always set for a
     // successful canonical_prove attempt.
-    expect(ROUTE_SRC).toMatch(/noveltyDiagnostics = \{\s*\n\s*priorPracticeFingerprintCount: g\.priorPracticeFingerprintCount,\s*\n\s*rejectedExactDuplicateCount: g\.rejectedExactDuplicateCount,\s*\n\s*acceptedNovelQuestionCount: questions\.length,\s*\n\s*noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',/);
+    // Built through the ONE marker builder (src/lib/lx/novelty-marker.ts),
+    // which stamps noveltyPolicy 'EXACT_DUPLICATE_EXCLUSION_V1'.
+    expect(ROUTE_SRC).toMatch(/noveltyDiagnostics = buildExactDuplicateNoveltyMarker\(\{\s*\n\s*priorFingerprintCount: g\.priorPracticeFingerprintCount,\s*\n\s*rejectedExactDuplicateCount: g\.rejectedExactDuplicateCount,\s*\n\s*acceptedNovelQuestionCount: questions\.length,/);
   });
 
   it('route.ts DELEGATES to the shared certified generator (generateCanonicalProveQuestions) rather than reimplementing chunking/novelty/recovery inline -- CANON-R6-PERF-R2 Part 6\'s own "never a cheaper pre-generation path" requirement depends on this being ONE real function, not two parallel implementations', () => {

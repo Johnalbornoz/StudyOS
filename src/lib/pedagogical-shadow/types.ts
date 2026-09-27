@@ -86,9 +86,12 @@ export interface StudyUSEvidenceRow {
   itemCount?: number;
   correctCount?: number;
   /**
-   * Only knowable from a separate memory/retention source
-   * (concept_memory_state's own novelty bookkeeping) that this module
-   * does not itself read. `undefined` unless a caller supplies it.
+   * `learning_evidence.metadata.novel`, stamped at submission from the
+   * session's generation-time novelty marker
+   * (`QuizSessionV1Marker.novelty`, via `isExactDuplicateNoveltyCertified`)
+   * -- set for canonical PROVE/RETAIN attempts whose every administered
+   * item passed the exact-duplicate filter. `undefined` for every row
+   * without that stamp (legacy/pre-fix rows); never inferred.
    */
   novel?: boolean;
   /**

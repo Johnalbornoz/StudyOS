@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import type { ExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
 
 export type QuizMode =
   | 'topic_practice'
@@ -126,18 +127,14 @@ export interface QuizSessionV1Marker {
   supportLevel: 'ASSISTED' | 'NONE';
   minimumScorePercent: number;
   /**
-   * CANON-R6R1 -- additive; present ONLY for a `canonical_prove` session
-   * (`null`/omitted for Practice/Reinforce, and for any pre-R6R1 Prove
-   * row that predates this field). Diagnostic record of the exact-
+   * CANON-R6R1 -- additive; present for a `canonical_prove` or
+   * `canonical_retain` session (`null`/omitted for Practice/Reinforce,
+   * and for any row that predates this field). Record of the exact-
    * duplicate novelty filtering that ran at generation time -- never
-   * full prior-question text, only counts.
+   * full prior-question text, only counts. Submission reads it through
+   * `isExactDuplicateNoveltyCertified` to stamp `metadata.novel`.
    */
-  novelty?: {
-    priorPracticeFingerprintCount: number;
-    rejectedExactDuplicateCount: number;
-    acceptedNovelQuestionCount: number;
-    noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1';
-  } | null;
+  novelty?: ExactDuplicateNoveltyMarker | null;
 }
 
 export interface QuizSession {
@@ -251,7 +248,7 @@ export async function storeQuiz(
           supportLevel: v1Marker.supportLevel,
           minimumScorePercent: v1Marker.minimumScorePercent,
           // CANON-R6R1 -- additive; `undefined` (omitted from the JSON)
-          // for every non-Prove marker, exactly as before this phase.
+          // for every marker without novelty filtering (non-Prove/Retain).
           novelty: v1Marker.novelty ?? undefined,
         })
       : null;

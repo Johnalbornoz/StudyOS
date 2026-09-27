@@ -53,6 +53,7 @@ export async function fetchStudyUSEvidenceRows(
       le.metadata->>'activityType' AS activity_type,
       COALESCE(le.metadata->>'itemCount', de.reason_details->>'sampleSize') AS item_count,
       le.metadata->>'correctCount' AS correct_count,
+      le.metadata->>'novel' AS novel,
       le.metadata->'transferChallenges' AS transfer_challenges,
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
       EXISTS (
@@ -86,6 +87,12 @@ export async function fetchStudyUSEvidenceRows(
       activityType: row.activity_type ?? null,
       itemCount: row.item_count != null ? Number(row.item_count) : undefined,
       correctCount: row.correct_count != null ? Number(row.correct_count) : undefined,
+      // Stamped at submission ONLY for a v1-qualifying attempt whose
+      // session's novelty marker certifies every administered item
+      // (isExactDuplicateNoveltyCertified). Absent on every older row --
+      // stays undefined (never inferred), so historical attempts are
+      // never retroactively regraded.
+      novel: row.novel === 'true' ? true : row.novel === 'false' ? false : undefined,
       // CANON-V2-REMEDIATION Part 5 -- additive: NULL for every row until
       // a real canonical Transfer write path exists (none does yet --
       // see StudyUSEvidenceRow.transferChallenges's own grounding note).

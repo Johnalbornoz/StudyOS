@@ -31,6 +31,7 @@ import {
   type DeliveryActivityType,
 } from '@/lib/activity-delivery/contract';
 import { storeQuiz, findResumableCanonicalSession, type QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import { buildExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { consumeCompatibleInventory, linkConsumedActivity, reservedCandidateIds } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
@@ -79,9 +80,11 @@ async function openSession(
 ): Promise<{ quizId: string; questions: GeneratedQuestion[] }> {
   const ordered = shuffleArray(questions.map((q) => ({ ...q, conceptId: q.conceptId ?? input.conceptId })));
   if (ordered.length > 0 && askConfidence) ordered[0] = { ...ordered[0], askConfidence: true };
+  // PROVE and RETAIN sets were assembled with their novelty exclusions
+  // applied (activity-assembly.service.ts), so both carry the marker.
   const marker: QuizSessionV1Marker =
-    input.activityType === 'PROVE'
-      ? { ...input.v1Marker, novelty: { priorPracticeFingerprintCount: 0, rejectedExactDuplicateCount: 0, acceptedNovelQuestionCount: ordered.length, noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1' } }
+    input.activityType === 'PROVE' || input.activityType === 'RETAIN'
+      ? { ...input.v1Marker, novelty: buildExactDuplicateNoveltyMarker({ priorFingerprintCount: 0, rejectedExactDuplicateCount: 0, acceptedNovelQuestionCount: ordered.length }) }
       : input.v1Marker;
   const quizId = await storeQuiz(input.studentId, input.conceptId, input.subjectId, ordered, input.contract.language, input.quizMode, [input.conceptId], marker);
   await Promise.all([

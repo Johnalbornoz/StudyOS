@@ -95,6 +95,7 @@ import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/eviden
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
 import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import { buildExactDuplicateNoveltyMarker, isExactDuplicateNoveltyCertified } from '@/lib/lx/novelty-marker';
 import {
   logCanonicalProveGenerationSummary,
   logCanonicalProveCacheSummary,
@@ -1063,12 +1064,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     let noveltyDiagnostics: NonNullable<QuizSessionV1Marker['novelty']> | null = null;
     if (validated.quizMode === 'canonical_prove') {
       if (preparedCacheStatus === 'HIT') {
-        noveltyDiagnostics = {
-          priorPracticeFingerprintCount: preparedActivityFingerprintCount ?? 0,
+        noveltyDiagnostics = buildExactDuplicateNoveltyMarker({
+          priorFingerprintCount: preparedActivityFingerprintCount ?? 0,
           rejectedExactDuplicateCount: 0,
           acceptedNovelQuestionCount: questions.length,
-          noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
-        };
+        });
       } else if (proveGenerationResult !== null) {
         const g: CanonicalProveGenerationResult = proveGenerationResult;
         priorHistoryMs = g.priorHistoryMs;
@@ -1080,13 +1080,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         aggregateRecoveryMs = g.aggregateRecoveryMs;
         generationInvocations.push(...g.invocations);
         noveltyPasses.push(...g.noveltyPasses);
-        noveltyDiagnostics = {
-          priorPracticeFingerprintCount: g.priorPracticeFingerprintCount,
+        noveltyDiagnostics = buildExactDuplicateNoveltyMarker({
+          priorFingerprintCount: g.priorPracticeFingerprintCount,
           rejectedExactDuplicateCount: g.rejectedExactDuplicateCount,
           acceptedNovelQuestionCount: questions.length,
-          noveltyPolicy: 'EXACT_DUPLICATE_EXCLUSION_V1',
-        };
+        });
       }
+    } else if (validated.quizMode === 'canonical_retain' && retainGenerationResult !== null) {
+      // RETAIN's generation ran the SAME exact-duplicate filter against
+      // the broader Practice+Prove+Retain base
+      // (loadPriorCanonicalQuestionFingerprintsForRetain) -- record it on
+      // the marker exactly like Prove, so submission can certify
+      // `novel` (the engine's RETAIN noveltyRequired gate) from it.
+      const r: CanonicalRetainGenerationResult = retainGenerationResult;
+      noveltyDiagnostics = buildExactDuplicateNoveltyMarker({
+        priorFingerprintCount: r.priorCanonicalFingerprintCount,
+        rejectedExactDuplicateCount: r.rejectedExactDuplicateCount,
+        acceptedNovelQuestionCount: questions.length,
+      });
     }
 
     // CANON-R6-PERF-I1 Part 8 -- the ONE place every canonical_prove
@@ -1291,7 +1302,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // CANON-R6R1 Part 10 -- novelty diagnostics are attached to a NEW
     // object rather than mutating `v1Marker` itself, so Practice's own
     // marker (built once, above, before generation ever ran) is never
-    // touched; `noveltyDiagnostics` is non-null only for canonical_prove.
+    // touched; `noveltyDiagnostics` is non-null only for canonical_prove
+    // and canonical_retain.
     const v1MarkerToPersist: QuizSessionV1Marker | null = v1Marker
       ? { ...v1Marker, novelty: noveltyDiagnostics }
       : null;
@@ -1993,6 +2005,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     canonicalActivityType: quizSession.v1Marker!.canonicalActivityType,
                     itemCount: bucket.total,
                     correctCount: bucket.correct,
+                    // Novelty certified at generation time (session's
+                    // novelty marker) covering every administered item --
+                    // the source of the engine's RawEvidenceItem.novel.
+                    ...(isExactDuplicateNoveltyCertified(quizSession.v1Marker!.novelty, bucket.total) ? { novel: true } : {}),
                   }
                 : {}),
               // CANON-V2-ARCH-CLEANUP Section 9/10/11 -- the REAL,
