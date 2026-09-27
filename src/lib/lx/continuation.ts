@@ -244,9 +244,38 @@ export function isSameRoute(currentUrl: string, targetUrl: string, base = 'http:
  * degrades to the raw `launchTarget` (still navigable, just not
  * guaranteed to force a remount) rather than throwing.
  */
+/** Same pathname (query may differ) -- a navigation that would NOT remount a Next.js page on its own. */
+export function isSamePage(currentUrl: string, targetUrl: string, base = 'http://lx.invalid'): boolean {
+  try {
+    return new URL(currentUrl, base).pathname === new URL(targetUrl, base).pathname;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The React key of one activity instance on the quiz page: the relaunch
+ * nonce plus every launch parameter. Any change of what is being launched
+ * (concept, mode, difficulty, item count...) or a fresh nonce starts a
+ * brand-new instance; nothing else does (the page never rewrites its own URL).
+ */
+export function quizInstanceKey(searchParams: { toString(): string }): string {
+  const p = new URLSearchParams(searchParams.toString());
+  const nonce = p.get(RELAUNCH_NONCE_PARAM) ?? '';
+  p.delete(RELAUNCH_NONCE_PARAM);
+  const identity = [...p.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('&');
+  return `${nonce}|${identity}`;
+}
+
 export function buildRelaunchTarget(currentUrl: string, launchTarget: string, nonce: string = newRelaunchNonce()): string {
   try {
-    if (!isSameRoute(currentUrl, launchTarget)) return launchTarget;
+    // PRACTICE_SESSION_RESTART: ANY launch onto the page the learner is
+    // already on needs a fresh instance -- not only an identical URL. A
+    // canonical PRACTICE -> PRACTICE continuation routinely differs only in
+    // query (the contract raises `difficulty` 2 -> 3 after a strong
+    // practice); a query-only push does not remount the page, so the old
+    // Results stayed on screen until a manual reload.
+    if (!isSamePage(currentUrl, launchTarget)) return launchTarget;
     const u = new URL(launchTarget, 'http://lx.invalid');
     u.searchParams.set(RELAUNCH_NONCE_PARAM, nonce);
     return `${u.pathname}?${u.searchParams.toString()}`;

@@ -31,6 +31,7 @@ import {
   buildRelaunchTarget,
   newRelaunchNonce,
   RELAUNCH_NONCE_PARAM,
+  quizInstanceKey,
 } from '@/lib/lx/continuation';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
@@ -109,8 +110,8 @@ describe('LX-5R1 R3 -- buildRelaunchTarget: normal nav unchanged, same-route get
  * ==================================================================== */
 describe('LX-5R1 R3/R4 -- QuizPageContent remounts (fresh quizId/questions/answers/results) on relaunch', () => {
   it('the page splits into a thin wrapper keyed on the relaunch nonce, and an inner content component', () => {
-    expect(QUIZ).toMatch(/const relaunchKey = searchParams\.get\(RELAUNCH_NONCE_PARAM\) \|\| ''/);
-    expect(QUIZ).toMatch(/<QuizPageContent key=\{relaunchKey\}\s*\/>/);
+    // PRACTICE_SESSION_RESTART: keyed on the nonce AND the launch identity (quizInstanceKey)
+    expect(QUIZ).toMatch(/<QuizPageContent key=\{quizInstanceKey\(searchParams\)\}\s*\/>/);
     expect(QUIZ).toMatch(/function QuizPageContent\(\)/);
   });
 
@@ -130,8 +131,14 @@ describe('LX-5R1 R3/R4 -- QuizPageContent remounts (fresh quizId/questions/answe
     expect(refIdx).toBeGreaterThan(contentIdx);
   });
 
-  it('a genuinely different-route launch is unaffected -- no nonce present, key stays the stable empty string', () => {
-    expect(QUIZ).toMatch(/searchParams\.get\(RELAUNCH_NONCE_PARAM\) \|\| ''/);
+  it('the instance key is stable for the same launch and changes with any launch parameter or a fresh nonce', () => {
+    const base = new URLSearchParams('subjectId=s&conceptId=c&mode=topic_practice&difficulty=2&v1Launch=1&maxQuestions=3');
+    const reordered = new URLSearchParams('mode=topic_practice&conceptId=c&subjectId=s&maxQuestions=3&v1Launch=1&difficulty=2');
+    expect(quizInstanceKey(base)).toBe(quizInstanceKey(reordered));
+    const harder = new URLSearchParams(base); harder.set('difficulty', '3');
+    expect(quizInstanceKey(harder)).not.toBe(quizInstanceKey(base));
+    const relaunched = new URLSearchParams(base); relaunched.set(RELAUNCH_NONCE_PARAM, 'n1');
+    expect(quizInstanceKey(relaunched)).not.toBe(quizInstanceKey(base));
   });
 });
 
@@ -219,15 +226,15 @@ describe('LX-5R1 R5 -- Teaching Experience handoff semantics are unchanged by th
 describe('LX-5R1 R6/R13 -- Continue can never spin forever', () => {
   it('(12) both navigating branches (LAUNCH and RETURN_TO_MISSION) arm the stuck-navigation backstop before router.push', () => {
     const launchBranch = PANEL.slice(PANEL.indexOf("if (c?.status === 'LAUNCH'"), PANEL.indexOf('router.push(target)'));
-    expect(launchBranch).toMatch(/armStuckBackstop\(\);/);
+    expect(launchBranch).toMatch(/armStuckBackstop\(target\);/);
     const returnBranch = PANEL.slice(PANEL.indexOf('RETURN_TO_MISSION (any reason)'), PANEL.indexOf('router.push(conceptMissionPath'));
-    expect(returnBranch).toMatch(/armStuckBackstop\(\);/);
+    expect(returnBranch).toMatch(/armStuckBackstop\(conceptMissionPath\(\{ subjectId, conceptId \}\)\);/);
   });
 
-  it('(13) the backstop resolves to an explicit recoverable state (busy=false, failed=true), never just a hidden spinner', () => {
+  it('(13) the backstop never strands the learner and never claims "cannot determine the next step": it completes the SAME resolved navigation as a document load (PRACTICE_SESSION_RESTART)', () => {
     const fnBody = PANEL.slice(PANEL.indexOf('function armStuckBackstop'), PANEL.indexOf('async function onContinue'));
-    expect(fnBody).toMatch(/setBusy\(false\)/);
-    expect(fnBody).toMatch(/setFailed\(true\)/);
+    expect(fnBody).toMatch(/window\.location\.assign\(target\)/);
+    expect(fnBody).not.toMatch(/setFailed\(true\)/);
   });
 
   it('the backstop timer is cleared on unmount so a REAL navigation never falsely fires it', () => {

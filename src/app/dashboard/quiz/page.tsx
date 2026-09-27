@@ -13,7 +13,7 @@ import type { QuestionType, ExpectedReasoningType } from '@/services/quiz-genera
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 import type { LearningActivityKind } from '@/lib/lx/continuation';
-import { conceptMissionPath, RELAUNCH_NONCE_PARAM } from '@/lib/lx/continuation';
+import { conceptMissionPath, quizInstanceKey } from '@/lib/lx/continuation';
 import { LICENSE_CTA_PATH } from '@/lib/lx/session-launch-outcome';
 import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
@@ -277,8 +277,11 @@ function VisualAidView({ aid }: { aid: VisualAid }) {
  */
 export default function QuizPage() {
   const searchParams = useSearchParams();
-  const relaunchKey = searchParams.get(RELAUNCH_NONCE_PARAM) || '';
-  return <QuizPageContent key={relaunchKey} />;
+  // PRACTICE_SESSION_RESTART: keyed on the relaunch nonce AND the launch
+  // identity, so a continuation that changes only a query param (e.g.
+  // difficulty 2 -> 3) is still a brand-new activity instance -- never the
+  // stale Results.
+  return <QuizPageContent key={quizInstanceKey(searchParams)} />;
 }
 
 function QuizPageContent() {

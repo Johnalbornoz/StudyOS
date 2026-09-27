@@ -85,11 +85,14 @@ export default function ContinuationPanel({
     };
   }, []);
 
-  function armStuckBackstop() {
+  // The decision was already resolved -- a navigation that did not take
+  // the learner anywhere is NOT "cannot determine the next step". Fall back
+  // to a full document navigation to the SAME resolved target, so the
+  // learner never needs a manual reload.
+  function armStuckBackstop(target: string) {
     stuckTimerRef.current = setTimeout(() => {
-      setBusy(false);
-      setFailed(true);
-      mark('CONTINUATION_FAILED', { conceptId, reason: 'navigation_did_not_unmount' });
+      mark('CONTINUATION_HARD_NAVIGATION', { conceptId, reason: 'navigation_did_not_unmount' });
+      window.location.assign(target);
     }, 4000);
   }
 
@@ -147,7 +150,7 @@ export default function ContinuationPanel({
           mode,
           sameRoute,
         });
-        armStuckBackstop();
+        armStuckBackstop(target);
         router.push(target);
         return;
       }
@@ -162,7 +165,7 @@ export default function ContinuationPanel({
       }
       // RETURN_TO_MISSION (any reason) -> the Concept Mission.
       mark('CONTINUATION_NAVIGATED', { conceptId, sameRoute: false });
-      armStuckBackstop();
+      armStuckBackstop(conceptMissionPath({ subjectId, conceptId }));
       router.push(conceptMissionPath({ subjectId, conceptId }));
     } catch {
       mark('CONTINUATION_FAILED', { conceptId });
