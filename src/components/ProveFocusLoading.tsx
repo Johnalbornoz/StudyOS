@@ -145,6 +145,9 @@ export default function ProveFocusLoading({ at, itemCount = 10, difficultyRange 
         >
           {at[REMINDER_KEYS[reminderIndex]]}
         </p>
+        <p data-testid="prove-loading-footer" style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: 'var(--space-4) 0 0' }}>
+          {at['quiz.provePreparingFooter']}
+        </p>
       </div>
       {!reducedMotion && (
         <style>{`

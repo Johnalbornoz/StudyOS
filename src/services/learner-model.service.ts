@@ -498,6 +498,8 @@ export interface ConceptEvidenceHistoryItem {
   scorePercent: number | null;
   learningMode: 'SOLO' | 'COACH' | 'AI_NATIVE' | null;
   hintsUsed: number;
+  /** The activity's own declared type when the attempt recorded one (metadata.activityType, e.g. LEARN_CHECK / PRACTICE / SOLO_CHECK); null for legacy rows. */
+  activityType: string | null;
 }
 
 /**
@@ -512,7 +514,7 @@ export async function getConceptEvidenceHistory(
   limit: number = 20
 ): Promise<ConceptEvidenceHistoryItem[]> {
   const rows = await db.query(
-    `SELECT timestamp, source_type, result, score_percent, learning_mode, hints_used
+    `SELECT timestamp, source_type, result, score_percent, learning_mode, hints_used, metadata->>'activityType' AS activity_type
      FROM learning_evidence
      WHERE student_id = $1 AND concept_id = $2
      ORDER BY timestamp DESC
@@ -526,6 +528,7 @@ export async function getConceptEvidenceHistory(
     scorePercent: r.score_percent !== null ? Number(r.score_percent) : null,
     learningMode: r.learning_mode,
     hintsUsed: Number(r.hints_used || 0),
+    activityType: typeof r.activity_type === 'string' && r.activity_type ? r.activity_type : null,
   }));
 }
 

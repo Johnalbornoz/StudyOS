@@ -78,7 +78,7 @@ describe('practice window cases', () => {
     expect(x.stage).toBe('PROVE');
     expect(x.practice).toBeNull();
     expect(x.steps.map((s) => s.state)).toEqual(['DONE', 'DONE', 'CURRENT', 'UPCOMING', 'UPCOMING']);
-    expect(fillLine(es, x.remaining)).toBe(`Haz el Solo Check: ${CANONICAL_POLICY.prove.itemCount} preguntas sin ayuda, con al menos un ${CANONICAL_POLICY.prove.minimumScorePercent}%.`);
+    expect(fillLine(es, x.remaining)).toBe(`Haz la comprobación individual: ${CANONICAL_POLICY.prove.itemCount} preguntas sin ayuda, con al menos un ${CANONICAL_POLICY.prove.minimumScorePercent}%.`);
     expect(fillLine(es, x.after!)).toBe('Si lo superas, pasarás a Retener.');
   });
 

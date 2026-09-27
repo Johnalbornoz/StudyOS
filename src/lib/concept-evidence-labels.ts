@@ -24,6 +24,21 @@ export function sourceLabel(sourceType: string, t: ReturnType<typeof getMessages
   }
 }
 
+/**
+ * The learner-facing name of one history attempt. The activity's own
+ * declared type wins (LEARN_CHECK -> "Comprobar comprensión", SOLO_CHECK /
+ * Prove -> "Comprobación individual", ...), so an attempt is never named
+ * after its storage source type; legacy rows without a type fall back to
+ * the source label.
+ */
+export function historyActivityLabel(item: { sourceType: string; activityType: string | null }, t: ReturnType<typeof getMessages>): string {
+  if (item.activityType) {
+    const label = (t as Record<string, string>)[`activityLabel.${item.activityType}`];
+    if (label) return label;
+  }
+  return sourceLabel(item.sourceType, t);
+}
+
 export function resultLabel(result: EvidenceResult, t: ReturnType<typeof getMessages>): string {
   return result === 'correct' ? t['subjectDetail.resultCorrect'] : result === 'partial' ? t['subjectDetail.resultPartial'] : t['subjectDetail.resultIncorrect'];
 }
