@@ -53,7 +53,7 @@ export type MessageKey =
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
   // F13 -- workspace switcher
   | 'workspace.switcherLabel' | 'workspace.student' | 'workspace.parent' | 'workspace.teacher' | 'workspace.institution' | 'workspace.admin'
-  | 'license.demoBanner' | 'license.demoBannerCta' | 'difficulty.levelWord' | 'difficulty.to' | 'difficulty.trendUp' | 'difficulty.trendDown' | 'quiz.checkAnswer' | 'quiz.keyIdeaShow' | 'quiz.checkContinuity' | 'quiz.checkUnavailable' | 'quiz.checkHelpHint' | 'quiz.checkIncorrectGeneric' | 'quiz.feedbackDirection' | 'quiz.keyIdeaMore' | 'billing.sourceAdminGrant' | 'billing.validUntil' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
+  | 'license.demoBanner' | 'license.demoBannerCta' | 'difficulty.levelWord' | 'difficulty.to' | 'difficulty.trendUp' | 'difficulty.trendDown' | 'quiz.checkAnswer' | 'quiz.keyIdeaShow' | 'quiz.checkContinuity' | 'quiz.checkUnavailable' | 'quiz.checkHelpHint' | 'quiz.checkIncorrectGeneric' | 'quiz.feedbackDirection' | 'subjectDetail.interactiveFormulaResult' | 'quiz.keyIdeaMore' | 'billing.sourceAdminGrant' | 'billing.validUntil' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
   // F13 -- Teacher workspace navigation + surfaces
   | 'nav.groupTeacher' | 'nav.teacherClasses'
   | 'nav.groupInstitution' | 'nav.institutionOverview'
@@ -988,7 +988,7 @@ const es: Messages = {
   'subjectDetail.learnMoreError': 'No se pudo generar la explicación. Intenta de nuevo.',
   'subjectDetail.aiExplanationLabel': 'Explicación generada por IA',
   'subjectDetail.aiExplanationExamplesLabel': 'Ejemplos',
-  'subjectDetail.interactiveFormulaLabel': 'Fórmula interactiva',
+  'subjectDetail.interactiveFormulaLabel': 'Fórmula interactiva', 'subjectDetail.interactiveFormulaResult': 'Resultado',
   'ib.programmeLabel': 'Programa del Bachillerato Internacional (IB)',
   'ib.programmeNone': 'Ninguno',
   'ib.programmeMYP': 'MYP (Middle Years Programme)',
@@ -2212,7 +2212,7 @@ const en: Messages = {
   'subjectDetail.learnMoreError': "Couldn't generate the explanation. Try again.",
   'subjectDetail.aiExplanationLabel': 'AI-generated explanation',
   'subjectDetail.aiExplanationExamplesLabel': 'Examples',
-  'subjectDetail.interactiveFormulaLabel': 'Interactive formula',
+  'subjectDetail.interactiveFormulaLabel': 'Interactive formula', 'subjectDetail.interactiveFormulaResult': 'Result',
   'ib.programmeLabel': 'International Baccalaureate (IB) programme',
   'ib.programmeNone': 'None',
   'ib.programmeMYP': 'MYP (Middle Years Programme)',
@@ -3436,7 +3436,7 @@ const de: Messages = {
   'subjectDetail.learnMoreError': 'Die Erklärung konnte nicht erstellt werden. Versuche es erneut.',
   'subjectDetail.aiExplanationLabel': 'Von KI erstellte Erklärung',
   'subjectDetail.aiExplanationExamplesLabel': 'Beispiele',
-  'subjectDetail.interactiveFormulaLabel': 'Interaktive Formel',
+  'subjectDetail.interactiveFormulaLabel': 'Interaktive Formel', 'subjectDetail.interactiveFormulaResult': 'Ergebnis',
   'ib.programmeLabel': 'International Baccalaureate (IB) Programm',
   'ib.programmeNone': 'Keins',
   'ib.programmeMYP': 'MYP (Middle Years Programme)',
@@ -4660,7 +4660,7 @@ const fr: Messages = {
   'subjectDetail.learnMoreError': "Impossible de générer l'explication. Réessayez.",
   'subjectDetail.aiExplanationLabel': "Explication générée par l'IA",
   'subjectDetail.aiExplanationExamplesLabel': 'Exemples',
-  'subjectDetail.interactiveFormulaLabel': 'Formule interactive',
+  'subjectDetail.interactiveFormulaLabel': 'Formule interactive', 'subjectDetail.interactiveFormulaResult': 'Résultat',
   'ib.programmeLabel': 'Programme du Baccalauréat International (IB)',
   'ib.programmeNone': 'Aucun',
   'ib.programmeMYP': 'MYP (Middle Years Programme)',
@@ -5884,7 +5884,7 @@ const pt: Messages = {
   'subjectDetail.learnMoreError': 'Não foi possível gerar a explicação. Tente novamente.',
   'subjectDetail.aiExplanationLabel': 'Explicação gerada por IA',
   'subjectDetail.aiExplanationExamplesLabel': 'Exemplos',
-  'subjectDetail.interactiveFormulaLabel': 'Fórmula interativa',
+  'subjectDetail.interactiveFormulaLabel': 'Fórmula interativa', 'subjectDetail.interactiveFormulaResult': 'Resultado',
   'ib.programmeLabel': 'Programa do Bacharelado Internacional (IB)',
   'ib.programmeNone': 'Nenhum',
   'ib.programmeMYP': 'MYP (Middle Years Programme)',

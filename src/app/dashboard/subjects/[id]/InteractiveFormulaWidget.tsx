@@ -1,36 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import katex from 'katex';
 import { evaluate } from 'mathjs';
 import { Locale, getMessages } from '@/lib/i18n/messages';
 import { InteractiveFormula } from '@/services/interactive-formula.service';
-
-function renderLatex(source: string): string {
-  try {
-    return katex.renderToString(source, { throwOnError: false, displayMode: true });
-  } catch {
-    return source;
-  }
-}
-
-function formatValue(v: number, step: number): string {
-  const decimals = step < 1 ? Math.min(4, (String(step).split('.')[1] || '').length) : 0;
-  return v.toFixed(decimals);
-}
-
-function substituteTemplate(template: string, scope: Record<string, number>, resultText?: string): string {
-  return template.replace(/\{\{([^}]+)\}\}/g, (_, expr: string) => {
-    const trimmed = expr.trim();
-    if (trimmed === 'result' && resultText !== undefined) return resultText;
-    try {
-      const value = evaluate(trimmed, scope);
-      return typeof value === 'number' ? String(Math.round(value * 1000) / 1000) : String(value);
-    } catch {
-      return '';
-    }
-  });
-}
+import SafeMath from '@/components/SafeMath';
+import { formatResult, formatValue, plainMathLabel, substituteLatexTemplate, substituteSvgTemplate } from '@/lib/math/interactive-formula-template';
 
 export default function InteractiveFormulaWidget({
   locale,
@@ -53,15 +28,16 @@ export default function InteractiveFormulaWidget({
     }
   }, [data.resultExpression, values]);
 
-  const resultText = Number.isFinite(result) ? formatValue(result, 0.01) : '—';
+  const resultText = Number.isFinite(result) ? formatResult(result) : '—';
 
-  const formulaHtml = useMemo(() => renderLatex(data.latexTemplate), [data.latexTemplate]);
-  const substitutedHtml = useMemo(
-    () => renderLatex(substituteTemplate(data.latexSubstitutionTemplate, values, resultText)),
+  // Live worked calculation: placeholders are filled with the current slider
+  // values, then typeset by the certified renderer (never shown as source).
+  const substitutedLatex = useMemo(
+    () => substituteLatexTemplate(data.latexSubstitutionTemplate, values, resultText),
     [data.latexSubstitutionTemplate, values, resultText]
   );
   const diagramSvg = useMemo(
-    () => (data.diagramSvgTemplate ? substituteTemplate(data.diagramSvgTemplate, values) : null),
+    () => (data.diagramSvgTemplate ? substituteSvgTemplate(data.diagramSvgTemplate, values) : null),
     [data.diagramSvgTemplate, values]
   );
 
@@ -98,14 +74,12 @@ export default function InteractiveFormulaWidget({
         }}
       >
         <div style={{ padding: '20px 24px', borderRight: diagramSvg ? '1px solid var(--border-default)' : 'none' }}>
-          <div
-            style={{ fontSize: 18, textAlign: 'center', marginBottom: 4, color: 'var(--text-primary)' }}
-            dangerouslySetInnerHTML={{ __html: formulaHtml }}
-          />
-          <div
-            style={{ fontSize: 15, textAlign: 'center', marginBottom: 20, color: 'var(--brand-ink)', overflowX: 'auto' }}
-            dangerouslySetInnerHTML={{ __html: substitutedHtml }}
-          />
+          <div data-testid="formula-base" style={{ fontSize: 18, textAlign: 'center', marginBottom: 4, color: 'var(--text-primary)' }}>
+            <SafeMath latex={data.latexTemplate} display />
+          </div>
+          <div data-testid="formula-live" style={{ fontSize: 15, textAlign: 'center', marginBottom: 20, color: 'var(--brand-ink)', overflowX: 'auto' }}>
+            <SafeMath latex={substitutedLatex} display />
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {data.variables.map((v) => (
@@ -116,9 +90,9 @@ export default function InteractiveFormulaWidget({
                     fontSize: 13, marginBottom: 4,
                   }}
                 >
-                  <span style={{ color: 'var(--text-secondary)' }}>{v.label}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{plainMathLabel(v.label)}</span>
                   <span className="tabular" style={{ fontWeight: 650, color: 'var(--text-primary)' }}>
-                    {formatValue(values[v.symbol], v.step)} {v.unit}
+                    {formatValue(values[v.symbol], v.step)} {plainMathLabel(v.unit)}
                   </span>
                 </div>
                 <input
@@ -142,11 +116,13 @@ export default function InteractiveFormulaWidget({
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 12.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              {data.resultSymbol}
-            </span>
-            <div className="tabular" style={{ fontSize: 26, fontWeight: 650, color: 'var(--brand-ink)' }}>
-              {resultText} <span style={{ fontSize: 15, fontWeight: 600 }}>{data.resultUnit}</span>
+            <div data-testid="formula-result" role="status" aria-live="polite">
+              <span style={{ fontSize: 12.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {t['subjectDetail.interactiveFormulaResult']}:
+              </span>{' '}
+              <span className="tabular" style={{ fontSize: 26, fontWeight: 650, color: 'var(--brand-ink)' }}>
+                {resultText} <span style={{ fontSize: 15, fontWeight: 600 }}>{plainMathLabel(data.resultUnit)}</span>
+              </span>
             </div>
           </div>
         </div>
