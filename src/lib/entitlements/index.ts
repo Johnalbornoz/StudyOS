@@ -1,10 +1,11 @@
-import { db } from '@/lib/db';
-import { getSubscription, getEffectiveSubscription } from './subscription.service';
+import { getSubscription } from './subscription.service';
 import type { Capability, SubscriptionStatus } from './types';
+import { resolveLearningAccess, isLearnerOwner } from './learning-access';
 
 export type { Capability, SubscriptionStatus, Plan, SubscriptionRecord } from './types';
 export { getSubscription, getEffectiveSubscription, ensureSubscription, transitionSubscriptionStatus } from './subscription.service';
 export { isValidTransition, assertValidTransition, InvalidSubscriptionTransitionError } from './subscription-state-machine';
+export { resolveLearningAccess, decideLearningAccess, type LearningAccess } from './learning-access';
 
 /**
  * F3 -- THE canonical Entitlement authority (§12 of the task). Answers
@@ -19,22 +20,10 @@ export { isValidTransition, assertValidTransition, InvalidSubscriptionTransition
  * actor.
  */
 
-const PAID_ACCESS_STATUSES: readonly SubscriptionStatus[] = ['active', 'past_due', 'reactivated'];
 const REACTIVATABLE_STATUSES: readonly SubscriptionStatus[] = ['suspended', 'past_due', 'cancelled_at_period_end'];
 
-async function isOwner(actorUserId: string, learnerId: string): Promise<boolean> {
-  try {
-    const result = await db.query(`SELECT 1 FROM students WHERE id = $1 AND user_id = $2 LIMIT 1`, [learnerId, actorUserId]);
-    return result.rows.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-function isWithinCurrentPeriod(currentPeriodEnd: string | null): boolean {
-  if (!currentPeriodEnd) return false;
-  return new Date(currentPeriodEnd).getTime() >= Date.now();
-}
+/** Ownership through the F1 canonical link -- one rule, shared with learning-access.ts. */
+const isOwner = isLearnerOwner;
 
 /**
  * LEARNING_FULL_ACCESS: only the learner themself, only in a status
@@ -44,14 +33,9 @@ function isWithinCurrentPeriod(currentPeriodEnd: string | null): boolean {
  * thing), never treated as an immediate cutoff.
  */
 async function canUseLearningFullAccess(actorUserId: string, learnerId: string): Promise<boolean> {
-  if (!(await isOwner(actorUserId, learnerId))) return false;
-  // getEffectiveSubscription, never getSubscription directly -- an
-  // admin grant past its own expiration must lose access on THIS
-  // request, not on the next cron run that may never exist (§15).
-  const sub = await getEffectiveSubscription(learnerId);
-  if (PAID_ACCESS_STATUSES.includes(sub.status)) return true;
-  if (sub.status === 'cancelled_at_period_end') return isWithinCurrentPeriod(sub.currentPeriodEnd);
-  return false;
+  // The single canonical resolution (learning-access.ts) -- the same one the
+  // Billing page displays, so "licensed" can never mean two things.
+  return (await resolveLearningAccess(actorUserId, learnerId)).licensed;
 }
 
 /** Never revoked by subscription state -- the learner can always see their own history (INV-F3-06). */

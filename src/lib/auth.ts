@@ -158,20 +158,27 @@ async function upsertStudentRecord(
   try {
     await client.query('BEGIN');
 
+    // F1 canonical link: students.user_id / profiles.user_id point at the
+    // `users` row of the same Clerk identity. Ownership (entitlements' isOwner,
+    // F2 canAccessLearner) is decided on this link, so a Student created
+    // without it could never be licensed or authorized as owner. Never
+    // overwrites an existing link.
     const inserted = await client.query(
-      `INSERT INTO students (clerk_id, email, name)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name
-       RETURNING id`,
+      `INSERT INTO students (clerk_id, email, name, user_id)
+       VALUES ($1, $2, $3, (SELECT id FROM users WHERE clerk_id = $1 AND NOT is_system))
+       ON CONFLICT (clerk_id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name,
+         user_id = COALESCE(students.user_id, EXCLUDED.user_id)
+       RETURNING id, user_id`,
       [clerkUserId, email, name]
     );
     const studentId = inserted.rows[0].id;
+    const linkedUserId = inserted.rows[0].user_id ?? null;
 
     await client.query(
-      `INSERT INTO profiles (id, user_type, full_name)
-       VALUES ($1, 'student', $2)
-       ON CONFLICT (id) DO NOTHING`,
-      [studentId, name]
+      `INSERT INTO profiles (id, user_type, full_name, user_id)
+       VALUES ($1, 'student', $2, $3)
+       ON CONFLICT (id) DO UPDATE SET user_id = COALESCE(profiles.user_id, EXCLUDED.user_id)`,
+      [studentId, name, linkedUserId]
     );
     await client.query(
       `INSERT INTO student_profiles (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
@@ -189,6 +196,26 @@ async function upsertStudentRecord(
 }
 
 /**
+ * Repairs a students/profiles row created without its F1 canonical link
+ * (every Student created after F1 by the path above, before this fix).
+ * Same exact-clerk_id rule as the F1 identity backfill; only fills NULLs.
+ */
+async function linkStudentToCanonicalUser(studentId: string): Promise<void> {
+  await db.query(
+    `UPDATE students s SET user_id = u.id
+     FROM users u
+     WHERE s.id = $1 AND s.user_id IS NULL AND u.clerk_id = s.clerk_id AND NOT u.is_system`,
+    [studentId]
+  );
+  await db.query(
+    `UPDATE profiles p SET user_id = s.user_id
+     FROM students s
+     WHERE p.id = $1 AND s.id = p.id AND p.user_type = 'student' AND p.user_id IS NULL AND s.user_id IS NOT NULL`,
+    [studentId]
+  );
+}
+
+/**
  * Resolve a Clerk user ID to the internal student UUID (shared by
  * profiles.id and students.id), creating the rows on first use. Also
  * repairs the case where a students row exists without its matching
@@ -202,6 +229,7 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
   if (existing.rows.length > 0) {
     const studentId = existing.rows[0].id;
     await ensureProfileRows(studentId, null);
+    await linkStudentToCanonicalUser(studentId);
     return studentId;
   }
 

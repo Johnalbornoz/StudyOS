@@ -53,7 +53,7 @@ export type MessageKey =
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
   // F13 -- workspace switcher
   | 'workspace.switcherLabel' | 'workspace.student' | 'workspace.parent' | 'workspace.teacher' | 'workspace.institution' | 'workspace.admin'
-  | 'license.demoBanner' | 'license.demoBannerCta' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
+  | 'license.demoBanner' | 'license.demoBannerCta' | 'billing.sourceAdminGrant' | 'billing.validUntil' | 'learning.licenseRequiredTitle' | 'learning.licenseRequiredBody'
   // F13 -- Teacher workspace navigation + surfaces
   | 'nav.groupTeacher' | 'nav.teacherClasses'
   | 'nav.groupInstitution' | 'nav.institutionOverview'
@@ -633,6 +633,7 @@ type Messages = Record<MessageKey, string>;
 const es: Messages = {
   'workspace.switcherLabel': 'Espacio de trabajo', 'workspace.student': 'Estudiante', 'workspace.parent': 'Padre/Madre', 'workspace.teacher': 'Docente', 'workspace.institution': 'Institución', 'workspace.admin': 'Administración',
   'license.demoBanner': 'Estás en modo demostración. Activa una licencia para acceder a todas las funciones.', 'license.demoBannerCta': 'Activar licencia',
+  'billing.sourceAdminGrant': 'Licencia otorgada por la administración.', 'billing.validUntil': 'Válida hasta el {date}.',
   'learning.licenseRequiredTitle': 'Actividad incluida en la licencia', 'learning.licenseRequiredBody': 'Estás en modo demostración. Las actividades de aprendizaje con IA (comprobar, practicar, demostrar, retener y transferir) se activan con una licencia.',
   'nav.groupTeacher': 'Docente', 'nav.teacherClasses': 'Mis clases',
   'nav.groupInstitution': 'Institución', 'nav.institutionOverview': 'Resumen',
@@ -1852,6 +1853,7 @@ const es: Messages = {
 const en: Messages = {
   'workspace.switcherLabel': 'Workspace', 'workspace.student': 'Student', 'workspace.parent': 'Parent', 'workspace.teacher': 'Teacher', 'workspace.institution': 'Institution', 'workspace.admin': 'Admin',
   'license.demoBanner': "You're in demo mode. Activate a license to unlock all features.", 'license.demoBannerCta': 'Activate license',
+  'billing.sourceAdminGrant': 'Licence granted by an administrator.', 'billing.validUntil': 'Valid until {date}.',
   'learning.licenseRequiredTitle': 'Included with a licence', 'learning.licenseRequiredBody': 'You\'re in demo mode. AI-powered learning activities (check, practise, prove, retain and transfer) are unlocked with a licence.',
   'nav.groupTeacher': 'Teacher', 'nav.teacherClasses': 'My Classes',
   'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Overview',
@@ -3071,6 +3073,7 @@ const en: Messages = {
 const de: Messages = {
   'workspace.switcherLabel': 'Arbeitsbereich', 'workspace.student': 'Schüler', 'workspace.parent': 'Elternteil', 'workspace.teacher': 'Lehrkraft', 'workspace.institution': 'Institution', 'workspace.admin': 'Verwaltung',
   'license.demoBanner': 'Du befindest dich im Demomodus. Aktiviere eine Lizenz, um alle Funktionen freizuschalten.', 'license.demoBannerCta': 'Lizenz aktivieren',
+  'billing.sourceAdminGrant': 'Lizenz von der Verwaltung vergeben.', 'billing.validUntil': 'Gültig bis {date}.',
   'learning.licenseRequiredTitle': 'In der Lizenz enthalten', 'learning.licenseRequiredBody': 'Du bist im Demo-Modus. KI-gestützte Lernaktivitäten (prüfen, üben, nachweisen, festigen und übertragen) werden mit einer Lizenz freigeschaltet.',
   'nav.groupTeacher': 'Lehrkraft', 'nav.teacherClasses': 'Meine Klassen',
   'nav.groupInstitution': 'Institution', 'nav.institutionOverview': 'Übersicht',
@@ -4290,6 +4293,7 @@ const de: Messages = {
 const fr: Messages = {
   'workspace.switcherLabel': 'Espace de travail', 'workspace.student': 'Élève', 'workspace.parent': 'Parent', 'workspace.teacher': 'Enseignant', 'workspace.institution': 'Établissement', 'workspace.admin': 'Administration',
   'license.demoBanner': 'Vous êtes en mode démonstration. Activez une licence pour débloquer toutes les fonctionnalités.', 'license.demoBannerCta': 'Activer la licence',
+  'billing.sourceAdminGrant': 'Licence accordée par l\'administration.', 'billing.validUntil': 'Valable jusqu\'au {date}.',
   'learning.licenseRequiredTitle': 'Inclus dans la licence', 'learning.licenseRequiredBody': 'Tu es en mode démonstration. Les activités d\'apprentissage avec IA (vérifier, s\'entraîner, démontrer, retenir et transférer) sont débloquées avec une licence.',
   'nav.groupTeacher': 'Enseignant', 'nav.teacherClasses': 'Mes classes',
   'nav.groupInstitution': 'Établissement', 'nav.institutionOverview': 'Aperçu',
@@ -5509,6 +5513,7 @@ const fr: Messages = {
 const pt: Messages = {
   'workspace.switcherLabel': 'Espaço de trabalho', 'workspace.student': 'Aluno', 'workspace.parent': 'Responsável', 'workspace.teacher': 'Professor', 'workspace.institution': 'Instituição', 'workspace.admin': 'Administração',
   'license.demoBanner': 'Você está no modo demonstração. Ative uma licença para desbloquear todos os recursos.', 'license.demoBannerCta': 'Ativar licença',
+  'billing.sourceAdminGrant': 'Licença concedida pela administração.', 'billing.validUntil': 'Válida até {date}.',
   'learning.licenseRequiredTitle': 'Incluído na licença', 'learning.licenseRequiredBody': 'Você está no modo de demonstração. As atividades de aprendizagem com IA (verificar, praticar, demonstrar, reter e transferir) são liberadas com uma licença.',
   'nav.groupTeacher': 'Professor', 'nav.teacherClasses': 'Minhas turmas',
   'nav.groupInstitution': 'Instituição', 'nav.institutionOverview': 'Visão geral',

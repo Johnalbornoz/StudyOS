@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { getSubscriptionStatus } from '@/services/payment.service';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { resolveLearningAccess, billingDisplayStatus } from '@/lib/entitlements/learning-access';
 import SubscribeButton from './SubscribeButton';
 
 // F3: extended with the 4 new subscription statuses -- see
@@ -52,7 +53,12 @@ export default async function BillingPage() {
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
 
-  const subscription = await getSubscriptionStatus(studentId);
+  // The SAME canonical resolution as the demo banner and every premium
+  // feature (LEARNING_FULL_ACCESS) -- never the raw subscription row.
+  const actor = await getOrCreateCanonicalUser(clerkUserId);
+  const access = await resolveLearningAccess(actor.id, studentId);
+  const subscription = { status: billingDisplayStatus(access) };
+  const validUntil = access.licensed && access.validUntil ? new Date(access.validUntil).toLocaleDateString(locale) : null;
 
   return (
     <div>
@@ -65,9 +71,11 @@ export default async function BillingPage() {
         <span className={`chip ${STATUS_CHIP_CLASS[subscription.status]}`}>{t[`payment.status.${subscription.status}`]}</span>
         <p style={{ margin: 'var(--space-4) 0 var(--space-6)', fontSize: 15, color: 'var(--text-secondary)' }}>
           {t[STATUS_MESSAGE_KEY[subscription.status]]}
+          {access.licensed && access.source === 'ADMIN_GRANT' && <> {t['billing.sourceAdminGrant']}</>}
+          {validUntil && <> {t['billing.validUntil'].replace('{date}', validUntil)}</>}
         </p>
 
-        {subscription.status !== 'active' && (
+        {!access.licensed && (
           <SubscribeButton
             label={t['billing.subscribeButton']}
             notConfiguredMessage={t['billing.notConfigured']}
