@@ -95,6 +95,9 @@ export default async function LearningDebtPage() {
                   label={t['debt.review']}
                   unavailableLabel={t['today3.unavailableBody']}
                   retryLabel={t['today3.retry']}
+                  licenseTitle={t['learning.licenseRequiredTitle']}
+                  licenseBody={t['learning.licenseRequiredBody']}
+                  licenseCtaLabel={t['license.demoBannerCta']}
                   variant="secondary"
                 />
               </div>
@@ -126,6 +129,9 @@ export default async function LearningDebtPage() {
                     accessibleLabel={`${t['debt.fixFoundation']}: ${info?.label ?? d.actionConceptId}`}
                     unavailableLabel={t['today3.unavailableBody']}
                     retryLabel={t['today3.retry']}
+                    licenseTitle={t['learning.licenseRequiredTitle']}
+                    licenseBody={t['learning.licenseRequiredBody']}
+                    licenseCtaLabel={t['license.demoBannerCta']}
                   />
                 </li>
               );
@@ -158,6 +164,9 @@ export default async function LearningDebtPage() {
                     accessibleLabel={`${t['debt.continueRepair']}: ${info?.label ?? d.actionConceptId}`}
                     unavailableLabel={t['today3.unavailableBody']}
                     retryLabel={t['today3.retry']}
+                    licenseTitle={t['learning.licenseRequiredTitle']}
+                    licenseBody={t['learning.licenseRequiredBody']}
+                    licenseCtaLabel={t['license.demoBannerCta']}
                     variant="secondary"
                   />
                 </li>
@@ -190,6 +199,9 @@ export default async function LearningDebtPage() {
                     accessibleLabel={`${t['debt.review']}: ${info?.label ?? d.actionConceptId}`}
                     unavailableLabel={t['today3.unavailableBody']}
                     retryLabel={t['today3.retry']}
+                    licenseTitle={t['learning.licenseRequiredTitle']}
+                    licenseBody={t['learning.licenseRequiredBody']}
+                    licenseCtaLabel={t['license.demoBannerCta']}
                     variant="secondary"
                   />
                 </li>
@@ -222,6 +234,9 @@ export default async function LearningDebtPage() {
                     label={t['debt.review']}
                     unavailableLabel={t['today3.unavailableBody']}
                     retryLabel={t['today3.retry']}
+                    licenseTitle={t['learning.licenseRequiredTitle']}
+                    licenseBody={t['learning.licenseRequiredBody']}
+                    licenseCtaLabel={t['license.demoBannerCta']}
                     variant="secondary"
                   />
                 </div>

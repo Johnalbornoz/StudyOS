@@ -41,6 +41,8 @@ import {
   resolveConceptSubjectForStudent,
 } from '@/lib/pedagogical-decision';
 import { toCanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { canUseCapability } from '@/lib/entitlements';
 
 const StartSessionSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -65,6 +67,19 @@ export async function POST(request: NextRequest) {
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'You do not have permission to start a session for this student' }, { status: 403 });
+    }
+
+    // Every learning activity this route launches is AI-generated
+    // (/api/quizzes/generate-and-take requires LEARNING_FULL_ACCESS). Refuse
+    // HERE, with the same policy and code, before resolving or launching
+    // anything -- never hand the learner a launch target that is certain to
+    // fail with a 403 one step later. Nothing is written on this path.
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    if (!(await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS'))) {
+      return NextResponse.json(
+        { error: 'ENTITLEMENT_REQUIRED', message: 'A licence is required to start learning activities.' },
+        { status: 403 }
+      );
     }
 
     if (isCanonicalEngineV1Enabled()) {

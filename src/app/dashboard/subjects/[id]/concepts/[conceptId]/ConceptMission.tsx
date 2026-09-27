@@ -137,6 +137,9 @@ function NowCard({
             accessibleLabel={presentation.accessibleLabel}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
+            licenseTitle={t['learning.licenseRequiredTitle']}
+            licenseBody={t['learning.licenseRequiredBody']}
+            licenseCtaLabel={t['license.demoBannerCta']}
             variant="primary"
           />
         </div>

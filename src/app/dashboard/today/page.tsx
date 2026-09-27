@@ -112,6 +112,9 @@ function ItemRow({
         accessibleLabel={`${activityCta(decision.activityType, t)}: ${label}`}
         unavailableLabel={t['today3.unavailableBody']}
         retryLabel={t['today3.retry']}
+        licenseTitle={t['learning.licenseRequiredTitle']}
+        licenseBody={t['learning.licenseRequiredBody']}
+        licenseCtaLabel={t['license.demoBannerCta']}
         variant="secondary"
       />
     </div>
@@ -334,6 +337,9 @@ export default async function TodayPage() {
               accessibleLabel={`${activityCta(best.decision.activityType, t)}: ${bestLabel?.label ?? best.decision.actionConceptId}`}
               unavailableLabel={t['today3.unavailableBody']}
               retryLabel={t['today3.retry']}
+              licenseTitle={t['learning.licenseRequiredTitle']}
+              licenseBody={t['learning.licenseRequiredBody']}
+              licenseCtaLabel={t['license.demoBannerCta']}
               variant="primary"
               launchMark="TODAY_PRIMARY_ACTION_LAUNCHED"
             />

@@ -1,7 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { classifySessionLaunch, LICENSE_CTA_PATH } from '@/lib/lx/session-launch-outcome';
+
+/**
+ * Licence awareness: learning activities require LEARNING_FULL_ACCESS
+ * (demo mode excludes AI-generated activities). The existing
+ * session-eligibility endpoint is asked once per student (short-lived,
+ * shared across every button on the page) so an unlicensed student sees
+ * "activate a licence" instead of a CTA that cannot succeed. The server
+ * remains the authority: session/start refuses with ENTITLEMENT_REQUIRED
+ * either way, and that response shows the same state.
+ */
+const ELIGIBILITY_TTL_MS = 30_000;
+const eligibilityCache = new Map<string, { at: number; entitled: Promise<boolean | null> }>();
+
+function fetchEntitled(studentId: string): Promise<boolean | null> {
+  const cached = eligibilityCache.get(studentId);
+  if (cached && Date.now() - cached.at < ELIGIBILITY_TTL_MS) return cached.entitled;
+  const entitled = fetch(`/api/learning/session-eligibility?studentId=${encodeURIComponent(studentId)}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((b) => (b?.data && typeof b.data.entitled === 'boolean' ? b.data.entitled : null))
+    .catch(() => null);
+  eligibilityCache.set(studentId, { at: Date.now(), entitled });
+  return entitled;
+}
 
 /**
  * Phase 3E's single student-facing entry point into the Session Engine.
@@ -21,6 +46,9 @@ export default function StartSessionButton({
   retryLabel,
   variant = 'primary',
   launchMark,
+  licenseTitle,
+  licenseBody,
+  licenseCtaLabel,
 }: {
   studentId: string;
   actionConceptId: string;
@@ -38,10 +66,25 @@ export default function StartSessionButton({
    * no behavior change.
    */
   launchMark?: string;
+  /** Localized copy for the licence-required state (demo mode). */
+  licenseTitle: string;
+  licenseBody: string;
+  licenseCtaLabel: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [licenseRequired, setLicenseRequired] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchEntitled(studentId).then((entitled) => {
+      if (active && entitled === false) setLicenseRequired(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [studentId]);
 
   async function start() {
     setLoading(true);
@@ -52,15 +95,19 @@ export default function StartSessionButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, actionConceptId }),
       });
-      const body = await res.json();
-      const session = body?.data?.session;
-      if (res.ok && session?.launchStatus === 'READY' && session.launchTarget) {
+      const body = await res.json().catch(() => null);
+      const outcome = classifySessionLaunch(res.status, body);
+      if (outcome.kind === 'LICENSE_REQUIRED') {
+        setLicenseRequired(true);
+        return;
+      }
+      if (outcome.kind === 'LAUNCH') {
         if (launchMark) {
           try {
             console.log('[perf]', JSON.stringify({ label: launchMark, t: Math.round(performance.now()), conceptId: actionConceptId }));
           } catch { /* noop */ }
         }
-        router.push(session.launchTarget);
+        router.push(outcome.target);
         return;
       }
       setUnavailable(true);
@@ -69,6 +116,18 @@ export default function StartSessionButton({
     } finally {
       setLoading(false);
     }
+  }
+
+  if (licenseRequired) {
+    return (
+      <div role="note" style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 420 }}>
+        <strong style={{ fontSize: 14 }}>{licenseTitle}</strong>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{licenseBody}</span>
+        <Link href={LICENSE_CTA_PATH} className={variant === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'} style={{ alignSelf: 'flex-start' }}>
+          {licenseCtaLabel}
+        </Link>
+      </div>
+    );
   }
 
   return (

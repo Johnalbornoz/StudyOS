@@ -14,6 +14,7 @@ import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 import type { LearningActivityKind } from '@/lib/lx/continuation';
 import { conceptMissionPath, RELAUNCH_NONCE_PARAM } from '@/lib/lx/continuation';
+import { LICENSE_CTA_PATH } from '@/lib/lx/session-launch-outcome';
 import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
@@ -342,7 +343,12 @@ function QuizPageContent() {
   );
 
   const [quizId, setQuizId] = useState<string | null>(null);
-  const [quizLanguage, setQuizLanguage] = useState<Locale>('en');
+  const [quizLanguage, setQuizLanguage] = useState<Locale>('es');
+  // Until the activity reports its canonical language (generation result or
+  // an explicit switch), `at` follows the INTERFACE language -- never a
+  // hard-coded 'en'. Otherwise a failure BEFORE the activity starts (e.g.
+  // generation refused) would render in English for a Spanish learner.
+  const activityLanguageEstablishedRef = useRef(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -478,6 +484,21 @@ function QuizPageContent() {
   // the interface locale.
   const t = getMessages(locale);
   const at = getMessages(quizLanguage);
+  // Demo mode (no LEARNING_FULL_ACCESS): an account/licence message, so it
+  // uses the interface language (`t`), with the path to activate a licence
+  // -- never the generic "try again".
+  const licenseRequiredCard = () => (
+    <div className="card empty-state" role="note">
+      <strong>{t['learning.licenseRequiredTitle']}</strong>
+      <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{t['learning.licenseRequiredBody']}</p>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Link href={LICENSE_CTA_PATH} className="btn btn-primary">{t['license.demoBannerCta']}</Link>
+        <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard'} className="btn btn-secondary">
+          {t['continuation.backToConcept']}
+        </Link>
+      </div>
+    </div>
+  );
 
   // LX-8R1 R1: ONE interaction-policy authority. Runtime browser
   // capability detection is an INPUT to buildInteractionContract
@@ -552,7 +573,10 @@ function QuizPageContent() {
         const [meRes, langRes] = await Promise.all([fetch('/api/me'), fetch('/api/language')]);
         const me = await meRes.json();
         const lang = await langRes.json();
-        if (lang.locale) setLocale(lang.locale);
+        if (lang.locale) {
+          setLocale(lang.locale);
+          if (!activityLanguageEstablishedRef.current) setQuizLanguage(lang.locale);
+        }
         if (!me.studentId) throw new Error('Could not identify the student');
         setStudentId(me.studentId);
 
@@ -585,6 +609,7 @@ function QuizPageContent() {
   // the canonical background flow.
   const applyGenResult = useCallback((data: any) => {
     setQuizId(data.quizId);
+    activityLanguageEstablishedRef.current = true;
     setQuizLanguage(data.language);
     // LX-4P-R2: remember the generated language + the pristine batch, so a
     // later same-item localization can translate away and restore back.
@@ -637,6 +662,13 @@ function QuizPageContent() {
           // this activity" message for this known, machine-readable case.
           if (body.error === 'INVALID_GENERATION_CONTRACT' && body.reason === 'ZERO_GAP_PRACTICE_MISMATCH') {
             setErrorReason(body.reason);
+            setPhase('error');
+            return;
+          }
+          // Demo mode: AI-generated activities need a licence. Retrying cannot
+          // help, so this is its own explained state, never "try again".
+          if (genRes.status === 403 && body.error === 'ENTITLEMENT_REQUIRED') {
+            setErrorReason('ENTITLEMENT_REQUIRED');
             setPhase('error');
             return;
           }
@@ -720,6 +752,7 @@ function QuizPageContent() {
             // (canonical state, not the provider, rejected it).
             const err = new Error(b.message || 'Could not generate the quiz') as Error & { reason?: string };
             if (b.error === 'INVALID_GENERATION_CONTRACT' && b.reason === 'ZERO_GAP_PRACTICE_MISMATCH') err.reason = b.reason;
+            if (r.status === 403 && b.error === 'ENTITLEMENT_REQUIRED') err.reason = 'ENTITLEMENT_REQUIRED';
             throw err;
           }
           return b.data;
@@ -869,6 +902,7 @@ function QuizPageContent() {
       if (localized) {
         localizeAttemptedRef.current.add(`${current}@${next}`);
         setQuestions((qs) => qs.map((q, i) => (i === current ? localized : q)));
+        activityLanguageEstablishedRef.current = true;
         setQuizLanguage(next);
         // quizId, current, answers, draft, teachingExperience,
         // teachingStage, results are all deliberately untouched.
@@ -1491,6 +1525,7 @@ function QuizPageContent() {
     // back to Concept Mission, where fresh canonical state (and whatever
     // IS actually next) is shown -- never a dead end, never a repeated
     // invalid request.
+    if (errorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
     if (errorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
         <div>
@@ -2097,6 +2132,7 @@ function QuizPageContent() {
   // routes to Concept Mission instead, matching `generateQuiz`'s own
   // `errorReason` handling above.
   if (phase === 'quiz' && teachingStage === 'questions' && questions.length === 0 && genState !== 'ready') {
+    if (genErrorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
     if (genErrorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
         <div className="card empty-state" style={{ textAlign: 'center' }}>

@@ -192,7 +192,11 @@ describe('RELEASE-R1 8 -- no reachable UI path relies on quiz/page.tsx\'s own to
   it('StartSessionButton (the one canonical launch mechanism) never constructs a URL itself -- it only navigates to a server-returned launchTarget', () => {
     const SRC = read('src/app/dashboard/StartSessionButton.tsx');
     expect(SRC).not.toMatch(/dashboard\/quiz\?/);
-    expect(SRC).toMatch(/router\.push\(session\.launchTarget\)/);
+    // navigation target is the server-returned launchTarget, passed through verbatim by the pure classifier
+    expect(SRC).toMatch(/router\.push\(outcome\.target\)/);
+    const classifier = read('src/lib/lx/session-launch-outcome.ts');
+    expect(classifier).toMatch(/return \{ kind: 'LAUNCH', target: session\.launchTarget \}/);
+    expect(classifier).not.toMatch(/dashboard\/quiz\?/);
   });
 });
 

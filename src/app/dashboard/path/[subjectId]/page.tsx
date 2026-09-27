@@ -50,6 +50,9 @@ function ConceptRow({
             accessibleLabel={`${activityCta(onCurrentDecision.activityType, t)}: ${concept.title}`}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
+            licenseTitle={t['learning.licenseRequiredTitle']}
+            licenseBody={t['learning.licenseRequiredBody']}
+            licenseCtaLabel={t['license.demoBannerCta']}
             variant="secondary"
             launchMark="MY_PATH_ACTION_LAUNCHED"
           />

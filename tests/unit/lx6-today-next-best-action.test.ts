@@ -123,7 +123,11 @@ describe('LX-6 R7 -- launch reuses the canonical session-start entrypoint, never
   });
   it('launchMark only fires the [perf] log AFTER launchStatus READY is confirmed by the server -- never before, never on failure', () => {
     const fn = BUTTON_SRC.slice(BUTTON_SRC.indexOf('async function start'), BUTTON_SRC.indexOf('return (', BUTTON_SRC.indexOf('async function start')));
-    expect(fn).toMatch(/if \(res\.ok && session\?\.launchStatus === 'READY' && session\.launchTarget\) \{\s*\n\s*if \(launchMark\)/);
+    // the READY/launchTarget check now lives in the pure classifier (session-launch-outcome.ts);
+    // the perf mark still fires only inside the confirmed-LAUNCH branch, right before navigation
+    expect(fn).toMatch(/if \(outcome\.kind === 'LAUNCH'\) \{\s*\n\s*if \(launchMark\)/);
+    const classifier = readFileSync(join(process.cwd(), 'src/lib/lx/session-launch-outcome.ts'), 'utf-8');
+    expect(classifier).toMatch(/session\?\.launchStatus === 'READY' && typeof session\.launchTarget === 'string'/);
   });
   it('the hero gives its StartSessionButton an accessible name distinct from the badge text (R18)', () => {
     const hero = TODAY_SRC.slice(TODAY_SRC.indexOf('{best && ('), TODAY_SRC.indexOf('{isEmpty ? ('));

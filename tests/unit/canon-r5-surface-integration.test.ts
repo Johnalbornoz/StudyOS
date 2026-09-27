@@ -39,6 +39,17 @@ vi.mock('@/lib/pedagogical-decision', () => ({
 
 const verifyAuthMock = vi.fn();
 const verifyStudentAccessMock = vi.fn();
+// session/start now enforces LEARNING_FULL_ACCESS before launching (same
+// policy as generate-and-take); these suites exercise a licensed learner.
+vi.mock('@/lib/identity', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/identity')>()),
+  getOrCreateCanonicalUser: async () => ({ id: 'user-licensed', status: 'ACTIVE' }),
+}));
+vi.mock('@/lib/entitlements', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/entitlements')>()),
+  canUseCapability: async () => true,
+}));
+
 vi.mock('@/lib/auth', () => ({
   verifyAuth: () => verifyAuthMock(),
   verifyStudentAccess: (...a: unknown[]) => verifyStudentAccessMock(...a),
