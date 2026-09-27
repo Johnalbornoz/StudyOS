@@ -26,6 +26,8 @@ import { join } from 'path';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
+// QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+const CONFIG_SRC = read('src/lib/quiz/quiz-mode-config.ts');
 const GATED_SRC = read('src/services/gated-question-generation.service.ts');
 // CANON-R6-PERF-R2: the orchestration (chunk generation call site,
 // novelty filtering, recovery sizing) this file originally audited
@@ -330,7 +332,7 @@ describe('12/16 -- call-count safety: one initial concurrent round, at most one 
 // ============================================================
 describe('legacy firewall -- quick_check/topic_practice/review/cumulative_assessment/exam_simulation/diagnostic_check are untouched', () => {
   it('quick_check retains its fixed defaultMax: 6', () => {
-    expect(ROUTE_SRC).toMatch(/defaultMax: 6,/);
+    expect(CONFIG_SRC).toMatch(/defaultMax: 6,/);
   });
 
   it('the generic multi-concept branch (cumulative_assessment/exam_simulation/diagnostic_check/retention_check override) still calls generateGatedQuestionBatch, unchanged', () => {

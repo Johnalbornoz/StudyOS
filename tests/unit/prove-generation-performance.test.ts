@@ -28,8 +28,6 @@ const generateMock = vi.fn();
 vi.mock('@/services/canonical-prove-generation.service', () => ({ generateCanonicalProveQuestions: (...a: any[]) => generateMock(...a) }));
 
 import { findResumableCanonicalProveSession } from '@/services/quiz-persistence.service';
-import { ensureCanonicalProvePrepared } from '@/services/canonical-prepared-activity.service';
-import { decisionMayNeedProvePreparation } from '@/services/prove-preparation-trigger.service';
 import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
 
 const CONTRACT = { canonicalActivityType: 'PROVE', itemCount: { authorized: 10 }, difficulty: { min: 3, max: 4, target: 3 }, independence: true };
@@ -52,12 +50,13 @@ describe('1. idempotent Prove launch (same quiz for a re-launch)', () => {
     expect(r).toBeNull();
     const [sql, params] = queryMock.mock.calls[0];
     for (const clause of [
-      "qs.quiz_mode = 'canonical_prove'", "qs.status = 'active'", 'qs.expires_at > NOW()', 'qs.language = $3', 'qs.pedagogical_policy_version = $4',
-      "canonicalActivityType' = $5", "'itemCount'->>'authorized')::int = $6", "'difficulty'->>'min')::int = $7", "'difficulty'->>'max')::int = $8",
-      "'difficulty'->>'target')::int = $9", "independence')::boolean = $10", 'jsonb_array_length(qs.questions) = $6', 'NOT EXISTS', 'le.timestamp >= qs.created_at',
+      // generalized to every canonical mode (LEARNING_ACTIVITY_DELIVERY); the Prove form binds quiz_mode = canonical_prove
+      'qs.quiz_mode = $11', "qs.status = 'active'", 'qs.expires_at > NOW()', 'qs.language = $3', 'qs.pedagogical_policy_version = $4',
+      "canonicalActivityType' = $5", "'itemCount'->>'authorized')::int = $6::int", "'difficulty'->>'min')::int = $7", "'difficulty'->>'max')::int = $8",
+      "'difficulty'->>'target')::int = $9", "independence')::boolean = $10", 'jsonb_array_length(qs.questions) = $12', 'NOT EXISTS', 'le.timestamp >= qs.created_at',
     ]) expect(sql).toContain(clause);
     expect(sql).not.toMatch(/INSERT|UPDATE|DELETE/);
-    expect(params).toEqual(['s', 'c', 'es', 'v1', 'PROVE', 10, 3, 4, 3, true]);
+    expect(params).toEqual(['s', 'c', 'es', 'v1', 'PROVE', 10, 3, 4, 3, true, 'canonical_prove', 10]);
   });
 
   it('returns the SAME quizId and the SAME 10 questions', async () => {
@@ -72,81 +71,37 @@ describe('1. idempotent Prove launch (same quiz for a re-launch)', () => {
     expect(await findResumableCanonicalProveSession({ studentId: 's', conceptId: 'c', language: 'es', policyVersion: 'v1', contract: CONTRACT })).toBeNull();
   });
 
-  it('the route resumes BEFORE any prepared lookup or generation, returns without storing a new session, and writes no evidence', () => {
-    const resumeIdx = ROUTE.indexOf('await findResumableCanonicalProveSession({');
+  it('the launch resumes BEFORE inventory, bank or any generation, returns the same session, and writes no evidence (now for every canonical activity -- LEARNING_ACTIVITY_DELIVERY)', () => {
+    const svc = read('src/services/activity-delivery.service.ts');
+    // resume is read in the same round trip as the learner-state reads, before anything is consumed or assembled
+    const resumeIdx = svc.indexOf('const [resumed, snapshot, askFlags, reserved] = await Promise.all([\n      findResumableCanonicalSession({');
     expect(resumeIdx).toBeGreaterThan(-1);
-    expect(resumeIdx).toBeLessThan(ROUTE.indexOf('await findActivePreparedActivity('));
-    expect(resumeIdx).toBeLessThan(ROUTE.indexOf('await generateCanonicalProveQuestions({'));
-    const block = ROUTE.slice(resumeIdx, ROUTE.indexOf("const [questionArrays, askConfidenceFlags] = await Promise.all(["));
-    expect(block).toMatch(/quizId: resumable\.quizId/);
-    expect(block).toMatch(/resumable\.questions\.map\(\(q, i\) => toClientQuestion\(q, i\)\)/);
-    expect(block).not.toMatch(/storeQuiz|recordEvidence|learning_evidence|INSERT/);
-    const guardIdx = ROUTE.indexOf("if (validated.quizMode === 'canonical_prove' && v1Marker && v1Marker.itemCount) {");
-    expect(guardIdx).toBeGreaterThan(-1);
-    expect(guardIdx).toBeLessThan(resumeIdx);
-  });
-
-  it('the resume only runs after the fresh canonical authorization (v1Marker) -- independence and contract come from the engine, never the client', () => {
-    expect(ROUTE.indexOf("if (validated.quizMode === 'canonical_prove' && !v1Marker)")).toBeLessThan(ROUTE.indexOf('await findResumableCanonicalProveSession({'));
+    expect(resumeIdx).toBeLessThan(svc.indexOf('await consumeCompatibleInventory('));
+    expect(resumeIdx).toBeLessThan(svc.indexOf('await assembleActivityForLearner('));
+    expect(svc).toMatch(/if \(resumed\) return \{ status: 'DELIVERED', source: 'RESUMED', quizId: resumed\.quizId, questions: resumed\.questions, timings \};/);
+    expect(svc).not.toMatch(/learning_evidence|recordEvidence|updateMastery/);
+    // the route delivers only after the fresh canonical authorization (v1Marker)
+    expect(ROUTE.indexOf("if (validated.quizMode === 'canonical_prove' && !v1Marker)")).toBeLessThan(ROUTE.indexOf('await deliverCanonicalActivity(deliveryInput)'));
   });
 });
 
-describe('2. pre-generation is re-armed while PROVE is the next action', () => {
-  const decision = (over: Record<string, unknown> = {}): any => ({
-    stage: 'PROVE', actionState: 'EXECUTABLE', policyVersion: 'v1', canonicalRevision: 'r',
-    activityContract: { activityType: 'PROVE', itemCount: { min: 10, max: 10 }, difficulty: { min: 3, max: 4, target: 3 }, independence: true, supportLevel: 'NONE', minimumScorePercent: 80 },
-    ...over,
-  });
-  const base = { studentId: 's', conceptId: 'c', subjectId: 'sub', language: 'es', guidance: 'g', visualAidRate: 0, ibContext: null };
-
-  it('not PROVE / not executable -> nothing happens', async () => {
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision({ stage: 'PRACTICE' }) })).toBe('NOT_APPLICABLE');
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision({ actionState: 'WAITING' }) })).toBe('NOT_APPLICABLE');
-    expect(queryMock).not.toHaveBeenCalled();
-    expect(decisionMayNeedProvePreparation(decision({ stage: 'PRACTICE' }))).toBe(false);
-    expect(decisionMayNeedProvePreparation(decision())).toBe(true);
-  });
-
-  it('a READY unexpired or PREPARING batch -> no second preparation', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [{ id: 'p', status: 'READY', expires_at: new Date(Date.now() + 60_000), activity_contract: '{}', questions: '[]' }] });
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision() })).toBe('ALREADY_PREPARED');
-    queryMock.mockResolvedValueOnce({ rows: [{ id: 'p', status: 'PREPARING', expires_at: new Date(Date.now() + 60_000), activity_contract: '{}', questions: '[]' }] });
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision() })).toBe('ALREADY_PREPARED');
-    expect(generateMock).not.toHaveBeenCalled();
-  });
-
-  it('EXPIRED (the E2E case) or nothing prepared -> a new preparation starts through the certified pipeline', async () => {
-    queryMock.mockImplementation(async (sql: string) => {
-      if (/SELECT \* FROM canonical_prepared_activity/.test(sql)) return { rows: [{ id: 'p', status: 'READY', expires_at: new Date(Date.now() - 1000), activity_contract: '{}', questions: '[]' }] };
-      if (/INSERT INTO canonical_prepared_activity/.test(sql)) return { rows: [] }; // dedup slot already taken -> skipped, never generated twice
-      return { rows: [] };
-    });
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision() })).toBe('PREPARATION_STARTED');
-    expect(queryMock.mock.calls.some(([sql]) => /INSERT INTO canonical_prepared_activity/.test(sql))).toBe(true);
-  });
-
-  it('never throws', async () => {
-    queryMock.mockRejectedValue(new Error('db down'));
-    expect(await ensureCanonicalProvePrepared({ ...base, decision: decision() })).toBe('FAILED');
-  });
-
-  it('Concept Mission schedules it after the response, only when PROVE may need it', () => {
-    expect(PAGE).toMatch(/if \(decisionMayNeedProvePreparation\(canonicalDecision\)\) \{\s*after\(\(\) => keepCanonicalProvePrepared\(/);
-  });
-});
+// 2. pre-generation re-arming is now the LEARNING_ACTIVITY_DELIVERY inventory +
+// queue for every stage -- covered in tests/unit/activity-delivery-architecture.test.ts.
 
 describe('3. same generation context as the live request', () => {
   it('guidance comes from ONE shared config used by the live route and every background trigger', () => {
-    expect(ROUTE).toMatch(/guidance: CANONICAL_PROVE_GENERATION_CONFIG\.guidance/);
-    expect(read('src/services/prove-preparation-trigger.service.ts')).toMatch(/guidance: CANONICAL_PROVE_GENERATION_CONFIG\.guidance/);
+    expect(read('src/lib/quiz/quiz-mode-config.ts')).toMatch(/guidance: CANONICAL_PROVE_GENERATION_CONFIG\.guidance/);
+    // live (emergency) generation and the background worker read the SAME config
+    expect(ROUTE).toMatch(/import \{ QUIZ_MODE_CONFIG \} from '@\/lib\/quiz\/quiz-mode-config';/);
+    expect(read('src/services/activity-candidate-generation.service.ts')).toMatch(/const config = QUIZ_MODE_CONFIG\[quizMode\];/);
     expect(CANONICAL_PROVE_GENERATION_CONFIG.guidance).toMatch(/independent mastery check/);
   });
 
   it('language and IB/DP/HL context are resolved by the same shared service the route uses', () => {
     expect(ROUTE).toMatch(/import \{ resolveLanguageForSubject, getSubjectIBContext \} from '@\/services\/subject-generation-context\.service'/);
-    const trig = read('src/services/prove-preparation-trigger.service.ts');
-    expect(trig).toMatch(/resolveLanguageForSubject\(params\.subjectId, params\.studentId\)/);
-    expect(trig).toMatch(/getSubjectIBContext\(params\.subjectId\)/);
+    const worker = read('src/services/activity-delivery-worker.service.ts');
+    expect(worker).toMatch(/resolveLanguageForSubject\(target\.subjectId, target\.studentId\)/);
+    expect(worker).toMatch(/ibContext: await getSubjectIBContext\(p\.subjectId\)/);
   });
 });
 

@@ -42,12 +42,17 @@
 
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
-import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
+import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
+import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
 import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 import { recordQuizResponses } from '@/services/quiz-response-audit.service';
+import { DELIVERY_QUIZ_MODES } from '@/lib/activity-delivery/contract';
+import { deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
+import { loadAcademicContext } from '@/services/activity-delivery-context.service';
+import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
+import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
-import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
@@ -90,7 +95,7 @@ import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/d
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
-import { storeQuiz, getQuizSession, completeQuiz, findResumableCanonicalProveSession, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
 import {
   logCanonicalProveGenerationSummary,
   logCanonicalProveCacheSummary,
@@ -102,11 +107,11 @@ import {
 import { shuffleArray, toClientQuestion } from '@/lib/quiz/client-question';
 import { updateMastery } from '@/services/mastery.service';
 import { getStudentMastery } from '@/services/mastery.service';
-import { getIndependentMastery, shouldAskConfidence, type ConfidenceLevel } from '@/services/learner-model.service';
+import { type ConfidenceLevel } from '@/services/learner-model.service';
 import { getNextOccurrence } from '@/services/assessment.service';
 import { recordError } from '@/services/error-intelligence.service';
 import { isLocale } from '@/lib/i18n/messages';
-import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
+import type { LearningEvidence } from '@/lib/algorithms/mastery';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 import type { AIProvenance } from '@/lib/ai';
 import { recordDecisionEvent } from '@/lib/audit';
@@ -190,129 +195,6 @@ function logDifficultyResolution(activityType: string, decision: ReturnType<type
 }
 
 
-/**
- * Every mode offers Claude the full 18-type catalog -- it isn't
- * restricted to a fixed subset. `guidance` steers the STYLE and rigor
- * (how fast, how demanding), but which specific types actually get
- * used within that is Claude's call per question, based on what each
- * piece of content calls for.
- */
-const QUIZ_MODE_CONFIG: Record<
-  QuizMode,
-  { guidance: string; defaultMax: number; visualAidRate: number; evidenceSource: EvidenceSourceType }
-> = {
-  quick_check: {
-    guidance:
-      'A fast, low-friction confidence check. Prefer quick-to-answer types (multiple_choice, true_false, yes_no, short_answer) -- avoid long multi-step or open-ended types here.',
-    defaultMax: 6,
-    visualAidRate: 0,
-    evidenceSource: 'PRACTICE_QUESTION',
-  },
-  topic_practice: {
-    guidance: 'Everyday practice on this concept. Use a natural mix of types that fit the material -- don\'t default to only multiple_choice.',
-    defaultMax: 20,
-    visualAidRate: 0.1,
-    evidenceSource: 'PRACTICE_QUIZ',
-  },
-  review: {
-    // Reinforcement Review (Activity Type REVIEW, Evidence Mode
-    // PRACTICE) -- same cognitive shape as topic_practice, AI may
-    // assist. Distinct from retention_check below, which is the other,
-    // unassisted, "prove you still remember" flavor of Review.
-    guidance: 'Everyday practice on this concept. Use a natural mix of types that fit the material -- don\'t default to only multiple_choice.',
-    defaultMax: 20,
-    visualAidRate: 0.1,
-    evidenceSource: 'PRACTICE_QUIZ',
-  },
-  retention_check: {
-    // Retention Review (Activity Type RETENTION_CHECK, Evidence Mode
-    // INDEPENDENT) -- StudyUS needs unassisted proof the student still
-    // remembers, so this is short and low-friction like quick_check,
-    // just tagged with a different Activity Type/Evidence Mode.
-    guidance:
-      'A fast, low-friction confidence check. Prefer quick-to-answer types (multiple_choice, true_false, yes_no, short_answer) -- avoid long multi-step or open-ended types here.',
-    defaultMax: 6,
-    visualAidRate: 0,
-    evidenceSource: 'PRACTICE_QUESTION',
-  },
-  cumulative_assessment: {
-    guidance:
-      'A broader check spanning several concepts. Favor types that test connections and application across ideas (comparison, classification, matching, case_study) alongside standard types, whatever each concept\'s content actually supports.',
-    defaultMax: 20,
-    visualAidRate: 0.15,
-    evidenceSource: 'CUMULATIVE_ASSESSMENT',
-  },
-  exam_simulation: {
-    guidance:
-      'Simulate real exam rigor. Favor the most demanding types this material genuinely supports (step_by_step, case_study, error_detection, justification, numeric_problem, scenario) as well as standard types -- but never force a type onto content that doesn\'t suit it.',
-    defaultMax: 20,
-    visualAidRate: 0.2,
-    evidenceSource: 'EXAM_SIMULATION',
-  },
-  diagnostic_check: {
-    guidance:
-      'This is a short DIAGNOSTIC check, not a teaching moment -- its only job is to reveal whether the student genuinely understands this concept independently. Prefer types that can\'t be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess. Keep each question tightly focused on the core idea of this concept, not tangential details.',
-    defaultMax: 3,
-    visualAidRate: 0,
-    evidenceSource: 'DIAGNOSTIC',
-  },
-  // CANON-R6 -- the exact-10, independent canonical v1 Prove check.
-  // `defaultMax` is never actually consulted for a genuinely
-  // v1-authorized request (the server-derived override below always
-  // forces exactly `v1Marker.itemCount.authorized`, 10 today) -- it
-  // exists only so this Record stays total and so an unauthorized
-  // `canonical_prove` request (rejected before generation, see the
-  // v1Marker guard) never needs to reach this value at all. Reuses the
-  // SAME question-type catalog and generation prompt shape as
-  // quick_check (no new prompt template) -- guidance text differs only
-  // to reflect the higher item count and higher stakes; no AI provider,
-  // routing, or Quality Gate code was touched.
-  canonical_prove: {
-    // CANON-R6R1 Part 9 -- the trailing sentence is a lightweight,
-    // isolated generation-guidance nudge only (reduces churn/retries);
-    // it is NEVER the enforcement mechanism -- exact-duplicate exclusion
-    // is a deterministic post-generation server check
-    // (`filterExactDuplicates`, run inside
-    // `generateCanonicalProveQuestions` -- CANON-R6-PERF-R1/R2), which
-    // runs regardless of whether Claude actually honored this text.
-    guidance: CANONICAL_PROVE_GENERATION_CONFIG.guidance,
-    defaultMax: 10,
-    visualAidRate: CANONICAL_PROVE_GENERATION_CONFIG.visualAidRate,
-    evidenceSource: 'SOLO_VERIFICATION',
-  },
-  // CANON-V2-ARCH-CLEANUP -- the exact-10, independent, NOVEL canonical
-  // v1 Retain check. `defaultMax` is never actually consulted for a
-  // genuinely v1-authorized request (same reasoning as canonical_prove
-  // above).
-  canonical_retain: {
-    guidance:
-      'This is an independent retention check -- verify the student still genuinely remembers this concept, unaided, using NEW questions they have never seen before (never a repeat of a prior practice/prove/retain question, even reworded). Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess. Keep each question tightly focused on the core idea of this concept.',
-    defaultMax: 10,
-    visualAidRate: 0,
-    evidenceSource: 'SOLO_VERIFICATION',
-  },
-  // CANON-V2-ARCH-CLEANUP -- the ONE canonical Transfer mode: exactly 3
-  // structured, independent challenges. `defaultMax` is never consulted
-  // (canonical-transfer-generation.service.ts always requests exactly
-  // 3) -- present only so this Record stays total.
-  canonical_transfer: {
-    guidance:
-      'This is an independent Transfer check -- the student must apply this concept, unaided, in contexts progressively further from how it was originally taught. Every challenge requires the student to show their reasoning, not just a final answer.',
-    defaultMax: 3,
-    visualAidRate: 0,
-    evidenceSource: 'SOLO_VERIFICATION',
-  },
-  // CANON-V2-ARCH-CLEANUP -- the ONE canonical LEARN comprehension
-  // checkpoint: assisted, small, focused entirely on verifying genuine
-  // understanding (never a generic practice quiz relabeled).
-  canonical_learn_check: {
-    guidance:
-      'This is a comprehension checkpoint, not a practice drill -- verify the student genuinely understands the core idea of this concept (assistance/hints are allowed; the goal is confirming understanding, not testing independence). Prefer types that reveal genuine comprehension rather than pattern-matching (short_answer, error_detection, justification).',
-    defaultMax: 5,
-    visualAidRate: 0,
-    evidenceSource: 'PRACTICE_QUESTION',
-  },
-};
 
 const GenerateQuizSchema = z.object({
   studentId: z.string().uuid(),
@@ -420,48 +302,6 @@ async function handlePOST(request: NextRequest) {
 // `@/lib/quiz/client-question` so the same-item localization endpoint
 // reshapes a localized question exactly as the original was reshaped.
 
-/**
- * Decides, per concept, whether the first question about it in this
- * quiz should ask the student to self-report confidence first (see
- * shouldAskConfidence in learner-model.service.ts for the rule and
- * why). One DB round trip for mastery_records regardless of concept
- * count, plus one getIndependentMastery call per concept (bounded by
- * maxQuestions, same pattern already used for question generation
- * itself just above this function's call site).
- */
-async function computeAskConfidenceFlags(
-  studentId: string,
-  conceptIds: string[],
-  quizMode: QuizMode
-): Promise<Map<string, boolean>> {
-  // A Diagnostic Check is a deliberately minimal, single-purpose
-  // interaction (see quiz-generation guidance) -- it's testing the
-  // candidate concept, not a moment to also calibrate confidence.
-  if (quizMode === 'diagnostic_check') return new Map(conceptIds.map((id) => [id, false]));
-
-  const masteryRows = await db.query(
-    `SELECT concept_id, mastery_score, attempt_count FROM mastery_records WHERE student_id = $1 AND concept_id = ANY($2)`,
-    [studentId, conceptIds]
-  );
-  const masteryByConcept = new Map(masteryRows.rows.map((r) => [r.concept_id as string, r]));
-  const independentMasteries = await Promise.all(conceptIds.map((cId) => getIndependentMastery(studentId, cId)));
-
-  const flags = new Map<string, boolean>();
-  conceptIds.forEach((cId, i) => {
-    const row = masteryByConcept.get(cId);
-    flags.set(
-      cId,
-      shouldAskConfidence({
-        quizMode,
-        hasExistingMasteryRecord: !!row,
-        masteryScore: row ? Number(row.mastery_score) : null,
-        independentMastery: independentMasteries[i],
-        attemptCount: row ? Number(row.attempt_count) : 0,
-      })
-    );
-  });
-  return flags;
-}
 
 /** Select which concepts a multi-concept quiz (cumulative/exam sim) covers. */
 async function selectConceptsForQuizMode(
@@ -528,6 +368,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   // Transfer either (Prove-only performance feature) -- always a live
   // generation call.
   let transferGenerationResult: CanonicalTransferGenerationResult | null = null;
+  // LEARNING_ACTIVITY_DELIVERY: held only while an EMERGENCY generation runs
+  // (so a double click waits and then resumes, never a second session).
+  let emergencyLaunch: { lock: LaunchLock; input: DeliveryInput; authorizationMs: number } | null = null;
 
   try {
     const validated = GenerateQuizSchema.parse(body);
@@ -545,6 +388,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     if (!generateEntitled) {
       return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
     }
+    const authorizationMs = Date.now() - requestStartedAt;
 
     if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {
       return NextResponse.json(
@@ -648,6 +492,66 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const ibContext = await getSubjectIBContext(validated.subjectId);
 
     const config = QUIZ_MODE_CONFIG[validated.quizMode];
+
+    // LEARNING_ACTIVITY_DELIVERY -- a canonical activity is DELIVERED, not
+    // generated: resume an equivalent open session, else consume a READY
+    // prepared activity, else assemble from the VALIDATED question bank.
+    // 0 AI calls. Only when neither can supply a complete, contract-valid set
+    // does the launch fall through to the certified generators below as an
+    // explicit, instrumented EMERGENCY_GENERATION (the launch lock is held
+    // until its session exists). See docs/architecture/ACTIVITY_DELIVERY.md.
+    const deliveryActivityType = DELIVERY_QUIZ_MODES[validated.quizMode];
+    if (deliveryActivityType && v1Marker && validated.conceptId) {
+      const academic = await loadAcademicContext(validated.studentId, validated.subjectId);
+      const deliveryInput: DeliveryInput = {
+        studentId: validated.studentId,
+        subjectId: validated.subjectId,
+        conceptId: validated.conceptId,
+        quizMode: validated.quizMode,
+        activityType: deliveryActivityType,
+        academic,
+        v1Marker,
+        canonicalRevision: v1Marker.canonicalRevision,
+        contract: {
+          conceptId: validated.conceptId,
+          activityType: deliveryActivityType,
+          language,
+          academic,
+          difficulty: v1Marker.difficulty,
+          itemCount: v1Marker.itemCount?.authorized ?? Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax)),
+          independence: v1Marker.independence,
+          policyVersion: v1Marker.pedagogicalPolicyVersion,
+        },
+      };
+      const delivery = await deliverCanonicalActivity(deliveryInput);
+      if (delivery.status === 'DELIVERED') {
+        logActivityLaunch({
+          activityType: deliveryActivityType, source: delivery.source, conceptId: validated.conceptId,
+          authorizationMs, decisionMs: canonicalAuthorizationMs, timings: delivery.timings, totalMs: Date.now() - requestStartedAt,
+        });
+        return NextResponse.json({
+          success: true,
+          data: {
+            quizId: delivery.quizId,
+            language,
+            quizMode: validated.quizMode,
+            maxQuestions: delivery.questions.length,
+            countAuthority: { status: 'EXECUTION_DEFAULT' },
+            ibProgramme: ibContext?.programme || 'none',
+            delivery: { source: delivery.source },
+            ...(delivery.source === 'RESUMED' ? { resumed: true } : {}),
+            quiz: {
+              questions: delivery.questions.map((q, i) => toClientQuestion(q, i)),
+              count: delivery.questions.length,
+            },
+            message: delivery.source === 'RESUMED' ? 'Quiz resumed. Submit answers with this quizId to complete.' : 'Quiz ready. Submit answers with this quizId to complete.',
+          },
+        });
+      }
+      emergencyLaunch = { lock: delivery.lock, input: deliveryInput, authorizationMs };
+      console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+    }
+
     // Diagnostic Check is always short (2-4 questions) regardless of what was requested -- it's a targeted check, not a full quiz.
     // quick_check is always exactly 6 (STABILIZATION QUIZ PERFORMANCE Step 9): its dedicated
     // fast path (generateQuickCheckQuestions) is an audited, fixed 6-slot/4-type plan, not a
@@ -891,56 +795,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // keeping questionArrays' shape (one array per concept) identical
     // for the flatten/askConfidence logic below regardless of which
     // path ran.
-    // PROVE_GENERATION_PERFORMANCE -- idempotent Prove launch: an
-    // equivalent Prove session that is still open (same contract, no new
-    // evidence since it was created) is returned as-is -- same quizId,
-    // same 10 questions, no second generation, no reroll. Writes nothing.
-    if (validated.quizMode === 'canonical_prove' && v1Marker && v1Marker.itemCount) {
-      const resumeStartedAt = Date.now();
-      const resumable = await findResumableCanonicalProveSession({
-        studentId: validated.studentId,
-        conceptId: primaryConceptId!,
-        language,
-        policyVersion: v1Marker.pedagogicalPolicyVersion,
-        contract: {
-          canonicalActivityType: v1Marker.canonicalActivityType,
-          itemCount: { authorized: v1Marker.itemCount.authorized },
-          difficulty: v1Marker.difficulty,
-          independence: v1Marker.independence,
-        },
-      }).catch(() => null);
-      if (resumable) {
-        try {
-          // eslint-disable-next-line no-console
-          console.log('CANONICAL_PROVE_RESUMED', JSON.stringify({
-            operationId: parentOperationId,
-            conceptId: primaryConceptId,
-            quizIdSuffix: resumable.quizId.slice(-6),
-            resumeLookupMs: Date.now() - resumeStartedAt,
-            totalMs: Date.now() - requestStartedAt,
-            externalAiCallCount: 0,
-          }));
-        } catch { /* logging must never break the response */ }
-        return NextResponse.json({
-          success: true,
-          data: {
-            quizId: resumable.quizId,
-            language,
-            quizMode: validated.quizMode,
-            maxQuestions,
-            countAuthority,
-            ibProgramme: ibContext?.programme || 'none',
-            resumed: true,
-            quiz: {
-              questions: resumable.questions.map((q, i) => toClientQuestion(q, i)),
-              count: resumable.questions.length,
-            },
-            message: 'Quiz resumed. Submit answers with this quizId to complete.',
-          },
-        });
-      }
-    }
-
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -1471,6 +1325,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     );
     persistenceMs = Date.now() - persistenceStartedAt;
 
+    if (emergencyLaunch) {
+      await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));
+      logActivityLaunch({
+        activityType: emergencyLaunch.input.activityType, source: 'EMERGENCY_AI', conceptId: emergencyLaunch.input.conceptId,
+        authorizationMs: emergencyLaunch.authorizationMs, decisionMs: canonicalAuthorizationMs, timings: { sessionMs: persistenceMs }, totalMs: Date.now() - requestStartedAt,
+      });
+    }
+
     // CANON-R6-PERF-R2 -- reconcile the just-consumed prepared
     // activity's `consumed_by_quiz_id` onto the REAL quizId (the
     // atomic consumption itself already happened above, before
@@ -1569,6 +1431,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       });
     }
     throw error;
+  } finally {
+    if (emergencyLaunch) await emergencyLaunch.lock.release().catch(() => {});
   }
 }
 
@@ -2591,21 +2455,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // `prepareCanonicalProveActivity` itself (Part 14) and can never
         // surface here or affect this response, which has already
         // returned by the time it could.
-        // PROVE_GENERATION_PERFORMANCE: the ONE preparation trigger (same
-        // contract snapshot, shared Prove guidance, real IB/DP/HL context,
-        // dedup/TTL in the service), in the language of the session the
-        // learner just completed.
-        if (decisionMayNeedProvePreparation(fresh.decision)) {
-          const proveDecision = fresh.decision;
-          after(() =>
-            keepCanonicalProvePrepared({
-              studentId: validated.studentId,
-              subjectId: quizSession.subjectId,
-              conceptId: quizSession.conceptId!,
-              decision: proveDecision,
-              language: quizSession.language,
-            }),
-          );
+        // LEARNING_ACTIVITY_DELIVERY: an activity just finished and the
+        // canonical next action may have changed -- re-plan this learner's
+        // inventory (retire what no longer fits, assemble the next READY
+        // activity, top up the bank) after the response, in the language of
+        // the session just completed. Never on the learner's critical path.
+        {
+          const target = { studentId: validated.studentId, subjectId: quizSession.subjectId, conceptId: quizSession.conceptId! };
+          const replenishLanguage = quizSession.language;
+          after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
         }
       } catch (error) {
         if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;

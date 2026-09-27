@@ -345,41 +345,32 @@ describe('DB migration -- Part 5', () => {
 // ============================================================
 // Route wiring -- trigger (Part 2/3) and consumption (Part 8/10/11)
 // ============================================================
-describe('route wiring -- Part 2 trigger', () => {
-  it('the trigger fires only inside the fresh-canonical-decision success branch (canonicalResultsStatus = OK), gated on stage === PROVE && actionState === EXECUTABLE', () => {
+describe('route wiring -- Part 2 trigger (LEARNING_ACTIVITY_DELIVERY: now every canonical stage)', () => {
+  const TRIGGER = 'after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage })';
+  it('the trigger fires only inside the fresh-canonical-decision success branch (canonicalResultsStatus = OK)', () => {
     const okIdx = ROUTE_SRC.indexOf("canonicalResultsStatus = 'OK';");
     expect(okIdx).toBeGreaterThan(-1);
-    // PROVE_GENERATION_PERFORMANCE: the gate is the shared decisionMayNeedProvePreparation (stage PROVE && EXECUTABLE && contract)
-    const triggerIdx = ROUTE_SRC.indexOf('if (decisionMayNeedProvePreparation(fresh.decision)) {', okIdx);
-    expect(read('src/services/prove-preparation-trigger.service.ts')).toMatch(/decision\.stage === 'PROVE' && decision\.actionState === 'EXECUTABLE' && !!decision\.activityContract/);
+    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER, okIdx);
     expect(triggerIdx).toBeGreaterThan(okIdx);
-    // still inside the SAME try block, before its own catch -- not an
-    // exact-distance check (real-world comments between them vary).
-    const catchIdx = ROUTE_SRC.indexOf('} catch (error) {', okIdx);
-    expect(triggerIdx).toBeLessThan(catchIdx);
+    expect(triggerIdx).toBeLessThan(ROUTE_SRC.indexOf('} catch (error) {', okIdx));
   });
 
-  it('uses after() (Next.js\'s own supported post-response background mechanism, backed by Vercel waitUntil) -- never a bare detached Promise', () => {
+  it('uses after() (Next.js post-response background work, Vercel waitUntil) -- never a bare detached Promise', () => {
     expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse, after \} from 'next\/server';/);
-    expect(ROUTE_SRC).toMatch(/after\(\(\) =>\s*\n\s*keepCanonicalProvePrepared\(/);
+    expect(ROUTE_SRC).toContain(TRIGGER);
   });
 
-  it('Part 2 -- the trigger is scheduled via after(), which runs AFTER the response is sent -- the return statement below is not gated on it, so Practice submission latency is structurally independent of Prove preparation', () => {
-    const triggerIdx = ROUTE_SRC.indexOf('after(() =>\n            keepCanonicalProvePrepared(');
+  it('Part 2 -- the response is never gated on preparation (scheduled after it is sent)', () => {
+    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER);
     const returnIdx = ROUTE_SRC.indexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
     expect(triggerIdx).toBeGreaterThan(-1);
     expect(returnIdx).toBeGreaterThan(triggerIdx);
-    // no `await` directly on the after()-wrapped promise.
-    const line = ROUTE_SRC.slice(triggerIdx - 10, triggerIdx + 20);
-    expect(line).not.toMatch(/await after\(/);
+    expect(ROUTE_SRC.slice(triggerIdx - 10, triggerIdx + 20)).not.toMatch(/await after\(/);
   });
 
-  it('a background preparation failure is caught inside the scheduled callback itself -- never lets an unhandled rejection surface', () => {
-    const idx = ROUTE_SRC.indexOf('after(() =>\n            keepCanonicalProvePrepared(');
-    expect(idx).toBeGreaterThan(-1);
-    // the single trigger never throws: every failure is caught and reported inside it
-    const trig = read('src/services/prove-preparation-trigger.service.ts');
-    expect(trig).toMatch(/\} catch \(error\) \{\s*console\.error\('\[prove-preparation-trigger\] failed:', error\);\s*return 'FAILED';/);
+  it('a background failure is caught inside the scheduled callback itself -- never an unhandled rejection', () => {
+    const idx = ROUTE_SRC.indexOf(TRIGGER);
+    expect(ROUTE_SRC.slice(idx, idx + 300)).toMatch(/\.catch\(\(err\) => console\.error\('\[activity-delivery\] replenishment failed', err\)\)/);
   });
 });
 
@@ -433,13 +424,9 @@ describe('firewall -- no changes to the pedagogical engine, migration, AI routin
     expect(PREPARED_ACTIVITY_SRC).not.toMatch(/from '@\/lib\/pedagogical-engine'/);
   });
 
-  it('no RETAIN/TRANSFER/LEARN preparation is ever triggered -- the trigger fires ONLY on stage === PROVE', () => {
-    const triggerIdx = ROUTE_SRC.indexOf('if (decisionMayNeedProvePreparation(fresh.decision)) {');
-    expect(triggerIdx).toBeGreaterThan(-1);
-    // the shared gate admits PROVE only -- never RETAIN/TRANSFER/LEARN
-    const trig = read('src/services/prove-preparation-trigger.service.ts');
-    const gate = trig.slice(trig.indexOf('export function decisionMayNeedProvePreparation'), trig.indexOf('export async function keepCanonicalProvePrepared'));
-    expect(gate).toMatch(/decision\.stage === 'PROVE'/);
-    expect(gate).not.toMatch(/RETAIN|TRANSFER|LEARN/);
+  it('preparation covers the canonical next action of ANY stage through the one delivery worker (supersedes the PROVE-only scope)', () => {
+    const worker = read('src/services/activity-delivery-worker.service.ts');
+    expect(worker).toMatch(/export const prepareInventoryHandler: JobHandler/);
+    expect(worker).toMatch(/const target = inventoryTarget\(activityType\);/);
   });
 });

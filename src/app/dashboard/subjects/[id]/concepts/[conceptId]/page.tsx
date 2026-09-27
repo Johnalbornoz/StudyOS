@@ -19,7 +19,7 @@ import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 import { getConceptMissionView } from '@/services/concept-mission-view.service';
 import ConceptMission from './ConceptMission';
-import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
+import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
@@ -133,11 +133,10 @@ export default async function ConceptDetailPage({
     throw new Error('CANONICAL_DECISION_UNAVAILABLE');
   }
   const missionView = missionResult.view;
-  // PROVE_GENERATION_PERFORMANCE -- the learner decides to start Prove
-  // here: keep a prepared batch ready (background, after the response).
-  const canonicalDecision = missionResult.canonicalDecision;
-  if (decisionMayNeedProvePreparation(canonicalDecision)) {
-    after(() => keepCanonicalProvePrepared({ studentId, subjectId, conceptId, decision: canonicalDecision }));
+  // LEARNING_ACTIVITY_DELIVERY -- the learner decides what to launch here:
+  // keep this concept's next activity READY (background, after the response).
+  if (missionResult.canonicalDecision) {
+    after(() => scheduleDeliveryReplenishment({ studentId, subjectId, conceptId }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
   }
   // Canonical progress explanation (gate on): the ONE phase + its real requirement.
   const progress = missionResult.canonicalDecision

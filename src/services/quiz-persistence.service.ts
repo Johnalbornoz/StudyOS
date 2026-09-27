@@ -469,6 +469,57 @@ export async function recordHintUsed(quizId: string, questionIndex: number): Pro
  * concept since the session was created (so the canonical state and the
  * novelty basis it was generated against are unchanged). Read-only.
  */
+export async function findResumableCanonicalSession(params: {
+  studentId: string;
+  conceptId: string;
+  quizMode: QuizMode;
+  language: string;
+  policyVersion: string;
+  /** Exact number of questions the session must hold. */
+  expectedItemCount: number;
+  contract: {
+    canonicalActivityType: string;
+    /** null for LEARN_CHECK (no canonical item-count authority). */
+    itemCount: { authorized: number } | null;
+    difficulty: { min: number; max: number; target: number };
+    independence: boolean;
+  };
+}): Promise<{ quizId: string; questions: GeneratedQuestion[] } | null> {
+  const { studentId, conceptId, quizMode, language, policyVersion, contract, expectedItemCount } = params;
+  const r = await db.query(
+    `
+    SELECT qs.id
+    FROM quiz_sessions qs
+    WHERE qs.student_id = $1 AND qs.concept_id = $2
+      AND qs.quiz_mode = $11 AND qs.status = 'active' AND qs.expires_at > NOW()
+      AND qs.language = $3 AND qs.pedagogical_policy_version = $4
+      AND qs.canonical_activity_contract->>'canonicalActivityType' = $5
+      AND ($6::int IS NULL OR (qs.canonical_activity_contract->'itemCount'->>'authorized')::int = $6::int)
+      AND (qs.canonical_activity_contract->'difficulty'->>'min')::int = $7
+      AND (qs.canonical_activity_contract->'difficulty'->>'max')::int = $8
+      AND (qs.canonical_activity_contract->'difficulty'->>'target')::int = $9
+      AND (qs.canonical_activity_contract->>'independence')::boolean = $10
+      AND jsonb_array_length(qs.questions) = $12
+      AND NOT EXISTS (
+        SELECT 1 FROM learning_evidence le
+        WHERE le.student_id = qs.student_id AND le.concept_id = qs.concept_id::uuid AND le.timestamp >= qs.created_at
+      )
+    ORDER BY qs.created_at DESC
+    LIMIT 1
+    `,
+    [
+      studentId, conceptId, language, policyVersion, contract.canonicalActivityType, contract.itemCount?.authorized ?? null,
+      contract.difficulty.min, contract.difficulty.max, contract.difficulty.target, contract.independence, quizMode, expectedItemCount,
+    ],
+  );
+  const id: string | undefined = r.rows[0]?.id;
+  if (!id) return null;
+  const session = await getQuizSession(id);
+  if (!session || session.questions.length !== expectedItemCount) return null;
+  return { quizId: id, questions: session.questions };
+}
+
+/** PROVE form of findResumableCanonicalSession (kept for the PROVE_GENERATION_PERFORMANCE contract). */
 export async function findResumableCanonicalProveSession(params: {
   studentId: string;
   conceptId: string;
@@ -481,38 +532,7 @@ export async function findResumableCanonicalProveSession(params: {
     independence: boolean;
   };
 }): Promise<{ quizId: string; questions: GeneratedQuestion[] } | null> {
-  const { studentId, conceptId, language, policyVersion, contract } = params;
-  const r = await db.query(
-    `
-    SELECT qs.id
-    FROM quiz_sessions qs
-    WHERE qs.student_id = $1 AND qs.concept_id = $2
-      AND qs.quiz_mode = 'canonical_prove' AND qs.status = 'active' AND qs.expires_at > NOW()
-      AND qs.language = $3 AND qs.pedagogical_policy_version = $4
-      AND qs.canonical_activity_contract->>'canonicalActivityType' = $5
-      AND (qs.canonical_activity_contract->'itemCount'->>'authorized')::int = $6
-      AND (qs.canonical_activity_contract->'difficulty'->>'min')::int = $7
-      AND (qs.canonical_activity_contract->'difficulty'->>'max')::int = $8
-      AND (qs.canonical_activity_contract->'difficulty'->>'target')::int = $9
-      AND (qs.canonical_activity_contract->>'independence')::boolean = $10
-      AND jsonb_array_length(qs.questions) = $6
-      AND NOT EXISTS (
-        SELECT 1 FROM learning_evidence le
-        WHERE le.student_id = qs.student_id AND le.concept_id = qs.concept_id::uuid AND le.timestamp >= qs.created_at
-      )
-    ORDER BY qs.created_at DESC
-    LIMIT 1
-    `,
-    [
-      studentId, conceptId, language, policyVersion, contract.canonicalActivityType, contract.itemCount.authorized,
-      contract.difficulty.min, contract.difficulty.max, contract.difficulty.target, contract.independence,
-    ],
-  );
-  const id: string | undefined = r.rows[0]?.id;
-  if (!id) return null;
-  const session = await getQuizSession(id);
-  if (!session || session.questions.length !== contract.itemCount.authorized) return null;
-  return { quizId: id, questions: session.questions };
+  return findResumableCanonicalSession({ ...params, quizMode: 'canonical_prove', expectedItemCount: params.contract.itemCount.authorized });
 }
 
 /**

@@ -18,6 +18,8 @@ import { evaluateCanonicalLearningState, type RawEvidenceItem } from '@/lib/peda
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
+// QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+const CONFIG_SRC = read('src/lib/quiz/quiz-mode-config.ts');
 const QUIZ_PAGE_SRC = read('src/app/dashboard/quiz/page.tsx');
 
 const NOW = '2026-09-25T00:00:00.000Z';
@@ -195,7 +197,7 @@ describe('4/6 -- GENERATION MODE: canonical_prove is a distinct, server-only mod
   });
 
   it('5. quick_check\'s own dedicated fast path is completely untouched -- still fixed, never conditioned on canonical_prove or v1Marker', () => {
-    expect(ROUTE_SRC).toMatch(/quick_check: \{[\s\S]*?defaultMax: 6,/);
+    expect(CONFIG_SRC).toMatch(/quick_check: \{[\s\S]*?defaultMax: 6,/);
     const genService = read('src/services/quiz-generation.service.ts');
     expect(genService).toMatch(/RETENTION_REQUIRED_COUNT\s*=\s*6/);
   });
@@ -471,8 +473,8 @@ describe('34/35/36/37/38/39 -- REGRESSION: Practice v1, legacy topic_practice/qu
   });
 
   it('36. legacy quick_check\'s dedicated fast path (generateQuickCheckQuestions) and its fixed 6-question contract are byte-unchanged', () => {
-    expect(ROUTE_SRC).toMatch(/quick_check:\s*\{\s*\n\s*guidance:/);
-    expect(ROUTE_SRC).toMatch(/defaultMax: 6,/);
+    expect(CONFIG_SRC).toMatch(/quick_check:\s*\{\s*\n\s*guidance:/);
+    expect(CONFIG_SRC).toMatch(/defaultMax: 6,/);
   });
 
   it('37/38/39. Retention/Transfer/Learn Check remain the only three NOT_READY reasons -- Prove was the ONE and ONLY widened case this phase makes', () => {

@@ -49,9 +49,11 @@ describe('canonical_learn_check generation dispatch', () => {
   });
 
   it('QUIZ_MODE_CONFIG.canonical_learn_check declares a small, assisted default (never the 20-question generic ceiling)', () => {
-    const idx = ROUTE_SRC.indexOf('canonical_learn_check:');
+    // QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+    const CONFIG_SRC = read('src/lib/quiz/quiz-mode-config.ts');
+    const idx = CONFIG_SRC.indexOf('canonical_learn_check:');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 900);
+    const slice = CONFIG_SRC.slice(idx, idx + 900);
     expect(slice).toMatch(/defaultMax:\s*\d+/);
     const match = slice.match(/defaultMax:\s*(\d+)/);
     expect(Number(match?.[1])).toBeLessThanOrEqual(10);

@@ -25,7 +25,6 @@ import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } 
 import { loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import { ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
-import type { CanonicalPedagogicalDecision } from '@/lib/pedagogical-engine/types';
 
 /**
  * CANON-R6-PERF-R2 Part 13 -- conservative TTL: a prepared Prove batch
@@ -453,69 +452,4 @@ export async function invalidatePreparedActivity(id: string, reason: string): Pr
     [id, reason]
   );
   safeLog('prove_pregeneration_invalidated', { id, reason });
-}
-
-/**
- * PROVE_GENERATION_PERFORMANCE -- re-arm pre-generation whenever PROVE is
- * the canonical next action but nothing usable is prepared. CANON-R6-PERF-R2
- * only prepared at the qualifying Practice submission; once that batch
- * passed its 2 h TTL (unchanged) the learner's Prove click always went
- * cold (real DEV E2E: prepared 05:11, clicked 14:29 -> EXPIRED -> 35 s, and
- * the re-launch -> MISS -> 69 s). Called in the background (`after()`) from
- * the surfaces where the learner decides to start Prove (Concept Mission),
- * so the click finds a READY batch.
- *
- * Same certified pipeline and contract snapshot as the submission trigger;
- * `prepareCanonicalProveActivity` keeps its own dedup (unique slot + ON
- * CONFLICT DO NOTHING) and stale-row cleanup. Never throws.
- */
-export type EnsureProvePreparedOutcome = 'NOT_APPLICABLE' | 'ALREADY_PREPARED' | 'PREPARATION_STARTED' | 'FAILED';
-
-export async function ensureCanonicalProvePrepared(params: {
-  studentId: string;
-  conceptId: string;
-  subjectId: string;
-  decision: Pick<CanonicalPedagogicalDecision, 'stage' | 'actionState' | 'activityContract' | 'policyVersion' | 'canonicalRevision'>;
-  language: string;
-  guidance: string;
-  visualAidRate: number;
-  ibContext: IBContext | null;
-  now?: Date;
-}): Promise<EnsureProvePreparedOutcome> {
-  try {
-    const { decision } = params;
-    const contract = decision.activityContract;
-    if (decision.stage !== 'PROVE' || decision.actionState !== 'EXECUTABLE' || !contract || !contract.itemCount || contract.minimumScorePercent == null) {
-      return 'NOT_APPLICABLE';
-    }
-    const authorized = contract.itemCount.max ?? contract.itemCount.min;
-    const now = params.now ?? new Date();
-    const active = await findActivePreparedActivity(params.studentId, params.conceptId, 'PROVE');
-    if (active && (active.status === 'PREPARING' || (active.status === 'READY' && active.expiresAt && active.expiresAt.getTime() > now.getTime()))) {
-      return 'ALREADY_PREPARED';
-    }
-    await prepareCanonicalProveActivity({
-      studentId: params.studentId,
-      conceptId: params.conceptId,
-      subjectId: params.subjectId,
-      pedagogicalPolicyVersion: decision.policyVersion,
-      canonicalRevision: decision.canonicalRevision,
-      contract: {
-        canonicalActivityType: contract.activityType,
-        itemCount: { min: contract.itemCount.min, max: contract.itemCount.max, authorized },
-        difficulty: { min: contract.difficulty.min, max: contract.difficulty.max, target: contract.difficulty.target },
-        independence: contract.independence,
-        supportLevel: contract.supportLevel,
-        minimumScorePercent: contract.minimumScorePercent,
-      },
-      language: params.language,
-      guidance: params.guidance,
-      visualAidRate: params.visualAidRate,
-      ibContext: params.ibContext,
-    });
-    return 'PREPARATION_STARTED';
-  } catch (error) {
-    console.error('[canonical-prepared-activity] ensureCanonicalProvePrepared failed:', error);
-    return 'FAILED';
-  }
 }

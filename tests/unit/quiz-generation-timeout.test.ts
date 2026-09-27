@@ -165,7 +165,8 @@ describe('quiz_mode configs unchanged (verified against the real route source, n
   };
 
   it('QUIZ_MODE_CONFIG.quick_check.defaultMax is still 6 (its fast path hardcodes 6 independently -- see quiz-generation-quick-check.test.ts)', async () => {
-    const routeSrc = await readRouteSrc();
+    // QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+    const routeSrc = (await import('fs')).readFileSync((await import('path')).join(process.cwd(), 'src/lib/quiz/quiz-mode-config.ts'), 'utf8');
     const match = routeSrc.match(/quick_check:\s*\{(?:[^{}]|\{[^{}]*\})*?defaultMax:\s*(\d+)/);
     expect(match?.[1]).toBe('6');
   });

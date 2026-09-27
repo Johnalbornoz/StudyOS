@@ -8,7 +8,7 @@ vi.mock('@/lib/db', () => ({ db: { query: (...args: any[]) => queryMock(...args)
 import {
   storeQuiz,
   getQuiz,
-  findResumableCanonicalProveSession,
+  findResumableCanonicalSession,
   getStudentActiveQuizzes,
   cleanupExpiredQuizzes,
   QUIZ_SESSION_TTL_MINUTES,
@@ -74,8 +74,8 @@ describe('QUIZ_SESSION_TIMEZONE -- quiz_sessions timestamps never depend on the 
 
   it('resume, active listing and cleanup compare against NOW() in SQL and bind no JS Date', async () => {
     queryMock.mockResolvedValue({ rows: [], rowCount: 0 });
-    await findResumableCanonicalProveSession({
-      studentId: 's1', conceptId: 'c1', language: 'es', policyVersion: 'v1',
+    await findResumableCanonicalSession({
+      studentId: 's1', conceptId: 'c1', quizMode: 'canonical_prove', language: 'es', policyVersion: 'v1', expectedItemCount: 10,
       contract: { canonicalActivityType: 'PROVE', itemCount: { authorized: 10 }, difficulty: { min: 3, max: 5, target: 4 }, independence: true },
     });
     await getStudentActiveQuizzes('s1');
@@ -89,7 +89,7 @@ describe('QUIZ_SESSION_TIMEZONE -- quiz_sessions timestamps never depend on the 
     for (const [, params] of queryMock.mock.calls) {
       expect((params ?? []).some((p: unknown) => p instanceof Date)).toBe(false);
     }
-    expect(resumeParams).toHaveLength(10);
+    expect(resumeParams).toHaveLength(12);
   });
 
   it('quiz-persistence never derives a session timestamp from the process clock', () => {

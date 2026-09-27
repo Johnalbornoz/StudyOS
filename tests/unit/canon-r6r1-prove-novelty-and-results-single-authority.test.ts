@@ -24,6 +24,8 @@ import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const ROUTE_SRC = read('src/app/api/quizzes/generate-and-take/route.ts');
+// QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+const CONFIG_SRC = read('src/lib/quiz/quiz-mode-config.ts');
 const QUIZ_PAGE_SRC = read('src/app/dashboard/quiz/page.tsx');
 const NOVELTY_SRC = read('src/lib/lx/exact-duplicate-novelty.ts');
 const PERSISTENCE_SRC = read('src/services/quiz-persistence.service.ts');
@@ -277,15 +279,15 @@ describe('9 -- generation guidance is an isolated nudge only, never the enforcem
   it('the canonical_prove guidance string gained an additive "do not repeat" sentence, scoped to ONLY that one config entry', () => {
     // PROVE_GENERATION_PERFORMANCE: the Prove guidance lives in ONE shared module so live
     // generation and background preparation can never drift; the config entry references it.
-    const idx = ROUTE_SRC.indexOf('canonical_prove: {');
-    const slice = ROUTE_SRC.slice(idx, idx + 1200);
+    const idx = CONFIG_SRC.indexOf('canonical_prove: {');
+    const slice = CONFIG_SRC.slice(idx, idx + 1200);
     expect(slice).toMatch(/guidance: CANONICAL_PROVE_GENERATION_CONFIG\.guidance/);
     expect(readFileSync(join(process.cwd(), 'src/lib/quiz/canonical-prove-config.ts'), 'utf-8')).toMatch(/do not repeat a question the student has already been asked/);
   });
 
   it('no other QUIZ_MODE_CONFIG entry (quick_check/topic_practice/review/etc.) was touched by this addition', () => {
-    const idx = ROUTE_SRC.indexOf("quick_check: {");
-    const slice = ROUTE_SRC.slice(idx, idx + 400);
+    const idx = CONFIG_SRC.indexOf("quick_check: {");
+    const slice = CONFIG_SRC.slice(idx, idx + 400);
     expect(slice).not.toMatch(/do not repeat/);
   });
 });
@@ -295,9 +297,9 @@ describe('9 -- generation guidance is an isolated nudge only, never the enforcem
 // ============================================================
 describe('15/16 -- legacy quick_check and Practice generation are completely untouched', () => {
   it('15. quick_check retains its fixed defaultMax: 6 and its own dedicated fast path, with no novelty policy attached', () => {
-    expect(ROUTE_SRC).toMatch(/quick_check:\s*\{\s*\n\s*guidance:/);
-    expect(ROUTE_SRC).toMatch(/defaultMax: 6,/);
-    const idx = ROUTE_SRC.indexOf('quick_check: {');
+    expect(CONFIG_SRC).toMatch(/quick_check:\s*\{\s*\n\s*guidance:/);
+    expect(CONFIG_SRC).toMatch(/defaultMax: 6,/);
+    const idx = CONFIG_SRC.indexOf('quick_check: {');
     const slice = ROUTE_SRC.slice(idx, idx + 400);
     expect(slice).not.toMatch(/novelty|Fingerprint/i);
   });

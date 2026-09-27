@@ -238,7 +238,8 @@ describe('Parts 15-19/33/34 -- resolveV1ActivityLaunchReadiness (grounded in the
 
   it('legacy quick_check/retention_check stay fixed at 6 -- the new canonical_prove/canonical_retain modes are distinct, never a repurposing of the tuned legacy generators', () => {
     const genRoute = readFileSync(join(process.cwd(), 'src/app/api/quizzes/generate-and-take/route.ts'), 'utf-8');
-    expect(genRoute).toMatch(/quick_check:\s*\{[\s\S]*?defaultMax:\s*6/);
+    // QUIZ_MODE_CONFIG moved verbatim to src/lib/quiz/quiz-mode-config.ts (LEARNING_ACTIVITY_DELIVERY: shared with the background worker)
+    expect(readFileSync(join(process.cwd(), 'src/lib/quiz/quiz-mode-config.ts'), 'utf-8')).toMatch(/quick_check:\s*\{[\s\S]*?defaultMax:\s*6/);
     const genService = readFileSync(join(process.cwd(), 'src/services/quiz-generation.service.ts'), 'utf-8');
     expect(genService).toMatch(/RETENTION_REQUIRED_COUNT\s*=\s*6/);
   });

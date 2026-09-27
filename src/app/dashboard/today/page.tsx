@@ -1,4 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
+import { after } from 'next/server';
+import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -221,6 +223,9 @@ export default async function TodayPage() {
 
   const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: !!best && !bestZeroGapBlocked, isColdProfile: isCold });
   if (todayState === 'NEXT_ACTION_AVAILABLE' && best) {
+    // LEARNING_ACTIVITY_DELIVERY -- the primary action is one tap away: keep it READY.
+    const replenishTarget = { studentId, subjectId: best.decision.subjectId, conceptId: best.decision.actionConceptId };
+    after(() => scheduleDeliveryReplenishment(replenishTarget).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
     logToday('TODAY_PRIMARY_ACTION_RENDERED', {
       activityType: best.decision.activityType,
       conceptId: best.decision.actionConceptId,

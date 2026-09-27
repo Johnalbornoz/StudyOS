@@ -66,6 +66,12 @@ export function currentAiOperation(): string | null {
   return s && !s.closed ? s.operation : null;
 }
 
+/** AI work recorded so far in the active scope (executions + provider round-trips). 0 outside a scope. */
+export function currentAiCallCount(): { executions: number; providerCalls: number } {
+  const s = storage.getStore();
+  return s ? { executions: s.executions.length, providerCalls: s.providerCalls.length } : { executions: 0, providerCalls: 0 };
+}
+
 export function recordAiExecution(sample: AiExecutionSample): void {
   const s = storage.getStore();
   if (s && !s.closed) s.executions.push(sample);
