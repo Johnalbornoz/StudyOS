@@ -318,3 +318,67 @@ describe('7. bank pool selection (regression: an exhausted-oldest bank must not 
     expect(['LEARN_CHECK', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'].filter((t) => isIndependentActivity(t as never))).toEqual(['PROVE', 'RETAIN', 'TRANSFER']);
   });
 });
+
+describe('8. background worker throughput', () => {
+  it('bank replenishment is split into generator-sized chunks that run in parallel', async () => {
+    const { bankChunks } = await import('@/lib/activity-delivery/contract');
+    expect(bankChunks(20, 10)).toEqual([10, 10]);
+    expect(bankChunks(25, 10)).toEqual([10, 10, 5]);
+    expect(bankChunks(3, 3)).toEqual([3]);
+    expect(bankChunks(0, 10)).toEqual([]);
+    expect(bankChunks(-4, 10)).toEqual([]);
+    const W = read('src/services/activity-delivery-worker.service.ts');
+    // generation already in flight is subtracted, so repeated triggers never over-generate
+    expect(W).toMatch(/const missing = want - undelivered - inFlight;/);
+    expect(W).toMatch(/enqueueGenerationJob\('BANK_REPLENISH', `\$\{key\}:c\$\{i\}`/);
+    expect(read('src/services/generation-queue.service.ts')).toMatch(/kind = 'BANK_REPLENISH' AND status IN \('PENDING', 'RUNNING'\) AND left\(dedup_key, length\(\$1\)\) = \$1/);
+  });
+
+  it('a slow job never holds back quick jobs queued behind it (continuous slots, no batch barrier)', async () => {
+    const { runGenerationWorker } = await import('@/services/generation-queue.service');
+    const queue = [
+      { id: 'slow', kind: 'BANK_REPLENISH', dedup_key: 'b', payload: {}, attempts: 1, max_attempts: 3 },
+      { id: 'q1', kind: 'PREPARE_INVENTORY', dedup_key: 'p1', payload: {}, attempts: 1, max_attempts: 3 },
+      { id: 'q2', kind: 'PREPARE_INVENTORY', dedup_key: 'p2', payload: {}, attempts: 1, max_attempts: 3 },
+      { id: 'q3', kind: 'PREPARE_INVENTORY', dedup_key: 'p3', payload: {}, attempts: 1, max_attempts: 3 },
+    ];
+    h.poolQuery.mockImplementation(async (sql: string) => {
+      if (String(sql).includes('UPDATE generation_jobs j')) { const j = queue.shift(); return { rows: j ? [j] : [] }; }
+      return { rows: [] };
+    });
+    const done: string[] = [];
+    let releaseSlow!: () => void;
+    const slowGate = new Promise<void>((r) => { releaseSlow = r; });
+    const stats = runGenerationWorker({
+      BANK_REPLENISH: async (job) => { await slowGate; done.push(job.id); return { ok: true, result: {} }; },
+      PREPARE_INVENTORY: async (job) => { done.push(job.id); if (done.length === 3) releaseSlow(); return { ok: true, result: {} }; },
+    }, { concurrency: 2 });
+    expect(await stats).toEqual({ processed: 4, succeeded: 4, retried: 0, failed: 0 });
+    expect(done).toEqual(['q1', 'q2', 'q3', 'slow']);
+  });
+
+  it('follow-up jobs queued by a running job are still drained before the worker stops', async () => {
+    const { runGenerationWorker } = await import('@/services/generation-queue.service');
+    const queue: any[] = [{ id: 'bank', kind: 'BANK_REPLENISH', dedup_key: 'b', payload: {}, attempts: 1, max_attempts: 3 }];
+    h.poolQuery.mockImplementation(async (sql: string) => {
+      if (String(sql).includes('UPDATE generation_jobs j')) { const j = queue.shift(); return { rows: j ? [j] : [] }; }
+      return { rows: [] };
+    });
+    const done: string[] = [];
+    const s = await runGenerationWorker({
+      BANK_REPLENISH: async (job) => { await new Promise((r) => setTimeout(r, 30)); queue.push({ id: 'prep', kind: 'PREPARE_INVENTORY', dedup_key: 'p', payload: {}, attempts: 1, max_attempts: 3 }); done.push(job.id); return { ok: true, result: {} }; },
+      PREPARE_INVENTORY: async (job) => { done.push(job.id); return { ok: true, result: {} }; },
+    }, { concurrency: 3 });
+    expect(done).toEqual(['bank', 'prep']);
+    expect(s.processed).toBe(2);
+  });
+
+  it('maxJobs bounds the jobs a run starts', async () => {
+    const { runGenerationWorker } = await import('@/services/generation-queue.service');
+    let n = 0;
+    h.poolQuery.mockImplementation(async (sql: string) =>
+      String(sql).includes('UPDATE generation_jobs j') ? { rows: [{ id: `j${n++}`, kind: 'PREPARE_INVENTORY', dedup_key: `k${n}`, payload: {}, attempts: 1, max_attempts: 3 }] } : { rows: [] });
+    const s = await runGenerationWorker({ BANK_REPLENISH: async () => ({ ok: true, result: {} }), PREPARE_INVENTORY: async () => ({ ok: true, result: {} }) }, { concurrency: 3, maxJobs: 5 });
+    expect(s.processed).toBe(5);
+  });
+});

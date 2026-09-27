@@ -31,10 +31,10 @@ import { verifyV1PracticeLaunchMarker, getCanonicalPedagogicalDecision } from '@
 import { runWithAiMetrics, currentAiCallCount } from '@/lib/ai/request-metrics';
 import { deliverCanonicalActivity, type DeliveryInput } from '@/services/activity-delivery.service';
 import { loadAcademicContext } from '@/services/activity-delivery-context.service';
-import { addValidatedCandidates } from '@/services/question-bank.service';
+import { addValidatedCandidates, countUndeliveredCandidates } from '@/services/question-bank.service';
 import { runGenerationWorker, type JobHandler } from '@/services/generation-queue.service';
 import { prepareInventoryHandler, runDeliveryWorker, scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
-import { STAGE_FOR_ACTIVITY } from '@/lib/activity-delivery/contract';
+import { STAGE_FOR_ACTIVITY, inventoryTarget, bankTarget } from '@/lib/activity-delivery/contract';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import type { DeliveryActivityType, AcademicContext } from '@/lib/activity-delivery/contract';
 import { QUIZ_MODE_FOR_ACTIVITY } from '@/lib/activity-delivery/contract';
@@ -230,8 +230,8 @@ async function runHot() {
     contracts[t] = { difficulty: m.difficulty, itemCount: m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[quizMode].defaultMax };
   }
   await ensureBank(studentId, subjectId, concepts, academic, contracts);
-  // start clean: no open sessions / inventory from earlier runs
-  await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE student_id = $1 AND status = 'active'`, [studentId]);
+  // start clean: no open sessions / queue jobs from earlier runs
+  await resetBenchLearner(studentId);
 
   const all: LaunchSample[] = [];
   const runsReport: any[] = [];
@@ -387,6 +387,23 @@ function startWorkerLoop(studentId: string) {
   return { stats, stop: async () => { stop = true; await done; } };
 }
 
+/**
+ * Benchmark learner ONLY: close queue jobs an interrupted earlier run left
+ * open (their leases would otherwise read as generation in flight), and with
+ * `emptyConcepts` start those concepts from an empty bank and no inventory.
+ */
+async function resetBenchLearner(studentId: string, emptyConcepts: string[] = []) {
+  const jobs = await db.query(
+    `UPDATE generation_jobs SET status = 'FAILED', last_error = 'BENCH_RESET', locked_at = NULL, updated_at = now()
+      WHERE payload->>'studentId' = $1 AND status IN ('PENDING', 'RUNNING') RETURNING id`, [studentId]);
+  await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE student_id = $1 AND status = 'active'`, [studentId]);
+  if (emptyConcepts.length) {
+    await db.query(`UPDATE canonical_prepared_activity SET status = 'INVALIDATED', failure_reason = 'BENCH_RESET' WHERE student_id = $1 AND concept_id = ANY($2::uuid[]) AND status IN ('PREPARING', 'READY')`, [studentId, emptyConcepts]);
+    await db.query(`UPDATE question_bank_candidates SET validation_status = 'RETIRED' WHERE student_id = $1 AND concept_id = ANY($2::uuid[]) AND validation_status = 'VALIDATED'`, [studentId, emptyConcepts]);
+  }
+  console.log(`[bench] reset: ${jobs.rows.length} open jobs closed, ${emptyConcepts.length} concepts emptied`);
+}
+
 const readyCount = async (studentId: string, conceptId: string, t: DeliveryActivityType) =>
   (await db.query(`SELECT count(*)::int n FROM canonical_prepared_activity WHERE student_id = $1 AND concept_id = $2 AND stage = $3 AND status = 'READY'`, [studentId, conceptId, STAGE_FOR_ACTIVITY[t]])).rows[0].n as number;
 
@@ -433,15 +450,23 @@ async function integrity(studentId: string, concepts: Record<DeliveryActivityTyp
 async function runSteady() {
   const { studentId } = await ensureLearner();
   const { subjectId, concepts, academic, types, blocked } = await ensureSteadySubject(studentId);
-  await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE student_id = $1 AND status = 'active'`, [studentId]);
+  // from zero: empty bank + no inventory; everything below is produced by the real worker
+  await resetBenchLearner(studentId, Object.values(concepts));
   const since = new Date();
   const worker = startWorkerLoop(studentId);
 
   // warm-up: the REAL triggers queue preparation; the REAL worker fills bank + inventory (no seeding)
   const tWarm = Date.now();
   for (const t of types) await scheduleDeliveryReplenishment({ studentId, subjectId, conceptId: concepts[t] }, { kickWorker: false, language: LANGUAGE });
+  // "start with sufficient inventory": every type at its POLICY targets (READY inventory + bank depth), reached by the real worker
   const warm: Record<string, number | null> = {};
-  await Promise.all(types.map(async (t) => { warm[t] = await waitFor(async () => (await readyCount(studentId, concepts[t], t)) > 0, 15 * 60_000); }));
+  await Promise.all(types.map(async (t) => {
+    const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
+    const itemCount = m?.itemCount?.authorized ?? QUIZ_MODE_CONFIG[QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode].defaultMax;
+    warm[t] = await waitFor(async () =>
+      (await readyCount(studentId, concepts[t], t)) >= inventoryTarget(t)
+      && (await countUndeliveredCandidates({ studentId, conceptId: concepts[t], activityType: t, language: LANGUAGE, academic })) >= bankTarget(t, itemCount), 15 * 60_000);
+  }));
   const warmUpMs = Date.now() - tWarm;
   console.log(`[bench] steady warm-up ${warmUpMs} ms`, JSON.stringify(warm));
 
@@ -510,6 +535,7 @@ async function runCold() {
   const { studentId } = await ensureLearner();
   const { subjectId, concepts, academic, types, blocked } = await ensureSteadySubject(studentId);
   const REPS = arg('coldReps', 2);
+  await resetBenchLearner(studentId);
   const out: Record<string, any> = {};
   for (const t of TYPES) if (blocked[t]) out[t] = { status: 'BLOCKED', reason: blocked[t] };
   for (const t of types) {

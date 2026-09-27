@@ -148,3 +148,10 @@ export function bankTarget(activityType: DeliveryActivityType, itemCount: number
       return Math.max(itemCount * 3, 9);
   }
 }
+
+/** Splits a candidate need into generator-sized chunks (one BANK_REPLENISH job each, run in parallel). */
+export function bankChunks(needed: number, batchCap: number): number[] {
+  const out: number[] = [];
+  for (let left = Math.max(0, Math.floor(needed)); left > 0; left -= batchCap) out.push(Math.min(batchCap, left));
+  return out;
+}

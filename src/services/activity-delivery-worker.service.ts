@@ -24,6 +24,7 @@ import { getCanonicalPedagogicalDecision, resolveCanonicalLaunch, resolveAuthori
 import {
   academicContextFingerprint,
   activityContractFingerprint,
+  bankChunks,
   bankTarget,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
@@ -35,7 +36,7 @@ import {
 } from '@/lib/activity-delivery/contract';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import type { QuizMode } from '@/services/quiz-persistence.service';
-import { enqueueGenerationJob, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
+import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
@@ -117,18 +118,27 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
     ) prepared++;
   }
 
-  // keep the bank deep enough for the next launches, never waiting for a miss
-  const undelivered = await countUndeliveredCandidates({ studentId: p.studentId, conceptId: p.conceptId, activityType, language: contract.language, academic });
+  // keep the bank deep enough for the next launches, never waiting for a miss:
+  // what is missing (after the generation already in flight) is requested as
+  // parallel chunks of at most one generator batch each
+  const key = bankKey(contract);
+  const [undelivered, inFlight] = await Promise.all([
+    countUndeliveredCandidates({ studentId: p.studentId, conceptId: p.conceptId, activityType, language: contract.language, academic }),
+    openBankSupply(key),
+  ]);
   const want = bankTarget(activityType, contract.itemCount);
-  if (undelivered < want || bankShort) {
-    await enqueueGenerationJob('BANK_REPLENISH', bankKey(contract), {
-      ...p, activityType, language: contract.language, academic, difficulty: contract.difficulty.target, needed: Math.max(want - undelivered, contract.itemCount), round: 1,
+  const missing = want - undelivered - inFlight;
+  const needed = bankShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
+  const chunks = bankChunks(needed, BATCH_CAP[activityType]);
+  for (let i = 0; i < chunks.length; i++) {
+    await enqueueGenerationJob('BANK_REPLENISH', `${key}:c${i}`, {
+      ...p, activityType, language: contract.language, academic, difficulty: contract.difficulty.target, needed: chunks[i], round: 1,
     });
   }
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
-  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, undelivered } };
+  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, undelivered, inFlight, bankJobs: chunks.length } };
 };
 
 export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {

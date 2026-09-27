@@ -116,16 +116,18 @@ Each READY activity is delivered at most once.
   3. Assembles READY sets up to the target.
   4. Queues `BANK_REPLENISH` if the bank is shallow or short.
   5. Queues a delayed follow-up preparation if the bank was short.
+- **Bank requests:** `PREPARE_INVENTORY` asks only for what is missing: bank target − undelivered − generation already in flight (`openBankSupply`). It splits that need into generator-sized **chunks** (`bankChunks`). Each chunk is its own `BANK_REPLENISH` job, keyed `bank:…:c<i>`, and the chunks run in parallel. The in-flight subtraction means repeated triggers never over-generate.
 - **`BANK_REPLENISH` handler:**
-  1. Generates only the missing candidates, capped per round.
-  2. Banks the validated ones and keeps partial progress.
-  3. Re-queues the remainder (at most 5 rounds).
+  1. Generates one chunk.
+  2. Banks the validated candidates and keeps partial progress.
+  3. Re-queues only the chunk's remainder, as `…:c<i>:r<n>` (at most 5 rounds).
   4. If a round produced nothing, it is retried with backoff (at most 3 attempts).
 
 ## Worker / queue
 
 - **Dedup:** partial unique index on `dedup_key` over open jobs.
-- **Concurrency:** claims use `FOR UPDATE SKIP LOCKED`, and each worker runs N jobs in parallel.
+- **Concurrency:** claims use `FOR UPDATE SKIP LOCKED`. A worker runs N independent **slots**, and each slot claims its next job as soon as it is free. There is no batch barrier, so a slow AI bank chunk never holds back the quick `PREPARE_INVENTORY` jobs behind it.
+- **Draining:** a slot that finds nothing waits while any other slot is still working, because that job may queue follow-ups. The run ends when every slot is idle, or at `maxJobs` or the deadline.
 - **Leases:** a stale `RUNNING` job is reclaimed after 10 minutes.
 - **Retries:** exponential backoff from 20 s, then `FAILED` at `max_attempts`.
 - **Logging:** one `[generation-queue]` log line per state change.
@@ -176,8 +178,8 @@ There are three scenarios.
 
 ### STEADY STATE (`--scenario=steady`)
 
-- **Setup:** a real subject whose bank is filled only by the REAL worker. `BANK_REPLENISH` runs the certified generators with real AI calls in the background. The benchmark inserts nothing.
-- **Warm-up:** the real triggers queue the jobs, and the warm-up waits for the first READY activity of each type.
+- **Setup:** a real subject that starts **from zero**, with an empty bank and no inventory. Its bank is filled only by the REAL worker. `BANK_REPLENISH` runs the certified generators with real AI calls in the background. The benchmark inserts nothing.
+- **Warm-up:** the real triggers queue the jobs. The warm-up waits until each type reaches its **policy targets**: READY inventory at `inventoryTarget` and undelivered bank at `bankTarget`.
 - **Tracks:** one learner track per type runs concurrently, launching every `--think` seconds (default 30 s, deliberately faster than a real learner). The worker loop keeps running, like `after()` and cron do in production.
 - **Measured per type:**
   - latency;
@@ -213,6 +215,8 @@ These gates apply to HOT and STEADY STATE:
 STEADY STATE also requires no `EMERGENCY_REQUIRED` in normal operation and no duplicate open queue jobs.
 
 COLD MISS requires the launch to be controlled, the miss to be recoverable, and no synchronous AI call.
+
+Each scenario first closes queue jobs that an interrupted earlier run left open for the benchmark learner. Their leases would otherwise read as generation in flight.
 
 A type the real engine cannot launch is reported as `BLOCKED`. It is never simulated in STEADY STATE or COLD MISS.
 

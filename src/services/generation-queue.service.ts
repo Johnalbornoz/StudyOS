@@ -52,6 +52,16 @@ export async function enqueueGenerationJob(kind: GenerationJobKind, dedupKey: st
   return created;
 }
 
+/** Candidates still to arrive from open BANK_REPLENISH jobs of one bank (`dedupPrefix` + its chunk / round suffixes). */
+export async function openBankSupply(dedupPrefix: string): Promise<number> {
+  const r = await db.query(
+    `SELECT COALESCE(sum((payload->>'needed')::int), 0)::int AS n FROM generation_jobs
+      WHERE kind = 'BANK_REPLENISH' AND status IN ('PENDING', 'RUNNING') AND left(dedup_key, length($1)) = $1`,
+    [dedupPrefix],
+  );
+  return r.rows[0]?.n ?? 0;
+}
+
 /** Claims up to `limit` due jobs for this worker (SKIP LOCKED), reclaiming stale leases. */
 export async function claimGenerationJobs(limit: number, workerId: string, onlyStudentId?: string): Promise<GenerationJob[]> {
   const r = await db.query(
@@ -95,9 +105,16 @@ export async function failGenerationJob(job: GenerationJob, error: string, remai
 
 export type JobHandler = (job: GenerationJob) => Promise<{ ok: true; result: Record<string, unknown> } | { ok: false; error: string; remainingPayload?: Record<string, unknown> }>;
 
+/** How long an idle slot waits before looking again while another slot is still working. */
+export const WORKER_IDLE_POLL_MS = 500;
+
 /**
- * Processes due jobs until none remain, `maxJobs` were handled, or the
- * deadline is near. Runs up to `concurrency` jobs in parallel.
+ * Processes due jobs until the queue is idle, `maxJobs` were started, or
+ * the deadline is near. `concurrency` independent slots each claim the
+ * next job as soon as they are free -- a slow job (an AI bank round) never
+ * holds back the quick ones behind it. A slot that finds nothing waits
+ * while any other slot is still working (its job may queue follow-ups)
+ * and stops once every slot is idle.
  */
 export async function runGenerationWorker(
   handlers: Record<GenerationJobKind, JobHandler>,
@@ -109,26 +126,45 @@ export async function runGenerationWorker(
   const maxJobs = opts.maxJobs ?? 20;
   const concurrency = opts.concurrency ?? 3;
   const stats = { processed: 0, succeeded: 0, retried: 0, failed: 0 };
-  while (stats.processed < maxJobs && Date.now() < deadline) {
-    const jobs = await claimGenerationJobs(Math.min(concurrency, maxJobs - stats.processed), workerId, opts.onlyStudentId);
-    if (jobs.length === 0) break;
-    await Promise.all(
-      jobs.map(async (job) => {
-        stats.processed++;
-        try {
-          const outcome = await handlers[job.kind](job);
-          if (outcome.ok) {
-            await completeGenerationJob(job, outcome.result);
-            stats.succeeded++;
-          } else {
-            (await failGenerationJob(job, outcome.error, outcome.remainingPayload)) === 'FAILED' ? stats.failed++ : stats.retried++;
-          }
-        } catch (error) {
-          (await failGenerationJob(job, error instanceof Error ? error.message : String(error))) === 'FAILED' ? stats.failed++ : stats.retried++;
-        }
-      }),
-    );
-  }
+  let started = 0;
+  let busy = 0;
+
+  const runJob = async (job: GenerationJob) => {
+    try {
+      const outcome = await handlers[job.kind](job);
+      if (outcome.ok) {
+        await completeGenerationJob(job, outcome.result);
+        stats.succeeded++;
+      } else {
+        (await failGenerationJob(job, outcome.error, outcome.remainingPayload)) === 'FAILED' ? stats.failed++ : stats.retried++;
+      }
+    } catch (error) {
+      (await failGenerationJob(job, error instanceof Error ? error.message : String(error))) === 'FAILED' ? stats.failed++ : stats.retried++;
+    }
+  };
+
+  const slot = async () => {
+    while (started < maxJobs && Date.now() < deadline) {
+      started++;
+      busy++;
+      const [job] = await claimGenerationJobs(1, workerId, opts.onlyStudentId);
+      if (!job) {
+        started--;
+        busy--;
+        if (busy === 0) return;
+        await new Promise((r) => setTimeout(r, WORKER_IDLE_POLL_MS));
+        continue;
+      }
+      stats.processed++;
+      try {
+        await runJob(job);
+      } finally {
+        busy--;
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.max(1, concurrency) }, slot));
   log('worker_run', { workerId, ...stats });
   return stats;
 }
