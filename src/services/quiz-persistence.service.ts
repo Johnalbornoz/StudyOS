@@ -176,6 +176,16 @@ export interface QuizSession {
 }
 
 /**
+ * Quiz session lifetime. created_at/expires_at are computed by Postgres
+ * (`now()`), never from a JS Date: the columns are timestamptz since
+ * 20261017_1000, and even on a schema still at `timestamp without time
+ * zone` a DB-side now() keeps writes and every `expires_at > NOW()`
+ * comparison on the same clock, whatever the TZ of the process writing
+ * (a UTC-6 laptop script used to store local wall time).
+ */
+export const QUIZ_SESSION_TTL_MINUTES = 45;
+
+/**
  * Store generated quiz in database. `conceptId` is the single concept
  * for topic_practice/quick_check quizzes, or null for quizzes spanning
  * multiple concepts (cumulative_assessment/exam_simulation) -- those
@@ -216,8 +226,6 @@ export async function storeQuiz(
 ): Promise<string> {
   try {
     const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 45 * 60 * 1000); // Expire after 45 minutes
 
     // Phase 3A: Activity Type/Evidence Mode are derived once, here, at
     // attempt creation, and stamped onto the row -- never recomputed or
@@ -256,7 +264,7 @@ export async function storeQuiz(
         quiz_mode, concept_ids, activity_type, evidence_mode,
         pedagogical_policy_version, canonical_revision, canonical_stage,
         canonical_activity_contract, target_skill_ids, target_competency_ids
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now() + make_interval(mins => $8), $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       `,
       [
         quizId,
@@ -266,8 +274,7 @@ export async function storeQuiz(
         JSON.stringify(questions),
         language,
         'active',
-        now,
-        expiresAt,
+        QUIZ_SESSION_TTL_MINUTES,
         quizMode,
         conceptIds.length > 0 ? conceptIds : questions.map((q) => q.conceptId),
         activityType,
@@ -376,7 +383,7 @@ export async function getQuiz(quizId: string): Promise<GeneratedQuestion[] | nul
   try {
     const result = await db.query(
       `
-      SELECT questions, status, expires_at
+      SELECT questions, status, (now() > expires_at) AS is_expired
       FROM quiz_sessions
       WHERE id = $1
       `,
@@ -389,8 +396,8 @@ export async function getQuiz(quizId: string): Promise<GeneratedQuestion[] | nul
 
     const row = result.rows[0];
 
-    // Check if quiz has expired
-    if (new Date() > new Date(row.expires_at)) {
+    // Check if quiz has expired (decided by the DB clock, see QUIZ_SESSION_TTL_MINUTES)
+    if (row.is_expired) {
       // Mark as expired
       await db.query(
         'UPDATE quiz_sessions SET status = $1 WHERE id = $2',
