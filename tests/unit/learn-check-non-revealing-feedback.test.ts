@@ -139,10 +139,12 @@ describe('check endpoint -- multiple choice', () => {
     expect(data.scaffold).toEqual(['Ask yourself whether one point can have more than one description.']);
   });
 
-  it('a hint failure degrades to no help -- never to the solution', async () => {
+  it('a hint failure degrades to the safe localized fallback -- never to the solution, never empty', async () => {
     h.hint.mockRejectedValue(new Error('AI down'));
     const data = await check(0, 'c');
-    expect(data).toMatchObject({ correct: false, direction: null, scaffold: [] });
+    expect(data.correct).toBe(false);
+    expect(data.direction).toBeTruthy();
+    expect(h.hint).toHaveBeenCalledTimes(2); // regenerated once before falling back
     expectNoLeak(data, MC);
   });
 
@@ -193,7 +195,8 @@ describe('policy boundaries', () => {
     expect(route).not.toMatch(/keyIdea/);
     expect(route).not.toMatch(/explanation:\s*question\.explanation\s*[,}]\s*\n\s*\}\s*,?\s*\n\s*\}\);/);
     expect(route).toMatch(/stripAnswerReveals\(grade\.feedback, guardQuestion\)/);
-    expect(route).toMatch(/hints\.map\(\(h\) => stripAnswerReveals\(h, guardQuestion\)\)/);
+    expect(route).toMatch(/await getSafeQuestionHints\(question, session\.language/);
+    expect(read('src/services/safe-hint.service.ts')).toMatch(/list\.map\(\(h\) => stripAnswerReveals\(h, guardQuestion\)\)/);
   });
 
   it('the UI shows direction + progressive scaffold ("Show the key idea" then "Show another hint"), never a key-idea solution', () => {

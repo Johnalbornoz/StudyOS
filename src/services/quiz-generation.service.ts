@@ -3074,6 +3074,16 @@ ${contextBlock}${ibInstruction}`;
  * "give the answer," and this function's own hard rules are stated
  * again, after the adaptive block, as the final word.
  */
+const QUESTION_HINTS_SCHEMA = {
+  name: 'question_hints',
+  schema: {
+    type: 'object',
+    properties: { hints: { type: 'array', items: { type: 'string' } } },
+    required: ['hints'],
+    additionalProperties: false,
+  },
+};
+
 export async function generateQuestionHint(
   question: GeneratedQuestion,
   language: string = 'en',
@@ -3109,7 +3119,7 @@ Instead, give 2-3 short hints that redirect their THINKING -- e.g. what concept,
 
 Write the hints in ${languageName}.
 
-Output ONLY a JSON array of strings, no markdown, no explanation. Example shape: ["hint one", "hint two"]`;
+Output ONLY a JSON object, no markdown, no explanation. Exact shape: {"hints": ["hint one", "hint two"]}`;
 
   const userPrompt = `Question: "${question.question}"${optionsBlock}
 
@@ -3129,11 +3139,32 @@ Give 2-3 hints following the rules above.`;
       promptVersion: prompt.version,
       context: aiContext ? { ...aiContext, sourceComponent: 'quiz-generation.service.ts:generateQuestionHint' } : undefined,
       call: (signal) =>
-        callModel({ provider: HINT_ROUTE.provider, model: HINT_ROUTE.primary, maxTokens: HINT_BUDGET.maxOutputTokens, reasoningEffort: HINT_BUDGET.reasoningEffort, system: systemPrompt, user: userPrompt }, signal),
+        callModel(
+          {
+            provider: HINT_ROUTE.provider,
+            model: HINT_ROUTE.primary,
+            maxTokens: HINT_BUDGET.maxOutputTokens,
+            reasoningEffort: HINT_BUDGET.reasoningEffort,
+            system: systemPrompt,
+            user: userPrompt,
+            jsonSchema: QUESTION_HINTS_SCHEMA,
+          },
+          signal
+        ),
+      // v4: the reply is an OBJECT {hints: [...]}. v3 asked for a bare array,
+      // which OpenAI JSON mode cannot return -- the model answered with an
+      // object, this validator coerced it to [] and PASSED, and the learner
+      // got an empty "Dame una pista". An empty result is now a validation
+      // failure (never a silent empty success).
       validate: (raw) =>
         validateJson(raw, (parsed) => {
-          if (!Array.isArray(parsed)) return { value: [] as string[], errors: [] };
-          return { value: parsed.filter((s): s is string => typeof s === 'string').slice(0, 3), errors: [] };
+          const list: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.hints) ? parsed.hints : [];
+          const hints = list
+            .filter((h): h is string => typeof h === 'string')
+            .map((h) => h.trim())
+            .filter((h) => h.length > 0)
+            .slice(0, 3);
+          return { value: hints, errors: hints.length === 0 ? ['EMPTY_HINTS'] : [] };
         }),
     });
     return result;

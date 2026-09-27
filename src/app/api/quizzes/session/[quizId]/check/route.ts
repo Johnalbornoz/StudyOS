@@ -27,7 +27,7 @@ import { canUseCapability } from '@/lib/entitlements';
 import { getQuizSession } from '@/services/quiz-persistence.service';
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
-import { generateQuestionHint } from '@/services/quiz-generation.service';
+import { getSafeQuestionHints } from '@/services/safe-hint.service';
 
 const CheckSchema = z.object({
   studentId: z.string().uuid(),
@@ -75,21 +75,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const guardQuestion = { answerFormat: question.answerFormat, correctAnswer: question.correctAnswer, options: question.options, explanation: question.explanation };
 
   // Wrong/partial: why it does not work + a conceptual direction + a
-  // progressive scaffold, all from non-revealing sources and all filtered
-  // by the leak guard. The hint model is instructed never to state or imply
-  // the answer; the guard enforces it regardless.
+  // progressive scaffold, from the shared safe-hint pipeline (non-revealing
+  // generation, leak guard, one regeneration, safe fallback -- never empty).
   let direction: string | null = null;
   let scaffold: string[] = [];
   if (!grade.correct) {
-    const hints = await generateQuestionHint(question, session.language, undefined, {
+    const { hints } = await getSafeQuestionHints(question, session.language, {
       studentId: body.studentId,
       subjectId: session.subjectId,
       conceptId: session.conceptId ?? undefined,
       sourceId: quizId,
-    }).catch(() => [] as string[]);
-    const safeHints = hints.map((h) => stripAnswerReveals(h, guardQuestion)).filter((h): h is string => !!h);
-    direction = safeHints[0] ?? null;
-    scaffold = safeHints.slice(1);
+    });
+    direction = hints[0] ?? null;
+    scaffold = hints.slice(1);
   }
 
   return NextResponse.json({

@@ -588,6 +588,9 @@ export type MessageKey =
   | 'help.close'
   | 'help.loading'
   | 'help.error'
+  | 'help.hintFallbackData'
+  | 'help.hintFallbackChoice'
+  | 'help.hintFallbackOpen'
   | 'feedback.whatNow'
   | 'feedback.almost'
   | 'feedback.incorrect'
@@ -1802,6 +1805,9 @@ const es: Messages = {
   'help.close': 'Cerrar',
   'help.loading': 'Un momento…',
   'help.error': 'No se pudo obtener la ayuda. Inténtalo de nuevo.',
+  'help.hintFallbackData': 'Relee el enunciado: ¿qué datos te dan y qué te piden exactamente?',
+  'help.hintFallbackChoice': 'Antes de mirar las opciones, piensa qué relación une los datos y qué tipo de resultado esperas.',
+  'help.hintFallbackOpen': 'Escribe primero qué relación conecta los datos antes de calcular nada.',
   'feedback.whatNow': 'Qué hacer ahora',
   'feedback.almost': 'Casi',
   'feedback.incorrect': 'Todavía no',
@@ -3026,6 +3032,9 @@ const en: Messages = {
   'help.close': 'Close',
   'help.loading': 'One moment…',
   'help.error': 'Couldn\'t get help. Try again.',
+  'help.hintFallbackData': 'Reread the question: what information are you given, and what exactly are you asked to find?',
+  'help.hintFallbackChoice': 'Before looking at the options, think about how the given data are related and what kind of result you expect.',
+  'help.hintFallbackOpen': 'First write down the relationship that connects the data, before calculating anything.',
   'feedback.whatNow': 'What to do now',
   'feedback.almost': 'Almost',
   'feedback.incorrect': 'Not yet',
@@ -4250,6 +4259,9 @@ const de: Messages = {
   'help.close': 'Schließen',
   'help.loading': 'Einen Moment…',
   'help.error': 'Hilfe nicht verfügbar. Versuch es nochmal.',
+  'help.hintFallbackData': 'Lies die Aufgabe noch einmal: Welche Angaben hast du, und was genau ist gesucht?',
+  'help.hintFallbackChoice': 'Bevor du die Optionen ansiehst: Wie hängen die Angaben zusammen, und welches Ergebnis erwartest du ungefähr?',
+  'help.hintFallbackOpen': 'Schreib zuerst auf, welcher Zusammenhang die Angaben verbindet, bevor du rechnest.',
   'feedback.whatNow': 'Was jetzt zu tun ist',
   'feedback.almost': 'Fast',
   'feedback.incorrect': 'Noch nicht',
@@ -5474,6 +5486,9 @@ const fr: Messages = {
   'help.close': 'Fermer',
   'help.loading': 'Un instant…',
   'help.error': 'Aide indisponible. Réessaie.',
+  'help.hintFallbackData': 'Relis l\'énoncé : quelles données as-tu, et que te demande-t-on exactement ?',
+  'help.hintFallbackChoice': 'Avant de regarder les options, réfléchis à la relation entre les données et au type de résultat attendu.',
+  'help.hintFallbackOpen': 'Écris d\'abord la relation qui relie les données, avant de calculer quoi que ce soit.',
   'feedback.whatNow': 'Que faire maintenant',
   'feedback.almost': 'Presque',
   'feedback.incorrect': 'Pas encore',
@@ -6698,6 +6713,9 @@ const pt: Messages = {
   'help.close': 'Fechar',
   'help.loading': 'Um momento…',
   'help.error': 'Não foi possível obter ajuda. Tente de novo.',
+  'help.hintFallbackData': 'Releia o enunciado: que dados você tem e o que exatamente se pede?',
+  'help.hintFallbackChoice': 'Antes de olhar as opções, pense em como os dados se relacionam e que tipo de resultado você espera.',
+  'help.hintFallbackOpen': 'Escreva primeiro a relação que conecta os dados, antes de calcular qualquer coisa.',
   'feedback.whatNow': 'O que fazer agora',
   'feedback.almost': 'Quase',
   'feedback.incorrect': 'Ainda não',

@@ -15,6 +15,8 @@ import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
 
+const HELP_TIMEOUT_MS = 45_000;
+
 type HelpAction = 'HINT' | 'EXAMPLE' | 'REMINDER' | 'ANOTHER_ANGLE' | 'FIRST_STEP';
 
 const ACTION_KEY: Record<HelpAction, string> = {
@@ -61,18 +63,29 @@ export default function ContextualHelp({
     setLoading(action);
     setError(false);
     setResult(null);
+    // Loading always ends: success, error, or the client-side timeout.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), HELP_TIMEOUT_MS);
     try {
       const res = await fetch('/api/learning/contextual-help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, quizId, questionIndex, action, language: locale }),
+        signal: controller.signal,
       });
       const body = await res.json();
       if (!res.ok || !body.success) throw new Error();
-      setResult(body.data as HelpResult);
+      const data = body.data as HelpResult;
+      // Never an empty help box: a hint reply with no content shows the safe fallback.
+      if (action === 'HINT' && !(data.hints && data.hints.some((h) => h.trim()))) {
+        data.hints = [t['help.hintFallbackData']];
+      }
+      setResult(data);
     } catch {
-      setError(true);
+      if (action === 'HINT') setResult({ action, hints: [t['help.hintFallbackData']] });
+      else setError(true);
     } finally {
+      clearTimeout(timer);
       setLoading(null);
     }
   }
@@ -113,7 +126,7 @@ export default function ContextualHelp({
         )}
 
         {result && (
-          <div className="al-help-result" aria-live="polite">
+          <div className="al-help-result" aria-live="polite" data-testid="help-result" data-action={result.action}>
             {result.hints && result.hints.length > 0 && (
               <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.7 }}>
                 {result.hints.map((h, i) => (

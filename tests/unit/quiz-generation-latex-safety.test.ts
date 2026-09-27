@@ -369,7 +369,7 @@ describe('prompt version provenance (Step 18 Section 8): every QUESTION_GENERATI
     // quiz.question_hint is NOT a QUESTION_GENERATION prompt -- its
     // version is owned by the adaptive-teaching work (v2 Phase 5-R, v3
     // Phase 7 7E3), never by this Step 18 LaTeX-safety change.
-    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v3');
+    expect(PROMPT_REGISTRY['quiz.question_hint'].version).toBe('v4');
     expect(PROMPT_REGISTRY['misconception.classification'].version).toBe('v1');
   });
 });

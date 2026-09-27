@@ -7,7 +7,8 @@
  * hiding of the menu is never the enforcement. Every action maps to a
  * real, already-existing content behaviour; nothing here diagnoses.
  *
- *   HINT           -> generateQuestionHint            (existing)
+ *   HINT           -> getSafeQuestionHints (generateQuestionHint + leak guard,
+ *                     one regeneration, localized safe fallback -- never empty)
  *   EXAMPLE        -> ConceptExplanation.examples[0]  (existing, cached)
  *   REMINDER       -> ConceptExplanation.summary      (existing, cached)
  *   ANOTHER_ANGLE  -> ConceptExplanation.sections[]   (existing, cached)
@@ -16,7 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getQuizSession, recordHintUsed } from '@/services/quiz-persistence.service';
-import { generateQuestionHint } from '@/services/quiz-generation.service';
+import { getSafeQuestionHints } from '@/services/safe-hint.service';
 import { getConceptExplanation } from '@/services/concept-explanation.service';
 import { generateGuidedPractice } from '@/services/teaching-content.service';
 import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
@@ -78,14 +79,17 @@ export async function POST(request: NextRequest) {
   try {
     if (v.action === 'HINT') {
       const intent = await getTeachingIntentForConcept(v.studentId, conceptId).catch(() => null);
-      const hints = await generateQuestionHint(
+      const { hints, source, discarded } = await getSafeQuestionHints(
         question,
         v.language,
-        intent ? toTeachingGenerationContext(intent) : undefined,
         { studentId: v.studentId, subjectId: session.subjectId, conceptId, sourceId: v.quizId },
+        intent ? toTeachingGenerationContext(intent) : undefined,
       );
+      if (source !== 'ai') console.warn('contextual-help hint degraded', { source, discarded });
+      // Help usage is recorded once per question (idempotent set) and only
+      // once a hint is actually delivered; it is never learning evidence.
       recordHintUsed(v.quizId, v.questionIndex).catch(() => {});
-      return NextResponse.json({ success: true, data: { action: v.action, hints } });
+      return NextResponse.json({ success: true, data: { action: v.action, hints, hintSource: source } });
     }
 
     if (v.action === 'FIRST_STEP') {
