@@ -45,6 +45,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
 import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
+import { recordQuizResponses } from '@/services/quiz-response-audit.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
@@ -1906,6 +1907,30 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           }).catch(() => {})
         )
     );
+
+    // QUIZ_RESPONSE_AUDIT_PERSISTENCE -- the verbatim answer and its grade
+    // for every question, in their own tables (separate from evidence),
+    // idempotent per (session, question). Written before the evidence so a
+    // final review is always reconstructible; a failure is retried once and
+    // then reported loudly, never silently dropped, and never changes the
+    // learner's graded result.
+    {
+      const auditInput = {
+        quizSessionId: validated.quizId,
+        studentId: validated.studentId,
+        canonicalActivityType: quizSession.v1Marker?.canonicalActivityType ?? quizSession.activityType ?? null,
+        evidenceMode: quizSession.evidenceMode ?? null,
+        language,
+        responses: graded
+          .filter((g): g is NonNullable<typeof g> => g !== null)
+          .map((g) => ({ questionIndex: g.questionIndex, question: g.question, rawAnswer: g.rawAnswer, gradeResult: g.gradeResult as never })),
+      };
+      try {
+        await recordQuizResponses(auditInput).catch(() => recordQuizResponses(auditInput));
+      } catch (error) {
+        console.error('[quiz-response-audit] PERSISTENCE_FAILED', JSON.stringify({ quizId: validated.quizId, responses: auditInput.responses.length }), error);
+      }
+    }
 
     const totalQuestions = validated.answers.length;
     const score = totalQuestions ? Math.round((correctCount / totalQuestions) * 100) : 0;
