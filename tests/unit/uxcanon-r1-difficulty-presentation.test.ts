@@ -27,25 +27,25 @@ describe('UX/CANON-R1 1-5 -- getDifficultyPresentation maps each canonical level
   it('1. difficulty 1 -> Inicial', () => {
     expect(getDifficultyPresentation(1, es)).toEqual({ value: 1, max: 5, label: 'Inicial' });
   });
-  it('2. difficulty 2 -> Básica', () => {
-    expect(getDifficultyPresentation(2, es)).toEqual({ value: 2, max: 5, label: 'Básica' });
+  it('2. difficulty 2 -> Básico', () => {
+    expect(getDifficultyPresentation(2, es)).toEqual({ value: 2, max: 5, label: 'Básico' });
   });
-  it('3. difficulty 3 -> Intermedia', () => {
-    expect(getDifficultyPresentation(3, es)).toEqual({ value: 3, max: 5, label: 'Intermedia' });
+  it('3. difficulty 3 -> Intermedio', () => {
+    expect(getDifficultyPresentation(3, es)).toEqual({ value: 3, max: 5, label: 'Intermedio' });
   });
-  it('4. difficulty 4 -> Alta', () => {
-    expect(getDifficultyPresentation(4, es)).toEqual({ value: 4, max: 5, label: 'Alta' });
+  it('4. difficulty 4 -> Avanzado', () => {
+    expect(getDifficultyPresentation(4, es)).toEqual({ value: 4, max: 5, label: 'Avanzado' });
   });
-  it('5. difficulty 5 -> Avanzada', () => {
-    expect(getDifficultyPresentation(5, es)).toEqual({ value: 5, max: 5, label: 'Avanzada' });
+  it('5. difficulty 5 -> Reto', () => {
+    expect(getDifficultyPresentation(5, es)).toEqual({ value: 5, max: 5, label: 'Reto' });
   });
 
   it('the EN locale maps the same 5 levels correctly', () => {
     expect(getDifficultyPresentation(1, en).label).toBe('Initial');
     expect(getDifficultyPresentation(2, en).label).toBe('Basic');
     expect(getDifficultyPresentation(3, en).label).toBe('Intermediate');
-    expect(getDifficultyPresentation(4, en).label).toBe('High');
-    expect(getDifficultyPresentation(5, en).label).toBe('Advanced');
+    expect(getDifficultyPresentation(4, en).label).toBe('Advanced');
+    expect(getDifficultyPresentation(5, en).label).toBe('Challenge');
   });
 
   it('clamps a malformed/out-of-range value defensively -- never invents a 6th tier', () => {
@@ -59,19 +59,19 @@ describe('UX/CANON-R1 1-5 -- getDifficultyPresentation maps each canonical level
  * REQUIRED TEST 6 -- active question shows canonical difficulty.       *
  * ================================================================= */
 describe('UX/CANON-R1 6 -- the active question surface shows canonical difficulty', () => {
-  it('quiz/page.tsx renders DifficultyBadge with the current question\'s own canonical difficulty', () => {
+  it('quiz/page.tsx renders DifficultyIndicator with the current question\'s own canonical difficulty', () => {
     const SRC = read('src/app/dashboard/quiz/page.tsx');
-    expect(SRC).toMatch(/<DifficultyBadge difficulty=\{q\.difficulty\} t=\{at\} \/>/);
+    expect(SRC).toMatch(/<DifficultyIndicator value=\{q\.difficulty\} t=\{at\} \/>/);
   });
 
-  it('the compact visible text matches the required format ("Dificultad 4/5 · Alta")', () => {
+  it('the compact visible text matches the required format ("Dificultad 4/5 · Avanzado")', () => {
     const p = getDifficultyPresentation(4, es);
-    expect(formatDifficultyCompact(p, es)).toBe('Dificultad 4/5 · Alta');
+    expect(formatDifficultyCompact(p, es)).toBe('Dificultad 4/5 · Avanzado');
   });
 
-  it('the accessible text matches the recommended format ("Dificultad 4 de 5, Alta")', () => {
+  it('the accessible text matches the recommended format ("Dificultad: nivel 4 de 5, Avanzado")', () => {
     const p = getDifficultyPresentation(4, es);
-    expect(formatDifficultyAccessible(p, es)).toBe('Dificultad 4 de 5, Alta');
+    expect(formatDifficultyAccessible(p, es)).toBe('Dificultad: nivel 4 de 5, Avanzado');
   });
 });
 
@@ -81,12 +81,12 @@ describe('UX/CANON-R1 6 -- the active question surface shows canonical difficult
 describe('UX/CANON-R1 7 -- Results shows the difficulty the activity was worked at', () => {
   it('quiz/page.tsx renders formatDifficultyWorked from the session\'s own question difficulties', () => {
     const SRC = read('src/app/dashboard/quiz/page.tsx');
-    expect(SRC).toMatch(/formatDifficultyWorked\(at, \{/);
+    expect(SRC).toMatch(/<DifficultyIndicator\s+t=\{at\}\s+range=\{\{/); // Results now renders the visual indicator (range)
     expect(SRC).toMatch(/min: Math\.min\(\.\.\.questions\.map\(\(q\) => q\.difficulty\)\)/);
   });
 
   it('a single-difficulty activity shows one value, never inventing an average', () => {
-    expect(formatDifficultyWorked(es, { min: 4, max: 4 })).toBe('Dificultad trabajada: 4/5 · Alta');
+    expect(formatDifficultyWorked(es, { min: 4, max: 4 })).toBe('Dificultad trabajada: 4/5 · Avanzado');
   });
 
   it('a mixed-difficulty activity shows a range, not an average', () => {
@@ -101,14 +101,14 @@ describe('UX/CANON-R1 7 -- Results shows the difficulty the activity was worked 
  * selector/control introduced.                                        *
  * ================================================================= */
 describe('UX/CANON-R1 8-9 -- difficulty remains system-defined, never learner-editable', () => {
-  it('8. DifficultyBadge exposes no way to change the value -- no onChange, no setState, no callback prop', () => {
-    const SRC = read('src/app/dashboard/quiz/DifficultyBadge.tsx');
+  it('8. DifficultyIndicator exposes no way to change the value -- no onChange, no setState, no callback prop', () => {
+    const SRC = read('src/components/DifficultyIndicator.tsx');
     expect(SRC).not.toMatch(/onChange|onClick|onSelect|setDifficulty/);
     expect(SRC).not.toMatch(/useState/);
   });
 
   it('9. no selector/slider/dropdown/range control was introduced anywhere for difficulty', () => {
-    const badgeSrc = read('src/app/dashboard/quiz/DifficultyBadge.tsx');
+    const badgeSrc = read('src/components/DifficultyIndicator.tsx');
     const presentationSrc = read('src/lib/lx/difficulty-presentation.ts');
     for (const src of [badgeSrc, presentationSrc]) {
       expect(src).not.toMatch(/<select/i);
@@ -120,8 +120,8 @@ describe('UX/CANON-R1 8-9 -- difficulty remains system-defined, never learner-ed
     expect(quizSrc).not.toMatch(/onChange.*setDifficulty/);
   });
 
-  it('DifficultyBadge is not a control: no interactive ARIA role, not keyboard-focusable', () => {
-    const SRC = read('src/app/dashboard/quiz/DifficultyBadge.tsx');
+  it('DifficultyIndicator is not a control: no interactive ARIA role, not keyboard-focusable', () => {
+    const SRC = read('src/components/DifficultyIndicator.tsx');
     expect(SRC).not.toMatch(/role=["'](button|slider|combobox|listbox)["']/);
     expect(SRC).not.toMatch(/tabIndex/);
   });
@@ -131,16 +131,16 @@ describe('UX/CANON-R1 8-9 -- difficulty remains system-defined, never learner-ed
  * REQUIRED TEST 10 -- active learning uses ACTIVITY_LANGUAGE.          *
  * ================================================================= */
 describe('UX/CANON-R1 10 -- difficulty labels follow ACTIVITY_LANGUAGE, never the shell/interface locale', () => {
-  it('quiz/page.tsx passes the activity-language messages (`at`), not a global interface `t`, to DifficultyBadge', () => {
+  it('quiz/page.tsx passes the activity-language messages (`at`), not a global interface `t`, to DifficultyIndicator', () => {
     const SRC = read('src/app/dashboard/quiz/page.tsx');
     // The exact same `at` LearningSupportStatus/ContextualHelp/every other
     // active-learning string on this screen already uses.
-    expect(SRC).toMatch(/<DifficultyBadge difficulty=\{q\.difficulty\} t=\{at\} \/>/);
-    expect(SRC).not.toMatch(/<DifficultyBadge[^>]*t=\{t\}/); // never the shell-language `t`
+    expect(SRC).toMatch(/<DifficultyIndicator value=\{q\.difficulty\} t=\{at\} \/>/);
+    expect(SRC).not.toMatch(/<DifficultyIndicator[^>]*t=\{t\}/); // never the shell-language `t`
   });
 
-  it('no locale is hardcoded into DifficultyBadge or difficulty-presentation.ts -- both take `t` as a parameter', () => {
-    const badgeSrc = read('src/app/dashboard/quiz/DifficultyBadge.tsx');
+  it('no locale is hardcoded into DifficultyIndicator or difficulty-presentation.ts -- both take `t` as a parameter', () => {
+    const badgeSrc = read('src/components/DifficultyIndicator.tsx');
     const presentationSrc = read('src/lib/lx/difficulty-presentation.ts');
     expect(badgeSrc).not.toMatch(/'es'|"es"|Español/);
     expect(presentationSrc).not.toMatch(/'es'|"es"|Español/);

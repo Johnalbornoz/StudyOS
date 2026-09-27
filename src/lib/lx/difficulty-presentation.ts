@@ -44,7 +44,48 @@ export function formatDifficultyWorked(t: T, range: { min: number; max: number }
   return `${t['difficulty.workedLabel']}: ${scale}${suffix}`;
 }
 
-/** "Dificultad 4 de 5, Alta" -- the accessible (screen-reader) text (PART C/S). Never relies on color/glyph alone. */
+/** "Dificultad: nivel 2 de 5, Básico" -- the accessible (screen-reader) text (PART C/S). Never relies on color/glyph alone. */
 export function formatDifficultyAccessible(presentation: DifficultyPresentation, t: T): string {
-  return `${t['difficulty.label']} ${presentation.value} ${t['difficulty.of']} ${presentation.max}, ${presentation.label}`;
+  return `${t['difficulty.label']}: ${t['difficulty.levelWord']} ${presentation.value} ${t['difficulty.of']} ${presentation.max}, ${presentation.label}`;
+}
+
+export type DifficultyTrend = 'up' | 'down';
+
+/**
+ * Model for the visual DifficultyIndicator (5 horizontal segments + tier
+ * label). Presentation only: renders the canonical value/range it is
+ * given; never computes difficulty. `trend` is reserved for surfacing an
+ * adaptive change later (↑/↓) -- callers pass nothing today.
+ */
+export interface DifficultyIndicatorModel {
+  min: number;
+  max: number;
+  /** One entry per segment (5): 'filled' up to `min`, 'range' from min+1 to max, else 'empty'. */
+  segments: Array<'filled' | 'range' | 'empty'>;
+  /** Visible tier label ("Básico", or "Intermedio – Avanzado" for a range) -- never "X/5". */
+  label: string;
+  /** Screen-reader text ("Dificultad: nivel 2 de 5, Básico"). */
+  accessible: string;
+  trend: DifficultyTrend | null;
+  /** Screen-reader description of the trend, when present. */
+  trendAccessible: string | null;
+}
+
+export function getDifficultyIndicatorModel(
+  input: { value: number } | { range: { min: number; max: number } },
+  t: T,
+  trend: DifficultyTrend | null = null,
+): DifficultyIndicatorModel {
+  const clamp = (n: number) => Math.max(1, Math.min(5, Math.round(n)));
+  const lo = 'value' in input ? clamp(input.value) : clamp(Math.min(input.range.min, input.range.max));
+  const hi = 'value' in input ? lo : clamp(Math.max(input.range.min, input.range.max));
+  const segments = Array.from({ length: 5 }, (_, i) => (i < lo ? 'filled' : i < hi ? 'range' : 'empty') as 'filled' | 'range' | 'empty');
+  const tier = (n: number) => t[LEVEL_KEYS[n - 1]];
+  const label = lo === hi ? tier(lo) : `${tier(lo)} – ${tier(hi)}`;
+  const accessible =
+    lo === hi
+      ? formatDifficultyAccessible({ value: lo, max: 5, label: tier(lo) }, t)
+      : `${t['difficulty.label']}: ${t['difficulty.levelWord']} ${lo} ${t['difficulty.to']} ${hi} ${t['difficulty.of']} 5, ${tier(lo)} ${t['difficulty.to']} ${tier(hi)}`;
+  const trendAccessible = trend === 'up' ? t['difficulty.trendUp'] : trend === 'down' ? t['difficulty.trendDown'] : null;
+  return { min: lo, max: hi, segments, label, accessible, trend, trendAccessible };
 }

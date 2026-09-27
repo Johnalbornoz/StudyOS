@@ -129,7 +129,8 @@ describe('LX-4R R5 -- expectedReasoningType is generated, read back with a known
     const CLIENTQ = read('src/lib/quiz/client-question.ts');
     expect(CLIENTQ).toMatch(/expectedReasoningType: q\.expectedReasoningType/); // sent to client
     expect(QUIZ).toMatch(/expectedReasoningType: \(\(q as any\)\.expectedReasoningType/); // client contract input
-    expect(ROUTE).toMatch(/deriveResponseEvidenceContract\(/); // grader guard input
+    expect(ROUTE).toMatch(/gradeQuizAnswer\(/); // route grades through the shared grader...
+    expect(read('src/lib/quiz/grade-question.ts')).toMatch(/deriveResponseEvidenceContract\(/); // ...whose guard input is the same tag
   });
 });
 

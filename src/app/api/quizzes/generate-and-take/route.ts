@@ -79,6 +79,7 @@ import {
   type PreparedActivityContractSnapshot,
 } from '@/services/canonical-prepared-activity.service';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
+import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
@@ -1666,44 +1667,20 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
           answerSubmittedAt: answer.answerSubmittedAt,
         });
 
-        if (question.answerFormat === 'text') {
-          const gradeResult = await gradeAnswer(question, answer.answer, language, {
-            studentId: validated.studentId,
-            subjectId: quizSession.subjectId,
-          });
-          // LX-4F: the Response/Evidence Contract is the grader whitelist,
-          // enforced at runtime. For an ANSWER_ONLY question (e.g. a plain
-          // numeric problem with no canonical PROCEDURAL reasoning tag), a
-          // correct final answer can never be marked down for absent work
-          // or disliked phrasing. SHOW_WORK / EXPLAIN / JUSTIFY are
-          // returned unchanged (the grader legitimately scores METHOD /
-          // REASONING there).
-          const contract = deriveResponseEvidenceContract(
-            {
-              type: question.type as QuestionType,
-              expectedReasoningType: (question.expectedReasoningType as ExpectedReasoningType | undefined) ?? null,
-            },
-            quizSession.evidenceMode,
-          );
-          const guarded = applyResponseContractGuard(contract, gradeResult, {
-            studentAnswer: answer.answer,
-            correctAnswer: question.correctAnswer,
-          });
-          return {
-            questionIndex: answer.questionIndex,
-            question,
-            rawAnswer: answer.answer,
-            gradeResult: { ...gradeResult, ...guarded },
-            reportedConfidence: answer.confidence,
-            timing,
-          };
-        }
-        const structured = gradeStructuredAnswer(question, answer.answer);
+        // The single per-question grader (src/lib/quiz/grade-question.ts),
+        // shared with the assisted per-question feedback check so immediate
+        // feedback and the recorded evidence can never disagree. Free text:
+        // AI grader + LX-4F Response/Evidence Contract guard; structured
+        // formats: deterministic.
+        const gradeResult = await gradeQuizAnswer(question, answer.answer, language, quizSession.evidenceMode, {
+          studentId: validated.studentId,
+          subjectId: quizSession.subjectId,
+        });
         return {
           questionIndex: answer.questionIndex,
           question,
           rawAnswer: answer.answer,
-          gradeResult: { ...structured, confidence: 1, errorType: null as null },
+          gradeResult,
           reportedConfidence: answer.confidence,
           timing,
         };

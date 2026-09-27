@@ -19,8 +19,7 @@ import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
 import ContinuationPanel from './ContinuationPanel';
-import DifficultyBadge from './DifficultyBadge';
-import { formatDifficultyWorked } from '@/lib/lx/difficulty-presentation';
+import DifficultyIndicator from '@/components/DifficultyIndicator';
 // LX-8 R33: optional modality controls are never on the critical
 // rendering path -- both use browser-only APIs (speechSynthesis /
 // SpeechRecognition) and are irrelevant to the very first paint of a
@@ -343,6 +342,18 @@ function QuizPageContent() {
   );
 
   const [quizId, setQuizId] = useState<string | null>(null);
+  // Assisted activities (LEARN_CHECK): immediate per-question feedback via
+  // /api/quizzes/session/[quizId]/check (read-only -- no evidence). Once
+  // checked, the answer is locked, so the answer recorded at submission is
+  // always the first attempt.
+  const [answerCheck, setAnswerCheck] = useState<{
+    index: number;
+    status: 'checking' | 'done' | 'unavailable';
+    correct?: boolean;
+    partial?: boolean;
+    feedback?: string | null;
+    keyIdea?: string | null;
+  } | null>(null);
   const [quizLanguage, setQuizLanguage] = useState<Locale>('es');
   // Until the activity reports its canonical language (generation result or
   // an explicit switch), `at` follows the INTERFACE language -- never a
@@ -1016,6 +1027,32 @@ function QuizPageContent() {
     }
   }
 
+  const perQuestionFeedback = quizMode === 'canonical_learn_check';
+  const answerLocked =
+    perQuestionFeedback && answerCheck?.index === current && (answerCheck.status === 'done' || answerCheck.status === 'unavailable');
+
+  async function checkAnswer() {
+    const q = questions[current];
+    if (!q || !quizId || !studentId) return;
+    const index = current;
+    setAnswerCheck({ index, status: 'checking' });
+    try {
+      const res = await fetch(`/api/quizzes/session/${quizId}/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, questionIndex: index, answer: encodeCurrentAnswer(q) }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.data) {
+        setAnswerCheck({ index, status: 'unavailable' });
+        return;
+      }
+      setAnswerCheck({ index, status: 'done', ...body.data });
+    } catch {
+      setAnswerCheck({ index, status: 'unavailable' });
+    }
+  }
+
   function nextQuestion() {
     // Phase 1D: the explicit-submission moment for the CURRENT question
     // -- covers every question including the last one, since advancing
@@ -1031,6 +1068,7 @@ function QuizPageContent() {
 
     if (current + 1 < questions.length) {
       setCurrent(current + 1);
+      setAnswerCheck(null);
     } else {
       submitQuiz(updatedAnswers, updatedConfidences);
     }
@@ -1723,11 +1761,14 @@ function QuizPageContent() {
               every question shares it (the ordinary case), or a range
               when they legitimately differ. Never a new average metric. */}
           {questions.length > 0 && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 12.5, marginTop: 2 }}>
-              {formatDifficultyWorked(at, {
-                min: Math.min(...questions.map((q) => q.difficulty)),
-                max: Math.max(...questions.map((q) => q.difficulty)),
-              })}
+            <p style={{ marginTop: 2 }}>
+              <DifficultyIndicator
+                t={at}
+                range={{
+                  min: Math.min(...questions.map((q) => q.difficulty)),
+                  max: Math.max(...questions.map((q) => q.difficulty)),
+                }}
+              />
             </p>
           )}
 
@@ -2352,7 +2393,7 @@ function QuizPageContent() {
             NOT LEARNER-EDITABLE: no selector, no slider, no
             preference, StudyUS remains the sole authority. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <DifficultyBadge difficulty={q.difficulty} t={at} />
+          <DifficultyIndicator value={q.difficulty} t={at} />
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
               title={q.calculatorAllowed ? at['quiz.calculatorAllowed'] : at['quiz.calculatorNotAllowed']}
@@ -2453,6 +2494,7 @@ function QuizPageContent() {
 
         {q.visualAid && <VisualAidView aid={q.visualAid} />}
 
+        <fieldset disabled={answerLocked || answerCheck?.status === 'checking'} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         {(q.answerFormat === 'single_choice') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {(q.options || []).map((opt, i) => {
@@ -2614,10 +2656,65 @@ function QuizPageContent() {
           </div>
         )}
 
+        </fieldset>
+
+        {perQuestionFeedback && answerCheck?.index === current && answerCheck.status !== 'checking' && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="card"
+            data-testid="answer-feedback"
+            style={{
+              marginTop: 'var(--space-4)',
+              borderColor: answerCheck.status === 'done' ? (answerCheck.correct ? 'var(--success, #15803d)' : 'var(--warning, #b45309)') : 'var(--border-default)',
+            }}
+          >
+            {answerCheck.status === 'unavailable' ? (
+              <p style={{ margin: 0, fontSize: 14 }}>{at['quiz.checkUnavailable']}</p>
+            ) : (
+              <>
+                <strong style={{ fontSize: 15 }}>
+                  {answerCheck.correct ? at['feedback.correct'] : answerCheck.partial ? at['feedback.almost'] : at['feedback.incorrect']}
+                </strong>
+                {answerCheck.feedback ? (
+                  <p style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={answerCheck.feedback} /></p>
+                ) : !answerCheck.correct ? (
+                  // Structured formats carry no grader text: a short, visible "why"
+                  // that does not reveal the right option (that is behind the key idea).
+                  <p style={{ margin: '6px 0 0', fontSize: 14 }}>{at['quiz.checkIncorrectGeneric']}</p>
+                ) : null}
+                {!answerCheck.correct && answerCheck.keyIdea && (
+                  <details style={{ marginTop: 'var(--space-2)' }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 13.5 }}>{at['quiz.keyIdeaShow']}</summary>
+                    <p style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={answerCheck.keyIdea} /></p>
+                  </details>
+                )}
+                {!answerCheck.correct && (
+                  <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{at['quiz.checkHelpHint']}</p>
+                )}
+              </>
+            )}
+            {current + 1 < questions.length && (
+              <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>{at['quiz.checkContinuity']}</p>
+            )}
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
-          <button onClick={nextQuestion} disabled={!canProceed(q) || submitting || switchingLanguage} className="btn btn-primary">
-            {submitting ? at['quiz.submitting'] : current + 1 < questions.length ? at['quiz.next'] : at['quiz.viewResults']}
-          </button>
+          {perQuestionFeedback && !answerLocked ? (
+            <button
+              onClick={checkAnswer}
+              disabled={!canProceed(q) || answerCheck?.status === 'checking' || switchingLanguage}
+              aria-busy={answerCheck?.status === 'checking'}
+              className="btn btn-primary"
+            >
+              {answerCheck?.status === 'checking' ? '…' : at['quiz.checkAnswer']}
+            </button>
+          ) : (
+            <button onClick={nextQuestion} disabled={!canProceed(q) || submitting || switchingLanguage} className="btn btn-primary">
+              {submitting ? at['quiz.submitting'] : current + 1 < questions.length ? at['quiz.next'] : at['quiz.viewResults']}
+            </button>
+          )}
         </div>
       </div>
     </div>

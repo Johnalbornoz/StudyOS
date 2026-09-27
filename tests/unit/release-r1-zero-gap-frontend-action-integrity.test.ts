@@ -335,9 +335,9 @@ describe('RELEASE-R1 13-17 -- valid Practice/Review/Prove/Retention/Transfer sti
  * REQUIRED TEST 18 -- UX/CANON-R1 difficulty visibility unchanged.     *
  * ================================================================= */
 describe('RELEASE-R1 18 -- UX/CANON-R1 difficulty visibility unchanged', () => {
-  it('DifficultyBadge is still rendered on the active question with the activity-language messages', () => {
+  it('DifficultyIndicator is still rendered on the active question with the activity-language messages', () => {
     const SRC = read('src/app/dashboard/quiz/page.tsx');
-    expect(SRC).toMatch(/<DifficultyBadge difficulty=\{q\.difficulty\} t=\{at\} \/>/);
+    expect(SRC).toMatch(/<DifficultyIndicator value=\{q\.difficulty\} t=\{at\} \/>/);
   });
 
   it('getDifficultyPresentation is untouched', () => {

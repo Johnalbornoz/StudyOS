@@ -111,10 +111,14 @@ describe('LX-4F -- Response Contract reaches the learner and the grader', () => 
     expect(QUIZ).toMatch(/responseContract\.\$\{responseContract\.kind\}/);
   });
 
-  it('the grader guard is wired into the route in front of the free-text grade', () => {
-    expect(ROUTE).toMatch(/import \{ applyResponseContractGuard \}/);
-    expect(ROUTE).toMatch(/deriveResponseEvidenceContract\(/);
-    expect(ROUTE).toMatch(/applyResponseContractGuard\(contract, gradeResult/);
+  it('the grader guard is wired in front of the free-text grade (the single shared per-question grader the route uses)', () => {
+    // The route grades every answer through src/lib/quiz/grade-question.ts
+    // (shared with the assisted per-question feedback check), where the guard lives.
+    const GRADER = read('src/lib/quiz/grade-question.ts');
+    expect(ROUTE).toMatch(/await gradeQuizAnswer\(question, answer\.answer, language, quizSession\.evidenceMode/);
+    expect(GRADER).toMatch(/import \{ applyResponseContractGuard \}/);
+    expect(GRADER).toMatch(/deriveResponseEvidenceContract\(/);
+    expect(GRADER).toMatch(/applyResponseContractGuard\(contract, gradeResult/);
   });
 });
 

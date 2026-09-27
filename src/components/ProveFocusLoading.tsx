@@ -25,6 +25,7 @@
  *   `aria-hidden` so screen readers are never spammed per animation frame.
  */
 import { useEffect, useState } from 'react';
+import DifficultyIndicator, { type DifficultyMessages } from '@/components/DifficultyIndicator';
 
 const REMINDER_KEYS = [
   'quiz.proveFocusTip1',
@@ -52,14 +53,15 @@ function usePrefersReducedMotion(): boolean {
 
 export interface ProveFocusLoadingProps {
   /** ACTIVITY_LANGUAGE-scoped translator (Part 27 -- never GLOBAL_INTERFACE_LANGUAGE for this copy). */
-  at: Record<string, string>;
+  at: DifficultyMessages;
   /** The frozen canonical Prove contract's own item count -- static policy, not fetched (10 today). */
   itemCount?: number;
   /** The frozen canonical Prove contract's own difficulty range display -- static policy, not fetched. */
-  difficultyLabel?: string;
+  /** The Prove contract's canonical difficulty band (presentation only). */
+  difficultyRange?: { min: number; max: number };
 }
 
-export default function ProveFocusLoading({ at, itemCount = 10, difficultyLabel = '3-4' }: ProveFocusLoadingProps) {
+export default function ProveFocusLoading({ at, itemCount = 10, difficultyRange = { min: 3, max: 4 } }: ProveFocusLoadingProps) {
   const [stage, setStage] = useState<'instant' | 'minimal' | 'full'>('instant');
   const [reminderIndex, setReminderIndex] = useState(0);
   const reducedMotion = usePrefersReducedMotion();
@@ -107,7 +109,7 @@ export default function ProveFocusLoading({ at, itemCount = 10, difficultyLabel 
         >
           <span className="chip">{(at['quiz.provePreparingContractCount'] || '').replace('{count}', String(itemCount))}</span>
           <span className="chip">{at['quiz.provePreparingContractIndependent']}</span>
-          <span className="chip">{(at['quiz.provePreparingContractDifficulty'] || '').replace('{range}', difficultyLabel)}</span>
+          <span className="chip"><DifficultyIndicator t={at} range={difficultyRange} size="xs" /></span>
           <span className="chip">{at['quiz.provePreparingContractNoHints']}</span>
         </div>
 

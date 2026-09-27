@@ -477,11 +477,11 @@ describe('LX-9R3 difficulty 17-21 -- a real, testable contract, never learner-se
     // StudyUS now DOES canonically determine difficulty
     // (resolveTargetDifficulty), so LX-4J's premise ("no canonical
     // authority exists") is no longer true, and the value is now shown
-    // (DifficultyBadge, SYSTEM-DEFINED/LEARNER-VISIBLE). What remains
+    // (DifficultyIndicator, SYSTEM-DEFINED/LEARNER-VISIBLE). What remains
     // invariant, and is re-asserted here, is that it is still NEVER
     // editable: no selector, no onChange-driven control, no slider.
     expect(QUIZ_PAGE_SRC).toMatch(/NOT LEARNER-EDITABLE/);
-    expect(QUIZ_PAGE_SRC).toMatch(/<DifficultyBadge difficulty=\{q\.difficulty\} t=\{at\} \/>/);
+    expect(QUIZ_PAGE_SRC).toMatch(/<DifficultyIndicator value=\{q\.difficulty\} t=\{at\} \/>/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/<select[^>]*difficulty/i);
     expect(QUIZ_PAGE_SRC).not.toMatch(/onChange.*setDifficulty/);
     expect(QUIZ_PAGE_SRC).not.toMatch(/type=["']range["'][^>]*difficulty/i);
