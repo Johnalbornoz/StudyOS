@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { getErrorPatternGuidance } from '@/services/error-intelligence.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -49,3 +50,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/learning-debt/error-guidance', handleGET);

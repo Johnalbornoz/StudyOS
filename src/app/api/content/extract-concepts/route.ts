@@ -27,6 +27,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { extractConceptsFromSource, getSubjectConcepts } from '@/services/concept-extraction.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 interface ExtractConceptsRequest {
   sourceId: string;
@@ -36,7 +37,7 @@ interface ExtractConceptsRequest {
   sourceLanguage?: string;
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -94,3 +95,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/content/extract-concepts', handlePOST);

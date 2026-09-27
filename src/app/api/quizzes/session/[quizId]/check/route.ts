@@ -28,6 +28,7 @@ import { getQuizSession } from '@/services/quiz-persistence.service';
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
 import { getSafeQuestionHints } from '@/services/safe-hint.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const CheckSchema = z.object({
   studentId: z.string().uuid(),
@@ -35,7 +36,7 @@ const CheckSchema = z.object({
   answer: z.string().min(1).max(20_000),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
   const { quizId } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -102,3 +103,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/session/[quizId]/check', handlePOST);

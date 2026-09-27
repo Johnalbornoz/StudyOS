@@ -10,8 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getTeacherClassRoster, TeacherAccessDeniedError } from '@/lib/teacher/read-model.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ classId: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ classId: string }> }) {
   const { classId } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -25,3 +26,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/teacher/classes/[classId]/roster', handleGET);

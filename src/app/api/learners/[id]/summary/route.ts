@@ -21,8 +21,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getChildOverview } from '@/services/parent.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: learnerId } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -34,3 +35,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const overview = await getChildOverview(learnerId);
   return NextResponse.json({ success: true, data: overview });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/learners/[id]/summary', handleGET);

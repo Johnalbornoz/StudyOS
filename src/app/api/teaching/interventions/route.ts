@@ -27,6 +27,7 @@ import { resolveFrameworkForObjective, resolveFrameworkForStudentExamProfile } f
 import { startInterventionSession } from '@/lib/teaching/session.service';
 import { resolveTeachingContentGenerationContext, generateTeachingContent } from '@/lib/teaching/ai-teaching-contract.service';
 import { DEFAULT_ASSISTANCE_LEVEL_BY_INTERVENTION, type InterventionType } from '@/lib/teaching/types';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const CreateSchema = z.object({
   studentId: z.string().uuid(),
@@ -34,7 +35,7 @@ const CreateSchema = z.object({
   interventionType: z.enum(['EXPLAIN', 'WORKED_EXAMPLE', 'GUIDED_PRACTICE', 'CONTEXTUAL_HELP', 'INDEPENDENT_PRACTICE', 'PROVE']).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
@@ -103,3 +104,6 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/teaching/interventions', handlePOST);

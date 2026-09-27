@@ -31,6 +31,7 @@ import { verifyAuth, verifyStudentAccess, checkRateLimit } from '@/lib/auth';
 import { updateMastery } from '@/services/mastery.service';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const RecordEvidenceSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -56,7 +57,7 @@ const RecordEvidenceSchema = z.object({
 
 type RecordEvidenceRequest = z.infer<typeof RecordEvidenceSchema>;
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     // Verify authentication
     const authContext = await verifyAuth();
@@ -155,3 +156,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/record-evidence', handlePOST);

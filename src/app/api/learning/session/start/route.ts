@@ -43,13 +43,14 @@ import {
 import { toCanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const StartSessionSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
   actionConceptId: z.string().uuid('Invalid actionConceptId'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) {
@@ -139,3 +140,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/session/start', handlePOST);

@@ -28,6 +28,7 @@ import { getQuizSession, evidenceModeForQuizMode, type QuizMode } from '@/servic
 import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
 import { deriveTeachingExperience } from '@/lib/lx/teaching-experience';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 // CANON-V2-PREVIEW-CERT Section 13/18 -- a real bug: canonical_prove/
 // canonical_retain/canonical_transfer/canonical_learn_check were never
@@ -44,7 +45,7 @@ const VALID_MODES: ReadonlySet<string> = new Set<QuizMode>([
   'canonical_prove', 'canonical_retain', 'canonical_transfer', 'canonical_learn_check',
 ]);
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -99,3 +100,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ success: true, data: { teachingExperience } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/learning/teaching-intent', handleGET);

@@ -11,8 +11,9 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getDiagnosisById } from '@/lib/diagnostics/diagnosis.service';
 import { explainDiagnosis } from '@/lib/diagnostics/explain.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -28,3 +29,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const explanation = await explainDiagnosis(id);
   return NextResponse.json({ success: true, data: { explanation } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/diagnostics/[id]/explain', handleGET);

@@ -27,6 +27,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getDebtResolutionProgress } from '@/services/debt-resolution.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const ProgressSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -35,7 +36,7 @@ const ProgressSchema = z.object({
 
 type ProgressRequest = z.infer<typeof ProgressSchema>;
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     // Verify authentication
     const authContext = await verifyAuth();
@@ -143,3 +144,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/learning-debt/progress', handleGET);

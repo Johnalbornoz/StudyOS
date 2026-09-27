@@ -3,6 +3,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { createConceptManually } from '@/services/concept-extraction.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const CreateSchema = z.object({
   studentId: z.string().uuid(),
@@ -11,7 +12,7 @@ const CreateSchema = z.object({
   language: z.string().default('en'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -47,3 +48,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true, data: result });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/concepts/create', handlePOST);

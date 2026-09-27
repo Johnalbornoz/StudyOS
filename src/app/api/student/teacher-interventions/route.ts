@@ -10,8 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { getStudentPendingTeacherInterventions } from '@/lib/student/teacher-intervention-execution.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest) {
+async function handleGET(_request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const studentId = await requireStudentId(authContext.userId);
@@ -20,3 +21,6 @@ export async function GET(_request: NextRequest) {
   const interventions = await getStudentPendingTeacherInterventions(studentId);
   return NextResponse.json({ success: true, data: { interventions } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/student/teacher-interventions', handleGET);

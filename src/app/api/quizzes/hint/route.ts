@@ -8,6 +8,7 @@ import { canUseAI } from '@/lib/ai-permission-policy';
 import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.service';
 import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const HintSchema = z.object({
   studentId: z.string().uuid(),
@@ -16,7 +17,7 @@ const HintSchema = z.object({
   language: z.string().default('en'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -101,3 +102,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/hint', handlePOST);

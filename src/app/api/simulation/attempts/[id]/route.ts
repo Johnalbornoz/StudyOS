@@ -4,8 +4,9 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -21,3 +22,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const scoreSummary = await getSimulationScoreSummary(attempt.examAttemptId);
   return NextResponse.json({ success: true, data: { attempt, scoreSummary } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/simulation/attempts/[id]', handleGET);

@@ -14,6 +14,7 @@ import { getRecentTransferFingerprints, isDuplicateTransferFingerprint } from '@
 import { loadTransferTaskInstance } from '@/services/transfer-task-instance.service';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({
   studentId: z.string().uuid(),
@@ -40,7 +41,7 @@ const Schema = z.object({
 // NB: any client-sent `promptFingerprint` is dropped by Zod here on
 // purpose -- the server always recomputes it from `prompt` below.
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -233,3 +234,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/cognitive/transfer/submit', handlePOST);

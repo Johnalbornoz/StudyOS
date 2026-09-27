@@ -6,6 +6,7 @@ import { getAIExecutionAuditSink } from './audit';
 import type { ProviderUsage } from './usage';
 import { estimateCostUSD } from './pricing';
 import { reserveAICall } from './operational-limits';
+import { recordAiExecution } from './request-metrics';
 
 /** No AI call in StudyUs waits forever (Step 7) -- 30s covers every current call's observed shape, including large batch generations. */
 export const DEFAULT_AI_TIMEOUT_MS = 30_000;
@@ -141,6 +142,17 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
    */
   const emit = async (execution: AIExecutionMetadata): Promise<AIExecutionMetadata> => {
     logAIExecution(execution);
+    recordAiExecution({
+      capability: execution.capability,
+      model: execution.model,
+      promptId: execution.promptId,
+      startedAtMs,
+      durationMs: execution.durationMs,
+      success: execution.success,
+      validationStatus: execution.validationStatus,
+      fallbackUsed: execution.fallbackUsed,
+      ...(execution.errorCode ? { errorCode: execution.errorCode } : {}),
+    });
     try {
       await getAIExecutionAuditSink().record({ execution, context: opts.context });
     } catch (err) {

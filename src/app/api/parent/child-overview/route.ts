@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateParentId } from '@/lib/auth';
 import { getChildOverview, verifyParentAccess } from '@/services/parent.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,3 +27,6 @@ export async function GET(request: NextRequest) {
   const overview = await getChildOverview(studentId, preferredLanguage);
   return NextResponse.json({ success: true, data: overview });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/parent/child-overview', handleGET);

@@ -8,8 +8,9 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminEmail } from '@/services/admin.service';
 import { explainKnowledgeState } from '@/lib/learner-state/knowledge-state-explain.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const user = await currentUser();
@@ -24,3 +25,6 @@ export async function GET(request: NextRequest) {
   const explanation = await explainKnowledgeState(studentId, conceptId);
   return NextResponse.json({ success: true, data: { explanation } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/admin/learner-state/knowledge', handleGET);

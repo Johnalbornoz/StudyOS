@@ -16,10 +16,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireStudentId } from '@/lib/auth';
 import { revokeRelationshipByStudent } from '@/services/parent.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ parentId: z.string().uuid() });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -41,3 +42,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/parent/relationships/revoke', handlePOST);

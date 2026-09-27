@@ -10,8 +10,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { listDiagnosesForStudentConcept } from '@/lib/diagnostics/diagnosis.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const studentId = searchParams.get('studentId');
   const conceptId = searchParams.get('conceptId');
@@ -27,3 +28,6 @@ export async function GET(request: NextRequest) {
   const diagnoses = await listDiagnosesForStudentConcept(studentId, conceptId);
   return NextResponse.json({ success: true, data: { diagnoses } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/diagnostics', handleGET);

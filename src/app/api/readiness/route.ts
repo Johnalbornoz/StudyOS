@@ -9,8 +9,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getLatestReadinessSnapshot, listReadinessSnapshots } from '@/lib/readiness/readiness.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const studentId = searchParams.get('studentId');
   const examProfileId = searchParams.get('examProfileId');
@@ -31,3 +32,6 @@ export async function GET(request: NextRequest) {
   const snapshot = await getLatestReadinessSnapshot(examProfileId);
   return NextResponse.json({ success: true, data: { snapshot } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/readiness', handleGET);

@@ -16,8 +16,9 @@ import { computeReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { determineNextAction } from '@/lib/simulation/next-action.service';
 import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -56,3 +57,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     data: { attempt: completed, scoreSummary, postExamDiagnosis, readinessSnapshot, nextAction },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts/[id]/complete', handlePOST);

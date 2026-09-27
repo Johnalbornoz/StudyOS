@@ -42,6 +42,8 @@
 
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
+import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
+import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
@@ -85,7 +87,7 @@ import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/d
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
-import { storeQuiz, getQuizSession, completeQuiz, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import { storeQuiz, getQuizSession, completeQuiz, findResumableCanonicalProveSession, QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
 import {
   logCanonicalProveGenerationSummary,
   logCanonicalProveCacheSummary,
@@ -100,8 +102,6 @@ import { getStudentMastery } from '@/services/mastery.service';
 import { getIndependentMastery, shouldAskConfidence, type ConfidenceLevel } from '@/services/learner-model.service';
 import { getNextOccurrence } from '@/services/assessment.service';
 import { recordError } from '@/services/error-intelligence.service';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
-import { resolveQuizLanguage } from '@/lib/i18n/language';
 import { isLocale } from '@/lib/i18n/messages';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
@@ -132,6 +132,7 @@ import {
   resolveAuthorizedItemCount,
   type CanonicalDecisionResult,
 } from '@/lib/pedagogical-decision';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 // Phase 3A: single-concept quiz modes -- every other mode spans several
 // concepts and is selected via selectConceptsForQuizMode/conceptIds instead.
@@ -186,25 +187,6 @@ function logDifficultyResolution(activityType: string, decision: ReturnType<type
   } catch { /* logging must never break generation */ }
 }
 
-async function resolveLanguageForSubject(subjectId: string, studentId: string) {
-  const result = await db.query(
-    `SELECT target_language, quiz_language_mode FROM subjects WHERE id = $1`,
-    [subjectId]
-  );
-  const subject = result.rows[0] || {};
-  const interfaceLanguage = await getInterfaceLanguage(studentId);
-  return resolveQuizLanguage(subject, interfaceLanguage);
-}
-
-async function getSubjectIBContext(subjectId: string): Promise<IBContext | null> {
-  const result = await db.query(
-    `SELECT ib_programme, ib_subject_group, ib_level FROM subjects WHERE id = $1`,
-    [subjectId]
-  );
-  const row = result.rows[0];
-  if (!row || row.ib_programme === 'none') return null;
-  return { programme: row.ib_programme, subjectGroup: row.ib_subject_group, level: row.ib_level };
-}
 
 /**
  * Every mode offers Claude the full 18-type catalog -- it isn't
@@ -291,10 +273,9 @@ const QUIZ_MODE_CONFIG: Record<
     // (`filterExactDuplicates`, run inside
     // `generateCanonicalProveQuestions` -- CANON-R6-PERF-R1/R2), which
     // runs regardless of whether Claude actually honored this text.
-    guidance:
-      'This is an independent mastery check -- the student demonstrates they can do this ALONE, with no help. Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess, the same rigor as a diagnostic check but across a full independent set. Keep each question tightly focused on the core idea of this concept. Write NEW questions -- do not repeat a question the student has already been asked while practicing this concept.',
+    guidance: CANONICAL_PROVE_GENERATION_CONFIG.guidance,
     defaultMax: 10,
-    visualAidRate: 0,
+    visualAidRate: CANONICAL_PROVE_GENERATION_CONFIG.visualAidRate,
     evidenceSource: 'SOLO_VERIFICATION',
   },
   // CANON-V2-ARCH-CLEANUP -- the exact-10, independent, NOVEL canonical
@@ -397,7 +378,7 @@ const SubmitQuizSchema = z.object({
   ),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) {
@@ -908,6 +889,56 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // keeping questionArrays' shape (one array per concept) identical
     // for the flatten/askConfidence logic below regardless of which
     // path ran.
+    // PROVE_GENERATION_PERFORMANCE -- idempotent Prove launch: an
+    // equivalent Prove session that is still open (same contract, no new
+    // evidence since it was created) is returned as-is -- same quizId,
+    // same 10 questions, no second generation, no reroll. Writes nothing.
+    if (validated.quizMode === 'canonical_prove' && v1Marker && v1Marker.itemCount) {
+      const resumeStartedAt = Date.now();
+      const resumable = await findResumableCanonicalProveSession({
+        studentId: validated.studentId,
+        conceptId: primaryConceptId!,
+        language,
+        policyVersion: v1Marker.pedagogicalPolicyVersion,
+        contract: {
+          canonicalActivityType: v1Marker.canonicalActivityType,
+          itemCount: { authorized: v1Marker.itemCount.authorized },
+          difficulty: v1Marker.difficulty,
+          independence: v1Marker.independence,
+        },
+      }).catch(() => null);
+      if (resumable) {
+        try {
+          // eslint-disable-next-line no-console
+          console.log('CANONICAL_PROVE_RESUMED', JSON.stringify({
+            operationId: parentOperationId,
+            conceptId: primaryConceptId,
+            quizIdSuffix: resumable.quizId.slice(-6),
+            resumeLookupMs: Date.now() - resumeStartedAt,
+            totalMs: Date.now() - requestStartedAt,
+            externalAiCallCount: 0,
+          }));
+        } catch { /* logging must never break the response */ }
+        return NextResponse.json({
+          success: true,
+          data: {
+            quizId: resumable.quizId,
+            language,
+            quizMode: validated.quizMode,
+            maxQuestions,
+            countAuthority,
+            ibProgramme: ibContext?.programme || 'none',
+            resumed: true,
+            quiz: {
+              questions: resumable.questions.map((q, i) => toClientQuestion(q, i)),
+              count: resumable.questions.length,
+            },
+            message: 'Quiz resumed. Submit answers with this quizId to complete.',
+          },
+        });
+      }
+    }
+
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -2593,3 +2624,6 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/generate-and-take', handlePOST);

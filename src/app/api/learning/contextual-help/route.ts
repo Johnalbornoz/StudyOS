@@ -25,6 +25,7 @@ import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation'
 import { canUseAI, type AIFeature } from '@/lib/ai-permission-policy';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const HELP_ACTIONS = ['HINT', 'EXAMPLE', 'REMINDER', 'ANOTHER_ANGLE', 'FIRST_STEP'] as const;
 type HelpAction = (typeof HELP_ACTIONS)[number];
@@ -45,7 +46,7 @@ const Schema = z.object({
   language: z.string().default('en'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -128,3 +129,6 @@ async function conceptLabel(conceptId: string, language: string): Promise<{ labe
   );
   return { label: r.rows[0]?.label ?? 'this concept', subjectName: r.rows[0]?.subject_name ?? '' };
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/contextual-help', handlePOST);

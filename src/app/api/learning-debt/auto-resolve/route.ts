@@ -30,6 +30,7 @@ import {
   autoResolveAllDebts,
 } from '@/services/debt-resolution.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const AutoResolveSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -38,7 +39,7 @@ const AutoResolveSchema = z.object({
 
 type AutoResolveRequest = z.infer<typeof AutoResolveSchema>;
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     // Verify authentication
     const authContext = await verifyAuth();
@@ -129,3 +130,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning-debt/auto-resolve', handlePOST);

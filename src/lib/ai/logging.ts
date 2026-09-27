@@ -1,4 +1,5 @@
 import type { AIExecutionMetadata } from './types';
+import { currentAiOperation } from './request-metrics';
 
 /**
  * Safe structured logging around the AI gateway (Step 17). Only ever
@@ -15,9 +16,12 @@ import type { AIExecutionMetadata } from './types';
  * production (see logAIDebugRaw below).
  */
 export function logAIExecution(execution: AIExecutionMetadata): void {
+  const operation = currentAiOperation();
   const line = {
     at: 'ai_execution',
     executionId: execution.executionId,
+    // AI request metrics: which request/operation this call belongs to (see request-metrics.ts)
+    ...(operation ? { operation } : {}),
     capability: execution.capability,
     risk: execution.risk,
     provider: execution.provider,

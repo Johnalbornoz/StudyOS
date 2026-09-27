@@ -41,13 +41,17 @@ describe('R1D R3 -- the explanation endpoint returns without generating the form
   it('the deferred widget has its own service function and its own route', () => {
     expect(EXPL_SVC).toMatch(/export async function getInteractiveFormula\(/);
     expect(FORMULA_ROUTE).toMatch(/getInteractiveFormula\(studentId, id, language\)/);
-    expect(FORMULA_ROUTE).toMatch(/export async function GET\(/);
+    // AI request metrics: the handler is wrapped (withAiRequestMetrics), still a real GET handler
+    expect(FORMULA_ROUTE).toMatch(/async function handleGET\(/);
+    expect(FORMULA_ROUTE).toMatch(/export const GET = withAiRequestMetrics\('GET \/api\/concepts\/\[id\]\/interactive-formula', handleGET\);/);
     // the route file physically lives at the interactive-formula path
     expect(() => read('src/app/api/concepts/[id]/interactive-formula/route.ts')).not.toThrow();
   });
 
   it('the formula route is a real GET request handler, not a fire-and-forget server promise', () => {
-    expect(FORMULA_ROUTE).toMatch(/export async function GET\(/);
+    // AI request metrics: the handler is wrapped (withAiRequestMetrics), still a real GET handler
+    expect(FORMULA_ROUTE).toMatch(/async function handleGET\(/);
+    expect(FORMULA_ROUTE).toMatch(/export const GET = withAiRequestMetrics\('GET \/api\/concepts\/\[id\]\/interactive-formula', handleGET\);/);
     // no unawaited background promise pattern in the explanation service
     expect(EXPL_SVC).not.toMatch(/void generateInteractiveFormula/);
     expect(EXPL_SVC).not.toMatch(/generateInteractiveFormula\([^)]*\)\s*;\s*\n\s*(?!\s*(const|let|var|return|if|\}))/);

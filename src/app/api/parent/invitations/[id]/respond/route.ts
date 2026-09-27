@@ -11,10 +11,11 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { getOrCreateParentId } from '@/lib/auth';
 import { acceptParentInvitation, declineParentInvitation } from '@/services/parent.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ decision: z.enum(['accept', 'decline']) });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: invitationId } = await params;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -41,3 +42,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!accepted) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   return NextResponse.json({ success: true, data: { status: 'accepted' } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/parent/invitations/[id]/respond', handlePOST);

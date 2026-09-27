@@ -268,9 +268,12 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
 // ============================================================
 describe('9 -- generation guidance is an isolated nudge only, never the enforcement mechanism', () => {
   it('the canonical_prove guidance string gained an additive "do not repeat" sentence, scoped to ONLY that one config entry', () => {
+    // PROVE_GENERATION_PERFORMANCE: the Prove guidance lives in ONE shared module so live
+    // generation and background preparation can never drift; the config entry references it.
     const idx = ROUTE_SRC.indexOf('canonical_prove: {');
     const slice = ROUTE_SRC.slice(idx, idx + 1200);
-    expect(slice).toMatch(/do not repeat a question the student has already been asked/);
+    expect(slice).toMatch(/guidance: CANONICAL_PROVE_GENERATION_CONFIG\.guidance/);
+    expect(readFileSync(join(process.cwd(), 'src/lib/quiz/canonical-prove-config.ts'), 'utf-8')).toMatch(/do not repeat a question the student has already been asked/);
   });
 
   it('no other QUIZ_MODE_CONFIG entry (quick_check/topic_practice/review/etc.) was touched by this addition', () => {

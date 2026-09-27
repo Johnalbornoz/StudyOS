@@ -12,11 +12,12 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { rescheduleLearningPlanItem } from '@/services/learning-plan-agency.service';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ studentId: z.string().uuid(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 const BAD_REQUEST = new Set(['DATE_INVALID', 'DATE_IN_PAST', 'DATE_OUT_OF_HORIZON', 'DATE_CONFLICT']);
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -49,3 +50,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/plan/items/[id]/reschedule', handlePOST);

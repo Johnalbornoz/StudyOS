@@ -23,6 +23,7 @@ import { db } from '@/lib/db';
 import { getInterventionSession, recordInterventionAttempt, ProveNotRecordableHereError } from '@/lib/teaching/session.service';
 import { classifyFeedback } from '@/lib/teaching/feedback.service';
 import { resolveCommandTermInterpretation } from '@/lib/teaching/command-term-teaching.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const AttemptSchema = z.object({
   conceptId: z.string().uuid(),
@@ -39,7 +40,7 @@ const AttemptSchema = z.object({
   timing: z.object({ questionPresentedAt: z.string(), answerSubmittedAt: z.string() }).optional(),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -103,3 +104,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     throw err;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/teaching/interventions/[id]/attempts', handlePOST);

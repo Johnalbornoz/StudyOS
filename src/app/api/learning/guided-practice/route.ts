@@ -40,6 +40,7 @@ import { canUseAI } from '@/lib/ai-permission-policy';
 import { query } from '@/lib/db';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const VALID_MODES: ReadonlySet<string> = new Set<QuizMode>([
   'topic_practice', 'review', 'quick_check', 'retention_check',
@@ -54,7 +55,7 @@ const Schema = z.object({
   language: z.string().default('en'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -128,3 +129,6 @@ export async function POST(request: NextRequest) {
     data: { guidedPractice: guidedPractice.isFallback ? null : guidedPractice },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/guided-practice', handlePOST);

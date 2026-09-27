@@ -21,6 +21,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { recordError } from '@/services/error-intelligence.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const RecordErrorSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -30,7 +31,7 @@ const RecordErrorSchema = z.object({
   sourceType: z.string().default('GUIDED_EXERCISE'),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) {
@@ -69,3 +70,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/errors/record', handlePOST);

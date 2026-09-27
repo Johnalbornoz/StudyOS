@@ -14,6 +14,7 @@ import { isAdminEmail } from '@/services/admin.service';
 import { getSkillState, projectSkillState } from '@/lib/learner-state/skill-state.service';
 import { getCompetencyState, projectCompetencyState } from '@/lib/learner-state/competency-state.service';
 import { getTransferAnalytics, projectTransferAnalytics } from '@/lib/learner-state/transfer-analytics.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({
   dimension: z.enum(['SKILL', 'COMPETENCY', 'TRANSFER_ANALYTICS']),
@@ -21,7 +22,7 @@ const Schema = z.object({
   targetId: z.string().uuid(), // skillId | competencyId | conceptId, depending on dimension
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const user = await currentUser();
@@ -51,3 +52,6 @@ export async function POST(request: NextRequest) {
   const after = await projectTransferAnalytics(studentId, targetId);
   return NextResponse.json({ success: true, data: { before, after } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/admin/learner-state/replay', handlePOST);

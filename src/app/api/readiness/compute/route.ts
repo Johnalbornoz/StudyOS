@@ -12,6 +12,7 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { computeReadinessSnapshot } from '@/lib/readiness/readiness.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const ComputeSchema = z.object({
   studentId: z.string().uuid(),
@@ -19,7 +20,7 @@ const ComputeSchema = z.object({
   examVersionId: z.string().uuid(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
@@ -37,3 +38,6 @@ export async function POST(request: NextRequest) {
   const snapshot = await computeReadinessSnapshot(validated);
   return NextResponse.json({ success: true, data: { snapshot } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/readiness/compute', handlePOST);

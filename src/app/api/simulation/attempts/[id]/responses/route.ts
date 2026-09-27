@@ -13,6 +13,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { recordSimulationItemResponse } from '@/lib/simulation/scoring.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const ResponseSchema = z.object({
   assessmentComponentId: z.string().uuid(),
@@ -27,7 +28,7 @@ const ResponseSchema = z.object({
   idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -64,3 +65,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({ success: true, data: { responseId, evaluation, evidenceWritten, duplicate } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts/[id]/responses', handlePOST);

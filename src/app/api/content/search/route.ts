@@ -32,8 +32,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess, verifySubjectAccess } from '@/lib/auth';
 import { retrieveContext } from '@/services/rag.service';
 import { generateEmbedding } from '@/services/embedding.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) {
@@ -107,3 +108,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/content/search', handleGET);

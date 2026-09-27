@@ -25,6 +25,7 @@ import { rebuildLearningPlan } from '@/services/learning-orchestration.service';
 import { getLegacyShapedCanonicalPlan } from '@/services/legacy-study-plan-compat';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const GenerateStudyPlanSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),
@@ -33,7 +34,7 @@ const GenerateStudyPlanSchema = z.object({
   startDate: z.string().datetime().optional(),
 });
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ success: true, data: shaped });
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED', message: 'Authentication required' }, { status: 401 });
@@ -90,3 +91,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR', message: 'Failed to generate study plan' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/study-plan/generate', handleGET);
+export const POST = withAiRequestMetrics('POST /api/study-plan/generate', handlePOST);

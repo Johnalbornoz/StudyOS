@@ -12,10 +12,11 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { skipLearningPlanItem } from '@/services/learning-plan-agency.service';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ studentId: z.string().uuid() });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -47,3 +48,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/learning/plan/items/[id]/skip', handlePOST);

@@ -21,6 +21,7 @@ import { getQuizSession } from '@/services/quiz-persistence.service';
 import { isLocale, LOCALES } from '@/lib/i18n/messages';
 import { toClientQuestion } from '@/lib/quiz/client-question';
 import { localizeGeneratedQuestion } from '@/services/question-localization.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({
   studentId: z.string().uuid(),
@@ -32,7 +33,7 @@ const Schema = z.object({
   optionOrder: z.array(z.string()).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -92,3 +93,6 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/localize-question', handlePOST);

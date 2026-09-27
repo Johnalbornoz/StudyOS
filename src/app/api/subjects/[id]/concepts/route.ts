@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { getSubjectConcepts } from '@/services/concept-extraction.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) {
@@ -30,3 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const concepts = await getSubjectConcepts(id, language);
   return NextResponse.json({ success: true, data: { concepts, subjectName: subject.rows[0].name } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/subjects/[id]/concepts', handleGET);

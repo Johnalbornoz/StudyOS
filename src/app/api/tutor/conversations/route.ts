@@ -4,13 +4,14 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { createConversation, getConversations } from '@/services/tutor.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 // GET (viewing past conversations) is never entitlement-gated -- a
 // Student's own history remains visible regardless of subscription
 // state (LEARNING_HISTORY_VIEW is never revoked). Only POST (starting
 // a new AI tutor conversation) is a paid capability.
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -36,7 +37,7 @@ const CreateSchema = z.object({
   subjectId: z.string().uuid().optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -64,3 +65,7 @@ export async function POST(request: NextRequest) {
   const conversationId = await createConversation(validated.studentId, validated.subjectId);
   return NextResponse.json({ success: true, data: { conversationId } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/tutor/conversations', handleGET);
+export const POST = withAiRequestMetrics('POST /api/tutor/conversations', handlePOST);

@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { after } from 'next/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -12,12 +13,13 @@ import { db } from '@/lib/db';
 import { getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { sourceLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
+import { historyActivityLabel, resultLabel, resultColor, criterionStatusLabel } from '@/lib/concept-evidence-labels';
 import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowledge-state-labels';
 import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 import { getConceptMissionView } from '@/services/concept-mission-view.service';
 import ConceptMission from './ConceptMission';
+import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
 import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
@@ -131,6 +133,12 @@ export default async function ConceptDetailPage({
     throw new Error('CANONICAL_DECISION_UNAVAILABLE');
   }
   const missionView = missionResult.view;
+  // PROVE_GENERATION_PERFORMANCE -- the learner decides to start Prove
+  // here: keep a prepared batch ready (background, after the response).
+  const canonicalDecision = missionResult.canonicalDecision;
+  if (decisionMayNeedProvePreparation(canonicalDecision)) {
+    after(() => keepCanonicalProvePrepared({ studentId, subjectId, conceptId, decision: canonicalDecision }));
+  }
   // Canonical progress explanation (gate on): the ONE phase + its real requirement.
   const progress = missionResult.canonicalDecision
     ? buildProgressExplanation(missionResult.canonicalDecision, (iso) => new Date(iso).toLocaleDateString(locale))
@@ -464,7 +472,7 @@ export default async function ConceptDetailPage({
                 <span className="tabular" style={{ color: 'var(--text-muted)', flexShrink: 0, width: 90 }}>
                   {new Date(h.timestamp).toLocaleDateString()}
                 </span>
-                <span style={{ flexShrink: 0, minWidth: 150 }}>{sourceLabel(h.sourceType, t)}</span>
+                <span style={{ flexShrink: 0, minWidth: 150 }}>{historyActivityLabel(h, t)}</span>
                 <span style={{ color: resultColor(h.result), fontWeight: 600, flexShrink: 0, minWidth: 90 }}>
                   {resultLabel(h.result, t)}
                   {h.scorePercent !== null ? ` (${Math.round(h.scorePercent)}%)` : ''}

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { recordExamResult } from '@/services/exam-result.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const RecordResultSchema = z.object({
   studentId: z.string().uuid(),
@@ -18,7 +19,7 @@ const RecordResultSchema = z.object({
   submissionToken: z.string().uuid(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) {
@@ -78,3 +79,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR', details: String(error) }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/assessments/record-result', handlePOST);

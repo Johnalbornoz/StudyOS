@@ -24,10 +24,11 @@ import {
   StudentInterventionNotStartableError,
 } from '@/lib/student/teacher-intervention-execution.service';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const StartSchema = z.object({ idempotencyKey: z.string().min(1) });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -54,3 +55,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/student/teacher-interventions/[id]/start', handlePOST);

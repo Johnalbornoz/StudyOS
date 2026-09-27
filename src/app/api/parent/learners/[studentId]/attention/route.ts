@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getParentAttentionAreas, ParentAccessDeniedError } from '@/lib/parent/read-model.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
 
   const authContext = await verifyAuth();
@@ -21,3 +22,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/parent/learners/[studentId]/attention', handleGET);

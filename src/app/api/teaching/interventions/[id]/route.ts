@@ -9,8 +9,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getInterventionSession, listAttemptsForSession } from '@/lib/teaching/session.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -26,3 +27,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const attempts = await listAttemptsForSession(id);
   return NextResponse.json({ success: true, data: { session, attempts } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/teaching/interventions/[id]', handleGET);

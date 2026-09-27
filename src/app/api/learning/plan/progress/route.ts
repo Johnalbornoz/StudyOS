@@ -10,10 +10,11 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { readOrchestrationObjectiveProgress, readStudyPlanAdherence } from '@/lib/learner-twin/metrics';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ studentId: z.string().uuid() });
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const authContext = await verifyAuth();
     if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -41,3 +42,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/learning/plan/progress', handleGET);

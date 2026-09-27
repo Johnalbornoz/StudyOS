@@ -1,5 +1,6 @@
 import { AIExecutionError, providerHttpError } from '../errors';
 import { resolveReasoningEffort, logReasoningEffortCompat, type ReasoningEffort } from '../model-compatibility';
+import { measureProviderCall } from '../request-metrics';
 
 const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_EMBEDDINGS_ENDPOINT = 'https://api.openai.com/v1/embeddings';
@@ -73,6 +74,12 @@ function resolveOpenAIReasoningEffort(model: string, requestedEffort: ReasoningE
 
 /** The one place StudyUs constructs a request to OpenAI's Chat Completions API. */
 export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSignal): Promise<OpenAIChatResult> {
+  return measureProviderCall('openai', params.model, params.messages.map((m) => `${m.role}:${m.content}`), () =>
+    callOpenAIChatUnmeasured(params, signal),
+  );
+}
+
+async function callOpenAIChatUnmeasured(params: OpenAIChatParams, signal: AbortSignal): Promise<OpenAIChatResult> {
   const apiKey = requireOpenAIKey();
   const reasoningEffort = resolveOpenAIReasoningEffort(params.model, params.reasoningEffort);
 
@@ -126,6 +133,12 @@ export interface OpenAIEmbeddingResult {
 
 /** The one place StudyUs constructs a request to OpenAI's Embeddings API. */
 export async function callOpenAIEmbedding(params: OpenAIEmbeddingParams, signal: AbortSignal): Promise<OpenAIEmbeddingResult> {
+  return measureProviderCall('openai', params.model, [params.input], () =>
+    callOpenAIEmbeddingUnmeasured(params, signal),
+  );
+}
+
+async function callOpenAIEmbeddingUnmeasured(params: OpenAIEmbeddingParams, signal: AbortSignal): Promise<OpenAIEmbeddingResult> {
   const apiKey = requireOpenAIKey();
 
   const response = await fetch(OPENAI_EMBEDDINGS_ENDPOINT, {

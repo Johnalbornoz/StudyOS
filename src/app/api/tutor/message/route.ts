@@ -5,6 +5,7 @@ import { canUseCapability } from '@/lib/entitlements';
 import { sendMessage, verifyConversationOwnership } from '@/services/tutor.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const SendSchema = z.object({
   studentId: z.string().uuid(),
@@ -13,7 +14,7 @@ const SendSchema = z.object({
   conceptId: z.string().uuid().optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -55,3 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INTERNAL_ERROR', details: String(error) }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/tutor/message', handlePOST);

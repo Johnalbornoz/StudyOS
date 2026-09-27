@@ -20,8 +20,9 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { isOwner } from '@/lib/authorization';
 import { getQuizSession } from '@/services/quiz-persistence.service';
 import { toClientQuestion } from '@/lib/quiz/client-question';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
   const { quizId } = await params;
   const { searchParams } = new URL(request.url);
   const studentId = searchParams.get('studentId');
@@ -52,3 +53,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/quizzes/session/[quizId]', handleGET);

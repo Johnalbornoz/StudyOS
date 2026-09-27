@@ -10,8 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getParentLearners } from '@/lib/parent/read-model.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(_request: NextRequest) {
+async function handleGET(_request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
@@ -19,3 +20,6 @@ export async function GET(_request: NextRequest) {
   const learners = await getParentLearners(actor.id);
   return NextResponse.json({ success: true, data: { learners } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/parent/learners', handleGET);

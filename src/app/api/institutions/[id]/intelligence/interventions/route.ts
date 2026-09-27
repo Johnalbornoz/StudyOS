@@ -3,8 +3,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getInstitutionInterventionSummary, type InterventionType } from '@/lib/institution-intelligence';
 import { respondFromService } from '../_respond';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: institutionId } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -17,3 +18,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   return respondFromService(() => getInstitutionInterventionSummary(actor.id, institutionId, { classId, interventionType, sinceDays }));
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/institutions/[id]/intelligence/interventions', handleGET);

@@ -32,6 +32,7 @@ import { requireStudentId, verifyContentSourceAccess } from '@/lib/auth';
 import { processContentForChunking } from '@/services/content-chunking.service';
 import { generateEmbedding, storeChunkWithEmbedding } from '@/services/embedding.service';
 import { db } from '@/lib/db';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 interface ProcessContentRequest {
   contentSourceId: string;
@@ -40,7 +41,7 @@ interface ProcessContentRequest {
   mimeType?: string;
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -145,3 +146,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/content/process', handlePOST);

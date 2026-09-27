@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireStudentId } from '@/lib/auth';
 import { getPendingRequestsForStudent, respondToRequest } from '@/services/parent.service';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 /** Pending parent link-requests for the current (student) user. */
-export async function GET() {
+async function handleGET() {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +23,7 @@ const RespondSchema = z.object({
   accept: z.boolean(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,3 +43,7 @@ export async function POST(request: NextRequest) {
   await respondToRequest(studentId, validated.parentId, validated.accept);
   return NextResponse.json({ success: true });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/parent/requests', handleGET);
+export const POST = withAiRequestMetrics('POST /api/parent/requests', handlePOST);

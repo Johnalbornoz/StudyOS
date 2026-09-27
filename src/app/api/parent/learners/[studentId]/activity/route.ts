@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getParentRecentActivity, ParentAccessDeniedError } from '@/lib/parent/read-model.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
   const limitParam = request.nextUrl.searchParams.get('limit');
   const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 20, 1), 50) : 20;
@@ -23,3 +24,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/parent/learners/[studentId]/activity', handleGET);

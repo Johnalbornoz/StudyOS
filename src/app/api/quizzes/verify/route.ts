@@ -33,6 +33,7 @@ import {
 import { recordDecisionEvent } from '@/lib/audit';
 import { normalizeResponseTiming } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const VerifySchema = z.object({
   studentId: z.string().uuid(),
@@ -47,7 +48,7 @@ const VerifySchema = z.object({
   answerSubmittedAt: z.string().optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -265,7 +266,7 @@ export async function POST(request: NextRequest) {
  * the honest "already resolved, or never existed" case Phase 4-R
  * Finding 9 requires the caller to handle safely, not fail on.
  */
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -311,3 +312,7 @@ export async function GET(request: NextRequest) {
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/verify', handlePOST);
+export const GET = withAiRequestMetrics('GET /api/quizzes/verify', handleGET);

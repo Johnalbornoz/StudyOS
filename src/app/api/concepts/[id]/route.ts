@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { deleteConcept } from '@/services/mastery.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) {
@@ -28,3 +29,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   return NextResponse.json({ success: true });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const DELETE = withAiRequestMetrics('DELETE /api/concepts/[id]', handleDELETE);

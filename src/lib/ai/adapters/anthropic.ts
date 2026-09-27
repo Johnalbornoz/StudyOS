@@ -1,4 +1,5 @@
 import { AIExecutionError, providerHttpError } from '../errors';
+import { measureProviderCall } from '../request-metrics';
 
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
@@ -33,6 +34,15 @@ export interface AnthropicMessagesResult {
  * does not change what gets sent (Step 5-6).
  */
 export async function callAnthropicMessages(params: AnthropicMessagesParams, signal: AbortSignal): Promise<AnthropicMessagesResult> {
+  return measureProviderCall(
+    'anthropic',
+    params.model,
+    [params.system, JSON.stringify(params.messages)],
+    () => callAnthropicMessagesUnmeasured(params, signal),
+  );
+}
+
+async function callAnthropicMessagesUnmeasured(params: AnthropicMessagesParams, signal: AbortSignal): Promise<AnthropicMessagesResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new AIExecutionError('CONFIGURATION_ERROR', 'ANTHROPIC_API_KEY is not set');

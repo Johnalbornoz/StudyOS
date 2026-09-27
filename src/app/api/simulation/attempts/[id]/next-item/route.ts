@@ -22,6 +22,7 @@ import {
   SimulationItemNotActiveError,
   SimulationItemNoPendingItemError,
 } from '@/lib/simulation/item-resolution.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 function mapError(error: unknown) {
   if (error instanceof SimulationItemNotFoundError) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -31,7 +32,7 @@ function mapError(error: unknown) {
   throw error;
 }
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -60,7 +61,7 @@ const SubmitSchema = z.object({
   idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -86,3 +87,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return mapError(error);
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/simulation/attempts/[id]/next-item', handleGET);
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts/[id]/next-item', handlePOST);

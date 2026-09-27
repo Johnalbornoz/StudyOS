@@ -2,8 +2,9 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractConceptsFromText } from '@/services/ai.service';
 import { query } from '@/lib/db';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,3 +45,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/concepts/extract', handlePOST);
