@@ -1868,8 +1868,8 @@ function QuizPageContent() {
               decides where to go next, only explains what just
               happened. */}
           {results.transferResult && (
-            <div className="card" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-5)' }}>
-              <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 10 }}>{at['quiz.transferResultTitle']}</p>
+            <div className="card" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-6)' }}>
+              <p className="label" style={{ color: 'var(--brand-ink)', margin: '0 0 var(--space-3)' }}>{at['quiz.transferResultTitle']}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
                   <span>{at['quiz.transferChallengeNear']}</span>
@@ -1914,8 +1914,8 @@ function QuizPageContent() {
               copy (previously fell through to `null`, showing nothing
               at all after a Retain or Transfer attempt). */}
           {results.canonicalResultsStatus === 'OK' && results.canonicalResults && (
-            <div className="card" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-5)' }}>
-              <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.canonicalNextStepTitle']}</p>
+            <div className="card" data-testid="results-next-step" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-6)' }}>
+              <p className="label" style={{ color: 'var(--brand-ink)', margin: '0 0 var(--space-3)' }}>{at['quiz.canonicalNextStepTitle']}</p>
               <p style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
                 {results.canonicalResults.actionState === 'WAITING'
                   ? (results.canonicalResults.nextEligibleAt
