@@ -23,6 +23,7 @@ import {
 } from '@/services/gated-question-generation.service';
 import { loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
+import { avoidanceBrief, diversityReport, leastSimilarFirst, selectDiverse, type DiversityReport } from '@/lib/lx/question-diversity';
 import { MAX_QUESTIONS_PER_CHUNK, ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
 
 export interface CanonicalProveGenerationParams {
@@ -49,7 +50,7 @@ export interface CanonicalProveNoveltyPassResult {
 }
 
 export interface CanonicalProveInvocationResult extends GatedBatchInvocationDiagnostics {
-  invocationType: 'CHUNK' | 'AGGREGATE_RECOVERY';
+  invocationType: 'CHUNK' | 'AGGREGATE_RECOVERY' | 'DIVERSITY_REGENERATION';
   chunkIndex: number | null;
 }
 
@@ -68,7 +69,17 @@ export interface CanonicalProveGenerationResult {
   priorPracticeFingerprintCount: number;
   rejectedExactDuplicateCount: number;
   finalQuestionCount: number;
+  /** PROVE_INTRA_SESSION_NOVELTY: candidates rejected as near duplicates / over-used templates. */
+  diversityRejectedCount: number;
+  /** Targeted regeneration rounds (only the rejected slots, never the whole set). */
+  diversityRegenerations: number;
+  /** True only when the deterministic fallback had to fill with the least-similar rejected candidates. */
+  diversityDegraded: boolean;
+  diversity: DiversityReport;
 }
+
+/** At most this many targeted regeneration rounds for rejected slots. */
+export const MAX_DIVERSITY_REGENERATIONS = 2;
 
 /**
  * Never throws for a "couldn't reach targetCount" outcome -- returns a
@@ -157,7 +168,54 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
     });
   }
 
-  const questions = accepted.slice(0, params.targetCount);
+  // PROVE_INTRA_SESSION_NOVELTY -- semantic diversity before the set is
+  // accepted (question-diversity.ts). Exact-text novelty above cannot see
+  // that two differently-worded items are the same problem (real Prove:
+  // #1 and #9, "5 cuadernos / 40 € -> 8 cuadernos / 64 €"). Near duplicates
+  // and over-used templates are dropped; ONLY those slots are regenerated
+  // (same certified bounded recovery + Quality Gate), told what not to
+  // repeat; after MAX_DIVERSITY_REGENERATIONS rounds a deterministic
+  // fallback fills from the least-similar rejected candidates so the
+  // contract stays exactly targetCount -- never fewer questions.
+  const firstPass = selectDiverse(accepted, params.targetCount, params.language);
+  let kept = firstPass.kept;
+  const rejectedPool = firstPass.rejected.map((r) => r.item);
+  let diversityRejectedCount = firstPass.rejected.length;
+  let diversityRegenerations = 0;
+  for (let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept.length < params.targetCount && diversityRejectedCount > 0; round++) {
+    const missing = params.targetCount - kept.length;
+    diversityRegenerations++;
+    const regen = await generateBoundedRecoveryBatch(params.conceptId, params.studentId, params.subjectId, {
+      count: missing,
+      difficulty: params.difficulty,
+      types: ALL_QUESTION_TYPES,
+      guidance: `${params.guidance}\n\nDIVERSITY: this assessment already contains the questions below. Each NEW question must use a different situation and quantities, different numbers, and a different reasoning demand -- never a variation of one of these:\n${avoidanceBrief(kept, params.language)}`,
+      language: params.language,
+      visualAidRate: params.visualAidRate,
+      ibContext: params.ibContext,
+      activityType: params.activityType,
+      quizMode: params.quizMode,
+      parentOperationId: params.parentOperationId,
+    });
+    invocations.push({ invocationType: 'DIVERSITY_REGENERATION', chunkIndex: null, ...regen.diagnostics });
+    const regenFiltered = filterExactDuplicates(regen.accepted, excludeFingerprints);
+    excludeFingerprints = regenFiltered.fingerprints;
+    rejectedExactDuplicateCount += regenFiltered.rejectedCount;
+    const more = selectDiverse(regenFiltered.accepted, params.targetCount, params.language, kept);
+    kept = kept.concat(more.kept);
+    rejectedPool.push(...more.rejected.map((r) => r.item));
+    diversityRejectedCount += more.rejected.length;
+  }
+  let diversityDegraded = false;
+  if (kept.length < params.targetCount && rejectedPool.length > 0) {
+    kept = kept.concat(leastSimilarFirst(rejectedPool, kept, params.language).slice(0, params.targetCount - kept.length));
+    diversityDegraded = true;
+  }
+  const questions = kept.slice(0, params.targetCount);
+  const diversity = diversityReport(questions, params.language);
+  try {
+    console.log('[prove-diversity]', JSON.stringify({ parentOperationId: params.parentOperationId, conceptId: params.conceptId, diversityRejectedCount, diversityRegenerations, diversityDegraded, ...diversity }));
+  } catch { /* observability never breaks generation */ }
   return {
     questions,
     chunkPlan: chunked.chunkPlan,
@@ -172,6 +230,10 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
     noveltyPasses,
     priorPracticeFingerprintCount: priorFingerprints.size,
     rejectedExactDuplicateCount,
+    diversityRejectedCount,
+    diversityRegenerations,
+    diversityDegraded,
+    diversity,
     finalQuestionCount: questions.length,
   };
 }

@@ -199,8 +199,14 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
   it('10/12. at most ONE aggregate recovery round exists in the shared generation service -- no loop, no retry counter, never recursive', () => {
     expect(GENERATION_SERVICE_SRC).not.toMatch(/for \(let attempt/);
     expect(GENERATION_SERVICE_SRC).not.toMatch(/MAX_NOVELTY_REFILL_ATTEMPTS/);
+    // exactly ONE aggregate (deficit) recovery; PROVE_INTRA_SESSION_NOVELTY adds a separate,
+    // bounded diversity regeneration (only the rejected slots, at most MAX_DIVERSITY_REGENERATIONS rounds)
     const recoveryCalls = (GENERATION_SERVICE_SRC.match(/generateBoundedRecoveryBatch\(/g) ?? []).length;
-    expect(recoveryCalls).toBe(1);
+    expect(recoveryCalls).toBe(2);
+    expect((GENERATION_SERVICE_SRC.match(/count: recoveryRequestedCount,/g) ?? []).length).toBe(1);
+    expect(GENERATION_SERVICE_SRC).toMatch(/export const MAX_DIVERSITY_REGENERATIONS = 2;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/for \(let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept\.length < params\.targetCount && diversityRejectedCount > 0; round\+\+\) \{\s*const missing = params\.targetCount - kept\.length;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/count: missing,/);
   });
 
   it('10. when the concurrent chunks\' own novelty-filtered aggregate is short of targetCount, ONE recovery is requested, sized via the proven deficit+1 surplus formula (capped at 2x the per-chunk max)', () => {
@@ -220,7 +226,8 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
   it('13/14. after at most one recovery round, the result is simply returned (never re-entered) -- the CALLER decides fail-closed semantics (route.ts\'s pre-existing choke point for the live path; FAILED status for the background pre-generation path)', () => {
     const idx = GENERATION_SERVICE_SRC.indexOf('if (accepted.length < params.targetCount) {');
     expect(idx).toBeGreaterThan(-1);
-    const returnIdx = GENERATION_SERVICE_SRC.indexOf('const questions = accepted.slice(0, params.targetCount);');
+    // the set is returned after the (single) aggregate recovery and the bounded diversity step
+    const returnIdx = GENERATION_SERVICE_SRC.indexOf('const questions = kept.slice(0, params.targetCount);');
     expect(returnIdx).toBeGreaterThan(idx);
     const deficitChecks = (GENERATION_SERVICE_SRC.match(/if \(accepted\.length < params\.targetCount\)/g) ?? []).length;
     expect(deficitChecks).toBe(1);

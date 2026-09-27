@@ -41,7 +41,7 @@ import { createHash } from 'crypto';
  * "recovery" themselves.
  */
 export interface CanonicalProveGenerationInvocationRecord {
-  invocationType: 'CHUNK' | 'AGGREGATE_RECOVERY';
+  invocationType: 'CHUNK' | 'AGGREGATE_RECOVERY' | 'DIVERSITY_REGENERATION';
   chunkIndex: number | null;
   requestedCount: number;
   acceptedCount: number;
