@@ -349,7 +349,9 @@ describe('route wiring -- Part 2 trigger', () => {
   it('the trigger fires only inside the fresh-canonical-decision success branch (canonicalResultsStatus = OK), gated on stage === PROVE && actionState === EXECUTABLE', () => {
     const okIdx = ROUTE_SRC.indexOf("canonicalResultsStatus = 'OK';");
     expect(okIdx).toBeGreaterThan(-1);
-    const triggerIdx = ROUTE_SRC.indexOf("if (fresh.decision.stage === 'PROVE' && fresh.decision.actionState === 'EXECUTABLE'", okIdx);
+    // PROVE_GENERATION_PERFORMANCE: the gate is the shared decisionMayNeedProvePreparation (stage PROVE && EXECUTABLE && contract)
+    const triggerIdx = ROUTE_SRC.indexOf('if (decisionMayNeedProvePreparation(fresh.decision)) {', okIdx);
+    expect(read('src/services/prove-preparation-trigger.service.ts')).toMatch(/decision\.stage === 'PROVE' && decision\.actionState === 'EXECUTABLE' && !!decision\.activityContract/);
     expect(triggerIdx).toBeGreaterThan(okIdx);
     // still inside the SAME try block, before its own catch -- not an
     // exact-distance check (real-world comments between them vary).
@@ -359,11 +361,11 @@ describe('route wiring -- Part 2 trigger', () => {
 
   it('uses after() (Next.js\'s own supported post-response background mechanism, backed by Vercel waitUntil) -- never a bare detached Promise', () => {
     expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse, after \} from 'next\/server';/);
-    expect(ROUTE_SRC).toMatch(/after\(\(\) =>\s*\n\s*prepareCanonicalProveActivity\(/);
+    expect(ROUTE_SRC).toMatch(/after\(\(\) =>\s*\n\s*keepCanonicalProvePrepared\(/);
   });
 
   it('Part 2 -- the trigger is scheduled via after(), which runs AFTER the response is sent -- the return statement below is not gated on it, so Practice submission latency is structurally independent of Prove preparation', () => {
-    const triggerIdx = ROUTE_SRC.indexOf('after(() =>\n              prepareCanonicalProveActivity(');
+    const triggerIdx = ROUTE_SRC.indexOf('after(() =>\n            keepCanonicalProvePrepared(');
     const returnIdx = ROUTE_SRC.indexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
     expect(triggerIdx).toBeGreaterThan(-1);
     expect(returnIdx).toBeGreaterThan(triggerIdx);
@@ -373,10 +375,11 @@ describe('route wiring -- Part 2 trigger', () => {
   });
 
   it('a background preparation failure is caught inside the scheduled callback itself -- never lets an unhandled rejection surface', () => {
-    const idx = ROUTE_SRC.indexOf('after(() =>\n              prepareCanonicalProveActivity(');
+    const idx = ROUTE_SRC.indexOf('after(() =>\n            keepCanonicalProvePrepared(');
     expect(idx).toBeGreaterThan(-1);
-    const slice = ROUTE_SRC.slice(idx, idx + 1600);
-    expect(slice).toMatch(/\.catch\(\(err\) => console\.error\('\[canon-r6-perf-r2\] background Prove preparation failed:', err\)\)/);
+    // the single trigger never throws: every failure is caught and reported inside it
+    const trig = read('src/services/prove-preparation-trigger.service.ts');
+    expect(trig).toMatch(/\} catch \(error\) \{\s*console\.error\('\[prove-preparation-trigger\] failed:', error\);\s*return 'FAILED';/);
   });
 });
 
@@ -431,8 +434,12 @@ describe('firewall -- no changes to the pedagogical engine, migration, AI routin
   });
 
   it('no RETAIN/TRANSFER/LEARN preparation is ever triggered -- the trigger fires ONLY on stage === PROVE', () => {
-    const triggerIdx = ROUTE_SRC.indexOf("if (fresh.decision.stage === 'PROVE'");
+    const triggerIdx = ROUTE_SRC.indexOf('if (decisionMayNeedProvePreparation(fresh.decision)) {');
     expect(triggerIdx).toBeGreaterThan(-1);
-    expect(ROUTE_SRC.slice(triggerIdx, triggerIdx + 100)).not.toMatch(/RETAIN|TRANSFER|LEARN/);
+    // the shared gate admits PROVE only -- never RETAIN/TRANSFER/LEARN
+    const trig = read('src/services/prove-preparation-trigger.service.ts');
+    const gate = trig.slice(trig.indexOf('export function decisionMayNeedProvePreparation'), trig.indexOf('export async function keepCanonicalProvePrepared'));
+    expect(gate).toMatch(/decision\.stage === 'PROVE'/);
+    expect(gate).not.toMatch(/RETAIN|TRANSFER|LEARN/);
   });
 });

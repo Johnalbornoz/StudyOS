@@ -24,15 +24,20 @@ export async function keepCanonicalProvePrepared(params: {
   subjectId: string;
   conceptId: string;
   decision: Decision;
+  /** The language of the activity that triggered it (e.g. the Practice just submitted); defaults to the subject's quiz language, as the live request does. */
+  language?: string;
 }): Promise<EnsureProvePreparedOutcome> {
   try {
     if (!decisionMayNeedProvePreparation(params.decision)) return 'NOT_APPLICABLE';
     const [language, ibContext] = await Promise.all([
-      resolveLanguageForSubject(params.subjectId, params.studentId),
+      params.language ?? resolveLanguageForSubject(params.subjectId, params.studentId),
       getSubjectIBContext(params.subjectId),
     ]);
     const outcome = await ensureCanonicalProvePrepared({
-      ...params,
+      studentId: params.studentId,
+      subjectId: params.subjectId,
+      conceptId: params.conceptId,
+      decision: params.decision,
       language,
       ibContext,
       guidance: CANONICAL_PROVE_GENERATION_CONFIG.guidance,

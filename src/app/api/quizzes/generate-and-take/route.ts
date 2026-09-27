@@ -44,6 +44,7 @@ import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { CANONICAL_PROVE_GENERATION_CONFIG } from '@/lib/quiz/canonical-prove-config';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
+import { decisionMayNeedProvePreparation, keepCanonicalProvePrepared } from '@/services/prove-preparation-trigger.service';
 import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
@@ -73,7 +74,6 @@ import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-gradi
 import { toCanonicalErrorCode, type CanonicalErrorCode } from '@/lib/pedagogical-decision/canonical-error-taxonomy';
 import { classifyProveRetainGenerationFailure, classifyTransferGenerationFailure } from '@/lib/lx/canonical-generation-failure-classifier';
 import {
-  prepareCanonicalProveActivity,
   findActivePreparedActivity,
   revalidatePreparedActivity,
   consumePreparedActivity,
@@ -129,7 +129,6 @@ import {
   checkV1ActivityContractCompliance,
   getCanonicalPedagogicalDecision,
   CanonicalDecisionUnavailableError,
-  resolveAuthorizedItemCount,
   type CanonicalDecisionResult,
 } from '@/lib/pedagogical-decision';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -2517,36 +2516,21 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // `prepareCanonicalProveActivity` itself (Part 14) and can never
         // surface here or affect this response, which has already
         // returned by the time it could.
-        if (fresh.decision.stage === 'PROVE' && fresh.decision.actionState === 'EXECUTABLE' && fresh.decision.activityContract) {
-          const contract = fresh.decision.activityContract;
-          const authorizedItemCount = resolveAuthorizedItemCount(contract.itemCount);
-          if (authorizedItemCount != null && contract.minimumScorePercent != null) {
-            const preparedContract: PreparedActivityContractSnapshot = {
-              canonicalActivityType: contract.activityType,
-              itemCount: { min: contract.itemCount!.min, max: contract.itemCount!.max, authorized: authorizedItemCount },
-              difficulty: { min: contract.difficulty.min, max: contract.difficulty.max, target: contract.difficulty.target },
-              independence: contract.independence,
-              supportLevel: contract.supportLevel,
-              minimumScorePercent: contract.minimumScorePercent,
-            };
-            after(() =>
-              prepareCanonicalProveActivity({
-                studentId: validated.studentId,
-                conceptId: quizSession.conceptId!,
-                subjectId: quizSession.subjectId,
-                pedagogicalPolicyVersion: fresh.decision.policyVersion,
-                canonicalRevision: fresh.decision.canonicalRevision,
-                contract: preparedContract,
-                language: quizSession.language,
-                // Reuses the SAME guidance string canonical_prove's own
-                // live generation uses (QUIZ_MODE_CONFIG) -- never a
-                // second, drifted copy.
-                guidance: QUIZ_MODE_CONFIG.canonical_prove.guidance,
-                visualAidRate: QUIZ_MODE_CONFIG.canonical_prove.visualAidRate,
-                ibContext: null,
-              }).catch((err) => console.error('[canon-r6-perf-r2] background Prove preparation failed:', err)),
-            );
-          }
+        // PROVE_GENERATION_PERFORMANCE: the ONE preparation trigger (same
+        // contract snapshot, shared Prove guidance, real IB/DP/HL context,
+        // dedup/TTL in the service), in the language of the session the
+        // learner just completed.
+        if (decisionMayNeedProvePreparation(fresh.decision)) {
+          const proveDecision = fresh.decision;
+          after(() =>
+            keepCanonicalProvePrepared({
+              studentId: validated.studentId,
+              subjectId: quizSession.subjectId,
+              conceptId: quizSession.conceptId!,
+              decision: proveDecision,
+              language: quizSession.language,
+            }),
+          );
         }
       } catch (error) {
         if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
