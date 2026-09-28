@@ -48,8 +48,7 @@ import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogi
 import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 import { recordQuizResponses } from '@/services/quiz-response-audit.service';
 import { DELIVERY_QUIZ_MODES } from '@/lib/activity-delivery/contract';
-import { deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
-import { loadAcademicContext } from '@/services/activity-delivery-context.service';
+import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
 import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
@@ -489,8 +488,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     const language = isLocale(validated.language)
       ? validated.language
       : await resolveLanguageForSubject(validated.subjectId, validated.studentId);
-    const ibContext = await getSubjectIBContext(validated.subjectId);
-
     const config = QUIZ_MODE_CONFIG[validated.quizMode];
 
     // LEARNING_ACTIVITY_DELIVERY -- a canonical activity is DELIVERED, not
@@ -502,27 +499,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // until its session exists). See docs/architecture/ACTIVITY_DELIVERY.md.
     const deliveryActivityType = DELIVERY_QUIZ_MODES[validated.quizMode];
     if (deliveryActivityType && v1Marker && validated.conceptId) {
-      const academic = await loadAcademicContext(validated.studentId, validated.subjectId);
-      const deliveryInput: DeliveryInput = {
-        studentId: validated.studentId,
-        subjectId: validated.subjectId,
-        conceptId: validated.conceptId,
-        quizMode: validated.quizMode,
-        activityType: deliveryActivityType,
-        academic,
-        v1Marker,
-        canonicalRevision: v1Marker.canonicalRevision,
-        contract: {
-          conceptId: validated.conceptId,
-          activityType: deliveryActivityType,
-          language,
-          academic,
-          difficulty: v1Marker.difficulty,
-          itemCount: v1Marker.itemCount?.authorized ?? Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax)),
-          independence: v1Marker.independence,
-          policyVersion: v1Marker.pedagogicalPolicyVersion,
-        },
-      };
+      const deliveryInput = await buildDeliveryInput({
+        studentId: validated.studentId, subjectId: validated.subjectId, conceptId: validated.conceptId, quizMode: validated.quizMode,
+        activityType: deliveryActivityType, v1Marker, language,
+        itemCount: v1Marker.itemCount?.authorized ?? Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax)),
+      });
       const delivery = await deliverCanonicalActivity(deliveryInput);
       if (delivery.status === 'DELIVERED') {
         logActivityLaunch({
@@ -537,7 +518,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             quizMode: validated.quizMode,
             maxQuestions: delivery.questions.length,
             countAuthority: { status: 'EXECUTION_DEFAULT' },
-            ibProgramme: ibContext?.programme || 'none',
+            ibProgramme: deliveryInput.academic.programme ?? 'none',
             delivery: { source: delivery.source },
             ...(delivery.source === 'RESUMED' ? { resumed: true } : {}),
             quiz: {
@@ -551,6 +532,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       emergencyLaunch = { lock: delivery.lock, input: deliveryInput, authorizationMs };
       console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
     }
+
+    // Only the generation path below needs the IB context -- a delivered launch never pays this read.
+    const ibContext = await getSubjectIBContext(validated.subjectId);
 
     // Diagnostic Check is always short (2-4 questions) regardless of what was requested -- it's a targeted check, not a full quiz.
     // quick_check is always exactly 6 (STABILIZATION QUIZ PERFORMANCE Step 9): its dedicated

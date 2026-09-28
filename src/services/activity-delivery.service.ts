@@ -31,7 +31,7 @@ import {
   type DeliveryActivityType,
 } from '@/lib/activity-delivery/contract';
 import { storeQuiz, findResumableCanonicalSession, type QuizMode, type QuizSessionV1Marker } from '@/services/quiz-persistence.service';
-import { loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
+import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { consumeCompatibleInventory, linkConsumedActivity, reservedCandidateIds } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
@@ -99,9 +99,47 @@ function scheduleReplenishment(input: Pick<DeliveryInput, 'studentId' | 'subject
     // after the response: the learner never waits for replenishment
     after(() => scheduleDeliveryReplenishment(target, { language }).catch(() => {}));
   } catch {
-    // outside a request scope (scripts / benchmark): queue only, no inline worker
-    void scheduleDeliveryReplenishment(target, { language, kickWorker: false }).catch(() => {});
+    // outside a request scope (scripts / benchmark): queue only
+    void scheduleDeliveryReplenishment(target, { language, dispatch: false }).catch(() => {});
   }
+}
+
+/**
+ * The ONE builder of a launch's DeliveryInput (the route and the DEV delivery
+ * benchmark both use it): the activity contract comes from the fresh v1
+ * marker, the academic context from the subject + learner profile.
+ */
+export async function buildDeliveryInput(p: {
+  studentId: string;
+  subjectId: string;
+  conceptId: string;
+  quizMode: QuizMode;
+  activityType: DeliveryActivityType;
+  v1Marker: QuizSessionV1Marker;
+  language: string;
+  itemCount: number;
+}): Promise<DeliveryInput> {
+  const academic = await loadAcademicContext(p.studentId, p.subjectId);
+  return {
+    studentId: p.studentId,
+    subjectId: p.subjectId,
+    conceptId: p.conceptId,
+    quizMode: p.quizMode,
+    activityType: p.activityType,
+    academic,
+    v1Marker: p.v1Marker,
+    canonicalRevision: p.v1Marker.canonicalRevision,
+    contract: {
+      conceptId: p.conceptId,
+      activityType: p.activityType,
+      language: p.language,
+      academic,
+      difficulty: p.v1Marker.difficulty,
+      itemCount: p.itemCount,
+      independence: p.v1Marker.independence,
+      policyVersion: p.v1Marker.pedagogicalPolicyVersion,
+    },
+  };
 }
 
 export async function deliverCanonicalActivity(input: DeliveryInput): Promise<DeliveryResult> {

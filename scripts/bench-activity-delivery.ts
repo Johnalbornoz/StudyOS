@@ -1,65 +1,186 @@
 /**
- * LEARNING_ACTIVITY_DELIVERY benchmark -- reproducible launch-latency and
- * integrity gates, run against the DEV database only (fingerprint-guarded).
+ * LEARNING_ACTIVITY_DELIVERY certification benchmark -- hosted DEV only.
  *
- *   npx tsx --env-file=.env.local scripts/bench-activity-delivery.ts [--runs=3] [--launches=20]
+ *   BENCH_SECRET_FILE=<0600 file with the DEV CRON_SECRET> \
+ *   npx tsx --env-file=.env.local --tsconfig tsconfig.json scripts/bench-activity-delivery.ts \
+ *     [--scenarios=steady,cold,hot,stress] [--runs=3] [--launches=20]
  *
- * Setup (idempotent): one clearly-labelled SYNTHETIC learner
- * (clerk_id 'bench:activity-delivery', email @studyus.invalid) with one
- * concept per canonical stage, placed there by synthetic evidence, and a
- * SYNTHETIC VALIDATED bank (generator 'BENCHMARK_SYNTHETIC') -- no AI calls,
- * no real learner touched.
+ * Every launch runs INSIDE the hosted DEV runtime, through the DEV-only
+ * endpoint POST /api/internal/delivery-bench (the route's own launch path),
+ * so the SLO gates use server-side latency; laptop -> Vercel round trips are
+ * reported apart as E2E. There is no local worker: DEV replenishes itself
+ * (after() -> dispatch -> worker endpoint in its own invocation).
  *
- * Each launch runs the route's hot path in-process: canonical authorization
- * (verifyV1PracticeLaunchMarker -- the real engine decision) -> academic
- * context -> deliverCanonicalActivity (resume / inventory / bank / session).
- * Clerk session verification (network to Clerk) is outside this process
- * and not measured. TRANSFER cannot be authorized from real evidence today
- * (RETAIN evidence is never marked novel -- see the report), so its launches
- * use the real decision call for timing plus a synthetic TRANSFER contract.
- * Between launches the session is abandoned (status 'expired', no evidence),
- * and on odd launches the background worker prepares inventory first, so
- * both the INVENTORY and the BANK paths are measured.
+ * The laptop only administers the ONE synthetic learner
+ * (clerk_id 'bench:activity-delivery', email @studyus.invalid) through the
+ * DEV database (fingerprint-guarded): idempotent setup, resets, controlled
+ * drains and read-only verification. No real learner is ever touched.
  *
- * Gates: HOT_PATH_AI_CALLS = 0, P95 < 2 s, P99 < 5 s,
- * DUPLICATE_ACTIVE_SESSIONS = 0, FAILED_LAUNCHES = 0.
+ * Scenarios (certification = STEADY, COLD, HOT; STRESS = capacity only):
+ *   STEADY  realistic cadence (itemCount x 20 s per learner), empty bank at
+ *           start, filled and kept only by the real worker. Hard gates.
+ *   COLD    controlled drain -> EMERGENCY_REQUIRED (0 AI) -> queued ->
+ *           worker -> READY -> next launch served. Hard architecture gate.
+ *   HOT     synthetic deep bank, 3 x 100 launches + double-click pairs.
+ *   STRESS  STEADY at a launch every 30 s. Reported, not gated -- except the
+ *           invariants that must hold even under stress.
+ *
+ * AI quota guard (DEV's limit is global, shared with E2E testing): before
+ * each scenario remaining_daily must be >= estimate + 1000; during it the
+ * per-minute counter is watched (AI_RATE_LIMIT_PRESSURE) and the scenario
+ * stops if fewer than 1000 daily calls would remain.
  */
 import { createHash } from 'crypto';
-import { readFileSync, rmSync, writeFileSync } from 'fs';
-import { spawn } from 'child_process';
-import { tmpdir } from 'os';
+import { execFileSync } from 'child_process';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { db } from '@/lib/db';
-import { verifyV1PracticeLaunchMarker, getCanonicalPedagogicalDecision } from '@/lib/pedagogical-decision';
-import { runWithAiMetrics, currentAiCallCount } from '@/lib/ai/request-metrics';
-import { deliverCanonicalActivity, type DeliveryInput } from '@/services/activity-delivery.service';
+import { verifyV1PracticeLaunchMarker } from '@/lib/pedagogical-decision';
 import { loadAcademicContext } from '@/services/activity-delivery-context.service';
 import { addValidatedCandidates } from '@/services/question-bank.service';
-import { runGenerationWorker, type JobHandler } from '@/services/generation-queue.service';
-import { prepareInventoryHandler, runDeliveryWorker, scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
-import { STAGE_FOR_ACTIVITY, inventoryTarget, SPARE_ASSEMBLABLE_SETS, type ActivityContract } from '@/lib/activity-delivery/contract';
 import { countSpareSets } from '@/services/activity-assembly.service';
 import { reservedCandidateIds } from '@/services/activity-inventory.service';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
-import type { DeliveryActivityType, AcademicContext } from '@/lib/activity-delivery/contract';
-import { QUIZ_MODE_FOR_ACTIVITY } from '@/lib/activity-delivery/contract';
-import type { QuizMode, QuizSessionV1Marker } from '@/services/quiz-persistence.service';
+import {
+  QUIZ_MODE_FOR_ACTIVITY, SPARE_ASSEMBLABLE_SETS, STAGE_FOR_ACTIVITY, inventoryTarget,
+  type AcademicContext, type ActivityContract, type DeliveryActivityType,
+} from '@/lib/activity-delivery/contract';
+import type { QuizMode } from '@/services/quiz-persistence.service';
 
 const DEV_FINGERPRINT = '2a29b99ee14a22b4';
-const arg = (name: string, dflt: number) => Number(process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? dflt);
-const RUNS = arg('runs', 3);
-const LAUNCHES = arg('launches', 20);
+const BASE_URL = process.env.BENCH_BASE_URL ?? 'https://study-os-env-dev-study-so.vercel.app';
+const argv = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
+const num = (name: string, dflt: number) => Number(argv(name) ?? dflt);
+const RUNS = num('runs', 3);
+const LAUNCHES = num('launches', 20);
+const SECONDS_PER_ITEM = num('secondsPerItem', 20);
+const STRESS_THINK_S = num('stressThink', 30);
+const COLD_REPS = num('coldReps', 2);
 const DOUBLE_CLICK_PAIRS = 5;
 const TYPES: DeliveryActivityType[] = ['LEARN_CHECK', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'];
 const LANGUAGE = 'es';
+const QUOTA_RESERVE = 1000;
+/** Upper estimates of AI calls per scenario (from earlier DEV runs), for the pre-scenario quota check. */
+const QUOTA_ESTIMATE: Record<string, number> = { steady: 1500, cold: 700, hot: 300, stress: 1600 };
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function assertDev() {
+function assertDevDatabase() {
   const url = new URL(process.env.DATABASE_URL!);
   const fp = createHash('sha256').update(`${url.hostname}|${url.pathname.slice(1)}`).digest('hex').slice(0, 16);
   if (fp !== DEV_FINGERPRINT) throw new Error(`Refusing to run: database fingerprint ${fp} is not DEV`);
+  return fp;
 }
 
-// ---------------------------------------------------------------- setup
+// ================================================================ hosted client
+/** The project's automation bypass for Deployment Protection, read through the Vercel CLI into memory only. */
+function protectionBypassSecret(): string {
+  const project = JSON.parse(readFileSync('.vercel/project.json', 'utf-8'));
+  const out = execFileSync('npx', ['-y', 'vercel@latest', 'api', `/v9/projects/${project.projectId}?teamId=${project.orgId}`], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const entry = Object.entries(JSON.parse(out).protectionBypass ?? {}).find(([, v]: any) => v?.scope === 'automation-bypass');
+  if (!entry) throw new Error('no automation bypass configured for the project');
+  return entry[0];
+}
+
+class Hosted {
+  private headers: Record<string, string>;
+  constructor(secret: string, bypass: string) {
+    this.headers = { authorization: `Bearer ${secret}`, 'x-vercel-protection-bypass': bypass, 'content-type': 'application/json' };
+  }
+  async post(body: Record<string, unknown>): Promise<{ status: number; json: any; e2eMs: number }> {
+    const t0 = Date.now();
+    const res = await fetch(`${BASE_URL}/api/internal/delivery-bench`, { method: 'POST', headers: this.headers, body: JSON.stringify(body) });
+    const json = await res.json().catch(() => null);
+    return { status: res.status, json, e2eMs: Date.now() - t0 };
+  }
+}
+
+let hosted: Hosted;
+
+interface LaunchSample {
+  type: DeliveryActivityType; at: number; serverMs: number; e2eMs: number; source: string; aiCalls: number; quizId: string | null;
+  authorizeMs: number; decisionMs: number; timings: Record<string, number>; readyBefore?: number; error?: string;
+}
+
+async function launch(ctx: { conceptId: string; type: DeliveryActivityType; syntheticTransfer?: boolean }): Promise<LaunchSample> {
+  const at = Date.now();
+  try {
+    const r = await hosted.post({ action: 'launch', conceptId: ctx.conceptId, activityType: ctx.type, language: LANGUAGE, ...(ctx.syntheticTransfer ? { syntheticTransferContract: true } : {}) });
+    const j = r.json ?? {};
+    if (r.status !== 200 || !j.status) return { type: ctx.type, at, serverMs: 0, e2eMs: r.e2eMs, source: 'FAILED', aiCalls: 0, quizId: null, authorizeMs: 0, decisionMs: 0, timings: {}, error: `HTTP_${r.status}:${j.error ?? ''}` };
+    if (j.status === 'NOT_AUTHORIZED_FOR_STAGE') return { type: ctx.type, at, serverMs: j.totalMs, e2eMs: r.e2eMs, source: 'FAILED', aiCalls: 0, quizId: null, authorizeMs: j.authorizeMs, decisionMs: j.decisionMs, timings: {}, error: 'NOT_AUTHORIZED_FOR_STAGE' };
+    return {
+      type: ctx.type, at, serverMs: j.totalMs, e2eMs: r.e2eMs, source: j.source, aiCalls: j.aiCalls, quizId: j.quizId,
+      authorizeMs: j.authorizeMs, decisionMs: j.decisionMs, timings: j.timings ?? {}, ...(j.status === 'EMERGENCY_REQUIRED' ? { error: 'BANK_SHORT' } : {}),
+    };
+  } catch (error) {
+    return { type: ctx.type, at, serverMs: 0, e2eMs: Date.now() - at, source: 'FAILED', aiCalls: 0, quizId: null, authorizeMs: 0, decisionMs: 0, timings: {}, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+const abandon = async (quizId: string | null) => { if (quizId) await hosted.post({ action: 'abandon', quizId }); };
+const replenish = (conceptId: string) => hosted.post({ action: 'replenish', conceptId, language: LANGUAGE });
+
+// ================================================================ AI quota guard
+interface Quota { perDay: number; perMinute: number; dayCalls: number; minuteCalls: number; remaining: number; openJobs: number }
+async function quota(): Promise<Quota & { commitSha: string | null; region: string | null }> {
+  const r = await hosted.post({ action: 'status' });
+  if (r.status !== 200) throw new Error(`status endpoint HTTP ${r.status}`);
+  const { aiLimits, aiUsage, openJobs, commitSha, region } = r.json;
+  const now = new Date(aiUsage?.now ?? Date.now());
+  const today = now.toISOString().slice(0, 10);
+  const dayCalls = aiUsage && new Date(aiUsage.day_start).toISOString().slice(0, 10) === today ? aiUsage.day_calls : 0;
+  const minuteCalls = aiUsage && Math.floor(new Date(aiUsage.minute_start).getTime() / 60_000) === Math.floor(now.getTime() / 60_000) ? aiUsage.minute_calls : 0;
+  return {
+    perDay: aiLimits.perDay, perMinute: aiLimits.perMinute, dayCalls, minuteCalls, remaining: aiLimits.perDay - dayCalls,
+    openJobs: (openJobs as Array<{ n: number }>).reduce((n, j) => n + j.n, 0), commitSha, region,
+  };
+}
+
+class QuotaWatch {
+  peakPerMinute = 0; pressureEvents: Array<{ at: string; minuteCalls: number }> = []; maxOpenJobs = 0; aborted: string | null = null;
+  private stop = false; private done: Promise<void>;
+  constructor() {
+    this.done = (async () => {
+      while (!this.stop) {
+        try {
+          const q = await quota();
+          this.peakPerMinute = Math.max(this.peakPerMinute, q.minuteCalls);
+          this.maxOpenJobs = Math.max(this.maxOpenJobs, q.openJobs);
+          if (q.minuteCalls >= 0.9 * q.perMinute) this.pressureEvents.push({ at: new Date().toISOString(), minuteCalls: q.minuteCalls });
+          if (q.remaining < QUOTA_RESERVE && !this.aborted) this.aborted = `daily AI quota below reserve (${q.remaining} left)`;
+        } catch { /* a missed sample is not a failure */ }
+        await sleep(15_000);
+      }
+    })();
+  }
+  async end() { this.stop = true; await this.done; }
+}
+
+class QuotaPause extends Error {}
+async function guardQuota(scenario: string) {
+  const q = await quota();
+  const need = QUOTA_ESTIMATE[scenario] + QUOTA_RESERVE;
+  console.log(`[bench] quota before ${scenario}: ${q.dayCalls}/${q.perDay} used today, ${q.remaining} left, needs ${need}`);
+  if (q.remaining < need) throw new QuotaPause(`PAUSED before ${scenario}: remaining_daily ${q.remaining} < estimate ${QUOTA_ESTIMATE[scenario]} + reserve ${QUOTA_RESERVE}`);
+  return q;
+}
+
+/** AI usage attributable to the benchmark learner (every executeAI call is audited with its student). */
+async function benchAiUsage(studentId: string, since: Date) {
+  const r = await db.query(
+    `SELECT count(*)::int AS calls,
+            count(*) FILTER (WHERE status = 'FAILURE')::int AS failures,
+            count(*) FILTER (WHERE error_code = 'RATE_LIMIT')::int AS rate_limited,
+            COALESCE(sum(duration_ms), 0)::bigint AS provider_ms,
+            array_remove(array_agg(DISTINCT model), NULL) AS models
+       FROM ai_execution_events WHERE student_id = $1 AND created_at >= $2`, [studentId, since]);
+  const jobErrors = await db.query(
+    `SELECT count(*) FILTER (WHERE last_error ILIKE '%rate%')::int AS rate_limited_jobs, count(*) FILTER (WHERE status = 'FAILED')::int AS failed_jobs
+       FROM generation_jobs WHERE payload->>'studentId' = $1 AND created_at >= $2`, [studentId, since]);
+  const row = r.rows[0];
+  return { calls: row.calls, failures: row.failures, rateLimitedCalls: row.rate_limited, providerMs: Number(row.provider_ms), models: row.models ?? [], ...jobErrors.rows[0] };
+}
+
+// ================================================================ synthetic learner (DEV DB, bench learner only)
 async function ensureLearner(): Promise<{ studentId: string; subjectId: string; concepts: Record<DeliveryActivityType, string> }> {
   const clerkId = 'bench:activity-delivery';
   let s = await db.query(`SELECT id FROM students WHERE clerk_id = $1`, [clerkId]);
@@ -108,6 +229,7 @@ async function ensureStageEvidence(studentId: string, subjectId: string, concept
   }
 }
 
+// HOT only: a deep SYNTHETIC validated bank, created once before the runs and never topped up during them.
 const NOUNS = ['lumina', 'quarzo', 'brisal', 'tenzor', 'murela', 'vorkan', 'selpa', 'drimon', 'kaltor', 'fenix', 'orbel', 'praxa', 'zuleto', 'maribo', 'cantel', 'grevo', 'hudra', 'istel', 'jorva', 'lirpo'];
 function syntheticQuestion(conceptId: string, t: DeliveryActivityType, i: number, difficulty: number): any {
   const a = NOUNS[i % NOUNS.length] + String.fromCharCode(97 + ((i / NOUNS.length) | 0) % 26) + (i / 520 | 0);
@@ -128,14 +250,13 @@ function syntheticQuestion(conceptId: string, t: DeliveryActivityType, i: number
   return { ...base, type: ['numeric_problem', 'short_answer', 'justification'][i % 3] };
 }
 
-async function ensureBank(studentId: string, subjectId: string, concepts: Record<DeliveryActivityType, string>, academic: AcademicContext, contracts: Record<DeliveryActivityType, { difficulty: { min: number; max: number; target: number }; itemCount: number }>) {
+async function ensureSyntheticBank(studentId: string, concepts: Record<DeliveryActivityType, string>, academic: AcademicContext, contracts: Record<DeliveryActivityType, { difficulty: { min: number; max: number; target: number }; itemCount: number }>) {
   for (const t of TYPES) {
     const conceptId = concepts[t];
-    const perLaunch = contracts[t].itemCount;
-    // enough NEVER-DELIVERED candidates for every launch + double click + the READY sets the worker reserves
-    const need = (RUNS * LAUNCHES + DOUBLE_CLICK_PAIRS * RUNS + 10) * perLaunch;
+    // every launch + double click + the READY sets and spare sets the worker keeps
+    const need = (RUNS * LAUNCHES + DOUBLE_CLICK_PAIRS * RUNS + 10) * contracts[t].itemCount;
     const undelivered = (await db.query(
-      `SELECT count(*)::int n FROM question_bank_candidates c WHERE c.concept_id = $1 AND c.activity_type = $2 AND c.generator_model = 'BENCHMARK_SYNTHETIC'
+      `SELECT count(*)::int n FROM question_bank_candidates c WHERE c.concept_id = $1 AND c.activity_type = $2 AND c.generator_model = 'BENCHMARK_SYNTHETIC' AND c.validation_status = 'VALIDATED'
          AND NOT EXISTS (SELECT 1 FROM question_bank_deliveries d WHERE d.candidate_id = c.id)`, [conceptId, t])).rows[0].n;
     if (undelivered >= need) continue;
     const total = (await db.query(`SELECT count(*)::int n FROM question_bank_candidates WHERE concept_id = $1 AND activity_type = $2 AND generator_model = 'BENCHMARK_SYNTHETIC'`, [conceptId, t])).rows[0].n;
@@ -148,191 +269,15 @@ async function ensureBank(studentId: string, subjectId: string, concepts: Record
       studentId, conceptId, activityType: t, language: LANGUAGE, academic,
       generator: { provider: null, model: 'BENCHMARK_SYNTHETIC', promptId: null, promptVersion: 'bench-v1', operationId: null },
     });
-    console.log(`[bench] bank ${t}: +${need - undelivered} synthetic candidates (${need} undelivered)`);
+    console.log(`[bench] hot bank ${t}: +${need - undelivered} synthetic candidates`);
   }
 }
 
-// ---------------------------------------------------------------- launch
-interface LaunchSample { type: DeliveryActivityType; ms: number; source: string; aiCalls: number; authMs: number; decisionMs: number; timings: Record<string, number>; quizId: string | null; error?: string }
-
-const TRANSFER_MARKER = (policyVersion: string, canonicalRevision: string): QuizSessionV1Marker => ({
-  pedagogicalPolicyVersion: policyVersion as never, canonicalRevision, canonicalStage: 'TRANSFER' as never, canonicalActivityType: 'TRANSFER' as never,
-  itemCount: { min: 3, max: 3, authorized: 3 }, difficulty: { min: 4, max: 5, target: 4 }, assistanceAllowed: false, independence: true,
-  supportLevel: 'NONE', minimumScorePercent: 80,
-});
-
-async function launchOnce(ctx: { studentId: string; subjectId: string; conceptId: string; type: DeliveryActivityType; academic: AcademicContext; realTransfer?: boolean }): Promise<LaunchSample> {
-  const quizMode = QUIZ_MODE_FOR_ACTIVITY[ctx.type] as QuizMode;
-  return runWithAiMetrics(`BENCH launch ${ctx.type}`, async () => {
-    const t0 = Date.now();
-    try {
-      // authorization: the ownership read the route performs (Clerk session verification is outside this process)
-      await db.query(`SELECT id FROM students WHERE id = $1`, [ctx.studentId]);
-      const authMs = Date.now() - t0;
-      const t1 = Date.now();
-      let marker: QuizSessionV1Marker | null;
-      if (ctx.type === 'TRANSFER' && !ctx.realTransfer) {
-        const { decision } = await getCanonicalPedagogicalDecision({ studentId: ctx.studentId, conceptId: ctx.conceptId });
-        marker = TRANSFER_MARKER(decision.policyVersion, decision.canonicalRevision);
-      } else {
-        marker = (await verifyV1PracticeLaunchMarker({ studentId: ctx.studentId, conceptId: ctx.conceptId })) as QuizSessionV1Marker | null;
-      }
-      const decisionMs = Date.now() - t1;
-      if (!marker) throw new Error('NOT_AUTHORIZED_FOR_STAGE');
-      const input: DeliveryInput = {
-        studentId: ctx.studentId, subjectId: ctx.subjectId, conceptId: ctx.conceptId, quizMode, activityType: ctx.type, academic: ctx.academic,
-        v1Marker: marker, canonicalRevision: marker.canonicalRevision,
-        contract: {
-          conceptId: ctx.conceptId, activityType: ctx.type, language: LANGUAGE, academic: ctx.academic, difficulty: marker.difficulty,
-          itemCount: marker.itemCount?.authorized ?? QUIZ_MODE_CONFIG[quizMode].defaultMax, independence: marker.independence, policyVersion: marker.pedagogicalPolicyVersion,
-        },
-      };
-      const r = await deliverCanonicalActivity(input);
-      const ai = currentAiCallCount();
-      if (r.status !== 'DELIVERED') {
-        await r.lock.release();
-        return { type: ctx.type, ms: Date.now() - t0, source: 'EMERGENCY_REQUIRED', aiCalls: ai.executions + ai.providerCalls, authMs, decisionMs, timings: r.timings as never, quizId: null, error: 'BANK_SHORT' };
-      }
-      return { type: ctx.type, ms: Date.now() - t0, source: r.source, aiCalls: ai.executions + ai.providerCalls, authMs, decisionMs, timings: r.timings as never, quizId: r.quizId };
-    } catch (error) {
-      const ai = currentAiCallCount();
-      return { type: ctx.type, ms: Date.now() - t0, source: 'FAILED', aiCalls: ai.executions + ai.providerCalls, authMs: 0, decisionMs: 0, timings: {}, quizId: null, error: error instanceof Error ? error.message : String(error) };
-    }
-  });
-}
-
-const abandon = (quizId: string | null) => (quizId ? db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE id = $1`, [quizId]) : Promise.resolve());
-const skipBankJobs: JobHandler = async () => ({ ok: true, result: { skipped: 'benchmark: synthetic bank, no AI generation' } });
-
-async function activeDuplicates(studentId: string): Promise<number> {
-  const r = await db.query(
-    `SELECT count(*)::int n FROM (
-       SELECT concept_id, quiz_mode FROM quiz_sessions WHERE student_id = $1 AND status = 'active' AND expires_at > now()
-       GROUP BY concept_id, quiz_mode HAVING count(*) > 1) d`,
-    [studentId],
-  );
-  return r.rows[0].n;
-}
-
-const pct = (xs: number[], p: number) => {
-  if (!xs.length) return 0;
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)];
-};
-
-async function runHot() {
-  const { studentId, subjectId, concepts } = await ensureLearner();
-  await ensureStageEvidence(studentId, subjectId, concepts);
-  const academic = await loadAcademicContext(studentId, subjectId);
-
-  // contracts per stage from the real engine (TRANSFER: synthetic, see header)
-  const contracts = {} as Record<DeliveryActivityType, { difficulty: { min: number; max: number; target: number }; itemCount: number }>;
-  for (const t of TYPES) {
-    if (t === 'TRANSFER') { contracts[t] = { difficulty: { min: 4, max: 5, target: 4 }, itemCount: 3 }; continue; }
-    const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
-    if (!m) throw new Error(`synthetic concept for ${t} is not at that stage`);
-    const quizMode = QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode;
-    contracts[t] = { difficulty: m.difficulty, itemCount: m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[quizMode].defaultMax };
-  }
-  await ensureBank(studentId, subjectId, concepts, academic, contracts);
-  // start clean: no open sessions / queue jobs from earlier runs
-  await resetBenchLearner(studentId);
-
-  const all: LaunchSample[] = [];
-  const runsReport: any[] = [];
-  let doubleClickMismatches = 0;
-  const mismatchDetails: Array<Record<string, unknown>> = [];
-  let maxActiveDuplicates = 0;
-  for (let run = 1; run <= RUNS; run++) {
-    const samples: LaunchSample[] = [];
-    for (const t of TYPES) {
-      const ctx = { studentId, subjectId, conceptId: concepts[t], type: t, academic };
-      for (let i = 0; i < LAUNCHES; i++) {
-        if (i % 2 === 1) {
-          // background replenishment between launches (not timed): the worker prepares READY inventory
-          await runGenerationWorker({ PREPARE_INVENTORY: prepareInventoryHandler, BANK_REPLENISH: skipBankJobs }, { onlyStudentId: studentId, maxJobs: 10, concurrency: 2 });
-        }
-        const s = await launchOnce(ctx);
-        samples.push(s);
-        await abandon(s.quizId);
-      }
-      // idempotency: concurrent double clicks must yield ONE session
-      for (let k = 0; k < DOUBLE_CLICK_PAIRS; k++) {
-        const [a, b] = await Promise.all([launchOnce(ctx), launchOnce(ctx)]);
-        if (!a.quizId || a.quizId !== b.quizId) {
-          doubleClickMismatches++;
-          mismatchDetails.push({ run, type: t, a: { source: a.source, quizId: a.quizId, error: a.error ?? null }, b: { source: b.source, quizId: b.quizId, error: b.error ?? null } });
-        }
-        maxActiveDuplicates = Math.max(maxActiveDuplicates, await activeDuplicates(studentId));
-        await abandon(a.quizId);
-        if (b.quizId !== a.quizId) await abandon(b.quizId);
-      }
-    }
-    all.push(...samples);
-    runsReport.push({ run, ...summarize(samples) });
-    console.log(`[bench] run ${run}/${RUNS} done`);
-  }
-
-  const report = {
-    environment: 'DEV (Neon) from a local runner -- includes laptop->Neon network latency',
-    runs: RUNS, launchesPerTypePerRun: LAUNCHES, doubleClickPairsPerTypePerRun: DOUBLE_CLICK_PAIRS,
-    perRun: runsReport,
-    aggregate: summarize(all),
-    idempotency: { doubleClickMismatches, maxActiveDuplicateSessions: maxActiveDuplicates, mismatchDetails },
-  };
-  const gates = {
-    HOT_PATH_AI_CALLS: all.reduce((n, s) => n + s.aiCalls, 0),
-    P95_LAUNCH_MS: pct(all.filter((s) => s.quizId).map((s) => s.ms), 95),
-    P99_LAUNCH_MS: pct(all.filter((s) => s.quizId).map((s) => s.ms), 99),
-    DUPLICATE_ACTIVE_SESSIONS: maxActiveDuplicates + doubleClickMismatches,
-    FAILED_LAUNCHES: all.filter((s) => !s.quizId).length,
-  };
-  const pass = gates.HOT_PATH_AI_CALLS === 0 && gates.P95_LAUNCH_MS < 2000 && gates.P99_LAUNCH_MS < 5000 && gates.DUPLICATE_ACTIVE_SESSIONS === 0 && gates.FAILED_LAUNCHES === 0;
-  const out = { ...report, gates, verdict: pass ? 'PASS' : 'FAIL', generatedAt: new Date().toISOString() };
-  console.log(JSON.stringify({ scenario: 'HOT', gates, verdict: out.verdict, aggregate: out.aggregate.byType }, null, 1));
-  return { scenario: 'HOT', ...out };
-}
-
-function summarize(samples: LaunchSample[]) {
-  const byType: Record<string, any> = {};
-  for (const t of TYPES) {
-    const xs = samples.filter((s) => s.type === t);
-    const ok = xs.filter((s) => s.quizId);
-    const ms = ok.map((s) => s.ms);
-    const count = (src: string) => xs.filter((s) => s.source === src).length;
-    const avg = (f: (s: LaunchSample) => number) => (ok.length ? Math.round(ok.reduce((n, s) => n + f(s), 0) / ok.length) : 0);
-    byType[t] = {
-      launches: xs.length,
-      p50: pct(ms, 50), p95: pct(ms, 95), p99: pct(ms, 99), max: ms.length ? Math.max(...ms) : 0,
-      inventoryHitRate: xs.length ? +(count('INVENTORY') / xs.length).toFixed(2) : 0,
-      bankAssemblyRate: xs.length ? +(count('BANK') / xs.length).toFixed(2) : 0,
-      resumed: count('RESUMED'),
-      emergencyColdMisses: count('EMERGENCY_REQUIRED'),
-      aiCallsInHotPath: xs.reduce((n, s) => n + s.aiCalls, 0),
-      failedLaunches: xs.filter((s) => !s.quizId).length,
-      avgStageMs: {
-        authorization: avg((s) => s.authMs), decision: avg((s) => s.decisionMs), lock: avg((s) => s.timings.lockMs ?? 0), resume: avg((s) => s.timings.resumeMs ?? 0),
-        inventory: avg((s) => s.timings.inventoryMs ?? 0), bank: avg((s) => s.timings.bankMs ?? 0), session: avg((s) => s.timings.sessionMs ?? 0),
-      },
-      errors: [...new Set(xs.filter((s) => s.error).map((s) => s.error))],
-    };
-  }
-  return { byType };
-}
-
-// ================================================================ STEADY STATE / COLD MISS
-// A second, REAL subject of the same synthetic learner: real concept labels,
-// an EMPTY bank at first creation, and every candidate produced by the REAL
-// background worker (BANK_REPLENISH -> certified generators, real AI). The
-// benchmark never inserts or tops up candidates here. TRANSFER is reached
-// through the real engine: the synthetic RETAIN evidence carries the
-// submit-time `novel` stamp a certified attempt receives.
+// STEADY / STRESS / COLD: a REAL subject whose bank only the real worker fills.
 const STEADY_TOPICS: Record<DeliveryActivityType, string> = {
   LEARN_CHECK: 'Porcentajes', PRACTICE: 'Proporcionalidad directa', PROVE: 'Ecuaciones lineales',
   RETAIN: 'Área de figuras planas', TRANSFER: 'Regla de tres simple',
 };
-const THINK_MS = arg('think', 30) * 1000;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function ensureSteadySubject(studentId: string) {
   let sub = await db.query(`SELECT id FROM subjects WHERE student_id = $1 AND name = 'Matemáticas'`, [studentId]);
@@ -348,54 +293,45 @@ async function ensureSteadySubject(studentId: string) {
     if (!l.rows[0]) await db.query(`INSERT INTO concept_localizations (concept_id, language, label) VALUES ($1, $2, $3)`, [concepts[t], LANGUAGE, STEADY_TOPICS[t]]);
   }
   await ensureStageEvidence(studentId, subjectId, concepts);
-  // TRANSFER concept: a certified (novel) retention check after the Prove
-  const tc = concepts.TRANSFER;
-  const has = await db.query(`SELECT 1 FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND metadata->>'activityType' = 'RETENTION_CHECK' AND metadata->>'bench' = 'true'`, [studentId, tc]);
+  // TRANSFER concept: a certified retention check after the Prove (the stamp a novel attempt receives)
+  const has = await db.query(`SELECT 1 FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 AND metadata->>'activityType' = 'RETENTION_CHECK' AND metadata->>'bench' = 'true'`, [studentId, concepts.TRANSFER]);
   if (!has.rows[0]) {
     await db.query(
       `INSERT INTO learning_evidence (student_id, concept_id, subject_id, source_type, result, difficulty, "timestamp", learning_mode, hints_used, ai_assistance_type, metadata, score_percent)
        VALUES ($1, $2, $3, 'SOLO_VERIFICATION', 'correct', 3, $4, 'SOLO', 0, 'NONE', $5, 90)`,
-      [studentId, tc, subjectId, daysAgo(1), JSON.stringify({ bench: 'true', activityType: 'RETENTION_CHECK', itemCount: 10, correctCount: 9, novel: 'true' })],
+      [studentId, concepts.TRANSFER, subjectId, daysAgo(1), JSON.stringify({ bench: 'true', activityType: 'RETENTION_CHECK', itemCount: 10, correctCount: 9, novel: 'true' })],
     );
   }
-  // Only types the REAL engine launches are measured. TRANSFER is reported
-  // BLOCKED (not simulated) while retention evidence cannot unlock it.
+  // only types the REAL engine launches are measured; TRANSFER is reported BLOCKED, never simulated
   const types: DeliveryActivityType[] = [];
   const blocked: Record<string, string> = {};
+  const itemCount = {} as Record<DeliveryActivityType, number>;
+  const academic = await loadAcademicContext(studentId, subjectId);
+  const contracts = {} as Record<DeliveryActivityType, ActivityContract>;
   for (const t of TYPES) {
     const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
     const at = m?.canonicalActivityType ?? 'no launchable activity';
-    if (at === ({ LEARN_CHECK: 'LEARN_CHECK', PRACTICE: 'PRACTICE', PROVE: 'PROVE', RETAIN: 'RETENTION_CHECK', TRANSFER: 'TRANSFER' } as const)[t]) types.push(t);
-    else if (t === 'TRANSFER') blocked[t] = `real engine resolves ${at} after a certified retention check (RETAIN evidence is not read as novel yet)`;
-    else throw new Error(`steady concept for ${t} is at ${at} (real engine)`);
-  }
-  return { subjectId, concepts, types, blocked, academic: await loadAcademicContext(studentId, subjectId) };
-}
-
-/** The background worker, as after()/cron drive it: this learner's queue only, AI calls counted apart from launches. */
-function startWorkerLoop(studentId: string) {
-  const stats = { runs: 0, processed: 0, succeeded: 0, retried: 0, failed: 0, backgroundAiCalls: 0, maxOpenDuplicateKeys: 0 };
-  let stop = false;
-  const done = (async () => {
-    while (!stop) {
-      const r = await runWithAiMetrics('BENCH background worker', async () => {
-        const w = await runDeliveryWorker({ onlyStudentId: studentId, maxJobs: 10, concurrency: 5, deadlineMs: 240_000 });
-        const ai = currentAiCallCount();
-        return { w, ai: ai.executions + ai.providerCalls };
-      });
-      stats.runs++; stats.processed += r.w.processed; stats.succeeded += r.w.succeeded; stats.retried += r.w.retried; stats.failed += r.w.failed; stats.backgroundAiCalls += r.ai;
-      const dup = await db.query(`SELECT count(*)::int n FROM (SELECT dedup_key FROM generation_jobs WHERE status IN ('PENDING','RUNNING') GROUP BY dedup_key HAVING count(*) > 1) d`);
-      stats.maxOpenDuplicateKeys = Math.max(stats.maxOpenDuplicateKeys, dup.rows[0].n);
-      if (r.w.processed === 0) await sleep(2000);
+    if (m && at === ({ LEARN_CHECK: 'LEARN_CHECK', PRACTICE: 'PRACTICE', PROVE: 'PROVE', RETAIN: 'RETENTION_CHECK', TRANSFER: 'TRANSFER' } as const)[t]) {
+      types.push(t);
+      itemCount[t] = m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode].defaultMax;
+      contracts[t] = {
+        conceptId: concepts[t], activityType: t, language: LANGUAGE, academic, difficulty: m.difficulty, itemCount: itemCount[t],
+        independence: m.independence, policyVersion: m.pedagogicalPolicyVersion,
+      };
+    } else if (t === 'TRANSFER') {
+      blocked[t] = `real engine resolves ${at} after a certified retention check (RETAIN evidence is not read as novel yet)`;
+    } else {
+      throw new Error(`steady concept for ${t} is at ${at} (real engine)`);
     }
-  })();
-  return { stats, stop: async () => { stop = true; await done; } };
+  }
+  return { subjectId, concepts, types, blocked, itemCount, contracts, academic };
 }
 
 /**
  * Benchmark learner ONLY: close queue jobs an interrupted earlier run left
- * open (their leases would otherwise read as generation in flight), and with
- * `emptyConcepts` start those concepts from an empty bank and no inventory.
+ * open (their leases would read as generation in flight), expire its open
+ * sessions, and with `emptyConcepts` start those concepts from an empty bank
+ * and no inventory.
  */
 async function resetBenchLearner(studentId: string, emptyConcepts: string[] = []) {
   const jobs = await db.query(
@@ -409,240 +345,407 @@ async function resetBenchLearner(studentId: string, emptyConcepts: string[] = []
   console.log(`[bench] reset: ${jobs.rows.length} open jobs closed, ${emptyConcepts.length} concepts emptied`);
 }
 
-type WorkerStats = ReturnType<typeof startWorkerLoop>['stats'];
-
-/** Runs the worker loop in a child process (this script, `--scenario=worker-loop`); stop() returns its stats. */
-function startWorkerProcess(studentId: string) {
-  const statsFile = join(tmpdir(), `bench-worker-${process.pid}-${Date.now()}.json`);
-  const child = spawn('npx', ['tsx', '--tsconfig', 'tsconfig.json', process.argv[1], '--scenario=worker-loop', `--student=${studentId}`, `--stats=${statsFile}`], {
-    env: process.env, stdio: ['ignore', 'inherit', 'inherit'],
-  });
-  const exited = new Promise<void>((resolve) => child.on('exit', () => resolve()));
-  return {
-    async stop(): Promise<WorkerStats> {
-      child.kill('SIGTERM');
-      await exited;
-      const stats = JSON.parse(readFileSync(statsFile, 'utf-8')) as WorkerStats;
-      rmSync(statsFile, { force: true });
-      return stats;
-    },
-  };
-}
-
-/** `--scenario=worker-loop`: the child side of startWorkerProcess. */
-async function runWorkerLoopProcess() {
-  const studentId = process.argv.find((a) => a.startsWith('--student='))!.split('=')[1];
-  const statsFile = process.argv.find((a) => a.startsWith('--stats='))!.split('=')[1];
-  const loop = startWorkerLoop(studentId);
-  const stop = async () => {
-    await loop.stop();
-    writeFileSync(statsFile, JSON.stringify(loop.stats));
-    await db.end?.();
-    process.exit(0);
-  };
-  process.once('SIGTERM', () => void stop());
-  await new Promise(() => {});
-}
-
+// ================================================================ read-only verification
 const readyCount = async (studentId: string, conceptId: string, t: DeliveryActivityType) =>
   (await db.query(`SELECT count(*)::int n FROM canonical_prepared_activity WHERE student_id = $1 AND concept_id = $2 AND stage = $3 AND status = 'READY'`, [studentId, conceptId, STAGE_FOR_ACTIVITY[t]])).rows[0].n as number;
 
-async function waitFor(cond: () => Promise<boolean>, timeoutMs: number): Promise<number | null> {
+const spareSets = async (studentId: string, contract: ActivityContract, academic: AcademicContext) =>
+  countSpareSets({ studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(studentId, contract.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS });
+
+async function waitFor(cond: () => Promise<boolean>, timeoutMs: number, watch?: QuotaWatch): Promise<number | null> {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
+    if (watch?.aborted) return null;
     if (await cond()) return Date.now() - t0;
     await sleep(2000);
   }
   return null;
 }
 
-async function jobsByConcept(studentId: string, since: Date, concepts: Record<DeliveryActivityType, string>) {
+async function activeDuplicates(studentId: string): Promise<number> {
   const r = await db.query(
-    `SELECT payload->>'conceptId' AS concept, kind, status, count(*)::int n FROM generation_jobs
-      WHERE payload->>'studentId' = $1 AND created_at >= $2 GROUP BY 1, 2, 3`,
-    [studentId, since],
-  );
-  const out = {} as Record<DeliveryActivityType, Record<string, number>>;
-  for (const t of TYPES) {
-    out[t] = {};
-    for (const row of r.rows.filter((x) => x.concept === concepts[t])) out[t][`${row.kind}:${row.status}`] = row.n;
-  }
-  return out;
+    `SELECT count(*)::int n FROM (
+       SELECT concept_id, quiz_mode FROM quiz_sessions WHERE student_id = $1 AND status = 'active' AND expires_at > now()
+       GROUP BY concept_id, quiz_mode HAVING count(*) > 1) d`, [studentId]);
+  return r.rows[0].n;
 }
 
-/** Independent-check candidates delivered in more than one session, among those delivered during this scenario. */
-async function integrity(studentId: string, concepts: Record<DeliveryActivityType, string>, since: Date) {
+const evidenceRows = async (studentId: string) => (await db.query(`SELECT count(*)::int n FROM learning_evidence WHERE student_id = $1`, [studentId])).rows[0].n as number;
+
+/** The invariants that must hold in every scenario, stress included. */
+async function invariants(studentId: string, conceptIds: string[], since: Date, evidenceBefore: number) {
   const redelivered = await db.query(
     `SELECT c.activity_type, count(*)::int n FROM (
-       SELECT d.candidate_id FROM question_bank_deliveries d GROUP BY d.candidate_id
-       HAVING count(*) > 1 AND max(d.delivered_at) >= $3) x
+       SELECT d.candidate_id FROM question_bank_deliveries d GROUP BY d.candidate_id HAVING count(*) > 1 AND max(d.delivered_at) >= $3) x
        JOIN question_bank_candidates c ON c.id = x.candidate_id
       WHERE c.student_id = $1 AND c.concept_id = ANY($2::uuid[]) AND c.activity_type IN ('PROVE', 'RETAIN', 'TRANSFER')
-      GROUP BY 1`,
-    [studentId, Object.values(concepts), since],
-  );
+      GROUP BY 1`, [studentId, conceptIds, since]);
   const bankDupes = await db.query(
     `SELECT count(*)::int n FROM (SELECT concept_id, activity_type, language, content_fingerprint FROM question_bank_candidates
-      WHERE student_id = $1 GROUP BY 1, 2, 3, 4 HAVING count(*) > 1) d`,
-    [studentId],
-  );
-  return { independentCandidatesRedelivered: Object.fromEntries(redelivered.rows.map((r) => [r.activity_type, r.n])), duplicateBankContent: bankDupes.rows[0].n };
+      WHERE student_id = $1 GROUP BY 1, 2, 3, 4 HAVING count(*) > 1) d`, [studentId]);
+  // a delivered session must hold exactly its contract's item count
+  const corrupt = await db.query(
+    `SELECT count(*)::int n FROM quiz_sessions
+      WHERE student_id = $1 AND created_at >= $2 AND delivery_source IS NOT NULL
+        AND canonical_activity_contract->'itemCount'->>'authorized' IS NOT NULL
+        AND jsonb_array_length(questions) <> (canonical_activity_contract->'itemCount'->>'authorized')::int`, [studentId, since]);
+  const evidenceAfter = await evidenceRows(studentId);
+  return {
+    DUPLICATE_DELIVERED_ITEMS: redelivered.rows.reduce((n, r) => n + r.n, 0),
+    duplicateDeliveredByType: Object.fromEntries(redelivered.rows.map((r) => [r.activity_type, r.n])),
+    DUPLICATE_BANK_CONTENT: bankDupes.rows[0].n,
+    CORRUPT_SESSIONS: corrupt.rows[0].n,
+    EVIDENCE_WRITTEN_BY_LAUNCHES: evidenceAfter - evidenceBefore,
+  };
 }
 
-async function runSteady() {
-  const { studentId } = await ensureLearner();
-  const { subjectId, concepts, academic, types, blocked } = await ensureSteadySubject(studentId);
-  // from zero: empty bank + no inventory; everything below is produced by the real worker
-  await resetBenchLearner(studentId, Object.values(concepts));
-  const since = new Date();
-  // the background worker runs in its OWN process (own pool, own event loop), as the protected
-  // worker endpoint runs in its own invocation -- launches never share a process with AI generation here
-  const worker = startWorkerProcess(studentId);
-
-  // warm-up: the REAL triggers queue preparation; the REAL worker fills bank + inventory (no seeding)
-  const tWarm = Date.now();
-  for (const t of types) await scheduleDeliveryReplenishment({ studentId, subjectId, conceptId: concepts[t] }, { kickWorker: false, language: LANGUAGE });
-  // "start with sufficient inventory": every type at its POLICY targets -- READY inventory and
-  // SPARE_ASSEMBLABLE_SETS complete sets assemblable beyond it -- reached by the real worker
-  const warm: Record<string, number | null> = {};
-  await Promise.all(types.map(async (t) => {
-    const m = (await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] }))!;
-    const quizMode = QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode;
-    const contract: ActivityContract = {
-      conceptId: concepts[t], activityType: t, language: LANGUAGE, academic, difficulty: m.difficulty,
-      itemCount: m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[quizMode].defaultMax, independence: m.independence, policyVersion: m.pedagogicalPolicyVersion,
-    };
-    warm[t] = await waitFor(async () =>
-      (await readyCount(studentId, concepts[t], t)) >= inventoryTarget(t)
-      && (await countSpareSets({ studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(studentId, concepts[t]), maxSets: SPARE_ASSEMBLABLE_SETS })) >= SPARE_ASSEMBLABLE_SETS, 15 * 60_000);
-  }));
-  const warmUpMs = Date.now() - tWarm;
-  console.log(`[bench] steady warm-up ${warmUpMs} ms`, JSON.stringify(warm));
-
-  // one learner track per activity type, concurrently; a launch every THINK_MS; the worker keeps running
-  const samples: (LaunchSample & { readyBefore: number })[] = [];
-  let maxActiveDuplicates = 0;
-  let doubleClickMismatches = 0;
-  await Promise.all(types.map(async (t) => {
-    const ctx = { studentId, subjectId, conceptId: concepts[t], type: t, academic, realTransfer: true };
-    for (let i = 0; i < LAUNCHES; i++) {
-      const readyBefore = await readyCount(studentId, concepts[t], t);
-      const s = await launchOnce(ctx);
-      samples.push({ ...s, readyBefore });
-      if (s.source === 'EMERGENCY_REQUIRED') console.warn(`[bench] steady ${t} #${i}: EMERGENCY_REQUIRED`);
-      maxActiveDuplicates = Math.max(maxActiveDuplicates, await activeDuplicates(studentId));
-      await abandon(s.quizId);
-      await sleep(THINK_MS);
-    }
-    for (let k = 0; k < 2; k++) {
-      const [a, b] = await Promise.all([launchOnce(ctx), launchOnce(ctx)]);
-      if (!a.quizId || a.quizId !== b.quizId) doubleClickMismatches++;
-      await abandon(a.quizId);
-      if (b.quizId !== a.quizId) await abandon(b.quizId);
-      await sleep(THINK_MS);
-    }
-  }));
-  const workerStats = await worker.stop();
-
-  const summary = summarize(samples);
-  const jobs = await jobsByConcept(studentId, since, concepts);
+async function jobsByConcept(studentId: string, since: Date, concepts: Record<DeliveryActivityType, string>) {
+  const r = await db.query(
+    `SELECT payload->>'conceptId' AS concept, kind, status, count(*)::int n,
+            COALESCE(sum((result->>'inserted')::int), 0)::int AS inserted, COALESCE(sum((result->>'generated')::int), 0)::int AS generated
+       FROM generation_jobs WHERE payload->>'studentId' = $1 AND created_at >= $2 GROUP BY 1, 2, 3`, [studentId, since]);
+  const out = {} as Record<DeliveryActivityType, { jobs: Record<string, number>; candidatesInserted: number; candidatesGenerated: number }>;
   for (const t of TYPES) {
-    if (blocked[t]) { summary.byType[t] = { status: 'BLOCKED', reason: blocked[t] }; continue; }
-    const xs = samples.filter((s) => s.type === t);
-    Object.assign(summary.byType[t], {
-      replenishmentJobs: jobs[t],
-      minReadyBeforeLaunch: Math.min(...xs.map((s) => s.readyBefore)),
-      launchesWithoutReady: xs.filter((s) => s.readyBefore === 0).length,
-    });
+    const rows = r.rows.filter((x) => x.concept === concepts[t]);
+    out[t] = {
+      jobs: Object.fromEntries(rows.map((x) => [`${x.kind}:${x.status}`, x.n])),
+      candidatesInserted: rows.reduce((n, x) => n + x.inserted, 0),
+      candidatesGenerated: rows.reduce((n, x) => n + x.generated, 0),
+    };
   }
-  const ok = samples.filter((s) => s.quizId).map((s) => s.ms);
-  const gates = {
-    HOT_PATH_AI_CALLS: samples.reduce((n, s) => n + s.aiCalls, 0),
-    P95_LAUNCH_MS: pct(ok, 95),
-    P99_LAUNCH_MS: pct(ok, 99),
-    DUPLICATE_ACTIVE_SESSIONS: maxActiveDuplicates + doubleClickMismatches,
-    FAILED_LAUNCHES: samples.filter((s) => s.source === 'FAILED').length,
-    EMERGENCY_IN_NORMAL_OPERATION: samples.filter((s) => s.source === 'EMERGENCY_REQUIRED').length,
-    QUEUE_DUPLICATE_OPEN_JOBS: workerStats.maxOpenDuplicateKeys,
-  };
-  const integ = await integrity(studentId, concepts, since);
-  const pass = gates.HOT_PATH_AI_CALLS === 0 && gates.P95_LAUNCH_MS < 2000 && gates.P99_LAUNCH_MS < 5000 && gates.DUPLICATE_ACTIVE_SESSIONS === 0
-    && gates.FAILED_LAUNCHES === 0 && gates.EMERGENCY_IN_NORMAL_OPERATION === 0 && gates.QUEUE_DUPLICATE_OPEN_JOBS === 0
-    && integ.duplicateBankContent === 0 && Object.keys(integ.independentCandidatesRedelivered).length === 0;
-  const out = { scenario: 'STEADY_STATE', measuredTypes: types, blocked, thinkMs: THINK_MS, launchesPerType: LAUNCHES, warmUp: { totalMs: warmUpMs, firstReadyMsByType: warm }, worker: { process: 'separate', ...workerStats }, ...summary, integrity: integ, gates, verdict: pass ? 'PASS' : 'FAIL' };
-  console.log(JSON.stringify(out, null, 1));
   return out;
 }
 
-/**
- * TRUE COLD MISS, per activity type: the controlled contract's READY
- * inventory and its whole VALIDATED bank are drained (bench learner only),
- * the launch must return EMERGENCY_REQUIRED with 0 AI calls and queue
- * replenishment; the worker then recovers and the next launch is served.
- */
+// ================================================================ statistics
+const pct = (xs: number[], p: number) => {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)];
+};
+
+function summarize(samples: LaunchSample[]) {
+  const byType: Record<string, any> = {};
+  for (const t of TYPES) {
+    const xs = samples.filter((s) => s.type === t);
+    if (!xs.length) continue;
+    const ok = xs.filter((s) => s.quizId);
+    const server = ok.map((s) => s.serverMs);
+    const count = (src: string) => xs.filter((s) => s.source === src).length;
+    const avg = (f: (s: LaunchSample) => number) => (ok.length ? Math.round(ok.reduce((n, s) => n + f(s), 0) / ok.length) : 0);
+    byType[t] = {
+      launches: xs.length,
+      p50: pct(server, 50), p95: pct(server, 95), p99: pct(server, 99), max: server.length ? Math.max(...server) : 0,
+      e2e: { p50: pct(ok.map((s) => s.e2eMs), 50), p95: pct(ok.map((s) => s.e2eMs), 95), p99: pct(ok.map((s) => s.e2eMs), 99) },
+      inventoryHitRate: +(count('INVENTORY') / xs.length).toFixed(2),
+      bankAssemblyRate: +(count('BANK') / xs.length).toFixed(2),
+      resumed: count('RESUMED'),
+      emergencies: count('EMERGENCY_REQUIRED'),
+      aiCallsInHotPath: xs.reduce((n, s) => n + s.aiCalls, 0),
+      failedLaunches: count('FAILED'),
+      avgStageMs: {
+        authorize: avg((s) => s.authorizeMs), decision: avg((s) => s.decisionMs), lock: avg((s) => s.timings.lockMs ?? 0), resume: avg((s) => s.timings.resumeMs ?? 0),
+        inventory: avg((s) => s.timings.inventoryMs ?? 0), bank: avg((s) => s.timings.bankMs ?? 0), session: avg((s) => s.timings.sessionMs ?? 0),
+      },
+      errors: [...new Set(xs.filter((s) => s.error).map((s) => s.error))],
+    };
+  }
+  return byType;
+}
+
+function tableRow(scenario: string, samples: LaunchSample[], duplicates: number) {
+  const server = samples.filter((s) => s.quizId).map((s) => s.serverMs);
+  return {
+    scenario, p50: pct(server, 50), p95: pct(server, 95), p99: pct(server, 99),
+    emergency: samples.filter((s) => s.source === 'EMERGENCY_REQUIRED').length,
+    hotPathAi: samples.reduce((n, s) => n + s.aiCalls, 0), duplicates,
+    failures: samples.filter((s) => s.source === 'FAILED').length, launches: samples.length,
+  };
+}
+
+// ================================================================ scenarios
+async function doubleClicks(ctx: { conceptId: string; type: DeliveryActivityType; syntheticTransfer?: boolean }, pairs: number, studentId: string) {
+  let mismatches = 0; let maxActive = 0; const details: unknown[] = []; const samples: LaunchSample[] = [];
+  for (let k = 0; k < pairs; k++) {
+    const [a, b] = await Promise.all([launch(ctx), launch(ctx)]);
+    samples.push(a, b);
+    if (!a.quizId || a.quizId !== b.quizId) {
+      mismatches++;
+      details.push({ type: ctx.type, a: { source: a.source, quizId: a.quizId, error: a.error ?? null }, b: { source: b.source, quizId: b.quizId, error: b.error ?? null } });
+    }
+    maxActive = Math.max(maxActive, await activeDuplicates(studentId));
+    await abandon(a.quizId);
+    if (b.quizId !== a.quizId) await abandon(b.quizId);
+  }
+  return { mismatches, maxActive, details, samples };
+}
+
+/** STEADY (realistic cadence, hard gates) and STRESS (fixed fast cadence, capacity report). */
+async function runSteadyLike(mode: 'steady' | 'stress') {
+  const { studentId } = await ensureLearner();
+  const { concepts, types, blocked, itemCount, contracts, academic } = await ensureSteadySubject(studentId);
+  // from zero: empty bank + no inventory; everything below is produced by the deployed worker
+  await resetBenchLearner(studentId, Object.values(concepts));
+  const since = new Date();
+  const evidenceBefore = await evidenceRows(studentId);
+  const watch = new QuotaWatch();
+
+  // warm-up: the real trigger queues + dispatches; the worker fills bank + inventory to the POLICY targets
+  const tWarm = Date.now();
+  await Promise.all(types.map((t) => replenish(concepts[t])));
+  const warm: Record<string, number | null> = {};
+  await Promise.all(types.map(async (t) => {
+    warm[t] = await waitFor(async () => {
+      if ((await readyCount(studentId, concepts[t], t)) >= inventoryTarget(t) && (await spareSets(studentId, contracts[t], academic)) >= SPARE_ASSEMBLABLE_SETS) return true;
+      await replenish(concepts[t]); // keep the deployed worker dispatched while the bank fills (no local top-up)
+      return false;
+    }, 20 * 60_000, watch);
+  }));
+  const warmUpMs = Date.now() - tWarm;
+  console.log(`[bench] ${mode} warm-up ${warmUpMs} ms`, JSON.stringify(warm));
+
+  const thinkMs = (t: DeliveryActivityType) => (mode === 'steady' ? itemCount[t] * SECONDS_PER_ITEM : STRESS_THINK_S) * 1000;
+  const samples: LaunchSample[] = [];
+  const recoveries: Array<{ type: DeliveryActivityType; ms: number | null }> = [];
+  const pendingRecoveries: Promise<void>[] = [];
+  let maxActive = 0;
+  const dc = { mismatches: 0, details: [] as unknown[] };
+  const warmedUp = !watch.aborted && Object.values(warm).every((w) => w !== null);
+  if (warmedUp) {
+    await Promise.all(types.map(async (t) => {
+      const ctx = { conceptId: concepts[t], type: t };
+      for (let i = 0; i < LAUNCHES && !watch.aborted; i++) {
+        const readyBefore = await readyCount(studentId, concepts[t], t);
+        const sample = { ...(await launch(ctx)), readyBefore };
+        samples.push(sample);
+        if (sample.source === 'EMERGENCY_REQUIRED') {
+          console.warn(`[bench] ${mode} ${t} #${i}: EMERGENCY_REQUIRED`);
+          // time to recovery: until the worker has a READY activity again (measured apart, never blocks the track)
+          const t0 = Date.now();
+          pendingRecoveries.push(waitFor(async () => (await readyCount(studentId, concepts[t], t)) > 0, 10 * 60_000).then((ms) => { recoveries.push({ type: t, ms: ms === null ? null : Date.now() - t0 }); }));
+        }
+        maxActive = Math.max(maxActive, await activeDuplicates(studentId));
+        await abandon(sample.quizId);
+        await sleep(thinkMs(t));
+      }
+      const d = await doubleClicks(ctx, 2, studentId);
+      samples.push(...d.samples);
+      dc.mismatches += d.mismatches; dc.details.push(...d.details); maxActive = Math.max(maxActive, d.maxActive);
+    }));
+  }
+  await Promise.all(pendingRecoveries);
+  await watch.end();
+
+  const byType = summarize(samples);
+  const jobs = await jobsByConcept(studentId, since, concepts);
+  for (const t of TYPES) {
+    if (blocked[t]) { byType[t] = { status: 'BLOCKED', reason: blocked[t] }; continue; }
+    const xs = samples.filter((x) => x.type === t);
+    byType[t] = {
+      ...(byType[t] ?? {}),
+      thinkSeconds: thinkMs(t) / 1000,
+      launchesWithoutReady: xs.filter((x) => x.readyBefore === 0).length,
+      replenishment: jobs[t],
+    };
+  }
+  const inv = await invariants(studentId, Object.values(concepts), since, evidenceBefore);
+  const ai = await benchAiUsage(studentId, since);
+  const minutes = Math.max(1, (Date.now() - since.getTime()) / 60_000);
+  const duplicates = maxActive + dc.mismatches + inv.DUPLICATE_DELIVERED_ITEMS;
+  const row = tableRow(mode.toUpperCase(), samples, duplicates);
+  const quotaReport = {
+    benchAiCalls: ai.calls, aiFailures: ai.failures, rateLimitedCalls: ai.rateLimitedCalls, rateLimitedJobs: ai.rate_limited_jobs, failedJobs: ai.failed_jobs,
+    peakCallsPerMinute: watch.peakPerMinute, AI_RATE_LIMIT_PRESSURE: watch.pressureEvents, maxOpenJobs: watch.maxOpenJobs,
+    remainingAfter: (await quota()).remaining, aborted: watch.aborted,
+    contaminated: watch.pressureEvents.length > 0 || ai.rateLimitedCalls > 0 || !!watch.aborted,
+  };
+  const base = {
+    scenario: mode.toUpperCase(), measuredTypes: types, blocked, warmUp: { totalMs: warmUpMs, byType: warm, completed: warmedUp },
+    byType, invariants: inv, idempotency: { doubleClickMismatches: dc.mismatches, maxActiveDuplicateSessions: maxActive, details: dc.details },
+    quota: quotaReport, table: row,
+  };
+  if (mode === 'stress') {
+    const inserted = Object.values(jobs).reduce((n, j) => n + j.candidatesInserted, 0);
+    const generated = Object.values(jobs).reduce((n, j) => n + j.candidatesGenerated, 0);
+    const neverViolated = row.hotPathAi === 0 && inv.DUPLICATE_DELIVERED_ITEMS === 0 && maxActive + dc.mismatches === 0 && inv.CORRUPT_SESSIONS === 0 && inv.EVIDENCE_WRITTEN_BY_LAUNCHES === 0;
+    return {
+      ...base,
+      capacity: {
+        emergencyRate: samples.length ? +(row.emergency / samples.length).toFixed(3) : 0,
+        inventoryDepletion: Object.fromEntries(types.map((t) => [t, byType[t].launchesWithoutReady])),
+        replenishmentThroughputPerMin: +(inserted / minutes).toFixed(1),
+        generationThroughputPerMin: +(generated / minutes).toFixed(1),
+        queueDepthMax: watch.maxOpenJobs,
+        aiCost: { calls: ai.calls, providerSeconds: Math.round(ai.providerMs / 1000), models: ai.models, note: 'no token or USD accounting is persisted; cost is reported in AI calls' },
+        timeToRecoveryMs: recoveries,
+      },
+      invariantsVerdict: neverViolated ? 'HELD' : 'VIOLATED',
+    };
+  }
+  const gates = {
+    EMERGENCY_REQUIRED: row.emergency, HOT_PATH_AI_CALLS: row.hotPathAi, DUPLICATE_ACTIVE_SESSIONS: maxActive + dc.mismatches,
+    DUPLICATE_DELIVERED_ITEMS: inv.DUPLICATE_DELIVERED_ITEMS, FAILED_LAUNCHES: row.failures, P95_LAUNCH_MS: row.p95, P99_LAUNCH_MS: row.p99,
+    REPLENISHMENT_AUTOMATIC: Object.values(jobs).some((j) => j.candidatesInserted > 0), CORRUPT_SESSIONS: inv.CORRUPT_SESSIONS,
+    EVIDENCE_WRITTEN_BY_LAUNCHES: inv.EVIDENCE_WRITTEN_BY_LAUNCHES, LAUNCHES_COMPLETED: samples.length === types.length * (LAUNCHES + 4),
+  };
+  const pass = gates.EMERGENCY_REQUIRED === 0 && gates.HOT_PATH_AI_CALLS === 0 && gates.DUPLICATE_ACTIVE_SESSIONS === 0 && gates.DUPLICATE_DELIVERED_ITEMS === 0
+    && gates.FAILED_LAUNCHES === 0 && gates.P95_LAUNCH_MS < 2000 && gates.P99_LAUNCH_MS < 5000 && gates.REPLENISHMENT_AUTOMATIC
+    && gates.CORRUPT_SESSIONS === 0 && gates.EVIDENCE_WRITTEN_BY_LAUNCHES === 0 && gates.LAUNCHES_COMPLETED;
+  return { ...base, gates, verdict: pass ? 'PASS' : 'FAIL' };
+}
+
+/** COLD: controlled drain per type -> EMERGENCY_REQUIRED with 0 AI -> queued -> worker -> READY -> served. */
 async function runCold() {
   const { studentId } = await ensureLearner();
-  const { subjectId, concepts, academic, types, blocked } = await ensureSteadySubject(studentId);
-  const REPS = arg('coldReps', 2);
+  const { concepts, types, blocked } = await ensureSteadySubject(studentId);
   await resetBenchLearner(studentId);
+  const since = new Date();
+  const evidenceBefore = await evidenceRows(studentId);
+  const watch = new QuotaWatch();
   const out: Record<string, any> = {};
+  const samples: LaunchSample[] = [];
   for (const t of TYPES) if (blocked[t]) out[t] = { status: 'BLOCKED', reason: blocked[t] };
   for (const t of types) {
     const conceptId = concepts[t];
     const reps: any[] = [];
-    for (let rep = 0; rep < REPS; rep++) {
-      // quiesce this learner's queue first, so the drain is the only change
-      await runDeliveryWorker({ onlyStudentId: studentId, maxJobs: 30, concurrency: 5 });
-      await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE student_id = $1 AND status = 'active'`, [studentId]);
+    for (let rep = 0; rep < COLD_REPS && !watch.aborted; rep++) {
+      await resetBenchLearner(studentId);
       await db.query(`UPDATE canonical_prepared_activity SET status = 'INVALIDATED', failure_reason = 'BENCH_COLD_DRAIN' WHERE student_id = $1 AND concept_id = $2 AND status IN ('PREPARING', 'READY')`, [studentId, conceptId]);
       await db.query(`UPDATE question_bank_candidates SET validation_status = 'RETIRED' WHERE student_id = $1 AND concept_id = $2 AND activity_type = $3 AND validation_status = 'VALIDATED'`, [studentId, conceptId, t]);
-      const since = new Date();
-      const ctx = { studentId, subjectId, conceptId, type: t, academic, realTransfer: true };
-
-      const miss = await launchOnce(ctx);
+      const repSince = new Date();
+      const miss = await launch({ conceptId, type: t });
+      samples.push(miss);
       const queuedMs = await waitFor(async () => (await db.query(
-        `SELECT 1 FROM generation_jobs WHERE payload->>'studentId' = $1 AND payload->>'conceptId' = $2 AND created_at >= $3`, [studentId, conceptId, since])).rows.length > 0, 20_000);
-
-      const worker = startWorkerLoop(studentId);
+        `SELECT 1 FROM generation_jobs WHERE payload->>'studentId' = $1 AND payload->>'conceptId' = $2 AND created_at >= $3`, [studentId, conceptId, repSince])).rows.length > 0, 20_000);
       const tRec = Date.now();
-      const recoveredMs = await waitFor(async () => (await readyCount(studentId, conceptId, t)) > 0, 10 * 60_000);
-      await worker.stop();
-      const next = await launchOnce(ctx);
+      const recoveredMs = await waitFor(async () => (await readyCount(studentId, conceptId, t)) > 0, 10 * 60_000, watch);
+      const next = await launch({ conceptId, type: t });
+      samples.push(next);
       await abandon(next.quizId);
       reps.push({
-        coldLaunch: { source: miss.source, ms: miss.ms, aiCalls: miss.aiCalls, error: miss.error ?? null },
+        coldLaunch: { source: miss.source, serverMs: miss.serverMs, aiCalls: miss.aiCalls },
         backgroundQueued: queuedMs !== null, queuedWithinMs: queuedMs,
-        recovery: { readyAfterMs: recoveredMs ?? (Date.now() - tRec), recovered: recoveredMs !== null, worker: worker.stats },
-        nextLaunch: { source: next.source, ms: next.ms, aiCalls: next.aiCalls, error: next.error ?? null },
-        jobs: (await jobsByConcept(studentId, since, concepts))[t],
+        timeToRecoveryMs: recoveredMs ?? Date.now() - tRec, recovered: recoveredMs !== null,
+        nextLaunch: { source: next.source, serverMs: next.serverMs, aiCalls: next.aiCalls },
+        jobs: (await jobsByConcept(studentId, repSince, concepts))[t],
       });
-      console.log(`[bench] cold ${t} rep ${rep + 1}/${REPS}:`, JSON.stringify(reps[reps.length - 1]));
+      console.log(`[bench] cold ${t} rep ${rep + 1}/${COLD_REPS}:`, JSON.stringify(reps[reps.length - 1]));
     }
     out[t] = {
       reps,
-      pass: reps.every((r) => r.coldLaunch.source === 'EMERGENCY_REQUIRED' && r.coldLaunch.aiCalls === 0 && r.backgroundQueued && r.recovery.recovered
+      pass: reps.length === COLD_REPS && reps.every((r) => r.coldLaunch.source === 'EMERGENCY_REQUIRED' && r.coldLaunch.aiCalls === 0 && r.backgroundQueued && r.recovered
         && ['INVENTORY', 'BANK'].includes(r.nextLaunch.source) && r.nextLaunch.aiCalls === 0),
     };
   }
-  const verdict = types.every((t) => out[t].pass) ? 'PASS' : 'FAIL';
-  console.log(JSON.stringify({ scenario: 'COLD_MISS', verdict }, null, 1));
-  return { scenario: 'COLD_MISS', byType: out, verdict };
+  await watch.end();
+  const inv = await invariants(studentId, Object.values(concepts), since, evidenceBefore);
+  const ai = await benchAiUsage(studentId, since);
+  const pass = types.every((t) => out[t].pass) && inv.DUPLICATE_DELIVERED_ITEMS === 0 && inv.EVIDENCE_WRITTEN_BY_LAUNCHES === 0 && inv.CORRUPT_SESSIONS === 0;
+  // the controlled misses ARE this scenario: the table counts them, the verdict requires them
+  return {
+    scenario: 'COLD', byType: out, invariants: inv,
+    quota: { benchAiCalls: ai.calls, rateLimitedCalls: ai.rateLimitedCalls, peakCallsPerMinute: watch.peakPerMinute, AI_RATE_LIMIT_PRESSURE: watch.pressureEvents, remainingAfter: (await quota()).remaining, aborted: watch.aborted },
+    table: tableRow('COLD', samples, inv.DUPLICATE_DELIVERED_ITEMS), verdict: pass ? 'PASS' : 'FAIL',
+  };
 }
 
+/** HOT: deep synthetic bank created once, 3 x 100 launches + double-click pairs; the deployed worker prepares inventory. */
+async function runHot() {
+  const { studentId, subjectId, concepts } = await ensureLearner();
+  await ensureStageEvidence(studentId, subjectId, concepts);
+  const academic = await loadAcademicContext(studentId, subjectId);
+  const contracts = {} as Record<DeliveryActivityType, { difficulty: { min: number; max: number; target: number }; itemCount: number }>;
+  for (const t of TYPES) {
+    if (t === 'TRANSFER') { contracts[t] = { difficulty: { min: 4, max: 5, target: 4 }, itemCount: 3 }; continue; }
+    const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
+    if (!m) throw new Error(`synthetic concept for ${t} is not at that stage`);
+    contracts[t] = { difficulty: m.difficulty, itemCount: m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode].defaultMax };
+  }
+  await ensureSyntheticBank(studentId, concepts, academic, contracts);
+  await resetBenchLearner(studentId);
+  const since = new Date();
+  const evidenceBefore = await evidenceRows(studentId);
+  const watch = new QuotaWatch();
+
+  const all: LaunchSample[] = [];
+  const perRun: any[] = [];
+  let mismatches = 0; let maxActive = 0; const details: unknown[] = [];
+  for (let run = 1; run <= RUNS && !watch.aborted; run++) {
+    const samples: LaunchSample[] = [];
+    for (const t of TYPES) {
+      const ctx = { conceptId: concepts[t], type: t, syntheticTransfer: t === 'TRANSFER' };
+      for (let i = 0; i < LAUNCHES && !watch.aborted; i++) {
+        const s = await launch(ctx);
+        samples.push(s);
+        await abandon(s.quizId);
+      }
+      const d = await doubleClicks(ctx, DOUBLE_CLICK_PAIRS, studentId);
+      mismatches += d.mismatches; maxActive = Math.max(maxActive, d.maxActive); details.push(...d.details);
+    }
+    all.push(...samples);
+    perRun.push({ run, byType: summarize(samples) });
+    console.log(`[bench] hot run ${run}/${RUNS} done`);
+  }
+  await watch.end();
+  const inv = await invariants(studentId, Object.values(concepts), since, evidenceBefore);
+  const row = tableRow('HOT', all, maxActive + mismatches + inv.DUPLICATE_DELIVERED_ITEMS);
+  const gates = {
+    HOT_PATH_AI_CALLS: row.hotPathAi, P95_LAUNCH_MS: row.p95, P99_LAUNCH_MS: row.p99, DUPLICATE_ACTIVE_SESSIONS: maxActive + mismatches,
+    DUPLICATE_DELIVERED_ITEMS: inv.DUPLICATE_DELIVERED_ITEMS, FAILED_LAUNCHES: row.failures, EMERGENCY_REQUIRED: row.emergency,
+    CORRUPT_SESSIONS: inv.CORRUPT_SESSIONS, EVIDENCE_WRITTEN_BY_LAUNCHES: inv.EVIDENCE_WRITTEN_BY_LAUNCHES, LAUNCHES_COMPLETED: all.length === RUNS * TYPES.length * LAUNCHES,
+  };
+  const pass = gates.HOT_PATH_AI_CALLS === 0 && gates.P95_LAUNCH_MS < 2000 && gates.P99_LAUNCH_MS < 5000 && gates.DUPLICATE_ACTIVE_SESSIONS === 0
+    && gates.DUPLICATE_DELIVERED_ITEMS === 0 && gates.FAILED_LAUNCHES === 0 && gates.EMERGENCY_REQUIRED === 0 && gates.CORRUPT_SESSIONS === 0
+    && gates.EVIDENCE_WRITTEN_BY_LAUNCHES === 0 && gates.LAUNCHES_COMPLETED;
+  const ai = await benchAiUsage(studentId, since);
+  return {
+    scenario: 'HOT', note: 'TRANSFER uses a synthetic contract: the real engine cannot reach TRANSFER yet',
+    perRun, aggregate: summarize(all), idempotency: { doubleClickMismatches: mismatches, maxActiveDuplicateSessions: maxActive, details },
+    invariants: inv, quota: { benchAiCalls: ai.calls, peakCallsPerMinute: watch.peakPerMinute, AI_RATE_LIMIT_PRESSURE: watch.pressureEvents, remainingAfter: (await quota()).remaining, aborted: watch.aborted },
+    table: row, gates, verdict: pass ? 'PASS' : 'FAIL',
+  };
+}
+
+// ================================================================ main
 async function main() {
-  assertDev();
-  const scenario = (process.argv.find((a) => a.startsWith('--scenario='))?.split('=')[1] ?? 'hot').toLowerCase();
-  if (scenario === 'worker-loop') return runWorkerLoopProcess();
-  const results: Record<string, unknown> = {};
-  if (scenario === 'hot' || scenario === 'all') results.hot = await runHot();
-  if (scenario === 'steady' || scenario === 'all') results.steady = await runSteady();
-  if (scenario === 'cold' || scenario === 'all') results.cold = await runCold();
-  const file = process.env.BENCH_OUT ?? 'bench-activity-delivery.json';
-  writeFileSync(file, JSON.stringify(results, null, 2));
+  const fingerprint = assertDevDatabase();
+  const secretFile = process.env.BENCH_SECRET_FILE;
+  if (!secretFile) throw new Error('BENCH_SECRET_FILE (0600 file holding the DEV CRON_SECRET) is required');
+  hosted = new Hosted(readFileSync(secretFile, 'utf-8').trim(), protectionBypassSecret());
+
+  // alignment: the deployment under test must serve exactly this checkout's SHA
+  const localSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf-8' }).trim();
+  const q0 = await quota();
+  const migrations = (await db.query(`SELECT count(*)::int AS n, max(version) AS latest FROM schema_migrations`)).rows[0];
+  const alignment = {
+    localSha, deployedSha: q0.commitSha, functionRegion: q0.region, databaseFingerprint: fingerprint,
+    databaseRegion: new URL(process.env.DATABASE_URL!).hostname.match(/\.([a-z]+-[a-z]+-\d)\.aws/)?.[1] ?? null, migrations,
+  };
+  console.log('[bench] alignment', JSON.stringify(alignment));
+  if (q0.commitSha !== localSha) throw new Error(`deployment serves ${q0.commitSha}, checkout is ${localSha}`);
+
+  const outDir = process.env.BENCH_OUT_DIR ?? 'bench-out';
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'alignment.json'), JSON.stringify(alignment, null, 2));
+  const scenarios = (argv('scenarios') ?? 'steady,cold,hot,stress').split(',');
+  const table: unknown[] = [];
+  for (const sc of scenarios) {
+    try {
+      await guardQuota(sc);
+    } catch (e) {
+      if (e instanceof QuotaPause) { console.log(`[bench] ${e.message}`); writeFileSync(join(outDir, `${sc}.json`), JSON.stringify({ scenario: sc, status: 'PAUSED', reason: e.message }, null, 2)); break; }
+      throw e;
+    }
+    const result: any = sc === 'steady' ? await runSteadyLike('steady') : sc === 'stress' ? await runSteadyLike('stress') : sc === 'cold' ? await runCold() : await runHot();
+    writeFileSync(join(outDir, `${sc}.json`), JSON.stringify(result, null, 2));
+    table.push({ ...result.table, verdict: result.verdict ?? `invariants ${result.invariantsVerdict}` });
+    console.log(`[bench] ${sc} done:`, JSON.stringify({ verdict: result.verdict ?? `invariants ${result.invariantsVerdict}`, table: result.table, quota: result.quota }));
+  }
+  writeFileSync(join(outDir, 'table.json'), JSON.stringify(table, null, 2));
+  console.log('[bench] TABLE', JSON.stringify(table));
   await db.end?.();
 }
 
 main().catch((e) => {
-  console.error('[bench] FAILED', e);
+  console.error('[bench] FAILED', e instanceof Error ? e.message : e);
   process.exit(1);
 });

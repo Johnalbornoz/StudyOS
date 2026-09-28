@@ -39,11 +39,14 @@ Emergency generation is the only synchronous AI path. It is never the normal pat
 | `src/services/question-bank.service.ts` | Bank I/O: add validated candidates, load pool, record deliveries |
 | `src/services/activity-assembly.service.ts` | Loads pool + novelty exclusions (reuses the PROVE/RETAIN fingerprint loaders), then assembles |
 | `src/services/activity-inventory.service.ts` | Prepared inventory: atomic consume, reconcile, retire, store READY |
-| `src/services/activity-delivery.service.ts` | The hot path (`deliverCanonicalActivity`), launch lock, emergency completion, launch log |
+| `src/services/activity-delivery.service.ts` | The hot path (`deliverCanonicalActivity`), the one `buildDeliveryInput`, emergency completion, launch log |
+| `src/services/activity-launch-lock.service.ts` | The transaction-scoped launch lock, shared by launches and the worker |
+| `src/services/worker-dispatch.service.ts` | Hands queued work to the worker endpoint in a separate invocation |
 | `src/services/generation-queue.service.ts` | DB queue: enqueue (dedup), claim (SKIP LOCKED + stale lease), retry/backoff, worker loop |
 | `src/services/activity-delivery-worker.service.ts` | `PREPARE_INVENTORY` and `BANK_REPLENISH` handlers, and `scheduleDeliveryReplenishment` (the single trigger) |
 | `src/services/activity-candidate-generation.service.ts` | Calls the certified generators per activity type (background only) |
-| `src/app/api/internal/generation-worker/route.ts` | `POST`, `Bearer CRON_SECRET` (fails closed). Drains the queue. |
+| `src/app/api/internal/generation-worker/route.ts` | `POST`, `Bearer CRON_SECRET` (fails closed). THE executor: answers 202 and drains the queue in its own invocation. |
+| `src/app/api/internal/delivery-bench/route.ts` | DEVELOPMENT ONLY. Runs the route's launch path server-side for the synthetic benchmark learner (see Benchmark). |
 
 ## New tables / columns
 
@@ -132,10 +135,12 @@ Each READY activity is delivered at most once.
 - **Leases:** a stale `RUNNING` job is reclaimed after 10 minutes.
 - **Retries:** exponential backoff from 20 s, then `FAILED` at `max_attempts`.
 - **Logging:** one `[generation-queue]` log line per state change.
-- **Execution:**
-  - In-request triggers run the worker inside `after()` (Vercel `waitUntil`).
-  - `POST /api/internal/generation-worker` is the scheduled drain.
-  - The Vercel cron for that endpoint is **not configured yet**. It is a production rollout step.
+- **Execution (worker isolation):**
+  - A learner-facing request, and its `after()`, **only enqueues and dispatches**. It never runs AI generation or validation in the instance that serves the learner.
+  - `dispatchDeliveryWorker` calls `POST /api/internal/generation-worker` on this deployment. It authenticates with `Bearer CRON_SECRET` and, behind Deployment Protection, with the automation bypass.
+  - The worker endpoint answers **202** immediately and drains the queue in `after()` of its **own** invocation (`maxDuration` 300 s). That endpoint is the only place in the app that executes the queue, and a guard test enforces it.
+  - Without `CRON_SECRET` or a deployment URL (local scripts), dispatch is a no-op, and jobs stay queued for the next dispatch or the scheduler.
+  - Vercel Cron runs only for Production deployments. A cron for the worker endpoint is a Production rollout step. On DEV, draining relies on dispatch.
 - **Cost instrumentation:** background generation runs under `runWithAiMetrics`. All AI routes are wrapped with `withAiRequestMetrics`, and an import-graph guard test enforces this.
 
 ## Idempotency
@@ -158,75 +163,68 @@ Each launch logs one `[activity-launch]` line with these fields:
 
 `HOT_PATH_AI_VIOLATION` is logged as an error if any AI call happens on a non-emergency launch.
 
-## Benchmark
+## Benchmark (certification protocol)
 
-Script: `scripts/bench-activity-delivery.ts`. It is guarded to the DEV fingerprint and uses one idempotent synthetic learner, `bench:activity-delivery`. It never touches a real learner.
+Script: `scripts/bench-activity-delivery.ts`. **Hosted DEV only.**
 
 ```bash
-npx tsx --env-file=.env.local --tsconfig tsconfig.json scripts/bench-activity-delivery.ts --scenario=all --runs=3 --launches=20
+BENCH_SECRET_FILE=<0600 file holding the DEV CRON_SECRET> BENCH_OUT_DIR=<dir> \
+  npx tsx --env-file=.env.local --tsconfig tsconfig.json scripts/bench-activity-delivery.ts --scenarios=steady,cold,hot,stress
 ```
 
-Every launch runs the route's hot path in-process: canonical authorization, then `deliverCanonicalActivity`. AI calls are counted per launch.
+### Where latency is measured
 
-There are three scenarios.
+- **Server-side, in the hosted runtime.** Every launch runs inside hosted DEV through the DEV-only endpoint `POST /api/internal/delivery-bench`. That endpoint runs the route's own launch path, measured from authorize through decision, inventory/bank, assembly and session. It shares the route's `buildDeliveryInput` and `deliverCanonicalActivity`.
+  - **Gates:** P50/P95/P99 use this **server-side** time.
+  - **E2E:** laptop → Vercel round trips are reported apart as E2E, and are never a gate.
+- **Endpoint safeguards.** The endpoint fails closed on three gates:
+  - it answers 404 outside Development;
+  - it requires `Bearer CRON_SECRET`;
+  - it only touches the synthetic learner `bench:activity-delivery`.
+  Clerk session verification is not part of the delivery backend and is not reproduced. Authorization runs the route's same reads, read-only.
+- **Alignment check.** Before anything runs, the benchmark refuses to start unless the deployment serves exactly the checkout's SHA. It records the function region, the database region, the database fingerprint and the migration ledger.
 
-### HOT (`--scenario=hot`)
+### How the benchmark runs
 
-- **Setup:** a SYNTHETIC validated bank is created once, before all runs. It is never topped up between launches.
-- **Runs:** each run launches every type 20 times.
-  - Odd launches first run the worker (`PREPARE_INVENTORY` only), so both the INVENTORY and BANK paths are exercised.
-  - Each run also fires 5 concurrent double-click pairs per type.
-- **TRANSFER:** uses a synthetic contract, because the real engine cannot reach TRANSFER yet (see Runtime caveats).
+- **No local worker.** DEV replenishes itself: `after()` dispatches, and the worker endpoint drains the queue in its own invocation.
+- **Administration from the laptop.** Through the fingerprint-guarded DEV database, the laptop only administers the synthetic learner:
+  - idempotent setup;
+  - resets, which close that learner's open jobs and expire its sessions;
+  - controlled drains;
+  - read-only verification.
 
-### STEADY STATE (`--scenario=steady`)
+### Scenarios
 
-- **Setup:** a real subject that starts **from zero**, with an empty bank and no inventory. Its bank is filled only by the REAL worker. `BANK_REPLENISH` runs the certified generators with real AI calls in the background. The benchmark inserts nothing.
-- **Warm-up:** the real triggers queue the jobs. The warm-up waits until each type reaches its **policy targets**: READY inventory at `inventoryTarget`, and `SPARE_ASSEMBLABLE_SETS` complete sets still assemblable from the bank beyond it.
-- **Tracks:** one learner track per type runs concurrently, launching every `--think` seconds (default 30 s, deliberately faster than a real learner).
-- **Worker:** the worker loop runs in a **separate process**, with its own pool and event loop, the way the protected worker endpoint runs in its own invocation. In production, `after()` replenishment runs in the instance that served the request, so it can share that instance's pool with concurrent requests. The worker endpoint (cron) does not.
-- **Measured per type:**
-  - latency;
-  - inventory hit rate and bank assembly rate;
-  - replenishment jobs, by kind and status;
-  - READY count before each launch;
-  - emergencies;
-  - background AI calls, counted apart from the hot path.
-- **Integrity checks:**
-  - duplicate open queue jobs;
-  - duplicate bank content;
-  - independent-check candidates delivered twice.
+| Scenario | Role | Setup | Gates |
+|---|---|---|---|
+| STEADY | certification | Real subject starting from an **empty** bank. The worker alone fills it to the policy targets. One learner per type launches at a **realistic cadence**: item count × 20 s (PRACTICE 3 → 60 s, PROVE/RETAIN 10 → 200 s). It ends with double-click pairs. | `EMERGENCY_REQUIRED = 0`, `HOT_PATH_AI_CALLS = 0`, `DUPLICATE_ACTIVE_SESSIONS = 0`, `DUPLICATE_DELIVERED_ITEMS = 0`, `FAILED_LAUNCHES = 0`, P95 < 2 s, P99 < 5 s, replenishment automatic (candidates inserted by the worker), 0 corrupt sessions, 0 evidence written by launches |
+| COLD | certification (recovery) | For each type, the contract is drained: READY invalidated, bank retired. The sequence is launch → `EMERGENCY_REQUIRED` with 0 AI → job queued → worker → READY → the next launch is served from INVENTORY or BANK with 0 AI. | All steps; `time_to_recovery` is measured |
+| HOT | certification | A deep **synthetic** bank, created once and never topped up. 3 runs × 5 types × 20 launches, plus 5 concurrent double-click pairs per type and run. | As STEADY |
+| STRESS | capacity (no SLO gate) | STEADY at a launch every 30 s. | Only the invariants: 0 hot-path AI, 0 duplicate items, 0 duplicate sessions, 0 corruption, 0 evidence writes |
 
-### TRUE COLD MISS (`--scenario=cold`)
+STRESS reports these capacity metrics:
+- emergency rate;
+- inventory depletion;
+- replenishment and generation throughput;
+- queue depth;
+- AI calls;
+- time to recovery;
+- latency.
 
-For each type, the benchmark does the following:
-1. It drains the controlled contract: READY rows become INVALIDATED, and the whole VALIDATED bank becomes RETIRED. This applies to the benchmark learner only.
-2. It launches. The expected result is `EMERGENCY_REQUIRED` with 0 AI calls, and a replenishment job queued.
-3. It runs the worker until a READY activity exists.
-4. It launches again. The expected result is INVENTORY or BANK with 0 AI calls.
+A type the real engine cannot launch is reported as `BLOCKED`. It is never simulated in STEADY, STRESS or COLD.
 
-In the product, the route answers `EMERGENCY_REQUIRED` with the explicit, logged EMERGENCY_GENERATION. The benchmark measures the delivery layer, which never calls AI.
+### AI quota guard
 
-### Gates
-
-These gates apply to HOT and STEADY STATE:
-- `HOT_PATH_AI_CALLS = 0`
-- `P95 < 2 s`
-- `P99 < 5 s`
-- `DUPLICATE_ACTIVE_SESSIONS = 0`
-- `FAILED_LAUNCHES = 0`
-
-STEADY STATE also requires no `EMERGENCY_REQUIRED` in normal operation and no duplicate open queue jobs.
-
-COLD MISS requires the launch to be controlled, the miss to be recoverable, and no synchronous AI call.
-
-Each scenario first closes queue jobs that an interrupted earlier run left open for the benchmark learner. Their leases would otherwise read as generation in flight.
-
-A type the real engine cannot launch is reported as `BLOCKED`. It is never simulated in STEADY STATE or COLD MISS.
-
-The benchmark runs from a laptop, so every figure includes the laptop-to-Neon round trips (about 100 ms each). An in-region Vercel function pays only a small fraction of that.
+DEV's AI limit is global (`ai_global_limits`) and shared with manual E2E testing.
+- **Before each scenario:** the scenario starts only if `remaining_daily ≥ estimate + 1000`.
+- **During the scenario:**
+  - the per-minute counter is sampled, and any minute at 90% or more of the limit is recorded as `AI_RATE_LIMIT_PRESSURE`;
+  - the scenario stops if fewer than 1000 daily calls would remain.
+- **Attribution:** AI usage is attributed to the benchmark learner through `ai_execution_events.student_id`. No token or USD accounting is persisted, so cost is reported in calls.
 
 ## Runtime caveats
 
+- Vercel functions run in `iad1` (us-east-1) and the DEV Neon database is in `us-east-2`. They are **not in the same region**, and every database round trip crosses regions.
 - `quiz_sessions.created_at`, `completed_at` and `expires_at` are `timestamptz` (migration `20261017_1000`), and `storeQuiz` sets them with the database `now()`. Scripts no longer need `TZ=UTC`. On a database that has not yet run this migration, the columns still hold UTC wall time.
 - RETAIN evidence is never marked `novel` by the evidence adapter (a pre-existing gap, fixed separately on `fix/retain-novelty-transfer`). Until that lands, TRANSFER is not reachable from real evidence. HOT exercises TRANSFER delivery with a synthetic contract, and STEADY STATE / COLD MISS report TRANSFER as `BLOCKED`.
 

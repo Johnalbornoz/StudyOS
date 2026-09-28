@@ -64,6 +64,14 @@ function resolveEnvironment(env: Record<string, string | undefined>): Deployment
 }
 
 /**
+ * Hosted (or local) Development only -- never Production, never Preview/Stage.
+ * Gates DEV-only internal tooling (the delivery benchmark endpoint).
+ */
+export function isDevelopmentDeployment(env: Record<string, string | undefined>): boolean {
+  return resolveEnvironment(env) === 'development' && env.VERCEL_ENV !== 'production';
+}
+
+/**
  * Build the version payload from an env bag. Reads ONLY these keys:
  *   - VERCEL_GIT_COMMIT_SHA  (documented, non-sensitive)
  *   - STUDYUS_COMMIT_SHA     (non-sensitive fallback for CLI deployments, which carry no git env)

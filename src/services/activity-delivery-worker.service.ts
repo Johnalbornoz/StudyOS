@@ -18,7 +18,8 @@
  *   nothing is retried with backoff (bounded attempts).
  *
  * Triggers: activity submitted, Concept Mission / Today opened, a READY
- * consumed, a cold-miss launch -- plus the protected worker endpoint.
+ * consumed, a cold-miss launch. Each one only ENQUEUES and dispatches; the
+ * protected worker endpoint is the one executor (its own invocation).
  */
 import { randomUUID } from 'crypto';
 import { getCanonicalPedagogicalDecision, resolveCanonicalLaunch, resolveAuthorizedItemCount } from '@/lib/pedagogical-decision';
@@ -43,6 +44,7 @@ import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeRead
 import { assembleActivityForLearner, countSpareSets } from '@/services/activity-assembly.service';
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { withLaunchLock } from '@/services/activity-launch-lock.service';
+import { dispatchDeliveryWorker } from '@/services/worker-dispatch.service';
 import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
@@ -178,10 +180,12 @@ export function runDeliveryWorker(opts?: { maxJobs?: number; concurrency?: numbe
 
 /**
  * THE replenishment trigger: queue a (deduplicated) inventory preparation
- * for this learner + concept and, by default, drive the worker right away
- * (callers invoke this from `after()`, never on the hot path).
+ * for this learner + concept and dispatch the worker, which drains the queue
+ * in its OWN invocation (worker-dispatch.service.ts). This never runs the AI
+ * pipeline itself -- callers invoke it from `after()`, never on the hot path.
+ * `dispatch: false` only queues (scripts, and callers outside a request).
  */
-export async function scheduleDeliveryReplenishment(target: ReplenishTarget, opts: { kickWorker?: boolean; language?: string } = {}): Promise<void> {
+export async function scheduleDeliveryReplenishment(target: ReplenishTarget, opts: { dispatch?: boolean; language?: string } = {}): Promise<void> {
   await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${target.studentId}:${target.conceptId}`, { ...target, ...(opts.language ? { language: opts.language } : {}) });
-  if (opts.kickWorker !== false) await runDeliveryWorker({ maxJobs: 6, concurrency: 2, deadlineMs: 250_000 });
+  if (opts.dispatch !== false) await dispatchDeliveryWorker('replenishment');
 }
