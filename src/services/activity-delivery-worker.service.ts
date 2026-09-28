@@ -41,6 +41,8 @@ import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type Generat
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner, countSpareSets } from '@/services/activity-assembly.service';
+import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
+import { withLaunchLock } from '@/services/activity-launch-lock.service';
 import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
@@ -99,25 +101,28 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   const identity = { studentId: p.studentId, conceptId: p.conceptId, stage, policyVersion: contract.policyVersion };
   const contractFingerprint = activityContractFingerprint(contract);
   const learnerFp = learnerStateFingerprint(await loadLearnerStateSnapshot(p.studentId, p.conceptId));
-  const { readyCompatible, usedSlots } = await reconcileInventory(identity, { contractFingerprint, learnerStateFingerprint: learnerFp });
+  const independent = isIndependentActivity(activityType);
+  const { readyCompatible, usedSlots } = await reconcileInventory(identity, { contractFingerprint, learnerStateFingerprint: learnerFp, independent });
 
+  // Assemble + store under the SAME lock a launch holds: the bank is never
+  // read while a launch is delivering from it, so a READY activity can never
+  // hold a candidate that a concurrent launch just delivered.
   const target = inventoryTarget(activityType);
-  let prepared = 0;
-  let bankShort = false;
-  for (let slot = 0; slot < target && readyCompatible + prepared < target; slot++) {
-    if (usedSlots.includes(slot)) continue;
-    const assembly = await assembleActivityForLearner({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId) });
-    if (assembly.status !== 'ASSEMBLED') {
-      bankShort = true;
-      break;
+  const { prepared, bankShort } = await withLaunchLock({ studentId: p.studentId, conceptId: p.conceptId, quizMode: next.quizMode }, async () => {
+    let stored = 0;
+    for (let slot = 0; slot < target && readyCompatible + stored < target; slot++) {
+      if (usedSlots.includes(slot)) continue;
+      const assembly = await assembleActivityForLearner({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId) });
+      if (assembly.status !== 'ASSEMBLED') return { prepared: stored, bankShort: true };
+      if (
+        await storeReadyActivity({
+          identity, canonicalRevision: next.canonicalRevision, contract, contractFingerprint, learnerStateFingerprint: learnerFp,
+          slot, questions: assembly.questions, candidateIds: assembly.candidateIds,
+        })
+      ) stored++;
     }
-    if (
-      await storeReadyActivity({
-        identity, canonicalRevision: next.canonicalRevision, contract, contractFingerprint, learnerStateFingerprint: learnerFp,
-        slot, questions: assembly.questions, candidateIds: assembly.candidateIds,
-      })
-    ) prepared++;
-  }
+    return { prepared: stored, bankShort: false };
+  });
 
   // keep the bank deep enough for the next launches, never waiting for a miss.
   // Depth = complete sets the bank can still assemble beyond the READY

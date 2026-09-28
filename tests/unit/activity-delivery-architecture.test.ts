@@ -416,3 +416,40 @@ describe('9. bank depth is measured in assemblable sets, never raw counts', () =
     expect(read('src/services/question-bank.service.ts')).not.toMatch(/countUndeliveredCandidates/);
   });
 });
+
+describe('10. a READY activity never holds a candidate a concurrent launch delivered (race found by STEADY)', () => {
+  it('the worker assembles + stores READY activities under the SAME launch lock as a launch', () => {
+    const W = read('src/services/activity-delivery-worker.service.ts');
+    const locked = W.slice(W.indexOf('await withLaunchLock({ studentId: p.studentId, conceptId: p.conceptId, quizMode: next.quizMode }, async () => {'));
+    expect(locked.length).toBeLessThan(W.length);
+    const body = locked.slice(0, locked.indexOf('\n  });'));
+    expect(body).toMatch(/assembleActivityForLearner\(/);
+    expect(body).toMatch(/storeReadyActivity\(/);
+    expect(read('src/services/activity-delivery.service.ts')).toMatch(/acquireLaunchLock\(launchLockKey\(input\)\)/);
+  });
+
+  it('defense in depth: consumption and reconciliation retire a READY whose candidate was delivered (independent checks)', () => {
+    const INV = read('src/services/activity-inventory.service.ts');
+    expect(INV).toMatch(/WHEN \$6::boolean AND EXISTS \(\s*SELECT 1 FROM question_bank_deliveries d WHERE d\.student_id = \$1 AND d\.candidate_id = ANY\(candidate_ids\)\s*\) THEN 'CANDIDATE_DELIVERED'/);
+    expect(INV).toMatch(/current\.independent && row\.has_delivered === true\s*\n\s*\? \{ compatible: false, reason: 'CANDIDATE_DELIVERED' \}/);
+    expect(read('src/services/activity-delivery.service.ts')).toMatch(/independent: isIndependentActivity\(input\.activityType\) \}/);
+  });
+
+  it('the hot path passes independence to consumption', async () => {
+    h.consume.mockResolvedValue(null);
+    h.assemble.mockResolvedValue({ status: 'SHORT', available: 0, needed: 10, poolSize: 0 });
+    const r = await deliverCanonicalActivity(INPUT);
+    await (r as any).lock.release();
+    expect(h.consume.mock.calls[0][1].independent).toBe(true);
+    await deliverCanonicalActivity({ ...INPUT, activityType: 'PRACTICE', quizMode: 'topic_practice', contract: { ...CONTRACT, activityType: 'PRACTICE', independence: false } }).then((x: any) => x.lock?.release());
+    expect(h.consume.mock.calls[1][1].independent).toBe(false);
+  });
+
+  it('withLaunchLock always releases, also when the work throws', async () => {
+    const { withLaunchLock } = await import('@/services/activity-launch-lock.service');
+    await expect(withLaunchLock({ studentId: 's', conceptId: 'c', quizMode: 'canonical_prove' }, async () => { throw new Error('boom'); })).rejects.toThrow('boom');
+    expect(h.clientQuery.mock.calls.map((c) => c[0])).toContain('COMMIT');
+    expect(h.release).toHaveBeenCalledTimes(1);
+    expect(await withLaunchLock({ studentId: 's', conceptId: 'c', quizMode: 'canonical_prove' }, async () => 42)).toBe(42);
+  });
+});

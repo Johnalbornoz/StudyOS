@@ -25,7 +25,10 @@
  * DUPLICATE_ACTIVE_SESSIONS = 0, FAILED_LAUNCHES = 0.
  */
 import { createHash } from 'crypto';
-import { writeFileSync } from 'fs';
+import { readFileSync, rmSync, writeFileSync } from 'fs';
+import { spawn } from 'child_process';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { db } from '@/lib/db';
 import { verifyV1PracticeLaunchMarker, getCanonicalPedagogicalDecision } from '@/lib/pedagogical-decision';
 import { runWithAiMetrics, currentAiCallCount } from '@/lib/ai/request-metrics';
@@ -406,6 +409,41 @@ async function resetBenchLearner(studentId: string, emptyConcepts: string[] = []
   console.log(`[bench] reset: ${jobs.rows.length} open jobs closed, ${emptyConcepts.length} concepts emptied`);
 }
 
+type WorkerStats = ReturnType<typeof startWorkerLoop>['stats'];
+
+/** Runs the worker loop in a child process (this script, `--scenario=worker-loop`); stop() returns its stats. */
+function startWorkerProcess(studentId: string) {
+  const statsFile = join(tmpdir(), `bench-worker-${process.pid}-${Date.now()}.json`);
+  const child = spawn('npx', ['tsx', '--tsconfig', 'tsconfig.json', process.argv[1], '--scenario=worker-loop', `--student=${studentId}`, `--stats=${statsFile}`], {
+    env: process.env, stdio: ['ignore', 'inherit', 'inherit'],
+  });
+  const exited = new Promise<void>((resolve) => child.on('exit', () => resolve()));
+  return {
+    async stop(): Promise<WorkerStats> {
+      child.kill('SIGTERM');
+      await exited;
+      const stats = JSON.parse(readFileSync(statsFile, 'utf-8')) as WorkerStats;
+      rmSync(statsFile, { force: true });
+      return stats;
+    },
+  };
+}
+
+/** `--scenario=worker-loop`: the child side of startWorkerProcess. */
+async function runWorkerLoopProcess() {
+  const studentId = process.argv.find((a) => a.startsWith('--student='))!.split('=')[1];
+  const statsFile = process.argv.find((a) => a.startsWith('--stats='))!.split('=')[1];
+  const loop = startWorkerLoop(studentId);
+  const stop = async () => {
+    await loop.stop();
+    writeFileSync(statsFile, JSON.stringify(loop.stats));
+    await db.end?.();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => void stop());
+  await new Promise(() => {});
+}
+
 const readyCount = async (studentId: string, conceptId: string, t: DeliveryActivityType) =>
   (await db.query(`SELECT count(*)::int n FROM canonical_prepared_activity WHERE student_id = $1 AND concept_id = $2 AND stage = $3 AND status = 'READY'`, [studentId, conceptId, STAGE_FOR_ACTIVITY[t]])).rows[0].n as number;
 
@@ -432,14 +470,16 @@ async function jobsByConcept(studentId: string, since: Date, concepts: Record<De
   return out;
 }
 
-async function integrity(studentId: string, concepts: Record<DeliveryActivityType, string>) {
+/** Independent-check candidates delivered in more than one session, among those delivered during this scenario. */
+async function integrity(studentId: string, concepts: Record<DeliveryActivityType, string>, since: Date) {
   const redelivered = await db.query(
     `SELECT c.activity_type, count(*)::int n FROM (
-       SELECT d.candidate_id FROM question_bank_deliveries d GROUP BY d.candidate_id HAVING count(*) > 1) x
+       SELECT d.candidate_id FROM question_bank_deliveries d GROUP BY d.candidate_id
+       HAVING count(*) > 1 AND max(d.delivered_at) >= $3) x
        JOIN question_bank_candidates c ON c.id = x.candidate_id
       WHERE c.student_id = $1 AND c.concept_id = ANY($2::uuid[]) AND c.activity_type IN ('PROVE', 'RETAIN', 'TRANSFER')
       GROUP BY 1`,
-    [studentId, Object.values(concepts)],
+    [studentId, Object.values(concepts), since],
   );
   const bankDupes = await db.query(
     `SELECT count(*)::int n FROM (SELECT concept_id, activity_type, language, content_fingerprint FROM question_bank_candidates
@@ -455,7 +495,9 @@ async function runSteady() {
   // from zero: empty bank + no inventory; everything below is produced by the real worker
   await resetBenchLearner(studentId, Object.values(concepts));
   const since = new Date();
-  const worker = startWorkerLoop(studentId);
+  // the background worker runs in its OWN process (own pool, own event loop), as the protected
+  // worker endpoint runs in its own invocation -- launches never share a process with AI generation here
+  const worker = startWorkerProcess(studentId);
 
   // warm-up: the REAL triggers queue preparation; the REAL worker fills bank + inventory (no seeding)
   const tWarm = Date.now();
@@ -500,7 +542,7 @@ async function runSteady() {
       await sleep(THINK_MS);
     }
   }));
-  await worker.stop();
+  const workerStats = await worker.stop();
 
   const summary = summarize(samples);
   const jobs = await jobsByConcept(studentId, since, concepts);
@@ -521,13 +563,13 @@ async function runSteady() {
     DUPLICATE_ACTIVE_SESSIONS: maxActiveDuplicates + doubleClickMismatches,
     FAILED_LAUNCHES: samples.filter((s) => s.source === 'FAILED').length,
     EMERGENCY_IN_NORMAL_OPERATION: samples.filter((s) => s.source === 'EMERGENCY_REQUIRED').length,
-    QUEUE_DUPLICATE_OPEN_JOBS: worker.stats.maxOpenDuplicateKeys,
+    QUEUE_DUPLICATE_OPEN_JOBS: workerStats.maxOpenDuplicateKeys,
   };
-  const integ = await integrity(studentId, concepts);
+  const integ = await integrity(studentId, concepts, since);
   const pass = gates.HOT_PATH_AI_CALLS === 0 && gates.P95_LAUNCH_MS < 2000 && gates.P99_LAUNCH_MS < 5000 && gates.DUPLICATE_ACTIVE_SESSIONS === 0
     && gates.FAILED_LAUNCHES === 0 && gates.EMERGENCY_IN_NORMAL_OPERATION === 0 && gates.QUEUE_DUPLICATE_OPEN_JOBS === 0
     && integ.duplicateBankContent === 0 && Object.keys(integ.independentCandidatesRedelivered).length === 0;
-  const out = { scenario: 'STEADY_STATE', measuredTypes: types, blocked, thinkMs: THINK_MS, launchesPerType: LAUNCHES, warmUp: { totalMs: warmUpMs, firstReadyMsByType: warm }, worker: worker.stats, ...summary, integrity: integ, gates, verdict: pass ? 'PASS' : 'FAIL' };
+  const out = { scenario: 'STEADY_STATE', measuredTypes: types, blocked, thinkMs: THINK_MS, launchesPerType: LAUNCHES, warmUp: { totalMs: warmUpMs, firstReadyMsByType: warm }, worker: { process: 'separate', ...workerStats }, ...summary, integrity: integ, gates, verdict: pass ? 'PASS' : 'FAIL' };
   console.log(JSON.stringify(out, null, 1));
   return out;
 }
@@ -590,6 +632,7 @@ async function runCold() {
 async function main() {
   assertDev();
   const scenario = (process.argv.find((a) => a.startsWith('--scenario='))?.split('=')[1] ?? 'hot').toLowerCase();
+  if (scenario === 'worker-loop') return runWorkerLoopProcess();
   const results: Record<string, unknown> = {};
   if (scenario === 'hot' || scenario === 'all') results.hot = await runHot();
   if (scenario === 'steady' || scenario === 'all') results.steady = await runSteady();

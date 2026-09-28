@@ -4,7 +4,9 @@
  *
  *   PREPARING -> READY -> CONSUMED
  *                     \-> INVALIDATED (contract or learner state changed,
- *                                      stage changed, legacy row)
+ *                                      stage changed, legacy row, or -- for
+ *                                      an independent check -- one of its
+ *                                      candidates was delivered meanwhile)
  *                     \-> EXPIRED     (past expires_at)
  *
  * A READY activity is delivered only while its activity-contract AND
@@ -50,7 +52,7 @@ export interface ConsumedActivity {
  */
 export async function consumeCompatibleInventory(
   identity: InventoryIdentity,
-  current: { contractFingerprint: string; learnerStateFingerprint: string },
+  current: { contractFingerprint: string; learnerStateFingerprint: string; independent: boolean },
 ): Promise<ConsumedActivity | null> {
   // ONE statement, atomic: lock this identity's READY rows (SKIP LOCKED), retire
   // the incompatible / expired ones (same rules as preparedActivityCompatibility),
@@ -63,6 +65,9 @@ export async function consumeCompatibleInventory(
                 WHEN expires_at IS NOT NULL AND expires_at <= now() THEN 'EXPIRED'
                 WHEN contract_fingerprint <> $4 THEN 'CONTRACT_CHANGED'
                 WHEN learner_state_fingerprint <> $5 THEN 'LEARNER_STATE_CHANGED'
+                WHEN $6::boolean AND EXISTS (
+                  SELECT 1 FROM question_bank_deliveries d WHERE d.student_id = $1 AND d.candidate_id = ANY(candidate_ids)
+                ) THEN 'CANDIDATE_DELIVERED'
                 ELSE NULL
               END AS verdict
          FROM canonical_prepared_activity
@@ -84,7 +89,7 @@ export async function consumeCompatibleInventory(
      )
      SELECT (SELECT json_agg(verdict) FROM retired) AS retired, c.id, c.questions, c.candidate_ids
        FROM (SELECT 1) one LEFT JOIN consumed c ON true`,
-    [identity.studentId, identity.conceptId, identity.stage, current.contractFingerprint, current.learnerStateFingerprint],
+    [identity.studentId, identity.conceptId, identity.stage, current.contractFingerprint, current.learnerStateFingerprint, current.independent],
   );
   const row = r.rows[0];
   for (const reason of (row?.retired as string[] | null) ?? []) log('retired', { stage: identity.stage, reason });
@@ -124,12 +129,13 @@ export async function reservedCandidateIds(studentId: string, conceptId: string)
  */
 export async function reconcileInventory(
   identity: InventoryIdentity,
-  current: { contractFingerprint: string; learnerStateFingerprint: string },
+  current: { contractFingerprint: string; learnerStateFingerprint: string; independent: boolean },
 ): Promise<{ readyCompatible: number; usedSlots: number[] }> {
   const rows = await db.query(
-    `SELECT id, stage, slot, contract_fingerprint, learner_state_fingerprint, expires_at
-       FROM canonical_prepared_activity
-      WHERE student_id = $1 AND concept_id = $2 AND status IN ('PREPARING', 'READY')`,
+    `SELECT p.id, p.stage, p.slot, p.contract_fingerprint, p.learner_state_fingerprint, p.expires_at,
+            EXISTS (SELECT 1 FROM question_bank_deliveries d WHERE d.student_id = p.student_id AND d.candidate_id = ANY(p.candidate_ids)) AS has_delivered
+       FROM canonical_prepared_activity p
+      WHERE p.student_id = $1 AND p.concept_id = $2 AND p.status IN ('PREPARING', 'READY')`,
     [identity.studentId, identity.conceptId],
   );
   const usedSlots: number[] = [];
@@ -140,10 +146,14 @@ export async function reconcileInventory(
       log('retired', { stage: row.stage, reason: 'STAGE_CHANGED' });
       continue;
     }
-    const verdict = preparedActivityCompatibility(
+    const fingerprintVerdict = preparedActivityCompatibility(
       { contractFingerprint: row.contract_fingerprint, learnerStateFingerprint: row.learner_state_fingerprint, expiresAt: row.expires_at ? new Date(row.expires_at) : null },
-      { ...current, now: new Date() },
+      { contractFingerprint: current.contractFingerprint, learnerStateFingerprint: current.learnerStateFingerprint, now: new Date() },
     );
+    const verdict: { compatible: true } | { compatible: false; reason: string } =
+      fingerprintVerdict.compatible && current.independent && row.has_delivered === true
+        ? { compatible: false, reason: 'CANDIDATE_DELIVERED' }
+        : fingerprintVerdict;
     if (!verdict.compatible) {
       await db.query(`UPDATE canonical_prepared_activity SET status = $2, failure_reason = $3 WHERE id = $1 AND status IN ('PREPARING', 'READY')`, [
         row.id,

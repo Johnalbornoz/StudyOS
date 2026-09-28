@@ -18,7 +18,6 @@
  * Launching writes no learning evidence.
  */
 import { after } from 'next/server';
-import { createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { currentAiCallCount } from '@/lib/ai/request-metrics';
 import { shuffleArray } from '@/lib/quiz/client-question';
@@ -35,11 +34,13 @@ import { storeQuiz, findResumableCanonicalSession, type QuizMode, type QuizSessi
 import { loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { consumeCompatibleInventory, linkConsumedActivity, reservedCandidateIds } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
+import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { addValidatedCandidates, recordBankDeliveries } from '@/services/question-bank.service';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
+import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
 
-export const LAUNCH_LOCK_TIMEOUT = '90s';
+export { launchLockId, type LaunchLock } from '@/services/activity-launch-lock.service';
 
 export type DeliverySource = 'RESUMED' | 'INVENTORY' | 'BANK' | 'EMERGENCY_AI';
 
@@ -49,10 +50,6 @@ export interface LaunchTimings {
   inventoryMs: number;
   bankMs: number;
   sessionMs: number;
-}
-
-export interface LaunchLock {
-  release(): Promise<void>;
 }
 
 export interface DeliveryInput {
@@ -70,49 +67,6 @@ export interface DeliveryInput {
 export type DeliveryResult =
   | { status: 'DELIVERED'; source: Exclude<DeliverySource, 'EMERGENCY_AI'>; quizId: string; questions: GeneratedQuestion[]; timings: LaunchTimings }
   | { status: 'EMERGENCY_REQUIRED'; lock: LaunchLock; timings: LaunchTimings; bank: { available: number; needed: number } };
-
-/**
- * Transaction-scoped advisory lock on a dedicated connection. A
- * transaction is pinned to ONE server connection even behind a
- * transaction-pooling proxy (Neon's PgBouncer), and the lock is released
- * by COMMIT/ROLLBACK -- a session-level pg_advisory_lock/unlock pair is
- * NOT safe there (the unlock can land on another server connection and
- * orphan the lock: found by the delivery benchmark).
- */
-async function acquireLaunchLock(key: string): Promise<LaunchLock> {
-  const client = await db.connect();
-  let released = false;
-  try {
-    // one round trip; the key is a 64-bit integer computed here, so the multi-statement text carries no user input
-    await client.query(`BEGIN; SET LOCAL lock_timeout = '${LAUNCH_LOCK_TIMEOUT}'; SELECT pg_advisory_xact_lock(${launchLockId(key)});`);
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    client.release();
-    throw error;
-  }
-  return {
-    async release() {
-      if (released) return;
-      released = true;
-      try {
-        await client.query('COMMIT');
-      } catch {
-        await client.query('ROLLBACK').catch(() => {});
-      } finally {
-        client.release();
-      }
-    },
-  };
-}
-
-/** Stable signed 64-bit lock id for a launch key (first 8 bytes of its sha256). */
-export function launchLockId(key: string): string {
-  return createHash('sha256').update(key).digest().readBigInt64BE(0).toString();
-}
-
-function launchLockKey(input: Pick<DeliveryInput, 'studentId' | 'conceptId' | 'quizMode'>): string {
-  return `activity-launch:${input.studentId}:${input.conceptId}:${input.quizMode}`;
-}
 
 /** Creates the session for a delivered set (same persistence as every session) and records its provenance. */
 async function openSession(
@@ -191,7 +145,7 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     t = Date.now();
     const consumed = await consumeCompatibleInventory(
       { studentId: input.studentId, conceptId: input.conceptId, stage, policyVersion: input.v1Marker.pedagogicalPolicyVersion },
-      { contractFingerprint, learnerStateFingerprint: learnerFp },
+      { contractFingerprint, learnerStateFingerprint: learnerFp, independent: isIndependentActivity(input.activityType) },
     );
     timings.inventoryMs = Date.now() - t;
     if (consumed && consumed.questions.length === input.contract.itemCount) {

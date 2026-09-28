@@ -86,6 +86,7 @@ A prepared activity is deliverable only while **both** fingerprints still match.
 | `LEARNER_STATE_CHANGED` | INVALIDATED |
 | `STAGE_CHANGED` (canonical next action moved to another stage) | INVALIDATED |
 | `NO_LAUNCHABLE_ACTIVITY` (waiting / consolidated / blocked) | INVALIDATED |
+| `CANDIDATE_DELIVERED` (independent check: one of its candidates was delivered meanwhile; defense in depth, see Idempotency) | INVALIDATED |
 | past `expires_at` | EXPIRED |
 
 Consumption is one atomic statement:
@@ -142,6 +143,7 @@ Each READY activity is delivered at most once.
 - **Launch lock:** each launch takes a transaction-scoped `pg_advisory_xact_lock` on `activity-launch:{student}:{concept}:{quizMode}`, in one round trip.
   - The lock is released by COMMIT (or by ROLLBACK on error).
   - Session-level advisory locks are unsafe behind the PgBouncer transaction pooler. They were found to orphan during the benchmark.
+- **Worker under the same lock:** the worker assembles and stores READY activities while holding the SAME launch lock. It therefore never reads the bank in the middle of a launch that is delivering from it, because a launch records its deliveries before releasing the lock. Without this, the STEADY benchmark found a READY built from candidates that a concurrent BANK launch had just delivered. Consumption and reconciliation also retire such a row (`CANDIDATE_DELIVERED`), so an independent check can never repeat an item.
 - **Session identity:** under the lock, an equivalent open session is looked up (`findResumableCanonicalSession`). An equivalent session has the same mode, policy, contract and item count, and is not expired or submitted.
   - A double click gives 1 session.
   - A refresh, or returning to the concept, resumes that session.
@@ -180,7 +182,8 @@ There are three scenarios.
 
 - **Setup:** a real subject that starts **from zero**, with an empty bank and no inventory. Its bank is filled only by the REAL worker. `BANK_REPLENISH` runs the certified generators with real AI calls in the background. The benchmark inserts nothing.
 - **Warm-up:** the real triggers queue the jobs. The warm-up waits until each type reaches its **policy targets**: READY inventory at `inventoryTarget`, and `SPARE_ASSEMBLABLE_SETS` complete sets still assemblable from the bank beyond it.
-- **Tracks:** one learner track per type runs concurrently, launching every `--think` seconds (default 30 s, deliberately faster than a real learner). The worker loop keeps running, like `after()` and cron do in production.
+- **Tracks:** one learner track per type runs concurrently, launching every `--think` seconds (default 30 s, deliberately faster than a real learner).
+- **Worker:** the worker loop runs in a **separate process**, with its own pool and event loop, the way the protected worker endpoint runs in its own invocation. In production, `after()` replenishment runs in the instance that served the request, so it can share that instance's pool with concurrent requests. The worker endpoint (cron) does not.
 - **Measured per type:**
   - latency;
   - inventory hit rate and bank assembly rate;
