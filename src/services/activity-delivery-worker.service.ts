@@ -7,8 +7,9 @@
  *   inventory that no longer matches (stage / contract / learner state)
  *   -> assemble READY activities from the bank up to the policy target
  *   (PRACTICE 2, everything else 1; a Prove READY is a complete 10) ->
- *   keep the bank deep enough; if the bank is short, queue BANK_REPLENISH
- *   and a follow-up preparation.
+ *   keep SPARE_ASSEMBLABLE_SETS complete sets assemblable from the bank
+ *   beyond them (queue BANK_REPLENISH chunks for what is missing); if the
+ *   bank is short, also a follow-up preparation.
  *
  * BANK_REPLENISH (learner, concept, activity type, language, academic)
  *   the certified generators produce candidates -> VALIDATED bank rows.
@@ -25,7 +26,7 @@ import {
   academicContextFingerprint,
   activityContractFingerprint,
   bankChunks,
-  bankTarget,
+  SPARE_ASSEMBLABLE_SETS,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
   learnerStateFingerprint,
@@ -39,8 +40,8 @@ import type { QuizMode } from '@/services/quiz-persistence.service';
 import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
-import { assembleActivityForLearner } from '@/services/activity-assembly.service';
-import { addValidatedCandidates, countUndeliveredCandidates } from '@/services/question-bank.service';
+import { assembleActivityForLearner, countSpareSets } from '@/services/activity-assembly.service';
+import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 
@@ -118,16 +119,17 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
     ) prepared++;
   }
 
-  // keep the bank deep enough for the next launches, never waiting for a miss:
-  // what is missing (after the generation already in flight) is requested as
-  // parallel chunks of at most one generator batch each
+  // keep the bank deep enough for the next launches, never waiting for a miss.
+  // Depth = complete sets the bank can still assemble beyond the READY
+  // inventory (real assembly: novelty + diversity); what is missing, after
+  // the generation already in flight, is requested as parallel chunks of at
+  // most one generator batch each.
   const key = bankKey(contract);
-  const [undelivered, inFlight] = await Promise.all([
-    countUndeliveredCandidates({ studentId: p.studentId, conceptId: p.conceptId, activityType, language: contract.language, academic }),
+  const [spareSets, inFlight] = await Promise.all([
+    countSpareSets({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
     openBankSupply(key),
   ]);
-  const want = bankTarget(activityType, contract.itemCount);
-  const missing = want - undelivered - inFlight;
+  const missing = (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight;
   const needed = bankShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
   const chunks = bankChunks(needed, BATCH_CAP[activityType]);
   for (let i = 0; i < chunks.length; i++) {
@@ -138,7 +140,7 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
-  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, undelivered, inFlight, bankJobs: chunks.length } };
+  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length } };
 };
 
 export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {

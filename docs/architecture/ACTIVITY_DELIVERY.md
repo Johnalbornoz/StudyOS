@@ -102,7 +102,7 @@ Each READY activity is delivered at most once.
   - PRACTICE keeps 2.
   - PROVE keeps 1 full, validated set of 10.
   - TRANSFER keeps 1 set of 3 (NEAR / CONTEXTUAL / HIGHER).
-- **Bank depth:** 2 full sets of undelivered candidates per (concept, activity type, language, academic context).
+- **Bank depth:** `SPARE_ASSEMBLABLE_SETS` (2) complete sets that the bank can still assemble beyond the READY inventory, per (learner, concept, activity type, language, academic context). Depth is measured by running the real assembly (`countAssemblableSets`: difficulty band, novelty exclusions, diversity), never by counting raw candidates. Leftovers of earlier assemblies are often near-duplicates of each other and cannot form a valid set.
 - **Triggers:** all of them call `scheduleDeliveryReplenishment`, always from `after()` so they run after the response:
   - an activity is submitted;
   - Concept Mission is opened;
@@ -116,7 +116,7 @@ Each READY activity is delivered at most once.
   3. Assembles READY sets up to the target.
   4. Queues `BANK_REPLENISH` if the bank is shallow or short.
   5. Queues a delayed follow-up preparation if the bank was short.
-- **Bank requests:** `PREPARE_INVENTORY` asks only for what is missing: bank target − undelivered − generation already in flight (`openBankSupply`). It splits that need into generator-sized **chunks** (`bankChunks`). Each chunk is its own `BANK_REPLENISH` job, keyed `bank:…:c<i>`, and the chunks run in parallel. The in-flight subtraction means repeated triggers never over-generate.
+- **Bank requests:** `PREPARE_INVENTORY` asks only for what is missing: (`SPARE_ASSEMBLABLE_SETS` − spare sets) × item count − generation already in flight (`openBankSupply`). It splits that need into generator-sized **chunks** (`bankChunks`). Each chunk is its own `BANK_REPLENISH` job, keyed `bank:…:c<i>`, and the chunks run in parallel. The in-flight subtraction means repeated triggers never over-generate.
 - **`BANK_REPLENISH` handler:**
   1. Generates one chunk.
   2. Banks the validated candidates and keeps partial progress.
@@ -179,7 +179,7 @@ There are three scenarios.
 ### STEADY STATE (`--scenario=steady`)
 
 - **Setup:** a real subject that starts **from zero**, with an empty bank and no inventory. Its bank is filled only by the REAL worker. `BANK_REPLENISH` runs the certified generators with real AI calls in the background. The benchmark inserts nothing.
-- **Warm-up:** the real triggers queue the jobs. The warm-up waits until each type reaches its **policy targets**: READY inventory at `inventoryTarget` and undelivered bank at `bankTarget`.
+- **Warm-up:** the real triggers queue the jobs. The warm-up waits until each type reaches its **policy targets**: READY inventory at `inventoryTarget`, and `SPARE_ASSEMBLABLE_SETS` complete sets still assemblable from the bank beyond it.
 - **Tracks:** one learner track per type runs concurrently, launching every `--think` seconds (default 30 s, deliberately faster than a real learner). The worker loop keeps running, like `after()` and cron do in production.
 - **Measured per type:**
   - latency;

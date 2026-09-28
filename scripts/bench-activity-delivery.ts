@@ -31,10 +31,12 @@ import { verifyV1PracticeLaunchMarker, getCanonicalPedagogicalDecision } from '@
 import { runWithAiMetrics, currentAiCallCount } from '@/lib/ai/request-metrics';
 import { deliverCanonicalActivity, type DeliveryInput } from '@/services/activity-delivery.service';
 import { loadAcademicContext } from '@/services/activity-delivery-context.service';
-import { addValidatedCandidates, countUndeliveredCandidates } from '@/services/question-bank.service';
+import { addValidatedCandidates } from '@/services/question-bank.service';
 import { runGenerationWorker, type JobHandler } from '@/services/generation-queue.service';
 import { prepareInventoryHandler, runDeliveryWorker, scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
-import { STAGE_FOR_ACTIVITY, inventoryTarget, bankTarget } from '@/lib/activity-delivery/contract';
+import { STAGE_FOR_ACTIVITY, inventoryTarget, SPARE_ASSEMBLABLE_SETS, type ActivityContract } from '@/lib/activity-delivery/contract';
+import { countSpareSets } from '@/services/activity-assembly.service';
+import { reservedCandidateIds } from '@/services/activity-inventory.service';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import type { DeliveryActivityType, AcademicContext } from '@/lib/activity-delivery/contract';
 import { QUIZ_MODE_FOR_ACTIVITY } from '@/lib/activity-delivery/contract';
@@ -458,14 +460,19 @@ async function runSteady() {
   // warm-up: the REAL triggers queue preparation; the REAL worker fills bank + inventory (no seeding)
   const tWarm = Date.now();
   for (const t of types) await scheduleDeliveryReplenishment({ studentId, subjectId, conceptId: concepts[t] }, { kickWorker: false, language: LANGUAGE });
-  // "start with sufficient inventory": every type at its POLICY targets (READY inventory + bank depth), reached by the real worker
+  // "start with sufficient inventory": every type at its POLICY targets -- READY inventory and
+  // SPARE_ASSEMBLABLE_SETS complete sets assemblable beyond it -- reached by the real worker
   const warm: Record<string, number | null> = {};
   await Promise.all(types.map(async (t) => {
-    const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
-    const itemCount = m?.itemCount?.authorized ?? QUIZ_MODE_CONFIG[QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode].defaultMax;
+    const m = (await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] }))!;
+    const quizMode = QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode;
+    const contract: ActivityContract = {
+      conceptId: concepts[t], activityType: t, language: LANGUAGE, academic, difficulty: m.difficulty,
+      itemCount: m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[quizMode].defaultMax, independence: m.independence, policyVersion: m.pedagogicalPolicyVersion,
+    };
     warm[t] = await waitFor(async () =>
       (await readyCount(studentId, concepts[t], t)) >= inventoryTarget(t)
-      && (await countUndeliveredCandidates({ studentId, conceptId: concepts[t], activityType: t, language: LANGUAGE, academic })) >= bankTarget(t, itemCount), 15 * 60_000);
+      && (await countSpareSets({ studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(studentId, concepts[t]), maxSets: SPARE_ASSEMBLABLE_SETS })) >= SPARE_ASSEMBLABLE_SETS, 15 * 60_000);
   }));
   const warmUpMs = Date.now() - tWarm;
   console.log(`[bench] steady warm-up ${warmUpMs} ms`, JSON.stringify(warm));

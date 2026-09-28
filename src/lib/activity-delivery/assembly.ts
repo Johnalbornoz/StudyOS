@@ -81,3 +81,20 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
   const chosen = selection.kept.slice(0, req.itemCount).map((q) => byQuestion.get(q)!);
   return { status: 'ASSEMBLED', questions: chosen.map((c) => c.question), candidateIds: chosen.map((c) => c.id) };
 }
+
+/**
+ * How many more complete, disjoint sets the pool can assemble (up to
+ * `maxSets`) -- by running the real assembly repeatedly, each set reserving
+ * its candidates. This is the bank's true depth.
+ */
+export function countAssemblableSets(candidates: BankCandidate[], req: AssemblyRequest, maxSets: number): number {
+  const reserved = new Set(req.reservedCandidateIds);
+  let sets = 0;
+  while (sets < maxSets) {
+    const r = assembleFromBank(candidates, { ...req, reservedCandidateIds: reserved });
+    if (r.status !== 'ASSEMBLED') break;
+    for (const id of r.candidateIds) reserved.add(id);
+    sets++;
+  }
+  return sets;
+}

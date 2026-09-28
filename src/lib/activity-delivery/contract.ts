@@ -136,18 +136,13 @@ export function inventoryTarget(activityType: DeliveryActivityType): number {
   return activityType === 'PRACTICE' ? 2 : 1;
 }
 
-/** Bank depth to aim for per (concept, activity type): enough for the next few launches without repeats. */
-export function bankTarget(activityType: DeliveryActivityType, itemCount: number): number {
-  switch (activityType) {
-    case 'PROVE':
-    case 'RETAIN':
-      return itemCount * 2; // two full, never-delivered independent sets
-    case 'TRANSFER':
-      return 6; // two per depth
-    default:
-      return Math.max(itemCount * 3, 9);
-  }
-}
+/**
+ * Bank depth policy, in COMPLETE SETS the bank can still assemble beyond the
+ * READY inventory (same filters, novelty exclusions and diversity as a real
+ * launch) -- never a raw candidate count: leftovers of earlier assemblies are
+ * often near-duplicates of each other and would not form a valid set.
+ */
+export const SPARE_ASSEMBLABLE_SETS = 2;
 
 /** Splits a candidate need into generator-sized chunks (one BANK_REPLENISH job each, run in parallel). */
 export function bankChunks(needed: number, batchCap: number): number[] {

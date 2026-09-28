@@ -112,21 +112,6 @@ export async function loadBankPool(
   }));
 }
 
-/** Available (VALIDATED, never delivered to this learner) candidates -- what replenishment compares with the bank target. */
-export async function countUndeliveredCandidates(
-  params: { studentId: string; conceptId: string; activityType: DeliveryActivityType; language: string; academic: AcademicContext },
-  client: DbExecutor = db,
-): Promise<number> {
-  const r = await client.query(
-    `SELECT count(*)::int AS n FROM question_bank_candidates c
-      WHERE c.concept_id = $2 AND c.student_id = $1 AND c.activity_type = $3 AND c.language = $4
-        AND c.academic_context_fingerprint = $5 AND c.validation_status = 'VALIDATED'
-        AND NOT EXISTS (SELECT 1 FROM question_bank_deliveries d WHERE d.candidate_id = c.id AND d.student_id = $1)`,
-    [params.studentId, params.conceptId, params.activityType, params.language, academicContextFingerprint(params.academic)],
-  );
-  return r.rows[0]?.n ?? 0;
-}
-
 /** Records which candidates were delivered in a session (idempotent) and bumps their usage. */
 export async function recordBankDeliveries(candidateIds: string[], quizSessionId: string, studentId: string, client: DbExecutor = db): Promise<void> {
   if (candidateIds.length === 0) return;

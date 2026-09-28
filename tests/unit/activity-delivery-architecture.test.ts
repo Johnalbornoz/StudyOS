@@ -52,7 +52,7 @@ vi.mock('@/lib/ai', async (orig) => ({ ...(await orig<typeof import('@/lib/ai')>
 vi.mock('@/lib/ai/adapters/call-model', async (orig) => ({ ...(await orig<typeof import('@/lib/ai/adapters/call-model')>()), callModel: (...a: any[]) => h.callModel(...a) }));
 
 import {
-  activityContractFingerprint, learnerStateFingerprint, preparedActivityCompatibility, inventoryTarget, bankTarget,
+  activityContractFingerprint, learnerStateFingerprint, preparedActivityCompatibility, inventoryTarget, SPARE_ASSEMBLABLE_SETS,
   NO_ACADEMIC_CONTEXT, type ActivityContract,
 } from '@/lib/activity-delivery/contract';
 import { assembleFromBank, type BankCandidate } from '@/lib/activity-delivery/assembly';
@@ -114,8 +114,7 @@ describe('1. activity contract', () => {
   it('replenishment policy: PRACTICE keeps 2 READY, every other next action 1; a Prove READY is a full set', () => {
     expect(inventoryTarget('PRACTICE')).toBe(2);
     for (const t of ['LEARN_CHECK', 'PROVE', 'RETAIN', 'TRANSFER'] as const) expect(inventoryTarget(t)).toBe(1);
-    expect(bankTarget('PROVE', 10)).toBe(20);
-    expect(bankTarget('TRANSFER', 3)).toBe(6);
+    expect(SPARE_ASSEMBLABLE_SETS).toBe(2);
   });
 
   it('the consumption SQL mirrors preparedActivityCompatibility exactly', () => {
@@ -329,7 +328,7 @@ describe('8. background worker throughput', () => {
     expect(bankChunks(-4, 10)).toEqual([]);
     const W = read('src/services/activity-delivery-worker.service.ts');
     // generation already in flight is subtracted, so repeated triggers never over-generate
-    expect(W).toMatch(/const missing = want - undelivered - inFlight;/);
+    expect(W).toMatch(/const missing = \(SPARE_ASSEMBLABLE_SETS - spareSets\) \* contract\.itemCount - inFlight;/);
     expect(W).toMatch(/enqueueGenerationJob\('BANK_REPLENISH', `\$\{key\}:c\$\{i\}`/);
     expect(read('src/services/generation-queue.service.ts')).toMatch(/kind = 'BANK_REPLENISH' AND status IN \('PENDING', 'RUNNING'\) AND left\(dedup_key, length\(\$1\)\) = \$1/);
   });
@@ -380,5 +379,40 @@ describe('8. background worker throughput', () => {
       String(sql).includes('UPDATE generation_jobs j') ? { rows: [{ id: `j${n++}`, kind: 'PREPARE_INVENTORY', dedup_key: `k${n}`, payload: {}, attempts: 1, max_attempts: 3 }] } : { rows: [] });
     const s = await runGenerationWorker({ BANK_REPLENISH: async () => ({ ok: true, result: {} }), PREPARE_INVENTORY: async () => ({ ok: true, result: {} }) }, { concurrency: 3, maxJobs: 5 });
     expect(s.processed).toBe(5);
+  });
+});
+
+describe('9. bank depth is measured in assemblable sets, never raw counts', () => {
+  const cand = (i: number, over: Partial<BankCandidate> = {}): BankCandidate => ({ id: `b${i}`, question: Q(i), difficulty: 3, contentFingerprint: `f${i}`, transferDepth: null, usageCount: 0, delivered: false, ...over });
+  const req = { activityType: 'PROVE' as const, itemCount: 3, difficulty: { min: 3, max: 4, target: 3 }, language: 'es', excludeFingerprints: new Set<string>(), reservedCandidateIds: new Set<string>() };
+
+  it('counts disjoint complete sets through the real assembly, bounded by maxSets', async () => {
+    const { countAssemblableSets } = await import('@/lib/activity-delivery/assembly');
+    const pool = Array.from({ length: 7 }, (_, i) => cand(i));
+    expect(countAssemblableSets(pool, req, 5)).toBe(2);
+    expect(countAssemblableSets(pool, req, 1)).toBe(1);
+    expect(countAssemblableSets(pool, { ...req, reservedCandidateIds: new Set(['b0', 'b1']) }, 5)).toBe(1);
+  });
+
+  it('a residue of near-duplicates is NOT depth (the raw count would say "enough")', async () => {
+    const { countAssemblableSets } = await import('@/lib/activity-delivery/assembly');
+    // same template, only the numbers vary: diversity keeps at most TEMPLATE_CAP of them
+    const residue = Array.from({ length: 6 }, (_, i) =>
+      cand(100 + i, { question: { ...Q(0), id: `r${i}`, question: `${Q(0).question} (${i})` } }));
+    expect(residue.length).toBeGreaterThanOrEqual(2 * req.itemCount);
+    expect(countAssemblableSets(residue, req, 2)).toBe(0);
+  });
+
+  it('delivered items never count for an independent check', async () => {
+    const { countAssemblableSets } = await import('@/lib/activity-delivery/assembly');
+    const pool = Array.from({ length: 6 }, (_, i) => cand(i, { delivered: i < 3 }));
+    expect(countAssemblableSets(pool, req, 5)).toBe(1);
+    expect(countAssemblableSets(pool, { ...req, activityType: 'PRACTICE' }, 5)).toBe(2);
+  });
+
+  it('the worker and the benchmark warm-up use the same depth measure', () => {
+    expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/countSpareSets\(\{ studentId: p\.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds\(p\.studentId, p\.conceptId\), maxSets: SPARE_ASSEMBLABLE_SETS \}\)/);
+    expect(read('scripts/bench-activity-delivery.ts')).toMatch(/countSpareSets\(/);
+    expect(read('src/services/question-bank.service.ts')).not.toMatch(/countUndeliveredCandidates/);
   });
 });
