@@ -28,7 +28,10 @@
  * AI quota guard (DEV's limit is global, shared with E2E testing): before
  * each scenario remaining_daily must be >= estimate + 1000; during it the
  * per-minute counter is watched (AI_RATE_LIMIT_PRESSURE) and the scenario
- * stops if fewer than 1000 daily calls would remain.
+ * stops if fewer than 1000 daily calls would remain, if the day's calls reach
+ * --dayCallCeiling (default 6000), or if the open queue grows past
+ * --openJobsAnomaly (a replenishment loop, not load). A stopped scenario also
+ * closes the benchmark learner's open jobs, so no benchmark AI keeps running.
  */
 import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
@@ -60,6 +63,10 @@ const DOUBLE_CLICK_PAIRS = 5;
 const TYPES: DeliveryActivityType[] = ['LEARN_CHECK', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'];
 const LANGUAGE = 'es';
 const QUOTA_RESERVE = 1000;
+/** Hard stop for the whole run: the day's global AI calls must never pass this (cost / loop protection). */
+const DAY_CALL_CEILING = num('dayCallCeiling', 6000);
+/** More open jobs than this at once means a replenishment loop, not load: stop. */
+const OPEN_JOBS_ANOMALY = num('openJobsAnomaly', 150);
 /** Upper estimates of AI calls per scenario (from earlier DEV runs), for the pre-scenario quota check. */
 const QUOTA_ESTIMATE: Record<string, number> = { steady: 1500, cold: 700, hot: 300, stress: 1600 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -147,6 +154,8 @@ class QuotaWatch {
           this.maxOpenJobs = Math.max(this.maxOpenJobs, q.openJobs);
           if (q.minuteCalls >= 0.9 * q.perMinute) this.pressureEvents.push({ at: new Date().toISOString(), minuteCalls: q.minuteCalls });
           if (q.remaining < QUOTA_RESERVE && !this.aborted) this.aborted = `daily AI quota below reserve (${q.remaining} left)`;
+          if (q.dayCalls >= DAY_CALL_CEILING && !this.aborted) this.aborted = `day AI calls ${q.dayCalls} reached the ceiling ${DAY_CALL_CEILING}`;
+          if (q.openJobs > OPEN_JOBS_ANOMALY && !this.aborted) this.aborted = `anomalous queue depth ${q.openJobs} (> ${OPEN_JOBS_ANOMALY})`;
         } catch { /* a missed sample is not a failure */ }
         await sleep(15_000);
       }
@@ -155,12 +164,21 @@ class QuotaWatch {
   async end() { this.stop = true; await this.done; }
 }
 
+/** After a scenario the benchmark learner has no open jobs left: nothing keeps generating on its behalf. */
+async function closeBenchJobs(studentId: string, reason: string) {
+  const r = await db.query(
+    `UPDATE generation_jobs SET status = 'FAILED', last_error = $2, locked_at = NULL, updated_at = now()
+      WHERE payload->>'studentId' = $1 AND status IN ('PENDING', 'RUNNING') RETURNING id`, [studentId, reason]);
+  return r.rows.length;
+}
+
 class QuotaPause extends Error {}
 async function guardQuota(scenario: string) {
   const q = await quota();
   const need = QUOTA_ESTIMATE[scenario] + QUOTA_RESERVE;
   console.log(`[bench] quota before ${scenario}: ${q.dayCalls}/${q.perDay} used today, ${q.remaining} left, needs ${need}`);
   if (q.remaining < need) throw new QuotaPause(`PAUSED before ${scenario}: remaining_daily ${q.remaining} < estimate ${QUOTA_ESTIMATE[scenario]} + reserve ${QUOTA_RESERVE}`);
+  if (q.dayCalls + QUOTA_ESTIMATE[scenario] > DAY_CALL_CEILING) throw new QuotaPause(`PAUSED before ${scenario}: ${q.dayCalls} day calls + estimate ${QUOTA_ESTIMATE[scenario]} would pass the ceiling ${DAY_CALL_CEILING}`);
   return q;
 }
 
@@ -736,7 +754,10 @@ async function main() {
       throw e;
     }
     const result: any = sc === 'steady' ? await runSteadyLike('steady') : sc === 'stress' ? await runSteadyLike('stress') : sc === 'cold' ? await runCold() : await runHot();
+    const { studentId } = await ensureLearner();
+    result.benchJobsClosedAtEnd = await closeBenchJobs(studentId, 'BENCH_SCENARIO_END');
     writeFileSync(join(outDir, `${sc}.json`), JSON.stringify(result, null, 2));
+    if (result.quota?.aborted) { console.log(`[bench] STOPPED after ${sc}: ${result.quota.aborted}`); break; }
     table.push({ ...result.table, verdict: result.verdict ?? `invariants ${result.invariantsVerdict}` });
     console.log(`[bench] ${sc} done:`, JSON.stringify({ verdict: result.verdict ?? `invariants ${result.invariantsVerdict}`, table: result.table, quota: result.quota }));
   }

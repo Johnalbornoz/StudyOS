@@ -220,6 +220,8 @@ DEV's AI limit is global (`ai_global_limits`) and shared with manual E2E testing
 - **During the scenario:**
   - the per-minute counter is sampled, and any minute at 90% or more of the limit is recorded as `AI_RATE_LIMIT_PRESSURE`;
   - the scenario stops if fewer than 1000 daily calls would remain.
+  - the run also stops when the day's global calls reach `--dayCallCeiling` (default 6000), or when more than `--openJobsAnomaly` jobs (default 150) are open at once, which signals a replenishment loop rather than load.
+- **After each scenario:** the benchmark learner's open jobs are closed, so no benchmark AI keeps running.
 - **Attribution:** AI usage is attributed to the benchmark learner through `ai_execution_events.student_id`. No token or USD accounting is persisted, so cost is reported in calls.
 
 ## Runtime caveats
