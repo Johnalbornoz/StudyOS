@@ -1060,6 +1060,14 @@ export async function generatePracticeQuestions(
     activityType?: string;
     quizMode?: string;
     parentOperationId?: string;
+    /**
+     * LEARNING_ACTIVITY_DELIVERY bank replenishment ONLY: return the
+     * quality-gated questions even when fewer than `count` survived. The
+     * bank never serves a short activity (assembly requires a complete set),
+     * so discarding validated questions would only waste a generation. The
+     * live quiz path never sets this and keeps its all-or-nothing rule.
+     */
+    acceptPartial?: boolean;
   } = {}
 ): Promise<GeneratedQuestion[]> {
   const count = Math.max(1, Math.min(20, options.count || 20));
@@ -1293,6 +1301,11 @@ ${shapeExamples}
       }
       published = [...published, ...newlyAccepted];
       log('PRACTICE_RECOVERY_COMPLETE', { recoveredCount: newlyAccepted.length, acceptedCount: published.length });
+    }
+
+    if (published.length < count && options.acceptPartial && published.length > 0) {
+      log('PRACTICE_GENERATION_PARTIAL_ACCEPTED', { publishedCount: published.length, requestedCount: count, durationMs: Date.now() - startedAt, success: true });
+      return published;
     }
 
     if (published.length < count) {

@@ -76,6 +76,8 @@ export async function generateActivityCandidates(p: CandidateGenerationParams): 
         activityType: common.activityType,
         quizMode,
         parentOperationId: p.parentOperationId,
+        // bank candidates are individually quality-gated; a complete set is enforced at assembly
+        acceptPartial: true,
       });
   }
   return { questions, generator: questionGeneratorIdentity(p.parentOperationId) };

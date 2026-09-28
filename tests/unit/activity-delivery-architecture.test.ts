@@ -453,3 +453,13 @@ describe('10. a READY activity never holds a candidate a concurrent launch deliv
     expect(await withLaunchLock({ studentId: 's', conceptId: 'c', quizMode: 'canonical_prove' }, async () => 42)).toBe(42);
   });
 });
+
+describe('11. bank generation keeps partially successful practice batches', () => {
+  it('only the bank generator opts into partial results; the live path stays all-or-nothing', () => {
+    const GEN = read('src/services/quiz-generation.service.ts');
+    expect(GEN).toMatch(/if \(published\.length < count && options\.acceptPartial && published\.length > 0\) \{/);
+    expect(GEN).toMatch(/returning no questions rather than a shorter quiz/);
+    expect(read('src/services/activity-candidate-generation.service.ts')).toMatch(/acceptPartial: true,/);
+    expect(read('src/app/api/quizzes/generate-and-take/route.ts')).not.toMatch(/acceptPartial/);
+  });
+});
