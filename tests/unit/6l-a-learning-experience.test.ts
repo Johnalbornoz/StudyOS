@@ -199,10 +199,11 @@ describe('NO FRONTEND POLICY -- mapping functions cannot independently invent ca
     const source = read('src/app/dashboard/today/page.tsx');
     expect(source).not.toMatch(/if\s*\(.*mastery(Score)?\s*[<>]/i);
     expect(source).not.toMatch(/if\s*\(.*forgettingRisk\s*[<>]/i);
-    // The CTA is derived from the decision's own activityType, not a
-    // locally-hardcoded string.
-    expect(source).toMatch(/activityCta\(decision\.activityType, t\)/);
-    expect(source).toMatch(/activityCta\(best\.decision\.activityType, t\)/);
+    // The CTA is derived from the presented decision's own activityType
+    // (UX-2: the canonical launch's, via lib/experience/next-challenge.ts),
+    // never a locally-hardcoded string.
+    expect(source).toMatch(/activityCta\(view\.activityType, t\)/);
+    expect(read('src/app/dashboard/NextChallengeCard.tsx')).toMatch(/activityCta\(view\.activityType, t\)/);
   });
 
   it('the concept detail page\'s situation banner is computed from conceptSituation() over already-canonical fields, never a new threshold', () => {
@@ -271,7 +272,8 @@ describe('COLD STATE TEST (Section 26) -- no canonical recommendation must never
     const source = read('src/app/dashboard/today/page.tsx');
     expect(source).toMatch(/isCold/);
     expect(source).toMatch(/coldStateTitle/);
-    expect(source).toMatch(/emptyTitle/);
+    // UX-2: the caught-up copy is xp.caughtUpTitle (checked for alarming language below).
+    expect(source).toMatch(/isCold \? t\['today3\.coldStateTitle'\] : t\['xp\.caughtUpTitle'\]/);
   });
 
   it('neither the cold-state nor the success/caught-up copy uses alarming or risk language in any locale', () => {
@@ -282,6 +284,8 @@ describe('COLD STATE TEST (Section 26) -- no canonical recommendation must never
       expect(t['today3.coldStateBody']).not.toMatch(alarming);
       expect(t['today3.emptyTitle']).not.toMatch(alarming);
       expect(t['today3.emptyBody']).not.toMatch(alarming);
+      expect(t['xp.caughtUpTitle']).not.toMatch(alarming);
+      expect(t['xp.caughtUpBody']).not.toMatch(alarming);
     }
   });
 

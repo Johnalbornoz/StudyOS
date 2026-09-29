@@ -89,7 +89,9 @@ describe('LX-7R1 test 24 -- no canonical action for this subject -> neutral fall
   });
 
   it('the page renders a neutral "View my path" link in the no-decision branch, never a fabricated Practice CTA', () => {
-    expect(SUBJECT_PAGE_SRC).toMatch(/subjectDecision \? \(/);
+    // UX-2: the Start button renders only when the canonical launch for the
+    // subject's current concept is READY; otherwise the neutral link.
+    expect(SUBJECT_PAGE_SRC).toMatch(/subjectChallenge\?\.status === 'READY' \? \(/);
     expect(SUBJECT_PAGE_SRC).toMatch(/href=\{`\/dashboard\/path\/\$\{id\}`\}/);
     expect(SUBJECT_PAGE_SRC).toMatch(/subjectDetail\.viewMyPath/);
   });

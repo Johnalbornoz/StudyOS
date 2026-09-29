@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { after } from 'next/server';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import Link from 'next/link';
@@ -6,29 +6,41 @@ import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getLearningOSSnapshot, loadConceptLabels, type ConceptDisplayInfo } from '@/services/learning-os-snapshot.service';
 import { getLearningPlanHorizon } from '@/services/learning-plan-read.service';
+import { getLearningDaysThisWeek } from '@/services/gamification.service';
+import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
+import { getExamDefinition } from '@/lib/assessment/exam-definition.service';
 import { planItemWhyKey, planItemDayBucket } from '@/lib/learning-plan-presentation';
-import { estimateActivityMinutes, type LearningPlanItem } from '@/lib/learning-execution-policy';
+import type { LearningPlanItem } from '@/lib/learning-execution-policy';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { deriveTodayState } from '@/lib/lx/today-view';
-import WhyThisV3 from '../WhyThisV3';
+import type { NextChallengeView } from '@/lib/experience/next-challenge';
+import { presentSnapshotNextChallenge, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
+import { challengeVerb } from '@/lib/experience/vocabulary';
+import { selectGoalProfile, calendarDaysUntil } from '@/lib/experience/goal';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { Section } from '@/components/ui/Section';
+import { StatTile } from '@/components/ui/StatTile';
 import { activityLabel } from '../activityLabel';
 import { activityCta } from '../activityCta';
-import { activityNarrative } from '../activityNarrative';
 import StartSessionButton from '../StartSessionButton';
+import NextChallengeCard from '../NextChallengeCard';
 
 /**
- * Today v3 -- entirely Learning-OS-backed (Phase 3C decisions + Phase
- * 3D execution fit), in one atomic migration. No legacy
- * getTodayPlan()/buildBestNextAction()/TodayReason logic remains on
- * this page, so there is never a top card from one authority and a
- * list from another.
+ * UX-2 Home ("Hoy") -- an action-first entry point over the SAME
+ * Learning-OS snapshot Today has always read (Phase 3C decisions + Phase
+ * 3D execution fit). This page presents decisions; it never makes one.
  *
- * LX-6: this page presents Phase 3C/3D's canonical decision -- it never
- * computes one. See src/lib/lx/today-view.ts for the four semantic
- * states (NEXT_ACTION_AVAILABLE / CONSOLIDATED / NO_ACTIVE_LEARNING_PATH
- * / UNRESOLVED) this render can be in, and why a snapshot READ FAILURE
- * is never silently treated the same as "nothing is due."
+ * Hierarchy: context (date, greeting, the learner's existing exam goal)
+ * -> "Tu siguiente reto" (the snapshot's next executable item, presented
+ * by the canonical launch the Start button runs -- see
+ * lib/experience/next-challenge.ts) -> a two-figure snapshot (learning
+ * days this week, today's planned minutes) -> the rest of today's plan
+ * -> the read-only 14-day horizon.
+ *
+ * See src/lib/lx/today-view.ts for the four semantic states. A snapshot
+ * READ FAILURE is never treated as "nothing is due": it renders an error
+ * with a retry.
  */
 
 /** LX-6 R19: safe, learner-content-free observability. Server-side (this page never ships to the client) -- one line per event, never an answer/question/prompt/RAG value. */
@@ -39,87 +51,59 @@ function logToday(label: string, meta: Record<string, unknown> = {}): void {
   } catch { /* logging must never break the page */ }
 }
 
-function ItemRow({
-  item,
-  studentId,
-  labels,
-  t,
-  deferred,
-}: {
-  item: LearningPlanItem;
-  studentId: string;
-  labels: Map<string, ConceptDisplayInfo>;
-  t: ReturnType<typeof getMessages>;
-  deferred?: boolean;
-}) {
-  const { decision } = item;
-  const info = labels.get(decision.actionConceptId);
-  const label = info?.label ?? decision.actionConceptId;
-  const subjectName = info?.subjectName ?? '';
+type T = ReturnType<typeof getMessages>;
 
+/** One row of "Hoy también": the SAME presenter as the hero, so a row never offers an activity its button would not launch. */
+function PlanRow({
+  view,
+  labels,
+  studentId,
+  t,
+  locale,
+}: {
+  view: NextChallengeView;
+  labels: Map<string, ConceptDisplayInfo>;
+  studentId: string;
+  t: T;
+  locale: string;
+}) {
+  const info = labels.get(view.conceptId);
+  const label = info?.label ?? view.conceptId;
+  const conceptHref = `/dashboard/subjects/${view.subjectId}/concepts/${view.conceptId}`;
   return (
-    <div
-      className="card"
-      style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)',
-        borderLeft: `3px solid ${deferred ? 'var(--text-muted)' : 'var(--brand)'}`,
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Closeout B: retention eyebrow. Branches ONLY on the
-            already-chosen canonical activityType -- no re-ranking, no
-            due-date/threshold logic, no raw memory value. */}
-        {decision.activityType === 'RETENTION_CHECK' && (
-          <div
-            style={{
-              fontSize: 10.5, fontWeight: 650, color: 'var(--brand-ink)',
-              textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 3,
-            }}
-          >
-            {t['today.retentionEyebrow']}
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 600, fontSize: 15 }}>{label}</span>
-          <span
-            className="tabular"
-            style={{
-              fontSize: 11, fontWeight: 650, color: 'var(--brand-ink)', background: 'var(--brand-subtle)',
-              borderRadius: 'var(--radius-full)', padding: '2px 9px',
-            }}
-          >
-            {activityLabel(decision.activityType, t)}
-          </span>
-          <span className="tabular" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {t['bestNextAction.minutes'].replace('{min}', String(item.estimatedMinutes))}
-          </span>
-          {deferred && (
-            <span
-              style={{
-                fontSize: 10.5, fontWeight: 650, color: 'var(--warning)', background: 'var(--warning-subtle)',
-                borderRadius: 'var(--radius-full)', padding: '2px 9px', textTransform: 'uppercase', letterSpacing: '0.02em',
-              }}
-            >
-              {t['today3.deferredBadge']}
-            </span>
+    <li className="card xp-row">
+      <div className="xp-row-main">
+        <Link href={conceptHref} className="xp-row-title">{label}</Link>
+        <div className="xp-row-meta">
+          {/* Closeout B: same guard as the hero -- the already-chosen activity only. */}
+          {view.status === 'READY' && (
+            <span className="xp-row-verb">{view.activityType === 'RETENTION_CHECK' ? t['today.retentionEyebrow'] : challengeVerb(view.challenge, t)}</span>
           )}
+          {view.status === 'READY' && <span>{activityLabel(view.activityType, t)}</span>}
+          {info?.subjectName && <span>{info.subjectName}</span>}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{subjectName}</div>
-        <WhyThisV3 facts={decision.facts} t={t} />
       </div>
-      <StartSessionButton
-        studentId={studentId}
-        actionConceptId={decision.actionConceptId}
-        label={activityCta(decision.activityType, t)}
-        accessibleLabel={`${activityCta(decision.activityType, t)}: ${label}`}
-        unavailableLabel={t['today3.unavailableBody']}
-        retryLabel={t['today3.retry']}
-        licenseTitle={t['learning.licenseRequiredTitle']}
-        licenseBody={t['learning.licenseRequiredBody']}
-        licenseCtaLabel={t['license.demoBannerCta']}
-        variant="secondary"
-      />
-    </div>
+      <div className="xp-row-action">
+        {view.status === 'READY' ? (
+          <StartSessionButton
+            studentId={studentId}
+            actionConceptId={view.conceptId}
+            label={activityCta(view.activityType, t)}
+            accessibleLabel={`${activityCta(view.activityType, t)}: ${label}`}
+            unavailableLabel={t['today3.unavailableBody']}
+            retryLabel={t['today3.retry']}
+            licenseTitle={t['learning.licenseRequiredTitle']}
+            licenseBody={t['learning.licenseRequiredBody']}
+            licenseCtaLabel={t['license.demoBannerCta']}
+            variant="secondary"
+          />
+        ) : view.status === 'WAITING' && view.nextEligibleAt ? (
+          <span className="xp-row-note">{t['xp.availableOn'].replace('{date}', new Date(view.nextEligibleAt).toLocaleDateString(locale))}</span>
+        ) : (
+          <Link href={conceptHref} className="ui-link">{t['xp.openConcept']}</Link>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -154,13 +138,22 @@ export default async function TodayPage() {
   }
   logToday('TODAY_DECISION_READY', { latencyMs: Date.now() - requestStartedAtMs });
 
-  // 8F1 -- "Tu camino": a STRICTLY READ-ONLY 14-day plan glance below
-  // the unchanged Phase 4 hero. It reads the 8B read boundary only; a
-  // render here never creates, rolls, or reconciles a plan. If the read
-  // fails, Today still works -- the section just doesn't render.
+  // Context + figures: independent, read-only, each degrading to "not
+  // shown" on failure -- never blocking the next-action hero.
   const todayIso = new Date().toISOString().slice(0, 10);
-  const horizon = await getLearningPlanHorizon(studentId).catch(() => null);
-  const caminoItems = (horizon?.items ?? []).slice(0, 6);
+  const [user, learningDaysThisWeek, examProfiles, horizon] = await Promise.all([
+    currentUser().catch(() => null),
+    getLearningDaysThisWeek(studentId).catch(() => null),
+    listStudentExamProfiles(studentId).catch(() => []),
+    // 8F1 -- "Tu camino": a STRICTLY READ-ONLY 14-day plan glance. It
+    // reads the 8B read boundary only; a render here never creates,
+    // rolls, or reconciles a plan.
+    getLearningPlanHorizon(studentId).catch(() => null),
+  ]);
+  const goalProfile = selectGoalProfile(examProfiles, todayIso);
+  const goalDefinition = goalProfile ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
+
+  const caminoItems = (horizon?.items ?? []).slice(0, 4);
   const caminoLabels = caminoItems.length
     ? await loadConceptLabels(
         caminoItems.map((i) => i.conceptId).filter((v): v is string => !!v),
@@ -172,62 +165,36 @@ export default async function TodayPage() {
 
   const best = snapshot?.nextExecutableItem ?? null;
   const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
-  // LX-9R5 PART A1/B1/D: never trust `best.decision.activityType` on its
-  // own -- the exact live My Path bug (stage RETAIN, "Practicar" offered
-  // anyway) reads from this SAME shared snapshot, so Today can show the
-  // identical contradiction unless it applies the same gate. Both flags
-  // are computed ONCE inside `getLearningOSSnapshot` itself (never a
-  // second memory read added here -- Today stays presentation-only).
-  // CANON-R5 Part 9/28 -- when the canonical engine gate is on,
-  // `canonicalOverride` (a FRESH per-item decision, see
-  // learning-os-snapshot.service.ts) is authoritative for whether this
-  // item is actually actionable right now; the legacy
-  // nextExecutableItemWaiting/ZeroGapBlocked flags are used only as a
-  // fallback when the gate is off. A failed canonical read
-  // (`canonicalOverrideReadFailed`) never falls back to trusting the
-  // legacy flags as if they were still authoritative -- it blocks the
-  // hero instead (the same safe default as an explicit BLOCKED result).
-  const canonicalOverride = snapshot?.canonicalOverride ?? null;
-  const bestWaiting = !!best && (canonicalOverride ? canonicalOverride.launchStatus === 'WAITING' : !!snapshot?.nextExecutableItemWaiting);
-  // LX-9R8 PART A1/A5: a PRACTICE/REVIEW decision whose canonical
-  // evidence gap is already 0, with no REINFORCE-justified reason to
-  // keep practicing, is NOT executable -- computed ONCE inside
-  // getLearningOSSnapshot (never a second policy/memory read added
-  // here). Unlike WAITING (a genuine obligation, just not due), this is
-  // a contradiction that should never have reached the learner, so it
-  // is treated as "no primary action" (routes to the existing
-  // CONSOLIDATED state below), never a distinct card of its own.
-  const bestZeroGapBlocked = !!best && (
-    canonicalOverride
-      ? canonicalOverride.launchStatus !== 'READY' && canonicalOverride.launchStatus !== 'WAITING'
-      : !!snapshot?.nextExecutableItemZeroGapBlocked || !!snapshot?.canonicalOverrideReadFailed
-  );
-  const bestNextEligibleAt = canonicalOverride?.nextEligibleAt ?? snapshot?.nextExecutableItemNextEligibleAt ?? null;
+  // UX-2: the hero is presented from the canonical launch for this
+  // concept (the snapshot's own `canonicalOverride`, computed with the
+  // same function /api/learning/session/start runs) whenever the
+  // canonical gate is on -- never from the legacy `activityType`, which
+  // could name a different activity than the one the button launches.
+  const hero = snapshot ? presentSnapshotNextChallenge(snapshot) : null;
+  const heroHasAction = !!hero && (hero.status === 'READY' || hero.status === 'WAITING');
+
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
   const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
 
-  // Step 6L-A: "nothing to show" has two very different meanings for the
-  // student -- a brand-new/cold profile with no evidence yet to build a
-  // recommendation from, versus an established student who is genuinely
-  // caught up right now. Distinguishing them is a plain existence check
-  // over already-canonical data (never a new recommendation/diagnostic
-  // policy), so the cold state is never confused with "you're at risk"
-  // or "you're behind." Never attempted when the read itself already
-  // failed -- a second, unguarded query on top of a failing read is how
-  // the pre-LX-6 page could crash instead of degrading.
+  // Step 6L-A: a brand-new/cold profile with no evidence yet is a
+  // different, calmer state than "caught up". A plain existence check
+  // over already-canonical data (never a new recommendation policy),
+  // never attempted when the read itself already failed.
   const isCold = isEmpty
     ? await query(`SELECT EXISTS (SELECT 1 FROM learning_evidence WHERE student_id = $1) AS has_evidence`, [studentId])
         .then((r) => r.rows[0].has_evidence === false)
         .catch(() => false)
     : false;
 
-  const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: !!best && !bestZeroGapBlocked, isColdProfile: isCold });
+  const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: heroHasAction, isColdProfile: isCold });
   if (todayState === 'NEXT_ACTION_AVAILABLE' && best) {
     // LEARNING_ACTIVITY_DELIVERY -- the primary action is one tap away: keep it READY.
     const replenishTarget = { studentId, subjectId: best.decision.subjectId, conceptId: best.decision.actionConceptId };
     after(() => scheduleDeliveryReplenishment(replenishTarget).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
     logToday('TODAY_PRIMARY_ACTION_RENDERED', {
-      activityType: best.decision.activityType,
+      activityType: hero?.status === 'READY' ? hero.activityType : null,
+      authority: hero?.authority ?? null,
+      heroStatus: hero?.status ?? null,
       conceptId: best.decision.actionConceptId,
       subjectId: best.decision.subjectId,
       reasonCode: best.decision.reasonCode,
@@ -237,191 +204,171 @@ export default async function TodayPage() {
     logToday('TODAY_FAILED');
   }
 
+  // The rest of today's session: never the hero twice (the hero IS
+  // dailyPlan.items[0] -- selectExecutableNextAction's own contract).
+  const sessionItems: LearningPlanItem[] = snapshot ? snapshot.dailyPlan.items.slice(1) : [];
+  const sessionViews = await Promise.all(
+    sessionItems.map((item) =>
+      loadConceptNextChallenge({
+        studentId,
+        subjectId: item.decision.subjectId,
+        conceptId: item.decision.actionConceptId,
+        legacyDecision: item.decision,
+        snapshot,
+      }).catch((): NextChallengeView => ({
+        status: 'UNAVAILABLE',
+        authority: 'CANONICAL',
+        conceptId: item.decision.actionConceptId,
+        subjectId: item.decision.subjectId,
+        stage: null,
+        reason: 'CANONICAL_READ_FAILED',
+      })),
+    ),
+  );
+  const deferred = snapshot?.dailyPlan.deferred ?? [];
+
+  const firstName = user?.firstName?.trim();
+  const goalName = goalDefinition?.name ?? null;
+  const goalDays = goalProfile?.examDate ? calendarDaysUntil(goalProfile.examDate, todayIso) : null;
+  const goalWhen =
+    goalDays === null ? null : goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays));
+
+  // A hero concept with nothing executable right now (canonical
+  // CONSOLIDATED / BLOCKED / zero-gap) shows the calm card only when
+  // nothing else is planned -- otherwise the plan below leads.
+  const showHero =
+    !!hero && (hero.status === 'READY' || hero.status === 'WAITING' || (hero.status === 'UNAVAILABLE' && hero.reason === 'CANONICAL_READ_FAILED') || sessionViews.length === 0);
+
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 4px', textTransform: 'capitalize' }}>
-          {todayFormatted}
-        </p>
-        <h1>{t['today.title']}</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15, maxWidth: '58ch' }}>
-          {t['today3.subtitle']}
-        </p>
-      </div>
+    <div className="xp-page">
+      <header className="xp-intro">
+        <p className="xp-date">{todayFormatted}</p>
+        <h1>{firstName ? t['xp.greeting'].replace('{name}', firstName) : t['xp.greetingNoName']}</h1>
+        <p className="xp-tagline">{t['xp.tagline']}</p>
+        {goalProfile && goalName && (
+          <Link href={`/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal">
+            <span>{t['xp.goalLabel']}</span>
+            <strong>{goalName}</strong>
+            {goalWhen && <span className="xp-goal-when">{goalWhen}</span>}
+          </Link>
+        )}
+      </header>
 
       {todayState === 'UNRESOLVED' ? (
         // LX-6 R4/R23: a read failure gets its own honest state -- Retry
         // (a plain reload; the next render re-reads canonical truth) and
-        // View My Path. Never a fabricated recommendation, never a
-        // silently-picked fallback activity.
-        <div className="card empty-state">
-          <strong>{t['today3.unresolvedTitle']}</strong>
-          {t['today3.unresolvedBody']}
-          <div style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            <a href="/dashboard/today" className="btn btn-primary">
-              {t['today3.unresolvedRetry']}
-            </a>
-            {/* LX-7: "View My Path" now points at the real My Path (it
-                previously pointed at the unrelated rolling-plan page,
-                the same href the nav item used before LX-7 existed). */}
-            <Link href="/dashboard/path" className="btn btn-ghost">
-              {t['today3.viewMyPath']}
-            </Link>
-          </div>
-        </div>
+        // View My Path. Never a fabricated recommendation.
+        <InlineAlert
+          tone="error"
+          title={t['today3.unresolvedTitle']}
+          body={t['today3.unresolvedBody']}
+          actions={
+            <>
+              <a href="/dashboard/today" className="btn btn-primary">{t['today3.unresolvedRetry']}</a>
+              <Link href="/dashboard/path" className="btn btn-secondary">{t['today3.viewMyPath']}</Link>
+            </>
+          }
+        />
       ) : (
         <>
-          {/* LX-6 R5/R9/R16: the ONE dominant learning action -- an editorial
-              stack (eyebrow, heading, "why this now," CTA), not an icon+row
-              SaaS card. Everything below this is deliberately smaller/quieter. */}
-          {best && (bestZeroGapBlocked ? null : bestWaiting ? (
-        // LX-9R5 PART A2: WAITING is a valid canonical result, never an
-        // error -- reuses the SAME copy Concept Mission's own NOW card
-        // already shows for this exact condition (LX-9R3-R1 W1).
-        <div
-          className="card"
-          style={{ marginBottom: 'var(--space-9)', padding: 'var(--space-6) var(--space-6)' }}
-        >
-          <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
-            {bestLabel?.label ?? best.decision.actionConceptId}
-          </h2>
-          <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 6 }}>{bestLabel?.subjectName}</div>
-          <strong style={{ fontSize: 16.5, display: 'block', marginTop: 'var(--space-4)' }}>
-            {t['conceptMission.noActionRetentionWaitingTitle']}
-          </strong>
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '4px 0 0', maxWidth: '52ch' }}>
-            {bestNextEligibleAt
-              ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
-                  '{date}',
-                  new Date(bestNextEligibleAt).toLocaleDateString(locale),
-                )
-              : t['conceptMission.noActionRetentionWaitingBody']}
-          </p>
-        </div>
-      ) : (
-        <div
-          className="card"
-          style={{
-            marginBottom: 'var(--space-9)', borderColor: 'var(--brand)', borderWidth: 2,
-            padding: 'var(--space-6) var(--space-6)',
-          }}
-        >
-          <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 10 }}>{t['bestNextAction.title']}</div>
-          {/* Closeout B: retention eyebrow -- same guard as ItemRow, on the
-              already-chosen canonical activityType only. */}
-          {best.decision.activityType === 'RETENTION_CHECK' && (
-            <div
-              style={{
-                fontSize: 11, fontWeight: 650, color: 'var(--brand-ink)',
-                textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 6,
-              }}
-            >
-              {t['today.retentionEyebrow']}
-            </div>
-          )}
-          <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
-            {bestLabel?.label ?? best.decision.actionConceptId}
-          </h2>
-          <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 6 }}>
-            {bestLabel?.subjectName} · {activityLabel(best.decision.activityType, t)} ·{' '}
-            {t['bestNextAction.minutes'].replace('{min}', String(best.estimatedMinutes))}
-          </div>
-          {/* R6/R12-R15: the learner-friendly "why this activity, now" --
-              pure ActivityType -> sentence, never free-form/AI-generated. */}
-          <p style={{ fontSize: 16.5, lineHeight: 1.5, color: 'var(--text-primary)', margin: 'var(--space-4) 0 0', maxWidth: '52ch' }}>
-            {activityNarrative(best.decision.activityType, t)}
-          </p>
-          {/* LX-6R1 R3: at most ONE short supporting reason under the hero --
-              never stack every fact on the decision. */}
-          <WhyThisV3 facts={best.decision.facts} t={t} maxFacts={1} />
-          <div style={{ marginTop: 'var(--space-5)' }}>
-            <StartSessionButton
+          {best && hero && showHero && (
+            <NextChallengeCard
+              view={hero}
+              conceptLabel={bestLabel?.label ?? best.decision.actionConceptId}
+              subjectName={bestLabel?.subjectName ?? ''}
               studentId={studentId}
-              actionConceptId={best.decision.actionConceptId}
-              label={activityCta(best.decision.activityType, t)}
-              accessibleLabel={`${activityCta(best.decision.activityType, t)}: ${bestLabel?.label ?? best.decision.actionConceptId}`}
-              unavailableLabel={t['today3.unavailableBody']}
-              retryLabel={t['today3.retry']}
-              licenseTitle={t['learning.licenseRequiredTitle']}
-              licenseBody={t['learning.licenseRequiredBody']}
-              licenseCtaLabel={t['license.demoBannerCta']}
-              variant="primary"
+              t={t}
+              locale={locale}
+              legacyMinutes={best.estimatedMinutes}
               launchMark="TODAY_PRIMARY_ACTION_LAUNCHED"
             />
-          </div>
-        </div>
-      ))}
-
-      {isEmpty ? (
-        <div className="card empty-state">
-          <strong>{isCold ? t['today3.coldStateTitle'] : t['today3.emptyTitle']}</strong>
-          {isCold ? t['today3.coldStateBody'] : t['today3.emptyBody']}
-          {isCold && (
-            <div style={{ marginTop: 'var(--space-4)' }}>
-              <Link href="/dashboard/subjects" className="btn btn-primary">
-                {t['today3.coldStateCta']}
-              </Link>
-            </div>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* LX-6 R9/R16: SECONDARY context, deliberately quieter than the
-              hero -- and never the same item twice: the hero above IS
-              dailyPlan.items[0] (selectExecutableNextAction's own
-              contract), so the rest of today's session starts at [1]. */}
-          {snapshot!.dailyPlan.items.length > 1 && (
-            <div style={{ marginBottom: 'var(--space-7)' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 2 }}>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 650, color: 'var(--text-secondary)' }}>{t['today3.sessionTitle']}</h2>
-                <span
-                  className="tabular"
-                  style={{ fontSize: 11.5, fontWeight: 650, color: 'var(--text-muted)', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}
-                >
-                  {t['today3.minutesPlanned']
-                    .replace('{planned}', String(snapshot!.dailyPlan.plannedMinutes))
-                    .replace('{available}', String(snapshot!.dailyPlan.availableMinutes))}
-                </span>
-              </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: 12.5, margin: '0 0 var(--space-3)' }}>{t['today3.sessionSubtitle']}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                {snapshot!.dailyPlan.items.slice(1).map((item) => (
-                  <ItemRow key={item.decision.actionConceptId} item={item} studentId={studentId} labels={snapshot!.conceptLabels} t={t} />
-                ))}
-              </div>
-            </div>
           )}
 
-          {snapshot!.dailyPlan.deferred.length > 0 && (
-            <div style={{ marginBottom: 'var(--space-7)' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 2 }}>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 650, color: 'var(--text-secondary)' }}>{t['today3.deferredTitle']}</h2>
-                <span
-                  className="tabular"
-                  style={{ fontSize: 11.5, fontWeight: 650, color: 'var(--warning)', background: 'var(--warning-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}
+          {isEmpty && (
+            <section className="xp-hero xp-hero--calm" aria-labelledby="xp-empty-title">
+              <h2 id="xp-empty-title" className="xp-hero-title">{isCold ? t['today3.coldStateTitle'] : t['xp.caughtUpTitle']}</h2>
+              <p className="xp-hero-why">{isCold ? t['today3.coldStateBody'] : t['xp.caughtUpBody']}</p>
+              <div className="xp-hero-cta">
+                {isCold ? (
+                  <Link href="/dashboard/subjects" className="btn btn-primary">{t['today3.coldStateCta']}</Link>
+                ) : (
+                  <Link href="/dashboard/path" className="btn btn-secondary">{t['xp.pathLink']}</Link>
+                )}
+              </div>
+            </section>
+          )}
+
+          {!isEmpty && !best && (
+            // Decisions exist but none is executable right now (Phase 3D's
+            // own answer) -- a calm, explicit state, never a blank page.
+            <section className="xp-hero xp-hero--calm" aria-labelledby="xp-caught-up-title">
+              <h2 id="xp-caught-up-title" className="xp-hero-title">{t['xp.caughtUpTitle']}</h2>
+              <p className="xp-hero-why">{t['xp.caughtUpBody']}</p>
+              <div className="xp-hero-cta">
+                <Link href="/dashboard/path" className="btn btn-secondary">{t['xp.pathLink']}</Link>
+              </div>
+            </section>
+          )}
+
+          {!isEmpty && snapshot && (
+            <Section id="xp-snapshot" title={t['nav.progress']} action={<Link href="/dashboard" className="ui-link">{t['xp.progressLink']}</Link>}>
+            <div className="xp-stats">
+              {learningDaysThisWeek !== null && (
+                <StatTile
+                  label={t['xp.weekTitle']}
+                  value={t['xp.weekValue'].replace('{count}', String(learningDaysThisWeek))}
+                  hint={t['xp.weekHint']}
                 >
-                  {snapshot!.dailyPlan.deferred.length}
-                </span>
-              </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: 12.5, margin: '0 0 var(--space-3)' }}>{t['today3.deferredSubtitle']}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                {snapshot!.dailyPlan.deferred.map((d) => (
-                  <ItemRow
-                    key={d.decision.actionConceptId}
-                    item={{
-                      decision: d.decision,
-                      sequence: 0,
-                      estimatedMinutes: estimateActivityMinutes(d.decision.activityType),
-                      executionReason: 'FITS_IN_ORDER',
-                    }}
-                    studentId={studentId}
-                    labels={snapshot!.conceptLabels}
-                    t={t}
-                    deferred
-                  />
-                ))}
-              </div>
+                  <span className="ui-meter" aria-hidden>
+                    {Array.from({ length: 7 }, (_, i) => (
+                      <span key={i} className={i < learningDaysThisWeek ? 'on' : undefined} />
+                    ))}
+                  </span>
+                </StatTile>
+              )}
+              <StatTile
+                label={t['xp.todayPlanTitle']}
+                value={t['xp.todayPlanValue'].replace('{minutes}', String(snapshot.dailyPlan.plannedMinutes))}
+                hint={t['xp.todayPlanHint']
+                  .replace('{count}', String(snapshot.dailyPlan.items.length))
+                  .replace('{available}', String(snapshot.dailyPlan.availableMinutes))}
+              />
             </div>
+            </Section>
+          )}
+
+          {sessionViews.length > 0 && (
+            <Section id="xp-also" title={t['xp.alsoToday']}>
+              <ul className="xp-list">
+                {sessionViews.map((view) => (
+                  <PlanRow key={view.conceptId} view={view} labels={snapshot!.conceptLabels} studentId={studentId} t={t} locale={locale} />
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {deferred.length > 0 && (
+            // Still important, just not in today's time budget: listed,
+            // never a competing set of Start buttons on Home.
+            <details className="xp-later">
+              <summary>{t['xp.laterTitle'].replace('{count}', String(deferred.length))}</summary>
+              <p className="xp-row-note" style={{ margin: '0 0 var(--space-3)' }}>{t['today3.deferredSubtitle']}</p>
+              <ul className="xp-list">
+                {deferred.map((d) => {
+                  const info = snapshot!.conceptLabels.get(d.decision.actionConceptId);
+                  return (
+                    <li key={d.decision.actionConceptId} className="card xp-row">
+                      <div className="xp-row-main">
+                        <Link href={`/dashboard/subjects/${d.decision.subjectId}/concepts/${d.decision.actionConceptId}`} className="xp-row-title">
+                          {info?.label ?? d.decision.actionConceptId}
+                        </Link>
+                        {info?.subjectName && <div className="xp-row-meta"><span>{info.subjectName}</span></div>}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
           )}
         </>
       )}
@@ -430,15 +377,8 @@ export default async function TodayPage() {
           competes with the primary action, never its own decision
           authority (read-only over the existing 8B plan horizon). */}
       {caminoItems.length > 0 && (
-        <div style={{ marginTop: 'var(--space-7)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--border-default)' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: 2 }}>
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{t['plan8.pathTitle']}</h2>
-            <Link href="/dashboard/study-plan" style={{ fontSize: 12.5, color: 'var(--brand-ink)', fontWeight: 600 }}>
-              {t['plan8.viewFull']}
-            </Link>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 12.5, margin: '0 0 var(--space-3)' }}>{t['plan8.pathSubtitle']}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+        <Section id="xp-camino" title={t['plan8.pathTitle']} action={<Link href="/dashboard/study-plan" className="ui-link">{t['plan8.viewFull']}</Link>}>
+          <ul className="xp-list">
             {caminoItems.map((it) => {
               const info = it.conceptId ? caminoLabels.get(it.conceptId) : null;
               const bucket = planItemDayBucket(it.scheduledDate, todayIso);
@@ -449,32 +389,20 @@ export default async function TodayPage() {
                     ? t['plan8.overdue']
                     : new Date(it.scheduledDate).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
               return (
-                <div
-                  key={it.id}
-                  style={{ padding: 'var(--space-2) 0', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', borderBottom: '1px solid var(--border-default)' }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 600, fontSize: 13.5 }}>{info?.label ?? it.conceptId ?? ''}</span>
-                      <span className="tabular" style={{ fontSize: 10.5, fontWeight: 650, color: 'var(--text-muted)', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-full)', padding: '2px 9px' }}>
-                        {activityLabel(it.intendedActivityType, t)}
-                      </span>
-                      <span className="tabular" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {t['plan8.minutes'].replace('{min}', String(it.estimatedMinutes))}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                      {bucket === 'OVERDUE' ? <span style={{ color: 'var(--warning)', fontWeight: 600 }}>{dayLabel}</span> : dayLabel}
-                      {info?.subjectName ? ` · ${info.subjectName}` : ''} · {t[planItemWhyKey(it.reasonCode) as keyof typeof t]}
+                <li key={it.id} className="card xp-row">
+                  <div className="xp-row-main">
+                    <span className="xp-row-title">{info?.label ?? it.conceptId ?? ''}</span>
+                    <div className="xp-row-meta">
+                      <span style={bucket === 'OVERDUE' ? { color: 'var(--warning)', fontWeight: 600 } : undefined}>{dayLabel}</span>
+                      {info?.subjectName && <span>{info.subjectName}</span>}
+                      <span>{t[planItemWhyKey(it.reasonCode) as keyof typeof t]}</span>
                     </div>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
-        </div>
-      )}
-        </>
+          </ul>
+        </Section>
       )}
     </div>
   );

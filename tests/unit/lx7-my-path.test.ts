@@ -194,8 +194,11 @@ describe('LX-7 tests 12/13 -- Today/My Path consistency (R20)', () => {
  * ============================================================== */
 describe('LX-7 test 14 -- current concept is visually dominant on the overview hero', () => {
   it('the hero card uses the brand border + a large heading, like Today’s own hero', () => {
-    expect(OVERVIEW_PAGE_SRC).toMatch(/borderColor: 'var\(--brand\)', borderWidth: 2/);
-    expect(OVERVIEW_PAGE_SRC).toMatch(/fontSize: 24,.*fontWeight: 700/);
+    // UX-2: My Path renders the SAME "Tu siguiente reto" hero as Today.
+    const card = strip(read('src/app/dashboard/NextChallengeCard.tsx'));
+    expect(OVERVIEW_PAGE_SRC).toMatch(/<NextChallengeCard/);
+    expect(card).toMatch(/<section className="xp-hero" aria-labelledby="xp-next-title"/);
+    expect(read('src/app/globals.css')).toMatch(/\.xp-hero-title \{[^}]*font-size: 30px;[^}]*font-weight: 700;/);
   });
 });
 
@@ -267,8 +270,13 @@ describe('LX-7 tests 20/21 -- concept click opens Concept Mission; CTA reuses ca
   });
 
   it('both pages launch exclusively through StartSessionButton -- no bespoke fetch to a quiz/session URL', () => {
-    for (const src of [OVERVIEW_PAGE_SRC, SUBJECT_PAGE_SRC]) {
+    // UX-2: the overview's CTA is inside the shared NextChallengeCard.
+    const card = strip(read('src/app/dashboard/NextChallengeCard.tsx'));
+    for (const src of [card, SUBJECT_PAGE_SRC]) {
       expect(src).toMatch(/<StartSessionButton/);
+    }
+    expect(OVERVIEW_PAGE_SRC).toMatch(/<NextChallengeCard/);
+    for (const src of [OVERVIEW_PAGE_SRC, SUBJECT_PAGE_SRC, card]) {
       expect(src).not.toMatch(/fetch\(['"`]\/api\/(quizzes|learning\/plan)/);
     }
   });
@@ -359,7 +367,7 @@ describe('LX-7 tests 28/29 -- mobile-safe layout; accessible stage status', () =
 describe('LX-7 tests 30/32/33/34 -- unrelated certified surfaces untouched', () => {
   it('30. Today’s hero/decision logic is unchanged -- only the "View My Path" href was corrected', () => {
     expect(TODAY_SRC).toMatch(/deriveTodayState/);
-    expect(TODAY_SRC).toMatch(/href="\/dashboard\/path" className="btn btn-ghost">\s*\{t\['today3\.viewMyPath'\]\}/);
+    expect(TODAY_SRC).toMatch(/href="\/dashboard\/path" className="btn btn-(ghost|secondary)">\s*\{t\['today3\.viewMyPath'\]\}/);
     expect(TODAY_SRC).not.toMatch(/href="\/dashboard\/study-plan"[^>]*>\s*\{t\['today3\.viewMyPath'\]\}/);
   });
 

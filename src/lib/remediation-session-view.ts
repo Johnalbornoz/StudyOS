@@ -124,7 +124,12 @@ export async function getRemediationSessionView(
 
   if (!conceptRowData) return { status: 'NOT_FOUND' };
 
-  const activityHref = remediationStepHref(activeStep, { id: path.id, subjectId: conceptRowData.subject_id });
+  const activityHref = remediationStepHref(activeStep, {
+    id: path.id,
+    subjectId: conceptRowData.subject_id,
+    conceptId: path.rootCauseConceptId,
+    conceptLabel: conceptRowData.label,
+  });
 
   // See file header: same call explain/generate and quizzes/hint
   // already make live; degrades to null (never fabricated) on any

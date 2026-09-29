@@ -232,9 +232,27 @@ describe('Part 9 -- getLearningOSSnapshot canonicalOverride (Today)', () => {
 });
 
 describe('Part 9 -- Today page treats a failed canonical override as blocked, never as "legacy is fine"', () => {
-  it('the page source computes bestZeroGapBlocked as true when canonicalOverrideReadFailed is true and there is no override', () => {
+  it('the page source computes bestZeroGapBlocked as true when canonicalOverrideReadFailed is true and there is no override', async () => {
+    // UX-2: Today presents its hero through presentSnapshotNextChallenge. With
+    // the gate on, a missing canonical override is UNAVAILABLE
+    // (CANONICAL_READ_FAILED) -- never "legacy is fine" -- and the card renders
+    // an error with no Start button for it.
     const source = readFileSync(join(process.cwd(), 'src/app/dashboard/today/page.tsx'), 'utf-8');
-    expect(source).toMatch(/canonicalOverrideReadFailed/);
+    expect(source).toMatch(/presentSnapshotNextChallenge\(snapshot\)/);
+    const { presentNextChallenge } = await import('@/lib/experience/next-challenge');
+    const view = presentNextChallenge({
+      conceptId: CONCEPT,
+      subjectId: 's1',
+      legacyDecision: { activityType: 'PRACTICE', facts: [] },
+      canonicalAuthority: true,
+      canonical: null,
+      legacyGate: { waiting: false, nextEligibleAt: null, zeroGapBlocked: false },
+    });
+    expect(view).toMatchObject({ status: 'UNAVAILABLE', reason: 'CANONICAL_READ_FAILED' });
+    const card = readFileSync(join(process.cwd(), 'src/app/dashboard/NextChallengeCard.tsx'), 'utf-8');
+    const failed = card.slice(card.indexOf("view.reason === 'CANONICAL_READ_FAILED'"), card.indexOf("if (view.status === 'READY')"));
+    expect(failed).toMatch(/xp\.readFailedTitle/);
+    expect(failed).not.toMatch(/StartSessionButton/);
   });
 });
 

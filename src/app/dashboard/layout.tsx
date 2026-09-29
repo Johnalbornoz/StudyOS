@@ -189,6 +189,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       label: i.label ?? t[i.labelKey as keyof typeof t] ?? i.key,
       iconKey: i.iconKey,
       badge: i.badge,
+      mobileTab: 'mobileTab' in i ? i.mobileTab : undefined,
     })),
   }));
 
@@ -210,6 +211,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       closeLabel={t['nav.closeMenu']}
       navLabel={t['nav.primary']}
       exitLabel={t['nav.exitActivity']}
+      locale={locale}
+      tabBarLabel={t['xp.tabBarLabel']}
+      notificationsLabel={t['nav.notifications']}
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
       workspaceSwitcher={
         <WorkspaceSwitcher

@@ -49,6 +49,8 @@ export default function StartSessionButton({
   licenseTitle,
   licenseBody,
   licenseCtaLabel,
+  size = 'default',
+  align = 'end',
 }: {
   studentId: string;
   actionConceptId: string;
@@ -70,6 +72,10 @@ export default function StartSessionButton({
   licenseTitle: string;
   licenseBody: string;
   licenseCtaLabel: string;
+  /** UX-2 presentation only: 'lg' renders the hero-sized primary button. */
+  size?: 'default' | 'lg';
+  /** UX-2 presentation only: horizontal alignment of the button and its inline error. */
+  align?: 'start' | 'end';
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -131,10 +137,10 @@ export default function StartSessionButton({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: align === 'start' ? 'flex-start' : 'flex-end', gap: 4 }}>
       <button
         type="button"
-        className={variant === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'}
+        className={`${variant === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'}${size === 'lg' ? ' btn-lg' : ''}`}
         style={{ height: variant === 'primary' ? undefined : 32, fontSize: variant === 'primary' ? undefined : 13, flexShrink: 0 }}
         onClick={start}
         disabled={loading}

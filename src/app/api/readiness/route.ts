@@ -9,6 +9,7 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getLatestReadinessSnapshot, listReadinessSnapshots } from '@/lib/readiness/readiness.service';
+import { isExamProfileOwnedByStudent } from '@/lib/assessment/student-exam-profile.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function handleGET(request: NextRequest) {
@@ -24,6 +25,11 @@ async function handleGET(request: NextRequest) {
 
   const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROGRESS_VIEW');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+  // UX-2 security fix: the exam profile must belong to the authorized
+  // learner. 404 (not 403) so a guessed id never confirms another
+  // learner's profile exists.
+  if (!(await isExamProfileOwnedByStudent(examProfileId, studentId))) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
   if (all) {
     const snapshots = await listReadinessSnapshots(examProfileId);

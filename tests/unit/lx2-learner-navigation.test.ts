@@ -12,10 +12,46 @@ import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
 const nav = (over = {}) => buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0, ...over });
 
 describe('LX-2E buildLearnerNav', () => {
-  it('primary group is exactly Today / My Path / Progress / Exam Prep / Assignments, in that order (F14: Workstream A/B added the missing Student-facing Exam Prep and Assignment surfaces to the primary nav)', () => {
+  it('UX-2: primary group is exactly Today / My Path / Progress / Exam Prep, in that order; Assignments joins it only while work is pending', () => {
     const primary = nav().find((g) => g.kind === 'PRIMARY')!;
-    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep', 'assignments']);
-    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments']);
+    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep']);
+    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep']);
+    const withWork = nav({ assignmentCount: 2 }).find((g) => g.kind === 'PRIMARY')!;
+    expect(withWork.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep', 'assignments']);
+    expect(withWork.items.find((i) => i.key === 'assignments')!.badge).toBe(2);
+  });
+
+  it('UX-2: Assignments is always reachable -- in PRIMARY with pending work, otherwise under "Más" -- and never listed twice', () => {
+    for (const assignmentCount of [0, 3]) {
+      const all = nav({ assignmentCount }).flatMap((g) => g.items).filter((i) => i.key === 'assignments');
+      expect(all).toHaveLength(1);
+      expect(all[0].href).toBe('/dashboard/assignments');
+    }
+    expect(nav().find((g) => g.kind === 'SECONDARY')!.items.some((i) => i.key === 'assignments')).toBe(true);
+    expect(nav({ assignmentCount: 3 }).find((g) => g.kind === 'SECONDARY')!.items.some((i) => i.key === 'assignments')).toBe(false);
+  });
+
+  it('UX-2: no capability was removed -- every pre-UX-2 destination is still in the nav, plus Materias', () => {
+    const before = [
+      '/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments',
+      '/dashboard/study-plan', '/dashboard/learning-debt', '/dashboard/tutor',
+      '/dashboard/notifications', '/dashboard/profile', '/dashboard/parent', '/dashboard/billing',
+    ];
+    for (const assignmentCount of [0, 1]) {
+      const hrefs = allNavHrefs(nav({ assignmentCount }));
+      for (const h of before) expect(hrefs, h).toContain(h);
+      expect(hrefs).toContain('/dashboard/subjects');
+    }
+  });
+
+  it('UX-2: exactly three bottom-tab destinations (Hoy / Mi ruta / Progreso), all primary', () => {
+    const groups = nav({ assignmentCount: 4 });
+    const tabs = groups.flatMap((g) => g.items.filter((i) => i.mobileTab).map((i) => ({ key: i.key, kind: g.kind })));
+    expect(tabs).toEqual([
+      { key: 'today', kind: 'PRIMARY' },
+      { key: 'myPath', kind: 'PRIMARY' },
+      { key: 'progress', kind: 'PRIMARY' },
+    ]);
   });
 
   it('LX-7: My Path now has its own real implementation -- no temporary stand-in mapping remains', () => {
@@ -24,9 +60,9 @@ describe('LX-2E buildLearnerNav', () => {
     expect(myPath.href).toBe('/dashboard/path');
   });
 
-  it('secondary group is useful-not-primary (study plan, learning debt, tutor)', () => {
+  it('secondary group is useful-not-primary (subjects, assignments without pending work, study plan, learning debt, tutor)', () => {
     const secondary = nav().find((g) => g.kind === 'SECONDARY')!;
-    expect(secondary.items.map((i) => i.key).sort()).toEqual(['debt', 'studyPlan', 'tutor']);
+    expect(secondary.items.map((i) => i.key)).toEqual(['subjects', 'assignments', 'studyPlan', 'debt', 'tutor']);
   });
 
   it('utility group holds account/profile/system; admin only when isAdmin', () => {

@@ -474,10 +474,17 @@ export async function getInterventionStateForConcept(studentId: string, conceptI
  * reuse the quiz engine's topic_practice mode, RETRIEVAL reuses
  * quick_check, SOLO_VERIFY reuses cumulative_assessment scoped to the
  * one concept; EXPLAIN/TRANSFER go to their own lightweight pages.
+ *
+ * UX-2 GAP-10: EXPLAIN/TRANSFER now carry the path's `subjectId` (and the
+ * concept label when the caller already resolved it for THIS step's
+ * concept). Those pages read both from the URL; without them the
+ * breadcrumb, the Explain generate call and the "continue" fallback all
+ * pointed at an empty subject. Routing only -- every step still resolves
+ * to the same destination and mode it always did.
  */
 export function remediationStepHref(
   step: RemediationStep,
-  path: { id: string; subjectId: string }
+  path: { id: string; subjectId: string; conceptId?: string; conceptLabel?: string }
 ): string {
   const base = `remediationStepId=${step.id}`;
   switch (step.stepType) {
@@ -489,8 +496,19 @@ export function remediationStepHref(
     case 'SOLO_VERIFY':
       return `/dashboard/quiz?subjectId=${path.subjectId}&conceptId=${step.conceptId}&mode=cumulative_assessment&${base}`;
     case 'EXPLAIN':
-      return `/dashboard/cognitive/explain?conceptId=${step.conceptId}&${base}`;
+      return `/dashboard/cognitive/explain?${cognitiveStepQuery(step, path)}`;
     case 'TRANSFER':
-      return `/dashboard/cognitive/transfer?conceptId=${step.conceptId}&${base}`;
+      return `/dashboard/cognitive/transfer?${cognitiveStepQuery(step, path)}`;
   }
+}
+
+function cognitiveStepQuery(
+  step: RemediationStep,
+  path: { subjectId: string; conceptId?: string; conceptLabel?: string }
+): string {
+  const params = new URLSearchParams({ subjectId: path.subjectId, conceptId: step.conceptId });
+  // A label is only ever attached to the concept it was resolved for.
+  if (path.conceptLabel && path.conceptId === step.conceptId) params.set('conceptLabel', path.conceptLabel);
+  params.set('remediationStepId', step.id);
+  return params.toString();
 }

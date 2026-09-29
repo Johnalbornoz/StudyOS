@@ -205,12 +205,25 @@ describe('LX-9R8 5 -- Today cannot offer a zero-gap Practice CTA', () => {
     // instead (see canonicalOverride's own doc comment) -- but with the
     // gate off (or no override), this is still byte-identical to the
     // original LX-9R8 computation: `!!snapshot?.nextExecutableItemZeroGapBlocked`.
-    expect(TODAY_SRC).toMatch(/const bestZeroGapBlocked = !!best && \(/);
-    expect(TODAY_SRC).toMatch(/!!snapshot\?\.nextExecutableItemZeroGapBlocked \|\| !!snapshot\?\.canonicalOverrideReadFailed/);
-    expect(TODAY_SRC).toMatch(/hasPrimaryAction: !!best && !bestZeroGapBlocked/);
-    expect(TODAY_SRC).toMatch(/\{best && \(bestZeroGapBlocked \? null : bestWaiting \?/);
-    // Closeout B boundary: Today itself never imports isZeroGapPracticeMismatch -- the computation lives in the service.
-    expect(TODAY_SRC).not.toMatch(/isZeroGapPracticeMismatch/);
+    // UX-2: Today presents the hero through the shared presenter; the
+    // snapshot's zero-gap flag reaches it unchanged, and a zero-gap item is
+    // never an executable (READY) hero.
+    const serverSrc = read('src/lib/experience/next-challenge.server.ts');
+    expect(TODAY_SRC).toMatch(/presentSnapshotNextChallenge\(snapshot\)/);
+    expect(serverSrc).toMatch(/zeroGapBlocked: snapshot\.nextExecutableItemZeroGapBlocked/);
+    expect(TODAY_SRC).toMatch(/const heroHasAction = !!hero && \(hero\.status === 'READY' \|\| hero\.status === 'WAITING'\);/);
+    expect(TODAY_SRC).toMatch(/hasPrimaryAction: heroHasAction/);
+    return import('@/lib/experience/next-challenge').then(({ presentNextChallenge }) => {
+      const view = presentNextChallenge({
+        conceptId: 'c1', subjectId: 's1',
+        legacyDecision: { activityType: 'PRACTICE', facts: [] },
+        canonicalAuthority: false, canonical: null,
+        legacyGate: { waiting: false, nextEligibleAt: null, zeroGapBlocked: true },
+      });
+      expect(view).toMatchObject({ status: 'UNAVAILABLE', reason: 'ZERO_GAP' });
+      // Closeout B boundary: Today itself never imports isZeroGapPracticeMismatch -- the computation lives in the service.
+      expect(TODAY_SRC).not.toMatch(/isZeroGapPracticeMismatch/);
+    });
   });
 });
 

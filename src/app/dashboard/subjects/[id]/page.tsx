@@ -24,6 +24,7 @@ import HierarchicalConceptList from './HierarchicalConceptList';
 import { getSubjectAccentColor } from '@/lib/subject-color';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { activityCta } from '../../activityCta';
+import { loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
 import StartSessionButton from '../../StartSessionButton';
 
 export default async function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
@@ -112,6 +113,19 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
   // Today/My Path would for this subject (or nothing, if there isn't one),
   // never an independently-derived "weakest concept" pick.
   const subjectDecision = resolveSubjectCurrentDecision(snapshot, id);
+  // UX-2 (waiting/gating consistency): the header CTA is presented from
+  // the SAME canonical launch its Start button runs, so a concept whose
+  // canonical action is WAITING / CONSOLIDATED / BLOCKED never shows a
+  // Start button here while Today and My Path correctly withhold it.
+  const subjectChallenge = subjectDecision
+    ? await loadConceptNextChallenge({
+        studentId,
+        subjectId: id,
+        conceptId: subjectDecision.actionConceptId,
+        legacyDecision: subjectDecision,
+        snapshot,
+      }).catch(() => null)
+    : null;
   // Digital Learning Twin (Phase 1C) cognitive summary -- same shape/values
   // getSubjectLearnerModel always produced, now sourced from the canonical
   // getSubjectView projection. subjectView is only null if the subject
@@ -127,7 +141,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', gap: 6 }}>
         <Link href="/dashboard" style={{ color: 'var(--text-muted)' }}>{t['nav.dashboard']}</Link> / {subject.name}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+      <div className="view-head" style={{ marginBottom: 'var(--space-8)' }}>
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <span
@@ -174,14 +188,14 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
             </p>
           )}
         </div>
-        {subjectDecision ? (
+        {subjectChallenge?.status === 'READY' ? (
           // LX-7R1 B3/B6/B7: the canonical decision for this subject,
           // launched through the same authority Today/My Path use --
           // never a hand-built /dashboard/quiz?... URL.
           <StartSessionButton
             studentId={studentId}
-            actionConceptId={subjectDecision.actionConceptId}
-            label={activityCta(subjectDecision.activityType, t)}
+            actionConceptId={subjectChallenge.conceptId}
+            label={activityCta(subjectChallenge.activityType, t)}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
             licenseTitle={t['learning.licenseRequiredTitle']}

@@ -4,10 +4,8 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { loadMyPathContext, buildMyPathOverview } from '@/lib/lx/path-view';
-import { activityCta } from '../activityCta';
-import { activityNarrative } from '../activityNarrative';
-import WhyThisV3 from '../WhyThisV3';
-import StartSessionButton from '../StartSessionButton';
+import { presentSnapshotNextChallenge } from '@/lib/experience/next-challenge.server';
+import NextChallengeCard from '../NextChallengeCard';
 import JourneyStrip from './JourneyStrip';
 import { journeyReason } from './journeyReason';
 
@@ -53,6 +51,8 @@ export default async function MyPathPage() {
 
   const context = await loadMyPathContext(studentId, locale);
   const overview = await buildMyPathOverview(context);
+  // UX-2: the hero is presented exactly like Today's (same snapshot item, same canonical launch).
+  const heroView = context.snapshot && overview.current ? presentSnapshotNextChallenge(context.snapshot) : null;
 
   logMyPath('MY_PATH_READY', { latencyMs: Date.now() - requestStartedAtMs, state: overview.state });
 
@@ -61,7 +61,8 @@ export default async function MyPathPage() {
       subjectId: overview.current.subjectId,
       conceptId: overview.current.conceptId,
       currentStage: overview.current.journey.currentStage,
-      activityType: overview.current.activityType,
+      activityType: heroView?.status === 'READY' ? heroView.activityType : null,
+      heroStatus: heroView?.status ?? null,
     });
   } else if (overview.state === 'UNRESOLVED') {
     logMyPath('MY_PATH_UNRESOLVED');
@@ -118,61 +119,22 @@ export default async function MyPathPage() {
 
       {overview.state === 'READY' && (
         <>
-          {overview.current && overview.current.actionState === 'EXECUTABLE' && overview.current.activityType ? (
-            <div
-              className="card"
-              style={{ marginBottom: 'var(--space-8)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-6)' }}
-            >
-              <div className="label" style={{ color: 'var(--brand-ink)', marginBottom: 10 }}>{t['myPath.heroLabel']}</div>
-              <p style={{ margin: '0 0 4px', fontSize: 13.5, color: 'var(--text-muted)' }}>{overview.current.subjectTitle}</p>
-              <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                {overview.current.conceptTitle}
-              </h2>
-              <div style={{ margin: 'var(--space-4) 0' }}>
-                <JourneyStrip journey={overview.current.journey} t={t} />
-              </div>
-              <p style={{ fontSize: 15.5, lineHeight: 1.5, color: 'var(--text-primary)', margin: '0 0 var(--space-2)', maxWidth: '52ch' }}>
-                {activityNarrative(overview.current.activityType, t)}
-              </p>
-              <WhyThisV3 facts={overview.current.decision.facts} t={t} maxFacts={1} />
-              <div style={{ marginTop: 'var(--space-5)' }}>
-                <StartSessionButton
-                  studentId={studentId}
-                  actionConceptId={overview.current.conceptId}
-                  label={activityCta(overview.current.activityType, t)}
-                  accessibleLabel={`${activityCta(overview.current.activityType, t)}: ${overview.current.conceptTitle}`}
-                  unavailableLabel={t['today3.unavailableBody']}
-                  retryLabel={t['today3.retry']}
-                  licenseTitle={t['learning.licenseRequiredTitle']}
-                  licenseBody={t['learning.licenseRequiredBody']}
-                  licenseCtaLabel={t['license.demoBannerCta']}
-                  variant="primary"
-                  launchMark="MY_PATH_ACTION_LAUNCHED"
-                />
-              </div>
-            </div>
-          ) : overview.current && overview.current.actionState === 'WAITING' ? (
-            // LX-9R5 PART A2: WAITING is a valid canonical result, never
-            // an error -- reuses the SAME copy Concept Mission's own NOW
-            // card already shows for this exact condition (LX-9R3-R1 W1),
-            // never a second wording for the same fact.
-            <div className="card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)' }}>
-              <div className="label" style={{ color: 'var(--text-muted)', marginBottom: 10 }}>{overview.current.subjectTitle}</div>
-              <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                {overview.current.conceptTitle}
-              </h2>
-              <div style={{ margin: 'var(--space-4) 0' }}>
-                <JourneyStrip journey={overview.current.journey} t={t} />
-              </div>
-              <strong style={{ fontSize: 15.5 }}>{t['conceptMission.noActionRetentionWaitingTitle']}</strong>
-              <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '52ch' }}>
-                {overview.current.nextEligibleAt
-                  ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
-                      '{date}',
-                      new Date(overview.current.nextEligibleAt).toLocaleDateString(locale),
-                    )
-                  : t['conceptMission.noActionRetentionWaitingBody']}
-              </p>
+          {overview.current && heroView ? (
+            // UX-2: the SAME hero Today renders, from the SAME snapshot
+            // next-executable item -- presented from the canonical launch
+            // the Start button runs, never from the legacy activityType.
+            <div style={{ marginBottom: 'var(--space-8)' }}>
+              <NextChallengeCard
+                view={heroView}
+                conceptLabel={overview.current.conceptTitle}
+                subjectName={overview.current.subjectTitle}
+                studentId={studentId}
+                t={t}
+                locale={locale}
+                legacyMinutes={overview.current.estimatedMinutes}
+                fallbackJourney={overview.current.journey}
+                launchMark="MY_PATH_ACTION_LAUNCHED"
+              />
             </div>
           ) : (
             <div className="card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)' }}>

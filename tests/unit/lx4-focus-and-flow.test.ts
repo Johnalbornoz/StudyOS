@@ -24,7 +24,10 @@ describe('LX-4K Focus Mode -- the shell collapses on active-learning routes', ()
 
   it('renders the minimal focus chrome (Exit + logo, no nav) on those routes', () => {
     expect(SHELL).toMatch(/const inFocusMode = chrome === 'minimal' \|\| FOCUS_MODE_PREFIXES\.some/);
-    const focusBranch = SHELL.slice(SHELL.indexOf('if (inFocusMode)'), SHELL.indexOf('return (\n    <div className="lx-shell">'));
+    // UX-2: the full-chrome root's className is dynamic (`lx-shell--tabs` modifier).
+    const focusBranch = SHELL.slice(SHELL.indexOf('if (inFocusMode)'), SHELL.indexOf('return (\n    <div className={`lx-shell'));
+    expect(focusBranch.length).toBeGreaterThan(0);
+    expect(focusBranch).not.toMatch(/<TabBar/);
     expect(focusBranch).toMatch(/lx-focusbar/);
     expect(focusBranch).toMatch(/lx-exit/);
     expect(focusBranch).toMatch(/exitLabel/);

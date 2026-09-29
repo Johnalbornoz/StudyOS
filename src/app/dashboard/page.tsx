@@ -1,4 +1,5 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
@@ -11,11 +12,6 @@ import { getMessages } from '@/lib/i18n/messages';
 import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
 import { knowledgeKpis } from '@/lib/knowledge-state-labels';
 
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
 
 /**
  * Progress V2 -- the student-facing "what have I achieved / what can I
@@ -181,7 +177,7 @@ export default async function DashboardPage() {
                     percentage (R5). */}
                 <div className="mastery-row" style={{ marginTop: 10 }} title={t['subjectDetail.journeyProgressLabel']}>
                   <div className="mastery-bar">
-                    <span className={masteryFillClass(s.journeyProgressPercent ?? 0)} style={{ width: `${s.journeyProgressPercent ?? 0}%` }} />
+                    <span className={QUANTITY_FILL_CLASS} style={{ width: `${s.journeyProgressPercent ?? 0}%` }} />
                   </div>
                   <span className="mastery-pct tabular">{s.journeyProgressPercent !== null ? `${s.journeyProgressPercent}%` : '—'}</span>
                 </div>

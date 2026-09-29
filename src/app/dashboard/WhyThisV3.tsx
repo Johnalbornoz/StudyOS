@@ -88,6 +88,19 @@ function factSentence(fact: LearningFact, t: ReturnType<typeof getMessages>): st
   }
 }
 
+/**
+ * UX-2: the same sentence WhyThisV3 renders, for surfaces that style it
+ * themselves (the dark "Tu siguiente reto" hero). One copy source, never
+ * a second fact-to-text table.
+ */
+export function whyThisSentence(facts: LearningFact[], t: ReturnType<typeof getMessages>, maxFacts?: number): string {
+  return facts
+    .map((f) => factSentence(f, t))
+    .filter(Boolean)
+    .slice(0, maxFacts ?? Infinity)
+    .join(' ');
+}
+
 export default function WhyThisV3({
   facts,
   t,

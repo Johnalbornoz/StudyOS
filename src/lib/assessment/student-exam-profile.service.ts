@@ -67,6 +67,18 @@ export async function addPreparationGoal(params: { studentExamProfileId: string;
   return toGoal(result.rows[0]);
 }
 
+/**
+ * UX-2 security fix -- ownership check for routes that accept an
+ * `examProfileId` next to an already-authorized `studentId`. Authorizing
+ * the learner is not enough: the profile id must also belong to that
+ * learner, or a caller could read (or write a readiness snapshot against)
+ * another learner's exam profile by passing its id.
+ */
+export async function isExamProfileOwnedByStudent(examProfileId: string, studentId: string): Promise<boolean> {
+  const result = await db.query(`SELECT 1 FROM student_exam_profiles WHERE id = $1 AND student_id = $2`, [examProfileId, studentId]);
+  return result.rows.length > 0;
+}
+
 export async function getStudentExamProfile(profileId: string): Promise<StudentExamProfile | null> {
   const result = await db.query(`SELECT * FROM student_exam_profiles WHERE id = $1`, [profileId]);
   return result.rows.length === 0 ? null : toProfile(result.rows[0]);

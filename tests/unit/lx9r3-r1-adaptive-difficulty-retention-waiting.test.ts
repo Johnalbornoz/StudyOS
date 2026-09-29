@@ -380,7 +380,12 @@ describe('20. qualifying successful Retention advances to Transfer', () => {
 describe('21. an early/deep-linked Retention attempt remains honest in Results (pre-existing LX-9R3 behavior, unchanged)', () => {
   it('retentionTooSoon still gates the RETAINED milestone and drives the honest copy', () => {
     expect(QUIZ_PAGE_SRC).toMatch(/const retentionTooSoon = quizMode === 'retention_check' && results\.retentionCheckQualified === false/);
-    expect(QUIZ_PAGE_SRC).toMatch(/passedIndependentCheck && !retentionTooSoon/);
+    // UX-2: the milestone follows the server-reported requirement status
+    // (lib/experience/result-milestone.ts), and a too-soon attempt still
+    // never earns RETAINED.
+    expect(QUIZ_PAGE_SRC).toMatch(/const milestone: MilestoneType \| null = resolveResultMilestone\(\{/);
+    expect(QUIZ_PAGE_SRC).toMatch(/retentionCheckQualified: results\.retentionCheckQualified/);
+    expect(QUIZ_PAGE_SRC).not.toMatch(/passedIndependentCheck/);
   });
 });
 

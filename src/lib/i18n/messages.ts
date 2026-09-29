@@ -670,7 +670,52 @@ export type MessageKey =
   | 'continuation.resolveFailed'
   | 'continuation.waitingHeadline'
   | 'continuation.waitingBody'
-  | 'continuation.waitingBodyWithDate';
+  | 'continuation.waitingBodyWithDate'
+  | 'todayNarrative.LEARN_CHECK'
+  | 'xp.greeting'
+  | 'xp.greetingNoName'
+  | 'xp.tagline'
+  | 'xp.nextChallenge'
+  | 'xp.challenge.LEARN_CHECK'
+  | 'xp.challenge.PRACTICE'
+  | 'xp.challenge.REVIEW'
+  | 'xp.challenge.SOLO_CHECK'
+  | 'xp.challenge.SOLO_VERIFY'
+  | 'xp.challenge.DIAGNOSTIC_CHECK'
+  | 'xp.challenge.REMEDIATION'
+  | 'xp.challenge.REINFORCE'
+  | 'xp.challenge.TRANSFER'
+  | 'xp.challenge.RETENTION_CHECK'
+  | 'xp.challenge.CUMULATIVE_ASSESSMENT'
+  | 'xp.challenge.MOCK_EXAM'
+  | 'xp.goalLabel'
+  | 'xp.goalDaysLeft'
+  | 'xp.goalToday'
+  | 'xp.goalTomorrow'
+  | 'xp.whereYouAre'
+  | 'xp.weekTitle'
+  | 'xp.weekValue'
+  | 'xp.weekHint'
+  | 'xp.todayPlanTitle'
+  | 'xp.todayPlanValue'
+  | 'xp.todayPlanHint'
+  | 'xp.progressLink'
+  | 'xp.alsoToday'
+  | 'xp.laterTitle'
+  | 'xp.availableOn'
+  | 'xp.openConcept'
+  | 'xp.caughtUpTitle'
+  | 'xp.caughtUpBody'
+  | 'xp.readFailedTitle'
+  | 'xp.readFailedBody'
+  | 'xp.loading'
+  | 'xp.errorTitle'
+  | 'xp.errorBody'
+  | 'xp.errorRetry'
+  | 'xp.errorHome'
+  | 'xp.tabBarLabel'
+  | 'xp.pathLink'
+  | 'xp.questionCount';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1749,7 +1794,7 @@ const es: Messages = {
   'conceptMission.journeyTitle': 'Tu recorrido con este concepto',
   'conceptMission.journeyYouAreHere': 'Estás aquí: {stage}',
   'conceptMission.nowTitle': 'Ahora',
-  'conceptMission.noActionConsolidatedTitle': 'Consolidado',
+  'conceptMission.noActionConsolidatedTitle': 'Dominado',
   'conceptMission.noActionConsolidatedBody': 'Ahora mismo no hace falta nada. StudyUS te lo volverá a proponer para un repaso de retención cuando toque.',
   'conceptMission.noActionZeroGapTitle': 'Ya has practicado suficiente',
   'conceptMission.noActionZeroGapBody': 'No hace falta más práctica en este concepto ahora mismo.',
@@ -1814,9 +1859,9 @@ const es: Messages = {
   'conceptMission.stage.PRACTICE': 'Practicar',
   'conceptMission.stage.READY_TO_PROVE': 'Listo para demostrar',
   'conceptMission.stage.PROVE': 'Demostrar',
-  'conceptMission.stage.RETAIN': 'Retener',
-  'conceptMission.stage.TRANSFER': 'Transferir',
-  'conceptMission.stage.CONSOLIDATED': 'Consolidado',
+  'conceptMission.stage.RETAIN': 'Recordar',
+  'conceptMission.stage.TRANSFER': 'Aplicar',
+  'conceptMission.stage.CONSOLIDATED': 'Dominado',
   'conceptMission.milestone.passed': '{stage} — paso anterior',
   'conceptMission.milestone.current': '{stage} — estás aquí',
   'conceptMission.milestone.upcoming': '{stage} — más adelante',
@@ -1954,6 +1999,51 @@ const es: Messages = {
   'practice.prepareFailedTitle': 'No se pudo preparar esta actividad',
   'practice.prepareFailedBody': 'Tu progreso está a salvo. Vuelve a intentarlo.',
   'practice.prepareRetry': 'Reintentar',
+  'todayNarrative.LEARN_CHECK': 'Primero entiendes la idea; después compruebas que la tienes clara.',
+  'xp.greeting': 'Hola, {name}',
+  'xp.greetingNoName': 'Hola',
+  'xp.tagline': 'No estudies más. Estudia mejor.',
+  'xp.nextChallenge': 'Tu siguiente reto',
+  'xp.challenge.LEARN_CHECK': 'Entiéndelo',
+  'xp.challenge.PRACTICE': 'Entrénalo',
+  'xp.challenge.REVIEW': 'Repásalo',
+  'xp.challenge.SOLO_CHECK': 'Demuéstralo',
+  'xp.challenge.SOLO_VERIFY': 'Demuéstralo',
+  'xp.challenge.DIAGNOSTIC_CHECK': 'Veamos dónde estás',
+  'xp.challenge.REMEDIATION': 'Refuérzalo',
+  'xp.challenge.REINFORCE': 'Refuérzalo',
+  'xp.challenge.TRANSFER': 'Aplícalo',
+  'xp.challenge.RETENTION_CHECK': 'Recuérdalo',
+  'xp.challenge.CUMULATIVE_ASSESSMENT': 'Júntalo todo',
+  'xp.challenge.MOCK_EXAM': 'Simulacro',
+  'xp.goalLabel': 'Tu objetivo',
+  'xp.goalDaysLeft': 'en {days} días',
+  'xp.goalToday': 'hoy',
+  'xp.goalTomorrow': 'mañana',
+  'xp.whereYouAre': 'Dónde estás',
+  'xp.weekTitle': 'Tu semana',
+  'xp.weekValue': '{count} de 7 días',
+  'xp.weekHint': 'con aprendizaje registrado',
+  'xp.todayPlanTitle': 'Plan de hoy',
+  'xp.todayPlanValue': '{minutes} min',
+  'xp.todayPlanHint': '{count} en tu sesión · {available} min disponibles',
+  'xp.progressLink': 'Ver tu progreso',
+  'xp.alsoToday': 'Hoy también',
+  'xp.laterTitle': '{count} más para otro día',
+  'xp.availableOn': 'Disponible el {date}',
+  'xp.openConcept': 'Ver concepto',
+  'xp.caughtUpTitle': 'Estás al día',
+  'xp.caughtUpBody': 'Nada urgente ahora mismo. Revisa tu ruta o descansa: tu progreso está guardado.',
+  'xp.readFailedTitle': 'No pudimos cargar tu siguiente reto',
+  'xp.readFailedBody': 'Es un problema temporal, no significa que no tengas nada pendiente. Tu progreso está a salvo.',
+  'xp.loading': 'Preparando tu día…',
+  'xp.errorTitle': 'Algo no salió bien',
+  'xp.errorBody': 'No pudimos cargar esta página. Tu progreso está a salvo.',
+  'xp.errorRetry': 'Reintentar',
+  'xp.errorHome': 'Ir a Hoy',
+  'xp.tabBarLabel': 'Secciones principales',
+  'xp.pathLink': 'Ver mi ruta',
+  'xp.questionCount': '{count} preguntas',
 };
 
 const en: Messages = {
@@ -3031,7 +3121,7 @@ const en: Messages = {
   'conceptMission.journeyTitle': 'Your path through this concept',
   'conceptMission.journeyYouAreHere': 'You are here: {stage}',
   'conceptMission.nowTitle': 'Now',
-  'conceptMission.noActionConsolidatedTitle': 'Consolidated',
+  'conceptMission.noActionConsolidatedTitle': 'Mastered',
   'conceptMission.noActionConsolidatedBody': 'Nothing is needed right now. StudyUS will bring this back for a retention check when it\'s due.',
   'conceptMission.noActionZeroGapTitle': 'You\'ve practiced enough',
   'conceptMission.noActionZeroGapBody': 'No more practice is needed on this concept right now.',
@@ -3096,9 +3186,9 @@ const en: Messages = {
   'conceptMission.stage.PRACTICE': 'Practice',
   'conceptMission.stage.READY_TO_PROVE': 'Ready to prove',
   'conceptMission.stage.PROVE': 'Prove',
-  'conceptMission.stage.RETAIN': 'Retain',
-  'conceptMission.stage.TRANSFER': 'Transfer',
-  'conceptMission.stage.CONSOLIDATED': 'Consolidated',
+  'conceptMission.stage.RETAIN': 'Remember',
+  'conceptMission.stage.TRANSFER': 'Apply',
+  'conceptMission.stage.CONSOLIDATED': 'Mastered',
   'conceptMission.milestone.passed': '{stage} — earlier step',
   'conceptMission.milestone.current': '{stage} — you are here',
   'conceptMission.milestone.upcoming': '{stage} — coming up',
@@ -3236,6 +3326,51 @@ const en: Messages = {
   'practice.prepareFailedTitle': 'Couldn\'t prepare this activity',
   'practice.prepareFailedBody': 'Your progress is safe. Try again.',
   'practice.prepareRetry': 'Try again',
+  'todayNarrative.LEARN_CHECK': 'First you understand the idea, then you check that it is clear.',
+  'xp.greeting': 'Hi, {name}',
+  'xp.greetingNoName': 'Hi',
+  'xp.tagline': 'Don\'t study more. Study better.',
+  'xp.nextChallenge': 'Your next challenge',
+  'xp.challenge.LEARN_CHECK': 'Understand it',
+  'xp.challenge.PRACTICE': 'Train it',
+  'xp.challenge.REVIEW': 'Review it',
+  'xp.challenge.SOLO_CHECK': 'Prove it',
+  'xp.challenge.SOLO_VERIFY': 'Prove it',
+  'xp.challenge.DIAGNOSTIC_CHECK': 'Let\'s see where you are',
+  'xp.challenge.REMEDIATION': 'Strengthen it',
+  'xp.challenge.REINFORCE': 'Strengthen it',
+  'xp.challenge.TRANSFER': 'Apply it',
+  'xp.challenge.RETENTION_CHECK': 'Recall it',
+  'xp.challenge.CUMULATIVE_ASSESSMENT': 'Put it all together',
+  'xp.challenge.MOCK_EXAM': 'Mock exam',
+  'xp.goalLabel': 'Your goal',
+  'xp.goalDaysLeft': 'in {days} days',
+  'xp.goalToday': 'today',
+  'xp.goalTomorrow': 'tomorrow',
+  'xp.whereYouAre': 'Where you are',
+  'xp.weekTitle': 'Your week',
+  'xp.weekValue': '{count} of 7 days',
+  'xp.weekHint': 'with learning recorded',
+  'xp.todayPlanTitle': 'Today\'s plan',
+  'xp.todayPlanValue': '{minutes} min',
+  'xp.todayPlanHint': '{count} in your session · {available} min available',
+  'xp.progressLink': 'See your progress',
+  'xp.alsoToday': 'Also today',
+  'xp.laterTitle': '{count} more for another day',
+  'xp.availableOn': 'Available on {date}',
+  'xp.openConcept': 'Open concept',
+  'xp.caughtUpTitle': 'You\'re up to date',
+  'xp.caughtUpBody': 'Nothing urgent right now. Check your path or take a break: your progress is saved.',
+  'xp.readFailedTitle': 'We couldn\'t load your next challenge',
+  'xp.readFailedBody': 'This is a temporary problem, not a sign that nothing is pending. Your progress is safe.',
+  'xp.loading': 'Getting your day ready…',
+  'xp.errorTitle': 'Something went wrong',
+  'xp.errorBody': 'We couldn\'t load this page. Your progress is safe.',
+  'xp.errorRetry': 'Try again',
+  'xp.errorHome': 'Go to Today',
+  'xp.tabBarLabel': 'Main sections',
+  'xp.pathLink': 'See my path',
+  'xp.questionCount': '{count} questions',
 };
 
 const de: Messages = {
@@ -4313,7 +4448,7 @@ const de: Messages = {
   'conceptMission.journeyTitle': 'Dein Weg durch dieses Konzept',
   'conceptMission.journeyYouAreHere': 'Du bist hier: {stage}',
   'conceptMission.nowTitle': 'Jetzt',
-  'conceptMission.noActionConsolidatedTitle': 'Gefestigt',
+  'conceptMission.noActionConsolidatedTitle': 'Beherrscht',
   'conceptMission.noActionConsolidatedBody': 'Im Moment ist nichts nötig. StudyUS legt dir das Konzept wieder vor, wenn eine Behaltensprüfung ansteht.',
   'conceptMission.noActionZeroGapTitle': 'Du hast genug geübt',
   'conceptMission.noActionZeroGapBody': 'Für dieses Konzept ist gerade keine weitere Übung nötig.',
@@ -4379,8 +4514,8 @@ const de: Messages = {
   'conceptMission.stage.READY_TO_PROVE': 'Bereit zum Nachweis',
   'conceptMission.stage.PROVE': 'Nachweisen',
   'conceptMission.stage.RETAIN': 'Behalten',
-  'conceptMission.stage.TRANSFER': 'Übertragen',
-  'conceptMission.stage.CONSOLIDATED': 'Gefestigt',
+  'conceptMission.stage.TRANSFER': 'Anwenden',
+  'conceptMission.stage.CONSOLIDATED': 'Beherrscht',
   'conceptMission.milestone.passed': '{stage} — früherer Schritt',
   'conceptMission.milestone.current': '{stage} — du bist hier',
   'conceptMission.milestone.upcoming': '{stage} — kommt noch',
@@ -4518,6 +4653,51 @@ const de: Messages = {
   'practice.prepareFailedTitle': 'Diese Aktivität konnte nicht vorbereitet werden',
   'practice.prepareFailedBody': 'Dein Fortschritt ist gesichert. Versuch es erneut.',
   'practice.prepareRetry': 'Erneut versuchen',
+  'todayNarrative.LEARN_CHECK': 'Erst verstehst du die Idee, dann prüfst du, ob sie sitzt.',
+  'xp.greeting': 'Hallo, {name}',
+  'xp.greetingNoName': 'Hallo',
+  'xp.tagline': 'Nicht mehr lernen. Besser lernen.',
+  'xp.nextChallenge': 'Deine nächste Herausforderung',
+  'xp.challenge.LEARN_CHECK': 'Versteh es',
+  'xp.challenge.PRACTICE': 'Trainier es',
+  'xp.challenge.REVIEW': 'Wiederhol es',
+  'xp.challenge.SOLO_CHECK': 'Zeig es',
+  'xp.challenge.SOLO_VERIFY': 'Zeig es',
+  'xp.challenge.DIAGNOSTIC_CHECK': 'Schauen wir, wo du stehst',
+  'xp.challenge.REMEDIATION': 'Festige es',
+  'xp.challenge.REINFORCE': 'Festige es',
+  'xp.challenge.TRANSFER': 'Wende es an',
+  'xp.challenge.RETENTION_CHECK': 'Ruf es ab',
+  'xp.challenge.CUMULATIVE_ASSESSMENT': 'Bring alles zusammen',
+  'xp.challenge.MOCK_EXAM': 'Probeprüfung',
+  'xp.goalLabel': 'Dein Ziel',
+  'xp.goalDaysLeft': 'in {days} Tagen',
+  'xp.goalToday': 'heute',
+  'xp.goalTomorrow': 'morgen',
+  'xp.whereYouAre': 'Wo du stehst',
+  'xp.weekTitle': 'Deine Woche',
+  'xp.weekValue': '{count} von 7 Tagen',
+  'xp.weekHint': 'mit erfasstem Lernen',
+  'xp.todayPlanTitle': 'Plan für heute',
+  'xp.todayPlanValue': '{minutes} Min.',
+  'xp.todayPlanHint': '{count} in deiner Sitzung · {available} Min. verfügbar',
+  'xp.progressLink': 'Deinen Fortschritt ansehen',
+  'xp.alsoToday': 'Heute außerdem',
+  'xp.laterTitle': '{count} weitere für einen anderen Tag',
+  'xp.availableOn': 'Verfügbar am {date}',
+  'xp.openConcept': 'Konzept öffnen',
+  'xp.caughtUpTitle': 'Du bist auf dem neuesten Stand',
+  'xp.caughtUpBody': 'Gerade ist nichts dringend. Sieh dir deinen Weg an oder mach eine Pause: dein Fortschritt ist gespeichert.',
+  'xp.readFailedTitle': 'Wir konnten deine nächste Herausforderung nicht laden',
+  'xp.readFailedBody': 'Das ist ein vorübergehendes Problem – es heißt nicht, dass nichts ansteht. Dein Fortschritt ist sicher.',
+  'xp.loading': 'Dein Tag wird vorbereitet…',
+  'xp.errorTitle': 'Etwas ist schiefgelaufen',
+  'xp.errorBody': 'Wir konnten diese Seite nicht laden. Dein Fortschritt ist sicher.',
+  'xp.errorRetry': 'Erneut versuchen',
+  'xp.errorHome': 'Zu Heute',
+  'xp.tabBarLabel': 'Hauptbereiche',
+  'xp.pathLink': 'Meinen Weg ansehen',
+  'xp.questionCount': '{count} Fragen',
 };
 
 const fr: Messages = {
@@ -5595,7 +5775,7 @@ const fr: Messages = {
   'conceptMission.journeyTitle': 'Ton parcours sur ce concept',
   'conceptMission.journeyYouAreHere': 'Tu es ici : {stage}',
   'conceptMission.nowTitle': 'Maintenant',
-  'conceptMission.noActionConsolidatedTitle': 'Consolidé',
+  'conceptMission.noActionConsolidatedTitle': 'Maîtrisé',
   'conceptMission.noActionConsolidatedBody': 'Rien n\'est nécessaire pour l\'instant. StudyUS te le représentera pour un contrôle de mémorisation le moment venu.',
   'conceptMission.noActionZeroGapTitle': 'Tu as assez pratiqué',
   'conceptMission.noActionZeroGapBody': 'Aucun entraînement supplémentaire n\'est nécessaire sur ce concept pour l\'instant.',
@@ -5661,8 +5841,8 @@ const fr: Messages = {
   'conceptMission.stage.READY_TO_PROVE': 'Prêt à démontrer',
   'conceptMission.stage.PROVE': 'Démontrer',
   'conceptMission.stage.RETAIN': 'Mémoriser',
-  'conceptMission.stage.TRANSFER': 'Transférer',
-  'conceptMission.stage.CONSOLIDATED': 'Consolidé',
+  'conceptMission.stage.TRANSFER': 'Appliquer',
+  'conceptMission.stage.CONSOLIDATED': 'Maîtrisé',
   'conceptMission.milestone.passed': '{stage} — étape précédente',
   'conceptMission.milestone.current': '{stage} — tu es ici',
   'conceptMission.milestone.upcoming': '{stage} — à venir',
@@ -5800,6 +5980,51 @@ const fr: Messages = {
   'practice.prepareFailedTitle': 'Impossible de préparer cette activité',
   'practice.prepareFailedBody': 'Ta progression est sauvegardée. Réessaie.',
   'practice.prepareRetry': 'Réessayer',
+  'todayNarrative.LEARN_CHECK': 'D\'abord tu comprends l\'idée, puis tu vérifies qu\'elle est claire.',
+  'xp.greeting': 'Bonjour, {name}',
+  'xp.greetingNoName': 'Bonjour',
+  'xp.tagline': 'N\'étudie pas plus. Étudie mieux.',
+  'xp.nextChallenge': 'Ton prochain défi',
+  'xp.challenge.LEARN_CHECK': 'Comprends-le',
+  'xp.challenge.PRACTICE': 'Entraîne-toi',
+  'xp.challenge.REVIEW': 'Révise-le',
+  'xp.challenge.SOLO_CHECK': 'Démontre-le',
+  'xp.challenge.SOLO_VERIFY': 'Démontre-le',
+  'xp.challenge.DIAGNOSTIC_CHECK': 'Voyons où tu en es',
+  'xp.challenge.REMEDIATION': 'Renforce-le',
+  'xp.challenge.REINFORCE': 'Renforce-le',
+  'xp.challenge.TRANSFER': 'Applique-le',
+  'xp.challenge.RETENTION_CHECK': 'Rappelle-le-toi',
+  'xp.challenge.CUMULATIVE_ASSESSMENT': 'Rassemble tout',
+  'xp.challenge.MOCK_EXAM': 'Examen blanc',
+  'xp.goalLabel': 'Ton objectif',
+  'xp.goalDaysLeft': 'dans {days} jours',
+  'xp.goalToday': 'aujourd\'hui',
+  'xp.goalTomorrow': 'demain',
+  'xp.whereYouAre': 'Où tu en es',
+  'xp.weekTitle': 'Ta semaine',
+  'xp.weekValue': '{count} sur 7 jours',
+  'xp.weekHint': 'avec apprentissage enregistré',
+  'xp.todayPlanTitle': 'Plan du jour',
+  'xp.todayPlanValue': '{minutes} min',
+  'xp.todayPlanHint': '{count} dans ta séance · {available} min disponibles',
+  'xp.progressLink': 'Voir ta progression',
+  'xp.alsoToday': 'Aussi aujourd\'hui',
+  'xp.laterTitle': '{count} de plus pour un autre jour',
+  'xp.availableOn': 'Disponible le {date}',
+  'xp.openConcept': 'Voir le concept',
+  'xp.caughtUpTitle': 'Tu es à jour',
+  'xp.caughtUpBody': 'Rien d\'urgent pour l\'instant. Consulte ton parcours ou fais une pause : ta progression est enregistrée.',
+  'xp.readFailedTitle': 'Nous n\'avons pas pu charger ton prochain défi',
+  'xp.readFailedBody': 'C\'est un problème temporaire, cela ne veut pas dire que rien n\'est en attente. Ta progression est en sécurité.',
+  'xp.loading': 'On prépare ta journée…',
+  'xp.errorTitle': 'Quelque chose s\'est mal passé',
+  'xp.errorBody': 'Nous n\'avons pas pu charger cette page. Ta progression est en sécurité.',
+  'xp.errorRetry': 'Réessayer',
+  'xp.errorHome': 'Aller à Aujourd\'hui',
+  'xp.tabBarLabel': 'Sections principales',
+  'xp.pathLink': 'Voir mon parcours',
+  'xp.questionCount': '{count} questions',
 };
 
 const pt: Messages = {
@@ -6877,7 +7102,7 @@ const pt: Messages = {
   'conceptMission.journeyTitle': 'Seu percurso neste conceito',
   'conceptMission.journeyYouAreHere': 'Você está aqui: {stage}',
   'conceptMission.nowTitle': 'Agora',
-  'conceptMission.noActionConsolidatedTitle': 'Consolidado',
+  'conceptMission.noActionConsolidatedTitle': 'Dominado',
   'conceptMission.noActionConsolidatedBody': 'Nada é necessário agora. O StudyUS trará isto de volta para uma verificação de retenção quando for a hora.',
   'conceptMission.noActionZeroGapTitle': 'Já praticaste o suficiente',
   'conceptMission.noActionZeroGapBody': 'Não é preciso mais prática neste conceito agora.',
@@ -6942,9 +7167,9 @@ const pt: Messages = {
   'conceptMission.stage.PRACTICE': 'Praticar',
   'conceptMission.stage.READY_TO_PROVE': 'Pronto para demonstrar',
   'conceptMission.stage.PROVE': 'Demonstrar',
-  'conceptMission.stage.RETAIN': 'Reter',
-  'conceptMission.stage.TRANSFER': 'Transferir',
-  'conceptMission.stage.CONSOLIDATED': 'Consolidado',
+  'conceptMission.stage.RETAIN': 'Lembrar',
+  'conceptMission.stage.TRANSFER': 'Aplicar',
+  'conceptMission.stage.CONSOLIDATED': 'Dominado',
   'conceptMission.milestone.passed': '{stage} — etapa anterior',
   'conceptMission.milestone.current': '{stage} — você está aqui',
   'conceptMission.milestone.upcoming': '{stage} — mais adiante',
@@ -7082,6 +7307,51 @@ const pt: Messages = {
   'practice.prepareFailedTitle': 'Não foi possível preparar esta atividade',
   'practice.prepareFailedBody': 'O seu progresso está salvo. Tente novamente.',
   'practice.prepareRetry': 'Tentar novamente',
+  'todayNarrative.LEARN_CHECK': 'Primeiro você entende a ideia; depois confere se ficou clara.',
+  'xp.greeting': 'Olá, {name}',
+  'xp.greetingNoName': 'Olá',
+  'xp.tagline': 'Não estude mais. Estude melhor.',
+  'xp.nextChallenge': 'Seu próximo desafio',
+  'xp.challenge.LEARN_CHECK': 'Entenda',
+  'xp.challenge.PRACTICE': 'Treine',
+  'xp.challenge.REVIEW': 'Revise',
+  'xp.challenge.SOLO_CHECK': 'Demonstre',
+  'xp.challenge.SOLO_VERIFY': 'Demonstre',
+  'xp.challenge.DIAGNOSTIC_CHECK': 'Vamos ver onde você está',
+  'xp.challenge.REMEDIATION': 'Reforce',
+  'xp.challenge.REINFORCE': 'Reforce',
+  'xp.challenge.TRANSFER': 'Aplique',
+  'xp.challenge.RETENTION_CHECK': 'Relembre',
+  'xp.challenge.CUMULATIVE_ASSESSMENT': 'Junte tudo',
+  'xp.challenge.MOCK_EXAM': 'Simulado',
+  'xp.goalLabel': 'Seu objetivo',
+  'xp.goalDaysLeft': 'em {days} dias',
+  'xp.goalToday': 'hoje',
+  'xp.goalTomorrow': 'amanhã',
+  'xp.whereYouAre': 'Onde você está',
+  'xp.weekTitle': 'Sua semana',
+  'xp.weekValue': '{count} de 7 dias',
+  'xp.weekHint': 'com aprendizado registrado',
+  'xp.todayPlanTitle': 'Plano de hoje',
+  'xp.todayPlanValue': '{minutes} min',
+  'xp.todayPlanHint': '{count} na sua sessão · {available} min disponíveis',
+  'xp.progressLink': 'Ver seu progresso',
+  'xp.alsoToday': 'Também hoje',
+  'xp.laterTitle': 'Mais {count} para outro dia',
+  'xp.availableOn': 'Disponível em {date}',
+  'xp.openConcept': 'Ver conceito',
+  'xp.caughtUpTitle': 'Você está em dia',
+  'xp.caughtUpBody': 'Nada urgente agora. Veja sua rota ou descanse: seu progresso está salvo.',
+  'xp.readFailedTitle': 'Não conseguimos carregar seu próximo desafio',
+  'xp.readFailedBody': 'É um problema temporário, não significa que não há nada pendente. Seu progresso está seguro.',
+  'xp.loading': 'Preparando seu dia…',
+  'xp.errorTitle': 'Algo deu errado',
+  'xp.errorBody': 'Não conseguimos carregar esta página. Seu progresso está seguro.',
+  'xp.errorRetry': 'Tentar novamente',
+  'xp.errorHome': 'Ir para Hoje',
+  'xp.tabBarLabel': 'Seções principais',
+  'xp.pathLink': 'Ver minha rota',
+  'xp.questionCount': '{count} perguntas',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

@@ -119,7 +119,7 @@ function buildCanonicalJourney(decision: CanonicalPedagogicalDecision): ConceptM
  * mislabel a genuine independent/Transfer/Retain CTA as an assisted
  * Practice one.
  */
-function toLegacyActivityType(activityType: PedagogicalActivityType | 'REINFORCE'): ActivityType {
+export function presentedActivityTypeForCanonical(activityType: PedagogicalActivityType | 'REINFORCE'): ActivityType {
   if (activityType === 'PROVE') return 'SOLO_CHECK';
   if (activityType === 'RETENTION_CHECK') return 'RETENTION_CHECK';
   if (activityType === 'TRANSFER') return 'TRANSFER';
@@ -154,7 +154,7 @@ function buildCanonicalNow(decision: CanonicalPedagogicalDecision): ConceptMissi
 
   return {
     kind: 'CANONICAL_ACTION',
-    activityType: toLegacyActivityType(activityType),
+    activityType: presentedActivityTypeForCanonical(activityType),
     actionConceptId: decision.conceptId,
     facts: [],
     fallback: null,

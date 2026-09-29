@@ -1,5 +1,6 @@
 import type { JourneyStage } from '@/lib/lx/concept-journey';
 import type { getMessages } from '@/lib/i18n/messages';
+import { stageLabel } from '@/lib/experience/vocabulary';
 
 /**
  * LX-7 -- UI translation only, mirroring activityLabel.ts's own
@@ -10,7 +11,11 @@ import type { getMessages } from '@/lib/i18n/messages';
  * concept-journey.ts.
  */
 export function journeyStageLabel(stage: JourneyStage, t: ReturnType<typeof getMessages>): string {
-  return t[`myPathStage.${stage}` as keyof typeof t];
+  // UX-2: one stage vocabulary for the whole Student experience -- My
+  // Path now renders the SAME labels as Concept Mission and Home
+  // (lib/experience/vocabulary.ts), instead of a second, drifting set.
+  if ((stage as string) === 'REINFORCE') return journeyReinforceLabel(t);
+  return stageLabel(stage, t);
 }
 
 /** The REINFORCE overlay's own label -- never a stage of the line itself (R7). */

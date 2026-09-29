@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { StatusBadge, toneForDimensionStatus } from '@/components/ui/StatusBadge';
+import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
 
 interface SubjectSummary {
   subjectId: string;
@@ -44,11 +45,6 @@ interface ParentExamPrepView {
   fullMock: { eligible: boolean; reasonCategory: 'PLATFORM_NOT_READY' | 'LEARNER_NOT_READY' | null; reasons: string[] };
 }
 
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
 
 export default function ParentPage() {
   const [locale, setLocale] = useState<Locale>('es');
@@ -264,7 +260,7 @@ export default function ParentPage() {
                       <span style={{ flex: '0 0 160px', fontWeight: 600, fontSize: 14 }}>{s.name}</span>
                       <div className="mastery-row" style={{ flex: 1 }}>
                         <div className="mastery-bar">
-                          <span className={masteryFillClass(s.avgMastery ?? 0)} style={{ width: `${s.avgMastery ?? 0}%` }} />
+                          <span className={QUANTITY_FILL_CLASS} style={{ width: `${s.avgMastery ?? 0}%` }} />
                         </div>
                         <span className="mastery-pct tabular">{s.avgMastery !== null ? `${s.avgMastery}%` : '—'}</span>
                       </div>

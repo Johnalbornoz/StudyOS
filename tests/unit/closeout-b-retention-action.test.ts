@@ -97,11 +97,13 @@ describe('Closeout B -- Today retention eyebrow (Step 13)', () => {
   });
 
   it('Today renders the eyebrow ONLY when the canonical activityType is RETENTION_CHECK -- hero + plan item', () => {
-    // exactly two guarded render sites (hero + ItemRow), both branching on activityType only,
-    // and exactly two references to the eyebrow key -- one per site.
-    const guards = [...TODAY_SRC.matchAll(/decision\.activityType === 'RETENTION_CHECK'/g)];
+    // exactly two guarded render sites (hero card + plan row), both branching on the
+    // presented activityType only, and exactly two references to the eyebrow key -- one per site.
+    // UX-2: the hero moved into NextChallengeCard (shared with My Path).
+    const HOME_SRC = TODAY_SRC + read('src/app/dashboard/NextChallengeCard.tsx');
+    const guards = [...HOME_SRC.matchAll(/view\.activityType === 'RETENTION_CHECK'/g)];
     expect(guards.length).toBe(2);
-    const eyebrows = [...TODAY_SRC.matchAll(/t\['today\.retentionEyebrow'\]/g)];
+    const eyebrows = [...HOME_SRC.matchAll(/t\['today\.retentionEyebrow'\]/g)];
     expect(eyebrows.length).toBe(2);
     // the eyebrow key never appears without a RETENTION_CHECK guard preceding it in the same render block
     expect(TODAY_SRC).not.toMatch(/today\.retentionEyebrow'\][\s\S]{0,80}today\.retentionEyebrow/); // not doubled inside one block

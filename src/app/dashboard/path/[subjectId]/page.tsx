@@ -6,11 +6,12 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { loadMyPathContext, buildSubjectPathView, type ConceptPathView } from '@/lib/lx/path-view';
-import type { ActivityType } from '@/lib/activity-taxonomy';
-import type { LearningFact } from '@/lib/adaptive-learning-policy';
+import { isRetentionWaiting } from '@/lib/lx/learner-journey-contract';
+import type { NextChallengeView } from '@/lib/experience/next-challenge';
+import { loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
+import { whyThisSentence } from '../../WhyThisV3';
 import { activityCta } from '../../activityCta';
 import { activityNarrative } from '../../activityNarrative';
-import WhyThisV3 from '../../WhyThisV3';
 import StartSessionButton from '../../StartSessionButton';
 import JourneyStrip from '../JourneyStrip';
 import { journeyReason } from '../journeyReason';
@@ -28,26 +29,31 @@ function ConceptRow({
   subjectId,
   studentId,
   t,
+  locale,
   onCurrentDecision,
 }: {
   concept: ConceptPathView;
   subjectId: string;
   studentId: string;
   t: ReturnType<typeof getMessages>;
-  onCurrentDecision: { activityType: ActivityType; facts: LearningFact[] } | null;
+  locale: string;
+  /** UX-2: the current concept's next challenge -- the SAME presenter and gates as Today/My Path. */
+  onCurrentDecision: NextChallengeView | null;
 }) {
+  const ready = onCurrentDecision?.status === 'READY' ? onCurrentDecision : null;
+  const why = ready ? whyThisSentence(ready.facts, t, 1) : '';
   return (
     <div className="card" style={{ padding: 'var(--space-4)', borderColor: concept.isCurrent ? 'var(--brand)' : undefined, borderWidth: concept.isCurrent ? 2 : undefined }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
         <Link href={`/dashboard/subjects/${subjectId}/concepts/${concept.conceptId}`} style={{ fontSize: 14.5, fontWeight: 650 }}>
           {concept.title}
         </Link>
-        {concept.isCurrent && onCurrentDecision && (
+        {concept.isCurrent && ready && (
           <StartSessionButton
             studentId={studentId}
             actionConceptId={concept.conceptId}
-            label={activityCta(onCurrentDecision.activityType, t)}
-            accessibleLabel={`${activityCta(onCurrentDecision.activityType, t)}: ${concept.title}`}
+            label={activityCta(ready.activityType, t)}
+            accessibleLabel={`${activityCta(ready.activityType, t)}: ${concept.title}`}
             unavailableLabel={t['today3.unavailableBody']}
             retryLabel={t['today3.retry']}
             licenseTitle={t['learning.licenseRequiredTitle']}
@@ -61,11 +67,21 @@ function ConceptRow({
       <div style={{ marginTop: 8 }}>
         <JourneyStrip journey={concept.journey} t={t} />
       </div>
-      {concept.isCurrent && onCurrentDecision ? (
+      {concept.isCurrent && ready ? (
         <>
-          <p style={{ margin: '8px 0 0', fontSize: 13.5, color: 'var(--text-primary)' }}>{activityNarrative(onCurrentDecision.activityType, t)}</p>
-          <WhyThisV3 facts={onCurrentDecision.facts} t={t} maxFacts={1} />
+          <p style={{ margin: '8px 0 0', fontSize: 13.5, color: 'var(--text-primary)' }}>{activityNarrative(ready.activityType, t)}</p>
+          {why && (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>
+              <span style={{ fontWeight: 650, color: 'var(--text-secondary)' }}>{t['whyThis.label']}</span> {why}
+            </div>
+          )}
         </>
+      ) : concept.isCurrent && onCurrentDecision?.status === 'WAITING' ? (
+        <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+          {onCurrentDecision.nextEligibleAt
+            ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace('{date}', new Date(onCurrentDecision.nextEligibleAt).toLocaleDateString(locale))
+            : t['conceptMission.noActionRetentionWaitingBody']}
+        </p>
       ) : (
         <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{journeyReason(concept.journey, t)}</p>
       )}
@@ -110,6 +126,29 @@ export default async function SubjectPathPage({ params }: { params: Promise<{ su
 
   const allConcepts = subjectView ? [...subjectView.topics.flatMap((tp) => tp.concepts), ...subjectView.unassigned] : [];
   const currentDecision = context.snapshot?.decisions.find((d) => d.actionConceptId === subjectView?.currentConceptId) ?? null;
+  // UX-2 (waiting/gating consistency): the current concept's Start button
+  // honors the SAME authoritative gates Today/My Path apply -- the
+  // canonical launch when the gate is on; with the gate off, the legacy
+  // retention-waiting rule My Path already uses (isRetentionWaiting on
+  // this concept's journey + batched memory signal).
+  const currentConcept = allConcepts.find((c) => c.conceptId === subjectView?.currentConceptId) ?? null;
+  const currentView: NextChallengeView | null =
+    currentDecision && currentConcept
+      ? await loadConceptNextChallenge({
+          studentId,
+          subjectId,
+          conceptId: currentDecision.actionConceptId,
+          legacyDecision: currentDecision,
+          snapshot: context.snapshot,
+          legacyGate: {
+            waiting:
+              !currentConcept.journey.intervention &&
+              isRetentionWaiting(currentConcept.journey.currentStage, context.memorySignals.get(currentDecision.actionConceptId)?.retentionDue),
+            nextEligibleAt: context.memorySignals.get(currentDecision.actionConceptId)?.nextReviewAt ?? null,
+            zeroGapBlocked: false,
+          },
+        }).catch(() => null)
+      : null;
   const fullyConsolidated = !!subjectView && subjectView.summary.totalConcepts > 0 && subjectView.summary.consolidatedCount === subjectView.summary.totalConcepts;
 
   if (subjectView?.currentConceptId) {
@@ -167,7 +206,8 @@ export default async function SubjectPathPage({ params }: { params: Promise<{ su
                           subjectId={subjectId}
                           studentId={studentId}
                           t={t}
-                          onCurrentDecision={c.isCurrent && currentDecision ? { activityType: currentDecision.activityType, facts: currentDecision.facts } : null}
+                          locale={locale}
+                          onCurrentDecision={c.isCurrent ? currentView : null}
                         />
                       ))}
                     </div>
@@ -185,7 +225,8 @@ export default async function SubjectPathPage({ params }: { params: Promise<{ su
                         subjectId={subjectId}
                         studentId={studentId}
                         t={t}
-                        onCurrentDecision={c.isCurrent && currentDecision ? { activityType: currentDecision.activityType, facts: currentDecision.facts } : null}
+                        locale={locale}
+                        onCurrentDecision={c.isCurrent ? currentView : null}
                       />
                     ))}
                   </div>

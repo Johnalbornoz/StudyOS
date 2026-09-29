@@ -7,6 +7,7 @@ import { SubjectHierarchy, HierarchyConcept } from '@/services/topic-hierarchy.s
 import type { MasteryState } from '@/services/knowledge-state.service';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import { averageJourneyProgress } from '@/lib/lx/journey-progress';
+import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
 
 const UNASSIGNED_KEY = '__unassigned__';
 
@@ -61,11 +62,6 @@ function buildSecondaryLine(concepts: HierarchyConcept[], t: ReturnType<typeof g
   );
 }
 
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -86,7 +82,7 @@ function MiniMastery({ score, width = 72 }: { score: number | null; width?: numb
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
       <div className="mastery-bar" style={{ width, flex: 'none' }}>
-        <span className={masteryFillClass(score)} style={{ width: `${score}%` }} />
+        <span className={QUANTITY_FILL_CLASS} style={{ width: `${score}%` }} />
       </div>
       <span className="mastery-pct tabular" style={{ width: 30 }}>{score}%</span>
     </div>

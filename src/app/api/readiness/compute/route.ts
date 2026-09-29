@@ -12,6 +12,7 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { computeReadinessSnapshot } from '@/lib/readiness/readiness.service';
+import { isExamProfileOwnedByStudent } from '@/lib/assessment/student-exam-profile.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const ComputeSchema = z.object({
@@ -34,6 +35,11 @@ async function handlePOST(request: NextRequest) {
 
   const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_INTERVENTION_CREATE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+  // UX-2 security fix: the exam profile must belong to the authorized
+  // learner. 404 (not 403) so a guessed id never confirms another
+  // learner's profile exists.
+  if (!(await isExamProfileOwnedByStudent(validated.examProfileId, validated.studentId))) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
   const snapshot = await computeReadinessSnapshot(validated);
   return NextResponse.json({ success: true, data: { snapshot } });

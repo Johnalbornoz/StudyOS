@@ -24,9 +24,12 @@ import type { ActivityType } from '@/lib/activity-taxonomy';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const TODAY_SRC = read('src/app/dashboard/today/page.tsx');
 const BUTTON_SRC = read('src/app/dashboard/StartSessionButton.tsx');
+// UX-2: the hero moved into the shared "Tu siguiente reto" card (Today + My Path).
+const CARD_SRC = read('src/app/dashboard/NextChallengeCard.tsx');
+// UX-2: LEARN_CHECK now has its narrative (it was the one type missing).
 const ALL_ACTIVITY_TYPES: ActivityType[] = [
   'PRACTICE', 'REVIEW', 'SOLO_CHECK', 'DIAGNOSTIC_CHECK', 'REMEDIATION',
-  'SOLO_VERIFY', 'TRANSFER', 'RETENTION_CHECK', 'CUMULATIVE_ASSESSMENT', 'MOCK_EXAM',
+  'SOLO_VERIFY', 'TRANSFER', 'RETENTION_CHECK', 'CUMULATIVE_ASSESSMENT', 'MOCK_EXAM', 'LEARN_CHECK',
 ];
 
 /* ============================================================== *
@@ -130,8 +133,11 @@ describe('LX-6 R7 -- launch reuses the canonical session-start entrypoint, never
     expect(classifier).toMatch(/session\?\.launchStatus === 'READY' && typeof session\.launchTarget === 'string'/);
   });
   it('the hero gives its StartSessionButton an accessible name distinct from the badge text (R18)', () => {
-    const hero = TODAY_SRC.slice(TODAY_SRC.indexOf('{best && ('), TODAY_SRC.indexOf('{isEmpty ? ('));
-    expect(hero).toMatch(/accessibleLabel=\{`\$\{activityCta\(best\.decision\.activityType, t\)\}: /);
+    // UX-2: Today renders the hero through NextChallengeCard; the CTA and its
+    // accessible name come from the SAME presented (canonical) activity.
+    expect(TODAY_SRC).toMatch(/<NextChallengeCard/);
+    expect(CARD_SRC).toMatch(/const cta = activityCta\(view\.activityType, t\);/);
+    expect(CARD_SRC).toMatch(/accessibleLabel=\{`\$\{cta\}: \$\{conceptLabel\}`\}/);
   });
 });
 
@@ -159,7 +165,8 @@ describe('LX-6 R19 -- safe observability marks', () => {
   });
   it('TODAY_PRIMARY_ACTION_RENDERED metadata is limited to activityType/conceptId/subjectId/reasonCode -- never question/answer/prompt content', () => {
     const call = TODAY_SRC.slice(TODAY_SRC.indexOf("logToday('TODAY_PRIMARY_ACTION_RENDERED'"), TODAY_SRC.indexOf("});", TODAY_SRC.indexOf("logToday('TODAY_PRIMARY_ACTION_RENDERED'")));
-    expect(call).toMatch(/activityType: best\.decision\.activityType/);
+    // UX-2: the logged activityType is the one actually presented/launched.
+    expect(call).toMatch(/activityType: hero\?\.status === 'READY' \? hero\.activityType : null/);
     expect(call).toMatch(/conceptId: best\.decision\.actionConceptId/);
     expect(call).toMatch(/subjectId: best\.decision\.subjectId/);
     expect(call).toMatch(/reasonCode: best\.decision\.reasonCode/);
@@ -201,8 +208,15 @@ describe('LX-6 R22 -- the LX-6 additions carry no pedagogical decision logic', (
     expect(TODAY_SRC).not.toMatch(/if\s*\(.*mastery(Score)?\s*[<>]/i);
     expect(TODAY_SRC).not.toMatch(/if\s*\(.*forgettingRisk\s*[<>]/i);
     expect(TODAY_SRC).not.toMatch(/computeSupportLevel|selectActivityType|LearningDecision\(/);
-    expect(TODAY_SRC).toMatch(/activityCta\(best\.decision\.activityType, t\)/);
-    expect(TODAY_SRC).toMatch(/activityNarrative\(best\.decision\.activityType, t\)/);
+    // UX-2: the hero is presented by the shared presenter over the snapshot
+    // (canonical launch when the gate is on) -- the legacy activityType is
+    // no longer rendered directly anywhere on Home.
+    expect(TODAY_SRC).toMatch(/presentSnapshotNextChallenge\(snapshot\)/);
+    expect(CARD_SRC).toMatch(/activityCta\(view\.activityType, t\)/);
+    expect(CARD_SRC).toMatch(/activityNarrative\(view\.activityType, t\)/);
+    for (const src of [TODAY_SRC, CARD_SRC]) {
+      expect(src).not.toMatch(/activity(Cta|Label|Narrative)\(best\.decision\.activityType/);
+    }
   });
 });
 
@@ -211,7 +225,8 @@ describe('LX-6 R22 -- the LX-6 additions carry no pedagogical decision logic', (
  * ============================================================== */
 describe('LX-6 R23 -- UNRESOLVED never invents a fallback action', () => {
   it('the UNRESOLVED branch offers Retry and View My Path only -- no Practice/quiz link, no picked concept', () => {
-    const block = TODAY_SRC.slice(TODAY_SRC.indexOf("todayState === 'UNRESOLVED' ? ("), TODAY_SRC.indexOf(') : ('));
+    const start = TODAY_SRC.indexOf("todayState === 'UNRESOLVED' ? (");
+    const block = TODAY_SRC.slice(start, TODAY_SRC.indexOf(') : (', start));
     expect(block).toMatch(/today3\.unresolvedTitle/);
     expect(block).toMatch(/today3\.unresolvedRetry/);
     expect(block).toMatch(/today3\.viewMyPath/);
@@ -230,18 +245,23 @@ describe('LX-6 R23 -- UNRESOLVED never invents a fallback action', () => {
  * ============================================================== */
 describe('LX-6 R16-R18 -- one dominant primary action, accessible, no dense grid', () => {
   it('the hero uses a real heading element (h2) for the concept title, not a bare styled div', () => {
-    const hero = TODAY_SRC.slice(TODAY_SRC.indexOf('{best && ('), TODAY_SRC.indexOf('{isEmpty ? ('));
-    expect(hero).toMatch(/<h2[^>]*>\s*\{bestLabel\?\.label/);
+    // UX-2: NextChallengeCard renders the concept title as h2 by default; Today passes the concept label.
+    expect(CARD_SRC).toMatch(/const Heading = headingLevel === 1 \? 'h1' : 'h2';/);
+    expect(CARD_SRC).toMatch(/headingLevel = 2,/);
+    expect(CARD_SRC).toMatch(/<Heading id="xp-next-title" className="xp-hero-title">\{conceptLabel\}<\/Heading>/);
+    expect(TODAY_SRC).toMatch(/conceptLabel=\{bestLabel\?\.label/);
+    expect(TODAY_SRC).not.toMatch(/headingLevel=/);
   });
   it('no side-by-side multi-column CSS grid is introduced (mobile hierarchy stays a single column)', () => {
     expect(TODAY_SRC).not.toMatch(/gridTemplateColumns|display:\s*'grid'/);
   });
   it('the secondary session/deferred/camino sections are visually smaller than the hero heading (font-size discipline)', () => {
-    const sessionHeading = TODAY_SRC.match(/\{t\['today3\.sessionTitle'\]\}<\/h2>/);
-    expect(sessionHeading).toBeTruthy();
-    // hero h2 is 26px; secondary h2s are all <= 18px
-    expect(TODAY_SRC).toMatch(/fontSize: 26,/);
-    expect(TODAY_SRC).not.toMatch(/fontSize: 18\}\}>\{t\['today3\.(sessionTitle|deferredTitle)'\]/);
+    // UX-2: secondary sections use the shared <Section> (13px uppercase h2);
+    // the hero title is 30px (24px on phones).
+    const css = read('src/app/globals.css');
+    expect(TODAY_SRC).toMatch(/<Section id="xp-also" title=\{t\['xp\.alsoToday'\]\}>/);
+    expect(css).toMatch(/\.ui-section-title \{[^}]*font-size: 13px;/);
+    expect(css).toMatch(/\.xp-hero-title \{[^}]*font-size: 30px;/);
   });
 });
 
@@ -250,8 +270,10 @@ describe('LX-6 R16-R18 -- one dominant primary action, accessible, no dense grid
  * ============================================================== */
 describe("LX-6 R9 -- the secondary session list never repeats the hero's own item", () => {
   it("today's session list starts at dailyPlan.items[1] -- the hero already IS items[0]", () => {
-    expect(TODAY_SRC).toMatch(/snapshot!\.dailyPlan\.items\.slice\(1\)\.map/);
-    expect(TODAY_SRC).toMatch(/snapshot!\.dailyPlan\.items\.length > 1 &&/);
+    expect(TODAY_SRC).toMatch(/snapshot \? snapshot\.dailyPlan\.items\.slice\(1\) : \[\]/);
+    expect(TODAY_SRC).toMatch(/sessionViews\.length > 0 &&/);
+    // the hero is the snapshot's nextExecutableItem (= dailyPlan.items[0])
+    expect(read('src/lib/experience/next-challenge.server.ts')).toMatch(/const best = snapshot\.nextExecutableItem;/);
   });
 });
 

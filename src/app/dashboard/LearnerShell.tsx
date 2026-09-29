@@ -5,10 +5,14 @@
  *
  * Owns the responsive chrome so no activity/route implements navigation
  * on its own:
- *   - desktop (>=1024px): fixed sidebar
+ *   - desktop (>=1024px): fixed sidebar; secondary/account groups are
+ *     collapsible disclosures (UX-2)
  *   - below 1024px: sticky top bar + slide-in drawer (Escape / backdrop
  *     to close, focus moved into the drawer on open and restored on
- *     close, body scroll locked while open)
+ *     close, body scroll locked while open). UX-2: when the nav marks
+ *     `mobileTab` destinations (the Student nav does), a fixed bottom tab
+ *     bar shows them plus "Más", which opens that same drawer -- one
+ *     navigation system, two presentations.
  *
  * `chrome` is the structural seam for the LX-4 focus state:
  *   - 'full'    -> nav + drawer
@@ -42,12 +46,16 @@ import {
   GraduationCap,
   Menu,
   X,
+  ChevronRight,
+  MoreHorizontal,
   School,
   Building2,
   ClipboardCheck,
   ClipboardList,
 } from 'lucide-react';
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
+import type { Locale } from '@/lib/i18n/messages';
+import { ShellLocaleProvider } from './ShellLocale';
 
 /**
  * LX-4K -- routes that ARE an active learning activity. On these the
@@ -82,6 +90,14 @@ const ICONS: Record<string, ReactNode> = {
   ClipboardList: <ClipboardList size={16} strokeWidth={2} aria-hidden />,
 };
 
+/** Larger glyphs for the bottom tab bar (touch-first). */
+const TAB_ICONS: Record<string, ReactNode> = {
+  CalendarDays: <CalendarDays size={22} strokeWidth={2} aria-hidden />,
+  Route: <Route size={22} strokeWidth={2} aria-hidden />,
+  LayoutDashboard: <LayoutDashboard size={22} strokeWidth={2} aria-hidden />,
+  ClipboardCheck: <ClipboardCheck size={22} strokeWidth={2} aria-hidden />,
+};
+
 /** Nav groups with labels already resolved (server passes plain strings). */
 export interface ResolvedNavItem {
   key: string;
@@ -89,6 +105,8 @@ export interface ResolvedNavItem {
   label: string;
   iconKey: string;
   badge?: number;
+  /** UX-2: shown in the compact bottom tab bar. */
+  mobileTab?: boolean;
 }
 export interface ResolvedNavGroup {
   kind: LearnerNavGroup['kind'];
@@ -96,44 +114,129 @@ export interface ResolvedNavGroup {
   items: ResolvedNavItem[];
 }
 
+function isActiveHref(href: string, pathname: string): boolean {
+  return href === '/dashboard' ? pathname === '/dashboard' : pathname === href || pathname.startsWith(href + '/');
+}
+
+function NavLink({ item, pathname, onNavigate }: { item: ResolvedNavItem; pathname: string; onNavigate?: () => void }) {
+  const active = isActiveHref(item.href, pathname);
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      className={`lx-navlink${active ? ' active' : ''}`}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        {ICONS[item.iconKey] ?? null}
+        {item.label}
+      </span>
+      {!!item.badge && <span className="lx-nav-badge">{item.badge}</span>}
+    </Link>
+  );
+}
+
 function NavList({
   groups,
   onNavigate,
   pathname,
   label,
+  expandAll = false,
 }: {
   groups: ResolvedNavGroup[];
   onNavigate?: () => void;
   pathname: string;
   /** LX-3R: a localized, landmark-distinct label -- the sidebar and the drawer each pass their own. */
   label: string;
+  /** UX-2: the drawer shows every group expanded (it IS the "more" menu). */
+  expandAll?: boolean;
 }) {
   return (
     <nav aria-label={label} style={{ display: 'flex', flexDirection: 'column' }}>
-      {groups.map((group) => (
-        <div key={group.kind}>
-          {group.title && <div className="lx-nav-grouptitle">{group.title}</div>}
-          {group.items.map((item) => {
-            const active =
-              item.href === '/dashboard' ? pathname === '/dashboard' : pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                onClick={onNavigate}
-                aria-current={active ? 'page' : undefined}
-                className={`lx-navlink${active ? ' active' : ''}`}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  {ICONS[item.iconKey] ?? null}
-                  {item.label}
-                </span>
-                {!!item.badge && <span className="lx-nav-badge">{item.badge}</span>}
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+      {groups.map((group) => {
+        // UX-2: the primary group is always visible; titled groups are
+        // native <details> disclosures (keyboard + screen-reader support
+        // for free), opened automatically when they hold the current page
+        // so the active item is never hidden.
+        if (!group.title) {
+          return (
+            <div key={group.kind}>
+              {group.items.map((item) => (
+                <NavLink key={item.key} item={item} pathname={pathname} onNavigate={onNavigate} />
+              ))}
+            </div>
+          );
+        }
+        const holdsActive = group.items.some((i) => isActiveHref(i.href, pathname));
+        const badgeTotal = group.items.reduce((sum, i) => sum + (i.badge ?? 0), 0);
+        return (
+          <details key={group.kind} className="lx-nav-group" open={expandAll || holdsActive}>
+            <summary>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ChevronRight className="lx-nav-chevron" size={14} strokeWidth={2.2} aria-hidden />
+                {group.title}
+              </span>
+              {badgeTotal > 0 && <span className="lx-nav-badge">{badgeTotal}</span>}
+            </summary>
+            {group.items.map((item) => (
+              <NavLink key={item.key} item={item} pathname={pathname} onNavigate={onNavigate} />
+            ))}
+          </details>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * UX-2 -- compact bottom navigation (< 1024px). Only destinations the nav
+ * config marks `mobileTab`, plus "Más", which opens the full drawer. The
+ * "Más" button is the drawer trigger, so focus returns to it on close.
+ */
+function TabBar({
+  tabs,
+  pathname,
+  label,
+  moreLabel,
+  moreBadge,
+  open,
+  onMore,
+  moreRef,
+}: {
+  tabs: ResolvedNavItem[];
+  pathname: string;
+  label: string;
+  moreLabel: string;
+  moreBadge: number;
+  open: boolean;
+  onMore: () => void;
+  moreRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  return (
+    <nav className="lx-tabbar" aria-label={label}>
+      {tabs.map((tab) => {
+        const active = isActiveHref(tab.href, pathname);
+        return (
+          <Link key={tab.key} href={tab.href} className={`lx-tab${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined}>
+            {TAB_ICONS[tab.iconKey] ?? null}
+            <span className="lx-tab-label">{tab.label}</span>
+            {!!tab.badge && <span className="lx-tab-badge">{tab.badge}</span>}
+          </Link>
+        );
+      })}
+      <button
+        ref={moreRef}
+        type="button"
+        className="lx-tab"
+        aria-expanded={open}
+        aria-controls="lx-drawer"
+        aria-haspopup="dialog"
+        onClick={onMore}
+      >
+        <MoreHorizontal size={22} strokeWidth={2} aria-hidden />
+        <span className="lx-tab-label">{moreLabel}</span>
+        {moreBadge > 0 && <span className="lx-tab-badge">{moreBadge}</span>}
+      </button>
     </nav>
   );
 }
@@ -183,6 +286,9 @@ export default function LearnerShell({
   chrome = 'full',
   workspaceSwitcher,
   banner,
+  locale = 'es',
+  tabBarLabel,
+  notificationsLabel,
   children,
 }: {
   groups: ResolvedNavGroup[];
@@ -203,6 +309,12 @@ export default function LearnerShell({
   workspaceSwitcher?: ReactNode;
   /** Onboarding/authorization rework (2026-09-21) -- an optional persistent, non-dismissable license-state notice (demo mode / no active license), rendered above page content. Never shown during Focus Mode so it cannot interrupt an in-progress activity; the server-side capability gate on the activity's own route is what actually blocks premium use, this is purely the visible cue. */
   banner?: ReactNode;
+  /** UX-2: the server-resolved interface language, exposed to client-only route boundaries (error/loading). */
+  locale?: Locale;
+  /** UX-2: landmark label for the compact bottom navigation. */
+  tabBarLabel?: string;
+  /** UX-2: accessible label for the top-bar notifications shortcut. */
+  notificationsLabel?: string;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? '';
@@ -332,13 +444,23 @@ export default function LearnerShell({
           </Link>
           {logo}
         </div>
-        <main className="lx-main lx-main--focus">{children}</main>
+        <main className="lx-main lx-main--focus">
+          <ShellLocaleProvider value={locale}>{children}</ShellLocaleProvider>
+        </main>
       </div>
     );
   }
 
+  // UX-2: compact navigation. Tabs come only from the nav config's own
+  // `mobileTab` flags, so non-Student workspaces keep the hamburger.
+  const allItems = groups.flatMap((g) => g.items);
+  const tabs = allItems.filter((i) => i.mobileTab).slice(0, 4);
+  const hasTabs = tabs.length > 0;
+  const moreBadge = allItems.filter((i) => !i.mobileTab).reduce((sum, i) => sum + (i.badge ?? 0), 0);
+  const notifications = allItems.find((i) => i.key === 'notifications');
+
   return (
-    <div className="lx-shell">
+    <div className={`lx-shell${hasTabs ? ' lx-shell--tabs' : ''}`}>
       {/* desktop sidebar */}
       <aside className="lx-sidebar">
         {logo}
@@ -349,18 +471,31 @@ export default function LearnerShell({
 
       {/* mobile top bar */}
       <div className="lx-topbar">
-        <button
-          ref={menuBtnRef}
-          type="button"
-          className="lx-menu-btn"
-          aria-label={menuLabel}
-          aria-expanded={open}
-          aria-controls="lx-drawer"
-          onClick={() => setOpen(true)}
-        >
-          <Menu size={20} strokeWidth={2} aria-hidden />
-        </button>
+        {!hasTabs && (
+          <button
+            ref={menuBtnRef}
+            type="button"
+            className="lx-menu-btn"
+            aria-label={menuLabel}
+            aria-expanded={open}
+            aria-controls="lx-drawer"
+            onClick={() => setOpen(true)}
+          >
+            <Menu size={20} strokeWidth={2} aria-hidden />
+          </button>
+        )}
         {logo}
+        <span className="lx-topbar-spacer" />
+        {hasTabs && notifications && (
+          <Link
+            href={notifications.href}
+            className="lx-topbar-action"
+            aria-label={notifications.badge ? `${notificationsLabel ?? notifications.label} (${notifications.badge})` : notificationsLabel ?? notifications.label}
+          >
+            <Bell size={20} strokeWidth={2} aria-hidden />
+            {!!notifications.badge && <span className="lx-topbar-dot" aria-hidden />}
+          </Link>
+        )}
       </div>
 
       {open && (
@@ -374,7 +509,7 @@ export default function LearnerShell({
               </button>
             </div>
             {workspaceSwitcher}
-            <NavList groups={groups} pathname={pathname} onNavigate={() => setOpen(false)} label={menuLabel} />
+            <NavList groups={groups} pathname={pathname} onNavigate={() => setOpen(false)} expandAll label={menuLabel} />
             <Footer displayName={displayName} streak={streak} streakLabel={streakLabel} localeSwitcher={localeSwitcher} />
           </div>
         </>
@@ -382,8 +517,21 @@ export default function LearnerShell({
 
       <main className="lx-main">
         {banner}
-        {children}
+        <ShellLocaleProvider value={locale}>{children}</ShellLocaleProvider>
       </main>
+
+      {hasTabs && (
+        <TabBar
+          tabs={tabs}
+          pathname={pathname}
+          label={tabBarLabel ?? navLabel}
+          moreLabel={groups.find((g) => g.kind === 'SECONDARY')?.title ?? menuLabel}
+          moreBadge={moreBadge}
+          open={open}
+          onMore={() => setOpen(true)}
+          moreRef={menuBtnRef}
+        />
+      )}
     </div>
   );
 }

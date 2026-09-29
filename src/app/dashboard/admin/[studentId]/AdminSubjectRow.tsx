@@ -2,12 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
 
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
 
 export default function AdminSubjectRow({
   subjectId,
@@ -52,7 +48,7 @@ export default function AdminSubjectRow({
       </div>
       <div className="mastery-row" style={{ flex: '0 0 160px' }}>
         <div className="mastery-bar">
-          <span className={masteryFillClass(avgMastery ?? 0)} style={{ width: `${avgMastery ?? 0}%` }} />
+          <span className={QUANTITY_FILL_CLASS} style={{ width: `${avgMastery ?? 0}%` }} />
         </div>
         <span className="mastery-pct tabular">{avgMastery !== null ? `${avgMastery}%` : '—'}</span>
       </div>

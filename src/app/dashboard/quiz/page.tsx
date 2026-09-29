@@ -43,6 +43,7 @@ import { buildInteractionContract, type ModalityCapabilities } from '@/lib/lx/in
 import { buildActivityLanguageContext } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
 import { milestoneFeedbackKey, type MilestoneType } from '@/lib/lx/progression-milestones';
+import { resolveResultMilestone } from '@/lib/experience/result-milestone';
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 
@@ -1627,35 +1628,25 @@ function QuizPageContent() {
   }
 
   if (results) {
-    // LX-9 A8/A9: a genuine SOLO/independent-evidence pass (retention_check
-    // or quick_check, never a mid-tier "good" Practice score) gets ONE
-    // calm, evidence-specific line instead of the generic score-tier
-    // message -- reusing `results.messageKey`'s own existing pass/fail
-    // signal (never a new score computed here) and `quizMode`, which is
-    // already the SAME authority `QUIZ_SUPPORT_CONTEXT`/
-    // `coarseEvidenceModeForQuizMode` use elsewhere in this file. A
-    // Practice pass never gets this copy (A9: correct answer != achievement) --
-    // only the two quizMode values that are themselves already independent
-    // no-help checks qualify.
-    const passedIndependentCheck = results.messageKey !== 'keep_going';
-    // LX-9R3 A1/A6: a good score alone is NOT sufficient for the RETAINED
-    // milestone. `retentionCheckQualified` (present only for
-    // retention_check, from mastery.service.ts's own memory-policy gap
-    // check) is undefined/true for a genuine, evidence-counting attempt
-    // and explicitly false for a real attempt that arrived too soon to
-    // ever count (memory-model.ts's replay leaves concept_memory_state
-    // provably untouched) -- the exact live bug where "EVIDENCIA
-    // SUFICIENTE" was shown for an attempt that changed nothing. `=== false`
-    // (not `!== true`) so a mode/response shape where this field is simply
-    // absent (e.g. an older cached response) never accidentally suppresses
-    // the milestone.
+    // LX-9 A8/A9 + UX-2: a genuine independent-evidence achievement
+    // (retention_check or quick_check, never a Practice pass -- A9: correct
+    // answer != achievement) gets ONE calm, evidence-specific line instead
+    // of the generic score-tier message. UX-2: the milestone now follows
+    // the requirement status the SERVER already reported
+    // (proveSufficiency / canonical RETAIN requirement), never the score
+    // tier -- `messageKey !== 'keep_going'` meant any score >= 50% was
+    // celebrated as PROVED/RETAINED. See lib/experience/result-milestone.ts.
+    // LX-9R3 A1/A6: `retentionCheckQualified` is undefined/true for a
+    // genuine, evidence-counting attempt and explicitly false for a real
+    // attempt that arrived too soon to ever count -- `=== false` (not
+    // `!== true`) so an absent field never suppresses the honest copy.
     const retentionTooSoon = quizMode === 'retention_check' && results.retentionCheckQualified === false;
-    const milestone: MilestoneType | null =
-      quizMode === 'retention_check' && passedIndependentCheck && !retentionTooSoon
-        ? 'RETAINED'
-        : quizMode === 'quick_check' && passedIndependentCheck
-          ? 'PROVED'
-          : null;
+    const milestone: MilestoneType | null = resolveResultMilestone({
+      quizMode,
+      proveSufficiency: results.proveSufficiency,
+      retentionCheckQualified: results.retentionCheckQualified,
+      canonicalResults: results.canonicalResults,
+    });
     const messageText = retentionTooSoon
       ? at['quiz.retentionTooSoon']
       : milestone

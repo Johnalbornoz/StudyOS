@@ -31,7 +31,7 @@ export {
 
 export { resolveConceptSubjectForStudent } from './resolve-concept-subject';
 
-export { overrideConceptMissionViewWithCanonicalDecision } from './concept-mission-override';
+export { overrideConceptMissionViewWithCanonicalDecision, presentedActivityTypeForCanonical } from './concept-mission-override';
 
 export {
   verifyV1PracticeLaunchMarker,

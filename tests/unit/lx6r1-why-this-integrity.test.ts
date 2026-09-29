@@ -81,15 +81,20 @@ describe('LX-6R1 tests 1-3 -- no raw severity/percentage in learner-facing copy'
  * ============================================================== */
 describe('LX-6R1 tests 4/5 -- hero capped to one reason (R3), secondary rows follow suit (R4)', () => {
   const TODAY_SRC = read('src/app/dashboard/today/page.tsx');
-  it('both the hero and ItemRow render <WhyThisV3 .../> from the same shared, qualitative component', () => {
-    const occurrences = [...TODAY_SRC.matchAll(/<WhyThisV3 facts=\{[\w.]+\} t=\{t\}[^/]*\/>/g)];
-    expect(occurrences.length).toBe(2); // hero + ItemRow
+  // UX-2: the hero moved into NextChallengeCard, which styles the SAME
+  // WhyThisV3 sentence itself (whyThisSentence -- one fact-to-text table).
+  const CARD_SRC = read('src/app/dashboard/NextChallengeCard.tsx');
+  const WHY_SRC = read('src/app/dashboard/WhyThisV3.tsx');
+  it('both the hero and WhyThisV3 render from the same shared, qualitative sentence builder', () => {
+    expect(CARD_SRC).toMatch(/import \{ whyThisSentence \} from '\.\/WhyThisV3';/);
+    expect(WHY_SRC).toMatch(/export function whyThisSentence\([\s\S]*?factSentence\(f, t\)/);
+    expect(WHY_SRC).toMatch(/const sentence = facts\s*\n?\s*\.map\(\(f\) => factSentence\(f, t\)\)/);
   });
-  it('the hero call site passes maxFacts={1} -- at most one short supporting reason, never a stack of diagnoses', () => {
-    expect(TODAY_SRC).toMatch(/<WhyThisV3 facts=\{best\.decision\.facts\} t=\{t\} maxFacts=\{1\} \/>/);
+  it('the hero call site caps the reason at ONE -- at most one short supporting reason, never a stack of diagnoses', () => {
+    expect(CARD_SRC).toMatch(/const why = whyThisSentence\(view\.facts, t, 1\);/);
   });
-  it('the secondary ItemRow call site does NOT pass maxFacts (unrestricted, but still qualitative-only per R1/R2)', () => {
-    expect(TODAY_SRC).toMatch(/<WhyThisV3 facts=\{decision\.facts\} t=\{t\} \/>/);
+  it('secondary rows on Home render no fact stack at all (stricter than the hero, never louder)', () => {
+    expect(TODAY_SRC).not.toMatch(/<WhyThisV3|whyThisSentence\(/);
   });
   it('given multiple facts on one decision, the hero renders only ONE fact sentence while a secondary row (no cap) renders all of them', () => {
     const facts: LearningFact[] = [
@@ -216,8 +221,11 @@ describe('LX-6R1 test 17 -- no evidence/mastery writes added', () => {
 describe('LX-6R1 tests 18/19 -- LX-6 visual hierarchy and launch behavior untouched', () => {
   it('today/page.tsx hero structure (heading, narrative, CTA) is unchanged by this repair', () => {
     const src = read('src/app/dashboard/today/page.tsx');
-    expect(src).toMatch(/<h2 style=\{\{ margin: 0, fontSize: 26,/);
-    expect(src).toMatch(/activityNarrative\(best\.decision\.activityType, t\)/);
+    // UX-2: heading, narrative and CTA now live in the shared hero card.
+    const card = read('src/app/dashboard/NextChallengeCard.tsx');
+    expect(src).toMatch(/<NextChallengeCard/);
+    expect(card).toMatch(/<Heading id="xp-next-title" className="xp-hero-title">\{conceptLabel\}<\/Heading>/);
+    expect(card).toMatch(/activityNarrative\(view\.activityType, t\)/);
     expect(src).toMatch(/launchMark="TODAY_PRIMARY_ACTION_LAUNCHED"/);
   });
   it('StartSessionButton.tsx (launch behavior) was not touched by this repair', () => {

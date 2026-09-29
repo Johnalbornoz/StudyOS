@@ -8,12 +8,8 @@ import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplan
 import type { MasteryState } from '@/services/knowledge-state.service';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import { deriveJourneyProgress } from '@/lib/lx/journey-progress';
+import { journeyStageTone, progressFillClass } from '@/lib/experience/progress-tone';
 
-function masteryFillClass(score: number) {
-  if (score >= 75) return 'fill-good';
-  if (score >= 50) return 'fill-warn';
-  return 'fill-critical';
-}
 
 interface ConceptRow {
   conceptId: string;
@@ -122,7 +118,7 @@ export default function ConceptList({
                   <>
                     <div className="mastery-row" title={t['subjectDetail.journeyProgressLabel']} aria-label={t['subjectDetail.journeyProgressLabel']}>
                       <div className="mastery-bar">
-                        <span className={masteryFillClass(progress.progressPercent)} style={{ width: `${progress.progressPercent}%` }} />
+                        <span className={progressFillClass(journeyStageTone(c.journeyStage))} style={{ width: `${progress.progressPercent}%` }} />
                       </div>
                       <span className="mastery-pct tabular">{progress.progressPercent}%</span>
                     </div>

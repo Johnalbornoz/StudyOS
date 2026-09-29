@@ -36,6 +36,8 @@ export interface LearnerNavItem {
   badge?: number;
   /** set only where this destination is a documented stand-in for future-phase work. */
   temporaryMappingNote?: string;
+  /** UX-2: shown as a tab in the compact (phone/tablet) bottom navigation. Presentation only. */
+  mobileTab?: boolean;
 }
 
 export interface LearnerNavGroup {
@@ -53,20 +55,47 @@ export interface LearnerNavInputs {
   assignmentCount?: number;
 }
 
+/**
+ * UX-2 information architecture. Every destination the learner had
+ * before is still here (and "Materias", previously reachable only from
+ * empty states, is now listed); what changed is emphasis:
+ *
+ *   PRIMARY   Hoy · Mi ruta · Progreso · Preparación de examen -- the
+ *             learner's loop. Hoy / Mi ruta / Progreso are also the
+ *             phone/tablet bottom tabs.
+ *             Mis tareas joins PRIMARY only while a teacher has assigned
+ *             pending work (badge > 0); otherwise it lives under "Más".
+ *   SECONDARY "Más": Materias, Mis tareas, Plan de estudio, Mejorar,
+ *             Tutor IA -- rendered collapsed.
+ *   UTILITY   "Cuenta" -- rendered collapsed.
+ *
+ * Grouping is presentation only; routes, permissions and badge counts
+ * are unchanged.
+ */
 export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
+  const hasPendingAssignments = (inputs.assignmentCount ?? 0) > 0;
+  const assignments: LearnerNavItem = {
+    key: 'assignments',
+    href: '/dashboard/assignments',
+    labelKey: 'nav.assignments',
+    iconKey: 'ClipboardList',
+    badge: inputs.assignmentCount,
+  };
+
   const primary: LearnerNavGroup = {
     kind: 'PRIMARY',
     items: [
-      { key: 'today', href: '/dashboard/today', labelKey: 'nav.today', iconKey: 'CalendarDays' },
+      { key: 'today', href: '/dashboard/today', labelKey: 'nav.today', iconKey: 'CalendarDays', mobileTab: true },
       {
         key: 'myPath',
         href: '/dashboard/path',
         labelKey: 'nav.myPath',
         iconKey: 'Route',
+        mobileTab: true,
       },
-      { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard' },
+      { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard', mobileTab: true },
       { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
-      { key: 'assignments', href: '/dashboard/assignments', labelKey: 'nav.assignments', iconKey: 'ClipboardList', badge: inputs.assignmentCount },
+      ...(hasPendingAssignments ? [assignments] : []),
     ],
   };
 
@@ -74,6 +103,8 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
     kind: 'SECONDARY',
     titleKey: 'nav.groupMore',
     items: [
+      { key: 'subjects', href: '/dashboard/subjects', labelKey: 'nav.subjects', iconKey: 'BookOpen' },
+      ...(hasPendingAssignments ? [] : [assignments]),
       { key: 'studyPlan', href: '/dashboard/study-plan', labelKey: 'nav.studyPlan', iconKey: 'ListChecks' },
       { key: 'debt', href: '/dashboard/learning-debt', labelKey: 'nav.debt', iconKey: 'RotateCcw', badge: inputs.debtCount },
       { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },

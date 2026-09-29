@@ -30,6 +30,9 @@ const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\
 
 const PATH_VIEW_SRC = read('src/lib/lx/path-view.ts');
 const PATH_PAGE_SRC = read('src/app/dashboard/path/page.tsx');
+// UX-2: the shared hero (Today + My Path) and its snapshot adapter.
+const CARD_SRC = read('src/app/dashboard/NextChallengeCard.tsx');
+const CHALLENGE_SERVER_SRC = read('src/lib/experience/next-challenge.server.ts');
 const TODAY_PAGE_SRC = read('src/app/dashboard/today/page.tsx');
 const SNAPSHOT_SRC = read('src/services/learning-os-snapshot.service.ts');
 const CONTINUATION_SERVICE_SRC = read('src/services/learning-continuation.service.ts');
@@ -107,8 +110,13 @@ describe('LX-9R5 3, 12 -- My Path never trusts the decision activityType blindly
   });
 
   it('My Path page renders the WAITING card (not the Practice CTA) when actionState is WAITING', () => {
-    expect(PATH_PAGE_SRC).toMatch(/overview\.current\.actionState === 'WAITING'/);
-    expect(PATH_PAGE_SRC).toMatch(/conceptMission\.noActionRetentionWaitingTitle/);
+    // UX-2: My Path's hero is the shared NextChallengeCard over the SAME
+    // snapshot item Today presents; its WAITING branch carries no Start button.
+    expect(PATH_PAGE_SRC).toMatch(/presentSnapshotNextChallenge\(context\.snapshot\)/);
+    expect(PATH_PAGE_SRC).toMatch(/<NextChallengeCard/);
+    const waiting = CARD_SRC.slice(CARD_SRC.indexOf("if (view.status === 'WAITING')"), CARD_SRC.indexOf('// CONSOLIDATED, or a canonical status'));
+    expect(waiting).toMatch(/conceptMission\.noActionRetentionWaitingTitle/);
+    expect(waiting).not.toMatch(/StartSessionButton/);
   });
 });
 
@@ -140,7 +148,10 @@ describe('LX-9R5 4-6 -- Concept Mission, My Path, Progress, Subject Detail agree
  * ================================================================== */
 describe('LX-9R5 7 -- Today never offers a conflicting executable action', () => {
   it('Today reads the pre-computed nextExecutableItemWaiting flag from the shared snapshot -- never a new memory read of its own', () => {
-    expect(TODAY_PAGE_SRC).toMatch(/snapshot\?\.nextExecutableItemWaiting/);
+    // UX-2: read through the shared snapshot adapter Today calls.
+    expect(TODAY_PAGE_SRC).toMatch(/presentSnapshotNextChallenge\(snapshot\)/);
+    expect(CHALLENGE_SERVER_SRC).toMatch(/waiting: snapshot\.nextExecutableItemWaiting/);
+    expect(CHALLENGE_SERVER_SRC).not.toMatch(/memory-read|getTwinMemorySignal/);
     // Closeout B's own established boundary: Today stays presentation-only.
     const valueImports = TODAY_PAGE_SRC
       .split('\n')
@@ -155,9 +166,26 @@ describe('LX-9R5 7 -- Today never offers a conflicting executable action', () =>
     expect(SNAPSHOT_SRC).toMatch(/memorySignal\?\.retentionDue === false/);
   });
 
-  it('Today renders the waiting card instead of the executable hero when bestWaiting is true', () => {
-    expect(TODAY_PAGE_SRC).toMatch(/bestWaiting \? \(/);
-    expect(TODAY_PAGE_SRC).toMatch(/conceptMission\.noActionRetentionWaitingTitle/);
+  it('Today renders the waiting card instead of the executable hero when bestWaiting is true', async () => {
+    const { presentNextChallenge } = await import('@/lib/experience/next-challenge');
+    // gate off: the snapshot's legacy waiting flag wins over the legacy activityType
+    const legacy = presentNextChallenge({
+      conceptId: 'c1', subjectId: 's1',
+      legacyDecision: { activityType: 'PRACTICE', facts: [] },
+      canonicalAuthority: false, canonical: null,
+      legacyGate: { waiting: true, nextEligibleAt: '2026-10-01T00:00:00Z', zeroGapBlocked: false },
+    });
+    expect(legacy).toMatchObject({ status: 'WAITING', nextEligibleAt: '2026-10-01T00:00:00Z' });
+    // gate on: the canonical launch's WAITING wins, whatever the legacy flags say
+    const canonical = presentNextChallenge({
+      conceptId: 'c1', subjectId: 's1',
+      legacyDecision: { activityType: 'PRACTICE', facts: [] },
+      canonicalAuthority: true,
+      canonical: { policyVersion: 'v', canonicalRevision: 'r', stage: 'RETAIN', actionState: 'WAITING', activityType: null, launchStatus: 'WAITING', launchTarget: null, launchParams: {}, waitingReason: 'RETENTION_NOT_DUE', nextEligibleAt: '2026-10-02T00:00:00Z', notReadyReason: null } as any,
+      legacyGate: { waiting: false, nextEligibleAt: null, zeroGapBlocked: false },
+    });
+    expect(canonical).toMatchObject({ status: 'WAITING', nextEligibleAt: '2026-10-02T00:00:00Z' });
+    expect(CARD_SRC).toMatch(/conceptMission\.noActionRetentionWaitingTitle/);
   });
 });
 
