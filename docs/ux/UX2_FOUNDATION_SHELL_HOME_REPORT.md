@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | Baseline | `UX1_BASELINE_SHA=b322e16c42f002982012074365d1bc4b219ae19c` (`develop`) |
-| UX-2 code commit | `20d044f6bb42468acd6084331c24492cbe046a1f` |
-| UX-2 candidate | the docs commit on top of `20d044f` that adds this report; its SHA is verified on hosted DEV via `/api/version` |
+| UX-2 code commits | `20d044f` (foundation, shell, Home) · landing commit on top of `5cc735c` (§8) |
+| UX-2 candidate | the final docs commit of UX-2; its SHA is verified on hosted DEV via `/api/version` |
 | Design contract | `docs/ux/UX1_AUDIT_COMPATIBILITY_BLUEPRINT.md` |
 | Environment | DEV only: worktree `studyos-dev`, hosted DEV `study-os-env-dev-study-so.vercel.app` |
 
@@ -124,13 +124,13 @@ Dark mode was checked at 390px.
 
 | Gate | Baseline (`b322e16`) | UX-2 |
 |---|---|---|
-| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,261 tests, all pass |
+| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,268 tests, all pass (incl. landing) |
 | `tsc --noEmit` | 0 errors | 0 errors |
 | `next build` | — | success |
 | Lint | no lint in the certified workflow (no ESLint config / script) | — |
 | `npm run test:e2e` | not run | not run: it exercises unchanged cognitive services, makes real LLM calls, and bulk-writes/deletes DEV rows |
 
-**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (46). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
+**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (53: 46 for Shell/Home, plus 7 for the landing in §8). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
 
 **Updated existing tests (13 files).** These were source-text guards pinned to the old Today and My Path markup. Each was rewritten to assert the **same invariant** against the new shared presenter or card. None was deleted, and several are stricter:
 
@@ -162,3 +162,51 @@ Dark mode was checked at 390px.
 - **Out of scope (C items):** prerequisite unlocks, topic readiness, gamification economy, persisted stage transitions, SOLO_VERIFY behaviour.
 - **Gate-off residuals.** Under a disabled canonical gate, Today's secondary rows and the subject detail page's non-hero concept keep the pre-UX-2 legacy behaviour (no zero-gap check). `CANONICAL_ENGINE_V1_ENABLED` is set in the DEV, Preview and Production Vercel environments.
 - **Carried into UX-3:** the quiz page silent submit error, answers lost on refresh, the "Ir directo a practicar" skip, and quiz mobile ergonomics.
+
+## 8. Public landing (`/[locale]`), added to UX-2 before closing
+
+The public page still carried the previous narrative ("No basta con acertar. Domínalo."). UX-2 aligned it with the new positioning and the UX-1 storytelling. Presentation only.
+
+**Page (`src/app/[locale]/page.tsx`), top to bottom:**
+
+1. **Hero.** Eyebrow *Aprendizaje · Entrenamiento · Rendimiento*, then **No estudies más. Estudia mejor.**, then the coach positioning. CTAs: Empieza gratis (`/sign-up`) and Ver cómo funciona.
+   - Beside the copy sits a **"Tu siguiente reto" preview**: the real Home hero styles and `StageTrack`, rendered as a static, `aria-hidden`, non-interactive illustration captioned "Ejemplo ilustrativo". It contains no learner data and no working control.
+2. **Principles: "Más horas no es estudiar mejor"**
+   - No repites lo que ya dominas
+   - Siempre sabes qué toca y por qué
+   - El error también enseña
+3. **Journey: Descubre → Enfócate → Aprende → Practica → Demuestra → Avanza.** "Solo avanzas cuando lo has demostrado" is backed by canonical stage gating.
+4. **Coach band: "Tú haces el trabajo. StudyUS te entrena."** A clear daily challenge, visible progress, and exam readiness (IB Diploma/MYP, as the previous page already claimed).
+5. **FAQ.** The existing questions, now as an accessible disclosure list. The FAQPage JSON-LD is unchanged.
+6. **Final CTA.** "Empieza hoy. Estudia mejor.", plus the sign-in link.
+
+Every claim describes behaviour the product already has; nothing new is promised.
+
+**Layout (`src/app/[locale]/layout.tsx`):**
+- The header is sticky and translucent. The How-it-works, sign-in and sign-up links are unchanged, and `mkt-header`/`mkt-nav` are kept.
+- The footer is redesigned: brand, the new tagline, and a labelled language switcher with `aria-current` and `hrefLang`.
+
+**Unchanged:** routes, `generateStaticParams`, the `notFound` locale guard, metadata shape (canonical, hreflang alternates, OG, Twitter), JSON-LD, Clerk sign-in/sign-up destinations and root redirect behaviour. There is no data access, auth call or client code on the public page.
+
+**Copy:**
+- 37 new `landing.*` keys, plus updated `marketing.h1`/`subhead`/`seoTitle`/`seoDescription`/`footerTagline`, in all **five** locales. The old slogan no longer exists anywhere (test-enforced).
+- How-it-works headings now use the product stage vocabulary (Recordar/Aplicar instead of Retener/Transferir) in all five locales. Its body copy and structure are unchanged.
+- The legacy `marketing.section*` and `marketing.stage*` keys remain in `messages.ts` but are no longer rendered. The stage keys are pinned by an existing i18n test.
+
+**Validation.** Real rendering on the local server against DEV; the page is public, so no sign-in was needed.
+
+| Width | Locale | Result |
+|---|---|---|
+| 1440 | es | two-column hero with preview; 3-column principles; 3×2 journey; dark coach band; FAQ; final CTA |
+| 1024 | en | two-column hero, no overflow |
+| 768 | fr | single-column hero, 2-column journey, no overflow |
+| 430 | pt | no overflow |
+| 390 | de (longest copy) | no overflow; h1 36px; CTAs full width, 52px tall |
+
+Further checks:
+- **All 5 locales:** the h1 is correct and there are no raw keys, "undefined" or empty headings (5 h2 and 15 h3 each). hreflang links and JSON-LD are present.
+- **Routing:** `/` returns 307 to `/es`, `/xx` returns 404, and `/es/how-it-works` and `/sign-up` return 200.
+
+**Tests:**
+- 7 new landing tests: copy in all locales, the old slogan gone, the narrative order, auth/routing/SEO preserved, the preview non-interactive, responsive CSS contracts, and the How-it-works vocabulary.
+- Existing marketing-header, naming and i18n tests still pass.
