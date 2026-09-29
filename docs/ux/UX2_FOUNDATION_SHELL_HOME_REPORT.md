@@ -3,7 +3,8 @@
 | | |
 |---|---|
 | Baseline | `UX1_BASELINE_SHA=b322e16c42f002982012074365d1bc4b219ae19c` (`develop`) |
-| UX-2 code commits | `20d044f` (foundation, shell, Home) · landing commit on top of `5cc735c` (§8) |
+| UX-2 code commits | `20d044f` (foundation, shell, Home) · `9111a80` (first landing) · `f17854a` (final landing + visual-acceptance fixes) |
+| Pre-addendum candidate | `5cc735ce2e19c775d4117d439f3308d6947209d9` |
 | UX-2 candidate | the final docs commit of UX-2; its SHA is verified on hosted DEV via `/api/version` |
 | Design contract | `docs/ux/UX1_AUDIT_COMPATIBILITY_BLUEPRINT.md` |
 | Environment | DEV only: worktree `studyos-dev`, hosted DEV `study-os-env-dev-study-so.vercel.app` |
@@ -124,13 +125,13 @@ Dark mode was checked at 390px.
 
 | Gate | Baseline (`b322e16`) | UX-2 |
 |---|---|---|
-| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,268 tests, all pass (incl. landing) |
+| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,270 tests, all pass |
 | `tsc --noEmit` | 0 errors | 0 errors |
 | `next build` | — | success |
 | Lint | no lint in the certified workflow (no ESLint config / script) | — |
 | `npm run test:e2e` | not run | not run: it exercises unchanged cognitive services, makes real LLM calls, and bulk-writes/deletes DEV rows |
 
-**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (53: 46 for Shell/Home, plus 7 for the landing in §8). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
+**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (55: 46 for Shell/Home, 9 for the landing and addendum fixes). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
 
 **Updated existing tests (13 files).** These were source-text guards pinned to the old Today and My Path markup. Each was rewritten to assert the **same invariant** against the new shared presenter or card. None was deleted, and several are stricter:
 
@@ -163,50 +164,88 @@ Dark mode was checked at 390px.
 - **Gate-off residuals.** Under a disabled canonical gate, Today's secondary rows and the subject detail page's non-hero concept keep the pre-UX-2 legacy behaviour (no zero-gap check). `CANONICAL_ENGINE_V1_ENABLED` is set in the DEV, Preview and Production Vercel environments.
 - **Carried into UX-3:** the quiz page silent submit error, answers lost on refresh, the "Ir directo a practicar" skip, and quiz mobile ergonomics.
 
-## 8. Public landing (`/[locale]`), added to UX-2 before closing
+## 8. Public landing (`/[locale]`)
 
-The public page still carried the previous narrative ("No basta con acertar. Domínalo."). UX-2 aligned it with the new positioning and the UX-1 storytelling. Presentation only.
+The page was rebuilt around the approved story. The first version (`9111a80`) was replaced in `f17854a`. Presentation only.
 
-**Page (`src/app/[locale]/page.tsx`), top to bottom:**
-
-1. **Hero.** Eyebrow *Aprendizaje · Entrenamiento · Rendimiento*, then **No estudies más. Estudia mejor.**, then the coach positioning. CTAs: Empieza gratis (`/sign-up`) and Ver cómo funciona.
-   - Beside the copy sits a **"Tu siguiente reto" preview**: the real Home hero styles and `StageTrack`, rendered as a static, `aria-hidden`, non-interactive illustration captioned "Ejemplo ilustrativo". It contains no learner data and no working control.
-2. **Principles: "Más horas no es estudiar mejor"**
-   - No repites lo que ya dominas
-   - Siempre sabes qué toca y por qué
-   - El error también enseña
-3. **Journey: Descubre → Enfócate → Aprende → Practica → Demuestra → Avanza.** "Solo avanzas cuando lo has demostrado" is backed by canonical stage gating.
-4. **Coach band: "Tú haces el trabajo. StudyUS te entrena."** A clear daily challenge, visible progress, and exam readiness (IB Diploma/MYP, as the previous page already claimed).
-5. **FAQ.** The existing questions, now as an accessible disclosure list. The FAQPage JSON-LD is unchanged.
-6. **Final CTA.** "Empieza hoy. Estudia mejor.", plus the sign-in link.
-
-Every claim describes behaviour the product already has; nothing new is promised.
-
-**Layout (`src/app/[locale]/layout.tsx`):**
-- The header is sticky and translucent. The How-it-works, sign-in and sign-up links are unchanged, and `mkt-header`/`mkt-nav` are kept.
-- The footer is redesigned: brand, the new tagline, and a labelled language switcher with `aria-current` and `hrefLang`.
-
-**Unchanged:** routes, `generateStaticParams`, the `notFound` locale guard, metadata shape (canonical, hreflang alternates, OG, Twitter), JSON-LD, Clerk sign-in/sign-up destinations and root redirect behaviour. There is no data access, auth call or client code on the public page.
-
-**Copy:**
-- 37 new `landing.*` keys, plus updated `marketing.h1`/`subhead`/`seoTitle`/`seoDescription`/`footerTagline`, in all **five** locales. The old slogan no longer exists anywhere (test-enforced).
-- How-it-works headings now use the product stage vocabulary (Recordar/Aplicar instead of Retener/Transferir) in all five locales. Its body copy and structure are unchanged.
-- The legacy `marketing.section*` and `marketing.stage*` keys remain in `messages.ts` but are no longer rendered. The stage keys are pinned by an existing i18n test.
-
-**Validation.** Real rendering on the local server against DEV; the page is public, so no sign-in was needed.
-
-| Width | Locale | Result |
+| # | Section | Content |
 |---|---|---|
-| 1440 | es | two-column hero with preview; 3-column principles; 3×2 journey; dark coach band; FAQ; final CTA |
-| 1024 | en | two-column hero, no overflow |
-| 768 | fr | single-column hero, 2-column journey, no overflow |
-| 430 | pt | no overflow |
-| 390 | de (longest copy) | no overflow; h1 36px; CTAs full width, 52px tall |
+| 1 | Hero | **No estudies más. Estudia mejor.** Supporting line: *Descubre qué necesitas. Enfócate. Entrénalo. Demuestra que lo sabes.* CTAs: Empieza gratis (`/sign-up`) and Ver cómo funciona. Beside them, a labelled "Tu siguiente reto" illustration. |
+| 2 | ¿Por qué estudiar todo otra vez? / Empieza por lo que realmente necesitas | Evidence-based focus and no needless repetition. Illustration: concepts marked "Ya lo dominas" / "Tu foco". |
+| 3 | Hackea tu aprendizaje / Encuentra la forma más efectiva de aprenderlo | Another explanation, another example, practice that adapts. "AI" is not the promise. |
+| 4 | ¿Crees que lo sabes? / Demuéstralo | Recognising an answer vs proving it on your own (dark band). |
+| 5 | ¿Todavía no? / Vamos a trabajarlo | Aprende → Practica → Inténtalo → Ajusta → Inténtalo otra vez. |
+| 6 | Lo tienes / Domínalo. Desbloquéalo. Avanza. | The five-stage model in human words first (Entiéndelo → Entrénalo → Demuéstralo → Haz que se quede → Úsalo en algo nuevo), with the product stage labels shown secondary. Illustration: an unlocked step and the next challenge. |
+| 7 | Un reto hoy. Otro mañana. / Haz que cada sesión cuente | Learning days this week and today's plan (the same figures Home shows). |
+| 8 | ¿Estás listo? / Ahora puedes saberlo | What you know, what needs reinforcement, where to invest time, progress to goal. Illustration: the real exam-readiness status ladder. |
+| — | FAQ; final CTA | **Tu meta está ahí.** / Estudia lo que necesitas. Entrena lo que te falta. Demuestra lo que sabes. / Empieza tu reto. |
 
-Further checks:
-- **All 5 locales:** the h1 is correct and there are no raw keys, "undefined" or empty headings (5 h2 and 15 h3 each). hreflang links and JSON-LD are present.
-- **Routing:** `/` returns 307 to `/es`, `/xx` returns 404, and `/es/how-it-works` and `/sign-up` return 200.
+**Truthfulness.**
+- Every claim maps to existing behaviour: the canonical stage gating, contextual help, independent Prove, retention, learning days and F9 readiness.
+- Illustrations are static, `aria-hidden` and captioned "Ejemplo ilustrativo". None contains learner data or a working control; this is test-enforced.
+- "Hack your learning" is localized (Hackea tu aprendizaje / Hack dein Lernen / Hacke ton apprentissage / Hackeie seu aprendizado), so no English is left in translated pages.
 
-**Tests:**
-- 7 new landing tests: copy in all locales, the old slogan gone, the narrative order, auth/routing/SEO preserved, the preview non-interactive, responsive CSS contracts, and the How-it-works vocabulary.
-- Existing marketing-header, naming and i18n tests still pass.
+**Preserved:** routes, locale guard, `generateStaticParams`, metadata, hreflang, JSON-LD, and the sign-in/sign-up destinations. There is no data access or auth call on the public page. The old slogan and the root default title ("AI Learning Platform for Concept Mastery") are gone. The old slogan is test-enforced.
+
+## 9. Visual acceptance
+
+**Method.** Real rendering in the built-in browser, reviewing copy, hierarchy, layout, type, icons, CTAs, cards and states at each width, not only overflow. Public pages were checked on the local server against DEV; hosted DEV was smoke-checked.
+
+**Public landing**
+
+| Width | Result | Notes |
+|---|---|---|
+| 1440 | PASS | Two-column hero; split story sections (copy + illustration); dark bands pace the scroll |
+| 1024 | PASS | Same composition, tighter |
+| 768 | PASS | Its own single-column tablet composition, illustrations capped at 560px |
+| 430 | PASS | Full-width CTAs; header scrolls away |
+| 390 | PASS | h1 38px; no word breaks; 44px+ targets; final CTA reachable |
+
+**Authenticated Home (signed-in DEV student)**
+
+**Not completed. This is the open condition.** The sign-in never reached either browser:
+- The built-in pane was never signed in; the local server logged no sign-in.
+- In the Claude tab group in Chrome, Clerk reported no user even after the user confirmed three times.
+
+The session cannot enter credentials itself. What was verified instead:
+
+| Width | Result | Evidence |
+|---|---|---|
+| 1440 / 1024 / 768 / 430 / 390 | PASS (component level) | The real components inside the real shell, with fixture data, in a temporary route (§3). Deleted, never committed. |
+| All | PENDING | Real signed-in data at every width. |
+
+**Student shell**
+
+| Viewport | Result | Evidence |
+|---|---|---|
+| Desktop | PASS | Real shell: grouped nav; "Más"/"Cuenta" disclosures; active states |
+| Tablet | PASS | Top bar + bottom tabs at 768; drawer |
+| Mobile | PASS | Tabs; the "Más" drawer: focus moves in, Escape closes it, focus returns, scroll locks |
+
+- **Localization.** ES/EN/DE/FR/PT all render complete copy: correct h1, 7 story sections, no raw keys or blanks. German is the longest and was checked at 390. The landing and learner shells now declare `lang`; Focus Mode is left untouched because activity content may be in another language.
+- **Dark mode.** The landing (hero, bands, illustrations, CTAs), the Home components (fixture) and the shell were inspected. Contrast holds; the brand logo is dark-on-dark, which predates UX-2.
+- **Icons and symbols.**
+  - lucide icons are used only for navigation and for the alert tone. Illustrations use neutral dots and a ↻ for the retry loop.
+  - Nothing decorative is interactive, and no robot, brain or AI imagery is used.
+  - Removed: the old CSS `capitalize` date casing.
+
+**Visual defects found and fixed: 10**
+1. The five-stage row broke words mid-word ("Entiéndel/o") at desktop. It is now a numbered list.
+2. The hero supporting lines wrapped unevenly. They now flow as a single sentence.
+3. The FAQ was centred while every other section was left-aligned.
+4. The phone header took about 100px of every screen (sticky, two rows). It now scrolls away on phones.
+5. The logo link was 32px and the inline sign-in link 17px. Both are now 44px targets.
+6. Stage labels broke mid-word in German ("Nachweis/en"). They now hyphenate, using the new `lang`.
+7. `<html lang="en">` was hard-coded for every locale. The shells now declare the real language.
+8. The root default title and description still told the old "AI platform" story.
+9. The demo licence notice on Home used the old jargon ("con IA… retener y transferir").
+10. On the earlier pass: the mobile shell grid made the top bar fill half the screen; the hero CTA was not full width on phones; the date capitalized every word ("Lunes, 29 De Septiembre"); and the goal pill needed a softer radius on phones.
+
+Defects not fixed: none, apart from the pending signed-in review.
+
+## 10. Final hosted DEV validation
+
+- `/api/version` returns `f17854a20197e1d745f3ec6f6a5f792267f967fa` (`dpl_9ZntjMXZ…`, target `dev`).
+- **Smoke checks:** `/` returns 307 to `/es`; all five locales return 200; `/es/how-it-works`, `/sign-in`, `/sign-up`, `/api/health` and `/dashboard/today` return 200; `/xx` returns 404.
+- **Per locale:** the correct h1, 7 story sections, the final CTA, the correct `lang`, and no old narrative. The sign-in title is "StudyUS | Don't study more. Study better."
+- **Authenticated spot-check:** pending (§9).
