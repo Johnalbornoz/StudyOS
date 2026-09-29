@@ -283,3 +283,111 @@ This pass follows the rules in `docs/ux/STUDYUS_VISUAL_QUALITY.md` (precision be
 | Home components + shell (audit, fixture in real shell) | PASS | PASS | PASS | PASS | PASS |
 
 **Visual regression coverage.** Static precision guards (9 tests, mutation-checked against the original tilt) and the committed rendered-geometry audit. No pixel-diff suite: the repository has no Playwright or browser runner, so adding one was out of proportion for UX-2.
+
+## 12. Final authenticated surfaces consistency pass
+
+**Scope.** Hoy, Mi ruta, Progreso and Preparación de examen, plus the shared Student shell, were made one product. This pass changed presentation only:
+- no change to cognition, readiness, progress computation, exam or simulation logic, schema or learning APIs;
+- no migrations.
+
+The one backend change is the simulation ownership fix below.
+
+**Shared foundation**
+- One container: `--page-max` went from 920 to 1040px, and the main column is centred on desktop.
+- One page intro (`components/ui/PageIntro.tsx`): h1, lead, optional crumb and actions.
+- One indicator primitive (`components/ui/Indicator.tsx`): a `null` value renders "Por validar", never 0%.
+- One form vocabulary (`.ui-form`, `.ui-field`, `.ui-input`, `.ui-select`) and choice cards (`.ui-choice`).
+- One disclosure (`.ui-disclosure`).
+
+Measured at every width, the h1 left edge is identical on all four pages:
+- 348px at 1440
+- 312px at 1024
+- 16px at 768, 430 and 390
+
+**Hoy.** Polish only. The canonical hero is unchanged, and it is still the canonical next challenge.
+
+**Mi ruta**, brought to Hoy's quality:
+- `PageIntro`, then the canonical hero (or a calm caught-up/empty state).
+- "Lo que sigue" as cards.
+- "Tus materias" as link cards.
+- Three defects came up during real-data review, all fixed:
+  1. `auto-fill` grids left an empty column with two items; they now use `auto-fit`.
+  2. Stage names were hyphenated inside narrow cards ("Apren-der"). There is now a compact track: bars plus one caption naming the current stage, with the full labelled list kept for screen readers.
+  3. "1 necesitan un repaso" was ungrammatical. The pills are now label-first ("Por repasar: **1**") in all 5 locales.
+
+**Progreso**, redesigned:
+- Header "Progreso, <nombre>".
+- Overall journey % with achievements.
+- Five capability indicators; "Por validar" whenever there is no value.
+- Subjects shown as cards with "X de N validados" and a bar. Each has an expandable concept list:
+  - each row shows the name, stage chip and %;
+  - capabilities, misconceptions and "Ver concepto" sit collapsed underneath.
+- "Qué necesita atención" links to each concept.
+- Two columns on wide desktop.
+- No new calculation; GAP-07 stays documented.
+
+**Preparación de examen**, redesigned:
+- **List page:**
+  - With profiles: exam cards (goal, date, days left, state, "Ver preparación"), with "Añadir otro examen" as a secondary disclosure.
+  - Without a profile: setup is the primary content.
+- **Detail page:** exam and goal first, then "Tu preparación", then "Siguiente paso", then "Practica para tu examen" (practice in a side column on wide desktop).
+- **Readiness** is shown on F9's own ordered status scale, positioned by the server-reported status.
+  - With no snapshot, or when the server reports `INSUFFICIENT_EVIDENCE`, the page shows the intentional state "Tu preparación todavía está tomando forma" instead of a ladder stuck on step one.
+  - Dimension detail sits behind "Detalle por dimensión".
+- **No raw enums:**
+  - practice type and timing are choice cards with mapped labels and descriptions;
+  - eligibility reason codes map to plain sentences (`lib/experience/exam-prep.ts`);
+  - translation fallbacks to raw server values were removed.
+- **CTA** "Comenzar práctica". The POST body is byte-for-byte the same as before.
+
+**Security: simulation ownership (in scope, because the redesigned practice flow uses it).**
+- `POST /api/simulation/attempts` accepted any `examProfileId`. It now returns 404 unless the profile belongs to the calling learner (`isExamProfileOwnedByStudent`, the same guard as the readiness fix), before any eligibility check or start.
+- Tests: another learner's profile returns 404 with no eligibility or start call; the learner's own profile returns 200.
+- Other simulation routes were left untouched: the redesign does not use them.
+
+**Real-data review (DEV DB, signed-in student, local server on the DEV database).**
+- Hoy: WAITING retention check, and goal "PAA Mathematics (Pilot) · en 67 días".
+- Progreso: 3% overall; capabilities 87% and 88%, then three "Por validar"; two subjects; one concept needing attention.
+- Exam detail: "tomando forma" state, and MINI_MOCK eligible.
+
+**Width matrix.** Each cell was checked for:
+- horizontal overflow;
+- elements past the viewport;
+- content edge;
+- plus screenshots.
+
+All five pages were measured in same-origin iframes at exact CSS widths.
+
+| Page | 1440 | 1024 | 768 | 430 | 390 |
+|---|---|---|---|---|---|
+| Hoy | PASS | PASS | PASS | PASS | PASS |
+| Mi ruta | PASS | PASS | PASS | PASS | PASS |
+| Progreso | PASS | PASS | PASS | PASS | PASS |
+| Preparación de examen (list) | PASS | PASS | PASS | PASS | PASS |
+| Preparación de examen (detail) | PASS | PASS | PASS | PASS | PASS |
+
+**Dark mode** was checked on Progreso (expanded concept) and exam detail at 390, with the app's own `prefers-color-scheme: dark` rules applied.
+
+**Locales:**
+- All four pages were checked at 1440 and 390 in EN, DE, FR, PT and ES, using the in-app language preference on the DEV account, which was restored to ES afterwards.
+- Checks per page: correct h1; no raw enum or untranslated key in `main`; no clipped headings, buttons, choice titles or stage chips; no overflow.
+- Known and unchanged: `<html lang>` stays `en`; the locale `lang` is set on the shell element (§1).
+
+**Tests added** (`tests/unit/ux2-experience-foundation.test.ts`, 15):
+- no raw enums rendered, and no raw fallbacks;
+- enum copy exists in 5 locales;
+- reason-code mapping and de-duplication;
+- readiness ladder follows F9's order and the server status only;
+- exam hierarchy order;
+- no-profile setup is primary;
+- insufficient-evidence state;
+- unchanged POST body;
+- "Por validar" (never a visible 0%);
+- concept detail reachable;
+- actionable needs-attention;
+- no score thresholds;
+- Mi ruta compact track, pills and grids;
+- shared intro and container;
+- Hoy still canonical.
+
+Also 2 ownership tests in `tests/unit/f9-api-routes-security.test.ts`.
