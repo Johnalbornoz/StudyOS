@@ -62,13 +62,20 @@ const COLD_REPS = num('coldReps', 2);
 const DOUBLE_CLICK_PAIRS = 5;
 const TYPES: DeliveryActivityType[] = ['LEARN_CHECK', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER'];
 const LANGUAGE = 'es';
-const QUOTA_RESERVE = 1000;
+/** Daily AI calls always left for normal DEV use (--quotaReserve). */
+const QUOTA_RESERVE = num('quotaReserve', 1000);
+/** Restrict STEADY / STRESS / COLD to these activity types (--types=TRANSFER); HOT always runs all five. */
+const ONLY_TYPES = argv('types')?.split(',') as DeliveryActivityType[] | undefined;
 /** Hard stop for the whole run: the day's global AI calls must never pass this (cost / loop protection). */
 const DAY_CALL_CEILING = num('dayCallCeiling', 6000);
 /** More open jobs than this at once means a replenishment loop, not load: stop. */
 const OPEN_JOBS_ANOMALY = num('openJobsAnomaly', 150);
 /** Upper estimates of AI calls per scenario (from earlier DEV runs), for the pre-scenario quota check. */
-const QUOTA_ESTIMATE: Record<string, number> = { steady: 1500, cold: 700, hot: 300, stress: 1600 };
+const QUOTA_ESTIMATE: Record<string, number> = {
+  steady: 1500, cold: 700, hot: 300, stress: 1600,
+  // --estimates=steady:300,cold:80 overrides (e.g. for a single-type run)
+  ...Object.fromEntries((argv('estimates') ?? '').split(',').filter(Boolean).map((kv) => { const [k, v] = kv.split(':'); return [k, Number(v)]; })),
+};
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function assertDevDatabase() {
@@ -329,6 +336,7 @@ async function ensureSteadySubject(studentId: string) {
   for (const t of TYPES) {
     const m = await verifyV1PracticeLaunchMarker({ studentId, conceptId: concepts[t] });
     const at = m?.canonicalActivityType ?? 'no launchable activity';
+    if (ONLY_TYPES && !ONLY_TYPES.includes(t)) continue;
     if (m && at === ({ LEARN_CHECK: 'LEARN_CHECK', PRACTICE: 'PRACTICE', PROVE: 'PROVE', RETAIN: 'RETENTION_CHECK', TRANSFER: 'TRANSFER' } as const)[t]) {
       types.push(t);
       itemCount[t] = m.itemCount?.authorized ?? QUIZ_MODE_CONFIG[QUIZ_MODE_FOR_ACTIVITY[t] as QuizMode].defaultMax;
@@ -507,7 +515,7 @@ async function runSteadyLike(mode: 'steady' | 'stress') {
   const { studentId } = await ensureLearner();
   const { concepts, types, blocked, itemCount, contracts, academic } = await ensureSteadySubject(studentId);
   // from zero: empty bank + no inventory; everything below is produced by the deployed worker
-  await resetBenchLearner(studentId, Object.values(concepts));
+  await resetBenchLearner(studentId, types.map((t) => concepts[t]));
   const since = new Date();
   const evidenceBefore = await evidenceRows(studentId);
   const watch = new QuotaWatch();
@@ -562,6 +570,7 @@ async function runSteadyLike(mode: 'steady' | 'stress') {
   const jobs = await jobsByConcept(studentId, since, concepts);
   for (const t of TYPES) {
     if (blocked[t]) { byType[t] = { status: 'BLOCKED', reason: blocked[t] }; continue; }
+    if (!types.includes(t)) continue;
     const xs = samples.filter((x) => x.type === t);
     byType[t] = {
       ...(byType[t] ?? {}),
