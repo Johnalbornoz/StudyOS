@@ -1,34 +1,54 @@
 'use client';
 
 /**
- * F14 Workstream A -- self-service simulation start (task section 4).
- * POSTs to the real, unmodified F9 `/api/simulation/attempts` route --
- * this component performs no eligibility decision itself. TOPIC_EXAM/
- * DOMAIN_EXAM take a raw learning-objective/academic-subject id,
- * mirroring F13's own Teacher `AssignInterventionForm` precedent (no
- * lookup/picker UI exists yet for either on the Teacher side either --
- * a real, disclosed platform gap, not something this panel invents a
- * workaround for). MINI_MOCK/FULL_MOCK eligibility is passed down
- * pre-computed from the server (F9's own `getSimulationEligibility`);
- * a rejected TOPIC_EXAM/DOMAIN_EXAM attempt surfaces the server's own
- * `reasons` verbatim, never a fabricated explanation.
+ * F14 Workstream A / UX-2 -- self-service exam practice.
+ *
+ * POSTs to the real, unmodified F9 `/api/simulation/attempts` route with
+ * exactly the same body as before (including `language: 'en'`, which is
+ * the existing behaviour and is left untouched here). This component makes
+ * no eligibility decision: MINI_MOCK/FULL_MOCK eligibility arrives
+ * pre-computed from the server; TOPIC_EXAM/DOMAIN_EXAM are checked
+ * server-side on submit. UX-2 changes presentation only: choice cards
+ * instead of raw enum selects, and the server's reason codes shown as
+ * plain sentences (lib/experience/exam-prep.ts), never verbatim.
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK';
-type TimingMode = 'UNTIMED' | 'TRAINING_TIMED' | 'OFFICIAL_SIMULATION_TIMED';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import {
+  PRIMARY_SIMULATION_TYPES,
+  TIMING_MODES,
+  eligibilityReasonKeys,
+  type EligibilityReasonKey,
+  type SimulationType,
+  type TimingMode,
+} from '@/lib/experience/exam-prep';
 
 export interface StartSimulationLabels {
   title: string;
-  simulationTypeLabel: string;
-  timingModeLabel: string;
+  lead: string;
+  typeLegend: string;
+  timingLegend: string;
+  advanced: string;
   learningObjectiveIdLabel: string;
   academicSubjectIdLabel: string;
+  targetIdHint: string;
   submit: string;
   submitting: string;
-  notEligible: string;
   error: string;
+  types: Record<SimulationType, { title: string; body: string }>;
+  timings: Record<TimingMode, { title: string; body: string }>;
+  reasons: Record<EligibilityReasonKey, string>;
+}
+
+function Choice({ name, value, checked, onChange, title, body }: { name: string; value: string; checked: boolean; onChange: () => void; title: string; body: string }) {
+  return (
+    <label className="ui-choice">
+      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />
+      <span className="ui-choice-title">{title}</span>
+      <span className="ui-choice-body">{body}</span>
+    </label>
+  );
 }
 
 export function StartSimulationPanel({
@@ -56,17 +76,20 @@ export function StartSimulationPanel({
   const [learningObjectiveId, setLearningObjectiveId] = useState('');
   const [academicSubjectId, setAcademicSubjectId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errorKeys, setErrorKeys] = useState<EligibilityReasonKey[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const blockedReasons =
     simulationType === 'MINI_MOCK' ? (miniMockEligible ? [] : miniMockReasons)
     : simulationType === 'FULL_MOCK' ? (fullMockEligible ? [] : fullMockReasons)
     : []; // TOPIC_EXAM/DOMAIN_EXAM eligibility depends on the id typed below -- checked server-side on submit only
+  const blockedKeys = eligibilityReasonKeys(blockedReasons);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setErrorKeys([]);
     try {
       const res = await fetch('/api/simulation/attempts', {
         method: 'POST',
@@ -82,10 +105,12 @@ export function StartSimulationPanel({
           ...(simulationType === 'DOMAIN_EXAM' ? { academicSubjectId } : {}),
         }),
       });
-      const body = await res.json();
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
         const reasons = body?.data?.eligibility?.reasons;
-        setError(Array.isArray(reasons) && reasons.length > 0 ? reasons.join(', ') : body?.error || labels.error);
+        if (Array.isArray(reasons) && reasons.length > 0) setErrorKeys(eligibilityReasonKeys(reasons));
+        else if (body?.error === 'TIMING_NOT_CONFIGURED') setErrorKeys(['ex.reason.unavailable']);
+        else setError(labels.error);
         return;
       }
       router.push(`/dashboard/exam-prep/attempt/${body.data.simulationAttempt.id}`);
@@ -96,57 +121,64 @@ export function StartSimulationPanel({
     }
   }
 
+  const advancedOpen = simulationType === 'TOPIC_EXAM' || simulationType === 'DOMAIN_EXAM';
+
   return (
-    <form onSubmit={onSubmit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{labels.title}</h2>
+    <section className="card ex-practice" aria-labelledby="ex-practice-title">
+      <div>
+        <h2 id="ex-practice-title" className="ex-practice-title">{labels.title}</h2>
+        <p className="ui-intro-lead" style={{ marginTop: 'var(--space-1)' }}>{labels.lead}</p>
+      </div>
+      <form onSubmit={onSubmit} className="ui-form">
+        <fieldset className="ui-choices">
+          <legend className="ui-label">{labels.typeLegend}</legend>
+          {PRIMARY_SIMULATION_TYPES.map((type) => (
+            <Choice key={type} name="simulationType" value={type} checked={simulationType === type} onChange={() => setSimulationType(type)} title={labels.types[type].title} body={labels.types[type].body} />
+          ))}
+        </fieldset>
 
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-        {labels.simulationTypeLabel}
-        <select value={simulationType} onChange={(e) => setSimulationType(e.target.value as SimulationType)}>
-          <option value="MINI_MOCK">MINI_MOCK</option>
-          <option value="FULL_MOCK">FULL_MOCK</option>
-          <option value="TOPIC_EXAM">TOPIC_EXAM</option>
-          <option value="DOMAIN_EXAM">DOMAIN_EXAM</option>
-        </select>
-      </label>
+        <details className="ui-disclosure" open={advancedOpen}>
+          <summary>{labels.advanced}</summary>
+          <div className="ui-disclosure-body ui-form">
+            <fieldset className="ui-choices">
+              {(['TOPIC_EXAM', 'DOMAIN_EXAM'] as const).map((type) => (
+                <Choice key={type} name="simulationType" value={type} checked={simulationType === type} onChange={() => setSimulationType(type)} title={labels.types[type].title} body={labels.types[type].body} />
+              ))}
+            </fieldset>
+            {simulationType === 'TOPIC_EXAM' && (
+              <label className="ui-field">
+                <span className="ui-label">{labels.learningObjectiveIdLabel}</span>
+                <input className="ui-input" value={learningObjectiveId} onChange={(e) => setLearningObjectiveId(e.target.value)} required />
+                <span className="ui-hint">{labels.targetIdHint}</span>
+              </label>
+            )}
+            {simulationType === 'DOMAIN_EXAM' && (
+              <label className="ui-field">
+                <span className="ui-label">{labels.academicSubjectIdLabel}</span>
+                <input className="ui-input" value={academicSubjectId} onChange={(e) => setAcademicSubjectId(e.target.value)} required />
+                <span className="ui-hint">{labels.targetIdHint}</span>
+              </label>
+            )}
+          </div>
+        </details>
 
-      {simulationType === 'TOPIC_EXAM' && (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          {labels.learningObjectiveIdLabel}
-          <input value={learningObjectiveId} onChange={(e) => setLearningObjectiveId(e.target.value)} required />
-        </label>
-      )}
-      {simulationType === 'DOMAIN_EXAM' && (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          {labels.academicSubjectIdLabel}
-          <input value={academicSubjectId} onChange={(e) => setAcademicSubjectId(e.target.value)} required />
-        </label>
-      )}
+        <fieldset className="ui-choices">
+          <legend className="ui-label">{labels.timingLegend}</legend>
+          {TIMING_MODES.map((mode) => (
+            <Choice key={mode} name="timingMode" value={mode} checked={timingMode === mode} onChange={() => setTimingMode(mode)} title={labels.timings[mode].title} body={labels.timings[mode].body} />
+          ))}
+        </fieldset>
 
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-        {labels.timingModeLabel}
-        <select value={timingMode} onChange={(e) => setTimingMode(e.target.value as TimingMode)}>
-          <option value="UNTIMED">UNTIMED</option>
-          <option value="TRAINING_TIMED">TRAINING_TIMED</option>
-          <option value="OFFICIAL_SIMULATION_TIMED">OFFICIAL_SIMULATION_TIMED</option>
-        </select>
-      </label>
+        {blockedKeys.length > 0 && <InlineAlert tone="info" title={blockedKeys.map((k) => labels.reasons[k]).join(' ')} />}
+        {errorKeys.length > 0 && <InlineAlert tone="warning" title={errorKeys.map((k) => labels.reasons[k]).join(' ')} />}
+        {error && <InlineAlert tone="error" title={error} />}
 
-      {blockedReasons.length > 0 && (
-        <p role="status" style={{ fontSize: 12.5, color: 'var(--warning)' }}>
-          {labels.notEligible}: {blockedReasons.join(', ')}
-        </p>
-      )}
-
-      <button type="submit" className="btn btn-primary" disabled={submitting || blockedReasons.length > 0}>
-        {submitting ? labels.submitting : labels.submit}
-      </button>
-
-      {error && (
-        <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)' }}>
-          {error}
-        </p>
-      )}
-    </form>
+        <div className="ui-form-actions">
+          <button type="submit" className="btn btn-primary btn-lg" disabled={submitting || blockedKeys.length > 0} aria-busy={submitting}>
+            {submitting ? labels.submitting : labels.submit}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }

@@ -6,7 +6,10 @@ import { getMessages } from '@/lib/i18n/messages';
 import { loadMyPathContext, buildMyPathOverview } from '@/lib/lx/path-view';
 import { presentSnapshotNextChallenge } from '@/lib/experience/next-challenge.server';
 import NextChallengeCard from '../NextChallengeCard';
-import JourneyStrip from './JourneyStrip';
+import StageTrack from '../StageTrack';
+import { PageIntro } from '@/components/ui/PageIntro';
+import { Section } from '@/components/ui/Section';
+import { InlineAlert } from '@/components/ui/InlineAlert';
 import { journeyReason } from './journeyReason';
 
 /**
@@ -80,41 +83,31 @@ export default async function MyPathPage() {
     : [];
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1>{t['myPath.title']}</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15, maxWidth: '60ch' }}>{t['myPath.subtitle']}</p>
-      </div>
+    <div className="xp-page xp-page--wide">
+      <PageIntro title={t['myPath.title']} lead={t['myPath.subtitle']} />
 
       {overview.state === 'UNRESOLVED' && (
-        <div className="card empty-state">
-          <strong>{t['myPath.unresolvedTitle']}</strong>
-          {t['myPath.unresolvedBody']}
-          <div style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            <a href="/dashboard/path" className="btn btn-primary">{t['myPath.unresolvedRetry']}</a>
-            <Link href="/dashboard/today" className="btn btn-ghost">{t['myPath.unresolvedGoToToday']}</Link>
-          </div>
-        </div>
+        <InlineAlert
+          tone="error"
+          title={t['myPath.unresolvedTitle']}
+          body={t['myPath.unresolvedBody']}
+          actions={
+            <>
+              <a href="/dashboard/path" className="btn btn-primary">{t['myPath.unresolvedRetry']}</a>
+              <Link href="/dashboard/today" className="btn btn-secondary">{t['myPath.unresolvedGoToToday']}</Link>
+            </>
+          }
+        />
       )}
 
-      {overview.state === 'NO_ACTIVE_SUBJECTS' && (
-        <div className="card empty-state">
-          <strong>{t['myPath.startTitle']}</strong>
-          {t['myPath.startBody']}
-          <div style={{ marginTop: 'var(--space-4)' }}>
+      {(overview.state === 'NO_ACTIVE_SUBJECTS' || overview.state === 'COLD') && (
+        <section className="xp-hero xp-hero--calm" aria-labelledby="rt-start-title">
+          <h2 id="rt-start-title" className="xp-hero-title">{t['myPath.startTitle']}</h2>
+          <p className="xp-hero-why">{overview.state === 'COLD' ? t['myPath.coldBody'] : t['myPath.startBody']}</p>
+          <div className="xp-hero-cta">
             <Link href="/dashboard/subjects" className="btn btn-primary">{t['myPath.exploreCta']}</Link>
           </div>
-        </div>
-      )}
-
-      {overview.state === 'COLD' && (
-        <div className="card empty-state">
-          <strong>{t['myPath.startTitle']}</strong>
-          {t['myPath.coldBody']}
-          <div style={{ marginTop: 'var(--space-4)' }}>
-            <Link href="/dashboard/subjects" className="btn btn-primary">{t['myPath.exploreCta']}</Link>
-          </div>
-        </div>
+        </section>
       )}
 
       {overview.state === 'READY' && (
@@ -123,79 +116,62 @@ export default async function MyPathPage() {
             // UX-2: the SAME hero Today renders, from the SAME snapshot
             // next-executable item -- presented from the canonical launch
             // the Start button runs, never from the legacy activityType.
-            <div style={{ marginBottom: 'var(--space-8)' }}>
-              <NextChallengeCard
-                view={heroView}
-                conceptLabel={overview.current.conceptTitle}
-                subjectName={overview.current.subjectTitle}
-                studentId={studentId}
-                t={t}
-                locale={locale}
-                legacyMinutes={overview.current.estimatedMinutes}
-                fallbackJourney={overview.current.journey}
-                launchMark="MY_PATH_ACTION_LAUNCHED"
-              />
-            </div>
+            <NextChallengeCard
+              view={heroView}
+              conceptLabel={overview.current.conceptTitle}
+              subjectName={overview.current.subjectTitle}
+              studentId={studentId}
+              t={t}
+              locale={locale}
+              legacyMinutes={overview.current.estimatedMinutes}
+              fallbackJourney={overview.current.journey}
+              launchMark="MY_PATH_ACTION_LAUNCHED"
+            />
           ) : (
-            <div className="card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)' }}>
-              <strong>{t['myPath.allCaughtUpTitle']}</strong>
-              <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', fontSize: 14.5 }}>{t['myPath.allCaughtUpBody']}</p>
-            </div>
+            <section className="xp-hero xp-hero--calm" aria-labelledby="rt-caught-up">
+              <h2 id="rt-caught-up" className="xp-hero-title">{t['myPath.allCaughtUpTitle']}</h2>
+              <p className="xp-hero-why">{t['myPath.allCaughtUpBody']}</p>
+            </section>
           )}
 
           {nearby.length > 0 && (
-            <div style={{ marginBottom: 'var(--space-8)' }}>
-              <h2 style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 'var(--space-3)' }}>
-                {t['myPath.nearbyTitle']}
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <Section id="rt-next" title={t['myPath.nearbyTitle']}>
+              <ul className="rt-next">
                 {nearby.map((c) => (
-                  <div key={c.conceptId} className="card" style={{ padding: 'var(--space-4)' }}>
-                    <Link href={`/dashboard/subjects/${overview.current!.subjectId}/concepts/${c.conceptId}`} style={{ fontSize: 14, fontWeight: 600 }}>
+                  <li key={c.conceptId} className="card rt-card">
+                    <Link href={`/dashboard/subjects/${overview.current!.subjectId}/concepts/${c.conceptId}`} className="rt-card-title">
                       {c.title}
                     </Link>
-                    <div style={{ marginTop: 6 }}>
-                      <JourneyStrip journey={c.journey} t={t} />
-                    </div>
-                    <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{journeyReason(c.journey, t)}</p>
-                  </div>
+                    <p className="rt-card-reason">{journeyReason(c.journey, t)}</p>
+                    <StageTrack journey={c.journey} t={t} variant="light" />
+                    {c.journey.intervention && <span className="xp-reinforce" style={{ alignSelf: 'flex-start' }}>{t['myPathStage.REINFORCE']}</span>}
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </Section>
           )}
 
-          {consolidatedCount + retentionDueCount + transferPendingCount > 0 && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 'var(--space-8)' }}>
-              {[
-                consolidatedCount > 0 ? `${consolidatedCount} ${t['myPath.summaryConsolidated']}` : null,
-                retentionDueCount > 0 ? `${retentionDueCount} ${t['myPath.summaryRetentionDue']}` : null,
-                transferPendingCount > 0 ? `${transferPendingCount} ${t['myPath.summaryTransferPending']}` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-
-          <div>
-            <h2 style={{ fontSize: 14, fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 'var(--space-3)' }}>
-              {t['myPath.subjectsTitle']}
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+          <Section id="rt-subjects" title={t['myPath.subjectsTitle']}>
+            {consolidatedCount + retentionDueCount + transferPendingCount > 0 && (
+              <ul className="rt-summary">
+                {consolidatedCount > 0 && <li>{t['myPath.pillConsolidated']}<strong>{consolidatedCount}</strong></li>}
+                {retentionDueCount > 0 && <li>{t['myPath.pillRetentionDue']}<strong>{retentionDueCount}</strong></li>}
+                {transferPendingCount > 0 && <li>{t['myPath.pillTransferPending']}<strong>{transferPendingCount}</strong></li>}
+              </ul>
+            )}
+            <ul className="rt-subjects">
               {overview.subjects.map((s) => (
-                <Link
-                  key={s.subjectId}
-                  href={`/dashboard/path/${s.subjectId}`}
-                  className="card"
-                  style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}
-                >
-                  <span style={{ fontSize: 14.5, fontWeight: 650 }}>{s.title}</span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                    {s.summary.consolidatedCount}/{s.summary.totalConcepts} {t['myPath.summaryConsolidated']}
-                  </span>
-                </Link>
+                <li key={s.subjectId}>
+                  <Link href={`/dashboard/path/${s.subjectId}`} className="card card-link rt-subject">
+                    <span className="rt-subject-title">{s.title}</span>
+                    <span className="rt-subject-meta">
+                      {s.summary.consolidatedCount}/{s.summary.totalConcepts} {t['myPath.summaryConsolidated']}
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </Section>
         </>
       )}
     </div>

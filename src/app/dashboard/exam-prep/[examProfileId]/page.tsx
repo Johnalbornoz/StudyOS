@@ -8,9 +8,20 @@ import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.ser
 import { getExamDefinition, getExamVersion, getPublishedExamVersion } from '@/lib/assessment/exam-definition.service';
 import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { PageIntro } from '@/components/ui/PageIntro';
+import { InlineAlert } from '@/components/ui/InlineAlert';
 import { StatusBadge, toneForReadinessStatus, toneForDimensionStatus } from '@/components/ui/StatusBadge';
-import { StartSimulationPanel } from './StartSimulationPanel';
+import { calendarDaysUntil } from '@/lib/experience/goal';
+import {
+  READINESS_ORDER,
+  SIMULATION_TYPES,
+  TIMING_MODES,
+  simulationTypeLabelKey,
+  simulationTypeBodyKey,
+  timingModeLabelKey,
+  timingModeBodyKey,
+} from '@/lib/experience/exam-prep';
+import { StartSimulationPanel, type StartSimulationLabels } from './StartSimulationPanel';
 
 const DIMENSION_LABEL_KEY = {
   KNOWLEDGE_READINESS: 'examPrep.dimension.knowledge',
@@ -61,88 +72,138 @@ export default async function ExamPrepDetailPage({ params }: { params: Promise<{
     : [null, null];
   const [miniMockEligibility, fullMockEligibility] = eligibility;
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const days = profile.examDate ? calendarDaysUntil(profile.examDate, todayIso) : null;
+  const dateLine = profile.examDate
+    ? `${new Date(`${profile.examDate}T12:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}${
+        days !== null && days >= 0 ? ` · ${days === 0 ? t['xp.goalToday'] : days === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(days))}` : ''
+      }`
+    : t['examPrep.noExamDateSet'];
+  const currentIndex = snapshot ? READINESS_ORDER.indexOf(snapshot.overallStatus) : -1;
+  // No snapshot yet, or the server itself reports INSUFFICIENT_EVIDENCE: an intentional
+  // "still taking shape" state rather than a ladder stuck on its first rung.
+  const forming = !snapshot || snapshot.overallStatus === 'INSUFFICIENT_EVIDENCE';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <PageHeader
+    <div className="xp-page xp-page--wide">
+      <PageIntro
+        crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
         title={definition?.name ?? profile.examDefinitionId}
-        subtitle={t['examPrep.detailSubtitle']}
-        breadcrumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
+        lead={dateLine}
       />
 
-      {!examVersion && <div className="card" style={{ padding: 'var(--space-4)' }}>{t['examPrep.noExamVersion']}</div>}
-
-      {examVersion && !snapshot && (
-        <div className="card" style={{ padding: 'var(--space-4)' }}>{t['examPrep.noSnapshotYet']}</div>
-      )}
-
-      {snapshot && (
-        <section className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{t['examPrep.overallStatus']}</h2>
-            <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`] ?? snapshot.overallStatus} tone={toneForReadinessStatus(snapshot.overallStatus)} />
-          </div>
-
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{t['examPrep.scoreProjection']}</div>
-            <div style={{ fontSize: 14 }}>
-              {snapshot.scoreProjectionAvailability === 'AVAILABLE'
-                ? t['examPrep.scoreProjection.available']
-                : t[`examPrep.scoreProjection.${snapshot.scoreProjectionAvailability}`] ?? snapshot.scoreProjectionAvailability}
+      <div className="ex-layout">
+        <div className="xp-page" style={{ gap: 'var(--space-6)' }}>
+          <section className="card ex-status" aria-labelledby="ex-status-title">
+            <div>
+              <h2 id="ex-status-title" className="ex-status-title">{t['ex.readinessTitle']}</h2>
+              <p className="ui-hint" style={{ margin: 'var(--space-1) 0 0' }}>{t['ex.readinessLead']}</p>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{t['examPrep.dimensions']}</div>
-            <ul className="list-card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {snapshot.dimensions.map((d) => (
-                <li key={d.dimension} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600 }}>{t[DIMENSION_LABEL_KEY[d.dimension]] ?? d.dimension}</span>
-                    <StatusBadge label={t[`examPrep.dimensionStatus.${d.status}`] ?? d.status} tone={toneForDimensionStatus(d.status)} />
-                  </div>
-                  {d.unsupportedPlatformAreas.length > 0 && (
-                    <div style={{ fontSize: 12.5, color: 'var(--warning)' }}>
-                      {t['examPrep.platformNotSupported']}: {d.unsupportedPlatformAreas.join(', ')}
+            {!examVersion && <InlineAlert tone="info" title={t['examPrep.noExamVersion']} />}
+
+            {examVersion && forming && (
+              <div>
+                <p className="ex-status-title" style={{ fontSize: 'var(--fs-lg)' }}>{t['ex.formingTitle']}</p>
+                <p className="ex-status-body" style={{ marginTop: 'var(--space-2)' }}>{t['ex.formingBody']}</p>
+              </div>
+            )}
+
+            {snapshot && (
+              <>
+                {!forming && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                      <span className="ui-label">{t['examPrep.overallStatus']}</span>
+                      <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`]} tone={toneForReadinessStatus(snapshot.overallStatus)} />
                     </div>
-                  )}
-                  {d.whatWouldImproveConfidence && (
-                    <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{d.whatWouldImproveConfidence}</div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+                    {/* where the server-reported status sits on F9's own status scale */}
+                    <ol className="ex-ladder" aria-label={t['examPrep.overallStatus']}>
+                      {READINESS_ORDER.map((status, i) => (
+                        <li key={status} className={i < currentIndex ? 'done' : i === currentIndex ? 'current' : undefined} aria-current={i === currentIndex ? 'step' : undefined}>
+                          <span className="ex-ladder-bar" aria-hidden />
+                          <span className="ex-ladder-label">{t[`examPrep.status.${status}`]}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+                <p className="ex-status-body">
+                  <strong>{t['examPrep.scoreProjection']}:</strong>{' '}
+                  {snapshot.scoreProjectionAvailability === 'AVAILABLE'
+                    ? t['examPrep.scoreProjection.available']
+                    : t[`examPrep.scoreProjection.${snapshot.scoreProjectionAvailability}`] ?? t['examPrep.scoreProjection.NOT_APPLICABLE']}
+                </p>
+                <details className="ui-disclosure">
+                  <summary>{t['ex.moreDetail']}</summary>
+                  <div className="ui-disclosure-body">
+                    <ul className="ex-dims">
+                      {snapshot.dimensions.map((d) => (
+                        <li key={d.dimension} className="card ex-dim">
+                          <div className="ex-dim-head">
+                            <span className="ex-dim-name">{t[DIMENSION_LABEL_KEY[d.dimension]] ?? d.dimension}</span>
+                            <StatusBadge label={t[`examPrep.dimensionStatus.${d.status}`]} tone={toneForDimensionStatus(d.status)} />
+                          </div>
+                          {d.unsupportedPlatformAreas.length > 0 && (
+                            <span className="ex-dim-note ex-dim-note--warn">{t['examPrep.platformNotSupported']}</span>
+                          )}
+                          {d.whatWouldImproveConfidence && <span className="ex-dim-note">{d.whatWouldImproveConfidence}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                    {snapshot.limitations.length > 0 && (
+                      <p className="ex-dim-note" style={{ margin: 'var(--space-4) 0 0' }}>
+                        {t['examPrep.limitations']}: {snapshot.limitations.join('; ')}
+                      </p>
+                    )}
+                  </div>
+                </details>
+              </>
+            )}
+          </section>
 
-          {snapshot.limitations.length > 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {t['examPrep.limitations']}: {snapshot.limitations.join('; ')}
+          <section className="card ex-status" aria-labelledby="ex-next-title">
+            <h2 id="ex-next-title" className="ex-status-title">{t['ex.nextTitle']}</h2>
+            <p className="ex-status-body">{t['ex.nextBody']}</p>
+            <div>
+              <Link href="/dashboard/today" className="btn btn-secondary">{t['ex.continueToday']}</Link>
             </div>
-          )}
-        </section>
-      )}
+          </section>
+        </div>
 
-      {examVersion && (
-        <StartSimulationPanel
-          studentId={studentId}
-          examProfileId={profile.id}
-          examVersionId={examVersion.id}
-          miniMockEligible={miniMockEligibility?.eligible ?? false}
-          miniMockReasons={miniMockEligibility?.reasons ?? []}
-          fullMockEligible={fullMockEligibility?.eligible ?? false}
-          fullMockReasons={fullMockEligibility?.reasons ?? []}
-          labels={{
-            title: t['examPrep.start.title'],
-            simulationTypeLabel: t['examPrep.start.simulationTypeLabel'],
-            timingModeLabel: t['examPrep.start.timingModeLabel'],
-            learningObjectiveIdLabel: t['examPrep.start.learningObjectiveIdLabel'],
-            academicSubjectIdLabel: t['examPrep.start.academicSubjectIdLabel'],
-            submit: t['examPrep.start.submit'],
-            submitting: t['examPrep.start.submitting'],
-            notEligible: t['examPrep.start.notEligible'],
-            error: t['examPrep.start.error'],
-          }}
-        />
-      )}
+        {examVersion && (
+          <StartSimulationPanel
+            studentId={studentId}
+            examProfileId={profile.id}
+            examVersionId={examVersion.id}
+            miniMockEligible={miniMockEligibility?.eligible ?? false}
+            miniMockReasons={miniMockEligibility?.reasons ?? []}
+            fullMockEligible={fullMockEligibility?.eligible ?? false}
+            fullMockReasons={fullMockEligibility?.reasons ?? []}
+            labels={{
+              title: t['ex.practiceTitle'],
+              lead: t['ex.practiceLead'],
+              typeLegend: t['ex.typeLegend'],
+              timingLegend: t['ex.timingLegend'],
+              advanced: t['ex.advanced'],
+              learningObjectiveIdLabel: t['examPrep.start.learningObjectiveIdLabel'],
+              academicSubjectIdLabel: t['examPrep.start.academicSubjectIdLabel'],
+              targetIdHint: t['ex.targetIdHint'],
+              submit: t['ex.start'],
+              submitting: t['ex.starting'],
+              error: t['examPrep.start.error'],
+              types: Object.fromEntries(SIMULATION_TYPES.map((type) => [type, { title: t[simulationTypeLabelKey(type)], body: t[simulationTypeBodyKey(type)] }])) as StartSimulationLabels['types'],
+              timings: Object.fromEntries(TIMING_MODES.map((mode) => [mode, { title: t[timingModeLabelKey(mode)], body: t[timingModeBodyKey(mode)] }])) as StartSimulationLabels['timings'],
+              reasons: {
+                'ex.reason.unavailable': t['ex.reason.unavailable'],
+                'ex.reason.domainIncomplete': t['ex.reason.domainIncomplete'],
+                'ex.reason.needsTarget': t['ex.reason.needsTarget'],
+                'ex.reason.notFound': t['ex.reason.notFound'],
+              },
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

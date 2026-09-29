@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AvailableExamOption } from '@/lib/assessment/exam-definition.service';
+import { InlineAlert } from '@/components/ui/InlineAlert';
 
 interface Labels {
   title: string;
+  lead: string;
   exam: string;
   date: string;
   purpose: string;
@@ -69,43 +71,50 @@ export function CreateExamProfileForm({
   }
 
   return (
-    <section className="card" aria-labelledby="create-exam-profile-title" style={{ padding: 'var(--space-5)' }}>
-      <h2 id="create-exam-profile-title" style={{ marginTop: 0 }}>{labels.title}</h2>
+    <section className="card ex-practice" aria-labelledby="create-exam-profile-title">
+      <div>
+        <h2 id="create-exam-profile-title" className="ex-practice-title">{labels.title}</h2>
+        <p className="ui-intro-lead" style={{ marginTop: 'var(--space-1)' }}>{labels.lead}</p>
+      </div>
       {exams.length === 0 ? (
-        <p role="status">{labels.unavailable}</p>
+        <InlineAlert tone="info" title={labels.unavailable} />
       ) : (
-        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 'var(--space-4)' }}>
-          <label>
-            <span>{labels.exam}</span>
-            <select required value={selection} onChange={(event) => setSelection(event.target.value)} style={{ display: 'block', width: '100%' }}>
-              <option value="">—</option>
-              {exams.map((exam) => (
-                <option key={exam.examVersionId} value={exam.examVersionId}>
-                  {exam.examDefinitionName} — {exam.versionLabel}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{labels.date} ({labels.optional})</span>
-            <input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} style={{ display: 'block', width: '100%' }} />
-          </label>
-          <label>
-            <span>{labels.purpose} ({labels.optional})</span>
-            <input maxLength={200} value={purpose} onChange={(event) => setPurpose(event.target.value)} style={{ display: 'block', width: '100%' }} />
-          </label>
-          <label>
-            <span>{labels.programme} ({labels.optional})</span>
-            <input maxLength={200} value={programmeContext} onChange={(event) => setProgrammeContext(event.target.value)} style={{ display: 'block', width: '100%' }} />
-          </label>
-          <label>
-            <span>{labels.subject} ({labels.optional})</span>
-            <input maxLength={200} value={subjectFocus} onChange={(event) => setSubjectFocus(event.target.value)} style={{ display: 'block', width: '100%' }} />
-          </label>
-          {error ? <p role="alert" style={{ color: 'var(--color-danger, #b42318)' }}>{error}</p> : null}
-          <button className="btn-primary" type="submit" disabled={!selection || submitting}>
-            {submitting ? labels.submitting : labels.submit}
-          </button>
+        <form onSubmit={onSubmit} className="ui-form">
+          <div className="ui-form-grid">
+            <label className="ui-field">
+              <span className="ui-label">{labels.exam}</span>
+              <select className="ui-select" required value={selection} onChange={(event) => setSelection(event.target.value)}>
+                <option value="" disabled>—</option>
+                {exams.map((exam) => (
+                  <option key={exam.examVersionId} value={exam.examVersionId}>
+                    {exam.examDefinitionName} — {exam.versionLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="ui-field">
+              <span className="ui-label">{labels.date} <span className="ui-optional">({labels.optional})</span></span>
+              <input className="ui-input" type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} />
+            </label>
+            <label className="ui-field">
+              <span className="ui-label">{labels.purpose} <span className="ui-optional">({labels.optional})</span></span>
+              <input className="ui-input" maxLength={200} value={purpose} onChange={(event) => setPurpose(event.target.value)} />
+            </label>
+            <label className="ui-field">
+              <span className="ui-label">{labels.programme} <span className="ui-optional">({labels.optional})</span></span>
+              <input className="ui-input" maxLength={200} value={programmeContext} onChange={(event) => setProgrammeContext(event.target.value)} />
+            </label>
+            <label className="ui-field">
+              <span className="ui-label">{labels.subject} <span className="ui-optional">({labels.optional})</span></span>
+              <input className="ui-input" maxLength={200} value={subjectFocus} onChange={(event) => setSubjectFocus(event.target.value)} />
+            </label>
+          </div>
+          {error ? <InlineAlert tone="error" title={error} /> : null}
+          <div className="ui-form-actions">
+            <button className="btn btn-primary btn-lg" type="submit" disabled={!selection || submitting} aria-busy={submitting}>
+              {submitting ? labels.submitting : labels.submit}
+            </button>
+          </div>
         </form>
       )}
     </section>

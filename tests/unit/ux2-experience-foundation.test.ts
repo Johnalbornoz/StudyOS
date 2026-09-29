@@ -22,6 +22,10 @@ import { resolveResultMilestone } from '@/lib/experience/result-milestone';
 import { journeyStageTone, progressFillClass, QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
 import { challengeVerb, stageLabel } from '@/lib/experience/vocabulary';
 import { selectGoalProfile, calendarDaysUntil } from '@/lib/experience/goal';
+import {
+  SIMULATION_TYPES, TIMING_MODES, READINESS_ORDER, eligibilityReasonKey, eligibilityReasonKeys,
+  simulationTypeLabelKey, simulationTypeBodyKey, timingModeLabelKey, timingModeBodyKey,
+} from '@/lib/experience/exam-prep';
 import { presentedActivityTypeForCanonical } from '@/lib/pedagogical-decision/concept-mission-override';
 import { journeyStageLabel } from '@/app/dashboard/path/journeyStageLabel';
 import { activityNarrative } from '@/app/dashboard/activityNarrative';
@@ -786,5 +790,156 @@ describe('UX-2 precision -- static elements never look accidentally misaligned',
   it('the rendered-geometry audit used for certification is kept in the repo', () => {
     const audit = read('scripts/ux/landing-geometry-audit.js');
     for (const check of ['no static transform', 'one content edge', 'one right edge', 'captions centred', 'stage tracks', 'hero card', 'equivalent components']) expect(audit).toContain(check);
+  });
+});
+
+describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de examen', () => {
+  const examList = strip(read('src/app/dashboard/exam-prep/page.tsx'));
+  const examDetail = strip(read('src/app/dashboard/exam-prep/[examProfileId]/page.tsx'));
+  const panel = strip(read('src/app/dashboard/exam-prep/[examProfileId]/StartSimulationPanel.tsx'));
+  const progress = strip(read('src/app/dashboard/page.tsx'));
+  const path = strip(read('src/app/dashboard/path/page.tsx'));
+  const today = strip(read('src/app/dashboard/today/page.tsx'));
+  const ENUMS = [...SIMULATION_TYPES, ...TIMING_MODES, ...READINESS_ORDER, 'MANDATORY_DOMAIN_INCOMPLETE'];
+
+  it('no raw simulation / timing / readiness / reason enum is ever rendered as text', () => {
+    for (const [name, src] of [['list', examList], ['detail', examDetail], ['panel', panel]] as const) {
+      for (const e of ENUMS) expect(src, `${name}:${e}`).not.toMatch(new RegExp(`>\\s*${e}\\s*<`));
+      // a missing translation must never fall back to the raw server value
+      expect(src, name).not.toMatch(/\?\?\s*(snapshot\.overallStatus|d\.status)/);
+    }
+    expect(panel).not.toMatch(/<select|<option/);
+    expect(panel).toMatch(/eligibilityReasonKeys\(/);
+    expect(panel).not.toMatch(/\.join\(['"`], ['"`]\)\s*}?\s*<\/|reasons\.join/);
+  });
+
+  it('every enum value has Student copy in all five locales', () => {
+    for (const locale of LOCALES) {
+      const t = getMessages(locale) as Record<string, string>;
+      for (const type of SIMULATION_TYPES) {
+        expect(t[simulationTypeLabelKey(type)], `${locale}:${type}`).toBeTruthy();
+        expect(t[simulationTypeBodyKey(type)], `${locale}:${type}`).toBeTruthy();
+      }
+      for (const mode of TIMING_MODES) {
+        expect(t[timingModeLabelKey(mode)], `${locale}:${mode}`).toBeTruthy();
+        expect(t[timingModeBodyKey(mode)], `${locale}:${mode}`).toBeTruthy();
+      }
+      for (const s of READINESS_ORDER) expect(t[`examPrep.status.${s}`], `${locale}:${s}`).toBeTruthy();
+      for (const s of ['STRONG', 'DEVELOPING', 'WEAK', 'INSUFFICIENT_EVIDENCE', 'NOT_APPLICABLE']) expect(t[`examPrep.dimensionStatus.${s}`], `${locale}:${s}`).toBeTruthy();
+      for (const k of ['ex.reason.unavailable', 'ex.reason.domainIncomplete', 'ex.reason.needsTarget', 'ex.reason.notFound', 'ex.formingTitle', 'ex.formingBody', 'ex.start', 'myPath.pillRetentionDue', 'pg.validated']) {
+        expect(t[k], `${locale}:${k}`).toBeTruthy();
+      }
+      for (const e of ENUMS) expect(Object.values(t).some((v) => v === e), `${locale} copy equals raw ${e}`).toBe(false);
+    }
+    expect(getMessages('es')['ex.start']).toBe('Comenzar práctica');
+  });
+
+  it('eligibility reason codes map to plain sentences and are de-duplicated', () => {
+    expect(eligibilityReasonKey('MANDATORY_DOMAIN_INCOMPLETE: 4f1c')).toBe('ex.reason.domainIncomplete');
+    expect(eligibilityReasonKey('LEARNING_OBJECTIVE_ID_REQUIRED')).toBe('ex.reason.needsTarget');
+    expect(eligibilityReasonKey('ACADEMIC_SUBJECT_ID_REQUIRED')).toBe('ex.reason.needsTarget');
+    expect(eligibilityReasonKey('NO_BLUEPRINT_TARGET_FOR_OBJECTIVE:x')).toBe('ex.reason.notFound');
+    expect(eligibilityReasonKey('NO_BLUEPRINT_TARGETS_FOR_SUBJECT')).toBe('ex.reason.notFound');
+    expect(eligibilityReasonKey('SOMETHING_NEW')).toBe('ex.reason.unavailable');
+    expect(eligibilityReasonKeys(['MANDATORY_DOMAIN_INCOMPLETE:a', 'MANDATORY_DOMAIN_INCOMPLETE:b'])).toEqual(['ex.reason.domainIncomplete']);
+  });
+
+  it('readiness ladder follows F9\'s declared status order and the server-reported status only', () => {
+    expect([...READINESS_ORDER]).toEqual(['INSUFFICIENT_EVIDENCE', 'EARLY_PREPARATION', 'DEVELOPING', 'SIMULATION_READY', 'FULL_MOCK_ELIGIBLE']);
+    expect(examDetail).toMatch(/READINESS_ORDER\.indexOf\(snapshot\.overallStatus\)/);
+    expect(examDetail).toMatch(/READINESS_ORDER\.map\(/);
+    expect(examDetail).not.toMatch(/computeReadiness|recompute|readinessScore\s*[<>]=?/);
+  });
+
+  it('exam hierarchy: goal, then readiness, then next step, then practice; configuration secondary', () => {
+    const intro = examDetail.indexOf('<PageIntro');
+    const readiness = examDetail.indexOf("t['ex.readinessTitle']");
+    const next = examDetail.indexOf("t['ex.nextTitle']");
+    const practice = examDetail.indexOf('<StartSimulationPanel');
+    expect(intro).toBeGreaterThan(-1);
+    expect(intro).toBeLessThan(readiness);
+    expect(readiness).toBeLessThan(next);
+    expect(next).toBeLessThan(practice);
+    // detail (dimensions) is disclosed, not the headline
+    expect(examDetail).toMatch(/<details className="ui-disclosure">\s*<summary>\{t\['ex\.moreDetail'\]\}/);
+    // practice: primary types as choice cards, targeted types under the advanced disclosure
+    expect(panel).toMatch(/PRIMARY_SIMULATION_TYPES\.map/);
+    expect(panel.indexOf("'TOPIC_EXAM', 'DOMAIN_EXAM'")).toBeGreaterThan(panel.indexOf('<details className="ui-disclosure"'));
+    expect(panel).toMatch(/className="btn btn-primary btn-lg"/);
+  });
+
+  it('no profile: setup is primary; with profiles: the form moves into a disclosure', () => {
+    expect(examList).toMatch(/rows\.length === 0 \? \(\s*form\s*\)/);
+    expect(examList).toMatch(/<details className="ui-disclosure">\s*<summary>\{t\['ex\.addAnother'\]\}<\/summary>\s*<div className="ui-disclosure-body">\{form\}<\/div>/);
+  });
+
+  it('insufficient evidence is an intentional "taking shape" state, not an empty ladder', () => {
+    expect(examDetail).toMatch(/const forming = !snapshot \|\| snapshot\.overallStatus === 'INSUFFICIENT_EVIDENCE';/);
+    expect(examDetail).toMatch(/examVersion && forming && \([\s\S]*?t\['ex\.formingTitle'\][\s\S]*?t\['ex\.formingBody'\]/);
+    expect(examDetail).toMatch(/\{!forming && \([\s\S]*?className="ex-ladder"/);
+    expect(examList).toMatch(/snapshot\.overallStatus !== 'INSUFFICIENT_EVIDENCE'/);
+    expect(getMessages('es')['ex.formingTitle']).toMatch(/tomando forma/);
+  });
+
+  it('the simulation practice POST body is unchanged', () => {
+    expect(panel).toMatch(/fetch\('\/api\/simulation\/attempts'/);
+    expect(panel).toMatch(/studentId,\s*examProfileId,\s*examVersionId,\s*simulationType,\s*timingMode,\s*language: 'en',/);
+  });
+
+  it('Progreso: pending capabilities read "Por validar", never 0%', () => {
+    const indicator = strip(read('src/components/ui/Indicator.tsx'));
+    expect(indicator).toMatch(/value === null/);
+    expect(indicator).toMatch(/pendingLabel/);
+    expect(progress).toMatch(/<Indicator/);
+    // a null value may leave an aria-hidden bar empty, but visible text never turns it into 0%
+    const visibleZero = progress.split('\n').filter((l) => /\?\?\s*0\)?\s*\}?%/.test(l) && !/width:/.test(l));
+    expect(visibleZero).toEqual([]);
+    expect(progress).toMatch(/journeyProgressPercent !== null \? `\$\{s\.journeyProgressPercent\}%` : '—'/);
+  });
+
+  it('Progreso: concept detail (dimensions, misconceptions) stays reachable behind a disclosure', () => {
+    expect(progress).toMatch(/<details className="pg-concepts"/);
+    expect(progress).toMatch(/<details[^>]*className="pg-concept"/);
+    expect(progress).toMatch(/className="pg-dims"/);
+    expect(progress).toMatch(/misconception/i);
+    expect(progress).toMatch(/journeyStageTone\(/);
+    expect(progress).toMatch(/t\['pg\.validated'\]/);
+  });
+
+  it('Progreso: needs attention is actionable (links to the concept)', () => {
+    const at = progress.indexOf('className="pg-attention"');
+    expect(at).toBeGreaterThan(-1);
+    expect(progress.slice(at, at + 1500)).toMatch(/href=\{`\/dashboard\/subjects\/\$\{[^}]+\}\/concepts\/\$\{[^}]+\}`\}/);
+  });
+
+  it('no new score thresholds in the redesigned surfaces', () => {
+    for (const [name, src] of [['progress', progress], ['path', path], ['examList', examList], ['examDetail', examDetail], ['panel', panel], ['indicator', strip(read('src/components/ui/Indicator.tsx'))]] as const) {
+      expect(src, name).not.toMatch(/[<>]=?\s*(0\.)?(40|50|60|70|75|80)\b(?!\s*px)/);
+    }
+  });
+
+  it('Mi ruta: compact card track, label-first summary pills, grids that fill the row', () => {
+    const track = strip(read('src/app/dashboard/StageTrack.tsx'));
+    const css = read('src/app/globals.css');
+    expect(track).toMatch(/variant !== 'light'/);
+    expect(track).toMatch(/className="xp-track-caption"/);
+    expect(css).toMatch(/\.xp-track-compact \.xp-track-label \{ position: absolute;[^}]*clip-path: inset\(50%\);/);
+    expect(css).toMatch(/\.rt-next \{ display: grid; grid-template-columns: repeat\(auto-fit,/);
+    expect(css).toMatch(/\.rt-subjects \{ display: grid; grid-template-columns: repeat\(auto-fit,/);
+    expect(path).toMatch(/<li>\{t\['myPath\.pillRetentionDue'\]\}<strong>\{retentionDueCount\}<\/strong><\/li>/);
+    expect(path).not.toMatch(/<strong>\{retentionDueCount\}<\/strong>\{t\[/);
+  });
+
+  it('the four pages share one intro, one container width and one indicator primitive', () => {
+    for (const [name, src] of [['progress', progress], ['path', path], ['examList', examList], ['examDetail', examDetail]] as const) {
+      expect(src, name).toMatch(/<PageIntro/);
+    }
+    const css = read('src/app/globals.css');
+    expect(css).toMatch(/--page-max: 1040px;/);
+  });
+
+  it('Hoy stays canonical: the hero is still the canonical next challenge', () => {
+    expect(today).toMatch(/NextChallengeCard/);
+    expect(today).toMatch(/presentSnapshotNextChallenge|loadConceptNextChallenge|presentNextChallenge/);
   });
 });

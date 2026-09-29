@@ -12,10 +12,10 @@ import { stageLabel } from '@/lib/experience/vocabulary';
  * text label per segment plus a screen-reader state, so position is
  * never conveyed by colour alone.
  */
-export default function StageTrack({ journey, t }: { journey: ConceptJourney; t: ReturnType<typeof getMessages> }) {
+export default function StageTrack({ journey, t, variant = 'hero' }: { journey: ConceptJourney; t: ReturnType<typeof getMessages>; variant?: 'hero' | 'light' }) {
   const completed = new Set(journey.completedStages);
-  return (
-    <ol className="xp-track" aria-label={t['myPath.journeyLabel']}>
+  const track = (
+    <ol className={`xp-track${variant === 'light' ? ' xp-track--light' : ''}`} aria-label={t['myPath.journeyLabel']}>
       {RUNG_ORDER.map((rung) => {
         const state: 'COMPLETED' | 'CURRENT' | 'PENDING' = journey.consolidated || completed.has(rung)
           ? 'COMPLETED'
@@ -37,5 +37,15 @@ export default function StageTrack({ journey, t }: { journey: ConceptJourney; t:
         );
       })}
     </ol>
+  );
+  if (variant !== 'light') return track;
+  // Compact (card) variant: bars only -- the segment labels stay in the
+  // accessible list (visually hidden by CSS) and one visible caption names
+  // the current stage, so narrow cards never hyphenate stage names.
+  return (
+    <div className="xp-track-compact">
+      {track}
+      <p className="xp-track-caption" aria-hidden>{stageLabel(journey.currentStage, t)}</p>
+    </div>
   );
 }

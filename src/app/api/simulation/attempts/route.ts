@@ -16,6 +16,7 @@ import { canUseCapability } from '@/lib/entitlements';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
 import { startSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { TimingConfigurationError } from '@/lib/simulation/plan.service';
+import { isExamProfileOwnedByStudent } from '@/lib/assessment/student-exam-profile.service';
 
 const StartSchema = z.object({
   studentId: z.string().uuid(),
@@ -57,6 +58,14 @@ export async function POST(request: NextRequest) {
 
   const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
   if (!entitled) return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
+
+  // UX-2 security fix (same as /api/readiness): the exam profile must
+  // belong to the authorized learner -- otherwise completing the attempt
+  // would write a readiness snapshot against another learner's profile.
+  // 404 so a guessed id never confirms another learner's profile exists.
+  if (!(await isExamProfileOwnedByStudent(validated.examProfileId, validated.studentId))) {
+    return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  }
 
   const eligibility = await getSimulationEligibility(validated);
   if (!eligibility.eligible) {

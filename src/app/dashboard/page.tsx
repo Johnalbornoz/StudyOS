@@ -1,5 +1,8 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
+import { QUANTITY_FILL_CLASS, journeyStageTone, progressFillClass } from '@/lib/experience/progress-tone';
+import { PageIntro } from '@/components/ui/PageIntro';
+import { Section } from '@/components/ui/Section';
+import { Indicator } from '@/components/ui/Indicator';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
@@ -71,192 +74,179 @@ export default async function DashboardPage() {
   });
   const hasAnyCapability = capabilityKpis.some((k) => k.score !== null);
 
+  const subjectNameById = new Map(overview.subjects.map((s) => [s.subjectId, s.subjectName]));
+  const overall = overview.overallJourneyProgressPercent;
+
   return (
-    <div>
-      <div className="view-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+    <div className="xp-page xp-page--wide">
+      <PageIntro
+        title={`${t['progress.title']}${firstName ? `, ${firstName}` : ''}`}
+        lead={t['pg.lead']}
+        actions={<Link href="/dashboard/subjects/new" className="btn btn-secondary">{t['dashboard.createSubject']}</Link>}
+      />
+
+      {/* A -- the one learner-wide number: canonical journey progress (LX-9R5 H). */}
+      <section className="card pg-hero" aria-labelledby="pg-overall">
         <div>
-          <h1>{t['progress.title']}{firstName ? `, ${firstName}` : ''}</h1>
-          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>{t['progress.subtitle']}</p>
-          {/* LX-9R5 PART H: the PRIMARY (and ONLY) learner-wide number
-              shown here is canonical journey progress (concept-weighted
-              mean of every concept's LearnerJourneyStage across every
-              active subject). LX-9R1-R1 had demoted raw
-              `overallMasteryPercent` to a secondary, explicitly-labeled
-              line -- still confusing in live QA ("Avance general del
-              recorrido: 73%" beside "Dominio general: 1%"), so it is
-              removed from this learner-facing page entirely. The metric
-              itself is NOT deleted -- `overview.overallMasteryPercent`
-              is still computed and returned by
-              `getStudentProgressOverview` for admin/analytics/debug
-              consumers; only this primary learner surface stops
-              rendering it. */}
-          <p style={{ color: 'var(--text-muted)', margin: '10px 0 0', fontSize: 14 }}>
-            {t['progress.overallJourneyLabel']}:{' '}
-            <strong className="tabular" style={{ color: 'var(--text-primary)' }}>
-              {overview.overallJourneyProgressPercent !== null ? `${overview.overallJourneyProgressPercent}%` : t['dashboard.notEnoughEvidence']}
-            </strong>
-          </p>
+          <p id="pg-overall" className="pg-hero-label">{t['progress.overallJourneyLabel']}</p>
+          {overall !== null ? (
+            <>
+              <span className="pg-hero-figure">{overall}%</span>
+              <span className="ui-bar" aria-hidden>
+                <span className={QUANTITY_FILL_CLASS} style={{ width: `${overall}%` }} />
+              </span>
+            </>
+          ) : (
+            <span className="pg-hero-figure pg-hero-figure--pending">{t['dashboard.notEnoughEvidence']}</span>
+          )}
         </div>
-        <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['dashboard.createSubject']}</Link>
-      </div>
+        <div>
+          <p className="pg-hero-label">{t['progress.achievementsTitle']}</p>
+          {achievementLines.length === 0 ? (
+            <p className="ui-hint" style={{ margin: 0, fontSize: 'var(--fs-sm)' }}>{t['dashboard.notEnoughEvidence']}</p>
+          ) : (
+            <ul className="pg-achievements">
+              {achievementLines.map((line, i) => (
+                <li key={i}>
+                  <Trophy size={16} strokeWidth={1.75} color="var(--brand)" aria-hidden />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
-      {/* 1. What I've achieved */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['progress.achievementsTitle']}</h2>
-        {achievementLines.length === 0 ? (
-          <div className="card empty-state">
-            <Trophy size={28} strokeWidth={1.5} color="var(--text-muted)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
-            <div>{t['dashboard.notEnoughEvidence']}</div>
-          </div>
-        ) : (
-          <div className="card list-card">
-            {achievementLines.map((line, i) => (
-              <div key={i} className="list-row">
-                <Trophy size={16} strokeWidth={1.75} color="var(--brand)" aria-hidden style={{ flexShrink: 0 }} />
-                <div className="row-main">
-                  <div className="row-title">{line}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 2. My learning capabilities */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h2 style={{ marginBottom: 'var(--space-3)', fontSize: 16 }}>{t['progress.capabilitiesTitle']}</h2>
+      {/* B -- capabilities: existing dimension values; null is "Por validar", never 0%. */}
+      <Section id="pg-capabilities" title={t['progress.capabilitiesTitle']}>
         {hasAnyCapability ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-4)' }}>
+          <div className="ui-indicators">
             {capabilityKpis.map((kpi) => (
-              <div key={kpi.labelKey} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                <div className="label" style={{ color: 'var(--text-muted)' }}>{t[kpi.labelKey]}</div>
-                <div className="tabular" style={{ fontSize: 22, fontWeight: 650, lineHeight: 1 }}>
-                  {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
-                </div>
-              </div>
+              <Indicator key={kpi.labelKey} label={t[kpi.labelKey]} value={kpi.score} pendingLabel={t['knowledgeState.pendingValidation']} />
             ))}
           </div>
         ) : (
-          <div className="card empty-state">
-            <div>{t['dashboard.notEnoughEvidence']}</div>
-          </div>
+          <div className="card empty-state">{t['dashboard.notEnoughEvidence']}</div>
         )}
-      </div>
+      </Section>
 
-      {/* 3. Progress by subject/concept */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
-        <h2>{t['progress.subjectsTitle']}</h2>
-        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{overview.subjects.length} {t['dashboard.active']}</span>
-      </div>
-
-      {overview.subjects.length === 0 ? (
-        <div className="card empty-state">
-          <BookOpen size={32} strokeWidth={1.5} color="var(--brand)" aria-hidden style={{ marginBottom: 'var(--space-3)' }} />
-          <strong>{t['dashboard.noSubjectsTitle']}</strong>
-          {t['dashboard.noSubjectsBody']}
-          <div style={{ marginTop: 'var(--space-4)' }}>
-            <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['subjectNew.submit']}</Link>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {overview.subjects.map((s: SubjectProgress) => {
-            const accent = getSubjectAccentColor(s.subjectId);
-            return (
-              <div key={s.subjectId} className="card subject-accent" style={{ '--accent': accent } as React.CSSProperties}>
-                <Link href={`/dashboard/subjects/${s.subjectId}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-4)' }}>
-                  <h3 style={{ margin: 0 }}>{s.subjectName}</h3>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                    {s.validatedCount}/{s.conceptCount} {t['progress.validatedLabel']}
-                  </span>
-                </Link>
-                {/* LX-9R1-R1: subject card primary progress is canonical
-                    journey progress -- the SAME value shown as the
-                    subject detail page's own header ("Avance del
-                    recorrido"), never an independently-calculated
-                    percentage (R5). */}
-                <div className="mastery-row" style={{ marginTop: 10 }} title={t['subjectDetail.journeyProgressLabel']}>
-                  <div className="mastery-bar">
-                    <span className={QUANTITY_FILL_CLASS} style={{ width: `${s.journeyProgressPercent ?? 0}%` }} />
-                  </div>
-                  <span className="mastery-pct tabular">{s.journeyProgressPercent !== null ? `${s.journeyProgressPercent}%` : '—'}</span>
-                </div>
-
-                {s.concepts.length > 0 && (
-                  <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    {s.concepts.map((c: ConceptProgress) => {
-                      const kpis = knowledgeKpis(c.dimensions);
-                      return (
-                        <div key={c.conceptId} style={{ borderTop: '1px solid var(--border-default)', paddingTop: 'var(--space-3)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
-                            <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label}</span>
-                            {/* LX-9 FINAL, PART M: the row's PRIMARY status is
-                                now the SAME canonical journey stage/percentage
-                                Concept Mission shows for this concept -- the
-                                live-QA-reported "Retener" (Concept Mission) vs
-                                "Aprendiendo" (this badge, from raw MasteryState)
-                                split. MasteryState/evidence dimensions remain
-                                visible below as separate evidence-profile KPIs
-                                (Part N), never as the primary status. */}
-                            <span
-                              className="tabular"
-                              title={t['subjectDetail.journeyProgressLabel']}
-                              style={{ fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', flexShrink: 0 }}
-                            >
-                              {t[c.journeyProgressLabelKey]} · {c.journeyProgressPercent}%
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
-                            {kpis.map((kpi) => (
-                              <span key={kpi.labelKey} className="tabular">
-                                {t[kpi.labelKey]}: {kpi.score !== null ? `${Math.round(kpi.score)}%` : t['knowledgeState.pendingValidation']}
-                              </span>
-                            ))}
-                          </div>
-                          {c.needsAttention.length > 0 && (
-                            <div style={{ fontSize: 12.5, color: 'var(--warning)', marginTop: 6 }}>
-                              {c.needsAttention.map((n, i) => (
-                                <div key={i}>{n.description} · {n.occurrenceCount}</div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 4. What needs attention */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '8px 0 12px' }}>
-        <h2>{t['progress.needsAttentionTitle']}</h2>
-        <Link href="/dashboard/learning-debt" className="btn btn-ghost">{t['dashboard.viewAll']}</Link>
-      </div>
-      <div className="card list-card" style={{ marginBottom: 'var(--space-8)' }}>
-        {overview.needsAttention.length === 0 ? (
-          <div className="empty-state">
-            <CheckCircle2 size={28} strokeWidth={1.5} color="var(--success)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
-            <div>{t['progress.needsAttentionEmpty']}</div>
-          </div>
-        ) : (
-          overview.needsAttention.slice(0, 5).map((item) => (
-            <div key={item.conceptId} className="list-row">
-              <span
-                style={{
-                  width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
-                  background: item.severity >= 3 ? 'var(--error)' : 'var(--warning)',
-                }}
-              />
-              <div className="row-main">
-                <div className="row-title">{item.conceptLabel}</div>
+      <div className="pg-layout">
+        {/* C/D -- by subject, then concept rows with details on demand. */}
+        <Section id="pg-subjects" title={t['progress.subjectsTitle']} action={<span className="ui-hint">{overview.subjects.length} {t['dashboard.active']}</span>}>
+          {overview.subjects.length === 0 ? (
+            <div className="card empty-state">
+              <BookOpen size={32} strokeWidth={1.5} color="var(--brand)" aria-hidden style={{ marginBottom: 'var(--space-3)' }} />
+              <strong>{t['dashboard.noSubjectsTitle']}</strong>
+              {t['pg.noSubjectsLead']}
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <Link href="/dashboard/subjects/new" className="btn btn-primary">{t['subjectNew.submit']}</Link>
               </div>
             </div>
-          ))
-        )}
+          ) : (
+            <ul className="pg-subjects">
+              {overview.subjects.map((s: SubjectProgress) => (
+                <li key={s.subjectId} className="card pg-subject subject-accent" style={{ '--accent': getSubjectAccentColor(s.subjectId) } as React.CSSProperties}>
+                  <div className="pg-subject-head">
+                    <div>
+                      <Link href={`/dashboard/subjects/${s.subjectId}`} className="pg-subject-title">{s.subjectName}</Link>
+                      <div className="pg-subject-meta">
+                        {t['pg.validated'].replace('{validated}', String(s.validatedCount)).replace('{total}', String(s.conceptCount))}
+                      </div>
+                    </div>
+                    {/* LX-9R1-R1: the subject's journey progress, as the service computes it (GAP-07 documented). */}
+                    <span className="pg-subject-figure" title={t['subjectDetail.journeyProgressLabel']}>
+                      {s.journeyProgressPercent !== null ? `${s.journeyProgressPercent}%` : '—'}
+                    </span>
+                    <span className="ui-bar" aria-hidden>
+                      <span className={QUANTITY_FILL_CLASS} style={{ width: `${s.journeyProgressPercent ?? 0}%` }} />
+                    </span>
+                  </div>
+                  {s.concepts.length > 0 && (
+                    <details className="pg-concepts">
+                      <summary>{t['pg.conceptsToggle'].replace('{count}', String(s.concepts.length))}</summary>
+                      <ul className="pg-concept-list">
+                        {s.concepts.map((c: ConceptProgress) => {
+                          const kpis = knowledgeKpis(c.dimensions);
+                          const tone = journeyStageTone(c.journeyStage);
+                          return (
+                            <li key={c.conceptId}>
+                              <details className="pg-concept">
+                                <summary>
+                                  <span className="pg-concept-name">{c.label}</span>
+                                  {/* LX-9 FINAL M: primary status = the canonical journey stage Concept Mission shows. */}
+                                  <span className={`pg-stage${tone === 'active' ? ' pg-stage--active' : tone === 'strong' ? ' pg-stage--strong' : tone === 'attention' ? ' pg-stage--attention' : ''}`}>
+                                    {t[c.journeyProgressLabelKey]}
+                                  </span>
+                                  <span className="pg-concept-pct">
+                                    <span>{c.journeyProgressPercent}%</span>
+                                    <span className="ui-bar" aria-hidden>
+                                      <span className={progressFillClass(tone)} style={{ width: `${c.journeyProgressPercent}%` }} />
+                                    </span>
+                                  </span>
+                                </summary>
+                                <div className="pg-concept-detail">
+                                  <ul className="pg-dims">
+                                    {kpis.map((kpi) => (
+                                      <li key={kpi.labelKey}>
+                                        <span>{t[kpi.labelKey]}</span>
+                                        {kpi.score !== null ? (
+                                          <strong>{Math.round(kpi.score)}%</strong>
+                                        ) : (
+                                          <strong className="pending">{t['knowledgeState.pendingValidation']}</strong>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {c.needsAttention.length > 0 && (
+                                    <ul className="pg-misconceptions">
+                                      {c.needsAttention.map((n, i) => (
+                                        <li key={i}>{n.description} · {n.occurrenceCount}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  <div style={{ marginTop: 'var(--space-3)' }}>
+                                    <Link href={`/dashboard/subjects/${s.subjectId}/concepts/${c.conceptId}`} className="ui-link">{t['xp.openConcept']}</Link>
+                                  </div>
+                                </div>
+                              </details>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </details>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+
+        {/* E -- needs attention: the existing list, each item one tap from its concept. */}
+        <Section id="pg-attention" title={t['progress.needsAttentionTitle']} action={<Link href="/dashboard/learning-debt" className="ui-link">{t['dashboard.viewAll']}</Link>}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {overview.needsAttention.length === 0 ? (
+              <div className="empty-state">
+                <CheckCircle2 size={28} strokeWidth={1.5} color="var(--success)" aria-hidden style={{ marginBottom: 'var(--space-2)' }} />
+                <div>{t['progress.needsAttentionEmpty']}</div>
+              </div>
+            ) : (
+              <ul className="pg-attention">
+                {overview.needsAttention.slice(0, 5).map((item) => (
+                  <li key={item.conceptId}>
+                    <Link href={`/dashboard/subjects/${item.subjectId}/concepts/${item.conceptId}`}>
+                      <span className="pg-attention-dot" style={{ background: item.severity >= 3 ? 'var(--error)' : 'var(--warning)' }} aria-hidden />
+                      <span className="pg-attention-name">
+                        {item.conceptLabel}
+                        {subjectNameById.get(item.subjectId) && <span className="pg-attention-subject">{subjectNameById.get(item.subjectId)}</span>}
+                      </span>
+                      <span className="pg-attention-cta">{t['xp.openConcept']}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Section>
       </div>
     </div>
   );

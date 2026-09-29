@@ -261,12 +261,34 @@ describe('entitlement gating: starting a simulation attempt requires LEARNING_FU
   });
 
   it('attempts POST returns 409 SIMULATION_NOT_ELIGIBLE when the eligibility check fails, never starting an attempt', async () => {
+    dbQueryMock.mockResolvedValue({ rows: [{ owned: 1 }] }); // the exam profile belongs to this learner
     getSimulationEligibilityMock.mockResolvedValue({ simulationType: 'FULL_MOCK', eligible: false, reasons: ['MANDATORY_DOMAIN_INCOMPLETE: Reading'] });
     const res: any = await attemptsPOST(
       jsonReq({ studentId: VALID_ID, examProfileId: VALID_ID, examVersionId: VALID_ID, simulationType: 'FULL_MOCK', timingMode: 'OFFICIAL_SIMULATION_TIMED', language: 'en' })
     );
     expect(res.status).toBe(409);
     expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('UX-2 security: starting a simulation requires owning the exam profile', () => {
+  const body = { studentId: VALID_ID, examProfileId: '22222222-2222-4222-8222-222222222222', examVersionId: VALID_ID, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'en' };
+  it('another learner\'s exam profile -> 404, and neither eligibility nor the attempt is touched', async () => {
+    dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId ? { rows: [] } : { rows: [] },
+    );
+    const res: any = await attemptsPOST(jsonReq(body));
+    expect(res.status).toBe(404);
+    expect(getSimulationEligibilityMock).not.toHaveBeenCalled();
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+  it('the learner\'s own profile proceeds exactly as before', async () => {
+    dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID ? { rows: [{ owned: 1 }] } : { rows: [] },
+    );
+    const res: any = await attemptsPOST(jsonReq(body));
+    expect(res.status).toBe(200);
+    expect(startSimulationAttemptMock).toHaveBeenCalledWith(expect.objectContaining({ examProfileId: body.examProfileId, studentId: VALID_ID }));
   });
 });
 

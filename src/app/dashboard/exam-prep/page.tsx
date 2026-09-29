@@ -7,9 +7,9 @@ import { getMessages } from '@/lib/i18n/messages';
 import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
 import { getExamDefinition, listAvailableExamOptions } from '@/lib/assessment/exam-definition.service';
 import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { PageIntro } from '@/components/ui/PageIntro';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
+import { calendarDaysUntil } from '@/lib/experience/goal';
 import { CreateExamProfileForm } from './CreateExamProfileForm';
 
 /**
@@ -38,50 +38,72 @@ export default async function ExamPrepPage() {
     })
   );
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <PageHeader title={t['examPrep.title']} subtitle={t['examPrep.subtitle']} />
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dateLine = (examDate: string | null) => {
+    if (!examDate) return t['examPrep.noExamDateSet'];
+    const days = calendarDaysUntil(examDate, todayIso);
+    const date = new Date(`${examDate}T12:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+    if (days < 0) return date;
+    return `${date} · ${days === 0 ? t['xp.goalToday'] : days === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(days))}`;
+  };
 
-      <CreateExamProfileForm
-        studentId={studentId}
-        exams={availableExams}
-        labels={{
-          title: t['examPrep.create.title'],
-          exam: t['examPrep.create.exam'],
-          date: t['examPrep.create.date'],
-          purpose: t['examPrep.create.purpose'],
-          programme: t['examPrep.create.programme'],
-          subject: t['examPrep.create.subject'],
-          optional: t['examPrep.create.optional'],
-          submit: t['examPrep.create.submit'],
-          submitting: t['examPrep.create.submitting'],
-          unavailable: t['examPrep.create.unavailable'],
-          error: t['examPrep.create.error'],
-        }}
-      />
+  const form = (
+    <CreateExamProfileForm
+      studentId={studentId}
+      exams={availableExams}
+      labels={{
+        title: t['examPrep.create.title'],
+        lead: t['ex.setupLead'],
+        exam: t['examPrep.create.exam'],
+        date: t['examPrep.create.date'],
+        purpose: t['examPrep.create.purpose'],
+        programme: t['examPrep.create.programme'],
+        subject: t['examPrep.create.subject'],
+        optional: t['examPrep.create.optional'],
+        submit: t['examPrep.create.submit'],
+        submitting: t['examPrep.create.submitting'],
+        unavailable: t['examPrep.create.unavailable'],
+        error: t['examPrep.create.error'],
+      }}
+    />
+  );
+
+  return (
+    <div className="xp-page xp-page--wide">
+      <PageIntro title={t['examPrep.title']} lead={t['examPrep.subtitle']} />
 
       {rows.length === 0 ? (
-        <EmptyState title={t['examPrep.empty']} body={t['examPrep.emptyBody']} />
+        // No exam yet: setting one up IS the primary action here.
+        form
       ) : (
-        <ul className="list-card card">
-          {rows.map(({ profile, definitionName, snapshot }) => (
-            <li key={profile.id} className="list-row">
-              <Link href={`/dashboard/exam-prep/${profile.id}`} className="row-main" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="row-title">{definitionName}</div>
-                <div className="row-sub">
-                  {profile.examDate ? profile.examDate : t['examPrep.noExamDateSet']}
+        <>
+          <ul className="ex-list">
+            {rows.map(({ profile, definitionName, snapshot }) => (
+              <li key={profile.id} className="card ex-card">
+                <div>
+                  <p className="ex-goal-kicker">{t['ex.goalKicker']}</p>
+                  <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
+                  <p className="ex-card-meta">{dateLine(profile.examDate)}</p>
+                  <div className="ex-card-state">
+                    {!profile.examVersionId ? (
+                      <StatusBadge label={t['examPrep.noExamVersion']} tone="neutral" />
+                    ) : snapshot && snapshot.overallStatus !== 'INSUFFICIENT_EVIDENCE' ? (
+                      <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`]} tone={toneForReadinessStatus(snapshot.overallStatus)} />
+                    ) : (
+                      <span>{t['ex.formingTitle']}</span>
+                    )}
+                  </div>
                 </div>
-              </Link>
-              {!profile.examVersionId ? (
-                <StatusBadge label={t['examPrep.noExamVersion']} tone="neutral" />
-              ) : snapshot ? (
-                <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`] ?? snapshot.overallStatus} tone={toneForReadinessStatus(snapshot.overallStatus)} />
-              ) : (
-                <StatusBadge label={t['examPrep.noSnapshotYet']} tone="neutral" />
-              )}
-            </li>
-          ))}
-        </ul>
+                <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{t['ex.viewPrep']}</Link>
+              </li>
+            ))}
+          </ul>
+          {/* With an exam already set up, configuration is secondary. */}
+          <details className="ui-disclosure">
+            <summary>{t['ex.addAnother']}</summary>
+            <div className="ui-disclosure-body">{form}</div>
+          </details>
+        </>
       )}
     </div>
   );

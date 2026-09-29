@@ -787,7 +787,53 @@ export type MessageKey =
   | 'landing.finalLine2'
   | 'landing.finalLine3'
   | 'landing.finalCta'
-  | 'landing.illustration';
+  | 'landing.illustration'
+  | 'pg.lead'
+  | 'pg.capabilitiesLead'
+  | 'pg.conceptsToggle'
+  | 'pg.validated'
+  | 'pg.noSubjectsLead'
+  | 'ex.goalKicker'
+  | 'ex.readinessTitle'
+  | 'ex.readinessLead'
+  | 'ex.formingTitle'
+  | 'ex.formingBody'
+  | 'ex.nextTitle'
+  | 'ex.nextBody'
+  | 'ex.continueToday'
+  | 'ex.practiceTitle'
+  | 'ex.practiceLead'
+  | 'ex.typeLegend'
+  | 'ex.timingLegend'
+  | 'ex.type.MINI_MOCK'
+  | 'ex.typeBody.MINI_MOCK'
+  | 'ex.type.FULL_MOCK'
+  | 'ex.typeBody.FULL_MOCK'
+  | 'ex.type.TOPIC_EXAM'
+  | 'ex.typeBody.TOPIC_EXAM'
+  | 'ex.type.DOMAIN_EXAM'
+  | 'ex.typeBody.DOMAIN_EXAM'
+  | 'ex.timing.UNTIMED'
+  | 'ex.timingBody.UNTIMED'
+  | 'ex.timing.TRAINING_TIMED'
+  | 'ex.timingBody.TRAINING_TIMED'
+  | 'ex.timing.OFFICIAL_SIMULATION_TIMED'
+  | 'ex.timingBody.OFFICIAL_SIMULATION_TIMED'
+  | 'ex.advanced'
+  | 'ex.targetIdHint'
+  | 'ex.start'
+  | 'ex.starting'
+  | 'ex.reason.unavailable'
+  | 'ex.reason.domainIncomplete'
+  | 'ex.reason.needsTarget'
+  | 'ex.reason.notFound'
+  | 'ex.addAnother'
+  | 'ex.setupLead'
+  | 'ex.viewPrep'
+  | 'ex.moreDetail'
+  | 'myPath.pillConsolidated'
+  | 'myPath.pillRetentionDue'
+  | 'myPath.pillTransferPending';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2188,6 +2234,52 @@ const es: Messages = {
   'landing.finalLine3': 'Demuestra lo que sabes.',
   'landing.finalCta': 'Empieza tu reto',
   'landing.illustration': 'Ilustración',
+  'pg.lead': 'Lo que ya lograste, cómo aprendes y qué necesita atención.',
+  'pg.capabilitiesLead': 'Cómo va tu aprendizaje en cada dimensión, según tu evidencia.',
+  'pg.conceptsToggle': '{count} conceptos',
+  'pg.validated': '{validated} de {total} validados',
+  'pg.noSubjectsLead': 'Crea tu primera materia para empezar a ver tu progreso aquí.',
+  'ex.goalKicker': 'Tu examen',
+  'ex.readinessTitle': 'Tu preparación',
+  'ex.readinessLead': 'Según la evidencia registrada hasta ahora.',
+  'ex.formingTitle': 'Tu preparación todavía está tomando forma.',
+  'ex.formingBody': 'Todavía no hay suficiente evidencia para saber cómo vas. Sigue con tus retos y, cuando esté disponible, haz una práctica de examen: cada respuesta suma evidencia.',
+  'ex.nextTitle': 'Siguiente paso',
+  'ex.nextBody': 'Cada concepto que demuestras en tus retos diarios cuenta para tu examen.',
+  'ex.continueToday': 'Ir a tu siguiente reto',
+  'ex.practiceTitle': 'Practica para tu examen',
+  'ex.practiceLead': 'Elige el tipo de práctica y cómo quieres el tiempo.',
+  'ex.typeLegend': 'Tipo de práctica',
+  'ex.timingLegend': 'Tiempo',
+  'ex.type.MINI_MOCK': 'Mini simulacro',
+  'ex.typeBody.MINI_MOCK': 'Una muestra corta del examen.',
+  'ex.type.FULL_MOCK': 'Simulacro completo',
+  'ex.typeBody.FULL_MOCK': 'El examen entero, como el día real.',
+  'ex.type.TOPIC_EXAM': 'Por objetivo',
+  'ex.typeBody.TOPIC_EXAM': 'Un objetivo concreto del temario.',
+  'ex.type.DOMAIN_EXAM': 'Por área',
+  'ex.typeBody.DOMAIN_EXAM': 'Un área completa del temario.',
+  'ex.timing.UNTIMED': 'Sin límite de tiempo',
+  'ex.timingBody.UNTIMED': 'A tu ritmo.',
+  'ex.timing.TRAINING_TIMED': 'Con tiempo de entrenamiento',
+  'ex.timingBody.TRAINING_TIMED': 'Con reloj, para ganar ritmo.',
+  'ex.timing.OFFICIAL_SIMULATION_TIMED': 'Tiempo oficial',
+  'ex.timingBody.OFFICIAL_SIMULATION_TIMED': 'El tiempo real del examen.',
+  'ex.advanced': 'Practicar un objetivo o un área',
+  'ex.targetIdHint': 'Tu profesor o coordinador puede darte este código.',
+  'ex.start': 'Comenzar práctica',
+  'ex.starting': 'Preparando…',
+  'ex.reason.unavailable': 'Esta práctica todavía no está disponible para tu examen.',
+  'ex.reason.domainIncomplete': 'Antes necesitas evidencia en todas las áreas obligatorias del examen.',
+  'ex.reason.needsTarget': 'Indica el objetivo o el área que quieres practicar.',
+  'ex.reason.notFound': 'No encontramos ese objetivo o área en este examen.',
+  'ex.addAnother': 'Añadir otro examen',
+  'ex.setupLead': 'Elige el examen que quieres preparar. Lo demás es opcional y puedes completarlo cuando quieras.',
+  'ex.viewPrep': 'Ver preparación',
+  'ex.moreDetail': 'Detalle por dimensión',
+  'myPath.pillConsolidated': 'Dominados:',
+  'myPath.pillRetentionDue': 'Por repasar:',
+  'myPath.pillTransferPending': 'Listos para aplicar:',
 };
 
 const en: Messages = {
@@ -3587,6 +3679,52 @@ const en: Messages = {
   'landing.finalLine3': 'Prove what you know.',
   'landing.finalCta': 'Start your challenge',
   'landing.illustration': 'Illustration',
+  'pg.lead': 'What you\'ve achieved, how you learn and what needs attention.',
+  'pg.capabilitiesLead': 'How your learning is going in each dimension, based on your evidence.',
+  'pg.conceptsToggle': '{count} concepts',
+  'pg.validated': '{validated} of {total} validated',
+  'pg.noSubjectsLead': 'Create your first subject to start seeing your progress here.',
+  'ex.goalKicker': 'Your exam',
+  'ex.readinessTitle': 'Your preparation',
+  'ex.readinessLead': 'Based on the evidence recorded so far.',
+  'ex.formingTitle': 'Your preparation is still taking shape.',
+  'ex.formingBody': 'There isn\'t enough evidence yet to know how you\'re doing. Keep going with your challenges and, when it\'s available, take an exam practice: every answer adds evidence.',
+  'ex.nextTitle': 'Next step',
+  'ex.nextBody': 'Every concept you prove in your daily challenges counts toward your exam.',
+  'ex.continueToday': 'Go to your next challenge',
+  'ex.practiceTitle': 'Practise for your exam',
+  'ex.practiceLead': 'Choose the type of practice and how you want the timing.',
+  'ex.typeLegend': 'Type of practice',
+  'ex.timingLegend': 'Timing',
+  'ex.type.MINI_MOCK': 'Mini mock exam',
+  'ex.typeBody.MINI_MOCK': 'A short sample of the exam.',
+  'ex.type.FULL_MOCK': 'Full mock exam',
+  'ex.typeBody.FULL_MOCK': 'The whole exam, like the real day.',
+  'ex.type.TOPIC_EXAM': 'By objective',
+  'ex.typeBody.TOPIC_EXAM': 'One specific objective of the syllabus.',
+  'ex.type.DOMAIN_EXAM': 'By area',
+  'ex.typeBody.DOMAIN_EXAM': 'A whole area of the syllabus.',
+  'ex.timing.UNTIMED': 'No time limit',
+  'ex.timingBody.UNTIMED': 'At your own pace.',
+  'ex.timing.TRAINING_TIMED': 'Training timer',
+  'ex.timingBody.TRAINING_TIMED': 'With a clock, to build pace.',
+  'ex.timing.OFFICIAL_SIMULATION_TIMED': 'Official timing',
+  'ex.timingBody.OFFICIAL_SIMULATION_TIMED': 'The exam\'s real time limit.',
+  'ex.advanced': 'Practise one objective or area',
+  'ex.targetIdHint': 'Your teacher or coordinator can give you this code.',
+  'ex.start': 'Start practice',
+  'ex.starting': 'Preparing…',
+  'ex.reason.unavailable': 'This practice isn\'t available for your exam yet.',
+  'ex.reason.domainIncomplete': 'First you need evidence in every mandatory area of the exam.',
+  'ex.reason.needsTarget': 'Enter the objective or area you want to practise.',
+  'ex.reason.notFound': 'We couldn\'t find that objective or area in this exam.',
+  'ex.addAnother': 'Add another exam',
+  'ex.setupLead': 'Choose the exam you want to prepare for. Everything else is optional.',
+  'ex.viewPrep': 'View preparation',
+  'ex.moreDetail': 'Detail by dimension',
+  'myPath.pillConsolidated': 'Mastered:',
+  'myPath.pillRetentionDue': 'To refresh:',
+  'myPath.pillTransferPending': 'Ready to apply:',
 };
 
 const de: Messages = {
@@ -4986,6 +5124,52 @@ const de: Messages = {
   'landing.finalLine3': 'Zeig, was du kannst.',
   'landing.finalCta': 'Starte deine Herausforderung',
   'landing.illustration': 'Illustration',
+  'pg.lead': 'Was du erreicht hast, wie du lernst und was Aufmerksamkeit braucht.',
+  'pg.capabilitiesLead': 'Wie dein Lernen in jeder Dimension läuft, laut deiner Evidenz.',
+  'pg.conceptsToggle': '{count} Konzepte',
+  'pg.validated': '{validated} von {total} bestätigt',
+  'pg.noSubjectsLead': 'Lege dein erstes Fach an, um hier deinen Fortschritt zu sehen.',
+  'ex.goalKicker': 'Deine Prüfung',
+  'ex.readinessTitle': 'Deine Vorbereitung',
+  'ex.readinessLead': 'Laut der bisher erfassten Evidenz.',
+  'ex.formingTitle': 'Deine Vorbereitung nimmt noch Gestalt an.',
+  'ex.formingBody': 'Es gibt noch nicht genug Evidenz, um zu wissen, wie du stehst. Mach mit deinen Herausforderungen weiter und, sobald verfügbar, mit einer Prüfungsübung: Jede Antwort zählt.',
+  'ex.nextTitle': 'Nächster Schritt',
+  'ex.nextBody': 'Jedes Konzept, das du in deinen täglichen Herausforderungen zeigst, zählt für deine Prüfung.',
+  'ex.continueToday': 'Zur nächsten Herausforderung',
+  'ex.practiceTitle': 'Übe für deine Prüfung',
+  'ex.practiceLead': 'Wähle die Art der Übung und wie du die Zeit willst.',
+  'ex.typeLegend': 'Art der Übung',
+  'ex.timingLegend': 'Zeit',
+  'ex.type.MINI_MOCK': 'Mini-Probeprüfung',
+  'ex.typeBody.MINI_MOCK': 'Ein kurzer Ausschnitt der Prüfung.',
+  'ex.type.FULL_MOCK': 'Komplette Probeprüfung',
+  'ex.typeBody.FULL_MOCK': 'Die ganze Prüfung, wie am echten Tag.',
+  'ex.type.TOPIC_EXAM': 'Nach Lernziel',
+  'ex.typeBody.TOPIC_EXAM': 'Ein bestimmtes Lernziel des Lehrplans.',
+  'ex.type.DOMAIN_EXAM': 'Nach Bereich',
+  'ex.typeBody.DOMAIN_EXAM': 'Ein ganzer Bereich des Lehrplans.',
+  'ex.timing.UNTIMED': 'Ohne Zeitlimit',
+  'ex.timingBody.UNTIMED': 'In deinem Tempo.',
+  'ex.timing.TRAINING_TIMED': 'Mit Trainingszeit',
+  'ex.timingBody.TRAINING_TIMED': 'Mit Uhr, um Tempo aufzubauen.',
+  'ex.timing.OFFICIAL_SIMULATION_TIMED': 'Offizielle Zeit',
+  'ex.timingBody.OFFICIAL_SIMULATION_TIMED': 'Das echte Zeitlimit der Prüfung.',
+  'ex.advanced': 'Ein Lernziel oder einen Bereich üben',
+  'ex.targetIdHint': 'Deine Lehrkraft oder Koordination kann dir diesen Code geben.',
+  'ex.start': 'Übung starten',
+  'ex.starting': 'Wird vorbereitet…',
+  'ex.reason.unavailable': 'Diese Übung ist für deine Prüfung noch nicht verfügbar.',
+  'ex.reason.domainIncomplete': 'Zuerst brauchst du Evidenz in allen Pflichtbereichen der Prüfung.',
+  'ex.reason.needsTarget': 'Gib das Lernziel oder den Bereich an, den du üben willst.',
+  'ex.reason.notFound': 'Dieses Lernziel oder diesen Bereich gibt es in dieser Prüfung nicht.',
+  'ex.addAnother': 'Weitere Prüfung hinzufügen',
+  'ex.setupLead': 'Wähle die Prüfung, auf die du dich vorbereiten willst. Alles andere ist optional.',
+  'ex.viewPrep': 'Vorbereitung ansehen',
+  'ex.moreDetail': 'Details nach Dimension',
+  'myPath.pillConsolidated': 'Gemeistert:',
+  'myPath.pillRetentionDue': 'Aufzufrischen:',
+  'myPath.pillTransferPending': 'Bereit zur Anwendung:',
 };
 
 const fr: Messages = {
@@ -6385,6 +6569,52 @@ const fr: Messages = {
   'landing.finalLine3': 'Démontre ce que tu sais.',
   'landing.finalCta': 'Commence ton défi',
   'landing.illustration': 'Illustration',
+  'pg.lead': 'Ce que tu as accompli, comment tu apprends et ce qui demande de l\'attention.',
+  'pg.capabilitiesLead': 'Où en est ton apprentissage dans chaque dimension, selon tes preuves.',
+  'pg.conceptsToggle': '{count} notions',
+  'pg.validated': '{validated} sur {total} validées',
+  'pg.noSubjectsLead': 'Crée ta première matière pour voir ta progression ici.',
+  'ex.goalKicker': 'Ton examen',
+  'ex.readinessTitle': 'Ta préparation',
+  'ex.readinessLead': 'Selon les preuves enregistrées jusqu\'ici.',
+  'ex.formingTitle': 'Ta préparation est encore en train de prendre forme.',
+  'ex.formingBody': 'Il n\'y a pas encore assez de preuves pour savoir où tu en es. Continue tes défis et, quand c\'est possible, fais un entraînement d\'examen : chaque réponse compte.',
+  'ex.nextTitle': 'Prochaine étape',
+  'ex.nextBody': 'Chaque notion que tu démontres dans tes défis quotidiens compte pour ton examen.',
+  'ex.continueToday': 'Aller à ton prochain défi',
+  'ex.practiceTitle': 'Entraîne-toi pour ton examen',
+  'ex.practiceLead': 'Choisis le type d\'entraînement et la gestion du temps.',
+  'ex.typeLegend': 'Type d\'entraînement',
+  'ex.timingLegend': 'Temps',
+  'ex.type.MINI_MOCK': 'Mini examen blanc',
+  'ex.typeBody.MINI_MOCK': 'Un court échantillon de l\'examen.',
+  'ex.type.FULL_MOCK': 'Examen blanc complet',
+  'ex.typeBody.FULL_MOCK': 'L\'examen entier, comme le jour J.',
+  'ex.type.TOPIC_EXAM': 'Par objectif',
+  'ex.typeBody.TOPIC_EXAM': 'Un objectif précis du programme.',
+  'ex.type.DOMAIN_EXAM': 'Par domaine',
+  'ex.typeBody.DOMAIN_EXAM': 'Un domaine entier du programme.',
+  'ex.timing.UNTIMED': 'Sans limite de temps',
+  'ex.timingBody.UNTIMED': 'À ton rythme.',
+  'ex.timing.TRAINING_TIMED': 'Avec chrono d\'entraînement',
+  'ex.timingBody.TRAINING_TIMED': 'Avec un chrono, pour prendre le rythme.',
+  'ex.timing.OFFICIAL_SIMULATION_TIMED': 'Temps officiel',
+  'ex.timingBody.OFFICIAL_SIMULATION_TIMED': 'Le temps réel de l\'examen.',
+  'ex.advanced': 'S\'entraîner sur un objectif ou un domaine',
+  'ex.targetIdHint': 'Ton professeur ou coordinateur peut te donner ce code.',
+  'ex.start': 'Commencer l\'entraînement',
+  'ex.starting': 'Préparation…',
+  'ex.reason.unavailable': 'Cet entraînement n\'est pas encore disponible pour ton examen.',
+  'ex.reason.domainIncomplete': 'Il te faut d\'abord des preuves dans tous les domaines obligatoires de l\'examen.',
+  'ex.reason.needsTarget': 'Indique l\'objectif ou le domaine à travailler.',
+  'ex.reason.notFound': 'Cet objectif ou ce domaine n\'existe pas dans cet examen.',
+  'ex.addAnother': 'Ajouter un autre examen',
+  'ex.setupLead': 'Choisis l\'examen que tu veux préparer. Le reste est facultatif.',
+  'ex.viewPrep': 'Voir la préparation',
+  'ex.moreDetail': 'Détail par dimension',
+  'myPath.pillConsolidated': 'Maîtrisés :',
+  'myPath.pillRetentionDue': 'À raviver :',
+  'myPath.pillTransferPending': 'Prêts à appliquer :',
 };
 
 const pt: Messages = {
@@ -7784,6 +8014,52 @@ const pt: Messages = {
   'landing.finalLine3': 'Demonstre o que você sabe.',
   'landing.finalCta': 'Comece seu desafio',
   'landing.illustration': 'Ilustração',
+  'pg.lead': 'O que você já conquistou, como aprende e o que precisa de atenção.',
+  'pg.capabilitiesLead': 'Como vai seu aprendizado em cada dimensão, segundo sua evidência.',
+  'pg.conceptsToggle': '{count} conceitos',
+  'pg.validated': '{validated} de {total} validados',
+  'pg.noSubjectsLead': 'Crie sua primeira matéria para ver seu progresso aqui.',
+  'ex.goalKicker': 'Sua prova',
+  'ex.readinessTitle': 'Sua preparação',
+  'ex.readinessLead': 'Segundo a evidência registrada até agora.',
+  'ex.formingTitle': 'Sua preparação ainda está tomando forma.',
+  'ex.formingBody': 'Ainda não há evidência suficiente para saber como você está. Continue com seus desafios e, quando estiver disponível, faça uma prática de prova: cada resposta soma evidência.',
+  'ex.nextTitle': 'Próximo passo',
+  'ex.nextBody': 'Cada conceito que você demonstra nos desafios diários conta para sua prova.',
+  'ex.continueToday': 'Ir para o próximo desafio',
+  'ex.practiceTitle': 'Pratique para sua prova',
+  'ex.practiceLead': 'Escolha o tipo de prática e como quer o tempo.',
+  'ex.typeLegend': 'Tipo de prática',
+  'ex.timingLegend': 'Tempo',
+  'ex.type.MINI_MOCK': 'Mini simulado',
+  'ex.typeBody.MINI_MOCK': 'Uma amostra curta da prova.',
+  'ex.type.FULL_MOCK': 'Simulado completo',
+  'ex.typeBody.FULL_MOCK': 'A prova inteira, como no dia real.',
+  'ex.type.TOPIC_EXAM': 'Por objetivo',
+  'ex.typeBody.TOPIC_EXAM': 'Um objetivo específico do programa.',
+  'ex.type.DOMAIN_EXAM': 'Por área',
+  'ex.typeBody.DOMAIN_EXAM': 'Uma área completa do programa.',
+  'ex.timing.UNTIMED': 'Sem limite de tempo',
+  'ex.timingBody.UNTIMED': 'No seu ritmo.',
+  'ex.timing.TRAINING_TIMED': 'Com tempo de treino',
+  'ex.timingBody.TRAINING_TIMED': 'Com relógio, para ganhar ritmo.',
+  'ex.timing.OFFICIAL_SIMULATION_TIMED': 'Tempo oficial',
+  'ex.timingBody.OFFICIAL_SIMULATION_TIMED': 'O tempo real da prova.',
+  'ex.advanced': 'Praticar um objetivo ou área',
+  'ex.targetIdHint': 'Seu professor ou coordenador pode fornecer este código.',
+  'ex.start': 'Começar prática',
+  'ex.starting': 'Preparando…',
+  'ex.reason.unavailable': 'Esta prática ainda não está disponível para sua prova.',
+  'ex.reason.domainIncomplete': 'Antes você precisa de evidência em todas as áreas obrigatórias da prova.',
+  'ex.reason.needsTarget': 'Informe o objetivo ou a área que quer praticar.',
+  'ex.reason.notFound': 'Não encontramos esse objetivo ou área nesta prova.',
+  'ex.addAnother': 'Adicionar outra prova',
+  'ex.setupLead': 'Escolha a prova que quer preparar. O resto é opcional.',
+  'ex.viewPrep': 'Ver preparação',
+  'ex.moreDetail': 'Detalhe por dimensão',
+  'myPath.pillConsolidated': 'Dominados:',
+  'myPath.pillRetentionDue': 'Para rever:',
+  'myPath.pillTransferPending': 'Prontos para aplicar:',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };
