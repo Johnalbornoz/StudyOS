@@ -192,7 +192,7 @@ async function benchAiUsage(studentId: string, since: Date) {
             array_remove(array_agg(DISTINCT model), NULL) AS models
        FROM ai_execution_events WHERE student_id = $1 AND created_at >= $2`, [studentId, since]);
   const jobErrors = await db.query(
-    `SELECT count(*) FILTER (WHERE last_error ILIKE '%rate%')::int AS rate_limited_jobs, count(*) FILTER (WHERE status = 'FAILED')::int AS failed_jobs
+    `SELECT count(*) FILTER (WHERE last_error ILIKE '%RATE_LIMIT%')::int AS rate_limited_jobs, count(*) FILTER (WHERE status = 'FAILED')::int AS failed_jobs
        FROM generation_jobs WHERE payload->>'studentId' = $1 AND created_at >= $2`, [studentId, since]);
   const row = r.rows[0];
   return { calls: row.calls, failures: row.failures, rateLimitedCalls: row.rate_limited, providerMs: Number(row.provider_ms), models: row.models ?? [], ...jobErrors.rows[0] };
@@ -482,19 +482,24 @@ function tableRow(scenario: string, samples: LaunchSample[], duplicates: number)
 
 // ================================================================ scenarios
 async function doubleClicks(ctx: { conceptId: string; type: DeliveryActivityType; syntheticTransfer?: boolean }, pairs: number, studentId: string) {
-  let mismatches = 0; let maxActive = 0; const details: unknown[] = []; const samples: LaunchSample[] = [];
+  let mismatches = 0; let pairsWithoutSession = 0; let maxActive = 0; const details: unknown[] = []; const samples: LaunchSample[] = [];
   for (let k = 0; k < pairs; k++) {
     const [a, b] = await Promise.all([launch(ctx), launch(ctx)]);
     samples.push(a, b);
-    if (!a.quizId || a.quizId !== b.quizId) {
+    const detail = { type: ctx.type, a: { source: a.source, quizId: a.quizId, error: a.error ?? null }, b: { source: b.source, quizId: b.quizId, error: b.error ?? null } };
+    if (!a.quizId && !b.quizId) {
+      // neither click opened a session (e.g. both EMERGENCY_REQUIRED): no duplicate -- counted apart
+      pairsWithoutSession++;
+      details.push({ ...detail, classification: 'NO_SESSION' });
+    } else if (a.quizId !== b.quizId) {
       mismatches++;
-      details.push({ type: ctx.type, a: { source: a.source, quizId: a.quizId, error: a.error ?? null }, b: { source: b.source, quizId: b.quizId, error: b.error ?? null } });
+      details.push({ ...detail, classification: 'DIFFERENT_SESSIONS' });
     }
     maxActive = Math.max(maxActive, await activeDuplicates(studentId));
     await abandon(a.quizId);
     if (b.quizId !== a.quizId) await abandon(b.quizId);
   }
-  return { mismatches, maxActive, details, samples };
+  return { mismatches, pairsWithoutSession, maxActive, details, samples };
 }
 
 /** STEADY (realistic cadence, hard gates) and STRESS (fixed fast cadence, capacity report). */
