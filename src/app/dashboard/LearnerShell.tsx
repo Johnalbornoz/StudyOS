@@ -460,7 +460,7 @@ export default function LearnerShell({
   const notifications = allItems.find((i) => i.key === 'notifications');
 
   return (
-    <div className={`lx-shell${hasTabs ? ' lx-shell--tabs' : ''}`}>
+    <div className={`lx-shell${hasTabs ? ' lx-shell--tabs' : ''}`} lang={locale}>
       {/* desktop sidebar */}
       <aside className="lx-sidebar">
         {logo}

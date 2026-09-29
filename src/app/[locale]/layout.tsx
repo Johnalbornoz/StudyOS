@@ -20,9 +20,9 @@ export default async function MarketingLayout({
   const t = getMessages(locale as Locale);
 
   return (
-    <div className="lp-shell">
+    <div className="lp-shell" lang={locale}>
       <header className="mkt-header">
-        <Link href={`/${locale}`} style={{ display: 'flex', alignItems: 'center' }}>
+        <Link href={`/${locale}`} className="mkt-logo" aria-label="StudyUS">
           <Image src="/logo.png" alt="StudyUS" width={112} height={37} priority style={{ height: 32, width: 'auto' }} />
         </Link>
         <nav className="mkt-nav">
