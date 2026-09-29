@@ -238,7 +238,9 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
 
   it('(15) PRACTICE chrome (the question-answering card: calculator note, Prove banner, per-type instructions, Next/Submit) reads `at`', () => {
     expect(QUIZ).toMatch(/at\['quiz\.calculatorAllowed'\]/);
-    expect(QUIZ).toMatch(/at\['activeLearning\.proveTitle'\]/);
+    // UX-3: the Prove banner is now the session header's kind + purpose
+    // (Demuéstralo / ¿Todavía lo recuerdas? / Aplícalo) -- still `at`.
+    expect(QUIZ).toMatch(/kindLabel=\{at\[kindLabelKey\(activityKind\)\]\}/);
     expect(QUIZ).toMatch(/at\['quiz\.selectAllThatApply'\]/);
     expect(QUIZ).toMatch(/at\['quiz\.matchInstructions'\]/);
     expect(QUIZ).toMatch(/at\['quiz\.orderInstructions'\]/);
@@ -247,9 +249,11 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
   });
 
   it('(16) PROVE banner ("activeLearning.proveTitle/Body/helpUnavailable") reads `at`', () => {
-    expect(QUIZ).toMatch(/at\['activeLearning\.proveTitle'\]/);
-    expect(QUIZ).toMatch(/at\['activeLearning\.proveBody'\]/);
-    expect(QUIZ).toMatch(/at\['activeLearning\.helpUnavailable'\]/);
+    // UX-3: title/body are the kind label + purpose line (all five locales
+    // carry xs.kind.* / xs.purpose.*), read from `at`, never `t`.
+    expect(QUIZ).toMatch(/purpose=\{at\[kindPurposeKey\(activityKind\)\]\}/);
+    // UX-3: the "why no help" reason is the independent support line, fed `at`.
+    expect(QUIZ).toMatch(/<LearningSupportStatus[\s\S]{0,260}t=\{at\}/);
   });
 
   it('(10) hints / contextual help follow activity language (already correct pre-existing wiring, unchanged)', () => {
@@ -278,7 +282,8 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
   });
 
   it('the Results score/mastery/verification screen reads `at` throughout (not just the reviewing sub-view)', () => {
-    expect(QUIZ).toMatch(/at\['quiz\.results'\]/);
+    // UX-3: the Results heading is the server-derived outcome, from `at`.
+    expect(QUIZ).toMatch(/const outcomeTitle = outcome === 'RECORDED' \? at\[kindDoneKey\(activityKind\)\] : at\[outcomeKey\(outcome\)\];/);
     expect(QUIZ).toMatch(/at\['quiz\.score'\]/);
     // LX-9R5 PART K: quiz.masteryLabel ("Dominio del concepto") is no
     // longer rendered on this screen at all (the raw mastery leak this

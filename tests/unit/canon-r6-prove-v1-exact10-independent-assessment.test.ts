@@ -460,7 +460,8 @@ describe('31/32/33 -- RESULTS: canonical re-fetch and the new Results UI wiring'
   });
 
   it('33. the legacy messageText line is untouched -- still rendered for every attempt, v1 or not, unconditionally', () => {
-    expect(QUIZ_PAGE_SRC).toMatch(/<p style=\{\{ marginTop: 'var\(--space-4\)', color: 'var\(--text-secondary\)', fontSize: 14 \}\}>\{messageText\}<\/p>/);
+    // UX-3: same line, same `!isV1Result` guard -- restyled as outcome body copy.
+    expect(QUIZ_PAGE_SRC).toMatch(/\{!isV1Result && \(\s*<p className="ls-outcome-body">\{messageText\}<\/p>\s*\)\}/);
   });
 });
 

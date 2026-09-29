@@ -234,7 +234,8 @@ describe('LX-4R R9 -- active-learning a11y', () => {
     expect(QUIZ).toMatch(/resultsHeadingRef\.current\?\.focus\(\)/);
   });
   it('the question is a heading; the response-requirement line is text, not colour', () => {
-    expect(QUIZ).toMatch(/<h2 style=\{\{ fontSize: 20[\s\S]*?<MathText text=\{q\.question\}/);
+    expect(QUIZ).toMatch(/<h2 id="ls-question" className="ls-question">[\s\S]*?<MathText text=\{q\.question\}/);
+    expect(QUIZ).toMatch(/<p className="al-response-req ls-ask">\s*<strong>\{at\['responseContract\.label'\]\}:<\/strong>/);
   });
   it('teach-first + help disclosures are keyboard operable', () => {
     expect(INTRO).toMatch(/onClick=\{advance\}/);
@@ -242,7 +243,11 @@ describe('LX-4R R9 -- active-learning a11y', () => {
     expect(HELP_UI).toMatch(/aria-controls=\{panelId\}/);
   });
   it('Prove states WHY help is unavailable, not just omits it', () => {
-    expect(QUIZ).toMatch(/activeLearning\.helpUnavailable/);
+    // UX-3: stated once, by the independent support line (its SOLO/ASSESSMENT
+    // notes read "sin pistas ni ayuda…"), rendered for every non-practice mode.
+    expect(QUIZ).toMatch(/assistanceMode=\{supported \? 'SUPPORTED' : 'INDEPENDENT'\}/);
+    expect(QUIZ).toMatch(/context=\{isVerify \? 'SOLO' : QUIZ_SUPPORT_CONTEXT\[quizMode\]\}/);
+    expect(MESSAGES.es['support.independentNote']).toMatch(/sin pistas/i);
   });
 });
 

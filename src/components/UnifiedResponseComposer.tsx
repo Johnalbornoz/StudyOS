@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import MathExpressionEditor from './MathExpressionEditor';
+import { Sigma } from 'lucide-react';
 import VoiceInputButton from '@/app/dashboard/VoiceInputButton';
 import MathVoiceInput from '@/app/dashboard/MathVoiceInput';
 import {
@@ -116,7 +117,8 @@ const paragraphStyle: React.CSSProperties = {
   background: 'transparent',
   color: 'var(--text-primary)',
   fontFamily: 'inherit',
-  fontSize: 14,
+  // UX-3: 16px -- below that, iOS zooms the page on focus mid-activity.
+  fontSize: 16,
   lineHeight: 1.5,
   padding: 0,
 };
@@ -243,7 +245,7 @@ export default function UnifiedResponseComposer({
     <div>
       <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-secondary)' }}>{t[instructionKey]}</p>
 
-      <div style={surfaceStyle}>
+      <div className="ls-composer" style={surfaceStyle}>
         {blocks.map((block, i) =>
           block.type === 'paragraph' ? (
             <textarea
@@ -277,7 +279,7 @@ export default function UnifiedResponseComposer({
         )}
       </div>
 
-      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="ls-composer-tools">
         <div>
           {voiceEnabled &&
             (activeIsMath ? (
@@ -318,13 +320,9 @@ export default function UnifiedResponseComposer({
             onClick={handleMathKeyboardClick}
             aria-label={t['response.mathKeyboardLabel']}
             title={t['response.mathKeyboardLabel']}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 30, padding: '0 10px',
-              borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', background: 'var(--bg-subtle)',
-              color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13,
-            }}
+            className="ls-tool"
           >
-            <span aria-hidden style={{ marginRight: 6 }}>⌨</span>
+            <Sigma size={16} strokeWidth={2} aria-hidden />
             {t['response.mathKeyboardLabel']}
           </button>
         )}

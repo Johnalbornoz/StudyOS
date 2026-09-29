@@ -104,7 +104,10 @@ describe('LX-5D activity completion checkpoint replaces the back-to-subject dead
   it('the bare "back to subject" primary link is gone from the results actions', () => {
     // the score/review remain, but the dominant action is Continue
     const resultsBlock = QUIZ.slice(QUIZ.indexOf('LX-4R R8: surfaced authority mismatch'), QUIZ.indexOf('LX-4R R1/R2/R3'));
-    expect(resultsBlock).toMatch(/<ContinuationPanel/);
+    // UX-3: the panel is built once (inline inside the canonical next-step
+    // card, or standalone) and the results block always renders one of them.
+    expect(resultsBlock).toMatch(/\{!canonicalNextShown && continuation\(false\)\}/);
+    expect(QUIZ).toMatch(/const continuation = \(inline: boolean\) =>[\s\S]*?<ContinuationPanel/);
     expect(resultsBlock).not.toMatch(/Link href=\{`\/dashboard\/subjects\/\$\{subjectId\}`\} className="btn btn-primary"/);
   });
   it('Prove insufficiency is shown as a note, not a local "complete" decision', () => {

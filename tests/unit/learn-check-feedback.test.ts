@@ -139,7 +139,8 @@ describe('quiz UI contract', () => {
   it('LEARN_CHECK asks to check before advancing; the answer is locked once checked (first attempt is recorded)', () => {
     expect(quiz).toMatch(/const perQuestionFeedback = quizMode === 'canonical_learn_check';/);
     expect(quiz).toMatch(/perQuestionFeedback && !answerLocked \? \(\s*<button\s+onClick=\{checkAnswer\}/);
-    expect(quiz).toMatch(/<fieldset disabled=\{answerLocked \|\| answerCheck\?\.status === 'checking'\}/);
+    // UX-3: the same lock (plus: inputs also freeze while a submission is in flight).
+    expect(quiz).toMatch(/<fieldset className="ls-answer" disabled=\{answerLocked \|\| answerCheck\?\.status === 'checking' \|\| submitting\}/);
   });
 
   it('feedback is visible and announced; help is offered on a wrong answer; a failed check never blocks', () => {

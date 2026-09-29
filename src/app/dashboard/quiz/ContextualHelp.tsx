@@ -100,7 +100,7 @@ export default function ContextualHelp({
     <div className="al-help">
       <button
         type="button"
-        className="btn btn-ghost al-help-trigger"
+        className="btn btn-secondary al-help-trigger"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => dispatch({ type: 'TOGGLE' })}

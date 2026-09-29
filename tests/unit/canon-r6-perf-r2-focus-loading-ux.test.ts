@@ -119,7 +119,8 @@ describe('scoping -- canonical_prove ONLY, every other canonical mode unaffected
     const idx = QUIZ_PAGE_SRC.indexOf("if (phase === 'setup' && isCanonicalFlow) {");
     const slice = QUIZ_PAGE_SRC.slice(idx, idx + 700);
     expect(slice).toMatch(/: t\['quiz\.generating'\];/);
-    expect(slice).toMatch(/return <div className="card empty-state">\{canonicalLoadingTitle\}<\/div>;/);
+    // UX-3: the same canonical title, now inside the shared preparing view.
+    expect(slice).toMatch(/return preparingView\(canonicalLoadingTitle\);/);
     expect(slice).toMatch(/quiz\.retainPreparingTitle/);
     expect(slice).toMatch(/quiz\.transferPreparingTitle/);
     expect(slice).toMatch(/quiz\.learnCheckPreparingTitle/);

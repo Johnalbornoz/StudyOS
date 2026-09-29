@@ -6,6 +6,10 @@ import Link from 'next/link';
 import LearningSupportStatus from '../../LearningSupportStatus';
 import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
 import { getMessages, Locale } from '@/lib/i18n/messages';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { SessionHeader } from '@/components/learning/SessionHeader';
+import { classifySubmitFailure, submitFailureKey, type SubmitFailure } from '@/lib/experience/learning-session';
 
 type TransferDistance = 'NEAR' | 'MID' | 'FAR';
 
@@ -32,10 +36,15 @@ export default function TransferPage() {
   // stable identity the evidence idempotency key is built from.
   const activityIdRef = useRef<string | null>(null);
 
+  // UX-3: failures are visible and recoverable. A failed submit keeps the
+  // learner's text and re-sends with the SAME activityId (the server's
+  // evidence idempotency key), so a retry can never double-count.
+  const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const t = getMessages(locale);
 
   useEffect(() => {
-    async function init() {
+    async function load() {
       const [meRes, langRes] = await Promise.all([fetch('/api/me'), fetch('/api/language')]);
       const me = await meRes.json();
       const lang = await langRes.json();
@@ -63,16 +72,19 @@ export default function TransferPage() {
       // Phase 1D: the prompt just became visible/answerable.
       presentedAtRef.current = new Date().toISOString();
     }
-    init();
+    load().catch(() => setPhase('error'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAttempt]);
 
   async function submit() {
     if (!studentId || !response.trim()) return;
     // Phase 1D: captured before setPhase('submitting')/the fetch.
     const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
-    const res = await fetch('/api/cognitive/transfer/submit', {
+    setSubmitFailure(null);
+    let res: Response;
+    try {
+    res = await fetch('/api/cognitive/transfer/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -90,21 +102,52 @@ export default function TransferPage() {
         activityId: activityIdRef.current,
       }),
     });
-    const body = await res.json();
-    if (!res.ok) {
-      setPhase('error');
+    } catch {
+      setSubmitFailure(classifySubmitFailure({ thrown: true }));
+      setPhase('answering');
+      return;
+    }
+    const body = await res.json().catch(() => null);
+    if (!res.ok || !body?.data) {
+      setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
+      setPhase('answering');
       return;
     }
     setResult({ result: body.data.result, feedback: body.data.feedback });
     setPhase('done');
   }
 
-  if (phase === 'loading' || phase === 'error') {
+  const lsKind = remediationStepId ? 'reinforce' : 'transfer';
+  if (phase === 'loading') {
     return (
-      <div style={{ maxWidth: 560 }}>
-        <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>
-          {phase === 'loading' ? t['cognitive.generating'] : t['common.error']}
-        </p>
+      <div className="ls" data-kind={lsKind}>
+        <div className="card ls-preparing" role="status" aria-live="polite">
+          <span className="ls-kicker">{t['cognitive.transferTitle']}</span>
+          <p className="ls-preparing-text">{t['xs.preparing']}</p>
+          <Skeleton height={24} width="85%" />
+          <Skeleton height={120} radius="var(--radius-md)" />
+        </div>
+      </div>
+    );
+  }
+  if (phase === 'error') {
+    return (
+      <div className="ls" data-kind={lsKind}>
+        <InlineAlert
+          tone="error"
+          title={t['practice.prepareFailedTitle']}
+          body={t['practice.prepareFailedBody']}
+          actions={
+            <>
+              <button type="button" className="btn btn-primary" onClick={() => { setPhase('loading'); setLoadAttempt((n) => n + 1); }}>
+                {t['practice.prepareRetry']}
+              </button>
+              <Link href={subjectId && conceptId ? `/dashboard/subjects/${subjectId}/concepts/${conceptId}` : '/dashboard/today'} className="btn btn-secondary">
+                {t['continuation.backToConcept']}
+              </Link>
+            </>
+          }
+        />
       </div>
     );
   }
@@ -125,24 +168,21 @@ export default function TransferPage() {
   const showTransferAttemptNote = !!result && result.result !== 'correct';
 
   return (
-    <div style={{ maxWidth: 560 }}>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
-        <Link href={`/dashboard/subjects/${subjectId}`} style={{ color: 'var(--text-muted)' }}>{conceptLabel}</Link>
-      </div>
-      <h1 style={{ marginBottom: 4 }}>{t['cognitive.transferTitle']}</h1>
-      {context && (
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 'var(--space-6)' }}>
-          {t['cognitive.transferContextLabel']}: {context}
-        </p>
-      )}
+    <div className="ls" data-kind={lsKind}>
+      <SessionHeader
+        kind={lsKind}
+        kindLabel={t['cognitive.transferTitle']}
+        title={conceptLabel || t['cognitive.transferTitle']}
+        purpose={context ? `${t['cognitive.transferContextLabel']}: ${context}` : null}
+      />
 
       {/* Phase 6 Closeout A: Transfer is always an independent attempt
           (Evidence Mode INDEPENDENT) -- no hints, no AI help. Fixed by
           the activity's identity, not derived from any learner state. */}
       <LearningSupportStatus assistanceMode="INDEPENDENT" context="SOLO" t={t} />
 
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <p id="transfer-prompt" style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>{prompt}</p>
+      <section className="card ls-task" aria-labelledby="transfer-prompt">
+        <h2 id="transfer-prompt" className="ls-question">{prompt}</h2>
         {phase !== 'done' ? (
           <>
             <label htmlFor="transfer-response" className="sr-only">{t['cognitive.transferTitle']}</label>
@@ -152,20 +192,22 @@ export default function TransferPage() {
               value={response}
               onChange={(e) => setResponse(e.target.value)}
               rows={6}
-              style={{
-                width: '100%', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
-                background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14, resize: 'vertical',
-              }}
+              className="ui-input ls-textarea"
             />
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ marginTop: 'var(--space-4)' }}
-              disabled={!response.trim() || phase === 'submitting'}
-              onClick={submit}
-            >
-              {phase === 'submitting' ? t['cognitive.generating'] : t['cognitive.submitAnswer']}
-            </button>
+            {submitFailure && (
+              <InlineAlert tone="error" title={t['xs.submitFailedTitle']} body={t[submitFailureKey(submitFailure)]} />
+            )}
+            <div className="ls-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                disabled={!response.trim() || phase === 'submitting'}
+                aria-busy={phase === 'submitting'}
+                onClick={submit}
+              >
+                {phase === 'submitting' ? t['quiz.submitting'] : submitFailure ? t['xs.retrySubmit'] : t['cognitive.submitAnswer']}
+              </button>
+            </div>
           </>
         ) : (
           result && (
@@ -202,7 +244,7 @@ export default function TransferPage() {
             </div>
           )
         )}
-      </div>
+      </section>
     </div>
   );
 }

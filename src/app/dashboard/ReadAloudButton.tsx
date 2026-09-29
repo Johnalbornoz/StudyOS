@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Square, Volume2 } from 'lucide-react';
 import type { Locale } from '@/lib/i18n/messages';
 import { activityLanguageToBCP47 } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
@@ -95,18 +96,17 @@ export default function ReadAloudButton({ text, activityLanguage, label, stopLab
   if (!supported) return null;
 
   return (
+    // UX-3: one audio control geometry (44px target, line icon, pressed
+    // state while speaking) shared with the microphone.
     <button
       type="button"
+      className="ls-audio ls-audio--speak"
       onClick={speaking ? stop : speak}
       aria-label={speaking ? stopLabel : label}
+      aria-pressed={speaking}
       title={speaking ? stopLabel : label}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30,
-        borderRadius: 'var(--radius-full)', border: '1px solid var(--border-default)',
-        background: speaking ? 'var(--brand-subtle)' : 'var(--bg-subtle)', cursor: 'pointer', flexShrink: 0,
-      }}
     >
-      <span aria-hidden style={{ fontSize: 13 }}>{speaking ? '⏹' : '🔊'}</span>
+      {speaking ? <Square size={14} strokeWidth={2.5} fill="currentColor" aria-hidden /> : <Volume2 size={20} strokeWidth={2} aria-hidden />}
     </button>
   );
 }

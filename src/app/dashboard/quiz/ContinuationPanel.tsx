@@ -46,6 +46,13 @@ export default function ContinuationPanel({
   note,
   /** 'inline' = plain block (Learn end); 'card' = bordered card (results / remediation). */
   variant = 'card',
+  /**
+   * UX-3: false when the surrounding surface already states the next step
+   * (the canonical next-step card on Results). The headline stays in the
+   * DOM -- visually hidden -- so the landmark keeps its accessible name;
+   * waiting / failure messages always show.
+   */
+  showHeadline = true,
 }: {
   studentId: string;
   subjectId: string;
@@ -54,6 +61,7 @@ export default function ContinuationPanel({
   from: LearningActivityKind;
   note?: string;
   variant?: 'inline' | 'card';
+  showHeadline?: boolean;
 }) {
   const t = getMessages(locale);
   const router = useRouter();
@@ -75,8 +83,11 @@ export default function ContinuationPanel({
   const stuckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // R9 / LX-5O: move focus to the checkpoint headline when it appears.
+  // UX-3: only when the headline is the visible statement -- inside the
+  // Results next-step card the page's own outcome heading owns focus.
   useEffect(() => {
-    headingRef.current?.focus();
+    if (showHeadline) headingRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -185,18 +196,20 @@ export default function ContinuationPanel({
         id="lx-cp-heading"
         ref={headingRef}
         tabIndex={-1}
-        className="label"
+        className={showHeadline || waitingResult ? 'label' : 'label sr-only'}
         style={{ color: 'var(--brand-ink)', margin: 0 }}
       >
         {waitingResult ? t['continuation.waitingHeadline'] : t[cp.headlineKey as keyof typeof t]}
       </p>
-      <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-        {waitingResult
-          ? waitingResult.nextEligibleAt
-            ? t['continuation.waitingBodyWithDate'].replace('{date}', new Date(waitingResult.nextEligibleAt).toLocaleDateString(locale))
-            : t['continuation.waitingBody']
-          : t[cp.bodyKey as keyof typeof t]}
-      </p>
+      {(showHeadline || waitingResult) && (
+        <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {waitingResult
+            ? waitingResult.nextEligibleAt
+              ? t['continuation.waitingBodyWithDate'].replace('{date}', new Date(waitingResult.nextEligibleAt).toLocaleDateString(locale))
+              : t['continuation.waitingBody']
+            : t[cp.bodyKey as keyof typeof t]}
+        </p>
+      )}
       {note && !waitingResult && (
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{note}</p>
       )}

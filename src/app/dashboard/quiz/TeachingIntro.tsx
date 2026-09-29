@@ -23,6 +23,9 @@ import MathText from '@/components/MathText';
 import type { TeachingExperienceView, TeachingExperienceMode } from '@/lib/lx/teaching-experience';
 import InteractiveFormulaWidget from '@/app/dashboard/subjects/[id]/InteractiveFormulaWidget';
 import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { activityKindForMode, kindLabelKey, teachingSkipTarget, teachingStepKey } from '@/lib/experience/learning-session';
 
 interface Explanation {
   summary: string;
@@ -104,6 +107,9 @@ export default function TeachingIntro({
   const needsGuided = plan.includes('GUIDE');
 
   const [idx, setIdx] = useState(0);
+  // UX-3: steps the learner actually saw -- a skipped reading step is never shown as done.
+  const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
+  useEffect(() => { setVisited((v) => (v.has(idx) ? v : new Set(v).add(idx))); }, [idx]);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [guided, setGuided] = useState<Guided | null>(null);
   // LX-4P-PERF-R1 R6: MODEL/EXPLAIN and GUIDE prepare INDEPENDENTLY.
@@ -208,7 +214,14 @@ export default function TeachingIntro({
           setGuideState('error');
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // UX-3: a cleanup that drops this request's result must also release
+      // its key -- otherwise a re-run with the same key (React StrictMode's
+      // mount/unmount/mount, or any remount) skips the request and GUIDE
+      // waits forever on a response nobody will apply.
+      if (guideKeyRef.current === key) guideKeyRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conceptId, quizMode, locale, guideAttempt]);
 
@@ -261,7 +274,14 @@ export default function TeachingIntro({
   // GUIDE loads" branch: the learner simply reaches the GUIDE stage in
   // sequence and sees its own state there.
   if (expLoading) {
-    return <div className="card empty-state">{t['teachingIntro.loading']}</div>;
+    return (
+      <div className="card ls-preparing" role="status" aria-live="polite">
+        <p className="ls-preparing-text">{t['teachingIntro.loading']}</p>
+        <Skeleton height={24} width="70%" />
+        <Skeleton height={16} />
+        <Skeleton height={16} width="90%" />
+      </div>
+    );
   }
   if (effectivePlan.length === 0) return null;
 
@@ -273,65 +293,84 @@ export default function TeachingIntro({
     else setIdx((i) => i + 1);
   }
 
+  // UX-3 (guided-step bypass fix): the shortcut on EXPLAIN / MODEL may
+  // only skip what the canonical plan lets it skip -- it lands on a GUIDE
+  // still ahead in the plan and ends the teaching phase only when none
+  // remains (teachingSkipTarget). It used to call onDone() directly,
+  // silently dropping a required GUIDE.
+  const skip = teachingSkipTarget(effectivePlan, idx);
+  function skipAhead() {
+    if (skip.kind === 'STAGE') setIdx(skip.index);
+    else onDone();
+  }
+
+  // The steps the learner walks through, then the activity itself.
+  const activityLabel = t[kindLabelKey(activityKindForMode(quizMode))];
+
   return (
-    <div className="al-teach">
-      <div className="al-teach-progress" aria-hidden>
+    <div className="ls">
+      <ol className="ls-steps" aria-label={t['xs.teachSteps']}>
         {effectivePlan.map((s, i) => (
-          <span key={s} className={`al-teach-dot${i === idx ? ' active' : ''}${i < idx ? ' done' : ''}`} />
+          <li key={s} className={i === idx ? 'current' : i < idx && visited.has(i) ? 'done' : undefined} aria-current={i === idx ? 'step' : undefined}>
+            <span className="ls-steps-bar" aria-hidden />
+            <span className="ls-steps-label">{t[teachingStepKey(s)]}</span>
+          </li>
         ))}
-      </div>
+        <li>
+          <span className="ls-steps-bar" aria-hidden />
+          <span className="ls-steps-label">{activityLabel}</span>
+        </li>
+      </ol>
 
-      <section className="card al-teach-card" aria-live="polite">
-        <p className="label" style={{ color: 'var(--brand-ink)' }}>
-          {t[`teachingExperience.mode.${stage}` as keyof typeof t]}
-        </p>
-
+      <section className="card ls-teach-card" aria-live="polite" aria-labelledby="ls-teach-title">
         {stage === 'EXPLAIN' && explanation && (
-          <div>
-            <h2 style={{ fontSize: 18, margin: '4px 0 var(--space-3)' }}>{t['teachingIntro.explainTitle']}</h2>
-            <p style={{ fontSize: 16, lineHeight: 1.6, fontWeight: 550 }}>
-              <MathText text={explanation.summary} />
-            </p>
-            {explanation.sections.slice(0, 3).map((sec, i) => (
-              <div key={i} style={{ marginTop: 'var(--space-4)' }}>
-                <h3 style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--brand-ink)', margin: '0 0 4px' }}>{sec.heading}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0 }}>
-                  <MathText text={sec.body} />
-                </p>
-              </div>
-            ))}
-          </div>
+          <>
+            <h2 id="ls-teach-title" className="ls-teach-title">{t['teachingIntro.explainTitle']}</h2>
+            <div className="ls-keyidea">
+              <span className="ls-keyidea-label">{t['xs.keyIdea']}</span>
+              <p className="ls-keyidea-text"><MathText text={explanation.summary} /></p>
+            </div>
+            <div className="ls-sections">
+              {explanation.sections.slice(0, 3).map((sec, i) => (
+                <div key={i} className="ls-section">
+                  <h3>{sec.heading}</h3>
+                  <p><MathText text={sec.body} /></p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {stage === 'MODEL' && explanation && (
-          <div>
-            <h2 style={{ fontSize: 18, margin: '4px 0 var(--space-3)' }}>{t['teachingIntro.modelTitle']}</h2>
-            <ol className="al-worked">
+          <>
+            <h2 id="ls-teach-title" className="ls-teach-title">{t['teachingIntro.modelTitle']}</h2>
+            <ol className="ls-worked">
               {explanation.examples.slice(0, exampleStep).map((ex, i) => (
                 <li key={i}>
-                  <span className="label" style={{ color: 'var(--text-muted)' }}>
-                    {t['workedExample.step'].replace('{n}', String(i + 1))}
-                  </span>
-                  <div style={{ fontSize: 15, lineHeight: 1.6 }}>
+                  <span className="ls-worked-num" aria-hidden>{i + 1}</span>
+                  <div className="ls-worked-body">
+                    <span className="sr-only">{t['workedExample.step'].replace('{n}', String(i + 1))}: </span>
                     <MathText text={ex} />
                   </div>
                 </li>
               ))}
             </ol>
             {exampleStep < Math.min(4, explanation.examples.length) && (
-              <button type="button" className="btn btn-secondary" onClick={() => setExampleStep((s) => s + 1)}>
-                {t['workedExample.revealNext']}
-              </button>
+              <div className="ls-teach-actions">
+                <button type="button" className="btn btn-secondary" onClick={() => setExampleStep((s) => s + 1)}>
+                  {t['workedExample.revealNext']}
+                </button>
+              </div>
             )}
             {/* LX-4P-PERF-R1D R4: optional enrichment -- inserted only when
                 it has arrived. MODEL is fully usable without it; no
                 spinner, no error state. */}
             {interactiveFormula && (
-              <div style={{ marginTop: 'var(--space-4)' }}>
+              <div>
                 <InteractiveFormulaWidget locale={locale} data={interactiveFormula} />
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* LX-4P-PERF-R1E-R1 R2/R5: GUIDE's three sub-states. A required
@@ -341,41 +380,46 @@ export default function TeachingIntro({
             the learner actually work through (and thereby genuinely
             complete) the guided sequence. There is no skip action here. */}
         {stage === 'GUIDE' && guideState === 'loading' && (
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)' }}>{t['guided.preparing']}</p>
+          <div role="status" aria-live="polite" className="ls-preparing" style={{ padding: 0 }}>
+            <p id="ls-teach-title" className="ls-preparing-text">{t['guided.preparing']}</p>
+            <Skeleton height={48} radius="var(--radius-md)" />
+            <Skeleton height={96} radius="var(--radius-md)" />
+          </div>
         )}
         {stage === 'GUIDE' && guideState === 'ready' && guided && (
           <GuidedPractice guided={guided} locale={locale} onComplete={advance} />
         )}
         {stage === 'GUIDE' && guideState === 'error' && (
-          <div>
-            <h2 style={{ fontSize: 18, margin: '4px 0 var(--space-2)' }}>{t['guided.failedTitle']}</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 var(--space-4)' }}>
-              {t['guided.failedBody']}
-            </p>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-primary" onClick={retryGuide}>
-                {t['guided.retry']}
+          <InlineAlert
+            tone="error"
+            title={t['guided.failedTitle']}
+            body={t['guided.failedBody']}
+            actions={
+              <>
+                <button type="button" className="btn btn-primary" onClick={retryGuide}>
+                  {t['guided.retry']}
+                </button>
+                <a href={exitHref} className="btn btn-ghost">
+                  {t['guided.exit']}
+                </a>
+              </>
+            }
+          />
+        )}
+
+        {stage !== 'GUIDE' && (
+          <div className="ls-teach-actions">
+            <button type="button" className="btn btn-primary btn-lg" onClick={advance}>
+              {isLast ? t['teachingIntro.startPractice'] : t['teachingIntro.continue']}
+            </button>
+            {!isLast && (
+              <button type="button" className="btn btn-ghost" onClick={skipAhead}>
+                {skip.kind === 'STAGE' ? t['xs.skipToGuide'] : t['teachingIntro.skip']}
               </button>
-              <a href={exitHref} className="btn btn-ghost">
-                {t['guided.exit']}
-              </a>
-            </div>
+            )}
           </div>
         )}
       </section>
-
-      {stage !== 'GUIDE' && (
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-primary" onClick={advance}>
-            {isLast ? t['teachingIntro.startPractice'] : t['teachingIntro.continue']}
-          </button>
-          {!isLast && (
-            <button type="button" className="btn btn-ghost" onClick={onDone}>
-              {t['teachingIntro.skip']}
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -399,69 +443,78 @@ function GuidedPractice({
   const isLastStep = stepIdx >= guided.steps.length - 1;
 
   return (
-    <div>
-      <h2 style={{ fontSize: 18, margin: '4px 0 var(--space-2)' }}>{t['guided.title']}</h2>
-      <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 var(--space-2)' }}>
+    <>
+      <h2 id="ls-teach-title" className="ls-teach-title">{t['guided.title']}</h2>
+      <div className="ls-guide-problem">
         <MathText text={guided.problem} />
-      </p>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 var(--space-4)' }}>{t['guided.notEvidence']}</p>
+      </div>
+      <p className="ls-note">{t['guided.notEvidence']}</p>
 
-      <div className="al-guided-step" aria-live="polite">
-        <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 var(--space-2)' }}>
+      <div className="ls-guide-step" aria-live="polite">
+        <span className="ls-guide-count">{t['xs.guideStepOf'].replace('{n}', String(stepIdx + 1)).replace('{total}', String(guided.steps.length))}</span>
+        <p className="ls-guide-prompt">
           <MathText text={step.prompt} />
         </p>
         {!revealed ? (
           <>
-            <label className="sr-only" htmlFor="al-guided-entry">
-              {t['guided.yourStep']}
+            <label className="ui-field" htmlFor="al-guided-entry">
+              <span className="ui-label">{t['guided.yourStep']}</span>
+              <input
+                id="al-guided-entry"
+                className="ui-input"
+                value={entry}
+                onChange={(e) => setEntry(e.target.value)}
+                placeholder={t['xs.guideYourAnswer']}
+                autoComplete="off"
+              />
             </label>
-            <input
-              id="al-guided-entry"
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder={t['guided.yourStep']}
-              style={{
-                width: '100%', height: 44, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
-                padding: '0 12px', fontSize: 15, fontFamily: 'inherit',
-              }}
-            />
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ marginTop: 'var(--space-3)' }}
-              onClick={() => setRevealed(true)}
-            >
-              {t['guided.check']}
-            </button>
+            <div className="ls-teach-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setRevealed(true)}
+              >
+                {t['guided.check']}
+              </button>
+            </div>
           </>
         ) : (
-          <div style={{ marginTop: 'var(--space-2)' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 14 }}>
-              <span className="label" style={{ color: 'var(--text-muted)' }}>{t['guided.expected']}:</span>{' '}
-              <MathText text={step.expectedAnswer} />
-            </p>
-            <p style={{ margin: '0 0 var(--space-3)', fontSize: 13.5, color: 'var(--text-secondary)' }}>
-              <span className="label" style={{ color: 'var(--text-muted)' }}>{t['workedExample.why']}:</span>{' '}
-              <MathText text={step.why} />
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => {
-                if (isLastStep) {
-                  onComplete();
-                } else {
-                  setStepIdx((i) => i + 1);
-                  setEntry('');
-                  setRevealed(false);
-                }
-              }}
-            >
-              {isLastStep ? t['teachingIntro.startPractice'] : t['guided.nextStep']}
-            </button>
-          </div>
+          <>
+            {entry.trim() && (
+              <p className="ls-note">
+                {t['xs.guideYourAnswer']}: <MathText text={entry} />
+              </p>
+            )}
+            <div className="ls-guide-shown">
+              <p>
+                <strong>{t['xs.guideShown']}:</strong>{' '}
+                <MathText text={step.expectedAnswer} />
+              </p>
+              <p>
+                <strong>{t['workedExample.why']}:</strong>{' '}
+                <MathText text={step.why} />
+              </p>
+            </div>
+            <div className="ls-teach-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                onClick={() => {
+                  if (isLastStep) {
+                    onComplete();
+                  } else {
+                    setStepIdx((i) => i + 1);
+                    setEntry('');
+                    setRevealed(false);
+                  }
+                }}
+              >
+                {isLastStep ? t['teachingIntro.startPractice'] : t['guided.nextStep']}
+              </button>
+            </div>
+          </>
         )}
       </div>
-    </div>
+    </>
   );
 }

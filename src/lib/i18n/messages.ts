@@ -833,7 +833,71 @@ export type MessageKey =
   | 'ex.moreDetail'
   | 'myPath.pillConsolidated'
   | 'myPath.pillRetentionDue'
-  | 'myPath.pillTransferPending';
+  | 'myPath.pillTransferPending'
+  | 'xs.kind.check'
+  | 'xs.kind.train'
+  | 'xs.kind.reinforce'
+  | 'xs.kind.prove'
+  | 'xs.kind.retain'
+  | 'xs.kind.transfer'
+  | 'xs.kind.diagnose'
+  | 'xs.kind.assess'
+  | 'xs.purpose.check'
+  | 'xs.purpose.train'
+  | 'xs.purpose.reinforce'
+  | 'xs.purpose.prove'
+  | 'xs.purpose.retain'
+  | 'xs.purpose.transfer'
+  | 'xs.purpose.diagnose'
+  | 'xs.purpose.assess'
+  | 'xs.done.check'
+  | 'xs.done.train'
+  | 'xs.done.reinforce'
+  | 'xs.done.prove'
+  | 'xs.done.retain'
+  | 'xs.done.transfer'
+  | 'xs.done.diagnose'
+  | 'xs.done.assess'
+  | 'xs.teach.EXPLAIN'
+  | 'xs.teach.MODEL'
+  | 'xs.teach.GUIDE'
+  | 'xs.teach.PRACTICE'
+  | 'xs.teachSteps'
+  | 'xs.outcome.MASTERED'
+  | 'xs.outcome.SATISFIED'
+  | 'xs.outcome.NOT_YET'
+  | 'xs.outcome.RECORDED'
+  | 'xs.outcomeBody.NOT_YET'
+  | 'xs.satisfied.check'
+  | 'xs.satisfied.train'
+  | 'xs.resultFact'
+  | 'xs.nextTitle'
+  | 'xs.review'
+  | 'xs.progress'
+  | 'xs.progressLabel'
+  | 'xs.preparing'
+  | 'xs.submitFailedTitle'
+  | 'xs.submitFailed.NETWORK'
+  | 'xs.submitFailed.SERVER'
+  | 'xs.submitFailed.EXPIRED'
+  | 'xs.retrySubmit'
+  | 'xs.alreadySubmittedTitle'
+  | 'xs.alreadySubmittedBody'
+  | 'xs.resumed'
+  | 'xs.checkRetry'
+  | 'xs.moveUp'
+  | 'xs.moveDown'
+  | 'xs.skipToGuide'
+  | 'xs.keyIdea'
+  | 'xs.guideShown'
+  | 'xs.guideStepOf'
+  | 'xs.guideYourAnswer'
+  | 'xs.tutor.conversations'
+  | 'xs.tutor.showConversations'
+  | 'xs.tutor.messages'
+  | 'xs.tutor.sendFailed'
+  | 'xs.tutor.loadFailed'
+  | 'xs.checking';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2280,6 +2344,70 @@ const es: Messages = {
   'myPath.pillConsolidated': 'Dominados:',
   'myPath.pillRetentionDue': 'Por repasar:',
   'myPath.pillTransferPending': 'Listos para aplicar:',
+  'xs.kind.check': 'Compruébalo',
+  'xs.kind.train': 'Entrénalo',
+  'xs.kind.reinforce': 'Vamos a trabajarlo',
+  'xs.kind.prove': 'Demuéstralo',
+  'xs.kind.retain': '¿Todavía lo recuerdas?',
+  'xs.kind.transfer': 'Aplícalo',
+  'xs.kind.diagnose': 'Comprobación rápida',
+  'xs.kind.assess': 'Evaluación',
+  'xs.purpose.check': 'Comprueba que la idea quedó clara. Tienes ayuda y cada respuesta se revisa al momento.',
+  'xs.purpose.train': 'Entrenamiento con ayuda disponible. Equivocarte aquí es parte de aprender.',
+  'xs.purpose.reinforce': 'Un refuerzo para tu recorrido, con ayuda disponible.',
+  'xs.purpose.prove': '¿Crees que ya lo sabes? Demuéstralo por tu cuenta, sin ayuda. Esto cuenta como evidencia.',
+  'xs.purpose.retain': 'Ha pasado un tiempo. Comprobamos, sin ayuda, si la idea sigue contigo.',
+  'xs.purpose.transfer': 'Usa lo que sabes en situaciones nuevas, por tu cuenta.',
+  'xs.purpose.diagnose': 'Unas pocas preguntas para ver dónde estás.',
+  'xs.purpose.assess': 'Responde por tu cuenta. Los resultados se muestran al final.',
+  'xs.done.check': 'Comprobación completada',
+  'xs.done.train': 'Entrenamiento completado',
+  'xs.done.reinforce': 'Refuerzo completado',
+  'xs.done.prove': 'Intento registrado',
+  'xs.done.retain': 'Repaso completado',
+  'xs.done.transfer': 'Retos completados',
+  'xs.done.diagnose': 'Comprobación completada',
+  'xs.done.assess': 'Evaluación completada',
+  'xs.teach.EXPLAIN': 'Entiéndelo',
+  'xs.teach.MODEL': 'Míralo paso a paso',
+  'xs.teach.GUIDE': 'Ahora tú',
+  'xs.teach.PRACTICE': 'Entrénalo',
+  'xs.teachSteps': 'Pasos de esta actividad',
+  'xs.outcome.MASTERED': 'Dominado',
+  'xs.outcome.SATISFIED': 'Lo tienes',
+  'xs.outcome.NOT_YET': 'Todavía no',
+  'xs.outcome.RECORDED': 'Hecho',
+  'xs.outcomeBody.NOT_YET': 'Vamos a trabajarlo. Tu siguiente paso ya está preparado.',
+  'xs.satisfied.check': 'La idea quedó clara.',
+  'xs.satisfied.train': 'Tu entrenamiento cumple lo que este paso necesita.',
+  'xs.resultFact': '{correct} de {total} correctas',
+  'xs.nextTitle': 'Siguiente reto',
+  'xs.review': 'Revisar respuestas',
+  'xs.progress': '{n} de {total}',
+  'xs.progressLabel': 'Progreso de la actividad',
+  'xs.preparing': 'Preparando tu actividad…',
+  'xs.submitFailedTitle': 'No se enviaron tus respuestas',
+  'xs.submitFailed.NETWORK': 'Parece que no hay conexión. Tus respuestas siguen aquí y no se ha evaluado nada.',
+  'xs.submitFailed.SERVER': 'Hubo un problema de nuestro lado. Tus respuestas siguen aquí y no se ha evaluado nada.',
+  'xs.submitFailed.EXPIRED': 'Esta actividad ya no está disponible, así que no pudimos registrar estas respuestas. Vuelve al concepto para seguir.',
+  'xs.retrySubmit': 'Reintentar envío',
+  'xs.alreadySubmittedTitle': 'Tus respuestas ya estaban registradas',
+  'xs.alreadySubmittedBody': 'Las recibimos la primera vez y no se ha cambiado nada. Sigue con tu siguiente paso.',
+  'xs.resumed': 'Retomamos donde lo dejaste. Tus respuestas sin enviar se han conservado.',
+  'xs.checkRetry': 'Volver a comprobar',
+  'xs.moveUp': 'Subir',
+  'xs.moveDown': 'Bajar',
+  'xs.skipToGuide': 'Ir al ejercicio guiado',
+  'xs.keyIdea': 'La idea clave',
+  'xs.guideShown': 'Así se hace',
+  'xs.guideStepOf': 'Paso {n} de {total}',
+  'xs.guideYourAnswer': 'Tu respuesta',
+  'xs.tutor.conversations': 'Conversaciones',
+  'xs.tutor.showConversations': 'Ver conversaciones',
+  'xs.tutor.messages': 'Mensajes',
+  'xs.tutor.sendFailed': 'No se pudo enviar tu mensaje. Lo dejamos en el cuadro para que lo reintentes.',
+  'xs.tutor.loadFailed': 'No se pudieron cargar las conversaciones.',
+  'xs.checking': 'Comprobando…',
 };
 
 const en: Messages = {
@@ -3725,6 +3853,70 @@ const en: Messages = {
   'myPath.pillConsolidated': 'Mastered:',
   'myPath.pillRetentionDue': 'To refresh:',
   'myPath.pillTransferPending': 'Ready to apply:',
+  'xs.kind.check': 'Check it',
+  'xs.kind.train': 'Train it',
+  'xs.kind.reinforce': 'Let\'s work on it',
+  'xs.kind.prove': 'Prove it',
+  'xs.kind.retain': 'Do you still remember it?',
+  'xs.kind.transfer': 'Apply it',
+  'xs.kind.diagnose': 'Quick check',
+  'xs.kind.assess': 'Assessment',
+  'xs.purpose.check': 'Make sure the idea is clear. Help is available and each answer is checked right away.',
+  'xs.purpose.train': 'Training with help available. Mistakes here are part of learning.',
+  'xs.purpose.reinforce': 'Reinforcement for your path, with help available.',
+  'xs.purpose.prove': 'Think you\'ve got it? Show it on your own, without help. This counts as evidence.',
+  'xs.purpose.retain': 'Some time has passed. We\'re checking, without help, whether the idea is still with you.',
+  'xs.purpose.transfer': 'Use what you know in new situations, on your own.',
+  'xs.purpose.diagnose': 'A few questions to see where you are.',
+  'xs.purpose.assess': 'Answer on your own. Results appear at the end.',
+  'xs.done.check': 'Check complete',
+  'xs.done.train': 'Training complete',
+  'xs.done.reinforce': 'Reinforcement complete',
+  'xs.done.prove': 'Attempt recorded',
+  'xs.done.retain': 'Memory check complete',
+  'xs.done.transfer': 'Challenges complete',
+  'xs.done.diagnose': 'Check complete',
+  'xs.done.assess': 'Assessment complete',
+  'xs.teach.EXPLAIN': 'Understand it',
+  'xs.teach.MODEL': 'See it step by step',
+  'xs.teach.GUIDE': 'Your turn',
+  'xs.teach.PRACTICE': 'Train it',
+  'xs.teachSteps': 'Steps in this activity',
+  'xs.outcome.MASTERED': 'Mastered',
+  'xs.outcome.SATISFIED': 'You\'ve got it',
+  'xs.outcome.NOT_YET': 'Not yet',
+  'xs.outcome.RECORDED': 'Done',
+  'xs.outcomeBody.NOT_YET': 'Let\'s work on it. Your next step is ready.',
+  'xs.satisfied.check': 'The idea is clear.',
+  'xs.satisfied.train': 'Your training meets what this step needs.',
+  'xs.resultFact': '{correct} of {total} correct',
+  'xs.nextTitle': 'Next challenge',
+  'xs.review': 'Review answers',
+  'xs.progress': '{n} of {total}',
+  'xs.progressLabel': 'Activity progress',
+  'xs.preparing': 'Preparing your activity…',
+  'xs.submitFailedTitle': 'Your answers weren\'t sent',
+  'xs.submitFailed.NETWORK': 'It looks like you\'re offline. Your answers are still here and nothing has been graded.',
+  'xs.submitFailed.SERVER': 'Something went wrong on our side. Your answers are still here and nothing has been graded.',
+  'xs.submitFailed.EXPIRED': 'This activity is no longer available, so these answers couldn\'t be recorded. Go back to the concept to continue.',
+  'xs.retrySubmit': 'Try sending again',
+  'xs.alreadySubmittedTitle': 'Your answers were already recorded',
+  'xs.alreadySubmittedBody': 'We received them the first time and nothing was changed. Continue with your next step.',
+  'xs.resumed': 'Picking up where you left off. Your unsent answers were kept.',
+  'xs.checkRetry': 'Check again',
+  'xs.moveUp': 'Move up',
+  'xs.moveDown': 'Move down',
+  'xs.skipToGuide': 'Go to the guided exercise',
+  'xs.keyIdea': 'The key idea',
+  'xs.guideShown': 'Here\'s how',
+  'xs.guideStepOf': 'Step {n} of {total}',
+  'xs.guideYourAnswer': 'Your answer',
+  'xs.tutor.conversations': 'Conversations',
+  'xs.tutor.showConversations': 'Show conversations',
+  'xs.tutor.messages': 'Messages',
+  'xs.tutor.sendFailed': 'Your message couldn\'t be sent. It\'s back in the box so you can try again.',
+  'xs.tutor.loadFailed': 'Conversations couldn\'t be loaded.',
+  'xs.checking': 'Checking…',
 };
 
 const de: Messages = {
@@ -5170,6 +5362,70 @@ const de: Messages = {
   'myPath.pillConsolidated': 'Gemeistert:',
   'myPath.pillRetentionDue': 'Aufzufrischen:',
   'myPath.pillTransferPending': 'Bereit zur Anwendung:',
+  'xs.kind.check': 'Überprüfe es',
+  'xs.kind.train': 'Trainiere es',
+  'xs.kind.reinforce': 'Lass es uns üben',
+  'xs.kind.prove': 'Zeig, was du kannst',
+  'xs.kind.retain': 'Weißt du es noch?',
+  'xs.kind.transfer': 'Wende es an',
+  'xs.kind.diagnose': 'Kurzer Check',
+  'xs.kind.assess': 'Leistungsüberprüfung',
+  'xs.purpose.check': 'Prüfe, ob die Idee sitzt. Hilfe ist verfügbar, jede Antwort wird sofort geprüft.',
+  'xs.purpose.train': 'Training mit Hilfe. Fehler gehören hier zum Lernen dazu.',
+  'xs.purpose.reinforce': 'Eine Vertiefung für deinen Weg, mit Hilfe.',
+  'xs.purpose.prove': 'Glaubst du, du kannst es? Zeig es allein, ohne Hilfe. Das zählt als Nachweis.',
+  'xs.purpose.retain': 'Es ist etwas Zeit vergangen. Wir prüfen ohne Hilfe, ob du es noch weißt.',
+  'xs.purpose.transfer': 'Nutze dein Wissen in neuen Situationen, ganz allein.',
+  'xs.purpose.diagnose': 'Ein paar Fragen, um zu sehen, wo du stehst.',
+  'xs.purpose.assess': 'Antworte selbstständig. Die Ergebnisse siehst du am Ende.',
+  'xs.done.check': 'Check abgeschlossen',
+  'xs.done.train': 'Training abgeschlossen',
+  'xs.done.reinforce': 'Vertiefung abgeschlossen',
+  'xs.done.prove': 'Versuch gespeichert',
+  'xs.done.retain': 'Erinnerungscheck abgeschlossen',
+  'xs.done.transfer': 'Aufgaben abgeschlossen',
+  'xs.done.diagnose': 'Check abgeschlossen',
+  'xs.done.assess': 'Überprüfung abgeschlossen',
+  'xs.teach.EXPLAIN': 'Versteh es',
+  'xs.teach.MODEL': 'Schritt für Schritt',
+  'xs.teach.GUIDE': 'Jetzt du',
+  'xs.teach.PRACTICE': 'Trainiere es',
+  'xs.teachSteps': 'Schritte dieser Aktivität',
+  'xs.outcome.MASTERED': 'Gemeistert',
+  'xs.outcome.SATISFIED': 'Du hast es',
+  'xs.outcome.NOT_YET': 'Noch nicht',
+  'xs.outcome.RECORDED': 'Erledigt',
+  'xs.outcomeBody.NOT_YET': 'Lass uns daran arbeiten. Dein nächster Schritt ist bereit.',
+  'xs.satisfied.check': 'Die Idee sitzt.',
+  'xs.satisfied.train': 'Dein Training erfüllt, was dieser Schritt braucht.',
+  'xs.resultFact': '{correct} von {total} richtig',
+  'xs.nextTitle': 'Nächste Herausforderung',
+  'xs.review': 'Antworten ansehen',
+  'xs.progress': '{n} von {total}',
+  'xs.progressLabel': 'Fortschritt der Aktivität',
+  'xs.preparing': 'Deine Aktivität wird vorbereitet…',
+  'xs.submitFailedTitle': 'Deine Antworten wurden nicht gesendet',
+  'xs.submitFailed.NETWORK': 'Offenbar besteht keine Verbindung. Deine Antworten sind noch da, nichts wurde bewertet.',
+  'xs.submitFailed.SERVER': 'Bei uns ist etwas schiefgelaufen. Deine Antworten sind noch da, nichts wurde bewertet.',
+  'xs.submitFailed.EXPIRED': 'Diese Aktivität ist nicht mehr verfügbar, daher konnten die Antworten nicht gespeichert werden. Geh zurück zum Konzept, um weiterzumachen.',
+  'xs.retrySubmit': 'Erneut senden',
+  'xs.alreadySubmittedTitle': 'Deine Antworten waren bereits gespeichert',
+  'xs.alreadySubmittedBody': 'Wir haben sie beim ersten Mal erhalten, nichts wurde geändert. Mach mit deinem nächsten Schritt weiter.',
+  'xs.resumed': 'Wir machen da weiter, wo du aufgehört hast. Deine ungesendeten Antworten sind erhalten.',
+  'xs.checkRetry': 'Erneut prüfen',
+  'xs.moveUp': 'Nach oben',
+  'xs.moveDown': 'Nach unten',
+  'xs.skipToGuide': 'Zur geführten Übung',
+  'xs.keyIdea': 'Die Kernidee',
+  'xs.guideShown': 'So geht\'s',
+  'xs.guideStepOf': 'Schritt {n} von {total}',
+  'xs.guideYourAnswer': 'Deine Antwort',
+  'xs.tutor.conversations': 'Unterhaltungen',
+  'xs.tutor.showConversations': 'Unterhaltungen anzeigen',
+  'xs.tutor.messages': 'Nachrichten',
+  'xs.tutor.sendFailed': 'Deine Nachricht konnte nicht gesendet werden. Sie steht wieder im Eingabefeld.',
+  'xs.tutor.loadFailed': 'Unterhaltungen konnten nicht geladen werden.',
+  'xs.checking': 'Wird geprüft…',
 };
 
 const fr: Messages = {
@@ -6615,6 +6871,70 @@ const fr: Messages = {
   'myPath.pillConsolidated': 'Maîtrisés :',
   'myPath.pillRetentionDue': 'À raviver :',
   'myPath.pillTransferPending': 'Prêts à appliquer :',
+  'xs.kind.check': 'Vérifie-le',
+  'xs.kind.train': 'Entraîne-toi',
+  'xs.kind.reinforce': 'Travaillons-le',
+  'xs.kind.prove': 'Prouve-le',
+  'xs.kind.retain': 'Tu t\'en souviens encore ?',
+  'xs.kind.transfer': 'Applique-le',
+  'xs.kind.diagnose': 'Vérification rapide',
+  'xs.kind.assess': 'Évaluation',
+  'xs.purpose.check': 'Vérifie que l\'idée est claire. L\'aide est disponible et chaque réponse est vérifiée tout de suite.',
+  'xs.purpose.train': 'Entraînement avec aide disponible. Se tromper ici fait partie de l\'apprentissage.',
+  'xs.purpose.reinforce': 'Un renforcement pour ton parcours, avec aide disponible.',
+  'xs.purpose.prove': 'Tu penses savoir ? Montre-le seul, sans aide. Cela compte comme preuve.',
+  'xs.purpose.retain': 'Un peu de temps a passé. On vérifie, sans aide, si l\'idée est toujours là.',
+  'xs.purpose.transfer': 'Utilise ce que tu sais dans de nouvelles situations, seul.',
+  'xs.purpose.diagnose': 'Quelques questions pour voir où tu en es.',
+  'xs.purpose.assess': 'Réponds seul. Les résultats s\'affichent à la fin.',
+  'xs.done.check': 'Vérification terminée',
+  'xs.done.train': 'Entraînement terminé',
+  'xs.done.reinforce': 'Renforcement terminé',
+  'xs.done.prove': 'Tentative enregistrée',
+  'xs.done.retain': 'Rappel terminé',
+  'xs.done.transfer': 'Défis terminés',
+  'xs.done.diagnose': 'Vérification terminée',
+  'xs.done.assess': 'Évaluation terminée',
+  'xs.teach.EXPLAIN': 'Comprends-le',
+  'xs.teach.MODEL': 'Regarde pas à pas',
+  'xs.teach.GUIDE': 'À toi',
+  'xs.teach.PRACTICE': 'Entraîne-toi',
+  'xs.teachSteps': 'Étapes de cette activité',
+  'xs.outcome.MASTERED': 'Maîtrisé',
+  'xs.outcome.SATISFIED': 'Tu l\'as',
+  'xs.outcome.NOT_YET': 'Pas encore',
+  'xs.outcome.RECORDED': 'Fait',
+  'xs.outcomeBody.NOT_YET': 'Travaillons-le. Ta prochaine étape est prête.',
+  'xs.satisfied.check': 'L\'idée est claire.',
+  'xs.satisfied.train': 'Ton entraînement répond à ce que cette étape demande.',
+  'xs.resultFact': '{correct} sur {total} correctes',
+  'xs.nextTitle': 'Prochain défi',
+  'xs.review': 'Revoir les réponses',
+  'xs.progress': '{n} sur {total}',
+  'xs.progressLabel': 'Progression de l\'activité',
+  'xs.preparing': 'Préparation de ton activité…',
+  'xs.submitFailedTitle': 'Tes réponses n\'ont pas été envoyées',
+  'xs.submitFailed.NETWORK': 'Il semble qu\'il n\'y ait pas de connexion. Tes réponses sont toujours là et rien n\'a été évalué.',
+  'xs.submitFailed.SERVER': 'Un problème est survenu de notre côté. Tes réponses sont toujours là et rien n\'a été évalué.',
+  'xs.submitFailed.EXPIRED': 'Cette activité n\'est plus disponible, ces réponses n\'ont donc pas pu être enregistrées. Reviens au concept pour continuer.',
+  'xs.retrySubmit': 'Réessayer l\'envoi',
+  'xs.alreadySubmittedTitle': 'Tes réponses étaient déjà enregistrées',
+  'xs.alreadySubmittedBody': 'Nous les avons reçues la première fois et rien n\'a changé. Continue avec ta prochaine étape.',
+  'xs.resumed': 'On reprend là où tu t\'étais arrêté. Tes réponses non envoyées ont été conservées.',
+  'xs.checkRetry': 'Vérifier à nouveau',
+  'xs.moveUp': 'Monter',
+  'xs.moveDown': 'Descendre',
+  'xs.skipToGuide': 'Aller à l\'exercice guidé',
+  'xs.keyIdea': 'L\'idée clé',
+  'xs.guideShown': 'Voilà comment',
+  'xs.guideStepOf': 'Étape {n} sur {total}',
+  'xs.guideYourAnswer': 'Ta réponse',
+  'xs.tutor.conversations': 'Conversations',
+  'xs.tutor.showConversations': 'Voir les conversations',
+  'xs.tutor.messages': 'Messages',
+  'xs.tutor.sendFailed': 'Ton message n\'a pas pu être envoyé. Il est de retour dans le champ pour réessayer.',
+  'xs.tutor.loadFailed': 'Impossible de charger les conversations.',
+  'xs.checking': 'Vérification…',
 };
 
 const pt: Messages = {
@@ -8060,6 +8380,70 @@ const pt: Messages = {
   'myPath.pillConsolidated': 'Dominados:',
   'myPath.pillRetentionDue': 'Para rever:',
   'myPath.pillTransferPending': 'Prontos para aplicar:',
+  'xs.kind.check': 'Confirme',
+  'xs.kind.train': 'Treine',
+  'xs.kind.reinforce': 'Vamos trabalhar nisso',
+  'xs.kind.prove': 'Demonstre',
+  'xs.kind.retain': 'Você ainda se lembra?',
+  'xs.kind.transfer': 'Aplique',
+  'xs.kind.diagnose': 'Verificação rápida',
+  'xs.kind.assess': 'Avaliação',
+  'xs.purpose.check': 'Confirme que a ideia ficou clara. Há ajuda disponível e cada resposta é verificada na hora.',
+  'xs.purpose.train': 'Treino com ajuda disponível. Errar aqui faz parte de aprender.',
+  'xs.purpose.reinforce': 'Um reforço para o seu percurso, com ajuda disponível.',
+  'xs.purpose.prove': 'Acha que já sabe? Mostre sozinho, sem ajuda. Isto conta como evidência.',
+  'xs.purpose.retain': 'Passou algum tempo. Vamos verificar, sem ajuda, se a ideia continua com você.',
+  'xs.purpose.transfer': 'Use o que você sabe em situações novas, sozinho.',
+  'xs.purpose.diagnose': 'Algumas perguntas para ver onde você está.',
+  'xs.purpose.assess': 'Responda sozinho. Os resultados aparecem no final.',
+  'xs.done.check': 'Verificação concluída',
+  'xs.done.train': 'Treino concluído',
+  'xs.done.reinforce': 'Reforço concluído',
+  'xs.done.prove': 'Tentativa registrada',
+  'xs.done.retain': 'Revisão concluída',
+  'xs.done.transfer': 'Desafios concluídos',
+  'xs.done.diagnose': 'Verificação concluída',
+  'xs.done.assess': 'Avaliação concluída',
+  'xs.teach.EXPLAIN': 'Entenda',
+  'xs.teach.MODEL': 'Veja passo a passo',
+  'xs.teach.GUIDE': 'Agora você',
+  'xs.teach.PRACTICE': 'Treine',
+  'xs.teachSteps': 'Etapas desta atividade',
+  'xs.outcome.MASTERED': 'Dominado',
+  'xs.outcome.SATISFIED': 'Você conseguiu',
+  'xs.outcome.NOT_YET': 'Ainda não',
+  'xs.outcome.RECORDED': 'Feito',
+  'xs.outcomeBody.NOT_YET': 'Vamos trabalhar nisso. Seu próximo passo está pronto.',
+  'xs.satisfied.check': 'A ideia ficou clara.',
+  'xs.satisfied.train': 'Seu treino cumpre o que esta etapa precisa.',
+  'xs.resultFact': '{correct} de {total} corretas',
+  'xs.nextTitle': 'Próximo desafio',
+  'xs.review': 'Rever respostas',
+  'xs.progress': '{n} de {total}',
+  'xs.progressLabel': 'Progresso da atividade',
+  'xs.preparing': 'Preparando sua atividade…',
+  'xs.submitFailedTitle': 'Suas respostas não foram enviadas',
+  'xs.submitFailed.NETWORK': 'Parece que não há conexão. Suas respostas continuam aqui e nada foi avaliado.',
+  'xs.submitFailed.SERVER': 'Houve um problema do nosso lado. Suas respostas continuam aqui e nada foi avaliado.',
+  'xs.submitFailed.EXPIRED': 'Esta atividade não está mais disponível, então estas respostas não puderam ser registradas. Volte ao conceito para continuar.',
+  'xs.retrySubmit': 'Tentar enviar de novo',
+  'xs.alreadySubmittedTitle': 'Suas respostas já estavam registradas',
+  'xs.alreadySubmittedBody': 'Recebemos da primeira vez e nada foi alterado. Siga para o próximo passo.',
+  'xs.resumed': 'Retomamos de onde você parou. Suas respostas não enviadas foram mantidas.',
+  'xs.checkRetry': 'Verificar de novo',
+  'xs.moveUp': 'Subir',
+  'xs.moveDown': 'Descer',
+  'xs.skipToGuide': 'Ir para o exercício guiado',
+  'xs.keyIdea': 'A ideia-chave',
+  'xs.guideShown': 'É assim',
+  'xs.guideStepOf': 'Passo {n} de {total}',
+  'xs.guideYourAnswer': 'Sua resposta',
+  'xs.tutor.conversations': 'Conversas',
+  'xs.tutor.showConversations': 'Ver conversas',
+  'xs.tutor.messages': 'Mensagens',
+  'xs.tutor.sendFailed': 'Não foi possível enviar sua mensagem. Ela voltou para a caixa para você tentar de novo.',
+  'xs.tutor.loadFailed': 'Não foi possível carregar as conversas.',
+  'xs.checking': 'Verificando…',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

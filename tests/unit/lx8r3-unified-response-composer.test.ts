@@ -30,7 +30,9 @@ const TOOLBAR_CONFIG_SRC = strip(read('src/lib/math-expression-toolbar-config.ts
  * ================================================================ */
 describe('LX-8R3 R1 -- one response surface, not two independent editors', () => {
   it('renders exactly one bordered surface containing the whole block list -- never two separately-bordered boxes', () => {
-    expect(COMPOSER_SRC.match(/border: '1px solid var\(--border-default\)'/g)?.length).toBe(2); // the ONE surface + the keyboard-icon button's own border, not a second answer box
+    // the ONE surface (UX-3: the math-entry button's border now comes from the shared .ls-tool control class, not a second inline box)
+    expect(COMPOSER_SRC.match(/border: '1px solid var\(--border-default\)'/g)?.length).toBe(1);
+    expect(COMPOSER_SRC).toMatch(/className="ls-tool"/);
   });
 
   it('supports paragraph blocks (multi-line prose via rows growing with content) and math blocks (structured MathExpressionEditor) in the same block list', () => {
@@ -177,7 +179,9 @@ describe('LX-8R3 R14 -- visual cleanup: calmer surface, nothing duplicated', () 
   });
 
   it('the mic and keyboard controls sit in one row, space-between, matching the target calmer layout ([ mic ... keyboard ])', () => {
-    expect(COMPOSER_SRC).toMatch(/justifyContent: 'space-between'/);
+    // UX-3: the same row, expressed as the shared .ls-composer-tools rule
+    expect(COMPOSER_SRC).toMatch(/<div className="ls-composer-tools">/);
+    expect(readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf-8')).toMatch(/\.ls-composer-tools \{ display: flex; align-items: center; justify-content: space-between;/);
   });
 });
 

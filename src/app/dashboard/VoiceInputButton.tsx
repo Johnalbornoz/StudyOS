@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Mic, Square } from 'lucide-react';
 import type { Locale } from '@/lib/i18n/messages';
 import { activityLanguageToBCP47 } from '@/lib/lx/activity-language';
 import { logInteraction } from '@/lib/lx/multimodal-observability';
@@ -197,25 +198,26 @@ export default function VoiceInputButton(props: VoiceInputButtonProps) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
         <span role="alert" style={{ fontSize: 12, color: 'var(--error)' }}>{props.transcriptionFailedLabel}</span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={start}>{props.micLabel}</button>
+        <button type="button" className="ls-audio ls-audio--mic" onClick={start} aria-label={props.micLabel} title={props.micLabel}>
+          <Mic size={20} strokeWidth={2} aria-hidden />
+        </button>
       </div>
     );
   }
 
   const listening = state === 'LISTENING';
   return (
+    // UX-3: same control geometry as read-aloud; while listening it is
+    // pressed, pulses (not under reduced motion) and says "stop".
     <button
       type="button"
+      className={`ls-audio ls-audio--mic${listening ? ' is-listening' : ''}`}
       onClick={listening ? stopListening : start}
       aria-label={listening ? props.stopLabel : props.micLabel}
+      aria-pressed={listening}
       title={listening ? props.stopLabel : props.micLabel}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30,
-        borderRadius: 'var(--radius-full)', border: '1px solid var(--border-default)',
-        background: listening ? 'var(--warning-subtle)' : 'var(--bg-subtle)', cursor: 'pointer', flexShrink: 0,
-      }}
     >
-      <span aria-hidden style={{ fontSize: 13 }}>{listening ? '⏹' : '🎙'}</span>
+      {listening ? <Square size={14} strokeWidth={2.5} fill="currentColor" aria-hidden /> : <Mic size={20} strokeWidth={2} aria-hidden />}
     </button>
   );
 }

@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { SessionHeader } from '@/components/learning/SessionHeader';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -110,13 +111,16 @@ export default async function RemediationSessionPage({
           shell trusts only while the learner is on THIS path. */}
       <FocusOriginBeacon subjectId={view.subjectId} conceptId={view.conceptId} />
 
-      {/* Session header */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <p className="label" style={{ color: 'var(--text-muted)', margin: '0 0 4px' }}>{view.conceptLabel}</p>
-        <h1>{t['remediation.headerTitle']}</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15, maxWidth: '58ch' }}>
-          {t['remediation.headerSubtitle']}
-        </p>
+      {/* Session header -- UX-3: the same learning-session header as every
+          activity ("Vamos a trabajarlo" · the repair · the concept). */}
+      <div className="ls" data-kind="reinforce" style={{ marginBottom: 'var(--space-6)' }}>
+        <SessionHeader
+          kind="reinforce"
+          kindLabel={t['xs.kind.reinforce']}
+          title={t['remediation.headerTitle']}
+          context={view.conceptLabel}
+          purpose={t['remediation.headerSubtitle']}
+        />
       </div>
 
       {/* Why */}

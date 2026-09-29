@@ -1,3 +1,4 @@
+import { MessageCircle, PenLine } from 'lucide-react';
 import type { getMessages } from '@/lib/i18n/messages';
 
 /**
@@ -69,29 +70,17 @@ export default function LearningSupportStatus({ assistanceMode, hintsAvailable, 
       : null
     : t[independentNoteKey(context)];
 
+  // UX-3: one quiet line (icon · title · note) -- the session header
+  // already frames the activity, so this is context, not a banner.
+  const Icon = supported ? MessageCircle : PenLine;
   return (
-    <div
-      role="note"
-      aria-label={title}
-      style={{
-        display: 'flex',
-        gap: 'var(--space-3)',
-        alignItems: 'flex-start',
-        marginBottom: 'var(--space-4)',
-        padding: 'var(--space-3) var(--space-4)',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-default)',
-        background: 'var(--bg-subtle)',
-      }}
-    >
-      {/* Decorative only -- the text below carries the full meaning. */}
-      <span aria-hidden="true" style={{ fontSize: 15, lineHeight: 1.3, flexShrink: 0 }}>
-        {supported ? '💬' : '✏️'}
-      </span>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text-secondary)' }}>{title}</div>
-        {note && <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>{note}</div>}
-      </div>
+    <div role="note" aria-label={title} className="ls-support" data-mode={supported ? 'supported' : 'independent'}>
+      {/* Decorative only -- the text carries the full meaning. */}
+      <span className="ls-support-icon" aria-hidden><Icon size={16} strokeWidth={2} /></span>
+      <p className="ls-support-text">
+        <strong>{title}</strong>
+        {note && <span> · {note}</span>}
+      </p>
     </div>
   );
 }

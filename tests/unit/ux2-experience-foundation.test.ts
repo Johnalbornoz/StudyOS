@@ -767,7 +767,8 @@ describe('UX-2 precision -- static elements never look accidentally misaligned',
       .split('\n')
       .filter((l) => /(^|[\s{;])(padding|margin|gap|row-gap|column-gap)[a-z-]*:\s*[^;]*\b\d+(\.\d+)?px/.test(l))
       .filter((l) => !/katex-display/.test(l)) // 2px scrollbar clearance, functional
-      .filter((l) => !/margin-top: calc\(0\.775em - 1\.5px\)/.test(l)); // dash centred on the first line, derived from line-height
+      .filter((l) => !/margin-top: calc\(0\.775em - 1\.5px\)/.test(l)) // dash centred on the first line, derived from line-height
+      .filter((l) => !/margin-top: calc\(var\(--space-3\) \+ \(var\(--fs-md\) \* 1\.6 - 28px\) \/ 2\)/.test(l)); // UX-3 step number centred on the body's first line, derived
     expect(raw).toEqual([]);
   });
 

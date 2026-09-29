@@ -62,7 +62,10 @@ describe('tests 2/4/5 -- a canonically required GUIDE stage is never silently om
     expect(TEACH).toMatch(/\{stage !== 'GUIDE' && \(/);
   });
   it('there is no learner-facing "skip GUIDE" action anywhere in the GUIDE error/loading sub-states', () => {
-    const guideBlock = TEACH.slice(TEACH.indexOf("stage === 'GUIDE' && guideState === 'loading'"), TEACH.indexOf('</section>'));
+    // UX-3: the non-GUIDE Continue/Skip bar now sits inside the same card,
+    // after the GUIDE sub-states -- the GUIDE block ends where it begins.
+    const guideStart = TEACH.indexOf("stage === 'GUIDE' && guideState === 'loading'");
+    const guideBlock = TEACH.slice(guideStart, TEACH.indexOf("{stage !== 'GUIDE' && (", guideStart));
     expect(guideBlock).not.toMatch(/teachingIntro\.skip|onClick=\{onDone\}/);
   });
 });

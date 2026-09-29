@@ -46,6 +46,30 @@ import { milestoneFeedbackKey, type MilestoneType } from '@/lib/lx/progression-m
 import { resolveResultMilestone } from '@/lib/experience/result-milestone';
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { SessionHeader } from '@/components/learning/SessionHeader';
+import {
+  activityKindForMode,
+  kindLabelKey,
+  kindPurposeKey,
+  kindDoneKey,
+  resolveActivityOutcome,
+  outcomeKey,
+  classifySubmitFailure,
+  submitFailureKey,
+  type SubmitFailure,
+} from '@/lib/experience/learning-session';
+import {
+  browserDraftStorage,
+  clearDraft,
+  draftHasInput,
+  loadDraft,
+  purgeForeignDrafts,
+  questionFingerprint,
+  saveDraft,
+  type DraftPending,
+} from '@/lib/experience/session-draft';
 
 // CANON-V2-FINAL-HARDENING Section 5/12 -- widened to include the 3
 // canonical activities added after canonical_prove (canonical_retain,
@@ -337,6 +361,12 @@ function QuizPageContent() {
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
   const [quizMode] = useState<QuizMode>(modeParam);
+  // UX-3: the user-facing experience of the launched mode (Entrénalo /
+  // Demuéstralo / …). Presentation only -- the mode was chosen upstream.
+  const activityKind = activityKindForMode(modeParam, { remediation: !!remediationStepId });
+  // UX-3: the concept's own display name for the session header (the
+  // subject concepts response already carries it; nothing new is fetched).
+  const [conceptLabel, setConceptLabel] = useState('');
   const [maxQuestions, setMaxQuestions] = useState<number>(MODE_DEFAULT_MAX[modeParam]);
   const allowsTopicSelection = quizMode === 'cumulative_assessment' || quizMode === 'exam_simulation';
   const [subjectConcepts, setSubjectConcepts] = useState<SubjectConcept[]>([]);
@@ -445,6 +475,23 @@ function QuizPageContent() {
   const [genErrorReason, setGenErrorReason] = useState<string | null>(null);
   const [results, setResults] = useState<any>(null);
   const [reviewing, setReviewing] = useState(false);
+  // UX-3 (silent submit failure): a failed submission is its own visible,
+  // recoverable state -- never an incorrect answer, never silent. The
+  // answers stay in state; Retry re-sends the SAME set.
+  const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  // UX-3: the server answered a re-send with `alreadySubmitted` (the first
+  // response was lost in transit). Nothing changed server-side; the learner
+  // continues from canonical truth.
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  // UX-3 (refresh continuity): true once a local draft of THIS session was
+  // restored -- drives the one-line "picking up where you left off" note.
+  const [resumedFromDraft, setResumedFromDraft] = useState(false);
+  const draftFingerprintRef = useRef<string | null>(null);
+  const draftRestoreAttemptedRef = useRef<string | null>(null);
+  const pendingRestoreRef = useRef<{ index: number; pending: DraftPending } | null>(null);
+  const resumedFromDraftRef = useRef(false);
+  // UX-3: a synchronous guard -- two quick clicks can never send two submissions.
+  const submittingRef = useRef(false);
 
   // LX-4R R4: per-question hints moved into the ContextualHelp surface
   // (/api/learning/contextual-help). The legacy toggle/state is gone.
@@ -608,6 +655,10 @@ function QuizPageContent() {
         if (conceptsRes.ok) {
           if (allowsTopicSelection) setSubjectConcepts(conceptsBody.data.concepts || []);
           setSubjectName(conceptsBody.data.subjectName || '');
+          const match = conceptId
+            ? ((conceptsBody.data.concepts || []) as SubjectConcept[]).find((c) => c.id === conceptId || c.canonicalId === conceptId)
+            : null;
+          if (match?.label) setConceptLabel(match.label);
         }
       } catch (err: any) {
         setError(err.message);
@@ -643,6 +694,10 @@ function QuizPageContent() {
     setAnswers({});
     setResults(null);
     setReviewing(false);
+    setSubmitFailure(null);
+    setAlreadySubmitted(false);
+    // UX-3: identity of this exact question batch, for draft scoping.
+    draftFingerprintRef.current = questionFingerprint(data.quiz.questions);
   }, []);
 
   const genBody = useCallback(
@@ -795,8 +850,10 @@ function QuizPageContent() {
       tiP.then((view) => {
         setTeachingExperience(view);
         perfMark('T1_teachingintent_ready');
+        // UX-3: a learner whose draft of THIS session was restored had
+        // already reached its questions -- the teaching stage is not re-entered.
         const teachFirst =
-          !!view && view.stages.some((s: string) => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE');
+          !resumedFromDraftRef.current && !!view && view.stages.some((s: string) => s === 'EXPLAIN' || s === 'MODEL' || s === 'GUIDE');
         if (teachFirst) {
           setTeachingStage('teaching');
           setPhase('quiz'); // teaching UI can render NOW -- questions still cooking
@@ -853,8 +910,60 @@ function QuizPageContent() {
     setOrderingAnswer(q.orderingItemsShuffled ? [...q.orderingItemsShuffled] : []);
     setClassificationAnswer({});
     setConfidenceSelected(null);
+    // UX-3: a draft restored for THIS index refills the learner's own
+    // unsubmitted input (never an answer they did not give).
+    const restore = pendingRestoreRef.current;
+    if (restore && restore.index === current) {
+      pendingRestoreRef.current = null;
+      applyPendingDraft(restore.pending);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, questions.length]);
+
+  function applyPendingDraft(p: DraftPending) {
+    setSingleChoice(p.singleChoice);
+    setMultiChoice(p.multiChoice);
+    setTextAnswer(p.textAnswer);
+    setMatchingAnswer(p.matchingAnswer);
+    if (p.orderingAnswer.length > 0) setOrderingAnswer(p.orderingAnswer);
+    setClassificationAnswer(p.classificationAnswer);
+    setConfidenceSelected(p.confidenceSelected as ConfidenceLevel | null);
+  }
+
+  // UX-3 (refresh continuity): restore the learner's unsubmitted input for
+  // the SAME server session only. The canonical delivery path resumes the
+  // open session after a reload (same quizId, same questions); a new
+  // session never matches its key or fingerprint, so nothing is restored
+  // into it. The server's state is never changed here -- no request is made.
+  useEffect(() => {
+    if (!studentId || !quizId || questions.length === 0 || !draftFingerprintRef.current) return;
+    if (draftRestoreAttemptedRef.current === quizId) return;
+    draftRestoreAttemptedRef.current = quizId;
+    const storage = browserDraftStorage();
+    const now = Date.now();
+    purgeForeignDrafts(storage, studentId, now);
+    const d = loadDraft(storage, { studentId, quizId, fingerprint: draftFingerprintRef.current, questionCount: questions.length, now });
+    if (!d || !draftHasInput(d)) return;
+    questionPresentedAtRef.current = { ...questionPresentedAtRef.current, ...d.presentedAt };
+    answerSubmittedAtRef.current = { ...d.submittedAt };
+    setAnswers(d.answers);
+    setConfidences(d.confidences as Record<number, ConfidenceLevel>);
+    const check = d.check as { index?: number; status?: string } | null;
+    if (check && check.index === d.current && (check.status === 'done' || check.status === 'unavailable')) {
+      setAnswerCheck(d.check as NonNullable<typeof answerCheck>);
+    }
+    if (d.current === current) applyPendingDraft(d.pending);
+    else {
+      pendingRestoreRef.current = { index: d.current, pending: d.pending };
+      setCurrent(d.current);
+    }
+    // The learner had already reached the questions of this very session.
+    resumedFromDraftRef.current = true;
+    setTeachingStage('questions');
+    setPhase('quiz');
+    setResumedFromDraft(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, quizId, questions.length]);
 
   useEffect(() => {
     if (results && !reviewing) resultsHeadingRef.current?.focus();
@@ -1045,6 +1154,7 @@ function QuizPageContent() {
     const q = questions[current];
     if (!q || !quizId || !studentId) return;
     const index = current;
+    setResumedFromDraft(false);
     setAnswerCheck({ index, status: 'checking' });
     try {
       const res = await fetch(`/api/quizzes/session/${quizId}/check`, {
@@ -1068,6 +1178,7 @@ function QuizPageContent() {
     // -- covers every question including the last one, since advancing
     // past the last question is exactly what triggers submitQuiz below.
     answerSubmittedAtRef.current[current] = new Date().toISOString();
+    setResumedFromDraft(false);
     const q = questions[current];
     const encoded = encodeCurrentAnswer(q);
     const updatedAnswers = { ...answers, [current]: encoded };
@@ -1096,8 +1207,11 @@ function QuizPageContent() {
 
   async function submitQuiz(finalAnswers: Record<number, string>, finalConfidences: Record<number, ConfidenceLevel> = confidences) {
     if (!studentId || !quizId) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
+    setSubmitFailure(null);
     try {
       const answerList = Object.entries(finalAnswers).map(([idx, ans]) => ({
         questionIndex: Number(idx),
@@ -1121,15 +1235,59 @@ function QuizPageContent() {
           remediationStepId: remediationStepId || undefined,
         }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.message || t['common.error']);
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body) {
+        // UX-3: visible and recoverable -- a transport/server failure is
+        // never presented as an incorrect answer, and nothing is scored.
+        setError(body?.message || t['common.error']);
+        setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
+        return;
+      }
+      if (body.alreadySubmitted) {
+        // The first submission was recorded; its response was lost. The
+        // server changed nothing -- continue from canonical truth.
+        setAlreadySubmitted(true);
+        return;
+      }
       setResults(body.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || t['common.error']);
+      setSubmitFailure(classifySubmitFailure({ thrown: true }));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
+
+  // UX-3: persist the learner's own unsubmitted input for this session
+  // (see session-draft.ts). Declared after the restore effect so a reload
+  // reads the stored draft before anything is written.
+  useEffect(() => {
+    if (!studentId || !quizId || !draftFingerprintRef.current || results || alreadySubmitted) return;
+    if (phase !== 'quiz' || teachingStage !== 'questions' || questions.length === 0) return;
+    if (draftRestoreAttemptedRef.current !== quizId) return;
+    saveDraft(browserDraftStorage(), {
+      v: 1,
+      studentId,
+      quizId,
+      fingerprint: draftFingerprintRef.current,
+      current,
+      answers,
+      confidences,
+      presentedAt: questionPresentedAtRef.current,
+      submittedAt: answerSubmittedAtRef.current,
+      pending: { singleChoice, multiChoice, textAnswer, matchingAnswer, orderingAnswer, classificationAnswer, confidenceSelected },
+      check: answerCheck && answerCheck.index === current && (answerCheck.status === 'done' || answerCheck.status === 'unavailable') ? answerCheck : null,
+      savedAt: Date.now(),
+    });
+  }, [studentId, quizId, results, alreadySubmitted, phase, teachingStage, questions.length, current, answers, confidences, singleChoice, multiChoice, textAnswer, matchingAnswer, orderingAnswer, classificationAnswer, confidenceSelected, answerCheck]);
+
+  // UX-3: authoritative completion (or a session the server no longer
+  // has) ends the draft's life.
+  useEffect(() => {
+    if (!studentId || !quizId) return;
+    if (results || alreadySubmitted || submitFailure === 'EXPIRED') clearDraft(browserDraftStorage(), studentId, quizId);
+  }, [results, alreadySubmitted, submitFailure, studentId, quizId]);
 
   // Submits the student's answer to a triggered verification question.
   // The server (never this client) computes the outcome and evidence
@@ -1310,6 +1468,20 @@ function QuizPageContent() {
       ? t['quiz.modeDiagnosticCheckDesc']
       : t['quiz.modeTopicPracticeDesc'];
 
+  // UX-3: every "getting it ready" moment has context (which experience)
+  // and a stable skeleton of the task -- never a bare floating line.
+  const preparingView = (text: string) => (
+    <div className="ls" data-kind={activityKind}>
+      <div className="card ls-preparing" role="status" aria-live="polite">
+        <span className="ls-kicker">{at[kindLabelKey(activityKind)]}</span>
+        <p className="ls-preparing-text">{text}</p>
+        <Skeleton height={24} width="85%" />
+        <Skeleton height={52} radius="var(--radius-md)" />
+        <Skeleton height={52} radius="var(--radius-md)" />
+      </div>
+    </div>
+  );
+
   // Phase 4-R: a resumed pending verification is a small, self-contained
   // flow -- it never enters the normal setup/loading/quiz/results phase
   // machine above at all (no generate-and-take call is ever made for
@@ -1351,22 +1523,20 @@ function QuizPageContent() {
               </p>
               {resumeQuestion.visualAid && <VisualAidView aid={resumeQuestion.visualAid} />}
               {resumeQuestion.answerFormat === 'single_choice' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {(resumeQuestion.options || []).map((opt: any) => {
+                <div role="radiogroup" aria-label={at['quiz.verificationTitle']} className="ls-options">
+                  {(resumeQuestion.options || []).map((opt: any, i: number) => {
                     const isSelected = resumeAnswer === opt.id;
                     return (
                       <button
                         key={opt.id}
                         type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        className="ls-option"
                         onClick={() => setResumeAnswer(opt.id)}
-                        style={{
-                          textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius-sm)',
-                          border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
-                          background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
-                          cursor: 'pointer', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--text-primary)',
-                        }}
                       >
-                        <MathText text={opt.text} />
+                        <span className="ls-option-key" aria-hidden>{String.fromCharCode(65 + i)}</span>
+                        <span className="ls-option-text"><MathText text={opt.text} /></span>
                       </button>
                     );
                   })}
@@ -1462,7 +1632,7 @@ function QuizPageContent() {
         : quizMode === 'canonical_learn_check'
         ? t['quiz.learnCheckPreparingTitle']
         : t['quiz.generating'];
-    return <div className="card empty-state">{canonicalLoadingTitle}</div>;
+    return preparingView(canonicalLoadingTitle);
   }
 
   if (phase === 'setup') {
@@ -1547,7 +1717,9 @@ function QuizPageContent() {
   }
 
   if (phase === 'loading') {
-    return <div className="card empty-state">{at['quiz.generating']}</div>;
+    // UX-3: no "generating with AI" chrome inside learning -- the learner
+    // is waiting for their activity, not for a model.
+    return preparingView(at['xs.preparing']);
   }
 
   if (phase === 'error') {
@@ -1576,15 +1748,16 @@ function QuizPageContent() {
     if (errorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
     if (errorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
-        <div>
-          <div className="card empty-state">
-            <strong>{at['quiz.canonicalStateChanged']}</strong>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-            <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
-              {at['continuation.backToConcept']}
-            </Link>
-          </div>
+        <div className="ls" data-kind={activityKind}>
+          <InlineAlert
+            tone="info"
+            title={at['quiz.canonicalStateChanged']}
+            actions={
+              <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
+                {at['continuation.backToConcept']}
+              </Link>
+            }
+          />
         </div>
       );
     }
@@ -1609,20 +1782,45 @@ function QuizPageContent() {
         ? 'quiz.learnCheckLoadError'
         : 'quiz.loadError';
     return (
-      <div>
-        <div className="card empty-state" style={{ color: 'var(--error)' }}>
-          <strong>{at[failureMessageKey]}</strong>
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-          {studentId && (
-            <button className="btn btn-primary" onClick={() => generateQuiz(studentId)}>
-              {at['activeLearning.tryAgain']}
-            </button>
-          )}
-          <Link href="/dashboard" className="btn btn-secondary">
-            {at['quiz.backToDashboard']}
-          </Link>
-        </div>
+      <div className="ls" data-kind={activityKind}>
+        <InlineAlert
+          tone="error"
+          title={at[failureMessageKey]}
+          actions={
+            <>
+              {studentId && (
+                <button className="btn btn-primary" onClick={() => generateQuiz(studentId)}>
+                  {at['activeLearning.tryAgain']}
+                </button>
+              )}
+              <Link href="/dashboard" className="btn btn-secondary">
+                {at['quiz.backToDashboard']}
+              </Link>
+            </>
+          }
+        />
+      </div>
+    );
+  }
+
+  // UX-3: a re-send after a lost response. The server kept the first
+  // submission unchanged (`alreadySubmitted`), so there are no new results
+  // to show -- only the honest statement and the canonical continuation.
+  if (alreadySubmitted) {
+    return (
+      <div className="ls ls-result" data-kind={activityKind}>
+        <section className="card ls-outcome" data-outcome="RECORDED" role="status" aria-live="polite" data-testid="already-submitted">
+          <span className="ls-kicker">{at[kindLabelKey(activityKind)]}</span>
+          <h1 className="ls-outcome-title">{at['xs.alreadySubmittedTitle']}</h1>
+          <p className="ls-outcome-body">{at['xs.alreadySubmittedBody']}</p>
+        </section>
+        {subjectId && conceptId && studentId && !diagnosisId ? (
+          <ContinuationPanel studentId={studentId} subjectId={subjectId} conceptId={conceptId} locale={quizLanguage} from={continuationKind} />
+        ) : (
+          <div className="ls-secondary">
+            <Link href={subjectId ? `/dashboard/subjects/${subjectId}` : '/dashboard'} className="btn btn-primary">{at['quiz.backToSubject']}</Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -1669,9 +1867,9 @@ function QuizPageContent() {
       const review: (ReviewItem & { errorType?: string | null; reasoningValid?: boolean | null })[] = results.review || [];
       const supportedPractice = PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
       return (
-        <div style={{ maxWidth: 680 }}>
-          <h1>{at['quiz.reviewTitle']}</h1>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
+        <div className="ls" data-kind={activityKind}>
+          <h1 className="ls-title">{at['xs.review']}</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {review.map((r) => {
               // LX-4R R6: pedagogical feedback -- what happened / why /
               // what to change / what now. `errorType` / `reasoningValid`
@@ -1752,7 +1950,7 @@ function QuizPageContent() {
               );
             })}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
+          <div className="ls-secondary">
             <button className="btn btn-secondary" onClick={() => setReviewing(false)}>{at['quiz.backToResults']}</button>
             {/* LX-4R R6: act on the feedback -- retry inside the activity
                 rather than being pushed straight on. See the results view
@@ -1768,18 +1966,72 @@ function QuizPageContent() {
       );
     }
 
+    // UX-3: the headline is the SERVER's verdict on this activity's own
+    // requirement (resolveActivityOutcome) -- never the score. The score
+    // stays visible as a plain fact about this attempt.
+    const outcome = resolveActivityOutcome({
+      kind: activityKind,
+      canonicalResultsStatus: results.canonicalResultsStatus,
+      canonicalResults: results.canonicalResults,
+      proveSufficiency: results.proveSufficiency,
+      milestone,
+    });
+    const outcomeTitle = outcome === 'RECORDED' ? at[kindDoneKey(activityKind)] : at[outcomeKey(outcome)];
+    const outcomeBody =
+      outcome === 'MASTERED'
+        ? at['progression.milestoneConsolidated']
+        : outcome === 'NOT_YET'
+          ? at['xs.outcomeBody.NOT_YET']
+          : outcome === 'SATISFIED'
+            ? activityKind === 'prove' ? at['progression.milestoneProved']
+              : activityKind === 'retain' ? at['progression.milestoneRetained']
+              : activityKind === 'transfer' ? at['progression.milestoneTransferred']
+              : activityKind === 'check' ? at['xs.satisfied.check']
+              : at['xs.satisfied.train']
+            : null;
+
+    // LX-5D: the activity no longer dead-ends at "back to subject".
+    // One canonical continuation -- the resolver re-reads Phase 4 /
+    // first-touch and launches the next canonical action, or returns to
+    // the Concept Mission. For Prove, an insufficient gap simply means
+    // the canonical re-read keeps the same purpose (no local "if
+    // sufficient => RETAIN"). UX-3: rendered inside the canonical next-step
+    // card when there is one (inline, no second headline), else on its own.
+    const canonicalNextShown = results.canonicalResultsStatus === 'OK' && !!results.canonicalResults;
+    const continuation = (inline: boolean) =>
+      subjectId && conceptId && studentId && !resumeVerifyAttemptId && !diagnosisId ? (
+        <ContinuationPanel
+          studentId={studentId}
+          subjectId={subjectId}
+          conceptId={conceptId}
+          locale={quizLanguage}
+          from={continuationKind}
+          variant={inline ? 'inline' : 'card'}
+          showHeadline={!inline}
+          note={
+            results.proveSufficiency && !results.proveSufficiency.sufficient
+              ? at['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
+              : undefined
+          }
+        />
+      ) : null;
+
     return (
-      <div style={{ maxWidth: 620 }}>
-        <h1 tabIndex={-1} ref={resultsHeadingRef}>{at['quiz.results']}</h1>
+      <div className="ls ls-result" data-kind={activityKind}>
         {/* R9: the outcome is announced to assistive tech when it appears. */}
-        <div className="card" role="status" aria-live="polite" style={{ marginTop: 'var(--space-6)' }}>
-          <div className="label" style={{ color: 'var(--text-muted)' }}>{at['quiz.score']}</div>
-          <div className="tabular" style={{ fontSize: 40, fontWeight: 650, margin: '4px 0' }}>
-            {results.results.score}%
+        <section className="card ls-outcome" data-outcome={outcome} role="status" aria-live="polite" data-testid="results-outcome">
+          <span className="ls-kicker">{at[kindLabelKey(activityKind)]}</span>
+          <h1 className="ls-outcome-title" tabIndex={-1} ref={resultsHeadingRef}>{outcomeTitle}</h1>
+          {outcomeBody && !(!isV1Result && outcomeBody === messageText) && <p className="ls-outcome-body">{outcomeBody}</p>}
+          <div className="ls-fact">
+            <span className="ls-fact-value">{at['xs.resultFact'].replace('{correct}', String(results.results.correctCount)).replace('{total}', String(results.results.totalQuestions))}</span>
+            <span className="ls-fact-label">{at['quiz.score']}: <span className="tabular">{results.results.score}%</span></span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-            {results.results.correctCount} / {results.results.totalQuestions} {at['quiz.correctOf']}
-          </p>
+          {/* CANON-R6R1: the legacy next-step line only ever renders for a
+              non-v1 attempt -- never alongside canonicalResults. */}
+          {!isV1Result && (
+            <p className="ls-outcome-body">{messageText}</p>
+          )}
 
           {/* UX/CANON-R1 PART D: canonical difficulty this activity was
               generated at -- the session's own targetDifficulty when
@@ -1878,6 +2130,8 @@ function QuizPageContent() {
             </p>
           )}
 
+        </section>
+
           {/* CANON-V2-FINAL-HARDENING Section 10 -- the TRANSFER-specific
               results breakdown: the 3 challenge scores shown
               individually (never collapsed into one number the learner
@@ -1890,28 +2144,28 @@ function QuizPageContent() {
               decides where to go next, only explains what just
               happened. */}
           {results.transferResult && (
-            <div className="card" style={{ marginTop: 'var(--space-4)', padding: 'var(--space-6)' }}>
-              <p className="label" style={{ color: 'var(--brand-ink)', margin: '0 0 var(--space-3)' }}>{at['quiz.transferResultTitle']}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+            <section className="card ls-panel" aria-labelledby="ls-transfer-breakdown">
+              <p id="ls-transfer-breakdown" className="ls-panel-label">{at['quiz.transferResultTitle']}</p>
+              <div className="ls-rows">
+                <div className="ls-row">
                   <span>{at['quiz.transferChallengeNear']}</span>
-                  <span style={{ fontWeight: 600 }}>{results.transferResult.nearScore}%</span>
+                  <span className="tabular">{results.transferResult.nearScore}%</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                <div className="ls-row">
                   <span>{at['quiz.transferChallengeContextual']}</span>
-                  <span style={{ fontWeight: 600 }}>{results.transferResult.contextualScore}%</span>
+                  <span className="tabular">{results.transferResult.contextualScore}%</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                <div className="ls-row">
                   <span>{at['quiz.transferChallengeHigher']}</span>
-                  <span style={{ fontWeight: 600 }}>{results.transferResult.higherScore}%</span>
+                  <span className="tabular">{results.transferResult.higherScore}%</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, borderTop: '1px solid var(--border-default)', paddingTop: 6, marginTop: 4 }}>
+                <div className="ls-row ls-row--total">
                   <span>{at['quiz.transferOverallLabel']}</span>
-                  <span>{results.transferResult.overallScore}%</span>
+                  <span className="tabular">{results.transferResult.overallScore}%</span>
                 </div>
               </div>
               {!results.transferResult.passed && results.transferResult.diagnostic && (
-                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>
+                <p className="ls-outcome-body">
                   {results.transferResult.diagnostic === 'RETENTION_WEAKNESS'
                     ? at['quiz.transferDiagnosticRetentionWeakness']
                     : results.transferResult.diagnostic === 'FOUNDATIONAL_PROCEDURAL_FAILURE'
@@ -1919,7 +2173,7 @@ function QuizPageContent() {
                     : at['quiz.transferDiagnosticApplicationContextWeakness']}
                 </p>
               )}
-            </div>
+            </section>
           )}
           {/* CANON-R6/R6R1 Part 14-17 -- for ANY v1 attempt,
               `canonicalResults` (a FRESH getCanonicalPedagogicalDecision,
@@ -1936,9 +2190,9 @@ function QuizPageContent() {
               copy (previously fell through to `null`, showing nothing
               at all after a Retain or Transfer attempt). */}
           {results.canonicalResultsStatus === 'OK' && results.canonicalResults && (
-            <div className="card" data-testid="results-next-step" style={{ marginTop: 'var(--space-4)', borderColor: 'var(--brand)', borderWidth: 2, padding: 'var(--space-6)' }}>
-              <p className="label" style={{ color: 'var(--brand-ink)', margin: '0 0 var(--space-3)' }}>{at['quiz.canonicalNextStepTitle']}</p>
-              <p style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+            <section className="card ls-panel ls-next" data-testid="results-next-step" aria-labelledby="ls-next-title">
+              <p id="ls-next-title" className="ls-panel-label">{at['quiz.canonicalNextStepTitle']}</p>
+              <p className="ls-next-text">
                 {results.canonicalResults.actionState === 'WAITING'
                   ? (results.canonicalResults.nextEligibleAt
                       ? at['conceptMission.noActionRetentionWaitingBodyWithDate'].replace('{date}', new Date(results.canonicalResults.nextEligibleAt).toLocaleDateString(quizLanguage))
@@ -1957,12 +2211,13 @@ function QuizPageContent() {
                               ? at['quiz.canonicalNextConsolidated']
                               : null}
               </p>
-            </div>
+              {/* UX-3: the ONE continue action sits with the canonical next
+                  step it resolves -- the resolver re-reads the same truth. */}
+              {continuation(true)}
+            </section>
           )}
           {results.canonicalResultsStatus === 'V1_ACTIVITY_CONTRACT_VIOLATION' && (
-            <div className="card empty-state" style={{ marginTop: 'var(--space-4)' }}>
-              <p style={{ margin: 0 }}>{at['quiz.canonicalContractViolation']}</p>
-            </div>
+            <InlineAlert tone="info" title={at['quiz.canonicalContractViolation']} />
           )}
           {/* CANON-R6R1 Part 17 -- evidence write succeeded but the
               canonical re-fetch failed. The factual score/correct/
@@ -1971,19 +2226,13 @@ function QuizPageContent() {
               notice -- never legacy progression copy, never an invented
               stage. */}
           {results.canonicalResultsStatus === 'CANONICAL_RESULTS_UNAVAILABLE' && (
-            <div className="card empty-state" style={{ marginTop: 'var(--space-4)' }}>
-              <p style={{ margin: 0 }}>{at['quiz.canonicalResultsUnavailable']}</p>
-            </div>
+            <InlineAlert tone="info" title={at['quiz.canonicalResultsUnavailable']} />
           )}
 
-          {!isV1Result && (
-            <p style={{ marginTop: 'var(--space-4)', color: 'var(--text-secondary)', fontSize: 14 }}>{messageText}</p>
-          )}
-        </div>
 
         {(results.verificationNeeded || []).length > 0 && (
-          <div className="card" style={{ marginTop: 'var(--space-4)' }}>
-            <p className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{at['quiz.verificationTitle']}</p>
+          <section className="card ls-panel" aria-labelledby="ls-verify-title">
+            <p id="ls-verify-title" className="ls-panel-label">{at['quiz.verificationTitle']}</p>
             {(results.verificationNeeded || []).map((v: any) => {
               const resolved = verificationResults[v.conceptId];
               if (resolved) {
@@ -2014,22 +2263,20 @@ function QuizPageContent() {
                   </p>
                   {v.question.visualAid && <VisualAidView aid={v.question.visualAid} />}
                   {v.question.answerFormat === 'single_choice' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {(v.question.options || []).map((opt: any) => {
+                    <div role="radiogroup" aria-label={at['quiz.verificationTitle']} className="ls-options">
+                      {(v.question.options || []).map((opt: any, i: number) => {
                         const isSelected = verificationAnswers[v.conceptId] === opt.id;
                         return (
                           <button
                             key={opt.id}
                             type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            className="ls-option"
                             onClick={() => setVerificationAnswers((prev) => ({ ...prev, [v.conceptId]: opt.id }))}
-                            style={{
-                              textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius-sm)',
-                              border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
-                              background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
-                              cursor: 'pointer', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--text-primary)',
-                            }}
                           >
-                            <MathText text={opt.text} />
+                            <span className="ls-option-key" aria-hidden>{String.fromCharCode(65 + i)}</span>
+                            <span className="ls-option-text"><MathText text={opt.text} /></span>
                           </button>
                         );
                       })}
@@ -2085,7 +2332,7 @@ function QuizPageContent() {
                 </div>
               );
             })}
-          </div>
+          </section>
         )}
 
         {/* LX-4R R7: canonical Evidence Sufficiency after INDEPENDENT
@@ -2094,8 +2341,8 @@ function QuizPageContent() {
             and NEVER decides the next activity (LX-5). */}
         {results.proveSufficiency && (
           <div
-            className="card"
-            style={{ marginTop: 'var(--space-4)', borderColor: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)' }}
+            className="card ls-panel"
+            style={{ borderColor: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)' }}
           >
             <p className="label" style={{ color: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)', margin: '0 0 4px' }}>
               {results.proveSufficiency.sufficient ? at['prove.sufficientTitle'] : at['prove.moreNeededTitle']}
@@ -2112,7 +2359,7 @@ function QuizPageContent() {
             canonical PRACTICE/PROVE activity with no remaining evidence
             gap. Not hidden behind an execution minimum. */}
         {countAuthority?.zeroGapMismatch && (
-          <p style={{ marginTop: 'var(--space-3)', fontSize: 12.5, color: 'var(--text-muted)' }}>
+          <p className="ls-note">
             {at['activeLearning.activityComplete']}
           </p>
         )}
@@ -2123,33 +2370,18 @@ function QuizPageContent() {
             returns to the Concept Mission. For Prove, an insufficient
             gap simply means the canonical re-read keeps the same
             purpose (no local "if sufficient => RETAIN"). */}
-        {subjectId && conceptId && studentId && !resumeVerifyAttemptId && !diagnosisId && (
-          <div style={{ marginTop: 'var(--space-6)' }}>
-            <ContinuationPanel
-              studentId={studentId}
-              subjectId={subjectId}
-              conceptId={conceptId}
-              locale={quizLanguage}
-              from={continuationKind}
-              note={
-                results.proveSufficiency && !results.proveSufficiency.sufficient
-                  ? at['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
-                  : undefined
-              }
-            />
-          </div>
-        )}
+        {!canonicalNextShown && continuation(false)}
 
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost" onClick={() => setReviewing(true)}>{at['quiz.reviewButton']}</button>
+        <div className="ls-secondary">
+          <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>
           {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && studentId && (
-            <button className="btn btn-ghost" onClick={() => studentId && generateQuiz(studentId)}>
+            <button className="btn btn-secondary" onClick={() => studentId && generateQuiz(studentId)}>
               {at['activeLearning.practiceAgain']}
             </button>
           )}
         </div>
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && (
-          <p style={{ marginTop: 'var(--space-3)', fontSize: 12, color: 'var(--text-muted)' }}>{at['activeLearning.retryNote']}</p>
+          <p className="ls-note">{at['activeLearning.retryNote']}</p>
         )}
       </div>
     );
@@ -2170,6 +2402,13 @@ function QuizPageContent() {
     conceptId
   ) {
     return (
+      <div className="ls" data-kind={activityKind}>
+      <SessionHeader
+        kind={activityKind}
+        kindLabel={at[kindLabelKey(activityKind)]}
+        title={conceptLabel || subjectName || at[kindLabelKey(activityKind)]}
+        context={conceptLabel ? subjectName : null}
+      />
       <TeachingIntro
         view={teachingExperience}
         studentId={studentId}
@@ -2184,6 +2423,7 @@ function QuizPageContent() {
         exitHref={subjectId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'}
         onDone={() => setTeachingStage('questions')}
       />
+      </div>
     );
   }
 
@@ -2201,26 +2441,31 @@ function QuizPageContent() {
     if (genErrorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
     if (genErrorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
-        <div className="card empty-state" style={{ textAlign: 'center' }}>
-          <strong>{at['quiz.canonicalStateChanged']}</strong>
-          <div style={{ marginTop: 'var(--space-4)' }}>
-            <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
-              {at['continuation.backToConcept']}
-            </Link>
-          </div>
+        <div className="ls" data-kind={activityKind}>
+          <InlineAlert
+            tone="info"
+            title={at['quiz.canonicalStateChanged']}
+            actions={
+              <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
+                {at['continuation.backToConcept']}
+              </Link>
+            }
+          />
         </div>
       );
     }
+    if (genState !== 'error') return preparingView(at['practice.preparing']);
     return (
-      <div className="card empty-state" style={{ textAlign: 'center' }}>
+      <div className="ls" data-kind={activityKind}>
         {genState === 'error' ? (
-          <>
-            <strong>{at['practice.prepareFailedTitle']}</strong>
-            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{at['practice.prepareFailedBody']}</p>
+          <InlineAlert
+            tone="error"
+            title={at['practice.prepareFailedTitle']}
+            body={at['practice.prepareFailedBody']}
+            actions={
             <button
               type="button"
               className="btn btn-primary"
-              style={{ marginTop: 'var(--space-4)' }}
               // LX-9 FINAL: this state was produced by `startCanonicalActivity`'s
               // own background generation wave failing (genState='error'),
               // NEVER by `generateQuiz` -- retrying must re-run the SAME
@@ -2240,10 +2485,9 @@ function QuizPageContent() {
             >
               {at['practice.prepareRetry']}
             </button>
-          </>
-        ) : (
-          <p role="status" aria-live="polite" style={{ color: 'var(--text-muted)' }}>{at['practice.preparing']}</p>
-        )}
+            }
+          />
+        ) : null}
       </div>
     );
   }
@@ -2256,19 +2500,30 @@ function QuizPageContent() {
   // above) and from the post-completion Results breakdown.
   if (quizMode === 'canonical_transfer' && questions.length > 0 && !transferIntroDismissed) {
     return (
-      <div style={{ maxWidth: 560 }}>
-        <div className="card" style={{ padding: 'var(--space-8)' }}>
-          <p className="label" style={{ color: 'var(--brand-ink)', marginBottom: 6 }}>{at['quiz.transferResultTitle']}</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '6px 0 var(--space-6)' }}>{at['quiz.transferIntroBody']}</p>
-          <ol style={{ margin: '0 0 var(--space-6)', paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeNear']}</li>
-            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeContextual']}</li>
-            <li style={{ fontSize: 15 }}>{at['quiz.transferChallengeHigher']}</li>
+      <div className="ls" data-kind={activityKind}>
+        <SessionHeader
+          kind={activityKind}
+          kindLabel={at[kindLabelKey(activityKind)]}
+          title={conceptLabel || subjectName || at[kindLabelKey(activityKind)]}
+          context={conceptLabel ? subjectName : null}
+          purpose={at[kindPurposeKey(activityKind)]}
+        />
+        <section className="card ls-teach-card" aria-labelledby="ls-transfer-intro">
+          <h2 id="ls-transfer-intro" className="ls-teach-title">{at['quiz.transferIntroBody']}</h2>
+          <ol className="ls-worked">
+            {(['quiz.transferChallengeNear', 'quiz.transferChallengeContextual', 'quiz.transferChallengeHigher'] as const).map((k, i) => (
+              <li key={k}>
+                <span className="ls-worked-num" aria-hidden>{i + 1}</span>
+                <span className="ls-worked-body">{at[k]}</span>
+              </li>
+            ))}
           </ol>
-          <button type="button" className="btn btn-primary" onClick={() => setTransferIntroDismissed(true)}>
-            {at['quiz.transferIntroStart']}
-          </button>
-        </div>
+          <div className="ls-teach-actions">
+            <button type="button" className="btn btn-primary btn-lg" onClick={() => setTransferIntroDismissed(true)}>
+              {at['quiz.transferIntroStart']}
+            </button>
+          </div>
+        </section>
       </div>
     );
   }
@@ -2294,10 +2549,12 @@ function QuizPageContent() {
   // non-null: `currentQuestionForContract` (questions[current]) equals
   // `q` at this point, past the `if (!q) return null` guard above.
   const ic = interactionContract!;
-  const isProveMode = !PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId;
+  // Choice-based answers get a phone-sticky primary action; free-text /
+  // math answers keep it inline so it never fights the math keyboard.
+  const stickyAction = q.answerFormat === 'single_choice' || q.answerFormat === 'multi_choice';
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    <div className="ls" data-kind={activityKind}>
       {/* LX-4P-R2: a mid-attempt question-language change first tries
           same-item localization (/api/quizzes/localize-question). This
           dialog is only the FALLBACK -- shown when no safe in-place
@@ -2339,36 +2596,26 @@ function QuizPageContent() {
         </div>
       )}
 
-      {/* LX-4K: Focus Mode already provides an Exit affordance -- the
-          in-page breadcrumb is gone. The picker (question language, not
-          UI language) stays but is demoted to the corner. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-        <select
-          value={quizLanguage}
-          disabled={switchingLanguage}
-          onChange={(e) => changeQuizLanguage(e.target.value as Locale)}
-          title={at['quiz.languagePickerLabel']}
-          aria-label={at['quiz.languagePickerLabel']}
-          style={{
-            height: 30, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
-            background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 12.5, fontFamily: 'inherit',
-            padding: '0 8px',
-          }}
-        >
-          {LOCALES.map((l) => (
-            <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
-        <span className="tabular" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-          {/* CANON-V2-PREVIEW-CERT Section 14 -- Transfer identifies
-              WHICH challenge type the learner is on (translated into
-              learner language, never the raw NEAR/CONTEXTUAL/HIGHER
-              enum) instead of the generic "Question X of Y" every
-              other mode keeps using. */}
-          {quizMode === 'canonical_transfer' && questions[current]?.transferDepth
+      {/* UX-3: one focused header -- kind, concept, purpose, position.
+          LX-4K: Focus Mode already provides the Exit affordance. The
+          question-language picker (not the UI language) stays, demoted
+          into the header tools. */}
+      <SessionHeader
+        kind={activityKind}
+        kindLabel={at[kindLabelKey(activityKind)]}
+        title={conceptLabel || subjectName || at[kindLabelKey(activityKind)]}
+        context={conceptLabel ? subjectName : null}
+        purpose={at[kindPurposeKey(activityKind)]}
+        progress={{
+          current: current + 1,
+          total: questions.length,
+          label: at['xs.progressLabel'],
+          // CANON-V2-PREVIEW-CERT Section 14 -- Transfer identifies
+          // WHICH challenge type the learner is on (translated into
+          // learner language, never the raw NEAR/CONTEXTUAL/HIGHER
+          // enum) instead of the generic "Question X of Y" every
+          // other mode keeps using.
+          text: quizMode === 'canonical_transfer' && questions[current]?.transferDepth
             ? `${
                 questions[current].transferDepth === 'NEAR'
                   ? at['quiz.transferChallengeNear']
@@ -2376,21 +2623,36 @@ function QuizPageContent() {
                   ? at['quiz.transferChallengeContextual']
                   : at['quiz.transferChallengeHigher']
               } · ${current + 1}/${questions.length}`
-            : `${current + 1}/${questions.length}`}
-        </span>
-        <div style={{ flex: 1, height: 5, background: 'var(--border-default)', borderRadius: 999, overflow: 'hidden' }}>
-          <div
-            style={{
-              height: '100%', background: 'var(--brand)',
-              width: `${((current + 1) / questions.length) * 100}%`,
-              transition: 'width 250ms ease',
-            }}
-          />
-        </div>
-      </div>
+            : at['xs.progress'].replace('{n}', String(current + 1)).replace('{total}', String(questions.length)),
+        }}
+        tools={
+          <select
+            className="ls-lang"
+            value={quizLanguage}
+            disabled={switchingLanguage}
+            onChange={(e) => changeQuizLanguage(e.target.value as Locale)}
+            title={at['quiz.languagePickerLabel']}
+            aria-label={at['quiz.languagePickerLabel']}
+          >
+            {LOCALES.map((l) => (
+              <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
+            ))}
+          </select>
+        }
+      />
 
-      <div className="card" style={{ padding: 'var(--space-8)', opacity: switchingLanguage ? 0.5 : 1 }}>
-        {/* Phase 6 Closeout A: in-flow assisted/independent indicator.
+      {resumedFromDraft && current + 1 <= questions.length && (
+        <div className="ls-resumed">
+          <InlineAlert tone="info" title={at['xs.resumed']} />
+        </div>
+      )}
+
+      <section className="card ls-task" aria-labelledby="ls-question" style={{ opacity: switchingLanguage ? 0.5 : 1 }}>
+        {/* R9 + UX-3: in an independent activity (Prove / Retain / Transfer /
+            assessment) this line states WHY help is unavailable ("Por tu
+            cuenta · Sin pistas ni ayuda…"), not just omits it; the header
+            names the kind -- never "Demuéstralo" on a Retain or Transfer.
+            Phase 6 Closeout A: in-flow assisted/independent indicator.
             Presentation only -- derived from the quiz mode already in
             the URL (or the resumed verification flow), never from
             mastery/retention/hint thresholds and never from a
@@ -2417,11 +2679,13 @@ function QuizPageContent() {
             false claim -- it is SYSTEM-DEFINED, LEARNER-VISIBLE, and
             NOT LEARNER-EDITABLE: no selector, no slider, no
             preference, StudyUS remains the sole authority. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+        <div className="ls-meta">
           <DifficultyIndicator value={q.difficulty} t={at} />
           {typeof q.calculatorAllowed === 'boolean' && (
             <span
               title={q.calculatorAllowed ? at['quiz.calculatorAllowed'] : at['quiz.calculatorNotAllowed']}
+              aria-label={q.calculatorAllowed ? at['quiz.calculatorAllowed'] : at['quiz.calculatorNotAllowed']}
+              role="img"
               style={{
                 position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 26, height: 26, borderRadius: 'var(--radius-full)',
@@ -2446,24 +2710,8 @@ function QuizPageContent() {
           )}
         </div>
 
-        {isProveMode && (
-          <div style={{ marginBottom: 'var(--space-4)' }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{at['activeLearning.proveTitle']}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              {at['activeLearning.proveBody']}
-            </p>
-            {/* R9: the reason help is unavailable, stated -- not just absent. */}
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{at['activeLearning.helpUnavailable']}</p>
-          </div>
-        )}
-
-        <p className="al-response-req" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-          <span className="label" style={{ color: 'var(--text-muted)' }}>{at['responseContract.label']}:</span>{' '}
-          {at[`responseContract.${responseContract.kind}` as keyof typeof t]}
-        </p>
-
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, lineHeight: '28px', flex: 1 }}>
+        <div className="ls-question-row">
+          <h2 id="ls-question" className="ls-question">
             <MathText text={q.question} />
           </h2>
           {/* LX-8 R8/R22: read-aloud is accessibility, not help -- offered
@@ -2482,6 +2730,15 @@ function QuizPageContent() {
           )}
         </div>
 
+        {at[`responseContract.${responseContract.kind}` as keyof typeof t] && (
+          <p className="al-response-req ls-ask">
+            <strong>{at['responseContract.label']}:</strong>{' '}
+            {at[`responseContract.${responseContract.kind}` as keyof typeof t]}
+          </p>
+        )}
+
+        {q.visualAid && <VisualAidView aid={q.visualAid} />}
+
         {/* LX-4R R4: the contextual help surface (PRACTICE only). The
             server (/api/learning/contextual-help -> canUseAI) is the
             authority; it is never rendered for Prove / assessment. */}
@@ -2490,16 +2747,9 @@ function QuizPageContent() {
         )}
 
         {q.askConfidence && (
-          <div
-            role="radiogroup"
-            aria-label={at['quiz.confidenceQuestion']}
-            style={{
-              marginBottom: 'var(--space-5)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-subtle)', border: '1px solid var(--border-default)',
-            }}
-          >
-            <p style={{ margin: '0 0 var(--space-3)', fontSize: 14, fontWeight: 600 }}>{at['quiz.confidenceQuestion']}</p>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <div role="radiogroup" aria-label={at['quiz.confidenceQuestion']} className="ls-confidence">
+            <p className="ls-confidence-title">{at['quiz.confidenceQuestion']}</p>
+            <div className="ls-confidence-options">
               {(['NOT_SURE', 'SOMEWHAT_SURE', 'VERY_SURE'] as ConfidenceLevel[]).map((level) => (
                 <button
                   key={level}
@@ -2508,7 +2758,6 @@ function QuizPageContent() {
                   aria-checked={confidenceSelected === level}
                   onClick={() => setConfidenceSelected(level)}
                   className={`btn ${confidenceSelected === level ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize: 13.5, flex: '1 1 auto', minWidth: 100 }}
                 >
                   {level === 'NOT_SURE' ? at['quiz.confidenceLow'] : level === 'SOMEWHAT_SURE' ? at['quiz.confidenceMedium'] : at['quiz.confidenceHigh']}
                 </button>
@@ -2517,34 +2766,24 @@ function QuizPageContent() {
           </div>
         )}
 
-        {q.visualAid && <VisualAidView aid={q.visualAid} />}
-
-        <fieldset disabled={answerLocked || answerCheck?.status === 'checking'} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <fieldset className="ls-answer" disabled={answerLocked || answerCheck?.status === 'checking' || submitting}>
         {(q.answerFormat === 'single_choice') && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <div role="radiogroup" aria-labelledby="ls-question" className="ls-options">
             {(q.options || []).map((opt, i) => {
               const letter = String.fromCharCode(65 + i);
               const isSelected = singleChoice === opt.id;
               return (
                 <button
                   key={opt.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  className="ls-option"
                   onClick={() => setSingleChoice(opt.id)}
                   disabled={switchingLanguage}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 'var(--space-3)', textAlign: 'left',
-                    padding: '13px var(--space-4)', border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
-                    borderRadius: 'var(--radius-sm)', background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
-                    cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, color: 'var(--text-primary)', width: '100%',
-                  }}
                 >
-                  <span style={{
-                    width: 24, height: 24, borderRadius: '50%', border: '1.5px solid var(--border-default)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 650,
-                    color: 'var(--text-muted)', flexShrink: 0,
-                  }}>
-                    {letter}
-                  </span>
-                  <MathText text={opt.text} />
+                  <span className="ls-option-key" aria-hidden>{letter}</span>
+                  <span className="ls-option-text"><MathText text={opt.text} /></span>
                 </button>
               );
             })}
@@ -2552,20 +2791,12 @@ function QuizPageContent() {
         )}
 
         {q.answerFormat === 'multi_choice' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 4px' }}>{at['quiz.selectAllThatApply']}</p>
+          <div className="ls-options">
+            <p className="ls-instructions">{at['quiz.selectAllThatApply']}</p>
             {(q.options || []).map((opt) => {
               const isSelected = multiChoice.includes(opt.id);
               return (
-                <label
-                  key={opt.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                    padding: '13px var(--space-4)', border: `1.5px solid ${isSelected ? 'var(--brand)' : 'var(--border-default)'}`,
-                    borderRadius: 'var(--radius-sm)', background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
-                    cursor: 'pointer', fontSize: 14,
-                  }}
-                >
+                <label key={opt.id} className="ls-option">
                   <input
                     type="checkbox"
                     checked={isSelected}
@@ -2573,7 +2804,7 @@ function QuizPageContent() {
                       setMultiChoice((prev) => (prev.includes(opt.id) ? prev.filter((id) => id !== opt.id) : [...prev, opt.id]))
                     }
                   />
-                  <MathText text={opt.text} />
+                  <span className="ls-option-text"><MathText text={opt.text} /></span>
                 </label>
               );
             })}
@@ -2617,67 +2848,62 @@ function QuizPageContent() {
         )}
 
         {q.answerFormat === 'matching' && (
-          <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.matchInstructions']}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {(q.matchingLeft || []).map((left) => (
-                <div key={left} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={left} /></span>
-                  <select
-                    value={matchingAnswer[left] || ''}
-                    onChange={(e) => setMatchingAnswer((prev) => ({ ...prev, [left]: e.target.value }))}
-                    style={{ flex: 1, height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', fontSize: 13.5 }}
-                  >
-                    <option value="" disabled>—</option>
-                    {(q.matchingRightShuffled || []).map((right) => (
-                      <option key={right} value={right}>{right}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
+          <div className="ls-pairs">
+            <p className="ls-instructions">{at['quiz.matchInstructions']}</p>
+            {(q.matchingLeft || []).map((left, i) => (
+              <div key={left} className="ls-pair">
+                <span className="ls-pair-text" id={`ls-match-${i}`}><MathText text={left} /></span>
+                <select
+                  className="ui-select"
+                  aria-labelledby={`ls-match-${i}`}
+                  value={matchingAnswer[left] || ''}
+                  onChange={(e) => setMatchingAnswer((prev) => ({ ...prev, [left]: e.target.value }))}
+                >
+                  <option value="" disabled>—</option>
+                  {(q.matchingRightShuffled || []).map((right) => (
+                    <option key={right} value={right}>{right}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
         )}
 
         {q.answerFormat === 'ordering' && (
-          <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.orderInstructions']}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {orderingAnswer.map((item, i) => (
-                <div key={item} style={{
-                  display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '10px var(--space-3)',
-                  border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-subtle)',
-                }}>
-                  <span className="tabular" style={{ fontWeight: 650, color: 'var(--text-muted)', width: 20 }}>{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={item} /></span>
-                  <button className="btn btn-ghost" style={{ height: 28, width: 28, padding: 0 }} onClick={() => moveOrderingItem(i, -1)} disabled={i === 0}>↑</button>
-                  <button className="btn btn-ghost" style={{ height: 28, width: 28, padding: 0 }} onClick={() => moveOrderingItem(i, 1)} disabled={i === orderingAnswer.length - 1}>↓</button>
-                </div>
-              ))}
-            </div>
+          <div className="ls-order">
+            <p className="ls-instructions">{at['quiz.orderInstructions']}</p>
+            {orderingAnswer.map((item, i) => (
+              <div key={item} className="ls-order-item">
+                <span className="ls-order-index">{i + 1}</span>
+                <span className="ls-option-text"><MathText text={item} /></span>
+                <span className="ls-order-moves">
+                  <button type="button" className="btn btn-ghost" aria-label={`${at['xs.moveUp']}: ${item}`} onClick={() => moveOrderingItem(i, -1)} disabled={i === 0}>↑</button>
+                  <button type="button" className="btn btn-ghost" aria-label={`${at['xs.moveDown']}: ${item}`} onClick={() => moveOrderingItem(i, 1)} disabled={i === orderingAnswer.length - 1}>↓</button>
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
         {q.answerFormat === 'classification' && (
-          <div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 8px' }}>{at['quiz.classifyInstructions']}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {(q.classificationItems || []).map((item) => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ flex: 1, fontSize: 14 }}><MathText text={item} /></span>
-                  <select
-                    value={classificationAnswer[item] || ''}
-                    onChange={(e) => setClassificationAnswer((prev) => ({ ...prev, [item]: e.target.value }))}
-                    style={{ flex: 1, height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', fontSize: 13.5 }}
-                  >
-                    <option value="" disabled>—</option>
-                    {(q.classificationCategories || []).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
+          <div className="ls-pairs">
+            <p className="ls-instructions">{at['quiz.classifyInstructions']}</p>
+            {(q.classificationItems || []).map((item, i) => (
+              <div key={item} className="ls-pair">
+                <span className="ls-pair-text" id={`ls-class-${i}`}><MathText text={item} /></span>
+                <select
+                  className="ui-select"
+                  aria-labelledby={`ls-class-${i}`}
+                  value={classificationAnswer[item] || ''}
+                  onChange={(e) => setClassificationAnswer((prev) => ({ ...prev, [item]: e.target.value }))}
+                >
+                  <option value="" disabled>—</option>
+                  {(q.classificationCategories || []).map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
         )}
 
@@ -2687,75 +2913,103 @@ function QuizPageContent() {
           <div
             role="status"
             aria-live="polite"
-            className="card"
+            className="ls-feedback"
             data-testid="answer-feedback"
-            style={{
-              marginTop: 'var(--space-4)',
-              borderColor: answerCheck.status === 'done' ? (answerCheck.correct ? 'var(--success, #15803d)' : 'var(--warning, #b45309)') : 'var(--border-default)',
-            }}
+            data-tone={answerCheck.status !== 'done' ? 'unavailable' : answerCheck.correct ? 'correct' : answerCheck.partial ? 'almost' : 'notyet'}
           >
             {answerCheck.status === 'unavailable' ? (
-              <p style={{ margin: 0, fontSize: 14 }}>{at['quiz.checkUnavailable']}</p>
+              <>
+                {/* UX-3: a failed check is not a mistake -- say so, and let
+                    the learner re-run the SAME read-only check. The answer
+                    stays locked exactly as before. */}
+                <p>{at['quiz.checkUnavailable']}</p>
+                <button type="button" className="btn btn-secondary" onClick={checkAnswer}>{at['xs.checkRetry']}</button>
+              </>
             ) : (
               <>
-                <strong style={{ fontSize: 15 }}>
+                <p className="ls-feedback-title">
                   {answerCheck.correct ? at['feedback.correct'] : answerCheck.partial ? at['feedback.almost'] : at['feedback.incorrect']}
-                </strong>
+                </p>
                 {answerCheck.feedback ? (
-                  <p style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={answerCheck.feedback} /></p>
+                  <p><MathText text={answerCheck.feedback} /></p>
                 ) : !answerCheck.correct ? (
                   // Structured formats carry no grader text: a short, visible "why"
                   // that does not reveal the right option.
-                  <p style={{ margin: '6px 0 0', fontSize: 14 }}>{at['quiz.checkIncorrectGeneric']}</p>
+                  <p>{at['quiz.checkIncorrectGeneric']}</p>
                 ) : null}
                 {!answerCheck.correct && answerCheck.direction && (
-                  <p data-testid="answer-direction" style={{ margin: '6px 0 0', fontSize: 14 }}>
+                  <p data-testid="answer-direction">
                     <strong>{at['quiz.feedbackDirection']}</strong> <MathText text={answerCheck.direction} />
                   </p>
                 )}
                 {/* Progressive scaffold: one extra hint per click, never the solution. */}
                 {!answerCheck.correct &&
                   (answerCheck.scaffold ?? []).slice(0, answerCheck.scaffoldShown ?? 0).map((hint, i) => (
-                    <p key={i} data-testid="answer-scaffold" style={{ margin: '6px 0 0', fontSize: 14 }}><MathText text={hint} /></p>
+                    <p key={i} data-testid="answer-scaffold"><MathText text={hint} /></p>
                   ))}
                 {!answerCheck.correct && (answerCheck.scaffoldShown ?? 0) < (answerCheck.scaffold?.length ?? 0) && (
                   <button
                     type="button"
                     className="btn btn-ghost"
-                    style={{ marginTop: 'var(--space-2)', fontSize: 13.5 }}
                     onClick={() => setAnswerCheck((prev) => (prev ? { ...prev, scaffoldShown: (prev.scaffoldShown ?? 0) + 1 } : prev))}
                   >
                     {(answerCheck.scaffoldShown ?? 0) === 0 ? at['quiz.keyIdeaShow'] : at['quiz.keyIdeaMore']}
                   </button>
                 )}
                 {!answerCheck.correct && (
-                  <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>{at['quiz.checkHelpHint']}</p>
+                  <p className="ls-feedback-note">{at['quiz.checkHelpHint']}</p>
                 )}
               </>
             )}
             {current + 1 < questions.length && (
-              <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>{at['quiz.checkContinuity']}</p>
+              <p className="ls-feedback-note">{at['quiz.checkContinuity']}</p>
             )}
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
+        {/* UX-3: a failed submission is visible, announced, and recoverable.
+            The answers stay exactly as entered; nothing was scored. */}
+        {submitFailure && (
+          <InlineAlert
+            tone="error"
+            title={at['xs.submitFailedTitle']}
+            body={at[submitFailureKey(submitFailure)]}
+            actions={
+              submitFailure === 'EXPIRED' ? (
+                <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-secondary">
+                  {at['continuation.backToConcept']}
+                </Link>
+              ) : null
+            }
+          />
+        )}
+
+        <div className={`ls-actions${stickyAction ? ' ls-actions--sticky' : ''}`}>
           {perQuestionFeedback && !answerLocked ? (
             <button
               onClick={checkAnswer}
               disabled={!canProceed(q) || answerCheck?.status === 'checking' || switchingLanguage}
               aria-busy={answerCheck?.status === 'checking'}
-              className="btn btn-primary"
+              className="btn btn-primary btn-lg"
             >
-              {answerCheck?.status === 'checking' ? '…' : at['quiz.checkAnswer']}
+              {answerCheck?.status === 'checking' ? at['xs.checking'] : at['quiz.checkAnswer']}
+            </button>
+          ) : submitFailure && submitFailure !== 'EXPIRED' ? (
+            <button onClick={() => submitQuiz(answers, confidences)} disabled={submitting} aria-busy={submitting} className="btn btn-primary btn-lg">
+              {submitting ? at['quiz.submitting'] : at['xs.retrySubmit']}
             </button>
           ) : (
-            <button onClick={nextQuestion} disabled={!canProceed(q) || submitting || switchingLanguage} className="btn btn-primary">
+            <button
+              onClick={nextQuestion}
+              disabled={!canProceed(q) || submitting || switchingLanguage || submitFailure === 'EXPIRED'}
+              aria-busy={submitting}
+              className="btn btn-primary btn-lg"
+            >
               {submitting ? at['quiz.submitting'] : current + 1 < questions.length ? at['quiz.next'] : at['quiz.viewResults']}
             </button>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

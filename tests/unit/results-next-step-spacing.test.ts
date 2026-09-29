@@ -41,10 +41,15 @@ describe('"Tu siguiente paso" card', () => {
 
   it('uses the same inner padding as the standard card ("Ya tienes la idea" = .card, var(--space-6)) and separates label and message', () => {
     expect(css).toMatch(/\.card \{[^}]*padding: var\(--space-6\);/);
-    expect(quiz).toMatch(/data-testid="results-next-step" style=\{\{ marginTop: 'var\(--space-4\)', borderColor: 'var\(--brand\)', borderWidth: 2, padding: 'var\(--space-6\)' \}\}>\s*<p className="label" style=\{\{ color: 'var\(--brand-ink\)', margin: '0 0 var\(--space-3\)' \}\}>\{at\['quiz\.canonicalNextStepTitle'\]\}<\/p>/);
+    // UX-3: a .card (inner padding var(--space-6)) laid out by .ls-panel,
+    // whose gap separates the label from the message.
+    expect(quiz).toMatch(/<section className="card ls-panel ls-next" data-testid="results-next-step" aria-labelledby="ls-next-title">\s*<p id="ls-next-title" className="ls-panel-label">\{at\['quiz\.canonicalNextStepTitle'\]\}<\/p>/);
+    expect(css).toMatch(/\.ls-panel \{ display: flex; flex-direction: column; gap: var\(--space-3\); \}/);
+    // desktop: the panel never overrides .card padding (phones share one learning-card rule)
+    expect(css).not.toMatch(/^\.ls-panel[^{]*\{[^}]*padding/m);
   });
 
   it('the equivalent Results card (transfer result) gets the same spacing', () => {
-    expect(quiz).toMatch(/padding: 'var\(--space-6\)' \}\}>\s*<p className="label" style=\{\{ color: 'var\(--brand-ink\)', margin: '0 0 var\(--space-3\)' \}\}>\{at\['quiz\.transferResultTitle'\]\}/);
+    expect(quiz).toMatch(/<section className="card ls-panel" aria-labelledby="ls-transfer-breakdown">\s*<p id="ls-transfer-breakdown" className="ls-panel-label">\{at\['quiz\.transferResultTitle'\]\}/);
   });
 });

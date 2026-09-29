@@ -63,7 +63,9 @@ describe('in-execution challenge-type-aware progress (Section 14) -- richer than
   it('every OTHER mode keeps the plain generic "current+1/length" progress indicator, unaffected', () => {
     const idx = QUIZ_PAGE_SRC.indexOf("quizMode === 'canonical_transfer' && questions[current]?.transferDepth");
     const slice = QUIZ_PAGE_SRC.slice(idx, idx + 900);
-    expect(slice).toMatch(/: `\$\{current \+ 1\}\/\$\{questions\.length\}`/);
+    // UX-3: the generic branch is the localized "{n} de {total}" -- still
+    // plain position, same current+1 / questions.length inputs.
+    expect(slice).toMatch(/: at\['xs\.progress'\]\.replace\('\{n\}', String\(current \+ 1\)\)\.replace\('\{total\}', String\(questions\.length\)\)/);
   });
 });
 
