@@ -494,7 +494,8 @@ describe('UX-2 §8/§9 -- Student shell', () => {
     expect(mq).toMatch(/position: fixed;/);
     expect(mq).toMatch(/env\(safe-area-inset-bottom\)/);
     expect(mq).toMatch(/\.lx-shell--tabs \.lx-main \{ padding-bottom: calc\(/);
-    expect(CSS).toMatch(/\.lx-tab \{[^}]*min-height: 60px;/);
+    expect(CSS).toMatch(/--tabbar-height: 60px;/);
+    expect(CSS).toMatch(/\.lx-tab \{[^}]*min-height: var\(--tabbar-height\);/);
   });
 
   it('client-only route boundaries get the shell\'s resolved language', () => {
@@ -695,11 +696,12 @@ describe('UX-2 landing -- "No estudies más. Estudia mejor."', () => {
     }
   });
 
-  it('responsive: split sections on desktop, a single-column tablet composition, full-width CTAs on phones', () => {
+  it('responsive: one shared split grid on desktop, a single-column tablet composition, full-width CTAs on phones', () => {
     const css = read('src/app/globals.css');
     const lp = css.slice(css.indexOf('UX-2 -- public landing'));
-    expect(lp).toMatch(/\.lp-split \{ display: grid; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 0\.9fr\);/);
-    expect(lp).toMatch(/@media \(max-width: 1023px\) \{\s*\.lp-hero-grid, \.lp-split \{ grid-template-columns: 1fr;/);
+    expect(lp).toMatch(/\.lp-split, \.lp-hero-grid \{ display: grid; grid-template-columns: var\(--lp-cols\); gap: var\(--lp-gap\);/);
+    expect(lp).toMatch(/--lp-cols: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+    expect(lp).toMatch(/@media \(max-width: 1023px\) \{\s*\.lp-shell \{ --lp-cols: minmax\(0, 1fr\);/);
     const phone = lp.slice(lp.indexOf('/* Phone */'));
     expect(phone).toMatch(/\.mkt-header \{ position: static; \}/);
     expect(phone).toMatch(/\.lp-cta-row \.btn \{ width: 100%; \}/);
@@ -717,5 +719,72 @@ describe('UX-2 landing -- "No estudies más. Estudia mejor."', () => {
       const body = (getMessages(locale) as unknown as Record<string, string>)['learning.licenseRequiredBody'];
       expect(body, locale).not.toMatch(/\bIA\b|\bAI\b|\bKI\b|retener|transferir|retain|transfer\b|übertragen|transférer|reter/i);
     }
+  });
+});
+
+/* ================================================================== *
+ * 10 -- precision guard: no decorative tilt or nudges come back.       *
+ * ================================================================== */
+describe('UX-2 precision -- static elements never look accidentally misaligned', () => {
+  const css = read('src/app/globals.css');
+  const ux2 = css.slice(css.indexOf('UX-2 -- Experience Foundation'));
+  const landing = css.slice(css.indexOf('UX-2 -- public landing'));
+
+  it('no rotate/skew anywhere in UX-2 CSS except the disclosure chevron state', () => {
+    const rot = [...ux2.matchAll(/(rotate|skew)[XYZ]?\(/g)].map((m) => ux2.slice(Math.max(0, ux2.lastIndexOf('\n', m.index) + 1), ux2.indexOf('\n', m.index)));
+    expect(rot).toEqual(['.lx-nav-group[open] > summary .lx-nav-chevron { transform: rotate(90deg); }']);
+  });
+
+  it('the landing hero preview card carries no transform at all', () => {
+    expect(css).not.toMatch(/\.lp-preview-card[^{]*\{[^}]*transform/);
+    expect(read('src/app/[locale]/page.tsx')).not.toMatch(/rotate|skew|translate/);
+  });
+
+  it('the only translate in UX-2 CSS centres a hit area -- never a visual nudge', () => {
+    const tr = [...ux2.matchAll(/translate[XY]?\(/g)].map((m) => ux2.slice(ux2.lastIndexOf('\n', m.index) + 1, ux2.indexOf('\n', m.index)));
+    expect(tr).toEqual([expect.stringMatching(/^\.lp-final-note a::after \{.*transform: translateY\(-50%\); \}$/)]);
+  });
+
+  it('no negative-margin nudges in the landing (the metadata separator slot is the one derived exception)', () => {
+    expect(landing).not.toMatch(/margin[a-z-]*:\s*-\d/);
+    expect(ux2).toMatch(/\.xp-hero-meta \{ margin: var\(--space-2\) 0 0 calc\(var\(--meta-sep\) \* -1\);[^}]*clip-path: inset\(0 0 0 var\(--meta-sep\)\);/);
+    expect(ux2).not.toMatch(/\.xp-hero-meta > span \+ span::before/);
+  });
+
+  it('hero and story sections share one composition grid; header and footer share the content edge', () => {
+    expect(landing).toMatch(/\.lp-split, \.lp-hero-grid \{ display: grid; grid-template-columns: var\(--lp-cols\); gap: var\(--lp-gap\);/);
+    expect(landing).toMatch(/\.lp-shell \.mkt-header \{ padding-left: var\(--lp-inline\); padding-right: var\(--lp-inline\); \}/);
+    expect(landing).toMatch(/padding: var\(--space-6\) var\(--lp-inline\);/);
+    expect(landing).toMatch(/--lp-inline: max\(var\(--lp-pad\), calc\(\(100% - var\(--lp-max\)\) \/ 2 \+ var\(--lp-pad\)\)\);/);
+  });
+
+  it('spacing in UX-2 CSS uses the token scale (no arbitrary px paddings/margins/gaps)', () => {
+    const raw = ux2
+      .split('\n')
+      .filter((l) => /(^|[\s{;])(padding|margin|gap|row-gap|column-gap)[a-z-]*:\s*[^;]*\b\d+(\.\d+)?px/.test(l))
+      .filter((l) => !/katex-display/.test(l)) // 2px scrollbar clearance, functional
+      .filter((l) => !/margin-top: calc\(0\.775em - 1\.5px\)/.test(l)); // dash centred on the first line, derived from line-height
+    expect(raw).toEqual([]);
+  });
+
+  it('equivalent chips share one geometry (24px, 0 12px, 12px type)', () => {
+    for (const sel of ['.xp-hero-verb {', '.xp-reinforce {', '.lp-badge {']) {
+      const rule = ux2.slice(ux2.indexOf(sel), ux2.indexOf('}', ux2.indexOf(sel)));
+      expect(rule, sel).toMatch(/min-height: 24px;/);
+      expect(rule, sel).toMatch(/padding: 0 var\(--space-3\);/);
+      expect(rule, sel).toMatch(/font-size: 12px;/);
+    }
+  });
+
+  it('the public sticky header is opaque -- scrolled content never ghosts through', () => {
+    const at = landing.indexOf('\n.mkt-header {');
+    const rule = landing.slice(at, landing.indexOf('}', at));
+    expect(rule).toMatch(/background: var\(--bg-base\);/);
+    expect(rule).not.toMatch(/color-mix|backdrop-filter/);
+  });
+
+  it('the rendered-geometry audit used for certification is kept in the repo', () => {
+    const audit = read('scripts/ux/landing-geometry-audit.js');
+    for (const check of ['no static transform', 'one content edge', 'one right edge', 'captions centred', 'stage tracks', 'hero card', 'equivalent components']) expect(audit).toContain(check);
   });
 });

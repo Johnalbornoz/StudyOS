@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMessages, LOCALES, type Locale } from '@/lib/i18n/messages';
@@ -131,7 +132,16 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
         <div className="lp-container lp-hero-grid">
           <div className="lp-hero-copy">
             <p className="lp-eyebrow">{t['landing.eyebrow']}</p>
-            <h1 id="lp-title" className="lp-title">{t['marketing.h1']}</h1>
+            {/* Each sentence of the positioning wraps as a unit, so the line
+                never breaks inside "No estudies más." / "Estudia mejor." */}
+            <h1 id="lp-title" className="lp-title">
+              {t['marketing.h1'].split(/(?<=[.!?])\s+/).map((sentence, i) => (
+                <Fragment key={i}>
+                  {i > 0 && ' '}
+                  <span className="lp-title-line">{sentence}</span>
+                </Fragment>
+              ))}
+            </h1>
             <p className="lp-hero-lines">
               {([1, 2, 3, 4] as const).map((i) => <span key={i}>{t[`landing.heroLine${i}`]} </span>)}
             </p>
