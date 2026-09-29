@@ -20,13 +20,13 @@ export default async function MarketingLayout({
   const t = getMessages(locale as Locale);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="lp-shell">
       <header className="mkt-header">
         <Link href={`/${locale}`} style={{ display: 'flex', alignItems: 'center' }}>
           <Image src="/logo.png" alt="StudyUS" width={112} height={37} priority style={{ height: 32, width: 'auto' }} />
         </Link>
         <nav className="mkt-nav">
-          <Link href={`/${locale}/how-it-works`} style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500 }}>
+          <Link href={`/${locale}/how-it-works`} className="mkt-navlink">
             {t['marketing.navHowItWorks']}
           </Link>
           <Link href="/sign-in" className="btn btn-secondary">{t['home.signIn']}</Link>
@@ -36,22 +36,20 @@ export default async function MarketingLayout({
 
       <main style={{ flex: 1 }}>{children}</main>
 
-      <footer
-        style={{
-          borderTop: '1px solid var(--border-default)', padding: 'var(--space-6) var(--space-8)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)',
-        }}
-      >
-        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          StudyUS — {t['marketing.footerTagline']}
-        </span>
-        <nav style={{ display: 'flex', gap: 'var(--space-4)' }}>
+      <footer className="lp-footer">
+        <div className="lp-footer-brand">
+          <Image src="/logo.png" alt="StudyUS" width={91} height={30} style={{ height: 26, width: 'auto' }} />
+          <span>{t['marketing.footerTagline']}</span>
+        </div>
+        <nav className="lp-footer-locales" aria-label={t['landing.languagesLabel']}>
           {LOCALES.map((l) => (
             <Link
               key={l}
               href={`/${l}`}
               hrefLang={l}
-              style={{ fontSize: 13, color: l === locale ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: l === locale ? 650 : 400 }}
+              lang={l}
+              aria-current={l === locale ? 'page' : undefined}
+              className={l === locale ? 'active' : undefined}
             >
               {LOCALE_NAMES[l]}
             </Link>

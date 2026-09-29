@@ -592,3 +592,92 @@ describe('UX-2 §19/§20 -- responsive and content foundations', () => {
     expect(dark).toMatch(/--hero-bg:/);
   });
 });
+
+/* ================================================================== *
+ * 9 -- public landing (/[locale]) aligned to the UX-2 positioning.     *
+ * ================================================================== */
+describe('UX-2 landing -- "No estudies más. Estudia mejor."', () => {
+  const PAGE = strip(read('src/app/[locale]/page.tsx'));
+  const LAYOUT = strip(read('src/app/[locale]/layout.tsx'));
+  const LANDING_KEYS = [
+    'marketing.h1', 'marketing.subhead', 'marketing.seoTitle', 'marketing.seoDescription', 'marketing.footerTagline',
+    'landing.eyebrow', 'landing.previewLabel', 'landing.previewNote', 'landing.previewConcept', 'landing.previewSubject',
+    'landing.principlesTitle', 'landing.journeyTitle', 'landing.journeyIntro', 'landing.coachTitle',
+    'landing.finalTitle', 'landing.finalBody', 'landing.haveAccount', 'landing.languagesLabel',
+    ...[1, 2, 3].flatMap((i) => [`landing.principle${i}Title`, `landing.principle${i}Body`, `landing.coach${i}Title`, `landing.coach${i}Body`]),
+    ...[1, 2, 3, 4, 5, 6].flatMap((i) => [`landing.step${i}Name`, `landing.step${i}Body`]),
+  ];
+
+  it('the old narrative is gone and the new positioning is the headline in all five languages', () => {
+    const expected: Record<string, string> = {
+      es: 'No estudies más. Estudia mejor.',
+      en: "Don't study more. Study better.",
+      de: 'Nicht mehr lernen. Besser lernen.',
+      fr: "N'étudie pas plus. Étudie mieux.",
+      pt: 'Não estude mais. Estude melhor.',
+    };
+    for (const locale of LOCALES) {
+      const t = getMessages(locale) as unknown as Record<string, string>;
+      expect(t['marketing.h1']).toBe(expected[locale]);
+      expect(t['marketing.footerTagline']).toBe(expected[locale]);
+      expect(t['marketing.seoTitle']).toContain(expected[locale]);
+    }
+    expect(read('src/lib/i18n/messages.ts')).not.toMatch(/No basta con acertar|Domínalo/);
+  });
+
+  it('every landing key has non-empty copy in every locale', () => {
+    for (const locale of LOCALES) {
+      const t = getMessages(locale) as unknown as Record<string, string>;
+      for (const k of LANDING_KEYS) expect(t[k]?.trim(), `${locale}:${k}`).toBeTruthy();
+    }
+  });
+
+  it('the storytelling follows the approved narrative: Descubre → Enfócate → Aprende → Practica → Demuestra → Avanza', () => {
+    const es = getMessages('es') as unknown as Record<string, string>;
+    expect([1, 2, 3, 4, 5, 6].map((i) => es[`landing.step${i}Name`])).toEqual(['Descubre', 'Enfócate', 'Aprende', 'Practica', 'Demuestra', 'Avanza']);
+    expect(PAGE).toMatch(/const JOURNEY = \[1, 2, 3, 4, 5, 6\] as const;/);
+    for (const section of ['lp-principles', 'lp-journey', 'lp-coach', 'lp-faq', 'lp-final']) expect(PAGE).toContain(`aria-labelledby="${section}"`);
+  });
+
+  it('authentication, sign-up, locale routing and SEO are preserved', () => {
+    expect(PAGE).toMatch(/if \(!isSupportedLocale\(locale\)\) notFound\(\);/);
+    expect(PAGE).toMatch(/export function generateStaticParams\(\)/);
+    expect(PAGE).toMatch(/export async function generateMetadata/);
+    expect(PAGE).toMatch(/canonical: `\$\{SITE_URL\}\/\$\{locale\}`/);
+    expect(PAGE).toMatch(/'@type': 'FAQPage'/);
+    expect(PAGE).toMatch(/href="\/sign-up"/);
+    expect(PAGE).toMatch(/href="\/sign-in"/);
+    expect(PAGE).toMatch(/href=\{`\/\$\{locale\}\/how-it-works`\}/);
+    const nav = LAYOUT.slice(LAYOUT.indexOf('<nav className="mkt-nav"'), LAYOUT.indexOf('</nav>'));
+    expect(nav).toMatch(/\/sign-in/);
+    expect(nav).toMatch(/\/sign-up/);
+    expect(LAYOUT).toMatch(/LOCALES\.map\(\(l\) => \(/);
+    expect(LAYOUT).toMatch(/hrefLang=\{l\}/);
+    // presentation only: no data access, auth calls or client state on the public page
+    expect(PAGE + LAYOUT).not.toMatch(/@\/lib\/db|getOrCreate|@clerk\/nextjs\/server|use client|fetch\(/);
+  });
+
+  it('the product preview is a labelled, non-interactive illustration -- never learner data or a working control', () => {
+    expect(PAGE).toMatch(/<div className="xp-hero lp-preview-card" aria-hidden="true">/);
+    expect(PAGE).toMatch(/<figcaption className="lp-preview-caption">/);
+    expect(PAGE).toMatch(/landing\.previewNote/);
+    const preview = PAGE.slice(PAGE.indexOf('<figure className="lp-preview">'), PAGE.indexOf('</figure>'));
+    expect(preview).not.toMatch(/<Link|<button|href=|StartSessionButton/);
+  });
+
+  it('responsive: two-column hero on desktop, single column and full-width CTAs on phones', () => {
+    const css = read('src/app/globals.css');
+    const lp = css.slice(css.indexOf('UX-2 -- public landing'));
+    expect(lp).toMatch(/\.lp-hero-grid \{ display: grid; grid-template-columns: minmax\(0, 1\.05fr\) minmax\(0, 0\.95fr\);/);
+    expect(lp).toMatch(/@media \(max-width: 1023px\) \{\s*\.lp-hero-grid \{ grid-template-columns: 1fr;/);
+    const phone = lp.slice(lp.indexOf('@media (max-width: 599px)'));
+    expect(phone).toMatch(/\.lp-cta-row \.btn \{ width: 100%; \}/);
+    expect(phone).toMatch(/\.lp-principles, \.lp-journey \{ grid-template-columns: 1fr; \}/);
+  });
+
+  it('How it works uses the same stage vocabulary as the product (no Retener/Transferir jargon)', () => {
+    const es = getMessages('es') as unknown as Record<string, string>;
+    expect(es['howItWorks.h1']).toBe('Aprender. Practicar. Demostrar. Recordar. Aplicar.');
+    expect(es['howItWorks.h1']).not.toMatch(/Retener|Transferir/);
+  });
+});
