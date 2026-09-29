@@ -125,13 +125,13 @@ Dark mode was checked at 390px.
 
 | Gate | Baseline (`b322e16`) | UX-2 |
 |---|---|---|
-| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,270 tests, all pass |
+| `vitest run` | 396 files / 6,212 tests, all pass | 397 files / 6,279 tests, all pass |
 | `tsc --noEmit` | 0 errors | 0 errors |
 | `next build` | — | success |
 | Lint | no lint in the certified workflow (no ESLint config / script) | — |
 | `npm run test:e2e` | not run | not run: it exercises unchanged cognitive services, makes real LLM calls, and bulk-writes/deletes DEV rows |
 
-**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (55: 46 for Shell/Home, 9 for the landing and addendum fixes). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
+**New tests:** `tests/unit/ux2-experience-foundation.test.ts` (64: 46 for Shell/Home, 9 for the landing, 9 precision guards). It covers the canonical hero, the gates, milestones, tones, LEARN_CHECK, GAP-10, readiness ownership, the shell, Home states, the vocabulary, the "no learning rules in UX-2 files" guard, and the responsive CSS contracts. Four key assertions were mutation-checked: reverting the fix makes the test fail.
 
 **Updated existing tests (13 files).** These were source-text guards pinned to the old Today and My Path markup. Each was rewritten to assert the **same invariant** against the new shared presenter or card. None was deleted, and several are stricter:
 
@@ -249,3 +249,37 @@ Defects not fixed: none, apart from the pending signed-in review.
 - **Smoke checks:** `/` returns 307 to `/es`; all five locales return 200; `/es/how-it-works`, `/sign-in`, `/sign-up`, `/api/health` and `/dashboard/today` return 200; `/xx` returns 404.
 - **Per locale:** the correct h1, 7 story sections, the final CTA, the correct `lang`, and no old narrative. The sign-in title is "StudyUS | Don't study more. Study better."
 - **Authenticated spot-check:** pending (§9).
+
+## 11. Pixel-precision pass
+
+This pass follows the rules in `docs/ux/STUDYUS_VISUAL_QUALITY.md` (precision before decoration).
+
+**Method.** Rendered geometry measured with `scripts/ux/landing-geometry-audit.js` and a matching Home/shell audit, run in the browser at 1440, 1024, 768, 430 and 390, plus screenshot review. The audit was confirmed to flag an injected `rotate(-1deg)`.
+
+**Precision defects found and fixed: 14**
+1. **Hero preview card tilted** by a decorative `rotate(-1deg)`, removed. The card now follows the hero grid; its top and bottom edges are horizontal, and the caption is centred on it.
+2. **Hero and story sections used different grids** (1.05/0.95fr with a 48px gap vs 1/0.9fr with 64px), so sketches did not share the card's column. There is now one grid (`--lp-cols`, `--lp-gap`).
+3. **Header and footer ran full width** (logo at x=32 while content started at x=192 on a 1440 screen). They now share the content edge (`--lp-inline`).
+4. **The sticky header was translucent** (92% plus blur), so page text ghosted through it. It is now opaque.
+5. **The headline broke mid-sentence at 1024** ("No estudies / más. Estudia / mejor."). Each sentence now wraps as a unit and the size scales with the viewport (clamp 40–60px).
+6. **The five-step list stopped short** of its column edge. It is now full column width.
+7. **The FAQ was 760px wide**, matching no grid edge. It now shares both content edges.
+8. **Bullet dashes were nudged** to `top: 9px`, about 3px off the first line's centre. They are now derived from the line-height.
+9. **The final sign-in link used a `-12px` negative-margin** touch-target hack. It is now a centred hit area that doesn't move the text.
+10. **Metadata separators orphaned on wrap.** When the "Tu siguiente reto" metadata wrapped at 390 (Home and landing), the second line started with "·". There is now a fixed separator slot plus clip, so every line starts on the card's content edge. This is the "caja superior desalineada".
+11. **Low-contrast demo-licence notice on the dark hero.** Light-theme text on dark green; now uses hero ink colours.
+12. **Unequal stat tiles on phones.** They stacked with unequal heights; now two equal tiles side by side.
+13. **Spacing off the token scale.** About 30 raw px paddings, margins and gaps (3/6/10/14px…) now use `--space-*`. Equivalent chips were unified to 24px with `0 var(--space-3)` and 12px type. The tab height is now a token (`--tabbar-height`). The notification dot and alert icon are positioned from their centres or line-heights, not nudged.
+14. **The `.ui-link` gap** was off-scale.
+
+**Transforms kept, all functional:**
+- the disclosure chevron's open state (`rotate(90deg)`)
+- the hit-area centring (`translateY(-50%)`)
+- the reduced-motion reset
+
+| Surface | 1440 | 1024 | 768 | 430 | 390 |
+|---|---|---|---|---|---|
+| Public landing (audit + screenshots) | PASS | PASS | PASS | PASS | PASS |
+| Home components + shell (audit, fixture in real shell) | PASS | PASS | PASS | PASS | PASS |
+
+**Visual regression coverage.** Static precision guards (9 tests, mutation-checked against the original tilt) and the committed rendered-geometry audit. No pixel-diff suite: the repository has no Playwright or browser runner, so adding one was out of proportion for UX-2.
