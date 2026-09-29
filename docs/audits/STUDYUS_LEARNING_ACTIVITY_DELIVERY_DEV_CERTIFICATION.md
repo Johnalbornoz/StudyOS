@@ -110,3 +110,65 @@ What **500/day and 20/min** allow in practice, summed across every learner in DE
 This is a property of DEV's configured budget, **not of the architecture**. The architecture was certified above with sufficient budget.
 
 **Operational note:** today's global counter ended above 500 because of the certification. After the restore, DEV AI is rate-limited until the 00:00 UTC reset.
+
+---
+
+# RETAIN → TRANSFER integration (`fix/retain-novelty-transfer`)
+
+**`RETAIN_TRANSFER_INTEGRATION_DEV = PASS` · `TRANSFER_DELIVERY_REAL_ENGINE_DEV = PASS` · `DEV_AI_LIMITS_RESTORED = PASS`**
+
+## Integration
+
+- **Commits on `develop`:**
+  - `7f18f98` is the RETAIN novelty fix (branch C), rebased onto `c6fe5cf`. The only conflict was a pair of import lines, and it kept both sides.
+  - `736410b` adds benchmark options only (`--types`, `--quotaReserve`, `--estimates`).
+- **Nothing else mixed in.** The Activity Delivery core (resume, consume, assembly, queue, worker) is unchanged. The only delivery change is that a RETAIN session now carries the same novelty marker as PROVE. For that reason the full Activity Delivery certification was **not** repeated.
+- **Checks:**
+  - full suite: 396 files and 6210 tests pass;
+  - typecheck and build pass;
+  - DEV: 40 migrations applied, 0 pending, 0 drift;
+  - deployment `736410b` matched the checkout.
+
+## RETAIN novelty and RETAIN → TRANSFER (real engine)
+
+- **Unit tests:** `tests/unit/canon-retain-novelty-unlocks-transfer.test.ts` runs the real fetch, adapter and engine.
+  - A novel, independent, 10-item RETAIN at 80% or above, taken 3 or more days after PROVE, moves the concept to **TRANSFER**.
+  - An unstamped (legacy) RETAIN does not qualify, and nothing is regraded retroactively.
+- **Real engine on DEV data:** the concept with a certified RETAIN resolves **TRANSFER**, with 3 items, difficulty 4–5 and independent. A concept without one stays at RETAIN.
+- **Hosted DEV:**
+  - A RETAIN session delivered from INVENTORY, with 0 AI, carries the novelty marker `EXACT_DUPLICATE_EXCLUSION_V1` with 10/10 accepted items.
+  - The real engine authorizes `canonical_transfer`.
+- **Not exercised live:** the submission-time `metadata.novel` stamp needs a Clerk session and AI grading. It is covered by the certification helper and write-path tests, and the Student E2E will exercise it on the next real RETAIN.
+
+## TRANSFER delivery with the real engine (hosted DEV, server-side latency)
+
+| Scenario | P50 | P95 | P99 | Emergency | Hot-path AI | Duplicates | Failures | Launches | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| TRANSFER STEADY (60 s cadence = 3 items × 20 s) | 382 ms | 442 ms | 442 ms | **0** | **0** | **0** | **0** | 24 | **PASS** |
+| TRANSFER COLD (2 repetitions) | 172 ms | 175 ms | 175 ms | 2 controlled misses | **0** | **0** | **0** | 4 | **PASS** |
+
+**STEADY:**
+- **Setup:** the concept started from an empty bank. The deployed worker filled it (1 READY and 2 spare sets) in 21 s.
+- **Delivery:** inventory hit rate 0.92, and 0 launches found no READY activity.
+- **Replenishment:** the worker inserted 75 candidates. E2E p95 was 1.07 s.
+- **Session integrity:**
+  - All 24 TRANSFER sessions hold exactly one **NEAR, one CONTEXTUAL and one HIGHER** challenge.
+  - 0 duplicate delivered items and 0 duplicate sessions (0 double-click mismatches).
+- **Learner state:**
+  - 0 evidence written by launches.
+  - The learner state still resolves TRANSFER afterwards.
+  - The concept's evidence is unchanged (5 rows, the latest one from the seed).
+
+**COLD:** each repetition went launch → `EMERGENCY_REQUIRED` with 0 AI (152–309 ms) → job queued within about 110 ms → the worker recovered in 4.3–8.6 s → the next launch was served from INVENTORY with 0 AI. The second repetition reused generation still in flight from the first, the same caveat as in the main COLD run.
+
+**AI usage:** 93 benchmark calls (75 in STEADY, 18 in COLD), against an estimate of about 380. The peak was 15 calls/min, with no rate-limit pressure.
+
+## DEV AI limits
+
+- **Raised:** limits were set to 7000/day and 120/min for the run, with the day ceiling guard at 2500.
+- **Restored:** 500/day and 20/min, **verified on hosted DEV**.
+- **Counter:** the global day counter was never touched manually. It ended at 1315 for UTC 2026-09-29, so DEV AI is rate-limited until the next 00:00 UTC reset.
+- **After the restore:**
+  - the worker answers 401 without a secret and 401 with a wrong one;
+  - 0 benchmark jobs and 0 active benchmark sessions are open;
+  - Stage and Production were not touched.
