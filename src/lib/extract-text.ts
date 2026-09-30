@@ -39,8 +39,12 @@ export async function extractTextFromFile(file: File): Promise<string> {
 
   if (isPdf) {
     const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await pdfParse(buffer);
+    // A plain Uint8Array, never a Buffer: pdf.js 1.10 copies its input with
+    // `new input.constructor(input)` and later re-reads bytes through
+    // `.buffer` assuming offset 0. On Node >= 24.21 (Buffer.poolSize 64 KB)
+    // a Buffer copy lands inside a shared pool slab at a non-zero offset, so
+    // PDFs failed intermittently in Preview ("bad XRef entry").
+    const result = await pdfParse(new Uint8Array(await file.arrayBuffer()));
     return result.text;
   }
 

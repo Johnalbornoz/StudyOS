@@ -1,15 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import path from 'path';
+import { extractTextFromFile } from '@/lib/extract-text';
 
 /**
- * Preview blocker: pdf-parse@1's package root (index.js) runs a debug
- * self-test when `module.parent` is unset -- always the case under a
- * dynamic ESM import -- and throws ENOENT on a test fixture that is not
- * deployed. Every PDF import failed with EXTRACTION_FAILED on Vercel.
+ * Preview blockers in PDF import (both surfaced as EXTRACTION_FAILED):
+ * 1. pdf-parse@1's package root runs a debug self-test when `module.parent`
+ *    is unset -- always, under a dynamic ESM import -- and throws ENOENT on a
+ *    fixture that is not deployed.
+ * 2. pdf.js 1.10 copies a Buffer input with `new Buffer(input)`, which on
+ *    Node >= 24.21 (64 KB Buffer pool) lands at a non-zero offset in a shared
+ *    slab; pdf.js then reads the wrong bytes ("bad XRef entry").
  */
-describe('extractTextFromFile -- PDF loader', () => {
+describe('extractTextFromFile -- PDF', () => {
   const src = readFileSync(path.join(__dirname, '../../src/lib/extract-text.ts'), 'utf8');
+  const sample = readFileSync(path.join(__dirname, '../fixtures/pdf-import-sample.pdf'));
 
   it('imports the pdf-parse library entry, never the package root', () => {
     expect(src).toContain("import('pdf-parse/lib/pdf-parse.js')");
@@ -17,20 +22,16 @@ describe('extractTextFromFile -- PDF loader', () => {
     expect(src).not.toMatch(/require\(\s*['"]pdf-parse['"]\s*\)/);
   });
 
-  it('parses a real PDF through the same entry point', async () => {
-    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    // Minimal one-page PDF with the text "Hola PDF".
-    const pdf = [
-      '%PDF-1.4',
-      '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj',
-      '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj',
-      '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj',
-      '4 0 obj<</Length 40>>stream\nBT /F1 12 Tf 20 100 Td (Hola PDF) Tj ET\nendstream endobj',
-      '5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj',
-      'trailer<</Root 1 0 R>>',
-      '%%EOF',
-    ].join('\n');
-    const result = await pdfParse(Buffer.from(pdf, 'latin1'));
-    expect(result.text).toContain('Hola PDF');
+  it('hands pdf.js a plain Uint8Array, never a Buffer', () => {
+    expect(src).toContain('pdfParse(new Uint8Array(await file.arrayBuffer()))');
+    expect(src).not.toMatch(/pdfParse\(\s*Buffer/);
+  });
+
+  it('parses a real PDF (with an xref table) on every attempt, not only some', async () => {
+    for (let i = 0; i < 6; i++) {
+      const file = new File([sample], 'examen.pdf', { type: 'application/pdf' });
+      const text = await extractTextFromFile(file);
+      expect(text).toContain('Examen de práctica');
+    }
   });
 });
