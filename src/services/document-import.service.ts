@@ -94,6 +94,13 @@ export function mergeCandidates(perChunk: { chunkId: string; concepts: { canonic
   return out;
 }
 
+/** Pure: how many distinct proposed topics each chunk produced. */
+export function chunkTopicCounts(candidates: readonly { chunkIds: string[] }[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const c of candidates) for (const id of new Set(c.chunkIds)) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return counts;
+}
+
 /**
  * Upload + parse + propose. Writes only the Student's content source and its
  * chunks (the existing storage for uploaded material) -- never a concept.
@@ -205,8 +212,15 @@ export async function importSelectedConcepts(input: {
     for (const chunkId of c.chunkIds) conceptsByChunk.set(chunkId, [...(conceptsByChunk.get(chunkId) ?? []), conceptId]);
   }
 
-  // Keep the material linked to the concepts it taught (the retrieval context the Tutor/generation already use).
+  // Supporting context: a chunk is linked to a concept ONLY when it is
+  // specific to that one concept (the extraction found exactly one topic in
+  // it). Retrieval by concept feeds activity generation and explanations, so
+  // a multi-topic chunk -- e.g. a whole exam page -- must never become a
+  // concept's context: that made "Vértice de una parábola" generate
+  // factoring / discriminant questions (E2E COGNITIVE_ALIGNMENT defect).
+  const topicsPerChunk = chunkTopicCounts(stored);
   for (const [chunkId, ids] of conceptsByChunk) {
+    if (topicsPerChunk.get(chunkId) !== 1) continue;
     await updateChunkConceptMappings(chunkId, [...new Set(ids)]).catch(() => {});
   }
   await query(

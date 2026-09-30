@@ -24,6 +24,7 @@ const h = vi.hoisted(() => ({
   extractConcepts: vi.fn(async (..._a: any[]) => [] as { canonicalId: string; label: string }[]),
   seq: 0,
   clerk: 'clerk_A',
+  mapped: [] as { chunkId: string; ids: string[] }[],
 }));
 
 vi.mock('@/lib/db', () => {
@@ -68,7 +69,7 @@ vi.mock('@/services/content-chunking.service', () => ({
 vi.mock('@/services/embedding.service', () => ({
   generateEmbedding: async () => [0.1],
   storeChunkWithEmbedding: async (_s: string, _t: string, order: number) => ({ chunkId: `chunk-${order}`, embedding: [] }),
-  updateChunkConceptMappings: async () => {},
+  updateChunkConceptMappings: async (chunkId: string, ids: string[]) => { h.mapped.push({ chunkId, ids }); },
 }));
 vi.mock('@/services/concept-extraction.service', () => ({
   extractConceptsFromChunk: (...a: any[]) => h.extractConcepts(...a),
@@ -105,6 +106,7 @@ beforeEach(() => {
   h.deleted = [];
   h.seq = 0;
   h.clerk = 'clerk_A';
+  h.mapped = [];
   h.extractText.mockReset().mockResolvedValue('Tema 1: ecuaciones cuadráticas. Tema 2: discriminante.');
   h.extractConcepts.mockReset().mockImplementation(async (...a: any[]) => { const text = String(a[0]); return (
     text.includes('ecuaciones')
@@ -246,5 +248,32 @@ describe('security: Student A cannot import into Student B', () => {
     const body = await (await analyzeRoute(new NextRequest('https://dev.test/x', { method: 'POST', body: form }))).json();
     expect(Object.keys(body.data).sort()).toEqual(['candidates', 'sourceId']);
     expect(Object.keys(body.data.candidates[0]).sort()).toEqual(['existingConceptId', 'key', 'label']);
+  });
+});
+
+describe('cognitive alignment: a document never becomes another concept\'s context', () => {
+  it('a multi-topic chunk (e.g. a one-page exam) is NOT attached to any selected concept', async () => {
+    // one chunk that yields several topics -- the E2E defect shape
+    h.extractText.mockResolvedValue('Examen: factoriza x^2-7x+12, discriminante, vértice de y=x^2-4x+1');
+    h.extractConcepts.mockImplementation(async () => [
+      { canonicalId: 'F', label: 'Factorización' },
+      { canonicalId: 'D', label: 'Discriminante' },
+      { canonicalId: 'V', label: 'Vértice de una parábola' },
+    ]);
+    const r = await analyze();
+    await importSelectedConcepts({ studentId: A.student, subjectId: A.subject, sourceId: r.sourceId, keys: ['c3'], language: 'es' });
+    expect(h.created).toEqual(['Vértice de una parábola']);
+    expect(h.mapped).toEqual([]); // the vertex concept gets no factoring/discriminant context
+  });
+  it('a chunk specific to one topic is attached to that concept only', async () => {
+    h.extractText.mockResolvedValue('El vértice de la parábola. Fórmula general');
+    h.extractConcepts.mockImplementation(async (...a: any[]) =>
+      String(a[0]).includes('vértice') ? [{ canonicalId: 'V', label: 'Vértice de una parábola' }] : [{ canonicalId: 'G', label: 'Fórmula general' }],
+    );
+    const r = await analyze();
+    await importSelectedConcepts({ studentId: A.student, subjectId: A.subject, sourceId: r.sourceId, keys: ['c1'], language: 'es' });
+    expect(h.mapped).toHaveLength(1);
+    expect(h.mapped[0].chunkId).toBe('chunk-0');
+    expect(h.mapped[0].ids).toHaveLength(1);
   });
 });
