@@ -55,7 +55,7 @@ import {
 import { getSubjectHierarchy } from './topic-hierarchy.service';
 import { getLearningOSSnapshot } from './learning-os-snapshot.service';
 import { rankLearningDecisions } from '@/lib/adaptive-learning-policy';
-import { resolveConceptJourneyStage } from '@/lib/lx/path-view';
+import { resolveConceptJourneyResultAuthoritative } from '@/lib/lx/path-view';
 import { averageJourneyProgress } from '@/lib/lx/journey-progress';
 import { buildCanonicalLearningProgress } from '@/lib/lx/canonical-learning-progress';
 import { deriveJourneyProgress } from '@/lib/lx/journey-progress';
@@ -77,6 +77,9 @@ export interface DimensionScores {
 }
 
 export interface AchievementCounts {
+  /** UX-4 (GAP-07): concepts whose authoritative journey stage is CONSOLIDATED ("Dominado") -- the same authority and count Mi ruta shows. */
+  consolidatedCount: number;
+  /** Knowledge-state VALIDATED_MASTERY (Phase 2.2). Kept for API consumers; not rendered to the Student (a different authority than "Dominado"). */
   validatedMasteryCount: number;
   retentionDemonstratedCount: number;
   independentEvidenceCount: number;
@@ -120,6 +123,14 @@ export interface SubjectProgress {
   journeyProgressPercent: number | null;
   conceptCount: number;
   validatedCount: number;
+  /**
+   * UX-4 (GAP-07): the subject's concept universe (hierarchy) and how many
+   * of those are CONSOLIDATED under the SAME authoritative stages that
+   * produce `journeyProgressPercent` -- so "X de N dominados" and the
+   * subject percentage can never come from two different authorities.
+   */
+  hierarchyConceptCount: number;
+  consolidatedCount: number;
   concepts: ConceptProgress[];
 }
 
@@ -200,9 +211,19 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
       const subjectDecisions = snapshot ? rankLearningDecisions(snapshot.decisions.filter((d) => d.subjectId === s.id)) : [];
       const decisionByConceptId = new Map(subjectDecisions.map((d) => [d.actionConceptId, d]));
       const allHierarchyConcepts = [...hierarchy.topics.flatMap((topic) => topic.subtopics.flatMap((sub) => sub.concepts)), ...hierarchy.unassigned];
-      const journeyStages: LearnerJourneyStage[] = allHierarchyConcepts.map((c) =>
-        resolveConceptJourneyStage(c.id, s.id, knowledgeStateByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id))
-      );
+      // UX-4 (GAP-07): the canonical-aware authority every learner-facing
+      // surface must use (path-view.ts) -- the Subjects detail page and My
+      // Path already read it, and the per-concept rows below already apply
+      // the same fresh canonical decision. Previously this rollup used the
+      // legacy-only resolver, so the subject/overall % could disagree with
+      // the concept rows under it. Same aggregation, one authority.
+      const journeyStages: LearnerJourneyStage[] = (
+        await Promise.all(
+          allHierarchyConcepts.map((c) =>
+            resolveConceptJourneyResultAuthoritative(studentId, c.id, s.id, knowledgeStateByConceptId.get(c.id) ?? null, decisionByConceptId.get(c.id))
+          )
+        )
+      ).map((r) => r.stage);
 
       const withRaw: ConceptWithRawMastery[] = await Promise.all(masteryRows.map(async (row: any) => {
         const ks = knowledgeStateByConceptId.get(row.concept_id) ?? null;
@@ -282,6 +303,8 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
           journeyProgressPercent: averageJourneyProgress(journeyStages),
           conceptCount: concepts.length,
           validatedCount: concepts.filter((c) => c.masteryState === 'VALIDATED_MASTERY').length,
+          hierarchyConceptCount: journeyStages.length,
+          consolidatedCount: journeyStages.filter((stage) => stage === 'CONSOLIDATED').length,
           concepts,
         },
         rawMasteryScores,
@@ -311,6 +334,7 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
   };
 
   const achievements: AchievementCounts = {
+    consolidatedCount: allJourneyStages.filter((stage) => stage === 'CONSOLIDATED').length,
     validatedMasteryCount: allConcepts.filter((c) => c.masteryState === 'VALIDATED_MASTERY').length,
     retentionDemonstratedCount: allConcepts.filter(
       (c) => c.dimensions.retentionScore !== null && c.dimensions.retentionScore >= policy.minimumRetention

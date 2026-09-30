@@ -276,6 +276,9 @@ async function resolveJourneyResultAuthoritative(
         intervention: decision.intervention,
         reason: 'CANONICAL_ENGINE_V1',
         contractVersion: LEARNER_JOURNEY_CONTRACT_VERSION,
+        // UX-4: an existing engine fact, not a derivation -- any attempt the
+        // engine replayed for this concept, qualifying or not.
+        engineHasEvidence: decision.qualifiedEvidence.some((q) => q.qualifyingEvidenceIds.length + q.nonQualifyingEvidenceIds.length > 0),
       };
     } catch (error) {
       if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;

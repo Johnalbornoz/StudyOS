@@ -33,6 +33,8 @@ export interface ConceptJourney {
   intervention: LearnerJourneyIntervention | null;
   /** Provenance for future Decision Trace/admin QA (R30) -- never shown to the learner. Verbatim reason code from LX-1B. */
   reasonCode: string;
+  /** UX-4: verbatim `LearnerJourneyResult.engineHasEvidence` (canonical path only). */
+  engineHasEvidence?: boolean;
 }
 
 /** Adapts one LX-1B `LearnerJourneyResult` into My Path's flat rendering line. */
@@ -45,6 +47,7 @@ export function conceptJourneyFromResult(result: LearnerJourneyResult): ConceptJ
       consolidated: true,
       intervention: result.intervention,
       reasonCode: result.reason,
+      ...(result.engineHasEvidence !== undefined ? { engineHasEvidence: result.engineHasEvidence } : {}),
     };
   }
   const idx = currentRungIndex(result.stage);
@@ -56,6 +59,7 @@ export function conceptJourneyFromResult(result: LearnerJourneyResult): ConceptJ
     consolidated: false,
     intervention: result.intervention,
     reasonCode: result.reason,
+    ...(result.engineHasEvidence !== undefined ? { engineHasEvidence: result.engineHasEvidence } : {}),
   };
 }
 

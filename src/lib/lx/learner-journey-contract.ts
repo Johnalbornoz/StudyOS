@@ -86,6 +86,14 @@ export interface LearnerJourneyResult {
   /** The single canonical fact that decided this stage -- for "why am I here" copy, never a score. */
   reason: string;
   contractVersion: typeof LEARNER_JOURNEY_CONTRACT_VERSION;
+  /**
+   * UX-4 (B-level, read-only): whether the canonical engine holds ANY
+   * evidence for this concept (qualifying or not) -- verbatim from the
+   * decision's own `qualifiedEvidence` id lists. Present only on the
+   * canonical path; absent on the legacy path (callers fall back to their
+   * own existing signal).
+   */
+  engineHasEvidence?: boolean;
 }
 
 const BLOCKED_OR_REPAIR: ReadonlySet<LearningState> = new Set<LearningState>([

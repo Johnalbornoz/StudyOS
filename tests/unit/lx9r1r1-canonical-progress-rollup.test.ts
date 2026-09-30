@@ -193,11 +193,12 @@ describe('LX-9R1-R1 required tests 6-8 -- overall progress is concept-weighted a
     expect(fnSrc).not.toMatch(/overallMasteryPercent|avgMasteryPercent/);
   });
 
-  it('8. overall/subject journey progress never reads raw mastery_score -- source contract (the journeyStages computation path only touches resolveConceptJourneyStage)', () => {
+  it('8. overall/subject journey progress never reads raw mastery_score -- source contract (UX-4 GAP-07: the journeyStages path only touches the canonical-aware resolveConceptJourneyResultAuthoritative, never the legacy-only resolver)', () => {
     const src = strip(read('src/services/progress-overview.service.ts'));
     const journeyBlockStart = src.indexOf('const journeyStages: LearnerJourneyStage[]');
-    const journeyBlock = src.slice(journeyBlockStart, journeyBlockStart + 300);
-    expect(journeyBlock).toMatch(/resolveConceptJourneyStage/);
+    const journeyBlock = src.slice(journeyBlockStart, journeyBlockStart + 400);
+    expect(journeyBlock).toMatch(/resolveConceptJourneyResultAuthoritative/);
+    expect(src).not.toMatch(/resolveConceptJourneyStage\(/);
     expect(journeyBlock).not.toMatch(/mastery_score|rawMastery/);
   });
 });
