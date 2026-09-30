@@ -3,6 +3,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { createConversation, getConversations } from '@/services/tutor.service';
+import { assertOwnedSubject, OwnershipError } from '@/lib/tutor/context-pack';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -62,6 +63,16 @@ async function handlePOST(request: NextRequest) {
     return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
   }
 
+  // UX-5: a conversation may only be scoped to a subject this Student owns
+  // (its material grounds every reply).
+  if (validated.subjectId) {
+    try {
+      await assertOwnedSubject(validated.studentId, validated.subjectId);
+    } catch (e) {
+      if (e instanceof OwnershipError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+      throw e;
+    }
+  }
   const conversationId = await createConversation(validated.studentId, validated.subjectId);
   return NextResponse.json({ success: true, data: { conversationId } });
 }
