@@ -90,7 +90,7 @@ export async function getRemediationSessionView(
   // can carry it for the continuation checkpoint. `cl.description` is
   // never read (LX-3P-R1) -- label only.
   const conceptRow = await db.query(
-    `SELECT c.subject_id, COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT c.subject_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
      WHERE c.id = $1`,

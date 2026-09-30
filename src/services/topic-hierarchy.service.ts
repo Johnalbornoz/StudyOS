@@ -88,7 +88,7 @@ export async function classifySubjectHierarchy(subjectId: string, language: stri
 
   const conceptsResult = await db.query(
     `
-    SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+    SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
     FROM concepts c
     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
     WHERE c.subject_id = $1
@@ -281,7 +281,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
     SELECT
       t.id AS topic_id, COALESCE(tl.name, t.name) AS topic_name, t.display_order AS topic_order,
       st.id AS subtopic_id, COALESCE(sl.name, st.name) AS subtopic_name, st.display_order AS subtopic_order,
-      c.id AS concept_id, COALESCE(cl.label, c.canonical_id) AS concept_label,
+      c.id AS concept_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS concept_label,
       mr.mastery_score, mr.confidence_score, mr.last_practiced
     FROM concepts c
     JOIN subtopics st ON st.id = c.subtopic_id
@@ -328,7 +328,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
 
   const unassignedResult = await db.query(
     `
-    SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, mr.mastery_score, mr.confidence_score, mr.last_practiced
+    SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, mr.mastery_score, mr.confidence_score, mr.last_practiced
     FROM concepts c
     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
     LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $2

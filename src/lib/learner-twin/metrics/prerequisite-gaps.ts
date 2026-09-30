@@ -45,7 +45,7 @@ export async function readPrerequisiteGaps(studentId: string, targetConceptId: s
 
   const [labelsResult, masteryResult, stateResult] = await Promise.all([
     db.query<{ id: string; label: string }>(
-      `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+      `SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
        FROM concepts c LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = 'en'
        WHERE c.id = ANY($1)`,
       [prereqIds]

@@ -12,7 +12,7 @@ function buildQueryMock(prereqRows: any[], labelRows: any[], masteryRows: any[],
   return vi.fn(async (sql: string) => {
     const s = sql.replace(/\s+/g, ' ').trim();
     if (s.includes('FROM concept_relationships WHERE target_concept_id')) return { rows: prereqRows };
-    if (s.includes('COALESCE(cl.label, c.canonical_id) AS label')) return { rows: labelRows };
+    if (s.includes('c.canonical_id) AS label')) return { rows: labelRows };
     if (s.includes('SELECT concept_id, mastery_score FROM mastery_records')) return { rows: masteryRows };
     if (s.includes('SELECT concept_id, mastery_state FROM concept_knowledge_state')) return { rows: stateRows };
     throw new Error(`Unmocked: ${s}`);

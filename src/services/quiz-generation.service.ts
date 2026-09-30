@@ -476,7 +476,7 @@ export async function generateQuestionsForConcept(
       // interactive-formula.service.ts already do for this case.
       const conceptRow = await db.query(
         `
-        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
         FROM concepts c
         JOIN subjects s ON s.id = c.subject_id
         LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
@@ -706,7 +706,7 @@ export async function generateQuickCheckQuestions(
     if (context.chunks.length === 0) {
       const conceptRow = await db.query(
         `
-        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
         FROM concepts c
         JOIN subjects s ON s.id = c.subject_id
         LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
@@ -1112,7 +1112,7 @@ export async function generatePracticeQuestions(
     if (context.chunks.length === 0) {
       const conceptRow = await db.query(
         `
-        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
         FROM concepts c
         JOIN subjects s ON s.id = c.subject_id
         LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2
@@ -1667,7 +1667,7 @@ export async function generateRetentionCheckQuestions(
     if (context.chunks.length === 0) {
       const conceptRow = await db.query(
         `
-        SELECT COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+        SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
         FROM concepts c
         JOIN subjects s ON s.id = c.subject_id
         LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $2

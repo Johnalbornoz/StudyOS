@@ -126,7 +126,7 @@ export async function getConceptMissionView(
   // invention and never triggers AI generation on this read.
   const conceptRow = await query(
     `SELECT s.name AS subject_name,
-            COALESCE(cl.label, c.canonical_id) AS label
+            COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id
      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3

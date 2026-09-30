@@ -890,7 +890,7 @@ export async function getStudentMastery(
     SELECT
       c.id as concept_id,
       c.canonical_id,
-      COALESCE(cl.label, c.canonical_id) as label,
+      COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) as label,
       mr.mastery_score,
       mr.confidence_score,
       mr.attempt_count,

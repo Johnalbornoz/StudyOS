@@ -88,7 +88,7 @@ interface ConceptOwnership {
  */
 async function verifyConceptOwnership(conceptId: string, subjectId: string, studentId: string): Promise<ConceptOwnership> {
   const result = await db.query(
-    `SELECT COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id
      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id

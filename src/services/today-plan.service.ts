@@ -159,7 +159,7 @@ async function getPhase2TodayItems(studentId: string, preferredLanguage: string)
   const labelRows =
     conceptIds.length > 0
       ? await db.query(
-          `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label, c.subject_id, s.name AS subject_name, mr.mastery_score
+          `SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, c.subject_id, s.name AS subject_name, mr.mastery_score
            FROM concepts c JOIN subjects s ON s.id = c.subject_id
            LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id AND language = $2 ORDER BY (language = $2) DESC LIMIT 1) cl ON true
            LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $3

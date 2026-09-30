@@ -667,7 +667,7 @@ export interface SubjectConceptRow {
 /** Direct source: mastery_records + concepts, one bulk query -- never one query per concept. */
 export async function readSubjectMasteryRows(studentId: StudentId, subjectId: string): Promise<SubjectConceptRow[]> {
   const result = await db.query(
-    `SELECT c.id AS concept_id, COALESCE(cl.label, c.canonical_id) AS label,
+    `SELECT c.id AS concept_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label,
             mr.mastery_score, mr.confidence_score, mr.attempt_count, mr.correct_count, mr.incorrect_count, mr.updated_at
      FROM mastery_records mr
      JOIN concepts c ON mr.concept_id = c.id

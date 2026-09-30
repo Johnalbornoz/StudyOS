@@ -216,7 +216,7 @@ export async function getBlockedConceptLabels(conceptId: string): Promise<string
   const unlocked = await getConceptsUnlockedBy(conceptId);
   if (unlocked.length === 0) return [];
   const result = await db.query(
-    `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id LIMIT 1) cl ON true
      WHERE c.id = ANY($1)`,
@@ -247,7 +247,7 @@ export async function inferPrerequisitesForConcept(
   language: string = 'en'
 ): Promise<ConceptRelationship[]> {
   const conceptsResult = await db.query(
-    `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      LEFT JOIN LATERAL (
        SELECT label FROM concept_localizations WHERE concept_id = c.id ORDER BY (language = $2) DESC LIMIT 1

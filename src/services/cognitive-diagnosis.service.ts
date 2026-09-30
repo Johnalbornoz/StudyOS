@@ -224,7 +224,7 @@ export async function generateRootCauseHypotheses(
   if (prerequisites.length === 0) return [];
 
   const labelsResult = await db.query(
-    `SELECT c.id, COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM concepts c
      LEFT JOIN LATERAL (SELECT label FROM concept_localizations WHERE concept_id = c.id ORDER BY (language = $2) DESC LIMIT 1) cl ON true
      WHERE c.id = ANY($1)`,

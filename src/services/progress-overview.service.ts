@@ -345,7 +345,7 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
   };
 
   const debtResult = await db.query(
-    `SELECT ld.concept_id, ld.subject_id, ld.severity, COALESCE(cl.label, c.canonical_id) AS label
+    `SELECT ld.concept_id, ld.subject_id, ld.severity, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
      FROM learning_debt ld
      JOIN concepts c ON c.id = ld.concept_id
      JOIN subjects s ON s.id = ld.subject_id

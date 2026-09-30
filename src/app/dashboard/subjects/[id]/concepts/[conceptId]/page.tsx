@@ -98,7 +98,7 @@ export default async function ConceptDetailPage({
   const [subjectResult, conceptResult] = await Promise.all([
     query(`SELECT name FROM subjects WHERE id = $1 AND student_id = $2`, [subjectId, studentId]),
     query(
-      `SELECT COALESCE(cl.label, c.canonical_id) AS label
+      `SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
        FROM concepts c
        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
        WHERE c.id = $1 AND c.subject_id = $2`,

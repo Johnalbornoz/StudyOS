@@ -83,7 +83,7 @@ export async function assertOwnedSubject(studentId: string, subjectId: string): 
 /** Throws OwnershipError unless the concept lives in a subject the Student owns. */
 export async function assertOwnedConcept(studentId: string, conceptId: string, language: string): Promise<{ id: string; label: string; subjectId: string; topic: string | null }> {
   const r = await db.query(
-    `SELECT c.id, c.subject_id, COALESCE(cl.label, c.canonical_id) AS label, COALESCE(tl.name, t.name) AS topic
+    `SELECT c.id, c.subject_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, COALESCE(tl.name, t.name) AS topic
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id AND s.student_id = $2
      LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3

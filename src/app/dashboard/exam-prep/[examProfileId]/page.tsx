@@ -147,13 +147,15 @@ export default async function ExamPrepDetailPage({ params }: { params: Promise<{
                           {d.unsupportedPlatformAreas.length > 0 && (
                             <span className="ex-dim-note ex-dim-note--warn">{t['examPrep.platformNotSupported']}</span>
                           )}
-                          {d.whatWouldImproveConfidence && <span className="ex-dim-note">{d.whatWouldImproveConfidence}</span>}
                         </li>
                       ))}
                     </ul>
-                    {snapshot.limitations.length > 0 && (
+                    {/* Preview certification: `limitations` and `whatWouldImproveConfidence`
+                        are internal English audit strings with raw codes
+                        (FULL_MOCK_BLOCKED: …) -- never shown verbatim. */}
+                    {snapshot.limitations.some((l) => l.startsWith('FULL_MOCK_BLOCKED')) && (
                       <p className="ex-dim-note" style={{ margin: 'var(--space-4) 0 0' }}>
-                        {t['examPrep.limitations']}: {snapshot.limitations.join('; ')}
+                        {t['parent.fullMock']}: {t['parent.fullMock.platformNotReady']}
                       </p>
                     )}
                   </div>

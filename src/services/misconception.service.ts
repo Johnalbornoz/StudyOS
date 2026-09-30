@@ -227,7 +227,7 @@ export async function getRecurringMisconceptions(studentId: string): Promise<Rec
   const result = await db.query(
     `SELECT sm.misconception_signature_id, sm.occurrence_count, sm.last_seen,
             ms.concept_id, ms.misconception_code, ms.description,
-            COALESCE(cl.label, c.canonical_id) AS concept_label,
+            COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS concept_label,
             c.subject_id, s.name AS subject_name
      FROM student_misconceptions sm
      JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id

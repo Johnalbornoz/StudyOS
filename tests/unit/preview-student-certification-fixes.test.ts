@@ -69,3 +69,25 @@ describe('Preview certification -- retention dates use the Student time zone', (
     expect(src).toContain('() => new Date(iso).toLocaleDateString(locale),');
   });
 });
+
+describe('Preview certification -- no raw codes reach the Student', () => {
+  const walk = (dir: string): string[] =>
+    require('fs').readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) =>
+      e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : [],
+    );
+
+  it('a concept without a label in the interface language falls back to another label, never straight to canonical_id', () => {
+    const offenders = walk('src').filter((p) => read(p).includes('COALESCE(cl.label, c.canonical_id)'));
+    expect(offenders).toEqual([]);
+    expect(read('src/services/topic-hierarchy.service.ts')).toContain(
+      'COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id)',
+    );
+  });
+
+  it('exam prep never renders internal English audit strings (limitations / whatWouldImproveConfidence)', () => {
+    const src = read('src/app/dashboard/exam-prep/[examProfileId]/page.tsx');
+    expect(src).not.toContain('{d.whatWouldImproveConfidence}');
+    expect(src).not.toContain("snapshot.limitations.join(");
+    expect(src).toContain("{t['parent.fullMock']}: {t['parent.fullMock.platformNotReady']}");
+  });
+});

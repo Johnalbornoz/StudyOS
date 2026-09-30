@@ -502,7 +502,7 @@ export async function getActiveDebts(
         ld.created_at,
         ld.resolved_at,
         c.canonical_id,
-        COALESCE(cl.label, c.canonical_id) AS label,
+        COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label,
         mr.mastery_score,
         mr.attempt_count,
         mr.confidence_score,

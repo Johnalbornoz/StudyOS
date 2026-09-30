@@ -118,7 +118,7 @@ export async function loadConceptLabels(conceptIds: string[], preferredLanguage:
   if (distinctIds.length === 0) return labels;
 
   const result = await db.query(
-    `SELECT c.id, c.canonical_id, COALESCE(cl.label, c.canonical_id) AS label, s.name AS subject_name
+    `SELECT c.id, c.canonical_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id
      LEFT JOIN LATERAL (
