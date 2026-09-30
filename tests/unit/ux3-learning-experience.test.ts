@@ -362,7 +362,8 @@ describe('UX-3 learning shell, controls and mobile rules', () => {
     expect(tutor).toMatch(/<div className="tt" data-view=\{view\}>/);
     expect(UX3_CSS).toMatch(/@media \(max-width: 1023px\) \{\s*\.tt \{ grid-template-columns: minmax\(0, 1fr\);[\s\S]*?\.tt\[data-view='chat'\] \.tt-list \{ display: none; \}/);
     expect(UX3_CSS).toMatch(/\.tt-input \{[^}]*font-size: 16px;/);
-    expect(tutor).toMatch(/setMessages\(\(prev\) => prev\.filter\(\(m\) => m\.id !== optimisticUser\.id\)\);\s*setInput\(userText\);\s*setSendFailed\(true\);/);
+    // UX-5 restructure, same guarantee: the optimistic message is removed, the typed text goes back, the failure is stated.
+    expect(tutor).toMatch(/setItems\(\(prev\) => prev\.filter\(\(i\) => !\(i\.kind === 'message' && i\.message\.id === optimistic\.id\)\)\);\s*if \(!action\) setInput\(message\);\s*setSendFailed\(true\);/);
     expect(tutor).toMatch(/role="log" aria-live="polite"/);
   });
 

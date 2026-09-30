@@ -5,13 +5,14 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import TutorChat from './TutorChat';
+import { PageIntro } from '@/components/ui/PageIntro';
 
 export default async function TutorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ conceptId?: string }>;
+  searchParams: Promise<{ conceptId?: string; subjectId?: string }>;
 }) {
-  const { conceptId } = await searchParams;
+  const { conceptId, subjectId } = await searchParams;
   const { userId: clerkUserId } = await auth();
 
   if (!clerkUserId) {
@@ -35,11 +36,9 @@ export default async function TutorPage({
 
   return (
     <div>
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>{t['tutor.title']}</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>{t['tutor.subtitle']}</p>
-      </div>
-      <TutorChat studentId={studentId} locale={locale} subjects={subjects} conceptId={conceptId} />
+      <PageIntro title={t['tutor.title']} lead={t['tutor.subtitle']} />
+      {/* UX-5: ids from the URL are only lookup keys -- /api/tutor/context verifies ownership before any label is shown. */}
+      <TutorChat studentId={studentId} locale={locale} subjects={subjects} conceptId={conceptId} subjectId={subjectId} />
     </div>
   );
 }

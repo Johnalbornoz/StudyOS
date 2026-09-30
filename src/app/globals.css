@@ -1692,7 +1692,6 @@ img, video { max-width: 100%; height: auto; }
 .tt-conv-title { font-size: var(--fs-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tt-conv-meta { font-size: var(--fs-xs); color: var(--text-muted); }
 .tt-chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 0; overflow: hidden; }
-.tt-chat-head { display: none; }
 .tt-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
 .tt-msg { max-width: 78%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--fs-md); line-height: 1.55; overflow-wrap: anywhere; min-width: 0; }
 .tt-msg .katex-display { overflow-x: auto; overflow-y: hidden; }
@@ -1708,8 +1707,7 @@ img, video { max-width: 100%; height: auto; }
   .tt { grid-template-columns: minmax(0, 1fr); gap: 0; height: calc(100dvh - 200px - var(--tabbar-height)); min-height: 420px; }
   .tt[data-view='chat'] .tt-list { display: none; }
   .tt[data-view='list'] .tt-chat { display: none; }
-  .tt-chat-head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-default); }
-  .tt-chat-head .btn { min-height: var(--touch-target); }
+  .tt-back { display: inline-flex; }
   .tt-msg { max-width: 88%; }
   .tt-log { padding: var(--space-4); }
 }
@@ -1789,4 +1787,70 @@ img, video { max-width: 100%; height: auto; }
   .kn-detail { padding-left: var(--space-2); }
   .kn-dist { width: 100%; }
   .kn-focus .btn { width: 100%; }
+}
+
+
+/* ==========================================================================
+   UX-5 -- StudyUS Tutor: context, policy, representations, media
+   ========================================================================== */
+.tt-nav { display: flex; flex-direction: column; gap: var(--space-2); flex: 1; min-height: 0; }
+.tt-nav-title { margin: 0; padding: 0 var(--space-3); font-size: 12px; font-weight: 650; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
+.tt-convs-empty { padding: var(--space-2) var(--space-3); }
+.tt-chat-top { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border-default); }
+.tt-back { display: none; min-height: var(--touch-target); }
+.tt-context { display: flex; flex-direction: column; min-width: 0; }
+.tt-context-kicker { font-size: 12px; font-weight: 650; color: var(--brand-ink); }
+.tt-context-title { font-size: var(--fs-md); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.tt-context-meta { font-size: var(--fs-xs); color: var(--text-muted); }
+.tt-log { max-width: 100%; }
+.tt-log > * { max-width: 720px; }
+.tt-intro, .tt-restricted, .tt-notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); border-radius: var(--radius-md); background: var(--bg-subtle); color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.55; }
+.tt-intro p, .tt-notice p { margin: 0; }
+.tt-intro svg { flex-shrink: 0; color: var(--brand); }
+.tt-notice { flex-direction: column; }
+.tt-restricted { border: 1.5px solid var(--border-default); background: var(--bg-base); }
+.tt-restricted svg { flex-shrink: 0; color: var(--text-muted); }
+.tt-restricted > div { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.tt-restricted-title { margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); }
+.tt-restricted-body { margin: 0; }
+.tt-msg--assistant { display: flex; flex-direction: column; gap: var(--space-2); }
+.tt-msg-tools { display: flex; justify-content: flex-start; }
+.tt-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tt-action.btn { min-height: var(--touch-target); padding: 0 var(--space-3); font-size: var(--fs-sm); font-weight: 550; border-radius: var(--radius-full); }
+.tt-compose-row { align-items: flex-end; }
+.tt-input { min-height: var(--touch-target); max-height: 160px; padding: var(--space-3); line-height: 1.4; resize: none; field-sizing: content; }
+.tt-input:disabled { background: var(--bg-subtle); color: var(--text-muted); }
+.tt-send { min-height: var(--touch-target); }
+/* visuals drawn by StudyUS */
+.tt-visual { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-default); }
+.tt-visual-svg { width: 100%; max-width: 360px; height: auto; overflow: visible; }
+.tt-visual-fill { fill: var(--brand); stroke: var(--bg-base); stroke-width: 2; }
+.tt-visual-empty { fill: var(--brand-subtle); stroke: var(--bg-base); stroke-width: 2; }
+.tt-visual-axis { stroke: var(--text-secondary); stroke-width: 1.5; }
+.tt-visual-point { fill: var(--brand); }
+.tt-visual-label { font-size: 12px; font-weight: 650; fill: var(--text-primary); font-family: inherit; }
+.tt-visual-tick { font-size: 10px; fill: var(--text-muted); font-family: inherit; }
+.tt-visual-caption { font-size: var(--fs-xs); color: var(--text-muted); }
+/* external educational video -- visibly distinct from the Tutor's own explanation */
+.tt-video { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); border: 1.5px dashed var(--border-default); background: var(--bg-base); }
+.tt-video-kicker { display: inline-flex; align-items: center; gap: var(--space-1); margin: 0; font-size: 12px; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+.tt-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
+.tt-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.tt-video-play { align-self: flex-start; }
+.tt-video-title { margin: 0; font-size: var(--fs-md); font-weight: 650; overflow-wrap: anywhere; }
+.tt-video-meta { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); }
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* small desktops: a narrower history column keeps the conversation readable */
+  .tt { grid-template-columns: 220px minmax(0, 1fr); gap: var(--space-4); }
+}
+@media (max-width: 1023px) {
+  /* one pane at a time (UX-3): the conversation pane gets its way back to the list */
+  .tt-back { display: inline-flex; flex-shrink: 0; }
+}
+@media (max-width: 599px) {
+  .tt-chat-top { padding: var(--space-2) var(--space-3); }
+  /* one scrollable row of representation choices -- the conversation keeps the screen */
+  .tt-compose .tt-actions { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: var(--space-1); }
+  .tt-compose .tt-actions::-webkit-scrollbar { display: none; }
+  .tt-action.btn { flex: 0 0 auto; white-space: nowrap; }
 }

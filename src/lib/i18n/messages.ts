@@ -928,7 +928,34 @@ export type MessageKey =
   | 'kn.loadError'
   | 'kn.seeAll'
   | 'pg.consolidated'
-  | 'pg.achievementConsolidated';
+  | 'pg.achievementConsolidated'
+  | 'tt.newFor'
+  | 'tt.recent'
+  | 'tt.general'
+  | 'tt.restricted.INDEPENDENT'
+  | 'tt.restricted.ASSESSMENT'
+  | 'tt.restricted.UNAVAILABLE'
+  | 'tt.restrictedBody'
+  | 'tt.backToToday'
+  | 'tt.contextFailed'
+  | 'tt.introConcept'
+  | 'tt.introGeneral'
+  | 'tt.action.EXPLAIN_DIFFERENTLY'
+  | 'tt.action.EXAMPLE'
+  | 'tt.action.STEP_BY_STEP'
+  | 'tt.action.SHOW_ME'
+  | 'tt.action.WHY'
+  | 'tt.action.FIND_VIDEO'
+  | 'tt.actionsLabel'
+  | 'tt.visualCaption'
+  | 'tt.pending.reply'
+  | 'tt.pending.video'
+  | 'tt.video.kicker'
+  | 'tt.video.play'
+  | 'tt.video.approved'
+  | 'tt.video.none'
+  | 'tt.composerRestricted'
+  | 'tt.askTutor';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2470,6 +2497,33 @@ const es: Messages = {
   'kn.seeAll': 'Ver tu conocimiento',
   'pg.consolidated': '{n} de {total} dominados',
   'pg.achievementConsolidated': '{n} dominados',
+  'tt.newFor': 'Nueva conversación sobre',
+  'tt.recent': 'Recientes',
+  'tt.general': 'Pregunta general',
+  'tt.restricted.INDEPENDENT': 'Ahora te toca demostrarlo por tu cuenta.',
+  'tt.restricted.ASSESSMENT': 'Tienes una evaluación en curso.',
+  'tt.restricted.UNAVAILABLE': 'El Tutor no está disponible en este momento.',
+  'tt.restrictedBody': 'El Tutor estará disponible cuando termines.',
+  'tt.backToToday': 'Volver a Hoy',
+  'tt.contextFailed': 'No pudimos cargar el contexto; el Tutor puede ayudarte igualmente.',
+  'tt.introConcept': 'Pregúntame lo que no te quede claro de {concept}, o elige una forma de verlo.',
+  'tt.introGeneral': 'Escribe tu duda. Te respondo en corto y, si quieres, lo vemos de otra forma.',
+  'tt.action.EXPLAIN_DIFFERENTLY': 'Explícamelo diferente',
+  'tt.action.EXAMPLE': 'Dame un ejemplo',
+  'tt.action.STEP_BY_STEP': 'Vamos paso a paso',
+  'tt.action.SHOW_ME': 'Muéstramelo',
+  'tt.action.WHY': '¿Por qué funciona así?',
+  'tt.action.FIND_VIDEO': 'Busca un video',
+  'tt.actionsLabel': 'Formas de ayuda',
+  'tt.visualCaption': 'Representación visual',
+  'tt.pending.reply': 'Preparando la explicación…',
+  'tt.pending.video': 'Buscando un video aprobado…',
+  'tt.video.kicker': 'Video educativo externo',
+  'tt.video.play': 'Ver video',
+  'tt.video.approved': 'Fuente educativa aprobada',
+  'tt.video.none': 'No encontré un video aprobado para este concepto. Te lo puedo mostrar de otra forma.',
+  'tt.composerRestricted': 'El Tutor vuelve cuando termines',
+  'tt.askTutor': 'Preguntar al Tutor',
 };
 
 const en: Messages = {
@@ -4010,6 +4064,33 @@ const en: Messages = {
   'kn.seeAll': 'See your knowledge',
   'pg.consolidated': '{n} of {total} mastered',
   'pg.achievementConsolidated': '{n} mastered',
+  'tt.newFor': 'New conversation about',
+  'tt.recent': 'Recent',
+  'tt.general': 'General question',
+  'tt.restricted.INDEPENDENT': 'Right now it\'s your turn to show it on your own.',
+  'tt.restricted.ASSESSMENT': 'You have an assessment in progress.',
+  'tt.restricted.UNAVAILABLE': 'The Tutor isn\'t available right now.',
+  'tt.restrictedBody': 'The Tutor will be available when you finish.',
+  'tt.backToToday': 'Back to Today',
+  'tt.contextFailed': 'We couldn\'t load the context; the Tutor can still help you.',
+  'tt.introConcept': 'Ask me anything that isn\'t clear about {concept}, or pick a way to see it.',
+  'tt.introGeneral': 'Type your question. I\'ll keep it short and we can look at it another way if you like.',
+  'tt.action.EXPLAIN_DIFFERENTLY': 'Explain it differently',
+  'tt.action.EXAMPLE': 'Give me an example',
+  'tt.action.STEP_BY_STEP': 'Let\'s go step by step',
+  'tt.action.SHOW_ME': 'Show me',
+  'tt.action.WHY': 'Why does it work?',
+  'tt.action.FIND_VIDEO': 'Find a video',
+  'tt.actionsLabel': 'Ways to help',
+  'tt.visualCaption': 'Visual representation',
+  'tt.pending.reply': 'Preparing the explanation…',
+  'tt.pending.video': 'Looking for an approved video…',
+  'tt.video.kicker': 'External educational video',
+  'tt.video.play': 'Play video',
+  'tt.video.approved': 'Approved educational source',
+  'tt.video.none': 'I couldn\'t find an approved video for this concept. I can show it to you another way.',
+  'tt.composerRestricted': 'The Tutor is back when you finish',
+  'tt.askTutor': 'Ask the Tutor',
 };
 
 const de: Messages = {
@@ -5550,6 +5631,33 @@ const de: Messages = {
   'kn.seeAll': 'Dein Wissen ansehen',
   'pg.consolidated': '{n} von {total} gemeistert',
   'pg.achievementConsolidated': '{n} gemeistert',
+  'tt.newFor': 'Neue Unterhaltung zu',
+  'tt.recent': 'Zuletzt',
+  'tt.general': 'Allgemeine Frage',
+  'tt.restricted.INDEPENDENT': 'Jetzt zeigst du es ganz allein.',
+  'tt.restricted.ASSESSMENT': 'Du hast gerade eine Überprüfung offen.',
+  'tt.restricted.UNAVAILABLE': 'Der Tutor ist gerade nicht verfügbar.',
+  'tt.restrictedBody': 'Der Tutor ist wieder da, wenn du fertig bist.',
+  'tt.backToToday': 'Zurück zu Heute',
+  'tt.contextFailed': 'Der Kontext konnte nicht geladen werden; der Tutor hilft dir trotzdem.',
+  'tt.introConcept': 'Frag mich alles, was dir bei {concept} unklar ist, oder wähle eine Darstellung.',
+  'tt.introGeneral': 'Schreib deine Frage. Ich antworte kurz – auf Wunsch auch anders erklärt.',
+  'tt.action.EXPLAIN_DIFFERENTLY': 'Erklär es anders',
+  'tt.action.EXAMPLE': 'Gib mir ein Beispiel',
+  'tt.action.STEP_BY_STEP': 'Schritt für Schritt',
+  'tt.action.SHOW_ME': 'Zeig es mir',
+  'tt.action.WHY': 'Warum funktioniert das?',
+  'tt.action.FIND_VIDEO': 'Such ein Video',
+  'tt.actionsLabel': 'Hilfe-Möglichkeiten',
+  'tt.visualCaption': 'Visuelle Darstellung',
+  'tt.pending.reply': 'Erklärung wird vorbereitet…',
+  'tt.pending.video': 'Suche nach einem geprüften Video…',
+  'tt.video.kicker': 'Externes Lernvideo',
+  'tt.video.play': 'Video abspielen',
+  'tt.video.approved': 'Geprüfte Bildungsquelle',
+  'tt.video.none': 'Ich habe kein geprüftes Video zu diesem Konzept gefunden. Ich kann es dir anders zeigen.',
+  'tt.composerRestricted': 'Der Tutor ist zurück, wenn du fertig bist',
+  'tt.askTutor': 'Den Tutor fragen',
 };
 
 const fr: Messages = {
@@ -7090,6 +7198,33 @@ const fr: Messages = {
   'kn.seeAll': 'Voir tes connaissances',
   'pg.consolidated': '{n} sur {total} maîtrisés',
   'pg.achievementConsolidated': '{n} maîtrisés',
+  'tt.newFor': 'Nouvelle conversation sur',
+  'tt.recent': 'Récentes',
+  'tt.general': 'Question générale',
+  'tt.restricted.INDEPENDENT': 'C\'est à toi de le montrer seul, maintenant.',
+  'tt.restricted.ASSESSMENT': 'Tu as une évaluation en cours.',
+  'tt.restricted.UNAVAILABLE': 'Le tuteur n\'est pas disponible pour le moment.',
+  'tt.restrictedBody': 'Le tuteur sera disponible quand tu auras terminé.',
+  'tt.backToToday': 'Retour à Aujourd\'hui',
+  'tt.contextFailed': 'Impossible de charger le contexte ; le tuteur peut quand même t\'aider.',
+  'tt.introConcept': 'Demande-moi ce qui n\'est pas clair sur {concept}, ou choisis une façon de le voir.',
+  'tt.introGeneral': 'Écris ta question. Je réponds brièvement et on peut voir autrement si tu veux.',
+  'tt.action.EXPLAIN_DIFFERENTLY': 'Explique-le autrement',
+  'tt.action.EXAMPLE': 'Donne-moi un exemple',
+  'tt.action.STEP_BY_STEP': 'Pas à pas',
+  'tt.action.SHOW_ME': 'Montre-le-moi',
+  'tt.action.WHY': 'Pourquoi ça marche ?',
+  'tt.action.FIND_VIDEO': 'Trouve une vidéo',
+  'tt.actionsLabel': 'Façons d\'aider',
+  'tt.visualCaption': 'Représentation visuelle',
+  'tt.pending.reply': 'Préparation de l\'explication…',
+  'tt.pending.video': 'Recherche d\'une vidéo approuvée…',
+  'tt.video.kicker': 'Vidéo éducative externe',
+  'tt.video.play': 'Lire la vidéo',
+  'tt.video.approved': 'Source éducative approuvée',
+  'tt.video.none': 'Je n\'ai pas trouvé de vidéo approuvée pour ce concept. Je peux te le montrer autrement.',
+  'tt.composerRestricted': 'Le tuteur revient quand tu as terminé',
+  'tt.askTutor': 'Demander au tuteur',
 };
 
 const pt: Messages = {
@@ -8630,6 +8765,33 @@ const pt: Messages = {
   'kn.seeAll': 'Ver seu conhecimento',
   'pg.consolidated': '{n} de {total} dominados',
   'pg.achievementConsolidated': '{n} dominados',
+  'tt.newFor': 'Nova conversa sobre',
+  'tt.recent': 'Recentes',
+  'tt.general': 'Pergunta geral',
+  'tt.restricted.INDEPENDENT': 'Agora é sua vez de mostrar sozinho.',
+  'tt.restricted.ASSESSMENT': 'Você tem uma avaliação em andamento.',
+  'tt.restricted.UNAVAILABLE': 'O Tutor não está disponível no momento.',
+  'tt.restrictedBody': 'O Tutor estará disponível quando você terminar.',
+  'tt.backToToday': 'Voltar para Hoje',
+  'tt.contextFailed': 'Não foi possível carregar o contexto; o Tutor pode ajudar mesmo assim.',
+  'tt.introConcept': 'Pergunte o que não ficou claro sobre {concept}, ou escolha uma forma de ver.',
+  'tt.introGeneral': 'Escreva sua dúvida. Respondo de forma curta e, se quiser, vemos de outro jeito.',
+  'tt.action.EXPLAIN_DIFFERENTLY': 'Explique de outro jeito',
+  'tt.action.EXAMPLE': 'Me dê um exemplo',
+  'tt.action.STEP_BY_STEP': 'Vamos passo a passo',
+  'tt.action.SHOW_ME': 'Mostre para mim',
+  'tt.action.WHY': 'Por que funciona assim?',
+  'tt.action.FIND_VIDEO': 'Busque um vídeo',
+  'tt.actionsLabel': 'Formas de ajuda',
+  'tt.visualCaption': 'Representação visual',
+  'tt.pending.reply': 'Preparando a explicação…',
+  'tt.pending.video': 'Procurando um vídeo aprovado…',
+  'tt.video.kicker': 'Vídeo educativo externo',
+  'tt.video.play': 'Ver vídeo',
+  'tt.video.approved': 'Fonte educativa aprovada',
+  'tt.video.none': 'Não encontrei um vídeo aprovado para este conceito. Posso mostrar de outra forma.',
+  'tt.composerRestricted': 'O Tutor volta quando você terminar',
+  'tt.askTutor': 'Perguntar ao Tutor',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };
