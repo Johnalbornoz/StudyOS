@@ -82,7 +82,7 @@ describe('component wiring', () => {
   const quiz = read('src/app/dashboard/quiz/page.tsx');
 
   it('the help surface is keyed by quizId + questionIndex (remount per question)', () => {
-    expect(quiz).toMatch(/<ContextualHelp key=\{`\$\{quizId\}:\$\{current\}`\} studentId=\{studentId\} quizId=\{quizId\} questionIndex=\{current\}/);
+    expect(quiz).toMatch(/<ContextualHelp\s+key=\{`\$\{quizId\}:\$\{current\}`\}\s+studentId=\{studentId\}\s+quizId=\{quizId\}\s+questionIndex=\{current\}/);
   });
 
   it('the component resets on scope change, aborts the pending request, and applies replies only through the scoped reducer', () => {

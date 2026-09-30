@@ -28,7 +28,7 @@ import ChatMessage from '@/components/ChatMessage';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { splitMessageContent } from '@/lib/tutor/visuals';
 import { availableActions, type TutorAction, type ChatAction } from '@/lib/tutor/quick-actions';
-import type { TutorSupportPolicy } from '@/lib/tutor/context-pack';
+import type { TutorEntryMode, TutorSupportPolicy } from '@/lib/tutor/context-pack';
 import PedagogicalVisual from './PedagogicalVisual';
 
 // Browser-only modality controls, loaded on demand (UX-3 components, unchanged behavior).
@@ -47,6 +47,7 @@ interface TutorContextView {
   subject: { id: string; name: string } | null;
   concept: { id: string; label: string } | null;
   topic: string | null;
+  entryMode?: TutorEntryMode | null;
   supportPolicy: TutorSupportPolicy;
   capabilities: { video: boolean; visuals: boolean };
 }
@@ -84,12 +85,15 @@ export default function TutorChat({
   subjects,
   conceptId,
   subjectId,
+  entryMode,
 }: {
   studentId: string;
   locale: Locale;
   subjects: SubjectOption[];
   conceptId?: string;
   subjectId?: string;
+  /** UX-5 closure: the allowed learning surface this Tutor was opened from (validated server-side too). */
+  entryMode?: TutorEntryMode;
 }) {
   const t = getMessages(locale);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -103,7 +107,9 @@ export default function TutorChat({
   const [listFailed, setListFailed] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
   // Context of the CURRENT conversation. The entry concept applies only to the new conversation it starts.
-  const [entryContext, setEntryContext] = useState<{ subjectId?: string; conceptId?: string } | null>(conceptId || subjectId ? { subjectId, conceptId } : null);
+  const [entryContext, setEntryContext] = useState<{ subjectId?: string; conceptId?: string; from?: TutorEntryMode } | null>(
+    conceptId || subjectId ? { subjectId, conceptId, from: conceptId ? entryMode : undefined } : null,
+  );
   const [context, setContext] = useState<TutorContextView | null>(null);
   const [contextFailed, setContextFailed] = useState(false);
   const [view, setView] = useState<'list' | 'chat'>(conceptId || subjectId ? 'chat' : 'list');
@@ -114,6 +120,7 @@ export default function TutorChat({
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
   const contextSubjectId = entryContext?.subjectId ?? activeConversation?.subjectId ?? undefined;
   const contextConceptId = entryContext?.conceptId;
+  const contextFrom = entryContext?.from;
 
   async function loadConversations() {
     try {
@@ -140,6 +147,7 @@ export default function TutorChat({
     const qs = new URLSearchParams({ studentId });
     if (contextSubjectId) qs.set('subjectId', contextSubjectId);
     if (contextConceptId) qs.set('conceptId', contextConceptId);
+    if (contextFrom) qs.set('from', contextFrom);
     setContextFailed(false);
     fetch(`/api/tutor/context?${qs}`)
       .then(async (r) => {
@@ -156,7 +164,7 @@ export default function TutorChat({
     return () => {
       cancelled = true;
     };
-  }, [studentId, contextSubjectId, contextConceptId]);
+  }, [studentId, contextSubjectId, contextConceptId, contextFrom]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -229,7 +237,7 @@ export default function TutorChat({
       const res = await fetch('/api/tutor/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, conversationId, message, conceptId: contextConceptId, action }),
+        body: JSON.stringify({ studentId, conversationId, message, conceptId: contextConceptId, from: contextFrom, action }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.data?.reply) throw new Error();
@@ -333,6 +341,7 @@ export default function TutorChat({
             <span className="tt-context-kicker">{t['tutor.title']}</span>
             <span className="tt-context-title">{contextTitle ?? t['tt.general']}</span>
             {contextMeta && <span className="tt-context-meta">{contextMeta}</span>}
+            {context?.entryMode && <span className="tt-context-from">{t[`tt.from.${context.entryMode}`]}</span>}
           </div>
         </header>
 

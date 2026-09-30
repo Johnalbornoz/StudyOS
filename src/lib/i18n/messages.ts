@@ -955,7 +955,63 @@ export type MessageKey =
   | 'tt.video.approved'
   | 'tt.video.none'
   | 'tt.composerRestricted'
-  | 'tt.askTutor';
+  | 'tt.askTutor'
+  | 'sp.title'
+  | 'sp.addTitle'
+  | 'sp.lead'
+  | 'sp.forYou'
+  | 'sp.forYouProfile'
+  | 'sp.examBadge'
+  | 'sp.yours'
+  | 'sp.all'
+  | 'sp.search'
+  | 'sp.searchPlaceholder'
+  | 'sp.noMatch'
+  | 'sp.levelTitle'
+  | 'sp.levelHL'
+  | 'sp.levelSL'
+  | 'sp.cancel'
+  | 'sp.adding'
+  | 'sp.error'
+  | 'cf.label'
+  | 'cf.placeholder'
+  | 'cf.hint'
+  | 'cf.existing'
+  | 'cf.proposals'
+  | 'cf.searching'
+  | 'cf.noProposals'
+  | 'cf.addTo'
+  | 'cf.adding'
+  | 'cf.error'
+  | 'ss.label'
+  | 'ss.placeholder'
+  | 'ss.add'
+  | 'ln.title'
+  | 'ln.lead'
+  | 'ln.startTitle'
+  | 'ln.startBody'
+  | 'ln.quietTitle'
+  | 'ln.quietBody'
+  | 'ln.findTitle'
+  | 'ln.topicsTitle'
+  | 'ln.pathLink'
+  | 'ln.next'
+  | 'nav.home'
+  | 'nav.learn'
+  | 'tt.from.LEARN'
+  | 'tt.from.WORKED'
+  | 'tt.from.GUIDED'
+  | 'tt.from.LEARN_CHECK'
+  | 'tt.from.PRACTICE'
+  | 'tt.from.REVIEW'
+  | 'tt.from.REMEDIATION'
+  | 'tt.from.CONCEPT'
+  | 'tt.opensNewTab'
+  | 'pg.workOnIt'
+  | 'xp.firstTopicBody'
+  | 'xp.firstTopicCta'
+  | 'ln.pickTitle'
+  | 'ln.pickBody';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2524,6 +2580,62 @@ const es: Messages = {
   'tt.video.none': 'No encontré un video aprobado para este concepto. Te lo puedo mostrar de otra forma.',
   'tt.composerRestricted': 'El Tutor vuelve cuando termines',
   'tt.askTutor': 'Preguntar al Tutor',
+  'sp.title': '¿Qué quieres aprender?',
+  'sp.addTitle': 'Agregar materia',
+  'sp.lead': 'Elige una materia. Después eliges el tema y empiezas.',
+  'sp.forYou': 'Para ti',
+  'sp.forYouProfile': 'Según tu perfil: {profile}',
+  'sp.examBadge': 'Tu objetivo',
+  'sp.yours': 'Tus materias',
+  'sp.all': 'Ver todas las materias',
+  'sp.search': 'Buscar materia',
+  'sp.searchPlaceholder': 'Ej.: Química',
+  'sp.noMatch': 'Esa materia no está en la lista.',
+  'sp.levelTitle': '{subject}: ¿nivel superior o nivel medio?',
+  'sp.levelHL': 'Nivel superior (HL)',
+  'sp.levelSL': 'Nivel medio (SL)',
+  'sp.cancel': 'Elegir otra materia',
+  'sp.adding': 'Preparando {subject}…',
+  'sp.error': 'No pudimos agregar la materia. Inténtalo de nuevo.',
+  'cf.label': 'Buscar un tema de {subject}',
+  'cf.placeholder': 'Ej.: ecuaciones de segundo grado',
+  'cf.hint': 'Escríbelo con tus palabras.',
+  'cf.existing': 'Ya lo tienes',
+  'cf.proposals': 'Temas de {subject} que puedes empezar',
+  'cf.searching': 'Buscando temas…',
+  'cf.noProposals': 'No encontramos temas con eso. Prueba con otras palabras.',
+  'cf.addTo': 'Añadir a {subject}',
+  'cf.adding': 'Preparando «{concept}»…',
+  'cf.error': 'No pudimos añadir el tema. Inténtalo de nuevo.',
+  'ss.label': 'Cambiar de materia',
+  'ss.placeholder': 'Elige una materia',
+  'ss.add': 'Agregar materia',
+  'ln.title': 'Aprender',
+  'ln.lead': 'Tu materia, sus temas y tu siguiente paso.',
+  'ln.startTitle': '¿Qué quieres aprender en {subject}?',
+  'ln.startBody': 'Escribe un tema y elige uno de la lista. Luego pulsa Empezar.',
+  'ln.quietTitle': 'Nada pendiente ahora en esta materia',
+  'ln.quietBody': 'Puedes abrir cualquier tema de abajo o buscar uno nuevo.',
+  'ln.findTitle': 'Buscar o añadir un tema',
+  'ln.topicsTitle': 'Temas de {subject}',
+  'ln.pathLink': 'Ver tu ruta',
+  'ln.next': 'Siguiente',
+  'nav.home': 'Inicio',
+  'nav.learn': 'Aprender',
+  'tt.from.LEARN': 'Desde: explicación',
+  'tt.from.WORKED': 'Desde: ejemplo resuelto',
+  'tt.from.GUIDED': 'Desde: práctica guiada',
+  'tt.from.LEARN_CHECK': 'Desde: comprobación',
+  'tt.from.PRACTICE': 'Desde: práctica',
+  'tt.from.REVIEW': 'Desde: repaso',
+  'tt.from.REMEDIATION': 'Desde: refuerzo',
+  'tt.from.CONCEPT': 'Desde: el tema',
+  'tt.opensNewTab': 'se abre en otra pestaña; tu actividad sigue aquí',
+  'pg.workOnIt': 'Trabajar en esto',
+  'xp.firstTopicBody': 'Ya tienes tu materia. Ahora elige el tema con el que quieres empezar.',
+  'xp.firstTopicCta': 'Elegir un tema',
+  'ln.pickTitle': 'Elige un tema para empezar',
+  'ln.pickBody': 'Abre un tema de la lista y pulsa Empezar.',
 };
 
 const en: Messages = {
@@ -4091,6 +4203,62 @@ const en: Messages = {
   'tt.video.none': 'I couldn\'t find an approved video for this concept. I can show it to you another way.',
   'tt.composerRestricted': 'The Tutor is back when you finish',
   'tt.askTutor': 'Ask the Tutor',
+  'sp.title': 'What do you want to learn?',
+  'sp.addTitle': 'Add a subject',
+  'sp.lead': 'Pick a subject. Then choose a topic and start.',
+  'sp.forYou': 'For you',
+  'sp.forYouProfile': 'Based on your profile: {profile}',
+  'sp.examBadge': 'Your goal',
+  'sp.yours': 'Your subjects',
+  'sp.all': 'See all subjects',
+  'sp.search': 'Search subjects',
+  'sp.searchPlaceholder': 'E.g. Chemistry',
+  'sp.noMatch': 'That subject isn\'t on the list.',
+  'sp.levelTitle': '{subject}: Higher or Standard Level?',
+  'sp.levelHL': 'Higher Level (HL)',
+  'sp.levelSL': 'Standard Level (SL)',
+  'sp.cancel': 'Choose another subject',
+  'sp.adding': 'Setting up {subject}…',
+  'sp.error': 'We couldn\'t add the subject. Please try again.',
+  'cf.label': 'Search a topic in {subject}',
+  'cf.placeholder': 'E.g. quadratic equations',
+  'cf.hint': 'Say it in your own words.',
+  'cf.existing': 'Already in your subjects',
+  'cf.proposals': 'Topics in {subject} you can start',
+  'cf.searching': 'Looking for topics…',
+  'cf.noProposals': 'No topics found for that. Try other words.',
+  'cf.addTo': 'Add to {subject}',
+  'cf.adding': 'Setting up “{concept}”…',
+  'cf.error': 'We couldn\'t add the topic. Please try again.',
+  'ss.label': 'Change subject',
+  'ss.placeholder': 'Choose a subject',
+  'ss.add': 'Add a subject',
+  'ln.title': 'Learn',
+  'ln.lead': 'Your subject, its topics and your next step.',
+  'ln.startTitle': 'What do you want to learn in {subject}?',
+  'ln.startBody': 'Type a topic and pick one from the list. Then press Start.',
+  'ln.quietTitle': 'Nothing due right now in this subject',
+  'ln.quietBody': 'You can open any topic below or look for a new one.',
+  'ln.findTitle': 'Find or add a topic',
+  'ln.topicsTitle': 'Topics in {subject}',
+  'ln.pathLink': 'See your path',
+  'ln.next': 'Next',
+  'nav.home': 'Home',
+  'nav.learn': 'Learn',
+  'tt.from.LEARN': 'From: explanation',
+  'tt.from.WORKED': 'From: worked example',
+  'tt.from.GUIDED': 'From: guided practice',
+  'tt.from.LEARN_CHECK': 'From: understanding check',
+  'tt.from.PRACTICE': 'From: practice',
+  'tt.from.REVIEW': 'From: review',
+  'tt.from.REMEDIATION': 'From: reinforcement',
+  'tt.from.CONCEPT': 'From: the topic',
+  'tt.opensNewTab': 'opens in a new tab; your activity stays here',
+  'pg.workOnIt': 'Work on this',
+  'xp.firstTopicBody': 'Your subject is ready. Now choose the topic you want to start with.',
+  'xp.firstTopicCta': 'Choose a topic',
+  'ln.pickTitle': 'Choose a topic to start',
+  'ln.pickBody': 'Open a topic from the list and press Start.',
 };
 
 const de: Messages = {
@@ -5658,6 +5826,62 @@ const de: Messages = {
   'tt.video.none': 'Ich habe kein geprüftes Video zu diesem Konzept gefunden. Ich kann es dir anders zeigen.',
   'tt.composerRestricted': 'Der Tutor ist zurück, wenn du fertig bist',
   'tt.askTutor': 'Den Tutor fragen',
+  'sp.title': 'Was möchtest du lernen?',
+  'sp.addTitle': 'Fach hinzufügen',
+  'sp.lead': 'Wähle ein Fach. Dann wählst du ein Thema und legst los.',
+  'sp.forYou': 'Für dich',
+  'sp.forYouProfile': 'Passend zu deinem Profil: {profile}',
+  'sp.examBadge': 'Dein Ziel',
+  'sp.yours': 'Deine Fächer',
+  'sp.all': 'Alle Fächer ansehen',
+  'sp.search': 'Fach suchen',
+  'sp.searchPlaceholder': 'z. B. Chemie',
+  'sp.noMatch': 'Dieses Fach ist nicht in der Liste.',
+  'sp.levelTitle': '{subject}: Higher oder Standard Level?',
+  'sp.levelHL': 'Higher Level (HL)',
+  'sp.levelSL': 'Standard Level (SL)',
+  'sp.cancel': 'Anderes Fach wählen',
+  'sp.adding': '{subject} wird vorbereitet …',
+  'sp.error': 'Das Fach konnte nicht hinzugefügt werden. Versuch es noch einmal.',
+  'cf.label': 'Ein Thema in {subject} suchen',
+  'cf.placeholder': 'z. B. quadratische Gleichungen',
+  'cf.hint': 'Beschreib es mit deinen Worten.',
+  'cf.existing': 'Schon in deinen Fächern',
+  'cf.proposals': 'Themen in {subject}, mit denen du anfangen kannst',
+  'cf.searching': 'Themen werden gesucht …',
+  'cf.noProposals': 'Dazu gibt es keine Themen. Versuch andere Wörter.',
+  'cf.addTo': 'Zu {subject} hinzufügen',
+  'cf.adding': '„{concept}“ wird vorbereitet …',
+  'cf.error': 'Das Thema konnte nicht hinzugefügt werden. Versuch es noch einmal.',
+  'ss.label': 'Fach wechseln',
+  'ss.placeholder': 'Fach wählen',
+  'ss.add': 'Fach hinzufügen',
+  'ln.title': 'Lernen',
+  'ln.lead': 'Dein Fach, seine Themen und dein nächster Schritt.',
+  'ln.startTitle': 'Was möchtest du in {subject} lernen?',
+  'ln.startBody': 'Gib ein Thema ein und wähle eins aus der Liste. Dann tippe auf Starten.',
+  'ln.quietTitle': 'Gerade nichts offen in diesem Fach',
+  'ln.quietBody': 'Du kannst unten ein Thema öffnen oder ein neues suchen.',
+  'ln.findTitle': 'Thema suchen oder hinzufügen',
+  'ln.topicsTitle': 'Themen in {subject}',
+  'ln.pathLink': 'Deinen Weg ansehen',
+  'ln.next': 'Als Nächstes',
+  'nav.home': 'Start',
+  'nav.learn': 'Lernen',
+  'tt.from.LEARN': 'Von: Erklärung',
+  'tt.from.WORKED': 'Von: Musterbeispiel',
+  'tt.from.GUIDED': 'Von: geführte Übung',
+  'tt.from.LEARN_CHECK': 'Von: Verständnischeck',
+  'tt.from.PRACTICE': 'Von: Übung',
+  'tt.from.REVIEW': 'Von: Wiederholung',
+  'tt.from.REMEDIATION': 'Von: Festigung',
+  'tt.from.CONCEPT': 'Von: dem Thema',
+  'tt.opensNewTab': 'öffnet sich in einem neuen Tab; deine Aktivität bleibt hier',
+  'pg.workOnIt': 'Daran arbeiten',
+  'xp.firstTopicBody': 'Dein Fach ist bereit. Wähle jetzt das Thema, mit dem du anfangen möchtest.',
+  'xp.firstTopicCta': 'Thema wählen',
+  'ln.pickTitle': 'Wähle ein Thema zum Starten',
+  'ln.pickBody': 'Öffne ein Thema aus der Liste und tippe auf Starten.',
 };
 
 const fr: Messages = {
@@ -7225,6 +7449,62 @@ const fr: Messages = {
   'tt.video.none': 'Je n\'ai pas trouvé de vidéo approuvée pour ce concept. Je peux te le montrer autrement.',
   'tt.composerRestricted': 'Le tuteur revient quand tu as terminé',
   'tt.askTutor': 'Demander au tuteur',
+  'sp.title': 'Qu\'est-ce que tu veux apprendre ?',
+  'sp.addTitle': 'Ajouter une matière',
+  'sp.lead': 'Choisis une matière. Ensuite, choisis un thème et commence.',
+  'sp.forYou': 'Pour toi',
+  'sp.forYouProfile': 'D\'après ton profil : {profile}',
+  'sp.examBadge': 'Ton objectif',
+  'sp.yours': 'Tes matières',
+  'sp.all': 'Voir toutes les matières',
+  'sp.search': 'Chercher une matière',
+  'sp.searchPlaceholder': 'Ex. : Chimie',
+  'sp.noMatch': 'Cette matière n\'est pas dans la liste.',
+  'sp.levelTitle': '{subject} : niveau supérieur ou niveau moyen ?',
+  'sp.levelHL': 'Niveau supérieur (NS)',
+  'sp.levelSL': 'Niveau moyen (NM)',
+  'sp.cancel': 'Choisir une autre matière',
+  'sp.adding': 'Préparation de {subject}…',
+  'sp.error': 'Impossible d\'ajouter la matière. Réessaie.',
+  'cf.label': 'Chercher un thème de {subject}',
+  'cf.placeholder': 'Ex. : équations du second degré',
+  'cf.hint': 'Dis-le avec tes mots.',
+  'cf.existing': 'Déjà dans tes matières',
+  'cf.proposals': 'Thèmes de {subject} que tu peux commencer',
+  'cf.searching': 'Recherche de thèmes…',
+  'cf.noProposals': 'Aucun thème trouvé. Essaie d\'autres mots.',
+  'cf.addTo': 'Ajouter à {subject}',
+  'cf.adding': 'Préparation de « {concept} »…',
+  'cf.error': 'Impossible d\'ajouter le thème. Réessaie.',
+  'ss.label': 'Changer de matière',
+  'ss.placeholder': 'Choisis une matière',
+  'ss.add': 'Ajouter une matière',
+  'ln.title': 'Apprendre',
+  'ln.lead': 'Ta matière, ses thèmes et ta prochaine étape.',
+  'ln.startTitle': 'Qu\'est-ce que tu veux apprendre en {subject} ?',
+  'ln.startBody': 'Écris un thème et choisis-en un dans la liste. Puis appuie sur Commencer.',
+  'ln.quietTitle': 'Rien à faire pour l\'instant dans cette matière',
+  'ln.quietBody': 'Tu peux ouvrir un thème ci-dessous ou en chercher un nouveau.',
+  'ln.findTitle': 'Chercher ou ajouter un thème',
+  'ln.topicsTitle': 'Thèmes de {subject}',
+  'ln.pathLink': 'Voir ton parcours',
+  'ln.next': 'Suivant',
+  'nav.home': 'Accueil',
+  'nav.learn': 'Apprendre',
+  'tt.from.LEARN': 'Depuis : explication',
+  'tt.from.WORKED': 'Depuis : exemple résolu',
+  'tt.from.GUIDED': 'Depuis : pratique guidée',
+  'tt.from.LEARN_CHECK': 'Depuis : vérification',
+  'tt.from.PRACTICE': 'Depuis : entraînement',
+  'tt.from.REVIEW': 'Depuis : révision',
+  'tt.from.REMEDIATION': 'Depuis : renforcement',
+  'tt.from.CONCEPT': 'Depuis : le thème',
+  'tt.opensNewTab': 's\'ouvre dans un nouvel onglet ; ton activité reste ici',
+  'pg.workOnIt': 'Travailler dessus',
+  'xp.firstTopicBody': 'Ta matière est prête. Choisis maintenant le thème par lequel commencer.',
+  'xp.firstTopicCta': 'Choisir un thème',
+  'ln.pickTitle': 'Choisis un thème pour commencer',
+  'ln.pickBody': 'Ouvre un thème de la liste et appuie sur Commencer.',
 };
 
 const pt: Messages = {
@@ -8792,6 +9072,62 @@ const pt: Messages = {
   'tt.video.none': 'Não encontrei um vídeo aprovado para este conceito. Posso mostrar de outra forma.',
   'tt.composerRestricted': 'O Tutor volta quando você terminar',
   'tt.askTutor': 'Perguntar ao Tutor',
+  'sp.title': 'O que você quer aprender?',
+  'sp.addTitle': 'Adicionar matéria',
+  'sp.lead': 'Escolha uma matéria. Depois escolha o tema e comece.',
+  'sp.forYou': 'Para você',
+  'sp.forYouProfile': 'Com base no seu perfil: {profile}',
+  'sp.examBadge': 'Seu objetivo',
+  'sp.yours': 'Suas matérias',
+  'sp.all': 'Ver todas as matérias',
+  'sp.search': 'Buscar matéria',
+  'sp.searchPlaceholder': 'Ex.: Química',
+  'sp.noMatch': 'Essa matéria não está na lista.',
+  'sp.levelTitle': '{subject}: nível superior ou nível médio?',
+  'sp.levelHL': 'Nível superior (HL)',
+  'sp.levelSL': 'Nível médio (SL)',
+  'sp.cancel': 'Escolher outra matéria',
+  'sp.adding': 'Preparando {subject}…',
+  'sp.error': 'Não foi possível adicionar a matéria. Tente novamente.',
+  'cf.label': 'Buscar um tema de {subject}',
+  'cf.placeholder': 'Ex.: equações do segundo grau',
+  'cf.hint': 'Escreva com suas palavras.',
+  'cf.existing': 'Você já tem',
+  'cf.proposals': 'Temas de {subject} que você pode começar',
+  'cf.searching': 'Buscando temas…',
+  'cf.noProposals': 'Nenhum tema encontrado. Tente outras palavras.',
+  'cf.addTo': 'Adicionar a {subject}',
+  'cf.adding': 'Preparando “{concept}”…',
+  'cf.error': 'Não foi possível adicionar o tema. Tente novamente.',
+  'ss.label': 'Trocar de matéria',
+  'ss.placeholder': 'Escolha uma matéria',
+  'ss.add': 'Adicionar matéria',
+  'ln.title': 'Aprender',
+  'ln.lead': 'Sua matéria, os temas e seu próximo passo.',
+  'ln.startTitle': 'O que você quer aprender em {subject}?',
+  'ln.startBody': 'Digite um tema e escolha um da lista. Depois toque em Começar.',
+  'ln.quietTitle': 'Nada pendente agora nesta matéria',
+  'ln.quietBody': 'Você pode abrir um tema abaixo ou buscar um novo.',
+  'ln.findTitle': 'Buscar ou adicionar um tema',
+  'ln.topicsTitle': 'Temas de {subject}',
+  'ln.pathLink': 'Ver sua rota',
+  'ln.next': 'Próximo',
+  'nav.home': 'Início',
+  'nav.learn': 'Aprender',
+  'tt.from.LEARN': 'De: explicação',
+  'tt.from.WORKED': 'De: exemplo resolvido',
+  'tt.from.GUIDED': 'De: prática guiada',
+  'tt.from.LEARN_CHECK': 'De: verificação',
+  'tt.from.PRACTICE': 'De: prática',
+  'tt.from.REVIEW': 'De: revisão',
+  'tt.from.REMEDIATION': 'De: reforço',
+  'tt.from.CONCEPT': 'De: o tema',
+  'tt.opensNewTab': 'abre em outra aba; sua atividade continua aqui',
+  'pg.workOnIt': 'Trabalhar nisso',
+  'xp.firstTopicBody': 'Sua matéria está pronta. Agora escolha o tema para começar.',
+  'xp.firstTopicCta': 'Escolher um tema',
+  'ln.pickTitle': 'Escolha um tema para começar',
+  'ln.pickBody': 'Abra um tema da lista e toque em Começar.',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

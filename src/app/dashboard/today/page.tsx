@@ -25,6 +25,7 @@ import { activityLabel } from '../activityLabel';
 import { activityCta } from '../activityCta';
 import StartSessionButton from '../StartSessionButton';
 import NextChallengeCard from '../NextChallengeCard';
+import SubjectSwitcher from '../SubjectSwitcher';
 
 /**
  * UX-2 Home ("Hoy") -- an action-first entry point over the SAME
@@ -141,7 +142,7 @@ export default async function TodayPage() {
   // Context + figures: independent, read-only, each degrading to "not
   // shown" on failure -- never blocking the next-action hero.
   const todayIso = new Date().toISOString().slice(0, 10);
-  const [user, learningDaysThisWeek, examProfiles, horizon] = await Promise.all([
+  const [user, learningDaysThisWeek, examProfiles, horizon, mySubjects] = await Promise.all([
     currentUser().catch(() => null),
     getLearningDaysThisWeek(studentId).catch(() => null),
     listStudentExamProfiles(studentId).catch(() => []),
@@ -149,7 +150,17 @@ export default async function TodayPage() {
     // reads the 8B read boundary only; a render here never creates,
     // rolls, or reconciles a plan.
     getLearningPlanHorizon(studentId).catch(() => null),
+    // UX-5 closure: the Student's own subjects, for the subject switcher and
+    // the "no concept yet" first step. Fails soft (switcher hidden).
+    query(
+      `SELECT s.id, s.name, EXISTS (SELECT 1 FROM concepts c WHERE c.subject_id = s.id) AS has_concepts
+       FROM subjects s WHERE s.student_id = $1 AND s.status != 'archived' ORDER BY s.name`,
+      [studentId],
+    )
+      .then((r) => r.rows as { id: string; name: string; has_concepts: boolean }[])
+      .catch(() => null),
   ]);
+  const noConceptYet = !!mySubjects && mySubjects.length > 0 && mySubjects.every((sub) => !sub.has_concepts);
   const goalProfile = selectGoalProfile(examProfiles, todayIso);
   const goalDefinition = goalProfile ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
 
@@ -245,6 +256,17 @@ export default async function TodayPage() {
         <p className="xp-date">{todayFormatted}</p>
         <h1>{firstName ? t['xp.greeting'].replace('{name}', firstName) : t['xp.greetingNoName']}</h1>
         <p className="xp-tagline">{t['xp.tagline']}</p>
+        {mySubjects && mySubjects.length > 0 && (
+          <div className="xp-subjects">
+            <SubjectSwitcher
+              subjects={mySubjects.map(({ id, name }) => ({ id, name }))}
+              currentId={best?.decision.subjectId ?? (mySubjects.length === 1 ? mySubjects[0].id : null)}
+              label={t['ss.label']}
+              placeholder={t['ss.placeholder']}
+              addLabel={t['ss.add']}
+            />
+          </div>
+        )}
         {goalProfile && goalName && (
           <Link href={`/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal">
             <span>{t['xp.goalLabel']}</span>
@@ -284,13 +306,25 @@ export default async function TodayPage() {
             />
           )}
 
-          {isEmpty && (
+          {isEmpty && noConceptYet && (
+            // UX-5 closure: a new Student who chose a subject but no topic yet
+            // continues exactly where first-run left off -- never a dead end.
+            <section className="xp-hero" aria-labelledby="xp-first-title">
+              <h2 id="xp-first-title" className="xp-hero-title">{t['sp.title']}</h2>
+              <p className="xp-hero-why">{t['xp.firstTopicBody']}</p>
+              <div className="xp-hero-cta">
+                <Link href={`/dashboard/learn?subjectId=${mySubjects![0].id}`} className="btn btn-primary btn-lg">{t['xp.firstTopicCta']}</Link>
+              </div>
+            </section>
+          )}
+
+          {isEmpty && !noConceptYet && (
             <section className="xp-hero xp-hero--calm" aria-labelledby="xp-empty-title">
               <h2 id="xp-empty-title" className="xp-hero-title">{isCold ? t['today3.coldStateTitle'] : t['xp.caughtUpTitle']}</h2>
               <p className="xp-hero-why">{isCold ? t['today3.coldStateBody'] : t['xp.caughtUpBody']}</p>
               <div className="xp-hero-cta">
                 {isCold ? (
-                  <Link href="/dashboard/subjects" className="btn btn-primary">{t['today3.coldStateCta']}</Link>
+                  <Link href="/dashboard/learn" className="btn btn-primary">{t['today3.coldStateCta']}</Link>
                 ) : (
                   <Link href="/dashboard/path" className="btn btn-secondary">{t['xp.pathLink']}</Link>
                 )}

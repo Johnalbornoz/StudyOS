@@ -436,3 +436,69 @@ describe('UX-5 Tutor UI contracts, localization, boundaries', () => {
     expect(read('src/app/dashboard/knowledge/page.tsx')).toMatch(/\/dashboard\/tutor\?subjectId=\$\{subjectId\}&conceptId=\$\{c\.concept\.conceptId\}/);
   });
 });
+
+/* ---------------------------------------------------------------- H (UX-5 closure) */
+describe('UX-5 closure -- contextual Tutor entry from learning surfaces', () => {
+  it('the entry mode is kept only with a verified concept and only for allowed surfaces', async () => {
+    const withConcept = await buildTutorContext({ studentId: STUDENT_A, language: 'es', conceptId: CONCEPT_A, entryMode: 'PRACTICE' });
+    expect(withConcept.learning.entryMode).toBe('PRACTICE');
+    expect(contextPromptBlock(withConcept)).toMatch(/opened the Tutor from a practice activity[\s\S]*do not do the activity for them/);
+    // no concept -> no activity context
+    expect((await buildTutorContext({ studentId: STUDENT_A, language: 'es', subjectId: SUBJECT_A, entryMode: 'PRACTICE' })).learning.entryMode).toBeNull();
+    // restricted surfaces are not entry modes at all -- a client cannot claim them
+    for (const m of ['PROVE', 'RETAIN', 'TRANSFER', 'ASSESSMENT', 'EXAM', 'x']) {
+      expect((await buildTutorContext({ studentId: STUDENT_A, language: 'es', conceptId: CONCEPT_A, entryMode: m })).learning.entryMode).toBeNull();
+    }
+  });
+
+  it('the entry mode never widens the policy: the integrity guard still restricts', async () => {
+    guardMock.mockResolvedValue({ allowed: false, reason: 'ACTIVE_RESTRICTED_EVIDENCE', evidenceMode: 'INDEPENDENT' });
+    const ctx = await buildTutorContext({ studentId: STUDENT_A, language: 'es', conceptId: CONCEPT_A, entryMode: 'PRACTICE' });
+    expect(ctx.supportPolicy).toBe('RESTRICTED_INDEPENDENT');
+  });
+
+  it('message route: carries the allowed mode to the service; a restricted mode is refused', async () => {
+    const { POST } = await import('@/app/api/tutor/message/route');
+    const ok = await POST(new Request('http://x', { method: 'POST', body: JSON.stringify({ studentId: STUDENT_A, conversationId: CONV_A, message: 'no entiendo', conceptId: CONCEPT_A, from: 'GUIDED' }) }) as any);
+    expect(ok.status).toBe(200);
+    expect(sendMessageMock.mock.calls[0][5].context.learning.entryMode).toBe('GUIDED');
+    const bad = await POST(new Request('http://x', { method: 'POST', body: JSON.stringify({ studentId: STUDENT_A, conversationId: CONV_A, message: 'x', conceptId: CONCEPT_A, from: 'PROVE' }) }) as any);
+    expect(bad.status).toBe(400);
+  });
+
+  it('context route returns the verified entry mode (the Student never retypes where they are)', async () => {
+    const { GET } = await import('@/app/api/tutor/context/route');
+    const res = await GET(new Request(`http://x/api/tutor/context?studentId=${STUDENT_A}&conceptId=${CONCEPT_A}&from=LEARN_CHECK`) as any);
+    const body = await res.json();
+    expect(body.data).toMatchObject({ concept: { label: 'Fracciones equivalentes' }, subject: { name: 'Matemáticas' }, topic: 'Fracciones', entryMode: 'LEARN_CHECK' });
+  });
+
+  it('activities link the Tutor only where help is allowed, with their context, in a new tab', () => {
+    const quiz = read('src/app/dashboard/quiz/page.tsx');
+    expect(quiz).toMatch(/const TUTOR_FROM_QUIZ_MODE: Partial<Record<QuizMode, TutorEntryMode>> = \{\s*topic_practice: 'PRACTICE',\s*review: 'REVIEW',\s*canonical_learn_check: 'LEARN_CHECK',\s*\};/);
+    // ContextualHelp (with the Tutor link) renders only for PRACTICE-evidence modes
+    expect(quiz).toMatch(/\{PRACTICE_EVIDENCE_MODES\.includes\(quizMode\) && studentId && quizId && \(\s*<ContextualHelp[\s\S]*?tutor=\{subjectId && conceptId \?/);
+    expect(quiz).toMatch(/tutorSubjectId=\{subjectId && PRACTICE_EVIDENCE_MODES\.includes\(quizMode\) \? subjectId : null\}/);
+    const intro = read('src/app/dashboard/quiz/TeachingIntro.tsx');
+    expect(intro).toMatch(/from=\{stage === 'MODEL' \? 'WORKED' : stage === 'GUIDE' \? 'GUIDED' : 'LEARN'\}/);
+    const link = read('src/app/dashboard/tutor/TutorEntryLink.tsx');
+    expect(link).toMatch(/target: '_blank', rel: 'noopener'/);
+    // remediation: supported steps only
+    expect(read('src/app/dashboard/remediation/[pathId]/page.tsx')).toMatch(/\{!isIndependentStep && view\.subjectId && view\.conceptId && \(\s*<TutorEntryLink[^>]*from="REMEDIATION"/);
+    // concept surfaces
+    expect(read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptMission.tsx')).toMatch(/&from=CONCEPT/);
+    expect(read('src/app/dashboard/knowledge/page.tsx')).toMatch(/&from=CONCEPT/);
+  });
+
+  it('the Tutor page accepts only a valid entry mode and shows it in the context header', () => {
+    expect(read('src/app/dashboard/tutor/page.tsx')).toMatch(/entryMode=\{isTutorEntryMode\(from\) \? from : undefined\}/);
+    const ui = read('src/app/dashboard/tutor/TutorChat.tsx');
+    expect(ui).toMatch(/context\?\.entryMode && <span className="tt-context-from">\{t\[`tt\.from\.\$\{context\.entryMode\}`\]\}/);
+    expect(ui).toMatch(/conceptId: contextConceptId, from: contextFrom, action/);
+    for (const l of LOCALES) {
+      const m = getMessages(l) as Record<string, string>;
+      for (const k of ['LEARN', 'WORKED', 'GUIDED', 'LEARN_CHECK', 'PRACTICE', 'REVIEW', 'REMEDIATION', 'CONCEPT']) expect(m[`tt.from.${k}`], `${l} ${k}`).toBeTruthy();
+      expect(m['tt.opensNewTab']).toBeTruthy();
+    }
+  });
+});

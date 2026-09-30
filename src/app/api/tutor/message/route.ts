@@ -3,7 +3,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { sendMessage, verifyConversationOwnership } from '@/services/tutor.service';
-import { buildTutorContext, OwnershipError } from '@/lib/tutor/context-pack';
+import { buildTutorContext, OwnershipError, TUTOR_ENTRY_MODES } from '@/lib/tutor/context-pack';
 import { TUTOR_ACTIONS } from '@/lib/tutor/quick-actions';
 import { db } from '@/lib/db';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -15,6 +15,8 @@ const SendSchema = z.object({
   conversationId: z.string().uuid(),
   message: z.string().min(1).max(4000),
   conceptId: z.string().uuid().optional(),
+  // UX-5 closure: the allowed learning surface the Tutor was opened from (framing only).
+  from: z.enum(TUTOR_ENTRY_MODES).optional(),
   // UX-5: a representation request (never FIND_VIDEO -- that goes through /api/tutor/video).
   action: z.enum(TUTOR_ACTIONS.filter((a) => a !== 'FIND_VIDEO') as [string, ...string[]]).optional(),
 });
@@ -64,6 +66,7 @@ async function handlePOST(request: NextRequest) {
       language: preferredLanguage,
       subjectId: conv.rows[0]?.subject_id ?? null,
       conceptId: validated.conceptId ?? null,
+      entryMode: validated.from ?? null,
     });
     const reply = await sendMessage(validated.conversationId, validated.studentId, validated.message, preferredLanguage, validated.conceptId, {
       context,

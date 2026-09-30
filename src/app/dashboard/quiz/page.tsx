@@ -18,6 +18,7 @@ import { LICENSE_CTA_PATH } from '@/lib/lx/session-launch-outcome';
 import { consumeLaunchTeachingHandoff } from '@/lib/lx/launch-teaching-handoff';
 import TeachingIntro from './TeachingIntro';
 import ContextualHelp from './ContextualHelp';
+import type { TutorEntryMode } from '@/lib/tutor/context-pack';
 import ContinuationPanel from './ContinuationPanel';
 import DifficultyIndicator from '@/components/DifficultyIndicator';
 // LX-8 R33: optional modality controls are never on the critical
@@ -101,6 +102,14 @@ type QuizMode =
 // PRACTICE (assistance explicitly allowed, activity-taxonomy.ts) --
 // same "help/Tutor available" presentation topic_practice/review get.
 const PRACTICE_EVIDENCE_MODES: readonly QuizMode[] = ['topic_practice', 'review', 'canonical_learn_check'];
+// UX-5 closure: which allowed learning surface the Tutor is opened FROM
+// (presentation/framing only). Only PRACTICE-evidence modes appear -- the
+// Tutor is never linked from Prove / Retain / Transfer / Assessment.
+const TUTOR_FROM_QUIZ_MODE: Partial<Record<QuizMode, TutorEntryMode>> = {
+  topic_practice: 'PRACTICE',
+  review: 'REVIEW',
+  canonical_learn_check: 'LEARN_CHECK',
+};
 // LX-8R1 R1: the ONE place this page derives its coarse, presentation-
 // only EvidenceMode mirror from quizMode -- extracted so it is computed
 // once and fed into buildInteractionContract (interaction-contract.ts)
@@ -2419,6 +2428,9 @@ function QuizPageContent() {
         // canonically required GUIDE stage fails to prepare -- the
         // Concept Mission, never a silent fall-through to Practice.
         exitHref={subjectId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'}
+        // UX-5 closure: the teach-first stages (EXPLAIN/MODEL/GUIDE) may open
+        // the Tutor with context -- only before a PRACTICE-evidence activity.
+        tutorSubjectId={subjectId && PRACTICE_EVIDENCE_MODES.includes(quizMode) ? subjectId : null}
         onDone={() => setTeachingStage('questions')}
       />
       </div>
@@ -2741,7 +2753,14 @@ function QuizPageContent() {
             server (/api/learning/contextual-help -> canUseAI) is the
             authority; it is never rendered for Prove / assessment. */}
         {PRACTICE_EVIDENCE_MODES.includes(quizMode) && studentId && quizId && (
-          <ContextualHelp key={`${quizId}:${current}`} studentId={studentId} quizId={quizId} questionIndex={current} locale={quizLanguage} />
+          <ContextualHelp
+            key={`${quizId}:${current}`}
+            studentId={studentId}
+            quizId={quizId}
+            questionIndex={current}
+            locale={quizLanguage}
+            tutor={subjectId && conceptId ? { subjectId, conceptId, from: TUTOR_FROM_QUIZ_MODE[quizMode] ?? 'PRACTICE' } : null}
+          />
         )}
 
         {q.askConfidence && (

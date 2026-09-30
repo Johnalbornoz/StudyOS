@@ -38,6 +38,8 @@ export interface LearnerNavItem {
   temporaryMappingNote?: string;
   /** UX-2: shown as a tab in the compact (phone/tablet) bottom navigation. Presentation only. */
   mobileTab?: boolean;
+  /** UX-5 closure: detail routes this destination owns (highlighted as the same place). Presentation only. */
+  activePrefixes?: string[];
 }
 
 export interface LearnerNavGroup {
@@ -56,21 +58,24 @@ export interface LearnerNavInputs {
 }
 
 /**
- * UX-2 information architecture. Every destination the learner had
- * before is still here (and "Materias", previously reachable only from
- * empty states, is now listed); what changed is emphasis:
+ * UX-5 closure information architecture -- the learner's mental model is
+ * four places, not four overlapping maps:
  *
- *   PRIMARY   Hoy · Mi ruta · Progreso · Preparación de examen -- the
- *             learner's loop. Hoy / Mi ruta / Progreso are also the
- *             phone/tablet bottom tabs.
+ *   PRIMARY   Inicio (¿qué hago ahora?) · Aprender (materias, temas,
+ *             siguiente paso -- absorbs Mi ruta, Tu conocimiento and
+ *             Materias, which stay as detail routes highlighted under
+ *             Aprender) · Progreso (¿cómo voy?). These are also the
+ *             phone/tablet bottom tabs, plus "Más".
  *             Mis tareas joins PRIMARY only while a teacher has assigned
  *             pending work (badge > 0); otherwise it lives under "Más".
- *   SECONDARY "Más": Materias, Mis tareas, Plan de estudio, Mejorar,
- *             Tutor IA -- rendered collapsed.
+ *   SECONDARY "Más": Tutor, Preparación de examen (also surfaced on
+ *             Inicio when an exam goal is active), Mis tareas, Plan de
+ *             estudio, Mejorar -- rendered collapsed.
  *   UTILITY   "Cuenta" -- rendered collapsed.
  *
  * Grouping is presentation only; routes, permissions and badge counts
- * are unchanged.
+ * are unchanged -- /dashboard/path, /dashboard/knowledge and
+ * /dashboard/subjects all still resolve (deep links / detail views).
  */
 export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
   const hasPendingAssignments = (inputs.assignmentCount ?? 0) > 0;
@@ -85,18 +90,16 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
   const primary: LearnerNavGroup = {
     kind: 'PRIMARY',
     items: [
-      { key: 'today', href: '/dashboard/today', labelKey: 'nav.today', iconKey: 'CalendarDays', mobileTab: true },
+      { key: 'today', href: '/dashboard/today', labelKey: 'nav.home', iconKey: 'CalendarDays', mobileTab: true },
       {
-        key: 'myPath',
-        href: '/dashboard/path',
-        labelKey: 'nav.myPath',
-        iconKey: 'Route',
+        key: 'learn',
+        href: '/dashboard/learn',
+        labelKey: 'nav.learn',
+        iconKey: 'BookOpen',
         mobileTab: true,
+        activePrefixes: ['/dashboard/path', '/dashboard/knowledge', '/dashboard/subjects'],
       },
       { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard', mobileTab: true },
-      // UX-4: the Student's knowledge map (Subject -> Topic -> Concept). Not a mobile tab: phones reach it from "Más" and from Progreso / Mi ruta.
-      { key: 'knowledge', href: '/dashboard/knowledge', labelKey: 'nav.knowledge', iconKey: 'Network' },
-      { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
       ...(hasPendingAssignments ? [assignments] : []),
     ],
   };
@@ -105,11 +108,11 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
     kind: 'SECONDARY',
     titleKey: 'nav.groupMore',
     items: [
-      { key: 'subjects', href: '/dashboard/subjects', labelKey: 'nav.subjects', iconKey: 'BookOpen' },
+      { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },
+      { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
       ...(hasPendingAssignments ? [] : [assignments]),
       { key: 'studyPlan', href: '/dashboard/study-plan', labelKey: 'nav.studyPlan', iconKey: 'ListChecks' },
       { key: 'debt', href: '/dashboard/learning-debt', labelKey: 'nav.debt', iconKey: 'RotateCcw', badge: inputs.debtCount },
-      { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },
     ],
   };
 

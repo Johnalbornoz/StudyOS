@@ -129,8 +129,9 @@ describe('UX-4 Knowledge page -- existing authority, ownership, accessible struc
     expect(page).toMatch(/<span className="kn-dist" aria-hidden>/);
   });
 
-  it('is reachable: primary navigation plus links from Progreso and Mi ruta', () => {
-    expect(read('src/lib/lx/learner-navigation.ts')).toMatch(/key: 'knowledge', href: '\/dashboard\/knowledge'/);
+  it('is reachable: owned by Aprender in the nav (UX-5 closure), plus links from Aprender, Progreso and Mi ruta', () => {
+    expect(read('src/lib/lx/learner-navigation.ts')).toMatch(/activePrefixes: \[[^\]]*'\/dashboard\/knowledge'/);
+    expect(read('src/app/dashboard/learn/page.tsx')).toMatch(/href="\/dashboard\/knowledge"/);
     expect(read('src/app/dashboard/page.tsx')).toMatch(/href="\/dashboard\/knowledge"/);
     expect(read('src/app/dashboard/path/page.tsx')).toMatch(/href="\/dashboard\/knowledge"/);
     expect(read('src/app/dashboard/knowledge/loading.tsx')).toMatch(/aria-busy="true"/);

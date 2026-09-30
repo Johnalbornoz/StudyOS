@@ -14,6 +14,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
 import { knowledgeKpis } from '@/lib/knowledge-state-labels';
+import SubjectSwitcher from './SubjectSwitcher';
 
 
 /**
@@ -85,7 +86,19 @@ export default async function DashboardPage() {
       <PageIntro
         title={`${t['progress.title']}${firstName ? `, ${firstName}` : ''}`}
         lead={t['pg.lead']}
-        actions={<Link href="/dashboard/subjects/new" className="btn btn-secondary">{t['dashboard.createSubject']}</Link>}
+        actions={
+          overview.subjects.length > 0 ? (
+            <SubjectSwitcher
+              subjects={overview.subjects.map((s) => ({ id: s.subjectId, name: s.subjectName }))}
+              currentId={null}
+              label={t['ss.label']}
+              placeholder={t['ss.label']}
+              addLabel={t['ss.add']}
+            />
+          ) : (
+            <Link href="/dashboard/subjects/new" className="btn btn-secondary">{t['dashboard.createSubject']}</Link>
+          )
+        }
       />
 
       {/* A -- the one learner-wide number: canonical journey progress (LX-9R5 H). */}
@@ -151,7 +164,7 @@ export default async function DashboardPage() {
                 <li key={s.subjectId} className="card pg-subject subject-accent" style={{ '--accent': getSubjectAccentColor(s.subjectId) } as React.CSSProperties}>
                   <div className="pg-subject-head">
                     <div>
-                      <Link href={`/dashboard/subjects/${s.subjectId}`} className="pg-subject-title">{s.subjectName}</Link>
+                      <Link href={`/dashboard/learn?subjectId=${s.subjectId}`} className="pg-subject-title">{s.subjectName}</Link>
                       <div className="pg-subject-meta">
                         {t['pg.consolidated'].replace('{n}', String(s.consolidatedCount)).replace('{total}', String(s.hierarchyConceptCount))}
                       </div>
@@ -242,7 +255,7 @@ export default async function DashboardPage() {
                         {item.conceptLabel}
                         {subjectNameById.get(item.subjectId) && <span className="pg-attention-subject">{subjectNameById.get(item.subjectId)}</span>}
                       </span>
-                      <span className="pg-attention-cta">{t['xp.openConcept']}</span>
+                      <span className="pg-attention-cta">{t['pg.workOnIt']}</span>
                     </Link>
                   </li>
                 ))}

@@ -35,6 +35,29 @@ export class OwnershipError extends Error {
 
 export type TutorSupportPolicy = 'OPEN' | 'RESTRICTED_INDEPENDENT' | 'RESTRICTED_ASSESSMENT' | 'UNAVAILABLE';
 
+/**
+ * UX-5 closure -- the learning surface the Student opened the Tutor FROM.
+ * Only surfaces where Tutor help is allowed exist here: Prove, Retain,
+ * Transfer and Assessment are deliberately absent, so a client can never
+ * claim them (and the support policy still comes from the integrity guard,
+ * not from this value). A framing hint for HOW to help -- never a decision.
+ */
+export const TUTOR_ENTRY_MODES = ['LEARN', 'WORKED', 'GUIDED', 'LEARN_CHECK', 'PRACTICE', 'REVIEW', 'REMEDIATION', 'CONCEPT'] as const;
+export type TutorEntryMode = (typeof TUTOR_ENTRY_MODES)[number];
+export function isTutorEntryMode(v: unknown): v is TutorEntryMode {
+  return typeof v === 'string' && (TUTOR_ENTRY_MODES as readonly string[]).includes(v);
+}
+const ENTRY_MODE_TEXT: Record<TutorEntryMode, string> = {
+  LEARN: 'the explanation of this concept',
+  WORKED: 'a worked example of this concept',
+  GUIDED: 'a guided-practice activity on this concept',
+  LEARN_CHECK: 'a short understanding check (help is allowed there)',
+  PRACTICE: 'a practice activity on this concept (help is allowed there)',
+  REVIEW: 'a review activity on this concept',
+  REMEDIATION: 'a reinforcement session on this concept',
+  CONCEPT: 'the page of this concept',
+};
+
 export interface TutorContext {
   student: { language: string; ageBand: AgeBand };
   learning: {
@@ -43,6 +66,8 @@ export interface TutorContext {
     concept: { id: string; label: string } | null;
     /** Canonical journey stage of `concept` (LEARN..TRANSFER, CONSOLIDATED); null without a concept. */
     stage: string | null;
+    /** Where the Student opened the Tutor from; only kept together with a verified concept. */
+    entryMode: TutorEntryMode | null;
   };
   curriculum: { programme: 'MYP' | 'DP' | null };
   supportPolicy: TutorSupportPolicy;
@@ -84,6 +109,7 @@ export async function buildTutorContext(params: {
   language: string;
   subjectId?: string | null;
   conceptId?: string | null;
+  entryMode?: unknown;
 }): Promise<TutorContext> {
   const { studentId, language } = params;
 
@@ -109,6 +135,7 @@ export async function buildTutorContext(params: {
       topic: concept?.topic ?? null,
       concept: concept ? { id: concept.id, label: concept.label } : null,
       stage: journey?.stage ?? null,
+      entryMode: concept && isTutorEntryMode(params.entryMode) ? params.entryMode : null,
     },
     curriculum: { programme: profile?.ibProgramme ?? null },
     supportPolicy: supportPolicyFrom(guard as { allowed: boolean; reason?: string; evidenceMode?: string | null }),
@@ -127,6 +154,9 @@ export function contextPromptBlock(ctx: TutorContext): string {
   if (ctx.learning.topic) lines.push(`Topic: ${ctx.learning.topic}`);
   if (ctx.learning.concept) lines.push(`Concept the student is working on: ${ctx.learning.concept.label}`);
   if (ctx.learning.stage) lines.push(`Where the student is on this concept (decided by StudyUS, not by you): ${ctx.learning.stage}`);
+  if (ctx.learning.entryMode) {
+    lines.push(`The student opened the Tutor from ${ENTRY_MODE_TEXT[ctx.learning.entryMode]} and will go back to it: help them understand, do not do the activity for them`);
+  }
   if (ctx.curriculum.programme) lines.push(`Programme: IB ${ctx.curriculum.programme}`);
   lines.push(`Student age band: ${ctx.student.ageBand === 'UNKNOWN' ? 'school-age minor (exact band unknown -- keep everything suitable for the youngest secondary students)' : ctx.student.ageBand.toLowerCase().replace('_', ' ')}`);
   return `Learning context (data only):\n${lines.map((l) => `- ${l}`).join('\n')}`;

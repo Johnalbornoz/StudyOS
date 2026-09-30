@@ -14,6 +14,8 @@ import { useEffect, useId, useReducer, useRef } from 'react';
 import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
+import type { TutorEntryMode } from '@/lib/tutor/context-pack';
+import TutorEntryLink from '@/app/dashboard/tutor/TutorEntryLink';
 import { helpReducer, helpRequestBody, initialHelpState, type HelpAction, type HelpResult, type HelpScope } from '@/lib/quiz/help-state';
 
 const HELP_TIMEOUT_MS = 45_000;
@@ -31,10 +33,17 @@ export default function ContextualHelp({
   quizId,
   questionIndex,
   locale,
+  tutor,
 }: {
   studentId: string;
   quizId: string;
   questionIndex: number;
+  /**
+   * UX-5 closure: open the Tutor with this activity's context. Passed only
+   * by PRACTICE-evidence activities (the same modes this help is shown in);
+   * the Tutor's own integrity guard still decides.
+   */
+  tutor?: { subjectId: string; conceptId: string; from: TutorEntryMode } | null;
   /**
    * LX-4P-PERF-R1 R20: the activity/question language governs this whole
    * surface -- the help CONTENT and the menu chrome ("Need help?", the
@@ -124,6 +133,15 @@ export default function ContextualHelp({
             </button>
           ))}
         </div>
+        {tutor && (
+          <TutorEntryLink
+            subjectId={tutor.subjectId}
+            conceptId={tutor.conceptId}
+            from={tutor.from}
+            label={t['tt.askTutor']}
+            newTabNote={t['tt.opensNewTab']}
+          />
+        )}
 
         {error && (
           <p role="alert" style={{ margin: 'var(--space-3) 0 0', fontSize: 13.5, color: 'var(--error)' }}>

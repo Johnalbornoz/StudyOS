@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import Link from 'next/link';
+import TutorEntryLink from '@/app/dashboard/tutor/TutorEntryLink';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -232,7 +233,7 @@ export default async function RemediationSessionPage({
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '16px 0 0' }}>{t['remediation.supportFadeNote']}</p>
         )}
 
-        <div style={{ marginTop: 'var(--space-5)' }}>
+        <div style={{ marginTop: 'var(--space-5)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center' }}>
           <Link
             href={view.activityHref}
             className="btn btn-primary"
@@ -240,6 +241,10 @@ export default async function RemediationSessionPage({
           >
             {remediationStepCta(view.currentStepType, t)}
           </Link>
+          {/* UX-5 closure: supported reinforcement steps may open the Tutor with context; an independent step never links it. */}
+          {!isIndependentStep && view.subjectId && view.conceptId && (
+            <TutorEntryLink subjectId={view.subjectId} conceptId={view.conceptId} from="REMEDIATION" label={t['tt.askTutor']} />
+          )}
         </div>
       </div>
     </div>

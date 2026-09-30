@@ -25,6 +25,7 @@ import InteractiveFormulaWidget from '@/app/dashboard/subjects/[id]/InteractiveF
 import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { InlineAlert } from '@/components/ui/InlineAlert';
+import TutorEntryLink from '@/app/dashboard/tutor/TutorEntryLink';
 import { activityKindForMode, kindLabelKey, teachingSkipTarget, teachingStepKey } from '@/lib/experience/learning-session';
 
 interface Explanation {
@@ -55,8 +56,11 @@ export default function TeachingIntro({
   locale,
   exitHref,
   onDone,
+  tutorSubjectId = null,
 }: {
   view: TeachingExperienceView;
+  /** UX-5 closure: set only when the Tutor may be opened from this teaching phase (PRACTICE-evidence activity). */
+  tutorSubjectId?: string | null;
   studentId: string;
   /**
    * LX-4P-PERF-R1 R6: null until the background question batch returns a
@@ -404,6 +408,16 @@ export default function TeachingIntro({
                 </a>
               </>
             }
+          />
+        )}
+
+        {tutorSubjectId && (
+          <TutorEntryLink
+            subjectId={tutorSubjectId}
+            conceptId={conceptId}
+            from={stage === 'MODEL' ? 'WORKED' : stage === 'GUIDE' ? 'GUIDED' : 'LEARN'}
+            label={t['tt.askTutor']}
+            newTabNote={t['tt.opensNewTab']}
           />
         )}
 

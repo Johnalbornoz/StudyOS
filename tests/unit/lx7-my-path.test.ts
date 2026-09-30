@@ -371,12 +371,12 @@ describe('LX-7 tests 30/32/33/34 -- unrelated certified surfaces untouched', () 
     expect(TODAY_SRC).not.toMatch(/href="\/dashboard\/study-plan"[^>]*>\s*\{t\['today3\.viewMyPath'\]\}/);
   });
 
-  it('the nav item for My Path now points at the real implementation with no temporary-mapping note', () => {
-    const myPath = buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0 })
+  it('My Path is a real detail route owned by Aprender (UX-5 closure), with no temporary-mapping note', () => {
+    const learn = buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0 })
       .find((g) => g.kind === 'PRIMARY')!
-      .items.find((i) => i.key === 'myPath')!;
-    expect(myPath.href).toBe('/dashboard/path');
-    expect(myPath.temporaryMappingNote).toBeUndefined();
+      .items.find((i) => i.key === 'learn')!;
+    expect(learn.activePrefixes).toContain('/dashboard/path');
+    expect(learn.temporaryMappingNote).toBeUndefined();
   });
 });
 

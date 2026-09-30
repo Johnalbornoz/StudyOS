@@ -4,7 +4,7 @@
  * label key must exist in every supported locale.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { buildLearnerNav, allNavHrefs } from '@/lib/lx/learner-navigation';
 import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
@@ -12,14 +12,15 @@ import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
 const nav = (over = {}) => buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0, ...over });
 
 describe('LX-2E buildLearnerNav', () => {
-  it('UX-2/UX-4: primary group is exactly Today / My Path / Progress / Knowledge / Exam Prep, in that order; Assignments joins it only while work is pending', () => {
+  it('UX-5 closure: primary group is exactly Inicio / Aprender / Progreso, in that order; Assignments joins it only while work is pending', () => {
     const primary = nav().find((g) => g.kind === 'PRIMARY')!;
-    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'knowledge', 'examPrep']);
-    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/knowledge', '/dashboard/exam-prep']);
-    // UX-4: Knowledge is not a mobile tab (phones: "Más" + links from Progreso / Mi ruta)
-    expect(primary.items.find((i) => i.key === 'knowledge')!.mobileTab).toBeFalsy();
+    expect(primary.items.map((i) => i.key)).toEqual(['today', 'learn', 'progress']);
+    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/learn', '/dashboard']);
+    expect(primary.items.map((i) => i.labelKey)).toEqual(['nav.home', 'nav.learn', 'nav.progress']);
+    // Aprender owns Mi ruta / Tu conocimiento / Materias as detail routes (highlighted, never removed)
+    expect(primary.items.find((i) => i.key === 'learn')!.activePrefixes).toEqual(['/dashboard/path', '/dashboard/knowledge', '/dashboard/subjects']);
     const withWork = nav({ assignmentCount: 2 }).find((g) => g.kind === 'PRIMARY')!;
-    expect(withWork.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'knowledge', 'examPrep', 'assignments']);
+    expect(withWork.items.map((i) => i.key)).toEqual(['today', 'learn', 'progress', 'assignments']);
     expect(withWork.items.find((i) => i.key === 'assignments')!.badge).toBe(2);
   });
 
@@ -33,38 +34,42 @@ describe('LX-2E buildLearnerNav', () => {
     expect(nav({ assignmentCount: 3 }).find((g) => g.kind === 'SECONDARY')!.items.some((i) => i.key === 'assignments')).toBe(false);
   });
 
-  it('UX-2: no capability was removed -- every pre-UX-2 destination is still in the nav, plus Materias', () => {
-    const before = [
-      '/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments',
+  it('UX-2/UX-5: no capability was removed -- every destination stays reachable (nav or Aprender-owned detail route)', () => {
+    const inNav = [
+      '/dashboard/today', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments',
       '/dashboard/study-plan', '/dashboard/learning-debt', '/dashboard/tutor',
-      '/dashboard/notifications', '/dashboard/profile', '/dashboard/parent', '/dashboard/billing',
+      '/dashboard/notifications', '/dashboard/profile', '/dashboard/parent', '/dashboard/billing', '/dashboard/learn',
     ];
     for (const assignmentCount of [0, 1]) {
-      const hrefs = allNavHrefs(nav({ assignmentCount }));
-      for (const h of before) expect(hrefs, h).toContain(h);
-      expect(hrefs).toContain('/dashboard/subjects');
+      const groups = nav({ assignmentCount });
+      const hrefs = allNavHrefs(groups);
+      for (const h of inNav) expect(hrefs, h).toContain(h);
+      const owned = groups.flatMap((g) => g.items).flatMap((i) => i.activePrefixes ?? []);
+      for (const h of ['/dashboard/path', '/dashboard/knowledge', '/dashboard/subjects']) expect(owned, h).toContain(h);
+    }
+    // the detail routes themselves still exist
+    for (const f of ['src/app/dashboard/path/page.tsx', 'src/app/dashboard/knowledge/page.tsx', 'src/app/dashboard/subjects/page.tsx']) {
+      expect(existsSync(join(process.cwd(), f)), f).toBe(true);
     }
   });
 
-  it('UX-2: exactly three bottom-tab destinations (Hoy / Mi ruta / Progreso), all primary', () => {
+  it('UX-5 closure: exactly three bottom-tab destinations (Inicio / Aprender / Progreso), all primary', () => {
     const groups = nav({ assignmentCount: 4 });
     const tabs = groups.flatMap((g) => g.items.filter((i) => i.mobileTab).map((i) => ({ key: i.key, kind: g.kind })));
     expect(tabs).toEqual([
       { key: 'today', kind: 'PRIMARY' },
-      { key: 'myPath', kind: 'PRIMARY' },
+      { key: 'learn', kind: 'PRIMARY' },
       { key: 'progress', kind: 'PRIMARY' },
     ]);
   });
 
-  it('LX-7: My Path now has its own real implementation -- no temporary stand-in mapping remains', () => {
-    const myPath = nav().find((g) => g.kind === 'PRIMARY')!.items.find((i) => i.key === 'myPath')!;
-    expect(myPath.temporaryMappingNote).toBeUndefined();
-    expect(myPath.href).toBe('/dashboard/path');
+  it('LX-7: no temporary stand-in mapping remains in the nav', () => {
+    expect(nav().flatMap((g) => g.items).every((i) => i.temporaryMappingNote === undefined)).toBe(true);
   });
 
-  it('secondary group is useful-not-primary (subjects, assignments without pending work, study plan, learning debt, tutor)', () => {
+  it('secondary group ("Más") holds Tutor, Exam Prep, assignments without pending work, study plan, learning debt', () => {
     const secondary = nav().find((g) => g.kind === 'SECONDARY')!;
-    expect(secondary.items.map((i) => i.key)).toEqual(['subjects', 'assignments', 'studyPlan', 'debt', 'tutor']);
+    expect(secondary.items.map((i) => i.key)).toEqual(['tutor', 'examPrep', 'assignments', 'studyPlan', 'debt']);
   });
 
   it('utility group holds account/profile/system; admin only when isAdmin', () => {

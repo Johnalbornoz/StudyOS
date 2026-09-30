@@ -114,7 +114,7 @@ export default async function KnowledgePage() {
               {t['kn.viewConcept']}
             </Link>
             {/* UX-5: contextual Tutor entry -- starts a conversation about THIS concept (ownership verified server-side). */}
-            <Link href={`/dashboard/tutor?subjectId=${subjectId}&conceptId=${c.concept.conceptId}`} className="btn btn-ghost">
+            <Link href={`/dashboard/tutor?subjectId=${subjectId}&conceptId=${c.concept.conceptId}&from=CONCEPT`} className="btn btn-ghost">
               {t['tt.askTutor']}
             </Link>
           </div>

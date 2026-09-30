@@ -277,8 +277,8 @@ export default function ConceptMission({
           />
         )}
         <Link
-          href={`/dashboard/tutor?subjectId=${view.identity.subjectId}&conceptId=${conceptId}`}
-          className="btn btn-secondary"
+          href={`/dashboard/tutor?subjectId=${view.identity.subjectId}&conceptId=${conceptId}&from=CONCEPT`}
+          className="btn btn-secondary cm-tutor"
         >
           {t['conceptMission.secondaryTutor']}
         </Link>

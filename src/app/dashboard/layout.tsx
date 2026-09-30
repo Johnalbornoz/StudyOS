@@ -190,6 +190,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       iconKey: i.iconKey,
       badge: i.badge,
       mobileTab: 'mobileTab' in i ? i.mobileTab : undefined,
+      activePrefixes: 'activePrefixes' in i ? i.activePrefixes : undefined,
     })),
   }));
 

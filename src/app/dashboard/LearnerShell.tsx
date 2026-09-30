@@ -96,6 +96,7 @@ const ICONS: Record<string, ReactNode> = {
 const TAB_ICONS: Record<string, ReactNode> = {
   CalendarDays: <CalendarDays size={22} strokeWidth={2} aria-hidden />,
   Route: <Route size={22} strokeWidth={2} aria-hidden />,
+  BookOpen: <BookOpen size={22} strokeWidth={2} aria-hidden />,
   LayoutDashboard: <LayoutDashboard size={22} strokeWidth={2} aria-hidden />,
   ClipboardCheck: <ClipboardCheck size={22} strokeWidth={2} aria-hidden />,
 };
@@ -109,6 +110,8 @@ export interface ResolvedNavItem {
   badge?: number;
   /** UX-2: shown in the compact bottom tab bar. */
   mobileTab?: boolean;
+  /** UX-5 closure: detail routes highlighted as this destination. */
+  activePrefixes?: string[];
 }
 export interface ResolvedNavGroup {
   kind: LearnerNavGroup['kind'];
@@ -116,12 +119,16 @@ export interface ResolvedNavGroup {
   items: ResolvedNavItem[];
 }
 
-function isActiveHref(href: string, pathname: string): boolean {
+function matchesHref(href: string, pathname: string): boolean {
   return href === '/dashboard' ? pathname === '/dashboard' : pathname === href || pathname.startsWith(href + '/');
 }
 
+function isActiveHref(item: { href: string; activePrefixes?: string[] }, pathname: string): boolean {
+  return matchesHref(item.href, pathname) || (item.activePrefixes ?? []).some((p) => matchesHref(p, pathname));
+}
+
 function NavLink({ item, pathname, onNavigate }: { item: ResolvedNavItem; pathname: string; onNavigate?: () => void }) {
-  const active = isActiveHref(item.href, pathname);
+  const active = isActiveHref(item, pathname);
   return (
     <Link
       href={item.href}
@@ -169,7 +176,7 @@ function NavList({
             </div>
           );
         }
-        const holdsActive = group.items.some((i) => isActiveHref(i.href, pathname));
+        const holdsActive = group.items.some((i) => isActiveHref(i, pathname));
         const badgeTotal = group.items.reduce((sum, i) => sum + (i.badge ?? 0), 0);
         return (
           <details key={group.kind} className="lx-nav-group" open={expandAll || holdsActive}>
@@ -217,7 +224,7 @@ function TabBar({
   return (
     <nav className="lx-tabbar" aria-label={label}>
       {tabs.map((tab) => {
-        const active = isActiveHref(tab.href, pathname);
+        const active = isActiveHref(tab, pathname);
         return (
           <Link key={tab.key} href={tab.href} className={`lx-tab${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined}>
             {TAB_ICONS[tab.iconKey] ?? null}

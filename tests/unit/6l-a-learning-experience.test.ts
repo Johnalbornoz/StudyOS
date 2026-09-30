@@ -289,9 +289,9 @@ describe('COLD STATE TEST (Section 26) -- no canonical recommendation must never
     }
   });
 
-  it('the cold-state CTA leads to an existing canonical entry point (subjects), not a newly-invented diagnostic policy', () => {
+  it('the cold-state CTA leads to an existing canonical entry point (Aprender, UX-5 closure), not a newly-invented diagnostic policy', () => {
     const source = read('src/app/dashboard/today/page.tsx');
-    expect(source).toMatch(/href="\/dashboard\/subjects"/);
+    expect(source).toMatch(/href="\/dashboard\/learn"[^>]*>\{t\['today3\.coldStateCta'\]\}/);
   });
 });
 

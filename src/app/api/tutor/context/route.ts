@@ -27,13 +27,14 @@ async function handleGET(request: NextRequest) {
   if ((subjectId && !uuid.test(subjectId)) || (conceptId && !uuid.test(conceptId))) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
   try {
     const language = await getInterfaceLanguage(studentId);
-    const ctx = await buildTutorContext({ studentId, language, subjectId, conceptId });
+    const ctx = await buildTutorContext({ studentId, language, subjectId, conceptId, entryMode: sp.get('from') });
     return NextResponse.json({
       success: true,
       data: {
         subject: ctx.learning.subject,
         concept: ctx.learning.concept,
         topic: ctx.learning.topic,
+        entryMode: ctx.learning.entryMode,
         supportPolicy: ctx.supportPolicy,
         capabilities: { video: videoRetrievalConfigured(), visuals: true },
       },
