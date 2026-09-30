@@ -8,6 +8,10 @@
   --brand: #2F6B5E;
   --brand-subtle: #E4EEEA;
   --brand-ink: #1F4A40;
+  /* Filled brand surfaces carrying white text (primary button, the Student's
+     Tutor bubble). Separate from --brand so dark mode can keep >= 4.5:1. */
+  --brand-fill: #2F6B5E;
+  --brand-fill-hover: #1F4A40;
   --success: #238636;
   --success-subtle: #E4F1E6;
   --warning: #B7791F;
@@ -72,6 +76,10 @@
     --brand: #4C9484;
     --brand-subtle: #1C3830;
     --brand-ink: #8FD4BE;
+    /* White text: 4.84:1 at rest, 6.20:1 on hover (--brand #4C9484 was 3.57:1,
+       and hovering onto --brand-ink #8FD4BE dropped to 1.70:1). */
+    --brand-fill: #3A7D6E;
+    --brand-fill-hover: #2F6B5E;
     --success: #4CAF63;
     --success-subtle: #1B3320;
     --warning: #E0A94A;
@@ -172,8 +180,8 @@ a { color: inherit; text-decoration: none; }
   border: 0;
 }
 
-.btn-primary { background: var(--brand); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--brand-ink); }
+.btn-primary { background: var(--brand-fill); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--brand-fill-hover); }
 
 .btn-secondary { background: var(--bg-base); border-color: var(--border-default); color: var(--text-primary); }
 .btn-secondary:hover:not(:disabled) { background: var(--bg-subtle); }
@@ -1695,7 +1703,7 @@ img, video { max-width: 100%; height: auto; }
 .tt-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
 .tt-msg { max-width: 78%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--fs-md); line-height: 1.55; overflow-wrap: anywhere; min-width: 0; }
 .tt-msg .katex-display { overflow-x: auto; overflow-y: hidden; }
-.tt-msg--user { align-self: flex-end; background: var(--brand); color: #fff; }
+.tt-msg--user { align-self: flex-end; background: var(--brand-fill); color: #fff; }
 .tt-msg--assistant { align-self: flex-start; background: var(--bg-subtle); color: var(--text-primary); }
 .tt-thinking { align-self: flex-start; font-size: var(--fs-sm); color: var(--text-muted); }
 .tt-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-6); text-align: center; font-size: var(--fs-md); color: var(--text-muted); }

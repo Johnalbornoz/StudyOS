@@ -25,6 +25,7 @@ import { resolveNowPresentation } from '@/lib/lx/now-presentation';
 import WhyThisV3 from '@/app/dashboard/WhyThisV3';
 import StartSessionButton from '@/app/dashboard/StartSessionButton';
 import ConceptExplanationDisclosure from './ConceptExplanationDisclosure';
+import LocalDateText from '@/components/ui/LocalDateText';
 
 type T = ReturnType<typeof getMessages>;
 
@@ -162,10 +163,11 @@ function NowCard({
   // CONSOLIDATED but without implying the whole concept is finished.
   const zeroGapMismatch = fallback === 'ZERO_GAP_MISMATCH';
   const retentionWaitingBody = now.nextEligibleReviewAt
-    ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace(
-        '{date}',
-        new Date(now.nextEligibleReviewAt).toLocaleDateString(locale),
-      )
+    ? <LocalDateText
+        template={t['conceptMission.noActionRetentionWaitingBodyWithDate']}
+        iso={new Date(now.nextEligibleReviewAt).toISOString()}
+        locale={locale}
+      />
     : t['conceptMission.noActionRetentionWaitingBody'];
   return (
     <section

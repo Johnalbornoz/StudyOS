@@ -11,6 +11,7 @@ import { activityNarrative } from './activityNarrative';
 import { whyThisSentence } from './WhyThisV3';
 import StartSessionButton from './StartSessionButton';
 import StageTrack from './StageTrack';
+import LocalDateText from '@/components/ui/LocalDateText';
 
 type T = ReturnType<typeof getMessages>;
 
@@ -138,7 +139,7 @@ export default function NextChallengeCard({
         <p className="xp-hero-narrative"><strong>{t['conceptMission.noActionRetentionWaitingTitle']}</strong></p>
         <p className="xp-hero-why">
           {view.nextEligibleAt
-            ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace('{date}', new Date(view.nextEligibleAt).toLocaleDateString(locale))
+            ? <LocalDateText template={t['conceptMission.noActionRetentionWaitingBodyWithDate']} iso={new Date(view.nextEligibleAt).toISOString()} locale={locale} />
             : t['conceptMission.noActionRetentionWaitingBody']}
         </p>
         {journey && <StageTrack journey={journey} t={t} />}

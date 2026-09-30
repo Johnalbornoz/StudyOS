@@ -15,6 +15,7 @@ import { activityNarrative } from '../../activityNarrative';
 import StartSessionButton from '../../StartSessionButton';
 import JourneyStrip from '../JourneyStrip';
 import { journeyReason } from '../journeyReason';
+import LocalDateText from '@/components/ui/LocalDateText';
 
 /** R29: safe, learner-content-free observability. */
 function logMyPath(label: string, meta: Record<string, unknown> = {}): void {
@@ -79,7 +80,7 @@ function ConceptRow({
       ) : concept.isCurrent && onCurrentDecision?.status === 'WAITING' ? (
         <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
           {onCurrentDecision.nextEligibleAt
-            ? t['conceptMission.noActionRetentionWaitingBodyWithDate'].replace('{date}', new Date(onCurrentDecision.nextEligibleAt).toLocaleDateString(locale))
+            ? <LocalDateText template={t['conceptMission.noActionRetentionWaitingBodyWithDate']} iso={new Date(onCurrentDecision.nextEligibleAt).toISOString()} locale={locale} />
             : t['conceptMission.noActionRetentionWaitingBody']}
         </p>
       ) : (
