@@ -13,7 +13,15 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: async () => ({ userId: 'clerk_1' }) }));
-vi.mock('@/lib/db', () => ({ query: (...a: any[]) => h.queryMock(...a), db: { query: (...a: any[]) => h.queryMock(...a) } }));
+vi.mock('@/lib/db', () => ({
+  query: (...a: any[]) => h.queryMock(...a),
+  db: {
+    query: (...a: any[]) => h.queryMock(...a),
+    // create runs in one transaction on a checked-out client
+    connect: async () => ({ query: (...a: any[]) => h.queryMock(...a), release: () => {} }),
+  },
+}));
+vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: async () => 'es' }));
 vi.mock('@/services/academic-profile.service', () => ({ getAcademicProfile: (...a: any[]) => h.profileMock(...a) }));
 vi.mock('@/lib/auth', () => ({
   requireStudentId: (...a: any[]) => h.requireStudentIdMock(...a),
@@ -41,8 +49,16 @@ beforeEach(() => {
   h.requireStudentIdMock.mockResolvedValue(STUDENT_ID);
   h.verifyAuthMock.mockResolvedValue({ userId: 'clerk_1', role: 'student' });
   h.verifyStudentAccessMock.mockResolvedValue(true);
-  h.queryMock.mockResolvedValue({ rows: [{ id: SUBJECT_ID }], rowCount: 1 });
+  h.queryMock.mockImplementation(defaultDb);
 });
+
+/** No existing subject; INSERT returns the new id; everything else is a harmless row. */
+async function defaultDb(sql: string) {
+  if (/^SELECT id FROM subjects WHERE student_id/.test(sql)) return { rows: [], rowCount: 0 };
+  return { rows: [{ id: SUBJECT_ID }], rowCount: 1 };
+}
+const insertCalls = () => h.queryMock.mock.calls.filter(([sql]) => String(sql).startsWith('INSERT INTO subjects'));
+const insertParams = () => insertCalls()[0][1];
 
 describe('context derivation', () => {
   it('DP profile -> DP subjects with required level; MYP -> no level; national -> no IB', () => {
@@ -92,8 +108,7 @@ describe('POST /api/subjects/create enforces the inherited context', () => {
     h.profileMock.mockResolvedValue(DP2);
     const res = await createSubject(post({ name: 'Matemáticas', ibSubjectGroup: 'mathematics', ibLevel: 'HL' }));
     expect(res.status).toBe(200);
-    const [, params] = h.queryMock.mock.calls[0];
-    expect(params.slice(4)).toEqual(['DP', 'mathematics', 'HL']);
+    expect(insertParams().slice(4)).toEqual(['DP', 'mathematics', 'HL']);
   });
 
   it('DP2 student: an MYP subject is rejected and nothing is written', async () => {
@@ -119,8 +134,33 @@ describe('POST /api/subjects/create enforces the inherited context', () => {
     expect(res.status).toBe(400);
     const ok = await createSubject(post({ name: 'Historia' }));
     expect(ok.status).toBe(200);
-    const [, params] = h.queryMock.mock.calls[0];
-    expect(params.slice(4)).toEqual(['none', null, null]);
+    expect(insertParams().slice(4)).toEqual(['none', null, null]);
+  });
+
+  it('UX-5: free text that is not a catalog subject is rejected and nothing is written', async () => {
+    h.profileMock.mockResolvedValue(NATIONAL);
+    const res = await createSubject(post({ name: 'Mi materia inventada' }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'SUBJECT_NOT_IN_CATALOG' });
+    const unknownKey = await createSubject(post({ catalogKey: 'astrology' }));
+    expect(unknownKey.status).toBe(400);
+    expect(h.queryMock).not.toHaveBeenCalled();
+  });
+
+  it('UX-5: a catalog key stores the catalog name (interface language) and IB group, never client values', async () => {
+    h.profileMock.mockResolvedValue(DP2);
+    const res = await createSubject(post({ catalogKey: 'english', ibSubjectGroup: 'arts', ibLevel: 'SL', name: 'ignored' }));
+    expect(res.status).toBe(200);
+    expect(insertParams()).toEqual([STUDENT_ID, 'Inglés', 'en', 'match_interface', 'DP', 'language_acquisition', 'SL']);
+  });
+
+  it('UX-5: choosing a subject the Student already has returns it instead of duplicating', async () => {
+    h.profileMock.mockResolvedValue(NATIONAL);
+    h.queryMock.mockImplementation(async (sql: string) =>
+      /^SELECT id FROM subjects WHERE student_id/.test(sql) ? { rows: [{ id: SUBJECT_ID }], rowCount: 1 } : { rows: [], rowCount: 0 });
+    const res = await createSubject(post({ catalogKey: 'history' }));
+    expect(await res.json()).toEqual({ success: true, subjectId: SUBJECT_ID, existing: true });
+    expect(insertCalls()).toHaveLength(0);
   });
 
   it('only an active Student can create subjects', async () => {
