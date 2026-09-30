@@ -55,7 +55,6 @@ export default function AssessmentPanel({
 }) {
   const t = getMessages(locale);
   const [occurrence, setOccurrence] = useState<Occurrence | null>(null);
-  const [readiness, setReadiness] = useState<number | null>(null);
   const [history, setHistory] = useState<ExamResultHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -93,17 +92,12 @@ export default function AssessmentPanel({
       const occ = upcomingBody.data?.occurrence || null;
       setOccurrence(occ);
       setHistory(historyBody.data?.results || []);
-      setReadiness(null);
-
-      if (occ) {
-        const readinessRes = await fetch(
-          `/api/exam-readiness/score?studentId=${studentId}&subjectId=${subjectId}`
-        );
-        const readinessBody = await readinessRes.json();
-        if (readinessBody.data?.hasUpcomingExam) {
-          setReadiness(readinessBody.data.overall.score);
-        }
-      }
+      // UX-4 (readiness consistency): the legacy subject-level readiness %
+      // (/api/exam-readiness/score) is no longer fetched or shown to the
+      // Student. StudyUS has ONE Student-facing readiness -- the F9
+      // exam-profile status in "Preparación de examen" -- and a second,
+      // differently-computed "Preparación X%" contradicted it. The API and
+      // its calculation are unchanged.
     } finally {
       setLoading(false);
     }
@@ -348,12 +342,6 @@ export default function AssessmentPanel({
                 {occurrence.daysUntil} {t['exam.daysUntil']}
               </div>
             </div>
-            <div>
-              <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.readiness']}</div>
-              <div className="tabular" style={{ fontWeight: 600, fontSize: 15 }}>
-                {readiness !== null ? `${readiness}%` : t['exam.readinessLoading']}
-              </div>
-            </div>
           </div>
 
           <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-default)' }}>
@@ -452,12 +440,6 @@ export default function AssessmentPanel({
             <strong style={{ fontSize: 14 }}>{t['exam.resultSaved']}</strong>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>
-            {lastOutcome.predictedReadiness !== null && (
-              <div>
-                <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.predicted']}</div>
-                <div className="tabular" style={{ fontWeight: 600, fontSize: 15 }}>{Math.round(lastOutcome.predictedReadiness)}%</div>
-              </div>
-            )}
             <div>
               <div className="label" style={{ color: 'var(--text-muted)' }}>{t['exam.actual']}</div>
               <div className="tabular" style={{ fontWeight: 600, fontSize: 15 }}>{lastOutcome.percentage}%</div>

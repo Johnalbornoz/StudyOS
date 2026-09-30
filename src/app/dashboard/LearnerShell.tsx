@@ -52,6 +52,7 @@ import {
   Building2,
   ClipboardCheck,
   ClipboardList,
+  Network,
 } from 'lucide-react';
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
 import type { Locale } from '@/lib/i18n/messages';
@@ -75,6 +76,7 @@ const ICONS: Record<string, ReactNode> = {
   CalendarDays: <CalendarDays size={16} strokeWidth={2} aria-hidden />,
   LayoutDashboard: <LayoutDashboard size={16} strokeWidth={2} aria-hidden />,
   Route: <Route size={16} strokeWidth={2} aria-hidden />,
+  Network: <Network size={16} strokeWidth={2} aria-hidden />,
   BookOpen: <BookOpen size={16} strokeWidth={2} aria-hidden />,
   RotateCcw: <RotateCcw size={16} strokeWidth={2} aria-hidden />,
   ListChecks: <ListChecks size={16} strokeWidth={2} aria-hidden />,

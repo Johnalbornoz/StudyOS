@@ -12,12 +12,14 @@ import { MESSAGES, LOCALES } from '@/lib/i18n/messages';
 const nav = (over = {}) => buildLearnerNav({ isAdmin: false, debtCount: 0, notifCount: 0, ...over });
 
 describe('LX-2E buildLearnerNav', () => {
-  it('UX-2: primary group is exactly Today / My Path / Progress / Exam Prep, in that order; Assignments joins it only while work is pending', () => {
+  it('UX-2/UX-4: primary group is exactly Today / My Path / Progress / Knowledge / Exam Prep, in that order; Assignments joins it only while work is pending', () => {
     const primary = nav().find((g) => g.kind === 'PRIMARY')!;
-    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep']);
-    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/exam-prep']);
+    expect(primary.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'knowledge', 'examPrep']);
+    expect(primary.items.map((i) => i.href)).toEqual(['/dashboard/today', '/dashboard/path', '/dashboard', '/dashboard/knowledge', '/dashboard/exam-prep']);
+    // UX-4: Knowledge is not a mobile tab (phones: "Más" + links from Progreso / Mi ruta)
+    expect(primary.items.find((i) => i.key === 'knowledge')!.mobileTab).toBeFalsy();
     const withWork = nav({ assignmentCount: 2 }).find((g) => g.kind === 'PRIMARY')!;
-    expect(withWork.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'examPrep', 'assignments']);
+    expect(withWork.items.map((i) => i.key)).toEqual(['today', 'myPath', 'progress', 'knowledge', 'examPrep', 'assignments']);
     expect(withWork.items.find((i) => i.key === 'assignments')!.badge).toBe(2);
   });
 

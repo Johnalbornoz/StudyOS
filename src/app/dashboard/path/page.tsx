@@ -151,7 +151,7 @@ export default async function MyPathPage() {
             </Section>
           )}
 
-          <Section id="rt-subjects" title={t['myPath.subjectsTitle']}>
+          <Section id="rt-subjects" title={t['myPath.subjectsTitle']} action={<Link href="/dashboard/knowledge" className="ui-link">{t['kn.seeAll']}</Link>}>
             {consolidatedCount + retentionDueCount + transferPendingCount > 0 && (
               <ul className="rt-summary">
                 {consolidatedCount > 0 && <li>{t['myPath.pillConsolidated']}<strong>{consolidatedCount}</strong></li>}

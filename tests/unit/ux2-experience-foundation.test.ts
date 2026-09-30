@@ -904,7 +904,8 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
     expect(progress).toMatch(/className="pg-dims"/);
     expect(progress).toMatch(/misconception/i);
     expect(progress).toMatch(/journeyStageTone\(/);
-    expect(progress).toMatch(/t\['pg\.validated'\]/);
+    // UX-4 (GAP-07): the subject line counts canonical "dominados" over the hierarchy
+    expect(progress).toMatch(/t\['pg\.consolidated'\]/);
   });
 
   it('Progreso: needs attention is actionable (links to the concept)', () => {

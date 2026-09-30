@@ -2124,11 +2124,9 @@ function QuizPageContent() {
             </div>
           )}
 
-          {results.examReadinessCalibration && (
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
-              {at['quiz.examReadinessCalibrationLabel']}: {results.examReadinessCalibration.predictedReadiness}% → {results.examReadinessCalibration.actualPerformance}%
-            </p>
-          )}
+          {/* UX-4 (readiness consistency): the legacy "predicted -> actual"
+              readiness % is not shown -- the Student's one readiness is the
+              F9 status in Preparación de examen. The field stays in the API. */}
 
         </section>
 

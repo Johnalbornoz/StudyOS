@@ -55,8 +55,11 @@ export default async function DashboardPage() {
   const overview = await getStudentProgressOverview(studentId, locale);
 
   const achievementLines: string[] = [];
-  if (overview.achievements.validatedMasteryCount > 0) {
-    achievementLines.push(`${overview.achievements.validatedMasteryCount} ${t['progress.achievementValidatedMastery']}`);
+  // UX-4 (GAP-07): "Dominado" is the authoritative journey stage
+  // (CONSOLIDATED) -- the same count Mi ruta and Tu conocimiento show --
+  // never the knowledge-state VALIDATED_MASTERY flag, a different authority.
+  if (overview.achievements.consolidatedCount > 0) {
+    achievementLines.push(t['pg.achievementConsolidated'].replace('{n}', String(overview.achievements.consolidatedCount)));
   }
   if (overview.achievements.retentionDemonstratedCount > 0) {
     achievementLines.push(`${overview.achievements.retentionDemonstratedCount} ${t['progress.achievementRetention']}`);
@@ -132,7 +135,7 @@ export default async function DashboardPage() {
 
       <div className="pg-layout">
         {/* C/D -- by subject, then concept rows with details on demand. */}
-        <Section id="pg-subjects" title={t['progress.subjectsTitle']} action={<span className="ui-hint">{overview.subjects.length} {t['dashboard.active']}</span>}>
+        <Section id="pg-subjects" title={t['progress.subjectsTitle']} action={<Link href="/dashboard/knowledge" className="ui-link">{t['kn.seeAll']}</Link>}>
           {overview.subjects.length === 0 ? (
             <div className="card empty-state">
               <BookOpen size={32} strokeWidth={1.5} color="var(--brand)" aria-hidden style={{ marginBottom: 'var(--space-3)' }} />
@@ -150,7 +153,7 @@ export default async function DashboardPage() {
                     <div>
                       <Link href={`/dashboard/subjects/${s.subjectId}`} className="pg-subject-title">{s.subjectName}</Link>
                       <div className="pg-subject-meta">
-                        {t['pg.validated'].replace('{validated}', String(s.validatedCount)).replace('{total}', String(s.conceptCount))}
+                        {t['pg.consolidated'].replace('{n}', String(s.consolidatedCount)).replace('{total}', String(s.hierarchyConceptCount))}
                       </div>
                     </div>
                     {/* LX-9R1-R1: the subject's journey progress, as the service computes it (GAP-07 documented). */}

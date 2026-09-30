@@ -897,7 +897,38 @@ export type MessageKey =
   | 'xs.tutor.messages'
   | 'xs.tutor.sendFailed'
   | 'xs.tutor.loadFailed'
-  | 'xs.checking';
+  | 'xs.checking'
+  | 'nav.knowledge'
+  | 'kn.title'
+  | 'kn.lead'
+  | 'kn.summaryTitle'
+  | 'kn.state.MASTERED'
+  | 'kn.state.DEMONSTRATED'
+  | 'kn.state.IN_PROGRESS'
+  | 'kn.state.ATTENTION'
+  | 'kn.state.NOT_STARTED'
+  | 'kn.meaning.MASTERED'
+  | 'kn.meaning.ATTENTION'
+  | 'kn.meaning.NOT_STARTED'
+  | 'kn.meaning.LEARN'
+  | 'kn.meaning.PRACTICE'
+  | 'kn.meaning.PROVE'
+  | 'kn.meaning.RETAIN'
+  | 'kn.meaning.TRANSFER'
+  | 'kn.focus'
+  | 'kn.focusNow'
+  | 'kn.goToChallenge'
+  | 'kn.viewConcept'
+  | 'kn.otherConcepts'
+  | 'kn.topicCount'
+  | 'kn.noEvidence'
+  | 'kn.subjectEmpty'
+  | 'kn.emptyTitle'
+  | 'kn.emptyBody'
+  | 'kn.loadError'
+  | 'kn.seeAll'
+  | 'pg.consolidated'
+  | 'pg.achievementConsolidated';
 
 type Messages = Record<MessageKey, string>;
 
@@ -1845,8 +1876,8 @@ const es: Messages = {
   'streak.dashboardSubtitle': 'días seguidos estudiando',
   'streak.dashboardEmpty': 'practica hoy para empezar',
   'streak.thisWeekLabel': 'días de aprendizaje esta semana',
-  'nav.tutor': 'Tutor IA',
-  'tutor.title': 'Tutor IA',
+  'nav.tutor': 'Tutor',
+  'tutor.title': 'Tutor',
   'tutor.subtitle': 'Pregunta lo que quieras sobre tu material de estudio',
   'tutor.newConversation': 'Nueva conversación',
   'tutor.noSubject': 'Sin materia específica',
@@ -2408,6 +2439,37 @@ const es: Messages = {
   'xs.tutor.sendFailed': 'No se pudo enviar tu mensaje. Lo dejamos en el cuadro para que lo reintentes.',
   'xs.tutor.loadFailed': 'No se pudieron cargar las conversaciones.',
   'xs.checking': 'Comprobando…',
+  'nav.knowledge': 'Tu conocimiento',
+  'kn.title': 'Tu conocimiento',
+  'kn.lead': 'Lo que ya sabes, en lo que estás trabajando y lo que te falta, concepto a concepto.',
+  'kn.summaryTitle': 'Resumen de tu conocimiento',
+  'kn.state.MASTERED': 'Dominado',
+  'kn.state.DEMONSTRATED': 'Demostrado',
+  'kn.state.IN_PROGRESS': 'En progreso',
+  'kn.state.ATTENTION': 'Necesita atención',
+  'kn.state.NOT_STARTED': 'Por trabajar',
+  'kn.meaning.MASTERED': 'Lo demostraste, lo recuerdas con el tiempo y lo aplicas en situaciones nuevas.',
+  'kn.meaning.ATTENTION': 'Hay algo que conviene reforzar antes de seguir avanzando.',
+  'kn.meaning.NOT_STARTED': 'Todavía no has empezado este concepto.',
+  'kn.meaning.LEARN': 'Estás entendiendo la idea.',
+  'kn.meaning.PRACTICE': 'Lo estás entrenando.',
+  'kn.meaning.PROVE': 'Ya lo entrenaste: toca demostrarlo por tu cuenta.',
+  'kn.meaning.RETAIN': 'Ya lo demostraste por tu cuenta. Falta comprobar que lo recuerdas con el tiempo.',
+  'kn.meaning.TRANSFER': 'Lo demostraste y lo recuerdas. Falta aplicarlo en situaciones nuevas.',
+  'kn.focus': 'En foco',
+  'kn.focusNow': 'Ahora mismo trabajas en',
+  'kn.goToChallenge': 'Ir a tu siguiente reto',
+  'kn.viewConcept': 'Ver concepto',
+  'kn.otherConcepts': 'Otros conceptos',
+  'kn.topicCount': '{n} de {total} dominados',
+  'kn.noEvidence': 'Todavía no hay evidencia de tu trabajo. En cuanto completes tu primer reto, verás aquí lo que ya sabes.',
+  'kn.subjectEmpty': 'Esta materia todavía no tiene conceptos.',
+  'kn.emptyTitle': 'Todavía no hay conocimiento que mostrar',
+  'kn.emptyBody': 'Crea tu primera materia y StudyUS empezará a mostrarte lo que sabes.',
+  'kn.loadError': 'No pudimos cargar tu conocimiento ahora.',
+  'kn.seeAll': 'Ver tu conocimiento',
+  'pg.consolidated': '{n} de {total} dominados',
+  'pg.achievementConsolidated': '{n} dominados',
 };
 
 const en: Messages = {
@@ -3354,8 +3416,8 @@ const en: Messages = {
   'streak.dashboardSubtitle': 'days studying in a row',
   'streak.dashboardEmpty': 'practice today to start one',
   'streak.thisWeekLabel': 'learning days this week',
-  'nav.tutor': 'AI Tutor',
-  'tutor.title': 'AI Tutor',
+  'nav.tutor': 'Tutor',
+  'tutor.title': 'Tutor',
   'tutor.subtitle': 'Ask anything about your study material',
   'tutor.newConversation': 'New conversation',
   'tutor.noSubject': 'No specific subject',
@@ -3917,6 +3979,37 @@ const en: Messages = {
   'xs.tutor.sendFailed': 'Your message couldn\'t be sent. It\'s back in the box so you can try again.',
   'xs.tutor.loadFailed': 'Conversations couldn\'t be loaded.',
   'xs.checking': 'Checking…',
+  'nav.knowledge': 'Your knowledge',
+  'kn.title': 'Your knowledge',
+  'kn.lead': 'What you already know, what you\'re working on and what\'s still ahead, concept by concept.',
+  'kn.summaryTitle': 'Summary of your knowledge',
+  'kn.state.MASTERED': 'Mastered',
+  'kn.state.DEMONSTRATED': 'Demonstrated',
+  'kn.state.IN_PROGRESS': 'In progress',
+  'kn.state.ATTENTION': 'Needs attention',
+  'kn.state.NOT_STARTED': 'Not started',
+  'kn.meaning.MASTERED': 'You demonstrated it, you still remember it and you apply it in new situations.',
+  'kn.meaning.ATTENTION': 'There\'s something worth reinforcing before moving on.',
+  'kn.meaning.NOT_STARTED': 'You haven\'t started this concept yet.',
+  'kn.meaning.LEARN': 'You\'re getting to understand the idea.',
+  'kn.meaning.PRACTICE': 'You\'re training it.',
+  'kn.meaning.PROVE': 'You\'ve trained it: next, show it on your own.',
+  'kn.meaning.RETAIN': 'You demonstrated it on your own. Next, we check that you remember it over time.',
+  'kn.meaning.TRANSFER': 'You demonstrated it and remember it. Next, apply it in new situations.',
+  'kn.focus': 'In focus',
+  'kn.focusNow': 'Right now you\'re working on',
+  'kn.goToChallenge': 'Go to your next challenge',
+  'kn.viewConcept': 'View concept',
+  'kn.otherConcepts': 'Other concepts',
+  'kn.topicCount': '{n} of {total} mastered',
+  'kn.noEvidence': 'There\'s no evidence of your work yet. Once you complete your first challenge, you\'ll see what you know here.',
+  'kn.subjectEmpty': 'This subject doesn\'t have any concepts yet.',
+  'kn.emptyTitle': 'Nothing to show yet',
+  'kn.emptyBody': 'Create your first subject and StudyUS will start showing you what you know.',
+  'kn.loadError': 'We couldn\'t load your knowledge right now.',
+  'kn.seeAll': 'See your knowledge',
+  'pg.consolidated': '{n} of {total} mastered',
+  'pg.achievementConsolidated': '{n} mastered',
 };
 
 const de: Messages = {
@@ -4863,8 +4956,8 @@ const de: Messages = {
   'streak.dashboardSubtitle': 'Tage in Folge gelernt',
   'streak.dashboardEmpty': 'übe heute, um eine zu starten',
   'streak.thisWeekLabel': 'Lerntage diese Woche',
-  'nav.tutor': 'KI-Tutor',
-  'tutor.title': 'KI-Tutor',
+  'nav.tutor': 'Tutor',
+  'tutor.title': 'Tutor',
   'tutor.subtitle': 'Frag alles zu deinem Lernmaterial',
   'tutor.newConversation': 'Neue Unterhaltung',
   'tutor.noSubject': 'Kein bestimmtes Fach',
@@ -5426,6 +5519,37 @@ const de: Messages = {
   'xs.tutor.sendFailed': 'Deine Nachricht konnte nicht gesendet werden. Sie steht wieder im Eingabefeld.',
   'xs.tutor.loadFailed': 'Unterhaltungen konnten nicht geladen werden.',
   'xs.checking': 'Wird geprüft…',
+  'nav.knowledge': 'Dein Wissen',
+  'kn.title': 'Dein Wissen',
+  'kn.lead': 'Was du schon kannst, woran du arbeitest und was noch vor dir liegt – Konzept für Konzept.',
+  'kn.summaryTitle': 'Überblick über dein Wissen',
+  'kn.state.MASTERED': 'Gemeistert',
+  'kn.state.DEMONSTRATED': 'Nachgewiesen',
+  'kn.state.IN_PROGRESS': 'In Arbeit',
+  'kn.state.ATTENTION': 'Braucht Aufmerksamkeit',
+  'kn.state.NOT_STARTED': 'Noch offen',
+  'kn.meaning.MASTERED': 'Du hast es nachgewiesen, erinnerst dich daran und wendest es in neuen Situationen an.',
+  'kn.meaning.ATTENTION': 'Hier gibt es etwas zu festigen, bevor es weitergeht.',
+  'kn.meaning.NOT_STARTED': 'Mit diesem Konzept hast du noch nicht begonnen.',
+  'kn.meaning.LEARN': 'Du erarbeitest gerade die Idee.',
+  'kn.meaning.PRACTICE': 'Du trainierst es gerade.',
+  'kn.meaning.PROVE': 'Du hast es trainiert: Jetzt zeigst du es allein.',
+  'kn.meaning.RETAIN': 'Du hast es selbst nachgewiesen. Als Nächstes prüfen wir, ob du es behältst.',
+  'kn.meaning.TRANSFER': 'Du hast es nachgewiesen und behalten. Jetzt wendest du es neu an.',
+  'kn.focus': 'Im Fokus',
+  'kn.focusNow': 'Gerade arbeitest du an',
+  'kn.goToChallenge': 'Zur nächsten Aufgabe',
+  'kn.viewConcept': 'Konzept ansehen',
+  'kn.otherConcepts': 'Weitere Konzepte',
+  'kn.topicCount': '{n} von {total} gemeistert',
+  'kn.noEvidence': 'Noch gibt es keine Nachweise deiner Arbeit. Nach deiner ersten Aufgabe siehst du hier, was du kannst.',
+  'kn.subjectEmpty': 'Dieses Fach hat noch keine Konzepte.',
+  'kn.emptyTitle': 'Noch nichts zu zeigen',
+  'kn.emptyBody': 'Lege dein erstes Fach an, dann zeigt dir StudyUS, was du kannst.',
+  'kn.loadError': 'Dein Wissen konnte gerade nicht geladen werden.',
+  'kn.seeAll': 'Dein Wissen ansehen',
+  'pg.consolidated': '{n} von {total} gemeistert',
+  'pg.achievementConsolidated': '{n} gemeistert',
 };
 
 const fr: Messages = {
@@ -6372,8 +6496,8 @@ const fr: Messages = {
   'streak.dashboardSubtitle': "jours d'affilée",
   'streak.dashboardEmpty': "pratiquez aujourd'hui pour en démarrer une",
   'streak.thisWeekLabel': "jours d'apprentissage cette semaine",
-  'nav.tutor': 'Tuteur IA',
-  'tutor.title': 'Tuteur IA',
+  'nav.tutor': 'Tuteur',
+  'tutor.title': 'Tuteur',
   'tutor.subtitle': 'Pose toutes tes questions sur ton matériel d\'étude',
   'tutor.newConversation': 'Nouvelle conversation',
   'tutor.noSubject': 'Aucune matière spécifique',
@@ -6935,6 +7059,37 @@ const fr: Messages = {
   'xs.tutor.sendFailed': 'Ton message n\'a pas pu être envoyé. Il est de retour dans le champ pour réessayer.',
   'xs.tutor.loadFailed': 'Impossible de charger les conversations.',
   'xs.checking': 'Vérification…',
+  'nav.knowledge': 'Tes connaissances',
+  'kn.title': 'Tes connaissances',
+  'kn.lead': 'Ce que tu sais déjà, ce sur quoi tu travailles et ce qui reste, concept par concept.',
+  'kn.summaryTitle': 'Résumé de tes connaissances',
+  'kn.state.MASTERED': 'Maîtrisé',
+  'kn.state.DEMONSTRATED': 'Démontré',
+  'kn.state.IN_PROGRESS': 'En cours',
+  'kn.state.ATTENTION': 'À revoir',
+  'kn.state.NOT_STARTED': 'À travailler',
+  'kn.meaning.MASTERED': 'Tu l\'as démontré, tu t\'en souviens et tu l\'appliques à de nouvelles situations.',
+  'kn.meaning.ATTENTION': 'Il y a quelque chose à renforcer avant d\'avancer.',
+  'kn.meaning.NOT_STARTED': 'Tu n\'as pas encore commencé ce concept.',
+  'kn.meaning.LEARN': 'Tu es en train de comprendre l\'idée.',
+  'kn.meaning.PRACTICE': 'Tu es en train de t\'entraîner.',
+  'kn.meaning.PROVE': 'Tu t\'es entraîné : à toi de le montrer seul.',
+  'kn.meaning.RETAIN': 'Tu l\'as démontré seul. Reste à vérifier que tu t\'en souviens avec le temps.',
+  'kn.meaning.TRANSFER': 'Tu l\'as démontré et tu t\'en souviens. Reste à l\'appliquer à de nouvelles situations.',
+  'kn.focus': 'En cours',
+  'kn.focusNow': 'En ce moment, tu travailles sur',
+  'kn.goToChallenge': 'Aller à ton prochain défi',
+  'kn.viewConcept': 'Voir le concept',
+  'kn.otherConcepts': 'Autres concepts',
+  'kn.topicCount': '{n} sur {total} maîtrisés',
+  'kn.noEvidence': 'Il n\'y a pas encore de preuve de ton travail. Après ton premier défi, tu verras ici ce que tu sais.',
+  'kn.subjectEmpty': 'Cette matière n\'a pas encore de concepts.',
+  'kn.emptyTitle': 'Rien à afficher pour l\'instant',
+  'kn.emptyBody': 'Crée ta première matière et StudyUS commencera à te montrer ce que tu sais.',
+  'kn.loadError': 'Impossible de charger tes connaissances pour l\'instant.',
+  'kn.seeAll': 'Voir tes connaissances',
+  'pg.consolidated': '{n} sur {total} maîtrisés',
+  'pg.achievementConsolidated': '{n} maîtrisés',
 };
 
 const pt: Messages = {
@@ -7881,8 +8036,8 @@ const pt: Messages = {
   'streak.dashboardSubtitle': 'dias seguidos estudando',
   'streak.dashboardEmpty': 'pratique hoje para começar uma',
   'streak.thisWeekLabel': 'dias de aprendizado esta semana',
-  'nav.tutor': 'Tutor de IA',
-  'tutor.title': 'Tutor de IA',
+  'nav.tutor': 'Tutor',
+  'tutor.title': 'Tutor',
   'tutor.subtitle': 'Pergunte o que quiser sobre seu material de estudo',
   'tutor.newConversation': 'Nova conversa',
   'tutor.noSubject': 'Sem matéria específica',
@@ -8444,6 +8599,37 @@ const pt: Messages = {
   'xs.tutor.sendFailed': 'Não foi possível enviar sua mensagem. Ela voltou para a caixa para você tentar de novo.',
   'xs.tutor.loadFailed': 'Não foi possível carregar as conversas.',
   'xs.checking': 'Verificando…',
+  'nav.knowledge': 'Seu conhecimento',
+  'kn.title': 'Seu conhecimento',
+  'kn.lead': 'O que você já sabe, no que está trabalhando e o que falta, conceito a conceito.',
+  'kn.summaryTitle': 'Resumo do seu conhecimento',
+  'kn.state.MASTERED': 'Dominado',
+  'kn.state.DEMONSTRATED': 'Demonstrado',
+  'kn.state.IN_PROGRESS': 'Em progresso',
+  'kn.state.ATTENTION': 'Precisa de atenção',
+  'kn.state.NOT_STARTED': 'Por trabalhar',
+  'kn.meaning.MASTERED': 'Você demonstrou, lembra com o tempo e aplica em situações novas.',
+  'kn.meaning.ATTENTION': 'Há algo que vale reforçar antes de avançar.',
+  'kn.meaning.NOT_STARTED': 'Você ainda não começou este conceito.',
+  'kn.meaning.LEARN': 'Você está entendendo a ideia.',
+  'kn.meaning.PRACTICE': 'Você está treinando.',
+  'kn.meaning.PROVE': 'Você já treinou: agora é demonstrar sozinho.',
+  'kn.meaning.RETAIN': 'Você demonstrou sozinho. Falta verificar que lembra com o tempo.',
+  'kn.meaning.TRANSFER': 'Você demonstrou e lembra. Falta aplicar em situações novas.',
+  'kn.focus': 'Em foco',
+  'kn.focusNow': 'Agora você está trabalhando em',
+  'kn.goToChallenge': 'Ir para o próximo desafio',
+  'kn.viewConcept': 'Ver conceito',
+  'kn.otherConcepts': 'Outros conceitos',
+  'kn.topicCount': '{n} de {total} dominados',
+  'kn.noEvidence': 'Ainda não há evidência do seu trabalho. Quando concluir seu primeiro desafio, verá aqui o que já sabe.',
+  'kn.subjectEmpty': 'Esta matéria ainda não tem conceitos.',
+  'kn.emptyTitle': 'Ainda não há nada para mostrar',
+  'kn.emptyBody': 'Crie sua primeira matéria e o StudyUS começará a mostrar o que você sabe.',
+  'kn.loadError': 'Não foi possível carregar seu conhecimento agora.',
+  'kn.seeAll': 'Ver seu conhecimento',
+  'pg.consolidated': '{n} de {total} dominados',
+  'pg.achievementConsolidated': '{n} dominados',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

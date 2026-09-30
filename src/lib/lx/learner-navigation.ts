@@ -94,6 +94,8 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
         mobileTab: true,
       },
       { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard', mobileTab: true },
+      // UX-4: the Student's knowledge map (Subject -> Topic -> Concept). Not a mobile tab: phones reach it from "Más" and from Progreso / Mi ruta.
+      { key: 'knowledge', href: '/dashboard/knowledge', labelKey: 'nav.knowledge', iconKey: 'Network' },
       { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
       ...(hasPendingAssignments ? [assignments] : []),
     ],
