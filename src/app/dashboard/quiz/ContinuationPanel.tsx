@@ -190,17 +190,23 @@ export default function ContinuationPanel({
   return (
     <section
       className={variant === 'card' ? 'card lx-checkpoint' : 'lx-checkpoint'}
-      aria-labelledby="lx-cp-heading"
+      // STUDENT E2E a11y: the kind headline ("Ya tienes la idea") describes a
+      // SUCCESSFUL finish; inline (inside the results "Tu siguiente paso"
+      // panel, which carries its own heading) it must not be announced --
+      // after a "Todavía no" it told screen-reader users the opposite.
+      aria-labelledby={showHeadline || waitingResult ? 'lx-cp-heading' : undefined}
     >
-      <p
-        id="lx-cp-heading"
-        ref={headingRef}
-        tabIndex={-1}
-        className={showHeadline || waitingResult ? 'label' : 'label sr-only'}
-        style={{ color: 'var(--brand-ink)', margin: 0 }}
-      >
-        {waitingResult ? t['continuation.waitingHeadline'] : t[cp.headlineKey as keyof typeof t]}
-      </p>
+      {(showHeadline || waitingResult) && (
+        <p
+          id="lx-cp-heading"
+          ref={headingRef}
+          tabIndex={-1}
+          className="label"
+          style={{ color: 'var(--brand-ink)', margin: 0 }}
+        >
+          {waitingResult ? t['continuation.waitingHeadline'] : t[cp.headlineKey as keyof typeof t]}
+        </p>
+      )}
       {(showHeadline || waitingResult) && (
         <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {waitingResult

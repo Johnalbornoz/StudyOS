@@ -76,7 +76,7 @@ export default function ConceptExplanationDisclosure({
     <div>
       <button
         type="button"
-        className={emphasis === 'primary' ? 'btn btn-primary' : 'btn btn-secondary'}
+        className={emphasis === 'primary' ? 'btn btn-primary cm-action' : 'btn btn-secondary cm-action'}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={toggle}

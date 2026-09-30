@@ -32,7 +32,21 @@ export default function SubjectSwitcher({
   const current = subjects.find((s) => s.id === currentId) ?? null;
 
   return (
-    <details ref={ref} className="ss" onKeyDown={(e) => { if (e.key === 'Escape') close(); }}>
+    <details
+      ref={ref}
+      className="ss"
+      onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+      onToggle={(e) => {
+        // STUDENT E2E (mobile): open toward whichever side keeps the menu on
+        // screen -- start-aligned by default (phones, where the trigger wraps
+        // to the left), end-aligned only when that would overflow the right.
+        const el = e.currentTarget;
+        if (!el.open) return;
+        const trigger = el.getBoundingClientRect();
+        const menuWidth = Math.min(280, window.innerWidth - 32);
+        el.dataset.align = trigger.left + menuWidth > window.innerWidth - 16 ? 'end' : 'start';
+      }}
+    >
       <summary className="ss-trigger" aria-label={`${label}: ${current?.name ?? placeholder}`}>
         <BookOpen size={16} strokeWidth={2} aria-hidden />
         <span className="ss-current">{current?.name ?? placeholder}</span>

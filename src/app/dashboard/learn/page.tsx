@@ -17,6 +17,7 @@ import { Section } from '@/components/ui/Section';
 import NextChallengeCard from '../NextChallengeCard';
 import SubjectSwitcher from '../SubjectSwitcher';
 import ConceptFinder from './ConceptFinder';
+import DocumentImport from './DocumentImport';
 
 /**
  * UX-5 closure -- APRENDER.
@@ -173,6 +174,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
           <h2 id="ln-start-title" className="ln-start-title">{t['ln.startTitle'].replace('{subject}', selected.name)}</h2>
           <p className="ln-start-body">{t['ln.startBody']}</p>
           <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} autoFocus />
+          <div className="ln-or">
+            <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+          </div>
         </section>
       ) : (
         <>
@@ -200,6 +204,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
 
           <Section id="ln-find" title={t['ln.findTitle']}>
             <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} />
+            <div className="ln-or">
+              <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+            </div>
           </Section>
 
           <Section

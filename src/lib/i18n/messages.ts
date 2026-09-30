@@ -1011,7 +1011,39 @@ export type MessageKey =
   | 'xp.firstTopicBody'
   | 'xp.firstTopicCta'
   | 'ln.pickTitle'
-  | 'ln.pickBody';
+  | 'ln.pickBody'
+  | 'examPrep.attempt.noGradedItems'
+  | 'di.open'
+  | 'di.lead'
+  | 'di.note'
+  | 'di.choose'
+  | 'di.types'
+  | 'di.analyze'
+  | 'di.analyzing'
+  | 'di.reviewTitle'
+  | 'di.reviewLead'
+  | 'di.newTitle'
+  | 'di.existingTitle'
+  | 'di.selectAll'
+  | 'di.selectNone'
+  | 'di.summaryNone'
+  | 'di.summaryNew'
+  | 'di.summaryReuse'
+  | 'di.confirm'
+  | 'di.cancel'
+  | 'di.adding'
+  | 'di.doneTitle'
+  | 'di.start'
+  | 'di.again'
+  | 'di.err.UNSUPPORTED_FILE'
+  | 'di.err.FILE_TOO_LARGE'
+  | 'di.err.EMPTY_FILE'
+  | 'di.err.NO_CONCEPTS'
+  | 'di.err.EXTRACTION_FAILED'
+  | 'di.err.network'
+  | 'di.err.import'
+  | 'di.summaryNewOne'
+  | 'di.summaryReuseOne';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2636,6 +2668,38 @@ const es: Messages = {
   'xp.firstTopicCta': 'Elegir un tema',
   'ln.pickTitle': 'Elige un tema para empezar',
   'ln.pickBody': 'Abre un tema de la lista y pulsa Empezar.',
+  'examPrep.attempt.noGradedItems': 'No hubo preguntas disponibles para calificar en este intento, así que no hay puntaje.',
+  'di.open': 'Subir documento o examen',
+  'di.lead': 'Sube una guía, tus apuntes o un examen. Detectamos los temas y tú eliges cuáles agregar.',
+  'di.note': 'Subir un documento no cuenta como evidencia: tu progreso solo cambia cuando practicas y lo demuestras.',
+  'di.choose': 'Elegir archivo',
+  'di.types': 'PDF, texto o imagen · máximo 4 MB',
+  'di.analyze': 'Buscar temas en el documento',
+  'di.analyzing': 'Leyendo el documento y buscando temas…',
+  'di.reviewTitle': 'Temas encontrados en «{file}»',
+  'di.reviewLead': 'Marca los que quieres estudiar en {subject}. No se agrega nada hasta que confirmes.',
+  'di.newTitle': 'Temas nuevos',
+  'di.existingTitle': 'Ya los tienes',
+  'di.selectAll': 'Seleccionar todos',
+  'di.selectNone': 'Quitar selección',
+  'di.summaryNone': 'Todavía no has marcado ningún tema.',
+  'di.summaryNew': 'Se agregarán {n} temas nuevos a {subject}.',
+  'di.summaryReuse': '{n} ya los tienes y se reutilizan.',
+  'di.confirm': 'Agregar a {subject}',
+  'di.cancel': 'Cancelar',
+  'di.adding': 'Agregando…',
+  'di.doneTitle': 'Listo: {n} temas en {subject}',
+  'di.start': 'Empezar',
+  'di.again': 'Subir otro documento',
+  'di.err.UNSUPPORTED_FILE': 'Ese tipo de archivo no se puede leer. Usa un PDF, un archivo de texto o una imagen.',
+  'di.err.FILE_TOO_LARGE': 'El archivo supera 4 MB. Prueba con uno más pequeño.',
+  'di.err.EMPTY_FILE': 'No encontramos texto en ese archivo.',
+  'di.err.NO_CONCEPTS': 'No pudimos detectar temas en este documento. Prueba con otro archivo o busca el tema por su nombre.',
+  'di.err.EXTRACTION_FAILED': 'No pudimos leer el documento ahora. Inténtalo de nuevo.',
+  'di.err.network': 'Se perdió la conexión. Tu materia sigue aquí; inténtalo de nuevo.',
+  'di.err.import': 'No pudimos agregar todos los temas. Inténtalo de nuevo: los que ya se agregaron no se duplican.',
+  'di.summaryNewOne': 'Se agregará 1 tema nuevo a {subject}.',
+  'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
 };
 
 const en: Messages = {
@@ -4259,6 +4323,38 @@ const en: Messages = {
   'xp.firstTopicCta': 'Choose a topic',
   'ln.pickTitle': 'Choose a topic to start',
   'ln.pickBody': 'Open a topic from the list and press Start.',
+  'examPrep.attempt.noGradedItems': 'There were no gradable questions in this attempt, so there is no score.',
+  'di.open': 'Upload a document or exam',
+  'di.lead': 'Upload a study guide, your notes or an exam. We detect the topics and you choose which to add.',
+  'di.note': 'Uploading a document doesn\'t count as evidence: your progress only changes when you practise and show what you know.',
+  'di.choose': 'Choose file',
+  'di.types': 'PDF, text or image · up to 4 MB',
+  'di.analyze': 'Find topics in the document',
+  'di.analyzing': 'Reading the document and looking for topics…',
+  'di.reviewTitle': 'Topics found in “{file}”',
+  'di.reviewLead': 'Tick the ones you want to study in {subject}. Nothing is added until you confirm.',
+  'di.newTitle': 'New topics',
+  'di.existingTitle': 'Already in your topics',
+  'di.selectAll': 'Select all',
+  'di.selectNone': 'Clear selection',
+  'di.summaryNone': 'You haven\'t ticked any topic yet.',
+  'di.summaryNew': '{n} new topics will be added to {subject}.',
+  'di.summaryReuse': '{n} you already have will be reused.',
+  'di.confirm': 'Add to {subject}',
+  'di.cancel': 'Cancel',
+  'di.adding': 'Adding…',
+  'di.doneTitle': 'Done: {n} topics in {subject}',
+  'di.start': 'Start',
+  'di.again': 'Upload another document',
+  'di.err.UNSUPPORTED_FILE': 'That file type can\'t be read. Use a PDF, a text file or an image.',
+  'di.err.FILE_TOO_LARGE': 'The file is over 4 MB. Try a smaller one.',
+  'di.err.EMPTY_FILE': 'We couldn\'t find any text in that file.',
+  'di.err.NO_CONCEPTS': 'We couldn\'t detect topics in this document. Try another file or search for the topic by name.',
+  'di.err.EXTRACTION_FAILED': 'We couldn\'t read the document right now. Please try again.',
+  'di.err.network': 'The connection was lost. Your subject is still here; please try again.',
+  'di.err.import': 'We couldn\'t add all the topics. Please try again: any already added won\'t be duplicated.',
+  'di.summaryNewOne': '1 new topic will be added to {subject}.',
+  'di.summaryReuseOne': '1 you already have will be reused.',
 };
 
 const de: Messages = {
@@ -5882,6 +5978,38 @@ const de: Messages = {
   'xp.firstTopicCta': 'Thema wählen',
   'ln.pickTitle': 'Wähle ein Thema zum Starten',
   'ln.pickBody': 'Öffne ein Thema aus der Liste und tippe auf Starten.',
+  'examPrep.attempt.noGradedItems': 'In diesem Versuch gab es keine bewertbaren Fragen, daher gibt es keine Punktzahl.',
+  'di.open': 'Dokument oder Prüfung hochladen',
+  'di.lead': 'Lade einen Lernzettel, deine Notizen oder eine Prüfung hoch. Wir erkennen die Themen, und du wählst aus, welche hinzukommen.',
+  'di.note': 'Ein hochgeladenes Dokument zählt nicht als Nachweis: Dein Fortschritt ändert sich nur, wenn du übst und es zeigst.',
+  'di.choose': 'Datei wählen',
+  'di.types': 'PDF, Text oder Bild · max. 4 MB',
+  'di.analyze': 'Themen im Dokument finden',
+  'di.analyzing': 'Dokument wird gelesen und nach Themen durchsucht …',
+  'di.reviewTitle': 'Themen in „{file}“',
+  'di.reviewLead': 'Markiere, was du in {subject} lernen möchtest. Nichts wird hinzugefügt, bevor du bestätigst.',
+  'di.newTitle': 'Neue Themen',
+  'di.existingTitle': 'Hast du schon',
+  'di.selectAll': 'Alle auswählen',
+  'di.selectNone': 'Auswahl aufheben',
+  'di.summaryNone': 'Du hast noch kein Thema markiert.',
+  'di.summaryNew': '{n} neue Themen kommen zu {subject}.',
+  'di.summaryReuse': '{n} hast du schon; sie werden wiederverwendet.',
+  'di.confirm': 'Zu {subject} hinzufügen',
+  'di.cancel': 'Abbrechen',
+  'di.adding': 'Wird hinzugefügt …',
+  'di.doneTitle': 'Fertig: {n} Themen in {subject}',
+  'di.start': 'Starten',
+  'di.again': 'Weiteres Dokument hochladen',
+  'di.err.UNSUPPORTED_FILE': 'Dieser Dateityp kann nicht gelesen werden. Nutze PDF, Text oder ein Bild.',
+  'di.err.FILE_TOO_LARGE': 'Die Datei ist größer als 4 MB. Versuch eine kleinere.',
+  'di.err.EMPTY_FILE': 'In dieser Datei wurde kein Text gefunden.',
+  'di.err.NO_CONCEPTS': 'Wir konnten in diesem Dokument keine Themen erkennen. Versuch eine andere Datei oder suche das Thema nach Namen.',
+  'di.err.EXTRACTION_FAILED': 'Das Dokument konnte gerade nicht gelesen werden. Versuch es noch einmal.',
+  'di.err.network': 'Die Verbindung wurde unterbrochen. Dein Fach ist noch da; versuch es noch einmal.',
+  'di.err.import': 'Nicht alle Themen konnten hinzugefügt werden. Versuch es noch einmal: Bereits hinzugefügte werden nicht doppelt angelegt.',
+  'di.summaryNewOne': '1 neues Thema kommt zu {subject}.',
+  'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
 };
 
 const fr: Messages = {
@@ -7505,6 +7633,38 @@ const fr: Messages = {
   'xp.firstTopicCta': 'Choisir un thème',
   'ln.pickTitle': 'Choisis un thème pour commencer',
   'ln.pickBody': 'Ouvre un thème de la liste et appuie sur Commencer.',
+  'examPrep.attempt.noGradedItems': 'Aucune question n\'a pu être notée dans cette tentative, il n\'y a donc pas de score.',
+  'di.open': 'Importer un document ou un examen',
+  'di.lead': 'Importe un guide, tes notes ou un examen. Nous détectons les thèmes et tu choisis ceux à ajouter.',
+  'di.note': 'Importer un document ne compte pas comme preuve : ta progression ne change que lorsque tu t\'entraînes et le démontres.',
+  'di.choose': 'Choisir un fichier',
+  'di.types': 'PDF, texte ou image · 4 Mo maximum',
+  'di.analyze': 'Trouver les thèmes du document',
+  'di.analyzing': 'Lecture du document et recherche des thèmes…',
+  'di.reviewTitle': 'Thèmes trouvés dans « {file} »',
+  'di.reviewLead': 'Coche ceux que tu veux étudier en {subject}. Rien n\'est ajouté avant ta confirmation.',
+  'di.newTitle': 'Nouveaux thèmes',
+  'di.existingTitle': 'Déjà dans tes thèmes',
+  'di.selectAll': 'Tout sélectionner',
+  'di.selectNone': 'Tout désélectionner',
+  'di.summaryNone': 'Tu n\'as encore coché aucun thème.',
+  'di.summaryNew': '{n} nouveaux thèmes seront ajoutés à {subject}.',
+  'di.summaryReuse': '{n} que tu as déjà seront réutilisés.',
+  'di.confirm': 'Ajouter à {subject}',
+  'di.cancel': 'Annuler',
+  'di.adding': 'Ajout…',
+  'di.doneTitle': 'C\'est fait : {n} thèmes en {subject}',
+  'di.start': 'Commencer',
+  'di.again': 'Importer un autre document',
+  'di.err.UNSUPPORTED_FILE': 'Ce type de fichier ne peut pas être lu. Utilise un PDF, un fichier texte ou une image.',
+  'di.err.FILE_TOO_LARGE': 'Le fichier dépasse 4 Mo. Essaie avec un plus petit.',
+  'di.err.EMPTY_FILE': 'Aucun texte trouvé dans ce fichier.',
+  'di.err.NO_CONCEPTS': 'Nous n\'avons détecté aucun thème dans ce document. Essaie un autre fichier ou cherche le thème par son nom.',
+  'di.err.EXTRACTION_FAILED': 'Impossible de lire le document pour l\'instant. Réessaie.',
+  'di.err.network': 'La connexion a été perdue. Ta matière est toujours là ; réessaie.',
+  'di.err.import': 'Impossible d\'ajouter tous les thèmes. Réessaie : ceux déjà ajoutés ne seront pas dupliqués.',
+  'di.summaryNewOne': '1 nouveau thème sera ajouté à {subject}.',
+  'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
 };
 
 const pt: Messages = {
@@ -9128,6 +9288,38 @@ const pt: Messages = {
   'xp.firstTopicCta': 'Escolher um tema',
   'ln.pickTitle': 'Escolha um tema para começar',
   'ln.pickBody': 'Abra um tema da lista e toque em Começar.',
+  'examPrep.attempt.noGradedItems': 'Não houve perguntas disponíveis para corrigir nesta tentativa, então não há pontuação.',
+  'di.open': 'Enviar documento ou prova',
+  'di.lead': 'Envie um guia, suas anotações ou uma prova. Detectamos os temas e você escolhe quais adicionar.',
+  'di.note': 'Enviar um documento não conta como evidência: seu progresso só muda quando você pratica e demonstra.',
+  'di.choose': 'Escolher arquivo',
+  'di.types': 'PDF, texto ou imagem · até 4 MB',
+  'di.analyze': 'Encontrar temas no documento',
+  'di.analyzing': 'Lendo o documento e buscando temas…',
+  'di.reviewTitle': 'Temas encontrados em “{file}”',
+  'di.reviewLead': 'Marque os que você quer estudar em {subject}. Nada é adicionado até você confirmar.',
+  'di.newTitle': 'Temas novos',
+  'di.existingTitle': 'Você já tem',
+  'di.selectAll': 'Selecionar todos',
+  'di.selectNone': 'Limpar seleção',
+  'di.summaryNone': 'Você ainda não marcou nenhum tema.',
+  'di.summaryNew': '{n} temas novos serão adicionados a {subject}.',
+  'di.summaryReuse': '{n} que você já tem serão reutilizados.',
+  'di.confirm': 'Adicionar a {subject}',
+  'di.cancel': 'Cancelar',
+  'di.adding': 'Adicionando…',
+  'di.doneTitle': 'Pronto: {n} temas em {subject}',
+  'di.start': 'Começar',
+  'di.again': 'Enviar outro documento',
+  'di.err.UNSUPPORTED_FILE': 'Esse tipo de arquivo não pode ser lido. Use um PDF, um arquivo de texto ou uma imagem.',
+  'di.err.FILE_TOO_LARGE': 'O arquivo tem mais de 4 MB. Tente um menor.',
+  'di.err.EMPTY_FILE': 'Não encontramos texto nesse arquivo.',
+  'di.err.NO_CONCEPTS': 'Não conseguimos detectar temas neste documento. Tente outro arquivo ou busque o tema pelo nome.',
+  'di.err.EXTRACTION_FAILED': 'Não foi possível ler o documento agora. Tente novamente.',
+  'di.err.network': 'A conexão caiu. Sua matéria continua aqui; tente novamente.',
+  'di.err.import': 'Não foi possível adicionar todos os temas. Tente novamente: os que já foram adicionados não serão duplicados.',
+  'di.summaryNewOne': '1 tema novo será adicionado a {subject}.',
+  'di.summaryReuseOne': '1 que você já tem será reutilizado.',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

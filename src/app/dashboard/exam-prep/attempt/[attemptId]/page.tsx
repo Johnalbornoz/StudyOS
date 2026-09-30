@@ -27,6 +27,8 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId).catch(() => 'es' as const);
   const t = getMessages(locale);
+  // STUDENT E2E: localized labels for the attempt's enums (the same keys the setup screen uses) -- never a raw code.
+  const label = (key: string, fallback: string) => (t as Record<string, string>)[key] ?? fallback;
 
   const attempt = await getSimulationAttempt(attemptId);
   if (!attempt || attempt.studentId !== studentId) notFound();
@@ -37,7 +39,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader
         title={t['examPrep.attempt.title']}
-        subtitle={attempt.simulationType}
+        subtitle={label(`ex.type.${attempt.simulationType}`, attempt.simulationType)}
         breadcrumb={<Link href={`/dashboard/exam-prep/${attempt.examProfileId}`}>{t['examPrep.title']}</Link>}
       />
 
@@ -47,16 +49,22 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
           tone={attempt.status === 'COMPLETED' ? 'good' : attempt.status === 'ABANDONED' ? 'neutral' : attempt.status === 'PAUSED' ? 'warn' : 'info'}
         />
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          {t['examPrep.attempt.timingMode']}: {attempt.timingMode}
+          {t['examPrep.attempt.timingMode']}: {label(`ex.timing.${attempt.timingMode}`, attempt.timingMode)}
         </span>
       </div>
 
       {attempt.status === 'COMPLETED' && scoreSummary && (
         <div className="card" style={{ padding: 'var(--space-4)' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{t['assignments.practice.score']}</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>
-            {scoreSummary.maxScore > 0 ? Math.round((scoreSummary.rawScore / scoreSummary.maxScore) * 100) : 0}%
-          </div>
+          {/* STUDENT E2E: nothing gradable (e.g. no equivalent concept yet) is "no score", never 0%. */}
+          {scoreSummary.maxScore > 0 ? (
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{Math.round((scoreSummary.rawScore / scoreSummary.maxScore) * 100)}%</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 28, fontWeight: 700 }} aria-hidden>—</div>
+              <p style={{ margin: 'var(--space-1) 0 0', fontSize: 14, color: 'var(--text-secondary)' }}>{t['examPrep.attempt.noGradedItems']}</p>
+            </>
+          )}
         </div>
       )}
 
