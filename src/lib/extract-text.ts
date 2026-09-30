@@ -28,13 +28,17 @@ function isImageMimeType(type: string): type is ImageMimeType {
  *
  * pdf-parse is imported dynamically so a load failure surfaces as a
  * normal caught error (a JSON response) instead of crashing the whole
- * route module.
+ * route module. It is imported from `pdf-parse/lib/pdf-parse.js`, never
+ * the package root: pdf-parse@1's index.js runs a debug self-test when
+ * `module.parent` is unset -- which it is under a dynamic ESM import --
+ * reading `./test/data/05-versions-space.pdf`, a file absent from the
+ * deployed bundle (ENOENT on every PDF in Preview).
  */
 export async function extractTextFromFile(file: File): Promise<string> {
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
   if (isPdf) {
-    const pdfParse = (await import('pdf-parse')).default;
+    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await pdfParse(buffer);
     return result.text;

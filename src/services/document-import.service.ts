@@ -119,7 +119,9 @@ export async function analyzeDocument(input: {
   let text: string;
   try {
     text = (await extractTextFromFile(file)) ?? '';
-  } catch {
+  } catch (err) {
+    // Operators need the cause; the Student only ever sees the recoverable code.
+    console.error('[import] text extraction failed:', err instanceof Error ? err.message : 'unknown');
     throw new ImportError('EXTRACTION_FAILED');
   }
   if (!text.trim()) throw new ImportError('EMPTY_FILE');
