@@ -25,8 +25,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyContentSourceAccess } from '@/lib/auth';
 import { extractConceptsFromSource, getSubjectConcepts } from '@/services/concept-extraction.service';
+import { db } from '@/lib/db';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 interface ExtractConceptsRequest {
@@ -37,10 +38,15 @@ interface ExtractConceptsRequest {
   sourceLanguage?: string;
 }
 
+async function sourceBelongsToSubject(sourceId: string, subjectId: string): Promise<boolean> {
+  const r = await db.query(`SELECT 1 FROM content_sources WHERE id = $1 AND subject_id = $2 LIMIT 1`, [sourceId, subjectId]).catch(() => ({ rows: [] }));
+  return r.rows.length > 0;
+}
+
 async function handlePOST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const authContext = await verifyAuth();
+    if (!authContext) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -60,7 +66,17 @@ async function handlePOST(request: NextRequest) {
       }
     }
 
-    // TODO: Verify authorization
+    // STUDENT E2E security: every client id is bound to the authenticated
+    // Student -- the student itself, the subject, and the uploaded source
+    // (which must also belong to that subject). 403 on any mismatch.
+    const owns =
+      (await verifyStudentAccess(authContext.userId, body.studentId, authContext.role)) &&
+      (await verifySubjectAccess(body.studentId, body.subjectId)) &&
+      (await verifyContentSourceAccess(body.studentId, body.sourceId)) &&
+      (await sourceBelongsToSubject(body.sourceId, body.subjectId));
+    if (!owns) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
 
     // Extract concepts from source
     const result = await extractConceptsFromSource(
@@ -90,7 +106,7 @@ async function handlePOST(request: NextRequest) {
   } catch (error) {
     console.error('Error extracting concepts:', error);
     return NextResponse.json(
-      { error: 'Failed to extract concepts', details: String(error) },
+      { error: 'Failed to extract concepts' },
       { status: 500 }
     );
   }

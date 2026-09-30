@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { createContentSource } from '@/services/content.service';
-import { requireStudentId } from '@/lib/auth';
+import { requireStudentId, verifySubjectAccess } from '@/lib/auth';
 import { extractTextFromFile } from '@/lib/extract-text';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -22,6 +22,10 @@ async function handlePOST(req: NextRequest) {
 
     if (!file || !subjectId) {
       return NextResponse.json({ error: 'Missing file or subjectId' }, { status: 400 });
+    }
+    // STUDENT E2E security: the subject must be the authenticated Student's own.
+    if (!(await verifySubjectAccess(studentId, subjectId))) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     }
 
     const extractedText = await extractTextFromFile(file);
@@ -47,7 +51,7 @@ async function handlePOST(req: NextRequest) {
     return NextResponse.json({ success: true, sourceId: source.id, extractedText });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 500 });
   }
 }
 

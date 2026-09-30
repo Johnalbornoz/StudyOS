@@ -9,14 +9,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function handleGET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const authContext = await verifyAuth();
+    if (!authContext) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -34,7 +34,10 @@ async function handleGET(request: NextRequest) {
       );
     }
 
-    // TODO: Verify that userId is authorized to view studentId's data
+    // STUDENT E2E security: only the Student themselves (or an authorized teacher/admin).
+    if (!(await verifyStudentAccess(authContext.userId, studentId, authContext.role))) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
 
     const debts = await getActiveDebts(studentId, subjectId || undefined);
 
@@ -48,7 +51,7 @@ async function handleGET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching active debts:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch debts', details: String(error) },
+      { error: 'Failed to fetch debts' },
       { status: 500 }
     );
   }

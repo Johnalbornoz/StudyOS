@@ -424,6 +424,68 @@ export async function verifyContentSourceAccess(
 }
 
 /**
+ * STUDENT E2E -- object-level ownership for the remaining Student-owned ids
+ * that routes accepted from the client without binding them to the
+ * authenticated Student. Same fail-closed contract as the helpers above:
+ * missing row, another Student's row, or any DB error => false.
+ */
+export async function verifyConceptAccess(studentId: string, conceptId: string, subjectId?: string | null): Promise<boolean> {
+  try {
+    const result = await db.query(
+      `SELECT 1 FROM concepts c JOIN subjects s ON s.id = c.subject_id
+       WHERE c.id = $1 AND s.student_id = $2 AND ($3::uuid IS NULL OR c.subject_id = $3::uuid)
+       LIMIT 1`,
+      [conceptId, studentId, subjectId ?? null]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error verifying concept access:', error);
+    return false;
+  }
+}
+
+/** Every concept id must belong to the Student (and to `subjectId` when given). */
+export async function verifyConceptsAccess(studentId: string, conceptIds: string[], subjectId?: string | null): Promise<boolean> {
+  const ids = [...new Set(conceptIds)];
+  if (ids.length === 0) return true;
+  try {
+    const result = await db.query(
+      `SELECT count(*)::int AS n FROM concepts c JOIN subjects s ON s.id = c.subject_id
+       WHERE c.id = ANY($1::uuid[]) AND s.student_id = $2 AND ($3::uuid IS NULL OR c.subject_id = $3::uuid)`,
+      [ids, studentId, subjectId ?? null]
+    );
+    return result.rows[0]?.n === ids.length;
+  } catch (error) {
+    console.error('Error verifying concepts access:', error);
+    return false;
+  }
+}
+
+export async function verifyDiagnosisAccess(studentId: string, diagnosisId: string): Promise<boolean> {
+  try {
+    const result = await db.query(`SELECT 1 FROM cognitive_diagnoses WHERE id = $1 AND student_id = $2 LIMIT 1`, [diagnosisId, studentId]);
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error verifying diagnosis access:', error);
+    return false;
+  }
+}
+
+export async function verifyRemediationStepAccess(studentId: string, stepId: string): Promise<boolean> {
+  try {
+    const result = await db.query(
+      `SELECT 1 FROM remediation_steps rs JOIN remediation_paths rp ON rp.id = rs.remediation_path_id
+       WHERE rs.id = $1 AND rp.student_id = $2 LIMIT 1`,
+      [stepId, studentId]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error verifying remediation step access:', error);
+    return false;
+  }
+}
+
+/**
  * Middleware helper for API routes
  *
  * Usage in route handlers:

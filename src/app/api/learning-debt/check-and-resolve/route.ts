@@ -20,7 +20,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { checkAndResolveDebt } from '@/services/learning-debt.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -34,8 +34,8 @@ interface CheckAndResolveRequest {
 
 async function handlePOST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const authContext = await verifyAuth();
+    if (!authContext) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -55,7 +55,11 @@ async function handlePOST(request: NextRequest) {
       }
     }
 
-    // TODO: Verify authorization
+    // STUDENT E2E security: a Student can only touch their OWN debts (the
+    // service's UPDATE is scoped by this verified studentId).
+    if (!(await verifyStudentAccess(authContext.userId, body.studentId, authContext.role))) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
 
     const resolved = await checkAndResolveDebt(
       body.studentId,
@@ -75,7 +79,7 @@ async function handlePOST(request: NextRequest) {
   } catch (error) {
     console.error('Error checking/resolving debt:', error);
     return NextResponse.json(
-      { error: 'Failed to check debt resolution', details: String(error) },
+      { error: 'Failed to check debt resolution' },
       { status: 500 }
     );
   }

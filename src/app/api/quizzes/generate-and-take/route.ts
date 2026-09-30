@@ -52,7 +52,7 @@ import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery
 import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
-import { verifyAuth, verifyStudentAccess, checkRateLimit, type UserRole } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyConceptsAccess, verifyDiagnosisAccess, verifyRemediationStepAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { db } from '@/lib/db';
@@ -389,6 +389,19 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
     }
     const authorizationMs = Date.now() - requestStartedAt;
+
+    // STUDENT E2E security: the subject and every concept id are bound to
+    // the authenticated Student before anything is generated, stored or
+    // retrieved (the generator's own reads are scoped by id only).
+    const subjectOwned = await verifySubjectAccess(validated.studentId, validated.subjectId);
+    const conceptsOwned = await verifyConceptsAccess(
+      validated.studentId,
+      [...(validated.conceptId ? [validated.conceptId] : []), ...(validated.conceptIds ?? [])],
+      validated.subjectId,
+    );
+    if (!subjectOwned || !conceptsOwned) {
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this subject or concept' }, { status: 403 });
+    }
 
     if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {
       return NextResponse.json(
@@ -1519,6 +1532,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         { error: 'QUIZ_NOT_FOUND', message: 'Quiz expired or not found. Generate a new quiz.' },
         { status: 400 }
       );
+    }
+    // STUDENT E2E security: a diagnosis / remediation step named by the
+    // client must be the authenticated Student's own -- otherwise this
+    // submit could resolve or advance another Student's record.
+    if (
+      (validated.diagnosisId && !(await verifyDiagnosisAccess(validated.studentId, validated.diagnosisId))) ||
+      (validated.remediationStepId && !(await verifyRemediationStepAccess(validated.studentId, validated.remediationStepId)))
+    ) {
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this record' }, { status: 403 });
     }
 
     // Phase 2B Step 10: defense-in-depth only -- the real, database-

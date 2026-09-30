@@ -27,7 +27,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess, checkRateLimit } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifyConceptAccess, checkRateLimit } from '@/lib/auth';
 import { updateMastery } from '@/services/mastery.service';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import { z } from 'zod';
@@ -107,6 +107,11 @@ async function handlePOST(request: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    // STUDENT E2E security: the concept must be this Student's, in this subject.
+    if (!(await verifyConceptAccess(validated.studentId, validated.conceptId, validated.subjectId))) {
+      return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this concept' }, { status: 403 });
     }
 
     // Create evidence object
