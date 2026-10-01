@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { StartAssignmentButton } from './StartAssignmentButton';
 import { db } from '@/lib/db';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 
 const TYPE_LABEL_KEY = {
   CONCEPT_REINFORCEMENT: 'teacher.interventions.type.concept',
@@ -46,6 +47,7 @@ export default async function AssignmentsPage() {
       ).catch(() => ({ rows: [] as any[] }))
     : { rows: [] as any[] };
   const topicById = new Map<string, string | null>(topicRows.rows.map((r: any) => [r.id, r.label]));
+  const now = Date.now();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -59,15 +61,19 @@ export default async function AssignmentsPage() {
             <li key={i.id} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="row-main">
-                  <div className="row-title">{topicById.get(i.id) || (t[TYPE_LABEL_KEY[i.interventionType as keyof typeof TYPE_LABEL_KEY]] ?? i.interventionType)}</div>
+                  <div className="row-title">{i.title || topicById.get(i.id) || (t[TYPE_LABEL_KEY[i.interventionType as keyof typeof TYPE_LABEL_KEY]] ?? i.interventionType)}</div>
+                  {i.title && topicById.get(i.id) && <div className="row-sub">{fillMessage(t['studentAssign.topic'], { topic: topicById.get(i.id) })}</div>}
                   {i.instructions && <div className="row-sub">{i.instructions}</div>}
+                  {i.startsAt && new Date(i.startsAt).getTime() > now && (
+                    <div className="row-sub">{fillMessage(t['studentAssign.availableFrom'], { date: new Date(i.startsAt).toLocaleDateString(locale) })}</div>
+                  )}
                   {i.dueAt && (
                     <div className="row-sub">{t['assignments.due']}: {new Date(i.dueAt).toLocaleDateString(locale)}</div>
                   )}
                 </div>
                 <StatusBadge label={t[`assignments.status.${i.effectiveStatus}`] ?? i.effectiveStatus} tone={toneForInterventionStatus(i.effectiveStatus)} />
               </div>
-              {(i.effectiveStatus === 'ASSIGNED' || i.effectiveStatus === 'IN_PROGRESS') && (
+              {(i.effectiveStatus === 'ASSIGNED' || i.effectiveStatus === 'IN_PROGRESS') && !(i.startsAt && new Date(i.startsAt).getTime() > now) && (
                 <StartAssignmentButton
                   interventionId={i.id}
                   targetType={i.targetType}

@@ -8,14 +8,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { requireStudentId } from '@/lib/auth';
-import { db } from '@/lib/db';
 import { respondToClassInvitation } from '@/services/institution.service';
 import { allUuids } from '@/lib/institution/route-guard';
-import { notifyUser } from '@/lib/notifications/role-notifications.service';
+import { notifyInviterOfResponse } from '@/lib/institution/class-invitations';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ accept: z.boolean() });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: enrollmentId } = await params;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -35,18 +35,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const result = await respondToClassInvitation(studentId, enrollmentId, parsed.data.accept);
   if (!result) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  if (result.invitedByUserId) {
-    const student = await db.query(`SELECT name, email FROM students WHERE id = $1`, [studentId]);
-    const studentName = student.rows[0]?.name || student.rows[0]?.email || '';
-    await notifyUser({
-      recipientUserId: result.invitedByUserId,
-      workspace: 'INSTITUTION',
-      type: parsed.data.accept ? 'CLASS_ENROLLMENT_ACCEPTED' : 'CLASS_ENROLLMENT_DECLINED',
-      title: parsed.data.accept ? 'Invitación aceptada' : 'Invitación rechazada',
-      message: parsed.data.accept ? `${studentName} se unió a ${result.className}.` : `${studentName} no aceptó unirse a ${result.className}.`,
-      payload: { studentName, className: result.className },
-      actionHref: `/dashboard/institution/${result.institutionId}/classes`,
-    });
-  }
+  await notifyInviterOfResponse(result, studentId, parsed.data.accept);
   return NextResponse.json({ success: true, data: { status: parsed.data.accept ? 'ACTIVE' : 'DECLINED' } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/student/class-invitations/[id]/respond', handlePOST);

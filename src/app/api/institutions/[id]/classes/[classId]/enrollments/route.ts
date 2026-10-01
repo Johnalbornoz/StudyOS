@@ -7,13 +7,14 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getClassInInstitution, inviteStudentToClass, listClassRosterForInstitution, getInstitutionById } from '@/services/institution.service';
+import { getClassInInstitution, listClassRosterForInstitution } from '@/services/institution.service';
 import { allUuids, requireInstitutionAdminActor, readJson } from '@/lib/institution/route-guard';
-import { notifyUser } from '@/lib/notifications/role-notifications.service';
+import { inviteToClassAndNotify } from '@/lib/institution/class-invitations';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ email: z.string().trim().email().max(320) });
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string; classId: string }> }) {
+async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string; classId: string }> }) {
   const { id: institutionId, classId } = await params;
   if (!allUuids(institutionId, classId)) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   const guard = await requireInstitutionAdminActor(institutionId, 'TEACHER_ASSIGNMENT_MANAGE');
@@ -22,7 +23,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ success: true, data: { roster: await listClassRosterForInstitution(institutionId, classId) } });
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; classId: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string; classId: string }> }) {
   const { id: institutionId, classId } = await params;
   if (!allUuids(institutionId, classId)) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   const guard = await requireInstitutionAdminActor(institutionId, 'TEACHER_ASSIGNMENT_MANAGE');
@@ -34,19 +35,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const klass = await getClassInInstitution(institutionId, classId);
   if (!klass) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const result = await inviteStudentToClass(institutionId, classId, parsed.data.email, guard.actor.id);
+  const result = await inviteToClassAndNotify(institutionId, klass, parsed.data.email, guard.actor.id);
   if (result.outcome === 'NO_STUDENT_ACCOUNT') return NextResponse.json({ error: 'NO_STUDENT_ACCOUNT' }, { status: 404 });
-  if (result.outcome === 'INVITED') {
-    const institution = await getInstitutionById(institutionId);
-    await notifyUser({
-      recipientUserId: result.studentUserId,
-      workspace: 'STUDENT',
-      type: 'CLASS_ENROLLMENT_INVITE',
-      title: 'Invitación a una clase',
-      message: `${institution?.name ?? ''} te invitó a la clase ${klass.name}. Acepta o rechaza en tus notificaciones.`,
-      payload: { institutionName: institution?.name ?? '', className: klass.name },
-      actionHref: '/dashboard/notifications',
-    });
-  }
   return NextResponse.json({ success: true, data: { outcome: result.outcome } }, { status: result.outcome === 'INVITED' ? 201 : 200 });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/institutions/[id]/classes/[classId]/enrollments', handleGET);
+export const POST = withAiRequestMetrics('POST /api/institutions/[id]/classes/[classId]/enrollments', handlePOST);

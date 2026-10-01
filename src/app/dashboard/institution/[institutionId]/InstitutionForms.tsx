@@ -21,8 +21,8 @@ function Feedback({ message }: { message: Msg }) {
   );
 }
 
-async function postJson(url: string, body: unknown): Promise<Response> {
-  return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+async function postJson(url: string, body: unknown, method: 'POST' | 'PATCH' = 'POST'): Promise<Response> {
+  return fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 }
 
 export function CreateGradeForm({ institutionId, labels }: { institutionId: string; labels: { name: string; submit: string; saved: string; error: string } }) {
@@ -61,15 +61,19 @@ export function CreateGradeForm({ institutionId, labels }: { institutionId: stri
 export function CreateClassForm({
   institutionId,
   grades,
+  subjects,
   labels,
 }: {
   institutionId: string;
   grades: Array<{ id: string; name: string }>;
-  labels: { title: string; name: string; grade: string; noGrade: string; submit: string; saved: string; error: string };
+  /** ACTIVE catalog subjects the class can be linked to. */
+  subjects: Array<{ id: string; name: string }>;
+  labels: { title: string; name: string; grade: string; noGrade: string; subject: string; noSubject: string; submit: string; saved: string; error: string };
 }) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? '');
+  const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Msg>(null);
   return (
@@ -80,7 +84,7 @@ export function CreateClassForm({
         e.preventDefault();
         if (!name.trim()) return;
         setBusy(true);
-        const res = await postJson(`/api/institutions/${institutionId}/classes`, { name: name.trim(), gradeId: gradeId || null });
+        const res = await postJson(`/api/institutions/${institutionId}/classes`, { name: name.trim(), gradeId: gradeId || null, canonicalSubjectId: subjectId || null });
         setMessage(res.ok ? { text: labels.saved } : { text: labels.error, error: true });
         setBusy(false);
         if (res.ok) {
@@ -101,8 +105,66 @@ export function CreateClassForm({
           </option>
         ))}
       </select>
+      <label htmlFor="class-subject">{labels.subject}</label>
+      <select id="class-subject" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+        <option value="">{labels.noSubject}</option>
+        {subjects.map((sub) => (
+          <option key={sub.id} value={sub.id}>
+            {sub.name}
+          </option>
+        ))}
+      </select>
       <div className="ta-actions">
         <button type="submit" className="btn btn-primary" disabled={busy || !name.trim()}>
+          {labels.submit}
+        </button>
+      </div>
+      <Feedback message={message} />
+    </form>
+  );
+}
+
+/** Link (or change) the catalog subject of one class. */
+export function SetClassSubjectForm({
+  institutionId,
+  classId,
+  currentSubjectId,
+  subjects,
+  labels,
+}: {
+  institutionId: string;
+  classId: string;
+  currentSubjectId: string | null;
+  subjects: Array<{ id: string; name: string }>;
+  labels: { label: string; submit: string; saved: string; error: string };
+}) {
+  const router = useRouter();
+  const [subjectId, setSubjectId] = useState(currentSubjectId ?? subjects[0]?.id ?? '');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<Msg>(null);
+  return (
+    <form
+      className="ta-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!subjectId) return;
+        setBusy(true);
+        const res = await postJson(`/api/institutions/${institutionId}/classes/${classId}`, { canonicalSubjectId: subjectId }, 'PATCH');
+        setMessage(res.ok ? { text: labels.saved } : { text: labels.error, error: true });
+        setBusy(false);
+        if (res.ok) router.refresh();
+      }}
+    >
+      <label htmlFor={`class-subject-${classId}`}>{labels.label}</label>
+      <div className="ta-row">
+        <select id={`class-subject-${classId}`} value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+          {subjects.map((sub) => (
+            <option key={sub.id} value={sub.id}>
+              {sub.name}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="btn btn-primary" disabled={busy || !subjectId || subjectId === currentSubjectId}>
           {labels.submit}
         </button>
       </div>
@@ -114,10 +176,13 @@ export function CreateClassForm({
 export function InviteStudentForm({
   institutionId,
   classId,
+  endpoint,
   labels,
 }: {
   institutionId: string;
   classId: string;
+  /** Defaults to the institution-admin route; the Teacher passes its own class-scoped route. */
+  endpoint?: string;
   labels: { label: string; body: string; submit: string; sent: string; noAccount: string; already: string; error: string };
 }) {
   const router = useRouter();
@@ -131,7 +196,7 @@ export function InviteStudentForm({
         e.preventDefault();
         if (!email.trim()) return;
         setBusy(true);
-        const res = await postJson(`/api/institutions/${institutionId}/classes/${classId}/enrollments`, { email: email.trim() });
+        const res = await postJson(endpoint ?? `/api/institutions/${institutionId}/classes/${classId}/enrollments`, { email: email.trim() });
         const body = await res.json().catch(() => ({}));
         if (res.status === 404 && body?.error === 'NO_STUDENT_ACCOUNT') setMessage({ text: labels.noAccount, error: true });
         else if (!res.ok) setMessage({ text: labels.error, error: true });
@@ -164,7 +229,7 @@ export function AssignTeacherForm({
   labels,
 }: {
   institutionId: string;
-  teachers: Array<{ membershipId: string; email: string | null }>;
+  teachers: Array<{ membershipId: string; email: string | null; name?: string | null }>;
   /** Selectable scopes (class or whole grade); omitted when `fixedScope` is given. */
   scopes?: Array<{ value: string; label: string }>;
   fixedScope?: { classId: string };
@@ -201,7 +266,7 @@ export function AssignTeacherForm({
         <select id={`assign-teacher-${fixedScope?.classId ?? 'any'}`} aria-label={labels.selectTeacher} value={membershipId} onChange={(e) => setMembershipId(e.target.value)}>
           {teachers.map((tch) => (
             <option key={tch.membershipId} value={tch.membershipId}>
-              {tch.email ?? tch.membershipId}
+              {tch.name && tch.email ? `${tch.name} · ${tch.email}` : (tch.name ?? tch.email ?? tch.membershipId)}
             </option>
           ))}
         </select>

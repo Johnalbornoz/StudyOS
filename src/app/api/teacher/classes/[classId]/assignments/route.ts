@@ -2,8 +2,11 @@
  * Track A -- /api/teacher/classes/[classId]/assignments
  * GET: the class's assignments with each learner's outcome, plus the
  *      catalog concepts that can be assigned to this class.
- * POST { canonicalConceptId, instructions?, dueAt? }: publish one class
- *      assignment (N per-learner interventions, one group).
+ * POST { canonicalConceptId, title?, instructions?, startsAt?, dueAt?, studentIds? }:
+ *      publish one class assignment (N per-learner interventions, one
+ *      group) to the whole class or to selected ACTIVE learners. The topic
+ *      must belong to the class's subject; invalid requests write nothing
+ *      (422 with the reason code).
  * The actor must TEACH this class (approved membership + active scope);
  * an institution admin, a pending teacher or another class's teacher gets
  * 403. Nothing here writes learning evidence or mastery.
@@ -20,11 +23,15 @@ import {
   publishClassAssignment,
   TeacherClassAccessDeniedError,
   NoLearnersToAssignError,
+  InvalidClassAssignmentError,
 } from '@/lib/teacher/class-assignment.service';
 
 const Schema = z.object({
   canonicalConceptId: z.string().uuid(),
+  title: z.string().trim().max(200).nullable().optional(),
   instructions: z.string().trim().max(500).nullable().optional(),
+  startsAt: z.string().datetime({ offset: true }).nullable().optional(),
+  studentIds: z.array(z.string().uuid()).max(500).nullable().optional(),
   dueAt: z
     .string()
     .datetime({ offset: true })
@@ -71,6 +78,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     if (error instanceof TeacherClassAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     if (error instanceof NoLearnersToAssignError) return NextResponse.json({ error: 'NO_LEARNERS_TO_ASSIGN' }, { status: 422 });
+    if (error instanceof InvalidClassAssignmentError) return NextResponse.json({ error: error.code }, { status: 422 });
     throw error;
   }
 }

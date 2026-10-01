@@ -112,6 +112,7 @@ describe('Class assignment publish (A3/A5)', () => {
   it('writes nothing when no learner has the topic', async () => {
     respond((sql) => {
       if (sql.includes('FROM (') && sql.includes('WHERE t.id = $2')) return { rows: [{ '?': 1 }] };
+      if (sql.includes('SELECT canonical_subject_id FROM classes')) return { rows: [{ canonical_subject_id: 'subj-1' }] };
       if (sql.includes('FROM canonical_concepts WHERE id')) return { rows: [{ id: 'cc1', name: 'Linear Equations' }] };
       if (sql.includes('FROM class_enrollments ce JOIN students s')) return { rows: [{ id: 's1', name: 'A', email: 'a@x', user_id: 'u1' }] };
       return undefined;
@@ -124,6 +125,7 @@ describe('Class assignment publish (A3/A5)', () => {
   it('one group, one per-learner row through the full chain, each learner\'s OWN concept; unmatched learners are reported, never guessed', async () => {
     respond((sql) => {
       if (sql.includes('FROM (') && sql.includes('WHERE t.id = $2')) return { rows: [{ '?': 1 }] };
+      if (sql.includes('SELECT canonical_subject_id FROM classes')) return { rows: [{ canonical_subject_id: 'subj-1' }] };
       if (sql.includes('FROM canonical_concepts WHERE id')) return { rows: [{ id: 'cc1', name: 'Linear Equations' }] };
       if (sql.includes('FROM class_enrollments ce JOIN students s')) return { rows: [{ id: 's1', name: 'A', email: 'a@x', user_id: 'u1' }, { id: 's2', name: 'B', email: 'b@x', user_id: 'u2' }] };
       if (sql.includes('SELECT institution_id FROM classes')) return { rows: [{ institution_id: 'inst-A' }] };

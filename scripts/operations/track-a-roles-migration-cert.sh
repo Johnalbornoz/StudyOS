@@ -106,4 +106,21 @@ echo "  OK -- documented rollback restores the prior schema"
 $PSQL -f "$TARGET_MIGRATION" >/dev/null
 echo "  OK -- re-apply after rollback succeeds"
 
+# --- 20261018_1100_track_a_teacher_e2e -----------------------------------
+TEACHER_MIGRATION="$MIGRATIONS_DIR/20261018_1100_track_a_teacher_e2e.sql"
+$PSQL -f "$TEACHER_MIGRATION" >/dev/null
+echo "  OK -- teacher-e2e migration idempotent"
+$PSQL -c "INSERT INTO canonical_subjects (id, name) VALUES ('66666666-6666-4666-8666-666666666666', 'Mathematics') ON CONFLICT DO NOTHING" >/dev/null 2>&1 || true
+$PSQL -c "UPDATE classes SET canonical_subject_id = (SELECT id FROM canonical_subjects LIMIT 1) WHERE id = '44444444-4444-4444-8444-444444444444'" >/dev/null
+echo "  OK -- class linked to a canonical subject"
+expect_reject "UPDATE classes SET canonical_subject_id = '99999999-9999-4999-8999-999999999999' WHERE id = '44444444-4444-4444-8444-444444444444'" "class linked to a non-existent subject"
+$PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='teacher_interventions' AND column_name IN ('title','starts_at')" | grep -qx 2 || fail "assignment title/starts_at missing"
+echo "  OK -- assignment title / starts_at present"
+TROLLBACK="$WORKDIR/rollback2.sql"
+{ echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$TEACHER_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$TROLLBACK"
+$PSQL -f "$TROLLBACK" >/dev/null
+$PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='classes' AND column_name='canonical_subject_id'" | grep -qx 0 || fail "teacher rollback incomplete"
+$PSQL -f "$TEACHER_MIGRATION" >/dev/null
+echo "  OK -- teacher-e2e rollback + re-apply"
+
 echo "=== Track A roles migration certification: ALL CHECKS PASSED ==="

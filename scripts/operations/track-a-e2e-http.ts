@@ -113,8 +113,8 @@ async function ids() {
   const classB = (await q1(`SELECT id FROM classes WHERE institution_id = $1 LIMIT 1`, [instB])).id;
   const gradeB = (await q1(`SELECT id FROM grades WHERE institution_id = $1 LIMIT 1`, [instB])).id;
   const teacherBMembership = (await q1(`SELECT id FROM institution_memberships WHERE institution_id = $1 AND user_id = $2`, [instB, users['teacher-b']])).id;
-  const canonical = (await q1(`SELECT id FROM canonical_concepts WHERE name = 'Linear Equations' AND status = 'ACTIVE' LIMIT 1`)).id;
-  return { users, students, instA, instB, classB, gradeB, teacherBMembership, canonical };
+  const canonicalRow = await q1(`SELECT id, canonical_subject_id FROM canonical_concepts WHERE name = 'Linear Equations' AND status = 'ACTIVE' LIMIT 1`);
+  return { users, students, instA, instB, classB, gradeB, teacherBMembership, canonical: canonicalRow.id as string, canonicalSubject: canonicalRow.canonical_subject_id as string };
 }
 
 /** Back to the provisioned state (re-runnable): Institution A empty, no parent links, no role edits from a previous run. */
@@ -264,7 +264,7 @@ async function main() {
   const grade = await post(`/api/institutions/${x.instA}/grades`, 'inst-a', { name: '10.º A' });
   check('A4.create-grade', grade.status === 201, grade.text.slice(0, 120));
   const gradeA = grade.body?.data?.grade?.id;
-  const klass = await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'Matemáticas 10A', gradeId: gradeA });
+  const klass = await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'Matemáticas 10A', gradeId: gradeA, canonicalSubjectId: x.canonicalSubject });
   check('A4.create-class', klass.status === 201, klass.text.slice(0, 120));
   const classA = klass.body?.data?.class?.id;
   check('SEC.class-under-foreign-grade', (await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'X', gradeId: x.gradeB })).status === 422);

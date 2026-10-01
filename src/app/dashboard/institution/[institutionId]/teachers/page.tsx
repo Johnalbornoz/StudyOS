@@ -45,7 +45,7 @@ export default async function InstitutionTeachersPage({ params }: { params: Prom
     listInstitutionGrades(institutionId),
   ]);
   const scopes = [
-    ...classes.map((c) => ({ value: `class:${c.id}`, label: fillMessage(t['inst.teachers.scopeClass'], { name: c.name }) })),
+    ...classes.map((c) => ({ value: `class:${c.id}`, label: fillMessage(t['inst.teachers.scopeClass'], { name: c.subjectName ? `${c.name} (${c.subjectName})` : c.name }) })),
     ...grades.map((g) => ({ value: `grade:${g.id}`, label: fillMessage(t['inst.teachers.scopeGrade'], { name: g.name }) })),
   ];
 
@@ -98,7 +98,7 @@ export default async function InstitutionTeachersPage({ params }: { params: Prom
               return (
                 <li key={teacher.membershipId} className="list-row" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
                   <div className="row-main" style={{ flexBasis: 240 }}>
-                    <div className="row-title" style={{ overflowWrap: 'anywhere' }}>{teacher.email ?? teacher.userId}</div>
+                    <div className="row-title" style={{ overflowWrap: 'anywhere' }}>{teacher.name && teacher.email ? `${teacher.name} · ${teacher.email}` : (teacher.name ?? teacher.email ?? teacher.userId)}</div>
                     {mine.length === 0 ? (
                       <div className="row-sub">{t['inst.teachers.noAssignments']}</div>
                     ) : (
@@ -120,7 +120,7 @@ export default async function InstitutionTeachersPage({ params }: { params: Prom
                     url={`/api/institutions/${institutionId}/memberships/${teacher.membershipId}/revoke`}
                     label={t['institution.teachers.revoke']}
                     errorLabel={t['inst.common.error']}
-                    confirmText={`${t['institution.teachers.revoke']}: ${teacher.email ?? ''}?`}
+                    confirmText={`${t['institution.teachers.revoke']}: ${teacher.name ?? teacher.email ?? ''}?`}
                   />
                 </li>
               );

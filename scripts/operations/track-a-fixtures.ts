@@ -4,6 +4,7 @@
  *
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts provision
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts tokens <outfile.json>
+ *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts teacher-reset
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts signin <tag>
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts cleanup
  *
@@ -141,7 +142,9 @@ async function provision() {
   let gradeB = (await db.query(`SELECT id FROM grades WHERE institution_id = $1 LIMIT 1`, [instB])).rows[0]?.id;
   if (!gradeB) gradeB = (await createGrade(instB, '9.º B')).id;
   let classB = (await db.query(`SELECT id FROM classes WHERE institution_id = $1 LIMIT 1`, [instB])).rows[0]?.id;
-  if (!classB) classB = (await createClass(instB, gradeB, 'Matemáticas 9B')).id;
+  const mathSubject = (await db.query(`SELECT canonical_subject_id FROM canonical_concepts WHERE name = $1 AND status = 'ACTIVE' LIMIT 1`, [CANONICAL_CONCEPT_NAME])).rows[0]?.canonical_subject_id ?? null;
+  if (!classB) classB = (await createClass(instB, gradeB, 'Matemáticas 9B', mathSubject)).id;
+  else await db.query(`UPDATE classes SET canonical_subject_id = COALESCE(canonical_subject_id, $2) WHERE id = $1`, [classB, mathSubject]);
   const tb = await requestTeacherMembership(instB, out['teacher-b'].userId);
   if (tb.status === 'PENDING') await decideMembership(tb.id, out['inst-b'].userId, 'APPROVED');
   const hasScope = await db.query(`SELECT 1 FROM teacher_assignments WHERE institution_membership_id = $1 AND status = 'ACTIVE'`, [tb.id]);
@@ -207,6 +210,59 @@ async function manualPrep() {
   await requestChildLink(parentProfile, emailFor('student-a'));
   await respondToRequest(studentA, parentProfile, true);
   console.log('manual-prep done: teacher-a PENDING at Institution A; parent-a accepted by student-a; student-a first-run complete');
+}
+
+/**
+ * Starting state of the Teacher E2E (automated and manual), DEV fixtures
+ * only: Teresa (teacher-a) has NO persona yet (she chooses Teacher in step
+ * 1); Institution A has no grade, class, teacher or enrollment; Ana (inst-a)
+ * is its admin; Sofía (student-a) has completed first-run and is outside
+ * every class of Institution A -- her own learning history is kept (it is
+ * produced only through the governed engine path, see
+ * track-a-teacher-e2e-http.ts --learner-data-only). Institution B (Tomás,
+ * Samuel, Matemáticas 9B) stays complete for the negative cases.
+ */
+async function teacherReset() {
+  assertDev();
+  const { upsertAcademicProfile } = await import('@/services/academic-profile.service');
+  const user = async (tag: Tag) => (await db.query(`SELECT id FROM users WHERE email = $1`, [emailFor(tag)])).rows[0]?.id as string;
+  const instA = (await db.query(`SELECT id FROM institutions WHERE name = $1`, [INST_A_NAME])).rows[0]?.id as string;
+  if (!instA) throw new Error('run provision first');
+  const fixtureUsers = (await db.query(`SELECT id FROM users WHERE email LIKE 'studyus-ta-%+clerk_test@example.com'`)).rows.map((r: any) => r.id);
+  const fixtureStudents = (await db.query(`SELECT s.id FROM students s WHERE s.user_id = ANY($1::uuid[])`, [fixtureUsers])).rows.map((r: any) => r.id);
+  const interventions = (await db.query(`SELECT id FROM teacher_interventions WHERE institution_id = $1`, [instA])).rows.map((r: any) => r.id);
+  await db.query(`DELETE FROM teacher_intervention_executions WHERE teacher_intervention_id = ANY($1::uuid[])`, [interventions]);
+  await db.query(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
+  await db.query(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = $1)`, [instA]);
+  await db.query(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = $1)`, [instA]);
+  await db.query(`DELETE FROM classes WHERE institution_id = $1`, [instA]);
+  await db.query(`DELETE FROM grades WHERE institution_id = $1`, [instA]);
+  await db.query(`DELETE FROM institution_memberships WHERE institution_id = $1 AND membership_role = 'TEACHER'`, [instA]);
+  await db.query(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [fixtureUsers, fixtureStudents]);
+  // Teresa: no persona at all (fixture identity reset -- she chooses Teacher herself in step 1).
+  const teresa = await user('teacher-a');
+  await db.query(`DELETE FROM user_roles WHERE user_id = $1 AND role IN ('STUDENT', 'PARENT', 'TEACHER')`, [teresa]);
+  await db.query(`UPDATE users SET active_workspace = NULL WHERE id = ANY($1::uuid[])`, [fixtureUsers]);
+  const sofia = (await db.query(`SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE u.email = $1`, [emailFor('student-a')])).rows[0].id;
+  await upsertAcademicProfile(sofia, { countryOfStudy: 'CO', schoolYear: '10', curriculumType: 'national', academicYear: '2026', profileCompleted: true } as any);
+  // Sofía practises on her own (a licensed Student capability): a 30-day,
+  // audited grant through the admin licensing service, attributed to the
+  // fixture holder of the STUDYUS_ADMIN capability (student-c), never to a
+  // real person.
+  const licensed = await db.query(
+    `SELECT 1 FROM subscriptions WHERE student_id = $1 AND status IN ('active', 'past_due', 'reactivated') AND (grant_expires_at IS NULL OR grant_expires_at > NOW())`,
+    [sofia]
+  );
+  if (licensed.rows.length === 0) {
+    const { grantAdminLicense } = await import('@/services/membership-admin.service');
+    await grantAdminLicense(await user('student-c'), {
+      studentId: sofia,
+      reason: 'TRACK_A_TEACHER_E2E_DEV_FIXTURE',
+      expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+      source: 'TRIAL',
+    });
+  }
+  console.log('teacher-reset done: Teresa without persona; Institution A empty; Sofía first-run complete, licensed (fixture grant) and outside every class');
 }
 
 /** A one-time sign-in ticket URL path for the browser (no password is ever used). */
@@ -313,7 +369,7 @@ async function cleanup() {
 
 if (process.argv[1]?.endsWith('track-a-fixtures.ts')) {
   const [cmd, arg] = process.argv.slice(2);
-  const run = cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | manual-prep | tokens <file> | signin <tag> | cleanup'));
+  const run = cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | manual-prep | tokens <file> | signin <tag> | cleanup'));
   run
     .catch((e) => {
       console.error(e instanceof Error ? e.message : e);

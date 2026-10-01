@@ -9,7 +9,11 @@
  * Placeholders use {name}; render them with `fillMessage`.
  */
 
-export type RolesMessageKey =
+import { TEACHER_E2E_MESSAGES, type TeacherE2EMessageKey } from './teacher-e2e-messages';
+
+export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey;
+
+type BaseRolesMessageKey =
   // account / multi-role
   | 'account.title' | 'account.subtitle' | 'account.firstTitle' | 'account.firstBody' | 'account.chooseNote' | 'account.choose'
   | 'account.goToWorkspace' | 'account.goToInstitution' | 'account.goToAdmin' | 'account.capabilitiesTitle'
@@ -84,7 +88,7 @@ export type RolesMessageKey =
   | 'notif.CLASS_ENROLLMENT_ACCEPTED' | 'notif.CLASS_ENROLLMENT_DECLINED' | 'notif.ASSIGNMENT_PUBLISHED'
   | 'notif.ROLE_ADDED' | 'notif.ROLE_REVOKED';
 
-type Catalog = Record<RolesMessageKey, string>;
+type Catalog = Record<BaseRolesMessageKey, string>;
 
 const es: Catalog = {
   'account.subtitle': 'Tu cuenta usa StudyUS como {persona}.',
@@ -1291,7 +1295,13 @@ const pt: Catalog = {
   'notif.ROLE_REVOKED': 'Um administrador retirou um papel da sua conta.',
 };
 
-export const ROLES_MESSAGES = { es, en, de, fr, pt } as const;
+export const ROLES_MESSAGES = {
+  es: { ...es, ...TEACHER_E2E_MESSAGES.es },
+  en: { ...en, ...TEACHER_E2E_MESSAGES.en },
+  de: { ...de, ...TEACHER_E2E_MESSAGES.de },
+  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr },
+  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt },
+} as const;
 
 /**
  * Replace {placeholders} with values; unknown placeholders are left empty,

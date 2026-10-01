@@ -99,6 +99,9 @@ export interface StudentTeacherIntervention {
   instructions: string | null;
   assignedAt: string;
   dueAt: string | null;
+  /** Track A: assignment title and the moment it becomes startable (null = immediately). */
+  title: string | null;
+  startsAt: string | null;
   storedStatus: TeacherInterventionStatus;
   effectiveStatus: TeacherInterventionStatus;
 }
@@ -116,6 +119,8 @@ function toStudentIntervention(row: any): StudentTeacherIntervention {
     instructions: row.instructions,
     assignedAt: row.assigned_at instanceof Date ? row.assigned_at.toISOString() : row.assigned_at,
     dueAt,
+    title: row.title ?? null,
+    startsAt: row.starts_at instanceof Date ? row.starts_at.toISOString() : (row.starts_at ?? null),
     storedStatus,
     effectiveStatus: getEffectiveStatus(storedStatus, dueAt),
   };
@@ -806,8 +811,14 @@ export async function startTeacherInterventionExecution(
   interventionId: string,
   idempotencyKey: string
 ): Promise<StartExecutionResult> {
-  const typeRow = await db.query(`SELECT intervention_type FROM teacher_interventions WHERE id = $1`, [interventionId]);
+  const typeRow = await db.query(`SELECT intervention_type, student_id, starts_at FROM teacher_interventions WHERE id = $1`, [interventionId]);
   if (typeRow.rows.length === 0) throw new StudentInterventionNotFoundError(interventionId);
+  // Track A: an assignment with a future start date is visible but not yet
+  // startable (owner check first, so a non-owner still gets ACCESS_DENIED).
+  const startsAt = typeRow.rows[0].starts_at;
+  if (startsAt && new Date(startsAt).getTime() > Date.now() && (await isOwner(actorUserId, typeRow.rows[0].student_id))) {
+    throw new StudentInterventionNotStartableError('intervention is not available yet (starts_at in the future)');
+  }
 
   if (typeRow.rows[0].intervention_type === 'SKILL_PRACTICE') {
     return startSkillReinforcementExecution(actorUserId, interventionId, idempotencyKey);

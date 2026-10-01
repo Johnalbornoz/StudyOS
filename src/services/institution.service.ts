@@ -296,18 +296,52 @@ export async function createGrade(institutionId: string, name: string): Promise<
 /**
  * Track A: a class's grade must belong to the SAME institution (guarded in
  * the INSERT itself). Throws SCOPE_OUTSIDE_INSTITUTION otherwise -- a class
- * can never be filed under another institution's grade.
+ * can never be filed under another institution's grade. The optional
+ * canonical subject must be an ACTIVE catalog subject (SUBJECT_NOT_AVAILABLE
+ * otherwise): it is what scopes the class's topics, assignments and the
+ * teacher's learner view.
  */
-export async function createClass(institutionId: string, gradeId: string | null, name: string): Promise<{ id: string; name: string }> {
+export async function createClass(
+  institutionId: string,
+  gradeId: string | null,
+  name: string,
+  canonicalSubjectId: string | null = null
+): Promise<{ id: string; name: string }> {
+  if (canonicalSubjectId && !(await isActiveCanonicalSubject(canonicalSubjectId))) throw new Error('SUBJECT_NOT_AVAILABLE');
   const result = await db.query(
-    `INSERT INTO classes (institution_id, grade_id, name)
-     SELECT $1::uuid, $2::uuid, $3
+    `INSERT INTO classes (institution_id, grade_id, name, canonical_subject_id)
+     SELECT $1::uuid, $2::uuid, $3, $4::uuid
      WHERE $2::uuid IS NULL OR EXISTS (SELECT 1 FROM grades g WHERE g.id = $2::uuid AND g.institution_id = $1::uuid)
      RETURNING id, name`,
-    [institutionId, gradeId, name]
+    [institutionId, gradeId, name, canonicalSubjectId]
   );
   if (result.rows.length === 0) throw new Error('SCOPE_OUTSIDE_INSTITUTION');
   return result.rows[0];
+}
+
+async function isActiveCanonicalSubject(canonicalSubjectId: string): Promise<boolean> {
+  const r = await db.query(`SELECT 1 FROM canonical_subjects WHERE id = $1 AND status = 'ACTIVE'`, [canonicalSubjectId]);
+  return r.rows.length > 0;
+}
+
+/** ACTIVE catalog subjects an Institution Admin can link a class to (the catalog itself is StudyUS-owned; nobody here creates one). */
+export async function listLinkableSubjects(): Promise<Array<{ id: string; name: string }>> {
+  const r = await db.query(`SELECT id, name FROM canonical_subjects WHERE status = 'ACTIVE' ORDER BY name`);
+  return r.rows.map((row: any) => ({ id: row.id, name: row.name }));
+}
+
+/**
+ * Link (or re-link) a class of THIS institution to one ACTIVE catalog
+ * subject. Scoped by institution in the UPDATE itself: a class id from
+ * another institution matches nothing (false).
+ */
+export async function setClassSubject(institutionId: string, classId: string, canonicalSubjectId: string): Promise<boolean> {
+  if (!(await isActiveCanonicalSubject(canonicalSubjectId))) throw new Error('SUBJECT_NOT_AVAILABLE');
+  const r = await db.query(
+    `UPDATE classes SET canonical_subject_id = $3 WHERE id = $1 AND institution_id = $2 RETURNING id`,
+    [classId, institutionId, canonicalSubjectId]
+  );
+  return (r.rowCount ?? 0) > 0;
 }
 
 export async function enrollStudent(classId: string, studentId: string): Promise<void> {
@@ -426,9 +460,11 @@ export interface InstitutionClassRow {
   name: string;
   gradeId: string | null;
   gradeName: string | null;
+  subjectId: string | null;
+  subjectName: string | null;
   activeEnrollmentCount: number;
   pendingEnrollmentCount: number;
-  teachers: Array<{ assignmentId: string; userId: string; email: string | null }>;
+  teachers: Array<{ assignmentId: string; userId: string; email: string | null; name: string | null }>;
 }
 
 export async function getInstitutionById(institutionId: string): Promise<Institution | null> {
@@ -444,7 +480,7 @@ export async function listInstitutionGrades(institutionId: string): Promise<Inst
 export async function listInstitutionClassesWithStaff(institutionId: string): Promise<InstitutionClassRow[]> {
   const r = await db.query(
     `
-    SELECT c.id, c.name, c.grade_id, g.name AS grade_name,
+    SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count,
       COALESCE((
@@ -457,30 +493,44 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
       ), '[]'::json) AS teachers
     FROM classes c
     LEFT JOIN grades g ON g.id = c.grade_id
+    LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id
     WHERE c.institution_id = $1
     ORDER BY g.name NULLS LAST, c.name
     `,
     [institutionId]
   );
+  const identities = await resolveDisplayIdentities(r.rows.flatMap((row: any) => (row.teachers ?? []).map((tch: any) => tch.userId)));
   return r.rows.map((row: any) => ({
     id: row.id,
     name: row.name,
     gradeId: row.grade_id,
     gradeName: row.grade_name,
+    subjectId: row.canonical_subject_id,
+    subjectName: row.subject_name,
     activeEnrollmentCount: row.active_count,
     pendingEnrollmentCount: row.pending_count,
-    teachers: row.teachers ?? [],
+    teachers: (row.teachers ?? []).map((tch: any) => ({
+      ...tch,
+      email: identities.get(tch.userId)?.email ?? tch.email,
+      name: identities.get(tch.userId)?.name ?? null,
+    })),
   }));
 }
 
 /** Approved TEACHER memberships of one institution, with the teacher's email (never a raw id in the UI). */
-export async function listApprovedTeachers(institutionId: string): Promise<Array<{ membershipId: string; userId: string; email: string | null }>> {
+export async function listApprovedTeachers(institutionId: string): Promise<Array<{ membershipId: string; userId: string; email: string | null; name: string | null }>> {
   const r = await db.query(
     `SELECT im.id, im.user_id, u.email FROM institution_memberships im JOIN users u ON u.id = im.user_id
      WHERE im.institution_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED' ORDER BY u.email`,
     [institutionId]
   );
-  return r.rows.map((row: any) => ({ membershipId: row.id, userId: row.user_id, email: row.email }));
+  const identities = await resolveDisplayIdentities(r.rows.map((row: any) => row.user_id));
+  return r.rows.map((row: any) => ({
+    membershipId: row.id,
+    userId: row.user_id,
+    email: identities.get(row.user_id)?.email ?? row.email,
+    name: identities.get(row.user_id)?.name ?? null,
+  }));
 }
 
 /**
@@ -504,14 +554,26 @@ export async function listPendingMembershipsWithEmail(institutionId: string): Pr
   }));
 }
 
-export async function getClassInInstitution(institutionId: string, classId: string): Promise<{ id: string; name: string; gradeId: string | null; gradeName: string | null } | null> {
+export interface InstitutionClassSummary {
+  id: string;
+  name: string;
+  gradeId: string | null;
+  gradeName: string | null;
+  subjectId: string | null;
+  subjectName: string | null;
+}
+
+export async function getClassInInstitution(institutionId: string, classId: string): Promise<InstitutionClassSummary | null> {
   const r = await db.query(
-    `SELECT c.id, c.name, c.grade_id, g.name AS grade_name FROM classes c LEFT JOIN grades g ON g.id = c.grade_id
+    `SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name
+     FROM classes c LEFT JOIN grades g ON g.id = c.grade_id LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id
      WHERE c.id = $1 AND c.institution_id = $2`,
     [classId, institutionId]
   );
   const row = r.rows[0];
-  return row ? { id: row.id, name: row.name, gradeId: row.grade_id, gradeName: row.grade_name } : null;
+  return row
+    ? { id: row.id, name: row.name, gradeId: row.grade_id, gradeName: row.grade_name, subjectId: row.canonical_subject_id, subjectName: row.subject_name }
+    : null;
 }
 
 export interface ClassRosterEntry {
@@ -656,16 +718,16 @@ export async function respondToClassInvitation(
   studentId: string,
   enrollmentId: string,
   accept: boolean
-): Promise<{ invitedByUserId: string | null; institutionId: string; className: string } | null> {
+): Promise<{ invitedByUserId: string | null; institutionId: string; classId: string; className: string } | null> {
   const r = await db.query(
     `UPDATE class_enrollments ce SET status = $3, responded_at = NOW()
      FROM classes c
      WHERE ce.id = $1 AND ce.student_id = $2 AND ce.status = 'PENDING' AND c.id = ce.class_id
-     RETURNING ce.invited_by_user_id, c.institution_id, c.name`,
+     RETURNING ce.invited_by_user_id, c.institution_id, c.id AS class_id, c.name`,
     [enrollmentId, studentId, accept ? 'ACTIVE' : 'DECLINED']
   );
   const row = r.rows[0];
-  return row ? { invitedByUserId: row.invited_by_user_id, institutionId: row.institution_id, className: row.name } : null;
+  return row ? { invitedByUserId: row.invited_by_user_id, institutionId: row.institution_id, classId: row.class_id, className: row.name } : null;
 }
 
 /** ACTIVE teacher scopes of one institution, for the admin's class staffing view. */

@@ -63,6 +63,66 @@ async function requireTeacherOfClass(actorUserId: string, classId: string): Prom
   if (!(await isTeacherOfClass(actorUserId, classId))) throw new TeacherClassAccessDeniedError(classId);
 }
 
+export interface TeacherClassContext {
+  id: string;
+  name: string;
+  institutionId: string;
+  institutionName: string;
+  gradeName: string | null;
+  /** The class's canonical subject (set by the Institution Admin); null until linked. */
+  subjectId: string | null;
+  subjectName: string | null;
+}
+
+/** The class as its Teacher sees it -- null when the actor does not teach it (callers answer 403/404, never a hint). */
+export async function getTeacherClass(actorUserId: string, classId: string): Promise<TeacherClassContext | null> {
+  if (!(await isTeacherOfClass(actorUserId, classId))) return null;
+  const r = await db.query(
+    `SELECT c.id, c.name, c.institution_id, i.name AS institution_name, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name
+     FROM classes c JOIN institutions i ON i.id = c.institution_id
+     LEFT JOIN grades g ON g.id = c.grade_id LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id
+     WHERE c.id = $1`,
+    [classId]
+  );
+  const row = r.rows[0];
+  return row
+    ? {
+        id: row.id,
+        name: row.name,
+        institutionId: row.institution_id,
+        institutionName: row.institution_name,
+        gradeName: row.grade_name,
+        subjectId: row.canonical_subject_id,
+        subjectName: row.subject_name,
+      }
+    : null;
+}
+
+/** Every class the actor teaches, with its context (Teacher home). */
+export async function listTeacherClasses(actorUserId: string): Promise<Array<TeacherClassContext & { activeLearners: number; pendingInvitations: number }>> {
+  const r = await db.query(
+    `SELECT c.id, c.name, c.institution_id, i.name AS institution_name, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name,
+       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
+       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count
+     FROM classes c JOIN institutions i ON i.id = c.institution_id
+     LEFT JOIN grades g ON g.id = c.grade_id LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id
+     WHERE c.id IN (${TEACHER_CLASS_SQL}) AND i.status = 'ACTIVE'
+     ORDER BY i.name, g.name NULLS LAST, c.name`,
+    [actorUserId]
+  );
+  return r.rows.map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    institutionId: row.institution_id,
+    institutionName: row.institution_name,
+    gradeName: row.grade_name,
+    subjectId: row.canonical_subject_id,
+    subjectName: row.subject_name,
+    activeLearners: row.active_count,
+    pendingInvitations: row.pending_count,
+  }));
+}
+
 export interface AssignableCanonicalConcept {
   canonicalConceptId: string;
   name: string;
@@ -70,39 +130,55 @@ export interface AssignableCanonicalConcept {
 }
 
 /**
- * Catalog concepts at least one ACTIVE learner of this class has a MATCHED
- * mapping for (only those can actually be practised), with the count.
+ * The topics a Teacher can assign in this class: the ACTIVE catalog
+ * concepts of the class's OWN canonical subject (the Teacher never picks
+ * content outside it), each with how many ACTIVE learners have a MATCHED
+ * concept for it (only those learners can actually practise it). A class
+ * without a linked subject offers no topics (`subjectLinked: false`).
  */
-export async function listAssignableConceptsForClass(actorUserId: string, classId: string): Promise<{ concepts: AssignableCanonicalConcept[]; activeLearners: number }> {
+export async function listAssignableConceptsForClass(
+  actorUserId: string,
+  classId: string
+): Promise<{ concepts: AssignableCanonicalConcept[]; activeLearners: number; subjectLinked: boolean }> {
   await requireTeacherOfClass(actorUserId, classId);
-  const [concepts, learners] = await Promise.all([
+  const [concepts, learners, klass] = await Promise.all([
     db.query(
       `
-      SELECT cc.id, cc.name, COUNT(DISTINCT ce.student_id)::int AS matched
-      FROM class_enrollments ce
-      JOIN subjects s ON s.student_id = ce.student_id
-      JOIN concepts c ON c.subject_id = s.id
-      JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = c.id AND ccm.status = 'MATCHED'
-      JOIN canonical_concepts cc ON cc.id = ccm.canonical_concept_id AND cc.status = 'ACTIVE'
-      WHERE ce.class_id = $1 AND ce.status = 'ACTIVE'
-      GROUP BY cc.id, cc.name
+      SELECT cc.id, cc.name,
+        (SELECT COUNT(DISTINCT ce.student_id)::int
+         FROM class_enrollments ce
+         JOIN subjects s ON s.student_id = ce.student_id
+         JOIN concepts c ON c.subject_id = s.id
+         JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = c.id AND ccm.status = 'MATCHED' AND ccm.canonical_concept_id = cc.id
+         WHERE ce.class_id = $1 AND ce.status = 'ACTIVE') AS matched
+      FROM classes k
+      JOIN canonical_concepts cc ON cc.canonical_subject_id = k.canonical_subject_id AND cc.status = 'ACTIVE'
+      WHERE k.id = $1
       ORDER BY cc.name
       `,
       [classId]
     ),
     db.query(`SELECT COUNT(*)::int AS n FROM class_enrollments WHERE class_id = $1 AND status = 'ACTIVE'`, [classId]),
+    db.query(`SELECT canonical_subject_id FROM classes WHERE id = $1`, [classId]),
   ]);
   return {
     concepts: concepts.rows.map((r: any) => ({ canonicalConceptId: r.id, name: r.name, matchedLearners: r.matched })),
     activeLearners: learners.rows[0]?.n ?? 0,
+    subjectLinked: Boolean(klass.rows[0]?.canonical_subject_id),
   };
 }
 
 export interface PublishClassAssignmentInput {
   classId: string;
   canonicalConceptId: string;
+  /** Shown to learner and teacher; defaults to the topic name. */
+  title?: string | null;
   instructions?: string | null;
+  /** From when the learner can start it (default: now). */
+  startsAt?: string | null;
   dueAt?: string | null;
+  /** Selected learners (student ids). Omitted / empty = the whole class (every ACTIVE learner). */
+  studentIds?: string[] | null;
 }
 
 export interface PublishClassAssignmentResult {
@@ -119,6 +195,20 @@ export class NoLearnersToAssignError extends Error {
 }
 
 /**
+ * The assignment request itself is invalid -- nothing is written:
+ *  - CLASS_SUBJECT_REQUIRED: the class has no linked subject yet;
+ *  - CONCEPT_NOT_IN_CLASS_SUBJECT: the topic is not an ACTIVE concept of the class's subject;
+ *  - RECIPIENT_NOT_IN_CLASS: a selected learner is not ACTIVE in this class;
+ *  - INVALID_DATES: due date not after the start date.
+ */
+export class InvalidClassAssignmentError extends Error {
+  constructor(public readonly code: 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES') {
+    super(code);
+    this.name = 'InvalidClassAssignmentError';
+  }
+}
+
+/**
  * Publish one class assignment. Every per-learner row goes through
  * `assignTeacherIntervention` (class access + ACTIVE enrollment + genuine
  * teacher relationship, per learner). Nothing is written when no learner
@@ -127,15 +217,33 @@ export class NoLearnersToAssignError extends Error {
 export async function publishClassAssignment(actorUserId: string, input: PublishClassAssignmentInput): Promise<PublishClassAssignmentResult> {
   await requireTeacherOfClass(actorUserId, input.classId);
 
-  const canonical = await db.query(`SELECT id, name FROM canonical_concepts WHERE id = $1 AND status = 'ACTIVE'`, [input.canonicalConceptId]);
-  if (canonical.rows.length === 0) throw new NoLearnersToAssignError();
+  const klass = await db.query(`SELECT canonical_subject_id FROM classes WHERE id = $1`, [input.classId]);
+  const classSubjectId: string | null = klass.rows[0]?.canonical_subject_id ?? null;
+  if (!classSubjectId) throw new InvalidClassAssignmentError('CLASS_SUBJECT_REQUIRED');
+  const canonical = await db.query(
+    `SELECT id, name FROM canonical_concepts WHERE id = $1 AND status = 'ACTIVE' AND canonical_subject_id = $2`,
+    [input.canonicalConceptId, classSubjectId]
+  );
+  if (canonical.rows.length === 0) throw new InvalidClassAssignmentError('CONCEPT_NOT_IN_CLASS_SUBJECT');
   const conceptName: string = canonical.rows[0].name;
+  const title = input.title?.trim() || conceptName;
+  if (input.startsAt && input.dueAt && new Date(input.dueAt).getTime() <= new Date(input.startsAt).getTime()) {
+    throw new InvalidClassAssignmentError('INVALID_DATES');
+  }
 
   const learners = await db.query(
     `SELECT s.id, s.name, s.email, s.user_id FROM class_enrollments ce JOIN students s ON s.id = ce.student_id
      WHERE ce.class_id = $1 AND ce.status = 'ACTIVE' ORDER BY s.name NULLS LAST, s.email`,
     [input.classId]
   );
+  const selected = [...new Set(input.studentIds ?? [])];
+  if (selected.length > 0) {
+    // Every selected learner must be ACTIVE in THIS class -- otherwise the
+    // whole request is refused (0 writes), never silently narrowed.
+    const active = new Set(learners.rows.map((l: any) => l.id));
+    if (selected.some((id) => !active.has(id))) throw new InvalidClassAssignmentError('RECIPIENT_NOT_IN_CLASS');
+    learners.rows = learners.rows.filter((l: any) => selected.includes(l.id));
+  }
 
   const plan: Array<{ studentId: string; userId: string | null; conceptId: string }> = [];
   const skipped: PublishClassAssignmentResult['skipped'] = [];
@@ -160,6 +268,8 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
         target: { targetType: 'CONCEPT', conceptId: p.conceptId },
         instructions: input.instructions ?? undefined,
         dueAt: input.dueAt ?? undefined,
+        startsAt: input.startsAt ?? undefined,
+        title,
         assignmentGroupId,
       });
       assigned.push({ studentId: p.studentId, interventionId: intervention.id });
@@ -169,8 +279,8 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
           workspace: 'STUDENT',
           type: 'ASSIGNMENT_PUBLISHED',
           title: 'Nueva tarea asignada',
-          message: `Tu docente te asignó practicar: ${conceptName}.`,
-          payload: { conceptName },
+          message: `Tu docente te asignó: ${title} (${conceptName}).`,
+          payload: { conceptName, title },
           actionHref: '/dashboard/assignments',
         });
       }
@@ -199,8 +309,11 @@ export interface LearnerAssignmentOutcome {
 export interface ClassAssignmentView {
   assignmentGroupId: string;
   title: string;
+  /** The catalog topic (concept) the assignment practises. */
+  conceptName: string;
   instructions: string | null;
   assignedAt: string;
+  startsAt: string | null;
   dueAt: string | null;
   counts: Record<TeacherInterventionStatus, number>;
   learners: LearnerAssignmentOutcome[];
@@ -234,6 +347,7 @@ export async function listClassAssignments(actorUserId: string, classId: string)
   const rows = await db.query(
     `
     SELECT ti.id, ti.assignment_group_id, ti.student_id, ti.status, ti.due_at, ti.assigned_at, ti.instructions, ti.target_type,
+           ti.title AS assignment_title, ti.starts_at,
            COALESCE(cc.name, ccl.label, ti.intervention_type) AS title,
            s.name AS student_name, s.email AS student_email,
            tie.execution_type, tie.execution_reference, tie.completed_at
@@ -277,9 +391,11 @@ export async function listClassAssignments(actorUserId: string, classId: string)
     if (!view) {
       view = {
         assignmentGroupId: key,
-        title: r.title,
+        title: r.assignment_title || r.title,
+        conceptName: r.title,
         instructions: r.instructions,
         assignedAt: iso(r.assigned_at)!,
+        startsAt: iso(r.starts_at),
         dueAt: iso(r.due_at),
         counts: { ASSIGNED: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0, EXPIRED: 0 },
         learners: [],

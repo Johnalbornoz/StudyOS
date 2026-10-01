@@ -30,6 +30,16 @@ const ROLE_MODULES = [
   'src/app/api/institutions/[id]/classes/[classId]/enrollments/[enrollmentId]/end/route.ts',
   'src/app/api/student/class-invitations/[id]/respond/route.ts',
   'src/app/api/notifications/inbox/route.ts',
+  // Teacher E2E readiness
+  'src/lib/teacher/learner-view.service.ts',
+  'src/lib/institution/class-invitations.ts',
+  'src/app/api/teacher/classes/[classId]/enrollments/route.ts',
+  'src/app/api/teacher/classes/[classId]/enrollments/[enrollmentId]/end/route.ts',
+  'src/app/api/teacher/classes/[classId]/students/[studentId]/route.ts',
+  'src/app/api/teacher/classes/[classId]/attention/route.ts',
+  'src/app/api/institutions/[id]/classes/[classId]/route.ts',
+  'src/app/dashboard/teacher/classes/[classId]/page.tsx',
+  'src/app/dashboard/teacher/classes/[classId]/students/[studentId]/page.tsx',
 ];
 
 const COGNITIVE_TABLES = [
@@ -161,5 +171,34 @@ describe('Single primary persona (Track A product amendment)', () => {
     const svc = strip(read('src/services/user-admin.service.ts'));
     expect(svc).toMatch(/role IN \('STUDENT', 'PARENT', 'TEACHER'\) AND role <> \$2 AND status = 'ACTIVE'/);
     expect(svc).toMatch(/throw new PersonaExistsError\(\)/);
+  });
+});
+
+describe('Teacher learner view stays a read-only projection of the canonical read models', () => {
+  const view = strip(read('src/lib/teacher/learner-view.service.ts'));
+  const pages = ['src/app/dashboard/teacher/classes/[classId]/page.tsx', 'src/app/dashboard/teacher/classes/[classId]/students/[studentId]/page.tsx'].map((f) => strip(read(f)));
+
+  it('uses the ONE canonical decision authority and never a read path with hidden writes', () => {
+    expect(view).toMatch(/getCanonicalPedagogicalDecision\(/);
+    for (const src of [view, ...pages]) {
+      expect(src).not.toMatch(/\b(getActiveDebts|getLearningDecisions|getLearningOSSnapshot|getSubjectHierarchy|getTeachingIntent\w*|getBestLearningDecisionForConcept|loadConceptNextChallenge|recordStudentMisconception|recalculateConceptKnowledgeState|ensureConceptLocalizations|getUpcomingForStudent)\(/);
+      expect(src).not.toMatch(/\b(INSERT INTO|DELETE FROM)\b|\bUPDATE\s+\w+\s+SET\b/);
+    }
+  });
+
+  it('never reads Tutor conversations, parent data or billing', () => {
+    for (const src of [view, ...pages]) {
+      expect(src).not.toMatch(/tutor_|chat_messages|conversations|parent_student_relationships|profiles\b|subscriptions|billing|stripe|entitlement/i);
+    }
+  });
+
+  it('every learner read is gated by teaching THIS class + ACTIVE enrollment + the teacher relationship', () => {
+    expect(view).toMatch(/getTeacherClass\(actorUserId, classId\)/);
+    expect(view).toMatch(/status = 'ACTIVE'/);
+    expect(view).toMatch(/canTeacherAccessLearner\(actorUserId, studentId\)/);
+  });
+
+  it('the Teacher cannot edit phases, mastery or evidence from the UI (no such control or route)', () => {
+    for (const src of pages) expect(src).not.toMatch(/\/api\/(mastery|evidence|learning-state|knowledge)/);
   });
 });

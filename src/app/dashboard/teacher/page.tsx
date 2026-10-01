@@ -1,12 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '@/lib/db';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
-import { getTeacherAssignedClasses } from '@/lib/teacher/read-model.service';
+import { listTeacherClasses } from '@/lib/teacher/class-assignment.service';
 import { getMyTeacherMemberships, listActiveInstitutions } from '@/services/institution.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -29,18 +28,10 @@ export default async function TeacherHomePage() {
   const t = getMessages(locale);
 
   const [classes, memberships, institutions] = await Promise.all([
-    getTeacherAssignedClasses(actor.id),
+    listTeacherClasses(actor.id),
     getMyTeacherMemberships(actor.id),
     listActiveInstitutions(),
   ]);
-  const counts = classes.length
-    ? await db.query(
-        `SELECT class_id, COUNT(*)::int AS n FROM class_enrollments WHERE class_id = ANY($1::uuid[]) AND status = 'ACTIVE' GROUP BY class_id`,
-        [classes.map((c) => c.classId)]
-      )
-    : { rows: [] as any[] };
-  const countByClass = new Map<string, number>(counts.rows.map((r: any) => [r.class_id, r.n]));
-
   const pending = memberships.filter((m) => m.status === 'PENDING');
   const approved = memberships.some((m) => m.status === 'APPROVED');
 
@@ -65,13 +56,20 @@ export default async function TeacherHomePage() {
         ) : (
           <ul className="list-card card" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {classes.map((c) => (
-              <li key={c.classId} className="list-row">
-                <div className="row-main">
-                  <Link href={`/dashboard/teacher/classes/${c.classId}`} className="row-title">
-                    {c.name}
+              <li key={c.id} className="list-row" style={{ flexWrap: 'wrap' }}>
+                <div className="row-main" style={{ flexBasis: 220 }}>
+                  <Link href={`/dashboard/teacher/classes/${c.id}`} className="row-title">
+                    {c.subjectName ? `${c.name} · ${c.subjectName}` : c.name}
                   </Link>
-                  <div className="row-sub">{fillMessage(t['teacherHome.studentsCount'], { n: countByClass.get(c.classId) ?? 0 })}</div>
+                  <div className="row-sub">{[c.institutionName, c.gradeName].filter(Boolean).join(' · ')}</div>
+                  <div className="row-sub">
+                    {fillMessage(t['teacherHome.studentsCount'], { n: c.activeLearners })}
+                    {c.pendingInvitations > 0 ? ` · ${fillMessage(t['tc.pendingInvitations'], { n: c.pendingInvitations })}` : ''}
+                  </div>
                 </div>
+                <Link href={`/dashboard/teacher/classes/${c.id}`} className="btn btn-secondary">
+                  {t['tc.openClass']}
+                </Link>
               </li>
             ))}
           </ul>

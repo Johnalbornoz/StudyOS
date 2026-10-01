@@ -76,6 +76,10 @@ export interface AssignTeacherInterventionParams {
   dueAt?: string;
   /** Track A: groups the per-learner rows of one class-level assignment. */
   assignmentGroupId?: string;
+  /** Track A: the assignment's title (shown to learner and teacher). */
+  title?: string;
+  /** Track A: the learner can start it from this moment on (default: immediately). */
+  startsAt?: string;
 }
 
 export interface TeacherIntervention {
@@ -97,6 +101,8 @@ export interface TeacherIntervention {
   instructions: string | null;
   assignedAt: string;
   dueAt: string | null;
+  title: string | null;
+  startsAt: string | null;
   status: TeacherInterventionStatus;
   cancelledAt: string | null;
   cancelledByUserId: string | null;
@@ -123,6 +129,8 @@ function toIntervention(row: any): TeacherIntervention {
     instructions: row.instructions,
     assignedAt: row.assigned_at instanceof Date ? row.assigned_at.toISOString() : row.assigned_at,
     dueAt: row.due_at instanceof Date ? row.due_at.toISOString() : row.due_at,
+    title: row.title ?? null,
+    startsAt: row.starts_at instanceof Date ? row.starts_at.toISOString() : (row.starts_at ?? null),
     status: row.status,
     cancelledAt: row.cancelled_at instanceof Date ? row.cancelled_at.toISOString() : row.cancelled_at,
     cancelledByUserId: row.cancelled_by_user_id,
@@ -225,8 +233,8 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         assigned_by_user_id, institution_id, class_id, student_id,
         target_type, concept_id, skill_id, competency_id, learning_objective_id,
         exam_profile_id, simulation_type, academic_subject_id,
-        intervention_type, reason, instructions, due_at, assignment_group_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *
       `,
       [
@@ -247,6 +255,8 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         params.instructions ?? null,
         params.dueAt ?? null,
         params.assignmentGroupId ?? null,
+        params.title ?? null,
+        params.startsAt ?? null,
       ]
     );
     return toIntervention(result.rows[0]);

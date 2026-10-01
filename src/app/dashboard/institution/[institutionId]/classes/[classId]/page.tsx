@@ -10,10 +10,11 @@ import {
   listClassRosterForInstitution,
   listInstitutionClassesWithStaff,
   listApprovedTeachers,
+  listLinkableSubjects,
 } from '@/services/institution.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { InviteStudentForm, AssignTeacherForm, PostActionButton } from '../../InstitutionForms';
+import { InviteStudentForm, AssignTeacherForm, PostActionButton, SetClassSubjectForm } from '../../InstitutionForms';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,10 +45,11 @@ export default async function InstitutionClassPage({ params }: { params: Promise
   const klass = await getClassInInstitution(institutionId, classId);
   if (!klass) notFound();
 
-  const [roster, classes, teachers] = await Promise.all([
+  const [roster, classes, teachers, subjects] = await Promise.all([
     listClassRosterForInstitution(institutionId, classId),
     listInstitutionClassesWithStaff(institutionId),
     listApprovedTeachers(institutionId),
+    listLinkableSubjects(),
   ]);
   const staff = classes.find((c) => c.id === classId)?.teachers ?? [];
   const base = `/api/institutions/${institutionId}`;
@@ -56,9 +58,26 @@ export default async function InstitutionClassPage({ params }: { params: Promise
     <div className="ta-stack">
       <PageHeader
         title={klass.name}
-        subtitle={[overview.institutionName, klass.gradeName].filter(Boolean).join(' · ')}
+        subtitle={[overview.institutionName, klass.gradeName, klass.subjectName].filter(Boolean).join(' · ')}
         breadcrumb={<Link href={`/dashboard/institution/${institutionId}/classes`}>{t['institution.classes.title']}</Link>}
       />
+
+      <section className="card ta-card" aria-labelledby="subject-title">
+        <h2 id="subject-title">{t['inst.class.subjectTitle']}</h2>
+        <p className="ta-msg">{klass.subjectName ? klass.subjectName : t['inst.class.subjectMissing']}</p>
+        <SetClassSubjectForm
+          institutionId={institutionId}
+          classId={classId}
+          currentSubjectId={klass.subjectId}
+          subjects={subjects}
+          labels={{
+            label: t['inst.class.subjectLabel'],
+            submit: klass.subjectId ? t['inst.class.subjectChange'] : t['inst.class.subjectLink'],
+            saved: t['inst.common.saved'],
+            error: t['inst.common.error'],
+          }}
+        />
+      </section>
 
       <section className="card ta-card" aria-labelledby="staff-title">
         <h2 id="staff-title">{t['inst.class.staffTitle']}</h2>
@@ -68,7 +87,7 @@ export default async function InstitutionClassPage({ params }: { params: Promise
           <ul className="role-list">
             {staff.map((s) => (
               <li key={s.assignmentId} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{s.email}</span>
+                <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{s.name && s.email ? `${s.name} · ${s.email}` : (s.name ?? s.email)}</span>
                 <PostActionButton url={`/api/institutions/assignments/${s.assignmentId}/end`} label={t['inst.class.endAssignment']} errorLabel={t['inst.common.error']} />
               </li>
             ))}
