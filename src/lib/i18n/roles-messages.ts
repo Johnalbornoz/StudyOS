@@ -69,6 +69,7 @@ export type RolesMessageKey =
   | 'inst.teachers.assignmentsTitle' | 'inst.teachers.noAssignments' | 'inst.teachers.assignError'
   | 'inst.requests.teacherRequest' | 'inst.requests.status.APPROVED' | 'inst.requests.status.REJECTED' | 'inst.requests.status.REVOKED'
   | 'inst.common.error' | 'inst.common.saved'
+  | 'inst.overview.teachersDesc' | 'inst.overview.classesDesc' | 'inst.overview.learnersDesc' | 'inst.overview.enrollmentsDesc'
   // StudyUS admin -- institutions
   | 'adminInst.create.title' | 'adminInst.create.name' | 'adminInst.create.submit' | 'adminInst.create.done'
   | 'adminInst.invite.title' | 'adminInst.invite.email' | 'adminInst.invite.submit' | 'adminInst.invite.done'
@@ -277,6 +278,10 @@ const es: Catalog = {
   'inst.requests.status.REVOKED': 'Revocada',
   'inst.common.error': 'No se pudo completar la acción.',
   'inst.common.saved': 'Guardado.',
+  'inst.overview.teachersDesc': 'Docentes aprobados en tu institución.',
+  'inst.overview.classesDesc': 'Clases creadas en tu institución.',
+  'inst.overview.learnersDesc': 'Estudiantes distintos inscritos en al menos una clase.',
+  'inst.overview.enrollmentsDesc': 'Inscripciones activas (un estudiante puede estar en varias clases).',
 
   'adminInst.create.title': 'Nueva institución',
   'adminInst.create.name': 'Nombre de la institución',
@@ -509,6 +514,10 @@ const en: Catalog = {
   'inst.requests.status.REVOKED': 'Revoked',
   'inst.common.error': 'The action couldn’t be completed.',
   'inst.common.saved': 'Saved.',
+  'inst.overview.teachersDesc': 'Approved teachers at your institution.',
+  'inst.overview.classesDesc': 'Classes created at your institution.',
+  'inst.overview.learnersDesc': 'Distinct students enrolled in at least one class.',
+  'inst.overview.enrollmentsDesc': 'Active enrollments (a student can be in several classes).',
 
   'adminInst.create.title': 'New institution',
   'adminInst.create.name': 'Institution name',
@@ -741,6 +750,10 @@ const de: Catalog = {
   'inst.requests.status.REVOKED': 'Entzogen',
   'inst.common.error': 'Die Aktion konnte nicht abgeschlossen werden.',
   'inst.common.saved': 'Gespeichert.',
+  'inst.overview.teachersDesc': 'Freigegebene Lehrkräfte deiner Einrichtung.',
+  'inst.overview.classesDesc': 'In deiner Einrichtung angelegte Klassen.',
+  'inst.overview.learnersDesc': 'Verschiedene Lernende, die in mindestens einer Klasse eingeschrieben sind.',
+  'inst.overview.enrollmentsDesc': 'Aktive Einschreibungen (eine Person kann in mehreren Klassen sein).',
 
   'adminInst.create.title': 'Neue Einrichtung',
   'adminInst.create.name': 'Name der Einrichtung',
@@ -973,6 +986,10 @@ const fr: Catalog = {
   'inst.requests.status.REVOKED': 'Révoquée',
   'inst.common.error': 'L’action n’a pas pu être effectuée.',
   'inst.common.saved': 'Enregistré.',
+  'inst.overview.teachersDesc': 'Enseignants approuvés de ton établissement.',
+  'inst.overview.classesDesc': 'Classes créées dans ton établissement.',
+  'inst.overview.learnersDesc': 'Élèves distincts inscrits dans au moins une classe.',
+  'inst.overview.enrollmentsDesc': 'Inscriptions actives (un élève peut être dans plusieurs classes).',
 
   'adminInst.create.title': 'Nouvel établissement',
   'adminInst.create.name': 'Nom de l’établissement',
@@ -1205,6 +1222,10 @@ const pt: Catalog = {
   'inst.requests.status.REVOKED': 'Revogada',
   'inst.common.error': 'Não foi possível concluir a ação.',
   'inst.common.saved': 'Salvo.',
+  'inst.overview.teachersDesc': 'Professores aprovados na sua instituição.',
+  'inst.overview.classesDesc': 'Turmas criadas na sua instituição.',
+  'inst.overview.learnersDesc': 'Estudantes distintos matriculados em pelo menos uma turma.',
+  'inst.overview.enrollmentsDesc': 'Matrículas ativas (um estudante pode estar em várias turmas).',
 
   'adminInst.create.title': 'Nova instituição',
   'adminInst.create.name': 'Nome da instituição',

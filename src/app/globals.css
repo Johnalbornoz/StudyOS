@@ -2049,3 +2049,8 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
   .ta-table-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
   .ta-table-head { display: none; }
 }
+
+/* Track A: the workspace switcher is a primary control on phones too (44px targets in the drawer). */
+@media (max-width: 1023px) {
+  .lx-workspace-trigger, .lx-workspace-option { min-height: var(--touch-target); }
+}

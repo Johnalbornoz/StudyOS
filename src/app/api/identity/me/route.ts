@@ -9,7 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import { getOrCreateCanonicalUser, getUserRoles, getRevokedRoles, resolveAvailableWorkspaces } from '@/lib/identity';
+import { getOrCreateCanonicalUser, getUserRoles, getRevokedRoles, resolveAvailableWorkspaces, resolveDefaultWorkspace } from '@/lib/identity';
 
 export async function GET() {
   const authContext = await verifyAuth();
@@ -31,7 +31,15 @@ export async function GET() {
       // Track A: revoked roles are explained on /role-select (never re-addable by self-service).
       revokedRoles: revokedRoles.map((r) => r.role),
       availableWorkspaces,
-      activeWorkspace: user.activeWorkspace,
+      // Track A: the workspace the user is ACTUALLY in -- the stored one while
+      // still available, else the default the dashboard would open (the
+      // same rule as workspace entry). Never a stale or unavailable value.
+      activeWorkspace:
+        user.activeWorkspace && availableWorkspaces.includes(user.activeWorkspace)
+          ? user.activeWorkspace
+          : availableWorkspaces.length > 0
+            ? await resolveDefaultWorkspace(user.id)
+            : null,
     },
   });
 }

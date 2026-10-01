@@ -85,7 +85,7 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
                     </div>
                   )}
                 </div>
-                <MembershipRequestActions institutionId={institutionId} membershipId={m.id} labels={{ approve: t['institution.requests.approve'], reject: t['institution.requests.reject'] }} />
+                <MembershipRequestActions institutionId={institutionId} membershipId={m.id} labels={{ approve: t['institution.requests.approve'], reject: t['institution.requests.reject'], error: t['inst.common.error'] }} />
               </li>
             ))}
           </ul>

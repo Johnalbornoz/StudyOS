@@ -56,25 +56,22 @@ export default async function InstitutionOverviewPage({ params }: { params: Prom
         <MetricCard
           label={t['institution.overview.activeTeachers']}
           value={overview.activeTeacherCount.value}
-          populationDescription={overview.activeTeacherCount.population.description}
+          populationDescription={t['inst.overview.teachersDesc']}
         />
         <MetricCard
           label={t['institution.overview.classes']}
           value={overview.activeClassCount.value}
-          populationDescription={overview.activeClassCount.population.description}
-          limitations={overview.activeClassCount.limitations}
+          populationDescription={t['inst.overview.classesDesc']}
         />
         <MetricCard
           label={t['institution.overview.uniqueLearners']}
           value={overview.uniqueActiveLearnerCount.value}
-          populationDescription={overview.uniqueActiveLearnerCount.population.description}
-          limitations={overview.uniqueActiveLearnerCount.limitations}
+          populationDescription={t['inst.overview.learnersDesc']}
         />
         <MetricCard
           label={t['institution.overview.activeEnrollments']}
           value={overview.activeEnrollmentCount.value}
-          populationDescription={overview.activeEnrollmentCount.population.description}
-          limitations={overview.activeEnrollmentCount.limitations}
+          populationDescription={t['inst.overview.enrollmentsDesc']}
         />
       </div>
     </div>
