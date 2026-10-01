@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { isAdminEmail } from '@/services/admin.service';
 import { createExamDefinition } from '@/lib/assessment/exam-definition.service';
 import { db } from '@/lib/db';
+import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 
 async function requireAdmin() {
   const { userId } = await auth();
@@ -30,7 +31,8 @@ export async function GET() {
 const CreateSchema = z.object({
   academicProgrammeId: z.string().uuid().optional(),
   name: z.string().min(1).max(200),
-  examFamily: z.string().min(1).max(100),
+  // Track B: the exam-family taxonomy (also a DB CHECK constraint) -- no free-text families.
+  examFamily: z.enum(EXAM_FAMILIES),
   purpose: z.string().max(500).optional(),
   domains: z.array(z.string()).optional(),
 });

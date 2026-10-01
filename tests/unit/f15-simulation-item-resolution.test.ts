@@ -1,259 +1,369 @@
 /**
- * F15 Workstream A/B -- deterministic tests for
- * item-resolution.service.ts, the new wiring that resolves IVG-F14-01.
- * Covers: ownership enforcement (IDOR), active-status enforcement,
- * idempotent re-fetch of a pending item (no silent question swap on
- * refresh/resume), unavailable-item handling (never fabricates a
- * question), skip-without-grading, and that grading is delegated
- * verbatim to the real recordSimulationItemResponse (never
- * re-implemented here).
+ * F15 -> Track B -- deterministic tests for item-resolution.service.ts, the
+ * server-authoritative exam delivery service. Covers: ownership (IDOR),
+ * active-status enforcement, idempotent re-fetch (a refresh never swaps the
+ * item), unavailable items (never fabricated), answer-key isolation, grading
+ * delegated to recordSimulationItemResponse with the SERVER-held item,
+ * tampered answers rejected before anything is recorded, navigation policy,
+ * autosave, compare-and-swap retries, HARD section deadlines, breaks,
+ * inactivity expiry, skip and hand-in finalization.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const queryMock = vi.fn();
-vi.mock('@/lib/db', () => ({ db: { query: (...args: any[]) => queryMock(...args) } }));
+let writtenNav: any[] = [];
+let casFailuresLeft = 0;
+const otherQueries: Array<{ sql: string; params: any[] }> = [];
+const queryMock = vi.fn(async (sql: string, params: any[] = []) => {
+  if (/UPDATE simulation_attempts SET navigation_state = \$2/.test(sql)) {
+    if (casFailuresLeft > 0) {
+      casFailuresLeft--;
+      return { rows: [], rowCount: 0 };
+    }
+    writtenNav.push(JSON.parse(params[1]));
+    return { rows: [{ id: params[0] }], rowCount: 1 };
+  }
+  otherQueries.push({ sql, params });
+  return { rows: [], rowCount: 1 };
+});
+vi.mock('@/lib/db', () => ({ db: { query: (sql: string, params?: any[]) => queryMock(sql, params) } }));
 
 const isOwnerMock = vi.fn();
-vi.mock('@/lib/authorization', () => ({ isOwner: (...args: any[]) => isOwnerMock(...args) }));
+vi.mock('@/lib/authorization', () => ({ isOwner: (...a: any[]) => isOwnerMock(...a) }));
 
 const getSimulationAttemptMock = vi.fn();
-vi.mock('@/lib/simulation/attempt.service', () => ({ getSimulationAttempt: (...args: any[]) => getSimulationAttemptMock(...args) }));
+vi.mock('@/lib/simulation/attempt.service', () => ({ getSimulationAttempt: (...a: any[]) => getSimulationAttemptMock(...a) }));
 
 const getSimulationPlanByIdMock = vi.fn();
-vi.mock('@/lib/simulation/plan.service', () => ({ getSimulationPlanById: (...args: any[]) => getSimulationPlanByIdMock(...args) }));
+vi.mock('@/lib/simulation/plan.service', () => ({
+  getSimulationPlanById: (...a: any[]) => getSimulationPlanByIdMock(...a),
+  deriveSections: () => [],
+}));
 
 const getObjectiveTargetMock = vi.fn();
-vi.mock('@/lib/assessment/blueprint.service', () => ({ getObjectiveTarget: (...args: any[]) => getObjectiveTargetMock(...args) }));
+vi.mock('@/lib/assessment/blueprint.service', () => ({ getObjectiveTarget: (...a: any[]) => getObjectiveTargetMock(...a) }));
+vi.mock('@/lib/assessment/component.service', () => ({ listComponentsForVersion: async () => [] }));
 
-const resolveActivityMetadataForObjectiveMock = vi.fn();
-vi.mock('@/lib/curriculum/activity-metadata-bridge.service', () => ({
-  resolveActivityMetadataForObjective: (...args: any[]) => resolveActivityMetadataForObjectiveMock(...args),
-}));
-
-const resolveStudentConceptForCanonicalConceptMock = vi.fn();
-vi.mock('@/lib/readiness/student-concept-resolution.service', () => ({
-  resolveStudentConceptForCanonicalConcept: (...args: any[]) => resolveStudentConceptForCanonicalConceptMock(...args),
-}));
-
-const generatePracticeQuestionsMock = vi.fn();
-vi.mock('@/services/quiz-generation.service', () => ({ generatePracticeQuestions: (...args: any[]) => generatePracticeQuestionsMock(...args) }));
+const sourceExamItemMock = vi.fn();
+vi.mock('@/lib/exam-core/item-sourcing.service', () => ({ sourceExamItem: (...a: any[]) => sourceExamItemMock(...a) }));
 
 const recordSimulationItemResponseMock = vi.fn();
-vi.mock('@/lib/simulation/scoring.service', () => ({ recordSimulationItemResponse: (...args: any[]) => recordSimulationItemResponseMock(...args) }));
+vi.mock('@/lib/simulation/scoring.service', () => ({ recordSimulationItemResponse: (...a: any[]) => recordSimulationItemResponseMock(...a) }));
 
 import {
   getNextSimulationItem,
   submitSimulationItemAnswer,
   skipUnavailableSimulationItem,
+  saveSimulationItemDraft,
+  endSimulationBreak,
+  finalizeOpenItemsForSubmission,
   SimulationItemAccessDeniedError,
   SimulationItemNotFoundError,
   SimulationItemNotActiveError,
   SimulationItemNoPendingItemError,
+  SimulationNavigationError,
+  SimulationInvalidResponseError,
 } from '@/lib/simulation/item-resolution.service';
+import { findAnswerKeyLeak, type ExamItem } from '@/lib/exam-core/items';
+import type { ResolvedDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
 
-const BASE_ATTEMPT = {
-  id: 'attempt-1',
-  examAttemptId: 'exam-attempt-1',
-  studentId: 'student-1',
-  examProfileId: 'profile-1',
-  examVersionId: 'version-1',
-  simulationType: 'TOPIC_EXAM' as const,
-  simulationPlanId: 'plan-1',
-  readinessSnapshotId: null,
-  timingMode: 'UNTIMED' as const,
-  pauseAllowed: true,
-  status: 'ACTIVE' as const,
-  pausedAt: null,
-  resumedAt: null,
-  elapsedSecondsAtPause: null,
-  navigationState: {} as Record<string, unknown>,
-  language: 'en',
-  timezone: null,
-  createdAt: '2026-01-01T00:00:00.000Z',
-};
+const NOW = new Date().toISOString();
 
-const BASE_PLAN = {
+function policy(over: Partial<ResolvedDeliveryPolicy> = {}): ResolvedDeliveryPolicy {
+  return { v: 1, navigation: 'LINEAR', breaks: [], itemFeedback: 'NEVER', resultReview: 'FULL', permittedResources: [], timeLimit: 'NONE', pauseAllowed: true, tutorAssistance: 'BLOCKED', inactivityExpiryHours: 24, ...over };
+}
+
+const SECTIONS = [
+  { componentId: 'comp-a', key: 'a', name: 'Section A', order: 0, startIndex: 0, endIndex: 1, durationSeconds: 600 },
+  { componentId: 'comp-b', key: 'b', name: 'Section B', order: 1, startIndex: 2, endIndex: 2, durationSeconds: 600 },
+];
+
+function nav(over: Record<string, unknown> = {}) {
+  return { v: 2, rev: 3, policy: policy(), sections: SECTIONS, sectionIndex: 0, sectionStartedAt: NOW, sectionPausedSeconds: 0, breakUntil: null, items: {}, visitedTargetIds: [], lastActivityAt: NOW, ...over };
+}
+
+function attempt(over: Record<string, unknown> = {}) {
+  return {
+    id: 'attempt-1',
+    examAttemptId: 'exam-attempt-1',
+    studentId: 'student-1',
+    examProfileId: 'profile-1',
+    examVersionId: 'version-1',
+    simulationType: 'FULL_MOCK',
+    simulationPlanId: 'plan-1',
+    readinessSnapshotId: null,
+    timingMode: 'UNTIMED',
+    pauseAllowed: true,
+    status: 'ACTIVE',
+    pausedAt: null,
+    resumedAt: null,
+    elapsedSecondsAtPause: null,
+    navigationState: nav(),
+    language: 'es',
+    timezone: null,
+    createdAt: NOW,
+    ...over,
+  };
+}
+
+const PLAN = {
   id: 'plan-1',
   studentId: 'student-1',
   examVersionId: 'version-1',
-  blueprintId: 'blueprint-1',
-  simulationType: 'TOPIC_EXAM' as const,
+  blueprintId: 'bp-1',
+  simulationType: 'FULL_MOCK',
   readinessSnapshotId: null,
   selectedTargets: [
-    { blueprintObjectiveTargetId: 'target-1', assessmentComponentId: 'component-1', questionType: null, difficultyRange: { min: 2, max: 4 }, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null },
-    { blueprintObjectiveTargetId: 'target-2', assessmentComponentId: 'component-2', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null },
+    { blueprintObjectiveTargetId: 'bot-0', assessmentComponentId: 'comp-a', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null },
+    { blueprintObjectiveTargetId: 'bot-1', assessmentComponentId: 'comp-a', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null },
+    { blueprintObjectiveTargetId: 'bot-2', assessmentComponentId: 'comp-b', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null },
   ],
-  timingAllocation: { mode: 'UNTIMED' as const, totalSeconds: null },
+  timingAllocation: { mode: 'UNTIMED', totalSeconds: null },
   toolRules: {},
-  scoringConfiguration: { scoringModelId: null },
-  createdAt: '2026-01-01T00:00:00.000Z',
+  scoringConfiguration: { scoringModelId: 'sm-1' },
+  sections: SECTIONS,
+  createdAt: NOW,
 };
 
-const SAMPLE_QUESTION = {
-  id: 'q1', conceptId: 'concept-1', type: 'multiple_choice', answerFormat: 'single_choice' as const,
-  question: 'What is 2+2?', options: [{ id: 'a', text: '3' }, { id: 'b', text: '4' }],
-  correctAnswer: 'b', explanation: '4 is correct', difficulty: 3,
-};
+function item(id = 'item-1'): ExamItem {
+  return {
+    id,
+    conceptId: '',
+    type: 'multiple_choice',
+    answerFormat: 'single_choice',
+    question: `What is ${id}?`,
+    options: [
+      { id: 'A', text: 'one' },
+      { id: 'B', text: 'two' },
+    ],
+    correctAnswer: 'B',
+    explanation: 'because',
+    difficulty: 3,
+    learningObjectiveId: 'lo-1',
+    exam: { source: 'APPROVED_BANK', approvedItemId: id, key: id, contentStatus: 'DEV_CERT_FIXTURE', marks: 2, stimulus: { key: 's1', title: 'Passage', text: 'Text' }, parts: null, acceptableAnswers: null, numericTolerance: null, commandTerm: null },
+  };
+}
 
-describe('getNextSimulationItem (IDOR + active-status + idempotent generation)', () => {
-  beforeEach(() => {
-    queryMock.mockReset();
-    isOwnerMock.mockReset();
-    getSimulationAttemptMock.mockReset();
-    getSimulationPlanByIdMock.mockReset();
-    getObjectiveTargetMock.mockReset();
-    resolveActivityMetadataForObjectiveMock.mockReset();
-    resolveStudentConceptForCanonicalConceptMock.mockReset();
-    generatePracticeQuestionsMock.mockReset();
-  });
+const CTX = { assessmentComponentId: 'comp-a', learningObjectiveId: 'lo-1', commandTermId: null };
 
-  it('throws SimulationItemNotFoundError when the attempt does not exist', async () => {
+beforeEach(() => {
+  writtenNav = [];
+  casFailuresLeft = 0;
+  otherQueries.length = 0;
+  queryMock.mockClear();
+  isOwnerMock.mockReset().mockResolvedValue(true);
+  getSimulationAttemptMock.mockReset().mockResolvedValue(attempt());
+  getSimulationPlanByIdMock.mockReset().mockResolvedValue(PLAN);
+  getObjectiveTargetMock.mockReset().mockResolvedValue({ id: 'bot-0', learningObjectiveId: 'lo-1' });
+  sourceExamItemMock.mockReset().mockResolvedValue({ outcome: 'READY', item: item() });
+  recordSimulationItemResponseMock.mockReset().mockResolvedValue({ responseId: 'resp-1', evaluation: { score: 2, maxScore: 2, feedback: 'ok' }, evidenceWritten: false, duplicate: false, grade: { status: 'ANSWERED' } });
+});
+
+describe('ownership and status (IDOR)', () => {
+  it('NOT_FOUND for an unknown attempt id', async () => {
     getSimulationAttemptMock.mockResolvedValue(null);
-    await expect(getNextSimulationItem('actor-A', 'nonexistent')).rejects.toBeInstanceOf(SimulationItemNotFoundError);
+    await expect(getNextSimulationItem('actor-1', 'nope')).rejects.toBeInstanceOf(SimulationItemNotFoundError);
   });
 
-  it('IDOR: throws SimulationItemAccessDeniedError when the actor does not own the attempt (Student A cannot fetch Student B session)', async () => {
-    getSimulationAttemptMock.mockResolvedValue(BASE_ATTEMPT);
+  it('a non-owner (another student, parent, teacher) can never fetch, autosave, answer or hand in', async () => {
     isOwnerMock.mockResolvedValue(false);
-    await expect(getNextSimulationItem('actor-B-not-owner', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
+    await expect(getNextSimulationItem('intruder', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
+    await expect(saveSimulationItemDraft('intruder', 'attempt-1', 0, 'A')).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
+    await expect(submitSimulationItemAnswer('intruder', 'attempt-1', 'A', 'k', 0)).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
+    await expect(finalizeOpenItemsForSubmission('intruder', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
+    expect(sourceExamItemMock).not.toHaveBeenCalled();
+    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+    expect(writtenNav).toHaveLength(0);
   });
 
-  it('throws SimulationItemNotActiveError when the attempt is PAUSED/COMPLETED/ABANDONED', async () => {
-    getSimulationAttemptMock.mockResolvedValue({ ...BASE_ATTEMPT, status: 'PAUSED' });
-    isOwnerMock.mockResolvedValue(true);
-    await expect(getNextSimulationItem('actor-owner', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemNotActiveError);
+  it.each(['PAUSED', 'COMPLETED', 'ABANDONED'])('a %s attempt never delivers or accepts an item', async (status) => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ status }));
+    await expect(getNextSimulationItem('actor-1', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemNotActiveError);
+    await expect(submitSimulationItemAnswer('actor-1', 'attempt-1', 'A')).rejects.toBeInstanceOf(SimulationItemNotActiveError);
   });
 
-  it('generates a real item via the concept-resolution bridge and persists it to navigation_state', async () => {
-    getSimulationAttemptMock.mockResolvedValue(BASE_ATTEMPT);
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-    getObjectiveTargetMock.mockResolvedValue({ id: 'target-1', blueprintId: 'blueprint-1', learningObjectiveId: 'objective-1', assessmentComponentId: 'component-1', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null });
-    resolveActivityMetadataForObjectiveMock.mockResolvedValue({ learningObjectiveId: 'objective-1', canonicalConceptIds: ['canonical-1'], skillIds: [], competencyIds: [], structureVersionId: 'struct-1' });
-    resolveStudentConceptForCanonicalConceptMock.mockResolvedValue('student-concept-1');
-    queryMock.mockResolvedValueOnce({ rows: [{ subject_id: 'subject-1' }] }); // concepts.subject_id lookup
-    generatePracticeQuestionsMock.mockResolvedValue([SAMPLE_QUESTION]);
-    queryMock.mockResolvedValueOnce({ rows: [] }); // UPDATE simulation_attempts
-
-    const result = await getNextSimulationItem('actor-owner', 'attempt-1');
-
-    expect(result.outcome).toBe('ITEM_READY');
-    if (result.outcome === 'ITEM_READY') {
-      expect(result.question.question).toBe('What is 2+2?');
-      // toClientQuestion strips the answer key -- never sent to the client.
-      expect((result.question as any).correctAnswer).toBeUndefined();
-    }
-    expect(generatePracticeQuestionsMock).toHaveBeenCalledWith('student-concept-1', 'student-1', 'subject-1', expect.objectContaining({ count: 1 }));
-    const updateCall = queryMock.mock.calls.find((c) => String(c[0]).includes('UPDATE simulation_attempts'));
-    expect(updateCall).toBeTruthy();
-  });
-
-  it('returns the SAME pending question on a repeated fetch for the same target index (idempotent -- a refresh never swaps the question)', async () => {
-    getSimulationAttemptMock.mockResolvedValue({
-      ...BASE_ATTEMPT,
-      navigationState: { currentTargetIndex: 0, pendingQuestion: SAMPLE_QUESTION, pendingQuestionTargetIndex: 0 },
-    });
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-
-    const result = await getNextSimulationItem('actor-owner', 'attempt-1');
-
-    expect(result.outcome).toBe('ITEM_READY');
-    expect(generatePracticeQuestionsMock).not.toHaveBeenCalled();
-    expect(queryMock).not.toHaveBeenCalled();
-  });
-
-  it('returns ITEM_UNAVAILABLE (never a fabricated question) when the student has no matched concept yet', async () => {
-    getSimulationAttemptMock.mockResolvedValue(BASE_ATTEMPT);
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-    getObjectiveTargetMock.mockResolvedValue({ id: 'target-1', blueprintId: 'blueprint-1', learningObjectiveId: 'objective-1', assessmentComponentId: 'component-1', questionType: null, difficultyRange: null, reasoningRequirement: null, commandTermId: null, allocatedSeconds: null });
-    resolveActivityMetadataForObjectiveMock.mockResolvedValue({ learningObjectiveId: 'objective-1', canonicalConceptIds: ['canonical-1'], skillIds: [], competencyIds: [], structureVersionId: 'struct-1' });
-    resolveStudentConceptForCanonicalConceptMock.mockResolvedValue(null);
-
-    const result = await getNextSimulationItem('actor-owner', 'attempt-1');
-
-    expect(result).toEqual({ outcome: 'ITEM_UNAVAILABLE', targetIndex: 0, totalTargets: 2, reason: 'CONCEPT_NOT_MATCHED' });
-    expect(generatePracticeQuestionsMock).not.toHaveBeenCalled();
-  });
-
-  it('returns COMPLETE when every target has already been visited', async () => {
-    getSimulationAttemptMock.mockResolvedValue({ ...BASE_ATTEMPT, navigationState: { currentTargetIndex: 2 } });
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-
-    const result = await getNextSimulationItem('actor-owner', 'attempt-1');
-    expect(result).toEqual({ outcome: 'COMPLETE' });
+  it('an attempt idle beyond its frozen inactivity expiry is closed (ABANDONED) on access and never resumed', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ lastActivityAt: new Date(Date.now() - 30 * 3600 * 1000).toISOString() }) }));
+    await expect(getNextSimulationItem('actor-1', 'attempt-1')).rejects.toBeInstanceOf(SimulationItemNotActiveError);
+    expect(otherQueries.some((q) => /UPDATE simulation_attempts SET status = 'ABANDONED'/.test(q.sql))).toBe(true);
+    expect(otherQueries.some((q) => /UPDATE exam_attempts SET status = 'ABANDONED'/.test(q.sql))).toBe(true);
   });
 });
 
-describe('submitSimulationItemAnswer (grading delegated verbatim, never re-implemented)', () => {
-  beforeEach(() => {
-    queryMock.mockReset();
-    isOwnerMock.mockReset();
-    getSimulationAttemptMock.mockReset();
-    getSimulationPlanByIdMock.mockReset();
-    recordSimulationItemResponseMock.mockReset();
+describe('server-authoritative delivery', () => {
+  it('sources the item, persists the SERVER copy (with its key) and sends the client a key-free item', async () => {
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(r.outcome).toBe('ITEM_READY');
+    if (r.outcome !== 'ITEM_READY') return;
+    expect(r.targetIndex).toBe(0);
+    expect(findAnswerKeyLeak(r)).toBeNull();
+    expect((r.question as any).correctAnswer).toBeUndefined();
+    expect(r.question.stimulus?.text).toBe('Text');
+    expect(r.question.marks).toBe(2);
+    expect(writtenNav).toHaveLength(1);
+    expect(writtenNav[0].items['0'].item.correctAnswer).toBe('B');
+    expect(writtenNav[0].rev).toBe(4);
   });
 
-  it('IDOR: throws SimulationItemAccessDeniedError for a non-owning actor (Student A cannot submit into Student B session)', async () => {
-    getSimulationAttemptMock.mockResolvedValue(BASE_ATTEMPT);
-    isOwnerMock.mockResolvedValue(false);
-    await expect(submitSimulationItemAnswer('actor-B', 'attempt-1', 'b')).rejects.toBeInstanceOf(SimulationItemAccessDeniedError);
-    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+  it('a repeated fetch returns the SAME delivered item and its autosaved draft (refresh recovery), sourcing nothing', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ items: { '0': { status: 'DELIVERED', item: item('kept'), ctx: CTX, draft: 'A' } } }) }));
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(sourceExamItemMock).not.toHaveBeenCalled();
+    expect(r.outcome === 'ITEM_READY' && r.question.question).toBe('What is kept?');
+    expect(r.outcome === 'ITEM_READY' && r.draft).toBe('A');
   });
 
-  it('throws SimulationItemNoPendingItemError when no item was fetched first', async () => {
-    getSimulationAttemptMock.mockResolvedValue(BASE_ATTEMPT);
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-    await expect(submitSimulationItemAnswer('actor-owner', 'attempt-1', 'b')).rejects.toBeInstanceOf(SimulationItemNoPendingItemError);
-    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+  it('ITEM_UNAVAILABLE when no item can be sourced -- never a fabricated question', async () => {
+    sourceExamItemMock.mockResolvedValue({ outcome: 'UNAVAILABLE', reason: 'CONCEPT_NOT_MATCHED' });
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(r).toMatchObject({ outcome: 'ITEM_UNAVAILABLE', reason: 'CONCEPT_NOT_MATCHED', targetIndex: 0 });
   });
 
-  it('delegates grading to the real recordSimulationItemResponse with the SERVER-held question, never a client-supplied one, and advances the index', async () => {
-    getSimulationAttemptMock.mockResolvedValue({
-      ...BASE_ATTEMPT,
-      navigationState: {
-        currentTargetIndex: 0,
-        pendingQuestion: SAMPLE_QUESTION,
-        pendingQuestionTargetIndex: 0,
-        pendingObjectiveContext: { assessmentComponentId: 'component-1', learningObjectiveId: 'objective-1', commandTermId: null },
-      },
-    });
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-    recordSimulationItemResponseMock.mockResolvedValue({ responseId: 'resp-1', evaluation: { rawResponse: 'b', score: 1, maxScore: 1, criteriaBreakdown: null, feedback: 'Correct!', evaluationModelVersion: null, provenance: null }, evidenceWritten: true, duplicate: false });
-    queryMock.mockResolvedValueOnce({ rows: [] }); // UPDATE simulation_attempts
+  it('COMPLETE once every section is resolved', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ sectionIndex: 2 }) }));
+    expect((await getNextSimulationItem('actor-1', 'attempt-1')).outcome).toBe('COMPLETE');
+  });
 
-    const result = await submitSimulationItemAnswer('actor-owner', 'attempt-1', 'b', 'idem-1');
+  it('a pre-Track-B pending question (legacy navigation state) is served unchanged, not regenerated', async () => {
+    const legacy = { currentTargetIndex: 0, visitedTargetIds: [], pendingQuestion: { ...item('legacy'), exam: undefined }, pendingQuestionTargetIndex: 0, pendingObjectiveContext: CTX };
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: legacy }));
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(sourceExamItemMock).not.toHaveBeenCalled();
+    expect(r.outcome === 'ITEM_READY' && r.question.question).toBe('What is legacy?');
+  });
 
-    expect(recordSimulationItemResponseMock).toHaveBeenCalledWith(
-      expect.objectContaining({ examAttemptId: 'exam-attempt-1', studentId: 'student-1', question: SAMPLE_QUESTION, studentAnswer: 'b', assessmentComponentId: 'component-1' })
+  it('retries on a compare-and-swap conflict instead of losing an update', async () => {
+    casFailuresLeft = 1;
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(r.outcome).toBe('ITEM_READY');
+    expect(getSimulationAttemptMock).toHaveBeenCalledTimes(2);
+    expect(writtenNav).toHaveLength(1);
+  });
+});
+
+describe('navigation policy', () => {
+  it('LINEAR: a later item of the section cannot be opened before the current one', async () => {
+    await expect(getNextSimulationItem('actor-1', 'attempt-1', 1)).rejects.toBeInstanceOf(SimulationNavigationError);
+  });
+  it('FREE_ORDER_WITHIN_SECTION: any open item of the current section can be opened', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ policy: policy({ navigation: 'FREE_ORDER_WITHIN_SECTION' }) }) }));
+    const r = await getNextSimulationItem('actor-1', 'attempt-1', 1);
+    expect(r.outcome === 'ITEM_READY' && r.targetIndex).toBe(1);
+  });
+  it('an item of a later section is never reachable before its section', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ policy: policy({ navigation: 'FREE_ORDER_WITHIN_SECTION' }) }) }));
+    await expect(getNextSimulationItem('actor-1', 'attempt-1', 2)).rejects.toBeInstanceOf(SimulationNavigationError);
+  });
+  it('a configured break starts once a section is fully resolved, and can be ended early', async () => {
+    getSimulationAttemptMock.mockResolvedValue(
+      attempt({ navigationState: nav({ policy: policy({ breaks: [{ afterSectionKey: 'a', minutes: 5 }] }), items: { '0': { status: 'ANSWERED' }, '1': { status: 'ANSWERED' } } }) })
     );
-    expect(result.done).toBe(false); // 2 targets total, only target 0 answered
-    expect(result.evaluation.score).toBe(1);
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(r.outcome).toBe('BREAK');
+    expect(writtenNav[0].sectionIndex).toBe(1);
+    expect(writtenNav[0].breakUntil).toBeTruthy();
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: writtenNav[0] }));
+    expect(await endSimulationBreak('actor-1', 'attempt-1')).toEqual({ ended: true });
+    expect(writtenNav[1].breakUntil).toBeNull();
   });
 });
 
-describe('skipUnavailableSimulationItem (advances without grading -- never a fabricated correct/incorrect)', () => {
-  beforeEach(() => {
-    queryMock.mockReset();
-    isOwnerMock.mockReset();
-    getSimulationAttemptMock.mockReset();
-    getSimulationPlanByIdMock.mockReset();
-    recordSimulationItemResponseMock.mockReset();
+describe('answers', () => {
+  const delivered = () => attempt({ navigationState: nav({ items: { '0': { status: 'DELIVERED', item: item(), ctx: CTX } } }) });
+
+  it('NO_PENDING_ITEM when nothing was delivered at that position', async () => {
+    await expect(submitSimulationItemAnswer('actor-1', 'attempt-1', 'A', 'k', 0)).rejects.toBeInstanceOf(SimulationItemNoPendingItemError);
+    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
   });
 
-  it('advances the target index and writes no evidence via recordSimulationItemResponse', async () => {
-    getSimulationAttemptMock.mockResolvedValue({ ...BASE_ATTEMPT, navigationState: { currentTargetIndex: 0 } });
-    isOwnerMock.mockResolvedValue(true);
-    getSimulationPlanByIdMock.mockResolvedValue(BASE_PLAN);
-    queryMock.mockResolvedValueOnce({ rows: [] });
+  it('grades the SERVER-held item via recordSimulationItemResponse (answer string only), marks it ANSWERED', async () => {
+    getSimulationAttemptMock.mockResolvedValue(delivered());
+    const r = await submitSimulationItemAnswer('actor-1', 'attempt-1', 'B', 'key-1', 0);
+    const call = recordSimulationItemResponseMock.mock.calls[0][0];
+    expect(call.question.correctAnswer).toBe('B'); // the server copy, never a client object
+    expect(call.studentAnswer).toBe('B');
+    expect(call.targetIndex).toBe(0);
+    expect(call.idempotencyKey).toBe('key-1');
+    expect(call.studentId).toBe('student-1');
+    expect(call.examVersionId).toBe('version-1');
+    expect(writtenNav[0].items['0'].status).toBe('ANSWERED');
+    expect(r.evaluation).toBeNull(); // policy: no item feedback during the attempt
+  });
 
-    const result = await skipUnavailableSimulationItem('actor-owner', 'attempt-1');
+  it('item feedback is returned only when the frozen policy allows it', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ policy: policy({ itemFeedback: 'AFTER_EACH_ITEM' }), items: { '0': { status: 'DELIVERED', item: item(), ctx: CTX } } }) }));
+    const r = await submitSimulationItemAnswer('actor-1', 'attempt-1', 'B', 'k', 0);
+    expect(r.evaluation).toEqual({ score: 2, maxScore: 2, feedback: 'ok' });
+  });
 
-    expect(result).toEqual({ done: false, targetIndex: 0, totalTargets: 2 });
+  it('a tampered structured answer (not producible by the controls) is rejected and NOTHING is recorded', async () => {
+    getSimulationAttemptMock.mockResolvedValue(delivered());
+    await expect(submitSimulationItemAnswer('actor-1', 'attempt-1', JSON.stringify({ correctAnswer: 'B' }), 'k', 0)).rejects.toBeInstanceOf(SimulationInvalidResponseError);
+    await expect(submitSimulationItemAnswer('actor-1', 'attempt-1', 'Z', 'k', 0)).rejects.toBeInstanceOf(SimulationInvalidResponseError);
     expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+    expect(writtenNav).toHaveLength(0);
+  });
+
+  it('a committed item cannot be answered again', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ items: { '0': { status: 'ANSWERED', item: item(), ctx: CTX } } }) }));
+    await expect(submitSimulationItemAnswer('actor-1', 'attempt-1', 'B', 'k2', 0)).rejects.toBeInstanceOf(SimulationItemNoPendingItemError);
+    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+  });
+
+  it('autosave stores a draft for a delivered item and never grades it', async () => {
+    getSimulationAttemptMock.mockResolvedValue(delivered());
+    const r = await saveSimulationItemDraft('actor-1', 'attempt-1', 0, 'A');
+    expect(r.targetIndex).toBe(0);
+    expect(writtenNav[0].items['0']).toMatchObject({ status: 'DELIVERED', draft: 'A' });
+    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+  });
+
+  it('skip only applies to an item the platform could not prepare; it records no response and excludes it', async () => {
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ items: { '0': { status: 'UNAVAILABLE', unavailableReason: 'NO_ITEM_GENERATED', ctx: CTX } } }) }));
+    const r = await skipUnavailableSimulationItem('actor-1', 'attempt-1');
+    expect(r.targetIndex).toBe(0);
+    expect(writtenNav[0].items['0'].status).toBe('EXCLUDED');
+    expect(recordSimulationItemResponseMock).not.toHaveBeenCalled();
+    getSimulationAttemptMock.mockResolvedValue(delivered());
+    await expect(skipUnavailableSimulationItem('actor-1', 'attempt-1', 0)).rejects.toBeInstanceOf(SimulationItemNoPendingItemError);
+  });
+});
+
+describe('timing and submission integrity', () => {
+  it('HARD limit: past the section deadline, drafts are committed and the rest becomes MISSING', async () => {
+    const past = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+    getSimulationAttemptMock.mockResolvedValue(
+      attempt({ timingMode: 'OFFICIAL_SIMULATION_TIMED', navigationState: nav({ policy: policy({ timeLimit: 'HARD' }), sectionStartedAt: past, items: { '0': { status: 'DELIVERED', item: item(), ctx: CTX, draft: 'B' } } }) })
+    );
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(recordSimulationItemResponseMock).toHaveBeenCalledTimes(1);
+    expect(recordSimulationItemResponseMock.mock.calls[0][0]).toMatchObject({ studentAnswer: 'B', targetIndex: 0, idempotencyKey: 'auto:attempt-1:0' });
+    const written = writtenNav[writtenNav.length - 1];
+    expect(written.items['1'].status).toBe('MISSING');
+    expect(written.sectionIndex).toBe(1);
+    expect(r.outcome === 'ITEM_READY' && r.targetIndex).toBe(2);
+  });
+
+  it('SOFT limit (training): over time is reported, never enforced', async () => {
+    const past = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+    getSimulationAttemptMock.mockResolvedValue(attempt({ navigationState: nav({ policy: policy({ timeLimit: 'SOFT' }), sectionStartedAt: past }) }));
+    const r = await getNextSimulationItem('actor-1', 'attempt-1');
+    expect(r.outcome === 'ITEM_READY' && r.targetIndex).toBe(0);
+    expect(r.outcome === 'ITEM_READY' && (r.section.remainingSeconds ?? 0) < 0).toBe(true);
+  });
+
+  it('hand-in commits autosaved drafts, marks the rest MISSING / EXCLUDED, and works from PAUSED', async () => {
+    getSimulationAttemptMock.mockResolvedValue(
+      attempt({
+        status: 'PAUSED',
+        navigationState: nav({ items: { '0': { status: 'DELIVERED', item: item(), ctx: CTX, draft: 'A' }, '1': { status: 'UNAVAILABLE', ctx: CTX } } }),
+      })
+    );
+    const r = await finalizeOpenItemsForSubmission('actor-1', 'attempt-1');
+    expect(r).toEqual({ committedDrafts: 1, missing: 1 });
+    expect(recordSimulationItemResponseMock.mock.calls[0][0]).toMatchObject({ studentAnswer: 'A', idempotencyKey: 'final:attempt-1:0' });
+    const written = writtenNav[0];
+    expect(written.items['1'].status).toBe('EXCLUDED');
+    expect(written.items['2'].status).toBe('MISSING');
+    expect(written.sectionIndex).toBe(2);
   });
 });

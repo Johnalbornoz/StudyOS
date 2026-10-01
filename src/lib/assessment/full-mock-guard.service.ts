@@ -39,13 +39,19 @@ export async function canFullMockBeOffered(examVersionId: string): Promise<FullM
     const mappingCheck = await db.query(
       `SELECT
          EXISTS(SELECT 1 FROM objective_concept_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_concept,
-         EXISTS(SELECT 1 FROM objective_skill_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_skill`,
+         EXISTS(SELECT 1 FROM objective_skill_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_skill,
+         EXISTS(SELECT 1 FROM approved_items WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_bank_items`,
       [target.learningObjectiveId]
     );
     const isMapped = mappingCheck.rows[0].has_concept || mappingCheck.rows[0].has_skill;
-    if (!isMapped) reasons.push(`OBJECTIVE_NOT_MAPPED: ${target.learningObjectiveId}`);
+    // Track B: an objective is deliverable when items can be generated for it
+    // (a published mapping) OR served from the approved bank (published items).
+    // A bank-only objective writes no learning evidence (no mapped concept) --
+    // honest, never a guessed concept.
+    const isDeliverable = isMapped || mappingCheck.rows[0].has_bank_items === true;
+    if (!isDeliverable) reasons.push(`OBJECTIVE_NOT_MAPPED: ${target.learningObjectiveId}`);
 
-    if (componentOk && isMapped) miniMockObjectiveIds.push(target.learningObjectiveId);
+    if (componentOk && isDeliverable) miniMockObjectiveIds.push(target.learningObjectiveId);
   }
 
   return { ready: reasons.length === 0, reasons, miniMockObjectiveIds };

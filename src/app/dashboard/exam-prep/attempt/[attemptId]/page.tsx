@@ -5,7 +5,6 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
-import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { AttemptControls } from './AttemptControls';
@@ -32,8 +31,8 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
 
   const attempt = await getSimulationAttempt(attemptId);
   if (!attempt || attempt.studentId !== studentId) notFound();
-
-  const scoreSummary = attempt.status === 'COMPLETED' ? await getSimulationScoreSummary(attempt.examAttemptId) : null;
+  // Track B: a submitted attempt is shown as its result (exam score vs canonical mastery, sections, review).
+  if (attempt.status === 'COMPLETED') redirect(`/dashboard/exam-prep/attempt/${attempt.id}/result`);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -46,27 +45,12 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
         <StatusBadge
           label={t[`examPrep.attempt.status.${attempt.status}`] ?? attempt.status}
-          tone={attempt.status === 'COMPLETED' ? 'good' : attempt.status === 'ABANDONED' ? 'neutral' : attempt.status === 'PAUSED' ? 'warn' : 'info'}
+          tone={attempt.status === 'ABANDONED' ? 'neutral' : attempt.status === 'PAUSED' ? 'warn' : 'info'}
         />
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {t['examPrep.attempt.timingMode']}: {label(`ex.timing.${attempt.timingMode}`, attempt.timingMode)}
         </span>
       </div>
-
-      {attempt.status === 'COMPLETED' && scoreSummary && (
-        <div className="card" style={{ padding: 'var(--space-4)' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>{t['assignments.practice.score']}</div>
-          {/* STUDENT E2E: nothing gradable (e.g. no equivalent concept yet) is "no score", never 0%. */}
-          {scoreSummary.maxScore > 0 ? (
-            <div style={{ fontSize: 28, fontWeight: 700 }}>{Math.round((scoreSummary.rawScore / scoreSummary.maxScore) * 100)}%</div>
-          ) : (
-            <>
-              <div style={{ fontSize: 28, fontWeight: 700 }} aria-hidden>—</div>
-              <p style={{ margin: 'var(--space-1) 0 0', fontSize: 14, color: 'var(--text-secondary)' }}>{t['examPrep.attempt.noGradedItems']}</p>
-            </>
-          )}
-        </div>
-      )}
 
       {attempt.status === 'ACTIVE' && (
         <ItemRunner
@@ -74,7 +58,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
           labels={{
             loading: t['examPrep.attempt.itemLoading'],
             loadError: t['examPrep.attempt.error'],
-            submit: t['examPrep.attempt.itemSubmit'],
+            submit: t['examPrep.run.submitAnswer'],
             submitting: t['examPrep.attempt.itemSubmitting'],
             submitError: t['examPrep.attempt.error'],
             progress: t['examPrep.attempt.progress'],
@@ -92,6 +76,38 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
             finalizing: t['examPrep.attempt.finalizing'],
             finalizeError: t['examPrep.attempt.finalizeError'],
             lastFeedback: t['examPrep.attempt.lastFeedback'],
+            section: t['examPrep.run.section'],
+            timeLeft: t['examPrep.run.timeLeft'],
+            overtime: t['examPrep.run.overtime'],
+            timeUpHard: t['examPrep.run.timeUpHard'],
+            saved: t['examPrep.run.saved'],
+            saving: t['examPrep.run.saving'],
+            saveError: t['examPrep.run.saveError'],
+            question: t['examPrep.run.question'],
+            marks: t['examPrep.run.marks'],
+            resources: t['examPrep.run.resources'],
+            breakTitle: t['examPrep.run.breakTitle'],
+            breakBody: t['examPrep.run.breakBody'],
+            endBreak: t['examPrep.run.endBreak'],
+            handIn: t['examPrep.run.handIn'],
+            handInConfirm: t['examPrep.run.handInConfirm'],
+            handingIn: t['examPrep.run.handingIn'],
+            navLabel: t['examPrep.run.navLabel'],
+            navStatus: {
+              OPEN: t['examPrep.run.status.OPEN'],
+              DRAFT: t['examPrep.run.status.DRAFT'],
+              ANSWERED: t['examPrep.run.status.ANSWERED'],
+              UNAVAILABLE: t['examPrep.run.status.UNAVAILABLE'],
+              SKIPPED: t['examPrep.run.status.SKIPPED'],
+              MISSING: t['examPrep.run.status.MISSING'],
+            },
+            integrity: t['examPrep.run.integrity'],
+            answerRecorded: t['examPrep.run.answerRecorded'],
+            invalidAnswer: t['examPrep.run.invalidAnswer'],
+            part: t['examPrep.run.part'],
+            answerPlaceholder: t['examPrep.run.answerPlaceholder'],
+            calculator: t['examPrep.run.calculator'],
+            retry: t['xp.errorRetry'],
           }}
         />
       )}
@@ -107,6 +123,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
       <AttemptControls
         attemptId={attempt.id}
         status={attempt.status}
+        pauseAllowed={attempt.pauseAllowed}
         labels={{
           pause: t['examPrep.attempt.pause'],
           resume: t['examPrep.attempt.resume'],

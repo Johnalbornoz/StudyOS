@@ -14,11 +14,12 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { canUseCapability } from '@/lib/entitlements';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
-import { startSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { startSimulationAttempt, findOpenSimulationAttemptForProfile, DeliveryPolicyConfigurationError, SimulationModeNotAllowedError } from '@/lib/simulation/attempt.service';
 import { TimingConfigurationError } from '@/lib/simulation/plan.service';
 import { isExamProfileOwnedByStudent, isExamVersionStartableForProfile } from '@/lib/assessment/student-exam-profile.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-const StartSchema = z.object({
+const StartSchema = z.strictObject({
   studentId: z.string().uuid(),
   examProfileId: z.string().uuid(),
   examVersionId: z.string().uuid(),
@@ -32,7 +33,7 @@ const StartSchema = z.object({
   timezone: z.string().optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     validated = StartSchema.parse(await request.json());
   } catch (error: any) {
-    return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
+    return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues?.[0]?.message ?? error.errors?.[0]?.message }, { status: 400 });
   }
 
   const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_INTERVENTION_CREATE');
@@ -71,6 +72,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'EXAM_VERSION_NOT_STARTABLE' }, { status: 409 });
   }
 
+  // Track B: never silently create a second attempt (double click, refresh, retry):
+  // an open attempt for this exam profile is returned for the Student to resume.
+  const open = await findOpenSimulationAttemptForProfile(validated.examProfileId);
+  if (open) return NextResponse.json({ error: 'ATTEMPT_IN_PROGRESS', data: { simulationAttemptId: open.id } }, { status: 409 });
+
   const eligibility = await getSimulationEligibility(validated);
   if (!eligibility.eligible) {
     return NextResponse.json({ error: 'SIMULATION_NOT_ELIGIBLE', data: { eligibility } }, { status: 409 });
@@ -84,6 +90,15 @@ export async function POST(request: NextRequest) {
     if (err instanceof TimingConfigurationError) {
       return NextResponse.json({ error: 'TIMING_NOT_CONFIGURED', message: err.message }, { status: 409 });
     }
+    if (err instanceof SimulationModeNotAllowedError) {
+      return NextResponse.json({ error: 'SIMULATION_MODE_NOT_ALLOWED', reason: err.reason }, { status: 409 });
+    }
+    if (err instanceof DeliveryPolicyConfigurationError) {
+      return NextResponse.json({ error: 'DELIVERY_POLICY_INVALID' }, { status: 409 });
+    }
     throw err;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts', handlePOST);

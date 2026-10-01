@@ -13,10 +13,13 @@ export interface AttemptControlLabels {
 export function AttemptControls({
   attemptId,
   status,
+  pauseAllowed = true,
   labels,
 }: {
   attemptId: string;
   status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED';
+  /** Track B: official simulation timing never offers pause (the server refuses it anyway). */
+  pauseAllowed?: boolean;
   labels: AttemptControlLabels;
 }) {
   const router = useRouter();
@@ -45,7 +48,7 @@ export function AttemptControls({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-        {status === 'ACTIVE' && (
+        {status === 'ACTIVE' && pauseAllowed && (
           <button type="button" className="btn" disabled={busy} onClick={() => call('pause')}>
             {labels.pause}
           </button>

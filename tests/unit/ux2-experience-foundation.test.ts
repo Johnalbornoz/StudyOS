@@ -882,9 +882,10 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
     expect(getMessages('es')['ex.formingTitle']).toMatch(/tomando forma/);
   });
 
-  it('the simulation practice POST body is unchanged', () => {
+  it('the simulation practice POST body keeps its shape (Track B: the Student\'s language, never a hard-coded one)', () => {
     expect(panel).toMatch(/fetch\('\/api\/simulation\/attempts'/);
-    expect(panel).toMatch(/studentId,\s*examProfileId,\s*examVersionId,\s*simulationType,\s*timingMode,\s*language: 'en',/);
+    expect(panel).toMatch(/studentId,\s*examProfileId,\s*examVersionId,\s*simulationType,\s*timingMode,\s*language,/);
+    expect(panel).not.toMatch(/language: 'en'/);
   });
 
   it('Progreso: pending capabilities read "Por validar", never 0%', () => {

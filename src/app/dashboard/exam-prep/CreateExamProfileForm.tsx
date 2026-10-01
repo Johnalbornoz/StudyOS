@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { AvailableExamOption } from '@/lib/assessment/exam-definition.service';
+import type { CatalogFamilyGroup } from '@/lib/exam-core/catalog.service';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 
 interface Labels {
+  family: string;
+  familyNames: Record<string, string>;
+  contentStatus: Record<string, string>;
   title: string;
   lead: string;
   exam: string;
@@ -22,13 +25,15 @@ interface Labels {
 
 export function CreateExamProfileForm({
   studentId,
-  exams,
+  groups,
   labels,
 }: {
   studentId: string;
-  exams: AvailableExamOption[];
+  /** Track B: the catalog grouped by exam family (taxonomy order). */
+  groups: CatalogFamilyGroup[];
   labels: Labels;
 }) {
+  const exams = groups.flatMap((g) => g.options);
   const router = useRouter();
   const [selection, setSelection] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -83,14 +88,28 @@ export function CreateExamProfileForm({
           <div className="ui-form-grid">
             <label className="ui-field">
               <span className="ui-label">{labels.exam}</span>
-              <select className="ui-select" required value={selection} onChange={(event) => setSelection(event.target.value)}>
+              <select className="ui-select" required value={selection} onChange={(event) => setSelection(event.target.value)} aria-describedby="exam-option-note">
                 <option value="" disabled>—</option>
-                {exams.map((exam) => (
-                  <option key={exam.examVersionId} value={exam.examVersionId}>
-                    {exam.examDefinitionName} — {exam.versionLabel}
-                  </option>
+                {groups.map((group) => (
+                  <optgroup key={group.family} label={labels.familyNames[group.family] ?? group.family}>
+                    {group.options.map((exam) => (
+                      <option key={exam.examVersionId} value={exam.examVersionId}>
+                        {exam.examDefinitionName}
+                        {exam.examYear || exam.examSession ? ` (${[exam.examYear, exam.examSession].filter(Boolean).join(' · ')})` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
+              <span id="exam-option-note" className="ui-hint">
+                {(() => {
+                  const chosen = exams.find((e) => e.examVersionId === selection);
+                  if (!chosen) return labels.family;
+                  const family = labels.familyNames[chosen.examFamily ?? 'OTHER'] ?? chosen.rawFamily;
+                  const status = chosen.contentStatus ? labels.contentStatus[chosen.contentStatus] : null;
+                  return [family, chosen.versionLabel, status].filter(Boolean).join(' · ');
+                })()}
+              </span>
             </label>
             <label className="ui-field">
               <span className="ui-label">{labels.date} <span className="ui-optional">({labels.optional})</span></span>

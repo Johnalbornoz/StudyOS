@@ -1,19 +1,24 @@
 /**
- * F9 -- scoring integration (task §28). Chooses among the FOUR
- * EXISTING graders by item shape -- exactly as F8's
- * recordInterventionAttempt already does -- then persists via F7's
- * real, unmodified recordExamAttemptItemResponse. No new grading
- * logic anywhere in F9.
+ * F9 -- scoring integration (task §28), extended by Track B: grading now goes
+ * through the exam-core item grader (`gradeExamItem`), which REUSES the
+ * existing graders (gradeStructuredAnswer / gradeAnswer) and adds only
+ * answer-shape validation, deterministic keyed text answers and multi-part
+ * mark schemes. Persistence stays F7's real recordExamAttemptItemResponse.
+ * No exam-family branching anywhere.
  */
 import { db } from '@/lib/db';
-import { gradeStructuredAnswer, gradeAnswer, type GeneratedQuestion } from '@/services/quiz-generation.service';
+import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { recordExamAttemptItemResponse } from '@/lib/assessment/evaluation.service';
 import type { EvaluationResult } from '@/lib/assessment/types';
 import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-metadata-bridge.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { updateMastery } from '@/services/mastery.service';
+import { examItemFromGenerated, type ExamItem } from '@/lib/exam-core/items';
+import { gradeExamItem, type ExamItemGrade } from '@/lib/exam-core/item-grading';
 
-const STRUCTURED_FORMATS = new Set(['single_choice', 'multi_choice', 'matching', 'ordering', 'classification']);
+function isExamItem(q: GeneratedQuestion | ExamItem): q is ExamItem {
+  return !!(q as ExamItem).exam;
+}
 
 /**
  * Also writes real learning_evidence for the response, through the
@@ -21,10 +26,13 @@ const STRUCTURED_FORMATS = new Set(['single_choice', 'multi_choice', 'matching',
  * already use (updateMastery, sourceType 'EXAM_SIMULATION' -- the
  * pre-existing F5 evidence source type, never a new one). A simulation
  * attempt is independent evidence by definition (no hint/scaffold path
- * exists inside an exam attempt) -- ai_assistance_type is always
- * 'NONE'. Metadata keys are attached only when genuinely resolved,
- * never fabricated (mirrors F7/F8's own INV-F7-18/INV-F8-12
- * discipline).
+ * exists inside an exam attempt, and the Tutor is restricted while an
+ * attempt is open) -- ai_assistance_type is always 'NONE'. Metadata keys
+ * are attached only when genuinely resolved, never fabricated (mirrors
+ * F7/F8's own INV-F7-18/INV-F8-12 discipline).
+ *
+ * Track B: an INVALID response (an answer the rendered controls could never
+ * have produced) is recorded with score 0 but NEVER becomes evidence.
  */
 export async function recordSimulationItemResponse(params: {
   examAttemptId: string;
@@ -33,7 +41,8 @@ export async function recordSimulationItemResponse(params: {
   assessmentComponentId: string;
   learningObjectiveId?: string;
   commandTermId?: string | null;
-  question: GeneratedQuestion;
+  /** The SERVER-HELD item (never a client-supplied question). A bare GeneratedQuestion is treated as a 1-mark AI item. */
+  question: GeneratedQuestion | ExamItem;
   studentAnswer: string;
   language?: string;
   /**
@@ -46,43 +55,34 @@ export async function recordSimulationItemResponse(params: {
    * duplicate Evidence is ever written.
    */
   idempotencyKey?: string;
-}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean }> {
-  let evaluation: EvaluationResult;
-
-  if (STRUCTURED_FORMATS.has(params.question.answerFormat)) {
-    const result = gradeStructuredAnswer(params.question, params.studentAnswer);
-    evaluation = { rawResponse: params.studentAnswer, score: result.score, maxScore: 1, criteriaBreakdown: null, feedback: result.feedback || null, evaluationModelVersion: null, provenance: null };
-  } else {
-    const result = await gradeAnswer(params.question, params.studentAnswer, params.language ?? 'en');
-    evaluation = {
-      rawResponse: params.studentAnswer,
-      score: result.score,
-      maxScore: 1,
-      criteriaBreakdown: { errorType: result.errorType, reasoningValid: result.reasoningValid, confidence: result.confidence },
-      feedback: result.feedback,
-      evaluationModelVersion: result.aiExecution?.aiModel ?? null,
-      provenance: result.aiExecution ? { ...result.aiExecution } : null,
-    };
-  }
+  /** Track B: the item's position in the frozen plan -- at most one committed response per item. */
+  targetIndex?: number;
+}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean; grade: ExamItemGrade }> {
+  const item: ExamItem = isExamItem(params.question) ? params.question : examItemFromGenerated(params.question, params.learningObjectiveId ?? null);
+  const grade = await gradeExamItem(item, params.studentAnswer, params.language ?? 'en');
+  const evaluation = grade.evaluation;
 
   const { id, duplicate } = await recordExamAttemptItemResponse({
     examAttemptId: params.examAttemptId,
     assessmentComponentId: params.assessmentComponentId,
     learningObjectiveId: params.learningObjectiveId,
-    itemSnapshot: params.question as unknown as Record<string, unknown>,
+    approvedItemId: item.exam.approvedItemId ?? undefined,
+    itemSnapshot: item as unknown as Record<string, unknown>,
     evaluation,
     idempotencyKey: params.idempotencyKey,
+    targetIndex: params.targetIndex,
+    itemSource: item.exam.source,
   });
 
   if (duplicate) {
     // The first application already wrote Evidence (if any) -- a retry
     // must never re-run updateMastery a second time for the same
     // logical submission.
-    return { responseId: id, evaluation, evidenceWritten: false, duplicate: true };
+    return { responseId: id, evaluation, evidenceWritten: false, duplicate: true, grade };
   }
 
   let evidenceWritten = false;
-  if (params.learningObjectiveId) {
+  if (grade.status === 'ANSWERED' && params.learningObjectiveId) {
     const bridge = await resolveActivityMetadataForObjective(params.learningObjectiveId);
     if (bridge && bridge.canonicalConceptIds.length > 0) {
       let studentConceptId: string | null = null;
@@ -94,17 +94,17 @@ export async function recordSimulationItemResponse(params: {
         const subjectRow = await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [studentConceptId]);
         const subjectId = subjectRow.rows[0]?.subject_id;
         if (subjectId) {
-          const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true } };
+          const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true, itemSource: item.exam.source } };
           if (bridge.skillIds.length > 0) metadata.skillIds = bridge.skillIds;
           metadata.framework = { examVersionId: params.examVersionId };
           if (params.commandTermId) metadata.commandTermId = params.commandTermId;
-          if (params.question.type) metadata.questionType = params.question.type;
+          if (item.type) metadata.questionType = item.type;
 
           await updateMastery({
             studentId: params.studentId,
             conceptId: studentConceptId,
             subjectId,
-            evidence: { sourceType: 'EXAM_SIMULATION', result: evaluation.score >= 1 ? 'correct' : evaluation.score > 0 ? 'partial' : 'incorrect', difficulty: params.question.difficulty, scorePercent: evaluation.maxScore > 0 ? (evaluation.score / evaluation.maxScore) * 100 : 0 },
+            evidence: { sourceType: 'EXAM_SIMULATION', result: grade.fraction >= 1 ? 'correct' : grade.fraction > 0 ? 'partial' : 'incorrect', difficulty: item.difficulty, scorePercent: grade.fraction * 100 },
             telemetry: { activityType: 'EXAM_SIMULATION', learningMode: 'AI_NATIVE', aiAssistanceType: 'NONE' },
             metadata,
             identity: params.idempotencyKey ? { operationType: 'EXAM_SIMULATION_RESPONSE', operationId: params.idempotencyKey, conceptId: studentConceptId } : undefined,
@@ -115,7 +115,7 @@ export async function recordSimulationItemResponse(params: {
     }
   }
 
-  return { responseId: id, evaluation, evidenceWritten, duplicate: false };
+  return { responseId: id, evaluation, evidenceWritten, duplicate: false, grade };
 }
 
 export async function getSimulationScoreSummary(examAttemptId: string): Promise<{ rawScore: number; maxScore: number; byComponent: Record<string, { score: number; maxScore: number }> }> {

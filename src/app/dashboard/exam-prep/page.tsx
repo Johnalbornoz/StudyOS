@@ -5,7 +5,10 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
-import { getExamDefinition, listAvailableExamOptions } from '@/lib/assessment/exam-definition.service';
+import { getExamDefinition } from '@/lib/assessment/exam-definition.service';
+import { listExamCatalog } from '@/lib/exam-core/catalog.service';
+import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
+import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
@@ -29,14 +32,24 @@ export default async function ExamPrepPage() {
   const t = getMessages(locale);
 
   const profiles = await listStudentExamProfiles(studentId);
-  const availableExams = await listAvailableExamOptions();
+  const catalog = await listExamCatalog();
   const rows = await Promise.all(
     profiles.map(async (profile) => {
-      const definition = await getExamDefinition(profile.examDefinitionId);
-      const snapshot = profile.examVersionId ? await getLatestReadinessSnapshot(profile.id) : null;
-      return { profile, definitionName: definition?.name ?? profile.examDefinitionId, snapshot };
+      const [definition, snapshot, openAttempt] = await Promise.all([
+        getExamDefinition(profile.examDefinitionId),
+        profile.examVersionId ? getLatestReadinessSnapshot(profile.id) : Promise.resolve(null),
+        findOpenSimulationAttemptForProfile(profile.id),
+      ]);
+      return { profile, definitionName: definition?.name ?? profile.examDefinitionId, family: definition?.examFamily ?? null, snapshot, openAttempt };
     })
   );
+  const tr = t as Record<string, string>;
+  const familyNames: Record<string, string> = Object.fromEntries([...EXAM_FAMILIES, 'OTHER'].map((f) => [f, tr[`exam.family.${f}`] ?? f]));
+  const contentStatus: Record<string, string> = {
+    DEV_CERT_FIXTURE: t['exam.contentStatus.DEV_CERT_FIXTURE'],
+    ORIGINAL: t['exam.contentStatus.ORIGINAL'],
+    OFFICIAL_LICENSED: t['exam.contentStatus.OFFICIAL_LICENSED'],
+  };
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateLine = (examDate: string | null) => {
@@ -50,8 +63,11 @@ export default async function ExamPrepPage() {
   const form = (
     <CreateExamProfileForm
       studentId={studentId}
-      exams={availableExams}
+      groups={catalog}
       labels={{
+        family: t['examPrep.create.family'],
+        familyNames,
+        contentStatus,
         title: t['examPrep.create.title'],
         lead: t['ex.setupLead'],
         exam: t['examPrep.create.exam'],
@@ -78,10 +94,10 @@ export default async function ExamPrepPage() {
       ) : (
         <>
           <ul className="ex-list">
-            {rows.map(({ profile, definitionName, snapshot }) => (
+            {rows.map(({ profile, definitionName, family, snapshot, openAttempt }) => (
               <li key={profile.id} className="card ex-card">
                 <div>
-                  <p className="ex-goal-kicker">{t['ex.goalKicker']}</p>
+                  <p className="ex-goal-kicker">{family ? familyNames[family] ?? family : t['ex.goalKicker']}</p>
                   <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
                   <p className="ex-card-meta">{dateLine(profile.examDate)}</p>
                   <div className="ex-card-state">
@@ -94,7 +110,11 @@ export default async function ExamPrepPage() {
                     )}
                   </div>
                 </div>
-                <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{t['ex.viewPrep']}</Link>
+                {openAttempt ? (
+                  <Link href={`/dashboard/exam-prep/attempt/${openAttempt.id}`} className="btn btn-primary">{t['examPrep.inProgress.resume']}</Link>
+                ) : (
+                  <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{t['ex.viewPrep']}</Link>
+                )}
               </li>
             ))}
           </ul>

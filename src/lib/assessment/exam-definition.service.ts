@@ -5,9 +5,29 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import type { ExamDefinition, ExamVersion, ScoringModel, ScoringType } from './types';
+import { isExamFamily, EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
+
+/** Track B: a definition outside the exam-family taxonomy is refused (no arbitrary families). */
+export class UnknownExamFamilyError extends Error {
+  constructor(family: string) {
+    super(`UNKNOWN_EXAM_FAMILY: ${family} (allowed: ${EXAM_FAMILIES.join(', ')})`);
+    this.name = 'UnknownExamFamilyError';
+  }
+}
 
 function toDefinition(r: any): ExamDefinition {
-  return { id: r.id, academicProgrammeId: r.academic_programme_id, name: r.name, examFamily: r.exam_family, purpose: r.purpose, domains: r.domains, status: r.status };
+  return {
+    id: r.id,
+    academicProgrammeId: r.academic_programme_id,
+    name: r.name,
+    examFamily: r.exam_family,
+    purpose: r.purpose,
+    domains: r.domains,
+    status: r.status,
+    configKey: r.config_key ?? null,
+    academicSubjectId: r.academic_subject_id ?? null,
+    aggregationGroup: r.aggregation_group ?? null,
+  };
 }
 function toVersion(r: any): ExamVersion {
   return {
@@ -20,6 +40,8 @@ function toVersion(r: any): ExamVersion {
     scoringModelId: r.scoring_model_id,
     supportedModalities: r.supported_modalities,
     status: r.status,
+    examYear: r.exam_year ?? null,
+    examSession: r.exam_session ?? null,
   };
 }
 function toScoringModel(r: any): ScoringModel {
@@ -27,6 +49,7 @@ function toScoringModel(r: any): ScoringModel {
 }
 
 export async function createExamDefinition(params: { academicProgrammeId?: string; name: string; examFamily: string; purpose?: string; domains?: string[] }): Promise<ExamDefinition> {
+  if (!isExamFamily(params.examFamily)) throw new UnknownExamFamilyError(params.examFamily);
   const result = await db.query(
     `INSERT INTO exam_definitions (academic_programme_id, name, exam_family, purpose, domains, status)
      VALUES ($1, $2, $3, $4, $5, 'ACTIVE') RETURNING *`,

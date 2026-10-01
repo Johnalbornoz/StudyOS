@@ -27,6 +27,12 @@ export interface ExamDefinition {
   purpose: string | null;
   domains: string[] | null;
   status: CatalogStatus;
+  /** Track B: stable configuration key (configuration-driven verticals); null for hand-made definitions. */
+  configKey?: string | null;
+  /** Track B: optional subject anchor (Qualification -> Subject). */
+  academicSubjectId?: string | null;
+  /** Track B: subject group inside a qualification aggregation (AICE). */
+  aggregationGroup?: string | null;
 }
 
 export interface ScoringModel {
@@ -47,6 +53,9 @@ export interface ExamVersion {
   scoringModelId: string | null;
   supportedModalities: string[] | null;
   status: ExamVersionStatus;
+  /** Track B: OPTIONAL sitting year / session -- never required. */
+  examYear?: number | null;
+  examSession?: string | null;
 }
 
 export interface AssessmentComponent {
@@ -63,6 +72,10 @@ export interface AssessmentComponent {
   procedureRequired: boolean;
   simulationCapable: boolean;
   supportStatus: SupportStatus;
+  /** Track B: section order inside the version (null = after every ordered section). */
+  sequenceOrder?: number | null;
+  /** Track B: stable section key inside the version (scoring/delivery policies refer to it). */
+  sectionKey?: string | null;
 }
 
 export interface CommandTerm {

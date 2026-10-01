@@ -12,10 +12,17 @@ import type { EvaluationResult } from './types';
 /** Postgres unique_violation on idx_exam_attempt_item_responses_idempotency -- same detection idiom as mastery.service.ts's own operation_key conflict handling. */
 const PG_UNIQUE_VIOLATION = '23505';
 const IDEMPOTENCY_CONSTRAINT = 'idx_exam_attempt_item_responses_idempotency';
+/** Track B: one committed response per delivered item (exam_attempt_id, target_index). */
+const TARGET_CONSTRAINT = 'idx_exam_attempt_item_responses_target';
 
 function isIdempotencyConflict(err: unknown): boolean {
   const pgErr = err as { code?: string; constraint?: string } | undefined;
   return pgErr?.code === PG_UNIQUE_VIOLATION && pgErr?.constraint === IDEMPOTENCY_CONSTRAINT;
+}
+
+function isTargetConflict(err: unknown): boolean {
+  const pgErr = err as { code?: string; constraint?: string } | undefined;
+  return pgErr?.code === PG_UNIQUE_VIOLATION && pgErr?.constraint === TARGET_CONSTRAINT;
 }
 
 export async function recordExamAttemptItemResponse(params: {
@@ -35,6 +42,10 @@ export async function recordExamAttemptItemResponse(params: {
    * unchanged, exactly as F5's own operation_key was introduced.
    */
   idempotencyKey?: string;
+  /** Track B: position of the server-delivered item in the attempt's frozen plan (one response per item). */
+  targetIndex?: number;
+  /** Track B: where the server-delivered item came from. */
+  itemSource?: 'APPROVED_BANK' | 'AI_GENERATED';
 }): Promise<{ id: string; duplicate?: boolean }> {
   if (params.idempotencyKey) {
     const existing = await db.query(
@@ -48,8 +59,9 @@ export async function recordExamAttemptItemResponse(params: {
     const result = await db.query(
       `INSERT INTO exam_attempt_item_responses (
          exam_attempt_id, assessment_component_id, learning_objective_id, approved_item_id, item_snapshot,
-         raw_response, score, max_score, criteria_breakdown, feedback, evaluation_model_version, evaluation_provenance, reasoning_trace, idempotency_key
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
+         raw_response, score, max_score, criteria_breakdown, feedback, evaluation_model_version, evaluation_provenance, reasoning_trace, idempotency_key,
+         target_index, item_source
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
       [
         params.examAttemptId,
         params.assessmentComponentId,
@@ -65,6 +77,8 @@ export async function recordExamAttemptItemResponse(params: {
         params.evaluation.provenance ? JSON.stringify(params.evaluation.provenance) : null,
         params.reasoningTrace ? JSON.stringify(params.reasoningTrace) : null,
         params.idempotencyKey ?? null,
+        params.targetIndex ?? null,
+        params.itemSource ?? null,
       ]
     );
     return result.rows[0];
@@ -76,6 +90,15 @@ export async function recordExamAttemptItemResponse(params: {
       const existing = await db.query(
         `SELECT id FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND idempotency_key = $2`,
         [params.examAttemptId, params.idempotencyKey]
+      );
+      if (existing.rows.length > 0) return { id: existing.rows[0].id, duplicate: true };
+    }
+    // Track B: a second commit for the SAME delivered item (e.g. two tabs, two
+    // different idempotency keys) never creates a second response.
+    if (params.targetIndex !== undefined && isTargetConflict(err)) {
+      const existing = await db.query(
+        `SELECT id FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND target_index = $2`,
+        [params.examAttemptId, params.targetIndex]
       );
       if (existing.rows.length > 0) return { id: existing.rows[0].id, duplicate: true };
     }

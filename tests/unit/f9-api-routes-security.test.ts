@@ -57,12 +57,30 @@ const getSimulationAttemptMock = vi.fn();
 const pauseSimulationAttemptMock = vi.fn();
 const resumeSimulationAttemptMock = vi.fn();
 const completeSimulationAttemptMock = vi.fn();
+const findOpenSimulationAttemptForProfileMock = vi.fn();
 vi.mock('@/lib/simulation/attempt.service', () => ({
   startSimulationAttempt: (...a: any[]) => startSimulationAttemptMock(...a),
   getSimulationAttempt: (...a: any[]) => getSimulationAttemptMock(...a),
   pauseSimulationAttempt: (...a: any[]) => pauseSimulationAttemptMock(...a),
   resumeSimulationAttempt: (...a: any[]) => resumeSimulationAttemptMock(...a),
   completeSimulationAttempt: (...a: any[]) => completeSimulationAttemptMock(...a),
+  findOpenSimulationAttemptForProfile: (...a: any[]) => findOpenSimulationAttemptForProfileMock(...a),
+  expireSimulationAttemptIfInactive: async () => false,
+  DeliveryPolicyConfigurationError: class DeliveryPolicyConfigurationError extends Error {},
+  SimulationModeNotAllowedError: class SimulationModeNotAllowedError extends Error {},
+}));
+
+// Track B: submission finalizes open items and scores through exam-core.
+const finalizeOpenItemsMock = vi.fn();
+vi.mock('@/lib/simulation/item-resolution.service', () => ({
+  finalizeOpenItemsForSubmission: (...a: any[]) => finalizeOpenItemsMock(...a),
+  SimulationItemNotActiveError: class SimulationItemNotActiveError extends Error {},
+}));
+const scoreAndRecordAttemptResultMock = vi.fn();
+vi.mock('@/lib/exam-core/results.service', () => ({
+  scoreAndRecordAttemptResult: (...a: any[]) => scoreAndRecordAttemptResultMock(...a),
+  getAttemptResult: async () => null,
+  deriveExamLifecycle: () => 'IN_PROGRESS',
 }));
 
 vi.mock('@/lib/simulation/plan.service', () => ({ TimingConfigurationError: class TimingConfigurationError extends Error {} }));
@@ -132,6 +150,9 @@ beforeEach(() => {
   pauseSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'PAUSED' });
   resumeSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'ACTIVE' });
   completeSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'COMPLETED' });
+  findOpenSimulationAttemptForProfileMock.mockReset().mockResolvedValue(null);
+  finalizeOpenItemsMock.mockReset().mockResolvedValue({ committedDrafts: 0, missing: 0 });
+  scoreAndRecordAttemptResultMock.mockReset().mockResolvedValue({ id: 'res-1', rawScore: 1, maxScore: 1, scoringStatus: 'SCORED' });
 
   recordSimulationItemResponseMock.mockReset().mockResolvedValue({ responseId: 'resp-1', evaluation: {}, evidenceWritten: true });
   getSimulationScoreSummaryMock.mockReset().mockResolvedValue({ rawScore: 1, maxScore: 1, byComponent: {} });
@@ -307,6 +328,36 @@ describe('UX-2 security: starting a simulation requires owning the exam profile'
 });
 
 describe('case M/54: finalization is idempotent-or-safely-rejected, never re-scored', () => {
+  it('Track B: a retried submission of a COMPLETED attempt returns the SAME stored result, never re-runs diagnosis/readiness', async () => {
+    getSimulationAttemptMock.mockResolvedValue({ id: 'sa-1', studentId: VALID_ID, status: 'COMPLETED', examAttemptId: 'ea-1', examVersionId: VALID_ID, examProfileId: 'p-1' });
+    const res: any = await completePOST(jsonReq({}), withParams('sa-1'));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.alreadySubmitted).toBe(true);
+    expect(body.data.result.id).toBe('res-1');
+    expect(finalizeOpenItemsMock).not.toHaveBeenCalled();
+    expect(completeSimulationAttemptMock).not.toHaveBeenCalled();
+    expect(runPostExamDiagnosisMock).not.toHaveBeenCalled();
+    expect(computeReadinessSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it('Track B: an open attempt for the same profile is returned (409 ATTEMPT_IN_PROGRESS), never a second attempt', async () => {
+    findOpenSimulationAttemptForProfileMock.mockResolvedValue({ id: 'sa-open' });
+    dbQueryMock.mockResolvedValue({ rows: [{ '?column?': 1 }] }); // owned profile, startable published version
+    const res: any = await attemptsPOST(jsonReq({ studentId: VALID_ID, examProfileId: VALID_ID, examVersionId: VALID_ID, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'es' }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body).toMatchObject({ error: 'ATTEMPT_IN_PROGRESS', data: { simulationAttemptId: 'sa-open' } });
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it('Track B: the start body is strict -- a client-supplied question / answer key is rejected (400)', async () => {
+    dbQueryMock.mockResolvedValue({ rows: [{ '?column?': 1 }] });
+    const res: any = await attemptsPOST(jsonReq({ studentId: VALID_ID, examProfileId: VALID_ID, examVersionId: VALID_ID, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'es', correctAnswer: 'A' }));
+    expect(res.status).toBe(400);
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+
   it('a second complete call on an already-completed attempt returns 409, never re-runs diagnosis/readiness', async () => {
     completeSimulationAttemptMock.mockRejectedValue(new Error('simulation attempt sa-1 could not be completed from its current status'));
     const res: any = await completePOST(jsonReq({}), withParams('sa-1'));

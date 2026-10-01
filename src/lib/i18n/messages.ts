@@ -1044,7 +1044,102 @@ export type MessageKey =
   | 'di.err.import'
   | 'di.summaryNewOne'
   | 'di.summaryReuseOne'
-  | 'workspace.addRole';
+  | 'workspace.addRole'
+  | 'exam.family.PAA'
+  | 'exam.family.PISA'
+  | 'exam.family.IB'
+  | 'exam.family.CAMBRIDGE'
+  | 'exam.family.AICE'
+  | 'exam.family.ICFES'
+  | 'exam.family.OTHER'
+  | 'exam.contentStatus.DEV_CERT_FIXTURE'
+  | 'exam.contentStatus.ORIGINAL'
+  | 'exam.contentStatus.OFFICIAL_LICENSED'
+  | 'exam.sitting'
+  | 'examPrep.create.family'
+  | 'examPrep.run.section'
+  | 'examPrep.run.timeLeft'
+  | 'examPrep.run.overtime'
+  | 'examPrep.run.timeUpHard'
+  | 'examPrep.run.saved'
+  | 'examPrep.run.saving'
+  | 'examPrep.run.saveError'
+  | 'examPrep.run.submitAnswer'
+  | 'examPrep.run.question'
+  | 'examPrep.run.marks'
+  | 'examPrep.run.resources'
+  | 'examPrep.run.breakTitle'
+  | 'examPrep.run.breakBody'
+  | 'examPrep.run.endBreak'
+  | 'examPrep.run.handIn'
+  | 'examPrep.run.handInConfirm'
+  | 'examPrep.run.handingIn'
+  | 'examPrep.run.navLabel'
+  | 'examPrep.run.status.OPEN'
+  | 'examPrep.run.status.DRAFT'
+  | 'examPrep.run.status.ANSWERED'
+  | 'examPrep.run.status.UNAVAILABLE'
+  | 'examPrep.run.status.SKIPPED'
+  | 'examPrep.run.status.MISSING'
+  | 'examPrep.run.integrity'
+  | 'examPrep.run.answerRecorded'
+  | 'examPrep.run.invalidAnswer'
+  | 'examPrep.run.part'
+  | 'examPrep.run.answerPlaceholder'
+  | 'examPrep.run.calculator'
+  | 'examPrep.result.title'
+  | 'examPrep.result.examScore'
+  | 'examPrep.result.examScoreNote'
+  | 'examPrep.result.noPolicy'
+  | 'examPrep.result.raw'
+  | 'examPrep.result.bySection'
+  | 'examPrep.result.strengths'
+  | 'examPrep.result.gaps'
+  | 'examPrep.result.none'
+  | 'examPrep.result.learningState'
+  | 'examPrep.result.learningStateNote'
+  | 'examPrep.result.notLinked'
+  | 'examPrep.result.studyConcept'
+  | 'examPrep.result.nextStep'
+  | 'examPrep.result.nextStepBody'
+  | 'examPrep.result.review'
+  | 'examPrep.result.reviewHidden'
+  | 'examPrep.result.yourAnswer'
+  | 'examPrep.result.correctAnswer'
+  | 'examPrep.result.status.CORRECT'
+  | 'examPrep.result.status.PARTIAL'
+  | 'examPrep.result.status.INCORRECT'
+  | 'examPrep.result.status.INVALID'
+  | 'examPrep.result.status.MISSING'
+  | 'examPrep.result.status.SKIPPED'
+  | 'examPrep.result.policy'
+  | 'examPrep.result.unofficial'
+  | 'examPrep.result.invalidated'
+  | 'examPrep.result.backToPrep'
+  | 'examPrep.result.pending'
+  | 'examPrep.result.class.STRENGTH'
+  | 'examPrep.result.class.DEVELOPING'
+  | 'examPrep.result.class.GAP'
+  | 'examPrep.result.class.NOT_ASSESSED'
+  | 'examPrep.areas.title'
+  | 'examPrep.areas.lead'
+  | 'examPrep.areas.noResult'
+  | 'examPrep.areas.practice'
+  | 'examPrep.gaps.title'
+  | 'examPrep.inProgress.title'
+  | 'examPrep.inProgress.resume'
+  | 'examPrep.history.title'
+  | 'examPrep.history.view'
+  | 'examPrep.history.open'
+  | 'examPrep.history.empty'
+  | 'examPrep.aggregate.title'
+  | 'examPrep.aggregate.rules'
+  | 'examPrep.aggregate.noResult'
+  | 'examPrep.start.topic'
+  | 'examPrep.start.area'
+  | 'examPrep.start.inProgress'
+  | 'examPrep.start.notAllowed'
+  | 'examPrep.version';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2702,6 +2797,101 @@ const es: Messages = {
   'di.summaryNewOne': 'Se agregará 1 tema nuevo a {subject}.',
   'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
   'workspace.addRole': 'Añadir otro rol',
+  'exam.family.PAA': 'PAA',
+  'exam.family.PISA': 'PISA',
+  'exam.family.IB': 'IB (Bachillerato Internacional)',
+  'exam.family.CAMBRIDGE': 'Cambridge',
+  'exam.family.AICE': 'Cambridge AICE',
+  'exam.family.ICFES': 'ICFES · Saber 11',
+  'exam.family.OTHER': 'Otros exámenes',
+  'exam.contentStatus.DEV_CERT_FIXTURE': 'Contenido de práctica (DEV), no oficial',
+  'exam.contentStatus.ORIGINAL': 'Contenido original de StudyUS',
+  'exam.contentStatus.OFFICIAL_LICENSED': 'Contenido oficial con licencia',
+  'exam.sitting': 'Convocatoria',
+  'examPrep.create.family': 'Tipo de examen',
+  'examPrep.run.section': 'Sección {n} de {total}',
+  'examPrep.run.timeLeft': 'Tiempo restante',
+  'examPrep.run.overtime': 'Tiempo cumplido: puedes seguir (práctica)',
+  'examPrep.run.timeUpHard': 'Se acabó el tiempo de esta sección. Tus respuestas guardadas se enviaron.',
+  'examPrep.run.saved': 'Guardado',
+  'examPrep.run.saving': 'Guardando…',
+  'examPrep.run.saveError': 'No se pudo guardar; lo intentaremos de nuevo.',
+  'examPrep.run.submitAnswer': 'Responder y continuar',
+  'examPrep.run.question': 'Pregunta {n}',
+  'examPrep.run.marks': '{n} pts',
+  'examPrep.run.resources': 'Recursos permitidos',
+  'examPrep.run.breakTitle': 'Pausa entre secciones',
+  'examPrep.run.breakBody': 'Siguiente: {name}. La pausa termina en {time}.',
+  'examPrep.run.endBreak': 'Continuar ahora',
+  'examPrep.run.handIn': 'Entregar simulacro',
+  'examPrep.run.handInConfirm': '¿Entregar ahora? Se enviarán tus respuestas guardadas y las preguntas sin responder contarán como no respondidas.',
+  'examPrep.run.handingIn': 'Entregando…',
+  'examPrep.run.navLabel': 'Preguntas de esta sección',
+  'examPrep.run.status.OPEN': 'Sin responder',
+  'examPrep.run.status.DRAFT': 'Borrador guardado',
+  'examPrep.run.status.ANSWERED': 'Respondida',
+  'examPrep.run.status.UNAVAILABLE': 'No disponible',
+  'examPrep.run.status.SKIPPED': 'Omitida',
+  'examPrep.run.status.MISSING': 'Sin respuesta',
+  'examPrep.run.integrity': 'Simulacro en curso: el Tutor no está disponible hasta que lo entregues o lo abandones.',
+  'examPrep.run.answerRecorded': 'Respuesta registrada.',
+  'examPrep.run.invalidAnswer': 'Esa respuesta no es válida para esta pregunta.',
+  'examPrep.run.part': 'Parte {id}',
+  'examPrep.run.answerPlaceholder': 'Escribe tu respuesta',
+  'examPrep.run.calculator': 'Calculadora permitida',
+  'examPrep.result.title': 'Resultado del simulacro',
+  'examPrep.result.examScore': 'Resultado del examen (este intento)',
+  'examPrep.result.examScoreNote': 'Es tu desempeño en este simulacro. No es tu dominio en StudyUS: ese lo determina tu aprendizaje con evidencia.',
+  'examPrep.result.noPolicy': 'Este examen aún no tiene una política de puntuación configurada; solo se muestran tus puntos.',
+  'examPrep.result.raw': '{earned} de {available} puntos',
+  'examPrep.result.bySection': 'Por sección',
+  'examPrep.result.strengths': 'Fortalezas en este intento',
+  'examPrep.result.gaps': 'Para reforzar',
+  'examPrep.result.none': 'Nada que destacar todavía.',
+  'examPrep.result.learningState': 'Tu estado de aprendizaje en StudyUS',
+  'examPrep.result.learningStateNote': 'Esto viene de tu motor de aprendizaje, no de este examen.',
+  'examPrep.result.notLinked': 'Este objetivo aún no está vinculado a tus conceptos de StudyUS.',
+  'examPrep.result.studyConcept': 'Estudiar en StudyUS',
+  'examPrep.result.nextStep': 'Siguiente paso en StudyUS',
+  'examPrep.result.nextStepBody': 'Tu siguiente paso lo decide tu motor de aprendizaje, con todo lo que sabe de ti.',
+  'examPrep.result.review': 'Revisión de preguntas',
+  'examPrep.result.reviewHidden': 'Este examen solo muestra puntuaciones, sin revisión de preguntas.',
+  'examPrep.result.yourAnswer': 'Tu respuesta',
+  'examPrep.result.correctAnswer': 'Respuesta correcta',
+  'examPrep.result.status.CORRECT': 'Correcta',
+  'examPrep.result.status.PARTIAL': 'Parcial',
+  'examPrep.result.status.INCORRECT': 'Incorrecta',
+  'examPrep.result.status.INVALID': 'No válida',
+  'examPrep.result.status.MISSING': 'Sin responder',
+  'examPrep.result.status.SKIPPED': 'No disponible (no cuenta)',
+  'examPrep.result.policy': 'Puntuación',
+  'examPrep.result.unofficial': 'Escala de práctica, no oficial.',
+  'examPrep.result.invalidated': 'Este resultado fue invalidado y no cuenta en tu historial.',
+  'examPrep.result.backToPrep': 'Volver a la preparación',
+  'examPrep.result.pending': 'Estamos calculando tu resultado…',
+  'examPrep.result.class.STRENGTH': 'Fortaleza',
+  'examPrep.result.class.DEVELOPING': 'En desarrollo',
+  'examPrep.result.class.GAP': 'Para reforzar',
+  'examPrep.result.class.NOT_ASSESSED': 'Sin evaluar',
+  'examPrep.areas.title': 'Áreas del examen',
+  'examPrep.areas.lead': 'Tu desempeño por área en el último simulacro entregado.',
+  'examPrep.areas.noResult': 'Aún sin simulacros entregados.',
+  'examPrep.areas.practice': 'Practicar esta área',
+  'examPrep.gaps.title': 'Conceptos para reforzar',
+  'examPrep.inProgress.title': 'Tienes un simulacro en curso',
+  'examPrep.inProgress.resume': 'Continuar simulacro',
+  'examPrep.history.title': 'Tus simulacros',
+  'examPrep.history.view': 'Ver resultado',
+  'examPrep.history.open': 'Abrir',
+  'examPrep.history.empty': 'Todavía no has hecho simulacros.',
+  'examPrep.aggregate.title': 'Tus asignaturas de {qualification}',
+  'examPrep.aggregate.rules': 'Las reglas del diploma no están configuradas en StudyUS: aquí ves tus resultados por asignatura.',
+  'examPrep.aggregate.noResult': 'Sin resultado',
+  'examPrep.start.topic': 'Objetivo',
+  'examPrep.start.area': 'Área',
+  'examPrep.start.inProgress': 'Ya tienes un simulacro en curso para este examen.',
+  'examPrep.start.notAllowed': 'Este examen no ofrece esa modalidad.',
+  'examPrep.version': 'Versión',
 };
 
 const en: Messages = {
@@ -4358,6 +4548,101 @@ const en: Messages = {
   'di.summaryNewOne': '1 new topic will be added to {subject}.',
   'di.summaryReuseOne': '1 you already have will be reused.',
   'workspace.addRole': 'Add another role',
+  'exam.family.PAA': 'PAA',
+  'exam.family.PISA': 'PISA',
+  'exam.family.IB': 'IB Diploma Programme',
+  'exam.family.CAMBRIDGE': 'Cambridge',
+  'exam.family.AICE': 'Cambridge AICE',
+  'exam.family.ICFES': 'ICFES · Saber 11',
+  'exam.family.OTHER': 'Other exams',
+  'exam.contentStatus.DEV_CERT_FIXTURE': 'Practice content (DEV), not official',
+  'exam.contentStatus.ORIGINAL': 'Original StudyUS content',
+  'exam.contentStatus.OFFICIAL_LICENSED': 'Licensed official content',
+  'exam.sitting': 'Sitting',
+  'examPrep.create.family': 'Exam type',
+  'examPrep.run.section': 'Section {n} of {total}',
+  'examPrep.run.timeLeft': 'Time left',
+  'examPrep.run.overtime': 'Time is up, you can keep going (practice)',
+  'examPrep.run.timeUpHard': 'Time is up for this section. Your saved answers were submitted.',
+  'examPrep.run.saved': 'Saved',
+  'examPrep.run.saving': 'Saving…',
+  'examPrep.run.saveError': 'Could not save; we will try again.',
+  'examPrep.run.submitAnswer': 'Answer and continue',
+  'examPrep.run.question': 'Question {n}',
+  'examPrep.run.marks': '{n} marks',
+  'examPrep.run.resources': 'Permitted resources',
+  'examPrep.run.breakTitle': 'Break between sections',
+  'examPrep.run.breakBody': 'Next: {name}. The break ends in {time}.',
+  'examPrep.run.endBreak': 'Continue now',
+  'examPrep.run.handIn': 'Hand in',
+  'examPrep.run.handInConfirm': 'Hand in now? Your saved answers will be submitted and unanswered questions will count as not answered.',
+  'examPrep.run.handingIn': 'Handing in…',
+  'examPrep.run.navLabel': 'Questions in this section',
+  'examPrep.run.status.OPEN': 'Not answered',
+  'examPrep.run.status.DRAFT': 'Draft saved',
+  'examPrep.run.status.ANSWERED': 'Answered',
+  'examPrep.run.status.UNAVAILABLE': 'Unavailable',
+  'examPrep.run.status.SKIPPED': 'Skipped',
+  'examPrep.run.status.MISSING': 'No answer',
+  'examPrep.run.integrity': 'Simulation in progress: the Tutor is unavailable until you hand it in or leave it.',
+  'examPrep.run.answerRecorded': 'Answer recorded.',
+  'examPrep.run.invalidAnswer': 'That answer is not valid for this question.',
+  'examPrep.run.part': 'Part {id}',
+  'examPrep.run.answerPlaceholder': 'Type your answer',
+  'examPrep.run.calculator': 'Calculator allowed',
+  'examPrep.result.title': 'Simulation result',
+  'examPrep.result.examScore': 'Exam result (this attempt)',
+  'examPrep.result.examScoreNote': 'This is your performance in this simulation. It is not your StudyUS mastery, which is set by your learning evidence.',
+  'examPrep.result.noPolicy': 'This exam has no scoring policy configured yet; only your marks are shown.',
+  'examPrep.result.raw': '{earned} of {available} marks',
+  'examPrep.result.bySection': 'By section',
+  'examPrep.result.strengths': 'Strengths in this attempt',
+  'examPrep.result.gaps': 'To reinforce',
+  'examPrep.result.none': 'Nothing to highlight yet.',
+  'examPrep.result.learningState': 'Your StudyUS learning state',
+  'examPrep.result.learningStateNote': 'This comes from your learning engine, not from this exam.',
+  'examPrep.result.notLinked': 'This objective is not linked to your StudyUS concepts yet.',
+  'examPrep.result.studyConcept': 'Study in StudyUS',
+  'examPrep.result.nextStep': 'Next step in StudyUS',
+  'examPrep.result.nextStepBody': 'Your learning engine decides your next step, using everything it knows about you.',
+  'examPrep.result.review': 'Question review',
+  'examPrep.result.reviewHidden': 'This exam shows scores only, without a question review.',
+  'examPrep.result.yourAnswer': 'Your answer',
+  'examPrep.result.correctAnswer': 'Correct answer',
+  'examPrep.result.status.CORRECT': 'Correct',
+  'examPrep.result.status.PARTIAL': 'Partial',
+  'examPrep.result.status.INCORRECT': 'Incorrect',
+  'examPrep.result.status.INVALID': 'Not valid',
+  'examPrep.result.status.MISSING': 'Not answered',
+  'examPrep.result.status.SKIPPED': 'Unavailable (not counted)',
+  'examPrep.result.policy': 'Scoring',
+  'examPrep.result.unofficial': 'Practice scale, not official.',
+  'examPrep.result.invalidated': 'This result was invalidated and does not count in your history.',
+  'examPrep.result.backToPrep': 'Back to preparation',
+  'examPrep.result.pending': 'We are calculating your result…',
+  'examPrep.result.class.STRENGTH': 'Strength',
+  'examPrep.result.class.DEVELOPING': 'Developing',
+  'examPrep.result.class.GAP': 'To reinforce',
+  'examPrep.result.class.NOT_ASSESSED': 'Not assessed',
+  'examPrep.areas.title': 'Exam areas',
+  'examPrep.areas.lead': 'Your performance by area in your last handed-in simulation.',
+  'examPrep.areas.noResult': 'No handed-in simulations yet.',
+  'examPrep.areas.practice': 'Practise this area',
+  'examPrep.gaps.title': 'Concepts to reinforce',
+  'examPrep.inProgress.title': 'You have a simulation in progress',
+  'examPrep.inProgress.resume': 'Continue simulation',
+  'examPrep.history.title': 'Your simulations',
+  'examPrep.history.view': 'View result',
+  'examPrep.history.open': 'Open',
+  'examPrep.history.empty': 'You have not done any simulations yet.',
+  'examPrep.aggregate.title': 'Your {qualification} subjects',
+  'examPrep.aggregate.rules': 'Diploma rules are not configured in StudyUS: here you see your results by subject.',
+  'examPrep.aggregate.noResult': 'No result',
+  'examPrep.start.topic': 'Objective',
+  'examPrep.start.area': 'Area',
+  'examPrep.start.inProgress': 'You already have a simulation in progress for this exam.',
+  'examPrep.start.notAllowed': 'This exam does not offer that mode.',
+  'examPrep.version': 'Version',
 };
 
 const de: Messages = {
@@ -6014,6 +6299,101 @@ const de: Messages = {
   'di.summaryNewOne': '1 neues Thema kommt zu {subject}.',
   'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
   'workspace.addRole': 'Weitere Rolle hinzufügen',
+  'exam.family.PAA': 'PAA',
+  'exam.family.PISA': 'PISA',
+  'exam.family.IB': 'IB-Diplomprogramm',
+  'exam.family.CAMBRIDGE': 'Cambridge',
+  'exam.family.AICE': 'Cambridge AICE',
+  'exam.family.ICFES': 'ICFES · Saber 11',
+  'exam.family.OTHER': 'Weitere Prüfungen',
+  'exam.contentStatus.DEV_CERT_FIXTURE': 'Übungsinhalt (DEV), nicht offiziell',
+  'exam.contentStatus.ORIGINAL': 'Originalinhalt von StudyUS',
+  'exam.contentStatus.OFFICIAL_LICENSED': 'Lizenzierter offizieller Inhalt',
+  'exam.sitting': 'Prüfungstermin',
+  'examPrep.create.family': 'Prüfungsart',
+  'examPrep.run.section': 'Abschnitt {n} von {total}',
+  'examPrep.run.timeLeft': 'Verbleibende Zeit',
+  'examPrep.run.overtime': 'Zeit abgelaufen, du kannst weitermachen (Übung)',
+  'examPrep.run.timeUpHard': 'Die Zeit für diesen Abschnitt ist abgelaufen. Deine gespeicherten Antworten wurden abgegeben.',
+  'examPrep.run.saved': 'Gespeichert',
+  'examPrep.run.saving': 'Wird gespeichert…',
+  'examPrep.run.saveError': 'Speichern fehlgeschlagen; wir versuchen es erneut.',
+  'examPrep.run.submitAnswer': 'Antworten und weiter',
+  'examPrep.run.question': 'Frage {n}',
+  'examPrep.run.marks': '{n} Pkt.',
+  'examPrep.run.resources': 'Erlaubte Hilfsmittel',
+  'examPrep.run.breakTitle': 'Pause zwischen Abschnitten',
+  'examPrep.run.breakBody': 'Als Nächstes: {name}. Die Pause endet in {time}.',
+  'examPrep.run.endBreak': 'Jetzt fortfahren',
+  'examPrep.run.handIn': 'Abgeben',
+  'examPrep.run.handInConfirm': 'Jetzt abgeben? Deine gespeicherten Antworten werden abgegeben; unbeantwortete Fragen zählen als nicht beantwortet.',
+  'examPrep.run.handingIn': 'Wird abgegeben…',
+  'examPrep.run.navLabel': 'Fragen in diesem Abschnitt',
+  'examPrep.run.status.OPEN': 'Nicht beantwortet',
+  'examPrep.run.status.DRAFT': 'Entwurf gespeichert',
+  'examPrep.run.status.ANSWERED': 'Beantwortet',
+  'examPrep.run.status.UNAVAILABLE': 'Nicht verfügbar',
+  'examPrep.run.status.SKIPPED': 'Übersprungen',
+  'examPrep.run.status.MISSING': 'Keine Antwort',
+  'examPrep.run.integrity': 'Simulation läuft: Der Tutor ist erst nach Abgabe oder Abbruch wieder verfügbar.',
+  'examPrep.run.answerRecorded': 'Antwort gespeichert.',
+  'examPrep.run.invalidAnswer': 'Diese Antwort ist für diese Frage nicht gültig.',
+  'examPrep.run.part': 'Teil {id}',
+  'examPrep.run.answerPlaceholder': 'Gib deine Antwort ein',
+  'examPrep.run.calculator': 'Taschenrechner erlaubt',
+  'examPrep.result.title': 'Ergebnis der Simulation',
+  'examPrep.result.examScore': 'Prüfungsergebnis (dieser Versuch)',
+  'examPrep.result.examScoreNote': 'Das ist deine Leistung in dieser Simulation. Es ist nicht deine StudyUS-Beherrschung; diese ergibt sich aus deinen Lernbelegen.',
+  'examPrep.result.noPolicy': 'Für diese Prüfung ist noch keine Bewertungsregel konfiguriert; nur deine Punkte werden angezeigt.',
+  'examPrep.result.raw': '{earned} von {available} Punkten',
+  'examPrep.result.bySection': 'Nach Abschnitt',
+  'examPrep.result.strengths': 'Stärken in diesem Versuch',
+  'examPrep.result.gaps': 'Zu festigen',
+  'examPrep.result.none': 'Noch nichts hervorzuheben.',
+  'examPrep.result.learningState': 'Dein Lernstand in StudyUS',
+  'examPrep.result.learningStateNote': 'Das stammt aus deiner Lern-Engine, nicht aus dieser Prüfung.',
+  'examPrep.result.notLinked': 'Dieses Ziel ist noch nicht mit deinen StudyUS-Konzepten verknüpft.',
+  'examPrep.result.studyConcept': 'In StudyUS lernen',
+  'examPrep.result.nextStep': 'Nächster Schritt in StudyUS',
+  'examPrep.result.nextStepBody': 'Deine Lern-Engine entscheidet deinen nächsten Schritt anhand von allem, was sie über dich weiß.',
+  'examPrep.result.review': 'Fragenüberblick',
+  'examPrep.result.reviewHidden': 'Diese Prüfung zeigt nur Punktzahlen, ohne Fragenüberblick.',
+  'examPrep.result.yourAnswer': 'Deine Antwort',
+  'examPrep.result.correctAnswer': 'Richtige Antwort',
+  'examPrep.result.status.CORRECT': 'Richtig',
+  'examPrep.result.status.PARTIAL': 'Teilweise',
+  'examPrep.result.status.INCORRECT': 'Falsch',
+  'examPrep.result.status.INVALID': 'Ungültig',
+  'examPrep.result.status.MISSING': 'Nicht beantwortet',
+  'examPrep.result.status.SKIPPED': 'Nicht verfügbar (zählt nicht)',
+  'examPrep.result.policy': 'Bewertung',
+  'examPrep.result.unofficial': 'Übungsskala, nicht offiziell.',
+  'examPrep.result.invalidated': 'Dieses Ergebnis wurde für ungültig erklärt und zählt nicht.',
+  'examPrep.result.backToPrep': 'Zurück zur Vorbereitung',
+  'examPrep.result.pending': 'Dein Ergebnis wird berechnet…',
+  'examPrep.result.class.STRENGTH': 'Stärke',
+  'examPrep.result.class.DEVELOPING': 'In Entwicklung',
+  'examPrep.result.class.GAP': 'Zu festigen',
+  'examPrep.result.class.NOT_ASSESSED': 'Nicht bewertet',
+  'examPrep.areas.title': 'Prüfungsbereiche',
+  'examPrep.areas.lead': 'Deine Leistung je Bereich in der zuletzt abgegebenen Simulation.',
+  'examPrep.areas.noResult': 'Noch keine abgegebenen Simulationen.',
+  'examPrep.areas.practice': 'Diesen Bereich üben',
+  'examPrep.gaps.title': 'Zu festigende Konzepte',
+  'examPrep.inProgress.title': 'Du hast eine laufende Simulation',
+  'examPrep.inProgress.resume': 'Simulation fortsetzen',
+  'examPrep.history.title': 'Deine Simulationen',
+  'examPrep.history.view': 'Ergebnis ansehen',
+  'examPrep.history.open': 'Öffnen',
+  'examPrep.history.empty': 'Du hast noch keine Simulationen gemacht.',
+  'examPrep.aggregate.title': 'Deine Fächer in {qualification}',
+  'examPrep.aggregate.rules': 'Diplomregeln sind in StudyUS nicht konfiguriert: Hier siehst du deine Ergebnisse je Fach.',
+  'examPrep.aggregate.noResult': 'Kein Ergebnis',
+  'examPrep.start.topic': 'Lernziel',
+  'examPrep.start.area': 'Bereich',
+  'examPrep.start.inProgress': 'Für diese Prüfung läuft bereits eine Simulation.',
+  'examPrep.start.notAllowed': 'Diese Prüfung bietet diesen Modus nicht an.',
+  'examPrep.version': 'Version',
 };
 
 const fr: Messages = {
@@ -7670,6 +8050,101 @@ const fr: Messages = {
   'di.summaryNewOne': '1 nouveau thème sera ajouté à {subject}.',
   'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
   'workspace.addRole': 'Ajouter un autre rôle',
+  'exam.family.PAA': 'PAA',
+  'exam.family.PISA': 'PISA',
+  'exam.family.IB': 'IB (Baccalauréat International)',
+  'exam.family.CAMBRIDGE': 'Cambridge',
+  'exam.family.AICE': 'Cambridge AICE',
+  'exam.family.ICFES': 'ICFES · Saber 11',
+  'exam.family.OTHER': 'Autres examens',
+  'exam.contentStatus.DEV_CERT_FIXTURE': 'Contenu d\'entraînement (DEV), non officiel',
+  'exam.contentStatus.ORIGINAL': 'Contenu original StudyUS',
+  'exam.contentStatus.OFFICIAL_LICENSED': 'Contenu officiel sous licence',
+  'exam.sitting': 'Session',
+  'examPrep.create.family': 'Type d\'examen',
+  'examPrep.run.section': 'Section {n} sur {total}',
+  'examPrep.run.timeLeft': 'Temps restant',
+  'examPrep.run.overtime': 'Temps écoulé, tu peux continuer (entraînement)',
+  'examPrep.run.timeUpHard': 'Le temps de cette section est écoulé. Tes réponses enregistrées ont été envoyées.',
+  'examPrep.run.saved': 'Enregistré',
+  'examPrep.run.saving': 'Enregistrement…',
+  'examPrep.run.saveError': 'Impossible d\'enregistrer ; nous réessaierons.',
+  'examPrep.run.submitAnswer': 'Répondre et continuer',
+  'examPrep.run.question': 'Question {n}',
+  'examPrep.run.marks': '{n} pts',
+  'examPrep.run.resources': 'Ressources autorisées',
+  'examPrep.run.breakTitle': 'Pause entre les sections',
+  'examPrep.run.breakBody': 'Ensuite : {name}. La pause se termine dans {time}.',
+  'examPrep.run.endBreak': 'Continuer maintenant',
+  'examPrep.run.handIn': 'Remettre',
+  'examPrep.run.handInConfirm': 'Remettre maintenant ? Tes réponses enregistrées seront envoyées et les questions sans réponse compteront comme non répondues.',
+  'examPrep.run.handingIn': 'Remise en cours…',
+  'examPrep.run.navLabel': 'Questions de cette section',
+  'examPrep.run.status.OPEN': 'Sans réponse',
+  'examPrep.run.status.DRAFT': 'Brouillon enregistré',
+  'examPrep.run.status.ANSWERED': 'Répondue',
+  'examPrep.run.status.UNAVAILABLE': 'Indisponible',
+  'examPrep.run.status.SKIPPED': 'Ignorée',
+  'examPrep.run.status.MISSING': 'Pas de réponse',
+  'examPrep.run.integrity': 'Simulation en cours : le Tuteur est indisponible jusqu\'à ta remise ou ton abandon.',
+  'examPrep.run.answerRecorded': 'Réponse enregistrée.',
+  'examPrep.run.invalidAnswer': 'Cette réponse n\'est pas valide pour cette question.',
+  'examPrep.run.part': 'Partie {id}',
+  'examPrep.run.answerPlaceholder': 'Écris ta réponse',
+  'examPrep.run.calculator': 'Calculatrice autorisée',
+  'examPrep.result.title': 'Résultat de la simulation',
+  'examPrep.result.examScore': 'Résultat d\'examen (cette tentative)',
+  'examPrep.result.examScoreNote': 'C\'est ta performance dans cette simulation. Ce n\'est pas ta maîtrise StudyUS, qui dépend de tes preuves d\'apprentissage.',
+  'examPrep.result.noPolicy': 'Cet examen n\'a pas encore de règle de notation configurée ; seuls tes points sont affichés.',
+  'examPrep.result.raw': '{earned} sur {available} points',
+  'examPrep.result.bySection': 'Par section',
+  'examPrep.result.strengths': 'Points forts de cette tentative',
+  'examPrep.result.gaps': 'À renforcer',
+  'examPrep.result.none': 'Rien à signaler pour l\'instant.',
+  'examPrep.result.learningState': 'Ton état d\'apprentissage StudyUS',
+  'examPrep.result.learningStateNote': 'Ceci provient de ton moteur d\'apprentissage, pas de cet examen.',
+  'examPrep.result.notLinked': 'Cet objectif n\'est pas encore lié à tes concepts StudyUS.',
+  'examPrep.result.studyConcept': 'Étudier dans StudyUS',
+  'examPrep.result.nextStep': 'Prochaine étape dans StudyUS',
+  'examPrep.result.nextStepBody': 'Ton moteur d\'apprentissage choisit ta prochaine étape avec tout ce qu\'il sait de toi.',
+  'examPrep.result.review': 'Revue des questions',
+  'examPrep.result.reviewHidden': 'Cet examen n\'affiche que les scores, sans revue des questions.',
+  'examPrep.result.yourAnswer': 'Ta réponse',
+  'examPrep.result.correctAnswer': 'Bonne réponse',
+  'examPrep.result.status.CORRECT': 'Correcte',
+  'examPrep.result.status.PARTIAL': 'Partielle',
+  'examPrep.result.status.INCORRECT': 'Incorrecte',
+  'examPrep.result.status.INVALID': 'Non valide',
+  'examPrep.result.status.MISSING': 'Sans réponse',
+  'examPrep.result.status.SKIPPED': 'Indisponible (non compté)',
+  'examPrep.result.policy': 'Notation',
+  'examPrep.result.unofficial': 'Échelle d\'entraînement, non officielle.',
+  'examPrep.result.invalidated': 'Ce résultat a été invalidé et ne compte pas dans ton historique.',
+  'examPrep.result.backToPrep': 'Retour à la préparation',
+  'examPrep.result.pending': 'Nous calculons ton résultat…',
+  'examPrep.result.class.STRENGTH': 'Point fort',
+  'examPrep.result.class.DEVELOPING': 'En progression',
+  'examPrep.result.class.GAP': 'À renforcer',
+  'examPrep.result.class.NOT_ASSESSED': 'Non évalué',
+  'examPrep.areas.title': 'Domaines de l\'examen',
+  'examPrep.areas.lead': 'Ta performance par domaine dans ta dernière simulation remise.',
+  'examPrep.areas.noResult': 'Aucune simulation remise pour l\'instant.',
+  'examPrep.areas.practice': 'S\'entraîner sur ce domaine',
+  'examPrep.gaps.title': 'Concepts à renforcer',
+  'examPrep.inProgress.title': 'Tu as une simulation en cours',
+  'examPrep.inProgress.resume': 'Reprendre la simulation',
+  'examPrep.history.title': 'Tes simulations',
+  'examPrep.history.view': 'Voir le résultat',
+  'examPrep.history.open': 'Ouvrir',
+  'examPrep.history.empty': 'Tu n\'as encore fait aucune simulation.',
+  'examPrep.aggregate.title': 'Tes matières de {qualification}',
+  'examPrep.aggregate.rules': 'Les règles du diplôme ne sont pas configurées dans StudyUS : tu vois ici tes résultats par matière.',
+  'examPrep.aggregate.noResult': 'Pas de résultat',
+  'examPrep.start.topic': 'Objectif',
+  'examPrep.start.area': 'Domaine',
+  'examPrep.start.inProgress': 'Tu as déjà une simulation en cours pour cet examen.',
+  'examPrep.start.notAllowed': 'Cet examen ne propose pas ce mode.',
+  'examPrep.version': 'Version',
 };
 
 const pt: Messages = {
@@ -9326,6 +9801,101 @@ const pt: Messages = {
   'di.summaryNewOne': '1 tema novo será adicionado a {subject}.',
   'di.summaryReuseOne': '1 que você já tem será reutilizado.',
   'workspace.addRole': 'Adicionar outra função',
+  'exam.family.PAA': 'PAA',
+  'exam.family.PISA': 'PISA',
+  'exam.family.IB': 'IB (Bacharelado Internacional)',
+  'exam.family.CAMBRIDGE': 'Cambridge',
+  'exam.family.AICE': 'Cambridge AICE',
+  'exam.family.ICFES': 'ICFES · Saber 11',
+  'exam.family.OTHER': 'Outros exames',
+  'exam.contentStatus.DEV_CERT_FIXTURE': 'Conteúdo de prática (DEV), não oficial',
+  'exam.contentStatus.ORIGINAL': 'Conteúdo original da StudyUS',
+  'exam.contentStatus.OFFICIAL_LICENSED': 'Conteúdo oficial licenciado',
+  'exam.sitting': 'Convocatória',
+  'examPrep.create.family': 'Tipo de exame',
+  'examPrep.run.section': 'Seção {n} de {total}',
+  'examPrep.run.timeLeft': 'Tempo restante',
+  'examPrep.run.overtime': 'Tempo esgotado, você pode continuar (prática)',
+  'examPrep.run.timeUpHard': 'O tempo desta seção acabou. Suas respostas salvas foram enviadas.',
+  'examPrep.run.saved': 'Salvo',
+  'examPrep.run.saving': 'Salvando…',
+  'examPrep.run.saveError': 'Não foi possível salvar; tentaremos de novo.',
+  'examPrep.run.submitAnswer': 'Responder e continuar',
+  'examPrep.run.question': 'Pergunta {n}',
+  'examPrep.run.marks': '{n} pts',
+  'examPrep.run.resources': 'Recursos permitidos',
+  'examPrep.run.breakTitle': 'Pausa entre seções',
+  'examPrep.run.breakBody': 'A seguir: {name}. A pausa termina em {time}.',
+  'examPrep.run.endBreak': 'Continuar agora',
+  'examPrep.run.handIn': 'Entregar simulado',
+  'examPrep.run.handInConfirm': 'Entregar agora? Suas respostas salvas serão enviadas e as perguntas sem resposta contarão como não respondidas.',
+  'examPrep.run.handingIn': 'Entregando…',
+  'examPrep.run.navLabel': 'Perguntas desta seção',
+  'examPrep.run.status.OPEN': 'Sem resposta',
+  'examPrep.run.status.DRAFT': 'Rascunho salvo',
+  'examPrep.run.status.ANSWERED': 'Respondida',
+  'examPrep.run.status.UNAVAILABLE': 'Indisponível',
+  'examPrep.run.status.SKIPPED': 'Ignorada',
+  'examPrep.run.status.MISSING': 'Sem resposta',
+  'examPrep.run.integrity': 'Simulado em andamento: o Tutor fica indisponível até você entregar ou abandonar.',
+  'examPrep.run.answerRecorded': 'Resposta registrada.',
+  'examPrep.run.invalidAnswer': 'Essa resposta não é válida para esta pergunta.',
+  'examPrep.run.part': 'Parte {id}',
+  'examPrep.run.answerPlaceholder': 'Escreva sua resposta',
+  'examPrep.run.calculator': 'Calculadora permitida',
+  'examPrep.result.title': 'Resultado do simulado',
+  'examPrep.result.examScore': 'Resultado do exame (esta tentativa)',
+  'examPrep.result.examScoreNote': 'Este é seu desempenho neste simulado. Não é seu domínio na StudyUS, que depende das suas evidências de aprendizagem.',
+  'examPrep.result.noPolicy': 'Este exame ainda não tem política de pontuação configurada; só seus pontos são mostrados.',
+  'examPrep.result.raw': '{earned} de {available} pontos',
+  'examPrep.result.bySection': 'Por seção',
+  'examPrep.result.strengths': 'Pontos fortes nesta tentativa',
+  'examPrep.result.gaps': 'Para reforçar',
+  'examPrep.result.none': 'Nada a destacar ainda.',
+  'examPrep.result.learningState': 'Seu estado de aprendizagem na StudyUS',
+  'examPrep.result.learningStateNote': 'Isto vem do seu motor de aprendizagem, não deste exame.',
+  'examPrep.result.notLinked': 'Este objetivo ainda não está vinculado aos seus conceitos da StudyUS.',
+  'examPrep.result.studyConcept': 'Estudar na StudyUS',
+  'examPrep.result.nextStep': 'Próximo passo na StudyUS',
+  'examPrep.result.nextStepBody': 'Seu motor de aprendizagem decide o próximo passo com tudo o que sabe sobre você.',
+  'examPrep.result.review': 'Revisão das perguntas',
+  'examPrep.result.reviewHidden': 'Este exame mostra apenas pontuações, sem revisão das perguntas.',
+  'examPrep.result.yourAnswer': 'Sua resposta',
+  'examPrep.result.correctAnswer': 'Resposta correta',
+  'examPrep.result.status.CORRECT': 'Correta',
+  'examPrep.result.status.PARTIAL': 'Parcial',
+  'examPrep.result.status.INCORRECT': 'Incorreta',
+  'examPrep.result.status.INVALID': 'Inválida',
+  'examPrep.result.status.MISSING': 'Sem resposta',
+  'examPrep.result.status.SKIPPED': 'Indisponível (não conta)',
+  'examPrep.result.policy': 'Pontuação',
+  'examPrep.result.unofficial': 'Escala de prática, não oficial.',
+  'examPrep.result.invalidated': 'Este resultado foi invalidado e não conta no seu histórico.',
+  'examPrep.result.backToPrep': 'Voltar à preparação',
+  'examPrep.result.pending': 'Estamos calculando seu resultado…',
+  'examPrep.result.class.STRENGTH': 'Ponto forte',
+  'examPrep.result.class.DEVELOPING': 'Em desenvolvimento',
+  'examPrep.result.class.GAP': 'Para reforçar',
+  'examPrep.result.class.NOT_ASSESSED': 'Não avaliado',
+  'examPrep.areas.title': 'Áreas do exame',
+  'examPrep.areas.lead': 'Seu desempenho por área no último simulado entregue.',
+  'examPrep.areas.noResult': 'Ainda sem simulados entregues.',
+  'examPrep.areas.practice': 'Praticar esta área',
+  'examPrep.gaps.title': 'Conceitos para reforçar',
+  'examPrep.inProgress.title': 'Você tem um simulado em andamento',
+  'examPrep.inProgress.resume': 'Continuar simulado',
+  'examPrep.history.title': 'Seus simulados',
+  'examPrep.history.view': 'Ver resultado',
+  'examPrep.history.open': 'Abrir',
+  'examPrep.history.empty': 'Você ainda não fez simulados.',
+  'examPrep.aggregate.title': 'Suas disciplinas de {qualification}',
+  'examPrep.aggregate.rules': 'As regras do diploma não estão configuradas na StudyUS: aqui você vê seus resultados por disciplina.',
+  'examPrep.aggregate.noResult': 'Sem resultado',
+  'examPrep.start.topic': 'Objetivo',
+  'examPrep.start.area': 'Área',
+  'examPrep.start.inProgress': 'Você já tem um simulado em andamento para este exame.',
+  'examPrep.start.notAllowed': 'Este exame não oferece essa modalidade.',
+  'examPrep.version': 'Versão',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

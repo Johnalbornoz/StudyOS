@@ -190,8 +190,11 @@ describe('E2E regression: simulation attempt page shows labels and an honest "no
     expect(src).toMatch(/label\(`ex\.type\.\$\{attempt\.simulationType\}`/);
     expect(src).toMatch(/label\(`ex\.timing\.\$\{attempt\.timingMode\}`/);
   });
-  it('0 gradable items is "no score", never 0%', () => {
+  it('0 gradable items is "no score", never 0% (Track B: shown on the attempt RESULT page)', () => {
+    const result = readFileSync(join(process.cwd(), 'src/app/dashboard/exam-prep/attempt/[attemptId]/result/page.tsx'), 'utf-8');
     expect(src).not.toMatch(/: 0\}%/);
-    expect(src).toMatch(/t\['examPrep\.attempt\.noGradedItems'\]/);
+    expect(result).not.toMatch(/: 0\}%/);
+    expect(result).toMatch(/result\.maxScore === 0[\s\S]{0,120}t\['examPrep\.attempt\.noGradedItems'\]/);
+    expect(src).toMatch(/redirect\(`\/dashboard\/exam-prep\/attempt\/\$\{attempt\.id\}\/result`\)/);
   });
 });
