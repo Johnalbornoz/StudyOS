@@ -64,6 +64,13 @@ export class StudentInterventionGenerationFailedError extends Error {
   }
 }
 
+/** Track A: generatePracticeQuestions, refusing an empty (all-or-nothing failed) set. */
+async function generateNonEmpty(conceptId: string, studentId: string, subjectId: string, language: string) {
+  const questions = await generatePracticeQuestions(conceptId, studentId, subjectId, { language });
+  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
+  return questions;
+}
+
 export type TeacherInterventionStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
 /**
@@ -310,8 +317,7 @@ export async function startConceptReinforcementExecution(
   // Track A: same language resolution as the Student's own practice route
   // (generate-and-take), never a hard-coded 'en'.
   const language = await languageFor(subjectId, claimed.studentId);
-  const questions = await generatePracticeQuestions(claimed.conceptId, claimed.studentId, subjectId, { language });
-  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
+  const questions = await generateNonEmpty(claimed.conceptId, claimed.studentId, subjectId, language);
   const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, language, 'topic_practice', []);
 
   try {
@@ -460,8 +466,7 @@ export async function startSkillReinforcementExecution(
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
   const language = await languageFor(subjectId, claimed.studentId);
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
-  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
+  const questions = await generateNonEmpty(conceptId, claimed.studentId, subjectId, language);
   const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, [claimed.skillId]);
 
   try {
@@ -599,8 +604,7 @@ export async function startCompetencyReinforcementExecution(
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
   const language = await languageFor(subjectId, claimed.studentId);
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
-  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
+  const questions = await generateNonEmpty(conceptId, claimed.studentId, subjectId, language);
   const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, null, [claimed.competencyId]);
 
   try {
