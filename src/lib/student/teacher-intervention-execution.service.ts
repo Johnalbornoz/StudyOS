@@ -50,6 +50,20 @@ export class StudentInterventionNotStartableError extends Error {
   }
 }
 
+/**
+ * Track A: practice generation is all-or-nothing (it returns [] rather than
+ * a short quiz). An empty set must never become a stored, startable
+ * activity -- the start fails retryably instead and NOTHING is written (no
+ * quiz session, no execution row, no status change), so the Student's next
+ * "Start" simply tries again.
+ */
+export class StudentInterventionGenerationFailedError extends Error {
+  constructor() {
+    super('practice generation returned no questions');
+    this.name = 'StudentInterventionGenerationFailedError';
+  }
+}
+
 export type TeacherInterventionStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
 /**
@@ -297,6 +311,7 @@ export async function startConceptReinforcementExecution(
   // (generate-and-take), never a hard-coded 'en'.
   const language = await languageFor(subjectId, claimed.studentId);
   const questions = await generatePracticeQuestions(claimed.conceptId, claimed.studentId, subjectId, { language });
+  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
   const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, language, 'topic_practice', []);
 
   try {
@@ -446,6 +461,7 @@ export async function startSkillReinforcementExecution(
 
   const language = await languageFor(subjectId, claimed.studentId);
   const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
+  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
   const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, [claimed.skillId]);
 
   try {
@@ -584,6 +600,7 @@ export async function startCompetencyReinforcementExecution(
 
   const language = await languageFor(subjectId, claimed.studentId);
   const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
+  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
   const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, null, [claimed.competencyId]);
 
   try {

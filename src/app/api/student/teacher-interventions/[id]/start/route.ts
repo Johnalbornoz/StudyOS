@@ -22,6 +22,7 @@ import {
   StudentInterventionAccessDeniedError,
   StudentInterventionNotFoundError,
   StudentInterventionNotStartableError,
+  StudentInterventionGenerationFailedError,
 } from '@/lib/student/teacher-intervention-execution.service';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -52,6 +53,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     }
     if (error instanceof StudentInterventionNotFoundError) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     if (error instanceof StudentInterventionNotStartableError) return NextResponse.json({ error: 'NOT_STARTABLE', message: error.message }, { status: 409 });
+    // Track A: retryable -- nothing was written; the Student just tries again.
+    if (error instanceof StudentInterventionGenerationFailedError) return NextResponse.json({ error: 'GENERATION_FAILED', retryable: true }, { status: 503 });
     throw error;
   }
 }
