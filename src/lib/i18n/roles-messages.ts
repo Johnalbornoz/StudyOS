@@ -199,7 +199,7 @@ const es: Catalog = {
   'teacherHome.request.again': 'Solicitar de nuevo',
   'teacherHome.request.none': 'No hay instituciones disponibles por ahora.',
   'teacherHome.request.error': 'No se pudo enviar la solicitud.',
-  'teacherHome.studentsCount': '{n} estudiantes',
+  'teacherHome.studentsCount': '{n} {n:estudiante|estudiantes}',
   'teacherClass.assignmentsTitle': 'Tareas de la clase',
   'teacherClass.compose.title': 'Nueva tarea para la clase',
   'teacherClass.compose.body': 'Elige un tema del catálogo. Cada estudiante lo practicará con su propio material y el resultado se registra en su aprendizaje de forma normal.',
@@ -211,8 +211,8 @@ const es: Catalog = {
   'teacherClass.compose.due': 'Fecha límite (opcional)',
   'teacherClass.compose.publish': 'Publicar tarea',
   'teacherClass.compose.publishing': 'Publicando…',
-  'teacherClass.compose.published': 'Tarea publicada para {n} estudiantes.',
-  'teacherClass.compose.skipped': '{n} estudiantes no la recibieron porque aún no tienen ese tema.',
+  'teacherClass.compose.published': 'Tarea publicada para {n} {n:estudiante|estudiantes}.',
+  'teacherClass.compose.skipped': '{n} {n:estudiante no la recibió porque aún no tiene|estudiantes no la recibieron porque aún no tienen} ese tema.',
   'teacherClass.compose.error': 'No se pudo publicar la tarea.',
   'teacherClass.assignments.empty': 'Todavía no has publicado tareas para esta clase.',
   'teacherClass.assignments.progress': '{done} de {total} completadas',
@@ -236,7 +236,7 @@ const es: Catalog = {
   'inst.grades.name': 'Nombre del grado',
   'inst.grades.add': 'Añadir grado',
   'inst.grades.empty': 'Todavía no hay grados.',
-  'inst.grades.classesCount': '{n} clases',
+  'inst.grades.classesCount': '{n} {n:clase|clases}',
   'inst.classes.create.title': 'Nueva clase',
   'inst.classes.create.name': 'Nombre de la clase',
   'inst.classes.create.grade': 'Grado',
@@ -435,7 +435,7 @@ const en: Catalog = {
   'teacherHome.request.again': 'Ask again',
   'teacherHome.request.none': 'No institutions available yet.',
   'teacherHome.request.error': 'The request couldn’t be sent.',
-  'teacherHome.studentsCount': '{n} students',
+  'teacherHome.studentsCount': '{n} {n:student|students}',
   'teacherClass.assignmentsTitle': 'Class assignments',
   'teacherClass.compose.title': 'New assignment for the class',
   'teacherClass.compose.body': 'Choose a catalogue topic. Each student practises it with their own material and the result is recorded in their learning as usual.',
@@ -447,8 +447,8 @@ const en: Catalog = {
   'teacherClass.compose.due': 'Due date (optional)',
   'teacherClass.compose.publish': 'Publish assignment',
   'teacherClass.compose.publishing': 'Publishing…',
-  'teacherClass.compose.published': 'Assignment published to {n} students.',
-  'teacherClass.compose.skipped': '{n} students didn’t receive it because they don’t have that topic yet.',
+  'teacherClass.compose.published': 'Assignment published to {n} {n:student|students}.',
+  'teacherClass.compose.skipped': '{n} {n:student didn’t receive it because they don’t|students didn’t receive it because they don’t} have that topic yet.',
   'teacherClass.compose.error': 'The assignment couldn’t be published.',
   'teacherClass.assignments.empty': 'You haven’t published assignments for this class yet.',
   'teacherClass.assignments.progress': '{done} of {total} completed',
@@ -472,7 +472,7 @@ const en: Catalog = {
   'inst.grades.name': 'Grade name',
   'inst.grades.add': 'Add grade',
   'inst.grades.empty': 'No grades yet.',
-  'inst.grades.classesCount': '{n} classes',
+  'inst.grades.classesCount': '{n} {n:class|classes}',
   'inst.classes.create.title': 'New class',
   'inst.classes.create.name': 'Class name',
   'inst.classes.create.grade': 'Grade',
@@ -671,7 +671,7 @@ const de: Catalog = {
   'teacherHome.request.again': 'Erneut anfragen',
   'teacherHome.request.none': 'Derzeit sind keine Einrichtungen verfügbar.',
   'teacherHome.request.error': 'Die Anfrage konnte nicht gesendet werden.',
-  'teacherHome.studentsCount': '{n} Lernende',
+  'teacherHome.studentsCount': '{n} {n:Lernende/r|Lernende}',
   'teacherClass.assignmentsTitle': 'Aufgaben der Klasse',
   'teacherClass.compose.title': 'Neue Aufgabe für die Klasse',
   'teacherClass.compose.body': 'Wähle ein Katalogthema. Alle Lernenden üben es mit ihrem eigenen Material; das Ergebnis fließt wie gewohnt in ihr Lernen ein.',
@@ -708,7 +708,7 @@ const de: Catalog = {
   'inst.grades.name': 'Name des Jahrgangs',
   'inst.grades.add': 'Jahrgang hinzufügen',
   'inst.grades.empty': 'Noch keine Jahrgänge.',
-  'inst.grades.classesCount': '{n} Klassen',
+  'inst.grades.classesCount': '{n} {n:Klasse|Klassen}',
   'inst.classes.create.title': 'Neue Klasse',
   'inst.classes.create.name': 'Name der Klasse',
   'inst.classes.create.grade': 'Jahrgang',
@@ -907,7 +907,7 @@ const fr: Catalog = {
   'teacherHome.request.again': 'Redemander',
   'teacherHome.request.none': 'Aucun établissement disponible pour l’instant.',
   'teacherHome.request.error': 'La demande n’a pas pu être envoyée.',
-  'teacherHome.studentsCount': '{n} élèves',
+  'teacherHome.studentsCount': '{n} {n:élève|élèves}',
   'teacherClass.assignmentsTitle': 'Devoirs de la classe',
   'teacherClass.compose.title': 'Nouveau devoir pour la classe',
   'teacherClass.compose.body': 'Choisis une notion du catalogue. Chaque élève s’y entraîne avec son propre matériel et le résultat est enregistré normalement dans son apprentissage.',
@@ -919,7 +919,7 @@ const fr: Catalog = {
   'teacherClass.compose.due': 'Date limite (facultatif)',
   'teacherClass.compose.publish': 'Publier le devoir',
   'teacherClass.compose.publishing': 'Publication…',
-  'teacherClass.compose.published': 'Devoir publié pour {n} élèves.',
+  'teacherClass.compose.published': 'Devoir publié pour {n} {n:élève|élèves}.',
   'teacherClass.compose.skipped': '{n} élèves ne l’ont pas reçu car ils n’ont pas encore cette notion.',
   'teacherClass.compose.error': 'Le devoir n’a pas pu être publié.',
   'teacherClass.assignments.empty': 'Tu n’as encore publié aucun devoir pour cette classe.',
@@ -944,7 +944,7 @@ const fr: Catalog = {
   'inst.grades.name': 'Nom du niveau',
   'inst.grades.add': 'Ajouter un niveau',
   'inst.grades.empty': 'Aucun niveau pour l’instant.',
-  'inst.grades.classesCount': '{n} classes',
+  'inst.grades.classesCount': '{n} {n:classe|classes}',
   'inst.classes.create.title': 'Nouvelle classe',
   'inst.classes.create.name': 'Nom de la classe',
   'inst.classes.create.grade': 'Niveau',
@@ -1143,7 +1143,7 @@ const pt: Catalog = {
   'teacherHome.request.again': 'Pedir novamente',
   'teacherHome.request.none': 'Nenhuma instituição disponível por enquanto.',
   'teacherHome.request.error': 'Não foi possível enviar a solicitação.',
-  'teacherHome.studentsCount': '{n} estudantes',
+  'teacherHome.studentsCount': '{n} {n:estudante|estudantes}',
   'teacherClass.assignmentsTitle': 'Tarefas da turma',
   'teacherClass.compose.title': 'Nova tarefa para a turma',
   'teacherClass.compose.body': 'Escolha um tema do catálogo. Cada estudante pratica com o próprio material e o resultado é registrado normalmente no seu aprendizado.',
@@ -1155,7 +1155,7 @@ const pt: Catalog = {
   'teacherClass.compose.due': 'Prazo (opcional)',
   'teacherClass.compose.publish': 'Publicar tarefa',
   'teacherClass.compose.publishing': 'Publicando…',
-  'teacherClass.compose.published': 'Tarefa publicada para {n} estudantes.',
+  'teacherClass.compose.published': 'Tarefa publicada para {n} {n:estudante|estudantes}.',
   'teacherClass.compose.skipped': '{n} estudantes não a receberam porque ainda não têm esse tema.',
   'teacherClass.compose.error': 'Não foi possível publicar a tarefa.',
   'teacherClass.assignments.empty': 'Você ainda não publicou tarefas para esta turma.',
@@ -1180,7 +1180,7 @@ const pt: Catalog = {
   'inst.grades.name': 'Nome da série',
   'inst.grades.add': 'Adicionar série',
   'inst.grades.empty': 'Ainda não há séries.',
-  'inst.grades.classesCount': '{n} turmas',
+  'inst.grades.classesCount': '{n} {n:turma|turmas}',
   'inst.classes.create.title': 'Nova turma',
   'inst.classes.create.name': 'Nome da turma',
   'inst.classes.create.grade': 'Série',
@@ -1267,9 +1267,16 @@ const pt: Catalog = {
 
 export const ROLES_MESSAGES = { es, en, de, fr, pt } as const;
 
-/** Replace {placeholders} with values; unknown placeholders are left empty, never shown raw. */
+/**
+ * Replace {placeholders} with values; unknown placeholders are left empty,
+ * never shown raw. `{n:one|other}` picks the singular form when n is 1
+ * ("1 estudiante", "3 estudiantes").
+ */
 export function fillMessage(template: string, params: Record<string, string | number | null | undefined> = {}): string {
-  return template.replace(/\{(\w+)\}/g, (_m, key: string) => {
+  const plural = template.replace(/\{(\w+):([^|{}]*)\|([^{}]*)\}/g, (_m, key: string, one: string, other: string) =>
+    Number(params[key]) === 1 ? one : other
+  );
+  return plural.replace(/\{(\w+)\}/g, (_m, key: string) => {
     const value = params[key];
     return value === null || value === undefined ? '' : String(value);
   });

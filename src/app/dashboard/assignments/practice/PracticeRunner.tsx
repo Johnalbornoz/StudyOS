@@ -123,7 +123,8 @@ export function PracticeRunner({
       <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{labels.resultsTitle}</h2>
         <p>
-          {labels.score}: {Math.round(results.score * 100)}% ({results.correctCount}/{results.totalQuestions})
+          {/* Track A: the grading route already returns 0-100. */}
+          {labels.score}: {Math.round(results.score)}% ({results.correctCount}/{results.totalQuestions})
         </p>
         <Link href="/dashboard/assignments">{labels.backToAssignments}</Link>
       </div>

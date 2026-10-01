@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { StartAssignmentButton } from './StartAssignmentButton';
+import { db } from '@/lib/db';
 
 const TYPE_LABEL_KEY = {
   CONCEPT_REINFORCEMENT: 'teacher.interventions.type.concept',
@@ -35,6 +36,16 @@ export default async function AssignmentsPage() {
   const t = getMessages(locale);
 
   const interventions = await getStudentPendingTeacherInterventions(studentId);
+  // Track A: show WHAT to practise (the learner's own topic, in their
+  // language) rather than only the assignment type. Read-only lookup.
+  const topicRows = interventions.length
+    ? await db.query(
+        `SELECT ti.id, (SELECT label FROM concept_localizations cl WHERE cl.concept_id = ti.concept_id ORDER BY (cl.language = $2) DESC, cl.language LIMIT 1) AS label
+         FROM teacher_interventions ti WHERE ti.id = ANY($1::uuid[]) AND ti.student_id = $3`,
+        [interventions.map((i) => i.id), locale, studentId]
+      ).catch(() => ({ rows: [] as any[] }))
+    : { rows: [] as any[] };
+  const topicById = new Map<string, string | null>(topicRows.rows.map((r: any) => [r.id, r.label]));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -48,7 +59,7 @@ export default async function AssignmentsPage() {
             <li key={i.id} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="row-main">
-                  <div className="row-title">{t[TYPE_LABEL_KEY[i.interventionType as keyof typeof TYPE_LABEL_KEY]] ?? i.interventionType}</div>
+                  <div className="row-title">{topicById.get(i.id) || (t[TYPE_LABEL_KEY[i.interventionType as keyof typeof TYPE_LABEL_KEY]] ?? i.interventionType)}</div>
                   {i.instructions && <div className="row-sub">{i.instructions}</div>}
                   {i.dueAt && (
                     <div className="row-sub">{t['assignments.due']}: {new Date(i.dueAt).toLocaleDateString(locale)}</div>

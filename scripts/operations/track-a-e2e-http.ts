@@ -7,7 +7,9 @@
  *
  *   # local production server (next start) on DEV DB + DEV Clerk:
  *   npx tsx --env-file=.env.local scripts/operations/track-a-e2e-http.ts http://localhost:3200 <tokens.json>
- *   # hosted DEV (Vercel Authentication) through `vercel curl`:
+ *   # hosted DEV (Vercel Authentication) with an existing automation bypass secret:
+ *   VERCEL_PROTECTION_BYPASS=<secret> npx tsx --env-file=.env.local scripts/operations/track-a-e2e-http.ts https://<dev-deployment> <tokens.json>
+ *   # or through `vercel curl` (slower, one CLI call per request):
  *   TRANSPORT=vercel VERCEL_LINK_DIR=<dir with .vercel/project.json> \
  *     npx tsx --env-file=.env.local scripts/operations/track-a-e2e-http.ts https://<dev-deployment> <tokens.json>
  *
@@ -37,9 +39,16 @@ interface Res {
 }
 
 async function viaFetch(method: string, path: string, token: string | null, body?: unknown): Promise<Res> {
+  // Hosted DEV sits behind Vercel Authentication: an EXISTING automation
+  // bypass secret (never created by this script) may be supplied via env.
+  const bypass = process.env.VERCEL_PROTECTION_BYPASS;
   const res = await fetch(BASE + path, {
     method,
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(bypass ? { 'x-vercel-protection-bypass': bypass } : {}),
+    },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     redirect: 'manual',
   });
@@ -80,6 +89,12 @@ const call = (method: string, path: string, who: Tag | null, body?: unknown) =>
   (TRANSPORT === 'vercel' ? viaVercelCurl : viaFetch)(method, path, who ? TOKENS[who] : null, body);
 const get = (path: string, who: Tag | null) => call('GET', path, who);
 const post = (path: string, who: Tag | null, body: unknown = {}) => call('POST', path, who, body);
+/** Authenticated page render (server components render the identity's real data). */
+async function page(id: string, path: string, who: Tag, mustContain: Array<string | RegExp>) {
+  const r = await call('GET', path, who);
+  const missing = mustContain.filter((m) => (typeof m === 'string' ? !r.text.includes(m) : !m.test(r.text)));
+  check(`PAGE.${id}`, r.status === 200 && missing.length === 0, `${r.status}${missing.length ? ' missing ' + missing.map(String).join(' | ') : ''}`);
+}
 const denied = (r: Res) => r.status === 401 || r.status === 403 || r.status === 404;
 const q1 = async (sql: string, p: unknown[] = []) => (await db.query(sql, p)).rows[0];
 const n = async (sql: string, p: unknown[] = []) => Number((await q1(sql, p))?.n ?? 0);
@@ -123,6 +138,7 @@ async function reset(x: Awaited<ReturnType<typeof ids>>) {
   await db.query(`UPDATE user_roles SET status = 'ACTIVE', revoked_at = NULL WHERE user_id = $1 AND role = 'PARENT'`, [x.users['parent-b']]);
   await db.query(`DELETE FROM user_roles WHERE user_id = $1 AND role = 'STUDENT'`, [x.users['inst-a']]);
   await db.query(`UPDATE users SET active_workspace = NULL WHERE id = ANY($1::uuid[])`, [fixtureUsers]);
+  await db.query(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[])`, [fixtureUsers, fixtureStudents]);
 }
 
 async function main() {
@@ -135,6 +151,13 @@ async function main() {
   const evidenceBefore = await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = ANY($1::uuid[])`, [Object.values(x.students)]);
   const masteryBefore = await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[])`, [Object.values(x.students)]);
 
+  // Student A completes the Student first-run (academic profile) through the
+  // real Student API, as a real student must before using Student pages.
+  const profile = await post('/api/academic-profile', 'student-a', {
+    countryOfStudy: 'CO', schoolYear: '10', curriculumType: 'national', academicYear: '2026', profileCompleted: true,
+  });
+  check('SETUP.student-a-first-run', profile.status === 200, `${profile.status}`);
+
   // ------------------------------------------------------------------ A1 MULTIROLE
   check('A1.unauthenticated-401', (await get('/api/identity/me', null)).status === 401);
   const me = await get('/api/identity/me', 'multi');
@@ -142,6 +165,8 @@ async function main() {
   check('A1.multi-three-workspaces', (me.body?.data?.availableWorkspaces ?? []).length === 3);
   check('A1.switch-to-parent', (await post('/api/identity/workspace', 'multi', { workspace: 'PARENT' })).status === 200);
   check('A1.active-workspace-explicit', (await get('/api/identity/me', 'multi')).body?.data?.activeWorkspace === 'PARENT');
+  await page('1-role-switcher', '/dashboard/parent', 'multi', ['Espacio de trabajo', 'Padre/Madre', 'Familia']);
+  await page('2-account-add-role', '/role-select', 'multi', ['StudyUS']);
   check('A1.switch-unavailable-denied', (await post('/api/identity/workspace', 'multi', { workspace: 'INSTITUTION' })).status === 403);
   check('A1.privileged-not-self-service', (await post('/api/identity/roles/select', 'teacher-a', { role: 'INSTITUTION_ADMIN' })).status === 400);
   check('A1.privileged-not-self-service-admin', (await post('/api/identity/roles/select', 'teacher-a', { role: 'STUDYUS_ADMIN' })).status === 400);
@@ -181,6 +206,7 @@ async function main() {
   const parentAProfile = (await q1(`SELECT id FROM profiles WHERE user_id = $1 AND user_type = 'parent'`, [x.users['parent-a']])).id;
   check('A2.student-receives-request', (studentRequests.body?.data?.requests ?? []).some((r: any) => r.parentId === parentAProfile));
   check('A2.student-notified', ((await get('/api/notifications/inbox', 'student-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'PARENT_LINK_REQUEST'));
+  await page('4-student-sees-request', '/dashboard/notifications', 'student-a', ['quiere ver tu progreso']);
   check('A2.other-student-cannot-accept', (await post('/api/parent/requests', 'student-b', { parentId: parentAProfile, accept: true })).status === 404);
   check('A2.student-accepts', (await post('/api/parent/requests', 'student-a', { parentId: parentAProfile, accept: true })).status === 200);
   const learners = (await get('/api/parent/learners', 'parent-a')).body?.data?.learners ?? [];
@@ -188,6 +214,8 @@ async function main() {
   for (const part of ['overview', 'subjects', 'activity', 'attention', 'exam-prep']) {
     check(`A2.accepted-reads-${part}`, (await get(`/api/parent/learners/${x.students['student-a']}/${part}`, 'parent-a')).status === 200);
   }
+  await page('5-parent-dashboard', '/dashboard/parent', 'parent-a', ['Familia']);
+  await page('5b-parent-notified', '/dashboard/notifications', 'parent-a', ['aceptó tu solicitud']);
   check('A2.parent-notified-accepted', ((await get('/api/notifications/inbox', 'parent-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'PARENT_LINK_ACCEPTED'));
   check('SEC.parentA-not-studentB', denied(await get(`/api/parent/learners/${x.students['student-b']}/overview`, 'parent-a')));
   check('SEC.parentA-not-studentB-legacy', denied(await get(`/api/parent/child-overview?studentId=${x.students['student-b']}`, 'parent-a')));
@@ -214,6 +242,7 @@ async function main() {
   check('A3.request-pending', reqT.status === 200 && reqT.body?.data?.membership?.status === 'PENDING', reqT.text.slice(0, 160));
   const membershipA = reqT.body?.data?.membership?.id;
   check('A4.admin-notified-request', ((await get('/api/notifications/inbox', 'inst-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'TEACHER_MEMBERSHIP_REQUESTED'));
+  await page('6-teacher-pending', '/dashboard/teacher', 'teacher-a', ['Tu solicitud está pendiente', INST_A_NAME, 'Pendiente de aprobación']);
   check('SEC.pending-teacher-no-roster', denied(await get(`/api/teacher/classes/${x.classB}/roster`, 'teacher-a')));
   check('SEC.pending-teacher-no-student', denied(await get(`/api/teacher/students/${x.students['student-b']}/overview`, 'teacher-a')));
   // Institution A builds its structure.
@@ -233,6 +262,7 @@ async function main() {
   // Approval.
   const pending = await get(`/api/institutions/${x.instA}/memberships/pending`, 'inst-a');
   check('A4.sees-pending-request', JSON.stringify(pending.body ?? {}).includes(membershipA));
+  await page('7-institution-approval', `/dashboard/institution/${x.instA}/requests`, 'inst-a', [emailFor('teacher-a'), 'Aprobar', 'Quiere unirse como docente']);
   check('SEC.teacher-cannot-self-approve', denied(await post(`/api/institutions/${x.instA}/memberships/${membershipA}/decide`, 'teacher-a', { decision: 'APPROVED' })));
   check('A4.approve-teacher', (await post(`/api/institutions/${x.instA}/memberships/${membershipA}/decide`, 'inst-a', { decision: 'APPROVED' })).status === 200);
   check('A3.teacher-notified-approved', ((await get('/api/notifications/inbox', 'teacher-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'TEACHER_MEMBERSHIP_APPROVED'));
@@ -259,6 +289,9 @@ async function main() {
   check('SEC.other-student-cannot-accept-enrollment', (await post(`/api/student/class-invitations/${enrollmentId}/respond`, 'student-b', { accept: true })).status === 404);
   check('A4.student-accepts-enrollment', (await post(`/api/student/class-invitations/${enrollmentId}/respond`, 'student-a', { accept: true })).status === 200);
   check('A4.admin-notified-enrollment', ((await get('/api/notifications/inbox', 'inst-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'CLASS_ENROLLMENT_ACCEPTED'));
+  await page('8-teacher-class', '/dashboard/teacher', 'teacher-a', ['Matemáticas 10A']);
+  await page('8b-teacher-class-roster', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Sofía Estudiante A', 'Nueva tarea para la clase']);
+  await page('8c-institution-class', `/dashboard/institution/${x.instA}/classes/${classA}`, 'inst-a', ['Sofía Estudiante A', 'Inscrito', emailFor('teacher-a')]);
   const roster = (await get(`/api/teacher/classes/${classA}/roster`, 'teacher-a')).body?.data?.roster ?? [];
   check('A3.roster-has-student', roster.length === 1 && roster[0].studentId === x.students['student-a']);
   check('A3.teacher-reads-student', (await get(`/api/teacher/students/${x.students['student-a']}/overview`, 'teacher-a')).status === 200);
@@ -278,6 +311,8 @@ async function main() {
   check('A5.publish', publish.status === 201 && publish.body?.data?.assigned?.length === 1, publish.text.slice(0, 200));
   const interventionId = publish.body?.data?.assigned?.[0]?.interventionId;
   check('A5.student-notified', ((await get('/api/notifications/inbox', 'student-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'ASSIGNMENT_PUBLISHED'));
+  await page('9-assignment-published', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Linear Equations', 'Asignada']);
+  await page('10-student-assignment-view', '/dashboard/assignments', 'student-a', ['Mis tareas', 'Comenzar', 'Practica antes del viernes.']);
   const pendingList = (await get('/api/student/teacher-interventions', 'student-a')).body?.data;
   check('A5.student-sees-assignment', JSON.stringify(pendingList ?? {}).includes(interventionId));
   check('SEC.studentB-not-assignment', !JSON.stringify((await get('/api/student/teacher-interventions', 'student-b')).body ?? {}).includes(interventionId));
@@ -337,6 +372,8 @@ async function main() {
   const learnerOutcome = after.body?.data?.assignments?.[0]?.learners?.[0];
   check('A5.teacher-sees-completed', learnerOutcome?.status === 'COMPLETED', JSON.stringify(learnerOutcome ?? {}).slice(0, 200));
   check('A5.teacher-sees-result', typeof learnerOutcome?.result?.total === 'number' && learnerOutcome.result.total > 0, JSON.stringify(learnerOutcome?.result ?? null));
+  await page('11-teacher-result-view', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/]);
+  await page('12-parent-summary', '/dashboard/parent', 'parent-a', ['Familia']);
   check('A5.teacher-sees-progress', (await get(`/api/teacher/students/${x.students['student-a']}/overview`, 'teacher-a')).body?.data?.lastActivityAt != null);
   const parentOverview = await get(`/api/parent/learners/${x.students['student-a']}/overview`, 'parent-a');
   check('A5.parent-sees-summary', parentOverview.status === 200 && parentOverview.body?.data?.lastActivityAt != null);

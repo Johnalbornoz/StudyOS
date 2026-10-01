@@ -90,6 +90,9 @@ describe('Role surfaces are localized', () => {
   it('placeholders are filled, never shown raw', () => {
     expect(fillMessage('{a} de {b}', { a: 2, b: 5 })).toBe('2 de 5');
     expect(fillMessage('{missing}!', {})).toBe('!');
+    expect(fillMessage('{n} {n:estudiante|estudiantes}', { n: 1 })).toBe('1 estudiante');
+    expect(fillMessage('{n} {n:estudiante|estudiantes}', { n: 3 })).toBe('3 estudiantes');
+    expect(fillMessage('{n} {n:estudiante|estudiantes}', { n: 0 })).toBe('0 estudiantes');
     for (const locale of LOCALES) {
       expect(fillMessage(getMessages(locale)['teacherClass.result'], { correct: 3, total: 4 })).not.toMatch(/[{}]/);
     }
