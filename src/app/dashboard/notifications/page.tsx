@@ -1,54 +1,88 @@
 import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getOrCreateStudentId } from '@/lib/auth';
-import { getUnreadNotifications } from '@/services/notifications.service';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
-import { getMessages } from '@/lib/i18n/messages';
+import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { resolveCurrentWorkspace } from '@/lib/identity/current-workspace';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages, type MessageKey } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
+import { listInbox } from '@/lib/notifications/role-notifications.service';
 import ParentRequestsPanel from './ParentRequestsPanel';
+import ClassInvitationsPanel from './ClassInvitationsPanel';
+import { MarkAllReadButton } from './MarkAllReadButton';
 
+/**
+ * Track A -- one notifications page for every workspace. The inbox is the
+ * caller's own, for their CURRENT workspace (server-resolved): a
+ * Student+Parent account sees learning signals in Student and family
+ * signals in Parent, never mixed. Previously this page provisioned a
+ * Student identity unconditionally and crashed for Parent / Teacher /
+ * Institution accounts.
+ */
 export default async function NotificationsPage() {
   const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) {
-    return (
-      <div>
-        <h1>Not authenticated</h1>
-        <Link href="/sign-in">Sign in</Link>
-      </div>
-    );
-  }
+  if (!clerkUserId) redirect('/sign-in');
 
-  const studentId = await getOrCreateStudentId(clerkUserId);
-  const locale = await getInterfaceLanguage(studentId);
+  const user = await getOrCreateCanonicalUser(clerkUserId, null);
+  const workspace = await resolveCurrentWorkspace(user.id);
+  if (!workspace) redirect('/role-select');
+
+  const locale = await getUserInterfaceLanguage(user.id).catch(() => 'es' as const);
   const t = getMessages(locale);
-  const notifications = await getUnreadNotifications(studentId).catch(() => []);
+  const notifications = await listInbox(user.id, workspace).catch(() => []);
+  const hasUnread = notifications.some((n) => !n.readAt);
 
   return (
     <div>
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1>{t['notifications.title']}</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
-          {t['notifications.subtitle']}
-        </p>
+      <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
+          <h1>{t['notifications.title']}</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15 }}>
+            {workspace === 'STUDENT' ? t['notifications.subtitle'] : t['notifications.subtitleRoles']}
+          </p>
+        </div>
+        {hasUnread && <MarkAllReadButton label={t['notifications.markAllRead']} />}
       </div>
 
-      <ParentRequestsPanel locale={locale} />
+      {workspace === 'STUDENT' && (
+        <>
+          <ParentRequestsPanel locale={locale} />
+          <ClassInvitationsPanel locale={locale} />
+        </>
+      )}
 
       {notifications.length === 0 ? (
         <div className="card empty-state">
           <strong>{t['notifications.emptyTitle']}</strong>
-          {t['notifications.emptyBody']}
+          {workspace === 'STUDENT' ? t['notifications.emptyBody'] : null}
         </div>
       ) : (
-        <div className="card list-card">
-          {notifications.map((n: any) => (
-            <div key={n.id} className="list-row">
-              <div className="row-main">
-                <div className="row-title">{n.title}</div>
-                <div className="row-sub">{n.message}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ul className="card list-card" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {notifications.map((n) => {
+            const key = `notif.${n.type}` as MessageKey;
+            const text = n.payload && key in t ? fillMessage(t[key], n.payload) : n.message;
+            return (
+              <li key={n.id} className={`list-row${n.readAt ? '' : ' ta-notif-unread'}`} style={{ flexWrap: 'wrap' }}>
+                <div className="row-main" style={{ flexBasis: 220 }}>
+                  <div className="row-title">
+                    {text}
+                    {!n.readAt && (
+                      <span className="chip" style={{ marginLeft: 8 }}>
+                        {t['notifications.new']}
+                      </span>
+                    )}
+                  </div>
+                  <div className="row-sub">{new Date(n.deliveredAt).toLocaleString(locale)}</div>
+                </div>
+                {n.actionHref && n.actionHref.startsWith('/dashboard') && n.actionHref !== '/dashboard/notifications' && (
+                  <Link href={n.actionHref} className="btn btn-ghost">
+                    {t['notifications.open']}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

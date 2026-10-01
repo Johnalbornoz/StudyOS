@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getTeacherStudentOverview, TeacherAccessDeniedError } from '@/lib/teacher/read-model.service';
 import { listTeacherInterventionsForStudent, TeacherInterventionAccessDeniedError } from '@/lib/teacher/intervention.service';
@@ -10,6 +10,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForInterventionStatus, toneForReadinessStatus } from '@/components/ui/StatusBadge';
 import { AssignInterventionForm } from '../AssignInterventionForm';
+import { CancelInterventionButton } from '../CancelInterventionButton';
+import { listLearnerConceptsForTeacher, isTeacherOfClass } from '@/lib/teacher/class-assignment.service';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 const TYPE_LABEL_KEY = {
   CONCEPT_REINFORCEMENT: 'teacher.interventions.type.concept',
@@ -40,20 +43,25 @@ export default async function TeacherStudentDetailPage({
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
   let interventions;
+  let concepts;
   try {
-    [overview, interventions] = await Promise.all([
+    [overview, interventions, concepts] = await Promise.all([
       getTeacherStudentOverview(actor.id, studentId),
       listTeacherInterventionsForStudent(actor.id, studentId),
+      listLearnerConceptsForTeacher(actor.id, studentId).catch(() => []),
     ]);
   } catch (error) {
     if (error instanceof TeacherAccessDeniedError || error instanceof TeacherInterventionAccessDeniedError) notFound();
     throw error;
   }
+  // The assign form is offered only in the context of a class this actor
+  // TEACHES (the route re-checks class + enrollment + relationship anyway).
+  const canAssignHere = Boolean(classId && /^[0-9a-f-]{36}$/i.test(classId) && (await isTeacherOfClass(actor.id, classId)));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -84,7 +92,10 @@ export default async function TeacherStudentDetailPage({
             {overview.latestReadinessStatus === 'NO_ACTIVE_EXAM_PROFILE' ? (
               <StatusBadge label={t['teacher.student.noActiveExamProfile']} tone="neutral" />
             ) : (
-              <StatusBadge label={overview.latestReadinessStatus} tone={toneForReadinessStatus(overview.latestReadinessStatus)} />
+              <StatusBadge
+                label={t[`readiness.overall.${overview.latestReadinessStatus}` as MessageKey] ?? overview.latestReadinessStatus}
+                tone={toneForReadinessStatus(overview.latestReadinessStatus)}
+              />
             )}
           </div>
         </div>
@@ -103,42 +114,35 @@ export default async function TeacherStudentDetailPage({
         ) : (
           <ul className="list-card card">
             {interventions.map((i) => (
-              <li key={i.id} className="list-row">
+              <li key={i.id} className="list-row" style={{ flexWrap: 'wrap' }}>
                 <div className="row-main">
                   <div className="row-title">{t[TYPE_LABEL_KEY[i.interventionType]] ?? i.interventionType}</div>
                   <div className="row-sub">{new Date(i.assignedAt).toLocaleDateString(locale)}</div>
                 </div>
-                <StatusBadge label={i.status} tone={toneForInterventionStatus(i.status)} />
+                <StatusBadge label={t[`assignments.status.${i.status}`]} tone={toneForInterventionStatus(i.status)} />
+                {(i.status === 'ASSIGNED' || i.status === 'IN_PROGRESS') && (
+                  <CancelInterventionButton interventionId={i.id} label={t['teacherStudent.cancel']} errorLabel={t['inst.common.error']} />
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      {classId && (
+      {canAssignHere && classId && (
         <AssignInterventionForm
           classId={classId}
           studentId={studentId}
+          concepts={concepts}
           labels={{
-            title: t['teacher.interventions.assignCta'],
-            targetTypeLabel: t['teacher.assign.targetTypeLabel'],
-            conceptIdLabel: t['teacher.assign.conceptIdLabel'],
-            skillIdLabel: t['teacher.assign.skillIdLabel'],
-            competencyIdLabel: t['teacher.assign.competencyIdLabel'],
-            examProfileIdLabel: t['teacher.assign.examProfileIdLabel'],
-            simulationTypeLabel: t['teacher.assign.simulationTypeLabel'],
-            submit: t['teacher.assign.submit'],
-            submitting: t['teacher.assign.submitting'],
-            success: t['teacher.assign.success'],
-            error: t['teacher.assign.error'],
-            errorForbidden: t['teacher.assign.error.forbidden'],
-            errorInvalidTarget: t['teacher.assign.error.invalidTarget'],
-            errorExamProfileMismatch: t['teacher.assign.error.examProfileMismatch'],
-            errorInvalidInput: t['teacher.assign.error.invalidInput'],
-            typeConcept: t['teacher.interventions.type.concept'],
-            typeSkill: t['teacher.interventions.type.skill'],
-            typeCompetency: t['teacher.interventions.type.competency'],
-            typeExam: t['teacher.interventions.type.exam'],
+            title: t['teacherStudent.assign.title'],
+            body: t['teacherStudent.assign.body'],
+            concept: t['teacherStudent.assign.concept'],
+            none: t['teacherStudent.assign.none'],
+            instructions: t['teacherStudent.assign.instructions'],
+            submit: t['teacherStudent.assign.submit'],
+            done: t['teacherStudent.assign.done'],
+            error: t['teacherStudent.assign.error'],
           }}
         />
       )}

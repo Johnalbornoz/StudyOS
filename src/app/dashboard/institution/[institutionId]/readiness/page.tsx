@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import {
   getInstitutionOverview,
@@ -38,7 +38,7 @@ export default async function InstitutionReadinessPage({
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
@@ -66,6 +66,7 @@ export default async function InstitutionReadinessPage({
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
     teachers: t['institution.teachers.title'],
+    requests: t['institution.requests.title'],
     learners: t['institution.learners.title'],
     coverage: t['institution.coverage.title'],
     readiness: t['institution.readiness.title'],

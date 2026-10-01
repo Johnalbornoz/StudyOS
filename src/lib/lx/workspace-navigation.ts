@@ -15,7 +15,7 @@
 import type { LearnerNavGroup } from './learner-navigation';
 import { ADMIN_SECTIONS } from '@/lib/admin/sections';
 
-export function buildParentNav(): LearnerNavGroup[] {
+export function buildParentNav(opts: { notifCount?: number } = {}): LearnerNavGroup[] {
   return [
     {
       kind: 'PRIMARY',
@@ -25,13 +25,13 @@ export function buildParentNav(): LearnerNavGroup[] {
       kind: 'UTILITY',
       titleKey: 'nav.groupAccount',
       items: [
-        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell' },
+        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell', badge: opts.notifCount || undefined },
       ],
     },
   ];
 }
 
-export function buildTeacherNav(): LearnerNavGroup[] {
+export function buildTeacherNav(opts: { notifCount?: number } = {}): LearnerNavGroup[] {
   return [
     {
       kind: 'PRIMARY',
@@ -41,13 +41,13 @@ export function buildTeacherNav(): LearnerNavGroup[] {
       kind: 'UTILITY',
       titleKey: 'nav.groupAccount',
       items: [
-        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell' },
+        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell', badge: opts.notifCount || undefined },
       ],
     },
   ];
 }
 
-export function buildInstitutionNav(): LearnerNavGroup[] {
+export function buildInstitutionNav(opts: { notifCount?: number } = {}): LearnerNavGroup[] {
   return [
     {
       kind: 'PRIMARY',
@@ -57,7 +57,7 @@ export function buildInstitutionNav(): LearnerNavGroup[] {
       kind: 'UTILITY',
       titleKey: 'nav.groupAccount',
       items: [
-        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell' },
+        { key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell', badge: opts.notifCount || undefined },
       ],
     },
   ];

@@ -30,7 +30,9 @@ vi.mock('@/services/notifications.service', () => ({ getUnreadNotifications: vi.
 vi.mock('@/services/learning-debt.service', () => ({ getActiveDebts: vi.fn(async () => []) }));
 vi.mock('@/services/gamification.service', () => ({ getLearningDaysThisWeek: vi.fn(async () => 0) }));
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({ countPendingTeacherInterventionsForStudent: vi.fn(async () => 0) }));
-vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: vi.fn(async () => 'es') }));
+vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: vi.fn(async () => 'es'), getUserInterfaceLanguage: vi.fn(async () => 'es') }));
+// Track A: non-Student workspaces read a workspace-scoped unread count.
+vi.mock('@/lib/notifications/role-notifications.service', () => ({ countUnread: vi.fn(async () => 0) }));
 vi.mock('@/lib/lx/learner-navigation', () => ({ buildLearnerNav: vi.fn(() => []) }));
 const buildAdminNavMock = vi.fn(() => []);
 vi.mock('@/lib/lx/workspace-navigation', () => ({ buildParentNav: vi.fn(() => []), buildTeacherNav: vi.fn(() => []), buildInstitutionNav: vi.fn(() => []), buildAdminNav: () => buildAdminNavMock() }));

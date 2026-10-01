@@ -6,6 +6,10 @@ import Link from 'next/link';
  * navigation system -- these links live inside the page content area,
  * the global shell's own nav still owns the top-level "Institution"
  * entry (task section 6).
+ *
+ * Track A: wraps instead of overflowing at phone widths (.ta-subnav), and
+ * the requests label is localized by every caller (no hard-coded fallback
+ * text shown to a non-Spanish reader).
  */
 export function InstitutionSubNav({
   institutionId,
@@ -33,7 +37,7 @@ export function InstitutionSubNav({
     { key: 'grades', href: `${base}/grades`, label: labels.grades },
     { key: 'classes', href: `${base}/classes`, label: labels.classes },
     { key: 'teachers', href: `${base}/teachers`, label: labels.teachers },
-    { key: 'requests', href: `${base}/requests`, label: labels.requests ?? 'Solicitudes' },
+    ...(labels.requests ? [{ key: 'requests' as const, href: `${base}/requests`, label: labels.requests }] : []),
     { key: 'learners', href: `${base}/learners`, label: labels.learners },
     { key: 'coverage', href: `${base}/coverage`, label: labels.coverage },
     { key: 'readiness', href: `${base}/readiness`, label: labels.readiness },
@@ -41,19 +45,9 @@ export function InstitutionSubNav({
     { key: 'attention', href: `${base}/attention`, label: labels.attention },
   ];
   return (
-    <nav aria-label={labels.overview} style={{ display: 'flex', gap: 'var(--space-4)', borderBottom: '1px solid var(--border-default)', marginBottom: 'var(--space-6)', paddingBottom: 'var(--space-2)' }}>
+    <nav aria-label={labels.overview} className="ta-subnav">
       {items.map((item) => (
-        <Link
-          key={item.key}
-          href={item.href}
-          aria-current={item.key === active ? 'page' : undefined}
-          style={{
-            fontSize: 13,
-            fontWeight: 650,
-            color: item.key === active ? 'var(--brand-ink)' : 'var(--text-muted)',
-            textDecoration: 'none',
-          }}
-        >
+        <Link key={item.key} href={item.href} aria-current={item.key === active ? 'page' : undefined}>
           {item.label}
         </Link>
       ))}

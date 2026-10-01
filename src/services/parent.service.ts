@@ -497,3 +497,21 @@ export async function getChildOverview(
     })),
   };
 }
+
+/** Track A -- the Student's own view of who can see their progress (ACCEPTED relationships only). `studentId` is always the caller's own resolved id. */
+export async function listParentsForStudent(studentId: string): Promise<Array<{ parentId: string; name: string; since: string | null }>> {
+  const result = await db.query(
+    `SELECT psr.parent_id, p.full_name, u.email, psr.responded_at
+     FROM parent_student_relationships psr
+     JOIN profiles p ON p.id = psr.parent_id
+     LEFT JOIN users u ON u.id = p.user_id
+     WHERE psr.student_id = $1 AND psr.status = 'accepted'
+     ORDER BY psr.responded_at ASC NULLS LAST`,
+    [studentId]
+  );
+  return result.rows.map((r: any) => ({
+    parentId: r.parent_id,
+    name: r.full_name || r.email || '',
+    since: r.responded_at instanceof Date ? r.responded_at.toISOString() : r.responded_at ?? null,
+  }));
+}

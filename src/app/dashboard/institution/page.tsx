@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getAdministeredInstitutions } from '@/services/institution.service';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -21,7 +21,7 @@ export default async function InstitutionHomePage() {
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   const institutions = await getAdministeredInstitutions(actor.id);

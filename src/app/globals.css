@@ -1992,3 +1992,60 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 @media (max-width: 599px) {
   .di-actions .btn { flex: 1 1 100%; }
 }
+
+/* Track A -- role experiences (account, Parent, Teacher, Institution). Tokens only, dark-mode safe, wraps at 390px. */
+.role-page { max-width: 640px; margin: 0 auto; padding: var(--space-8) var(--space-4) var(--space-12); display: flex; flex-direction: column; gap: var(--space-6); }
+.role-header { display: flex; flex-direction: column; gap: var(--space-2); }
+.role-header h1 { font-size: 26px; line-height: 32px; }
+.role-muted { margin: 0; color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.5; }
+.role-section { display: flex; flex-direction: column; gap: var(--space-3); }
+.role-section h2 { font-size: 18px; line-height: 24px; }
+.role-subheading { font-size: 14px; margin-top: var(--space-2); }
+.role-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.role-card { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); flex-wrap: wrap; }
+.role-card-main { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.role-card-title { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); font-weight: 650; font-size: 15px; }
+.role-card .btn { min-height: var(--touch-target); }
+.role-card-disabled { background: var(--bg-subtle); }
+.role-alert { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--brand-subtle); color: var(--text-primary); font-size: var(--fs-sm); }
+.role-alert-error { background: var(--error-subtle); color: var(--error); }
+
+.ta-form, .role-inline-form { display: flex; flex-direction: column; gap: var(--space-2); }
+.ta-form label, .role-inline-form label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); }
+.ta-row, .role-inline-row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: stretch; }
+.ta-row > input, .ta-row > select, .role-inline-row > input { flex: 1 1 200px; min-width: 0; }
+.ta-form input, .ta-form select, .ta-form textarea, .role-inline-form input {
+  min-height: var(--touch-target); padding: 0 var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  background: var(--bg-base); color: var(--text-primary); font: inherit; font-size: 16px;
+}
+.ta-form textarea { padding: var(--space-2) var(--space-3); min-height: 80px; resize: vertical; }
+.ta-form input:focus-visible, .ta-form select:focus-visible, .ta-form textarea:focus-visible, .role-inline-form input:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.ta-form .btn, .role-inline-form .btn { min-height: var(--touch-target); }
+.ta-msg { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); }
+.ta-msg-error { color: var(--error); }
+.ta-stack { display: flex; flex-direction: column; gap: var(--space-6); }
+.ta-card { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.ta-card h2, .ta-card h3 { font-size: 16px; line-height: 22px; }
+.ta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-3); }
+.ta-metric { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.ta-metric-label { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+.ta-metric-value { font-size: 24px; font-weight: 700; overflow-wrap: anywhere; }
+.ta-metric-text { font-size: 14px; font-weight: 600; }
+.ta-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.ta-actions .btn { min-height: var(--touch-target); }
+.ta-row-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; }
+.ta-subnav { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border-default); margin-bottom: var(--space-6); padding-bottom: var(--space-2); }
+.ta-subnav a { font-size: 13px; font-weight: 650; color: var(--text-muted); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+.ta-subnav a[aria-current='page'] { color: var(--brand-ink); }
+.ta-switcher { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ta-switcher a, .ta-switcher button { min-height: var(--touch-target); }
+.ta-table-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-default); }
+.ta-table-row:last-child { border-bottom: none; }
+.ta-table-head { font-size: 12px; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ta-notif-unread { border-left: 3px solid var(--brand); }
+@media (max-width: 599px) {
+  .role-page { padding-top: var(--space-6); }
+  .role-card .btn, .ta-actions .btn { flex: 1 1 100%; }
+  .ta-table-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+  .ta-table-head { display: none; }
+}

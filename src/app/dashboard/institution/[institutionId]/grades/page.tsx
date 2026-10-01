@@ -2,12 +2,14 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getInstitutionOverview, getInstitutionGrades, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionSubNav } from '../InstitutionSubNav';
+import { CreateGradeForm } from '../InstitutionForms';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 
 /**
  * F14 Workstream D -- Institution Grades (task section 7). Consumes
@@ -21,7 +23,7 @@ export default async function InstitutionGradesPage({ params }: { params: Promis
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
@@ -39,6 +41,7 @@ export default async function InstitutionGradesPage({ params }: { params: Promis
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
     teachers: t['institution.teachers.title'],
+    requests: t['institution.requests.title'],
     learners: t['institution.learners.title'],
     coverage: t['institution.coverage.title'],
     readiness: t['institution.readiness.title'],
@@ -51,8 +54,15 @@ export default async function InstitutionGradesPage({ params }: { params: Promis
       <PageHeader title={overview.institutionName} subtitle={t['institution.grades.title']} />
       <InstitutionSubNav institutionId={institutionId} active="grades" labels={subNavLabels} />
 
+      <div className="card ta-card" style={{ marginBottom: 'var(--space-6)' }}>
+        <CreateGradeForm
+          institutionId={institutionId}
+          labels={{ name: t['inst.grades.name'], submit: t['inst.grades.add'], saved: t['inst.common.saved'], error: t['inst.common.error'] }}
+        />
+      </div>
+
       {grades.length === 0 ? (
-        <EmptyState title={t['empty.noData']} />
+        <EmptyState title={t['inst.grades.empty']} />
       ) : (
         <ul className="list-card card">
           {grades.map((g) => (
@@ -60,7 +70,7 @@ export default async function InstitutionGradesPage({ params }: { params: Promis
               <Link href={`/dashboard/institution/${institutionId}/classes?gradeId=${g.id}`} className="row-main" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div className="row-title">{g.name}</div>
               </Link>
-              <div className="tabular" style={{ fontWeight: 700 }}>{g.classCount}</div>
+              <div className="row-sub">{fillMessage(t['inst.grades.classesCount'], { n: g.classCount })}</div>
             </li>
           ))}
         </ul>

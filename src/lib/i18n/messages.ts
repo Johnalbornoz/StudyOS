@@ -1,3 +1,5 @@
+import { ROLES_MESSAGES, type RolesMessageKey } from './roles-messages';
+
 export type Locale = 'es' | 'en' | 'de' | 'fr' | 'pt';
 
 export const LOCALES: Locale[] = ['es', 'en', 'de', 'fr', 'pt'];
@@ -1044,7 +1046,8 @@ export type MessageKey =
   | 'di.err.import'
   | 'di.summaryNewOne'
   | 'di.summaryReuseOne'
-  | 'workspace.addRole';
+  | 'workspace.addRole'
+  | RolesMessageKey;
 
 type Messages = Record<MessageKey, string>;
 
@@ -2702,6 +2705,8 @@ const es: Messages = {
   'di.summaryNewOne': 'Se agregará 1 tema nuevo a {subject}.',
   'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
   'workspace.addRole': 'Añadir otro rol',
+  // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
+  ...ROLES_MESSAGES.es,
 };
 
 const en: Messages = {
@@ -4358,6 +4363,8 @@ const en: Messages = {
   'di.summaryNewOne': '1 new topic will be added to {subject}.',
   'di.summaryReuseOne': '1 you already have will be reused.',
   'workspace.addRole': 'Add another role',
+  // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
+  ...ROLES_MESSAGES.en,
 };
 
 const de: Messages = {
@@ -6014,6 +6021,8 @@ const de: Messages = {
   'di.summaryNewOne': '1 neues Thema kommt zu {subject}.',
   'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
   'workspace.addRole': 'Weitere Rolle hinzufügen',
+  // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
+  ...ROLES_MESSAGES.de,
 };
 
 const fr: Messages = {
@@ -7670,6 +7679,8 @@ const fr: Messages = {
   'di.summaryNewOne': '1 nouveau thème sera ajouté à {subject}.',
   'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
   'workspace.addRole': 'Ajouter un autre rôle',
+  // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
+  ...ROLES_MESSAGES.fr,
 };
 
 const pt: Messages = {
@@ -9326,6 +9337,8 @@ const pt: Messages = {
   'di.summaryNewOne': '1 tema novo será adicionado a {subject}.',
   'di.summaryReuseOne': '1 que você já tem será reutilizado.',
   'workspace.addRole': 'Adicionar outra função',
+  // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
+  ...ROLES_MESSAGES.pt,
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

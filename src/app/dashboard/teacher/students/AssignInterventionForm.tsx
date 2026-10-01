@@ -1,219 +1,112 @@
 'use client';
 
 /**
- * F13 -- Teacher Intervention assignment UI (task section 18).
- * CONCEPT/SKILL/COMPETENCY/EXAM are four visually and structurally
- * distinct forms -- switching `targetType` never carries a value over
- * from a previous selection into the new shape, so one target can
- * never be silently inferred from another (task's own explicit
- * requirement). POSTs to the real, unmodified F11-B
- * `/api/teacher/interventions` route -- this component performs no
- * authorization or eligibility decision itself; a rejected request
- * (e.g. PAA Full Mock NOT_READY, wrong class, invalid target) is
- * rendered verbatim as the server's own denial, never silently
- * retried as something else (INV-F13-01).
+ * Track A (A3) -- individual practice assignment for one learner of one
+ * class. The teacher picks one of THE LEARNER'S OWN concepts (no raw ids to
+ * type); the scoped route (`POST /api/teacher/interventions`) re-runs the
+ * full authorization chain (class access, ACTIVE enrollment, genuine
+ * teacher relationship) and checks the concept belongs to this learner.
+ * Exam assignments are deferred to the cross-track integration.
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type TargetType = 'CONCEPT' | 'SKILL' | 'COMPETENCY' | 'EXAM';
-type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK';
-
 export interface AssignInterventionLabels {
   title: string;
-  targetTypeLabel: string;
-  conceptIdLabel: string;
-  skillIdLabel: string;
-  competencyIdLabel: string;
-  examProfileIdLabel: string;
-  simulationTypeLabel: string;
+  body: string;
+  concept: string;
+  none: string;
+  instructions: string;
   submit: string;
-  submitting: string;
-  success: string;
+  done: string;
   error: string;
-  typeConcept: string;
-  typeSkill: string;
-  typeCompetency: string;
-  typeExam: string;
-  /** F14 -- per-reason human-readable guidance (task section 8's "Backend decision -> reasonCode -> UI presentation mapping -> human-readable guidance"). Falls back to `error` for any code not covered here. */
-  errorForbidden?: string;
-  errorInvalidTarget?: string;
-  errorExamProfileMismatch?: string;
-  errorInvalidInput?: string;
-}
-
-/**
- * F14 Workstream E -- maps the real, specific error codes
- * `POST /api/teacher/interventions` actually returns to distinct,
- * human-readable guidance, instead of one generic message for every
- * rejection reason (F13's own documented residual gap,
- * `F13_RESIDUAL_RISK_REGISTER.md` #8). Presentation mapping ONLY: it
- * never re-derives WHY the server rejected the request, it only
- * chooses which already-written label to show for a code the server
- * already decided.
- */
-function describeAssignError(code: string | undefined, serverMessage: string | undefined, labels: AssignInterventionLabels): string {
-  switch (code) {
-    case 'FORBIDDEN':
-      return labels.errorForbidden || labels.error;
-    case 'INVALID_TARGET':
-      return labels.errorInvalidTarget || labels.error;
-    case 'EXAM_PROFILE_MISMATCH':
-      return labels.errorExamProfileMismatch || labels.error;
-    case 'INVALID_INPUT':
-      return serverMessage || labels.errorInvalidInput || labels.error;
-    default:
-      return labels.error;
-  }
 }
 
 export function AssignInterventionForm({
   classId,
   studentId,
+  concepts,
   labels,
 }: {
   classId: string;
   studentId: string;
+  concepts: Array<{ conceptId: string; label: string; subjectName: string }>;
   labels: AssignInterventionLabels;
 }) {
   const router = useRouter();
-  const [targetType, setTargetType] = useState<TargetType>('CONCEPT');
-  const [conceptId, setConceptId] = useState('');
-  const [skillId, setSkillId] = useState('');
-  const [competencyId, setCompetencyId] = useState('');
-  const [examProfileId, setExamProfileId] = useState('');
-  const [simulationType, setSimulationType] = useState<SimulationType>('TOPIC_EXAM');
-  const [learningObjectiveId, setLearningObjectiveId] = useState('');
-  const [academicSubjectId, setAcademicSubjectId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [conceptId, setConceptId] = useState(concepts[0]?.conceptId ?? '');
+  const [instructions, setInstructions] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
-  function buildTarget() {
-    switch (targetType) {
-      case 'CONCEPT':
-        return { targetType: 'CONCEPT' as const, conceptId };
-      case 'SKILL':
-        return { targetType: 'SKILL' as const, skillId };
-      case 'COMPETENCY':
-        return { targetType: 'COMPETENCY' as const, competencyId };
-      case 'EXAM':
-        if (simulationType === 'TOPIC_EXAM') return { targetType: 'EXAM' as const, examProfileId, simulationType, learningObjectiveId };
-        if (simulationType === 'DOMAIN_EXAM') return { targetType: 'EXAM' as const, examProfileId, simulationType, academicSubjectId };
-        return { targetType: 'EXAM' as const, examProfileId, simulationType };
-    }
-  }
-
-  const interventionTypeForTarget: Record<TargetType, string> = {
-    CONCEPT: 'CONCEPT_REINFORCEMENT',
-    SKILL: 'SKILL_PRACTICE',
-    COMPETENCY: 'COMPETENCY_PRACTICE',
-    EXAM: 'EXAM_PRACTICE',
-  };
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setResult('idle');
-    try {
-      const res = await fetch('/api/teacher/interventions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          classId,
-          studentId,
-          interventionType: interventionTypeForTarget[targetType],
-          target: buildTarget(),
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setErrorMessage(describeAssignError(body?.error, body?.message, labels));
-        setResult('error');
-        return;
-      }
-      setResult('success');
+  async function submit() {
+    if (!conceptId) return;
+    setBusy(true);
+    setMessage(null);
+    const res = await fetch('/api/teacher/interventions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        classId,
+        studentId,
+        interventionType: 'CONCEPT_REINFORCEMENT',
+        target: { targetType: 'CONCEPT', conceptId },
+        instructions: instructions.trim() || undefined,
+      }),
+    });
+    setMessage(res.ok ? { text: labels.done } : { text: labels.error, error: true });
+    setBusy(false);
+    if (res.ok) {
+      setInstructions('');
       router.refresh();
-    } catch {
-      setErrorMessage(labels.error);
-      setResult('error');
-    } finally {
-      setSubmitting(false);
     }
   }
+
+  const bySubject = concepts.reduce<Record<string, typeof concepts>>((acc, c) => {
+    (acc[c.subjectName] ??= []).push(c);
+    return acc;
+  }, {});
 
   return (
-    <form onSubmit={onSubmit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{labels.title}</h2>
-
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-        {labels.targetTypeLabel}
-        <select value={targetType} onChange={(e) => setTargetType(e.target.value as TargetType)}>
-          <option value="CONCEPT">{labels.typeConcept}</option>
-          <option value="SKILL">{labels.typeSkill}</option>
-          <option value="COMPETENCY">{labels.typeCompetency}</option>
-          <option value="EXAM">{labels.typeExam}</option>
-        </select>
-      </label>
-
-      {targetType === 'CONCEPT' && (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          {labels.conceptIdLabel}
-          <input value={conceptId} onChange={(e) => setConceptId(e.target.value)} required />
-        </label>
+    <section className="card ta-card" aria-labelledby="assign-title">
+      <h2 id="assign-title">{labels.title}</h2>
+      <p className="ta-msg">{labels.body}</p>
+      {concepts.length === 0 ? (
+        <p className="ta-msg">{labels.none}</p>
+      ) : (
+        <form
+          className="ta-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          <label htmlFor="assign-concept">{labels.concept}</label>
+          <select id="assign-concept" value={conceptId} onChange={(e) => setConceptId(e.target.value)}>
+            {Object.entries(bySubject).map(([subject, items]) => (
+              <optgroup key={subject} label={subject}>
+                {items.map((c) => (
+                  <option key={c.conceptId} value={c.conceptId}>
+                    {c.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <label htmlFor="assign-instructions">{labels.instructions}</label>
+          <textarea id="assign-instructions" maxLength={500} value={instructions} onChange={(e) => setInstructions(e.target.value)} />
+          <div className="ta-actions">
+            <button type="submit" className="btn btn-primary" disabled={busy || !conceptId}>
+              {labels.submit}
+            </button>
+          </div>
+        </form>
       )}
-      {targetType === 'SKILL' && (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          {labels.skillIdLabel}
-          <input value={skillId} onChange={(e) => setSkillId(e.target.value)} required />
-        </label>
-      )}
-      {targetType === 'COMPETENCY' && (
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          {labels.competencyIdLabel}
-          <input value={competencyId} onChange={(e) => setCompetencyId(e.target.value)} required />
-        </label>
-      )}
-      {targetType === 'EXAM' && (
-        <>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-            {labels.examProfileIdLabel}
-            <input value={examProfileId} onChange={(e) => setExamProfileId(e.target.value)} required />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-            {labels.simulationTypeLabel}
-            <select value={simulationType} onChange={(e) => setSimulationType(e.target.value as SimulationType)}>
-              <option value="TOPIC_EXAM">TOPIC_EXAM</option>
-              <option value="DOMAIN_EXAM">DOMAIN_EXAM</option>
-              <option value="MINI_MOCK">MINI_MOCK</option>
-              <option value="FULL_MOCK">FULL_MOCK</option>
-            </select>
-          </label>
-          {simulationType === 'TOPIC_EXAM' && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-              Learning objective ID
-              <input value={learningObjectiveId} onChange={(e) => setLearningObjectiveId(e.target.value)} required />
-            </label>
-          )}
-          {simulationType === 'DOMAIN_EXAM' && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-              Academic subject ID
-              <input value={academicSubjectId} onChange={(e) => setAcademicSubjectId(e.target.value)} required />
-            </label>
-          )}
-        </>
-      )}
-
-      <button type="submit" className="btn btn-primary" disabled={submitting}>
-        {submitting ? labels.submitting : labels.submit}
-      </button>
-
-      {result === 'success' && <p style={{ color: 'var(--success)', fontSize: 13 }}>{labels.success}</p>}
-      {result === 'error' && (
-        <p role="alert" style={{ color: 'var(--error)', fontSize: 13 }}>
-          {errorMessage || labels.error}
+      {message && (
+        <p role={message.error ? 'alert' : 'status'} className={message.error ? 'ta-msg ta-msg-error' : 'ta-msg'}>
+          {message.text}
         </p>
       )}
-    </form>
+    </section>
   );
 }

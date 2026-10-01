@@ -11,8 +11,9 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
 import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, type Workspace } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
+import { countUnread } from '@/lib/notifications/role-notifications.service';
 import LicenseBanner from './LicenseBanner';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getInterfaceLanguage, getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { buildLearnerNav } from '@/lib/lx/learner-navigation';
 import { buildParentNav, buildTeacherNav, buildInstitutionNav, buildAdminNav } from '@/lib/lx/workspace-navigation';
@@ -155,7 +156,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       // does not show a notification/debt badge for non-Student
       // workspaces rather than pretend a real read happened (documented
       // residual, see F13_NEXT_PHASE_HANDOFF.md).
-      locale = await getInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const);
+      // Track A: non-Student workspaces now have a real, workspace-scoped
+      // inbox (role-notifications.service), so they get an unread badge too.
+      const [lang, unread] = await Promise.all([
+        getUserInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const),
+        countUnread(canonicalUser.id, activeWorkspace).catch(() => 0),
+      ]);
+      locale = lang;
+      notifCount = unread;
       // Non-Student workspaces key their interface-language preference
       // by the F1 canonical user id, never by a fabricated Student
       // identity -- see F13_ROLE_WORKSPACE_MODEL.md for why this
@@ -171,9 +179,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isAdmin = isAdminEmail(email);
 
   const rawGroups =
-    activeWorkspace === 'PARENT' ? buildParentNav()
-    : activeWorkspace === 'TEACHER' ? buildTeacherNav()
-    : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav()
+    activeWorkspace === 'PARENT' ? buildParentNav({ notifCount })
+    : activeWorkspace === 'TEACHER' ? buildTeacherNav({ notifCount })
+    : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav({ notifCount })
     : activeWorkspace === 'ADMIN' ? buildAdminNav()
     : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
 
