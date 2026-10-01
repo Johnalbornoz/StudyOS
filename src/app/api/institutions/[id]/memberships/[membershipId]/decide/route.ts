@@ -13,6 +13,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessInstitution } from '@/lib/authorization';
 import { db } from '@/lib/db';
 import { decideMembership } from '@/services/institution.service';
+import { onTeacherMembershipDecided } from '@/lib/institution/membership-events';
 
 const Schema = z.object({ decision: z.enum(['APPROVED', 'REJECTED']) });
 
@@ -32,11 +33,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const belongs = await db.query(`SELECT 1 FROM institution_memberships WHERE id = $1 AND institution_id = $2`, [membershipId, institutionId]);
+  // Track A: the institution console decides TEACHER requests only.
+  const belongs = await db.query(
+    `SELECT 1 FROM institution_memberships WHERE id = $1 AND institution_id = $2 AND membership_role = 'TEACHER'`,
+    [membershipId, institutionId]
+  );
   if (belongs.rows.length === 0) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
   const decided = await decideMembership(membershipId, actor.id, validated.decision);
   if (!decided) return NextResponse.json({ error: 'NOT_PENDING' }, { status: 409 });
 
+  await onTeacherMembershipDecided(membershipId, actor.id, validated.decision);
   return NextResponse.json({ success: true });
 }

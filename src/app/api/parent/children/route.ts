@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { getOrCreateParentId } from '@/lib/auth';
+import { requireParentProfileId } from '@/lib/auth';
 import { getLinkedChildren } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -10,7 +10,8 @@ async function handleGET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const parentId = await getOrCreateParentId(clerkUserId);
+  const parentId = await requireParentProfileId(clerkUserId);
+  if (!parentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const children = await getLinkedChildren(parentId);
   return NextResponse.json({ success: true, data: { children } });
 }

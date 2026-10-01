@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
 import { decideMembership } from '@/services/institution.service';
-import { recordAdminAction } from '@/lib/admin/audit';
+import { onTeacherMembershipDecided } from '@/lib/institution/membership-events';
 
 const Schema = z.object({ decision: z.enum(['APPROVED', 'REJECTED']) });
 
@@ -21,6 +21,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const decided = await decideMembership(membershipId, guard.admin.actor.id, validated.decision);
   if (!decided) return NextResponse.json({ error: 'NOT_PENDING' }, { status: 409 });
 
-  await recordAdminAction({ actorUserId: guard.admin.actor.id, action: 'MEMBERSHIP_APPROVED', targetType: 'ROLE', targetId: membershipId, newState: { decision: validated.decision } });
+  // Track A: audits the REAL decision (a rejection used to be logged as
+  // MEMBERSHIP_APPROVED) and notifies the teacher.
+  await onTeacherMembershipDecided(membershipId, guard.admin.actor.id, validated.decision);
   return NextResponse.json({ success: true });
 }

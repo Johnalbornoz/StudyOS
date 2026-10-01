@@ -37,7 +37,10 @@ export function StartAssignmentButton({
     setBusy(true);
     setError(null);
     try {
-      const idempotencyKey = crypto.randomUUID();
+      // Track A: one stable key per assignment, so "Continue" (and a retry
+      // after a network error) RECOVERS the activity the server already
+      // created instead of generating a new one each click.
+      const idempotencyKey = `assignment:${interventionId}`;
       const res = await fetch(`/api/student/teacher-interventions/${interventionId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,7 +48,8 @@ export function StartAssignmentButton({
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body?.message || body?.error || labels.error);
+        // Never surface a raw server message (it can carry internal ids).
+        setError(labels.error);
         return;
       }
       const { outcome, executionReference } = body.data;

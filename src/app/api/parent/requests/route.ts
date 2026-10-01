@@ -40,7 +40,8 @@ async function handlePOST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  await respondToRequest(studentId, validated.parentId, validated.accept);
+  const changed = await respondToRequest(studentId, validated.parentId, validated.accept);
+  if (!changed) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   return NextResponse.json({ success: true });
 }
 

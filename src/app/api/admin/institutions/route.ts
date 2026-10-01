@@ -1,25 +1,22 @@
 /**
  * F2 -- POST /api/admin/institutions
  *
- * The only path to create an Institution. Gated by `isAdminEmail`, the
- * same StudyUS-admin allowlist already used by the existing
- * `/api/admin/*` routes -- not a new admin mechanism.
+ * The only path to create an Institution.
+ * Track A: gated by `guardAdminUsersRoute` (canonical STUDYUS_ADMIN role AND
+ * the allowlist, plus rate limit) -- the allowlist alone is no longer
+ * enough -- and audited (INSTITUTION_CREATED).
  */
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isAdminEmail } from '@/services/admin.service';
+import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
+import { recordAdminAction } from '@/lib/admin/audit';
 import { createInstitution } from '@/services/institution.service';
 
-const Schema = z.object({ name: z.string().min(1).max(200) });
+const Schema = z.object({ name: z.string().trim().min(1).max(200) });
 
 export async function POST(request: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-
-  const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? null;
-  if (!isAdminEmail(email)) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  const guard = await guardAdminUsersRoute('admin.institutions.create');
+  if ('error' in guard) return guard.error;
 
   let validated;
   try {
@@ -29,5 +26,12 @@ export async function POST(request: NextRequest) {
   }
 
   const institution = await createInstitution(validated.name);
-  return NextResponse.json({ success: true, data: { institution } });
+  await recordAdminAction({
+    actorUserId: guard.admin.actor.id,
+    action: 'INSTITUTION_CREATED',
+    targetType: 'INSTITUTION',
+    targetId: institution.id,
+    newState: { name: institution.name, status: institution.status },
+  }).catch(() => {});
+  return NextResponse.json({ success: true, data: { institution } }, { status: 201 });
 }

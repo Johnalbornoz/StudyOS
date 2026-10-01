@@ -15,13 +15,14 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessInstitution } from '@/lib/authorization';
 import { db } from '@/lib/db';
 import { createTeacherAssignment } from '@/services/institution.service';
+import { notifyUser } from '@/lib/notifications/role-notifications.service';
 
 const Schema = z.object({
   institutionMembershipId: z.string().uuid(),
   gradeId: z.string().uuid().nullable().optional(),
   classId: z.string().uuid().nullable().optional(),
   subjectLabel: z.string().min(1).max(100).nullable().optional(),
-});
+}).refine((v) => Boolean(v.gradeId || v.classId), { message: 'gradeId or classId is required' });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: institutionId } = await params;
@@ -40,17 +41,33 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const belongs = await db.query(
-    `SELECT 1 FROM institution_memberships WHERE id = $1 AND institution_id = $2`,
+    `SELECT user_id FROM institution_memberships WHERE id = $1 AND institution_id = $2`,
     [validated.institutionMembershipId, institutionId]
   );
   if (belongs.rows.length === 0) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
   try {
     const assignment = await createTeacherAssignment(validated.institutionMembershipId, validated);
+    const scopeName = await db.query(
+      `SELECT COALESCE((SELECT name FROM classes WHERE id = $1), (SELECT name FROM grades WHERE id = $2)) AS name`,
+      [assignment.classId, assignment.gradeId]
+    );
+    await notifyUser({
+      recipientUserId: belongs.rows[0].user_id,
+      workspace: 'TEACHER',
+      type: 'TEACHER_CLASS_ASSIGNED',
+      title: 'Nueva clase asignada',
+      message: `Ahora puedes trabajar con ${scopeName.rows[0]?.name ?? 'una clase'}.`,
+      payload: { scopeName: scopeName.rows[0]?.name ?? '' },
+      actionHref: '/dashboard/teacher',
+    });
     return NextResponse.json({ success: true, data: { assignment } });
   } catch (error: any) {
     if (error.message === 'MEMBERSHIP_NOT_APPROVED') {
       return NextResponse.json({ error: 'MEMBERSHIP_NOT_APPROVED' }, { status: 409 });
+    }
+    if (error.message === 'SCOPE_REQUIRED') {
+      return NextResponse.json({ error: 'SCOPE_REQUIRED' }, { status: 400 });
     }
     if (error.message === 'SCOPE_OUTSIDE_INSTITUTION') {
       return NextResponse.json({ error: 'SCOPE_OUTSIDE_INSTITUTION' }, { status: 422 });

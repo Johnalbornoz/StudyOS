@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateParentId } from '@/lib/auth';
+import { requireParentProfileId } from '@/lib/auth';
 import { unlinkChild } from '@/services/parent.service';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -26,7 +26,8 @@ async function handleDELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const parentId = await getOrCreateParentId(clerkUserId);
+  const parentId = await requireParentProfileId(clerkUserId);
+  if (!parentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const body = await request.json();
 
   let validated;

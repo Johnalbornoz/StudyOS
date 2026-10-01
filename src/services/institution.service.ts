@@ -82,18 +82,43 @@ export async function inviteInstitutionAdmin(institutionId: string, userId: stri
   return toMembership(result.rows[0]);
 }
 
-/** Teacher self-service request -- starts PENDING, grants nothing by itself (INV-F2-04/AC-F2-07). */
-export async function requestTeacherMembership(institutionId: string, userId: string): Promise<InstitutionMembership> {
+export class InstitutionNotAvailableError extends Error {
+  constructor() {
+    super('INSTITUTION_NOT_AVAILABLE');
+    this.name = 'InstitutionNotAvailableError';
+  }
+}
+
+/**
+ * Teacher self-service request -- starts PENDING, grants nothing by itself
+ * (INV-F2-04/AC-F2-07).
+ *
+ * Track A:
+ *  - the institution must exist and be ACTIVE (InstitutionNotAvailableError,
+ *    never a raw FK 500, never a request into a SUSPENDED institution);
+ *  - a REJECTED or REVOKED teacher may ask again: the row goes back to
+ *    PENDING and the institution decides again (a request never grants
+ *    access by itself, so this is not a re-entry). APPROVED and PENDING rows
+ *    are left untouched.
+ * `newlyPending` tells the caller whether to signal the institution admins.
+ */
+export async function requestTeacherMembership(institutionId: string, userId: string): Promise<InstitutionMembership & { newlyPending: boolean }> {
   const result = await db.query(
     `
     INSERT INTO institution_memberships (institution_id, user_id, membership_role, status)
-    VALUES ($1, $2, 'TEACHER', 'PENDING')
-    ON CONFLICT (institution_id, user_id, membership_role) DO UPDATE SET status = institution_memberships.status
+    SELECT i.id, $2, 'TEACHER', 'PENDING' FROM institutions i WHERE i.id = $1 AND i.status = 'ACTIVE'
+    ON CONFLICT (institution_id, user_id, membership_role) DO UPDATE
+      SET status = 'PENDING', requested_at = NOW(), reviewed_at = NULL, reviewed_by_user_id = NULL, updated_at = NOW()
+      WHERE institution_memberships.status IN ('REJECTED', 'REVOKED')
     RETURNING id, institution_id, user_id, membership_role, status
     `,
     [institutionId, userId]
   );
-  return toMembership(result.rows[0]);
+  if (result.rows.length > 0) return { ...toMembership(result.rows[0]), newlyPending: true };
+  const institution = await db.query(`SELECT 1 FROM institutions WHERE id = $1 AND status = 'ACTIVE'`, [institutionId]);
+  if (institution.rows.length === 0) throw new InstitutionNotAvailableError();
+  const existing = await getMembershipStatus(institutionId, userId, 'TEACHER');
+  return { ...(existing as InstitutionMembership), newlyPending: false };
 }
 
 /**
@@ -205,19 +230,25 @@ export async function decideMembership(
   decision: 'APPROVED' | 'REJECTED'
 ): Promise<boolean> {
   const result = await db.query(
-    `UPDATE institution_memberships SET status = $1, reviewed_at = NOW(), reviewed_by_user_id = $2 WHERE id = $3 AND status = 'PENDING' RETURNING id`,
+    `UPDATE institution_memberships SET status = $1, reviewed_at = NOW(), reviewed_by_user_id = $2, updated_at = NOW() WHERE id = $3 AND status = 'PENDING' RETURNING id`,
     [decision, reviewerUserId, membershipId]
   );
   return (result.rowCount ?? 0) > 0;
 }
 
-/** Soft-revoke an APPROVED membership -- never a DELETE (INV-F2-07/08). Any ACTIVE assignments under it are ended in the same transaction so access is removed immediately, without deleting the assignment's own historical row. */
+/**
+ * Soft-revoke an APPROVED membership -- never a DELETE (INV-F2-07/08). Any ACTIVE assignments under it are ended in the same transaction so access is removed immediately, without deleting the assignment's own historical row.
+ *
+ * Track A: TEACHER memberships only. An institution admin can never revoke
+ * another admin's (or their own) INSTITUTION_ADMIN membership through the
+ * teacher console -- admin membership is a StudyUS-admin decision.
+ */
 export async function revokeMembership(membershipId: string, reviewerUserId: string): Promise<boolean> {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
     const membership = await client.query(
-      `UPDATE institution_memberships SET status = 'REVOKED', reviewed_at = NOW(), reviewed_by_user_id = $1 WHERE id = $2 AND status = 'APPROVED' RETURNING id`,
+      `UPDATE institution_memberships SET status = 'REVOKED', reviewed_at = NOW(), reviewed_by_user_id = $1, updated_at = NOW() WHERE id = $2 AND status = 'APPROVED' AND membership_role = 'TEACHER' RETURNING id`,
       [reviewerUserId, membershipId]
     );
     if ((membership.rowCount ?? 0) === 0) {
@@ -243,11 +274,20 @@ export async function createGrade(institutionId: string, name: string): Promise<
   return result.rows[0];
 }
 
+/**
+ * Track A: a class's grade must belong to the SAME institution (guarded in
+ * the INSERT itself). Throws SCOPE_OUTSIDE_INSTITUTION otherwise -- a class
+ * can never be filed under another institution's grade.
+ */
 export async function createClass(institutionId: string, gradeId: string | null, name: string): Promise<{ id: string; name: string }> {
   const result = await db.query(
-    `INSERT INTO classes (institution_id, grade_id, name) VALUES ($1, $2, $3) RETURNING id, name`,
+    `INSERT INTO classes (institution_id, grade_id, name)
+     SELECT $1::uuid, $2::uuid, $3
+     WHERE $2::uuid IS NULL OR EXISTS (SELECT 1 FROM grades g WHERE g.id = $2::uuid AND g.institution_id = $1::uuid)
+     RETURNING id, name`,
     [institutionId, gradeId, name]
   );
+  if (result.rows.length === 0) throw new Error('SCOPE_OUTSIDE_INSTITUTION');
   return result.rows[0];
 }
 
@@ -279,6 +319,11 @@ export async function createTeacherAssignment(
   );
   if (membership.rows.length === 0) {
     throw new Error('MEMBERSHIP_NOT_APPROVED');
+  }
+  // Track A: a scope must name a grade or a class -- a scope with neither
+  // silently grants nothing (DB CHECK teacher_assignments_scope_present).
+  if (!scope.gradeId && !scope.classId) {
+    throw new Error('SCOPE_REQUIRED');
   }
   // Foundation (ADR-F06, tenant isolation): the grade / class must belong to
   // the SAME institution as the membership (and a class must sit in the
@@ -342,4 +387,277 @@ function toAssignment(row: any): TeacherAssignment {
     subjectLabel: row.subject_label,
     status: row.status,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Track A -- institution setup, roster and consent-based enrollment.
+// Every function here takes the institution id the CALLER was authorized for
+// (`canAccessInstitution` at the route) and re-checks that each child object
+// (grade / class / enrollment / membership) belongs to it -- a spoofed id from
+// another institution simply matches nothing.
+// ---------------------------------------------------------------------------
+
+export interface InstitutionGradeRow {
+  id: string;
+  name: string;
+}
+
+export interface InstitutionClassRow {
+  id: string;
+  name: string;
+  gradeId: string | null;
+  gradeName: string | null;
+  activeEnrollmentCount: number;
+  pendingEnrollmentCount: number;
+  teachers: Array<{ assignmentId: string; userId: string; email: string | null }>;
+}
+
+export async function getInstitutionById(institutionId: string): Promise<Institution | null> {
+  const r = await db.query(`SELECT id, name, status FROM institutions WHERE id = $1`, [institutionId]);
+  return r.rows.length > 0 ? toInstitution(r.rows[0]) : null;
+}
+
+export async function listInstitutionGrades(institutionId: string): Promise<InstitutionGradeRow[]> {
+  const r = await db.query(`SELECT id, name FROM grades WHERE institution_id = $1 ORDER BY name`, [institutionId]);
+  return r.rows.map((row: any) => ({ id: row.id, name: row.name }));
+}
+
+export async function listInstitutionClassesWithStaff(institutionId: string): Promise<InstitutionClassRow[]> {
+  const r = await db.query(
+    `
+    SELECT c.id, c.name, c.grade_id, g.name AS grade_name,
+      (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
+      (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count,
+      COALESCE((
+        SELECT json_agg(json_build_object('assignmentId', ta.id, 'userId', im.user_id, 'email', u.email) ORDER BY u.email)
+        FROM teacher_assignments ta
+        JOIN institution_memberships im ON im.id = ta.institution_membership_id
+        JOIN users u ON u.id = im.user_id
+        WHERE ta.status = 'ACTIVE' AND im.status = 'APPROVED' AND im.institution_id = c.institution_id
+          AND (ta.class_id = c.id OR (ta.class_id IS NULL AND ta.grade_id IS NOT NULL AND ta.grade_id = c.grade_id))
+      ), '[]'::json) AS teachers
+    FROM classes c
+    LEFT JOIN grades g ON g.id = c.grade_id
+    WHERE c.institution_id = $1
+    ORDER BY g.name NULLS LAST, c.name
+    `,
+    [institutionId]
+  );
+  return r.rows.map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    gradeId: row.grade_id,
+    gradeName: row.grade_name,
+    activeEnrollmentCount: row.active_count,
+    pendingEnrollmentCount: row.pending_count,
+    teachers: row.teachers ?? [],
+  }));
+}
+
+/** Approved TEACHER memberships of one institution, with the teacher's email (never a raw id in the UI). */
+export async function listApprovedTeachers(institutionId: string): Promise<Array<{ membershipId: string; userId: string; email: string | null }>> {
+  const r = await db.query(
+    `SELECT im.id, im.user_id, u.email FROM institution_memberships im JOIN users u ON u.id = im.user_id
+     WHERE im.institution_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED' ORDER BY u.email`,
+    [institutionId]
+  );
+  return r.rows.map((row: any) => ({ membershipId: row.id, userId: row.user_id, email: row.email }));
+}
+
+/** Pending requests WITH the requester's email (the admin decides on a person, not a uuid). */
+export async function listPendingMembershipsWithEmail(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null }>> {
+  const r = await db.query(
+    `SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, u.email AS user_email
+     FROM institution_memberships im JOIN users u ON u.id = im.user_id
+     WHERE im.institution_id = $1 AND im.status = 'PENDING' ORDER BY im.requested_at ASC`,
+    [institutionId]
+  );
+  return r.rows.map((row: any) => ({ ...toMembership(row), userEmail: row.user_email }));
+}
+
+export async function getClassInInstitution(institutionId: string, classId: string): Promise<{ id: string; name: string; gradeId: string | null; gradeName: string | null } | null> {
+  const r = await db.query(
+    `SELECT c.id, c.name, c.grade_id, g.name AS grade_name FROM classes c LEFT JOIN grades g ON g.id = c.grade_id
+     WHERE c.id = $1 AND c.institution_id = $2`,
+    [classId, institutionId]
+  );
+  const row = r.rows[0];
+  return row ? { id: row.id, name: row.name, gradeId: row.grade_id, gradeName: row.grade_name } : null;
+}
+
+export interface ClassRosterEntry {
+  enrollmentId: string;
+  studentId: string;
+  name: string;
+  email: string | null;
+  status: 'PENDING' | 'ACTIVE';
+  since: string;
+}
+
+/** The institution-admin roster of one class: ACTIVE students and PENDING invitations (never DECLINED/ENDED). */
+export async function listClassRosterForInstitution(institutionId: string, classId: string): Promise<ClassRosterEntry[]> {
+  const r = await db.query(
+    `
+    SELECT ce.id, ce.student_id, ce.status, COALESCE(ce.responded_at, ce.created_at) AS since, s.name, s.email
+    FROM class_enrollments ce
+    JOIN classes c ON c.id = ce.class_id
+    JOIN students s ON s.id = ce.student_id
+    WHERE ce.class_id = $1 AND c.institution_id = $2 AND ce.status IN ('ACTIVE', 'PENDING')
+    ORDER BY ce.status, s.name NULLS LAST, s.email
+    `,
+    [classId, institutionId]
+  );
+  return r.rows.map((row: any) => ({
+    enrollmentId: row.id,
+    studentId: row.student_id,
+    name: row.name || row.email || '',
+    email: row.email,
+    status: row.status,
+    since: row.since instanceof Date ? row.since.toISOString() : row.since,
+  }));
+}
+
+export type ClassInvitationOutcome =
+  | { outcome: 'INVITED'; enrollmentId: string; studentUserId: string }
+  | { outcome: 'ALREADY_PENDING' | 'ALREADY_ACTIVE' }
+  | { outcome: 'NO_STUDENT_ACCOUNT' };
+
+/**
+ * Invite a Student to a class by email. Enrollment is what grants the
+ * class's teachers read access to the learner, so it is CONSENT-BASED: the
+ * row starts PENDING (grants nothing -- every check requires ACTIVE) and
+ * becomes ACTIVE only when the Student accepts. Only identities holding an
+ * ACTIVE STUDENT role are matched; independent Students stay independent
+ * unless they accept. Re-inviting after a decline/removal re-opens the
+ * invitation; an ACTIVE enrollment is left untouched.
+ */
+export async function inviteStudentToClass(
+  institutionId: string,
+  classId: string,
+  studentEmail: string,
+  actorUserId: string
+): Promise<ClassInvitationOutcome> {
+  const klass = await getClassInInstitution(institutionId, classId);
+  if (!klass) throw new Error('CLASS_NOT_IN_INSTITUTION');
+
+  const match = await db.query(
+    `SELECT s.id AS student_id, s.user_id FROM students s
+     JOIN users u ON u.id = s.user_id
+     JOIN user_roles r ON r.user_id = u.id AND r.role = 'STUDENT' AND r.status = 'ACTIVE'
+     WHERE (lower(u.email) = lower($1) OR lower(s.email) = lower($1)) AND u.status = 'ACTIVE'
+     ORDER BY s.created_at ASC NULLS LAST LIMIT 1`,
+    [studentEmail.trim()]
+  );
+  const student = match.rows[0];
+  if (!student) return { outcome: 'NO_STUDENT_ACCOUNT' };
+
+  const existing = await db.query(`SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, student.student_id]);
+  if (existing.rows[0]?.status === 'ACTIVE') return { outcome: 'ALREADY_ACTIVE' };
+  if (existing.rows[0]?.status === 'PENDING') return { outcome: 'ALREADY_PENDING' };
+
+  const written = await db.query(
+    `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id)
+     VALUES ($1, $2, 'PENDING', $3)
+     ON CONFLICT (class_id, student_id) DO UPDATE
+       SET status = 'PENDING', invited_by_user_id = $3, responded_at = NULL, ended_at = NULL
+       WHERE class_enrollments.status IN ('DECLINED', 'ENDED')
+     RETURNING id`,
+    [classId, student.student_id, actorUserId]
+  );
+  if (written.rows.length === 0) return { outcome: 'ALREADY_PENDING' };
+  return { outcome: 'INVITED', enrollmentId: written.rows[0].id, studentUserId: student.user_id };
+}
+
+/** Remove a Student (or withdraw a pending invitation) -- soft, never a DELETE. Scoped to the class AND institution. */
+export async function endClassEnrollment(institutionId: string, classId: string, enrollmentId: string): Promise<boolean> {
+  const r = await db.query(
+    `UPDATE class_enrollments ce SET status = 'ENDED', ended_at = NOW()
+     FROM classes c
+     WHERE ce.id = $1 AND ce.class_id = $2 AND c.id = ce.class_id AND c.institution_id = $3 AND ce.status IN ('ACTIVE', 'PENDING')
+     RETURNING ce.id`,
+    [enrollmentId, classId, institutionId]
+  );
+  return (r.rowCount ?? 0) > 0;
+}
+
+export interface StudentClassInvitation {
+  enrollmentId: string;
+  classId: string;
+  className: string;
+  institutionName: string;
+  invitedAt: string;
+}
+
+/** The Student's own pending class invitations. `studentId` is always the caller's own resolved id. */
+export async function listPendingClassInvitationsForStudent(studentId: string): Promise<StudentClassInvitation[]> {
+  const r = await db.query(
+    `SELECT ce.id, ce.class_id, c.name AS class_name, i.name AS institution_name, ce.created_at
+     FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id JOIN institutions i ON i.id = c.institution_id
+     WHERE ce.student_id = $1 AND ce.status = 'PENDING' AND i.status = 'ACTIVE'
+     ORDER BY ce.created_at ASC`,
+    [studentId]
+  );
+  return r.rows.map((row: any) => ({
+    enrollmentId: row.id,
+    classId: row.class_id,
+    className: row.class_name,
+    institutionName: row.institution_name,
+    invitedAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  }));
+}
+
+/** The Student's own active classes (read-only context for the Student). */
+export async function listActiveClassesForStudent(studentId: string): Promise<Array<{ classId: string; className: string; institutionName: string }>> {
+  const r = await db.query(
+    `SELECT c.id, c.name, i.name AS institution_name FROM class_enrollments ce
+     JOIN classes c ON c.id = ce.class_id JOIN institutions i ON i.id = c.institution_id
+     WHERE ce.student_id = $1 AND ce.status = 'ACTIVE' ORDER BY i.name, c.name`,
+    [studentId]
+  );
+  return r.rows.map((row: any) => ({ classId: row.id, className: row.name, institutionName: row.institution_name }));
+}
+
+/**
+ * The Student accepts or declines a PENDING class invitation addressed to
+ * THEM (`student_id = $studentId` is the whole authorization boundary; the
+ * caller's own resolved id is always used). Returns the inviting admin and
+ * class context for the notification, or null when nothing changed.
+ */
+export async function respondToClassInvitation(
+  studentId: string,
+  enrollmentId: string,
+  accept: boolean
+): Promise<{ invitedByUserId: string | null; institutionId: string; className: string } | null> {
+  const r = await db.query(
+    `UPDATE class_enrollments ce SET status = $3, responded_at = NOW()
+     FROM classes c
+     WHERE ce.id = $1 AND ce.student_id = $2 AND ce.status = 'PENDING' AND c.id = ce.class_id
+     RETURNING ce.invited_by_user_id, c.institution_id, c.name`,
+    [enrollmentId, studentId, accept ? 'ACTIVE' : 'DECLINED']
+  );
+  const row = r.rows[0];
+  return row ? { invitedByUserId: row.invited_by_user_id, institutionId: row.institution_id, className: row.name } : null;
+}
+
+/** ACTIVE teacher scopes of one institution, for the admin's class staffing view. */
+export async function listInstitutionTeacherAssignments(institutionId: string): Promise<Array<{ id: string; membershipId: string; email: string | null; gradeName: string | null; className: string | null; subjectLabel: string | null }>> {
+  const r = await db.query(
+    `SELECT ta.id, ta.institution_membership_id, u.email, g.name AS grade_name, c.name AS class_name, ta.subject_label
+     FROM teacher_assignments ta
+     JOIN institution_memberships im ON im.id = ta.institution_membership_id
+     JOIN users u ON u.id = im.user_id
+     LEFT JOIN grades g ON g.id = ta.grade_id
+     LEFT JOIN classes c ON c.id = ta.class_id
+     WHERE im.institution_id = $1 AND ta.status = 'ACTIVE'
+     ORDER BY u.email, c.name NULLS LAST`,
+    [institutionId]
+  );
+  return r.rows.map((row: any) => ({
+    id: row.id,
+    membershipId: row.institution_membership_id,
+    email: row.email,
+    gradeName: row.grade_name,
+    className: row.class_name,
+    subjectLabel: row.subject_label,
+  }));
 }

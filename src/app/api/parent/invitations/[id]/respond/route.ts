@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { getOrCreateParentId } from '@/lib/auth';
+import { getOrCreateCanonicalUser, assignSelfServiceRole } from '@/lib/identity';
 import { acceptParentInvitation, declineParentInvitation } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -36,6 +37,14 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     if (!declined) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     return NextResponse.json({ success: true, data: { status: 'declined' } });
   }
+
+  // Track A: accepting an invitation addressed to your own verified email is
+  // an explicit choice to act as a Parent, so it adds the PARENT role (the
+  // same audited self-service grant /role-select uses). A role an
+  // administrator revoked is never re-granted this way.
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
+  const roleOutcome = await assignSelfServiceRole(clerkUserId, canonicalUser.id, 'PARENT');
+  if (roleOutcome === 'REVOKED') return NextResponse.json({ error: 'ROLE_REVOKED' }, { status: 409 });
 
   const parentId = await getOrCreateParentId(clerkUserId);
   const accepted = await acceptParentInvitation(invitationId, parentId, email);

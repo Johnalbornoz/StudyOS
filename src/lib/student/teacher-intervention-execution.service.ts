@@ -21,6 +21,7 @@ import { db } from '@/lib/db';
 import { isOwner } from '@/lib/authorization';
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { storeQuiz, getQuizSession } from '@/services/quiz-persistence.service';
+import { resolveLanguageForSubject as languageFor } from '@/services/subject-generation-context.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { getExamVersion, getPublishedExamVersion } from '@/lib/assessment/exam-definition.service';
@@ -166,7 +167,7 @@ export async function getStudentPendingTeacherInterventions(studentId: string): 
  * complete` flow (scoring, F8 post-exam diagnosis, F9 readiness
  * recomputation) is never called into or duplicated from here.
  */
-async function reconcileCompletionsForStudent(studentId: string): Promise<void> {
+export async function reconcileCompletionsForStudent(studentId: string): Promise<void> {
   const activeExecutions = await db.query(
     `
     SELECT tie.id AS execution_id, tie.execution_reference, tie.teacher_intervention_id, tie.execution_type
@@ -292,8 +293,11 @@ export async function startConceptReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${claimed.conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(claimed.conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, 'en', 'topic_practice', []);
+  // Track A: same language resolution as the Student's own practice route
+  // (generate-and-take), never a hard-coded 'en'.
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generatePracticeQuestions(claimed.conceptId, claimed.studentId, subjectId, { language });
+  const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, language, 'topic_practice', []);
 
   try {
     const insertResult = await db.query(
@@ -440,8 +444,9 @@ export async function startSkillReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, 'en', 'topic_practice', [], null, [claimed.skillId]);
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
+  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, [claimed.skillId]);
 
   try {
     const insertResult = await db.query(
@@ -577,8 +582,9 @@ export async function startCompetencyReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, 'en', 'topic_practice', [], null, null, [claimed.competencyId]);
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, { language });
+  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, null, [claimed.competencyId]);
 
   try {
     const insertResult = await db.query(

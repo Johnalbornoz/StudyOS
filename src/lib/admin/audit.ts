@@ -33,12 +33,17 @@ export type AdminAuditAction =
   | 'MEMBERSHIP_CANCELLED'
   | 'REFUND_DISPUTE_RECORDED'
   | 'MEMBERSHIP_RECONCILED'
-  | 'PASSWORD_CHANGE_CONFIRMED';
+  | 'PASSWORD_CHANGE_CONFIRMED'
+  // Track A -- institutional role decisions (who may act for an institution).
+  | 'MEMBERSHIP_REJECTED'
+  | 'TEACHER_MEMBERSHIP_REVOKED'
+  | 'INSTITUTION_CREATED'
+  | 'INSTITUTION_ADMIN_GRANTED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;

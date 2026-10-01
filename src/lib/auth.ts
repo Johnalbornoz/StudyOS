@@ -51,7 +51,7 @@
  *   out of scope here and belongs to a separate migration project.
  */
 
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { getOrCreateCanonicalUser, hasRole } from '@/lib/identity/canonical-user.service';
 
@@ -220,6 +220,28 @@ export class StudentRoleRequiredError extends Error {
  * repairs the case where a students row exists without its matching
  * profiles/student_profiles rows (e.g. from before this fix landed).
  */
+/**
+ * Track A -- the Clerk profile (email, name) of THIS clerkUserId. Inside a
+ * request made by someone else (an admin granting a Student role to another
+ * account) `currentUser()` is the ADMIN, so its email/name must never be
+ * copied onto the target's new students/profiles row: fall back to the
+ * Backend API lookup of the target itself.
+ */
+async function resolveClerkIdentity(clerkUserId: string): Promise<{ email: string | null; name: string | null }> {
+  const fromUser = (u: any) => ({
+    email: u?.primaryEmailAddress?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null,
+    name: u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null,
+  });
+  const sessionUser = await currentUser().catch(() => null);
+  if (sessionUser && (!sessionUser.id || sessionUser.id === clerkUserId)) return fromUser(sessionUser);
+  try {
+    const client = await clerkClient();
+    return fromUser(await client.users.getUser(clerkUserId));
+  } catch {
+    return { email: null, name: null };
+  }
+}
+
 export async function getOrCreateStudentId(clerkUserId: string): Promise<string> {
   const existing = await db.query(
     `SELECT id FROM students WHERE clerk_id = $1`,
@@ -248,14 +270,9 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
     throw new StudentRoleRequiredError();
   }
 
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress ||
-    user?.emailAddresses?.[0]?.emailAddress ||
-    `${clerkUserId}@placeholder.local`;
-  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
-
-  return upsertStudentRecord(clerkUserId, email, name);
+  const identity = await resolveClerkIdentity(clerkUserId);
+  const email = identity.email || `${clerkUserId}@placeholder.local`;
+  return upsertStudentRecord(clerkUserId, email, identity.name);
 }
 
 /**
@@ -295,6 +312,18 @@ export async function requireStudentId(clerkUserId: string): Promise<string | nu
 }
 
 /**
+ * Track A -- the role-checked gate for Parent-only routes, the PARENT twin of
+ * `requireStudentId`: returns null (never provisions a parent profile) when
+ * the caller holds no ACTIVE PARENT role. Callers treat null as 403.
+ */
+export async function requireParentProfileId(clerkUserId: string): Promise<string | null> {
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId);
+  const isParent = await hasRole(canonicalUser.id, 'PARENT');
+  if (!isParent) return null;
+  return getOrCreateParentId(clerkUserId);
+}
+
+/**
  * Resolve a Clerk user ID to a parent's profile UUID, creating the
  * profiles row (user_type='parent') on first use. Separate from
  * getOrCreateStudentId: parents have no legacy `students` table entry,
@@ -323,10 +352,7 @@ export async function getOrCreateParentId(clerkUserId: string): Promise<string> 
     return profileId;
   }
 
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || null;
-  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
+  const { email, name } = await resolveClerkIdentity(clerkUserId);
 
   const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
 

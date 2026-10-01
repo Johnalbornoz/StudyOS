@@ -16,7 +16,15 @@ export async function getOrCreateCanonicalUser(clerkUserId: string, email?: stri
     [clerkUserId]
   );
   if (existing.rows.length > 0) {
-    return toCanonicalUser(existing.rows[0]);
+    const row = existing.rows[0];
+    // Track A: a row first created by a code path without the email (e.g.
+    // a session without the email claim) is backfilled once, the first
+    // time a caller knows it. Never overwrites an existing email.
+    if (!row.email && email) {
+      await db.query(`UPDATE users SET email = $2, updated_at = NOW() WHERE id = $1 AND email IS NULL`, [row.id, email]);
+      row.email = email;
+    }
+    return toCanonicalUser(row);
   }
 
   const inserted = await db.query(
@@ -46,6 +54,18 @@ export async function getUserRoles(userId: string): Promise<UserRoleGrant[]> {
     role: row.role as Role,
     status: row.status,
     grantedVia: row.granted_via,
+  }));
+}
+
+/** Track A: roles an administrator REVOKED -- shown on role selection so a revoked role is explained, never offered as addable. */
+export async function getRevokedRoles(userId: string): Promise<Array<{ role: Role; revokedAt: string | null }>> {
+  const result = await db.query(
+    `SELECT role, revoked_at FROM user_roles WHERE user_id = $1 AND status = 'REVOKED' ORDER BY role`,
+    [userId]
+  );
+  return result.rows.map((row: any) => ({
+    role: row.role as Role,
+    revokedAt: row.revoked_at instanceof Date ? row.revoked_at.toISOString() : row.revoked_at ?? null,
   }));
 }
 

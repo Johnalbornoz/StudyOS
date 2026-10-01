@@ -21,6 +21,7 @@ import { getStudentMastery } from './mastery.service';
 import { getActiveDebts } from './learning-debt.service';
 import { getUpcomingForStudent } from './assessment.service';
 import { masteryToPercent, tryMasteryScore, averageMasteryScore } from '@/lib/mastery-format';
+import { notifyUser } from '@/lib/notifications/role-notifications.service';
 
 export type LinkStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
 
@@ -131,13 +132,19 @@ export async function revokeRelationshipByStudent(studentId: string, parentId: s
   return (result.rowCount ?? 0) > 0;
 }
 
+/**
+ * Track A: ACCEPTED relationships only. A pending, declined or revoked
+ * row must never expose the learner's name or email to the parent (a
+ * pending request is not consent, and listing it would also turn the
+ * request form into an account-existence oracle).
+ */
 export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]> {
   const result = await db.query(
     `
     SELECT s.id, s.name, s.email, psr.status
     FROM parent_student_relationships psr
     JOIN students s ON s.id = psr.student_id
-    WHERE psr.parent_id = $1 AND psr.status != 'declined'
+    WHERE psr.parent_id = $1 AND psr.status = 'accepted'
     ORDER BY psr.created_at ASC
     `,
     [parentId]
@@ -177,7 +184,7 @@ export async function respondToRequest(
   studentId: string,
   parentId: string,
   accept: boolean
-): Promise<void> {
+): Promise<boolean> {
   const status: LinkStatus = accept ? 'accepted' : 'declined';
   const result = await db.query(
     `
@@ -188,18 +195,102 @@ export async function respondToRequest(
     `,
     [status, studentId, parentId]
   );
-  if ((result.rowCount ?? 0) === 0) return;
+  if ((result.rowCount ?? 0) === 0) return false;
 
-  if (accept) {
-    const studentRow = await db.query(`SELECT name, email FROM students WHERE id = $1`, [studentId]);
-    const studentName = studentRow.rows[0]?.name || studentRow.rows[0]?.email || 'Your child';
-    await notify(
-      parentId,
-      'PARENT_LINK_ACCEPTED',
-      'Solicitud aceptada',
-      `${studentName} aceptó tu solicitud. Ya puedes ver su progreso en Modo padre.`
-    );
+  const [studentRow, parentRow] = await Promise.all([
+    db.query(`SELECT name, email FROM students WHERE id = $1`, [studentId]),
+    db.query(`SELECT user_id FROM profiles WHERE id = $1`, [parentId]),
+  ]);
+  const studentName = studentRow.rows[0]?.name || studentRow.rows[0]?.email || '';
+  const parentUserId: string | null = parentRow.rows[0]?.user_id ?? null;
+  if (parentUserId) {
+    await notifyUser({
+      recipientUserId: parentUserId,
+      workspace: 'PARENT',
+      type: accept ? 'PARENT_LINK_ACCEPTED' : 'PARENT_LINK_DECLINED',
+      title: accept ? 'Solicitud aceptada' : 'Solicitud rechazada',
+      message: accept
+        ? `${studentName} aceptó tu solicitud. Ya puedes ver su progreso.`
+        : 'Tu solicitud de vinculación no fue aceptada.',
+      // A declined request never reveals who declined it beyond what the
+      // parent typed; an accepted one names the child (consent given).
+      payload: accept ? { studentName } : {},
+      actionHref: '/dashboard/parent',
+    });
   }
+  return true;
+}
+
+export const MAX_PENDING_PARENT_REQUESTS = 10;
+
+export type ChildLinkRequestOutcome = 'SUBMITTED' | 'RATE_LIMITED';
+
+/**
+ * Track A -- the PARENT-initiated direction, consent-first and with no
+ * account-existence oracle:
+ *  - the caller learns nothing about whether the email belongs to a
+ *    StudyUS student (the route returns the same response for match,
+ *    no match, already pending and already linked);
+ *  - a match only ever creates a PENDING relationship, which grants no
+ *    access (`isActiveParentOf` counts 'accepted' only) until the
+ *    Student accepts it from their own notifications;
+ *  - only an identity holding an ACTIVE STUDENT role can be matched,
+ *    by the canonical users.email or the students.email of that row;
+ *  - a parent can never be linked to themselves;
+ *  - at most MAX_PENDING_PARENT_REQUESTS outstanding requests per parent
+ *    (bounded fan-out of unsolicited requests).
+ * Re-requesting after a decline/revoke resets that row to pending (the
+ * Student decides again); an accepted or pending row is left untouched.
+ */
+export async function requestChildLink(parentId: string, childEmail: string): Promise<ChildLinkRequestOutcome> {
+  const email = childEmail.trim().toLowerCase();
+  const pending = await db.query(
+    `SELECT COUNT(*)::int AS n FROM parent_student_relationships WHERE parent_id = $1 AND status = 'pending'`,
+    [parentId]
+  );
+  if ((pending.rows[0]?.n ?? 0) >= MAX_PENDING_PARENT_REQUESTS) return 'RATE_LIMITED';
+
+  const match = await db.query(
+    `
+    SELECT s.id AS student_id, s.user_id
+    FROM students s
+    JOIN users u ON u.id = s.user_id
+    JOIN user_roles r ON r.user_id = u.id AND r.role = 'STUDENT' AND r.status = 'ACTIVE'
+    WHERE (lower(u.email) = $1 OR lower(s.email) = $1) AND u.status = 'ACTIVE'
+    ORDER BY s.created_at ASC NULLS LAST
+    LIMIT 1
+    `,
+    [email]
+  );
+  const student = match.rows[0];
+  if (!student) return 'SUBMITTED';
+
+  const parent = await db.query(`SELECT user_id, full_name FROM profiles WHERE id = $1`, [parentId]);
+  const parentUserId: string | null = parent.rows[0]?.user_id ?? null;
+  if (parentUserId && parentUserId === student.user_id) return 'SUBMITTED';
+
+  const written = await db.query(
+    `INSERT INTO parent_student_relationships (parent_id, student_id, status)
+     VALUES ($1, $2, 'pending')
+     ON CONFLICT (parent_id, student_id) DO UPDATE
+       SET status = 'pending', responded_at = NULL
+       WHERE parent_student_relationships.status IN ('declined', 'revoked')
+     RETURNING status`,
+    [parentId, student.student_id]
+  );
+  if ((written.rowCount ?? 0) === 0) return 'SUBMITTED';
+
+  const parentName = parent.rows[0]?.full_name || '';
+  await notifyUser({
+    recipientUserId: student.user_id,
+    workspace: 'STUDENT',
+    type: 'PARENT_LINK_REQUEST',
+    title: 'Solicitud de acceso',
+    message: `${parentName || 'Un familiar'} quiere ver tu progreso en StudyUS. Puedes aceptar o rechazar en tus notificaciones.`,
+    payload: { parentName },
+    actionHref: '/dashboard/notifications',
+  });
+  return 'SUBMITTED';
 }
 
 /**
