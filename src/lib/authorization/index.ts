@@ -131,8 +131,9 @@ export async function canAccessInstitution(actorUserId: string, institutionId: s
   try {
     const result = await db.query(
       `
-      SELECT 1 FROM institution_memberships
-      WHERE user_id = $1 AND institution_id = $2 AND membership_role = 'INSTITUTION_ADMIN' AND status = 'APPROVED'
+      SELECT 1 FROM institution_memberships im JOIN institutions i ON i.id = im.institution_id
+      WHERE im.user_id = $1 AND im.institution_id = $2 AND im.membership_role = 'INSTITUTION_ADMIN' AND im.status = 'APPROVED'
+        AND i.status = 'ACTIVE'
       LIMIT 1
       `,
       [actorUserId, institutionId]

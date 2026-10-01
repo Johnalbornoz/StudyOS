@@ -20,7 +20,7 @@
 import { spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { db } from '@/lib/db';
-import { assertDev, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
+import { assertDev, institutionReset, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
 
 const BASE = (process.argv[2] ?? '').replace(/\/$/, '');
 const TOKENS: Record<Tag, string> = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf-8'));
@@ -119,6 +119,7 @@ async function ids() {
 
 /** Back to the provisioned state (re-runnable): Institution A empty, no parent links, no role edits from a previous run. */
 async function reset(x: Awaited<ReturnType<typeof ids>>) {
+  await institutionReset(); // the institution / coordinator E2E's institutions are not part of this world
   const fixtureUsers = Object.values(x.users);
   const fixtureStudents = Object.values(x.students);
   const interventions = (await db.query(`SELECT id FROM teacher_interventions WHERE student_id = ANY($1::uuid[])`, [fixtureStudents])).rows.map((r: any) => r.id);

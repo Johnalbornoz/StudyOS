@@ -123,4 +123,29 @@ $PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='cl
 $PSQL -f "$TEACHER_MIGRATION" >/dev/null
 echo "  OK -- teacher-e2e rollback + re-apply"
 
+# --- 20261018_1200_track_a_institution_coordinators ----------------------
+COORD_MIGRATION="$MIGRATIONS_DIR/20261018_1200_track_a_institution_coordinators.sql"
+$PSQL -f "$COORD_MIGRATION" >/dev/null
+$PSQL -f "$COORD_MIGRATION" >/dev/null
+echo "  OK -- coordinator migration applies and is idempotent"
+$PSQL -tAc "SELECT slug FROM institutions WHERE id = '33333333-3333-4333-8333-333333333333'" | grep -qx 'inst-33333333' || fail "existing institution slug not backfilled"
+echo "  OK -- existing institution got a collision-free slug"
+$PSQL -c "INSERT INTO institutions (name, status, slug, country) VALUES ('Colegio Uno', 'ACTIVE', 'colegio-uno', 'CO')" >/dev/null
+expect_reject "INSERT INTO institutions (name, status, slug) VALUES ('Colegio Uno', 'ACTIVE', 'colegio-uno')" "duplicate institution slug"
+expect_reject "INSERT INTO institutions (name, status, slug, country) VALUES ('X', 'ACTIVE', 'x-1', 'Colombia')" "non ISO-2 country"
+$PSQL -c "INSERT INTO institution_admin_invitations (institution_id, email, token_hash, invited_by_user_id, expires_at) VALUES ('33333333-3333-4333-8333-333333333333', 'c@test.local', 'h1', '11111111-1111-4111-8111-111111111111', now() + interval '7 days')" >/dev/null
+expect_reject "INSERT INTO institution_admin_invitations (institution_id, email, token_hash, invited_by_user_id, expires_at) VALUES ('33333333-3333-4333-8333-333333333333', 'c@test.local', 'h2', '11111111-1111-4111-8111-111111111111', now() + interval '7 days')" "second PENDING invitation for the same institution + email"
+expect_reject "INSERT INTO institution_admin_invitations (institution_id, email, token_hash, invited_by_user_id, expires_at) VALUES ('33333333-3333-4333-8333-333333333333', 'Upper@test.local', 'h3', '11111111-1111-4111-8111-111111111111', now() + interval '7 days')" "non-lowercase invitation email"
+$PSQL -c "UPDATE institution_admin_invitations SET status = 'ACCEPTED' WHERE token_hash = 'h1'" >/dev/null
+$PSQL -c "INSERT INTO institution_admin_invitations (institution_id, email, token_hash, invited_by_user_id, expires_at) VALUES ('33333333-3333-4333-8333-333333333333', 'c@test.local', 'h4', '11111111-1111-4111-8111-111111111111', now() + interval '7 days')" >/dev/null
+echo "  OK -- a new invitation is allowed once the previous one is no longer PENDING"
+CROLLBACK="$WORKDIR/rollback3.sql"
+{ echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$COORD_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$CROLLBACK"
+$PSQL -c "DELETE FROM institutions WHERE slug = 'colegio-uno'" >/dev/null
+$PSQL -f "$CROLLBACK" >/dev/null
+$PSQL -tAc "SELECT count(*) FROM information_schema.tables WHERE table_name='institution_admin_invitations'" | grep -qx 0 || fail "coordinator rollback left the invitations table"
+$PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='institutions' AND column_name IN ('slug','country','timezone')" | grep -qx 0 || fail "coordinator rollback left institution columns"
+$PSQL -f "$COORD_MIGRATION" >/dev/null
+echo "  OK -- coordinator rollback + re-apply"
+
 echo "=== Track A roles migration certification: ALL CHECKS PASSED ==="

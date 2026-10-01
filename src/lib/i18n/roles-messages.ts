@@ -10,8 +10,9 @@
  */
 
 import { TEACHER_E2E_MESSAGES, type TeacherE2EMessageKey } from './teacher-e2e-messages';
+import { INSTITUTION_ADMIN_MESSAGES, type InstitutionAdminMessageKey } from './institution-admin-messages';
 
-export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey;
+export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey;
 
 type BaseRolesMessageKey =
   // account / multi-role
@@ -1296,11 +1297,11 @@ const pt: Catalog = {
 };
 
 export const ROLES_MESSAGES = {
-  es: { ...es, ...TEACHER_E2E_MESSAGES.es },
-  en: { ...en, ...TEACHER_E2E_MESSAGES.en },
-  de: { ...de, ...TEACHER_E2E_MESSAGES.de },
-  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr },
-  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt },
+  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es },
+  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en },
+  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de },
+  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr },
+  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt },
 } as const;
 
 /**

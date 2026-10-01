@@ -38,7 +38,13 @@ export type AdminAuditAction =
   | 'MEMBERSHIP_REJECTED'
   | 'TEACHER_MEMBERSHIP_REVOKED'
   | 'INSTITUTION_CREATED'
-  | 'INSTITUTION_ADMIN_GRANTED';
+  | 'INSTITUTION_ADMIN_GRANTED'
+  // Track A -- institution profile and coordinators.
+  | 'INSTITUTION_UPDATED'
+  | 'COORDINATOR_INVITED'
+  | 'COORDINATOR_INVITATION_ACCEPTED'
+  | 'COORDINATOR_INVITATION_REVOKED'
+  | 'COORDINATOR_REMOVED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;

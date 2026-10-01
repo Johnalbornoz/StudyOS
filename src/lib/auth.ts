@@ -227,7 +227,7 @@ export class StudentRoleRequiredError extends Error {
  * copied onto the target's new students/profiles row: fall back to the
  * Backend API lookup of the target itself.
  */
-async function resolveClerkIdentity(clerkUserId: string): Promise<{ email: string | null; name: string | null }> {
+export async function resolveClerkIdentity(clerkUserId: string): Promise<{ email: string | null; name: string | null }> {
   const fromUser = (u: any) => ({
     email: u?.primaryEmailAddress?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null,
     name: u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null,

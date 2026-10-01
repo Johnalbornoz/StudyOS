@@ -55,7 +55,19 @@ export const IDENTITIES = {
   // One persona per account (product amendment); student-c also holds the
   // STUDYUS_ADMIN *capability* to prove a capability is not a second persona.
   'student-c': { first: 'Carla', last: 'Estudiante C', roles: ['STUDENT'] as const },
+  // Institution / coordinator E2E. `platform-admin` holds ONLY the Platform
+  // Admin capability (DEV-only allowlist, see admin.service). `coord-b` is a
+  // Teacher who also becomes coordinator of Institution E2E B (existing
+  // account path). `coord-a` and `coord-x` do NOT exist until the E2E
+  // "signs them up" after their invitation (new-person path).
+  'platform-admin': { first: 'Patricia', last: 'Plataforma', roles: [] as const },
+  'coord-b': { first: 'Bernardo', last: 'Coordinador B', roles: ['TEACHER'] as const },
+  'coord-a': { first: 'Andrea', last: 'Coordinadora A', roles: [] as const },
+  'coord-x': { first: 'Ximena', last: 'Invitada X', roles: [] as const },
 } as const;
+/** Identities created by the invitation flow itself, never by `provision`. */
+export const SIGN_UP_LATER: ReadonlySet<string> = new Set(['coord-a', 'coord-x']);
+export const E2E_INSTITUTION_PREFIX = 'Institution E2E';
 export type Tag = keyof typeof IDENTITIES;
 export const emailFor = (tag: Tag) => `studyus-ta-${tag}+clerk_test@example.com`;
 
@@ -112,6 +124,7 @@ async function provision() {
   assertDev();
   const out: Record<string, { clerkId: string; userId: string; studentId?: string }> = {};
   for (const tag of Object.keys(IDENTITIES) as Tag[]) {
+    if (SIGN_UP_LATER.has(tag)) continue;
     const spec = IDENTITIES[tag];
     const clerkId = await ensureClerkUser(tag);
     const user = await getOrCreateCanonicalUser(clerkId, emailFor(tag));
@@ -124,6 +137,13 @@ async function provision() {
     const student = await db.query(`SELECT id FROM students WHERE clerk_id = $1`, [clerkId]);
     out[tag] = { clerkId, userId: user.id, studentId: student.rows[0]?.id };
     console.log(`identity ${tag}: user ${user.id}${out[tag].studentId ? ` student ${out[tag].studentId}` : ''}`);
+  }
+
+  // Platform Admin capability for the fixture admin, through the same bootstrap the allowlist uses.
+  {
+    const { bootstrapStudyUSAdminIfEligible } = await import('@/lib/admin/authorization');
+    const admin = await getOrCreateCanonicalUser(out['platform-admin'].clerkId, emailFor('platform-admin'));
+    await bootstrapStudyUSAdminIfEligible(admin, emailFor('platform-admin'));
   }
 
   // Capability (not a persona) on student-c, as the admin bootstrap would grant it.
@@ -180,6 +200,7 @@ async function tokens(outfile: string) {
   const result: Record<string, string> = {};
   for (const tag of Object.keys(IDENTITIES) as Tag[]) {
     const u = await findClerkUser(tag);
+    if (!u && SIGN_UP_LATER.has(tag)) continue;
     if (!u) throw new Error(`missing Clerk identity ${tag} -- run provision first`);
     const session = await clerk().sessions.createSession({ userId: u.id });
     const token = await clerk().sessions.getToken(session.id, undefined, 600);
@@ -224,6 +245,7 @@ async function manualPrep() {
  */
 async function teacherReset() {
   assertDev();
+  await institutionReset();
   const { upsertAcademicProfile } = await import('@/services/academic-profile.service');
   const user = async (tag: Tag) => (await db.query(`SELECT id FROM users WHERE email = $1`, [emailFor(tag)])).rows[0]?.id as string;
   const instA = (await db.query(`SELECT id FROM institutions WHERE name = $1`, [INST_A_NAME])).rows[0]?.id as string;
@@ -265,6 +287,59 @@ async function teacherReset() {
   console.log('teacher-reset done: Teresa without persona; Institution A empty; Sofía first-run complete, licensed (fixture grant) and outside every class');
 }
 
+/**
+ * Institution / coordinator E2E starting state (DEV fixtures only):
+ * removes every `Institution E2E …` institution with everything filed under
+ * it, the coordinator invitations, and the sign-up-later identities
+ * (`coord-a`, `coord-x`: Clerk user + StudyUS rows), and takes coordinator
+ * memberships away from `coord-b` (it stays a Teacher). TA Institución A / B
+ * and every other identity are untouched.
+ */
+export async function institutionReset() {
+  assertDev();
+  const insts = (await db.query(`SELECT id FROM institutions WHERE name LIKE $1`, [`${E2E_INSTITUTION_PREFIX}%`])).rows.map((r: any) => r.id);
+  const q = (sql: string, p: unknown[]) => db.query(sql, p);
+  const interventions = (await db.query(`SELECT id FROM teacher_interventions WHERE institution_id = ANY($1::uuid[])`, [insts])).rows.map((r: any) => r.id);
+  await q(`DELETE FROM teacher_intervention_executions WHERE teacher_intervention_id = ANY($1::uuid[])`, [interventions]);
+  await q(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
+  await q(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await q(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await q(`DELETE FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM institution_admin_invitations WHERE institution_id = ANY($1::uuid[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [insts]);
+  await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM admin_audit_log WHERE target_id = ANY($1::text[])`, [insts]);
+  await q(`DELETE FROM institutions WHERE id = ANY($1::uuid[])`, [insts]);
+  for (const tag of SIGN_UP_LATER as Set<Tag>) {
+    const u = await findClerkUser(tag);
+    const rows = (await db.query(`SELECT id FROM users WHERE email = $1 OR clerk_id = $2`, [emailFor(tag), u?.id ?? '-'])).rows.map((r: any) => r.id);
+    await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[])`, [rows]);
+    await q(`DELETE FROM admin_audit_log WHERE actor_user_id = ANY($1::uuid[]) OR target_id = ANY($2::text[])`, [rows, rows]);
+    await q(`DELETE FROM institution_memberships WHERE user_id = ANY($1::uuid[])`, [rows]);
+    await q(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[])`, [rows]);
+    await q(`DELETE FROM user_roles WHERE user_id = ANY($1::uuid[])`, [rows]);
+    await q(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [rows]);
+    if (u) await clerk().users.deleteUser(u.id);
+  }
+  await q(`DELETE FROM notifications WHERE recipient_user_id IN (SELECT id FROM users WHERE email = $1)`, [emailFor('platform-admin')]);
+  const coordB = (await db.query(`SELECT id FROM users WHERE email = $1`, [emailFor('coord-b')])).rows[0]?.id;
+  if (coordB) {
+    await q(`DELETE FROM institution_memberships WHERE user_id = $1 AND membership_role = 'INSTITUTION_ADMIN'`, [coordB]);
+    await q(`DELETE FROM user_roles WHERE user_id = $1 AND role = 'INSTITUTION_ADMIN'`, [coordB]);
+    await q(`DELETE FROM notifications WHERE recipient_user_id = $1`, [coordB]);
+  }
+  console.log(`institution-reset done: ${insts.length} E2E institutions removed; coord-a / coord-x not signed up; coord-b is a Teacher without coordination`);
+}
+
+/** The person "signs up" after their invitation: a Clerk DEV test user with the invited email (no password). Returns a 10-minute session token. */
+export async function signUpLater(tag: Tag): Promise<string> {
+  assertDev();
+  if (!SIGN_UP_LATER.has(tag)) throw new Error(`${tag} is provisioned, not signed up later`);
+  const clerkId = await ensureClerkUser(tag);
+  const session = await clerk().sessions.createSession({ userId: clerkId });
+  return (await clerk().sessions.getToken(session.id, undefined, 600)).jwt;
+}
+
 /** A one-time sign-in ticket URL path for the browser (no password is ever used). */
 async function signin(tag: Tag) {
   assertDev();
@@ -282,6 +357,7 @@ async function cleanup() {
     if (u) clerkIds.push(u.id);
   }
   const userIds = (await db.query(`SELECT id FROM users WHERE clerk_id = ANY($1::text[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [clerkIds])).rows.map((r: any) => r.id);
+  await institutionReset();
   const institutions = (await db.query(`SELECT id FROM institutions WHERE name = ANY($1::text[])`, [[INST_A_NAME, INST_B_NAME]])).rows.map((r: any) => r.id);
   const studentIds = (await db.query(`SELECT id FROM students WHERE user_id = ANY($1::uuid[]) OR clerk_id = ANY($2::text[])`, [userIds, clerkIds])).rows.map((r: any) => r.id);
   const profileIds = (await db.query(`SELECT id FROM profiles WHERE id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[]) OR clerk_id = ANY($3::text[])`, [studentIds, userIds, clerkIds])).rows.map((r: any) => r.id);
@@ -356,7 +432,7 @@ async function cleanup() {
   await purge('profiles', 'id', profileIds);
   await q(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [userIds]);
 
-  for (const id of clerkIds) await clerk().users.deleteUser(id);
+  for (const id of clerkIds) await clerk().users.deleteUser(id).catch(() => {});
 
   const left =
     Number((await db.query(`SELECT COUNT(*) n FROM users WHERE id = ANY($1::uuid[])`, [userIds])).rows[0].n) +
@@ -369,7 +445,7 @@ async function cleanup() {
 
 if (process.argv[1]?.endsWith('track-a-fixtures.ts')) {
   const [cmd, arg] = process.argv.slice(2);
-  const run = cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | manual-prep | tokens <file> | signin <tag> | cleanup'));
+  const run = cmd === 'institution-reset' ? institutionReset() : cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | institution-reset | manual-prep | tokens <file> | signin <tag> | cleanup'));
   run
     .catch((e) => {
       console.error(e instanceof Error ? e.message : e);

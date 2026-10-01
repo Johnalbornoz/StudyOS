@@ -2022,6 +2022,8 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .ta-form input[type="radio"], .ta-form input[type="checkbox"] { min-height: 0; width: 20px; height: 20px; padding: 0; margin: 0; border: none; flex: none; accent-color: var(--brand); }
 .ta-form .ta-choice { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); font-weight: 400; color: var(--text-primary); }
 .ta-compact li { font-size: var(--fs-sm); }
+.ta-optional { font-weight: 400; color: var(--text-muted); }
+.ta-coordinator { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .ta-field { display: flex; flex-direction: column; gap: var(--space-1); flex: 1 1 160px; min-width: 0; }
 .ta-choices { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .ta-choices legend { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); padding: 0; margin-bottom: var(--space-1); }

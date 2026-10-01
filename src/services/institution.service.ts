@@ -168,7 +168,7 @@ export async function getAdministeredInstitutions(userId: string): Promise<Insti
     SELECT i.id, i.name, i.status
     FROM institutions i
     JOIN institution_memberships im ON im.institution_id = i.id
-    WHERE im.user_id = $1 AND im.membership_role = 'INSTITUTION_ADMIN' AND im.status = 'APPROVED'
+    WHERE im.user_id = $1 AND im.membership_role = 'INSTITUTION_ADMIN' AND im.status = 'APPROVED' AND i.status = 'ACTIVE'
     ORDER BY i.name
     `,
     [userId]

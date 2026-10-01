@@ -38,7 +38,9 @@ export type RoleNotificationType =
   | 'CLASS_ENROLLMENT_DECLINED'
   | 'ASSIGNMENT_PUBLISHED'
   | 'ROLE_ADDED'
-  | 'ROLE_REVOKED';
+  | 'ROLE_REVOKED'
+  | 'COORDINATOR_ASSIGNED'
+  | 'COORDINATOR_INVITATION_ACCEPTED';
 
 export type NotificationPayload = Record<string, string | number | null>;
 
