@@ -186,12 +186,35 @@ async function tokens(outfile: string) {
   console.log(`wrote ${Object.keys(result).length} session tokens to ${outfile}`);
 }
 
+/**
+ * Starting state for the operator's manual 12-step browser gate, through the
+ * real services: Student A has completed first-run; Teacher A has a PENDING
+ * request at Institution A (admin notified); Parent A is accepted by
+ * Student A. Institution A has no grade/class yet (the operator creates them).
+ */
+async function manualPrep() {
+  assertDev();
+  const { upsertAcademicProfile } = await import('@/services/academic-profile.service');
+  const { requestChildLink, respondToRequest } = await import('@/services/parent.service');
+  const { onTeacherMembershipRequested } = await import('@/lib/institution/membership-events');
+  const user = async (tag: Tag) => (await db.query(`SELECT id FROM users WHERE email = $1`, [emailFor(tag)])).rows[0]?.id as string;
+  const studentA = (await db.query(`SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE u.email = $1`, [emailFor('student-a')])).rows[0].id;
+  await upsertAcademicProfile(studentA, { countryOfStudy: 'CO', schoolYear: '10', curriculumType: 'national', academicYear: '2026', profileCompleted: true } as any);
+  const instA = (await db.query(`SELECT id FROM institutions WHERE name = $1`, [INST_A_NAME])).rows[0].id;
+  const m = await requestTeacherMembership(instA, await user('teacher-a'));
+  if (m.newlyPending) await onTeacherMembershipRequested(instA, emailFor('teacher-a'));
+  const parentProfile = (await db.query(`SELECT id FROM profiles WHERE user_id = $1 AND user_type = 'parent'`, [await user('parent-a')])).rows[0].id;
+  await requestChildLink(parentProfile, emailFor('student-a'));
+  await respondToRequest(studentA, parentProfile, true);
+  console.log('manual-prep done: teacher-a PENDING at Institution A; parent-a accepted by student-a; student-a first-run complete');
+}
+
 /** A one-time sign-in ticket URL path for the browser (no password is ever used). */
 async function signin(tag: Tag) {
   assertDev();
   const u = await findClerkUser(tag);
   if (!u) throw new Error(`missing Clerk identity ${tag}`);
-  const t = await clerk().signInTokens.createSignInToken({ userId: u.id, expiresInSeconds: 600 });
+  const t = await clerk().signInTokens.createSignInToken({ userId: u.id, expiresInSeconds: Number(process.env.TICKET_TTL_SECONDS ?? 600) });
   console.log(t.token);
 }
 
@@ -290,7 +313,7 @@ async function cleanup() {
 
 if (process.argv[1]?.endsWith('track-a-fixtures.ts')) {
   const [cmd, arg] = process.argv.slice(2);
-  const run = cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | tokens <file> | signin <tag> | cleanup'));
+  const run = cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | manual-prep | tokens <file> | signin <tag> | cleanup'));
   run
     .catch((e) => {
       console.error(e instanceof Error ? e.message : e);
