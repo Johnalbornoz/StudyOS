@@ -107,7 +107,7 @@ No raw ids or enums are shown on any of these screens (checked over HTTP).
 
 ## 5. Manual package (hosted DEV)
 
-Prepared state: `institution-reset`:
+Prepared state: `teacher-reset` (which also runs `institution-reset`), so the Teacher package (Teresa, `TEACHER_E2E_MANUAL_PACKAGE.md`) and this one are independent:
 - no *Institution E2E* institutions;
 - `coord-a` / `coord-x` not signed up;
 - `coord-b` = Teacher without coordination.
@@ -120,8 +120,8 @@ The sign-in links are one-time and handed over separately. The Platform Admin ca
 | 2 | Platform Admin · detail page | Invite **Andrea Coordinadora A** · `studyus-ta-coord-a+clerk_test@example.com` | "Invitación enviada…"; the row shows *Invitación pendiente* with the date; *Copiar enlace de invitación* | `SELECT email,status,expires_at FROM institution_admin_invitations` |
 | 3 | Andrea · invitation link (fresh browser profile) | Create the account with that email (or the prepared one-time link), then **Aceptar invitación** | Lands directly in *Institution E2E A* (Resumen); never on role selection | `SELECT status,accepted_at FROM institution_admin_invitations`; membership APPROVED |
 | 4 | Andrea · Grados / Clases | Create **3º Preparatoria**; class **Matemáticas 3A** with **Mathematics** | Visible in Clases and Asignaturas | `SELECT g.name,c.name,cs.name FROM classes c …` |
-| 5 | Teresa (Teacher) · `/dashboard/teacher` | Request **Institution E2E A** | Pending | membership PENDING |
-| 6 | Andrea · Solicitudes | See **Teresa Docente A · email** → **Aprobar** | Approved | membership APPROVED |
-| 7 | Andrea · class page | Assign Teresa to *Matemáticas 3A* | Teresa listed | `teacher_assignments` ACTIVE |
+| 5 | Tomás Docente B (Teacher) · `/dashboard/teacher` | Request **Institution E2E A** | Pending | membership PENDING |
+| 6 | Andrea · Solicitudes | See **Tomás Docente B · email** → **Aprobar** | Approved | membership APPROVED |
+| 7 | Andrea · class page | Assign Tomás to *Matemáticas 3A* | Tomás listed; Tomás sees the class | `teacher_assignments` ACTIVE |
 | 8 | Bernardo (Teacher) · Platform Admin invites his email to a second institution | — | "La persona ya tenía cuenta…"; Bernardo keeps *Profesor* and gains *Institución* in navigation | one persona row + coordinator membership |
 | N | Andrea opens Institution E2E B's URL / `/dashboard/admin/institutions` | — | Not found / not allowed | — |
