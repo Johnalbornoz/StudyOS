@@ -20,12 +20,15 @@ import { db } from '@/lib/db';
 import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-metadata-bridge.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
+import { ComponentDefinitionSchema, componentDefinitionForAI } from './component-definition';
 import { examItemFromApproved, examItemFromGenerated, validateExamItemStructure, type ExamItem } from './items';
 
 export type ItemUnavailableReason = 'NO_CURRICULUM_MAPPING' | 'CONCEPT_NOT_MATCHED' | 'NO_ITEM_GENERATED';
 
 export interface ItemSourcingTarget {
   learningObjectiveId: string;
+  /** V2: the component whose definition (structure contract) the generator receives. */
+  assessmentComponentId?: string;
   questionType: string | null;
   difficultyRange: { min: number; max: number } | null;
 }
@@ -96,7 +99,14 @@ export async function generateValidatedItem(params: {
 
   const range = params.target.difficultyRange;
   const midDifficulty = range ? Math.round((range.min + range.max) / 2) : undefined;
-  const guidance = params.target.questionType ? `Use exactly this question type: ${params.target.questionType}.` : undefined;
+  // V2: the component definition is the structure contract -- the generator fills content inside it, never invents structure.
+  let contract: string | null = null;
+  if (params.target.assessmentComponentId) {
+    const def = await db.query(`SELECT definition FROM assessment_components WHERE id = $1`, [params.target.assessmentComponentId]).catch(() => ({ rows: [] as any[] }));
+    const parsed = def.rows[0]?.definition ? ComponentDefinitionSchema.safeParse(def.rows[0].definition) : null;
+    if (parsed?.success) contract = componentDefinitionForAI(parsed.data);
+  }
+  const guidance = [params.target.questionType ? `Use exactly this question type: ${params.target.questionType}.` : '', contract ?? ''].filter(Boolean).join('\n\n') || undefined;
   const maxTries = Math.max(1, Math.min(2, params.maxTries ?? 2));
 
   for (let attempt = 1; attempt <= maxTries; attempt++) {

@@ -179,9 +179,9 @@ describe('source guards: the Exam Core never decides cognition', () => {
       expect(read(p), p).not.toMatch(/updateMastery|record-evidence|INSERT INTO learning_evidence/);
     }
   });
-  it('evidence is written per response only for a VALID answer to a server-held item, as non-assisted EXAM_SIMULATION', () => {
+  it('evidence is written per response only for a VALID, non-review answer to a server-held item, as non-assisted EXAM_SIMULATION', () => {
     const scoring = read('src/lib/simulation/scoring.service.ts');
-    expect(scoring).toMatch(/if \(grade\.status === 'ANSWERED' && params\.learningObjectiveId\)/);
+    expect(scoring).toMatch(/if \(grade\.status === 'ANSWERED' && grade\.reviewStatus === 'NONE' && params\.learningObjectiveId\)/);
     expect(scoring).toMatch(/sourceType: 'EXAM_SIMULATION'/);
     expect(scoring).toMatch(/aiAssistanceType: 'NONE'/);
     expect(scoring).toMatch(/operationType: 'EXAM_SIMULATION_RESPONSE'/);

@@ -44,6 +44,12 @@ export interface ResultItemReview {
   available: number;
   status: 'CORRECT' | 'PARTIAL' | 'INCORRECT' | 'INVALID' | 'MISSING' | 'SKIPPED';
   explanation: string | null;
+  /** V2: how the answer was given (a portfolio submission has no text answer to show). */
+  answerKind: 'STANDARD' | 'MATH' | 'PORTFOLIO';
+  /** V2: the mark awaits human review (AI assessors disagreed / were unsure / could not see some files). */
+  reviewRequired: boolean;
+  /** V2: rubric / portfolio work -- per-criterion marks and the evidence they rest on. */
+  rubric: null | { criteria: Array<{ id: string; name: string; awarded: number; max: number }>; evidence: Array<{ criterionId: string; quote: string }>; rationale: string | null; adjudicated: boolean };
 }
 
 export interface AttemptResultView {
@@ -70,16 +76,35 @@ function optionText(item: ExamItem, ids: string): string {
     .join('; ');
 }
 
+/** A math answer as stored: the literal (LaTeX / typed text), or `{ latex, working }`. */
+function mathLiteral(v: unknown): string | null {
+  if (typeof v === 'string') {
+    if (v.trim().startsWith('{')) {
+      try {
+        return mathLiteral(JSON.parse(v));
+      } catch {
+        return v;
+      }
+    }
+    return v;
+  }
+  if (v && typeof v === 'object' && typeof (v as { latex?: unknown }).latex === 'string') return (v as { latex: string }).latex;
+  return null;
+}
+
 function displayAnswer(item: ExamItem, raw: string | null): string | null {
   if (raw === null || raw === undefined || raw === '') return null;
+  if (item.exam?.portfolio) return null;
+  if (item.exam?.math) return mathLiteral(raw);
   if (item.exam?.parts) {
     try {
-      const parsed = JSON.parse(raw) as Record<string, string>;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
       return item.exam.parts
         .map((p) => {
           const v = parsed[p.id];
           if (!v) return `(${p.id}) —`;
-          return `(${p.id}) ${p.answerFormat === 'text' ? v : (p.options ?? []).find((o) => o.id === v)?.text ?? v}`;
+          if (p.answerFormat === 'math') return `(${p.id}) ${mathLiteral(v) ?? '—'}`;
+          return `(${p.id}) ${p.answerFormat === 'text' ? String(v) : (p.options ?? []).find((o) => o.id === v)?.text ?? String(v)}`;
         })
         .join(' · ');
     } catch {
@@ -91,8 +116,9 @@ function displayAnswer(item: ExamItem, raw: string | null): string | null {
 }
 
 function displayKey(item: ExamItem): string | null {
+  if (item.exam?.portfolio) return null;
   if (item.exam?.parts) {
-    return item.exam.parts.map((p) => `(${p.id}) ${p.answerFormat === 'text' ? p.correctAnswer : (p.options ?? []).find((o) => o.id === p.correctAnswer)?.text ?? p.correctAnswer}`).join(' · ');
+    return item.exam.parts.map((p) => `(${p.id}) ${p.answerFormat === 'text' || p.answerFormat === 'math' ? p.correctAnswer : (p.options ?? []).find((o) => o.id === p.correctAnswer)?.text ?? p.correctAnswer}`).join(' · ');
   }
   if (item.answerFormat === 'single_choice' || item.answerFormat === 'multi_choice') return optionText(item, item.correctAnswer);
   if (item.answerFormat === 'text') return item.correctAnswer;
@@ -152,8 +178,15 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
     const plan = (await db.query(`SELECT plan FROM simulation_plans WHERE id = $1`, [attempt.simulationPlanId])).rows[0]?.plan ?? {};
     const sections: Array<{ name: string; startIndex: number; endIndex: number }> = plan.sections ?? [];
     const sectionName = (i: number) => sections.find((s) => i >= s.startIndex && i <= s.endIndex)?.name ?? '';
-    const responses = (await db.query(`SELECT target_index, raw_response, score, max_score, criteria_breakdown, item_snapshot FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND target_index IS NOT NULL`, [attempt.examAttemptId])).rows;
+    const responses = (await db.query(`SELECT id, target_index, raw_response, score, max_score, criteria_breakdown, item_snapshot, review_status FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND target_index IS NOT NULL`, [attempt.examAttemptId])).rows;
     const byIndex = new Map(responses.map((r: any) => [Number(r.target_index), r]));
+    // V2: the decisive assessment per rubric response (the adjudicator when there was one, else assessor A).
+    const rubricIds = responses.filter((r: any) => r.criteria_breakdown?.rubric).map((r: any) => r.id);
+    const assessments = rubricIds.length
+      ? (await db.query(`SELECT response_id, role, rationale, evidence FROM exam_response_assessments WHERE response_id = ANY($1::uuid[]) ORDER BY (role = 'ADJUDICATOR') DESC, role ASC, created_at`, [rubricIds])).rows
+      : [];
+    const decisive = new Map<string, any>();
+    for (const a of assessments) if (!decisive.has(a.response_id)) decisive.set(a.response_id, a);
     review = [];
     const total = (plan.selectedTargets ?? []).length;
     for (let i = 0; i < total; i++) {
@@ -161,7 +194,7 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
       const state = nav.items?.[String(i)];
       const item: ExamItem | undefined = row?.item_snapshot ?? state?.item;
       if (!item) {
-        review.push({ targetIndex: i, sectionName: sectionName(i), question: '', stimulusTitle: null, yourAnswer: null, correctAnswer: null, earned: 0, available: 0, status: state?.status === 'EXCLUDED' ? 'SKIPPED' : 'MISSING', explanation: null });
+        review.push({ targetIndex: i, sectionName: sectionName(i), question: '', stimulusTitle: null, yourAnswer: null, correctAnswer: null, earned: 0, available: 0, status: state?.status === 'EXCLUDED' ? 'SKIPPED' : 'MISSING', explanation: null, answerKind: 'STANDARD', reviewRequired: false, rubric: null });
         continue;
       }
       const raw = row ? (typeof row.raw_response === 'string' ? row.raw_response : row.raw_response === null ? null : String(row.raw_response)) : null;
@@ -181,6 +214,20 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
         available,
         status,
         explanation: item.explanation ?? null,
+        answerKind: item.exam?.portfolio ? 'PORTFOLIO' : item.exam?.math || item.exam?.parts?.some((p) => p.answerFormat === 'math') ? 'MATH' : 'STANDARD',
+        reviewRequired: row?.review_status === 'REVIEW_REQUIRED',
+        rubric: (() => {
+          const scores = row?.criteria_breakdown?.rubric as Array<{ id: string; marks: number }> | undefined;
+          const def = item.exam?.portfolio?.rubric ?? item.exam?.rubric;
+          if (!scores || !def) return null;
+          const a = decisive.get(row.id);
+          return {
+            criteria: def.criteria.map((c) => ({ id: c.id, name: c.name, awarded: scores.find((x) => x.id === c.id)?.marks ?? 0, max: c.maxMarks })),
+            evidence: Array.isArray(a?.evidence) ? a.evidence.slice(0, 8) : [],
+            rationale: a?.rationale ?? null,
+            adjudicated: !!row.criteria_breakdown?.adjudicated,
+          };
+        })(),
       });
     }
   }

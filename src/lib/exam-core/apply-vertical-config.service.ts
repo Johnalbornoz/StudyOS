@@ -20,6 +20,9 @@ import { db } from '@/lib/db';
 import type { PoolClient } from 'pg';
 import { hashCanonical } from './scoring/scoring-policy';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from './vertical-config';
+import { upsertSources } from './catalog/source-registry.service';
+import { itemFingerprints } from './fingerprints';
+import { contentOriginOf } from './items';
 
 export class VerticalConfigError extends Error {
   constructor(public readonly code: 'INVALID_CONFIG' | 'CONFIG_CHANGED_FOR_EXISTING_VERSION' | 'NO_SYSTEM_IDENTITIES' | 'FAMILY_MISMATCH', detail: string) {
@@ -153,6 +156,17 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
     ).id;
     const blueprintId = (await one(client, `INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING id`, [versionId])).id;
 
+    // --- V2: sources + mandatory versioning metadata ---
+    const sourceKeys = [...(cfg.framework?.sourceKeys ?? []), ...cfg.sections.flatMap((sec) => sec.definition?.sourceKeys ?? [])];
+    const sourceIds = sourceKeys.length > 0 ? await upsertSources(client, sourceKeys) : new Map<string, string>();
+    const idsFor = (keys: string[] | undefined) => (keys ?? []).map((k) => sourceIds.get(k)!).filter(Boolean);
+    if (cfg.framework) {
+      await client.query(
+        `UPDATE exam_versions SET curriculum_version = $2, first_assessment = $3, last_assessment = $4, syllabus_code = $5, framework_version = $6, source_ids = $7 WHERE id = $1`,
+        [versionId, cfg.framework.curriculumVersion, cfg.framework.firstAssessment, cfg.framework.lastAssessment, cfg.framework.syllabusCode, cfg.framework.frameworkVersion, idsFor(cfg.framework.sourceKeys)]
+      );
+    }
+
     const componentIdsBySection: Record<string, string> = {};
     const objectiveIdsByCode: Record<string, string> = {};
     for (const [order, section] of cfg.sections.entries()) {
@@ -195,6 +209,12 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         )
       ).id as string;
       componentIdsBySection[section.key] = componentId;
+      if (section.definition) {
+        await client.query(
+          `UPDATE assessment_components SET definition = $2, max_marks = $3, weighting_percent = $4, calculator_policy = $5, target_difficulty_index = $6, source_ids = $7 WHERE id = $1`,
+          [componentId, JSON.stringify(section.definition), section.definition.maxMarks, section.definition.weightingPercent, section.definition.calculatorPolicy, section.targetDifficultyIndex ?? 1.0, idsFor(section.definition.sourceKeys)]
+        );
+      }
       await client.query(`INSERT INTO blueprint_component_allocations (blueprint_id, assessment_component_id, item_count, weight) VALUES ($1, $2, $3, $4)`, [
         blueprintId,
         componentId,
@@ -232,7 +252,13 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         itemIdsByKey[it.content.key] = existing.id;
         continue;
       }
-      const created = await one(client, `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by) VALUES ($1, $2, $3, $4) RETURNING id`, [objectiveId, it.content.type, JSON.stringify(it.content), editorId]);
+      const fp = itemFingerprints(it.content);
+      const created = await one(
+        client,
+        `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, content_origin, difficulty_index, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+        [objectiveId, it.content.type, JSON.stringify(it.content), editorId, contentOriginOf(it.content), it.content.difficultyIndex ?? null, fp.semantic, fp.template, fp.reasoning, fp.stimulus]
+      );
       await client.query(`UPDATE approved_items SET status = 'PROPOSED' WHERE id = $1 AND status = 'DRAFT'`, [created.id]);
       await client.query(`UPDATE approved_items SET status = 'APPROVED', reviewed_by = $2, reviewed_at = now() WHERE id = $1 AND status = 'PROPOSED' AND created_by <> $2`, [created.id, reviewerId]);
       await client.query(`UPDATE approved_items SET status = 'PUBLISHED', published_at = now() WHERE id = $1 AND status = 'APPROVED'`, [created.id]);

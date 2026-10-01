@@ -14,7 +14,9 @@ import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-m
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { updateMastery } from '@/services/mastery.service';
 import { examItemFromGenerated, type ExamItem } from '@/lib/exam-core/items';
-import { gradeExamItem, type ExamItemGrade } from '@/lib/exam-core/item-grading';
+import { gradeExamItem, gradeFromRubricOutcome, invalidExamItemGrade, type ExamItemGrade } from '@/lib/exam-core/item-grading';
+import { assessSubmission, parsePortfolioAnswer, resolveSubmissionForAnswer, SubmissionError } from '@/lib/exam-core/submissions/submission.service';
+import { recordAssessments } from '@/lib/exam-core/assessment/assessment-store';
 
 function isExamItem(q: GeneratedQuestion | ExamItem): q is ExamItem {
   return !!(q as ExamItem).exam;
@@ -59,7 +61,23 @@ export async function recordSimulationItemResponse(params: {
   targetIndex?: number;
 }): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean; grade: ExamItemGrade }> {
   const item: ExamItem = isExamItem(params.question) ? params.question : examItemFromGenerated(params.question, params.learningObjectiveId ?? null);
-  const grade = await gradeExamItem(item, params.studentAnswer, params.language ?? 'en');
+  let submissionId: string | null = null;
+  const grade = await gradeExamItem(item, params.studentAnswer, params.language ?? 'en', {
+    // V2: a portfolio task is answered with the Student's own submission for THIS attempt position.
+    portfolioGrader: async (it, answer) => {
+      const requested = parsePortfolioAnswer(answer);
+      const bound = requested ? await resolveSubmissionForAnswer({ examAttemptId: params.examAttemptId, targetIndex: params.targetIndex, studentId: params.studentId, submissionId: requested }) : null;
+      if (!bound) return invalidExamItemGrade(it, answer, 'SUBMISSION_NOT_FOUND');
+      try {
+        const { outcome, humanOnlyArtifacts } = await assessSubmission({ submissionId: bound, studentId: params.studentId, item: it, language: params.language ?? 'en' });
+        submissionId = bound;
+        return gradeFromRubricOutcome(it, answer, outcome, it.exam.portfolio!.rubric, { submissionId: bound, humanOnlyArtifacts });
+      } catch (err) {
+        if (err instanceof SubmissionError && err.code === 'INCOMPLETE') return invalidExamItemGrade(it, answer, 'SUBMISSION_INCOMPLETE');
+        throw err;
+      }
+    },
+  });
   const evaluation = grade.evaluation;
 
   const { id, duplicate } = await recordExamAttemptItemResponse({
@@ -72,7 +90,18 @@ export async function recordSimulationItemResponse(params: {
     idempotencyKey: params.idempotencyKey,
     targetIndex: params.targetIndex,
     itemSource: item.exam.source,
+    v2: {
+      normalizedResponse: grade.normalizedResponse,
+      gradingDetail: grade.detail,
+      reviewStatus: grade.reviewStatus,
+      contentOrigin: item.exam.contentOrigin ?? null,
+      scoringStrategy: grade.scoringStrategy,
+      strictScore: grade.strictFraction * grade.maxMarks,
+    },
   });
+  if (!duplicate && grade.assessments.length > 0) {
+    await recordAssessments({ responseId: id, submissionId: submissionId ?? undefined }, grade.assessments, item.exam.key ?? item.exam.approvedItemId);
+  }
 
   if (duplicate) {
     // The first application already wrote Evidence (if any) -- a retry
@@ -82,7 +111,8 @@ export async function recordSimulationItemResponse(params: {
   }
 
   let evidenceWritten = false;
-  if (grade.status === 'ANSWERED' && params.learningObjectiveId) {
+  // V2: a response awaiting review is not evidence until a reviewer confirms its mark.
+  if (grade.status === 'ANSWERED' && grade.reviewStatus === 'NONE' && params.learningObjectiveId) {
     const bridge = await resolveActivityMetadataForObjective(params.learningObjectiveId);
     if (bridge && bridge.canonicalConceptIds.length > 0) {
       let studentConceptId: string | null = null;

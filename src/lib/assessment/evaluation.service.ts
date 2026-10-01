@@ -46,6 +46,15 @@ export async function recordExamAttemptItemResponse(params: {
   targetIndex?: number;
   /** Track B: where the server-delivered item came from. */
   itemSource?: 'APPROVED_BANK' | 'AI_GENERATED';
+  /** Exam V2: auditable grading detail. Columns are written only when supplied, so V1 callers are unchanged. */
+  v2?: {
+    normalizedResponse: Record<string, unknown> | null;
+    gradingDetail: Record<string, unknown> | null;
+    reviewStatus: 'NONE' | 'REVIEW_REQUIRED';
+    contentOrigin: string | null;
+    scoringStrategy: string;
+    strictScore: number;
+  };
 }): Promise<{ id: string; duplicate?: boolean }> {
   if (params.idempotencyKey) {
     const existing = await db.query(
@@ -60,8 +69,8 @@ export async function recordExamAttemptItemResponse(params: {
       `INSERT INTO exam_attempt_item_responses (
          exam_attempt_id, assessment_component_id, learning_objective_id, approved_item_id, item_snapshot,
          raw_response, score, max_score, criteria_breakdown, feedback, evaluation_model_version, evaluation_provenance, reasoning_trace, idempotency_key,
-         target_index, item_source
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+         target_index, item_source${params.v2 ? ', normalized_response, grading_detail, review_status, content_origin, scoring_strategy, strict_score' : ''}
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16${params.v2 ? ', $17, $18, $19, $20, $21, $22' : ''}) RETURNING id`,
       [
         params.examAttemptId,
         params.assessmentComponentId,
@@ -79,6 +88,16 @@ export async function recordExamAttemptItemResponse(params: {
         params.idempotencyKey ?? null,
         params.targetIndex ?? null,
         params.itemSource ?? null,
+        ...(params.v2
+          ? [
+              params.v2.normalizedResponse ? JSON.stringify(params.v2.normalizedResponse) : null,
+              params.v2.gradingDetail ? JSON.stringify(params.v2.gradingDetail) : null,
+              params.v2.reviewStatus,
+              params.v2.contentOrigin,
+              params.v2.scoringStrategy,
+              params.v2.strictScore,
+            ]
+          : []),
       ]
     );
     return result.rows[0];

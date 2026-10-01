@@ -86,7 +86,7 @@ export default async function ExamPrepPage() {
 
   return (
     <div className="xp-page xp-page--wide">
-      <PageIntro title={t['examPrep.title']} lead={t['examPrep.subtitle']} />
+      <PageIntro title={t['examPrep.title']} lead={t['examPrep.subtitle']} actions={<Link className="btn btn-primary" href="/dashboard/exams">{t['exv2.page.cta']}</Link>} />
 
       {rows.length === 0 ? (
         // No exam yet: setting one up IS the primary action here.

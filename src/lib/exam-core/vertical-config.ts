@@ -15,6 +15,7 @@ import { EXAM_FAMILIES } from './taxonomy';
 import { ScoringPolicySchema } from './scoring/scoring-policy';
 import { DeliveryPolicySchema } from './delivery-policy';
 import { ApprovedItemContentSchema } from './items';
+import { ComponentDefinitionSchema, FrameworkVersioningSchema } from './component-definition';
 
 const KEY = z.string().regex(/^[a-z0-9][a-z0-9._-]{1,79}$/, 'lowercase key: letters, digits, . _ -');
 
@@ -46,6 +47,10 @@ const SectionSchema = z.object({
   weight: z.number().positive().optional(),
   simulationCapable: z.boolean().default(true),
   objectives: z.array(ObjectiveSchema).min(1).max(40),
+  /** V2: the component's structure as data (marks, timing, formats, AOs, sources). */
+  definition: ComponentDefinitionSchema.optional(),
+  /** V2: calibrated difficulty the Full Mock form aims for (1.0 = the real exam). */
+  targetDifficultyIndex: z.number().min(0.5).max(1.5).optional(),
 });
 
 export const ExamVerticalConfigSchema = z
@@ -71,6 +76,8 @@ export const ExamVerticalConfigSchema = z
       policy: ScoringPolicySchema,
     }),
     structureLabel: z.string().min(1).max(100),
+    /** V2: mandatory versioning metadata + sources (required for every V2 configuration). */
+    framework: FrameworkVersioningSchema.optional(),
     commandTerms: z.array(z.object({ term: z.string().min(1).max(60), expectedReasoningType: z.string().max(40).optional(), description: z.string().max(500).optional() })).default([]),
     sections: z.array(SectionSchema).min(1).max(20),
     items: z.array(z.object({ objectiveCode: KEY, content: ApprovedItemContentSchema })).max(500),
@@ -91,6 +98,7 @@ export const ExamVerticalConfigSchema = z
     if (cfg.contentStatus !== 'OFFICIAL_LICENSED' && cfg.scoring.policy.provenance.official) {
       ctx.addIssue({ code: 'custom', message: 'only OFFICIAL_LICENSED content may carry an official scoring provenance', path: ['scoring', 'policy', 'provenance'] });
     }
+    if (cfg.sections.some((s) => s.definition) && !cfg.framework) ctx.addIssue({ code: 'custom', message: 'a configuration with component definitions must declare framework versioning', path: ['framework'] });
     const sectionKeys = cfg.sections.map((s) => s.key);
     if (new Set(sectionKeys).size !== sectionKeys.length) ctx.addIssue({ code: 'custom', message: 'duplicate section key', path: ['sections'] });
     const codes = cfg.sections.flatMap((s) => s.objectives.map((o) => o.code));

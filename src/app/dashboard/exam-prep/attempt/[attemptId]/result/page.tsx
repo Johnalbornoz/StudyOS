@@ -11,6 +11,9 @@ import { masteryStateLabel } from '@/lib/knowledge-state-labels';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
+import { buildLearningBridge } from '@/lib/exam-core/learning-bridge.service';
+import { findInstanceByAttempt } from '@/lib/exam-core/exam-instance.service';
+import { ConceptRequestButton, RetakeButton } from './BridgeActions';
 
 /**
  * Track B / B10 -- the result of one submitted attempt.
@@ -49,6 +52,11 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
   const linkedConcepts = view.objectives.flatMap((o) => o.concepts.filter((c) => c.studentConceptId && c.subjectId).map((c) => ({ ...c, classification: o.classification })));
   const firstGapConcept = linkedConcepts.find((c) => c.classification === 'GAP') ?? linkedConcepts.find((c) => c.classification === 'DEVELOPING') ?? null;
   const sitting = [view.exam.examYear, view.exam.examSession].filter(Boolean).join(' · ');
+  // Exam V2: the instance (mode), the Exam -> Learning bridge and the retest loop.
+  const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
+  const bridge = result && result.status === 'SCORED' ? await buildLearningBridge({ simulationAttemptId: attempt.id, studentId, objectives: view.objectives }).catch(() => []) : [];
+  const v2: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('exv2.')));
+  const fmt = (key: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), tr[key] ?? key);
 
   return (
     <div className="xp-page xp-page--wide">
@@ -60,6 +68,8 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
 
       {view.exam.contentStatus && <p className="ui-hint" style={{ margin: 0 }}>{tr[`exam.contentStatus.${view.exam.contentStatus}`] ?? ''}</p>}
       {result?.status === 'INVALIDATED' && <InlineAlert tone="warning" title={t['examPrep.result.invalidated']} />}
+      {instance && <p className="ui-hint" style={{ margin: 0 }}>{tr[`exv2.mode.${instance.mode}`]}{instance.mode === 'CHALLENGE' ? ` · ${tr['exv2.challenge.label']}` : ''}</p>}
+      {result && result.reviewRequiredCount > 0 && <InlineAlert tone="info" title={fmt('exv2.result.reviewRequired', { n: result.reviewRequiredCount })} />}
 
       {!result ? (
         <div className="card xr-card">{t['examPrep.result.pending']}</div>
@@ -86,6 +96,15 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
               </p>
             )}
           </section>
+
+          {result.strictReadiness && result.maxScore > 0 && (
+            <section className="card exv2-strict" aria-labelledby="exv2-strict-title">
+              <h2 id="exv2-strict-title" className="xr-kicker">{tr['exv2.strict.title']}</h2>
+              <p className="xr-score">{result.strictReadiness.percent === null ? '—' : `${result.strictReadiness.percent}%`}</p>
+              <p className="xr-raw">{t['examPrep.result.raw'].replace('{earned}', String(result.strictReadiness.earned)).replace('{available}', String(result.strictReadiness.available))}</p>
+              <p className="ui-hint">{tr['exv2.strict.note']}</p>
+            </section>
+          )}
 
           <section className="card xr-result" aria-labelledby="xr-sections-title">
             <h2 id="xr-sections-title" className="xr-section-name">{t['examPrep.result.bySection']}</h2>
@@ -151,6 +170,30 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
             )}
           </section>
 
+          {bridge.length > 0 && (
+            <section className="card xr-result" aria-labelledby="exv2-bridge-title">
+              <h2 id="exv2-bridge-title" className="xr-section-name">{tr['exv2.bridge.title']}</h2>
+              <ul className="exv2-bridge">
+                {bridge.map((b) => (
+                  <li key={b.learningObjectiveId} className="exv2-bridge-item">
+                    <p className="exv2-bridge-text">
+                      {fmt('exv2.bridge.need', { topic: b.description })}{' '}
+                      {b.questions > 0 && <span className="ui-hint">{fmt('exv2.bridge.missed', { missed: b.questionsMissed, total: b.questions })}</span>}
+                    </p>
+                    {b.action.kind === 'REINFORCE' ? (
+                      <a className="btn btn-primary" href={b.action.href}>{tr['exv2.bridge.reinforce']}</a>
+                    ) : b.action.proposalStatus === 'REJECTED' ? (
+                      <span className="ui-hint">{tr['exv2.bridge.notAvailable']}</span>
+                    ) : (
+                      <ConceptRequestButton simulationAttemptId={attempt.id} learningObjectiveId={b.learningObjectiveId} requested={b.action.requested} labels={v2} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="ui-hint">{tr['exv2.bridge.note']}</p>
+            </section>
+          )}
+
           <section className="card xr-result" aria-labelledby="xr-next-title">
             <h2 id="xr-next-title" className="xr-section-name">{t['examPrep.result.nextStep']}</h2>
             <p className="ui-hint">{t['examPrep.result.nextStepBody']}</p>
@@ -162,6 +205,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
               ) : (
                 <Link className="btn btn-primary" href="/dashboard/today">{t['ex.continueToday']}</Link>
               )}
+              {instance && <RetakeButton instanceId={instance.id} labels={v2} />}
               <Link className="btn" href={`/dashboard/exam-prep/${view.examProfileId}`}>{t['examPrep.result.backToPrep']}</Link>
             </div>
           </section>
@@ -184,8 +228,23 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                       <div className="xr-review-body">
                         {r.stimulusTitle && <p className="ui-hint">{r.stimulusTitle}</p>}
                         {r.question && <p>{r.question}</p>}
-                        <p><strong>{t['examPrep.result.yourAnswer']}:</strong> {r.yourAnswer ?? '—'}</p>
-                        {r.correctAnswer && <p><strong>{t['examPrep.result.correctAnswer']}:</strong> {r.correctAnswer}</p>}
+                        {r.reviewRequired && <p className="xr-notice">{tr['exv2.result.itemReview']}</p>}
+                        <p><strong>{t['examPrep.result.yourAnswer']}:</strong> {r.answerKind === 'PORTFOLIO' ? tr['exv2.result.portfolioAnswer'] : r.yourAnswer ?? '—'}</p>
+                        {r.rubric && (
+                          <div>
+                            <p><strong>{tr['exv2.result.criteria']}:</strong> {r.rubric.criteria.map((c) => `${c.id} ${c.name}: ${c.awarded}/${c.max}`).join(' · ')}</p>
+                            {r.rubric.evidence.length > 0 && (
+                              <>
+                                <p><strong>{tr['exv2.result.evidence']}:</strong></p>
+                                <ul className="xr-objectives">
+                                  {r.rubric.evidence.map((e, k) => <li key={k}>{e.criterionId} — {e.quote}</li>)}
+                                </ul>
+                              </>
+                            )}
+                            {r.rubric.rationale && <p className="ui-hint"><strong>{tr['exv2.result.assessorNote']}:</strong> {r.rubric.rationale}</p>}
+                          </div>
+                        )}
+                        {r.correctAnswer && r.answerKind !== 'PORTFOLIO' && !r.rubric && <p><strong>{t['examPrep.result.correctAnswer']}:</strong> {r.correctAnswer}</p>}
                         {r.explanation && <p className="ui-hint">{r.explanation}</p>}
                       </div>
                     </details>

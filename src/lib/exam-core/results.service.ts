@@ -54,6 +54,41 @@ export interface StoredAttemptResult {
   scoredAt: string;
   invalidatedAt: string | null;
   invalidationReason: string | null;
+  /** Exam V2: STRICT_READINESS -- a separate, stricter internal metric. Never an official score. */
+  strictReadiness: StrictReadiness | null;
+  reviewRequiredCount: number;
+}
+
+export interface StrictReadiness {
+  v: 1;
+  earned: number;
+  available: number;
+  percent: number | null;
+  sections: Array<{ componentId: string; earned: number; available: number }>;
+  /** Responses scored by an older grader without a strict score count as their official score (and are listed). */
+  legacyResponses: number;
+}
+
+/**
+ * Pure: strict readiness over committed responses. Only fully correct work
+ * counts on deterministic targets; rubric work takes the lower assessor.
+ * `available` is the same denominator as the official raw score.
+ */
+export function computeStrictReadiness(responses: Array<{ assessment_component_id: string; score: unknown; max_score: unknown; strict_score?: unknown }>, available: number): StrictReadiness {
+  const bySection = new Map<string, { componentId: string; earned: number; available: number }>();
+  let earned = 0;
+  let legacy = 0;
+  for (const r of responses) {
+    const strict = r.strict_score === null || r.strict_score === undefined ? null : Number(r.strict_score);
+    if (strict === null) legacy += 1;
+    const e = strict ?? (Number(r.score) || 0);
+    earned += e;
+    const sec = bySection.get(r.assessment_component_id) ?? { componentId: r.assessment_component_id, earned: 0, available: 0 };
+    sec.earned += e;
+    sec.available += Number(r.max_score) || 0;
+    bySection.set(r.assessment_component_id, sec);
+  }
+  return { v: 1, earned, available, percent: available > 0 ? Math.round((earned / available) * 1000) / 10 : null, sections: [...bySection.values()], legacyResponses: legacy };
 }
 
 function toResult(r: any): StoredAttemptResult {
@@ -78,6 +113,8 @@ function toResult(r: any): StoredAttemptResult {
     scoredAt: r.scored_at instanceof Date ? r.scored_at.toISOString() : r.scored_at,
     invalidatedAt: r.invalidated_at instanceof Date ? r.invalidated_at.toISOString() : r.invalidated_at,
     invalidationReason: r.invalidation_reason,
+    strictReadiness: r.strict_readiness ?? null,
+    reviewRequiredCount: r.review_required_count === null || r.review_required_count === undefined ? 0 : Number(r.review_required_count),
   };
 }
 
@@ -281,6 +318,10 @@ export async function scoreAndRecordAttemptResult(simulationAttemptId: string): 
       outcome.responseSetHash,
     ]
   );
+  // Exam V2: strict readiness + responses awaiting review (written once, with the result).
+  const strict = computeStrictReadiness(responses, outcome.raw.available);
+  const reviewRequired = responses.filter((r: any) => r.review_status === 'REVIEW_REQUIRED').length;
+  await db.query(`UPDATE exam_attempt_results SET strict_readiness = $2, review_required_count = $3 WHERE exam_attempt_id = $1 AND strict_readiness IS NULL`, [row.exam_attempt_id, JSON.stringify(strict), reviewRequired]);
   const stored = await getAttemptResult(row.exam_attempt_id);
   if (!stored) throw new Error(`result for exam attempt ${row.exam_attempt_id} was not recorded`);
   return stored;

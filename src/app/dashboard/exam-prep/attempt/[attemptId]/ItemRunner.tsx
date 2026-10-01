@@ -19,7 +19,13 @@
  *   - breaks between sections; hand-in at any time.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import type { Locale } from '@/lib/i18n/messages';
+import { PortfolioPanel, type PortfolioRequirements } from './PortfolioPanel';
+
+// MathLive is browser-only.
+const MathExpressionEditor = dynamic(() => import('@/components/MathExpressionEditor'), { ssr: false });
 import { QuestionAnswerFields } from '@/components/quiz/QuestionAnswerFields';
 import { encodeClientAnswer } from '@/lib/quiz/client-answer-encoding';
 
@@ -28,9 +34,17 @@ type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'or
 interface ClientPart {
   id: string;
   prompt: string;
-  answerFormat: 'single_choice' | 'multi_choice' | 'text';
+  answerFormat: 'single_choice' | 'multi_choice' | 'text' | 'math';
   options?: { id: string; text: string }[];
   marks: number;
+  unitRequired?: boolean;
+  showWorking?: boolean;
+}
+
+/** Exam V2: a math answer as typed in the editor, plus optional working (read for method marks). */
+interface MathStaged {
+  latex: string;
+  working?: string;
 }
 
 interface ClientItem {
@@ -49,7 +63,18 @@ interface ClientItem {
   stimulus?: { key: string; title?: string; text: string };
   parts?: ClientPart[];
   commandTerm?: string;
+  // ---- Exam V2 ----
+  inputMode?: 'math' | 'portfolio';
+  unitRequired?: boolean;
+  showWorking?: boolean;
+  calculator?: 'NONE' | 'ALLOWED' | 'SCIENTIFIC_REQUIRED' | 'GDC_REQUIRED';
+  originLabel?: string;
+  rubricCriteria?: Array<{ id: string; name: string; maxMarks: number }>;
+  portfolioRequirements?: PortfolioRequirements;
 }
+
+/** Exam V2 labels (math editor, working, portfolio, content origin...). */
+export type ItemRunnerV2Labels = Record<string, string>;
 
 interface SectionView {
   index: number;
@@ -107,13 +132,37 @@ export interface ItemRunnerLabels {
   answerPlaceholder: string;
   calculator: string;
   retry: string;
+  v2?: ItemRunnerV2Labels;
 }
 
 type Phase = 'loading' | 'ready' | 'submitting' | 'unavailable' | 'skipping' | 'break' | 'complete' | 'handingIn' | 'error';
 
+function decodeMath(value: unknown): MathStaged | undefined {
+  if (typeof value === 'string') {
+    if (value.trim().startsWith('{')) {
+      try {
+        return decodeMath(JSON.parse(value));
+      } catch {
+        return { latex: value };
+      }
+    }
+    return { latex: value };
+  }
+  if (value && typeof value === 'object' && typeof (value as MathStaged).latex === 'string') return { latex: (value as MathStaged).latex, working: (value as MathStaged).working };
+  return undefined;
+}
+
+function encodeMath(m: unknown): unknown {
+  const v = decodeMath(m);
+  if (!v || (!v.latex.trim() && !(v.working ?? '').trim())) return undefined;
+  return v.working && v.working.trim() ? { latex: v.latex, working: v.working } : v.latex;
+}
+
 function decodeDraft(item: ClientItem, draft: string | null): unknown {
   if (draft === null || draft === undefined) return undefined;
   try {
+    if (item.inputMode === 'portfolio') return JSON.parse(draft)?.submissionId;
+    if (item.inputMode === 'math') return decodeMath(draft);
     if (item.parts) return JSON.parse(draft);
     switch (item.answerFormat) {
       case 'single_choice':
@@ -136,12 +185,20 @@ function decodeDraft(item: ClientItem, draft: string | null): unknown {
 }
 
 function encodeAnswer(item: ClientItem, staged: unknown): string {
+  if (item.inputMode === 'portfolio') return typeof staged === 'string' && staged ? JSON.stringify({ submissionId: staged }) : '';
+  if (item.inputMode === 'math') {
+    const v = encodeMath(staged);
+    return v === undefined ? '' : typeof v === 'string' ? v.trim() : JSON.stringify(v);
+  }
   if (item.parts) {
     const map = (staged as Record<string, unknown>) || {};
-    const out: Record<string, string> = {};
+    const out: Record<string, unknown> = {};
     for (const p of item.parts) {
       const v = map[p.id];
-      if (p.answerFormat === 'multi_choice') {
+      if (p.answerFormat === 'math') {
+        const m = encodeMath(v);
+        if (m !== undefined) out[p.id] = m;
+      } else if (p.answerFormat === 'multi_choice') {
         if (Array.isArray(v) && v.length > 0) out[p.id] = (v as string[]).join(',');
       } else if (typeof v === 'string' && v.trim() !== '') {
         out[p.id] = v;
@@ -185,7 +242,31 @@ function ChoiceList({ name, options, multi, value, onChange }: { name: string; o
   );
 }
 
-function AnswerInput({ item, staged, onChange, labels }: { item: ClientItem; staged: unknown; onChange: (v: unknown) => void; labels: ItemRunnerLabels }) {
+function MathInput({ id, value, onChange, showWorking, unitRequired, locale, labels }: { id: string; value: unknown; onChange: (v: MathStaged) => void; showWorking?: boolean; unitRequired?: boolean; locale: Locale; labels: ItemRunnerLabels }) {
+  const v = decodeMath(value) ?? { latex: '' };
+  const l = labels.v2 ?? {};
+  return (
+    <div className="exv2-math">
+      <MathExpressionEditor value={{ latex: v.latex }} onChange={(next) => onChange({ ...v, latex: next.latex })} locale={locale} placeholder={l['exv2.math.placeholder'] ?? labels.answerPlaceholder} />
+      <p className="ui-hint">{unitRequired ? l['exv2.math.unitRequired'] : l['exv2.math.hint']}</p>
+      {showWorking && (
+        <>
+          <label htmlFor={`exv2-w-${id}`} className="ui-hint">{l['exv2.math.working']}</label>
+          <textarea id={`exv2-w-${id}`} className="ui-input exv2-working" rows={4} placeholder={l['exv2.math.workingPlaceholder']} value={v.working ?? ''} onChange={(e) => onChange({ ...v, working: e.target.value })} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function AnswerInput({ item, staged, onChange, labels, locale, instanceId, onPortfolioReady }: { item: ClientItem; staged: unknown; onChange: (v: unknown) => void; labels: ItemRunnerLabels; locale: Locale; instanceId: string | null; onPortfolioReady: (id: string | null) => void }) {
+  if (item.inputMode === 'portfolio' && item.portfolioRequirements) {
+    if (!instanceId) return <p className="xr-error">{labels.v2?.['exv2.portfolio.noInstance'] ?? labels.loadError}</p>;
+    return <PortfolioPanel instanceId={instanceId} targetIndex={item.index} requirements={item.portfolioRequirements} labels={labels.v2 ?? {}} onReady={onPortfolioReady} />;
+  }
+  if (item.inputMode === 'math') {
+    return <MathInput id={`q-${item.index}`} value={staged} onChange={onChange} showWorking={item.showWorking} unitRequired={item.unitRequired} locale={locale} labels={labels} />;
+  }
   if (item.parts) {
     const map = (staged as Record<string, unknown>) || {};
     return (
@@ -197,7 +278,9 @@ function AnswerInput({ item, staged, onChange, labels }: { item: ClientItem; sta
               <span className="xr-marks">{labels.marks.replace('{n}', String(p.marks))}</span>
             </div>
             <p className="xr-part-prompt">{p.prompt}</p>
-            {p.answerFormat === 'text' ? (
+            {p.answerFormat === 'math' ? (
+              <MathInput id={`p-${item.index}-${p.id}`} value={map[p.id]} onChange={(v) => onChange({ ...map, [p.id]: v })} showWorking={p.showWorking} unitRequired={p.unitRequired} locale={locale} labels={labels} />
+            ) : p.answerFormat === 'text' ? (
               <input
                 className="ui-input"
                 aria-label={`${labels.part.replace('{id}', p.id)}: ${p.prompt}`}
@@ -226,7 +309,7 @@ function AnswerInput({ item, staged, onChange, labels }: { item: ClientItem; sta
   return <QuestionAnswerFields question={item} staged={staged} onChange={onChange} />;
 }
 
-export function ItemRunner({ attemptId, labels }: { attemptId: string; labels: ItemRunnerLabels }) {
+export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null }: { attemptId: string; labels: ItemRunnerLabels; locale?: Locale; instanceId?: string | null }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('loading');
   const [targetIndex, setTargetIndex] = useState(0);
@@ -348,6 +431,10 @@ export function ItemRunner({ attemptId, labels }: { attemptId: string; labels: I
     },
     [attemptId, targetIndex]
   );
+
+  const onPortfolioReady = useCallback((submissionId: string | null) => {
+    setStaged(submissionId ?? undefined);
+  }, []);
 
   function onChange(value: unknown) {
     setStaged(value);
@@ -569,8 +656,23 @@ export function ItemRunner({ attemptId, labels }: { attemptId: string; labels: I
             <span className="xr-marks">{labels.marks.replace('{n}', String(question.marks))}</span>
           </div>
           <p id={`xr-q-${question.index}`} className="xr-q-text">{question.question}</p>
-          {question.calculatorAllowed && <p className="ui-hint">{labels.calculator}</p>}
-          <AnswerInput item={question} staged={staged} onChange={onChange} labels={labels} />
+          {question.calculator ? (
+            <p className="ui-hint">{labels.v2?.[`exv2.calculator.${question.calculator}`] ?? labels.calculator}</p>
+          ) : (
+            question.calculatorAllowed && <p className="ui-hint">{labels.calculator}</p>
+          )}
+          {question.rubricCriteria && question.rubricCriteria.length > 0 && (
+            <div>
+              <p className="ui-hint">{labels.v2?.['exv2.rubric.title']}</p>
+              <ul className="exv2-criteria">
+                {question.rubricCriteria.map((c) => (
+                  <li key={c.id} className="xr-pill">{`${c.id} · ${c.name} (${c.maxMarks})`}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <AnswerInput item={question} staged={staged} onChange={onChange} labels={labels} locale={locale} instanceId={instanceId} onPortfolioReady={onPortfolioReady} />
+          {question.originLabel && labels.v2?.[question.originLabel] && <p className="exv2-origin">{labels.v2[question.originLabel]}</p>}
           <div className="xr-save" aria-live="polite">
             {saveState === 'saving' ? labels.saving : saveState === 'saved' ? labels.saved : saveState === 'error' ? labels.saveError : ''}
           </div>

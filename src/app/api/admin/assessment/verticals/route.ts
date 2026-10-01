@@ -14,7 +14,10 @@ import { z } from 'zod';
 import { isAdminEmail } from '@/services/admin.service';
 import { db } from '@/lib/db';
 import { applyExamVerticalConfig, VerticalConfigError } from '@/lib/exam-core/apply-vertical-config.service';
-import { DEV_CERT_VERTICALS } from '@/lib/exam-core/verticals';
+import { DEV_CERT_VERTICALS as V1_VERTICALS } from '@/lib/exam-core/verticals';
+import { V2_VERTICALS } from '@/lib/exam-core/verticals/v2';
+
+const DEV_CERT_VERTICALS = [...V1_VERTICALS, ...V2_VERTICALS];
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function requireAdmin() {

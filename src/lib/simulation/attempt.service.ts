@@ -10,7 +10,8 @@ import { db } from '@/lib/db';
 import { startExamAttempt, completeExamAttempt, getExamAttempt } from '@/lib/assessment/exam-attempt.service';
 import { buildSimulationPlan } from './plan.service';
 import { parseDeliveryPolicy, resolveDeliveryPolicy, isModeAllowed } from '@/lib/exam-core/delivery-policy';
-import { initNavState, isInactiveExpired, type ExamNavState } from '@/lib/exam-core/navigation-state';
+import { initNavState, isInactiveExpired, type ExamNavState, type ExamItemState } from '@/lib/exam-core/navigation-state';
+import type { SimulationPlan } from './types';
 import type { SimulationAttempt, SimulationType, TimingMode } from './types';
 
 /** Track B: the version's delivery policy (navigation_rules) is present but invalid -- the attempt never starts on a guessed policy. */
@@ -64,6 +65,16 @@ export async function startSimulationAttempt(params: {
   institutionExamPolicyId?: string;
   language: string;
   timezone?: string;
+  /** Exam V2: only these components (an exam instance's selected papers). */
+  assessmentComponentIds?: string[];
+  /** Exam V2: per-item feedback override (a Mock / Challenge forces NEVER). */
+  itemFeedback?: 'NEVER' | 'AFTER_EACH_ITEM';
+  /**
+   * Exam V2: a FROZEN form. Called with the built plan, returns the server-held
+   * items to preset per plan position, so nothing is sourced or generated
+   * during the attempt. Positions it leaves out are sourced as usual.
+   */
+  presetItems?: (plan: SimulationPlan) => Promise<Record<number, ExamItemState>>;
 }): Promise<{ examAttempt: Awaited<ReturnType<typeof getExamAttempt>>; simulationAttempt: SimulationAttempt; planId: string }> {
   // Track B: validate the version's delivery policy BEFORE writing anything.
   const versionRow = await db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [params.examVersionId]);
@@ -72,6 +83,7 @@ export async function startSimulationAttempt(params: {
   const modeCheck = isModeAllowed(parsedPolicy.policy, params.simulationType, params.timingMode);
   if (!modeCheck.allowed) throw new SimulationModeNotAllowedError(modeCheck.reason!);
   const deliveryPolicy = resolveDeliveryPolicy(parsedPolicy.policy, params.simulationType, params.timingMode);
+  if (params.itemFeedback === 'NEVER' || (params.itemFeedback === 'AFTER_EACH_ITEM' && params.timingMode !== 'OFFICIAL_SIMULATION_TIMED')) deliveryPolicy.itemFeedback = params.itemFeedback;
 
   const plan = await buildSimulationPlan({
     studentId: params.studentId,
@@ -81,7 +93,9 @@ export async function startSimulationAttempt(params: {
     academicSubjectId: params.academicSubjectId,
     timingMode: params.timingMode,
     readinessSnapshotId: params.readinessSnapshotId,
+    assessmentComponentIds: params.assessmentComponentIds,
   });
+  const preset = params.presetItems ? await params.presetItems(plan) : {};
 
   const examAttempt = await startExamAttempt({
     studentExamProfileId: params.examProfileId,
@@ -95,6 +109,7 @@ export async function startSimulationAttempt(params: {
   // Track B: the resolved delivery policy + section layout are FROZEN on the attempt.
   const navigationRules = (examAttempt?.frozenConfiguration as any)?.examVersion?.navigationRules ?? null;
   const navigationState = initNavState({ policy: deliveryPolicy, sections: plan.sections ?? [], now: new Date().toISOString(), rules: navigationRules });
+  for (const [index, state] of Object.entries(preset)) navigationState.items[String(index)] = state;
 
   const result = await db.query(
     `

@@ -33,6 +33,7 @@ import { recordSimulationItemResponse } from './scoring.service';
 import { sourceExamItem, type ItemUnavailableReason } from '@/lib/exam-core/item-sourcing.service';
 import { findAnswerKeyLeak, toExamClientItem, type ExamClientItem } from '@/lib/exam-core/items';
 import { structuredAnswerProblem } from '@/lib/exam-core/item-grading';
+import { portfolioAnswerProblem } from '@/lib/exam-core/submissions/submission.service';
 import {
   firstOpenIndex,
   isInactiveExpired,
@@ -338,7 +339,7 @@ export async function getNextSimulationItem(actorUserId: string, attemptId: stri
         const sourced = await sourceExamItem({
           attemptId: attempt.id,
           studentId: attempt.studentId,
-          target: { learningObjectiveId: objectiveTarget.learningObjectiveId, questionType: target.questionType, difficultyRange: target.difficultyRange },
+          target: { learningObjectiveId: objectiveTarget.learningObjectiveId, assessmentComponentId: target.assessmentComponentId, questionType: target.questionType, difficultyRange: target.difficultyRange },
           excludeApprovedItemIds: usedApprovedItemIds(nav),
           preferredStimulusKey: precedingStimulusKey(nav, section, index),
           language: attempt.language,
@@ -425,6 +426,11 @@ export async function submitSimulationItemAnswer(
     // Shape check BEFORE anything is recorded: a tampered answer is rejected, the item stays open.
     if (!state.item.exam.parts && state.item.answerFormat !== 'text') {
       const problem = structuredAnswerProblem(state.item, studentAnswer);
+      if (problem) throw new SimulationInvalidResponseError(problem);
+    }
+    // V2: a portfolio task is committed only with this position's own, complete submission.
+    if (state.item.exam.portfolio) {
+      const problem = await portfolioAnswerProblem({ examAttemptId: loaded.attempt.examAttemptId, targetIndex: index, studentId: loaded.attempt.studentId, answer: studentAnswer, item: state.item });
       if (problem) throw new SimulationInvalidResponseError(problem);
     }
 

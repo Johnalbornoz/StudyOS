@@ -5,6 +5,8 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { findInstanceByAttempt } from '@/lib/exam-core/exam-instance.service';
+import { db } from '@/lib/db';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { AttemptControls } from './AttemptControls';
@@ -33,6 +35,12 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   if (!attempt || attempt.studentId !== studentId) notFound();
   // Track B: a submitted attempt is shown as its result (exam score vs canonical mastery, sections, review).
   if (attempt.status === 'COMPLETED') redirect(`/dashboard/exam-prep/attempt/${attempt.id}/result`);
+  // Exam V2: the instance (if any) this attempt belongs to -- portfolio uploads are scoped to it.
+  const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
+  // The content-origin label names the framework ("Práctica generada por StudyUS, alineada al formato de IB").
+  const familyRow = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [attempt.examVersionId]).catch(() => ({ rows: [] as any[] }));
+  const frameworkName = (t as Record<string, string>)[`exam.family.${familyRow.rows[0]?.exam_family}`] ?? familyRow.rows[0]?.exam_family ?? '';
+  const v2Labels: Record<string, string> = Object.fromEntries(Object.entries(t as Record<string, string>).filter(([k]) => k.startsWith('exv2.')).map(([k, v]) => [k, v.replace('{framework}', frameworkName)]));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -55,7 +63,10 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
       {attempt.status === 'ACTIVE' && (
         <ItemRunner
           attemptId={attempt.id}
+          locale={locale}
+          instanceId={instance?.id ?? null}
           labels={{
+            v2: v2Labels,
             loading: t['examPrep.attempt.itemLoading'],
             loadError: t['examPrep.attempt.error'],
             submit: t['examPrep.run.submitAnswer'],
