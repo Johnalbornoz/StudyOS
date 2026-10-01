@@ -16,7 +16,7 @@ import { canUseCapability } from '@/lib/entitlements';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
 import { startSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { TimingConfigurationError } from '@/lib/simulation/plan.service';
-import { isExamProfileOwnedByStudent } from '@/lib/assessment/student-exam-profile.service';
+import { isExamProfileOwnedByStudent, isExamVersionStartableForProfile } from '@/lib/assessment/student-exam-profile.service';
 
 const StartSchema = z.object({
   studentId: z.string().uuid(),
@@ -65,6 +65,10 @@ export async function POST(request: NextRequest) {
   // 404 so a guessed id never confirms another learner's profile exists.
   if (!(await isExamProfileOwnedByStudent(validated.examProfileId, validated.studentId))) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  if (!(await isExamVersionStartableForProfile(validated.examProfileId, validated.examVersionId))) {
+    return NextResponse.json({ error: 'EXAM_VERSION_NOT_STARTABLE' }, { status: 409 });
   }
 
   const eligibility = await getSimulationEligibility(validated);

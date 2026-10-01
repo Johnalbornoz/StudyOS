@@ -223,6 +223,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           labels={workspaceLabels}
           switcherLabel={t['workspace.switcherLabel']}
           errorLabel={t['error.generic']}
+          addRoleLabel={t['workspace.addRole']}
         />
       }
       banner={

@@ -81,36 +81,27 @@ export async function verifyAuth(): Promise<AuthContext | null> {
 }
 
 /**
- * Verify student access to their own data
+ * Verify student access to their own data -- OWNER ONLY (default-deny).
  *
- * Rules:
- * - Students can only access their own studentId
- * - Teachers can access students they teach
- * - Admins can access any student
+ * Foundation (roles/exams shared, ADR-F06): this guard protects the
+ * Student's own learning routes (plan, cognitive submit, record-evidence,
+ * assessments, ...), several of which WRITE canonical evidence. It used to
+ * honour a Clerk session-claim `role`: 'admin' passed for ANY student and
+ * 'teacher' could read -- and, via record-evidence, write independent
+ * evidence -- for a taught student. Those were a second, non-canonical role
+ * model (canonical roles live in user_roles) and let a non-owner manipulate
+ * cognitive state. Teacher / Parent / Institution / StudyUS-admin reads go
+ * through their own scoped read models (src/lib/authorization,
+ * src/lib/teacher, src/lib/parent, src/lib/admin), never through this guard.
+ * `role` is kept in the signature so callers are unchanged; it no longer
+ * grants anything.
  */
 export async function verifyStudentAccess(
   userId: string,
   studentId: string,
-  role: UserRole
+  _role?: UserRole
 ): Promise<boolean> {
-  // Admins can access anyone
-  if (role === 'admin') {
-    return true;
-  }
-
-  // Students can only access themselves
-  if (role === 'student') {
-    const isOwner = await isUserStudent(userId, studentId);
-    return isOwner;
-  }
-
-  // Teachers can access their students
-  if (role === 'teacher') {
-    const canTeach = await canTeacherAccessStudent(userId, studentId);
-    return canTeach;
-  }
-
-  return false;
+  return isUserStudent(userId, studentId);
 }
 
 /**
@@ -215,6 +206,14 @@ async function linkStudentToCanonicalUser(studentId: string): Promise<void> {
   );
 }
 
+/** Thrown when a students row would be created for an identity without an ACTIVE STUDENT role. */
+export class StudentRoleRequiredError extends Error {
+  constructor() {
+    super('STUDENT_ROLE_REQUIRED');
+    this.name = 'StudentRoleRequiredError';
+  }
+}
+
 /**
  * Resolve a Clerk user ID to the internal student UUID (shared by
  * profiles.id and students.id), creating the rows on first use. Also
@@ -231,6 +230,22 @@ export async function getOrCreateStudentId(clerkUserId: string): Promise<string>
     await ensureProfileRows(studentId, null);
     await linkStudentToCanonicalUser(studentId);
     return studentId;
+  }
+
+  // Foundation (multi-role contract, ADR-F01/F06): a NEW students row is only
+  // ever created for an identity that holds an ACTIVE STUDENT role. Roles are
+  // granted first (role-select / admin console, both of which then call this
+  // function), so legitimate provisioning is unchanged; what this closes is a
+  // Parent-only / Teacher-only / admin-only identity silently becoming a
+  // Student by calling one of the many Student routes that use this function
+  // directly. The existing-row path above is untouched.
+  const studentRole = await db.query(
+    `SELECT 1 FROM user_roles r JOIN users u ON u.id = r.user_id
+     WHERE u.clerk_id = $1 AND r.role = 'STUDENT' AND r.status = 'ACTIVE' LIMIT 1`,
+    [clerkUserId]
+  );
+  if ((studentRole.rows?.length ?? 0) === 0) {
+    throw new StudentRoleRequiredError();
   }
 
   const user = await currentUser();
@@ -320,30 +335,6 @@ export async function getOrCreateParentId(clerkUserId: string): Promise<string> 
     [name, clerkUserId, canonicalUser.id]
   );
   return inserted.rows[0].id;
-}
-
-/**
- * F2: real implementation, replacing the permanent pre-F2 stub that
- * always returned `false`. Delegates entirely to the canonical
- * authorization service (src/lib/authorization) -- requires an
- * APPROVED TEACHER institution_membership AND an ACTIVE
- * teacher_assignment AND an ACTIVE class_enrollment linking
- * `studentId` to a class that assignment covers. `teacherId` here is
- * the Clerk user id, exactly as verifyStudentAccess already passes it
- * -- the signature/contract of this function is unchanged, only its
- * body now does real, fail-closed work instead of a hardcoded `false`.
- */
-async function canTeacherAccessStudent(
-  teacherId: string,
-  studentId: string
-): Promise<boolean> {
-  try {
-    const { canTeacherAccessStudentByClerkId } = await import('./authorization');
-    return await canTeacherAccessStudentByClerkId(teacherId, studentId);
-  } catch (error) {
-    console.error('Error checking teacher access:', error);
-    return false;
-  }
 }
 
 /**

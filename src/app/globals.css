@@ -432,6 +432,18 @@ a { color: inherit; text-decoration: none; }
 }
 .lx-workspace-option:hover, .lx-workspace-option:focus-visible { background: var(--brand-subtle); color: var(--brand-ink); }
 .lx-workspace-error { color: var(--error); font-size: 12px; margin: var(--space-1) 0 0; }
+/* Foundation (multi-role, ADR-F01): "add another role" -- always reachable,
+   also for a single-workspace (e.g. admin-only) actor. */
+.lx-workspace-indicator .lx-workspace-add-role {
+  display: block;
+  margin-top: var(--space-1);
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: underline;
+  min-height: 24px;
+  line-height: 24px;
+}
+.lx-workspace-menu .lx-workspace-add-role { color: var(--brand-ink); text-decoration: none; border-top: 1px solid var(--border-default); border-radius: 0; margin-top: var(--space-1); }
 
 @media (max-width: 1023px) {
   /* UX-2: explicit rows -- the implicit rows used to stretch to fill

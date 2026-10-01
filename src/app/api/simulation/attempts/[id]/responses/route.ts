@@ -1,34 +1,23 @@
 /**
- * F9 -- POST /api/simulation/attempts/[id]/responses
+ * F9 -- POST /api/simulation/attempts/[id]/responses  (RETIRED for grading)
  *
- * Records and grades one item response (task §28). Minimal-flow scope
- * decision matching F8's own precedent: accepts a full GeneratedQuestion
- * (the existing quiz-generation.service.ts shape, never redeclared) so
- * the existing graders can run unmodified.
+ * Foundation (roles/exams shared): this route accepted a client-supplied
+ * GeneratedQuestion -- answer key included -- and graded the student's answer
+ * against it, then wrote EXAM_SIMULATION evidence through updateMastery. A
+ * student could therefore forge a correct grade and spoof canonical mastery.
+ * The only UI (ItemRunner) answers through GET/POST .../next-item, where the
+ * question lives server-side (navigation_state.pendingQuestion) and cannot be
+ * forged. The auth + ownership chain is kept unchanged (same 401/403
+ * behaviour); an authorized caller now gets 410 and nothing is graded.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
-import { recordSimulationItemResponse } from '@/lib/simulation/scoring.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-const ResponseSchema = z.object({
-  assessmentComponentId: z.string().uuid(),
-  learningObjectiveId: z.string().uuid().optional(),
-  commandTermId: z.string().uuid().optional(),
-  question: z.record(z.string(), z.unknown()),
-  studentAnswer: z.string(),
-  language: z.string().optional(),
-  // Task §54: the client mints this ONCE per logical submission and
-  // resends the SAME value on any retry -- never a fresh value per
-  // attempt, which would defeat the whole point.
-  idempotencyKey: z.string().min(1).max(200).optional(),
-});
-
-async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -41,29 +30,11 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   const allowed = await canAccessLearner(actor.id, attempt.studentId, 'LEARNER_INTERVENTION_CREATE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  if (attempt.status !== 'ACTIVE') return NextResponse.json({ error: 'ATTEMPT_NOT_ACTIVE' }, { status: 409 });
-
-  let validated;
-  try {
-    validated = ResponseSchema.parse(await request.json());
-  } catch (error: any) {
-    return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
-  }
-
-  const { responseId, evaluation, evidenceWritten, duplicate } = await recordSimulationItemResponse({
-    examAttemptId: attempt.examAttemptId,
-    studentId: attempt.studentId,
-    examVersionId: attempt.examVersionId,
-    assessmentComponentId: validated.assessmentComponentId,
-    learningObjectiveId: validated.learningObjectiveId,
-    commandTermId: validated.commandTermId,
-    question: validated.question as any,
-    studentAnswer: validated.studentAnswer,
-    language: validated.language,
-    idempotencyKey: validated.idempotencyKey,
-  });
-
-  return NextResponse.json({ success: true, data: { responseId, evaluation, evidenceWritten, duplicate } });
+  // Never grade a client-supplied question (it carries its own answer key).
+  return NextResponse.json(
+    { error: 'GONE', message: 'Item responses are submitted through /api/simulation/attempts/[id]/next-item.' },
+    { status: 410 }
+  );
 }
 
 // AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).

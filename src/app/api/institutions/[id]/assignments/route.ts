@@ -52,6 +52,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (error.message === 'MEMBERSHIP_NOT_APPROVED') {
       return NextResponse.json({ error: 'MEMBERSHIP_NOT_APPROVED' }, { status: 409 });
     }
+    if (error.message === 'SCOPE_OUTSIDE_INSTITUTION') {
+      return NextResponse.json({ error: 'SCOPE_OUTSIDE_INSTITUTION' }, { status: 422 });
+    }
     throw error;
   }
 }

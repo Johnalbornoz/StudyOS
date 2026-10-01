@@ -38,6 +38,7 @@ export default function WorkspaceSwitcher({
   labels,
   switcherLabel,
   errorLabel,
+  addRoleLabel,
 }: {
   available: WorkspaceOption[];
   active: WorkspaceOption;
@@ -45,6 +46,13 @@ export default function WorkspaceSwitcher({
   labels: Record<WorkspaceOption, string>;
   switcherLabel: string;
   errorLabel: string;
+  /**
+   * Foundation (multi-role contract, ADR-F01): roles are additive, so every
+   * actor -- including a single-workspace one such as an admin-only account --
+   * gets a plain link to /role-select to add another self-service role. The
+   * role is granted only there (server-validated); this is navigation only.
+   */
+  addRoleLabel?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -58,6 +66,11 @@ export default function WorkspaceSwitcher({
     return (
       <div className="lx-workspace-indicator" aria-label={switcherLabel}>
         {labels[active]}
+        {addRoleLabel && (
+          <a href="/role-select" className="lx-workspace-add-role">
+            {addRoleLabel}
+          </a>
+        )}
       </div>
     );
   }
@@ -114,6 +127,13 @@ export default function WorkspaceSwitcher({
               </button>
             </li>
           ))}
+          {addRoleLabel && (
+            <li>
+              <a href="/role-select" className="lx-workspace-option lx-workspace-add-role">
+                {addRoleLabel}
+              </a>
+            </li>
+          )}
         </ul>
       )}
       {error && (

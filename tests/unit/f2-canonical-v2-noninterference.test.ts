@@ -74,11 +74,16 @@ describe('F1/F0-S protections remain present (source-level guard; real behavior 
     expect(gateway).toMatch(/reserveAICall/);
   });
 
-  it('canTeacherAccessStudent is no longer a hardcoded false stub', () => {
+  it('verifyStudentAccess is owner-only: no session-claim role grants a non-owner (foundation ADR-F06)', () => {
+    // Supersedes the former "canTeacherAccessStudent is no longer a hardcoded
+    // false stub" check: teacher reads now go only through the canonical,
+    // institution-scoped src/lib/authorization read models, never through the
+    // Student's own learning-route guard (which can write canonical evidence).
     const src = readFileSync(join(process.cwd(), 'src/lib/auth.ts'), 'utf-8');
-    const idx = src.indexOf('async function canTeacherAccessStudent');
-    const slice = src.slice(idx, idx + 500);
-    expect(slice).not.toMatch(/return false;\s*\n\s*} catch/);
-    expect(slice).toMatch(/canTeacherAccessStudentByClerkId/);
+    const idx = src.indexOf('export async function verifyStudentAccess');
+    const body = src.slice(idx, src.indexOf('\n}\n', idx));
+    expect(body).toMatch(/return isUserStudent\(userId, studentId\)/);
+    expect(body).not.toMatch(/role === 'admin'|role === 'teacher'/);
+    expect(src).not.toMatch(/async function canTeacherAccessStudent\(/);
   });
 });

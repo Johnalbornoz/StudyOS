@@ -39,7 +39,11 @@ export async function POST(request: NextRequest) {
     const { role } = Schema.parse(await request.json());
 
     const user = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
-    await assignSelfServiceRole(authContext.userId, user.id, role as SelfServiceRole);
+    const outcome = await assignSelfServiceRole(authContext.userId, user.id, role as SelfServiceRole);
+    if (outcome === 'REVOKED') {
+      // An administrator revoked this role: self-service never re-grants it.
+      return NextResponse.json({ error: 'ROLE_REVOKED' }, { status: 409 });
+    }
 
     // The initial selection also becomes the active workspace -- a
     // brand-new STUDENT/PARENT/TEACHER must land directly in the

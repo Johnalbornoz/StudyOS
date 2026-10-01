@@ -79,6 +79,23 @@ export async function isExamProfileOwnedByStudent(examProfileId: string, student
   return result.rows.length > 0;
 }
 
+/**
+ * Foundation (Exam Core attempt integrity): an attempt may only be started
+ * against a PUBLISHED version of the SAME exam definition the profile
+ * targets. Without this a caller could start an attempt on a DRAFT /
+ * SUPERSEDED version, or on another exam's version, through an owned
+ * profile -- freezing a configuration the catalog never published.
+ */
+export async function isExamVersionStartableForProfile(examProfileId: string, examVersionId: string): Promise<boolean> {
+  const result = await db.query(
+    `SELECT 1 FROM student_exam_profiles p
+     JOIN exam_versions v ON v.exam_definition_id = p.exam_definition_id
+     WHERE p.id = $1 AND v.id = $2 AND v.status = 'PUBLISHED'`,
+    [examProfileId, examVersionId]
+  );
+  return result.rows.length > 0;
+}
+
 export async function getStudentExamProfile(profileId: string): Promise<StudentExamProfile | null> {
   const result = await db.query(`SELECT * FROM student_exam_profiles WHERE id = $1`, [profileId]);
   return result.rows.length === 0 ? null : toProfile(result.rows[0]);

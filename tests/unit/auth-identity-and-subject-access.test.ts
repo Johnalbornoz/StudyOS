@@ -80,8 +80,8 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
   }
 
   it('7. a brand-new student creates BOTH a students row and a profiles (+ student_profiles) row', async () => {
-    // No existing students row for this clerk_id.
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    // No existing students row for this clerk_id; the identity holds an ACTIVE STUDENT role.
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     currentUserMock.mockResolvedValue({
       primaryEmailAddress: { emailAddress: 'new@student.test' },
       emailAddresses: [],
@@ -106,7 +106,7 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
   });
 
   it('8. the profiles/student_profiles rows are written with the exact same UUID students.id returned', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     currentUserMock.mockResolvedValue({
       primaryEmailAddress: { emailAddress: 'new@student.test' },
       emailAddresses: [],
@@ -126,6 +126,14 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
     const studentProfilesCall = clientQueryMock.mock.calls.find((c: any[]) => /INSERT INTO student_profiles/i.test(String(c[0])));
     expect(profilesCall?.[1]?.[0]).toBe(STUDENT_ID);
     expect(studentProfilesCall?.[1]?.[0]).toBe(STUDENT_ID);
+  });
+
+  it('7b. foundation: an identity WITHOUT an ACTIVE STUDENT role is refused -- no students/profiles row is ever created', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    const clientQueryMock = mockTransactionClient();
+    await expect(getOrCreateStudentId(CLERK_ID)).rejects.toThrow('STUDENT_ROLE_REQUIRED');
+    expect(clientQueryMock).not.toHaveBeenCalled();
+    expect(String(queryMock.mock.calls[1][0])).toMatch(/r\.role = 'STUDENT' AND r\.status = 'ACTIVE'/);
   });
 
   it('9. an existing student with an already-matching profile is idempotent -- no duplicate students row is created, no Clerk lookup is needed', async () => {

@@ -280,14 +280,30 @@ export async function createTeacherAssignment(
   if (membership.rows.length === 0) {
     throw new Error('MEMBERSHIP_NOT_APPROVED');
   }
+  // Foundation (ADR-F06, tenant isolation): the grade / class must belong to
+  // the SAME institution as the membership (and a class must sit in the
+  // given grade when both are set). Read paths already re-check
+  // c.institution_id = im.institution_id, but without this a scope row could
+  // still point a teacher at another institution's class. Guarded in the
+  // INSERT itself so the check and the write are one atomic statement.
   const result = await db.query(
     `
     INSERT INTO teacher_assignments (institution_membership_id, grade_id, class_id, subject_label, status)
-    VALUES ($1, $2, $3, $4, 'ACTIVE')
+    SELECT im.id, $2::uuid, $3::uuid, $4, 'ACTIVE'
+    FROM institution_memberships im
+    WHERE im.id = $1
+      AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM grades g WHERE g.id = $2::uuid AND g.institution_id = im.institution_id))
+      AND ($3::uuid IS NULL OR EXISTS (
+            SELECT 1 FROM classes c
+            WHERE c.id = $3::uuid AND c.institution_id = im.institution_id
+              AND ($2::uuid IS NULL OR c.grade_id IS NULL OR c.grade_id = $2::uuid)))
     RETURNING id, institution_membership_id, grade_id, class_id, subject_label, status
     `,
     [institutionMembershipId, scope.gradeId ?? null, scope.classId ?? null, scope.subjectLabel ?? null]
   );
+  if (result.rows.length === 0) {
+    throw new Error('SCOPE_OUTSIDE_INSTITUTION');
+  }
   return toAssignment(result.rows[0]);
 }
 

@@ -1043,7 +1043,8 @@ export type MessageKey =
   | 'di.err.network'
   | 'di.err.import'
   | 'di.summaryNewOne'
-  | 'di.summaryReuseOne';
+  | 'di.summaryReuseOne'
+  | 'workspace.addRole';
 
 type Messages = Record<MessageKey, string>;
 
@@ -2700,6 +2701,7 @@ const es: Messages = {
   'di.err.import': 'No pudimos agregar todos los temas. Inténtalo de nuevo: los que ya se agregaron no se duplican.',
   'di.summaryNewOne': 'Se agregará 1 tema nuevo a {subject}.',
   'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
+  'workspace.addRole': 'Añadir otro rol',
 };
 
 const en: Messages = {
@@ -4355,6 +4357,7 @@ const en: Messages = {
   'di.err.import': 'We couldn\'t add all the topics. Please try again: any already added won\'t be duplicated.',
   'di.summaryNewOne': '1 new topic will be added to {subject}.',
   'di.summaryReuseOne': '1 you already have will be reused.',
+  'workspace.addRole': 'Add another role',
 };
 
 const de: Messages = {
@@ -6010,6 +6013,7 @@ const de: Messages = {
   'di.err.import': 'Nicht alle Themen konnten hinzugefügt werden. Versuch es noch einmal: Bereits hinzugefügte werden nicht doppelt angelegt.',
   'di.summaryNewOne': '1 neues Thema kommt zu {subject}.',
   'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
+  'workspace.addRole': 'Weitere Rolle hinzufügen',
 };
 
 const fr: Messages = {
@@ -7665,6 +7669,7 @@ const fr: Messages = {
   'di.err.import': 'Impossible d\'ajouter tous les thèmes. Réessaie : ceux déjà ajoutés ne seront pas dupliqués.',
   'di.summaryNewOne': '1 nouveau thème sera ajouté à {subject}.',
   'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
+  'workspace.addRole': 'Ajouter un autre rôle',
 };
 
 const pt: Messages = {
@@ -9320,6 +9325,7 @@ const pt: Messages = {
   'di.err.import': 'Não foi possível adicionar todos os temas. Tente novamente: os que já foram adicionados não serão duplicados.',
   'di.summaryNewOne': '1 tema novo será adicionado a {subject}.',
   'di.summaryReuseOne': '1 que você já tem será reutilizado.',
+  'workspace.addRole': 'Adicionar outra função',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

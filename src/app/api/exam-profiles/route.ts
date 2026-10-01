@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_PROFILE_VIEW');
+  // Foundation (ADR-F06): creating an exam profile is a WRITE on the learner's
+  // own exam context -- owner-only. LEARNER_PROFILE_VIEW (held by an accepted
+  // Parent and an authorized Teacher) is a read permission and must not gate it.
+  const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_INTERVENTION_CREATE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const catalogMatch = await db.query(

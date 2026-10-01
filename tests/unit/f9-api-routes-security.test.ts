@@ -284,11 +284,25 @@ describe('UX-2 security: starting a simulation requires owning the exam profile'
   });
   it('the learner\'s own profile proceeds exactly as before', async () => {
     dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
-      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID ? { rows: [{ owned: 1 }] } : { rows: [] },
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID
+        ? { rows: [{ owned: 1 }] }
+        : /JOIN exam_versions v ON v\.exam_definition_id = p\.exam_definition_id/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID
+          ? { rows: [{ startable: 1 }] }
+          : { rows: [] },
     );
     const res: any = await attemptsPOST(jsonReq(body));
     expect(res.status).toBe(200);
     expect(startSimulationAttemptMock).toHaveBeenCalledWith(expect.objectContaining({ examProfileId: body.examProfileId, studentId: VALID_ID }));
+  });
+  it('foundation: an owned profile with a non-PUBLISHED or other-exam version -> 409, nothing started', async () => {
+    dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId ? { rows: [{ owned: 1 }] } : { rows: [] },
+    );
+    const res: any = await attemptsPOST(jsonReq(body));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe('EXAM_VERSION_NOT_STARTABLE');
+    expect(getSimulationEligibilityMock).not.toHaveBeenCalled();
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
   });
 });
 
