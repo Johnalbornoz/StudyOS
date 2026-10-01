@@ -95,10 +95,13 @@ describe('F13 UX Consolidation never becomes a second domain-truth or authorizat
     }
   });
 
-  it('the workspace switcher writes through the real F1 POST /api/identity/workspace route, never a client-only state change', () => {
+  // Track A product amendment (2026-10-01): one primary persona per account,
+  // so the shell no longer offers persona switching -- the former switcher
+  // is a server-rendered indicator with no client state and no way to
+  // change workspace. Capabilities are plain navigation links.
+  it('the persona indicator never switches workspace or offers another role', () => {
     const src = readFileSync(join(process.cwd(), 'src/app/dashboard/WorkspaceSwitcher.tsx'), 'utf-8');
-    expect(src).toMatch(/\/api\/identity\/workspace/);
-    expect(src).toMatch(/router\.refresh\(\)/);
+    expect(src).not.toMatch(/\/api\/identity\/workspace|useState|role-select/);
   });
 
   it('layout.tsx resolves workspace via F1\'s real resolveAvailableWorkspaces/getActiveWorkspace, never a hard-coded role check', () => {

@@ -77,7 +77,9 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
             {pending.map((m) => (
               <li key={m.id} className="list-row" style={{ flexWrap: 'wrap' }}>
                 <div className="row-main">
-                  <div className="row-title">{m.userEmail ?? m.userId}</div>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>
+                    {m.userName && m.userEmail ? `${m.userName} · ${m.userEmail}` : m.userName ?? m.userEmail ?? '—'}
+                  </div>
                   <div className="row-sub">{t['inst.requests.teacherRequest']}</div>
                   {m.requestedAt && (
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -101,7 +103,9 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
             {decided.map((m) => (
               <li key={m.id} className="list-row" style={{ flexWrap: 'wrap' }}>
                 <div className="row-main">
-                  <div className="row-title">{m.userEmail ?? m.userId}</div>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>
+                    {m.userName && m.userEmail ? `${m.userName} · ${m.userEmail}` : m.userName ?? m.userEmail ?? '—'}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                     {t[`inst.requests.status.${m.status}` as MessageKey] ?? m.status} {m.reviewedAt ? `— ${new Date(m.reviewedAt).toLocaleString(locale)}` : ''}
                   </div>

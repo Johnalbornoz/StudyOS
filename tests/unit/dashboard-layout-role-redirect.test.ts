@@ -32,7 +32,7 @@ vi.mock('@/services/gamification.service', () => ({ getLearningDaysThisWeek: vi.
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({ countPendingTeacherInterventionsForStudent: vi.fn(async () => 0) }));
 vi.mock('@/lib/i18n/language', () => ({ getInterfaceLanguage: vi.fn(async () => 'es'), getUserInterfaceLanguage: vi.fn(async () => 'es') }));
 // Track A: non-Student workspaces read a workspace-scoped unread count.
-vi.mock('@/lib/notifications/role-notifications.service', () => ({ countUnread: vi.fn(async () => 0) }));
+vi.mock('@/lib/notifications/role-notifications.service', () => ({ countUnread: vi.fn(async () => 0), countAccountUnread: vi.fn(async () => 0) }));
 vi.mock('@/lib/lx/learner-navigation', () => ({ buildLearnerNav: vi.fn(() => []) }));
 const buildAdminNavMock = vi.fn(() => []);
 vi.mock('@/lib/lx/workspace-navigation', () => ({ buildParentNav: vi.fn(() => []), buildTeacherNav: vi.fn(() => []), buildInstitutionNav: vi.fn(() => []), buildAdminNav: () => buildAdminNavMock() }));
@@ -57,11 +57,19 @@ const getOrCreateCanonicalUserMock = vi.fn();
 const resolveAvailableWorkspacesMock = vi.fn();
 const resolveDefaultWorkspaceMock = vi.fn();
 const getActiveWorkspaceMock = vi.fn();
-vi.mock('@/lib/identity', () => ({
+vi.mock('@/lib/identity', async () => {
+  const types = await import('@/lib/identity/types');
+  return {
+  personaWorkspaceOf: types.personaWorkspaceOf,
+  isPersonaWorkspace: types.isPersonaWorkspace,
   getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a),
   resolveAvailableWorkspaces: (...a: any[]) => resolveAvailableWorkspacesMock(...a),
   resolveDefaultWorkspace: (...a: any[]) => resolveDefaultWorkspaceMock(...a),
   getActiveWorkspace: (...a: any[]) => getActiveWorkspaceMock(...a),
+  };
+});
+vi.mock('@/lib/identity/workspace-entry', () => ({
+  WORKSPACE_HOME: { STUDENT: '/dashboard/today', PARENT: '/dashboard/parent', TEACHER: '/dashboard/teacher', INSTITUTION: '/dashboard/institution', ADMIN: '/dashboard/admin/overview' },
 }));
 
 import DashboardLayout from '@/app/dashboard/layout';
@@ -236,8 +244,9 @@ describe('DashboardLayout -- Admin/Auth reset block: Platform Administration con
     expect(buildAdminNavMock).toHaveBeenCalled();
     expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
     expect(canUseCapabilityMock).not.toHaveBeenCalled();
-    expect(result.props.workspaceSwitcher.props.active).toBe('ADMIN');
-    expect(result.props.workspaceSwitcher.props.available).toEqual(['STUDENT', 'ADMIN']);
+    expect(result.props.workspaceSwitcher.props.label).toBe('Administración');
+    // Track A: no persona switcher; the way back to the Student persona is a nav link.
+    expect(JSON.stringify(result.props.groups)).toContain('/dashboard/today');
   });
 
   it('the same account outside admin routes keeps its Student workspace (and banner)', async () => {
@@ -248,7 +257,7 @@ describe('DashboardLayout -- Admin/Auth reset block: Platform Administration con
     requestPathname = '/dashboard/subjects';
 
     const result: any = await DashboardLayout({ children: null as any });
-    expect(result.props.workspaceSwitcher.props.active).toBe('STUDENT');
+    expect(result.props.workspaceSwitcher.props.label).toBe('Estudiante');
     expect(result.props.banner).toBeTruthy();
   });
 

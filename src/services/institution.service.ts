@@ -12,6 +12,7 @@
  * built; this is the minimum controlled mechanism the task allows.
  */
 import { db } from '@/lib/db';
+import { resolveDisplayIdentities } from '@/lib/identity/display-identity';
 
 export type InstitutionStatus = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
 export type MembershipRole = 'TEACHER' | 'INSTITUTION_ADMIN';
@@ -184,14 +185,26 @@ export async function listPendingMemberships(institutionId: string): Promise<Ins
   return result.rows.map(toMembership);
 }
 
-/** Professional Admin Console -- the global "Solicitudes pendientes" inbox needs every institution's pending requests at once, unlike the per-institution coordinator view above. STUDYUS_ADMIN only (never exposed to a coordinator, who only ever sees their own institution via the function above). */
-export async function listAllPendingMembershipsAcrossInstitutions(): Promise<Array<InstitutionMembership & { institutionName: string }>> {
+/**
+ * Professional Admin Console -- the global "Solicitudes pendientes" inbox needs every institution's pending requests at once, unlike the per-institution coordinator view above. STUDYUS_ADMIN only (never exposed to a coordinator, who only ever sees their own institution via the function above).
+ *
+ * Track A: each request carries the REQUESTER's identity (name + email),
+ * resolved server-side from the membership's own user_id -- an admin must
+ * never have to identify a person from an internal id.
+ */
+export async function listAllPendingMembershipsAcrossInstitutions(): Promise<Array<InstitutionMembership & { institutionName: string; requesterName: string | null; requesterEmail: string | null }>> {
   const result = await db.query(
     `SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, i.name AS institution_name
      FROM institution_memberships im JOIN institutions i ON i.id = im.institution_id
      WHERE im.status = 'PENDING' ORDER BY im.requested_at ASC`
   );
-  return result.rows.map((r: any) => ({ ...toMembership(r), institutionName: r.institution_name }));
+  const identities = await resolveDisplayIdentities(result.rows.map((r: any) => r.user_id));
+  return result.rows.map((r: any) => ({
+    ...toMembership(r),
+    institutionName: r.institution_name,
+    requesterName: identities.get(r.user_id)?.name ?? null,
+    requesterEmail: identities.get(r.user_id)?.email ?? null,
+  }));
 }
 
 /**
@@ -203,7 +216,7 @@ export async function listAllPendingMembershipsAcrossInstitutions(): Promise<Arr
  * same person is later approved) documented as a residual risk rather
  * than solved here with a new history table.
  */
-export async function listDecidedMemberships(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null }>> {
+export async function listDecidedMemberships(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null; userName: string | null }>> {
   const result = await db.query(
     `
     SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, u.email AS user_email
@@ -214,7 +227,13 @@ export async function listDecidedMemberships(institutionId: string): Promise<Arr
     `,
     [institutionId]
   );
-  return result.rows.map((r: any) => ({ ...toMembership(r), userEmail: r.user_email }));
+  // Track A: the person, not a uuid (resolved for this institution's own rows only).
+  const identities = await resolveDisplayIdentities(result.rows.map((r: any) => r.user_id));
+  return result.rows.map((r: any) => ({
+    ...toMembership(r),
+    userEmail: identities.get(r.user_id)?.email ?? r.user_email,
+    userName: identities.get(r.user_id)?.name ?? null,
+  }));
 }
 
 /**
@@ -464,15 +483,25 @@ export async function listApprovedTeachers(institutionId: string): Promise<Array
   return r.rows.map((row: any) => ({ membershipId: row.id, userId: row.user_id, email: row.email }));
 }
 
-/** Pending requests WITH the requester's email (the admin decides on a person, not a uuid). */
-export async function listPendingMembershipsWithEmail(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null }>> {
+/**
+ * Pending requests of ONE institution WITH the requester's identity (name +
+ * email) -- the admin decides on a person, not a uuid. Scoped by
+ * institution_id: identities are resolved only for this institution's own
+ * requesters (the caller has already authorized the viewer for it).
+ */
+export async function listPendingMembershipsWithEmail(institutionId: string): Promise<Array<InstitutionMembership & { userEmail: string | null; userName: string | null }>> {
   const r = await db.query(
     `SELECT im.id, im.institution_id, im.user_id, im.membership_role, im.status, im.requested_at, im.reviewed_at, im.reviewed_by_user_id, u.email AS user_email
      FROM institution_memberships im JOIN users u ON u.id = im.user_id
      WHERE im.institution_id = $1 AND im.status = 'PENDING' ORDER BY im.requested_at ASC`,
     [institutionId]
   );
-  return r.rows.map((row: any) => ({ ...toMembership(row), userEmail: row.user_email }));
+  const identities = await resolveDisplayIdentities(r.rows.map((row: any) => row.user_id));
+  return r.rows.map((row: any) => ({
+    ...toMembership(row),
+    userEmail: identities.get(row.user_id)?.email ?? row.user_email,
+    userName: identities.get(row.user_id)?.name ?? null,
+  }));
 }
 
 export async function getClassInInstitution(institutionId: string, classId: string): Promise<{ id: string; name: string; gradeId: string | null; gradeName: string | null } | null> {

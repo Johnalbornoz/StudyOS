@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
   const [institutionRequests, invitations, syncCheck] = await Promise.all([
     listAllPendingMembershipsAcrossInstitutions(),
     listPendingInvitations().catch(() => []),
-    detectSyncErrors(50).catch(() => ({ usersWithoutClerkMatch: [] })),
+    detectSyncErrors(50).catch(() => ({ usersWithoutClerkMatch: [] as string[], accounts: [] })),
   ]);
 
   return NextResponse.json({
@@ -28,6 +28,8 @@ export async function GET(_request: NextRequest) {
       institutionRequests,
       invitations,
       syncErrors: syncCheck.usersWithoutClerkMatch,
+      // Track A: identified accounts (name / email / state) for the inbox.
+      syncAccounts: syncCheck.accounts,
     },
   });
 }

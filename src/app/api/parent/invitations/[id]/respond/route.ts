@@ -45,6 +45,9 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
   const roleOutcome = await assignSelfServiceRole(clerkUserId, canonicalUser.id, 'PARENT');
   if (roleOutcome === 'REVOKED') return NextResponse.json({ error: 'ROLE_REVOKED' }, { status: 409 });
+  // One persona per account: a Student or Teacher account cannot become a
+  // Parent by accepting an invitation (the invitation stays pending).
+  if (roleOutcome === 'PERSONA_EXISTS') return NextResponse.json({ error: 'PERSONA_CONFLICT' }, { status: 409 });
 
   const parentId = await getOrCreateParentId(clerkUserId);
   const accepted = await acceptParentInvitation(invitationId, parentId, email);

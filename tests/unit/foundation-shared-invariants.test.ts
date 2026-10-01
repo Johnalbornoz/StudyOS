@@ -12,7 +12,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 const dbQueryMock = vi.fn();
-vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: vi.fn() } }));
+const clientQueryMock = vi.fn();
+vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: async () => ({ query: (...a: any[]) => clientQueryMock(...a), release: () => {} }) } }));
 vi.mock('@/lib/auth', async (orig) => ({ ...(await orig<any>()), getOrCreateStudentId: vi.fn().mockResolvedValue('student-1') }));
 const recordAdminActionMock = vi.fn();
 vi.mock('@/lib/admin/audit', () => ({ recordAdminAction: (...a: any[]) => recordAdminActionMock(...a) }));
@@ -27,10 +28,16 @@ const rolesRows = (roles: string[]) => ({ rows: roles.map((role) => ({ role, sta
 
 beforeEach(() => {
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });
+  clientQueryMock.mockReset().mockResolvedValue({ rows: [] });
   recordAdminActionMock.mockReset().mockResolvedValue(undefined);
 });
 
-describe('IDENTITY / MULTI-ROLE (1-5)', () => {
+// Track A product amendment (2026-10-01): one canonical user, ONE primary
+// persona; institution / StudyUS administration are capabilities. The
+// additive-persona assertions (4b) were replaced; the security invariants
+// (no duplicate user, audited grants, revoked never re-granted, privileged
+// roles never self-service) are unchanged.
+describe('IDENTITY / SINGLE PERSONA + CAPABILITIES (1-5)', () => {
   it('1+2. one User holds many roles: user_roles is UNIQUE (user_id, role) and keyed to the same users row', () => {
     const f1 = read('database/migrations/20260919_1000_f1_unified_identity.sql');
     expect(f1).toMatch(/CREATE TABLE[^;]*user_roles[\s\S]*UNIQUE \(user_id, role\)/);
@@ -38,9 +45,8 @@ describe('IDENTITY / MULTI-ROLE (1-5)', () => {
   });
 
   it('2. granting a role never creates a users row (role assignment only inserts into user_roles)', async () => {
-    dbQueryMock.mockResolvedValueOnce({ rows: [{ id: 'r1' }] });
     expect(await assignSelfServiceRole('clerk-1', 'user-1', 'PARENT')).toBe('GRANTED');
-    const sqls = dbQueryMock.mock.calls.map((c) => String(c[0]));
+    const sqls = [...dbQueryMock.mock.calls, ...clientQueryMock.mock.calls].map((c) => String(c[0]));
     expect(sqls.every((s) => !/INSERT INTO users/i.test(s))).toBe(true);
     expect(recordAdminActionMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'ROLE_ADDED', actorUserId: 'user-1', reason: 'SELF_SERVICE' }));
   });
@@ -54,21 +60,24 @@ describe('IDENTITY / MULTI-ROLE (1-5)', () => {
     expect(fn).toMatch(/throw new StudentRoleRequiredError\(\)/);
   });
 
-  it('4. STUDYUS_ADMIN coexists with STUDENT: both workspaces are available, admin does not hide Student', async () => {
+  it('4. STUDYUS_ADMIN is a capability alongside the one persona: both contexts exist, admin does not hide Student', async () => {
     dbQueryMock.mockResolvedValue(rolesRows(['STUDYUS_ADMIN', 'STUDENT']));
     const available = await resolveAvailableWorkspaces('user-1');
     expect(available).toEqual(expect.arrayContaining(['STUDENT', 'ADMIN']));
   });
 
-  it('4b. an admin-only actor is always offered "add another role" (workspace switcher), and a self-service role can be added on top of any role', () => {
+  it('4b. no "add another role": the shell shows the ONE persona, never a persona switcher; the account page never offers a second persona', () => {
     const sw = read('src/app/dashboard/WorkspaceSwitcher.tsx');
-    expect(sw).toMatch(/available\.length <= 1[\s\S]*href="\/role-select"/);
-    expect(read('src/app/dashboard/layout.tsx')).toMatch(/addRoleLabel=\{t\['workspace\.addRole'\]\}/);
-    expect(read('src/app/role-select/page.tsx')).toMatch(/rolesNotYetHeld/);
+    expect(sw).not.toMatch(/role-select|addRole|\/api\/identity\/workspace|useState/);
+    expect(read('src/app/dashboard/layout.tsx')).not.toMatch(/workspace\.addRole|addRoleLabel/);
+    const page = read('src/app/role-select/page.tsx');
+    expect(page).not.toMatch(/rolesNotYetHeld|account\.addTitle|Añadir otro rol/);
+    expect(page).toMatch(/const canChoose = !persona && !revokedPersona/);
+    expect(read('src/app/api/identity/roles/select/route.ts')).toMatch(/outcome === 'PERSONA_EXISTS'[\s\S]*status: 409/);
   });
 
   it('4c. a REVOKED role is never silently re-granted by self-service', async () => {
-    dbQueryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ status: 'REVOKED' }] });
+    clientQueryMock.mockImplementation(async (sql: string) => (/FROM user_roles WHERE user_id/.test(sql) ? { rows: [{ role: 'STUDENT', status: 'REVOKED' }] } : { rows: [] }));
     expect(await assignSelfServiceRole('clerk-1', 'user-1', 'STUDENT')).toBe('REVOKED');
     expect(recordAdminActionMock).not.toHaveBeenCalled();
     expect(read('src/app/api/identity/roles/select/route.ts')).toMatch(/outcome === 'REVOKED'[\s\S]*ROLE_REVOKED[\s\S]*status: 409/);

@@ -158,32 +158,47 @@ async function main() {
   });
   check('SETUP.student-a-first-run', profile.status === 200, `${profile.status}`);
 
-  // ------------------------------------------------------------------ A1 MULTIROLE
+  // ------------------------------------------------------------------ A1 SINGLE PERSONA + CAPABILITIES
+  // Product amendment (2026-10-01): ONE primary persona per account;
+  // institution / StudyUS administration are capabilities, never personas.
   check('A1.unauthenticated-401', (await get('/api/identity/me', null)).status === 401);
-  const me = await get('/api/identity/me', 'multi');
-  check('A1.multi-three-roles', JSON.stringify([...(me.body?.data?.roles ?? [])].sort()) === JSON.stringify(['PARENT', 'STUDENT', 'TEACHER']), JSON.stringify(me.body?.data?.roles));
-  check('A1.multi-three-workspaces', (me.body?.data?.availableWorkspaces ?? []).length === 3);
-  check('A1.switch-to-parent', (await post('/api/identity/workspace', 'multi', { workspace: 'PARENT' })).status === 200);
-  check('A1.active-workspace-explicit', (await get('/api/identity/me', 'multi')).body?.data?.activeWorkspace === 'PARENT');
-  await page('1-role-switcher', '/dashboard/parent', 'multi', ['Espacio de trabajo', 'Padre/Madre', 'Familia']);
-  await page('2-account-add-role', '/role-select', 'multi', ['StudyUS']);
-  check('A1.switch-unavailable-denied', (await post('/api/identity/workspace', 'multi', { workspace: 'INSTITUTION' })).status === 403);
+  const personaOf: Record<string, string> = { 'student-a': 'STUDENT', 'student-b': 'STUDENT', 'student-c': 'STUDENT', 'parent-a': 'PARENT', 'parent-b': 'PARENT', 'teacher-a': 'TEACHER', 'teacher-b': 'TEACHER' };
+  const rolesBefore = await n(`SELECT COUNT(*) n FROM user_roles WHERE user_id = ANY($1::uuid[])`, [Object.values(x.users)]);
+  // Invariants 2-7: no persona can self-add another persona (409, nothing written).
+  const conflicts: Array<[Tag, string]> = [
+    ['student-a', 'PARENT'], ['student-a', 'TEACHER'],
+    ['parent-a', 'STUDENT'], ['parent-a', 'TEACHER'],
+    ['teacher-a', 'STUDENT'], ['teacher-a', 'PARENT'],
+  ];
+  for (const [who, role] of conflicts) {
+    const r = await post('/api/identity/roles/select', who, { role });
+    check(`A1.${personaOf[who].toLowerCase()}-cannot-add-${role.toLowerCase()}`, r.status === 409 && r.body?.error === 'PERSONA_EXISTS', `${r.status} ${r.text.slice(0, 80)}`);
+  }
+  check('A1.no-role-rows-written', (await n(`SELECT COUNT(*) n FROM user_roles WHERE user_id = ANY($1::uuid[])`, [Object.values(x.users)])) === rolesBefore);
+  // Invariant 8: the persona is stable across logins (every run uses fresh sessions) and is the active workspace.
+  for (const who of ['student-a', 'parent-a', 'teacher-a'] as Tag[]) {
+    const me = (await get('/api/identity/me', who)).body?.data;
+    const personas = (me?.roles ?? []).filter((r: string) => ['STUDENT', 'PARENT', 'TEACHER'].includes(r));
+    check(`A1.persona-stable-${who}`, personas.length === 1 && personas[0] === personaOf[who] && me?.activeWorkspace === personaOf[who], JSON.stringify(me));
+    check(`A1.reselect-own-persona-noop-${who}`, (await post('/api/identity/roles/select', who, { role: personaOf[who] })).status === 200);
+  }
+  // Invariant 9: the STUDYUS_ADMIN capability is not a second persona.
+  const meC = (await get('/api/identity/me', 'student-c')).body?.data;
+  check('A1.admin-capability-not-persona', JSON.stringify((meC?.roles ?? []).filter((r: string) => ['STUDENT', 'PARENT', 'TEACHER'].includes(r))) === '["STUDENT"]' && meC?.roles?.includes('STUDYUS_ADMIN') && meC?.activeWorkspace === 'STUDENT', JSON.stringify(meC));
+  check('A1.admin-capability-cannot-add-persona', (await post('/api/identity/roles/select', 'student-c', { role: 'PARENT' })).status === 409);
+  check('A1.switch-to-foreign-persona-denied', (await post('/api/identity/workspace', 'student-a', { workspace: 'PARENT' })).status === 403);
   check('A1.privileged-not-self-service', (await post('/api/identity/roles/select', 'teacher-a', { role: 'INSTITUTION_ADMIN' })).status === 400);
   check('A1.privileged-not-self-service-admin', (await post('/api/identity/roles/select', 'teacher-a', { role: 'STUDYUS_ADMIN' })).status === 400);
-  // An institution admin adds the Student role on the same account.
-  const addStudent = await post('/api/identity/roles/select', 'inst-a', { role: 'STUDENT' });
-  check('A1.admin-adds-student', addStudent.status === 200 && addStudent.body?.data?.activeWorkspace === 'STUDENT', `${addStudent.status} ${addStudent.text.slice(0, 120)}`);
-  check('A1.no-duplicate-user', (await n(`SELECT COUNT(*) n FROM users WHERE email = $1`, [emailFor('inst-a')])) === 1);
-  check('A1.one-student-row', (await n(`SELECT COUNT(*) n FROM students WHERE user_id = $1`, [x.users['inst-a']])) === 1);
-  check('A1.student-row-own-identity', (await q1(`SELECT email FROM students WHERE user_id = $1`, [x.users['inst-a']]))?.email === emailFor('inst-a'));
-  check('A1.role-add-audited', (await n(`SELECT COUNT(*) n FROM admin_audit_log WHERE actor_user_id = $1 AND action = 'ROLE_ADDED'`, [x.users['inst-a']])) >= 1);
-  check('A1.admin-role-kept', (await get('/api/identity/me', 'inst-a')).body?.data?.roles?.includes('INSTITUTION_ADMIN'));
-  check('A1.readd-idempotent', (await post('/api/identity/roles/select', 'inst-a', { role: 'STUDENT' })).status === 200 && (await n(`SELECT COUNT(*) n FROM students WHERE user_id = $1`, [x.users['inst-a']])) === 1);
-  // Back to the institution workspace for the institution flow.
-  check('A1.switch-back-institution', (await post('/api/identity/workspace', 'inst-a', { workspace: 'INSTITUTION' })).status === 200);
-  // Revoked role: an administrator revokes parent-b's PARENT role (admin-console write, applied directly).
+  check('A1.no-duplicate-users', (await n(`SELECT COUNT(*) n FROM (SELECT email FROM users WHERE email LIKE 'studyus-ta-%' GROUP BY email HAVING COUNT(*) > 1) d`)) === 0);
+  check('A1.one-student-row-per-student', (await n(`SELECT COUNT(*) n FROM (SELECT user_id FROM students WHERE user_id = ANY($1::uuid[]) GROUP BY user_id HAVING COUNT(*) > 1) d`, [Object.values(x.users)])) === 0);
+  check('A1.student-row-own-identity', (await q1(`SELECT email FROM students WHERE user_id = $1`, [x.users['student-a']]))?.email === emailFor('student-a'));
+  await page('1-persona-shell-no-switcher', '/dashboard/teacher', 'teacher-a', ['Profesor']);
+  const shell = await call('GET', '/dashboard/teacher', 'teacher-a');
+  check('PAGE.1b-no-add-role-anywhere', !/Añadir otro rol|Add another role|role-select/.test(shell.text));
+  // Revoked persona: never re-entered, and still blocks another persona.
   await db.query(`UPDATE user_roles SET status = 'REVOKED', revoked_at = NOW() WHERE user_id = $1 AND role = 'PARENT'`, [x.users['parent-b']]);
-  check('A1.revoked-not-reentered', (await post('/api/identity/roles/select', 'parent-b', { role: 'PARENT' })).status === 409);
+  check('A1.revoked-not-reentered', (await post('/api/identity/roles/select', 'parent-b', { role: 'PARENT' })).body?.error === 'ROLE_REVOKED');
+  check('A1.revoked-persona-blocks-other', (await post('/api/identity/roles/select', 'parent-b', { role: 'STUDENT' })).body?.error === 'PERSONA_EXISTS');
   check('A1.revoked-explained', (await get('/api/identity/me', 'parent-b')).body?.data?.revokedRoles?.includes('PARENT'));
   check('A1.revoked-workspace-denied', (await post('/api/identity/workspace', 'parent-b', { workspace: 'PARENT' })).status === 403);
   check('A1.revoked-parent-cannot-request', (await post('/api/parent/child-requests', 'parent-b', { email: emailFor('student-a') })).status === 403);
@@ -225,13 +240,13 @@ async function main() {
   check('A2.student-declines', (await post('/api/parent/requests', 'student-a', { parentId: parentBProfile, accept: false })).status === 200);
   check('A2.declined-no-access', denied(await get(`/api/parent/learners/${x.students['student-a']}/overview`, 'parent-b')));
   check('A2.parent-notified-declined', ((await get('/api/notifications/inbox', 'parent-b')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'PARENT_LINK_DECLINED'));
-  // Multiple children: the multi-role account (as a Student) accepts parent-a too.
-  await post('/api/parent/child-requests', 'parent-a', { email: emailFor('multi') });
-  check('A2.multi-child-accept', (await post('/api/parent/requests', 'multi', { parentId: parentAProfile, accept: true })).status === 200);
+  // Multiple children: Student C accepts parent-a too.
+  await post('/api/parent/child-requests', 'parent-a', { email: emailFor('student-c') });
+  check('A2.second-child-accept', (await post('/api/parent/requests', 'student-c', { parentId: parentAProfile, accept: true })).status === 200);
   check('A2.multiple-children', ((await get('/api/parent/learners', 'parent-a')).body?.data?.learners ?? []).length === 2);
   // Revoked relationship: the Student revokes; access ends immediately.
-  check('A2.student-revokes', (await post('/api/parent/relationships/revoke', 'multi', { parentId: parentAProfile })).status === 200);
-  check('A2.revoked-no-access', denied(await get(`/api/parent/learners/${x.students['multi']}/overview`, 'parent-a')));
+  check('A2.student-revokes', (await post('/api/parent/relationships/revoke', 'student-c', { parentId: parentAProfile })).status === 200);
+  check('A2.revoked-no-access', denied(await get(`/api/parent/learners/${x.students['student-c']}/overview`, 'parent-a')));
   check('A2.revoked-not-listed', ((await get('/api/parent/learners', 'parent-a')).body?.data?.learners ?? []).length === 1);
 
   // ------------------------------------------------------------------ A3/A4 TEACHER + INSTITUTION
@@ -267,6 +282,12 @@ async function main() {
   check('A4.approve-teacher', (await post(`/api/institutions/${x.instA}/memberships/${membershipA}/decide`, 'inst-a', { decision: 'APPROVED' })).status === 200);
   check('A3.teacher-notified-approved', ((await get('/api/notifications/inbox', 'teacher-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'TEACHER_MEMBERSHIP_APPROVED'));
   check('A3.approved-no-scope-no-classes', ((await get('/api/teacher/classes', 'teacher-a')).body?.data?.classes ?? []).length === 0);
+  // Invariants 10-11: the approved teacher reaches the Teacher workspace (never stranded) and sees the usable empty state.
+  check('A3.approved-teacher-workspace-is-teacher', (await get('/api/identity/me', 'teacher-a')).body?.data?.activeWorkspace === 'TEACHER');
+  check('A3.approved-teacher-can-open-workspace', (await post('/api/identity/workspace', 'teacher-a', { workspace: 'TEACHER' })).status === 200);
+  await page('6b-approved-teacher-empty-state', '/dashboard/teacher', 'teacher-a', ['Aún no tienes clases asignadas.', 'Cuando tu institución te asigne una clase o grado, aparecerá aquí.', 'Aprobado']);
+  const accountPage = await call('GET', '/role-select', 'teacher-a');
+  check('PAGE.6c-account-page-reachable', accountPage.status === 200);
   // Scope assignment.
   check('SEC.spoofed-class-id-cross-tenant', (await post(`/api/institutions/${x.instA}/assignments`, 'inst-a', { institutionMembershipId: membershipA, classId: x.classB })).status === 422);
   check('SEC.scope-required', (await post(`/api/institutions/${x.instA}/assignments`, 'inst-a', { institutionMembershipId: membershipA })).status === 400);
@@ -390,6 +411,7 @@ async function main() {
   check('DATA.no-evidence-for-uninvolved', (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = ANY($1::uuid[])`, [fixtureStudents.filter((s) => s !== x.students['student-a'])])) === 0);
   check('DATA.only-owner-practice-evidence', (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = ANY($1::uuid[])`, [fixtureStudents])) === evidenceA, `before=${evidenceBefore} afterA=${evidenceA}`);
   check('DATA.mastery-only-via-engine', (await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[]) AND student_id <> $2`, [fixtureStudents, x.students['student-a']])) === 0, `before=${masteryBefore}`);
+  check('DATA.single-persona-per-account', (await n(`SELECT COUNT(*) n FROM (SELECT user_id FROM user_roles WHERE role IN ('STUDENT', 'PARENT', 'TEACHER') AND status = 'ACTIVE' GROUP BY user_id HAVING COUNT(*) > 1) d`)) === 0);
   check('DATA.duplicate-users-0', (await n(`SELECT COUNT(*) n FROM (SELECT clerk_id FROM users GROUP BY clerk_id HAVING COUNT(*) > 1) d`)) === 0);
   check('DATA.duplicate-students-0', (await n(`SELECT COUNT(*) n FROM (SELECT user_id FROM students WHERE user_id IS NOT NULL GROUP BY user_id HAVING COUNT(*) > 1) d`)) === 0);
   check('DATA.cross-institution-scopes-0', (await n(

@@ -20,7 +20,7 @@ import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
 import { ADMIN_HOME } from '@/lib/admin/sections';
 import { getOrCreateCanonicalUser } from './canonical-user.service';
 import { getActiveWorkspace, resolveAvailableWorkspaces, resolveDefaultWorkspace } from './workspace.service';
-import type { Workspace } from './types';
+import { personaWorkspaceOf, type Workspace } from './types';
 
 export const ROLE_SELECT_PATH = '/role-select';
 
@@ -43,7 +43,9 @@ export interface WorkspaceEntryInput {
 /** Pure decision -- see module comment. */
 export function decideWorkspaceEntry({ available, stored, defaultWorkspace }: WorkspaceEntryInput): WorkspaceEntry {
   if (available.length === 0) return { kind: 'REDIRECT', to: ROLE_SELECT_PATH };
-  const active = (stored && available.includes(stored) ? stored : null) ?? defaultWorkspace ?? available[0];
+  // Track A: the account's ONE persona is its home; capabilities
+  // (institution / StudyUS admin) are where a capability-only account lands.
+  const active = personaWorkspaceOf(available, stored) ?? (stored && available.includes(stored) ? stored : null) ?? defaultWorkspace ?? available[0];
   if (active === 'STUDENT') return { kind: 'STUDENT' };
   return { kind: 'REDIRECT', to: WORKSPACE_HOME[active] };
 }

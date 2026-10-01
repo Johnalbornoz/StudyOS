@@ -2,7 +2,8 @@
 
 - **Base:** Foundation `2f94a1f2fba3bff10b04b933eacfde775be75672` (FOUNDATION_VERDICT=PASS, frozen).
 - **Branch:** `track-a/roles-e2e`. `main`, `develop`, Preview and Production are untouched. Track B is not merged.
-- **Scope:** A1 multi-role, A2 Parent, A3 Teacher, A4 Institution, A5 integrated flow, A6 DEV certification.
+- **Scope:** A1 identity / single persona, A2 Parent, A3 Teacher, A4 Institution, A5 integrated flow, A6 DEV certification.
+- **Product amendment PA-01 (2026-10-01):** one canonical user → ONE primary functional persona (STUDENT / PARENT / TEACHER); institution and StudyUS administration are capabilities. Recorded in `docs/foundation/ROLES_EXAMS_SHARED_FOUNDATION.md` (PA-01). This replaces the additive multi-role behaviour Track A first shipped.
 - **Student stays frozen.** No Learning Engine change. Role modules assign, observe, organize and report. They never write mastery, knowledge state, evidence, retention, transfer, misconceptions or readiness (source-guarded, §6).
 
 ## 1. What was reused from the Foundation
@@ -41,20 +42,19 @@ It is additive. It creates no table, drops no column and rewrites no row.
 
 ## 3. Functional flows
 
-### A1 Multi-role (`/role-select` → "Tu cuenta")
+### A1 Identity — single primary persona (PA-01)
 
-One account, several roles. The page shows:
+- **First entry:** an account with no persona sees `/role-select` once and chooses exactly ONE persona (the server refuses a second: 409 `PERSONA_EXISTS`, one transaction serialized on the user row). It then lands in that persona's workspace / onboarding.
+- **Afterwards, never role selection again.** `/role-select` becomes an account page whose primary action is **"Ir a mi espacio de {persona}"** (e.g. *Ir a mi espacio de Profesor*). A Teacher also sees the institutional authorization status. Nobody is stranded there after approval.
+- **No "Añadir otro rol", no persona switcher.** The shell shows the account's persona as a plain label. Capabilities (Institución, Administración) are navigation links; `/dashboard/institution/**` and `/dashboard/admin/**` render in their capability context and every other page renders in the persona. A stored capability workspace never displaces the persona.
+- **Capabilities are not personas.** An institution admin or StudyUS admin may also hold one persona; the capability never counts as "another role" and is never selectable. Self-service still refuses INSTITUTION_ADMIN / STUDYUS_ADMIN (400).
+- **Revoked persona:** never re-granted, still blocks choosing another (`PERSONA_EXISTS`), explained on the account page.
+- **Admin console:** a persona is assigned only when the account has none active; changing persona = revoke, then assign (deliberate).
+- **Parent invitations:** accepting grants PARENT only to an account without a persona (`PERSONA_CONFLICT` otherwise).
+- **One inbox per account:** notifications of the persona plus its capabilities, scoped per (user, workspace).
+- **DEV data:** two real DEV accounts held two personas (`i***@gmail.com` STUDENT+TEACHER, `p***@jalbornoz.com` TEACHER+PARENT). Normalized deterministically, DEV only, nothing deleted: keep the persona carrying data, else the earliest granted; soft-revoke the rest (audited `ROLE_REVOKED`, reason `TRACK_A_SINGLE_PERSONA_DEV_NORMALIZATION`). Result: STUDENT kept for `i***`, TEACHER kept for `p***`. Script: `scripts/operations/track-a-single-persona-normalize.ts` (dry run by default).
 
-- Active roles, with the active workspace marked. **Abrir** switches through the fail-closed workspace API, then does a full navigation.
-- **Añadir otro rol** for self-service roles the account does not hold. The added role becomes the active workspace.
-- Revoked roles, explained and never offered for re-adding.
-- For Students: who can see their progress, with revoke and invite.
-
-The workspace switcher stays reachable in the phone drawer (44 px). Interface language is one preference per person across workspaces.
-
-**Fixes in this area:**
-
-- An admin granting STUDENT to another account used to copy the admin's email and name onto the new student row (`currentUser()` is the admin). It now resolves the target through the Clerk Backend API.
+Also fixed earlier in A1: an admin granting STUDENT to another account used to copy the admin's email and name onto the new student row; it now resolves the target through the Clerk Backend API.
 
 ### A2 Parent
 
@@ -103,6 +103,8 @@ The Institution Admin owns the structure (product decision). The admin can:
 - approve, reject or revoke teacher requests (TEACHER only; audited; the teacher is notified).
 
 The StudyUS admin creates institutions and assigns each institution's admin by email. Both actions are audited.
+
+**Manual-gate fix (identity of requesters):** the StudyUS admin inbox ("Membresías institucionales pendientes") and the institution's own requests page now show WHO is asking — *Nombre · email* (email alone when no name), then role, institution and date — resolved server-side from the membership's own user (StudyUS records, then the Clerk profile), only for rows the viewer is already authorized to see. The Clerk ↔ StudyUS inconsistency rows show name / email / state / roles with a link to the user's admin page instead of an anonymous "internal account".
 
 **Fixes in this area:**
 
@@ -158,7 +160,6 @@ Every workspace has its inbox at `/dashboard/notifications`, with mark-read and 
 |---|---|
 | Exam assignment (EXAM target) in the class composer | Deferred to cross-track integration |
 | F12 institution intelligence pages (learners, coverage, readiness, interventions, attention) show engineering-English explainability strings; raw UUID inputs on coverage / readiness | P2 (certified F12 surfaces, outside Track A changes) |
-| Parent naming: the workspace switcher says "Padre/Madre", the page says "Familia" | P3 |
 | DRAFT state for assignments (publish is one step) | P3 (Foundation §16 non-blocking) |
 | Institution seat / licence model | P3 (Foundation §16 non-blocking) |
 | `scripts/e2e-cognitive-loop.ts` throws `INVALID_CURRENT_TRANSFER_EVIDENCE`; identical at the base SHA (pre-existing script drift) | P3 (not Track A) |

@@ -101,7 +101,7 @@ describe('Role surfaces are localized', () => {
   it('the account page has no hard-coded Spanish role labels any more', () => {
     const code = strip(read('src/app/role-select/page.tsx'));
     expect(code).not.toMatch(/'Padre, madre, tutor o coach'|'Profesor'|Añadir rol:/);
-    expect(code).toMatch(/t\[`role\.\$\{role\}\.name` as const\]/);
+    expect(code).toMatch(/t\[`role\.\$\{p\}\.name` as MessageKey\]/);
   });
 
   it('the institution sub-navigation has no hard-coded fallback label and wraps on phones', () => {
@@ -113,6 +113,53 @@ describe('Role surfaces are localized', () => {
   it('the notifications page never provisions a Student identity (it works in every workspace)', () => {
     const code = strip(read('src/app/dashboard/notifications/page.tsx'));
     expect(code).not.toMatch(/getOrCreateStudentId/);
-    expect(code).toMatch(/resolveCurrentWorkspace/);
+    expect(code).toMatch(/listAccountInbox/);
+  });
+});
+
+describe('Single primary persona (Track A product amendment)', () => {
+  const walk = (dir: string): string[] => {
+    const { readdirSync, statSync } = require('fs') as typeof import('fs');
+    return readdirSync(join(process.cwd(), dir)).flatMap((name: string) => {
+      const rel = `${dir}/${name}`;
+      return statSync(join(process.cwd(), rel)).isDirectory() ? walk(rel) : /\.(tsx?|ts)$/.test(name) ? [rel] : [];
+    });
+  };
+
+  it('no UI or API offers "add another role" any more (the old key may exist in the catalog, nothing renders it)', () => {
+    const offenders = walk('src')
+      .filter((f) => !f.startsWith('src/lib/i18n/'))
+      .filter((f) => /workspace\.addRole|addRoleLabel|Añadir otro rol|rolesNotYetHeld/.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  it('the account page gives a persona holder "Ir a mi espacio de {persona}" and never the persona choice', () => {
+    const page = strip(read('src/app/role-select/page.tsx'));
+    expect(page).toMatch(/fillMessage\(t\['account\.goToWorkspace'\], \{ persona: personaName \}\)/);
+    expect(page).toMatch(/\{canChoose && \(/);
+    expect(getMessages('es')['account.goToWorkspace'].replace('{persona}', getMessages('es')['role.TEACHER.name'])).toBe('Ir a mi espacio de Profesor');
+  });
+
+  it('an approved teacher with no classes gets the specified empty state (the workspace is never blocked)', () => {
+    const es = getMessages('es');
+    expect(es['teacherHome.noClasses']).toBe('Aún no tienes clases asignadas.');
+    expect(es['teacherHome.noClassesApproved']).toBe('Cuando tu institución te asigne una clase o grado, aparecerá aquí.');
+    const page = strip(read('src/app/dashboard/teacher/page.tsx'));
+    expect(page).toMatch(/EmptyState title=\{t\['teacherHome\.noClasses'\]\} body=\{approved \? t\['teacherHome\.noClassesApproved'\]/);
+  });
+
+  it('capabilities are reached by route, never by switching: institution and admin pages force their context; other pages render the persona', async () => {
+    const { resolveShellContext } = await import('@/lib/admin/shell-context');
+    const available = ['TEACHER', 'INSTITUTION', 'ADMIN'] as const;
+    expect(resolveShellContext({ pathname: '/dashboard/institution/x', available: [...available], stored: 'TEACHER', defaultWorkspace: 'TEACHER' }).workspace).toBe('INSTITUTION');
+    expect(resolveShellContext({ pathname: '/dashboard/admin/users', available: [...available], stored: 'TEACHER', defaultWorkspace: 'TEACHER' }).workspace).toBe('ADMIN');
+    expect(resolveShellContext({ pathname: '/dashboard/notifications', available: [...available], stored: 'ADMIN', defaultWorkspace: 'TEACHER' }).workspace).toBe('TEACHER');
+    expect(resolveShellContext({ pathname: '/dashboard', available: ['INSTITUTION'], stored: null, defaultWorkspace: 'INSTITUTION' }).workspace).toBe('INSTITUTION');
+  });
+
+  it('the admin console can assign a persona only when the account has none active', () => {
+    const svc = strip(read('src/services/user-admin.service.ts'));
+    expect(svc).toMatch(/role IN \('STUDENT', 'PARENT', 'TEACHER'\) AND role <> \$2 AND status = 'ACTIVE'/);
+    expect(svc).toMatch(/throw new PersonaExistsError\(\)/);
   });
 });

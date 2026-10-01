@@ -9,9 +9,10 @@ import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
-import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, type Workspace } from '@/lib/identity';
+import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, personaWorkspaceOf, isPersonaWorkspace, type Workspace } from '@/lib/identity';
+import { WORKSPACE_HOME } from '@/lib/identity/workspace-entry';
 import { canUseCapability } from '@/lib/entitlements';
-import { countUnread } from '@/lib/notifications/role-notifications.service';
+import { countAccountUnread } from '@/lib/notifications/role-notifications.service';
 import LicenseBanner from './LicenseBanner';
 import { getInterfaceLanguage, getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -160,7 +161,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       // inbox (role-notifications.service), so they get an unread badge too.
       const [lang, unread] = await Promise.all([
         getUserInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const),
-        countUnread(canonicalUser.id, activeWorkspace).catch(() => 0),
+        countAccountUnread(canonicalUser.id, availableWorkspaces).catch(() => 0),
       ]);
       locale = lang;
       notifCount = unread;
@@ -202,13 +203,33 @@ export default async function DashboardLayout({ children }: { children: React.Re
     })),
   }));
 
+  // Track A product amendment: the indicator names the account's ONE
+  // persona (or the capability context that is open); there is no persona
+  // switching and no "add another role".
   const workspaceLabels: Record<WorkspaceOption, string> = {
-    STUDENT: t['workspace.student'],
-    PARENT: t['workspace.parent'],
-    TEACHER: t['workspace.teacher'],
-    INSTITUTION: t['workspace.institution'],
+    STUDENT: t['role.STUDENT.name'],
+    PARENT: t['role.PARENT.name'],
+    TEACHER: t['role.TEACHER.name'],
+    INSTITUTION: t['role.INSTITUTION_ADMIN.name'],
     ADMIN: t['workspace.admin'],
   };
+
+  // Capabilities (institution administration, StudyUS administration) are
+  // ordinary links, plus a way back to the persona from a capability page.
+  const personaWorkspace = personaWorkspaceOf(availableWorkspaces);
+  const capabilityItems: ResolvedNavGroup['items'] = [];
+  if (availableWorkspaces.includes('INSTITUTION') && activeWorkspace !== 'INSTITUTION') {
+    capabilityItems.push({ key: 'cap-institution', href: WORKSPACE_HOME.INSTITUTION, label: t['capability.institution'], iconKey: 'Building2' });
+  }
+  if (availableWorkspaces.includes('ADMIN') && activeWorkspace !== 'ADMIN' && !(activeWorkspace === 'STUDENT' && isAdmin)) {
+    capabilityItems.push({ key: 'cap-admin', href: WORKSPACE_HOME.ADMIN, label: t['capability.admin'], iconKey: 'ShieldCheck' });
+  }
+  if (personaWorkspace && !isPersonaWorkspace(activeWorkspace)) {
+    capabilityItems.push({ key: 'cap-persona', href: WORKSPACE_HOME[personaWorkspace], label: t['capability.backToPersona'], iconKey: 'RotateCcw' });
+  }
+  if (capabilityItems.length > 0) {
+    navGroups.push({ kind: 'UTILITY', title: t['capability.groupTitle'], items: capabilityItems });
+  }
 
   return (
     <LearnerShell
@@ -226,12 +247,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
       workspaceSwitcher={
         <WorkspaceSwitcher
-          available={availableWorkspaces as WorkspaceOption[]}
-          active={activeWorkspace as WorkspaceOption}
-          labels={workspaceLabels}
-          switcherLabel={t['workspace.switcherLabel']}
-          errorLabel={t['error.generic']}
-          addRoleLabel={t['workspace.addRole']}
+          label={workspaceLabels[activeWorkspace as WorkspaceOption]}
+          ariaLabel={t['workspace.switcherLabel']}
         />
       }
       banner={

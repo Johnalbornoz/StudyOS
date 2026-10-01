@@ -44,6 +44,11 @@ export async function POST(request: NextRequest) {
       // An administrator revoked this role: self-service never re-grants it.
       return NextResponse.json({ error: 'ROLE_REVOKED' }, { status: 409 });
     }
+    if (outcome === 'PERSONA_EXISTS') {
+      // Track A product amendment: one primary persona per account -- never
+      // a second one by self-service.
+      return NextResponse.json({ error: 'PERSONA_EXISTS' }, { status: 409 });
+    }
 
     // Track A (explicit active workspace): the role the user just chose
     // becomes the active workspace -- adding Parent while in Teacher lands

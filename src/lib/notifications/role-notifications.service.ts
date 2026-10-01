@@ -168,3 +168,29 @@ export async function markInboxRead(userId: string, workspace: Workspace, ids?: 
   const r = await db.query(`UPDATE notifications n SET read_at = NOW() WHERE ${scope.where} AND n.read_at IS NULL${idFilter}`, params);
   return r.rowCount ?? 0;
 }
+
+/**
+ * Track A product amendment: ONE account inbox -- the persona's plus every
+ * capability the account holds (institution / StudyUS administration), so
+ * an institution request is never hidden because its admin is also, say, a
+ * Teacher. Each part is still scoped by (user, workspace).
+ */
+export async function listAccountInbox(userId: string, workspaces: readonly Workspace[], limit = 50): Promise<Array<InboxNotification & { workspace: Workspace }>> {
+  const parts = await Promise.all(workspaces.map(async (w) => (await listInbox(userId, w, limit)).map((n) => ({ ...n, workspace: w }))));
+  const seen = new Set<string>();
+  return parts
+    .flat()
+    .filter((n) => (seen.has(n.id) ? false : (seen.add(n.id), true)))
+    .sort((a, b) => new Date(b.deliveredAt).getTime() - new Date(a.deliveredAt).getTime())
+    .slice(0, limit);
+}
+
+export async function countAccountUnread(userId: string, workspaces: readonly Workspace[]): Promise<number> {
+  const counts = await Promise.all(workspaces.map((w) => countUnread(userId, w)));
+  return counts.reduce((a, b) => a + b, 0);
+}
+
+export async function markAccountInboxRead(userId: string, workspaces: readonly Workspace[], ids?: string[]): Promise<number> {
+  const counts = await Promise.all(workspaces.map((w) => markInboxRead(userId, w, ids)));
+  return counts.reduce((a, b) => a + b, 0);
+}

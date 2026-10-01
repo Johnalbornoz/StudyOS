@@ -5,6 +5,28 @@
 - **Purpose:** this is the common base for Track A (Roles E2E) and Track B (Exam Core and verticals).
 - **Outcome of the audit:** the existing architecture already supports both tracks. The foundation therefore adds **no new architecture and no migration**. It hardens seven shared invariants that both tracks depend on (§14), and pins the contracts with tests.
 
+## Product amendment PA-01 (2026-10-01) — single primary persona
+
+**Decision (product owner):** the principle *"One canonical User, multiple functional roles"* is REPLACED by:
+
+> **One canonical User, one primary functional persona; administrative and institutional privileges are separate capabilities.**
+
+| Concept | Values | How it is obtained |
+|---|---|---|
+| Primary persona (exactly one per account) | STUDENT · PARENT · TEACHER | Chosen once, self-service, at first entry. Stable across sessions. Changing it is a deliberate account-management action (an administrator revokes the current persona, then assigns another), never "add another role". |
+| Capability (zero or more) | INSTITUTION_ADMIN · STUDYUS_ADMIN | Invitation / allowlist / audited admin console, as before. Never offered for selection, never counted as a persona, reached by route (`/dashboard/institution/**`, `/dashboard/admin/**`). |
+
+**What changed (Track A, branch `track-a/roles-e2e`):**
+- `assignSelfServiceRole` refuses a second persona (`PERSONA_EXISTS`, 409), in one transaction serialized on the user row. A capability does not count as a persona.
+- The admin console assigns a persona only when the account has no active one (`PersonaExistsError`, 409).
+- The "add another role" link and the persona switcher are removed. The shell shows the account's persona; capabilities are plain navigation links; non-capability pages always render in the persona's workspace.
+- Accepting a parent invitation grants PARENT only to an account with no persona (`PERSONA_CONFLICT` otherwise).
+- DEV accounts created under the additive model were normalized deterministically (soft revoke, audited; `scripts/operations/track-a-single-persona-normalize.ts`). Preview / Production were not touched; promoting this amendment requires the same normalization first.
+
+**What is preserved unchanged:** the canonical identity model (one `users` row per person, no duplicates), authorization boundaries, ownership fixes (F2, F7), audit logging, revoked-role handling (a revoked persona is never re-granted and still counts as the account's persona), cross-tenant security (F3), Student route protections, Institution protections, Exam protections (F1, F4, F5).
+
+Sections §3, §14-F6, §15-F01 and §17-A1 below are superseded where they describe additive personas; they are kept for history and annotated.
+
 ## 1. System context
 
 StudyUS ("No estudies más. Estudia mejor.") keeps the Student at the centre. The Learning Engine stays the only authority on cognition: mastery, provisional mastery, retention, transfer, misconceptions, learning readiness, and the next learning step.
@@ -61,7 +83,7 @@ Inst.   ─┘                                     │
 | `profiles.user_type` | Legacy duplicate of the role |
 | Direct `getOrCreateStudentId` call sites | 25 routes. They are now safe (§14), but should migrate to `requireStudentId` |
 
-## 3. Identity and multi-role model
+## 3. Identity and multi-role model (superseded by PA-01: one persona + capabilities)
 
 These five concepts stay separate:
 
@@ -74,13 +96,13 @@ These five concepts stay separate:
 | Entitlement | Which paid capabilities may they use? | `src/lib/entitlements` (`canUseCapability`), per learner |
 
 **Contract:**
-- One person maps to one `users` row, with N roles. Any combination is valid: Student, Parent, Teacher, Student + Parent, Teacher + Parent, Student + Teacher, all three, or STUDYUS_ADMIN + any of these.
+- One person maps to one `users` row. ~~With N roles in any combination.~~ **PA-01:** with exactly ONE primary persona (Student, Parent or Teacher) plus optional capabilities (INSTITUTION_ADMIN, STUDYUS_ADMIN).
 - Adding a role never creates a second `users` row or a second `students` row.
-- **Roles are additive.** Holding a role (including STUDYUS_ADMIN) never prevents self-selecting another self-service role (STUDENT / PARENT / TEACHER). The workspace switcher always offers "add another role", even to a single-workspace actor (§14-F6).
+- ~~**Roles are additive.**~~ **PA-01:** personas are NOT additive. Holding a capability (including STUDYUS_ADMIN) never prevents choosing the one persona; holding a persona prevents choosing another (409 `PERSONA_EXISTS`). There is no "add another role".
 - A role an administrator **REVOKED** is never silently re-granted by self-service (409 `ROLE_REVOKED`).
 - Privileged roles (INSTITUTION_ADMIN, STUDYUS_ADMIN) are never self-service. INSTITUTION_ADMIN comes from an invitation; STUDYUS_ADMIN comes from the server-side allowlist bootstrap or the audited admin console.
 - **Default landing** follows `WORKSPACE_PRIORITY` (STUDENT > PARENT > TEACHER > INSTITUTION > ADMIN). A stored active workspace wins while it is still available. Zero roles redirect to `/role-select`.
-- **Switching** goes through `POST /api/identity/workspace`, which is fail-closed, followed by a full server round-trip so nothing stale from the prior role is shown.
+- **Switching** goes through `POST /api/identity/workspace`, which is fail-closed, followed by a full server round-trip so nothing stale from the prior role is shown. **PA-01:** there is no persona switching; capability contexts are entered by route and non-capability pages always render in the persona's workspace.
 
 ## 4. Workspace model
 
@@ -253,14 +275,14 @@ Schema gaps that the tracks may need are additive and belong to their tracks, no
 | F3 | `createTeacherAssignment`: the grade or class must belong to the membership's institution (guarded atomic INSERT). The route returns 422 `SCOPE_OUTSIDE_INSTITUTION`. | Cross-tenant scope row. |
 | F4 | `POST /api/exam-profiles` is owner-only (`LEARNER_INTERVENTION_CREATE`). | A read permission (parent / teacher) gated a write. |
 | F5 | `isExamVersionStartableForProfile`: attempts start only on a PUBLISHED version of the profile's exam (409 `EXAM_VERSION_NOT_STARTABLE`). | Exam Core attempt integrity, for every vertical. |
-| F6 | Multi-role: `assignSelfServiceRole` returns its outcome and audits real grants (`ROLE_ADDED`, `SELF_SERVICE`). A revoked role gets 409, not a silent 200. The STUDYUS_ADMIN allowlist grant is audited. The workspace switcher always offers "add another role" (new i18n key `workspace.addRole`, 5 locales). | An admin-only account (observed in Production) could not discover the Student workspace. Role grants were unaudited. |
+| F6 | *(Amended by PA-01: the "add another role" offer is removed; outcome, audit and revoked-role handling are kept.)* Multi-role: `assignSelfServiceRole` returns its outcome and audits real grants (`ROLE_ADDED`, `SELF_SERVICE`). A revoked role gets 409, not a silent 200. The STUDYUS_ADMIN allowlist grant is audited. The workspace switcher always offers "add another role" (new i18n key `workspace.addRole`, 5 locales). | An admin-only account (observed in Production) could not discover the Student workspace. Role grants were unaudited. |
 | F7 | `getOrCreateStudentId` creates a **new** `students` row only for an ACTIVE STUDENT role. The existing-row path is untouched. | Through 25 ungated Student routes, a Parent-only, Teacher-only or admin-only identity could silently become a Student. |
 
 ## 15. Architecture decisions (ADR summary)
 
 | ADR | Decision |
 |---|---|
-| F01 | One canonical User with many additive roles. Never a second identity per role. |
+| F01 | **Amended by PA-01:** one canonical User, one primary functional persona; administrative and institutional privileges are separate capabilities. Never a second identity per persona. *(Was: many additive roles.)* |
 | F02 | Role ≠ Workspace ≠ Entitlement ≠ Authorization. They are separate modules and separate questions. |
 | F03 | The independent Student stays first-class. Institution membership is optional and may be plural. |
 | F04 | Parent access requires an **accepted**, student-consented relationship, scoped to that child, read-only. |
@@ -289,7 +311,7 @@ All work packages reuse §13. Schema changes: none expected, except an optional 
 
 | WP | Scope and reuse | Functional acceptance | Security acceptance | Gate |
 |---|---|---|---|---|
-| **A1 Identity / role experience** | `/role-select`, WorkspaceSwitcher (`workspace.addRole`), `assignSelfServiceRole`, workspace APIs; migrate the 25 `getOrCreateStudentId` sites to `requireStudentId` | Add or switch roles in two clicks; admin + student; revoked role explained | Revoked role never re-granted; privileged roles never self-service | Scenarios S1 / S2 in hosted DEV |
+| **A1 Identity / single persona** (PA-01) | `/role-select` (first-time choice + account page), persona indicator, `assignSelfServiceRole` (single persona), workspace APIs; migrate the 25 `getOrCreateStudentId` sites to `requireStudentId` | Choose one persona once; capabilities by route; revoked persona explained; no "add another role" | Revoked role never re-granted; privileged roles never self-service | Scenarios S1 / S2 in hosted DEV |
 | **A2 Parent E2E** | Invitations, `isActiveParentOf`, parent read model; retire `verifyParentAccess` | Invite → accept → child dashboard → revoke | Parent A ↛ child B; pending gets nothing; no write permission | Matrix rows P1–P4 |
 | **A3 Teacher E2E** | Membership request and decision, `canTeacherAccessLearner`, teacher read model, `teacher_interventions` (incl. EXAM) | Request → approval → classes → assign → learner executes | Teacher ↛ other class or institution; never writes cognition | Matrix rows T1–T4 |
 | **A4 Institution E2E** | Admin invite, memberships console, grades / classes / enrollments **create APIs (new)** via `createGrade` / `createClass` / `enrollStudent` behind `canAccessInstitution`, F12 intelligence | Set up institution → approve teacher → roster → reports | Inst A ↛ Inst B; cohort suppression | Matrix rows I1–I4 |

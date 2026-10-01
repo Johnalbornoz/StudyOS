@@ -1,39 +1,32 @@
 'use client';
 
 /**
- * Track A (A1) -- "Tu cuenta": the multi-role account page.
+ * Track A -- the account page and first-time profile choice.
  *
- * One canonical user, N additive roles. This page shows them explicitly:
- *  - every ACTIVE role with its workspace, which one is active now, and
- *    "Abrir" (switch through the fail-closed POST /api/identity/workspace,
- *    then a full navigation so nothing from the prior role is reused);
- *  - "Añadir otro rol" for the self-service roles not yet held (STUDENT /
- *    PARENT / TEACHER -- the server's own Zod enum is the real allowlist);
- *    adding a role makes it the active workspace and opens it;
- *  - roles an administrator REVOKED, explained and never offered as
- *    addable (the server also answers 409 ROLE_REVOKED);
- *  - for a Student: who can see their progress (revocable) and parent
+ * Product amendment (2026-10-01): ONE canonical user, ONE primary persona
+ * (STUDENT / PARENT / TEACHER); institution and StudyUS administration are
+ * capabilities, not personas.
+ *  - No persona yet: choose exactly ONE (the server refuses a second one,
+ *    409 PERSONA_EXISTS). After choosing, the user goes straight into that
+ *    persona's workspace / onboarding.
+ *  - Persona held: never role selection again. The page is an account
+ *    summary whose primary action is "Ir a mi espacio de {persona}" -- an
+ *    approved Teacher is never stranded here -- plus capability shortcuts
+ *    and, for a Teacher, the institutional authorization status.
+ *  - Persona revoked by an administrator: explained; nothing self-service.
+ *  - For a Student: who can see their progress (revocable) and parent
  *    invitations they sent.
- * Still deliberately outside /dashboard: the dashboard layout redirects a
- * zero-role account here. Every action is re-authorized server-side; this
- * page never decides access.
+ * Every action is re-authorized server-side; this page decides nothing.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { getMessages, type Locale } from '@/lib/i18n/messages';
+import { getMessages, type Locale, type MessageKey } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 
 type Workspace = 'STUDENT' | 'PARENT' | 'TEACHER' | 'INSTITUTION' | 'ADMIN';
 type Role = 'STUDENT' | 'PARENT' | 'TEACHER' | 'INSTITUTION_ADMIN' | 'STUDYUS_ADMIN';
-type SelfServiceRole = 'STUDENT' | 'PARENT' | 'TEACHER';
+type Persona = 'STUDENT' | 'PARENT' | 'TEACHER';
 
-const SELF_SERVICE_ROLES: SelfServiceRole[] = ['STUDENT', 'PARENT', 'TEACHER'];
-const ROLE_ORDER: Role[] = ['STUDENT', 'PARENT', 'TEACHER', 'INSTITUTION_ADMIN', 'STUDYUS_ADMIN'];
-const WORKSPACE_OF: Record<Role, Workspace> = {
-  STUDENT: 'STUDENT',
-  PARENT: 'PARENT',
-  TEACHER: 'TEACHER',
-  INSTITUTION_ADMIN: 'INSTITUTION',
-  STUDYUS_ADMIN: 'ADMIN',
-};
+const PERSONAS: Persona[] = ['STUDENT', 'PARENT', 'TEACHER'];
 const HOME_HREF: Record<Workspace, string> = {
   STUDENT: '/dashboard/today',
   PARENT: '/dashboard/parent',
@@ -60,6 +53,12 @@ interface ParentWithAccess {
   name: string;
 }
 
+interface TeacherMembership {
+  id: string;
+  institutionName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+}
+
 export default function RoleSelectPage() {
   const [locale, setLocale] = useState<Locale>('es');
   const [state, setState] = useState<IdentityState | null>(null);
@@ -68,6 +67,7 @@ export default function RoleSelectPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [parents, setParents] = useState<ParentWithAccess[] | null>(null);
   const [sent, setSent] = useState<SentInvitation[]>([]);
+  const [memberships, setMemberships] = useState<TeacherMembership[] | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const t = getMessages(locale);
 
@@ -100,9 +100,16 @@ export default function RoleSelectPage() {
 
   useEffect(() => {
     if (state?.roles.includes('STUDENT')) loadFamily();
+    if (state?.roles.includes('TEACHER')) {
+      fetch('/api/teacher/my-memberships', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => setMemberships(b?.data?.memberships ?? []))
+        .catch(() => setMemberships([]));
+    }
   }, [state, loadFamily]);
 
-  async function openWorkspace(workspace: Workspace) {
+  /** Opens a workspace the account holds (persona or capability) through the fail-closed API, then a full navigation. */
+  async function open(workspace: Workspace) {
     setBusy(true);
     setError(null);
     const res = await fetch('/api/identity/workspace', {
@@ -118,16 +125,16 @@ export default function RoleSelectPage() {
     window.location.href = HOME_HREF[workspace];
   }
 
-  async function addRole(role: SelfServiceRole) {
+  async function choose(persona: Persona) {
     setBusy(true);
     setError(null);
     const res = await fetch('/api/identity/roles/select', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ role: persona }),
     });
     if (res.status === 409) {
-      setError(t['account.error.revoked']);
+      setError(t['account.error.personaExists']);
       await refresh();
       setBusy(false);
       return;
@@ -137,7 +144,7 @@ export default function RoleSelectPage() {
       setBusy(false);
       return;
     }
-    window.location.href = HOME_HREF[WORKSPACE_OF[role]];
+    window.location.href = HOME_HREF[persona];
   }
 
   async function revokeParent(parentId: string) {
@@ -184,16 +191,16 @@ export default function RoleSelectPage() {
     );
   }
 
-  const heldRoles = ROLE_ORDER.filter((r) => state.roles.includes(r));
-  const revoked = ROLE_ORDER.filter((r) => state.revokedRoles.includes(r) && !state.roles.includes(r));
-  const rolesNotYetHeld = SELF_SERVICE_ROLES.filter((r) => !state.roles.includes(r) && !state.revokedRoles.includes(r));
-  const firstTime = heldRoles.length === 0;
+  const persona = PERSONAS.find((p) => state.roles.includes(p)) ?? null;
+  const revokedPersona = persona ? null : PERSONAS.find((p) => state.revokedRoles.includes(p)) ?? null;
+  const canChoose = !persona && !revokedPersona;
+  const personaName = persona ? t[`role.${persona}.name` as MessageKey] : '';
 
   return (
     <main className="role-page">
       <header className="role-header">
-        <h1>{firstTime ? t['account.firstTitle'] : t['account.title']}</h1>
-        <p className="role-muted">{firstTime ? t['account.firstBody'] : t['account.subtitle']}</p>
+        <h1>{canChoose ? t['account.firstTitle'] : t['account.title']}</h1>
+        <p className="role-muted">{persona ? fillMessage(t['account.subtitle'], { persona: personaName }) : canChoose ? t['account.firstBody'] : ''}</p>
       </header>
 
       {error && (
@@ -207,45 +214,50 @@ export default function RoleSelectPage() {
         </p>
       )}
 
-      {!firstTime && (
-        <section aria-labelledby="roles-held" className="role-section">
-          <h2 id="roles-held">{t['account.yourRoles']}</h2>
-          <ul className="role-list">
-            {heldRoles.map((role) => {
-              const ws = WORKSPACE_OF[role];
-              const isActive = state.activeWorkspace === ws;
-              return (
-                <li key={role} className="card role-card">
-                  <div className="role-card-main">
-                    <div className="role-card-title">
-                      {t[`role.${role}.name` as const]}
-                      {isActive && <span className="chip chip-good">{t['account.activeNow']}</span>}
-                    </div>
-                    <div className="role-muted">{t[`role.${role}.desc` as const]}</div>
-                  </div>
-                  <button type="button" className={isActive ? 'btn btn-ghost' : 'btn btn-primary'} disabled={busy} onClick={() => openWorkspace(ws)}>
-                    {t['account.open']}
-                  </button>
-                </li>
-              );
-            })}
+      {persona && (
+        <section aria-labelledby="persona" className="role-section">
+          <div className="card role-card">
+            <div className="role-card-main">
+              <h2 id="persona" className="role-card-title">{personaName}</h2>
+              <div className="role-muted">{t[`role.${persona}.desc` as MessageKey]}</div>
+            </div>
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => open(persona)}>
+              {fillMessage(t['account.goToWorkspace'], { persona: personaName })}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {persona === 'TEACHER' && memberships && memberships.length > 0 && (
+        <section aria-labelledby="teacher-status" className="role-section">
+          <h2 id="teacher-status">{t['account.teacherStatusTitle']}</h2>
+          <ul className="card list-card">
+            {memberships.map((m) => (
+              <li key={m.id} className="list-row" style={{ flexWrap: 'wrap' }}>
+                <div className="row-main">
+                  <div className="row-title">{m.institutionName}</div>
+                </div>
+                <span className={m.status === 'APPROVED' ? 'chip chip-good' : m.status === 'PENDING' ? 'chip chip-warn' : 'chip chip-critical'}>
+                  {t[`teacherHome.membership.${m.status}` as MessageKey]}
+                </span>
+              </li>
+            ))}
           </ul>
         </section>
       )}
 
-      {rolesNotYetHeld.length > 0 && (
-        <section aria-labelledby="roles-add" className="role-section">
-          {!firstTime && <h2 id="roles-add">{t['account.addTitle']}</h2>}
-          {!firstTime && <p className="role-muted">{t['account.addBody']}</p>}
+      {canChoose && (
+        <section aria-label={t['account.firstTitle']} className="role-section">
+          <p className="role-muted">{t['account.chooseNote']}</p>
           <ul className="role-list">
-            {rolesNotYetHeld.map((role) => (
-              <li key={role} className="card role-card">
+            {PERSONAS.map((p) => (
+              <li key={p} className="card role-card">
                 <div className="role-card-main">
-                  <div className="role-card-title">{t[`role.${role}.name` as const]}</div>
-                  <div className="role-muted">{t[`role.${role}.desc` as const]}</div>
+                  <div className="role-card-title">{t[`role.${p}.name` as MessageKey]}</div>
+                  <div className="role-muted">{t[`role.${p}.desc` as MessageKey]}</div>
                 </div>
-                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => addRole(role)}>
-                  {t['account.add']}
+                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => choose(p)}>
+                  {t['account.choose']}
                 </button>
               </li>
             ))}
@@ -253,19 +265,32 @@ export default function RoleSelectPage() {
         </section>
       )}
 
-      {revoked.length > 0 && (
-        <section aria-labelledby="roles-revoked" className="role-section">
-          <h2 id="roles-revoked">{t['account.revokedTitle']}</h2>
-          <ul className="role-list">
-            {revoked.map((role) => (
-              <li key={role} className="card role-card role-card-disabled">
-                <div className="role-card-main">
-                  <div className="role-card-title">{t[`role.${role}.name` as const]}</div>
-                  <div className="role-muted">{t['account.revokedBody']}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+      {revokedPersona && (
+        <section aria-labelledby="revoked" className="role-section">
+          <div className="card role-card role-card-disabled">
+            <div className="role-card-main">
+              <h2 id="revoked" className="role-card-title">{t['account.revokedPersonaTitle']}</h2>
+              <div className="role-muted">{t['account.revokedPersonaBody']}</div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(state.roles.includes('INSTITUTION_ADMIN') || state.roles.includes('STUDYUS_ADMIN')) && (
+        <section aria-labelledby="capabilities" className="role-section">
+          <h2 id="capabilities">{t['account.capabilitiesTitle']}</h2>
+          <div className="ta-actions">
+            {state.roles.includes('INSTITUTION_ADMIN') && (
+              <button type="button" className={persona ? 'btn btn-secondary' : 'btn btn-primary'} disabled={busy} onClick={() => open('INSTITUTION')}>
+                {t['account.goToInstitution']}
+              </button>
+            )}
+            {state.roles.includes('STUDYUS_ADMIN') && (
+              <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => open('ADMIN')}>
+                {t['account.goToAdmin']}
+              </button>
+            )}
+          </div>
         </section>
       )}
 
@@ -330,11 +355,7 @@ export default function RoleSelectPage() {
         </section>
       )}
 
-      {!firstTime && state.activeWorkspace && (
-        <p>
-          <a href={HOME_HREF[state.activeWorkspace]}>{t['account.backToDashboard']}</a>
-        </p>
-      )}
+
     </main>
   );
 }

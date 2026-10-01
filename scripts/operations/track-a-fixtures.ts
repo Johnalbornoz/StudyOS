@@ -24,7 +24,8 @@
  *                     lineales") MATCHED to the catalog concept "Linear
  *                     Equations", so a class assignment can target it.
  *   parent-a, parent-b, teacher-a -- role only (the E2E runs their flows).
- *   multi          -- STUDENT + PARENT + TEACHER on one account.
+ *   student-c      -- STUDENT persona + STUDYUS_ADMIN capability (a capability
+ *                     is never a second persona); second child for parent-a.
  */
 import { createHash } from 'crypto';
 import { writeFileSync } from 'fs';
@@ -50,7 +51,9 @@ export const IDENTITIES = {
   'parent-b': { first: 'Pedro', last: 'Padre B', roles: ['PARENT'] as const },
   'student-a': { first: 'Sofía', last: 'Estudiante A', roles: ['STUDENT'] as const },
   'student-b': { first: 'Samuel', last: 'Estudiante B', roles: ['STUDENT'] as const },
-  multi: { first: 'Marta', last: 'Multirol', roles: ['STUDENT', 'PARENT', 'TEACHER'] as const },
+  // One persona per account (product amendment); student-c also holds the
+  // STUDYUS_ADMIN *capability* to prove a capability is not a second persona.
+  'student-c': { first: 'Carla', last: 'Estudiante C', roles: ['STUDENT'] as const },
 } as const;
 export type Tag = keyof typeof IDENTITIES;
 export const emailFor = (tag: Tag) => `studyus-ta-${tag}+clerk_test@example.com`;
@@ -121,6 +124,12 @@ async function provision() {
     out[tag] = { clerkId, userId: user.id, studentId: student.rows[0]?.id };
     console.log(`identity ${tag}: user ${user.id}${out[tag].studentId ? ` student ${out[tag].studentId}` : ''}`);
   }
+
+  // Capability (not a persona) on student-c, as the admin bootstrap would grant it.
+  await db.query(
+    `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, 'STUDYUS_ADMIN', 'ACTIVE', 'BACKFILL') ON CONFLICT (user_id, role) DO NOTHING`,
+    [out['student-c'].userId]
+  );
 
   // Institutions (StudyUS-admin path: createInstitution + inviteInstitutionAdmin).
   const instA = (await db.query(`SELECT id FROM institutions WHERE name = $1`, [INST_A_NAME])).rows[0]?.id ?? (await createInstitution(INST_A_NAME)).id;

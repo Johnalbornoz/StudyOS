@@ -1,5 +1,5 @@
-export type { Role, SelfServiceRole, Workspace, CanonicalUser, UserRoleGrant } from './types';
-export { SELF_SERVICE_ROLES, isSelfServiceRole, workspaceForRole, WORKSPACE_PRIORITY } from './types';
+export type { Role, SelfServiceRole, Workspace, CanonicalUser, UserRoleGrant, PrimaryPersona, Capability } from './types';
+export { SELF_SERVICE_ROLES, isSelfServiceRole, workspaceForRole, WORKSPACE_PRIORITY, PRIMARY_PERSONAS, CAPABILITY_ROLES, PERSONA_WORKSPACES, isPrimaryPersona, isPersonaWorkspace, personaWorkspaceOf } from './types';
 export { getOrCreateCanonicalUser, getCanonicalUserByClerkId, getUserRoles, getRevokedRoles, hasRole } from './canonical-user.service';
 export { assignSelfServiceRole, type SelfServiceRoleOutcome } from './role-assignment.service';
 export { resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, setActiveWorkspace } from './workspace.service';

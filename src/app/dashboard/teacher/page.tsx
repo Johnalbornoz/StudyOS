@@ -59,7 +59,9 @@ export default async function TeacherHomePage() {
       <section aria-labelledby="my-classes" className="ta-stack" style={{ gap: 'var(--space-3)' }}>
         <h2 id="my-classes" style={{ fontSize: 18 }}>{t['teacherHome.classesTitle']}</h2>
         {classes.length === 0 ? (
-          <EmptyState title={approved ? t['teacherHome.noClassesApproved'] : t['teacherHome.noClasses']} />
+          // Track A: an APPROVED teacher with no class yet gets a normal,
+          // usable workspace and this explicit empty state (never blocked).
+          <EmptyState title={t['teacherHome.noClasses']} body={approved ? t['teacherHome.noClassesApproved'] : undefined} />
         ) : (
           <ul className="list-card card" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {classes.map((c) => (

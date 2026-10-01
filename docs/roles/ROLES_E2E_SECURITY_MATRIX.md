@@ -38,7 +38,10 @@ Proof ids are the check names in `scripts/operations/track-a-e2e-http.ts`. Unit 
 | D20 | Teacher creates an institutional class; teacher self-approves | DENY | 403 / 403 | `SEC.teacher-cannot-create-class`, `SEC.teacher-cannot-self-approve` |
 | D21 | Institution admin → per-learner data, or publishes learner work | DENY | 403 / 403 | `SEC.inst-admin-not-learner`, `SEC.inst-admin-cannot-publish` |
 | D22 | Another student accepts someone's parent request or class invitation | DENY | 404 / 404 | `A2.other-student-cannot-accept`, `SEC.other-student-cannot-accept-enrollment` |
-| D23 | Revoked role re-entered (self-service, workspace switch, parent request) | DENY | 409 / 403 / 403 | `A1.revoked-*` |
+| D23 | Revoked persona re-entered, or replaced by another persona (self-service, workspace switch, parent request) | DENY | 409 ROLE_REVOKED / 409 PERSONA_EXISTS / 403 / 403 | `A1.revoked-*`, `A1.revoked-persona-blocks-other` |
+| D23b | Second persona by self-service (PA-01): Student→Parent, Student→Teacher, Parent→Student, Parent→Teacher, Teacher→Student, Teacher→Parent | DENY | 409 ×6, 0 rows written | `A1.*-cannot-add-*`, `A1.no-role-rows-written` |
+| D23c | A capability used to obtain a second persona (StudyUS admin + Student → Parent) | DENY | 409 | `A1.admin-capability-cannot-add-persona` |
+| D23d | Switch into a persona the account does not hold | DENY | 403 | `A1.switch-to-foreign-persona-denied` |
 | D24 | Privileged role by self-service (INSTITUTION_ADMIN, STUDYUS_ADMIN) | DENY | 400 / 400 | `A1.privileged-not-self-service*` |
 | D25 | Removed student → teacher access | DENY | 403 | `SEC.removed-student-no-teacher-access` |
 | D26 | Teacher opens the Student's in-progress activity | DENY | 403 | `SEC.teacher-cannot-open-quiz` |
@@ -53,6 +56,14 @@ Proof ids are the check names in `scripts/operations/track-a-e2e-http.ts`. Unit 
 | L2 | Approved, scoped teacher → assigned class (roster, learner overview, assignments, publish) | 200 | `A3.roster-has-student`, `A3.teacher-reads-student`, `A5.publish` |
 | L3 | Institution admin → own institution (grades, classes, requests, decide, scope, roster) | 200 / 201 | `A4.*` |
 | L4 | Student → own assignment and activity (list, start, recover, open, submit) | 200 | `A5.student-*` |
+
+## Identity exposure (manual-gate fix)
+
+| Case | Result | Proof |
+|---|---|---|
+| StudyUS admin sees the requester of every pending membership (name · email), resolved server-side | ALLOW | `track-a-admin-identity.test.ts` |
+| Institution admin sees requester identities of ITS OWN institution only; the route gate (`canAccessInstitution`) runs before any read | DENY for other institutions | `track-a-admin-identity.test.ts`, D9 |
+| Identity never taken from the client | — | resolved from `institution_memberships.user_id` |
 
 ## Writes
 

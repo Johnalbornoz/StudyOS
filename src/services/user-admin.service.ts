@@ -33,6 +33,13 @@ export class PrivilegedRoleForbiddenError extends Error {
     super('PRIVILEGED_ROLE_FORBIDDEN');
   }
 }
+/** Track A product amendment: an account holds ONE active primary persona. */
+export class PersonaExistsError extends Error {
+  constructor() {
+    super('PERSONA_EXISTS');
+    this.name = 'PersonaExistsError';
+  }
+}
 export class InstitutionRequiredError extends Error {
   constructor() {
     super('INSTITUTION_REQUIRED_FOR_COORDINATOR');
@@ -362,6 +369,15 @@ export async function revokeInvitation(actorUserId: string, invitationId: string
 export async function addRole(actorUserId: string, targetUserId: string, role: SelfServiceRole, targetClerkId: string): Promise<void> {
   if (!INVITABLE_ROLES.includes(role)) throw new PrivilegedRoleForbiddenError();
 
+  // Track A product amendment: an administrator may set an account's persona
+  // (or reactivate the one it had), but never add a SECOND active persona.
+  // Changing persona is deliberate: revoke the current one first, then add.
+  const otherActive = await db.query(
+    `SELECT 1 FROM user_roles WHERE user_id = $1 AND role IN ('STUDENT', 'PARENT', 'TEACHER') AND role <> $2 AND status = 'ACTIVE' LIMIT 1`,
+    [targetUserId, role]
+  );
+  if ((otherActive.rows?.length ?? 0) > 0) throw new PersonaExistsError();
+
   await db.query(
     `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'INVITATION')
      ON CONFLICT (user_id, role) DO UPDATE SET status = 'ACTIVE', revoked_at = NULL, revoked_by_user_id = NULL WHERE user_roles.status = 'REVOKED'`,
@@ -550,9 +566,21 @@ export async function cleanupTestIdentity(actorUserId: string, targetUserId: str
 
 export interface SyncCheckResult {
   usersWithoutClerkMatch: string[];
+  /** Track A: the same accounts, identified (name / email / state) -- never just an internal id. */
+  accounts: SyncErrorAccount[];
 }
 
 /** Best-effort, read-only detection -- never fabricates a role or profile. A `users` row whose `clerk_id` no longer resolves via Clerk is flagged, not repaired automatically. */
+export interface SyncErrorAccount {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  status: string;
+  isTest: boolean;
+  createdAt: string | null;
+  roles: string[];
+}
+
 export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckResult> {
   const client = await clerkClient();
   const rows = await db.query(`SELECT id, clerk_id FROM users ORDER BY created_at DESC LIMIT $1`, [sampleLimit]);
@@ -564,7 +592,29 @@ export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckRe
       missing.push(row.id);
     }
   }
-  return { usersWithoutClerkMatch: missing };
+  // Track A: identify each affected account from its own StudyUS records
+  // (its Clerk user is, by definition, missing).
+  const accounts: SyncErrorAccount[] = missing.length
+    ? (
+        await db.query(
+          `SELECT u.id, u.email, u.status, u.is_test, u.created_at,
+                  NULLIF(TRIM(COALESCE((SELECT s.name FROM students s WHERE s.user_id = u.id LIMIT 1),
+                                       (SELECT p.full_name FROM profiles p WHERE p.user_id = u.id AND p.full_name IS NOT NULL LIMIT 1))), '') AS name,
+                  ARRAY(SELECT r.role FROM user_roles r WHERE r.user_id = u.id AND r.status = 'ACTIVE' ORDER BY r.role) AS roles
+           FROM users u WHERE u.id = ANY($1::uuid[]) ORDER BY u.created_at DESC`,
+          [missing]
+        )
+      ).rows.map((r: any) => ({
+        userId: r.id,
+        email: r.email ?? null,
+        name: r.name ?? null,
+        status: r.status,
+        isTest: Boolean(r.is_test),
+        createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at ?? null,
+        roles: r.roles ?? [],
+      }))
+    : [];
+  return { usersWithoutClerkMatch: missing, accounts };
 }
 
 export async function reconcileSyncError(actorUserId: string, targetUserId: string): Promise<void> {

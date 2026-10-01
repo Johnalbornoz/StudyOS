@@ -107,10 +107,12 @@ describe('gate decisions', () => {
     expect(decideStudentOnboardingGate('/dashboard', student({ roles: ['PARENT'], storedWorkspace: 'PARENT' }))).toBeNull();
   });
 
-  it('7. multi-role Admin+Student: gated only when Student is the active context', () => {
+  // Track A product amendment: admin is a capability; Student pages always
+  // render in the Student persona, so the gate applies whatever was stored.
+  it('7. Student persona + admin capability: Student pages are gated; admin routes are not', () => {
     const multi = { roles: ['STUDENT', 'STUDYUS_ADMIN'] as any, profile: null, subjectCount: 0 };
     expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'STUDENT' }))).toBe('/dashboard/profile');
-    expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'ADMIN' }))).toBeNull();
+    expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'ADMIN' }))).toBe('/dashboard/profile');
     expect(decideStudentOnboardingGate('/dashboard/admin/users', student({ ...multi, storedWorkspace: 'STUDENT' }))).toBeNull();
   });
 

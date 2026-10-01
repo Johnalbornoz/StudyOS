@@ -1,21 +1,19 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { resolveCurrentWorkspace } from '@/lib/identity/current-workspace';
+import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, personaWorkspaceOf } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages, type MessageKey } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
-import { listInbox } from '@/lib/notifications/role-notifications.service';
+import { listAccountInbox } from '@/lib/notifications/role-notifications.service';
 import ParentRequestsPanel from './ParentRequestsPanel';
 import ClassInvitationsPanel from './ClassInvitationsPanel';
 import { MarkAllReadButton } from './MarkAllReadButton';
 
 /**
- * Track A -- one notifications page for every workspace. The inbox is the
- * caller's own, for their CURRENT workspace (server-resolved): a
- * Student+Parent account sees learning signals in Student and family
- * signals in Parent, never mixed. Previously this page provisioned a
+ * Track A -- one notifications page for every account: the inbox of the
+ * account's ONE persona plus its capabilities (institution / StudyUS
+ * administration), server-resolved. Previously this page provisioned a
  * Student identity unconditionally and crashed for Parent / Teacher /
  * Institution accounts.
  */
@@ -24,12 +22,13 @@ export default async function NotificationsPage() {
   if (!clerkUserId) redirect('/sign-in');
 
   const user = await getOrCreateCanonicalUser(clerkUserId, null);
-  const workspace = await resolveCurrentWorkspace(user.id);
-  if (!workspace) redirect('/role-select');
+  const workspaces = await resolveAvailableWorkspaces(user.id);
+  if (workspaces.length === 0) redirect('/role-select');
+  const workspace = personaWorkspaceOf(workspaces) ?? workspaces[0];
 
   const locale = await getUserInterfaceLanguage(user.id).catch(() => 'es' as const);
   const t = getMessages(locale);
-  const notifications = await listInbox(user.id, workspace).catch(() => []);
+  const notifications = await listAccountInbox(user.id, workspaces).catch(() => []);
   const hasUnread = notifications.some((n) => !n.readAt);
 
   return (

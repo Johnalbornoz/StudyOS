@@ -1046,7 +1046,6 @@ export type MessageKey =
   | 'di.err.import'
   | 'di.summaryNewOne'
   | 'di.summaryReuseOne'
-  | 'workspace.addRole'
   | RolesMessageKey;
 
 type Messages = Record<MessageKey, string>;
@@ -2704,7 +2703,6 @@ const es: Messages = {
   'di.err.import': 'No pudimos agregar todos los temas. Inténtalo de nuevo: los que ya se agregaron no se duplican.',
   'di.summaryNewOne': 'Se agregará 1 tema nuevo a {subject}.',
   'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
-  'workspace.addRole': 'Añadir otro rol',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.es,
 };
@@ -4362,7 +4360,6 @@ const en: Messages = {
   'di.err.import': 'We couldn\'t add all the topics. Please try again: any already added won\'t be duplicated.',
   'di.summaryNewOne': '1 new topic will be added to {subject}.',
   'di.summaryReuseOne': '1 you already have will be reused.',
-  'workspace.addRole': 'Add another role',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.en,
 };
@@ -6020,7 +6017,6 @@ const de: Messages = {
   'di.err.import': 'Nicht alle Themen konnten hinzugefügt werden. Versuch es noch einmal: Bereits hinzugefügte werden nicht doppelt angelegt.',
   'di.summaryNewOne': '1 neues Thema kommt zu {subject}.',
   'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
-  'workspace.addRole': 'Weitere Rolle hinzufügen',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.de,
 };
@@ -7678,7 +7674,6 @@ const fr: Messages = {
   'di.err.import': 'Impossible d\'ajouter tous les thèmes. Réessaie : ceux déjà ajoutés ne seront pas dupliqués.',
   'di.summaryNewOne': '1 nouveau thème sera ajouté à {subject}.',
   'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
-  'workspace.addRole': 'Ajouter un autre rôle',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.fr,
 };
@@ -9336,7 +9331,6 @@ const pt: Messages = {
   'di.err.import': 'Não foi possível adicionar todos os temas. Tente novamente: os que já foram adicionados não serão duplicados.',
   'di.summaryNewOne': '1 tema novo será adicionado a {subject}.',
   'di.summaryReuseOne': '1 que você já tem será reutilizado.',
-  'workspace.addRole': 'Adicionar outra função',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.pt,
 };

@@ -3,8 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { EmptyState } from '@/components/ui/EmptyState';
 
+/** Track A: who is asking -- "Nombre · email", or the email alone; never an internal id. */
+function who(name: string | null | undefined, email: string | null | undefined): string {
+  if (name && email) return `${name} · ${email}`;
+  return name || email || 'Cuenta sin correo registrado';
+}
+
 export default function RequestsInbox() {
-  const [data, setData] = useState<{ institutionRequests: any[]; invitations: any[]; syncErrors: string[] } | null>(null);
+  const [data, setData] = useState<{ institutionRequests: any[]; invitations: any[]; syncErrors: string[]; syncAccounts?: any[] } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -42,16 +48,16 @@ export default function RequestsInbox() {
         ) : (
           <ul className="list-card card">
             {data.institutionRequests.map((r: any) => (
-              <li key={r.id} className="list-row">
-                <div className="row-main">
-                  <div className="row-title">{r.institutionName}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Rol solicitado: {r.membershipRole === 'TEACHER' ? 'Profesor' : 'Coordinador'} · Solicitado {r.requestedAt ? new Date(r.requestedAt).toLocaleDateString('es') : '—'}
+              <li key={r.id} className="list-row" style={{ flexWrap: 'wrap' }}>
+                <div className="row-main" style={{ flexBasis: 240 }}>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>{who(r.requesterName, r.requesterEmail)}</div>
+                  <div className="row-sub">
+                    {r.membershipRole === 'TEACHER' ? 'Profesor' : 'Coordinador'} · {r.institutionName} · Solicitado {r.requestedAt ? new Date(r.requestedAt).toLocaleDateString('es') : '—'}
                   </div>
                 </div>
-                <span style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn" disabled={busy} onClick={() => decide(r.id, 'APPROVED')}>Aprobar</button>
-                  <button className="btn btn-ghost" disabled={busy} onClick={() => decide(r.id, 'REJECTED')}>Rechazar</button>
+                <span className="ta-actions">
+                  <button className="btn btn-secondary" disabled={busy} onClick={() => decide(r.id, 'REJECTED')} aria-label={`Rechazar a ${who(r.requesterName, r.requesterEmail)} en ${r.institutionName}`}>Rechazar</button>
+                  <button className="btn btn-primary" disabled={busy} onClick={() => decide(r.id, 'APPROVED')} aria-label={`Aprobar a ${who(r.requesterName, r.requesterEmail)} en ${r.institutionName}`}>Aprobar</button>
                 </span>
               </li>
             ))}
@@ -74,12 +80,20 @@ export default function RequestsInbox() {
           <EmptyState title="No se detectaron inconsistencias en la muestra reciente." />
         ) : (
           <ul className="list-card card">
-            {data.syncErrors.map((userId) => (
-              <li key={userId} className="list-row">
-                <div className="row-main">
-                  <div className="row-title">Cuenta interna sin usuario de Clerk correspondiente</div>
+            {(data.syncAccounts ?? data.syncErrors.map((userId) => ({ userId }))).map((a: any) => (
+              <li key={a.userId} className="list-row" style={{ flexWrap: 'wrap' }}>
+                <div className="row-main" style={{ flexBasis: 240 }}>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>{who(a.name, a.email)}</div>
+                  <div className="row-sub">
+                    Existe en StudyUS pero no en Clerk · estado {a.status ?? '—'}
+                    {a.roles?.length ? ` · ${a.roles.join(', ')}` : ''}
+                    {a.isTest ? ' · cuenta de prueba' : ''}
+                  </div>
                 </div>
-                <button className="btn btn-ghost" disabled={busy} onClick={() => reconcileSync(userId)}>Marcar revisado</button>
+                <span className="ta-actions">
+                  <a className="btn btn-ghost" href={`/dashboard/admin/users/${a.userId}`}>Ver ficha</a>
+                  <button className="btn btn-ghost" disabled={busy} onClick={() => reconcileSync(a.userId)}>Marcar revisado</button>
+                </span>
               </li>
             ))}
           </ul>

@@ -26,39 +26,61 @@ import { recordAdminAction } from '@/lib/admin/audit';
  * behavior (subjects, quizzes, mastery, Canonical V2) a pre-F1 signup
  * already got automatically from the Clerk webhook.
  */
-export type SelfServiceRoleOutcome = 'GRANTED' | 'ALREADY_ACTIVE' | 'REVOKED';
+export type SelfServiceRoleOutcome = 'GRANTED' | 'ALREADY_ACTIVE' | 'REVOKED' | 'PERSONA_EXISTS';
 
 /**
- * Foundation (multi-role contract, ADR-F01): roles are additive -- holding
- * any role (including STUDYUS_ADMIN) never prevents self-selecting another
- * self-service role. Two refinements over F1:
- *  - a role an administrator REVOKED is never silently re-granted (and no
- *    `students` row is provisioned for it): the outcome is 'REVOKED' and the
- *    route answers 409 instead of a misleading 200;
- *  - a real new grant is audited through the existing admin_audit_log
- *    (ROLE_ADDED, actor = the user themself, reason SELF_SERVICE) -- no
- *    second audit ecosystem. Audit is a record, never a gate: a failed audit
- *    write is logged, it never undoes the grant.
+ * Track A product amendment (2026-10-01): ONE primary persona per account.
+ *
+ *  - An account with no persona may select exactly one (STUDENT / PARENT /
+ *    TEACHER). Holding a CAPABILITY (INSTITUTION_ADMIN, STUDYUS_ADMIN) does
+ *    not count -- a capability-only account can still choose its persona.
+ *  - Re-selecting the persona the account already holds is a no-op
+ *    ('ALREADY_ACTIVE').
+ *  - Selecting a DIFFERENT persona is refused ('PERSONA_EXISTS') -- never an
+ *    additive second persona. Changing persona is a deliberate
+ *    account-management flow, not self-service.
+ *  - A persona an administrator REVOKED is never re-granted ('REVOKED'), and
+ *    a revoked persona still counts as the account's persona (it cannot be
+ *    replaced by self-service either).
+ * The check and the write run in one transaction serialized on the user's
+ * row (SELECT ... FOR UPDATE), so two concurrent selections cannot both win.
+ * A real grant is audited (ROLE_ADDED, SELF_SERVICE) -- audit is a record,
+ * never a gate.
  */
 export async function assignSelfServiceRole(
   clerkUserId: string,
   userId: string,
   role: SelfServiceRole
 ): Promise<SelfServiceRoleOutcome> {
-  const inserted = await db.query(
-    `INSERT INTO user_roles (user_id, role, status, granted_via)
-     VALUES ($1, $2, 'ACTIVE', 'SELF_REGISTRATION')
-     ON CONFLICT (user_id, role) DO NOTHING
-     RETURNING id`,
-    [userId, role]
-  );
-  let outcome: SelfServiceRoleOutcome = 'ALREADY_ACTIVE';
-  if ((inserted.rows?.length ?? 0) > 0) {
-    outcome = 'GRANTED';
-  } else {
-    const existing = await db.query(`SELECT status FROM user_roles WHERE user_id = $1 AND role = $2`, [userId, role]);
-    if (existing.rows?.[0]?.status === 'REVOKED') return 'REVOKED';
+  const client = await db.connect();
+  let outcome: SelfServiceRoleOutcome;
+  try {
+    await client.query('BEGIN');
+    await client.query(`SELECT id FROM users WHERE id = $1 FOR UPDATE`, [userId]);
+    const personas = await client.query(
+      `SELECT role, status FROM user_roles WHERE user_id = $1 AND role IN ('STUDENT', 'PARENT', 'TEACHER')`,
+      [userId]
+    );
+    const same = personas.rows.find((r: any) => r.role === role);
+    if (same?.status === 'REVOKED') outcome = 'REVOKED';
+    else if (same?.status === 'ACTIVE') outcome = 'ALREADY_ACTIVE';
+    else if (personas.rows.length > 0) outcome = 'PERSONA_EXISTS';
+    else {
+      await client.query(
+        `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'SELF_REGISTRATION')
+         ON CONFLICT (user_id, role) DO NOTHING`,
+        [userId, role]
+      );
+      outcome = 'GRANTED';
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
   }
+  if (outcome === 'REVOKED' || outcome === 'PERSONA_EXISTS') return outcome;
 
   if (role === 'STUDENT') {
     await getOrCreateStudentId(clerkUserId);
