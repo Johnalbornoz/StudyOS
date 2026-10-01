@@ -216,35 +216,56 @@ async function cleanup() {
   await q(`DELETE FROM admin_audit_log WHERE actor_user_id = ANY($1::uuid[]) OR target_id = ANY($2::text[])`, [userIds, userIds]);
   await q(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id IN (SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE s.student_id = ANY($1::uuid[]))`, [studentIds]);
 
-  // Every remaining row that references a fixture student/profile/user, resolved from the FK graph (incl. learning tables).
-  for (let pass = 0; pass < 4; pass++) {
-    const refs = (await db.query(
-      `SELECT conrelid::regclass::text AS t, a.attname AS c, confrelid::regclass::text AS parent
-       FROM pg_constraint con JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = con.conkey[1]
-       WHERE con.contype = 'f' AND confrelid::regclass::text IN ('profiles', 'students', 'subjects', 'concepts') AND array_length(con.conkey, 1) = 1
-         AND conrelid::regclass::text NOT IN ('profiles', 'students', 'users')`
-    )).rows as { t: string; c: string; parent: string }[];
-    const subjectIds = (await db.query(`SELECT id FROM subjects WHERE student_id = ANY($1::uuid[])`, [studentIds])).rows.map((r: any) => r.id);
-    const conceptIds = (await db.query(`SELECT id FROM concepts WHERE subject_id = ANY($1::uuid[])`, [subjectIds])).rows.map((r: any) => r.id);
-    const idsFor: Record<string, string[]> = { students: studentIds, profiles: profileIds, subjects: subjectIds, concepts: conceptIds };
-    for (const r of refs) {
-      if (r.t === 'subjects' || r.t === 'concepts') continue;
-      await q(`DELETE FROM ${r.t} WHERE ${r.c} = ANY($1::uuid[])`, [idsFor[r.parent]]).catch(() => {});
+  // Every remaining row that references a fixture student/profile/subject/concept, removed
+  // depth-first along the FK graph (children before parents), scoped strictly to fixture ids.
+  const fkRows = (await db.query(
+    `SELECT conrelid::regclass::text AS t, a.attname AS c, confrelid::regclass::text AS parent, pa.attname AS pc
+     FROM pg_constraint con
+     JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = con.conkey[1]
+     JOIN pg_attribute pa ON pa.attrelid = con.confrelid AND pa.attnum = con.confkey[1]
+     WHERE con.contype = 'f' AND array_length(con.conkey, 1) = 1`
+  )).rows as { t: string; c: string; parent: string; pc: string }[];
+  const hasId = new Set((await db.query(`SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'id'`)).rows.map((r: any) => r.table_name));
+  const visiting = new Set<string>();
+  async function purge(table: string, keyColumn: string, keys: unknown[]): Promise<void> {
+    if (keys.length === 0) return;
+    const marker = `${table}.${keyColumn}`;
+    if (visiting.has(marker)) return;
+    visiting.add(marker);
+    // Rows of `table` being removed, as values of each column children may reference.
+    for (const fk of fkRows.filter((f) => f.parent === table && f.t !== table)) {
+      const parentKeys = fk.pc === keyColumn ? keys : (await db.query(`SELECT ${fk.pc} AS k FROM ${table} WHERE ${keyColumn} = ANY($1)`, [keys])).rows.map((r: any) => r.k);
+      if (parentKeys.length === 0) continue;
+      if (hasId.has(fk.t)) {
+        const childIds = (await db.query(`SELECT id FROM ${fk.t} WHERE ${fk.c} = ANY($1)`, [parentKeys])).rows.map((r: any) => r.id);
+        await purge(fk.t, 'id', childIds);
+      } else {
+        await purge(fk.t, fk.c, parentKeys);
+      }
     }
-    await q(`DELETE FROM concepts WHERE id = ANY($1::uuid[])`, [conceptIds]).catch(() => {});
-    await q(`DELETE FROM subjects WHERE id = ANY($1::uuid[])`, [subjectIds]).catch(() => {});
+    await db.query(`DELETE FROM ${table} WHERE ${keyColumn} = ANY($1)`, [keys]);
+    visiting.delete(marker);
   }
-  // Tables keyed by student id without an FK (learning engine projections, preferences).
+  const subjectIds = (await db.query(`SELECT id FROM subjects WHERE student_id = ANY($1::uuid[])`, [studentIds])).rows.map((r: any) => r.id);
+  await purge('subjects', 'id', subjectIds);
+  // Tables keyed by student id without an FK (learning engine projections).
   const studentKeyed = (await db.query(
-    `SELECT table_name FROM information_schema.columns WHERE column_name = 'student_id' AND table_schema = 'public'
-       AND table_name NOT IN ('students') AND table_name IN (SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema = 'public')`
+    `SELECT c.table_name FROM information_schema.columns c JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema
+     WHERE c.column_name = 'student_id' AND c.table_schema = 'public' AND t.table_type = 'BASE TABLE' AND c.table_name NOT IN ('students')`
   )).rows.map((r: any) => r.table_name);
-  for (const t of studentKeyed) await q(`DELETE FROM ${t} WHERE student_id = ANY($1::uuid[])`, [studentIds]).catch(() => {});
+  for (const t of studentKeyed) {
+    if (hasId.has(t)) {
+      const rowIds = (await db.query(`SELECT id FROM ${t} WHERE student_id = ANY($1::uuid[])`, [studentIds])).rows.map((r: any) => r.id);
+      await purge(t, 'id', rowIds);
+    } else {
+      await purge(t, 'student_id', studentIds);
+    }
+  }
   await q(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[])`, [profileIds, userIds]);
   await q(`DELETE FROM user_roles WHERE user_id = ANY($1::uuid[])`, [userIds]);
-  await q(`DELETE FROM student_profiles WHERE id = ANY($1::uuid[])`, [profileIds]);
-  await q(`DELETE FROM profiles WHERE id = ANY($1::uuid[])`, [profileIds]);
-  await q(`DELETE FROM students WHERE id = ANY($1::uuid[])`, [studentIds]);
+  await purge('student_profiles', 'id', profileIds);
+  await purge('students', 'id', studentIds);
+  await purge('profiles', 'id', profileIds);
   await q(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [userIds]);
 
   for (const id of clerkIds) await clerk().users.deleteUser(id);
