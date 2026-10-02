@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { AttemptControls } from './AttemptControls';
 import { ItemRunner } from './ItemRunner';
+import { isAttemptDeletedFromHistory } from '@/lib/exam-core/history.service';
 
 /**
  * F15 Workstream A -- completes IVG-F14-01: a real, active attempt now
@@ -33,6 +34,8 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
 
   const attempt = await getSimulationAttempt(attemptId);
   if (!attempt || attempt.studentId !== studentId) notFound();
+  // Deleted from the Student's history (a pre-V2 attempt has no instance): never reachable again.
+  if (await isAttemptDeletedFromHistory(attempt.id)) notFound();
   // Track B: a submitted attempt is shown as its result (exam score vs canonical mastery, sections, review).
   if (attempt.status === 'COMPLETED') redirect(`/dashboard/exam-prep/attempt/${attempt.id}/result`);
   // Exam V2: the instance (if any) this attempt belongs to -- portfolio uploads are scoped to it.

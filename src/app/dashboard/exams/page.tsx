@@ -25,7 +25,7 @@ export default async function ExamsPage() {
   for (const f of EXAM_FAMILIES) labels[`exv2.family.${f}`] = t[`exam.family.${f}`] ?? f;
 
   const instances = await Promise.all((await listExamInstances(studentId)).map(toInstanceView));
-  const active = instances.filter((i) => i.status === 'READY' || i.status === 'IN_PROGRESS');
+  const active = instances.filter((i) => i.status === 'DRAFT' || i.status === 'READY' || i.status === 'IN_PROGRESS');
   const past = instances.filter((i) => i.status === 'COMPLETED' || i.status === 'ARCHIVED');
 
   return (

@@ -123,14 +123,17 @@ export async function getQualificationAggregate(studentId: string, examDefinitio
 }
 
 /** The Student's attempts for one profile, newest first, with their lifecycle facts (for the Exam Prep history). */
-export async function listProfileAttempts(examProfileId: string): Promise<Array<{ id: string; simulationType: string; timingMode: string; status: string; createdAt: string; finalScore: number | null; finalLabel: string | null; rawScore: number | null; maxScore: number | null; resultStatus: string | null; scoringStatus: string | null }>> {
+export async function listProfileAttempts(examProfileId: string): Promise<Array<{ id: string; simulationType: string; timingMode: string; status: string; createdAt: string; finalScore: number | null; finalLabel: string | null; rawScore: number | null; maxScore: number | null; resultStatus: string | null; scoringStatus: string | null; instanceMode: string | null; instanceFidelity: string | null }>> {
   const rows = await db.query(
     `SELECT sa.id, sa.simulation_type, sa.timing_mode, sa.status, sa.created_at,
-            r.final_score, r.final_label, r.raw_score, r.max_score, r.status AS result_status, r.scoring_status
+            r.final_score, r.final_label, r.raw_score, r.max_score, r.status AS result_status, r.scoring_status,
+            i.mode AS instance_mode, i.form->>'fidelity' AS instance_fidelity
        FROM simulation_attempts sa LEFT JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id
+       LEFT JOIN exam_instances i ON i.simulation_attempt_id = sa.id
       WHERE sa.exam_profile_id = $1
-        -- Exam V2: an attempt whose exam instance the Student deleted is hidden from the visible history (its result is kept).
-        AND NOT EXISTS (SELECT 1 FROM exam_instances i WHERE i.simulation_attempt_id = sa.id AND i.status = 'DELETED')
+        -- Deleted from the visible history (history.service): a deleted Exam V2 instance, or a hidden
+        -- pre-V2 attempt. Result, responses and evidence are kept.
+        AND sa.hidden_at IS NULL AND (i.id IS NULL OR i.status <> 'DELETED')
       ORDER BY sa.created_at DESC LIMIT 20`,
     [examProfileId]
   );
@@ -146,6 +149,8 @@ export async function listProfileAttempts(examProfileId: string): Promise<Array<
     maxScore: r.max_score === null ? null : Number(r.max_score),
     resultStatus: r.result_status,
     scoringStatus: r.scoring_status,
+    instanceMode: r.instance_mode ?? null,
+    instanceFidelity: r.instance_fidelity ?? null,
   }));
 }
 

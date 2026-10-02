@@ -1304,6 +1304,21 @@ export type MessageKey =
   | 'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS'
   | 'exv2.fact.calculator.allowed'
   | 'exv2.family.PAA'
+  | 'exv2.menu.more'
+  | 'exv2.delete.NOT_STARTED.action'
+  | 'exv2.delete.NOT_STARTED.title'
+  | 'exv2.delete.NOT_STARTED.body'
+  | 'exv2.delete.IN_PROGRESS.action'
+  | 'exv2.delete.IN_PROGRESS.title'
+  | 'exv2.delete.IN_PROGRESS.body'
+  | 'exv2.delete.COMPLETED.action'
+  | 'exv2.delete.COMPLETED.title'
+  | 'exv2.delete.COMPLETED.body'
+  | 'exv2.delete.ENDED.action'
+  | 'exv2.delete.ENDED.title'
+  | 'exv2.delete.ENDED.body'
+  | 'exv2.delete.done'
+  | 'exv2.history.score'
   | 'exv2.result.reviewRequired'
   | 'exv2.result.itemReview'
   | 'exv2.result.portfolioAnswer'
@@ -3246,6 +3261,21 @@ const es: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'El simulacro completo incluye todas las áreas.',
   'exv2.fact.calculator.allowed': 'calculadora permitida',
   'exv2.family.PAA': 'PAA',
+  'exv2.menu.more': 'Más acciones',
+  'exv2.delete.NOT_STARTED.action': 'Eliminar examen',
+  'exv2.delete.NOT_STARTED.title': '¿Quieres eliminar este examen?',
+  'exv2.delete.NOT_STARTED.body': 'Todavía no lo empezaste. Desaparecerá de tus exámenes.',
+  'exv2.delete.IN_PROGRESS.action': 'Cancelar y eliminar intento',
+  'exv2.delete.IN_PROGRESS.title': '¿Quieres cancelar y eliminar este intento?',
+  'exv2.delete.IN_PROGRESS.body': 'No podrás continuar este intento.',
+  'exv2.delete.COMPLETED.action': 'Eliminar de mi historial',
+  'exv2.delete.COMPLETED.title': '¿Quieres eliminar este examen de tu historial?',
+  'exv2.delete.COMPLETED.body': 'Dejará de aparecer en tu historial. Su resultado queda guardado como registro y lo que ya aprendiste no se pierde.',
+  'exv2.delete.ENDED.action': 'Eliminar de mi historial',
+  'exv2.delete.ENDED.title': '¿Quieres eliminar este intento de tu historial?',
+  'exv2.delete.ENDED.body': 'Este intento ya no se puede continuar. Dejará de aparecer en tu historial.',
+  'exv2.delete.done': 'Eliminado de tu historial.',
+  'exv2.history.score': 'Resultado: {score}',
 };
 
 const en: Messages = {
@@ -5174,6 +5204,21 @@ const en: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'The full mock includes every area.',
   'exv2.fact.calculator.allowed': 'calculator allowed',
   'exv2.family.PAA': 'PAA',
+  'exv2.menu.more': 'More actions',
+  'exv2.delete.NOT_STARTED.action': 'Delete exam',
+  'exv2.delete.NOT_STARTED.title': 'Do you want to delete this exam?',
+  'exv2.delete.NOT_STARTED.body': 'You have not started it yet. It will disappear from your exams.',
+  'exv2.delete.IN_PROGRESS.action': 'Cancel and delete attempt',
+  'exv2.delete.IN_PROGRESS.title': 'Do you want to cancel and delete this attempt?',
+  'exv2.delete.IN_PROGRESS.body': 'You will not be able to continue this attempt.',
+  'exv2.delete.COMPLETED.action': 'Remove from my history',
+  'exv2.delete.COMPLETED.title': 'Do you want to remove this exam from your history?',
+  'exv2.delete.COMPLETED.body': 'It will no longer appear in your history. Its result is kept as a record and what you have learned is not lost.',
+  'exv2.delete.ENDED.action': 'Remove from my history',
+  'exv2.delete.ENDED.title': 'Do you want to remove this attempt from your history?',
+  'exv2.delete.ENDED.body': 'This attempt can no longer be continued. It will no longer appear in your history.',
+  'exv2.delete.done': 'Removed from your history.',
+  'exv2.history.score': 'Result: {score}',
 };
 
 const de: Messages = {
@@ -7102,6 +7147,21 @@ const de: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'Die vollständige Probeprüfung umfasst alle Bereiche.',
   'exv2.fact.calculator.allowed': 'Taschenrechner erlaubt',
   'exv2.family.PAA': 'PAA',
+  'exv2.menu.more': 'Weitere Aktionen',
+  'exv2.delete.NOT_STARTED.action': 'Prüfung löschen',
+  'exv2.delete.NOT_STARTED.title': 'Möchtest du diese Prüfung löschen?',
+  'exv2.delete.NOT_STARTED.body': 'Du hast sie noch nicht begonnen. Sie verschwindet aus deinen Prüfungen.',
+  'exv2.delete.IN_PROGRESS.action': 'Versuch abbrechen und löschen',
+  'exv2.delete.IN_PROGRESS.title': 'Möchtest du diesen Versuch abbrechen und löschen?',
+  'exv2.delete.IN_PROGRESS.body': 'Du kannst diesen Versuch nicht fortsetzen.',
+  'exv2.delete.COMPLETED.action': 'Aus meinem Verlauf entfernen',
+  'exv2.delete.COMPLETED.title': 'Möchtest du diese Prüfung aus deinem Verlauf entfernen?',
+  'exv2.delete.COMPLETED.body': 'Sie erscheint nicht mehr in deinem Verlauf. Ihr Ergebnis bleibt als Nachweis gespeichert, und was du gelernt hast, geht nicht verloren.',
+  'exv2.delete.ENDED.action': 'Aus meinem Verlauf entfernen',
+  'exv2.delete.ENDED.title': 'Möchtest du diesen Versuch aus deinem Verlauf entfernen?',
+  'exv2.delete.ENDED.body': 'Dieser Versuch kann nicht mehr fortgesetzt werden. Er erscheint nicht mehr in deinem Verlauf.',
+  'exv2.delete.done': 'Aus deinem Verlauf entfernt.',
+  'exv2.history.score': 'Ergebnis: {score}',
 };
 
 const fr: Messages = {
@@ -9030,6 +9090,21 @@ const fr: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'L’examen blanc complet comprend toutes les parties.',
   'exv2.fact.calculator.allowed': 'calculatrice autorisée',
   'exv2.family.PAA': 'PAA',
+  'exv2.menu.more': 'Plus d’actions',
+  'exv2.delete.NOT_STARTED.action': 'Supprimer l’examen',
+  'exv2.delete.NOT_STARTED.title': 'Veux-tu supprimer cet examen ?',
+  'exv2.delete.NOT_STARTED.body': 'Tu ne l’as pas encore commencé. Il disparaîtra de tes examens.',
+  'exv2.delete.IN_PROGRESS.action': 'Annuler et supprimer la tentative',
+  'exv2.delete.IN_PROGRESS.title': 'Veux-tu annuler et supprimer cette tentative ?',
+  'exv2.delete.IN_PROGRESS.body': 'Tu ne pourras pas continuer cette tentative.',
+  'exv2.delete.COMPLETED.action': 'Retirer de mon historique',
+  'exv2.delete.COMPLETED.title': 'Veux-tu retirer cet examen de ton historique ?',
+  'exv2.delete.COMPLETED.body': 'Il n’apparaîtra plus dans ton historique. Son résultat est conservé comme trace et ce que tu as appris n’est pas perdu.',
+  'exv2.delete.ENDED.action': 'Retirer de mon historique',
+  'exv2.delete.ENDED.title': 'Veux-tu retirer cette tentative de ton historique ?',
+  'exv2.delete.ENDED.body': 'Cette tentative ne peut plus être continuée. Elle n’apparaîtra plus dans ton historique.',
+  'exv2.delete.done': 'Retiré de ton historique.',
+  'exv2.history.score': 'Résultat : {score}',
 };
 
 const pt: Messages = {
@@ -10958,6 +11033,21 @@ const pt: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'O simulado completo inclui todas as áreas.',
   'exv2.fact.calculator.allowed': 'calculadora permitida',
   'exv2.family.PAA': 'PAA',
+  'exv2.menu.more': 'Mais ações',
+  'exv2.delete.NOT_STARTED.action': 'Excluir exame',
+  'exv2.delete.NOT_STARTED.title': 'Quer excluir este exame?',
+  'exv2.delete.NOT_STARTED.body': 'Você ainda não o começou. Ele sairá dos seus exames.',
+  'exv2.delete.IN_PROGRESS.action': 'Cancelar e excluir tentativa',
+  'exv2.delete.IN_PROGRESS.title': 'Quer cancelar e excluir esta tentativa?',
+  'exv2.delete.IN_PROGRESS.body': 'Você não poderá continuar esta tentativa.',
+  'exv2.delete.COMPLETED.action': 'Remover do meu histórico',
+  'exv2.delete.COMPLETED.title': 'Quer remover este exame do seu histórico?',
+  'exv2.delete.COMPLETED.body': 'Ele deixará de aparecer no seu histórico. O resultado fica guardado como registro e o que você aprendeu não se perde.',
+  'exv2.delete.ENDED.action': 'Remover do meu histórico',
+  'exv2.delete.ENDED.title': 'Quer remover esta tentativa do seu histórico?',
+  'exv2.delete.ENDED.body': 'Esta tentativa não pode mais ser continuada. Ela deixará de aparecer no seu histórico.',
+  'exv2.delete.done': 'Removido do seu histórico.',
+  'exv2.history.score': 'Resultado: {score}',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

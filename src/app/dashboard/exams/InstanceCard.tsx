@@ -2,13 +2,14 @@
 
 /**
  * Exam V2 -- one exam instance: what it is (papers, mode), how faithful its
- * form is to the official paper, and the actions its state allows. Deleting
- * an instance that was started asks for an explicit in-page confirmation
- * (no browser dialog) and says what happens to the result.
+ * form is to the official paper, its date and result, and the actions its
+ * state allows. Deleting goes through the "⋯" menu (ExamDeleteMenu), which
+ * names the action after the state and always asks for confirmation.
  */
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ExamDeleteMenu, type ExamDeleteKind } from './ExamDeleteMenu';
 
 type L = Record<string, string>;
 
@@ -35,6 +36,7 @@ export interface InstanceView {
   simulationAttemptId: string | null;
   createdAt: string;
   completedAt: string | null;
+  result?: { rawScore: number; maxScore: number } | null;
 }
 
 const fmt = (s: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s);
@@ -42,8 +44,7 @@ const fmt = (s: string, vars: Record<string, string | number>) => Object.entries
 export function InstanceCard({ instance: initial, labels: l, language, highlight = false }: { instance: InstanceView; labels: L; language: string; highlight?: boolean }) {
   const router = useRouter();
   const [instance, setInstance] = useState(initial);
-  const [busy, setBusy] = useState<null | 'start' | 'retake' | 'delete'>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState<null | 'start' | 'retake'>(null);
   const [error, setError] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
 
@@ -76,27 +77,9 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
     }
   }
 
-  async function remove() {
-    const needsConfirm = instance.status === 'IN_PROGRESS' || instance.status === 'COMPLETED';
-    if (needsConfirm && !confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    setBusy('delete');
-    setError(null);
-    try {
-      const r = await fetch(`/api/exams/instances/${instance.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: needsConfirm }) });
-      if (!r.ok) {
-        setError(l['exv2.error.generic']);
-        return;
-      }
-      setGone(true);
-      router.refresh();
-    } finally {
-      setBusy(null);
-      setConfirmDelete(false);
-    }
-  }
+  const deleteKind: ExamDeleteKind | null =
+    instance.status === 'DRAFT' || instance.status === 'READY' ? 'NOT_STARTED' : instance.status === 'IN_PROGRESS' ? 'IN_PROGRESS' : instance.status === 'COMPLETED' || instance.status === 'ARCHIVED' ? 'COMPLETED' : null;
+  const date = new Date(instance.completedAt ?? instance.createdAt).toLocaleDateString(language, { day: 'numeric', month: 'short', year: 'numeric' });
 
   async function newMock() {
     const next = await post(`/api/exams/instances/${instance.id}/retake`, {}, 'retake');
@@ -126,6 +109,10 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
           <p className="xr-kicker">{l[`exv2.family.${instance.exam.family}`] ?? instance.exam.family}</p>
           <h3 className="exv2-instance-name">{instance.exam.definitionName}</h3>
           <p className="ex-card-meta">{instance.components.map((c) => c.name).join(' + ')}</p>
+          <p className="ex-card-meta">
+            {date}
+            {instance.status === 'COMPLETED' && instance.result ? ` · ${fmt(l['exv2.history.score'], { score: `${instance.result.rawScore}/${instance.result.maxScore}` })}` : ''}
+          </p>
         </div>
         <div className="exv2-badges">
           <span className={`xr-pill${instance.mode === 'CHALLENGE' ? ' is-warn' : instance.mode === 'MOCK' ? ' is-good' : ''}`}>
@@ -152,16 +139,6 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
       )}
       <p className="ui-hint">{fmt(l['exv2.origin.notice'], { framework: l[`exv2.family.${instance.exam.family}`] ?? instance.exam.family })}</p>
 
-      {confirmDelete && (
-        <div className="exv2-confirm" role="alertdialog" aria-labelledby={`exv2-del-${instance.id}`}>
-          <p id={`exv2-del-${instance.id}`}>{instance.status === 'COMPLETED' ? l['exv2.delete.confirmCompleted'] : l['exv2.delete.confirmInProgress']}</p>
-          <div className="xr-next-actions">
-            <button type="button" className="btn btn-danger" onClick={remove} disabled={busy === 'delete'}>{l['exv2.delete.yes']}</button>
-            <button type="button" className="btn" onClick={() => setConfirmDelete(false)}>{l['exv2.delete.no']}</button>
-          </div>
-        </div>
-      )}
-
       <div className="xr-next-actions">
         {instance.status === 'READY' && (
           <button type="button" className="btn btn-primary" onClick={start} disabled={busy !== null}>{busy === 'start' ? l['exv2.action.starting'] : l['exv2.action.start']}</button>
@@ -175,8 +152,17 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
         {(instance.status === 'COMPLETED' || instance.status === 'ARCHIVED') && (
           <button type="button" className="btn" onClick={retake} disabled={busy !== null}>{l['exv2.action.retake']}</button>
         )}
-        {!confirmDelete && (
-          <button type="button" className="btn btn-ghost" onClick={remove} disabled={busy !== null}>{l['exv2.action.delete']}</button>
+        {deleteKind && (
+          <ExamDeleteMenu
+            kind={deleteKind}
+            endpoint={`/api/exams/instances/${instance.id}`}
+            examName={instance.exam.definitionName}
+            labels={l}
+            onDeleted={() => {
+              setGone(true);
+              router.refresh();
+            }}
+          />
         )}
       </div>
       {error && <p role="alert" className="xr-error">{error}</p>}

@@ -12,10 +12,11 @@ import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
-async function load(id: string, actorUserId: string) {
+async function load(id: string, actorUserId: string, opts: { allowDeleted?: boolean } = {}) {
   if (!UUID.test(id)) return { error: NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 }) };
   const instance = await getExamInstance(id);
-  if (!instance || instance.status === 'DELETED') return { error: NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 }) };
+  // A deleted instance is gone for reads; a repeated DELETE by its owner is answered idempotently.
+  if (!instance || (instance.status === 'DELETED' && !opts.allowDeleted)) return { error: NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 }) };
   const owner = await requireOwnerOf(actorUserId, instance.studentId);
   // 404, not 403: a guessed id never confirms another Student's exam exists.
   if (!owner.ok) return { error: NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 }) };
@@ -39,7 +40,7 @@ async function handleDELETE(request: NextRequest, { params }: { params: Promise<
   if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
   const parsed = DeleteSchema.safeParse((await request.json().catch(() => ({}))) ?? {});
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
-  const r = await load(id, gate.actorUserId);
+  const r = await load(id, gate.actorUserId, { allowDeleted: true });
   if ('error' in r) return r.error;
   try {
     const out = await deleteExamInstance(r.instance!.id, { ...parsed.data, ownerStudentId: r.instance!.studentId });

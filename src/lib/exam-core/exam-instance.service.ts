@@ -417,6 +417,8 @@ export interface ExamInstanceView {
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  /** The scored result of a completed instance (raw / max), for the history card. */
+  result: { rawScore: number; maxScore: number } | null;
 }
 
 export async function toInstanceView(instance: ExamInstance): Promise<ExamInstanceView> {
@@ -428,6 +430,9 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
   ).rows[0];
   const comps = (await db.query(`SELECT id, name, definition->>'officialName' AS official FROM assessment_components WHERE id = ANY($1::uuid[])`, [instance.componentIds])).rows;
   const byId = new Map(comps.map((c: any) => [c.id, c.official ?? c.name]));
+  const scored = instance.status === 'COMPLETED' && instance.simulationAttemptId
+    ? (await db.query(`SELECT r.raw_score, r.max_score FROM simulation_attempts sa JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id WHERE sa.id = $1 AND r.status = 'SCORED'`, [instance.simulationAttemptId])).rows[0]
+    : null;
   const f = instance.form;
   return {
     id: instance.id,
@@ -456,6 +461,7 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
     createdAt: instance.createdAt,
     startedAt: instance.startedAt,
     completedAt: instance.completedAt,
+    result: scored ? { rawScore: Number(scored.raw_score), maxScore: Number(scored.max_score) } : null,
   };
 }
 

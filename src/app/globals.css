@@ -2121,6 +2121,21 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .exv2-confirm { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--error); border-radius: var(--radius-md); background: var(--error-subtle); }
 .exv2-confirm p { margin: 0; }
 .btn-danger { background: var(--error); color: #fff; }
+.exv2-menu { position: relative; display: inline-flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
+.exv2-menu.is-expanded { flex-basis: 100%; }
+.exv2-menu.is-expanded .exv2-confirm { flex-basis: 100%; }
+.exv2-menu-trigger { min-width: 44px; min-height: 44px; font-size: var(--fs-lg); line-height: 1; }
+.exv2-menu-list { position: absolute; top: calc(100% + var(--space-1)); right: 0; z-index: 20; min-width: 15rem; padding: var(--space-1); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); box-shadow: var(--shadow-lg); }
+.exv2-menu-item { display: block; width: 100%; min-height: 44px; padding: var(--space-2) var(--space-3); border: 0; border-radius: var(--radius-sm, 6px); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.exv2-menu-item:hover, .exv2-menu-item:focus-visible { background: var(--error-subtle); }
+.exv2-menu-item.is-danger { color: var(--error); }
+.exv2-confirm-title { font-weight: 600; }
+.exv2-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.exv2-history-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--border-default); }
+.exv2-history-row:first-child { border-top: 0; }
+.exv2-history-main { min-width: 0; flex: 1 1 14rem; }
+.exv2-history-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.exv2-history .ex-card-meta { margin: var(--space-1) 0 0; }
 .exv2-origin { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); }
 .exv2-math { display: flex; flex-direction: column; gap: var(--space-2); }
 .exv2-working { min-height: 96px; font-family: var(--font-mono, ui-monospace, monospace); font-size: var(--fs-sm); }

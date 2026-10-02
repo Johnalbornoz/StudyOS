@@ -22,6 +22,7 @@ import {
   timingModeBodyKey,
 } from '@/lib/experience/exam-prep';
 import { StartSimulationPanel, type StartSimulationLabels } from './StartSimulationPanel';
+import { AttemptHistory } from './AttemptHistory';
 import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
 import { getQualificationAggregate, listProfileAttempts, listVersionAreas } from '@/lib/exam-core/catalog.service';
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
@@ -274,27 +275,19 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
 
           <section className="card ex-status" aria-labelledby="ex-history-title">
             <h2 id="ex-history-title" className="ex-status-title">{t['examPrep.history.title']}</h2>
-            {attempts.length === 0 ? (
-              <p className="ui-hint" style={{ margin: 0 }}>{t['examPrep.history.empty']}</p>
-            ) : (
-              <ul className="xr-objectives">
-                {attempts.map((a) => (
-                  <li key={a.id}>
-                    <span>{new Date(a.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' })} · {tr[`ex.type.${a.simulationType}`] ?? a.simulationType}</span>{' '}
-                    <span className="xr-pill">
-                      {a.resultStatus === 'SCORED'
-                        ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`)
-                        : tr[`examPrep.attempt.status.${a.status}`] ?? a.status}
-                    </span>{' '}
-                    {a.status === 'COMPLETED' ? (
-                      <Link href={`/dashboard/exam-prep/attempt/${a.id}/result`}>{t['examPrep.history.view']}</Link>
-                    ) : a.status === 'ACTIVE' || a.status === 'PAUSED' ? (
-                      <Link href={`/dashboard/exam-prep/attempt/${a.id}`}>{t['examPrep.history.open']}</Link>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AttemptHistory
+              locale={locale}
+              rows={attempts.map((a) => ({
+                id: a.id,
+                name: `${definition?.name ?? ''} · ${
+                  a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+                }`,
+                status: a.status,
+                createdAt: a.createdAt,
+                result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
+              }))}
+              labels={Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('exv2.') || k.startsWith('examPrep.history.') || k.startsWith('examPrep.attempt.status.')))}
+            />
           </section>
 
           <section className="card ex-status" aria-labelledby="ex-next-title">

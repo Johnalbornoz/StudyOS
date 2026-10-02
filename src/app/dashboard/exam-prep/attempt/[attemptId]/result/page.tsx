@@ -15,6 +15,7 @@ import { buildLearningBridge } from '@/lib/exam-core/learning-bridge.service';
 import { findInstanceByAttempt } from '@/lib/exam-core/exam-instance.service';
 import { ConceptRequestButton, RetakeButton, ReinforceButton } from './BridgeActions';
 import MathText from '@/components/MathText';
+import { isAttemptDeletedFromHistory } from '@/lib/exam-core/history.service';
 
 /**
  * Track B / B10 -- the result of one submitted attempt.
@@ -57,6 +58,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
   const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
   // Soft-deleted by the Student: hidden from every visible surface (the result itself is preserved).
   if (instance?.status === 'DELETED') notFound();
+  if (await isAttemptDeletedFromHistory(attempt.id)) notFound();
   const bridge = result && result.status === 'SCORED' ? await buildLearningBridge({ simulationAttemptId: attempt.id, studentId, objectives: view.objectives }).catch(() => []) : [];
   const v2: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('exv2.')));
   const fmt = (key: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), tr[key] ?? key);
