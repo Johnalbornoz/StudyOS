@@ -354,8 +354,9 @@ async function s58(w: World, st: any) {
     await db.query(`INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) VALUES ($1, $2, 'ACTIVE', $3, NOW()) ON CONFLICT (class_id, student_id) DO UPDATE SET status = 'ACTIVE', ended_at = NULL`, [klass, s, w.users['lp-teacher']]);
   }
   st.klass3A = klass;
-  // backward compatibility: the LP class (V1 adoption) is associated to its curriculum
-  check('S58.v1-adoption-associates-class', (await q1(`SELECT institution_curriculum_id FROM classes WHERE id = $1`, [w.lpClass]))?.institution_curriculum_id === w.lpCurriculum);
+  // the LP class is associated to its curriculum by an EXPLICIT, audited coordinator choice (never by adoption / subject match)
+  check('S58.lp-class-explicitly-associated', (await q1(`SELECT institution_curriculum_id FROM classes WHERE id = $1`, [w.lpClass]))?.institution_curriculum_id === w.lpCurriculum
+    && Number((await q1(`SELECT count(*) n FROM academic_governance_events WHERE object_id::text = $1 AND action IN ('CLASS_CURRICULUM_ASSIGNED', 'CLASS_CURRICULUM_CHANGED')`, [w.lpClass]))?.n ?? 0) > 0);
   await page('S58-class-detail', `/dashboard/institution/${w.inst}/classes/${klass}`, 'lp-coord', ['Mathematics', 'AS Level']);
 }
 

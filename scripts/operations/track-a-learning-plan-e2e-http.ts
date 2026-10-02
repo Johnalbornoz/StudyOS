@@ -284,6 +284,11 @@ async function s57(w: World, state: { curriculumId?: string }) {
   const adopt = await post(`${base}/curricula`, 'lp-coord', { canonicalSubjectId: w.mathSubject, gradeId: w.grade, academicYear: '2026-2027', title: 'Matemáticas 11 LP' });
   state.curriculumId = adopt.body?.data?.id ?? adopt.body?.data?.curriculumId;
   check('S57.adopt', adopt.status === 201 && !!state.curriculumId, `${adopt.status} ${adopt.text.slice(0, 160)}`);
+  // Adopting a curriculum binds no class: the coordinator associates the LP class EXPLICITLY.
+  const unbound = await get(`${base}/classes/${w.klass}/curriculum`, 'lp-coord');
+  check('S57.adopt-binds-no-class', unbound.status === 200 && unbound.body?.data?.currentCurriculumId === null, `${unbound.status} ${unbound.text.slice(0, 120)}`);
+  const bind = await post(`${base}/classes/${w.klass}/curriculum`, 'lp-coord', { curriculumId: state.curriculumId });
+  check('S57.explicit-class-binding', bind.status === 200 && bind.body?.data?.curriculumId === state.curriculumId, `${bind.status} ${bind.text.slice(0, 160)}`);
   const dup = await post(`${base}/curricula`, 'lp-coord', { canonicalSubjectId: w.mathSubject, gradeId: w.grade, academicYear: '2026-2027', title: 'Otra' });
   check('S57.adopt-duplicate-refused', dup.status === 409, `${dup.status}`);
   const detail = await get(`${base}/curricula/${state.curriculumId}`, 'lp-coord');
