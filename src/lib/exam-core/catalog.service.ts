@@ -129,6 +129,8 @@ export async function listProfileAttempts(examProfileId: string): Promise<Array<
             r.final_score, r.final_label, r.raw_score, r.max_score, r.status AS result_status, r.scoring_status
        FROM simulation_attempts sa LEFT JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id
       WHERE sa.exam_profile_id = $1
+        -- Exam V2: an attempt whose exam instance the Student deleted is hidden from the visible history (its result is kept).
+        AND NOT EXISTS (SELECT 1 FROM exam_instances i WHERE i.simulation_attempt_id = sa.id AND i.status = 'DELETED')
       ORDER BY sa.created_at DESC LIMIT 20`,
     [examProfileId]
   );

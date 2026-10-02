@@ -43,7 +43,7 @@ async function handleDELETE(request: NextRequest, { params }: { params: Promise<
   if ('error' in r) return r.error;
   try {
     const out = await deleteExamInstance(r.instance!.id, { ...parsed.data, ownerStudentId: r.instance!.studentId });
-    return NextResponse.json({ success: true, data: { status: out.instance.status, resultInvalidated: out.resultInvalidated, attemptAbandoned: out.attemptAbandoned } });
+    return NextResponse.json({ success: true, data: { status: out.instance.status, resultPreserved: out.resultPreserved, attemptAbandoned: out.attemptAbandoned } });
   } catch (err) {
     if (err instanceof ExamInstanceError) return NextResponse.json({ error: err.code }, { status: 409 });
     throw err;

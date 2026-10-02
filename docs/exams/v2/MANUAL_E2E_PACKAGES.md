@@ -38,7 +38,7 @@ Borra solo los datos de examen de ese Student sobre versiones de prueba. No borr
 - **Eliminar:**
   - Listo: se elimina directo.
   - En curso: aviso «Esta prueba está en curso. Si la eliminas perderás este intento.»; tras confirmar, el intento no se puede reanudar.
-  - Terminado: se oculta y el resultado se anula; el aprendizaje registrado se conserva.
+  - Terminado: deja de mostrarse en el historial (lista de exámenes, historial de Exam Prep y página de resultados); el resultado y el aprendizaje registrado se conservan.
 - **Nuevo intento desde cero:** «Crear nuevo simulacro» o «Repetir con preguntas nuevas» crea un examen nuevo, con preguntas preferentemente nuevas, sin borradores, sin posición previa, sin nota previa y con el reloj desde cero.
 - **Seguridad (con un segundo Student):** pegar la URL de un intento, un resultado o un archivo del primer Student devuelve «no encontrado».
 

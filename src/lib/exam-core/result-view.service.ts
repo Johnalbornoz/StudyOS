@@ -95,7 +95,11 @@ function mathLiteral(v: unknown): string | null {
 function displayAnswer(item: ExamItem, raw: string | null): string | null {
   if (raw === null || raw === undefined || raw === '') return null;
   if (item.exam?.portfolio) return null;
-  if (item.exam?.math) return mathLiteral(raw);
+  // Math is returned as `$...$` segments so the page renders it as math, never as raw LaTeX.
+  if (item.exam?.math) {
+    const m = mathLiteral(raw);
+    return m ? `$${m}$` : null;
+  }
   if (item.exam?.parts) {
     try {
       const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -103,7 +107,10 @@ function displayAnswer(item: ExamItem, raw: string | null): string | null {
         .map((p) => {
           const v = parsed[p.id];
           if (!v) return `(${p.id}) —`;
-          if (p.answerFormat === 'math') return `(${p.id}) ${mathLiteral(v) ?? '—'}`;
+          if (p.answerFormat === 'math') {
+            const m = mathLiteral(v);
+            return `(${p.id}) ${m ? `$${m}$` : '—'}`;
+          }
           return `(${p.id}) ${p.answerFormat === 'text' ? String(v) : (p.options ?? []).find((o) => o.id === v)?.text ?? String(v)}`;
         })
         .join(' · ');
@@ -117,8 +124,9 @@ function displayAnswer(item: ExamItem, raw: string | null): string | null {
 
 function displayKey(item: ExamItem): string | null {
   if (item.exam?.portfolio) return null;
+  if (item.exam?.math) return `$${item.correctAnswer}$`;
   if (item.exam?.parts) {
-    return item.exam.parts.map((p) => `(${p.id}) ${p.answerFormat === 'text' || p.answerFormat === 'math' ? p.correctAnswer : (p.options ?? []).find((o) => o.id === p.correctAnswer)?.text ?? p.correctAnswer}`).join(' · ');
+    return item.exam.parts.map((p) => `(${p.id}) ${p.answerFormat === 'math' ? `$${p.correctAnswer}$` : p.answerFormat === 'text' ? p.correctAnswer : (p.options ?? []).find((o) => o.id === p.correctAnswer)?.text ?? p.correctAnswer}`).join(' · ');
   }
   if (item.answerFormat === 'single_choice' || item.answerFormat === 'multi_choice') return optionText(item, item.correctAnswer);
   if (item.answerFormat === 'text') return item.correctAnswer;

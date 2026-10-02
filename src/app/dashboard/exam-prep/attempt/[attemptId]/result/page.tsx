@@ -14,6 +14,7 @@ import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge
 import { buildLearningBridge } from '@/lib/exam-core/learning-bridge.service';
 import { findInstanceByAttempt } from '@/lib/exam-core/exam-instance.service';
 import { ConceptRequestButton, RetakeButton } from './BridgeActions';
+import MathText from '@/components/MathText';
 
 /**
  * Track B / B10 -- the result of one submitted attempt.
@@ -54,6 +55,8 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
   const sitting = [view.exam.examYear, view.exam.examSession].filter(Boolean).join(' · ');
   // Exam V2: the instance (mode), the Exam -> Learning bridge and the retest loop.
   const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
+  // Soft-deleted by the Student: hidden from every visible surface (the result itself is preserved).
+  if (instance?.status === 'DELETED') notFound();
   const bridge = result && result.status === 'SCORED' ? await buildLearningBridge({ simulationAttemptId: attempt.id, studentId, objectives: view.objectives }).catch(() => []) : [];
   const v2: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('exv2.')));
   const fmt = (key: string, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), tr[key] ?? key);
@@ -229,7 +232,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                         {r.stimulusTitle && <p className="ui-hint">{r.stimulusTitle}</p>}
                         {r.question && <p>{r.question}</p>}
                         {r.reviewRequired && <p className="xr-notice">{tr['exv2.result.itemReview']}</p>}
-                        <p><strong>{t['examPrep.result.yourAnswer']}:</strong> {r.answerKind === 'PORTFOLIO' ? tr['exv2.result.portfolioAnswer'] : r.yourAnswer ?? '—'}</p>
+                        <p><strong>{t['examPrep.result.yourAnswer']}:</strong> {r.answerKind === 'PORTFOLIO' ? tr['exv2.result.portfolioAnswer'] : r.answerKind === 'MATH' && r.yourAnswer ? <MathText text={r.yourAnswer} /> : r.yourAnswer ?? '—'}</p>
                         {r.rubric && (
                           <div>
                             <p><strong>{tr['exv2.result.criteria']}:</strong> {r.rubric.criteria.map((c) => `${c.id} ${c.name}: ${c.awarded}/${c.max}`).join(' · ')}</p>
@@ -244,7 +247,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                             {r.rubric.rationale && <p className="ui-hint"><strong>{tr['exv2.result.assessorNote']}:</strong> {r.rubric.rationale}</p>}
                           </div>
                         )}
-                        {r.correctAnswer && r.answerKind !== 'PORTFOLIO' && !r.rubric && <p><strong>{t['examPrep.result.correctAnswer']}:</strong> {r.correctAnswer}</p>}
+                        {r.correctAnswer && r.answerKind !== 'PORTFOLIO' && !r.rubric && <p><strong>{t['examPrep.result.correctAnswer']}:</strong> {r.answerKind === 'MATH' ? <MathText text={r.correctAnswer} /> : r.correctAnswer}</p>}
                         {r.explanation && <p className="ui-hint">{r.explanation}</p>}
                       </div>
                     </details>

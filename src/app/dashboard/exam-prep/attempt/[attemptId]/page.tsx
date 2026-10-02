@@ -37,6 +37,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   if (attempt.status === 'COMPLETED') redirect(`/dashboard/exam-prep/attempt/${attempt.id}/result`);
   // Exam V2: the instance (if any) this attempt belongs to -- portfolio uploads are scoped to it.
   const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
+  if (instance?.status === 'DELETED') notFound();
   // The content-origin label names the framework ("Práctica generada por StudyUS, alineada al formato de IB").
   const familyRow = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [attempt.examVersionId]).catch(() => ({ rows: [] as any[] }));
   const frameworkName = (t as Record<string, string>)[`exam.family.${familyRow.rows[0]?.exam_family}`] ?? familyRow.rows[0]?.exam_family ?? '';

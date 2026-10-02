@@ -26,7 +26,6 @@ import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/b
 import { listComponentsForVersion } from '@/lib/assessment/component.service';
 import { orderTargetsBySection } from '@/lib/simulation/plan.service';
 import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
-import { invalidateAttemptResult } from './results.service';
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { examItemFromApproved, examItemMarks } from './items';
 import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel } from './form-assembly';
@@ -328,18 +327,17 @@ export async function startExamInstance(instanceId: string, params: { language: 
  * Deletion rules (section 43):
  *   DRAFT / READY  -> DELETED; the unseen form is discarded and its item usage released.
  *   IN_PROGRESS    -> only with `confirm`; the attempt is abandoned (no result), then DELETED.
- *   COMPLETED      -> only with `confirm`; the result is INVALIDATED (kept for audit, no longer
- *                     shown or counted), then DELETED. Learning evidence already written from
- *                     the Student's own independent answers is real history and is kept.
+ *   COMPLETED      -> only with `confirm`; SOFT delete: the instance is DELETED (hidden from the
+ *                     Student's visible history). The attempt, its responses, its SCORED result
+ *                     and every piece of consolidated learning evidence are preserved untouched.
  *   ARCHIVED       -> DELETED.
  *   DELETED        -> no-op (idempotent).
  */
-export async function deleteExamInstance(instanceId: string, params: { confirm: boolean; reason?: string; ownerStudentId: string }): Promise<{ instance: ExamInstance; resultInvalidated: boolean; attemptAbandoned: boolean }> {
+export async function deleteExamInstance(instanceId: string, params: { confirm: boolean; reason?: string; ownerStudentId: string }): Promise<{ instance: ExamInstance; resultPreserved: boolean; attemptAbandoned: boolean }> {
   const instance = await getExamInstance(instanceId);
   // Owner-scoped in the service too (defense in depth): another Student's instance does not exist for this caller.
   if (!instance || instance.studentId !== params.ownerStudentId) throw new ExamInstanceError('NOT_FOUND');
-  if (instance.status === 'DELETED') return { instance, resultInvalidated: false, attemptAbandoned: false };
-  let resultInvalidated = false;
+  if (instance.status === 'DELETED') return { instance, resultPreserved: instance.completedAt !== null, attemptAbandoned: false };
   let attemptAbandoned = false;
   if ((instance.status === 'IN_PROGRESS' || instance.status === 'COMPLETED') && !params.confirm) throw new ExamInstanceError('CONFIRMATION_REQUIRED', instance.status);
 
@@ -353,13 +351,11 @@ export async function deleteExamInstance(instanceId: string, params: { confirm: 
       attemptAbandoned = true;
     }
   }
-  if (instance.status === 'COMPLETED' && instance.simulationAttemptId) {
-    const attempt = await getSimulationAttempt(instance.simulationAttemptId);
-    if (attempt) resultInvalidated = !!(await invalidateAttemptResult(attempt.examAttemptId, 'DELETED_BY_STUDENT'));
-  }
+  // COMPLETED: nothing below the instance is touched -- result and evidence stay as consolidated history.
+  const resultPreserved = instance.status === 'COMPLETED';
   const r = await db.query(`UPDATE exam_instances SET status = 'DELETED', deleted_at = now(), delete_reason = $2 WHERE id = $1 AND status <> 'DELETED' RETURNING *`, [instance.id, (params.reason ?? 'STUDENT_REQUEST').slice(0, 200)]);
-  console.log('[exam-core]', JSON.stringify({ at: 'exam_instance_deleted', instanceId: instance.id, from: instance.status, resultInvalidated, attemptAbandoned }));
-  return { instance: r.rows[0] ? toInstance(r.rows[0]) : instance, resultInvalidated, attemptAbandoned };
+  console.log('[exam-core]', JSON.stringify({ at: 'exam_instance_deleted', instanceId: instance.id, from: instance.status, resultPreserved, attemptAbandoned }));
+  return { instance: r.rows[0] ? toInstance(r.rows[0]) : instance, resultPreserved, attemptAbandoned };
 }
 
 /** A new attempt is always a NEW instance from zero (same papers, mode and rigor; a Mock gets a fresh form). */

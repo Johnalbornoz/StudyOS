@@ -17,10 +17,12 @@ import sharp from 'sharp';
 import { db } from '@/lib/db';
 import { getOrCreateCanonicalUser, assignSelfServiceRole } from '@/lib/identity';
 import { upsertStudentFromWebhook } from '@/lib/auth';
+import { updateMastery } from '@/services/mastery.service';
 import { applyExamVerticalConfig } from '@/lib/exam-core/apply-vertical-config.service';
 import { V2_VERTICALS } from '@/lib/exam-core/verticals/v2';
 import { applyAssessmentStructure, listStructureFamilies, listStructureChildren, resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
-import { createExamInstance, startExamInstance, deleteExamInstance, newInstanceFromExisting, getExamInstance, ensureExamProfile, ExamInstanceError, toInstanceView } from '@/lib/exam-core/exam-instance.service';
+import { createExamInstance, startExamInstance, deleteExamInstance, newInstanceFromExisting, getExamInstance, ensureExamProfile, ExamInstanceError, toInstanceView, listExamInstances } from '@/lib/exam-core/exam-instance.service';
+import { listProfileAttempts } from '@/lib/exam-core/catalog.service';
 import { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission, SimulationItemAccessDeniedError, SimulationInvalidResponseError } from '@/lib/simulation/item-resolution.service';
 import { completeSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { scoreAndRecordAttemptResult, getAttemptResult } from '@/lib/exam-core/results.service';
@@ -184,8 +186,25 @@ async function main() {
   const del1 = await deleteExamInstance(retake.id, { confirm: false, ownerStudentId: A.studentId });
   check('DELETE.ready-instance-deleted-usage-released', del1.instance.status === 'DELETED' && (await count(`SELECT count(*) n FROM exam_item_usage WHERE exam_instance_id = $1`, [retake.id])) === 0);
   check('DELETE.completed-needs-confirmation', await rejects(() => deleteExamInstance(mock.id, { confirm: false, ownerStudentId: A.studentId }), ExamInstanceError, 'CONFIRMATION_REQUIRED'));
+  // COMPLETED delete = soft delete of the instance only: result, responses and consolidated evidence preserved.
+  const mockExamAttemptId = (await getSimulationAttempt(simId))!.examAttemptId;
+  const evidenceSql = `SELECT count(*) n FROM learning_evidence WHERE student_id = $1 AND metadata->'context'->>'examAttemptId' = $2`;
+  // Consolidated evidence for this attempt, written through the REAL evidence writer (same call shape as scoring.service).
+  const subj = (await db.query(`INSERT INTO subjects (student_id, name) VALUES ($1, $2) RETURNING id`, [A.studentId, `tb2-${RUN} math`])).rows[0].id;
+  const conc = (await db.query(`INSERT INTO concepts (subject_id, canonical_id) VALUES ($1, $2) RETURNING id`, [subj, `tb2-${RUN}-logs`])).rows[0].id;
+  await updateMastery({
+    studentId: A.studentId, conceptId: conc, subjectId: subj,
+    evidence: { sourceType: 'EXAM_SIMULATION', result: 'correct', difficulty: 3, scorePercent: 100 },
+    telemetry: { activityType: 'EXAM_SIMULATION', learningMode: 'AI_NATIVE', aiAssistanceType: 'NONE' },
+    metadata: { context: { examAttemptId: mockExamAttemptId, simulationSource: true } },
+    identity: { operationType: 'EXAM_SIMULATION_RESPONSE', operationId: `tb2-${RUN}-evidence`, conceptId: conc },
+  } as never);
+  const before = { evidence: await count(evidenceSql, [A.studentId, mockExamAttemptId]), responses: await count(`SELECT count(*) n FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [mockExamAttemptId]), result: await getAttemptResult(mockExamAttemptId) };
   const del2 = await deleteExamInstance(mock.id, { confirm: true, ownerStudentId: A.studentId });
-  check('DELETE.completed-result-invalidated', del2.resultInvalidated && (await getAttemptResult((await getSimulationAttempt(simId))!.examAttemptId))?.status === 'INVALIDATED');
+  const afterResult = await getAttemptResult(mockExamAttemptId);
+  check('DELETE.completed-soft-delete-result-preserved', del2.resultPreserved && del2.instance.status === 'DELETED' && afterResult?.status === 'SCORED' && afterResult.responseSetHash === before.result?.responseSetHash && afterResult.rawScore === before.result?.rawScore);
+  check('DELETE.completed-evidence-and-responses-preserved', before.evidence >= 1 && (await count(evidenceSql, [A.studentId, mockExamAttemptId])) === before.evidence && (await count(`SELECT count(*) n FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [mockExamAttemptId])) === before.responses && before.responses > 0, `evidence=${before.evidence} responses=${before.responses}`);
+  check('DELETE.completed-hidden-from-visible-history', !(await listExamInstances(A.studentId)).some((i) => i.id === mock.id) && !(await listProfileAttempts(ib.profileId)).some((a) => a.id === simId));
 
   // ---- In-progress delete -> attempt cancelled, never resumable -> NEW ATTEMPT FROM ZERO ----
   const ip = await createExamInstance({ studentId: A.studentId, examProfileId: ib.profileId, examVersionId: ib.lvl.examVersionId, componentIds: [p1], mode: 'MOCK' });
@@ -346,6 +365,7 @@ async function cleanup() {
       await deleteCascade('exam_media_objects', 'owner_student_id', studentIds);
       await deleteCascade('student_exam_profiles', 'student_id', studentIds);
       await deleteCascade('learning_evidence', 'student_id', studentIds);
+      await deleteCascade('subjects', 'student_id', studentIds);
       await db.query(`DELETE FROM admin_audit_log WHERE actor_user_id = ANY($1::uuid[]) OR target_id = ANY($2::text[])`, [userIds, userIds]);
       await db.query(`DELETE FROM user_roles WHERE user_id = ANY($1::uuid[])`, [userIds]);
       await deleteCascade('students', 'id', studentIds);
