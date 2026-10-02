@@ -17,6 +17,7 @@
  * students' plans. It is NOT mastery and NOT StudyUS content coverage.
  */
 import { db } from '@/lib/db';
+import { bindingDomainAllowed, curriculumContextLabel, rankCurriculumCandidates } from './curriculum-identity';
 import { canonicalConceptLabels } from '@/lib/learning-plan/labels';
 import { recordGovernanceEvent } from './academic-governance';
 
@@ -34,6 +35,8 @@ export class CurriculumManagementError extends Error {
       | 'INVALID_CHANGE'
       | 'CONTENT_NOT_IN_CURRICULUM'
       | 'CLASS_SUBJECT_IN_USE'
+      | 'DOMAIN_MISMATCH'
+      | 'IMPACT_CONFIRMATION_REQUIRED'
   ) {
     super(code);
     this.name = 'CurriculumManagementError';
@@ -139,6 +142,8 @@ export interface CurriculumSubjectRow {
   archivedAt: string | null;
   replacedBy: string | null;
   canonicalSubjectId: string;
+  /** Canonical academic domain (e.g. MATHEMATICS) -- a grouping for suggestions, never an identity. */
+  academicDomain: string | null;
   academicSubjectId: string | null;
   versionId: string | null;
   structureImported: boolean;
@@ -153,7 +158,7 @@ export interface CurriculumSubjectRow {
 export async function listInstitutionCurriculumSubjects(institutionId: string, opts: { includeArchived?: boolean } = {}): Promise<CurriculumSubjectRow[]> {
   const r = await db.query(
     `SELECT ic.id, ic.title, ic.academic_year, ic.status, ic.archived_at, ic.replaced_by_curriculum_id, ic.grade_id, g.name AS grade_name,
-            ic.canonical_subject_id, cs.name AS canonical_subject, ic.base_academic_subject_id, ic.base_structure_version_id,
+            ic.canonical_subject_id, cs.name AS canonical_subject, cs.academic_domain_code, ic.base_academic_subject_id, ic.base_structure_version_id,
             COALESCE(ic.source_type, 'INSTITUTION_DEFINED') AS source_type,
             a.name AS subject, a.level, sv.version_label, sv.source_locator, p.id AS programme_id, COALESCE(p.name, ic.programme_label) AS programme, o.name AS authority, o.country,
             (SELECT COUNT(*) FROM classes c WHERE c.institution_curriculum_id = ic.id)::int AS classes,
@@ -193,6 +198,7 @@ export async function listInstitutionCurriculumSubjects(institutionId: string, o
     archivedAt: iso(x.archived_at),
     replacedBy: x.replaced_by_curriculum_id,
     canonicalSubjectId: x.canonical_subject_id,
+    academicDomain: x.academic_domain_code ?? null,
     academicSubjectId: x.base_academic_subject_id,
     versionId: x.base_structure_version_id,
     structureImported: Boolean(x.base_structure_version_id) && x.source_locator !== 'STRUCTURE_NOT_IMPORTED' && x.objectives_total > 0,
@@ -645,7 +651,15 @@ export async function updateInstitutionCurriculumContentStatus(params: {
   }
   if (params.concepts?.length) {
     const ids = params.concepts.map((c) => c.canonicalConceptId);
-    const valid = await db.query(`SELECT id FROM canonical_concepts WHERE id = ANY($1::uuid[]) AND canonical_subject_id = $2 AND status = 'ACTIVE'`, [ids, row.canonical_subject_id]);
+    // A concept of the curriculum's catalog subject, or -- governed equivalence -- of a catalog subject of the
+    // SAME academic domain (e.g. a concept shared by SEP Matemáticas and Cambridge Mathematics). Never another domain.
+    const valid = await db.query(
+      `SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects s ON s.id = cc.canonical_subject_id
+        JOIN canonical_subjects mine ON mine.id = $2
+        WHERE cc.id = ANY($1::uuid[]) AND cc.status = 'ACTIVE'
+          AND (cc.canonical_subject_id = $2 OR (mine.academic_domain_code IS NOT NULL AND s.academic_domain_code = mine.academic_domain_code))`,
+      [ids, row.canonical_subject_id]
+    );
     if (valid.rows.length !== new Set(ids).size) throw new CurriculumManagementError('CONTENT_NOT_IN_CURRICULUM');
     const current = await db.query(`SELECT canonical_concept_id, status, classification, institution_target_date, period FROM institution_curriculum_concepts WHERE curriculum_id = $1 AND canonical_concept_id = ANY($2::uuid[])`, [row.id, ids]);
     const by = new Map<string, any>(current.rows.map((r: any) => [r.canonical_concept_id, r]));
@@ -692,38 +706,113 @@ export async function updateInstitutionCurriculumContentStatus(params: {
 // Class association
 // ---------------------------------------------------------------------------
 
-/** ACTIVE curricula a class of this grade can use (exact grade first, then all-grades). */
-export async function compatibleCurriculaForClass(institutionId: string, gradeId: string | null) {
-  const all = await listInstitutionCurriculumSubjects(institutionId);
-  return all.filter((c) => !gradeId || !c.gradeId || c.gradeId === gradeId).sort((a, b) => Number(Boolean(b.gradeId)) - Number(Boolean(a.gradeId)));
+/** The canonical academic domains with their label in a language (e.g. MATHEMATICS -> Matemáticas). */
+export async function listAcademicDomains(locale: string): Promise<Array<{ code: string; label: string }>> {
+  const r = await db.query(`SELECT code, labels FROM canonical_academic_domains WHERE status = 'ACTIVE' ORDER BY code`);
+  return r.rows.map((x: any) => ({ code: x.code, label: x.labels?.[locale] ?? x.labels?.en ?? x.code }));
 }
 
-export async function assignClassCurriculum(params: { institutionId: string; classId: string; curriculumId: string; actorUserId: string }) {
-  const klass = (await db.query(`SELECT id, institution_id, grade_id, canonical_subject_id, institution_curriculum_id FROM classes WHERE id = $1`, [params.classId])).rows[0];
-  if (!klass || klass.institution_id !== params.institutionId) throw new CurriculumManagementError('CLASS_NOT_IN_INSTITUTION');
-  const curriculum = await requireInstitutionCurriculum(params.institutionId, params.curriculumId); // cross-tenant → NOT_FOUND
-  if (klass.canonical_subject_id && klass.canonical_subject_id !== curriculum.canonical_subject_id) {
-    const plan = await db.query(`SELECT 1 FROM class_plan_concepts WHERE class_id = $1 AND status = 'ACTIVE' LIMIT 1`, [params.classId]);
-    if (plan.rows[0]) throw new CurriculumManagementError('CLASS_SUBJECT_IN_USE');
-  }
-  await db.query(`UPDATE classes SET institution_curriculum_id = $2, canonical_subject_id = $3, grade_id = COALESCE(grade_id, $4) WHERE id = $1`, [
-    params.classId,
-    curriculum.id,
-    curriculum.canonical_subject_id,
-    curriculum.grade_id,
+/** A class's academic domain: its own (set by a coordinator), else its catalog subject's. */
+export async function classAcademicDomain(classId: string): Promise<string | null> {
+  const r = await db.query(`SELECT COALESCE(c.academic_domain_code, cs.academic_domain_code) AS d FROM classes c LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id WHERE c.id = $1`, [classId]);
+  return r.rows[0]?.d ?? null;
+}
+
+/**
+ * Candidates for a class's "Currículo asociado": EVERY active curriculum of the
+ * institution, the compatible ones (same academic domain, usable for the grade)
+ * first. A suggestion only -- nothing is bound here.
+ */
+export async function compatibleCurriculaForClass(institutionId: string, gradeId: string | null, academicDomain: string | null = null) {
+  const all = await listInstitutionCurriculumSubjects(institutionId);
+  return rankCurriculumCandidates(all, { academicDomain, gradeId }).map((r) => ({ ...r.curriculum, compatible: r.compatible, compatibility: r.reason }));
+}
+
+export interface ClassBindingImpact {
+  classId: string;
+  current: { curriculumId: string; label: string } | null;
+  next: { curriculumId: string; label: string } | null;
+  activeStudents: number;
+  planConcepts: number;
+  /** Class plan concepts the new curriculum does not include (kept in the plan, shown as outside the curriculum). */
+  planConceptsOutsideNext: number;
+  requiresConfirmation: boolean;
+}
+
+/** What changing a class's curriculum touches. Learner history is never touched. */
+export async function classBindingImpact(institutionId: string, classId: string, nextCurriculumId: string | null): Promise<ClassBindingImpact> {
+  const klass = (await db.query(`SELECT id, institution_id, institution_curriculum_id FROM classes WHERE id = $1`, [classId])).rows[0];
+  if (!klass || klass.institution_id !== institutionId) throw new CurriculumManagementError('CLASS_NOT_IN_INSTITUTION');
+  const all = await listInstitutionCurriculumSubjects(institutionId, { includeArchived: true });
+  const cur = all.find((c) => c.curriculumId === klass.institution_curriculum_id) ?? null;
+  const next = nextCurriculumId ? all.find((c) => c.curriculumId === nextCurriculumId && c.status === 'ACTIVE') ?? null : null;
+  if (nextCurriculumId && !next) throw new CurriculumManagementError('NOT_FOUND');
+  const [students, plan] = await Promise.all([
+    db.query(`SELECT COUNT(DISTINCT student_id)::int AS n FROM class_enrollments WHERE class_id = $1 AND status = 'ACTIVE'`, [classId]),
+    db.query(
+      `SELECT COUNT(*)::int AS n,
+              COUNT(*) FILTER (WHERE $2::uuid IS NULL OR NOT EXISTS (SELECT 1 FROM institution_curriculum_concepts icc WHERE icc.curriculum_id = $2 AND icc.canonical_concept_id = cpc.canonical_concept_id AND icc.status = 'ACTIVE'))::int AS outside
+         FROM class_plan_concepts cpc WHERE cpc.class_id = $1 AND cpc.status = 'ACTIVE'`,
+      [classId, next?.curriculumId ?? null]
+    ),
   ]);
+  const changing = (cur?.curriculumId ?? null) !== (next?.curriculumId ?? null);
+  return {
+    classId,
+    current: cur ? { curriculumId: cur.curriculumId, label: curriculumContextLabel(cur) } : null,
+    next: next ? { curriculumId: next.curriculumId, label: curriculumContextLabel(next) } : null,
+    activeStudents: students.rows[0].n,
+    planConcepts: plan.rows[0].n,
+    planConceptsOutsideNext: plan.rows[0].outside,
+    // Re-binding (or unbinding) a class that already has a curriculum or a plan needs an explicit "yes".
+    requiresConfirmation: changing && (!!cur || plan.rows[0].n > 0),
+  };
+}
+
+/**
+ * EXPLICIT class <-> curriculum binding (the only way a class gets a curriculum).
+ *   - the curriculum must be an ACTIVE curriculum of THIS institution (foreign -> NOT_FOUND);
+ *   - it must share the class's academic domain (a translation of the name is never enough,
+ *     a different domain is refused: DOMAIN_MISMATCH);
+ *   - changing / removing an existing binding (or binding a class with a plan) needs confirmImpact;
+ *   - enrollments, class plan concepts, learner state and evidence are NEVER modified; what the
+ *     class plan derives from the curriculum (classifications, required concepts) follows the new one.
+ * `curriculumId: null` removes the binding (explicit).
+ */
+export async function assignClassCurriculum(params: { institutionId: string; classId: string; curriculumId: string | null; actorUserId: string; confirmImpact?: boolean }) {
+  const klass = (await db.query(`SELECT id, institution_id, grade_id, canonical_subject_id, institution_curriculum_id, academic_domain_code FROM classes WHERE id = $1`, [params.classId])).rows[0];
+  if (!klass || klass.institution_id !== params.institutionId) throw new CurriculumManagementError('CLASS_NOT_IN_INSTITUTION');
+  const curriculum = params.curriculumId ? await requireInstitutionCurriculum(params.institutionId, params.curriculumId) : null; // cross-tenant → NOT_FOUND
+  if (curriculum && curriculum.id === klass.institution_curriculum_id) return { classId: params.classId, curriculumId: curriculum.id, changed: false };
+  const classDomain = await classAcademicDomain(params.classId);
+  const curriculumDomain = curriculum ? ((await db.query(`SELECT academic_domain_code FROM canonical_subjects WHERE id = $1`, [curriculum.canonical_subject_id])).rows[0]?.academic_domain_code ?? null) : null;
+  if (curriculum && !bindingDomainAllowed(classDomain, curriculumDomain)) throw new CurriculumManagementError('DOMAIN_MISMATCH');
+  const impact = await classBindingImpact(params.institutionId, params.classId, curriculum?.id ?? null);
+  if (impact.requiresConfirmation && !params.confirmImpact) throw new CurriculumManagementError('IMPACT_CONFIRMATION_REQUIRED');
+  if (curriculum) {
+    // The class keeps its name and its domain; its concept catalogue follows the chosen curriculum.
+    await db.query(`UPDATE classes SET institution_curriculum_id = $2, canonical_subject_id = $3, academic_domain_code = COALESCE(academic_domain_code, $4), grade_id = COALESCE(grade_id, $5) WHERE id = $1`, [
+      params.classId,
+      curriculum.id,
+      curriculum.canonical_subject_id,
+      curriculumDomain,
+      curriculum.grade_id,
+    ]);
+  } else {
+    await db.query(`UPDATE classes SET institution_curriculum_id = NULL WHERE id = $1`, [params.classId]);
+  }
   await recordGovernanceEvent({
     institutionId: params.institutionId,
     actorUserId: params.actorUserId,
     actorScope: 'INSTITUTION',
     objectType: 'CLASS',
     objectId: params.classId,
-    action: 'CLASS_CURRICULUM_ASSIGNED',
+    action: curriculum ? (klass.institution_curriculum_id ? 'CLASS_CURRICULUM_CHANGED' : 'CLASS_CURRICULUM_ASSIGNED') : 'CLASS_CURRICULUM_REMOVED',
     fields: ['institution_curriculum_id'],
-    oldValues: { curriculumId: klass.institution_curriculum_id },
-    newValues: { curriculumId: curriculum.id },
+    oldValues: { curriculumId: klass.institution_curriculum_id, label: impact.current?.label ?? null },
+    newValues: { curriculumId: curriculum?.id ?? null, label: impact.next?.label ?? null, planConceptsOutside: impact.planConceptsOutsideNext, activeStudents: impact.activeStudents },
   });
-  return { classId: params.classId, curriculumId: curriculum.id };
+  return { classId: params.classId, curriculumId: curriculum?.id ?? null, changed: true };
 }
 
 // ---------------------------------------------------------------------------

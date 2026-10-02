@@ -16,7 +16,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InviteStudentForm, AssignTeacherForm, PostActionButton, SetClassSubjectForm } from '../../InstitutionForms';
 import { ClassCurriculumSelect } from '../../curriculum/CurriculumManager';
-import { listInstitutionCurriculumSubjects } from '@/lib/institution/curriculum-management.service';
+import { listInstitutionCurriculumSubjects, listAcademicDomains } from '@/lib/institution/curriculum-management.service';
+import { curriculumContextLabel, rankCurriculumCandidates } from '@/lib/institution/curriculum-identity';
+import { classBindingLabels } from '@/lib/institution/admin-labels';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -47,16 +49,18 @@ export default async function InstitutionClassPage({ params }: { params: Promise
   const klass = await getClassInInstitution(institutionId, classId);
   if (!klass) notFound();
 
-  const [roster, classes, teachers, subjects, curricula] = await Promise.all([
+  const [roster, classes, teachers, subjects, curricula, domains] = await Promise.all([
     listClassRosterForInstitution(institutionId, classId),
     listInstitutionClassesWithStaff(institutionId),
     listApprovedTeachers(institutionId),
     listLinkableSubjects(),
     listInstitutionCurriculumSubjects(institutionId, { includeArchived: true }),
+    listAcademicDomains(locale),
   ]);
   const thisClass = classes.find((c) => c.id === classId);
   const currentCurriculum = curricula.find((c) => c.curriculumId === thisClass?.institutionCurriculumId) ?? null;
-  const curriculumLabel = (c: (typeof curricula)[number]) => [c.subject, c.code, c.level, c.gradeName ?? t['cur2.wizard.allGrades'], c.programme].filter(Boolean).join(' · ');
+  const curriculumLabel = (c: (typeof curricula)[number]) => curriculumContextLabel(c, t['cur2.wizard.allGrades']);
+  const domainLabel = thisClass?.academicDomain ? domains.find((d) => d.code === thisClass.academicDomain)?.label ?? thisClass.academicDomain : null;
   const staff = classes.find((c) => c.id === classId)?.teachers ?? [];
   const base = `/api/institutions/${institutionId}`;
 
@@ -71,14 +75,15 @@ export default async function InstitutionClassPage({ params }: { params: Promise
       <section className="card ta-card" aria-labelledby="class-curriculum-title" data-class-curriculum>
         <h2 id="class-curriculum-title">{t['cur2.teacher.curriculum']}</h2>
         <p className="ta-msg">
-          {currentCurriculum ? curriculumLabel(currentCurriculum) + (currentCurriculum.status === 'ARCHIVED' ? ` (${t['cur2.status.ARCHIVED']})` : '') : t['cur2.classes.none']}
+          {currentCurriculum ? curriculumLabel(currentCurriculum) + (currentCurriculum.status === 'ARCHIVED' ? ` (${t['cur2.status.ARCHIVED']})` : '') : t['cur2.classes.none2']}
         </p>
         <ClassCurriculumSelect
           institutionId={institutionId}
           classId={classId}
           current={thisClass?.institutionCurriculumId ?? null}
-          options={curricula.filter((c) => c.status === 'ACTIVE' && (!klass.gradeId || !c.gradeId || c.gradeId === klass.gradeId)).map((c) => ({ id: c.curriculumId, label: curriculumLabel(c) }))}
-          labels={{ curriculum: t['cur2.teacher.curriculum'], none: t['cur2.classes.none'], assign: t['cur2.classes.assign'], saved: t['cur2.saved'], error: t['cur2.error'] }}
+          options={rankCurriculumCandidates(curricula, { academicDomain: thisClass?.academicDomain ?? null, gradeId: klass.gradeId }).map((r) => ({ id: r.curriculum.curriculumId, label: curriculumLabel(r.curriculum), compatible: r.compatible }))}
+          domainLabel={domainLabel}
+          labels={classBindingLabels(t as Record<string, string>)}
         />
       </section>
 

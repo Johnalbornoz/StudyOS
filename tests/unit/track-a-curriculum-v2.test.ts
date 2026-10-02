@@ -219,7 +219,7 @@ describe('Curriculum management: tenant scope and bulk content', () => {
   it('an unchanged concept is neither rewritten nor audited (local DATE compared without shift)', async () => {
     respond((sql) => {
       if (sql.includes('FROM institution_curricula WHERE id')) return { rows: [{ id: 'cur-1', status: 'ACTIVE', canonical_subject_id: 's' }] };
-      if (sql.includes('FROM canonical_concepts WHERE id = ANY')) return { rows: [{ id: 'c-1' }] };
+      if (sql.includes('FROM canonical_concepts cc JOIN canonical_subjects')) return { rows: [{ id: 'c-1' }] };
       if (sql.includes('FROM institution_curriculum_concepts WHERE curriculum_id')) return { rows: [{ canonical_concept_id: 'c-1', status: 'ACTIVE', classification: 'REQUIRED', institution_target_date: new Date(2026, 9, 20), period: null }] };
       return undefined;
     });

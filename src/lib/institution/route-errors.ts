@@ -8,7 +8,7 @@ import { InvalidClassAssignmentError, NoLearnersToAssignError } from '@/lib/teac
 export function governedError(error: unknown): NextResponse {
   if (error instanceof FieldLockedError) return NextResponse.json({ error: error.code, fields: error.fields }, { status: 403 });
   if (error instanceof CurriculumManagementError) {
-    const status = error.code === 'NOT_FOUND' || error.code === 'CLASS_NOT_IN_INSTITUTION' ? 404 : error.code === 'CURRICULUM_NOT_ACTIVE' ? 409 : 422;
+    const status = error.code === 'NOT_FOUND' || error.code === 'CLASS_NOT_IN_INSTITUTION' ? 404 : error.code === 'CURRICULUM_NOT_ACTIVE' || error.code === 'IMPACT_CONFIRMATION_REQUIRED' ? 409 : 422;
     return NextResponse.json({ error: error.code }, { status });
   }
   if (error instanceof GovernanceError) {

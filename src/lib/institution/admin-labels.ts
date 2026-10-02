@@ -91,3 +91,26 @@ export function institutionSubNavLabels(t: Messages) {
     attention: t['institution.attention.title'],
   };
 }
+
+/** Labels of the explicit class <-> curriculum binding control (cur2.classes.*). */
+export function classBindingLabels(t: Record<string, string>): Record<string, string> {
+  return {
+    domain: t['cur2.classes.domain'],
+    noDomain: t['cur2.classes.noDomain'],
+    associated: t['cur2.classes.associated'],
+    select: t['cur2.classes.select'],
+    none: t['cur2.classes.none2'],
+    compatibleGroup: t['cur2.classes.compatibleGroup'],
+    otherGroup: t['cur2.classes.otherGroup'],
+    explicitNote: t['cur2.classes.explicitNote'],
+    remove: t['cur2.classes.remove'],
+    impactTitle: t['cur2.classes.impactTitle'],
+    impactBody: t['cur2.classes.impactBody'],
+    confirmChange: t['cur2.classes.confirmChange'],
+    cancel: t['cur2.classes.cancel'],
+    domainMismatch: t['cur2.classes.domainMismatch'],
+    assign: t['cur2.classes.assign'],
+    saved: t['cur2.saved'],
+    error: t['cur2.error'],
+  };
+}

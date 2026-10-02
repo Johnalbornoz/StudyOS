@@ -484,6 +484,8 @@ export interface InstitutionClassRow {
   subjectName: string | null;
   /** Track A -- the institution curriculum subject this class works on (explicit association). */
   institutionCurriculumId: string | null;
+  /** Canonical academic domain ("Área académica"): the class's own, else its catalog subject's. Never a binding. */
+  academicDomain: string | null;
   activeEnrollmentCount: number;
   pendingEnrollmentCount: number;
   teachers: Array<{ assignmentId: string; userId: string; email: string | null; name: string | null }>;
@@ -503,6 +505,7 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
   const r = await db.query(
     `
     SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name, c.institution_curriculum_id,
+      COALESCE(c.academic_domain_code, cs.academic_domain_code) AS academic_domain,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count,
       COALESCE((
@@ -530,6 +533,7 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
     subjectId: row.canonical_subject_id,
     subjectName: row.subject_name,
     institutionCurriculumId: row.institution_curriculum_id ?? null,
+    academicDomain: row.academic_domain ?? null,
     activeEnrollmentCount: row.active_count,
     pendingEnrollmentCount: row.pending_count,
     teachers: (row.teachers ?? []).map((tch: any) => ({

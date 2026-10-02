@@ -385,50 +385,114 @@ export function ArchiveSubjectButton({ institutionId, curriculumId, labels }: { 
   );
 }
 
-/** Associate a class with one ACTIVE curriculum subject (preselected when it is the only compatible one). */
+/**
+ * "Currículo asociado" of a class: an EXPLICIT choice, never preselected or inferred from the
+ * class name. Candidates come ranked by the server: the class's academic domain first ("Compatibles
+ * con Matemáticas"), the rest shown for context but not selectable. Changing or removing an existing
+ * binding shows its impact first and needs a confirmation.
+ */
 export function ClassCurriculumSelect({
   institutionId,
   classId,
   current,
   options,
+  domainLabel,
   labels,
 }: {
   institutionId: string;
   classId: string;
   current: string | null;
-  options: Array<{ id: string; label: string }>;
+  options: Array<{ id: string; label: string; compatible: boolean }>;
+  domainLabel: string | null;
   labels: L;
 }) {
   const router = useRouter();
-  const [value, setValue] = useState(current ?? (options.length === 1 ? options[0].id : ''));
-  const [state, setState] = useState<'idle' | 'busy' | 'saved' | 'error'>('idle');
+  const [value, setValue] = useState(current ?? '');
+  const [state, setState] = useState<'idle' | 'busy' | 'saved' | 'error' | 'mismatch'>('idle');
+  const [impact, setImpact] = useState<null | { from: string; to: string; students: number; plan: number; outside: number }>(null);
+  const compatible = options.filter((o) => o.compatible);
+  const others = options.filter((o) => !o.compatible);
+  const url = `/api/institutions/${institutionId}/classes/${classId}/curriculum`;
+
+  async function submit(confirmImpact: boolean, target: string | null) {
+    setState('busy');
+    const r = await send(url, 'POST', { curriculumId: target, ...(confirmImpact ? { confirmImpact: true } : {}) });
+    if (r.ok) {
+      setImpact(null);
+      setState('saved');
+      router.refresh();
+      return;
+    }
+    if (r.error === 'IMPACT_CONFIRMATION_REQUIRED') {
+      const res = await fetch(`${url}?curriculumId=${target ?? ''}`, { cache: 'no-store' }).then((x) => x.json()).catch(() => null);
+      const i = res?.data?.impact;
+      if (i) {
+        setImpact({ from: i.current?.label ?? labels.none, to: i.next?.label ?? labels.none, students: i.activeStudents, plan: i.planConcepts, outside: i.planConceptsOutsideNext });
+        setState('idle');
+        return;
+      }
+    }
+    setState(r.error === 'DOMAIN_MISMATCH' ? 'mismatch' : 'error');
+  }
+
   return (
-    <span className="ta-form ta-row" style={{ alignItems: 'flex-end' }}>
-      <label className="ta-field">
-        <span className="sr-only">{labels.curriculum}</span>
-        <select value={value} onChange={(e) => setValue(e.target.value)}>
-          <option value="">{labels.none}</option>
-          {options.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="button"
-        className="btn btn-secondary"
-        disabled={!value || value === current || state === 'busy'}
-        onClick={async () => {
-          setState('busy');
-          const r = await send(`/api/institutions/${institutionId}/classes/${classId}/curriculum`, 'POST', { curriculumId: value });
-          setState(r.ok ? 'saved' : 'error');
-          if (r.ok) router.refresh();
-        }}
-      >
-        {labels.assign}
-      </button>
+    <span className="ta-stack" style={{ gap: 'var(--space-2)' }} data-class-curriculum-select={classId}>
+      <span className="ta-msg">
+        {labels.domain}: <strong>{domainLabel ?? labels.noDomain}</strong>
+      </span>
+      <span className="ta-form ta-row" style={{ alignItems: 'flex-end' }}>
+        <label className="ta-field">
+          <span>{labels.associated}</span>
+          <select value={value} onChange={(e) => setValue(e.target.value)}>
+            <option value="">{current ? labels.none : labels.select}</option>
+            {compatible.length > 0 && (
+              <optgroup label={domainLabel ? labels.compatibleGroup.replace('{domain}', domainLabel) : labels.associated}>
+                {compatible.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {others.length > 0 && (
+              <optgroup label={labels.otherGroup}>
+                {others.map((o) => (
+                  <option key={o.id} value={o.id} disabled>
+                    {o.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+        <button type="button" className="btn btn-secondary" disabled={!value || value === current || state === 'busy'} onClick={() => submit(false, value)}>
+          {labels.assign}
+        </button>
+        {current && (
+          <button type="button" className="btn btn-ghost" disabled={state === 'busy'} onClick={() => submit(false, null)}>
+            {labels.remove}
+          </button>
+        )}
+      </span>
+      {impact && (
+        <span className="card ta-card" role="alertdialog" aria-labelledby={`impact-${classId}`}>
+          <strong id={`impact-${classId}`}>{labels.impactTitle}</strong>
+          <span className="ta-msg">
+            {labels.impactBody.replace('{from}', impact.from).replace('{to}', impact.to).replace('{students}', String(impact.students)).replace('{outside}', String(impact.outside)).replace('{plan}', String(impact.plan))}
+          </span>
+          <span className="ta-row">
+            <button type="button" className="btn btn-primary" onClick={() => submit(true, value || null)}>
+              {labels.confirmChange}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setImpact(null)}>
+              {labels.cancel}
+            </button>
+          </span>
+        </span>
+      )}
+      <span className="ta-msg">{labels.explicitNote}</span>
       {state === 'saved' && <span className="ta-msg" role="status">{labels.saved}</span>}
+      {state === 'mismatch' && <span className="ta-msg" role="alert">{labels.domainMismatch}</span>}
       {state === 'error' && <span className="ta-msg" role="alert">{labels.error}</span>}
     </span>
   );

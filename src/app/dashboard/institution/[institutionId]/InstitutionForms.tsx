@@ -69,7 +69,7 @@ export function CreateClassForm({
   grades: Array<{ id: string; name: string }>;
   /** ACTIVE catalog subjects the class can be linked to. */
   subjects: Array<{ id: string; name: string }>;
-  /** Track A Curriculum V2: the institution's ACTIVE curriculum subjects (grade-compatible ones are offered; a single one is preselected). */
+  /** Track A Curriculum V2: the institution's ACTIVE curriculum subjects (grade-compatible ones are offered; never preselected). */
   curricula?: Array<{ id: string; label: string; gradeId: string | null }>;
   labels: { title: string; name: string; grade: string; noGrade: string; subject: string; noSubject: string; submit: string; saved: string; error: string; curriculum?: string; noCurriculum?: string };
 }) {
@@ -79,7 +79,8 @@ export function CreateClassForm({
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? '');
   const compatible = curricula.filter((c) => !c.gradeId || !gradeId || c.gradeId === gradeId);
   const [curriculumChoice, setCurriculumChoice] = useState<string | null>(null);
-  const curriculumId = curriculumChoice ?? (compatible.length === 1 ? compatible[0].id : '');
+  // Never preselected: the curriculum is an explicit coordinator choice, even when only one fits.
+  const curriculumId = curriculumChoice ?? '';
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Msg>(null);
   return (

@@ -7,9 +7,10 @@ import { getMessages, type MessageKey } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
 import { canAccessInstitution } from '@/lib/authorization';
 import { getInstitutionOverview, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
-import { institutionSubNavLabels } from '@/lib/institution/admin-labels';
+import { institutionSubNavLabels, classBindingLabels } from '@/lib/institution/admin-labels';
 import { listInstitutionGrades, listInstitutionClassesWithStaff } from '@/services/institution.service';
-import { listInstitutionCurriculumSubjects, listCurriculumSourceOptions, type CurriculumSubjectRow } from '@/lib/institution/curriculum-management.service';
+import { listInstitutionCurriculumSubjects, listCurriculumSourceOptions, listAcademicDomains, type CurriculumSubjectRow } from '@/lib/institution/curriculum-management.service';
+import { curriculumContextLabel, rankCurriculumCandidates } from '@/lib/institution/curriculum-identity';
 import { listSupplementalSuggestions, listAdoptableSubjects, CURRICULUM_CLASSIFICATIONS } from '@/lib/learning-plan/institution-curriculum.service';
 import { listConceptProposals } from '@/lib/learning-plan/concept-proposals.service';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -43,7 +44,7 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
   }
   if (!(await canAccessInstitution(actor.id, institutionId, 'TEACHER_ASSIGNMENT_MANAGE'))) notFound();
 
-  const [all, sources, grades, classes, supplemental, proposals, adoptable] = await Promise.all([
+  const [all, sources, grades, classes, supplemental, proposals, adoptable, domains] = await Promise.all([
     listInstitutionCurriculumSubjects(institutionId, { includeArchived: true }),
     listCurriculumSourceOptions(),
     listInstitutionGrades(institutionId),
@@ -51,7 +52,9 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
     listSupplementalSuggestions(institutionId, locale),
     listConceptProposals({ institutionId }),
     listAdoptableSubjects(),
+    listAcademicDomains(locale),
   ]);
+  const domainLabels = new Map(domains.map((d) => [d.code, d.label]));
   const active = all.filter((s) => s.status === 'ACTIVE');
   const archived = all.filter((s) => s.status === 'ARCHIVED');
   const tk = (k: string) => t[k as MessageKey] ?? k;
@@ -184,14 +187,16 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
         ) : (
           <ul className="role-list">
             {classes.map((c) => {
-              const options = active.filter((s) => !c.gradeId || !s.gradeId || s.gradeId === c.gradeId).map((s) => ({ id: s.curriculumId, label: curriculumLabel(s) }));
+              // Every ACTIVE curriculum, compatible (same academic domain + grade) first -- a suggestion, never a binding.
+              const options = rankCurriculumCandidates(active, { academicDomain: c.academicDomain, gradeId: c.gradeId }).map((r) => ({ id: r.curriculum.curriculumId, label: curriculumContextLabel(r.curriculum, t['cur2.wizard.allGrades']), compatible: r.compatible }));
               const currentRow = all.find((s) => s.curriculumId === c.institutionCurriculumId);
               return (
                 <li key={c.id} className="ta-coordinator" data-class={c.id}>
                   <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <strong>{c.name}</strong>
                     <span className="ta-msg">
-                      {[c.gradeName, currentRow ? curriculumLabel(currentRow) + (currentRow.status === 'ARCHIVED' ? ` (${t['cur2.status.ARCHIVED']})` : '') : t['cur2.classes.none']].filter(Boolean).join(' · ')}
+                      {t['cur2.classes.class']}: {c.name}{c.gradeName ? ` · ${c.gradeName}` : ''} · {t['cur2.classes.associated']}:{' '}
+                      {currentRow ? curriculumContextLabel(currentRow, t['cur2.wizard.allGrades']) + (currentRow.status === 'ARCHIVED' ? ` (${t['cur2.status.ARCHIVED']})` : '') : t['cur2.classes.none2']}
                     </span>
                   </span>
                   <ClassCurriculumSelect
@@ -199,7 +204,8 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
                     classId={c.id}
                     current={c.institutionCurriculumId}
                     options={options}
-                    labels={{ curriculum: t['cur2.teacher.curriculum'], none: t['cur2.classes.none'], assign: t['cur2.classes.assign'], saved: t['cur2.saved'], error: t['cur2.error'] }}
+                    domainLabel={c.academicDomain ? domainLabels.get(c.academicDomain) ?? c.academicDomain : null}
+                    labels={classBindingLabels(t)}
                   />
                 </li>
               );
