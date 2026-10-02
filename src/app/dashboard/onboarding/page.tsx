@@ -40,9 +40,11 @@ export default async function OnboardingPage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
+  const tr = t as Record<string, string>;
 
   const subjectRes = await query(`SELECT 1 FROM subjects WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }));
-  const bounce = onboardingRouteRedirect({ hasSubject: subjectRes.rows.length > 0 });
+  const goalRes = await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }));
+  const bounce = onboardingRouteRedirect({ hasSubject: subjectRes.rows.length > 0, hasExamGoal: goalRes.rows.length > 0 });
   if (bounce) redirect(bounce);
 
   // UX-5 closure: first-run IS the question "¿Qué quieres aprender?" --
@@ -51,6 +53,21 @@ export default async function OnboardingPage() {
 
   return (
     <div className="xp-page">
+      {/* Objective first: two equal entry points -- learning a subject, or preparing an exam (no subject needed first). */}
+      <section className="prep-start" aria-labelledby="prep-start-title">
+        <h2 id="prep-start-title" className="exv2-title">{tr['prep.onboarding.title']}</h2>
+        <div className="prep-start-options">
+          <a className="card prep-start-option" href="#sp-learn">
+            <strong>{tr['prep.onboarding.learn']}</strong>
+            <span className="ui-hint">{tr['prep.onboarding.learnBody']}</span>
+          </a>
+          <Link className="card prep-start-option" href="/dashboard/exam-prep">
+            <strong>{tr['prep.onboarding.exam']}</strong>
+            <span className="ui-hint">{tr['prep.onboarding.examBody']}</span>
+          </Link>
+        </div>
+      </section>
+      <span id="sp-learn" />
       <PageIntro title={t['sp.title']} lead={t['sp.lead']} />
       <SubjectPicker
         locale={locale}

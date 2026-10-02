@@ -3,14 +3,15 @@
  * Only a Teacher with an ACTIVE assignment covering this class (or an admin
  * of its institution) -- via the teacher roster. Gaps by domain / objective /
  * concept for the class, per-Student gap concepts (for assigning
- * reinforcement through /api/teacher/interventions), and those Students'
+ * reinforcement through /api/teacher/interventions), those Students' exam
+ * goals (objective first: which exam each prepares), and their
  * AICE Diploma subjects with their readiness. Never other classes' Students.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
 import { db } from '@/lib/db';
-import { examGapsFor } from '@/lib/exam-core/exam-gaps.service';
+import { examGapsFor, examGoalsFor } from '@/lib/exam-core/exam-gaps.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -29,7 +30,7 @@ async function handleGET(request: NextRequest) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
   const ids = roster.map((r) => r.studentId);
-  const gaps = await examGapsFor(ids, { families: family ? [family] : undefined, includePerStudent: true });
+  const [gaps, goals] = await Promise.all([examGapsFor(ids, { families: family ? [family] : undefined, includePerStudent: true }), examGoalsFor(ids, { includePerStudent: true })]);
   const aice = ids.length
     ? (await db.query(
         `SELECT p.student_id, e.syllabus_code, e.level, e.expected_series_year, e.expected_series_month,
@@ -40,7 +41,7 @@ async function handleGET(request: NextRequest) {
         [ids]
       )).rows
     : [];
-  return NextResponse.json({ success: true, data: { classId, students: roster, gaps, aice } });
+  return NextResponse.json({ success: true, data: { classId, students: roster, gaps, goals, aice } });
 }
 
 export const GET = withAiRequestMetrics('GET /api/teacher/exam-insights', handleGET);

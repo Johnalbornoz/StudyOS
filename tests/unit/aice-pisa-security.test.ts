@@ -23,13 +23,13 @@ vi.mock('@/lib/exam-core/aice/plan.service', () => {
   }
   return { AicePlanError, createPlan: vi.fn(), getPlanView: vi.fn(async () => ({ entries: [] })), addPlanEntry: vi.fn(), updatePlanEntry: vi.fn(), removePlanEntry: vi.fn(), recordResult: vi.fn(async () => ({ id: 'r' })), institutionAiceSummary: vi.fn() };
 });
-vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: vi.fn(async () => ({ byConcept: [] })), examParticipation: vi.fn(async () => []) }));
+vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: vi.fn(async () => ({ byConcept: [] })), examGoalsFor: vi.fn(async () => ({ byObjective: [] })), examParticipation: vi.fn(async () => []) }));
 
 import { requireActor, requireOwnerOf, ownStudentId } from '@/lib/exam-core/route-auth';
 import { requireLearnerInInstitution, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
 import { addPlanEntry, updatePlanEntry, recordResult, AicePlanError, getPlanView } from '@/lib/exam-core/aice/plan.service';
-import { examGapsFor } from '@/lib/exam-core/exam-gaps.service';
+import { examGoalsFor, examGapsFor } from '@/lib/exam-core/exam-gaps.service';
 import { GET as planGET } from '@/app/api/aice/plan/route';
 import { POST as entryPOST } from '@/app/api/aice/plan/entries/route';
 import { PATCH as entryPATCH, DELETE as entryDELETE } from '@/app/api/aice/plan/entries/[id]/route';
@@ -109,6 +109,8 @@ describe('Teacher exam insights: own roster only', () => {
     vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: STUDENT, name: 'A' }] as any);
     expect((await (teacherGET as any)(req('GET', undefined, `http://localhost/api/teacher/exam-insights?classId=${CLASS}&family=PISA`))).status).toBe(200);
     expect(examGapsFor).toHaveBeenCalledWith([STUDENT], { families: ['PISA'], includePerStudent: true });
+    // Objective first: the class's exam goals, for the same roster only.
+    expect(examGoalsFor).toHaveBeenCalledWith([STUDENT], { includePerStudent: true });
   });
   it('manipulated ids / families are rejected', async () => {
     expect((await (teacherGET as any)(req('GET', undefined, 'http://localhost/api/teacher/exam-insights?classId=x'))).status).toBe(400);

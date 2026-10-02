@@ -11,7 +11,7 @@
  *
  * Restart = the same cleanup, then -- in ONE transaction -- archive the old
  * profile and create a new, clean ACTIVE one for the same exam (same version
- * and the Student's own plan fields: exam date, purpose, target institution),
+ * or objective, and the Student's own plan fields: exam date, purpose, target institution),
  * linked by replaced_by_profile_id. A repeated restart returns that same new
  * profile. "Fresh exam preparation ≠ erase learning history".
  *
@@ -117,6 +117,14 @@ export async function restartExamProfile(profileId: string, params: { ownerStude
         examDate: p.exam_date ? (p.exam_date instanceof Date ? p.exam_date.toISOString().slice(0, 10) : String(p.exam_date)) : undefined,
         timezone: p.timezone ?? undefined,
         institutionTargetId: p.institution_target_id ?? undefined,
+        // Objective first: the same objective and the Student's own goal details.
+        objectiveKey: p.objective_key ?? undefined,
+        objectiveFramework: p.objective_framework ?? undefined,
+        objectiveNodeId: p.objective_node_id ?? null,
+        objectiveContext: p.objective_context ?? undefined,
+        targetInstitutionName: p.target_institution_name ?? undefined,
+        targetQualification: p.target_qualification ?? undefined,
+        source: p.source ?? undefined,
       },
       client
     );

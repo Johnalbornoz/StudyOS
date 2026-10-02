@@ -473,7 +473,11 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
   };
 }
 
-/** Ensures the Student has an exam profile for the version's definition (reused when one exists). */
+/**
+ * Ensures the Student has an exam profile for the version's definition (reused when one exists).
+ * Objective first: a preparation chosen for the objective of this exam (e.g. PISA 2022, possibly
+ * chosen while it was catalogue only) is the SAME preparation -- it is reused and now names its exam.
+ */
 export async function ensureExamProfile(studentId: string, examDefinitionId: string, examVersionId: string): Promise<string> {
   // The Student's ACTIVE preparation for this exam (one at most); an archived one is never reused --
   // choosing the exam again after "Quitar de mi preparación" starts a new, clean preparation.
@@ -485,6 +489,23 @@ export async function ensureExamProfile(studentId: string, examDefinitionId: str
     await db.query(`UPDATE student_exam_profiles SET exam_version_id = $2 WHERE id = $1 AND exam_version_id IS NULL`, [existing.rows[0].id, examVersionId]);
     return existing.rows[0].id;
   }
-  const p = await createStudentExamProfile({ studentId, examDefinitionId, examVersionId });
+  const configKey = (await db.query(`SELECT config_key FROM exam_definitions WHERE id = $1`, [examDefinitionId])).rows[0]?.config_key as string | undefined;
+  const { objectiveForConfig } = await import('./objectives/objective-catalog');
+  const objective = configKey ? objectiveForConfig(configKey) : null;
+  if (objective) {
+    const byObjective = await db.query(
+      `UPDATE student_exam_profiles SET exam_definition_id = $3, exam_version_id = COALESCE(exam_version_id, $4), updated_at = now()
+        WHERE id = (SELECT id FROM student_exam_profiles WHERE student_id = $1 AND objective_key = $2 AND status <> 'ARCHIVED' AND exam_definition_id IS NULL LIMIT 1)
+        RETURNING id`,
+      [studentId, objective.key, examDefinitionId, examVersionId]
+    );
+    if (byObjective.rows[0]) return byObjective.rows[0].id;
+  }
+  const p = await createStudentExamProfile({
+    studentId,
+    examDefinitionId,
+    examVersionId,
+    ...(objective ? { objectiveKey: objective.key, objectiveFramework: objective.framework, objectiveContext: { label: objective.label, ...objective.context }, source: 'EXAM_INSTANCE' as const } : {}),
+  });
   return p.id;
 }

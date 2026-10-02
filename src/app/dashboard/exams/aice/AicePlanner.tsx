@@ -203,7 +203,9 @@ function EntryRow({ e, view, labels: l, busy, seriesLabel, call }: { e: PlanEntr
         </p>
         {groups.length > 1 && e.countedGroup !== 'CORE' && <p className="ui-hint">{f(l['aice.multiGroup'], { groups: groups.map((g) => l[`aice.group.${g}`]).join(l['aice.or']) })}</p>}
         <p className="ex-card-meta">
-          <span className="xr-pill">{l[`aice.readiness.${e.readiness}`] ?? e.readiness}</span>{' '}
+          {/* A planned qualification is independent of what StudyUS can practise for it today. */}
+          <span className="xr-pill is-good">{l['aice.planned']}</span>{' '}
+          <span className="xr-pill">{f(l['aice.studyusActivities'], { status: l[`aice.readiness.${e.readiness}`] ?? e.readiness })}</span>{' '}
           {e.preparation.latest ? f(l['aice.estimate'], { raw: e.preparation.latest.raw, max: e.preparation.latest.max }) : e.preparation.attempts > 0 ? f(l['aice.attempts'], { n: e.preparation.attempts }) : l['aice.notStarted']}
         </p>
         {e.results.map((r) => (

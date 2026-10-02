@@ -118,8 +118,16 @@ export interface ApprovedItem {
 export interface StudentExamProfile {
   id: string;
   studentId: string;
-  examDefinitionId: string;
+  /** Track B (objective first): null for a catalogue-only objective with no configured exam yet. */
+  examDefinitionId: string | null;
   examVersionId: string | null;
+  /** Track B: the governed catalogue objective (e.g. 'pisa.2022', 'ib.dp.physics.hl', 'cie.asal.9709.as'). */
+  objectiveKey?: string | null;
+  objectiveFramework?: string | null;
+  objectiveContext?: Record<string, unknown> | null;
+  targetInstitutionName?: string | null;
+  targetQualification?: string | null;
+  source?: 'STUDENT' | 'EXAM_INSTANCE' | 'INSTITUTION' | null;
   purpose: string | null;
   programmeContext: string | null;
   subjectFocus: string | null;

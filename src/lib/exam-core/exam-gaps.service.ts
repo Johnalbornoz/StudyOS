@@ -98,3 +98,64 @@ export async function examParticipation(studentIds: string[]): Promise<Array<{ f
   );
   return r.rows;
 }
+
+export interface GoalAggregate {
+  /** Distinct Students with at least one active exam preparation. */
+  studentsPreparing: number;
+  byFramework: Array<{ framework: string; students: number }>;
+  /** Each objective prepared, with what StudyUS can do for it today (capability status, not a Student result). */
+  byObjective: Array<{ objectiveKey: string; label: string; framework: string; students: number; status: string; canPractice: boolean; canRunMock: boolean }>;
+  /** Per Student (Teacher of those Students only): their exam goals. */
+  perStudent: Array<{ studentId: string; goals: Array<{ objectiveKey: string; label: string; examDate: string | null }> }>;
+}
+
+/**
+ * Exam GOALS (objective first) of an authorized Student set: who prepares
+ * which exam / qualification, and the capability readiness of each objective.
+ * Goals are personal; an institution never blocks or assigns them here.
+ */
+export async function examGoalsFor(studentIds: string[], opts: { includePerStudent: boolean; language?: string }): Promise<GoalAggregate> {
+  const empty: GoalAggregate = { studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] };
+  if (studentIds.length === 0) return empty;
+  const [{ objectiveByKey, objectiveForConfig }, { allObjectiveCapabilities }, { objectiveStatusKey }] = await Promise.all([
+    import('./objectives/objective-catalog'),
+    import('./objectives/preparation.service'),
+    import('./objectives/capabilities'),
+  ]);
+  const rows = (
+    await db.query(
+      `SELECT p.student_id, p.objective_key, d.config_key, p.exam_date FROM student_exam_profiles p LEFT JOIN exam_definitions d ON d.id = p.exam_definition_id
+        WHERE p.student_id = ANY($1::uuid[]) AND p.status <> 'ARCHIVED'`,
+      [studentIds]
+    )
+  ).rows as Array<{ student_id: string; objective_key: string | null; config_key: string | null; exam_date: string | Date | null }>;
+  const caps = await allObjectiveCapabilities(opts.language ?? 'es');
+  const goals = rows
+    .map((r) => ({ r, o: r.objective_key ? objectiveByKey(r.objective_key) : r.config_key ? objectiveForConfig(r.config_key) : null }))
+    .filter((x): x is { r: (typeof rows)[number]; o: NonNullable<ReturnType<typeof objectiveByKey>> } => !!x.o);
+  const byObjective = new Map<string, Set<string>>();
+  const byFramework = new Map<string, Set<string>>();
+  for (const { r, o } of goals) {
+    if (!byObjective.has(o.key)) byObjective.set(o.key, new Set());
+    byObjective.get(o.key)!.add(r.student_id);
+    if (!byFramework.has(o.framework)) byFramework.set(o.framework, new Set());
+    byFramework.get(o.framework)!.add(r.student_id);
+  }
+  return {
+    studentsPreparing: new Set(goals.map((g) => g.r.student_id)).size,
+    byFramework: [...byFramework.entries()].map(([framework, s]) => ({ framework, students: s.size })).sort((a, b) => b.students - a.students),
+    byObjective: [...byObjective.entries()]
+      .map(([key, s]) => {
+        const o = objectiveByKey(key)!;
+        const c = caps.get(key)!;
+        return { objectiveKey: key, label: o.label, framework: o.framework, students: s.size, status: objectiveStatusKey(c), canPractice: c.canPractice, canRunMock: c.canRunReducedMock || c.canRunFullMock };
+      })
+      .sort((a, b) => b.students - a.students),
+    perStudent: opts.includePerStudent
+      ? [...new Set(goals.map((g) => g.r.student_id))].map((studentId) => ({
+          studentId,
+          goals: goals.filter((g) => g.r.student_id === studentId).map((g) => ({ objectiveKey: g.o.key, label: g.o.label, examDate: g.r.exam_date ? new Date(g.r.exam_date).toISOString().slice(0, 10) : null })),
+        }))
+      : [],
+  };
+}

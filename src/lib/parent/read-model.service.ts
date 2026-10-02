@@ -206,7 +206,8 @@ export async function getParentRecentActivity(
 
 interface ActiveExamProfile {
   id: string;
-  examDefinitionId: string;
+  /** Track B (objective first): null for a catalogue-only exam goal (named by its objective). */
+  examDefinitionId: string | null;
   examVersionId: string | null;
   examName: string;
   examDate: string | null;
@@ -222,9 +223,9 @@ interface ActiveExamProfile {
 async function getActiveExamProfile(studentId: string): Promise<ActiveExamProfile | null> {
   const result = await db.query(
     `
-    SELECT sep.id, sep.exam_definition_id, sep.exam_version_id, sep.exam_date, ed.name AS exam_name
+    SELECT sep.id, sep.exam_definition_id, sep.exam_version_id, sep.exam_date, COALESCE(ed.name, sep.objective_context->>'label', sep.objective_key) AS exam_name
     FROM student_exam_profiles sep
-    JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
+    LEFT JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
     WHERE sep.student_id = $1 AND sep.status = 'ACTIVE'
     ORDER BY sep.created_at DESC
     LIMIT 1

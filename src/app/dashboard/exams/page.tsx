@@ -10,8 +10,14 @@ import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { ExamCatalogBrowser } from './ExamCatalogBrowser';
 import { InstanceCard } from './InstanceCard';
+import { ObjectivePicker } from '../exam-prep/ObjectivePicker';
+import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 
 /**
+ * Objective first: without a deep link the page asks "¿Para qué examen quieres
+ * prepararte?" (every catalogue objective selectable, readiness never blocks).
+ * With `?node=` (from a preparation) it opens the activity launcher at that entry.
+ *
  * Exam V2 -- "Exámenes": choose an exam by walking the framework's own
  * structure, pick papers and a mode (Practice / Mock / Challenge), and manage
  * one's exam instances (start, continue, results, repeat from zero, delete).
@@ -31,19 +37,32 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
   const initialNode = node && /^[a-z0-9._-]{1,120}$/.test(node)
     ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND selectable = true`, [node, locale])).rows[0] ?? null)
     : null;
+  const picker = initialNode ? null : await loadPickerData(studentId, locale);
+  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('prep.')));
   const active = instances.filter((i) => i.status === 'DRAFT' || i.status === 'READY' || i.status === 'IN_PROGRESS');
   const past = instances.filter((i) => i.status === 'COMPLETED' || i.status === 'ARCHIVED');
 
   return (
     <div className="exv2-page">
-      <PageIntro title={t['exv2.page.title']} lead={t['exv2.page.lead']} crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>} actions={<Link className="btn btn-secondary" href="/dashboard/exams/aice">{t['exv2.aice.diplomaPlan']}</Link>} />
+      <PageIntro
+        title={initialNode ? t['exv2.page.title'] : t['prep.question']}
+        lead={initialNode ? t['exv2.page.lead'] : t['prep.lead']}
+        crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
+        actions={<Link className="btn btn-secondary" href="/dashboard/exams/aice">{t['exv2.aice.diplomaPlan']}</Link>}
+      />
       {active.length > 0 && (
         <section aria-labelledby="exv2-active" className="exv2-list">
           <h2 id="exv2-active" className="exv2-title">{t['exv2.list.active']}</h2>
           {active.map((i) => <InstanceCard key={i.id} instance={i} labels={labels} language={locale} />)}
         </section>
       )}
-      <ExamCatalogBrowser labels={labels} language={locale} initialNode={initialNode} />
+      {/* Objective first: the Explorer asks WHICH exam to prepare (every objective selectable);
+          the activity launcher opens from a preparation (deep link to an entry). */}
+      {initialNode ? (
+        <ExamCatalogBrowser labels={labels} language={locale} initialNode={initialNode} />
+      ) : (
+        <ObjectivePicker objectives={picker!.objectives} frameworks={picker!.frameworks} suggested={picker!.suggested} labels={prepLabels} />
+      )}
       {past.length > 0 && (
         <section aria-labelledby="exv2-past" className="exv2-list">
           <h2 id="exv2-past" className="exv2-title">{t['exv2.list.past']}</h2>

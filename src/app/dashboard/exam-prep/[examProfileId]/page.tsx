@@ -29,6 +29,8 @@ import { getQualificationAggregate, listProfileAttempts, listVersionAreas } from
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
 import { parseDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
 import { db } from '@/lib/db';
+import { getPreparationView, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
+import { PreparationHome } from './PreparationHome';
 
 const DIMENSION_LABEL_KEY = {
   KNOWLEDGE_READINESS: 'examPrep.dimension.knowledge',
@@ -65,7 +67,9 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   const profile = await getStudentExamProfile(examProfileId);
   if (!profile || profile.studentId !== studentId) notFound();
 
-  const definition = await getExamDefinition(profile.examDefinitionId);
+  const definition = profile.examDefinitionId ? await getExamDefinition(profile.examDefinitionId) : null;
+  const objective = await profileObjective(profile);
+  const examName = objective?.label ?? definition?.name ?? '';
   const tr0 = t as Record<string, string>;
   const profileMenuLabels: Record<string, string> = Object.fromEntries(
     Object.entries(tr0).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
@@ -78,12 +82,12 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
     const archivedAttempts = await listProfileAttempts(profile.id);
     return (
       <div className="xp-page xp-page--wide">
-        <PageIntro crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>} title={definition?.name ?? profile.examDefinitionId} lead={tr0['examPrep.profile.archived.lead']} />
+        <PageIntro crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>} title={examName} lead={tr0['examPrep.profile.archived.lead']} />
         <section className="card ex-status" aria-labelledby="ex-archived-title">
           <h2 id="ex-archived-title" className="ex-status-title">{tr0['examPrep.profile.archived.title']}</h2>
           <p className="ex-status-body">{tr0['examPrep.profile.archived.body']}</p>
           <div className="xr-next-actions">
-            <ProfileMenu profileId={profile.id} examName={definition?.name ?? ''} hasInProgress={false} labels={profileMenuLabels} afterRemove="dashboard" actions={['restart']} />
+            <ProfileMenu profileId={profile.id} examName={examName} hasInProgress={false} labels={profileMenuLabels} afterRemove="dashboard" actions={['restart']} />
             <Link className="btn btn-secondary" href="/dashboard/exams">{t['exv2.page.cta']}</Link>
           </div>
         </section>
@@ -93,7 +97,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             locale={locale}
             rows={archivedAttempts.filter((a) => a.status === 'COMPLETED').map((a) => ({
               id: a.id,
-              name: `${definition?.name ?? ''} · ${a.instanceMode ? tr0[a.instanceMode === 'MOCK' ? (a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced') : `exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr0[`ex.type.${a.simulationType}`] ?? a.simulationType}`,
+              name: `${examName} · ${a.instanceMode ? tr0[a.instanceMode === 'MOCK' ? (a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced') : `exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr0[`ex.type.${a.simulationType}`] ?? a.simulationType}`,
               status: a.status,
               createdAt: a.createdAt,
               result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
@@ -105,6 +109,57 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
     );
   }
 
+  const tr = t as Record<string, string>;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const days = profile.examDate ? calendarDaysUntil(profile.examDate, todayIso) : null;
+  const dateLine = profile.examDate
+    ? `${new Date(`${profile.examDate}T12:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}${
+        days !== null && days >= 0 ? ` · ${days === 0 ? t['xp.goalToday'] : days === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(days))}` : ''
+      }`
+    : t['examPrep.noExamDateSet'];
+
+  // Objective first: every governed objective (catalogue-only included) opens the preparation home.
+  const view = objective ? await getPreparationView(studentId, profile.id, locale) : null;
+  if (view) {
+    const attempts = await listProfileAttempts(profile.id);
+    const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.')));
+    return (
+      <div className="xp-page xp-page--wide">
+        <PageIntro
+          crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
+          title={view.objective.label}
+          lead={[tr[`prep.fw.${view.objective.framework}`], view.objective.context.level, view.objective.context.version].filter(Boolean).join(' · ')}
+          actions={
+            <div className="ex-detail-actions">
+              <ProfileMenu profileId={profile.id} examName={view.objective.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />
+            </div>
+          }
+        />
+        <PreparationHome view={view} labels={prepLabels} language={locale} dateLine={dateLine} />
+        {attempts.length > 0 && (
+          <section className="card ex-status" aria-labelledby="ex-history-title">
+            <h2 id="ex-history-title" className="ex-status-title">{t['examPrep.history.title']}</h2>
+            <AttemptHistory
+              locale={locale}
+              rows={attempts.map((a) => ({
+                id: a.id,
+                name: `${view.objective.label} · ${
+                  a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+                }`,
+                status: a.status,
+                createdAt: a.createdAt,
+                result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
+              }))}
+              labels={Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('exv2.') || k.startsWith('examPrep.history.') || k.startsWith('examPrep.attempt.status.')))}
+            />
+          </section>
+        )}
+      </div>
+    );
+  }
+
+  // Legacy (F7 / F9) exam with no governed objective: the previous preparation page, unchanged.
+  if (!profile.examDefinitionId) notFound();
   const examVersion = profile.examVersionId
     ? await getExamVersion(profile.examVersionId)
     : await getPublishedExamVersion(profile.examDefinitionId);
@@ -118,14 +173,13 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
       ])
     : [null, null];
   const [miniMockEligibility, fullMockEligibility] = eligibility;
-  const tr = t as Record<string, string>;
 
   // Track B: areas, attempt history, the open attempt, the latest result and the qualification aggregate.
   const [areas, attempts, openAttempt, aggregate, versionRow] = await Promise.all([
     examVersion ? listVersionAreas(examVersion.id) : Promise.resolve([]),
     listProfileAttempts(profile.id),
     findOpenSimulationAttemptForProfile(profile.id),
-    getQualificationAggregate(studentId, profile.examDefinitionId),
+    getQualificationAggregate(studentId, profile.examDefinitionId!),
     examVersion ? db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [examVersion.id]) : Promise.resolve(null),
   ]);
   const latestScored = attempts.find((a) => a.resultStatus === 'SCORED');
@@ -137,13 +191,6 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   const sitting = [examVersion?.examYear, examVersion?.examSession].filter(Boolean).join(' · ');
   const pct = (f: number | null | undefined) => (f === null || f === undefined ? '—' : `${Math.round(f * 100)}%`);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const days = profile.examDate ? calendarDaysUntil(profile.examDate, todayIso) : null;
-  const dateLine = profile.examDate
-    ? `${new Date(`${profile.examDate}T12:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}${
-        days !== null && days >= 0 ? ` · ${days === 0 ? t['xp.goalToday'] : days === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(days))}` : ''
-      }`
-    : t['examPrep.noExamDateSet'];
   const currentIndex = snapshot ? READINESS_ORDER.indexOf(snapshot.overallStatus) : -1;
   // No snapshot yet, or the server itself reports INSUFFICIENT_EVIDENCE: an intentional
   // "still taking shape" state rather than a ladder stuck on its first rung.
@@ -153,11 +200,11 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
     <div className="xp-page xp-page--wide">
       <PageIntro
         crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
-        title={definition?.name ?? profile.examDefinitionId}
+        title={definition?.name ?? examName}
         lead={dateLine}
         actions={
           <div className="ex-detail-actions">
-            <ProfileMenu profileId={profile.id} examName={definition?.name ?? ''} hasInProgress={!!openAttempt} labels={profileMenuLabels} afterRemove="dashboard" />
+            <ProfileMenu profileId={profile.id} examName={definition?.name ?? examName} hasInProgress={!!openAttempt} labels={profileMenuLabels} afterRemove="dashboard" />
           </div>
         }
       />

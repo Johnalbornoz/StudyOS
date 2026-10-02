@@ -28,14 +28,17 @@ export default async function Home() {
     // the KPI-heavy Progress page; a learner with no subject yet goes to
     // onboarding. This is a routing decision only -- no mastery logic.
     let hasSubject = false;
+    let hasExamGoal = false;
     try {
       const studentId = await getOrCreateStudentId(userId);
       const res = await query(`SELECT 1 FROM subjects WHERE student_id = $1 LIMIT 1`, [studentId]);
       hasSubject = res.rows.length > 0;
+      // Objective first: a Student who started with an exam goal resumes in their preparation.
+      if (!hasSubject) hasExamGoal = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId])).rows.length > 0;
     } catch {
       // fall through to onboarding on any read failure -- safe default
     }
-    redirect(resolveFirstDestination({ hasSubject }).path);
+    redirect(resolveFirstDestination({ hasSubject, hasExamGoal }).path);
   }
 
   const headerList = await headers();

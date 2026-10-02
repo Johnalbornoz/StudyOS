@@ -869,9 +869,12 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
     expect(panel).toMatch(/className="btn btn-primary btn-lg"/);
   });
 
-  it('no profile: setup is primary; with profiles: the form moves into a disclosure', () => {
-    expect(examList).toMatch(/rows\.length === 0 \? \(\s*form\s*\)/);
-    expect(examList).toMatch(/<details className="ui-disclosure">\s*<summary>\{t\['ex\.addAnother'\]\}<\/summary>\s*<div className="ui-disclosure-body">\{form\}<\/div>/);
+  // Track B (objective first): the exam choice is the page's question -- primary with no
+  // preparation (it IS the page title), below "Mis preparaciones" otherwise; never hidden.
+  it('no profile: choosing the exam is the page; with profiles: the chooser follows "Mis preparaciones"', () => {
+    expect(examList).toMatch(/title=\{rows\.length === 0 \? tr\['prep\.question'\] : t\['examPrep\.title'\]\}/);
+    expect(examList).toMatch(/<ObjectivePicker /);
+    expect(examList.indexOf("tr['prep.mine.title']")).toBeLessThan(examList.indexOf('{chooser}'));
   });
 
   it('insufficient evidence is an intentional "taking shape" state, not an empty ladder', () => {
