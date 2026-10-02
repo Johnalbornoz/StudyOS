@@ -25,7 +25,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { recordAdminAction } from '@/lib/admin/audit';
 import { resolveDisplayIdentities } from '@/lib/identity/display-identity';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
-import { inviteInstitutionAdmin, type InstitutionStatus } from './institution.service';
+import { inviteInstitutionAdmin, slugifyInstitutionName, type InstitutionStatus } from './institution.service';
 
 export const INVITATION_TTL_DAYS = 7;
 export const INSTITUTION_LOCALES = ['es', 'en', 'de', 'fr', 'pt'] as const;
@@ -100,15 +100,7 @@ function toProfile(row: any): InstitutionProfile {
   };
 }
 
-export function slugifyInstitutionName(name: string): string {
-  return name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
-}
+export { slugifyInstitutionName };
 
 export function isValidTimezone(tz: string): boolean {
   try {

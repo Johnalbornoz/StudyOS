@@ -48,10 +48,30 @@ export async function listActiveInstitutions(): Promise<Institution[]> {
   return result.rows.map(toInstitution);
 }
 
+export function slugifyInstitutionName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+/** Every institution carries a unique slug (Track A invariant); a taken slug gets a numeric suffix. */
+async function uniqueInstitutionSlug(name: string): Promise<string> {
+  const base = slugifyInstitutionName(name) || 'institution';
+  const taken = new Set((await db.query(`SELECT slug FROM institutions WHERE slug = $1 OR slug LIKE $1 || '-%'`, [base])).rows.map((r: any) => r.slug));
+  if (!taken.has(base)) return base;
+  let i = 2;
+  while (taken.has(`${base}-${i}`)) i += 1;
+  return `${base}-${i}`;
+}
+
 export async function createInstitution(name: string): Promise<Institution> {
   const result = await db.query(
-    `INSERT INTO institutions (name, status) VALUES ($1, 'ACTIVE') RETURNING id, name, status`,
-    [name]
+    `INSERT INTO institutions (name, status, slug) VALUES ($1, 'ACTIVE', $2) RETURNING id, name, status`,
+    [name, await uniqueInstitutionSlug(name)]
   );
   return toInstitution(result.rows[0]);
 }
