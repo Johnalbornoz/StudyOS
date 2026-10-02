@@ -135,6 +135,12 @@ export async function adoptInstitutionCurriculum(params: {
       [curriculumId, ordered, params.actorUserId]
     );
   }
+  // Curriculum V2: matching classes without a curriculum are associated (same rule as the V2 backfill).
+  await db.query(
+    `UPDATE classes SET institution_curriculum_id = $1
+     WHERE institution_id = $2 AND institution_curriculum_id IS NULL AND canonical_subject_id = $3 AND ($4::uuid IS NULL OR grade_id = $4)`,
+    [curriculumId, params.institutionId, params.canonicalSubjectId, params.gradeId ?? null]
+  );
   await event({ institutionId: params.institutionId, curriculumId, eventType: 'CURRICULUM_ADOPTED', actorUserId: params.actorUserId, detail: { base: base?.name ?? 'GENERAL', version: base?.versionLabel ?? null, seeded: ordered.length } });
   return { id: curriculumId, seeded: ordered.length };
 }
@@ -215,17 +221,47 @@ export async function removeCurriculumConcept(params: { institutionId: string; c
 }
 
 /** The institution curriculum that applies to a class: same subject, the class's grade first, else the grade-less one. */
-export async function curriculumForClass(classId: string): Promise<{ curriculumId: string; classifications: Map<string, CurriculumClassification> } | null> {
+/**
+ * The curriculum a class works from: its explicit association
+ * (classes.institution_curriculum_id, Curriculum V2) -- kept even when that
+ * curriculum was later archived, as the class's historical reference --
+ * else (pre-V2 classes) the institution curriculum of its subject and grade.
+ */
+export async function curriculumForClass(classId: string): Promise<{
+  curriculumId: string;
+  classifications: Map<string, CurriculumClassification>;
+  title?: string;
+  programme?: string | null;
+  versionLabel?: string | null;
+  level?: string | null;
+  archived?: boolean;
+  required?: string[];
+} | null> {
   const r = await db.query(
-    `SELECT ic.id FROM classes c
-     JOIN institution_curricula ic ON ic.institution_id = c.institution_id AND ic.canonical_subject_id = c.canonical_subject_id AND ic.status = 'ACTIVE'
-     WHERE c.id = $1 AND (ic.grade_id IS NULL OR ic.grade_id = c.grade_id)
-     ORDER BY (ic.grade_id IS NOT NULL) DESC, ic.created_at DESC LIMIT 1`,
+    `SELECT ic.id, ic.title, ic.status, COALESCE(p.name, ic.programme_label) AS programme, sv.version_label, a.level
+     FROM classes c
+     JOIN institution_curricula ic ON ic.id = COALESCE(c.institution_curriculum_id, (
+       SELECT x.id FROM institution_curricula x WHERE x.institution_id = c.institution_id AND x.canonical_subject_id = c.canonical_subject_id AND x.status = 'ACTIVE'
+         AND (x.grade_id IS NULL OR x.grade_id = c.grade_id) ORDER BY (x.grade_id IS NOT NULL) DESC, x.created_at DESC LIMIT 1))
+     LEFT JOIN academic_subjects a ON a.id = ic.base_academic_subject_id
+     LEFT JOIN structure_versions sv ON sv.id = ic.base_structure_version_id
+     LEFT JOIN academic_programmes p ON p.id = COALESCE(ic.academic_programme_id, a.programme_id)
+     WHERE c.id = $1 AND ic.institution_id = c.institution_id`,
     [classId]
   );
-  if (!r.rows[0]) return null;
-  const concepts = await db.query(`SELECT canonical_concept_id, classification FROM institution_curriculum_concepts WHERE curriculum_id = $1 AND status = 'ACTIVE'`, [r.rows[0].id]);
-  return { curriculumId: r.rows[0].id, classifications: new Map(concepts.rows.map((row: any) => [row.canonical_concept_id, row.classification])) };
+  const row = r.rows[0];
+  if (!row) return null;
+  const concepts = await db.query(`SELECT canonical_concept_id, classification FROM institution_curriculum_concepts WHERE curriculum_id = $1 AND status = 'ACTIVE'`, [row.id]);
+  return {
+    curriculumId: row.id,
+    classifications: new Map(concepts.rows.map((x: any) => [x.canonical_concept_id, x.classification])),
+    title: row.title,
+    programme: row.programme,
+    versionLabel: row.version_label,
+    level: row.level,
+    archived: row.status !== 'ACTIVE',
+    required: concepts.rows.filter((x: any) => x.classification === 'REQUIRED').map((x: any) => x.canonical_concept_id),
+  };
 }
 
 /** Supplemental concepts teachers added to class plans that are not (yet) in the institution's curriculum. */

@@ -8,12 +8,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClass, listInstitutionClassesWithStaff } from '@/services/institution.service';
+import { compatibleCurriculaForClass, assignClassCurriculum } from '@/lib/institution/curriculum-management.service';
 import { allUuids, requireInstitutionAdminActor, readJson } from '@/lib/institution/route-guard';
 
 const Schema = z.object({
   name: z.string().trim().min(1).max(80),
   gradeId: z.string().uuid().nullable().optional(),
   canonicalSubjectId: z.string().uuid().nullable().optional(),
+  /** Track A Curriculum V2: an ACTIVE curriculum subject of THIS institution (the class inherits its subject). */
+  institutionCurriculumId: z.string().uuid().nullable().optional(),
 });
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +37,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
 
   try {
-    const created = await createClass(institutionId, parsed.data.gradeId ?? null, parsed.data.name, parsed.data.canonicalSubjectId ?? null);
+    let subjectId = parsed.data.canonicalSubjectId ?? null;
+    if (parsed.data.institutionCurriculumId) {
+      // validate BEFORE creating anything: a foreign / archived / incompatible curriculum creates no class
+      const compatible = await compatibleCurriculaForClass(institutionId, parsed.data.gradeId ?? null);
+      const curriculum = compatible.find((c) => c.curriculumId === parsed.data.institutionCurriculumId);
+      if (!curriculum) return NextResponse.json({ error: 'CURRICULUM_NOT_AVAILABLE' }, { status: 404 });
+      subjectId = curriculum.canonicalSubjectId;
+    }
+    const created = await createClass(institutionId, parsed.data.gradeId ?? null, parsed.data.name, subjectId);
+    if (parsed.data.institutionCurriculumId) {
+      await assignClassCurriculum({ institutionId, classId: created.id, curriculumId: parsed.data.institutionCurriculumId, actorUserId: guard.actor.id });
+    }
     return NextResponse.json({ success: true, data: { class: created } }, { status: 201 });
   } catch (error: any) {
     if (error?.message === 'SCOPE_OUTSIDE_INSTITUTION') return NextResponse.json({ error: 'SCOPE_OUTSIDE_INSTITUTION' }, { status: 422 });

@@ -197,9 +197,35 @@ echo "  OK -- curriculum / class plan / recommendation constraints"
 OROLLBACK="$WORKDIR/rollback5.sql"
 { echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$ORCH_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$OROLLBACK"
 $PSQL -c "DELETE FROM concept_catalog_mapping WHERE learner_concept_id = '88888888-8888-4888-8888-888888888889'; DELETE FROM concepts WHERE id = '88888888-8888-4888-8888-888888888889'" >/dev/null
+V2_MIGRATION="$MIGRATIONS_DIR/20261018_1500_track_a_institution_curriculum_v2.sql"
+V2ROLLBACK="$WORKDIR/rollback6.sql"
+{ echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$V2_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$V2ROLLBACK"
+$PSQL -f "$V2ROLLBACK" >/dev/null  # 1500 depends on 1400: roll it back first
 $PSQL -f "$OROLLBACK" >/dev/null
 $PSQL -tAc "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('student_plan_entries','class_plan_concepts','institution_curricula')" | grep -qx 0 || fail "orchestrator rollback incomplete"
 $PSQL -f "$ORCH_MIGRATION" >/dev/null
 echo "  OK -- orchestrator rollback + re-apply"
+
+# --- 20261018_1500_track_a_institution_curriculum_v2 ---------------------
+$PSQL -f "$V2_MIGRATION" >/dev/null
+$PSQL -f "$V2_MIGRATION" >/dev/null
+echo "  OK -- curriculum v2 migration applies on top of 1400 and is idempotent"
+CS=$($PSQL -tAc "SELECT id FROM canonical_subjects ORDER BY name LIMIT 1")
+$PSQL -c "INSERT INTO academic_organizations (id, name, status, country, source_type, authority_level) VALUES ('a1000000-0000-4000-8000-000000000001', 'SEP test', 'ACTIVE', 'MX', 'GOVERNMENT_AUTHORITY', 'NATIONAL')" >/dev/null
+expect_reject "INSERT INTO academic_organizations (name, status, source_type) VALUES ('X', 'ACTIVE', 'MINISTRY')" "unknown curriculum source type"
+$PSQL -c "INSERT INTO institution_curricula (id, institution_id, canonical_subject_id, title, grade_id) VALUES ('a2000000-0000-4000-8000-000000000001', '33333333-3333-4333-8333-333333333333', '$CS', 'A', NULL)" >/dev/null 2>&1 || true
+expect_reject "INSERT INTO institution_curricula (institution_id, canonical_subject_id, title) VALUES ('33333333-3333-4333-8333-333333333333', '$CS', 'dup')" "second ACTIVE curriculum for the same subject/level + version + grade + year"
+$PSQL -c "UPDATE institution_curricula SET status = 'ARCHIVED' WHERE institution_id = '33333333-3333-4333-8333-333333333333'" >/dev/null
+$PSQL -c "INSERT INTO institution_curricula (institution_id, canonical_subject_id, title) VALUES ('33333333-3333-4333-8333-333333333333', '$CS', 'after archive')" >/dev/null
+echo "  OK -- archived curriculum frees the slot (history kept)"
+expect_reject "INSERT INTO class_plan_concepts (class_id, canonical_concept_id, owner_scope) VALUES ('44444444-4444-4444-8444-444444444444', '99999999-9999-4999-8999-999999999990', 'STUDENT')" "class plan owner scope outside INSTITUTION/TEACHER"
+expect_reject "INSERT INTO academic_governance_events (actor_scope, object_type, action) VALUES ('ROBOT', 'x', 'y')" "unknown governance actor scope"
+$PSQL -c "INSERT INTO academic_governance_events (actor_scope, object_type, action, fields) VALUES ('INSTITUTION', 'INSTITUTION_ASSIGNMENT', 'CREATED', ARRAY['due_at'])" >/dev/null
+echo "  OK -- governance constraints"
+$PSQL -c "DELETE FROM academic_governance_events; DELETE FROM institution_curricula WHERE institution_id = '33333333-3333-4333-8333-333333333333'; DELETE FROM academic_organizations WHERE id = 'a1000000-0000-4000-8000-000000000001'" >/dev/null
+$PSQL -f "$V2ROLLBACK" >/dev/null
+$PSQL -tAc "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('institution_assignments','institution_curriculum_objectives','academic_governance_events')" | grep -qx 0 || fail "curriculum v2 rollback incomplete"
+$PSQL -f "$V2_MIGRATION" >/dev/null
+echo "  OK -- curriculum v2 rollback + re-apply"
 
 echo "=== Track A roles migration certification: ALL CHECKS PASSED ==="

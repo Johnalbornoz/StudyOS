@@ -62,18 +62,24 @@ export function CreateClassForm({
   institutionId,
   grades,
   subjects,
+  curricula = [],
   labels,
 }: {
   institutionId: string;
   grades: Array<{ id: string; name: string }>;
   /** ACTIVE catalog subjects the class can be linked to. */
   subjects: Array<{ id: string; name: string }>;
-  labels: { title: string; name: string; grade: string; noGrade: string; subject: string; noSubject: string; submit: string; saved: string; error: string };
+  /** Track A Curriculum V2: the institution's ACTIVE curriculum subjects (grade-compatible ones are offered; a single one is preselected). */
+  curricula?: Array<{ id: string; label: string; gradeId: string | null }>;
+  labels: { title: string; name: string; grade: string; noGrade: string; subject: string; noSubject: string; submit: string; saved: string; error: string; curriculum?: string; noCurriculum?: string };
 }) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? '');
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? '');
+  const compatible = curricula.filter((c) => !c.gradeId || !gradeId || c.gradeId === gradeId);
+  const [curriculumChoice, setCurriculumChoice] = useState<string | null>(null);
+  const curriculumId = curriculumChoice ?? (compatible.length === 1 ? compatible[0].id : '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Msg>(null);
   return (
@@ -84,7 +90,11 @@ export function CreateClassForm({
         e.preventDefault();
         if (!name.trim()) return;
         setBusy(true);
-        const res = await postJson(`/api/institutions/${institutionId}/classes`, { name: name.trim(), gradeId: gradeId || null, canonicalSubjectId: subjectId || null });
+        const res = await postJson(`/api/institutions/${institutionId}/classes`, {
+          name: name.trim(),
+          gradeId: gradeId || null,
+          ...(curriculumId && compatible.some((c) => c.id === curriculumId) ? { institutionCurriculumId: curriculumId } : { canonicalSubjectId: subjectId || null }),
+        });
         setMessage(res.ok ? { text: labels.saved } : { text: labels.error, error: true });
         setBusy(false);
         if (res.ok) {
@@ -105,6 +115,21 @@ export function CreateClassForm({
           </option>
         ))}
       </select>
+      {curricula.length > 0 && (
+        <>
+          <label htmlFor="class-curriculum">{labels.curriculum}</label>
+          <select id="class-curriculum" value={curriculumId} onChange={(e) => setCurriculumChoice(e.target.value)}>
+            <option value="">{labels.noCurriculum}</option>
+            {compatible.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+      {!curriculumId && (
+      <>
       <label htmlFor="class-subject">{labels.subject}</label>
       <select id="class-subject" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
         <option value="">{labels.noSubject}</option>
@@ -114,6 +139,8 @@ export function CreateClassForm({
           </option>
         ))}
       </select>
+      </>
+      )}
       <div className="ta-actions">
         <button type="submit" className="btn btn-primary" disabled={busy || !name.trim()}>
           {labels.submit}

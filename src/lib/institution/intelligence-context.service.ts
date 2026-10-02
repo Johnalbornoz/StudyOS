@@ -37,12 +37,14 @@ export interface IntelligenceContext {
   classId: string | null;
   exams: Array<{ id: string; label: string }>;
   examVersionId: string | null;
+  /** Track A: assignment origin filter (null = all). */
+  origin: 'INSTITUTION' | 'TEACHER' | null;
 }
 
 export async function getIntelligenceContext(
   actorUserId: string,
   institutionId: string,
-  requested: { curriculum?: string | null; period?: string | null; classId?: string | null; exam?: string | null },
+  requested: { curriculum?: string | null; period?: string | null; classId?: string | null; exam?: string | null; origin?: string | null },
   labels: { general: string; allGrades: string }
 ): Promise<IntelligenceContext> {
   await requireInstitutionAccess(actorUserId, institutionId);
@@ -71,7 +73,8 @@ export async function getIntelligenceContext(
   const ranked = [...rows].sort((a, b) => Number(Boolean(b.base_structure_version_id)) - Number(Boolean(a.base_structure_version_id)) || Number(Boolean(b.grade_id)) - Number(Boolean(a.grade_id)));
   const chosen = rows.find((r) => r.id === requested.curriculum) ?? ranked[0] ?? null;
   const period = (INTELLIGENCE_PERIODS as readonly string[]).includes(requested.period ?? '') ? (requested.period as IntelligencePeriod) : 'current';
-  if (!chosen) return { curricula, selected: null, structureVersionId: null, period, classes: [], classId: null, exams: [], examVersionId: null };
+  const origin = requested.origin === 'INSTITUTION' || requested.origin === 'TEACHER' ? requested.origin : null;
+  if (!chosen) return { curricula, selected: null, structureVersionId: null, period, classes: [], classId: null, exams: [], examVersionId: null, origin };
 
   const [classes, exams] = await Promise.all([
     db.query(
@@ -104,7 +107,8 @@ export async function getIntelligenceContext(
     classes: classOptions,
     classId: classOptions.some((c) => c.id === requested.classId) ? requested.classId! : null,
     exams: examOptions,
-    examVersionId: examOptions.find((e) => e.id === requested.exam)?.id ?? (examOptions.length === 1 ? examOptions[0].id : examOptions[0]?.id ?? null),
+    examVersionId: examOptions.find((e) => e.id === requested.exam)?.id ?? examOptions[0]?.id ?? null,
+    origin,
   };
 }
 

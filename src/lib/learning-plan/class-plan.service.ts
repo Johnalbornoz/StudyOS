@@ -27,6 +27,7 @@ import { canonicalConceptLabels } from './labels';
 import { curriculumForClass, recordCurriculumEvent, type CurriculumClassification } from './institution-curriculum.service';
 import { deactivateClassSources, enrollCanonicalConcept } from './personal-plan.service';
 import { deriveExamGaps } from './exam-bridge.service';
+import { enforceClassPlanLocks } from '@/lib/institution/institution-governance.service';
 
 export class ClassPlanError extends Error {
   constructor(public readonly code: 'NOT_TEACHER' | 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'NOT_FOUND') {
@@ -65,13 +66,24 @@ export interface ClassPlanConceptView {
   /** ACTIVE learners who have it in their personal plan */
   studentsWithConcept: number;
   prerequisiteLabels: string[];
+  /** Track A governance: who owns this class plan row (INSTITUTION rows are read-only for the Teacher). */
+  ownerScope: 'INSTITUTION' | 'TEACHER' | null;
+  lockedFields: string[];
+  institutionTargetDate: string | null;
+  /** The institution curriculum marks it REQUIRED (the Teacher decides when, never whether). */
+  requiredByInstitution: boolean;
 }
+
+/** A DATE column as YYYY-MM-DD (pg returns local midnight: local parts, never toISOString, which shifts east of UTC). */
+const dateOnly = (v: any): string | null =>
+  v ? (v instanceof Date ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}` : String(v).slice(0, 10)) : null;
 
 export interface ClassPlanView {
   klass: TeacherClassContext;
   hasInstitutionCurriculum: boolean;
   activeLearners: number;
   concepts: ClassPlanConceptView[];
+  curriculum: { title: string; programme: string | null; versionLabel: string | null; level: string | null; archived: boolean } | null;
 }
 
 /** Curriculum browser + class plan: every concept of the class subject with curriculum relevance and coverage. */
@@ -104,10 +116,14 @@ export async function getClassPlanView(actorUserId: string, classId: string, loc
       classification: curriculum?.classifications.get(id) ?? null,
       inClassPlan: active,
       priority: active ? p.priority : null,
-      targetDate: active && p.target_date ? String(p.target_date instanceof Date ? p.target_date.toISOString() : p.target_date).slice(0, 10) : null,
+      targetDate: active ? dateOnly(p.target_date) : null,
       period: active ? p.period : null,
       requiredForClass: active ? p.required_for_class : false,
       supplemental: active ? p.supplemental : false,
+      ownerScope: active ? p.owner_scope : null,
+      lockedFields: active ? p.locked_fields ?? [] : [],
+      institutionTargetDate: active ? dateOnly(p.institution_target_date) : null,
+      requiredByInstitution: curriculum?.classifications.get(id) === 'REQUIRED',
       orderIndex: active ? p.order_index : null,
       studentsWithConcept: coverageBy.get(id) ?? 0,
       prerequisiteLabels: prereqs.rows.filter((r: any) => r.concept_id === id).map((r: any) => labels.get(r.prerequisite_concept_id) ?? ''),
@@ -115,7 +131,13 @@ export async function getClassPlanView(actorUserId: string, classId: string, loc
   });
   const rank = (c: ClassPlanConceptView) => (c.inClassPlan ? 0 : c.classification === 'REQUIRED' ? 1 : c.classification ? 2 : 3);
   view.sort((a: ClassPlanConceptView, b: ClassPlanConceptView) => rank(a) - rank(b) || (a.orderIndex ?? 0) - (b.orderIndex ?? 0) || a.label.localeCompare(b.label));
-  return { klass, hasInstitutionCurriculum: Boolean(curriculum), activeLearners: learners.length, concepts: view };
+  return {
+    klass,
+    hasInstitutionCurriculum: Boolean(curriculum),
+    activeLearners: learners.length,
+    concepts: view,
+    curriculum: curriculum ? { title: curriculum.title ?? '', programme: curriculum.programme ?? null, versionLabel: curriculum.versionLabel ?? null, level: curriculum.level ?? null, archived: Boolean(curriculum.archived) } : null,
+  };
 }
 
 /** Add (or restore / update) a concept in the class plan. Supplemental when outside the institution curriculum (coordinators notified). */
@@ -128,6 +150,7 @@ export async function addToClassPlan(
   const klass = await requireTeacherClass(actorUserId, classId);
   const ok = await db.query(`SELECT name FROM canonical_concepts WHERE id = $1 AND canonical_subject_id = $2 AND status = 'ACTIVE'`, [canonicalConceptId, klass.subjectId]);
   if (!ok.rows[0]) throw new ClassPlanError('CONCEPT_NOT_IN_CLASS_SUBJECT');
+  await enforceClassPlanLocks({ classId, canonicalConceptId, actorUserId, institutionId: klass.institutionId, requested: { priority: opts.priority, period: opts.period, requiredForClass: opts.requiredForClass, targetDate: opts.targetDate ?? null } });
   const curriculum = await curriculumForClass(classId);
   const supplemental = Boolean(curriculum) && !curriculum!.classifications.has(canonicalConceptId);
   const r = await db.query(
@@ -161,6 +184,7 @@ export async function addToClassPlan(
 /** Remove from the class plan: retires CLASS_PLAN sources only; nothing a learner learned is touched. */
 export async function removeFromClassPlan(actorUserId: string, classId: string, canonicalConceptId: string): Promise<{ sourcesRetired: number }> {
   const klass = await requireTeacherClass(actorUserId, classId);
+  await enforceClassPlanLocks({ classId, canonicalConceptId, actorUserId, institutionId: klass.institutionId, requested: { remove: true } });
   const r = await db.query(
     `UPDATE class_plan_concepts SET status = 'REMOVED', removed_at = now(), removed_by_user_id = $3, updated_at = now()
      WHERE class_id = $1 AND canonical_concept_id = $2 AND status = 'ACTIVE' RETURNING id`,

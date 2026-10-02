@@ -26,10 +26,17 @@ export interface PlanConcept {
   added: boolean;
 }
 
-export async function ensureConceptInLearnerPlan(params: { studentId: string; canonicalConceptId: string; classId: string; actorUserId?: string | null }): Promise<PlanConcept> {
+export async function ensureConceptInLearnerPlan(params: {
+  studentId: string;
+  canonicalConceptId: string;
+  classId: string;
+  actorUserId?: string | null;
+  /** Track A governance: an institution task records INSTITUTION_ASSIGNMENT (keyed by the institution assignment). */
+  institutionAssignmentId?: string | null;
+}): Promise<PlanConcept> {
   const r = await enrollCanonicalConcept(params.studentId, params.canonicalConceptId, {
-    type: 'TEACHER_ASSIGNMENT',
-    key: params.classId,
+    type: params.institutionAssignmentId ? 'INSTITUTION_ASSIGNMENT' : 'TEACHER_ASSIGNMENT',
+    key: params.institutionAssignmentId ?? params.classId,
     classId: params.classId,
     actorUserId: params.actorUserId ?? null,
   });

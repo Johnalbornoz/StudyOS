@@ -85,7 +85,7 @@ export async function getClassProgress(actorUserId: string, classId: string, fil
     q(`SELECT cpc.canonical_concept_id, cpc.target_date, cpc.period, cpc.added_at FROM class_plan_concepts cpc
        JOIN canonical_concepts cc ON cc.id = cpc.canonical_concept_id AND cc.canonical_subject_id = $2
        WHERE cpc.class_id = $1 AND cpc.status = 'ACTIVE'`, [classId, klass.subjectId]),
-    q(`SELECT ti.assignment_group_id, ti.student_id, ti.assigned_at, ti.due_at, ti.title, cc.id AS canonical_concept_id, cc.name AS concept_name,
+    q(`SELECT ti.assignment_group_id, ti.student_id, ti.assigned_at, ti.due_at, ti.title, ti.owner_scope, cc.id AS canonical_concept_id, cc.name AS concept_name,
               CASE WHEN ti.status = 'COMPLETED' OR tie.completed_at IS NOT NULL THEN 'COMPLETED' ELSE ti.status END AS status
        FROM teacher_interventions ti
        LEFT JOIN concept_catalog_mapping m ON m.learner_concept_id = ti.concept_id AND m.status = 'MATCHED'
@@ -227,7 +227,7 @@ export async function getClassProgress(actorUserId: string, classId: string, fil
     assignments: assignmentRows.rows
       .filter((r: any) => !filters.assignment || r.assignment_group_id === filters.assignment)
       .filter((r: any) => !r.canonical_concept_id || conceptIds.includes(r.canonical_concept_id))
-      .map((r: any) => ({ groupId: r.assignment_group_id, title: r.title || r.concept_name || '', conceptId: r.canonical_concept_id, studentId: r.student_id, status: r.status, assignedAt: iso(r.assigned_at)!, dueAt: iso(r.due_at) })),
+      .map((r: any) => ({ groupId: r.assignment_group_id, title: r.title || r.concept_name || '', conceptId: r.canonical_concept_id, studentId: r.student_id, status: r.status, assignedAt: iso(r.assigned_at)!, dueAt: iso(r.due_at), institutional: r.owner_scope === 'INSTITUTION' })),
     examDates: examDates.rows.map((r: any) => ({ studentId: r.student_id, examName: r.exam_name, examDate: day(r.exam_date)! })),
   };
 

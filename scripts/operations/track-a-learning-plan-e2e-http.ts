@@ -306,7 +306,8 @@ async function s57(w: World, state: { curriculumId?: string }) {
   check('S57.other-coordinator-refused', denied(await get(`${base}/curricula`, 'inst-a')));
   check('S57.teacher-cannot-govern-curriculum', denied(await post(`${base}/curricula`, 'lp-teacher', { canonicalSubjectId: w.mathSubject, title: 'x' })));
   check('S57.student-refused', denied(await get(`${base}/curricula`, 'student-a')));
-  await page('S57-curriculum', `/dashboard/institution/${w.inst}/curriculum?curriculum=${state.curriculumId}`, 'lp-coord', ['Currículo institucional', 'Obligatorio', 'Retirado']);
+  await page('S57-curriculum', `/dashboard/institution/${w.inst}/curriculum`, 'lp-coord', ['Currículo', 'Ver cobertura curricular', 'Clases y currículo']);
+  await page('S57-curriculum-content', `/dashboard/institution/${w.inst}/curriculum/${state.curriculumId}`, 'lp-coord', ['Contenido curricular', 'Conceptos del currículo', 'Obligatorio']);
 }
 
 async function s54(w: World, state: { curriculumId?: string }) {

@@ -27,6 +27,7 @@ export function IntelligenceContextBar({
   classId,
   exams,
   examId,
+  origin = null,
   show,
   labels,
 }: {
@@ -37,14 +38,15 @@ export function IntelligenceContextBar({
   classId: string | null;
   exams: Array<{ id: string; label: string }>;
   examId: string | null;
-  show: { curriculum: boolean; period: boolean; class: boolean; exam: boolean };
+  origin?: string | null;
+  show: { curriculum: boolean; period: boolean; class: boolean; exam: boolean; origin?: boolean };
   labels: Record<string, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = curricula.find((c) => c.curriculumId === selectedId) ?? null;
 
-  function go(next: { curriculum?: string | null; period?: string; classId?: string | null; exam?: string | null }) {
+  function go(next: { curriculum?: string | null; period?: string; classId?: string | null; exam?: string | null; origin?: string | null }) {
     const qs = new URLSearchParams();
     const cur = next.curriculum !== undefined ? next.curriculum : selectedId;
     if (cur) qs.set('curriculum', cur);
@@ -53,6 +55,8 @@ export function IntelligenceContextBar({
     if (cls) qs.set('class', cls);
     const ex = next.exam !== undefined ? next.exam : next.curriculum !== undefined ? null : examId;
     if (ex) qs.set('exam', ex);
+    const og = next.origin !== undefined ? next.origin : origin;
+    if (og) qs.set('origin', og);
     router.push(`${pathname}?${qs}`);
   }
 
@@ -117,6 +121,16 @@ export function IntelligenceContextBar({
                 {c.name}
               </option>
             ))}
+          </select>
+        </label>
+      )}
+      {show.origin && (
+        <label className="ta-field" data-context="origin">
+          <span>{labels.origin}</span>
+          <select value={origin ?? ''} onChange={(e) => go({ origin: e.target.value || null })}>
+            <option value="">{labels['origin.ALL']}</option>
+            <option value="INSTITUTION">{labels['origin.INSTITUTION']}</option>
+            <option value="TEACHER">{labels['origin.TEACHER']}</option>
           </select>
         </label>
       )}

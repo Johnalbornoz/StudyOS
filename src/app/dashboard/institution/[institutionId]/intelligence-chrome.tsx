@@ -18,11 +18,11 @@ const one = (sp: Search, k: string) => {
 
 /** Resolve the governed context for a tab from the URL (ids never typed; foreign ids ignored). */
 export function loadContext(actorUserId: string, institutionId: string, sp: Search, t: T): Promise<IntelligenceContext> {
-  return getIntelligenceContext(actorUserId, institutionId, { curriculum: one(sp, 'curriculum'), period: one(sp, 'period'), classId: one(sp, 'class'), exam: one(sp, 'exam') }, { general: t['iix.general'], allGrades: t['iix.allGrades'] });
+  return getIntelligenceContext(actorUserId, institutionId, { curriculum: one(sp, 'curriculum'), period: one(sp, 'period'), classId: one(sp, 'class'), exam: one(sp, 'exam'), origin: one(sp, 'origin') }, { general: t['iix.general'], allGrades: t['iix.allGrades'] });
 }
 
 /** Title, sub-navigation, the tab's explanation and its context selectors. */
-export function IntelligenceHeader({ t, institutionId, institutionName, tab, ctx, show }: { t: T; institutionId: string; institutionName: string; tab: IntelligenceTab; ctx: IntelligenceContext; show: { curriculum: boolean; period: boolean; class: boolean; exam: boolean } }) {
+export function IntelligenceHeader({ t, institutionId, institutionName, tab, ctx, show }: { t: T; institutionId: string; institutionName: string; tab: IntelligenceTab; ctx: IntelligenceContext; show: { curriculum: boolean; period: boolean; class: boolean; exam: boolean; origin?: boolean } }) {
   const title = t[`institution.${tab}.title` as keyof T];
   return (
     <div className="ta-stack" style={{ gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
@@ -43,6 +43,7 @@ export function IntelligenceHeader({ t, institutionId, institutionName, tab, ctx
             classId={ctx.classId}
             exams={ctx.exams}
             examId={ctx.examVersionId}
+            origin={ctx.origin}
             show={show}
             labels={{
               context: t['iix.context'],
@@ -57,6 +58,10 @@ export function IntelligenceHeader({ t, institutionId, institutionName, tab, ctx
               class: t['iix.class'],
               allClasses: t['iix.allClasses'],
               exam: t['iix.exam'],
+              origin: t['cur2.origin'],
+              'origin.ALL': t['cur2.origin.ALL'],
+              'origin.INSTITUTION': t['cur2.origin.INSTITUTION'],
+              'origin.TEACHER': t['cur2.origin.TEACHER'],
             }}
           />
           {show.period && <p className="ta-msg">{t['iix.periodNote']}</p>}

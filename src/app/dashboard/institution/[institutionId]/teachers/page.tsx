@@ -57,6 +57,7 @@ export default async function InstitutionTeachersPage({ params }: { params: Prom
     requests: t['institution.requests.title'],
     subjects: t['ia.nav.subjects'],
     curriculum: t['icur.nav'],
+    tasks: t['cur2.tasks.nav'],
     coordinators: t['ia.nav.coordinators'],
     settings: t['ia.nav.settings'],
     learners: t['institution.learners.title'],

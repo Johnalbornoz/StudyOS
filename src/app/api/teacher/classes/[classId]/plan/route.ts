@@ -10,9 +10,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUserActor, readBody, isUuid } from '@/lib/learning-plan/route-actors';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { FieldLockedError } from '@/lib/institution/academic-governance';
 import { getClassPlanView, addToClassPlan, ClassPlanError } from '@/lib/learning-plan/class-plan.service';
 
 function planError(error: unknown) {
+  if (error instanceof FieldLockedError) return NextResponse.json({ error: error.code, fields: error.fields }, { status: 403 });
   if (error instanceof ClassPlanError) {
     const status = error.code === 'NOT_TEACHER' ? 403 : error.code === 'NOT_FOUND' ? 404 : 422;
     return NextResponse.json({ error: error.code }, { status });

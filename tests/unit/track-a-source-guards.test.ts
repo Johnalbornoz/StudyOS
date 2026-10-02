@@ -59,6 +59,28 @@ const ROLE_MODULES = [
   'src/lib/teacher/class-progress.service.ts',
   'src/lib/teacher/class-progress.compute.ts',
   'src/app/api/teacher/classes/[classId]/progress/route.ts',
+  // Institution Curriculum Management V2 + academic governance
+  'src/lib/institution/academic-governance.ts',
+  'src/lib/institution/curriculum-management.service.ts',
+  'src/lib/institution/institution-governance.service.ts',
+  'src/lib/institution/curriculum-attention.service.ts',
+  'src/lib/institution/route-errors.ts',
+  'src/app/api/institutions/[id]/curriculum/subjects/route.ts',
+  'src/app/api/institutions/[id]/curriculum/subjects/[curriculumId]/route.ts',
+  'src/app/api/institutions/[id]/curriculum/subjects/[curriculumId]/preview/route.ts',
+  'src/app/api/institutions/[id]/curriculum/subjects/[curriculumId]/archive/route.ts',
+  'src/app/api/institutions/[id]/curriculum/subjects/[curriculumId]/content/route.ts',
+  'src/app/api/institutions/[id]/curriculum/coverage/route.ts',
+  'src/app/api/institutions/[id]/classes/[classId]/curriculum/route.ts',
+  'src/app/api/institutions/[id]/classes/[classId]/plan/route.ts',
+  'src/app/api/institutions/[id]/institution-assignments/route.ts',
+  'src/app/api/institutions/[id]/institution-assignments/[assignmentId]/route.ts',
+  'src/app/api/teacher/classes/[classId]/institution-assignments/route.ts',
+  'src/app/api/teacher/classes/[classId]/institution-assignments/[assignmentId]/recipients/route.ts',
+  'src/app/api/teacher/classes/[classId]/assignments/[groupId]/route.ts',
+  'src/app/dashboard/institution/[institutionId]/curriculum/[curriculumId]/page.tsx',
+  'src/app/dashboard/institution/[institutionId]/tasks/page.tsx',
+  'src/app/dashboard/institution/[institutionId]/coverage/page.tsx',
 ];
 
 const COGNITIVE_TABLES = [

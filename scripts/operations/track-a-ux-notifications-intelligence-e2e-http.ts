@@ -153,9 +153,9 @@ async function main() {
     check(`I10.${tab}.context-selectors`, text.includes('Programa') && text.includes('Versión curricular') && text.includes('Grado / Nivel') && text.includes('Asignatura'));
   }
   const cov = visible((await get(`/dashboard/institution/${inst}/coverage`, 'lp-coord')).text);
-  check('I11.smart-default-single-curriculum', cov.includes('Matemáticas 11 LP') && cov.includes('11.º LP') && cov.includes('Trabajo en clases y estudiantes'));
-  check('I15.coverage.work-numbers', /\d+ de \d+ conceptos están en el plan de alguna clase/.test(cov));
-  check('I15.coverage.no-base-explained', cov.includes('catálogo general de la asignatura'));
+  check('I11.smart-default-single-curriculum', cov.includes('Matemáticas 11 LP') && cov.includes('11.º LP') && cov.includes('Cobertura de la institución'));
+  check('I15.coverage.work-numbers', cov.includes('En planes de clase') && cov.includes('En planes de estudiantes') && cov.includes('No representa dominio académico'));
+  check('I15.coverage.studyus-separate', cov.includes('Cobertura de contenido StudyUS') && cov.includes('Esto no es la cobertura de tu institución'));
   const rd = visible((await get(`/dashboard/institution/${inst}/readiness`, 'lp-coord')).text);
   check('I15.readiness.empty-or-data', rd.includes('Examen') || rd.includes('Este currículo todavía no tiene exámenes asociados.') || rd.includes('Todavía no hay estudiantes preparando este examen.'));
   const iv = visible((await get(`/dashboard/institution/${inst}/interventions?period=30d`, 'lp-coord')).text);

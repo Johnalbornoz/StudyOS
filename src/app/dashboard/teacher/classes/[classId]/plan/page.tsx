@@ -47,6 +47,7 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
   const learners = roster.filter((r) => r.status === 'ACTIVE').map((r) => ({ studentId: r.studentId, name: r.name }));
   const current = view.concepts.filter((c) => c.inClassPlan);
   const suggested = view.concepts.filter((c) => !c.inClassPlan);
+  const requiredUnscheduled = suggested.filter((c) => c.requiredByInstitution);
   const assignLabels = {
     assignAll: t['tcp.plan.assignAll'],
     assignSelected: t['tcp.plan.assignSelected'],
@@ -72,6 +73,31 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
       <ClassChrome klass={klass} active="plan" t={t} />
       <p className="ta-msg">{t['tcp.plan.subtitle']}</p>
       {!view.hasInstitutionCurriculum && <InlineAlert tone="info" title={t['tcp.plan.suggested']} body={t['tcp.plan.noCurriculum']} />}
+      {view.curriculum && (
+        <section className="card ta-card" aria-label={t['cur2.teacher.curriculum']} data-class-curriculum>
+          <strong>
+            {t['cur2.teacher.curriculum']}: {view.curriculum.title}
+          </strong>
+          <span className="ta-msg">{[view.curriculum.programme, view.curriculum.level, view.curriculum.versionLabel].filter(Boolean).join(' · ')}</span>
+          {view.curriculum.archived && <span className="ta-msg">{t['cur2.teacher.archived']}</span>}
+        </section>
+      )}
+      {requiredUnscheduled.length > 0 && (
+        <section className="card ta-card" aria-labelledby="required-title" data-required-unscheduled>
+          <h2 id="required-title" style={{ fontSize: 16 }}>{t['cur2.lock.notScheduled']}</h2>
+          <p className="ta-msg">{t['cur2.lock.notScheduledBody']}</p>
+          <ul className="role-list">
+            {requiredUnscheduled.map((c) => (
+              <li key={c.canonicalConceptId} className="ta-coordinator">
+                <span>
+                  <strong>{c.label}</strong> <span className="chip chip-warn">{t['cur2.lock.requiredBadge']}</span>
+                </span>
+                <AddToClassPlanButton classId={classId} canonicalConceptId={c.canonicalConceptId} label={t['tcp.plan.add']} errorLabel={t['inst.common.error']} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="current-title" className="ta-stack" style={{ gap: 'var(--space-3)' }}>
         <h2 id="current-title" style={{ fontSize: 18 }}>{t['tcp.plan.current']}</h2>
@@ -79,7 +105,7 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
           <EmptyState title={t['tcp.plan.currentEmpty']} />
         ) : (
           current.map((c) => (
-            <article key={c.canonicalConceptId} className="card ta-card" aria-label={c.label}>
+            <article key={c.canonicalConceptId} className="card ta-card" aria-label={c.label} data-owner={c.ownerScope ?? 'TEACHER'}>
               <div className="ta-coordinator">
                 <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <strong>{c.label}</strong>
@@ -97,9 +123,22 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
                 </span>
                 <span className="ta-actions">
                   {c.supplemental && <span className="chip chip-warn">{t['tcp.plan.supplementalBadge']}</span>}
-                  <RemoveFromClassPlanButton classId={classId} canonicalConceptId={c.canonicalConceptId} label={t['tcp.plan.remove']} confirmText={t['tcp.plan.removeConfirm']} errorLabel={t['inst.common.error']} />
+                  {c.requiredByInstitution && <span className="chip chip-warn">{t['cur2.lock.requiredBadge']}</span>}
+                  {c.ownerScope === 'INSTITUTION' ? (
+                    <span className="chip cur2-lock" title={t['cur2.lock.planRow']}>
+                      🔒 {fillMessage(t['cur2.lock.badge'], { institution: klass.institutionName })}
+                    </span>
+                  ) : (
+                    <RemoveFromClassPlanButton classId={classId} canonicalConceptId={c.canonicalConceptId} label={t['tcp.plan.remove']} confirmText={t['tcp.plan.removeConfirm']} errorLabel={t['inst.common.error']} />
+                  )}
                 </span>
               </div>
+              {c.ownerScope === 'INSTITUTION' && (
+                <p className="ta-msg" data-locked-row>
+                  {t['cur2.lock.planRow']}
+                  {c.institutionTargetDate ? ` ${t['cur2.lock.date']}: ${new Date(`${c.institutionTargetDate}T00:00:00`).toLocaleDateString(locale)} · ${fillMessage(t['cur2.lock.badge'], { institution: klass.institutionName })}.` : ''}
+                </p>
+              )}
               <AssignConceptControl classId={classId} canonicalConceptId={c.canonicalConceptId} learners={learners} labels={assignLabels} />
               <details>
                 <summary style={{ cursor: 'pointer' }}>{t['tcp.plan.edit']}</summary>
@@ -107,12 +146,15 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
                   classId={classId}
                   canonicalConceptId={c.canonicalConceptId}
                   initial={{ priority: c.priority ?? 'NORMAL', targetDate: c.targetDate, period: c.period, requiredForClass: c.requiredForClass }}
+                  locked={c.ownerScope === 'INSTITUTION' ? c.lockedFields : c.requiredByInstitution ? ['required_for_class'] : []}
+                  maxDate={c.institutionTargetDate}
                   labels={{
                     priority: t['tcp.plan.priority'],
                     priorities: { HIGH: t['tcp.plan.priority.HIGH'], NORMAL: t['tcp.plan.priority.NORMAL'], LOW: t['tcp.plan.priority.LOW'] },
-                    targetDate: t['tcp.plan.targetDate'],
+                    targetDate: c.ownerScope === 'INSTITUTION' ? t['cur2.lock.planningDate'] : t['tcp.plan.targetDate'],
                     period: t['tcp.plan.period'],
                     required: t['tcp.plan.required'],
+                    locked: fillMessage(t['cur2.lock.badge'], { institution: klass.institutionName }),
                     save: t['tcp.plan.save'],
                     saved: t['tcp.plan.saved'],
                     error: t['inst.common.error'],

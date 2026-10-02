@@ -2128,3 +2128,17 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 @media (max-width: 767px) {
   .cpi-filters > .ta-field { flex-basis: 100%; }
 }
+
+/* Track A: Institution Curriculum Management V2 (table on desktop, cards on phones via .cpi-grid rules). */
+.cur2-group { gap: var(--space-3); }
+.cur2-table td .ta-actions { flex-wrap: wrap; }
+.cur2-inline > summary { list-style: none; }
+.cur2-inline[open] { flex-basis: 100%; }
+.cur2-excluded { opacity: 0.6; }
+.cur2-danger { color: var(--error); }
+.cur2-lock { white-space: normal; }
+.cur2-subject-pick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.cur2-bulk { flex-wrap: wrap; }
+.cur2-wizard .btn, .cur2-bulk .btn, .cur2-institution-task .btn { min-height: var(--touch-target); }
+.cur2-objective { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); }
+.ta-choice:focus-within, .cur2-objective:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--radius-md); }

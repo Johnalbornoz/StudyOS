@@ -462,6 +462,7 @@ export default async function TeacherClassProgressPage({ params, searchParams }:
                       </strong>
                       <span className="ta-msg">
                         {e.title} · {fillMessage(t['cpi.pareto.students'], { n: e.students.length })}
+                        {e.institutional ? <span className="chip chip-warn" data-institutional> {t['cur2.progress.institutional']}</span> : null}
                       </span>
                     </span>
                     {e.atRisk.length > 0 && (

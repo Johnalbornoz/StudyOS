@@ -189,6 +189,13 @@ export interface PublishClassAssignmentInput {
    * assignment and never adds a recipient twice.
    */
   requestId?: string | null;
+  /**
+   * Track A governance (internal only, never accepted from a request body):
+   * a task defined by the institution. Its group id is the institution
+   * target's group; recipients' plans record INSTITUTION_ASSIGNMENT and the
+   * rows are owner_scope INSTITUTION. The teacher only chooses recipients.
+   */
+  governed?: { institutionAssignmentId: string };
 }
 
 export interface PublishClassAssignmentResult {
@@ -218,7 +225,7 @@ export class NoLearnersToAssignError extends Error {
  *  - REQUEST_CONFLICT: the request id belongs to another class / teacher.
  */
 export class InvalidClassAssignmentError extends Error {
-  constructor(public readonly code: 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES' | 'REQUEST_CONFLICT') {
+  constructor(public readonly code: 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES' | 'REQUEST_CONFLICT' | 'FIELD_LOCKED_BY_INSTITUTION') {
     super(code);
     this.name = 'InvalidClassAssignmentError';
   }
@@ -272,6 +279,12 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
   if (learners.rows.length === 0) throw new NoLearnersToAssignError();
 
   const assignmentGroupId = input.requestId ?? randomUUID();
+  // An institution task's group can never be extended through the teacher's own
+  // publish path (that would let a teacher add recipients with different dates).
+  if (!input.governed) {
+    const governedGroup = await db.query(`SELECT 1 FROM institution_assignment_targets WHERE assignment_group_id = $1`, [assignmentGroupId]);
+    if (governedGroup.rows.length > 0) throw new InvalidClassAssignmentError('FIELD_LOCKED_BY_INSTITUTION');
+  }
   const existingRows = await db.query(
     `SELECT id, student_id, class_id, assigned_by_user_id, concept_added_to_plan FROM teacher_interventions WHERE assignment_group_id = $1`,
     [assignmentGroupId]
@@ -294,7 +307,7 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
       skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'NOT_AUTHORIZED' });
       continue;
     }
-    const planConcept = await ensureConceptInLearnerPlan({ studentId: l.id, canonicalConceptId: input.canonicalConceptId, classId: input.classId, actorUserId });
+    const planConcept = await ensureConceptInLearnerPlan({ studentId: l.id, canonicalConceptId: input.canonicalConceptId, classId: input.classId, actorUserId, institutionAssignmentId: input.governed?.institutionAssignmentId ?? null });
     try {
       const intervention = await assignTeacherIntervention(actorUserId, {
         classId: input.classId,
@@ -309,6 +322,9 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
         addedToPlan: planConcept.added,
       });
       assigned.push({ studentId: l.id, interventionId: intervention.id, addedToPlan: planConcept.added });
+      if (input.governed) {
+        await db.query(`UPDATE teacher_interventions SET owner_scope = 'INSTITUTION', institution_assignment_id = $2 WHERE id = $1`, [intervention.id, input.governed.institutionAssignmentId]);
+      }
       if (l.user_id) {
         await notifyUser({
           recipientUserId: l.user_id,
@@ -369,6 +385,8 @@ export interface ClassAssignmentView {
   dueAt: string | null;
   counts: Record<TeacherInterventionStatus, number>;
   learners: LearnerAssignmentOutcome[];
+  /** Track A governance: INSTITUTION tasks are read-only for the Teacher (only recipients). */
+  ownerScope: 'INSTITUTION' | 'TEACHER';
 }
 
 function iso(v: any): string | null {
@@ -399,7 +417,7 @@ export async function listClassAssignments(actorUserId: string, classId: string)
   const rows = await db.query(
     `
     SELECT ti.id, ti.assignment_group_id, ti.student_id, ti.status, ti.due_at, ti.assigned_at, ti.instructions, ti.target_type,
-           ti.title AS assignment_title, ti.starts_at, ti.concept_added_to_plan,
+           ti.title AS assignment_title, ti.starts_at, ti.concept_added_to_plan, ti.owner_scope,
            COALESCE(cc.name, ccl.label, ti.intervention_type) AS title,
            s.name AS student_name, s.email AS student_email,
            tie.execution_type, tie.execution_reference, tie.completed_at
@@ -451,6 +469,7 @@ export async function listClassAssignments(actorUserId: string, classId: string)
         dueAt: iso(r.due_at),
         counts: { ASSIGNED: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELLED: 0, EXPIRED: 0 },
         learners: [],
+        ownerScope: r.owner_scope === 'INSTITUTION' ? 'INSTITUTION' : 'TEACHER',
       };
       groups.set(key, view);
     }

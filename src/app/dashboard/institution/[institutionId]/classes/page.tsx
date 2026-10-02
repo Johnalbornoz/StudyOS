@@ -7,6 +7,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
 import { getInstitutionOverview, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { listInstitutionClassesWithStaff, listInstitutionGrades, listLinkableSubjects } from '@/services/institution.service';
+import { listInstitutionCurriculumSubjects } from '@/lib/institution/curriculum-management.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionSubNav } from '../InstitutionSubNav';
@@ -43,7 +44,7 @@ export default async function InstitutionClassesPage({
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
     throw error;
   }
-  const [allClasses, grades, subjects] = await Promise.all([listInstitutionClassesWithStaff(institutionId), listInstitutionGrades(institutionId), listLinkableSubjects()]);
+  const [allClasses, grades, subjects, curricula] = await Promise.all([listInstitutionClassesWithStaff(institutionId), listInstitutionGrades(institutionId), listLinkableSubjects(), listInstitutionCurriculumSubjects(institutionId)]);
   const classes = gradeId ? allClasses.filter((c) => c.gradeId === gradeId) : allClasses;
 
   const subNavLabels = {
@@ -54,6 +55,7 @@ export default async function InstitutionClassesPage({
     requests: t['institution.requests.title'],
     subjects: t['ia.nav.subjects'],
     curriculum: t['icur.nav'],
+    tasks: t['cur2.tasks.nav'],
     coordinators: t['ia.nav.coordinators'],
     settings: t['ia.nav.settings'],
     learners: t['institution.learners.title'],
@@ -74,7 +76,10 @@ export default async function InstitutionClassesPage({
         institutionId={institutionId}
         grades={grades}
         subjects={subjects}
+        curricula={curricula.map((c) => ({ id: c.curriculumId, gradeId: c.gradeId, label: [c.subject, c.code, c.level, c.gradeName ?? t['cur2.wizard.allGrades'], c.programme].filter(Boolean).join(' · ') }))}
         labels={{
+          curriculum: t['cur2.teacher.curriculum'],
+          noCurriculum: t['cur2.classes.none'],
           title: t['inst.classes.create.title'],
           name: t['inst.classes.create.name'],
           grade: t['inst.classes.create.grade'],

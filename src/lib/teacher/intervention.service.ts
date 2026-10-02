@@ -15,7 +15,7 @@
  * the generic canAccessLearner.
  */
 import { db } from '@/lib/db';
-import { canAccessClass, canTeacherManageIntervention } from '@/lib/authorization';
+import { canAccessClass, canAccessInstitution, canTeacherManageIntervention } from '@/lib/authorization';
 import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import type { SimulationType } from '@/lib/simulation/types';
 import { reconcileCompletionsForStudent, getEffectiveStatus } from '@/lib/student/teacher-intervention-execution.service';
@@ -189,6 +189,32 @@ const TYPE_FOR_TARGET: Record<TeacherInterventionTarget['targetType'], TeacherIn
 
 export async function assignTeacherIntervention(actorUserId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
   const institutionId = await requireAssignmentAuthorization(actorUserId, params.classId, params.studentId);
+  return insertIntervention(actorUserId, institutionId, params);
+}
+
+/**
+ * Track A governance -- an INSTITUTION task delivered directly to every
+ * learner of a target class (no teacher recipient selection). Authorized as
+ * the institution (INSTITUTION_ADMIN of the class's institution) and only for
+ * learners ACTIVE in that class; the row is owner_scope INSTITUTION. Same
+ * validation and insert as a teacher assignment otherwise.
+ */
+export async function assignInstitutionDirectIntervention(
+  actorUserId: string,
+  params: AssignTeacherInterventionParams & { institutionAssignmentId: string }
+): Promise<TeacherIntervention> {
+  const classRow = await db.query(`SELECT institution_id FROM classes WHERE id = $1`, [params.classId]);
+  if (classRow.rows.length === 0) throw new TeacherInterventionAccessDeniedError(`class ${params.classId} does not exist`);
+  const institutionId: string = classRow.rows[0].institution_id;
+  if (!(await canAccessInstitution(actorUserId, institutionId, 'TEACHER_ASSIGNMENT_MANAGE'))) throw new TeacherInterventionAccessDeniedError('actor is not an institution admin of this class');
+  const enrollment = await db.query(`SELECT 1 FROM class_enrollments WHERE class_id = $1 AND student_id = $2 AND status = 'ACTIVE'`, [params.classId, params.studentId]);
+  if (enrollment.rows.length === 0) throw new TeacherInterventionAccessDeniedError(`student ${params.studentId} has no ACTIVE enrollment in class ${params.classId}`);
+  const intervention = await insertIntervention(actorUserId, institutionId, params);
+  await db.query(`UPDATE teacher_interventions SET owner_scope = 'INSTITUTION', institution_assignment_id = $2 WHERE id = $1`, [intervention.id, params.institutionAssignmentId]);
+  return intervention;
+}
+
+async function insertIntervention(actorUserId: string, institutionId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
   if (TYPE_FOR_TARGET[params.target.targetType] !== params.interventionType) {
     throw new TeacherInterventionInvalidTargetError(params.target.targetType);
   }

@@ -76,13 +76,20 @@ export function ClassPlanConceptEditor({
   classId,
   canonicalConceptId,
   initial,
+  locked = [],
+  maxDate = null,
   labels,
 }: {
   classId: string;
   canonicalConceptId: string;
   initial: { priority: 'HIGH' | 'NORMAL' | 'LOW'; targetDate: string | null; period: string | null; requiredForClass: boolean };
-  labels: { priority: string; priorities: Record<'HIGH' | 'NORMAL' | 'LOW', string>; targetDate: string; period: string; required: string; save: string; saved: string; error: string };
+  /** Track A governance: fields set by the institution (shown read-only; the server enforces them too). */
+  locked?: string[];
+  /** The institution target date: the teacher's planning date cannot be later. */
+  maxDate?: string | null;
+  labels: { priority: string; priorities: Record<'HIGH' | 'NORMAL' | 'LOW', string>; targetDate: string; period: string; required: string; save: string; saved: string; error: string; locked?: string };
 }) {
+  const isLocked = (f: string) => locked.includes(f);
   const router = useRouter();
   const [priority, setPriority] = useState(initial.priority);
   const [targetDate, setTargetDate] = useState(initial.targetDate ?? '');
@@ -96,14 +103,20 @@ export function ClassPlanConceptEditor({
       onSubmit={async (e) => {
         e.preventDefault();
         setState('busy');
-        const r = await post(`/api/teacher/classes/${classId}/plan`, { canonicalConceptId, priority, targetDate: targetDate || null, period: period.trim() || null, requiredForClass: required });
+        const r = await post(`/api/teacher/classes/${classId}/plan`, {
+          canonicalConceptId,
+          ...(isLocked('priority') ? {} : { priority }),
+          targetDate: targetDate || null,
+          ...(isLocked('period') ? {} : { period: period.trim() || null }),
+          ...(isLocked('required_for_class') ? {} : { requiredForClass: required }),
+        });
         setState(r.ok ? 'saved' : 'error');
         if (r.ok) router.refresh();
       }}
     >
       <label className="ta-field">
         <span>{labels.priority}</span>
-        <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)}>
+        <select value={priority} disabled={isLocked('priority')} onChange={(e) => setPriority(e.target.value as typeof priority)}>
           {(['HIGH', 'NORMAL', 'LOW'] as const).map((p) => (
             <option key={p} value={p}>
               {labels.priorities[p]}
@@ -113,20 +126,21 @@ export function ClassPlanConceptEditor({
       </label>
       <label className="ta-field">
         <span>{labels.targetDate}</span>
-        <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+        <input type="date" value={targetDate} max={maxDate ?? undefined} onChange={(e) => setTargetDate(e.target.value)} />
       </label>
       <label className="ta-field">
         <span>{labels.period}</span>
-        <input type="text" maxLength={60} value={period} onChange={(e) => setPeriod(e.target.value)} />
+        <input type="text" maxLength={60} value={period} readOnly={isLocked('period')} onChange={(e) => setPeriod(e.target.value)} />
       </label>
       <label className="ta-choice">
-        <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} /> {labels.required}
+        <input type="checkbox" checked={required} disabled={isLocked('required_for_class')} onChange={(e) => setRequired(e.target.checked)} /> {labels.required}
       </label>
       <button type="submit" className="btn btn-secondary" disabled={state === 'busy'}>
         {labels.save}
       </button>
       {state === 'saved' && <span className="ta-msg" role="status">{labels.saved}</span>}
       {state === 'error' && <span className="ta-msg" role="alert">{labels.error}</span>}
+      {locked.length > 0 && labels.locked && <span className="ta-msg">🔒 {labels.locked}</span>}
     </form>
   );
 }

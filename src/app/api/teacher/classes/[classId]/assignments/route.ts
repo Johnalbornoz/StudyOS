@@ -79,7 +79,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     if (error instanceof TeacherClassAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     if (error instanceof NoLearnersToAssignError) return NextResponse.json({ error: 'NO_LEARNERS_TO_ASSIGN' }, { status: 422 });
-    if (error instanceof InvalidClassAssignmentError) return NextResponse.json({ error: error.code }, { status: 422 });
+    if (error instanceof InvalidClassAssignmentError) return NextResponse.json({ error: error.code }, { status: error.code === 'FIELD_LOCKED_BY_INSTITUTION' ? 403 : 422 });
     throw error;
   }
 }

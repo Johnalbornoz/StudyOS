@@ -326,6 +326,15 @@ export async function purgeLearningPlanRows(scope: { studentIds?: string[]; clas
   await q(`DELETE FROM curriculum_events WHERE class_id = ANY($1::uuid[]) OR institution_id = ANY($2::uuid[]) OR actor_user_id = ANY($3::uuid[])`, [classes, insts, users]);
   await q(`DELETE FROM concept_proposals WHERE class_id = ANY($1::uuid[]) OR institution_id = ANY($2::uuid[]) OR requested_by_user_id = ANY($3::uuid[])`, [classes, insts, users]);
   await q(`DELETE FROM class_plan_concepts WHERE class_id = ANY($1::uuid[]) OR added_by_user_id = ANY($2::uuid[])`, [classes, users]);
+  // Curriculum V2 / governance rows (institution tasks, objective selection, class associations, version chains, audit).
+  await q(`DELETE FROM teacher_intervention_executions WHERE teacher_intervention_id IN (SELECT id FROM teacher_interventions WHERE institution_assignment_id IN (SELECT id FROM institution_assignments WHERE institution_id = ANY($1::uuid[])))`, [insts]);
+  await q(`DELETE FROM teacher_interventions WHERE institution_assignment_id IN (SELECT id FROM institution_assignments WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await q(`DELETE FROM institution_assignment_targets WHERE assignment_id IN (SELECT id FROM institution_assignments WHERE institution_id = ANY($1::uuid[])) OR class_id = ANY($2::uuid[])`, [insts, classes]);
+  await q(`DELETE FROM institution_assignments WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM academic_governance_events WHERE institution_id = ANY($1::uuid[]) OR actor_user_id = ANY($2::uuid[])`, [insts, users]);
+  await q(`UPDATE classes SET institution_curriculum_id = NULL WHERE institution_curriculum_id IN (SELECT id FROM institution_curricula WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await q(`UPDATE institution_curricula SET replaced_by_curriculum_id = NULL WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM institution_curriculum_objectives WHERE curriculum_id IN (SELECT id FROM institution_curricula WHERE institution_id = ANY($1::uuid[]))`, [insts]);
   await q(`DELETE FROM institution_curriculum_concepts WHERE curriculum_id IN (SELECT id FROM institution_curricula WHERE institution_id = ANY($1::uuid[])) OR added_by_user_id = ANY($2::uuid[])`, [insts, users]);
   await q(`DELETE FROM institution_curricula WHERE institution_id = ANY($1::uuid[])`, [insts]);
 }
@@ -412,7 +421,7 @@ export async function detachTeacherAddedConcepts(classIds: string[]): Promise<vo
   if (classIds.length === 0) return;
   const fixtureConcepts = (await db.query(
     `SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN students st ON st.id = s.student_id JOIN users u ON u.id = st.user_id
-     WHERE c.origin IN ('TEACHER_ASSIGNMENT', 'CLASS_PLAN') AND c.origin_class_id = ANY($1::uuid[]) AND u.email LIKE 'studyus-ta-%+clerk_test@example.com'`,
+     WHERE c.origin IN ('TEACHER_ASSIGNMENT', 'CLASS_PLAN', 'INSTITUTION_ASSIGNMENT') AND c.origin_class_id = ANY($1::uuid[]) AND u.email LIKE 'studyus-ta-%+clerk_test@example.com'`,
     [classIds]
   )).rows.map((r: any) => r.id);
   await purgeLearningPlanRows({ classIds, learnerConceptIds: fixtureConcepts });

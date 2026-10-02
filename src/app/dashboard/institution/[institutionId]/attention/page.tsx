@@ -8,6 +8,7 @@ import { getInstitutionOverview, getInstitutionAttentionAreas, InstitutionIntell
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { IntelligenceHeader, loadContext } from '../intelligence-chrome';
+import { getCurriculumAttention } from '@/lib/institution/curriculum-attention.service';
 
 /**
  * F14 / Track A -- attention areas (F12 `getInstitutionAttentionAreas`,
@@ -26,10 +27,12 @@ export default async function InstitutionAttentionPage({ params, searchParams }:
   let overview;
   let ctx;
   let areas;
+  let bySubject: Awaited<ReturnType<typeof getCurriculumAttention>> = [];
   try {
     overview = await getInstitutionOverview(actor.id, institutionId);
     ctx = await loadContext(actor.id, institutionId, sp, t);
     areas = await getInstitutionAttentionAreas(actor.id, institutionId, ctx.classId ? { classId: ctx.classId } : undefined);
+    bySubject = ctx.selected ? await getCurriculumAttention(institutionId, ctx.selected.curriculumId, locale) : [];
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
     throw error;
@@ -39,6 +42,24 @@ export default async function InstitutionAttentionPage({ params, searchParams }:
     <div>
       <IntelligenceHeader t={t} institutionId={institutionId} institutionName={overview.institutionName} tab="attention" ctx={ctx} show={{ curriculum: true, period: false, class: true, exam: false }} />
       {!ctx.selected && <InlineAlert tone="info" title={t['iix.noCurriculum.title']} body={t['iix.noCurriculum.body']} />}
+      {ctx.selected && (
+        <section className="card ta-card" aria-labelledby="att-subject" data-section="attention-by-subject" style={{ marginBottom: 'var(--space-4)' }}>
+          <h2 id="att-subject" style={{ fontSize: 16 }}>
+            {t['cur2.attention.bySubject']} · {ctx.selected.subject}
+          </h2>
+          {bySubject.length === 0 ? (
+            <p className="ta-msg">{t['cur2.attention.none']}</p>
+          ) : (
+            <ul className="role-list">
+              {bySubject.map((r) => (
+                <li key={r.conceptId} data-concept={r.conceptId}>
+                  {fillMessage(t['cur2.attention.row'], { concept: r.label, students: r.students, classes: r.classes })}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {areas.length === 0 ? (
         <EmptyState title={t['iix.empty.attention']} />
       ) : (

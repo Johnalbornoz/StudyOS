@@ -14,7 +14,7 @@ export type LearningPlanMessageKey =
   | 'lp.plan.own' | 'lp.plan.ownBody' | 'lp.plan.evidence'
   | 'lp.status.IN_PLAN' | 'lp.status.ACTIVE' | 'lp.status.MAINTENANCE' | 'lp.status.COMPLETED' | 'lp.status.ARCHIVED' | 'lp.status.SUGGESTED'
   | 'lp.source.SELF_SELECTED' | 'lp.source.CURRICULUM_RECOMMENDATION' | 'lp.source.INSTITUTION_CURRICULUM' | 'lp.source.CLASS_PLAN'
-  | 'lp.source.TEACHER_ASSIGNMENT' | 'lp.source.EXAM_GAP' | 'lp.source.PREREQUISITE_RECOMMENDATION'
+  | 'lp.source.TEACHER_ASSIGNMENT' | 'lp.source.INSTITUTION_ASSIGNMENT' | 'lp.source.EXAM_GAP' | 'lp.source.PREREQUISITE_RECOMMENDATION'
   | 'lp.explore.subject' | 'lp.explore.context' | 'lp.explore.general' | 'lp.explore.reason.REQUESTED' | 'lp.explore.reason.EXAM_PROFILE'
   | 'lp.explore.reason.ACADEMIC_PROFILE' | 'lp.explore.reason.INSTITUTION' | 'lp.explore.reason.GENERAL' | 'lp.explore.counts'
   | 'lp.explore.add' | 'lp.explore.adding' | 'lp.explore.added' | 'lp.explore.recommended' | 'lp.explore.inPlan' | 'lp.explore.prereqs'
@@ -82,6 +82,7 @@ const es: Catalog = {
   'lp.source.INSTITUTION_CURRICULUM': 'Currículo de tu institución',
   'lp.source.CLASS_PLAN': 'Plan de tu clase',
   'lp.source.TEACHER_ASSIGNMENT': 'Asignado por tu profesor',
+  'lp.source.INSTITUTION_ASSIGNMENT': 'Asignado por tu institución',
   'lp.source.EXAM_GAP': 'Detectado en un examen',
   'lp.source.PREREQUISITE_RECOMMENDATION': 'Base previa recomendada',
   'lp.explore.subject': 'Materia',
@@ -279,6 +280,7 @@ const en: Catalog = {
   'lp.source.INSTITUTION_CURRICULUM': 'Your institution’s curriculum',
   'lp.source.CLASS_PLAN': 'Your class plan',
   'lp.source.TEACHER_ASSIGNMENT': 'Assigned by your teacher',
+  'lp.source.INSTITUTION_ASSIGNMENT': 'Assigned by your institution',
   'lp.source.EXAM_GAP': 'Found in an exam',
   'lp.source.PREREQUISITE_RECOMMENDATION': 'Recommended prerequisite',
   'lp.explore.subject': 'Subject',
@@ -444,6 +446,7 @@ const en: Catalog = {
 
 const de: Catalog = {
   ...en,
+  'lp.source.INSTITUTION_ASSIGNMENT': 'Von deiner Schule zugewiesen',
   'nav.myPlan': 'Mein Plan',
   'lp.title': 'Mein Lernplan',
   'lp.tab.plan': 'Mein Plan',
@@ -463,6 +466,7 @@ const de: Catalog = {
 
 const fr: Catalog = {
   ...en,
+  'lp.source.INSTITUTION_ASSIGNMENT': 'Assigné par ton établissement',
   'nav.myPlan': 'Mon plan',
   'lp.title': 'Mon plan d’apprentissage',
   'lp.tab.plan': 'Mon plan',
@@ -482,6 +486,7 @@ const fr: Catalog = {
 
 const pt: Catalog = {
   ...en,
+  'lp.source.INSTITUTION_ASSIGNMENT': 'Atribuído pela sua instituição',
   'nav.myPlan': 'Meu plano',
   'lp.title': 'Meu plano de aprendizagem',
   'lp.tab.plan': 'Meu plano',

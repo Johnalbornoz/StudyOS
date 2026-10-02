@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserActor, readBody, isUuid } from '@/lib/learning-plan/route-actors';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { FieldLockedError } from '@/lib/institution/academic-governance';
 import { assignClassPlanConcept, ClassPlanError } from '@/lib/learning-plan/class-plan.service';
 
 const Schema = z.object({ studentIds: z.array(z.string().uuid()).max(500).nullable().optional() });
@@ -21,6 +22,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   try {
     return NextResponse.json({ success: true, data: await assignClassPlanConcept(actor.userId, classId, conceptId, parsed.data.studentIds ?? null) });
   } catch (error) {
+    if (error instanceof FieldLockedError) return NextResponse.json({ error: error.code, fields: error.fields }, { status: 403 });
     if (error instanceof ClassPlanError) {
       const status = error.code === 'NOT_TEACHER' ? 403 : error.code === 'NOT_FOUND' ? 404 : 422;
       return NextResponse.json({ error: error.code }, { status });

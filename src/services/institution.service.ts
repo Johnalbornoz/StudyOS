@@ -482,6 +482,8 @@ export interface InstitutionClassRow {
   gradeName: string | null;
   subjectId: string | null;
   subjectName: string | null;
+  /** Track A -- the institution curriculum subject this class works on (explicit association). */
+  institutionCurriculumId: string | null;
   activeEnrollmentCount: number;
   pendingEnrollmentCount: number;
   teachers: Array<{ assignmentId: string; userId: string; email: string | null; name: string | null }>;
@@ -500,7 +502,7 @@ export async function listInstitutionGrades(institutionId: string): Promise<Inst
 export async function listInstitutionClassesWithStaff(institutionId: string): Promise<InstitutionClassRow[]> {
   const r = await db.query(
     `
-    SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name,
+    SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name, c.institution_curriculum_id,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count,
       COALESCE((
@@ -527,6 +529,7 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
     gradeName: row.grade_name,
     subjectId: row.canonical_subject_id,
     subjectName: row.subject_name,
+    institutionCurriculumId: row.institution_curriculum_id ?? null,
     activeEnrollmentCount: row.active_count,
     pendingEnrollmentCount: row.pending_count,
     teachers: (row.teachers ?? []).map((tch: any) => ({

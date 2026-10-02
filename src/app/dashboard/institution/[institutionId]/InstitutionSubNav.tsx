@@ -17,7 +17,7 @@ export function InstitutionSubNav({
   labels,
 }: {
   institutionId: string;
-  active: 'overview' | 'grades' | 'classes' | 'subjects' | 'curriculum' | 'teachers' | 'requests' | 'coordinators' | 'settings' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
+  active: 'overview' | 'grades' | 'classes' | 'subjects' | 'curriculum' | 'tasks' | 'teachers' | 'requests' | 'coordinators' | 'settings' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
   labels: {
     overview: string;
     grades: string;
@@ -26,6 +26,7 @@ export function InstitutionSubNav({
     requests?: string;
     subjects?: string;
     curriculum?: string;
+    tasks?: string;
     coordinators?: string;
     settings?: string;
     learners: string;
@@ -42,6 +43,7 @@ export function InstitutionSubNav({
     { key: 'classes', href: `${base}/classes`, label: labels.classes },
     ...(labels.subjects ? [{ key: 'subjects' as const, href: `${base}/subjects`, label: labels.subjects }] : []),
     ...(labels.curriculum ? [{ key: 'curriculum' as const, href: `${base}/curriculum`, label: labels.curriculum }] : []),
+    ...(labels.tasks ? [{ key: 'tasks' as const, href: `${base}/tasks`, label: labels.tasks }] : []),
     { key: 'teachers', href: `${base}/teachers`, label: labels.teachers },
     ...(labels.requests ? [{ key: 'requests' as const, href: `${base}/requests`, label: labels.requests }] : []),
     ...(labels.coordinators ? [{ key: 'coordinators' as const, href: `${base}/coordinators`, label: labels.coordinators }] : []),

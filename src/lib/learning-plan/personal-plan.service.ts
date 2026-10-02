@@ -40,6 +40,7 @@ export const PLAN_SOURCE_TYPES = [
   'TEACHER_ASSIGNMENT',
   'EXAM_GAP',
   'PREREQUISITE_RECOMMENDATION',
+  'INSTITUTION_ASSIGNMENT',
 ] as const;
 export type PlanSourceType = (typeof PLAN_SOURCE_TYPES)[number];
 

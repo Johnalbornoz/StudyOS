@@ -34,7 +34,7 @@ export default async function InstitutionInterventionsPage({ params, searchParam
   try {
     overview = await getInstitutionOverview(actor.id, institutionId);
     ctx = await loadContext(actor.id, institutionId, sp, t);
-    summary = await getInstitutionInterventionSummary(actor.id, institutionId, { classId: ctx.classId ?? undefined, sinceDays: PERIOD_DAYS[ctx.period] });
+    summary = await getInstitutionInterventionSummary(actor.id, institutionId, { classId: ctx.classId ?? undefined, sinceDays: PERIOD_DAYS[ctx.period], ownerScope: ctx.origin ?? undefined });
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
     if (error instanceof NoActiveAnalyticsPolicyError) policyOpenDecision = true;
@@ -45,7 +45,7 @@ export default async function InstitutionInterventionsPage({ params, searchParam
 
   return (
     <div>
-      <IntelligenceHeader t={t} institutionId={institutionId} institutionName={overview.institutionName} tab="interventions" ctx={ctx} show={{ curriculum: true, period: true, class: true, exam: false }} />
+      <IntelligenceHeader t={t} institutionId={institutionId} institutionName={overview.institutionName} tab="interventions" ctx={ctx} show={{ curriculum: true, period: true, class: true, exam: false, origin: true }} />
       {!ctx.selected && <InlineAlert tone="info" title={t['iix.noCurriculum.title']} body={t['iix.noCurriculum.body']} />}
       {policyOpenDecision && <EmptyState title={t['empty.smallCohortSuppressed']} />}
       {summary && summary.cohort.suppressed && <EmptyState title={t['institution.learners.suppressedSmallCohort']} />}

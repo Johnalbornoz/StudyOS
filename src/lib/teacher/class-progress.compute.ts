@@ -73,6 +73,8 @@ export interface ProgressAssignment {
   status: string; // ASSIGNED | IN_PROGRESS | COMPLETED | EXPIRED
   assignedAt: string;
   dueAt: string | null;
+  /** Track A governance: a task defined by the institution. */
+  institutional?: boolean;
 }
 export interface ProgressExamDate {
   studentId: string;
@@ -329,7 +331,7 @@ export function computeTimeline(input: ProgressInputs) {
   const names = new Map(input.learners.map((l) => [l.id, l.name]));
   const label = new Map(input.concepts.map((c) => [c.id, c.label]));
   const byKey = new Map(input.pairs.map((p) => [key(p.studentId, p.conceptId), p]));
-  const events: Array<{ type: 'ASSIGNMENT_DUE' | 'TARGET_DATE' | 'RETENTION' | 'EXAM'; date: string; title: string; conceptId: string | null; students: StudentRef[]; atRisk: StudentRef[] }> = [];
+  const events: Array<{ type: 'ASSIGNMENT_DUE' | 'TARGET_DATE' | 'RETENTION' | 'EXAM'; date: string; title: string; conceptId: string | null; students: StudentRef[]; atRisk: StudentRef[]; institutional?: boolean }> = [];
   const ref = (id: string): StudentRef => ({ studentId: id, name: names.get(id) ?? '' });
 
   const groups = new Map<string, ProgressAssignment[]>();
@@ -340,7 +342,7 @@ export function computeTimeline(input: ProgressInputs) {
     const open = rows.filter((r) => r.status !== 'COMPLETED');
     if (open.length === 0 && due < now) continue;
     const risky = due - now <= RULES.assignmentRiskDays * DAY ? rows.filter((r) => r.status === 'ASSIGNED' || r.status === 'EXPIRED') : [];
-    events.push({ type: 'ASSIGNMENT_DUE', date: isoDay(rows[0].dueAt!), title: rows[0].title, conceptId: rows[0].conceptId, students: open.map((r) => ref(r.studentId)), atRisk: risky.map((r) => ref(r.studentId)) });
+    events.push({ type: 'ASSIGNMENT_DUE', date: isoDay(rows[0].dueAt!), title: rows[0].title, conceptId: rows[0].conceptId, students: open.map((r) => ref(r.studentId)), atRisk: risky.map((r) => ref(r.studentId)), institutional: Boolean(rows[0].institutional) });
   }
   for (const c of input.concepts) {
     if (!c.inClassPlan || !c.targetDate) continue;

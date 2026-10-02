@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { ClassAssignmentComposer } from '../ClassAssignmentComposer';
+import { InstitutionTaskCard, EditOwnTaskDue } from './InstitutionTasksPanel';
+import { listClassInstitutionAssignments } from '@/lib/institution/institution-governance.service';
 import { ClassChrome } from '../class-chrome';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,17 +36,52 @@ export default async function TeacherClassAssignmentsPage({ params }: { params: 
   const t = getMessages(locale);
   const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : null);
 
-  const [roster, assignable, assignments] = await Promise.all([
+  const [roster, assignable, assignments, institutionTasks] = await Promise.all([
     listClassRosterForInstitution(klass.institutionId, classId),
     listAssignableConceptsForClass(actor.id, classId),
     listClassAssignments(actor.id, classId),
+    listClassInstitutionAssignments(actor.id, classId, locale).catch(() => []),
   ]);
+  const taskLabels: Record<string, string> = {
+    badge: t['cur2.lock.badge'],
+    institutionTask: t['cur2.lock.institutionTask'],
+    explain: t['cur2.lock.explain'],
+    explainDirect: t['cur2.lock.explainDirect'],
+    date: t['cur2.lock.date'],
+    concept: t['cur2.tasks.concept'],
+    startsAt: t['cur2.tasks.startsAt'],
+    dueAt: t['cur2.tasks.dueAt'],
+    priority: t['cur2.tasks.priority'],
+    required: t['cur2.tasks.required'],
+    instructions: t['cur2.tasks.instructions'],
+    already: t['cur2.teacher.alreadyRecipients'],
+    assignAll: t['cur2.teacher.assignAll'],
+    assignSelected: t['cur2.teacher.assignSelected'],
+    assigned: t['cur2.teacher.assigned'],
+    cancel: t['cur2.wizard.cancel'],
+    error: t['cur2.error'],
+    'priority.HIGH': t['tcp.plan.priority.HIGH'],
+    'priority.NORMAL': t['tcp.plan.priority.NORMAL'],
+    'priority.LOW': t['tcp.plan.priority.LOW'],
+    editOwn: t['cur2.teacher.editOwn'],
+    ownSaved: t['cur2.teacher.ownSaved'],
+    save: t['cur2.save'],
+  };
   const active = roster.filter((r) => r.status === 'ACTIVE');
 
   return (
     <div className="ta-stack">
       <ClassChrome klass={klass} active="assignments" t={t} />
       {!klass.subjectId && <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tc.noSubject.body']} />}
+
+      {institutionTasks.length > 0 && (
+        <section aria-labelledby="institution-tasks-title" className="ta-stack" style={{ gap: 'var(--space-3)' }}>
+          <h2 id="institution-tasks-title" style={{ fontSize: 18 }}>{t['cur2.teacher.institutionTasks']}</h2>
+          {institutionTasks.map((task) => (
+            <InstitutionTaskCard key={task.id} classId={classId} task={task} learners={active.map((r) => ({ studentId: r.studentId, name: r.name }))} institutionName={klass.institutionName} locale={locale} labels={taskLabels} />
+          ))}
+        </section>
+      )}
 
       <ClassAssignmentComposer
         classId={classId}
@@ -114,6 +151,11 @@ export default async function TeacherClassAssignmentsPage({ params }: { params: 
                   })}
                 </span>
                 {a.instructions && <span className="ta-msg">{a.instructions}</span>}
+                {a.ownerScope === 'INSTITUTION' ? (
+                  <span className="chip chip-warn" data-owner="INSTITUTION">🔒 {t['cur2.lock.institutionTask']}</span>
+                ) : (
+                  <EditOwnTaskDue classId={classId} groupId={a.assignmentGroupId} current={a.dueAt} labels={taskLabels} />
+                )}
               </div>
               <div className="ta-table-row ta-table-head" aria-hidden>
                 <span>{t['teacherClass.learner']}</span>
