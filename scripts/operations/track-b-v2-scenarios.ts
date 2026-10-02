@@ -303,7 +303,7 @@ async function main() {
   const areas = await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice', language: 'es' });
   check('PAA.practice-four-areas', areas.map((n) => n.key.split('.').pop()).join() === 'lectura,redaccion,matematicas,ingles');
   const full = await profileFor(A, 'paa.full');
-  check('PAA.full-test-fixed-components-mock-challenge', full.lvl.componentsFixed && full.lvl.components.length === 4 && full.lvl.modes.join() === 'MOCK,CHALLENGE' && full.lvl.readiness === 'FULL_MOCK_READY', full.lvl.components.map((c) => `${c.name}:${c.officialMinutes}m/${c.plannedMinutes}m`).join(' | '));
+  check('PAA.full-test-fixed-components-mock-challenge', full.lvl.componentsFixed && full.lvl.components.length === 4 && full.lvl.modes.join() === 'MOCK,CHALLENGE' && full.lvl.readiness === 'REDUCED_MOCK_READY', full.lvl.components.map((c) => `${c.name}:${c.officialMinutes}m/${c.plannedMinutes}m`).join(' | '));
   const fm = await createExamInstance({ studentId: A.studentId, examProfileId: full.profileId, examVersionId: full.lvl.examVersionId, componentIds: full.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
   check('PAA.full-mock-frozen-before-start', fm.status === 'READY' && !!fm.formFrozenAt && fm.timingMode === 'OFFICIAL_SIMULATION_TIMED', `${fm.form?.fidelity} ${fm.form?.coveragePercent}%`);
   const fms = await startExamInstance(fm.id, { language: 'es' });

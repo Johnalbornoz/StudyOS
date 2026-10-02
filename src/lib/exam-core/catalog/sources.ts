@@ -10,6 +10,7 @@
  */
 
 import { IB_DP_SOURCES } from './ib-dp.generated';
+import { AICE_SOURCES } from '../aice/aice-syllabi.generated';
 
 export type SourceConfidence = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNVERIFIED';
 export type SourceLicense = 'PUBLIC' | 'LICENSED' | 'GENERATED' | 'INTERNAL';
@@ -62,6 +63,8 @@ const BASE_SOURCES: AssessmentSourceSeed[] = [
   { key: 'ibo-sehs-guide-2026', framework: 'IB', title: 'Sports, exercise and health science guide (first assessment 2026)', publisher: 'IBO', url: 'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/sports-exercise-health-science-guide.pdf', publicationYear: null, confidence: 'HIGH', license: 'PUBLIC' },
   // ---- PISA ----
   { key: 'oecd-pisa-2022-framework', framework: 'PISA', title: 'PISA 2022 Assessment and Analytical Framework (Ch. 2 Mathematics, Tables 2.1/2.2)', publisher: 'OECD', url: 'https://s3.amazonaws.com/archivos.agenciaeducacion.cl/Marco+de+Evaluaci%C3%B3n+y+An%C3%A1lisis+Prueba+PISA+2022+(en+Ingl%C3%A9s).pdf', documentVersion: 'PISA 2022', publicationYear: 2023, confidence: 'HIGH', license: 'PUBLIC', notes: 'OECD document, mirror hosted by Agencia de Calidad de la Educación (Chile).' },
+  { key: 'oecd-pisa-2018-framework', framework: 'PISA', title: 'PISA 2018 Assessment and Analytical Framework (Reading 2018 framework; Science 2015 framework, both reused in PISA 2022)', publisher: 'OECD', url: 'https://www.oecd.org/content/dam/oecd/en/publications/reports/2019/04/pisa-2018-assessment-and-analytical-framework_d1c359c7/b25efab8-en.pdf', publicationYear: 2019, confidence: 'HIGH', license: 'PUBLIC', notes: 'Reading: Table 2.2 task distribution by process; Science: Tables 4.9 / 4.10 score-point distributions.' },
+  { key: 'oecd-pisa-2022-results-vol1', framework: 'PISA', title: 'PISA 2022 Results (Volume I): The State of Learning and Equity in Education', publisher: 'OECD', url: 'https://www.oecd.org/content/dam/oecd/en/publications/reports/2023/12/pisa-2022-results-volume-i_76772a36/53f23881-en.pdf', publicationYear: 2023, confidence: 'HIGH', license: 'PUBLIC', notes: 'Test design (120 min; 60 min mathematics + 60 min other domain; multistage adaptive mathematics), scales and proficiency levels (IRT-calibrated).' },
   { key: 'oecd-pisa-2022-math-site', framework: 'PISA', title: 'PISA 2022 Mathematics Framework (interactive site)', publisher: 'OECD', url: 'https://pisa2022-maths.oecd.org/', publicationYear: null, confidence: 'HIGH', license: 'PUBLIC' },
   { key: 'nces-pisa-2022-technical-notes', framework: 'PISA', title: 'PISA 2022 U.S. Results - Technical Notes', publisher: 'NCES', url: 'https://nces.ed.gov/surveys/pisa/pisa2022/technical-notes/index.asp', publicationYear: 2023, confidence: 'MEDIUM', license: 'PUBLIC' },
   // ---- Saber 11 ----
@@ -84,4 +87,4 @@ const BASE_SOURCES: AssessmentSourceSeed[] = [
 ];
 
 /** Registry = hand-reviewed base sources + the IB DP research sources (generated). */
-export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [...BASE_SOURCES, ...IB_DP_SOURCES];
+export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [...BASE_SOURCES, ...IB_DP_SOURCES, ...AICE_SOURCES.filter((a) => !BASE_SOURCES.some((b) => b.key === a.key))];

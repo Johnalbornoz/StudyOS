@@ -1,6 +1,10 @@
 'use client';
 
-/** Exam V2 -- result-page actions: "Añadir a mi plan" (governed concept request) and "repeat from zero". */
+/**
+ * Exam V2 -- result-page actions: "Añadir a mi plan" (a mapped canonical concept
+ * joins the Student's learning plan), "Solicitar este tema" (governed concept
+ * request when no concept is mapped) and "repeat from zero".
+ */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -14,7 +18,7 @@ export function ConceptRequestButton({ simulationAttemptId, learningObjectiveId,
   if (state === 'done') return <span className="xr-pill is-good">{l['exv2.bridge.requested']}</span>;
   return (
     <>
-      <button type="button" className="btn" onClick={request} disabled={state === 'busy'}>{l['exv2.bridge.addToPlan']}</button>
+      <button type="button" className="btn" onClick={request} disabled={state === 'busy'}>{l['exv2.bridge.requestTopic']}</button>
       {state === 'error' && <span className="xr-error">{l['exv2.error.generic']}</span>}
     </>
   );
@@ -59,7 +63,7 @@ export function ReinforceButton({ simulationAttemptId, learningObjectiveId, cano
   }
   return (
     <>
-      <button type="button" className="btn btn-primary" onClick={go} disabled={busy}>{l['exv2.bridge.reinforce']}</button>
+      <button type="button" className="btn btn-primary" onClick={go} disabled={busy}>{l['exv2.bridge.addToPlan']}</button>
       {error && <span className="xr-error">{l['exv2.error.generic']}</span>}
     </>
   );

@@ -8,6 +8,8 @@
  * created here). Key = objective code (unique across the V2 configurations).
  */
 import { SCIENCE_LEARNING_LINKS } from './science-learning-links';
+import { AICE_LEARNING_LINKS } from './aice-learning-links';
+import { PISA_LEARNING_LINKS } from './pisa-learning-links';
 
 export interface LearningLink {
   concepts?: Array<{ subject: string; name: string }>;
@@ -70,7 +72,7 @@ function mathLinks(prefix: 'aahl' | 'aasl'): Record<string, LearningLink> {
   };
 }
 
-/** Every reviewed link (PAA + the science verticals' links). */
+/** Every reviewed link (PAA, IB, sciences, Cambridge AICE and PISA 2022). */
 export function allLearningLinks(): Record<string, LearningLink> {
-  return { ...OBJECTIVE_LEARNING_LINKS, ...SCIENCE_LEARNING_LINKS };
+  return { ...OBJECTIVE_LEARNING_LINKS, ...SCIENCE_LEARNING_LINKS, ...AICE_LEARNING_LINKS, ...PISA_LEARNING_LINKS };
 }

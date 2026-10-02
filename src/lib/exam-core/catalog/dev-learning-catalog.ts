@@ -31,6 +31,17 @@ export const DEV_CANONICAL_CONCEPTS: DevConcept[] = [
   ...['The mole concept', 'Stoichiometric relationships', 'Atomic structure', 'Chemical bonding and structure', 'Enthalpy changes', 'Rates of reaction', 'Chemical equilibrium', 'Acids and bases', 'Redox reactions', 'Organic functional groups', 'Experimental uncertainties in chemistry'].map((name) => ({ subject: 'Chemistry', name })),
   // IB Biology (2025 themes)
   ...['Cell structure', 'Membranes and transport', 'Enzymes and metabolism', 'Cell respiration', 'Photosynthesis', 'DNA replication and protein synthesis', 'Inheritance', 'Natural selection', 'Ecosystems and energy flow', 'Gas exchange', 'Statistical analysis in biology'].map((name) => ({ subject: 'Biology', name })),
+  // PISA 2022 (Reading evaluate & reflect; Science competencies)
+  ...['Credibilidad de las fuentes', 'Reflexión sobre contenido y forma', 'Conflictos entre fuentes'].map((name) => ({ subject: 'Lectura crítica', name })),
+  ...['Energía y materia', 'Ecosistemas y salud', 'Dinámica de la Tierra', 'Diseño de investigaciones y control de variables', 'Cómo se justifica el conocimiento científico', 'Interpretación de datos científicos'].map((name) => ({ subject: 'Ciencias', name })),
+  // Cambridge AICE reference subjects (9709, 9702, 9701, 9700, 9239, 9093, 9708)
+  ...['Numerical methods', 'Vectors', 'Complex numbers', 'Differential equations', 'Mechanics: kinematics', 'Mechanics: forces and equilibrium', 'Mechanics: energy, work and power', 'Permutations and combinations', 'Probability and events', 'Poisson distribution', 'Linear combinations of random variables', 'Hypothesis testing'].map((name) => ({ subject: 'Mathematics', name })),
+  ...['Physical quantities and units', 'Circular motion', 'Electric fields', 'Capacitance', 'Planning investigations'].map((name) => ({ subject: 'Physics', name })),
+  ...['Electrochemistry', 'Planning investigations'].map((name) => ({ subject: 'Chemistry', name })),
+  ...['Biological molecules', 'Planning investigations'].map((name) => ({ subject: 'Biology', name })),
+  ...['Analysing arguments and evidence', 'Evaluating sources and reasoning', 'Comparing perspectives', 'Research essay writing', 'Presenting solutions and reflecting on teamwork', 'Independent research methods'].map((name) => ({ subject: 'Global Perspectives', name })),
+  ...['Directed and comparative writing', 'Text analysis', 'Creative writing and commentary', 'Extended writing', 'Language change', 'Child language acquisition', 'English in the world', 'Language and identity'].map((name) => ({ subject: 'English Language', name })),
+  ...['Opportunity cost and resource allocation', 'Price elasticity of demand', 'Inflation', 'Indirect taxes and market intervention', 'Market failure', 'Macroeconomic policy', 'Market structures', 'Externalities', 'Exchange rates', 'Economic growth and unemployment', 'Labour markets', 'Economic development'].map((name) => ({ subject: 'Economics', name })),
 ];
 
 export const DEV_SKILLS: Array<{ name: string; type: 'TRANSVERSAL' | 'DISCIPLINE_SPECIFIC' }> = [

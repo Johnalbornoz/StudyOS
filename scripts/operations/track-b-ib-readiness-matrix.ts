@@ -8,7 +8,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { ibSubjectReadinessMatrix, ibCoverage } from '@/lib/exam-core/catalog/coverage';
 
-const label: Record<string, string> = { CATALOG_ONLY: 'CATALOG_ONLY', STRUCTURE_READY: 'STRUCTURE_READY', PRACTICE_READY: 'PRACTICE_READY', FULL_MOCK_READY: 'FULL_MOCK_READY', NOT_APPLICABLE: '—' };
+const label: Record<string, string> = { CATALOG_ONLY: 'CATALOG_ONLY', STRUCTURE_READY: 'STRUCTURE_READY', PRACTICE_READY: 'PRACTICE_READY', REDUCED_MOCK_READY: 'REDUCED_MOCK_READY', FULL_MOCK_READY: 'FULL_MOCK_READY', NOT_APPLICABLE: '—' };
 const rows = ibSubjectReadinessMatrix();
 const cov = ibCoverage();
 const lines = [
@@ -27,13 +27,14 @@ const lines = [
   `| IB_DP_CATALOG_COVERAGE | ${cov.catalogPercent} % (${cov.subjects} current subjects / versions) |`,
   `| IB_DP_STRUCTURE_COVERAGE | ${cov.structurePercent} % of ${cov.subjectLevels} examinable subject-levels |`,
   `| IB_DP_PRACTICE_COVERAGE | ${cov.practicePercent} % |`,
-  `| IB_DP_FULL_MOCK_COVERAGE | ${cov.fullMockPercent} % (fixed forms; reduced length, disclosed per form) |`,
+  `| IB_DP_REDUCED_MOCK_COVERAGE | ${cov.reducedMockPercent} % (a fixed form can be frozen; shorter than the official papers, disclosed per form) |`,
+  `| IB_DP_FULL_MOCK_COVERAGE | ${cov.fullMockPercent} % (fixed form at the official length) |`,
   '',
   '## Matrix',
   '',
-  '| Group | Subject | SL | HL | Current curriculum version | Catalog | Structure | Practice | Full Mock | Learning Bridge | Official content | Source confidence |',
-  '|---|---|---|---|---|---|---|---|---|---|---|---|',
-  ...rows.map((r) => `| ${r.group} | ${r.subject} | ${label[r.SL]} | ${label[r.HL]} | ${r.version.replace(/\|/g, '/')}${r.lastAssessment ? ` (last ${r.lastAssessment})` : ''} | ${r.catalog} | ${r.structure} | ${r.practice} | ${r.fullMock} | ${r.learningBridge} | ${r.officialContentCoveragePercent} % | ${r.confidence} |`),
+  '| Group | Subject | SL | HL | Current curriculum version | Catalog | Structure | Practice | Reduced Mock | Full Mock | Learning Bridge | Official content | Source confidence |',
+  '|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+  ...rows.map((r) => `| ${r.group} | ${r.subject} | ${label[r.SL]} | ${label[r.HL]} | ${r.version.replace(/\|/g, '/')}${r.lastAssessment ? ` (last ${r.lastAssessment})` : ''} | ${r.catalog} | ${r.structure} | ${r.practice} | ${r.reducedMock} | ${r.fullMock} | ${r.learningBridge} | ${r.officialContentCoveragePercent} % | ${r.confidence} |`),
   '',
   '**Not catalogued as current:** computer science (legacy), design technology (legacy) and visual arts (legacy), all last assessed in 2026; group 4 school-based syllabuses.',
   '',

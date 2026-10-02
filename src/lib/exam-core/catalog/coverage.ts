@@ -5,7 +5,8 @@
  *   CATALOG     current subjects present in the catalogue
  *   STRUCTURE   subject-levels with sourced, verified component structure
  *   PRACTICE    subject-levels where adaptive practice is possible
- *   FULL_MOCK   subject-levels where a fixed Mock form can be frozen
+ *   REDUCED     subject-levels where a fixed Mock form can be frozen (any length)
+ *   FULL_MOCK   ... and that form reaches the official length
  * Denominator: every examinable (subject, level) of the current curricula
  * (CAS is catalogued but not examinable; legacy courses are excluded).
  */
@@ -30,6 +31,7 @@ export interface MatrixRow {
   catalog: Cell;
   structure: Cell;
   practice: Cell;
+  reducedMock: Cell;
   fullMock: Cell;
   learningBridge: Cell;
   officialContentCoveragePercent: number;
@@ -82,6 +84,7 @@ export function ibSubjectReadinessMatrix(): MatrixRow[] {
       catalog: 'READY',
       structure: examinable ? cell(states, 'STRUCTURE_READY') : 'NOT_APPLICABLE',
       practice: examinable ? cell(states, 'PRACTICE_READY') : 'NOT_APPLICABLE',
+      reducedMock: examinable ? cell(states, 'REDUCED_MOCK_READY') : 'NOT_APPLICABLE',
       fullMock: examinable ? cell(states, 'FULL_MOCK_READY') : 'NOT_APPLICABLE',
       learningBridge: !examinable ? 'NOT_APPLICABLE' : objectiveCodes.length === 0 ? 'NOT_CONFIGURED' : linked === objectiveCodes.length ? 'READY' : linked > 0 ? 'PARTIAL' : 'NOT_CONFIGURED',
       officialContentCoveragePercent: 0,
@@ -96,6 +99,7 @@ export interface IbCoverage {
   catalogPercent: number;
   structurePercent: number;
   practicePercent: number;
+  reducedMockPercent: number;
   fullMockPercent: number;
 }
 
@@ -111,5 +115,5 @@ export function ibCoverage(): IbCoverage {
     }
   }
   const pct = (min: ReadinessState) => Math.round((pairs.filter((x) => atLeast(x, min)).length / pairs.length) * 1000) / 10;
-  return { subjects: current.length, subjectLevels: pairs.length, catalogPercent: 100, structurePercent: pct('STRUCTURE_READY'), practicePercent: pct('PRACTICE_READY'), fullMockPercent: pct('FULL_MOCK_READY') };
+  return { subjects: current.length, subjectLevels: pairs.length, catalogPercent: 100, structurePercent: pct('STRUCTURE_READY'), practicePercent: pct('PRACTICE_READY'), reducedMockPercent: pct('REDUCED_MOCK_READY'), fullMockPercent: pct('FULL_MOCK_READY') };
 }

@@ -26,7 +26,9 @@ interface NodeView {
   available: boolean;
   isExamLevel: boolean;
   hasChildren: boolean;
-  readiness: 'CATALOG_ONLY' | 'STRUCTURE_READY' | 'PRACTICE_READY' | 'FULL_MOCK_READY';
+  readiness: 'CATALOG_ONLY' | 'STRUCTURE_READY' | 'PRACTICE_READY' | 'REDUCED_MOCK_READY' | 'FULL_MOCK_READY';
+  bankInProgress?: boolean;
+  bank?: { items: number; positions: number; lengthCoveragePercent: number | null } | null;
   purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
   notExaminable: boolean;
   versioning: { curriculumVersion: string | null; firstAssessment: number | null; lastAssessment: number | null; syllabusCode: string | null; frameworkVersion: string | null };
@@ -35,20 +37,40 @@ interface NodeView {
 
 interface LevelView {
   nodeKey: string;
+  family?: string;
   label: string;
   purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
   modes: Mode[];
   componentsFixed: boolean;
   components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null; readiness: string; officialMinutes: number | null; officialItems: number | null; officialMarks: number | null; calculator: string | null; plannedMinutes: number | null }>;
+  /** Official assessment routes / component combinations (a Mock takes exactly one). */
+  routes?: Array<{ key: string; label: string; componentIds: string[]; stage: number | null; stageCount: number | null }>;
+  readiness?: string;
+  description?: string | null;
+  bank?: { items: number; positions: number; lengthCoveragePercent: number | null } | null;
 }
 
-/** Student-facing readiness label (never the raw state). */
-export function readinessLabel(n: { readiness: string; notExaminable?: boolean }, l: L): string {
-  if (n.notExaminable) return l['exv2.readiness.notExaminable'];
-  if (n.readiness === 'FULL_MOCK_READY') return l['exv2.readiness.mock'];
-  if (n.readiness === 'PRACTICE_READY') return l['exv2.readiness.practice'];
-  return l['exv2.readiness.soon'];
+/** The readiness the Student sees, as a message key (never the raw state). */
+export function readinessKey(n: { readiness: string; notExaminable?: boolean; bankInProgress?: boolean }): string {
+  if (n.notExaminable) return 'notExaminable';
+  if (n.readiness === 'FULL_MOCK_READY') return 'fullMock';
+  if (n.readiness === 'REDUCED_MOCK_READY') return 'reducedMock';
+  if (n.readiness === 'PRACTICE_READY') return 'practice';
+  if (n.readiness === 'STRUCTURE_READY') return n.bankInProgress ? 'bankInProgress' : 'structureOnly';
+  return 'notYet';
 }
+/** Student-facing readiness label. */
+export function readinessLabel(n: { readiness: string; notExaminable?: boolean; bankInProgress?: boolean }, l: L): string {
+  return l[`exv2.readiness.${readinessKey(n)}`];
+}
+/** One sentence saying what that readiness means. */
+export function readinessHint(n: { readiness: string; notExaminable?: boolean; bankInProgress?: boolean }, l: L): string {
+  return l[`exv2.readinessHint.${readinessKey(n)}`];
+}
+const PRACTICE_OK = new Set(['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY']);
+/** Catalogue node types that describe WHAT an entry assesses (shown in the domain detail). */
+const ASSESSES = new Set(['PROCESS', 'COMPETENCY', 'CONTEXT']);
+const MOCK_OK = new Set(['REDUCED_MOCK_READY', 'FULL_MOCK_READY']);
 
 type Mode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
 type Level = 'AUTO' | 'FOUNDATION' | 'STANDARD' | 'ADVANCED' | 'CHALLENGE';
@@ -65,7 +87,7 @@ export function factText(facts: Record<string, string | number> | null, l: L): s
   return out;
 }
 
-export function ExamCatalogBrowser({ labels: l, language }: { labels: L; language: string }) {
+export function ExamCatalogBrowser({ labels: l, language, initialNode }: { labels: L; language: string; initialNode?: { key: string; family: string; label: string } | null }) {
   const router = useRouter();
   const [families, setFamilies] = useState<Array<{ family: string; available: boolean }> | null>(null);
   const [family, setFamily] = useState<string | null>(null);
@@ -81,6 +103,14 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
   const [created, setCreated] = useState<InstanceView | null>(null);
   /** Narrower entries under the chosen one (e.g. PAA area -> skills). */
   const [levelChildren, setLevelChildren] = useState<NodeView[]>([]);
+
+  // Deep link (e.g. from the AICE Diploma plan "Preparar"): open that exam level directly.
+  useEffect(() => {
+    if (!initialNode) return;
+    setFamily(initialNode.family);
+    void openNode({ key: initialNode.key, family: initialNode.family, label: initialNode.label, isExamLevel: true, hasChildren: true, available: true } as NodeView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialNode?.key]);
 
   useEffect(() => {
     fetch('/api/exams/catalog', { cache: 'no-store' })
@@ -125,9 +155,12 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
       }
       const lvl: LevelView = b.data.level;
       setLevel(lvl);
-      const ready = lvl.components.filter((c) => c.readiness === 'PRACTICE_READY' || c.readiness === 'FULL_MOCK_READY');
+      const ready = lvl.components.filter((c) => PRACTICE_OK.has(c.readiness));
       setPicked(lvl.componentsFixed ? lvl.components.map((c) => c.componentId) : ready.map((c) => c.componentId).slice(0, 1));
-      setMode(lvl.modes.includes('MOCK') ? 'MOCK' : lvl.modes[0] ?? 'PRACTICE');
+      const firstMode = lvl.modes.includes('MOCK') ? 'MOCK' : lvl.modes[0] ?? 'PRACTICE';
+      setMode(firstMode);
+      const firstRoute = (lvl.routes ?? []).find((r) => r.componentIds.every((id) => MOCK_OK.has(lvl.components.find((c) => c.componentId === id)?.readiness ?? '')));
+      if (firstMode !== 'PRACTICE' && firstRoute) setPicked(firstRoute.componentIds);
       setNodes(null);
       return;
     }
@@ -234,7 +267,8 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
                   {factText(n.facts, l).length > 0 && <span className="exv2-node-facts">{factText(n.facts, l).join(' · ')}</span>}
                 </span>
                 <span className="exv2-node-side">
-                  <span className={`xr-pill${n.readiness === 'FULL_MOCK_READY' || n.readiness === 'PRACTICE_READY' ? ' is-good' : ''}`}>{readinessLabel(n, l)}</span>
+                  <span className={`xr-pill${PRACTICE_OK.has(n.readiness) ? ' is-good' : ''}`} title={readinessHint(n, l)} aria-describedby={`exv2-hint-${n.key}`}>{readinessLabel(n, l)}</span>
+                  <span id={`exv2-hint-${n.key}`} className="sr-only">{readinessHint(n, l)}</span>
                   {n.hasChildren && <span aria-hidden className="exv2-chevron">›</span>}
                 </span>
               </button>
@@ -244,16 +278,44 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
         </ul>
       )}
 
+      {level && !created && (level.description || levelChildren.some((c) => ASSESSES.has(c.type))) && (
+        <section className="exv2-about" aria-labelledby="exv2-about-title">
+          {level.description && (
+            <>
+              <h3 id="exv2-about-title" className="exv2-legend">{l['exv2.about.title']}</h3>
+              <p className="ex-status-body">{level.description}</p>
+            </>
+          )}
+          {levelChildren.some((c) => ASSESSES.has(c.type)) && (
+            <>
+              <h3 className="exv2-legend">{l['exv2.about.assesses']}</h3>
+              <ul className="exv2-about-list">
+                {levelChildren.filter((c) => ASSESSES.has(c.type)).map((c) => (
+                  <li key={c.key}>{c.label}{c.facts?.weightPercent ? ` · ${String(c.facts.weightPercent).replace(/%$/, '')} %` : ''}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h3 className="exv2-legend">{l['exv2.about.practise']}</h3>
+          <p className="ex-status-body">{level.modes.length ? level.modes.map((m) => l[`exv2.mode.${m}`]).join(' · ') : l['exv2.readinessHint.structureOnly']}</p>
+          <h3 className="exv2-legend">{l['exv2.about.mock']}</h3>
+          <p className="ex-status-body">
+            {readinessLabel({ readiness: level.readiness ?? 'CATALOG_ONLY' }, l)} — {readinessHint({ readiness: level.readiness ?? 'CATALOG_ONLY' }, l)}
+            {level.bank?.lengthCoveragePercent !== null && level.bank?.lengthCoveragePercent !== undefined && (level.readiness === 'REDUCED_MOCK_READY' || level.readiness === 'FULL_MOCK_READY') ? ` ${(l['exv2.about.coverage'] ?? '{n}').replace('{n}', String(level.bank.lengthCoveragePercent))}` : ''}
+          </p>
+        </section>
+      )}
+
       {level && !created && (
         <div className="exv2-setup">
           <fieldset className="exv2-fieldset">
             <legend className="exv2-legend">{l['exv2.setup.components']}</legend>
             {level.componentsFixed && <p className="ui-hint">{l['exv2.setup.fullTest']}</p>}
             {level.components.map((c) => {
-              const usable = mode === 'PRACTICE' ? c.readiness === 'PRACTICE_READY' || c.readiness === 'FULL_MOCK_READY' : c.readiness === 'FULL_MOCK_READY';
+              const usable = mode === 'PRACTICE' ? PRACTICE_OK.has(c.readiness) : MOCK_OK.has(c.readiness);
               return (
               <label key={c.componentId} className={`xr-choice${picked.includes(c.componentId) ? ' is-checked' : ''}`}>
-                <input type="checkbox" checked={picked.includes(c.componentId)} disabled={level.componentsFixed || !usable} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, c.componentId] : p.filter((x) => x !== c.componentId)))} />
+                <input type="checkbox" checked={picked.includes(c.componentId)} disabled={level.componentsFixed || !usable || (mode !== 'PRACTICE' && !!level.routes?.length)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, c.componentId] : p.filter((x) => x !== c.componentId)))} />
                 <span aria-hidden />
                 <span className="exv2-comp">
                   <span className="xr-choice-text">{c.name}</span>
@@ -269,13 +331,45 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
             <div className="exv2-modes">
               {level.modes.map((m) => (
                 <label key={m} className={`exv2-mode${mode === m ? ' is-checked' : ''}`}>
-                  <input type="radio" name="exv2-mode" checked={mode === m} onChange={() => setMode(m)} />
+                  <input
+                    type="radio"
+                    name="exv2-mode"
+                    checked={mode === m}
+                    onChange={() => {
+                      setMode(m);
+                      if (m !== 'PRACTICE' && level.routes?.length) {
+                        const r = level.routes.find((x) => x.componentIds.every((id) => MOCK_OK.has(level.components.find((c) => c.componentId === id)?.readiness ?? '')));
+                        setPicked(r ? r.componentIds : []);
+                      }
+                    }}
+                  />
                   <span className="exv2-mode-name">{l[`exv2.mode.${m}`]}</span>
                   <span className="exv2-mode-desc">{l[`exv2.mode.${m}.desc`]}</span>
                 </label>
               ))}
             </div>
           </fieldset>
+
+          {mode !== 'PRACTICE' && !!level.routes?.length && (
+            <fieldset className="exv2-fieldset">
+              <legend className="exv2-legend">{l['exv2.route.legend']}</legend>
+              <p className="ui-hint">{l['exv2.route.hint']}</p>
+              {level.routes.map((r, i) => {
+                const usable = r.componentIds.every((id) => MOCK_OK.has(level.components.find((c) => c.componentId === id)?.readiness ?? ''));
+                const checked = [...picked].sort().join() === [...r.componentIds].sort().join();
+                return (
+                  <label key={`${r.key}-${i}`} className={`xr-choice${checked ? ' is-checked' : ''}`}>
+                    <input type="radio" name="exv2-route" checked={checked} disabled={!usable} onChange={() => setPicked(r.componentIds)} />
+                    <span aria-hidden />
+                    <span className="exv2-comp">
+                      <span className="xr-choice-text">{l[`exv2.route.${r.key}`] ?? r.key}{r.stage ? ` · ${(l['exv2.route.stage'] ?? '{n}/{m}').replace('{n}', String(r.stage)).replace('{m}', String(r.stageCount))}` : ''}</span>
+                      <span className="exv2-node-facts">{r.componentIds.map((id) => level.components.find((c) => c.componentId === id)?.name ?? '').join(' + ')}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
 
           {mode === 'PRACTICE' && (
             <div className="exv2-practice">
@@ -319,9 +413,20 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
             </div>
           )}
 
-          <button type="button" className="btn btn-primary" disabled={busy || picked.length === 0 || level.modes.length === 0} onClick={create}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy || picked.length === 0 || level.modes.length === 0 || (mode !== 'PRACTICE' && !!level.routes?.length && !level.routes.some((r) => [...r.componentIds].sort().join() === [...picked].sort().join()))}
+            onClick={create}
+          >
             {busy ? l['exv2.setup.creating'] : l['exv2.setup.create']}
           </button>
+          {level.family === 'AICE' && (
+            <p className="xr-next-actions">
+              <a className="btn btn-ghost" href="/dashboard/exam-prep">{l['exv2.aice.viewPrep']}</a>
+              <a className="btn btn-ghost" href="/dashboard/exams/aice">{l['exv2.aice.diplomaPlan']}</a>
+            </p>
+          )}
           {levelChildren.length > 0 && (
             <div className="exv2-fieldset">
               <p className="exv2-legend">{l['exv2.setup.narrower']}</p>

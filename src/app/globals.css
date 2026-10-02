@@ -2130,6 +2130,23 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .exv2-menu-item:hover, .exv2-menu-item:focus-visible { background: var(--error-subtle); }
 .exv2-menu-item.is-danger { color: var(--error); }
 .exv2-confirm-title { font-weight: 600; }
+.exv2-about { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-subtle); }
+.exv2-about-list { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); }
+.aice-plan { display: flex; flex-direction: column; gap: var(--space-5); }
+.aice-rules, .aice-reqs, .aice-issues { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); }
+.aice-reqs { list-style: none; padding-left: 0; }
+.aice-reqs .is-ok::before { content: '✓ '; color: var(--success, inherit); }
+.aice-reqs .is-missing::before { content: '○ '; color: var(--error); }
+.aice-group.is-core { border-left: 4px solid var(--accent, var(--border-default)); }
+.aice-group-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.aice-entry { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; padding: var(--space-3) 0; border-top: 1px solid var(--border-default); }
+.aice-entry-main { flex: 1 1 18rem; min-width: 0; }
+.aice-entry-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.aice-entry-main .ex-card-meta { margin: var(--space-1) 0 0; }
+.aice-entry-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
+.aice-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px dashed var(--border-default); }
+.aice-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 10rem; flex: 1 1 10rem; }
+.aice-field select { min-height: 44px; }
 .exv2-ack { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; }
 .exv2-ack input { width: 20px; height: 20px; flex: none; }
 .ex-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }

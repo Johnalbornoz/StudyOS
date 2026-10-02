@@ -10,7 +10,11 @@ import { z } from 'zod';
 export const ComponentDefinitionSchema = z.object({
   /** e.g. "Paper 1", "Prueba de Matemáticas", "Art-making inquiries portfolio". */
   officialName: z.string().min(1).max(200),
-  kind: z.enum(['WRITTEN_PAPER', 'MULTIPLE_CHOICE_TEST', 'ADAPTIVE_TEST', 'PORTFOLIO', 'PERFORMANCE', 'PROJECT', 'ORAL', 'INTERNAL_ASSESSMENT']),
+  kind: z.enum([
+    'WRITTEN_PAPER', 'MULTIPLE_CHOICE_TEST', 'ADAPTIVE_TEST', 'PORTFOLIO', 'PERFORMANCE', 'PROJECT', 'ORAL', 'INTERNAL_ASSESSMENT',
+    // Cambridge AS & A Level component types (as named in each syllabus).
+    'PRACTICAL', 'COURSEWORK', 'PRESENTATION', 'RESEARCH_REPORT', 'OTHER_GOVERNED_COMPONENT',
+  ]),
   assessment: z.enum(['EXTERNAL', 'INTERNAL', 'NOT_APPLICABLE']).default('EXTERNAL'),
   officialDurationMinutes: z.number().int().positive().max(600).nullable(),
   /** Official marks for the full component (null when the framework reports scale scores only). */
@@ -19,6 +23,10 @@ export const ComponentDefinitionSchema = z.object({
   /** Official number of items when the framework publishes it (Saber ~50, PAA 55). */
   officialItemCount: z.number().int().positive().max(500).nullable().optional(),
   calculatorPolicy: z.enum(['NONE', 'ALLOWED', 'SCIENTIFIC_REQUIRED', 'GDC_REQUIRED']).nullable(),
+  /** Materials provided or allowed, as the syllabus states them (e.g. "List of formulae and statistical tables (MF19)"). */
+  resources: z.array(z.string().min(1).max(200)).max(10).optional(),
+  /** The official component number / code in the syllabus (e.g. "1", "4"). */
+  componentCode: z.string().min(1).max(20).optional(),
   responseFormats: z.array(z.enum(['SELECTED_RESPONSE', 'MULTI_SELECT', 'SHORT_RESPONSE', 'NUMERIC_ENTRY', 'MATH_EXPRESSION', 'EXTENDED_RESPONSE', 'ESSAY', 'MULTIMODAL_SUBMISSION'])).min(1),
   sections: z
     .array(z.object({ key: z.string().min(1).max(40), label: z.string().min(1).max(200), marksApprox: z.number().positive().nullable().optional(), responseKind: z.string().max(80).optional() }))

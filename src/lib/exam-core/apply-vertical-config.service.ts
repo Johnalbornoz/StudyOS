@@ -151,7 +151,7 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         client,
         `INSERT INTO exam_versions (exam_definition_id, version_label, scoring_model_id, supported_modalities, navigation_rules, exam_year, exam_session)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-        [definitionId, cfg.version.label, scoringModelId, cfg.version.supportedModalities ?? null, JSON.stringify({ ...cfg.version.delivery, configFingerprint: fingerprint, contentStatus: cfg.contentStatus, ...(cfg.reporting ? { reporting: cfg.reporting } : {}), ...(cfg.structureOnly ? { structureOnly: true } : {}) }), cfg.version.examYear ?? null, cfg.version.examSession ?? null]
+        [definitionId, cfg.version.label, scoringModelId, cfg.version.supportedModalities ?? null, JSON.stringify({ ...cfg.version.delivery, configFingerprint: fingerprint, contentStatus: cfg.contentStatus, ...(cfg.reporting ? { reporting: cfg.reporting } : {}), ...(cfg.structureOnly ? { structureOnly: true } : {}), ...(cfg.assessmentRoutes ? { assessmentRoutes: cfg.assessmentRoutes } : {}) }), cfg.version.examYear ?? null, cfg.version.examSession ?? null]
       )
     ).id;
     const blueprintId = (await one(client, `INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING id`, [versionId])).id;

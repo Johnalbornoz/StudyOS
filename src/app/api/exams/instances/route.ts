@@ -54,7 +54,12 @@ async function handlePOST(request: NextRequest) {
   if (level.componentsFixed && (body.componentIds.length !== allowed.size || !level.components.every((c) => body.componentIds.includes(c.componentId)))) {
     return NextResponse.json({ error: 'FULL_TEST_REQUIRES_ALL_COMPONENTS' }, { status: 400 });
   }
-  const needed = body.mode === 'PRACTICE' ? ['PRACTICE_READY', 'FULL_MOCK_READY'] : ['FULL_MOCK_READY'];
+  // Official component combinations: a Mock / Challenge takes exactly one route option (or one stage of a staged route).
+  if (body.mode !== 'PRACTICE' && level.routes.length > 0) {
+    const picked = [...new Set(body.componentIds)].sort().join();
+    if (!level.routes.some((r) => [...r.componentIds].sort().join() === picked)) return NextResponse.json({ error: 'ROUTE_REQUIRED' }, { status: 400 });
+  }
+  const needed = body.mode === 'PRACTICE' ? ['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'] : ['REDUCED_MOCK_READY', 'FULL_MOCK_READY'];
   if (level.components.filter((c) => body.componentIds.includes(c.componentId)).some((c) => !needed.includes(c.readiness))) {
     return NextResponse.json({ error: 'COMPONENT_NOT_READY' }, { status: 409 });
   }

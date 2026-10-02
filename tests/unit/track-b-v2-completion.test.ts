@@ -138,21 +138,23 @@ describe('IB DP -- complete catalogue, real structures only', () => {
     const cov = ibCoverage();
     expect(cov.catalogPercent).toBe(100);
     expect(cov.structurePercent).toBe(100);
-    expect(cov.fullMockPercent).toBeLessThan(cov.structurePercent);
+    expect(cov.reducedMockPercent).toBeLessThan(cov.structurePercent);
+    expect(cov.fullMockPercent).toBeLessThan(cov.reducedMockPercent); // only Visual arts reaches the official length
     expect(cov.practicePercent).toBeGreaterThan(0);
     const m = ibSubjectReadinessMatrix();
-    expect(m.find((r) => r.subject === 'Physics')).toMatchObject({ SL: 'FULL_MOCK_READY', HL: 'FULL_MOCK_READY', fullMock: 'READY', learningBridge: 'READY', officialContentCoveragePercent: 0 });
+    expect(m.find((r) => r.subject === 'Physics')).toMatchObject({ SL: 'REDUCED_MOCK_READY', HL: 'REDUCED_MOCK_READY', reducedMock: 'READY', fullMock: 'NOT_CONFIGURED', learningBridge: 'READY', officialContentCoveragePercent: 0 });
     expect(m.find((r) => r.subject === 'Economics')).toMatchObject({ structure: 'READY', practice: 'NOT_CONFIGURED', fullMock: 'NOT_CONFIGURED' });
   });
 });
 
 describe('readiness model', () => {
-  it('modes follow readiness: practice needs PRACTICE_READY, mock needs FULL_MOCK_READY', () => {
+  it('modes follow readiness: practice needs PRACTICE_READY, mock needs at least REDUCED_MOCK_READY', () => {
+    expect(modesFor('REDUCED_MOCK_READY', ['MOCK', 'CHALLENGE'])).toEqual(['MOCK', 'CHALLENGE']);
     expect(modesFor('STRUCTURE_READY')).toEqual([]);
     expect(modesFor('PRACTICE_READY')).toEqual(['PRACTICE']);
     expect(modesFor('FULL_MOCK_READY', ['MOCK', 'CHALLENGE'])).toEqual(['MOCK', 'CHALLENGE']);
   });
-  it('a component whose bank cannot fill every position is PRACTICE_READY, not FULL_MOCK_READY', () => {
+  it('a component whose bank cannot fill every position is PRACTICE_READY, not a mock', () => {
     const cfg = structuredClone(parsed.get('v2.ib.physics-hl')!);
     cfg.items = cfg.items.filter((i) => i.content.key !== 'physics-hl.p2.projectile' && i.objectiveCode !== 'phy.p2.fields' || i.objectiveCode === 'phy.p2.fields' && false);
     cfg.items.push(...parsed.get('v2.ib.physics-hl')!.items.filter((i) => i.objectiveCode === 'phy.p2.fields'));
@@ -230,7 +232,7 @@ describe('Learning Bridge links', () => {
 describe('readiness shown = what the entry offers', () => {
   it('PAA area/skill practice over a mock-ready config is PRACTICE_READY (never "Simulacro disponible")', () => {
     const configs = configsByKey();
-    expect(nodeReadiness(node('paa.full'), configs).state).toBe('FULL_MOCK_READY');
+    expect(nodeReadiness(node('paa.full'), configs).state).toBe('REDUCED_MOCK_READY'); // 36 of 175 official items
     for (const k of ['paa.practice.lectura', 'paa.practice.lectura.inferencia']) expect(nodeReadiness(node(k), configs).state, k).toBe('PRACTICE_READY');
   });
 });

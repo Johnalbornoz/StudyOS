@@ -10,6 +10,7 @@
  * Every node with structural facts cites registered sources (sources.ts).
  */
 import { ibCatalogTree } from './ib-dp';
+import { aiceCatalogTree } from './aice';
 import { V2_VERTICALS } from '../verticals/v2';
 
 export type NodeType =
@@ -72,21 +73,48 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
     family: 'PISA',
     roots: [
       {
-        key: 'pisa.2022', type: 'TEST', label: 'PISA 2022', frameworkVersion: '2022', firstAssessment: 2022, sourceKeys: ['oecd-pisa-2022-framework', 'oecd-pisa-2022-math-site'],
+        key: 'pisa.2022', type: 'TEST', label: 'PISA 2022', frameworkVersion: '2022', firstAssessment: 2022, lastAssessment: 2022,
+        description: 'PISA (OCDE) evalúa cómo los estudiantes de 15 años aplican lo que saben. Tres dominios independientes; StudyUS ofrece práctica alineada al marco, no la prueba oficial.',
+        sourceKeys: ['oecd-pisa-2022-framework', 'oecd-pisa-2018-framework', 'oecd-pisa-2022-results-vol1'],
         children: [
           {
-            key: 'pisa.2022.math', type: 'DOMAIN', label: 'Mathematics', labels: { es: 'Matemáticas' }, bind: { configKey: 'v2.pisa.math', sectionKey: 'math' }, sourceKeys: ['oecd-pisa-2022-framework'],
+            key: 'pisa.2022.full', type: 'VARIANT', label: 'Simulacro de los tres dominios', labels: { en: 'Three-domain simulation' }, purpose: 'FULL_TEST', modes: ['MOCK'],
+            description: 'Matemáticas, Lectura y Ciencias en una sola sesión, en formato reducido. No es la prueba oficial PISA.',
+            bind: { configKey: 'v2.pisa.2022', sectionKeys: ['math', 'reading', 'science'] }, sourceKeys: ['oecd-pisa-2022-results-vol1'],
+          },
+          {
+            key: 'pisa.2022.math', type: 'DOMAIN', label: 'Mathematics', labels: { es: 'Matemáticas' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math' },
+            description: 'Razonar matemáticamente y resolver problemas del mundo real: formular, emplear e interpretar, en cantidad, cambio y relaciones, espacio y forma, incertidumbre y datos.',
+            sourceKeys: ['oecd-pisa-2022-framework', 'oecd-pisa-2022-math-site'],
             children: [
-              info('pisa.2022.math.formulate', 'PROCESS', 'Formulate', { labels: { es: 'Formular' }, facts: { weightPercent: 25 } }),
-              info('pisa.2022.math.employ', 'PROCESS', 'Employ', { labels: { es: 'Emplear' }, facts: { weightPercent: 25 } }),
-              info('pisa.2022.math.interpret', 'PROCESS', 'Interpret and evaluate', { labels: { es: 'Interpretar y evaluar' }, facts: { weightPercent: 25 } }),
-              info('pisa.2022.math.reason', 'PROCESS', 'Reason', { labels: { es: 'Razonar' }, facts: { weightPercent: 25 } }),
+              info('pisa.2022.math.reason', 'PROCESS', 'Mathematical reasoning', { labels: { es: 'Razonamiento matemático' }, facts: { weightPercent: 25 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math', objectiveCodes: ['pisa.incertidumbre.razonar', 'pisa.cambio.razonar'] } }),
+              info('pisa.2022.math.formulate', 'PROCESS', 'Formulating situations mathematically', { labels: { es: 'Formular situaciones matemáticamente' }, facts: { weightPercent: 25 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math', objectiveCodes: ['pisa.cantidad.formular', 'pisa.cambio.formular'] } }),
+              info('pisa.2022.math.employ', 'PROCESS', 'Employing mathematical concepts, facts and procedures', { labels: { es: 'Emplear conceptos, hechos y procedimientos' }, facts: { weightPercent: 25 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math', objectiveCodes: ['pisa.cantidad.emplear', 'pisa.espacio.emplear'] } }),
+              info('pisa.2022.math.interpret', 'PROCESS', 'Interpreting, applying and evaluating mathematical outcomes', { labels: { es: 'Interpretar, aplicar y evaluar resultados' }, facts: { weightPercent: 25 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math', objectiveCodes: ['pisa.incertidumbre.interpretar', 'pisa.espacio.interpretar'] } }),
               info('pisa.2022.math.ctx.personal', 'CONTEXT', 'Personal'), info('pisa.2022.math.ctx.occupational', 'CONTEXT', 'Occupational', { labels: { es: 'Ocupacional' } }),
               info('pisa.2022.math.ctx.societal', 'CONTEXT', 'Societal', { labels: { es: 'Social' } }), info('pisa.2022.math.ctx.scientific', 'CONTEXT', 'Scientific', { labels: { es: 'Científico' } }),
             ],
           },
-          info('pisa.2022.reading', 'DOMAIN', 'Reading', { labels: { es: 'Lectura' } }),
-          info('pisa.2022.science', 'DOMAIN', 'Science', { labels: { es: 'Ciencias' } }),
+          {
+            key: 'pisa.2022.reading', type: 'DOMAIN', label: 'Reading', labels: { es: 'Lectura' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading' },
+            description: 'Comprender, usar, evaluar y reflexionar sobre textos de una o varias fuentes, continuos, discontinuos y mixtos (marco de Lectura 2018, usado en PISA 2022).',
+            sourceKeys: ['oecd-pisa-2018-framework'],
+            children: [
+              info('pisa.2022.reading.locate', 'PROCESS', 'Locating information', { labels: { es: 'Localizar información' }, facts: { weightPercent: 25 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading', objectiveCodes: ['pisa.read.locate.access', 'pisa.read.locate.search'] } }),
+              info('pisa.2022.reading.understand', 'PROCESS', 'Understanding', { labels: { es: 'Comprender' }, facts: { weightPercent: 45 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading', objectiveCodes: ['pisa.read.understand.literal', 'pisa.read.understand.integrate'] } }),
+              info('pisa.2022.reading.evaluate', 'PROCESS', 'Evaluating and reflecting', { labels: { es: 'Evaluar y reflexionar' }, facts: { weightPercent: 30 }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading', objectiveCodes: ['pisa.read.evaluate.quality', 'pisa.read.evaluate.reflect', 'pisa.read.evaluate.conflict'] } }),
+            ],
+          },
+          {
+            key: 'pisa.2022.science', type: 'DOMAIN', label: 'Science', labels: { es: 'Ciencias' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science' },
+            description: 'Explicar fenómenos, evaluar y diseñar investigaciones e interpretar datos y pruebas, con conocimiento de contenido, procedimental y epistémico (marco de Ciencias 2015, usado en PISA 2022).',
+            sourceKeys: ['oecd-pisa-2018-framework'],
+            children: [
+              info('pisa.2022.science.explain', 'COMPETENCY', 'Explain phenomena scientifically', { labels: { es: 'Explicar fenómenos científicamente' }, facts: { weightPercent: '40-50' }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science', objectiveCodes: ['pisa.sci.explain.physical', 'pisa.sci.explain.living', 'pisa.sci.explain.earth'] } }),
+              info('pisa.2022.science.evaluate', 'COMPETENCY', 'Evaluate and design scientific enquiry', { labels: { es: 'Evaluar y diseñar la investigación científica' }, facts: { weightPercent: '20-30' }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science', objectiveCodes: ['pisa.sci.evaluate.procedural', 'pisa.sci.evaluate.epistemic'] } }),
+              info('pisa.2022.science.interpret', 'COMPETENCY', 'Interpret data and evidence scientifically', { labels: { es: 'Interpretar datos y pruebas científicamente' }, facts: { weightPercent: '30-40' }, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science', objectiveCodes: ['pisa.sci.interpret.data'] } }),
+            ],
+          },
         ],
       },
     ],
@@ -195,7 +223,8 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
           },
         ],
       },
-      info('cie.as-a', 'QUALIFICATION', 'Cambridge International AS & A Level', { children: [info('cie.as-a.9709', 'SUBJECT', 'Mathematics (9709)', { syllabusCode: '9709', sourceKeys: ['cie-9709-syllabus-2026-2027'] })] }),
+      // Cambridge AICE Diploma: Core + Groups 1-4 -> subject (syllabus code) -> AS / A Level -> official components.
+      aiceCatalogTree((configKey) => V2_VERTICALS.find((v) => v.key === configKey)?.sections.map((sec) => ({ key: sec.key })) ?? null),
     ],
   },
 ];

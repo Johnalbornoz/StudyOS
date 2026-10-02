@@ -232,9 +232,15 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                       {b.questions > 0 && <span className="ui-hint">{fmt('exv2.bridge.missed', { missed: b.questionsMissed, total: b.questions })}</span>}
                     </p>
                     {b.action.kind === 'REINFORCE' ? (
-                      <a className="btn btn-primary" href={b.action.href}>{tr['exv2.bridge.reinforce']}</a>
+                      <>
+                        <span className="ui-hint">{tr['exv2.bridge.alreadyWorking']}</span>
+                        <a className="btn btn-primary" href={b.action.href}>{tr['exv2.bridge.continue']}</a>
+                      </>
                     ) : b.action.kind === 'ADD_AND_REINFORCE' ? (
-                      <ReinforceButton simulationAttemptId={attempt.id} learningObjectiveId={b.learningObjectiveId} canonicalConceptId={b.action.canonicalConceptId} language={locale} labels={v2} />
+                      <>
+                        <span className="ui-hint">{tr['exv2.bridge.addExplain']}</span>
+                        <ReinforceButton simulationAttemptId={attempt.id} learningObjectiveId={b.learningObjectiveId} canonicalConceptId={b.action.canonicalConceptId} language={locale} labels={v2} />
+                      </>
                     ) : b.action.proposalStatus === 'REJECTED' ? (
                       <span className="ui-hint">{tr['exv2.bridge.notAvailable']}</span>
                     ) : (

@@ -3,6 +3,7 @@
  * structure catalogue, framework fidelity of the reference verticals, DEV
  * reset guard and route-level security invariants.
  */
+import { EXAM_FAMILY_DESCRIPTORS } from '@/lib/exam-core/taxonomy';
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
@@ -161,7 +162,8 @@ describe('structure catalogue + source registry', () => {
       const cfg = byKey.get(x.node.bind.configKey);
       expect(cfg, x.node.key).toBeDefined();
       if (x.node.bind.sectionKey) expect(cfg!.sections.some((s) => s.key === x.node.bind!.sectionKey), x.node.key).toBe(true);
-      expect(cfg!.family).toBe(x.family === 'ICFES' ? 'ICFES' : x.family);
+      // A configuration belongs to the catalogue family of its ecosystem (AICE is a Cambridge family).
+      expect(EXAM_FAMILY_DESCRIPTORS[cfg!.family as keyof typeof EXAM_FAMILY_DESCRIPTORS].ecosystem, x.node.key).toBe(x.family);
     }
   });
   it('catalogue facts agree with the component definitions', () => {
@@ -194,7 +196,7 @@ describe('framework fidelity of the reference verticals', () => {
     }
   });
   it('PISA: 25 % per process and 25 % per content category in every form', () => {
-    const cfg = byKey.get('v2.pisa.math')!;
+    const cfg = byKey.get('v2.pisa.2022')!;
     for (const p of ['formular', 'emplear', 'interpretar', 'razonar']) expect(positions(cfg, (c) => c.endsWith(`.${p}`))).toBe(2);
     for (const c of ['cantidad', 'incertidumbre', 'cambio', 'espacio']) expect(positions(cfg, (x) => x.startsWith(`pisa.${c}.`))).toBe(2);
   });

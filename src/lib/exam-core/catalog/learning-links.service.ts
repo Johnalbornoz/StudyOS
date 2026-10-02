@@ -160,11 +160,12 @@ export async function applyObjectiveLearningLinks(options: { write: boolean }): 
  * "Reforzar ahora" for a canonical concept the Student does not study yet.
  * Returns the Student's concept (existing or newly added) and its subject.
  */
-export async function addConceptToStudentLearning(studentId: string, canonicalConceptId: string, language: string): Promise<{ studentConceptId: string; subjectId: string }> {
+export async function addConceptToStudentLearning(studentId: string, canonicalConceptId: string, language: string): Promise<{ studentConceptId: string; subjectId: string; existed: boolean }> {
   const existing = await resolveStudentConceptForCanonicalConcept(studentId, canonicalConceptId);
   if (existing) {
     const s = (await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [existing])).rows[0];
-    return { studentConceptId: existing, subjectId: s.subject_id };
+    // Already studied: its learner state is reused as it is -- nothing is reset or duplicated.
+    return { studentConceptId: existing, subjectId: s.subject_id, existed: true };
   }
   const cc = (await db.query(`SELECT cc.name, cs.name AS subject_name FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cc.id = $1 AND cc.status = 'ACTIVE'`, [canonicalConceptId])).rows[0];
   if (!cc) throw new Error('CANONICAL_CONCEPT_NOT_FOUND');
@@ -177,5 +178,5 @@ export async function addConceptToStudentLearning(studentId: string, canonicalCo
     // The label match must land on the same canonical concept; otherwise nothing is linked silently.
     throw new Error('CATALOG_MAPPING_MISMATCH');
   }
-  return { studentConceptId: conceptId, subjectId };
+  return { studentConceptId: conceptId, subjectId, existed: false };
 }

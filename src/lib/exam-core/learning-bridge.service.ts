@@ -158,3 +158,48 @@ export async function listConceptProposals(status: ProposalStatus | null = 'PROP
   );
   return r.rows.map((x: any) => ({ id: x.id, title: x.proposed_title, subjectName: x.subject_name, topic: x.topic, status: x.status, requests: x.requests, createdAt: x.created_at instanceof Date ? x.created_at.toISOString() : x.created_at }));
 }
+
+export class ReinforceError extends Error {
+  constructor(public readonly code: 'NOT_FOUND' | 'CATALOG_MAPPING_MISMATCH' | 'CANONICAL_CONCEPT_NOT_FOUND') {
+    super(code);
+    this.name = 'ReinforceError';
+  }
+}
+
+/**
+ * "Reforzar ahora" / "Añadir a mi plan" for a weak objective of the Student's
+ * OWN scored attempt, mapped (PUBLISHED) to a canonical concept: reuses the
+ * concept the Student already studies (learner state untouched) or adds it
+ * through the normal catalogue-mapping path; records the EXAM_GAP provenance
+ * once per Student and concept; lets the Personal Learning Plan orchestrator
+ * pick it up. Never creates a canonical concept.
+ */
+export async function reinforceFromExamGap(studentId: string, p: { simulationAttemptId: string; learningObjectiveId: string; canonicalConceptId: string; language: string }): Promise<{ href: string; alreadyStudying: boolean; studentConceptId: string }> {
+  const ok = await db.query(
+    `SELECT sa.exam_attempt_id FROM simulation_attempts sa JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'SCORED'
+      WHERE sa.id = $1 AND sa.student_id = $2
+        AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.objective_results) o WHERE o->>'learningObjectiveId' = $3::text)
+        AND EXISTS (SELECT 1 FROM objective_concept_mappings m WHERE m.learning_objective_id = $3::uuid AND m.canonical_concept_id = $4::uuid AND m.status = 'PUBLISHED')`,
+    [p.simulationAttemptId, studentId, p.learningObjectiveId, p.canonicalConceptId]
+  );
+  if (ok.rows.length === 0) throw new ReinforceError('NOT_FOUND');
+  const { addConceptToStudentLearning } = await import('./catalog/learning-links.service');
+  let r: { studentConceptId: string; subjectId: string; existed: boolean };
+  try {
+    r = await addConceptToStudentLearning(studentId, p.canonicalConceptId, p.language);
+  } catch (err) {
+    const code = (err as Error).message;
+    if (code === 'CATALOG_MAPPING_MISMATCH' || code === 'CANONICAL_CONCEPT_NOT_FOUND') throw new ReinforceError(code);
+    throw err;
+  }
+  await db.query(
+    `INSERT INTO exam_gap_concept_links (student_id, canonical_concept_id, student_concept_id, learning_objective_id, exam_attempt_id)
+     VALUES ($1, $2, $3, $4, $5) ON CONFLICT (student_id, canonical_concept_id) DO NOTHING`,
+    [studentId, p.canonicalConceptId, r.studentConceptId, p.learningObjectiveId, ok.rows[0].exam_attempt_id]
+  );
+  if (!r.existed) {
+    const { notifyLearningOrchestrationChange } = await import('@/services/learning-plan-orchestration-trigger');
+    await notifyLearningOrchestrationChange(studentId, 'ASSESSMENT_CHANGED');
+  }
+  return { href: `/dashboard/subjects/${r.subjectId}/concepts/${r.studentConceptId}`, alreadyStudying: r.existed, studentConceptId: r.studentConceptId };
+}

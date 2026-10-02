@@ -15,7 +15,7 @@
 import { db } from '@/lib/db';
 import { upsertSources } from './source-registry.service';
 import { ASSESSMENT_CATALOG, flattenCatalog, type CatalogFamily, type CatalogNode } from './structure';
-import { packageReadiness, modesFor, type ReadinessState, type ComponentReadiness } from './readiness';
+import { packageReadiness, modesFor, isMockReady, READINESS_ORDER, type ReadinessState, type ComponentReadiness } from './readiness';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
 import { allV2Configs } from '../verticals/v2/all';
 
@@ -38,7 +38,7 @@ export function nodeReadiness(node: CatalogNode, configs: Map<string, ExamVertic
   const r = packageReadiness(cfg, keys, node.bind.objectiveCodes);
   const modes = modesFor(r.state, node.modes);
   // The state shown is what this entry OFFERS: an area-practice node over a mock-ready config is "practice", never "mock available".
-  const state: ReadinessState = r.state === 'FULL_MOCK_READY' && !modes.includes('MOCK') ? (modes.includes('PRACTICE') ? 'PRACTICE_READY' : 'STRUCTURE_READY') : r.state;
+  const state: ReadinessState = isMockReady(r.state) && !modes.includes('MOCK') ? (modes.includes('PRACTICE') ? 'PRACTICE_READY' : 'STRUCTURE_READY') : r.state;
   return { ...r, state, modes };
 }
 
@@ -106,7 +106,7 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
           componentId,
           selectable,
           (node.sourceKeys ?? []).map((k) => sourceIds.get(k)!).filter(Boolean),
-          JSON.stringify({ facts: node.facts ?? null, bind: node.bind ?? null, purpose: node.purpose ?? null, notExaminable: !!node.notExaminable, readiness: { state: readiness.state, modes: readiness.modes, components: readiness.components } }),
+          JSON.stringify({ facts: node.facts ?? null, bind: node.bind ?? null, purpose: node.purpose ?? null, notExaminable: !!node.notExaminable, readiness: { state: readiness.state, modes: readiness.modes, components: readiness.components, bankInProgress: readiness.components.some((c) => c.bankInProgress) } }),
         ]
       );
       idByKey.set(node.key, r.rows[0].id);
@@ -134,8 +134,12 @@ export interface StructureNodeView {
   available: boolean;
   /** The node where the Student picks papers / components and a mode. */
   isExamLevel: boolean;
-  /** CATALOG_ONLY | STRUCTURE_READY | PRACTICE_READY | FULL_MOCK_READY (own binding, else best descendant). */
+  /** CATALOG_ONLY | STRUCTURE_READY | PRACTICE_READY | REDUCED_MOCK_READY | FULL_MOCK_READY (own binding, else best descendant). */
   readiness: ReadinessState;
+  /** Structure configured and some valid items, not yet enough to practise ("Banco en preparación"). */
+  bankInProgress: boolean;
+  /** Own binding's bank: valid items, positions of one form, form length vs official (null: not published / not bound). */
+  bank: { items: number; positions: number; lengthCoveragePercent: number | null } | null;
   purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
   notExaminable: boolean;
   hasChildren: boolean;
@@ -170,6 +174,11 @@ export async function listStructureChildren(params: { family: string; parentKey:
                UNION ALL
                SELECT c.id, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
              ) SELECT array_agg(DISTINCT sub.metadata->'readiness'->>'state') FROM sub) AS descendant_states,
+            (WITH RECURSIVE sub AS (
+               SELECT c.id, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
+               UNION ALL
+               SELECT c.id, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
+             ) SELECT bool_or(COALESCE((sub.metadata->'readiness'->>'bankInProgress')::boolean, false)) FROM sub) AS descendant_bank,
             COALESCE((SELECT json_agg(json_build_object('title', s.title, 'publisher', s.publisher, 'url', s.url, 'confidence', s.confidence) ORDER BY s.source_key)
                         FROM assessment_sources s WHERE s.id = ANY(n.source_ids)), '[]'::json) AS sources
        FROM assessment_structure_nodes n
@@ -182,11 +191,16 @@ export async function listStructureChildren(params: { family: string; parentKey:
     const bind = n.metadata?.bind ?? null;
     // The exam level is the bound node above the components (IB HL, Cambridge Extended, PISA Mathematics...).
     const isExamLevel = !!bind && !COMPONENT_NODE_TYPES.has(n.node_type);
-    const order: ReadinessState[] = ['CATALOG_ONLY', 'STRUCTURE_READY', 'PRACTICE_READY', 'FULL_MOCK_READY'];
+    const order = READINESS_ORDER;
     const states: ReadinessState[] = [n.metadata?.readiness?.state, ...((n.descendant_states as string[] | null) ?? [])].filter((x): x is ReadinessState => order.includes(x as ReadinessState));
     const readiness = states.reduce<ReadinessState>((best, s) => (order.indexOf(s) > order.indexOf(best) ? s : best), 'CATALOG_ONLY');
+    const own = n.metadata?.readiness as { components?: ComponentReadiness[]; bankInProgress?: boolean } | undefined;
+    const comps = own?.components ?? [];
+    const lengths = comps.map((c) => c.lengthCoveragePercent).filter((x): x is number => x !== null && x !== undefined);
     return {
       readiness,
+      bankInProgress: readiness === 'STRUCTURE_READY' && (!!own?.bankInProgress || !!n.descendant_bank),
+      bank: comps.length ? { items: comps.reduce((a, c) => a + (c.bankItems ?? 0), 0), positions: comps.reduce((a, c) => a + (c.requiredPositions ?? 0), 0), lengthCoveragePercent: lengths.length === comps.length ? Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length) : null } : null,
       purpose: n.metadata?.purpose ?? null,
       notExaminable: !!n.metadata?.notExaminable,
       key: n.node_key,
@@ -219,6 +233,15 @@ export interface ExamLevelSelection {
   /** A full test = all components together, never a pick of some. */
   componentsFixed: boolean;
   components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null; readiness: ReadinessState; officialMinutes: number | null; officialItems: number | null; officialMarks: number | null; calculator: string | null; plannedMinutes: number | null }>;
+  /**
+   * Official assessment routes (e.g. Cambridge 9709 AS: P1+P2 / P1+P4 / P1+P5; A Level linear or staged).
+   * Empty when the framework defines none. A Mock / Challenge must take exactly one option.
+   */
+  routes: Array<{ key: string; label: string; componentIds: string[]; stage: number | null; stageCount: number | null }>;
+  /** "Sobre esta área": the entry's own description (framework words), when it has one. */
+  description: string | null;
+  /** Bank of this entry: valid items, positions of one form, form length vs official (null: not published). */
+  bank: { items: number; positions: number; lengthCoveragePercent: number | null } | null;
 }
 
 /**
@@ -249,6 +272,16 @@ export async function resolveExamLevel(nodeKey: string, language: string): Promi
     focusObjectiveIds = r.rows.map((x: any) => x.id);
   }
   const compReadiness = new Map<string, ReadinessState>((readiness.components ?? []).map((c: any) => [c.sectionKey, c.state]));
+  const rules = (await db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [n.exam_version_id])).rows[0]?.navigation_rules ?? {};
+  const idByKey = new Map<string, string>(comps.rows.map((c: any) => [c.section_key, c.id]));
+  const toIds = (keys: string[]) => (keys.every((k) => idByKey.has(k)) ? keys.map((k) => idByKey.get(k)!) : null);
+  const routes: ExamLevelSelection['routes'] = [];
+  for (const r of (rules.assessmentRoutes ?? []) as Array<{ key: string; label: string; componentSets: string[][]; stages?: string[][][] }>) {
+    if (r.stages?.length) {
+      for (const stages of r.stages) stages.forEach((set, i) => { const ids = toIds(set); if (ids) routes.push({ key: r.key, label: r.label, componentIds: ids, stage: i + 1, stageCount: stages.length }); });
+    }
+    for (const set of r.componentSets) { const ids = toIds(set); if (ids) routes.push({ key: r.key, label: r.label, componentIds: ids, stage: null, stageCount: null }); }
+  }
   return {
     nodeKey,
     family: n.family,
@@ -276,5 +309,13 @@ export async function resolveExamLevel(nodeKey: string, language: string): Promi
         calculator: c.definition?.calculatorPolicy ?? null,
         plannedMinutes: c.duration_minutes ?? null,
       })),
+    routes,
+    description: n.description ?? null,
+    bank: (() => {
+      const cs = (readiness.components ?? []) as ComponentReadiness[];
+      if (!cs.length) return null;
+      const lengths = cs.map((c) => c.lengthCoveragePercent).filter((x): x is number => x !== null && x !== undefined);
+      return { items: cs.reduce((a, c) => a + (c.bankItems ?? 0), 0), positions: cs.reduce((a, c) => a + (c.requiredPositions ?? 0), 0), lengthCoveragePercent: lengths.length === cs.length ? Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length) : null };
+    })(),
   };
 }

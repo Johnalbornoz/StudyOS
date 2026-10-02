@@ -19,7 +19,7 @@ import { db } from '@/lib/db';
 import { ApprovedItemContentSchema, examItemFromApproved, type ExamItem } from '../items';
 import { gradeExamItem } from '../item-grading';
 import type { AssessorRunner } from '../assessment/double-assessor.service';
-import { IB_MATH_AA_HL_V2, CAMBRIDGE_0580_EXTENDED_V2, PISA_MATH_V2, PAA_V2 } from '../verticals/v2';
+import { IB_MATH_AA_HL_V2, CAMBRIDGE_0580_EXTENDED_V2, PISA_2022_V2, PAA_V2 } from '../verticals/v2';
 import type { ExamVerticalConfigInput } from '../vertical-config';
 
 export type CalibrationOrigin = 'OFFICIAL_EXEMPLAR' | 'RELEASED_SAMPLE' | 'BENCHMARK_FIXTURE';
@@ -56,8 +56,8 @@ export const BENCHMARK_CASES: Array<Omit<CalibrationCase, 'origin' | 'needsAI'> 
   { key: 'bm.cie.fraction.unsimplified', framework: 'CAMBRIDGE', componentRef: 'cie.p2', cfg: CAMBRIDGE_0580_EXTENDED_V2, itemKey: 'cie.p2.str.probability', response: '{"a":"\\\\frac{12}{90}","b":"\\\\frac{13}{15}"}', expectedMarks: 3, maxMarks: 4 },
   { key: 'bm.cie.standard-form.not-standard', framework: 'CAMBRIDGE', componentRef: 'cie.p2', cfg: CAMBRIDGE_0580_EXTENDED_V2, itemKey: 'cie.p2.num.standard', response: '24000', expectedMarks: 1, maxMarks: 2 },
   { key: 'bm.cie.line.rearranged', framework: 'CAMBRIDGE', componentRef: 'cie.p2', cfg: CAMBRIDGE_0580_EXTENDED_V2, itemKey: 'cie.p2.geo.gradient', response: '2x+y=2', expectedMarks: 3, maxMarks: 3 },
-  { key: 'bm.pisa.inequality', framework: 'PISA', componentRef: 'pisa.math', cfg: PISA_MATH_V2, itemKey: 'pisa.camb.raz.taxi', response: 'k > 7,5', expectedMarks: 2, maxMarks: 2 },
-  { key: 'bm.pisa.decimal-comma', framework: 'PISA', componentRef: 'pisa.math', cfg: PISA_MATH_V2, itemKey: 'pisa.cant.empl.cambio', response: '212,76', expectedMarks: 1, maxMarks: 1 },
+  { key: 'bm.pisa.inequality', framework: 'PISA', componentRef: 'pisa.math', cfg: PISA_2022_V2, itemKey: 'pisa.camb.raz.taxi', response: 'k > 7,5', expectedMarks: 2, maxMarks: 2 },
+  { key: 'bm.pisa.decimal-comma', framework: 'PISA', componentRef: 'pisa.math', cfg: PISA_2022_V2, itemKey: 'pisa.cant.empl.cambio', response: '212,76', expectedMarks: 1, maxMarks: 1 },
   { key: 'bm.paa.fraction.unsimplified', framework: 'PAA', componentRef: 'paa.matematicas', cfg: PAA_V2, itemKey: 'paa.m.fracciones.spr', response: '34/24', expectedMarks: 0.5, maxMarks: 1 },
   { key: 'bm.paa.spr.equivalent', framework: 'PAA', componentRef: 'paa.matematicas', cfg: PAA_V2, itemKey: 'paa.m.pitagoras.spr', response: '\\sqrt{144}', expectedMarks: 1, maxMarks: 1 },
 ];

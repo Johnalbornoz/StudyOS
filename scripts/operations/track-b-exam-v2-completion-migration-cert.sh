@@ -125,7 +125,7 @@ if [ "${CERT_APPLY_V2:-0}" = "1" ]; then
   EXPECT "no unresolved bindings" "$(grep -o '"unresolvedBindings":\[\]' "$WORKDIR/apply2.log" | wc -l | tr -d ' ')" "1"
   EXPECT "structure-only definitions are DRAFT (never in a learner catalogue)" "$(Q "SELECT count(*) FROM exam_definitions WHERE status='DRAFT'")" "$NS"
   EXPECT "readiness stored on bound nodes (none missing)" "$(Q "SELECT count(*) FROM assessment_structure_nodes WHERE exam_version_id IS NOT NULL AND NOT (metadata ? 'readiness')")" "0"
-  EXPECT "PAA full test is FULL_MOCK_READY" "$(Q "SELECT metadata->'readiness'->>'state' FROM assessment_structure_nodes WHERE node_key='paa.full'")" "FULL_MOCK_READY"
+  EXPECT "PAA full test is REDUCED_MOCK_READY (36 of 175 items)" "$(Q "SELECT metadata->'readiness'->>'state' FROM assessment_structure_nodes WHERE node_key='paa.full'")" "REDUCED_MOCK_READY"
   EXPECT "a structure-only subject is STRUCTURE_READY" "$(Q "SELECT metadata->'readiness'->>'state' FROM assessment_structure_nodes WHERE node_key='ib.dp.economics.hl'")" "STRUCTURE_READY"
   EXPECT "CAS is not examinable" "$(Q "SELECT coalesce(metadata->>'notExaminable','false') FROM assessment_structure_nodes WHERE node_key='ib.dp.cas'")" "true"
   echo "  configurations: $N ($NS structure-only)"

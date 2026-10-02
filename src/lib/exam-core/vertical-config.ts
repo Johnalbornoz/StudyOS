@@ -91,6 +91,24 @@ export const ExamVerticalConfigSchema = z
       .optional(),
     /** V2: a structure-only configuration (sourced definitions + blueprint, no bank yet). */
     structureOnly: z.boolean().optional(),
+    /**
+     * V2: the official assessment routes / component combinations (e.g. Cambridge
+     * 9709 AS: P1+P2, P1+P4, P1+P5). A Mock must take one complete combination
+     * (or one stage of a staged route); none is assumed when absent.
+     */
+    assessmentRoutes: z
+      .array(
+        z.object({
+          key: z.enum(['AS_ONLY', 'A_LEVEL_LINEAR', 'A_LEVEL_STAGED', 'GOVERNED_COMBINATION']),
+          label: z.string().min(1).max(200),
+          componentSets: z.array(z.array(KEY).min(1)).min(1).max(12),
+          /** Staged route: the sets taken in successive series (first the AS part). */
+          stages: z.array(z.array(z.array(KEY).min(1)).min(2)).max(12).optional(),
+          note: z.string().max(300).optional(),
+        })
+      )
+      .max(8)
+      .optional(),
     commandTerms: z.array(z.object({ term: z.string().min(1).max(60), expectedReasoningType: z.string().max(40).optional(), description: z.string().max(500).optional() })).default([]),
     sections: z.array(SectionSchema).min(1).max(20),
     items: z.array(z.object({ objectiveCode: KEY, content: ApprovedItemContentSchema })).max(500),
@@ -112,6 +130,7 @@ export const ExamVerticalConfigSchema = z
       ctx.addIssue({ code: 'custom', message: 'only OFFICIAL_LICENSED content may carry an official scoring provenance', path: ['scoring', 'policy', 'provenance'] });
     }
     if (cfg.reporting) for (const g of cfg.reporting.groups) for (const k of g.sectionKeys) if (!cfg.sections.some((s) => s.key === k)) ctx.addIssue({ code: 'custom', message: `reporting group ${g.key} references unknown section ${k}`, path: ['reporting'] });
+    for (const r of cfg.assessmentRoutes ?? []) for (const set of [...r.componentSets, ...(r.stages ?? []).flat()]) for (const k of set) if (!cfg.sections.some((s) => s.key === k)) ctx.addIssue({ code: 'custom', message: `route ${r.key} references unknown section ${k}`, path: ['assessmentRoutes'] });
     if (cfg.sections.some((s) => s.definition) && !cfg.framework) ctx.addIssue({ code: 'custom', message: 'a configuration with component definitions must declare framework versioning', path: ['framework'] });
     const sectionKeys = cfg.sections.map((s) => s.key);
     if (new Set(sectionKeys).size !== sectionKeys.length) ctx.addIssue({ code: 'custom', message: 'duplicate section key', path: ['sections'] });
