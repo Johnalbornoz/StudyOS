@@ -1,10 +1,10 @@
 # Exam & Assessment Architecture V2 — DEV readiness report (§58)
 
-**Candidate SHA (code):** `8bf41c0a161910ec9fd77081d48697dd04beaa9a`, branch `track-b/exam-architecture-v2`, based on Track B V1 `52de415`. This report is committed on top as a docs-only commit.
+**Candidate SHA (code):** `87a52319ee2bddb4ed19babeb53f5cfadba3b884` (previous: `8bf41c0a`), branch `track-b/exam-architecture-v2`, based on Track B V1 `52de415`. This report is committed on top as a docs-only commit.
 
-**Hosted DEV candidate:** `https://study-8x5jb2kzh-study-so.vercel.app` (Vercel target `dev`, deployment `dpl_ALSBepseCsFsnhmvsS5Bb8ZTuHWi`).
+**Hosted DEV candidate:** `https://study-rdvb248vz-study-so.vercel.app` (Vercel target `dev`, deployment `dpl_Q3ifFmzdsg3RFSJVjD7SZq4XtkRM`). It supersedes `study-8x5jb2kzh`.
 
-- `/api/version` → `commitSha = 8bf41c0a161910ec9fd77081d48697dd04beaa9a`, so repo SHA = deployed SHA.
+- `/api/version` → `commitSha = 87a52319ee2bddb4ed19babeb53f5cfadba3b884`, so repo SHA = deployed SHA.
 - `/api/diagnostics/preview-db` → DB fingerprint `2a29b99ee14a22b4` (DEV), 45 applied migrations.
 - The shared alias `study-os-env-dev-study-so.vercel.app` was **not** moved. It still points to Track A's `dpl_92B7rELKYQzdPRnbQCFV26uY3tQR`.
 - An earlier deployment from the same commit, `study-778l3t5t4`, carried a mistyped SHA env value. It was superseded, is not aliased, and must not be used.
@@ -36,15 +36,18 @@
 | EXAM_SCORING_STRATEGIES | **PASS** | 12 strategies; persisted per response |
 | EXAM_TO_LEARNING_BRIDGE | **PASS** | "Reforzar ahora" goes to the existing concept; "n de m preguntas" shown |
 | EXAM_CONCEPT_PROPOSAL_GOVERNANCE | **PASS** | Proposals and requests only; curator API; never creates canonical concepts |
-| EXAM_INSTANCE_DELETE | **PASS** | Per-state rules; idempotent; in-progress attempt cancelled; completed soft delete with result invalidated |
+| EXAM_INSTANCE_DELETE | **PASS** | Per-state rules; idempotent; in-progress attempt cancelled; completed = soft delete of the instance only (hidden everywhere; result, responses and evidence preserved) |
+| EXAM_COMPLETED_DELETE_EVIDENCE_PRESERVATION | **PASS** | DEV scenarios: result stays SCORED with the same response-set hash; responses and real `learning_evidence` (written through `updateMastery`) unchanged; hidden from exam list, Exam Prep history and the attempt/result pages |
+| IB_MATH_AA_HL_MANUAL_E2E_READY | **PASS** | [`MANUAL_E2E_IB_MATH_AA_HL.md`](MANUAL_E2E_IB_MATH_AA_HL.md) — P1, P2, P3 |
 | EXAM_DELETE_SECURITY | **PASS** | Owner-scoped in route and service; 404 for others; content untouchable |
 | NEW_ATTEMPT_FROM_ZERO | **PASS** | New instance, attempt and form; no drafts, position, score or timer carried over |
+| IB_ENGINE_SUPPORT | **PASS** | The transversal engine supports every IB component type (papers, multipart, rubric, portfolio) |
 | IB_DP_STRUCTURE_COVERAGE | **PARTIAL** | All six groups and the main subjects are listed with sources and versions; configured: Math AA HL and Visual Arts SL/HL |
 | IB_REFERENCE_VERTICAL_READY | **PASS** | Ready for manual E2E |
 | IB_ARTS_REFERENCE_VERTICAL_READY | **PASS** | Ready for manual E2E |
 | PISA_VERTICAL_READY | **PASS** | Ready for manual E2E |
 | SABER_VERTICAL_READY | **PASS** | Ready for manual E2E |
-| PAA_VERTICAL_READY | **PASS** | Ready for manual E2E |
+| PAA_VERTICAL_READY | **NEEDS_REDESIGN** | Modelled as a Mathematics-only area; the full PAA (Lectura, Redacción, Matemáticas, Inglés, Full Mock vs Practice) is being redesigned |
 | CAMBRIDGE_VERTICAL_READY | **PASS** | Ready for manual E2E |
 | EXAM_AUTOMATED_E2E | **PASS** | V2 scenarios 59/59 on DEV (real services, real AI) |
 | HOSTED_DEV_READY_FOR_MANUAL_EXAM_E2E | **PASS** | SHA, DB and migrations aligned; unauthenticated gates verified. The authenticated hosted flow was **not** run by Claude: it is the manual E2E |
@@ -121,7 +124,6 @@ Structural facts (papers, marks, timing, weights, distributions, calculator rule
 4. A human review queue and the reviewer role for REVIEW_REQUIRED.
 5. Official grade boundary transforms per framework.
 6. Bank expansion to reach FULL fidelity and the Challenge band.
-7. Whether deleting a COMPLETED exam should invalidate its result (current behaviour) or only hide it.
 
 ## Stop
 
