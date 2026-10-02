@@ -80,6 +80,8 @@ export interface AssignTeacherInterventionParams {
   title?: string;
   /** Track A: the learner can start it from this moment on (default: immediately). */
   startsAt?: string;
+  /** Track A: publishing this assignment put the concept into the learner's plan. */
+  addedToPlan?: boolean;
 }
 
 export interface TeacherIntervention {
@@ -233,8 +235,8 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         assigned_by_user_id, institution_id, class_id, student_id,
         target_type, concept_id, skill_id, competency_id, learning_objective_id,
         exam_profile_id, simulation_type, academic_subject_id,
-        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at, concept_added_to_plan
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *
       `,
       [
@@ -257,6 +259,7 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         params.assignmentGroupId ?? null,
         params.title ?? null,
         params.startsAt ?? null,
+        params.addedToPlan ?? false,
       ]
     );
     return toIntervention(result.rows[0]);

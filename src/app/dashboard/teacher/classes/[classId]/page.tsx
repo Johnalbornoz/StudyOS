@@ -164,7 +164,6 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
           assignmentTitle: t['tc.compose.assignmentTitle'],
           assignmentTitleHint: t['tc.compose.assignmentTitleHint'],
           concept: t['teacherClass.compose.concept'],
-          conceptOption: t['teacherClass.compose.conceptOption'],
           noSubject: t['tc.noSubject.body'],
           noConcepts: t['tc.compose.noConcepts'],
           noLearners: t['teacherClass.compose.noLearners'],
@@ -175,10 +174,13 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
           wholeClass: t['tc.compose.wholeClass'],
           selected: t['tc.compose.selected'],
           selectAtLeastOne: t['tc.compose.selectAtLeastOne'],
-          publish: t['teacherClass.compose.publish'],
+          publish: t['tc.compose.assign'],
           publishing: t['teacherClass.compose.publishing'],
           published: t['teacherClass.compose.published'],
-          skipped: t['teacherClass.compose.skipped'],
+          publishedAdded: t['tc.compose.publishedAdded'],
+          skipped: t['tc.compose.skippedAuth'],
+          previewHave: t['tc.compose.preview.have'],
+          previewAdd: t['tc.compose.preview.add'],
           error: t['teacherClass.compose.error'],
           errors: {
             CLASS_SUBJECT_REQUIRED: t['tc.noSubject.body'],
@@ -186,6 +188,7 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
             RECIPIENT_NOT_IN_CLASS: t['tc.error.recipientNotInClass'],
             INVALID_DATES: t['tc.error.invalidDates'],
             NO_LEARNERS_TO_ASSIGN: t['tc.error.noLearnersToAssign'],
+            REQUEST_CONFLICT: t['inst.common.error'],
           },
         }}
       />
@@ -226,7 +229,10 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
               </div>
               {a.learners.map((l) => (
                 <div key={l.interventionId} className="ta-table-row">
-                  <Link href={`/dashboard/teacher/classes/${classId}/students/${l.studentId}`}>{l.studentName}</Link>
+                  <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <Link href={`/dashboard/teacher/classes/${classId}/students/${l.studentId}`}>{l.studentName}</Link>
+                    <span className="ta-msg">{l.addedToPlan ? t['tc.assignments.addedToPlan'] : t['tc.assignments.hadConcept']}</span>
+                  </span>
                   <span>
                     <StatusBadge label={t[`assignments.status.${l.status}`]} tone={toneForInterventionStatus(l.status)} />
                   </span>

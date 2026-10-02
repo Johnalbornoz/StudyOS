@@ -12,7 +12,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fillMessage } from '@/lib/i18n/roles-messages';
 
-type ErrorCode = 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES' | 'NO_LEARNERS_TO_ASSIGN';
+type ErrorCode = 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES' | 'NO_LEARNERS_TO_ASSIGN' | 'REQUEST_CONFLICT';
+
+/** One idempotency key per composed assignment: a double click / retry returns the same assignment. */
+const newRequestId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`);
 
 export function ClassAssignmentComposer({
   classId,
@@ -27,6 +30,7 @@ export function ClassAssignmentComposer({
     canonicalConceptId: string;
     name: string;
     matchedLearners: number;
+    matchedStudentIds: string[];
   }>;
   activeLearners: Array<{ studentId: string; name: string }>;
   subjectLinked: boolean;
@@ -38,7 +42,6 @@ export function ClassAssignmentComposer({
     assignmentTitle: string;
     assignmentTitleHint: string;
     concept: string;
-    conceptOption: string;
     noSubject: string;
     noConcepts: string;
     noLearners: string;
@@ -52,7 +55,10 @@ export function ClassAssignmentComposer({
     publish: string;
     publishing: string;
     published: string;
+    publishedAdded: string;
     skipped: string;
+    previewHave: string;
+    previewAdd: string;
     error: string;
     errors: Record<ErrorCode, string>;
   };
@@ -69,7 +75,13 @@ export function ClassAssignmentComposer({
   const [selected, setSelected] = useState<string[]>(preset?.studentId ? [preset.studentId] : []);
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Array<{ text: string; error?: boolean }>>([]);
+  const [requestId, setRequestId] = useState(newRequestId);
   const idp = preset?.studentId ? `-${preset.studentId.slice(0, 8)}` : '';
+  // Preview for the CURRENT selection: who already has the concept and who will get it added to their plan.
+  const recipients = mode === 'SELECTED' ? selected : activeLearners.map((l) => l.studentId);
+  const haveIds = new Set(concepts.find((c) => c.canonicalConceptId === conceptId)?.matchedStudentIds ?? []);
+  const have = recipients.filter((id) => haveIds.has(id)).length;
+  const willAdd = recipients.length - have;
 
   async function publish() {
     if (!conceptId) return;
@@ -89,6 +101,7 @@ export function ClassAssignmentComposer({
         startsAt: start ? new Date(`${start}T00:00:00`).toISOString() : null,
         dueAt: due ? new Date(`${due}T23:59:00`).toISOString() : null,
         studentIds: mode === 'SELECTED' ? selected : null,
+        requestId,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -105,11 +118,13 @@ export function ClassAssignmentComposer({
           text: fillMessage(labels.published, { n: body.data.assigned.length }),
         },
       ];
+      if (body.data.addedToPlan > 0) out.push({ text: fillMessage(labels.publishedAdded, { n: body.data.addedToPlan }) });
       if (body.data.skipped.length > 0)
         out.push({
           text: fillMessage(labels.skipped, { n: body.data.skipped.length }),
         });
       setMessages(out);
+      setRequestId(newRequestId());
       setTitle('');
       setInstructions('');
       setStart('');
@@ -143,11 +158,7 @@ export function ClassAssignmentComposer({
           <select id={`compose-concept${idp}`} value={conceptId} onChange={(e) => setConceptId(e.target.value)}>
             {concepts.map((c) => (
               <option key={c.canonicalConceptId} value={c.canonicalConceptId}>
-                {fillMessage(labels.conceptOption, {
-                  name: c.name,
-                  n: c.matchedLearners,
-                  total: activeLearners.length,
-                })}
+                {c.name}
               </option>
             ))}
           </select>
@@ -190,8 +201,14 @@ export function ClassAssignmentComposer({
               )}
             </fieldset>
           )}
+          {recipients.length > 0 && (
+            <div role="status" aria-live="polite" className="ta-preview">
+              {have > 0 && <p className="ta-msg">{fillMessage(labels.previewHave, { n: have })}</p>}
+              {willAdd > 0 && <p className="ta-msg">{fillMessage(labels.previewAdd, { n: willAdd })}</p>}
+            </div>
+          )}
           <div className="ta-actions">
-            <button type="submit" className="btn btn-primary" disabled={busy || !conceptId}>
+            <button type="submit" className="btn btn-primary" disabled={busy || !conceptId || recipients.length === 0}>
               {busy ? labels.publishing : labels.publish}
             </button>
           </div>

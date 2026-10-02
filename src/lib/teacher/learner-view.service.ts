@@ -78,7 +78,7 @@ export interface TeacherLearnerView {
   student: { id: string; name: string };
   klass: TeacherClassContext;
   concepts: LearnerConceptState[];
-  assignments: Array<{ interventionId: string; title: string; topic: string; status: TeacherInterventionStatus; assignedAt: string; startsAt: string | null; dueAt: string | null; result: LearnerAssignmentOutcome['result'] }>;
+  assignments: Array<{ interventionId: string; title: string; topic: string; status: TeacherInterventionStatus; assignedAt: string; startsAt: string | null; dueAt: string | null; result: LearnerAssignmentOutcome['result']; addedToPlan: boolean }>;
   attention: AttentionItem[];
 }
 
@@ -225,7 +225,7 @@ function learnerAssignments(all: Awaited<ReturnType<typeof listClassAssignments>
   for (const a of all) {
     const mine = a.learners.find((l) => l.studentId === studentId);
     if (!mine) continue;
-    out.push({ interventionId: mine.interventionId, title: a.title, topic: a.conceptName, status: mine.status, assignedAt: a.assignedAt, startsAt: a.startsAt, dueAt: a.dueAt, result: mine.result });
+    out.push({ interventionId: mine.interventionId, title: a.title, topic: a.conceptName, status: mine.status, assignedAt: a.assignedAt, startsAt: a.startsAt, dueAt: a.dueAt, result: mine.result, addedToPlan: mine.addedToPlan });
   }
   return out;
 }

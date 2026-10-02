@@ -109,35 +109,32 @@ describe('Class assignment publish (A3/A5)', () => {
     expect(sqls().some((s) => s.includes('INSERT INTO teacher_interventions'))).toBe(false);
   });
 
-  it('writes nothing when no learner has the topic', async () => {
+  it('writes nothing when the selection has no ACTIVE learner', async () => {
+    respond((sql) => {
+      if (sql.includes('FROM (') && sql.includes('WHERE t.id = $2')) return { rows: [{ '?': 1 }] };
+      if (sql.includes('SELECT canonical_subject_id FROM classes')) return { rows: [{ canonical_subject_id: 'subj-1' }] };
+      if (sql.includes('FROM canonical_concepts WHERE id')) return { rows: [{ id: 'cc1', name: 'Linear Equations' }] };
+      return undefined;
+    });
+    await expect(publishClassAssignment('t1', { classId: 'c1', canonicalConceptId: 'cc1' })).rejects.toBeInstanceOf(NoLearnersToAssignError);
+    expect(sqls().some((s) => s.includes('INSERT INTO teacher_interventions'))).toBe(false);
+  });
+
+  it('one group, one per-learner row through the full chain, each learner\'s OWN concept (the plan is completed, never guessed)', async () => {
     respond((sql) => {
       if (sql.includes('FROM (') && sql.includes('WHERE t.id = $2')) return { rows: [{ '?': 1 }] };
       if (sql.includes('SELECT canonical_subject_id FROM classes')) return { rows: [{ canonical_subject_id: 'subj-1' }] };
       if (sql.includes('FROM canonical_concepts WHERE id')) return { rows: [{ id: 'cc1', name: 'Linear Equations' }] };
       if (sql.includes('FROM class_enrollments ce JOIN students s')) return { rows: [{ id: 's1', name: 'A', email: 'a@x', user_id: 'u1' }] };
-      return undefined;
-    });
-    resolveConceptMock.mockResolvedValue(null);
-    await expect(publishClassAssignment('t1', { classId: 'c1', canonicalConceptId: 'cc1' })).rejects.toBeInstanceOf(NoLearnersToAssignError);
-    expect(sqls().some((s) => s.includes('INSERT INTO teacher_interventions'))).toBe(false);
-  });
-
-  it('one group, one per-learner row through the full chain, each learner\'s OWN concept; unmatched learners are reported, never guessed', async () => {
-    respond((sql) => {
-      if (sql.includes('FROM (') && sql.includes('WHERE t.id = $2')) return { rows: [{ '?': 1 }] };
-      if (sql.includes('SELECT canonical_subject_id FROM classes')) return { rows: [{ canonical_subject_id: 'subj-1' }] };
-      if (sql.includes('FROM canonical_concepts WHERE id')) return { rows: [{ id: 'cc1', name: 'Linear Equations' }] };
-      if (sql.includes('FROM class_enrollments ce JOIN students s')) return { rows: [{ id: 's1', name: 'A', email: 'a@x', user_id: 'u1' }, { id: 's2', name: 'B', email: 'b@x', user_id: 'u2' }] };
       if (sql.includes('SELECT institution_id FROM classes')) return { rows: [{ institution_id: 'inst-A' }] };
       if (sql.includes('FROM class_enrollments WHERE class_id = $1 AND student_id = $2')) return { rows: [{ '?': 1 }] };
       if (sql.includes('FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE c.id = $1 AND s.student_id = $2')) return { rows: [{ '?': 1 }] };
       if (sql.includes('INSERT INTO teacher_interventions')) return { rows: [{ id: 'iv-1', status: 'ASSIGNED' }] };
       return undefined;
     });
-    resolveConceptMock.mockImplementation(async (studentId: string) => (studentId === 's1' ? 'own-concept-of-s1' : null));
+    resolveConceptMock.mockResolvedValue('own-concept-of-s1');
     const result = await publishClassAssignment('t1', { classId: 'c1', canonicalConceptId: 'cc1' });
-    expect(result.assigned).toEqual([{ studentId: 's1', interventionId: 'iv-1' }]);
-    expect(result.skipped).toEqual([{ studentId: 's2', name: 'B', reason: 'NO_MATCHED_CONCEPT' }]);
+    expect(result.assigned).toEqual([{ studentId: 's1', interventionId: 'iv-1', addedToPlan: false }]);
     const insert = dbQueryMock.mock.calls.find((c) => String(c[0]).includes('INSERT INTO teacher_interventions'))!;
     expect(insert[1]).toContain('own-concept-of-s1');
     expect(insert[1]).toContain(result.assignmentGroupId);

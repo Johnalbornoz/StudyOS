@@ -176,7 +176,7 @@ async function main() {
   if ((await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = $1`, [sofia])) === 0) await learnerData(x);
 
   const allStudents = Object.values(x.students);
-  const masteryBefore = await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[])`, [allStudents]);
+  const masteryBefore = await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[]) AND student_id <> $2 AND (attempt_count > 0 OR mastery_score > 0)`, [allStudents, sofia]);
   const evidenceOthersBefore = await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = ANY($1::uuid[]) AND student_id <> $2`, [allStudents, sofia]);
 
   // 0 -- starting state (teacher-reset): Teresa has no persona; Sofía is outside every class of Institution A.
@@ -271,7 +271,7 @@ async function main() {
   const roster = (await get(`/api/teacher/classes/${classA}/enrollments`, 'teacher-a')).body?.data?.roster ?? [];
   check('S12.roster-has-sofia', roster.some((r: any) => r.studentId === sofia && r.status === 'ACTIVE'));
   const lv = await get(`/api/teacher/classes/${classA}/students/${sofia}`, 'teacher-a');
-  const topic = lv.body?.data?.concepts?.[0];
+  const topic = (lv.body?.data?.concepts ?? []).find((c: any) => c.canonicalConceptId === x.canonical);
   check('S12.learner-view', lv.status === 200 && lv.body?.data?.klass?.subjectName === 'Mathematics' && topic?.topic === MANUAL_NAMES.concept, lv.text.slice(0, 160));
   check('S12.learner-view-canonical-phase', ['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER', 'CONSOLIDATED'].includes(topic?.stage), `${topic?.stage}`);
   check('S12.learner-view-evidence', (topic?.evidence?.totalAttempts ?? 0) > 0, JSON.stringify(topic?.evidence ?? null));
@@ -318,8 +318,39 @@ async function main() {
   check('S15.completed-with-result', after?.learners?.[0]?.status === 'COMPLETED' && (after?.learners?.[0]?.result?.total ?? 0) > 0, JSON.stringify(after?.learners?.[0] ?? {}).slice(0, 160));
   const lv2 = (await get(`/api/teacher/classes/${classA}/students/${sofia}`, 'teacher-a')).body?.data;
   check('S15.learner-view-assignment-completed', lv2?.assignments?.some((a: any) => a.interventionId === interventionId && a.status === 'COMPLETED'));
-  check('S15.evidence-grew', (lv2?.concepts?.[0]?.evidence?.totalAttempts ?? 0) > (topic?.evidence?.totalAttempts ?? 0));
+  check('S15.evidence-grew', ((lv2?.concepts ?? []).find((c: any) => c.canonicalConceptId === x.canonical)?.evidence?.totalAttempts ?? 0) > (topic?.evidence?.totalAttempts ?? 0));
   await page('15-teresa-results', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/, 'Repaso: ecuaciones lineales']);
+
+  // 15b -- auto-add to plan: Carla (no concept) + Sofía (has it) in ONE assignment; duplicate submit replays.
+  const carla = x.students['student-c'];
+  const carlaConcepts = async () => n(`SELECT COUNT(*) n FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN concept_catalog_mapping m ON m.learner_concept_id = c.id AND m.status = 'MATCHED' WHERE s.student_id = $1 AND m.canonical_concept_id = $2`, [carla, x.canonical]);
+  check('S15b.carla-lacks-concept', (await carlaConcepts()) === 0);
+  check('S15b.invite-carla', (await post(`/api/teacher/classes/${classA}/enrollments`, 'teacher-a', { email: emailFor('student-c') })).status === 201);
+  const carlaInv = ((await get('/api/student/class-invitations', 'student-c')).body?.data?.invitations ?? [])[0];
+  check('S15b.carla-accepts', (await post(`/api/student/class-invitations/${carlaInv?.enrollmentId}/respond`, 'student-c', { accept: true })).status === 200);
+  const preview = (await get(`/api/teacher/classes/${classA}/assignments`, 'teacher-a')).body?.data?.concepts?.find((c: any) => c.canonicalConceptId === x.canonical);
+  check('S15b.preview-who-has-it', preview?.matchedStudentIds?.includes(sofia) && !preview?.matchedStudentIds?.includes(carla), JSON.stringify(preview ?? {}).slice(0, 160));
+  const sofiaProgressBefore = await q1(`SELECT mastery_score, attempt_count, correct_count, updated_at FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [sofia, x.conceptA]);
+  const sofiaEvidenceBefore = await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = $1`, [sofia]);
+  const requestId = '7ac9e1d2-5b3f-4c8a-9e21-0d4f6b8a2c10';
+  const mixed = await post(`/api/teacher/classes/${classA}/assignments`, 'teacher-a', { canonicalConceptId: x.canonical, title: 'Refuerzo: ecuaciones lineales', studentIds: [sofia, carla], requestId });
+  check('S15b.mixed-assignment', mixed.status === 201 && mixed.body?.data?.assigned?.length === 2 && mixed.body?.data?.addedToPlan === 1 && mixed.body?.data?.alreadyHadConcept === 1, mixed.text.slice(0, 200));
+  const carlaRow = mixed.body?.data?.assigned?.find((a: any) => a.studentId === carla);
+  check('S15b.carla-concept-added', (await carlaConcepts()) === 1 && carlaRow?.addedToPlan === true);
+  const added = await q1(`SELECT c.origin, c.origin_class_id, m.mapping_method, mr.mastery_score, mr.attempt_count FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN concept_catalog_mapping m ON m.learner_concept_id = c.id LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = s.student_id WHERE s.student_id = $1 AND m.canonical_concept_id = $2`, [carla, x.canonical]);
+  check('S15b.provenance-and-zero-state', added?.origin === 'TEACHER_ASSIGNMENT' && added?.origin_class_id === classA && added?.mapping_method === 'TEACHER_ASSIGNMENT' && Number(added?.mastery_score) === 0 && Number(added?.attempt_count) === 0, JSON.stringify(added));
+  check('S15b.no-fabricated-evidence', (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = $1`, [carla])) === 0 && (await n(`SELECT COUNT(*) n FROM concept_knowledge_state WHERE student_id = $1`, [carla])) === 0);
+  const replay = await post(`/api/teacher/classes/${classA}/assignments`, 'teacher-a', { canonicalConceptId: x.canonical, title: 'Refuerzo: ecuaciones lineales', studentIds: [sofia, carla], requestId });
+  check('S15b.duplicate-submit-replays', replay.status < 300 && replay.body?.data?.replayed === true && JSON.stringify(replay.body?.data?.assigned) === JSON.stringify(mixed.body?.data?.assigned), replay.text.slice(0, 160));
+  check('S15b.no-duplicate-recipient', (await n(`SELECT COUNT(*) n FROM teacher_interventions WHERE assignment_group_id = $1`, [requestId])) === 2 && (await carlaConcepts()) === 1);
+  const sofiaProgressAfter = await q1(`SELECT mastery_score, attempt_count, correct_count, updated_at FROM mastery_records WHERE student_id = $1 AND concept_id = $2`, [sofia, x.conceptA]);
+  check('S15b.existing-progress-preserved', JSON.stringify(sofiaProgressAfter) === JSON.stringify(sofiaProgressBefore) && (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = $1`, [sofia])) === sofiaEvidenceBefore);
+  const carlaList = (await get('/api/student/teacher-interventions', 'student-c')).body?.data?.interventions ?? [];
+  check('S15b.carla-sees-assignment', carlaList.some((i: any) => i.id === carlaRow?.interventionId));
+  const carlaTopic = ((await get(`/api/teacher/classes/${classA}/students/${carla}`, 'teacher-a')).body?.data?.concepts ?? []).find((c: any) => c.canonicalConceptId === x.canonical);
+  check('S15b.carla-learning-starts-at-learn', carlaTopic?.inLearnerPlan === true && carlaTopic?.stage === 'LEARN' && carlaTopic?.evidence?.totalAttempts === 0, JSON.stringify(carlaTopic ?? {}).slice(0, 160));
+  await page('15b-teacher-sees-who-got-it', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Refuerzo: ecuaciones lineales', 'Lo incorporó a su plan con esta tarea', 'Ya lo tenía en su plan']);
+  check('S15b.foreign-student-refused', (await post(`/api/teacher/classes/${classA}/assignments`, 'teacher-a', { canonicalConceptId: x.canonical, studentIds: [studentB] })).status === 422);
 
   // 16 -- tenant security with real ids.
   check('S16.teacherA-not-classB-roster', denied(await get(`/api/teacher/classes/${x.classB}/enrollments`, 'teacher-a')));
@@ -349,12 +380,13 @@ async function main() {
   check('S17.sofia-reaccepts', (await post(`/api/student/class-invitations/${reinv[0]?.enrollmentId}/respond`, 'student-a', { accept: true })).status === 200);
 
   // 18 -- data integrity.
-  check('S18.no-mastery-for-other-students', (await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[]) AND student_id <> $2`, [allStudents, sofia])) <= masteryBefore);
+  // A plan entry added by an assignment is a zero "not started" record; no other learner gains progress.
+  check('S18.no-mastery-for-other-students', (await n(`SELECT COUNT(*) n FROM mastery_records WHERE student_id = ANY($1::uuid[]) AND student_id <> $2 AND (attempt_count > 0 OR mastery_score > 0)`, [allStudents, sofia])) === masteryBefore);
   check('S18.no-evidence-for-other-students', (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = ANY($1::uuid[]) AND student_id <> $2`, [allStudents, sofia])) === evidenceOthersBefore);
   check('S18.single-persona-per-fixture', (await n(`SELECT COUNT(*) n FROM (SELECT user_id FROM user_roles WHERE user_id = ANY($1::uuid[]) AND role IN ('STUDENT','PARENT','TEACHER') AND status = 'ACTIVE' GROUP BY user_id HAVING COUNT(*) > 1) d`, [Object.values(x.users)])) === 0);
   check('S18.no-duplicate-enrollments', (await n(`SELECT COUNT(*) n FROM (SELECT class_id, student_id FROM class_enrollments GROUP BY 1, 2 HAVING COUNT(*) > 1) d`)) === 0);
   check('S18.interventions-in-own-tenant', (await n(`SELECT COUNT(*) n FROM teacher_interventions ti JOIN classes c ON c.id = ti.class_id WHERE ti.institution_id <> c.institution_id`)) === 0);
-  check('S18.interventions-only-active-learners-at-publish', (await n(`SELECT COUNT(*) n FROM teacher_interventions WHERE class_id = $1 AND student_id <> $2`, [classA, sofia])) === 0);
+  check('S18.interventions-only-active-learners-at-publish', (await n(`SELECT COUNT(*) n FROM teacher_interventions WHERE class_id = $1 AND student_id <> ALL($2::uuid[])`, [classA, [sofia, x.students['student-c']]])) === 0);
   check('S18.teacher-wrote-no-evidence', (await n(`SELECT COUNT(*) n FROM learning_evidence WHERE student_id = $1 AND (metadata->>'actorUserId') = $2`, [sofia, x.users['teacher-a']])) === 0);
 }
 

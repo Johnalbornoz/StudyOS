@@ -257,6 +257,7 @@ async function teacherReset() {
   await db.query(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
   await db.query(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = $1)`, [instA]);
   await db.query(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = $1)`, [instA]);
+  await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = $1`, [instA])).rows.map((r: any) => r.id));
   await db.query(`DELETE FROM classes WHERE institution_id = $1`, [instA]);
   await db.query(`DELETE FROM grades WHERE institution_id = $1`, [instA]);
   await db.query(`DELETE FROM institution_memberships WHERE institution_id = $1 AND membership_role = 'TEACHER'`, [instA]);
@@ -288,6 +289,27 @@ async function teacherReset() {
 }
 
 /**
+ * Concepts a Teacher assignment added to FIXTURE learners' plans for these
+ * (fixture) classes are removed with them, so every run starts with the
+ * same plans; any other concept only loses its provenance link.
+ */
+export async function detachTeacherAddedConcepts(classIds: string[]): Promise<void> {
+  if (classIds.length === 0) return;
+  const fixtureConcepts = (await db.query(
+    `SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN students st ON st.id = s.student_id JOIN users u ON u.id = st.user_id
+     WHERE c.origin = 'TEACHER_ASSIGNMENT' AND c.origin_class_id = ANY($1::uuid[]) AND u.email LIKE 'studyus-ta-%+clerk_test@example.com'`,
+    [classIds]
+  )).rows.map((r: any) => r.id);
+  if (fixtureConcepts.length > 0) {
+    await db.query(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
+    await db.query(`DELETE FROM mastery_records WHERE concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
+    await db.query(`DELETE FROM concept_localizations WHERE concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
+    await db.query(`DELETE FROM concepts WHERE id = ANY($1::uuid[])`, [fixtureConcepts]);
+  }
+  await db.query(`UPDATE concepts SET origin_class_id = NULL WHERE origin_class_id = ANY($1::uuid[])`, [classIds]);
+}
+
+/**
  * Institution / coordinator E2E starting state (DEV fixtures only):
  * removes every `Institution E2E …` institution with everything filed under
  * it, the coordinator invitations, and the sign-up-later identities
@@ -304,6 +326,7 @@ export async function institutionReset() {
   await q(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
   await q(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = ANY($1::uuid[]))`, [insts]);
   await q(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts])).rows.map((r: any) => r.id));
   await q(`DELETE FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM institution_admin_invitations WHERE institution_id = ANY($1::uuid[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [insts]);
@@ -371,6 +394,7 @@ async function cleanup() {
   await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [userIds, profileIds]);
   await q(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[]))`, [institutions, userIds]);
   await q(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])) OR student_id = ANY($2::uuid[])`, [institutions, studentIds]);
+  await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [institutions])).rows.map((r: any) => r.id));
   await q(`DELETE FROM classes WHERE institution_id = ANY($1::uuid[])`, [institutions]);
   await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [institutions]);
   await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[])`, [institutions, userIds]);

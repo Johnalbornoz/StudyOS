@@ -257,7 +257,7 @@ describe('deriveTeacherAttention (pure)', () => {
   it('orders overdue work, misconceptions, reinforcement, prerequisites, retention; each with a Teacher action', () => {
     const items = deriveTeacherAttention(
       [base({ reinforce: true, retention: { status: 'AT_RISK', due: true, nextReviewAt: null, lastSuccessfulAt: null }, prerequisiteGaps: [{ label: 'Fracciones', state: 'LIKELY' }], misconceptions: { active: 1, critical: 0, recurring: 0, items: [{ description: 'Cambia el signo al despejar', occurrences: 2 }] } })],
-      [{ interventionId: 'i', title: 'Tarea 1', topic: 'Linear Equations', status: 'EXPIRED', assignedAt: '', startsAt: null, dueAt: '', result: null }]
+      [{ interventionId: 'i', title: 'Tarea 1', topic: 'Linear Equations', status: 'EXPIRED', assignedAt: '', startsAt: null, dueAt: '', result: null, addedToPlan: false }]
     );
     expect(items.map((i) => i.reason)).toEqual(['OVERDUE_ASSIGNMENT', 'MISCONCEPTION', 'REINFORCE', 'PREREQUISITE_GAP', 'RETENTION_DUE']);
     expect(items.map((i) => i.suggestion)).toEqual(['FOLLOW_UP_ASSIGNMENT', 'REVIEW_MISCONCEPTION', 'ASSIGN_REINFORCEMENT', 'ASSIGN_PREREQUISITE', 'ASSIGN_RETENTION']);

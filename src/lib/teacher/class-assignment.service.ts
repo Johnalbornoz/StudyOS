@@ -22,7 +22,7 @@
 import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { canTeacherAccessLearner } from '@/lib/authorization';
-import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
+import { ensureConceptInLearnerPlan, learnersHavingCanonicalConcept } from './plan-enrollment.service';
 import { reconcileCompletionsForStudent, getEffectiveStatus, type TeacherInterventionStatus } from '@/lib/student/teacher-intervention-execution.service';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
 import { assignTeacherIntervention, TeacherInterventionAccessDeniedError } from './intervention.service';
@@ -127,6 +127,8 @@ export interface AssignableCanonicalConcept {
   canonicalConceptId: string;
   name: string;
   matchedLearners: number;
+  /** ACTIVE learners of the class who already have this concept in their plan (the rest would get it added on assignment). */
+  matchedStudentIds: string[];
 }
 
 /**
@@ -161,8 +163,10 @@ export async function listAssignableConceptsForClass(
     db.query(`SELECT COUNT(*)::int AS n FROM class_enrollments WHERE class_id = $1 AND status = 'ACTIVE'`, [classId]),
     db.query(`SELECT canonical_subject_id FROM classes WHERE id = $1`, [classId]),
   ]);
+  const activeIds = (await db.query(`SELECT student_id FROM class_enrollments WHERE class_id = $1 AND status = 'ACTIVE'`, [classId])).rows.map((r: any) => r.student_id);
+  const withConcept = await Promise.all(concepts.rows.map((r: any) => learnersHavingCanonicalConcept(activeIds, r.id)));
   return {
-    concepts: concepts.rows.map((r: any) => ({ canonicalConceptId: r.id, name: r.name, matchedLearners: r.matched })),
+    concepts: concepts.rows.map((r: any, i: number) => ({ canonicalConceptId: r.id, name: r.name, matchedLearners: r.matched, matchedStudentIds: [...withConcept[i]] })),
     activeLearners: learners.rows[0]?.n ?? 0,
     subjectLinked: Boolean(klass.rows[0]?.canonical_subject_id),
   };
@@ -179,12 +183,23 @@ export interface PublishClassAssignmentInput {
   dueAt?: string | null;
   /** Selected learners (student ids). Omitted / empty = the whole class (every ACTIVE learner). */
   studentIds?: string[] | null;
+  /**
+   * Idempotency key chosen by the client once per composed assignment. It
+   * becomes the assignment group id: a retried submit returns the same
+   * assignment and never adds a recipient twice.
+   */
+  requestId?: string | null;
 }
 
 export interface PublishClassAssignmentResult {
   assignmentGroupId: string;
-  assigned: Array<{ studentId: string; interventionId: string }>;
-  skipped: Array<{ studentId: string; name: string; reason: 'NO_MATCHED_CONCEPT' | 'NOT_AUTHORIZED' }>;
+  assigned: Array<{ studentId: string; interventionId: string; addedToPlan: boolean }>;
+  skipped: Array<{ studentId: string; name: string; reason: 'NOT_AUTHORIZED' }>;
+  /** Recipients who already had the concept in their plan / who got it added by this assignment. */
+  alreadyHadConcept: number;
+  addedToPlan: number;
+  /** true when this call replayed an assignment that already existed (retried submit). */
+  replayed: boolean;
 }
 
 export class NoLearnersToAssignError extends Error {
@@ -199,20 +214,30 @@ export class NoLearnersToAssignError extends Error {
  *  - CLASS_SUBJECT_REQUIRED: the class has no linked subject yet;
  *  - CONCEPT_NOT_IN_CLASS_SUBJECT: the topic is not an ACTIVE concept of the class's subject;
  *  - RECIPIENT_NOT_IN_CLASS: a selected learner is not ACTIVE in this class;
- *  - INVALID_DATES: due date not after the start date.
+ *  - INVALID_DATES: due date not after the start date;
+ *  - REQUEST_CONFLICT: the request id belongs to another class / teacher.
  */
 export class InvalidClassAssignmentError extends Error {
-  constructor(public readonly code: 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES') {
+  constructor(public readonly code: 'CLASS_SUBJECT_REQUIRED' | 'CONCEPT_NOT_IN_CLASS_SUBJECT' | 'RECIPIENT_NOT_IN_CLASS' | 'INVALID_DATES' | 'REQUEST_CONFLICT') {
     super(code);
     this.name = 'InvalidClassAssignmentError';
   }
 }
 
+const PG_UNIQUE_VIOLATION = '23505';
+
 /**
- * Publish one class assignment. Every per-learner row goes through
- * `assignTeacherIntervention` (class access + ACTIVE enrollment + genuine
- * teacher relationship, per learner). Nothing is written when no learner
- * can receive it (NoLearnersToAssignError).
+ * Publish one class assignment of a catalog concept of the class's subject.
+ *
+ * Every check runs before any write. Then, per recipient (ACTIVE learner of
+ * this class the Teacher genuinely teaches):
+ *  - if the learner already has the concept, it is reused untouched;
+ *  - otherwise the concept is added to the learner's plan
+ *    (`ensureConceptInLearnerPlan`, provenance TEACHER_ASSIGNMENT, no
+ *    evidence / progress);
+ *  - the per-learner row is created through `assignTeacherIntervention`.
+ * A mixed selection never blocks. With a `requestId`, a retry returns the
+ * existing assignment and only completes recipients still missing.
  */
 export async function publishClassAssignment(actorUserId: string, input: PublishClassAssignmentInput): Promise<PublishClassAssignmentResult> {
   await requireTeacherOfClass(actorUserId, input.classId);
@@ -244,38 +269,49 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
     if (selected.some((id) => !active.has(id))) throw new InvalidClassAssignmentError('RECIPIENT_NOT_IN_CLASS');
     learners.rows = learners.rows.filter((l: any) => selected.includes(l.id));
   }
+  if (learners.rows.length === 0) throw new NoLearnersToAssignError();
 
-  const plan: Array<{ studentId: string; userId: string | null; conceptId: string }> = [];
+  const assignmentGroupId = input.requestId ?? randomUUID();
+  const existingRows = await db.query(
+    `SELECT id, student_id, class_id, assigned_by_user_id, concept_added_to_plan FROM teacher_interventions WHERE assignment_group_id = $1`,
+    [assignmentGroupId]
+  );
+  if (existingRows.rows.some((r: any) => r.class_id !== input.classId || r.assigned_by_user_id !== actorUserId)) {
+    throw new InvalidClassAssignmentError('REQUEST_CONFLICT');
+  }
+  const existingByStudent = new Map<string, any>(existingRows.rows.map((r: any) => [r.student_id, r]));
+
+  const assigned: PublishClassAssignmentResult['assigned'] = [];
   const skipped: PublishClassAssignmentResult['skipped'] = [];
   for (const l of learners.rows) {
-    const conceptId = await resolveStudentConceptForCanonicalConcept(l.id, input.canonicalConceptId);
-    if (!conceptId) {
-      skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'NO_MATCHED_CONCEPT' });
+    const prior = existingByStudent.get(l.id);
+    if (prior) {
+      assigned.push({ studentId: l.id, interventionId: prior.id, addedToPlan: prior.concept_added_to_plan });
       continue;
     }
-    plan.push({ studentId: l.id, userId: l.user_id, conceptId });
-  }
-  if (plan.length === 0) throw new NoLearnersToAssignError();
-
-  const assignmentGroupId = randomUUID();
-  const assigned: PublishClassAssignmentResult['assigned'] = [];
-  for (const p of plan) {
+    // Authorize this learner BEFORE anything is written for them (their plan included).
+    if (!(await canTeacherAccessLearner(actorUserId, l.id))) {
+      skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'NOT_AUTHORIZED' });
+      continue;
+    }
+    const planConcept = await ensureConceptInLearnerPlan({ studentId: l.id, canonicalConceptId: input.canonicalConceptId, classId: input.classId });
     try {
       const intervention = await assignTeacherIntervention(actorUserId, {
         classId: input.classId,
-        studentId: p.studentId,
+        studentId: l.id,
         interventionType: 'CONCEPT_REINFORCEMENT',
-        target: { targetType: 'CONCEPT', conceptId: p.conceptId },
+        target: { targetType: 'CONCEPT', conceptId: planConcept.conceptId },
         instructions: input.instructions ?? undefined,
         dueAt: input.dueAt ?? undefined,
         startsAt: input.startsAt ?? undefined,
         title,
         assignmentGroupId,
+        addedToPlan: planConcept.added,
       });
-      assigned.push({ studentId: p.studentId, interventionId: intervention.id });
-      if (p.userId) {
+      assigned.push({ studentId: l.id, interventionId: intervention.id, addedToPlan: planConcept.added });
+      if (l.user_id) {
         await notifyUser({
-          recipientUserId: p.userId,
+          recipientUserId: l.user_id,
           workspace: 'STUDENT',
           type: 'ASSIGNMENT_PUBLISHED',
           title: 'Nueva tarea asignada',
@@ -284,16 +320,30 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
           actionHref: '/dashboard/assignments',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof TeacherInterventionAccessDeniedError) {
-        const l = learners.rows.find((row: any) => row.id === p.studentId);
-        skipped.push({ studentId: p.studentId, name: l?.name || l?.email || '', reason: 'NOT_AUTHORIZED' });
+        skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'NOT_AUTHORIZED' });
         continue;
+      }
+      // A concurrent identical submit already created this recipient: reuse it.
+      if (error?.code === PG_UNIQUE_VIOLATION) {
+        const row = await db.query(`SELECT id, concept_added_to_plan FROM teacher_interventions WHERE assignment_group_id = $1 AND student_id = $2`, [assignmentGroupId, l.id]);
+        if (row.rows[0]) {
+          assigned.push({ studentId: l.id, interventionId: row.rows[0].id, addedToPlan: row.rows[0].concept_added_to_plan });
+          continue;
+        }
       }
       throw error;
     }
   }
-  return { assignmentGroupId, assigned, skipped };
+  return {
+    assignmentGroupId,
+    assigned,
+    skipped,
+    alreadyHadConcept: assigned.filter((a) => !a.addedToPlan).length,
+    addedToPlan: assigned.filter((a) => a.addedToPlan).length,
+    replayed: existingRows.rows.length > 0,
+  };
 }
 
 export interface LearnerAssignmentOutcome {
@@ -301,6 +351,8 @@ export interface LearnerAssignmentOutcome {
   studentId: string;
   studentName: string;
   status: TeacherInterventionStatus;
+  /** This assignment put the concept into the learner's plan (they did not have it before). */
+  addedToPlan: boolean;
   /** The graded result of the activity the learner completed (counts only), or null when not completed / not gradable. */
   result: { correct: number; total: number } | null;
   completedAt: string | null;
@@ -347,7 +399,7 @@ export async function listClassAssignments(actorUserId: string, classId: string)
   const rows = await db.query(
     `
     SELECT ti.id, ti.assignment_group_id, ti.student_id, ti.status, ti.due_at, ti.assigned_at, ti.instructions, ti.target_type,
-           ti.title AS assignment_title, ti.starts_at,
+           ti.title AS assignment_title, ti.starts_at, ti.concept_added_to_plan,
            COALESCE(cc.name, ccl.label, ti.intervention_type) AS title,
            s.name AS student_name, s.email AS student_email,
            tie.execution_type, tie.execution_reference, tie.completed_at
@@ -409,6 +461,7 @@ export async function listClassAssignments(actorUserId: string, classId: string)
       studentId: r.student_id,
       studentName: r.student_name || r.student_email || '',
       status,
+      addedToPlan: Boolean(r.concept_added_to_plan),
       result: r.completed_at ? results.get(r.execution_reference) ?? null : null,
       completedAt: iso(r.completed_at),
     });

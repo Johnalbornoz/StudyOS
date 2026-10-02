@@ -148,4 +148,26 @@ $PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='in
 $PSQL -f "$COORD_MIGRATION" >/dev/null
 echo "  OK -- coordinator rollback + re-apply"
 
+# --- 20261018_1300_track_a_teacher_plan_assignment -----------------------
+PLAN_MIGRATION="$MIGRATIONS_DIR/20261018_1300_track_a_teacher_plan_assignment.sql"
+$PSQL -f "$PLAN_MIGRATION" >/dev/null
+echo "  OK -- plan-assignment migration idempotent"
+$PSQL -c "INSERT INTO subjects (id, student_id, name) VALUES ('77777777-7777-4777-8777-777777777777', '22222222-2222-4222-8222-222222222222', 'Matemáticas')" >/dev/null
+$PSQL -c "INSERT INTO concepts (id, subject_id, canonical_id, origin, origin_class_id) VALUES ('88888888-8888-4888-8888-888888888888', '77777777-7777-4777-8777-777777777777', 'CANON_X', 'TEACHER_ASSIGNMENT', '44444444-4444-4444-8444-444444444444')" >/dev/null
+expect_reject "INSERT INTO concepts (subject_id, canonical_id, origin) VALUES ('77777777-7777-4777-8777-777777777777', 'CANON_Y', 'SOMETHING_ELSE')" "unknown concept origin"
+$PSQL -c "INSERT INTO canonical_concepts (id, canonical_subject_id, name) VALUES ('99999999-9999-4999-8999-999999999990', (SELECT id FROM canonical_subjects LIMIT 1), 'Linear Equations')" >/dev/null
+$PSQL -c "INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status, mapping_method) VALUES ('88888888-8888-4888-8888-888888888888', '99999999-9999-4999-8999-999999999990', 'MATCHED', 'TEACHER_ASSIGNMENT')" >/dev/null
+echo "  OK -- TEACHER_ASSIGNMENT mapping accepted"
+expect_reject "INSERT INTO concepts (subject_id, canonical_id) VALUES ('77777777-7777-4777-8777-777777777777', 'CANON_X')" "duplicate learner concept for the same canonical key"
+$PSQL -tAc "SELECT column_default FROM information_schema.columns WHERE table_name='teacher_interventions' AND column_name='concept_added_to_plan'" | grep -q false || fail "concept_added_to_plan default"
+$PSQL -tAc "SELECT 1 FROM pg_indexes WHERE indexname='uq_teacher_interventions_group_student'" | grep -q 1 || fail "group/student unique index missing"
+echo "  OK -- concept_added_to_plan + one recipient per assignment group"
+PROLLBACK="$WORKDIR/rollback4.sql"
+{ echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$PLAN_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$PROLLBACK"
+$PSQL -c "DELETE FROM concept_catalog_mapping WHERE mapping_method = 'TEACHER_ASSIGNMENT'" >/dev/null
+$PSQL -f "$PROLLBACK" >/dev/null
+$PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='concepts' AND column_name IN ('origin','origin_class_id')" | grep -qx 0 || fail "plan rollback incomplete"
+$PSQL -f "$PLAN_MIGRATION" >/dev/null
+echo "  OK -- plan-assignment rollback + re-apply"
+
 echo "=== Track A roles migration certification: ALL CHECKS PASSED ==="

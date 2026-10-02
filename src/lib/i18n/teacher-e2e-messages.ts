@@ -18,6 +18,8 @@ export type TeacherE2EMessageKey =
   | 'tc.compose.recipients' | 'tc.compose.wholeClass' | 'tc.compose.selected' | 'tc.compose.selectAtLeastOne'
   | 'tc.error.conceptNotInSubject' | 'tc.error.recipientNotInClass' | 'tc.error.invalidDates' | 'tc.error.noLearnersToAssign'
   | 'tc.assignments.created' | 'tc.assignments.starts' | 'tc.assignments.counts'
+  | 'tc.compose.preview.have' | 'tc.compose.preview.add' | 'tc.compose.assign' | 'tc.compose.publishedAdded' | 'tc.compose.skippedAuth'
+  | 'tc.assignments.addedToPlan' | 'tc.assignments.hadConcept' | 'studentAssign.assignedBy' | 'plan.assignedByClass'
   | 'tl.readOnlyNote' | 'tl.unavailable'
   | 'tl.needs.title' | 'tl.needs.why' | 'tl.needs.assignNow'
   | 'tl.reason.OVERDUE_ASSIGNMENT' | 'tl.reason.MISCONCEPTION' | 'tl.reason.REINFORCE' | 'tl.reason.PREREQUISITE_GAP' | 'tl.reason.RETENTION_DUE' | 'tl.reason.NOT_STARTED'
@@ -37,6 +39,15 @@ export type TeacherE2EMessageKey =
 type Catalog = Record<TeacherE2EMessageKey, string>;
 
 const es: Catalog = {
+  'plan.assignedByClass': "Asignado por tu clase {className}",
+  'studentAssign.assignedBy': "Asignada por tu profesor · {className}",
+  'tc.assignments.hadConcept': "Ya lo tenía en su plan",
+  'tc.assignments.addedToPlan': "Lo incorporó a su plan con esta tarea",
+  'tc.compose.skippedAuth': "{n} {n:estudiante no la recibió|estudiantes no la recibieron} porque ya no {n:está activo|están activos} en la clase.",
+  'tc.compose.publishedAdded': "{n} {n:estudiante lo incorporó|estudiantes lo incorporaron} a su plan.",
+  'tc.compose.assign': "Asignar",
+  'tc.compose.preview.add': "{n} {n:estudiante lo incorporará|estudiantes lo incorporarán} a su plan",
+  'tc.compose.preview.have': "{n} {n:estudiante ya tiene|estudiantes ya tienen} este concepto",
   'tl.transfer.NONE': 'Aún no lo ha aplicado a casos nuevos',
   'tl.transfer.NEAR_DEMONSTRATED': 'Lo aplica a casos parecidos',
   'tl.transfer.GENERALIZED': 'Lo generaliza a casos distintos',
@@ -78,7 +89,7 @@ const es: Catalog = {
   'tc.error.conceptNotInSubject': 'Ese tema no pertenece a la asignatura de esta clase.',
   'tc.error.recipientNotInClass': 'Algún estudiante seleccionado ya no está activo en esta clase. Recarga la página.',
   'tc.error.invalidDates': 'La fecha límite debe ser posterior a la fecha de inicio.',
-  'tc.error.noLearnersToAssign': 'Ningún estudiante seleccionado tiene todavía ese tema en su plan de estudio.',
+  'tc.error.noLearnersToAssign': "No hay estudiantes activos en esta selección.",
   'tc.assignments.created': 'Creada el {date}',
   'tc.assignments.starts': 'Empieza el {date}',
   'tc.assignments.counts': 'Asignadas {assigned} · En curso {started} · Completadas {completed} · Vencidas {overdue}',
@@ -143,6 +154,15 @@ const es: Catalog = {
 };
 
 const en: Catalog = {
+  'plan.assignedByClass': "Assigned by your class {className}",
+  'studentAssign.assignedBy': "Assigned by your teacher · {className}",
+  'tc.assignments.hadConcept': "Already in their plan",
+  'tc.assignments.addedToPlan': "Added to their plan by this assignment",
+  'tc.compose.skippedAuth': "{n} {n:student did|students did} not receive it because they are no longer active in the class.",
+  'tc.compose.publishedAdded': "{n} {n:student added|students added} it to their plan.",
+  'tc.compose.assign': "Assign",
+  'tc.compose.preview.add': "{n} {n:student will add|students will add} it to their plan",
+  'tc.compose.preview.have': "{n} {n:student already has|students already have} this concept",
   'tl.transfer.NONE': 'Not yet applied to new cases',
   'tl.transfer.NEAR_DEMONSTRATED': 'Applies it to similar cases',
   'tl.transfer.GENERALIZED': 'Generalizes it to different cases',
@@ -184,7 +204,7 @@ const en: Catalog = {
   'tc.error.conceptNotInSubject': "That topic does not belong to this class's subject.",
   'tc.error.recipientNotInClass': 'A selected student is no longer active in this class. Reload the page.',
   'tc.error.invalidDates': 'The due date must be after the start date.',
-  'tc.error.noLearnersToAssign': 'None of the selected students has that topic in their study plan yet.',
+  'tc.error.noLearnersToAssign': "There are no active students in this selection.",
   'tc.assignments.created': 'Created {date}',
   'tc.assignments.starts': 'Starts {date}',
   'tc.assignments.counts': 'Assigned {assigned} · In progress {started} · Completed {completed} · Overdue {overdue}',
@@ -249,6 +269,15 @@ const en: Catalog = {
 };
 
 const de: Catalog = {
+  'plan.assignedByClass': "Zugewiesen von deiner Klasse {className}",
+  'studentAssign.assignedBy': "Zugewiesen von deiner Lehrkraft · {className}",
+  'tc.assignments.hadConcept': "War schon im Lernplan",
+  'tc.assignments.addedToPlan': "Mit dieser Aufgabe in den Lernplan aufgenommen",
+  'tc.compose.skippedAuth': "{n} {n:Person hat|Personen haben} sie nicht erhalten, weil sie nicht mehr aktiv in der Klasse {n:ist|sind}.",
+  'tc.compose.publishedAdded': "{n} {n:Person hat|Personen haben} es in den Lernplan aufgenommen.",
+  'tc.compose.assign': "Zuweisen",
+  'tc.compose.preview.add': "{n} {n:Person nimmt|Personen nehmen} es in den Lernplan auf",
+  'tc.compose.preview.have': "{n} {n:Person hat|Personen haben} dieses Thema bereits",
   'tl.transfer.NONE': 'Noch nicht auf neue Fälle angewendet',
   'tl.transfer.NEAR_DEMONSTRATED': 'Wendet es auf ähnliche Fälle an',
   'tl.transfer.GENERALIZED': 'Überträgt es auf andere Fälle',
@@ -290,7 +319,7 @@ const de: Catalog = {
   'tc.error.conceptNotInSubject': 'Dieses Thema gehört nicht zum Fach dieser Klasse.',
   'tc.error.recipientNotInClass': 'Eine ausgewählte Person ist nicht mehr aktiv in dieser Klasse. Lade die Seite neu.',
   'tc.error.invalidDates': 'Das Fälligkeitsdatum muss nach dem Startdatum liegen.',
-  'tc.error.noLearnersToAssign': 'Keine der ausgewählten Personen hat dieses Thema bereits im Lernplan.',
+  'tc.error.noLearnersToAssign': "In dieser Auswahl gibt es keine aktiven Lernenden.",
   'tc.assignments.created': 'Erstellt am {date}',
   'tc.assignments.starts': 'Beginnt am {date}',
   'tc.assignments.counts': 'Zugewiesen {assigned} · Begonnen {started} · Erledigt {completed} · Überfällig {overdue}',
@@ -355,6 +384,15 @@ const de: Catalog = {
 };
 
 const fr: Catalog = {
+  'plan.assignedByClass': "Attribué par ta classe {className}",
+  'studentAssign.assignedBy': "Attribué par ton enseignant · {className}",
+  'tc.assignments.hadConcept': "Déjà dans son plan",
+  'tc.assignments.addedToPlan': "Ajouté à son plan par ce devoir",
+  'tc.compose.skippedAuth': "{n} {n:élève ne l’a pas reçu|élèves ne l’ont pas reçu} car {n:il n’est|ils ne sont} plus actifs dans la classe.",
+  'tc.compose.publishedAdded': "{n} {n:élève l’a ajouté|élèves l’ont ajouté} à son plan.",
+  'tc.compose.assign': "Attribuer",
+  'tc.compose.preview.add': "{n} {n:élève l’ajoutera|élèves l’ajouteront} à son plan",
+  'tc.compose.preview.have': "{n} {n:élève a|élèves ont} déjà ce concept",
   'tl.transfer.NONE': 'Pas encore appliqué à de nouveaux cas',
   'tl.transfer.NEAR_DEMONSTRATED': "L'applique à des cas proches",
   'tl.transfer.GENERALIZED': 'Le généralise à des cas différents',
@@ -396,7 +434,7 @@ const fr: Catalog = {
   'tc.error.conceptNotInSubject': "Ce thème n'appartient pas à la matière de cette classe.",
   'tc.error.recipientNotInClass': "Un élève sélectionné n'est plus actif dans cette classe. Rechargez la page.",
   'tc.error.invalidDates': "La date limite doit être postérieure à la date de début.",
-  'tc.error.noLearnersToAssign': "Aucun élève sélectionné n'a encore ce thème dans son plan d'étude.",
+  'tc.error.noLearnersToAssign': "Aucun élève actif dans cette sélection.",
   'tc.assignments.created': 'Créé le {date}',
   'tc.assignments.starts': 'Commence le {date}',
   'tc.assignments.counts': 'Attribués {assigned} · En cours {started} · Terminés {completed} · En retard {overdue}',
@@ -461,6 +499,15 @@ const fr: Catalog = {
 };
 
 const pt: Catalog = {
+  'plan.assignedByClass': "Atribuído pela sua turma {className}",
+  'studentAssign.assignedBy': "Atribuída pelo seu professor · {className}",
+  'tc.assignments.hadConcept': "Já estava no plano",
+  'tc.assignments.addedToPlan': "Incorporou ao plano com esta tarefa",
+  'tc.compose.skippedAuth': "{n} {n:estudante não a recebeu|estudantes não a receberam} porque não {n:está ativo|estão ativos} na turma.",
+  'tc.compose.publishedAdded': "{n} {n:estudante o incorporou|estudantes o incorporaram} ao plano.",
+  'tc.compose.assign': "Atribuir",
+  'tc.compose.preview.add': "{n} {n:estudante vai incorporá-lo|estudantes vão incorporá-lo} ao plano",
+  'tc.compose.preview.have': "{n} {n:estudante já tem|estudantes já têm} este conceito",
   'tl.transfer.NONE': 'Ainda não aplicou a casos novos',
   'tl.transfer.NEAR_DEMONSTRATED': 'Aplica a casos parecidos',
   'tl.transfer.GENERALIZED': 'Generaliza para casos diferentes',
@@ -502,7 +549,7 @@ const pt: Catalog = {
   'tc.error.conceptNotInSubject': 'Esse tema não pertence à disciplina desta turma.',
   'tc.error.recipientNotInClass': 'Algum estudante selecionado não está mais ativo nesta turma. Recarregue a página.',
   'tc.error.invalidDates': 'O prazo deve ser posterior à data de início.',
-  'tc.error.noLearnersToAssign': 'Nenhum estudante selecionado tem esse tema no plano de estudo ainda.',
+  'tc.error.noLearnersToAssign': "Não há estudantes ativos nesta seleção.",
   'tc.assignments.created': 'Criada em {date}',
   'tc.assignments.starts': 'Começa em {date}',
   'tc.assignments.counts': 'Atribuídas {assigned} · Em andamento {started} · Concluídas {completed} · Atrasadas {overdue}',

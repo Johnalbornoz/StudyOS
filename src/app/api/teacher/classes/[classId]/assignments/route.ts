@@ -32,6 +32,7 @@ const Schema = z.object({
   instructions: z.string().trim().max(500).nullable().optional(),
   startsAt: z.string().datetime({ offset: true }).nullable().optional(),
   studentIds: z.array(z.string().uuid()).max(500).nullable().optional(),
+  requestId: z.string().uuid().nullable().optional(),
   dueAt: z
     .string()
     .datetime({ offset: true })

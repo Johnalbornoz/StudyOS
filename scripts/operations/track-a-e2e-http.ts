@@ -20,7 +20,7 @@
 import { spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { db } from '@/lib/db';
-import { assertDev, institutionReset, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
+import { assertDev, institutionReset, detachTeacherAddedConcepts, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
 
 const BASE = (process.argv[2] ?? '').replace(/\/$/, '');
 const TOKENS: Record<Tag, string> = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf-8'));
@@ -127,6 +127,7 @@ async function reset(x: Awaited<ReturnType<typeof ids>>) {
   await db.query(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
   await db.query(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = $1)`, [x.instA]);
   await db.query(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = $1)`, [x.instA]);
+  await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = $1`, [x.instA])).rows.map((r: any) => r.id));
   await db.query(`DELETE FROM classes WHERE institution_id = $1`, [x.instA]);
   await db.query(`DELETE FROM grades WHERE institution_id = $1`, [x.instA]);
   await db.query(`DELETE FROM institution_memberships WHERE institution_id = $1 AND membership_role = 'TEACHER'`, [x.instA]);

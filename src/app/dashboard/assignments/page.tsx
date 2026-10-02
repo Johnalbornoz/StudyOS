@@ -41,12 +41,14 @@ export default async function AssignmentsPage() {
   // language) rather than only the assignment type. Read-only lookup.
   const topicRows = interventions.length
     ? await db.query(
-        `SELECT ti.id, (SELECT label FROM concept_localizations cl WHERE cl.concept_id = ti.concept_id ORDER BY (cl.language = $2) DESC, cl.language LIMIT 1) AS label
+        `SELECT ti.id, (SELECT label FROM concept_localizations cl WHERE cl.concept_id = ti.concept_id ORDER BY (cl.language = $2) DESC, cl.language LIMIT 1) AS label,
+                (SELECT k.name FROM classes k WHERE k.id = ti.class_id) AS class_name
          FROM teacher_interventions ti WHERE ti.id = ANY($1::uuid[]) AND ti.student_id = $3`,
         [interventions.map((i) => i.id), locale, studentId]
       ).catch(() => ({ rows: [] as any[] }))
     : { rows: [] as any[] };
   const topicById = new Map<string, string | null>(topicRows.rows.map((r: any) => [r.id, r.label]));
+  const classById = new Map<string, string | null>(topicRows.rows.map((r: any) => [r.id, r.class_name]));
   const now = Date.now();
 
   return (
@@ -63,6 +65,7 @@ export default async function AssignmentsPage() {
                 <div className="row-main">
                   <div className="row-title">{i.title || topicById.get(i.id) || (t[TYPE_LABEL_KEY[i.interventionType as keyof typeof TYPE_LABEL_KEY]] ?? i.interventionType)}</div>
                   {i.title && topicById.get(i.id) && <div className="row-sub">{fillMessage(t['studentAssign.topic'], { topic: topicById.get(i.id) })}</div>}
+                  {classById.get(i.id) && <div className="row-sub">{fillMessage(t['studentAssign.assignedBy'], { className: classById.get(i.id) })}</div>}
                   {i.instructions && <div className="row-sub">{i.instructions}</div>}
                   {i.startsAt && new Date(i.startsAt).getTime() > now && (
                     <div className="row-sub">{fillMessage(t['studentAssign.availableFrom'], { date: new Date(i.startsAt).toLocaleDateString(locale) })}</div>
