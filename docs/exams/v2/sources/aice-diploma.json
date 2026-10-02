@@ -1,0 +1,1021 @@
+{
+  "retrievedAt": "2026-10-01",
+  "sources": [
+    {
+      "key": "cie-aice-qualification",
+      "url": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-aice-diploma/qualification/",
+      "title": "Cambridge AICE Diploma qualification",
+      "effective": "Current web page as retrieved 2026-10-01; no effective series stated (25-month example cites Nov 2015-Nov 2017)",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-aice-curriculum",
+      "url": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-aice-diploma/curriculum/",
+      "title": "Cambridge AICE Diploma curriculum",
+      "effective": "Current web page as retrieved 2026-10-01; no version/year stated; page says 'not a definitive list' (full list in Cambridge Guide to Making Entries)",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-aice-overview",
+      "url": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-aice-diploma/",
+      "title": "Cambridge AICE Diploma",
+      "effective": "Current web page as retrieved 2026-10-01",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-us-grades-guide",
+      "url": "https://www.cambridgeinternational.org/usa/about-cambridge-international-us/guide-to-cambridge-grades/",
+      "title": "Guide to Cambridge grades for US high schools",
+      "effective": "Current web page as retrieved 2026-10-01",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-grading-scale-pdf",
+      "url": "https://www.cambridgeinternational.org/Images/635652-cambridge-advanced-grading-scale.pdf",
+      "title": "Cambridge International AS & A Level Grading Scale",
+      "effective": "Undated PDF; retrieved 2026-10-01",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-gt-index",
+      "url": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-international-as-and-a-levels/grade-threshold-tables/",
+      "title": "Grade threshold tables (Cambridge International AS & A Level)",
+      "effective": "Series March 2022 through June 2026 listed as of 2026-10-01",
+      "confidence": "HIGH"
+    },
+    {
+      "key": "cie-help-aice-search-snippets",
+      "url": "https://help.cambridgeinternational.org/hc/en-gb/articles/203543872-AICE-Diploma-Credits-FAQs",
+      "title": "AICE Diploma: Credits - FAQs (help centre; blocked by bot check, seen only via search snippets)",
+      "effective": "Unknown",
+      "confidence": "LOW"
+    }
+  ],
+  "diplomaRules": {
+    "minimumCredits": {
+      "value": 7,
+      "exactWording": "learners must achieve a minimum of seven credits (including Cambridge International AS Level Global Perspectives & Research)",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "creditsPerLevel": {
+      "value": {
+        "AS": 1,
+        "A": 2
+      },
+      "exactWording": "A Cambridge International AS Level is awarded one credit, and a Cambridge International A Level is awarded two credits.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "compulsoryCore": {
+      "value": {
+        "code": "9239",
+        "level": "AS",
+        "name": "Cambridge International AS Level Global Perspectives & Research"
+      },
+      "exactWording": "all learners will need to study and pass the revised Cambridge International AS Level Global Perspectives & Research (9239)",
+      "sourceKey": "cie-aice-curriculum",
+      "confidence": "HIGH"
+    },
+    "groupRequirement": {
+      "value": {
+        "minCreditsEach": 1,
+        "groups": [
+          "GROUP_1",
+          "GROUP_2",
+          "GROUP_3"
+        ]
+      },
+      "exactWording": "Learners must achieve at least one credit from each of Groups 1, 2 and 3.",
+      "sourceKey": "cie-aice-curriculum",
+      "confidence": "HIGH"
+    },
+    "remainingCredits": {
+      "value": "any group",
+      "exactWording": "The remaining credits can come from any of the groups.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "group4Max": {
+      "value": 2,
+      "optional": true,
+      "exactWording": "A maximum of two credits can count from Group 4, which is optional.",
+      "sourceKey": "cie-aice-curriculum",
+      "confidence": "HIGH"
+    },
+    "exceptionALevelGPR": {
+      "value": "A Level GPR (9239) satisfies core and yields one credit countable in Group 4",
+      "exactWording": "meet the compulsory requirement of the core group and also have one credit which may then be included in Group 4",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "exceptionALevelGPRPlusEGPorTS": {
+      "value": "With A Level GPR, one outcome from English General Paper (AS only) or Thinking Skills (AS or A) may be used; A Level Thinking Skills allowed even if exceeding Group 4 two-credit limit, only where it gives best overall outcome",
+      "exactWording": "the use of Cambridge International A Level Thinking Skills ... is allowed, even though this will exceed the two credit limit for Group 4",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "exceptionEightCredits": {
+      "value": "A Level GPR + three A Levels (8 credits) allowed when it gives best overall outcome",
+      "exactWording": "this will be allowed even though it equates to eight credits",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "validCombinations": {
+      "value": [
+        {
+          "ALevels": 3,
+          "ASLevels": 0,
+          "coreAS9239": 1,
+          "total": 7
+        },
+        {
+          "ALevels": 2,
+          "ASLevels": 2,
+          "coreAS9239": 1,
+          "total": 7
+        },
+        {
+          "ALevels": 1,
+          "ASLevels": 4,
+          "coreAS9239": 1,
+          "total": 7
+        },
+        {
+          "ALevels": 0,
+          "ASLevels": 6,
+          "coreAS9239": 1,
+          "total": 7
+        }
+      ],
+      "exactWording": "The following combinations of credits are valid for the Diploma",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "accumulationWindow": {
+      "value": {
+        "months": 25,
+        "maxSeries": 5
+      },
+      "exactWording": "They can use up to five exam series to take the equivalent of seven full credit examinations as long as they are taken within a 25-month period.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "entryInFinalSeries": {
+      "value": true,
+      "exactWording": "These candidates must be entered for the Cambridge AICE Diploma in the final exam series.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "nonAwardOutcome": {
+      "value": "individual subject certificates",
+      "exactWording": "Learners who do not meet the requirements of the group award will receive certificates for their individual subjects.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "subjectCountsOnce": {
+      "value": "NOT_CONFIRMED",
+      "exactWording": null,
+      "sourceKey": "cie-help-aice-search-snippets",
+      "confidence": "LOW",
+      "note": "Search snippet (help centre, inaccessible) suggests subjects with identical titles or common question papers cannot both count; not verified on primary page."
+    },
+    "asAndALevelSameSubjectBothCount": {
+      "value": "NOT_CONFIRMED",
+      "exactWording": null,
+      "sourceKey": "cie-help-aice-search-snippets",
+      "confidence": "LOW",
+      "note": "Likely cannot both count (same snippet); not verified on primary page."
+    },
+    "retakesWhichResultCounts": {
+      "value": "NOT_CONFIRMED",
+      "exactWording": null,
+      "sourceKey": "cie-help-aice-search-snippets",
+      "confidence": "LOW",
+      "note": "Qualification page only speaks of 'best overall outcome' for specific combinations; no explicit retake rule found on primary pages."
+    }
+  },
+  "points": {
+    "A": {
+      "A*": 140,
+      "A": 120,
+      "B": 100,
+      "C": 80,
+      "D": 60,
+      "E": 40
+    },
+    "AS": {
+      "a": 60,
+      "b": 50,
+      "c": 40,
+      "d": 30,
+      "e": 20
+    },
+    "maximumScore": 420,
+    "capWording": "Grade A* is awarded 140 points, however the maximum number of Cambridge AICE Diploma points is capped at 420.",
+    "computation": "NOT_CONFIRMED (exact best-credits selection algorithm not stated on primary page; page refers to 'best overall outcome')",
+    "sourceKey": "cie-aice-qualification",
+    "confidence": "HIGH",
+    "note": "Qualification page table prints AS grades in upper case (A-E); lower case used here per US grades guide."
+  },
+  "awardBands": {
+    "DISTINCTION": {
+      "min": 360,
+      "max": 420,
+      "exactWording": "awarded to students with a score of 360 points or above. The maximum Diploma score is 420 points.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "MERIT": {
+      "min": 250,
+      "max": 359,
+      "exactWording": "awarded to students with between 250 and 359 points.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "PASS": {
+      "min": 140,
+      "max": 249,
+      "exactWording": "awarded to students with between 140 and 249 points.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "FAIL": {
+      "max": 139,
+      "note": "US grades guide lists F (Fail) below 140 points",
+      "sourceKey": "cie-us-grades-guide",
+      "confidence": "MEDIUM"
+    }
+  },
+  "gradeScales": {
+    "A": {
+      "grades": [
+        "A*",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "U"
+      ],
+      "pass": [
+        "A*",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "case": "upper",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH",
+      "exactWording": "Cambridge International A Level subjects are graded from A* to E."
+    },
+    "AS": {
+      "grades": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "U"
+      ],
+      "pass": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "case": "lower (per US grades guide and grading scale PDF); qualification page prints upper case",
+      "sourceKey": "cie-us-grades-guide",
+      "confidence": "HIGH",
+      "exactWording": "AS Level grades are always given in lowercase"
+    },
+    "aStarOnlyAtALevel": {
+      "value": true,
+      "exactWording": "There is no A* grade awarded at Cambridge International AS Level.",
+      "sourceKey": "cie-aice-qualification",
+      "confidence": "HIGH"
+    },
+    "ungraded": {
+      "value": "U (ungraded) at both levels",
+      "sourceKey": "cie-grading-scale-pdf",
+      "confidence": "HIGH"
+    }
+  },
+  "groups": [
+    {
+      "key": "CORE",
+      "officialName": "Core: Cambridge International AS Level Global Perspectives & Research (9239)"
+    },
+    {
+      "key": "GROUP_1",
+      "officialName": "Group 1: Mathematics and Sciences"
+    },
+    {
+      "key": "GROUP_2",
+      "officialName": "Group 2: Languages"
+    },
+    {
+      "key": "GROUP_3",
+      "officialName": "Group 3: Arts and Humanities"
+    },
+    {
+      "key": "GROUP_4",
+      "officialName": "Group 4: Interdisciplinary subjects (optional)"
+    }
+  ],
+  "subjects": [
+    {
+      "name": "Global Perspectives & Research",
+      "code": "9239",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "CORE",
+        "GROUP_4"
+      ],
+      "notes": "AS Level is compulsory core. A Level GPR meets core and gives one credit usable in Group 4 (qualification page).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Biology",
+      "code": "9700",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Chemistry",
+      "code": "9701",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Computer Science",
+      "code": "9618",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Design and Technology",
+      "code": "9705",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Environmental Management",
+      "code": "8291",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_1",
+        "GROUP_3"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma). Group 3 entry says 'Available in Group 1 or Group 3'.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Further Mathematics",
+      "code": "9231",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Information Technology",
+      "code": "9626",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Marine Science",
+      "code": "9693",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Mathematics",
+      "code": "9709",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Physics",
+      "code": "9702",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Psychology",
+      "code": "9990",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_1",
+        "GROUP_3"
+      ],
+      "notes": "Available in Group 1 or Group 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Sport & Physical Education",
+      "code": "8386",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_1",
+        "GROUP_3"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma). Available in Group 1 or Group 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Arabic",
+      "code": "9680",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Arabic Language",
+      "code": "8680",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Chinese Language",
+      "code": "8238",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Chinese Language & Literature",
+      "code": "9868",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Available in Groups 2 or 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "English Language",
+      "code": "9093",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "French Language",
+      "code": "8028",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "French Language & Literature",
+      "code": "9898",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Available in Groups 2 or 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "German Language",
+      "code": "8027",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "German Language & Literature",
+      "code": "9897",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Available in Groups 2 or 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Language & Literature in English",
+      "code": "8695",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma). Available in Group 2 or Group 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Portuguese",
+      "code": "9718",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Spanish Language",
+      "code": "8022",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Spanish Language & Literature",
+      "code": "9844",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Available in Groups 2 or 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Tamil",
+      "code": "9689",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma). Code from linked syllabus URL (9xxx code despite single credit).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Urdu Language",
+      "code": "8686",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_2"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma).",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Urdu Language & Literature",
+      "code": "9866",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_2",
+        "GROUP_3"
+      ],
+      "notes": "Available in Groups 2 or 3.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Accounting",
+      "code": "9706",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Art and Design",
+      "code": "9479",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Biblical Studies",
+      "code": "9484",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Business",
+      "code": "9609",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Classical Studies",
+      "code": "9274",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Digital Media & Design",
+      "code": "9481",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Drama",
+      "code": "9482",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Economics",
+      "code": "9708",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Geography",
+      "code": "9696",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Hinduism",
+      "code": "9487",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "History",
+      "code": "9489",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Islamic Studies",
+      "code": "9488",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Law",
+      "code": "9084",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Literature in English",
+      "code": "9695",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Media Studies",
+      "code": "9607",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Music",
+      "code": "9483",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Sociology",
+      "code": "9699",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Travel & Tourism",
+      "code": "9395",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_3"
+      ],
+      "notes": "",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "English General Paper",
+      "code": "8021",
+      "levels": [
+        "AS"
+      ],
+      "groups": [
+        "GROUP_4"
+      ],
+      "notes": "Listed as 'single credit only' (AS Level only for Diploma). Listed 'from June 2019'.",
+      "sourceKey": "cie-aice-curriculum"
+    },
+    {
+      "name": "Thinking Skills",
+      "code": "9694",
+      "levels": [
+        "AS",
+        "A"
+      ],
+      "groups": [
+        "GROUP_4"
+      ],
+      "notes": "With A Level GPR, A Level Thinking Skills may exceed Group 4 two-credit limit (qualification page).",
+      "sourceKey": "cie-aice-curriculum"
+    }
+  ],
+  "subjectsNote": "Codes taken from syllabus page URLs linked from the curriculum page. 'levels' AS-only = 'single credit only' on the curriculum page. Curriculum page says list is not definitive.",
+  "series": {
+    "value": [
+      "MARCH",
+      "JUNE",
+      "NOVEMBER"
+    ],
+    "exactWording": "exam series twice a year, in June and November ... In India only, we offer a March exam series",
+    "results": {
+      "JUNE": "August",
+      "NOVEMBER": "January",
+      "MARCH": "May"
+    },
+    "marchAvailability": "India only",
+    "sourceKey": "cie-aice-qualification",
+    "confidence": "HIGH"
+  },
+  "thresholds": {
+    "published": true,
+    "perSyllabusPerSeries": true,
+    "variesBySeries": true,
+    "exactWording": "To achieve this, the thresholds may change from one series to the next.",
+    "definition": "A grade threshold is the minimum number of marks that a candidate needs to achieve to be awarded a particular grade",
+    "indexUrl": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-international-as-and-a-levels/grade-threshold-tables/",
+    "seriesPagePattern": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-advanced/cambridge-international-as-and-a-levels/grade-threshold-tables/{month}-{year}/",
+    "pdfPatternObserved": "https://www.cambridgeinternational.org/Images/{id}-cambridge-international-as-and-a-level-{subject-slug}-{code}-grade-threshold-table-{month}-{year}.pdf (id not predictable)",
+    "seriesListed": [
+      "june-2026",
+      "march-2026",
+      "november-2025",
+      "june-2025",
+      "march-2025",
+      "november-2024",
+      "june-2024",
+      "march-2024",
+      "november-2023",
+      "june-2023",
+      "march-2023",
+      "november-2022",
+      "june-2022",
+      "march-2022"
+    ],
+    "sourceKey": "cie-gt-index",
+    "confidence": "HIGH"
+  },
+  "notConfirmed": [
+    "Whether a subject can count only once / subjects with identical titles or common papers (help-centre snippet only, LOW)",
+    "Whether AS and A Level of the same subject can both count (help-centre snippet only, LOW)",
+    "Retakes: which result counts toward the Diploma (no explicit primary-page rule)",
+    "Exact score computation / best-credits selection algorithm (primary page says 'best overall outcome' and cap 420 only)",
+    "Version/effective year of the curriculum list (page undated; no 2026/2027 PDF subject list found)",
+    "Environmental Management Group 1 entry does not itself say multi-group; Group 3 entry does (treated as Group 1 or 3)",
+    "Tamil syllabus code: link uses 9689 though listed single credit only"
+  ]
+}
