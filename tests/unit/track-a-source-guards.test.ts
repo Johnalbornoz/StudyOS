@@ -56,6 +56,9 @@ const ROLE_MODULES = [
   'src/lib/learning-plan/concept-proposals.service.ts',
   'src/lib/learning-plan/curriculum.service.ts',
   'src/lib/learning-plan/student-views.service.ts',
+  'src/lib/teacher/class-progress.service.ts',
+  'src/lib/teacher/class-progress.compute.ts',
+  'src/app/api/teacher/classes/[classId]/progress/route.ts',
 ];
 
 const COGNITIVE_TABLES = [

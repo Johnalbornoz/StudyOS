@@ -380,6 +380,28 @@ export async function getTwinMemorySignalsForStudent(
   return signals;
 }
 
+/** Batched Twin memory signals for MANY (student, concept) pairs (one query), keyed `${studentId}:${conceptId}`. Absent = no memory state yet. */
+export async function getTwinMemorySignalsForPairs(
+  client: DbExecutor,
+  pairs: Array<{ studentId: string; conceptId: string }>,
+  now: Date = new Date(),
+  policy: MemoryPolicyV1 = MEMORY_POLICY_V1
+): Promise<Map<string, TwinMemorySignal>> {
+  const signals = new Map<string, TwinMemorySignal>();
+  if (pairs.length === 0) return signals;
+  const result = await client.query(
+    `SELECT student_id AS pair_student_id, ${FULL_MEMORY_STATE_COLUMNS}
+     FROM concept_memory_state
+     WHERE (student_id, concept_id) IN (SELECT * FROM unnest($1::uuid[], $2::uuid[]))`,
+    [pairs.map((p) => p.studentId), pairs.map((p) => p.conceptId)]
+  );
+  const nowIso = now.toISOString();
+  for (const row of result.rows as Array<ConceptMemoryStateFullRow & { pair_student_id: string }>) {
+    signals.set(`${row.pair_student_id}:${row.concept_id}`, toTwinMemorySignal(rowToMemoryState(row.pair_student_id, row.concept_id, row), nowIso, policy));
+  }
+  return signals;
+}
+
 // ============================================================
 // STEP 6J-B1 -- CANONICAL READ BOUNDARY FOR OTHER LIVE CONSUMERS
 // (subject cognitive summary, topic hierarchy, learning debt)

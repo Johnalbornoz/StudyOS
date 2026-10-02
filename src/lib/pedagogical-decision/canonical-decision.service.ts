@@ -35,8 +35,11 @@ import {
   type RecognizedRequirement,
 } from '@/lib/pedagogical-engine';
 import { mapStudyUSEvidenceToPedagogicalEvidence, fetchStudyUSEvidenceRows, type AdapterConfidence, type AdapterUnresolvedMapping } from '@/lib/pedagogical-shadow';
+import { fetchStudyUSEvidenceRowsForPairs } from '@/lib/pedagogical-shadow/evidence-fetch';
+import type { StudyUSEvidenceRow } from '@/lib/pedagogical-shadow/types';
 import { loadRecognizedRequirementsForEngine, INITIAL_MIGRATION_VERSION } from '@/lib/pedagogical-migration';
-import { getMisconceptionCountsForConcept } from '@/services/misconception.service';
+import { loadRecognizedRequirementsForPairs } from '@/lib/pedagogical-migration/recognition-persistence-adapter';
+import { getMisconceptionCountsForConcept, getActiveMisconceptionCountsForPairs } from '@/services/misconception.service';
 
 export class CanonicalDecisionUnavailableError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -117,4 +120,60 @@ export async function getCanonicalPedagogicalDecision(
       rowsConsidered: adapterResult.rowsConsidered,
     },
   };
+}
+
+export interface CanonicalDecisionBatchItem {
+  decision: CanonicalPedagogicalDecision;
+  /** The real evidence rows the decision was computed from (ids + timestamps let aggregate views place qualified evidence in time). */
+  evidenceRows: StudyUSEvidenceRow[];
+}
+
+/**
+ * The SAME canonical decision for MANY (student, concept) pairs -- for
+ * aggregate views (class progress) that must not issue one query per
+ * learner × concept. Exactly the three inputs `getCanonicalPedagogicalDecision`
+ * reads (real evidence rows, persisted recognitions, ACTIVE critical
+ * misconception), each loaded in ONE batched query, then the same pure
+ * `evaluateCanonicalLearningState` per pair. Never a second authority:
+ * `decision` is the engine's verbatim output for that pair. Fail-safe
+ * like the single read (a read failure throws CanonicalDecisionUnavailableError).
+ */
+export async function getCanonicalPedagogicalDecisionsBatch(params: {
+  pairs: Array<{ studentId: string; conceptId: string }>;
+  now?: string;
+  client?: DbExecutor;
+}): Promise<Map<string, CanonicalDecisionBatchItem>> {
+  const now = params.now ?? new Date().toISOString();
+  const client = params.client ?? db;
+  const pairs = [...new Map(params.pairs.map((p) => [`${p.studentId}:${p.conceptId}`, p])).values()];
+  const out = new Map<string, CanonicalDecisionBatchItem>();
+  if (pairs.length === 0) return out;
+  let evidence: Map<string, StudyUSEvidenceRow[]>;
+  let recognitions: Map<string, RecognizedRequirement[]>;
+  let misconceptions: Map<string, { criticalCount: number }>;
+  try {
+    [evidence, recognitions, misconceptions] = await Promise.all([
+      fetchStudyUSEvidenceRowsForPairs(pairs, client),
+      loadRecognizedRequirementsForPairs(pairs, INITIAL_MIGRATION_VERSION, client),
+      getActiveMisconceptionCountsForPairs(pairs, client),
+    ]);
+  } catch (error) {
+    throw new CanonicalDecisionUnavailableError(`Canonical decision inputs could not be read for ${pairs.length} pairs.`, error);
+  }
+  for (const { studentId, conceptId } of pairs) {
+    const key = `${studentId}:${conceptId}`;
+    const rows = evidence.get(key) ?? [];
+    const recognized = recognitions.get(key) ?? [];
+    const adapterResult = mapStudyUSEvidenceToPedagogicalEvidence(rows);
+    const decision = evaluateCanonicalLearningState({
+      conceptId,
+      studentId,
+      now,
+      evidence: adapterResult.items,
+      activeCriticalMisconception: (misconceptions.get(key)?.criticalCount ?? 0) > 0,
+      recognizedRequirements: recognized.length > 0 ? recognized : undefined,
+    });
+    out.set(key, { decision, evidenceRows: rows });
+  }
+  return out;
 }

@@ -296,6 +296,39 @@ export async function getMisconceptionCountsForConcept(studentId: string, concep
   return { activeCount, criticalCount, recurringCount, historicalCount: result.rows.length, resolvedCount };
 }
 
+/**
+ * Batched ACTIVE-critical / ACTIVE counts for MANY (student, concept) pairs
+ * (one query; same semantics as getMisconceptionCountsForConcept's
+ * activeCount / criticalCount), keyed `${studentId}:${conceptId}`. Pairs
+ * without any misconception are absent (= zero).
+ */
+export async function getActiveMisconceptionCountsForPairs(
+  pairs: Array<{ studentId: string; conceptId: string }>,
+  client: DbExecutor = db
+): Promise<Map<string, { activeCount: number; criticalCount: number; lastSeenAt: string | null }>> {
+  const out = new Map<string, { activeCount: number; criticalCount: number; lastSeenAt: string | null }>();
+  if (pairs.length === 0) return out;
+  const result = await client.query(
+    `SELECT sm.student_id, ms.concept_id,
+            COUNT(*) FILTER (WHERE sm.status = 'ACTIVE')::int AS active_count,
+            COUNT(*) FILTER (WHERE sm.status = 'ACTIVE' AND ms.is_critical)::int AS critical_count,
+            MAX(sm.last_seen) FILTER (WHERE sm.status = 'ACTIVE') AS last_seen
+     FROM student_misconceptions sm
+     JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
+     JOIN (SELECT DISTINCT * FROM unnest($1::uuid[], $2::uuid[]) AS p(student_id, concept_id)) p ON p.student_id = sm.student_id AND p.concept_id = ms.concept_id
+     GROUP BY sm.student_id, ms.concept_id`,
+    [pairs.map((p) => p.studentId), pairs.map((p) => p.conceptId)]
+  );
+  for (const row of result.rows) {
+    out.set(`${row.student_id}:${row.concept_id}`, {
+      activeCount: row.active_count,
+      criticalCount: row.critical_count,
+      lastSeenAt: row.last_seen ? new Date(row.last_seen).toISOString() : null,
+    });
+  }
+  return out;
+}
+
 export interface MisconceptionResolutionEvidence {
   sourceType: string;
   scorePercent: number | null;

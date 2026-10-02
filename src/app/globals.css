@@ -2075,3 +2075,50 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .ta-matrix th[scope="row"], .ta-matrix thead th:first-child { text-align: left; min-width: 160px; }
 .ta-matrix summary { cursor: pointer; font-weight: 700; }
 .ta-matrix td ul { text-align: left; }
+
+/* Track A: Teacher class progress intelligence. Desktop: analytics + table side by side;
+   tablet: stacked cards; mobile: summary → recommendations → students → visuals. */
+.cpi-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; }
+.cpi-students-filter summary { cursor: pointer; }
+.cpi-layout { display: flex; flex-direction: column; gap: var(--space-4); }
+.cpi-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
+.cpi-svg { width: 100%; height: auto; display: block; }
+.cpi-axis { font-size: 11px; fill: var(--text-muted); }
+.cpi-axisline { stroke: var(--border-default); stroke-dasharray: 4 4; }
+.cpi-plot { fill: none; stroke: var(--border-default); }
+.cpi-point { fill: var(--brand); stroke: var(--surface, #fff); stroke-width: 2; cursor: pointer; }
+.cpi-legend { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--fs-sm); color: var(--text-secondary); }
+.cpi-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.cpi-phase-NOT_STARTED { background: var(--border-default); fill: var(--border-default); }
+.cpi-phase-LEARN { background: #93c5fd; fill: #93c5fd; }
+.cpi-phase-PRACTICE { background: #60a5fa; fill: #60a5fa; }
+.cpi-phase-PROVE { background: #2563eb; fill: #2563eb; }
+.cpi-phase-RETAIN { background: #059669; fill: #059669; }
+.cpi-phase-TRANSFER { background: #7c3aed; fill: #7c3aed; }
+.cpi-phase-CONSOLIDATED { background: #065f46; fill: #065f46; }
+.cpi-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.cpi-bars summary { cursor: pointer; display: grid; grid-template-columns: minmax(120px, 1fr) 2fr; gap: var(--space-1) var(--space-2); align-items: center; }
+.cpi-bar-track { display: block; background: var(--brand-subtle); border-radius: var(--radius-md); overflow: hidden; height: 12px; }
+.cpi-bar { display: block; height: 100%; background: var(--brand); border-radius: var(--radius-md); }
+.cpi-bar-value { grid-column: 2; font-size: var(--fs-sm); color: var(--text-secondary); }
+.cpi-quadrant { max-width: 420px; margin: 0 auto; }
+.cpi-quadrant-lists { display: flex; flex-direction: column; gap: var(--space-2); }
+.cpi-quadrant-lists summary { cursor: pointer; font-weight: 600; }
+.cpi-table-scroll { overflow-x: auto; }
+.cpi-grid { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.cpi-grid th, .cpi-grid td { padding: var(--space-2); border-bottom: 1px solid var(--border-default); text-align: left; vertical-align: top; }
+@media (min-width: 1200px) {
+  .cpi-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .cpi-summary, .cpi-table, .cpi-visuals { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) {
+  .cpi-summary { order: 1; }
+  .cpi-recs { order: 2; }
+  .cpi-table { order: 3; }
+  .cpi-visuals { order: 4; grid-template-columns: 1fr; }
+  .cpi-matrix-desktop { display: none; }
+  .cpi-grid thead { display: none; }
+  .cpi-grid tr { display: block; border-bottom: 1px solid var(--border-default); padding: var(--space-2) 0; }
+  .cpi-grid th, .cpi-grid td { display: block; border: 0; padding: var(--space-1) 0; }
+  .cpi-grid td::before { content: attr(data-label) ': '; color: var(--text-muted); }
+}

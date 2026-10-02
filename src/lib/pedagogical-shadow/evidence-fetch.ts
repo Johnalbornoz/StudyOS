@@ -74,8 +74,12 @@ export async function fetchStudyUSEvidenceRows(
     `,
     [studentId, conceptId],
   );
-  return result.rows.map(
-    (row: any): StudyUSEvidenceRow => ({
+  return result.rows.map(mapStudyUSEvidenceRow);
+}
+
+/** The ONE row mapping for an evidence row (shared by the single and the batched read). */
+export function mapStudyUSEvidenceRow(row: any): StudyUSEvidenceRow {
+  return {
       id: row.id,
       sourceType: row.source_type,
       result: row.result,
@@ -120,6 +124,66 @@ export async function fetchStudyUSEvidenceRows(
       // (`activeCriticalMisconception`) is what resolution actually
       // affects, never this per-attempt one.
       hasItemCriticalMisconception: row.has_item_critical_misconception === true,
-    }),
+    };
+}
+
+/**
+ * Batched read for MANY (student, concept) pairs -- the same SELECT list,
+ * joins and row mapping as `fetchStudyUSEvidenceRows`, in ONE query (class
+ * analytics must not issue one query per learner × concept). Grouped by
+ * `${studentId}:${conceptId}`; each group is ordered by timestamp ASC
+ * exactly like the single read. Read-only.
+ */
+export async function fetchStudyUSEvidenceRowsForPairs(
+  pairs: Array<{ studentId: string; conceptId: string }>,
+  client: DbExecutor = db,
+): Promise<Map<string, StudyUSEvidenceRow[]>> {
+  const out = new Map<string, StudyUSEvidenceRow[]>();
+  const unique = [...new Map(pairs.map((p) => [`${p.studentId}:${p.conceptId}`, p])).values()];
+  if (unique.length === 0) return out;
+  const result = await client.query(
+    `
+    WITH pairs AS (SELECT * FROM unnest($1::uuid[], $2::uuid[]) AS p(student_id, concept_id))
+    SELECT
+      le.student_id AS pair_student_id,
+      le.concept_id AS pair_concept_id,
+      le.id,
+      le.source_type,
+      le.result,
+      le.score_percent,
+      le.difficulty,
+      le.timestamp,
+      le.hints_used,
+      le.ai_assistance_type,
+      le.metadata->>'activityType' AS activity_type,
+      COALESCE(le.metadata->>'itemCount', de.reason_details->>'sampleSize') AS item_count,
+      le.metadata->>'correctCount' AS correct_count,
+      le.metadata->>'novel' AS novel,
+      le.metadata->'transferChallenges' AS transfer_challenges,
+      le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
+      EXISTS (
+        SELECT 1 FROM student_misconceptions sm
+        JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
+        WHERE sm.student_id = le.student_id
+          AND ms.concept_id = le.concept_id
+          AND ms.is_critical = true
+          AND sm.evidence @> jsonb_build_array(jsonb_build_object('observedByEvidenceId', le.id::text))
+      ) AS has_item_critical_misconception
+    FROM learning_evidence le
+    JOIN pairs ON pairs.student_id = le.student_id AND pairs.concept_id = le.concept_id
+    LEFT JOIN decision_events de
+      ON de.source_event_type = 'learning_evidence'
+      AND de.source_event_id = le.id
+      AND de.decision_type = 'MASTERY_UPDATED'
+    ORDER BY le.student_id, le.concept_id, le.timestamp ASC
+    `,
+    [unique.map((p) => p.studentId), unique.map((p) => p.conceptId)],
   );
+  for (const row of result.rows) {
+    const key = `${row.pair_student_id}:${row.pair_concept_id}`;
+    const list = out.get(key) ?? [];
+    list.push(mapStudyUSEvidenceRow(row));
+    out.set(key, list);
+  }
+  return out;
 }
