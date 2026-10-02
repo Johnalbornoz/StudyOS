@@ -2130,6 +2130,17 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .exv2-menu-item:hover, .exv2-menu-item:focus-visible { background: var(--error-subtle); }
 .exv2-menu-item.is-danger { color: var(--error); }
 .exv2-confirm-title { font-weight: 600; }
+.exv2-ack { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; }
+.exv2-ack input { width: 20px; height: 20px; flex: none; }
+.ex-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+.ex-card-actions:has(.exv2-menu.is-expanded) { grid-column: 1 / -1; justify-content: flex-start; }
+.ex-detail-actions { display: flex; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .ex-card-actions { flex-wrap: nowrap; }
+  .ex-card-actions:has(.exv2-menu.is-expanded) { flex-wrap: wrap; }
+  .ex-card-actions > .btn { flex: 1 1 auto; }
+  .ex-card .exv2-menu-trigger { width: auto; flex: none; }
+}
 .exv2-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .exv2-history-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--border-default); }
 .exv2-history-row:first-child { border-top: 0; }

@@ -14,7 +14,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { canUseCapability } from '@/lib/entitlements';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
-import { startSimulationAttempt, findOpenSimulationAttemptForProfile, DeliveryPolicyConfigurationError, SimulationModeNotAllowedError } from '@/lib/simulation/attempt.service';
+import { startSimulationAttempt, findOpenSimulationAttemptForProfile, DeliveryPolicyConfigurationError, SimulationModeNotAllowedError, ExamProfileArchivedError } from '@/lib/simulation/attempt.service';
 import { TimingConfigurationError } from '@/lib/simulation/plan.service';
 import { isExamProfileOwnedByStudent, isExamVersionStartableForProfile } from '@/lib/assessment/student-exam-profile.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -95,6 +95,9 @@ async function handlePOST(request: NextRequest) {
     }
     if (err instanceof DeliveryPolicyConfigurationError) {
       return NextResponse.json({ error: 'DELIVERY_POLICY_INVALID' }, { status: 409 });
+    }
+    if (err instanceof ExamProfileArchivedError) {
+      return NextResponse.json({ error: 'PROFILE_ARCHIVED' }, { status: 409 });
     }
     throw err;
   }

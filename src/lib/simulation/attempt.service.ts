@@ -22,6 +22,14 @@ export class DeliveryPolicyConfigurationError extends Error {
   }
 }
 
+/** Track B: the exam preparation profile was removed by the Student (ARCHIVED) -- it never starts a new simulation. */
+export class ExamProfileArchivedError extends Error {
+  constructor() {
+    super('PROFILE_ARCHIVED');
+    this.name = 'ExamProfileArchivedError';
+  }
+}
+
 /** Track B: the version's delivery policy does not offer this simulation type / timing mode. */
 export class SimulationModeNotAllowedError extends Error {
   constructor(public readonly reason: string) {
@@ -78,7 +86,9 @@ export async function startSimulationAttempt(params: {
    */
   presetItems?: (plan: SimulationPlan) => Promise<Record<number, ExamItemState>>;
 }): Promise<{ examAttempt: Awaited<ReturnType<typeof getExamAttempt>>; simulationAttempt: SimulationAttempt; planId: string }> {
-  // Track B: validate the version's delivery policy BEFORE writing anything.
+  // Track B: validate the profile and the version's delivery policy BEFORE writing anything.
+  const profileRow = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1`, [params.examProfileId]);
+  if (profileRow.rows[0]?.status === 'ARCHIVED') throw new ExamProfileArchivedError();
   const versionRow = await db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [params.examVersionId]);
   const parsedPolicy = parseDeliveryPolicy(versionRow.rows[0]?.navigation_rules ?? null);
   if (!parsedPolicy.ok) throw new DeliveryPolicyConfigurationError(parsedPolicy.detail);

@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
   const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROFILE_VIEW');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]);
+  // Track B: a preparation the Student removed (ARCHIVED) is no longer part of it.
+  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' ORDER BY created_at DESC`, [studentId]);
   return NextResponse.json({ success: true, data: { profiles: result.rows } });
 }
 

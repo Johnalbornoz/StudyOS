@@ -7,7 +7,7 @@
  * not re-implement it, matching the established pattern of every prior
  * phase's service layer.
  */
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import type { GoalType, PreparationGoal, StudentExamProfile } from './types';
 
 function toProfile(r: any): StudentExamProfile {
@@ -23,6 +23,8 @@ function toProfile(r: any): StudentExamProfile {
     timezone: r.timezone,
     institutionTargetId: r.institution_target_id,
     status: r.status,
+    archivedAt: r.archived_at ? (r.archived_at instanceof Date ? r.archived_at.toISOString() : r.archived_at) : null,
+    replacedByProfileId: r.replaced_by_profile_id ?? null,
   };
 }
 function toGoal(r: any): PreparationGoal {
@@ -39,11 +41,16 @@ export async function createStudentExamProfile(params: {
   examDate?: string;
   timezone?: string;
   institutionTargetId?: string;
-}): Promise<StudentExamProfile> {
-  const result = await db.query(
+}, client: DbExecutor = db): Promise<StudentExamProfile> {
+  // Track B: at most one non-archived profile per Student and exam
+  // (uq_student_exam_profiles_one_active). A double click or a retry gets the
+  // SAME active profile back instead of a duplicate preparation.
+  const result = await client.query(
     `INSERT INTO student_exam_profiles (
        student_id, exam_definition_id, exam_version_id, purpose, programme_context, subject_focus, exam_date, timezone, institution_target_id
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     ON CONFLICT (student_id, exam_definition_id) WHERE status <> 'ARCHIVED' DO NOTHING
+     RETURNING *`,
     [
       params.studentId,
       params.examDefinitionId,
@@ -56,7 +63,9 @@ export async function createStudentExamProfile(params: {
       params.institutionTargetId ?? null,
     ]
   );
-  return toProfile(result.rows[0]);
+  if (result.rows[0]) return toProfile(result.rows[0]);
+  const existing = await client.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 AND exam_definition_id = $2 AND status <> 'ARCHIVED'`, [params.studentId, params.examDefinitionId]);
+  return toProfile(existing.rows[0]);
 }
 
 export async function addPreparationGoal(params: { studentExamProfileId: string; goalType: GoalType; targetValue?: string; competencyId?: string }): Promise<PreparationGoal> {
@@ -108,8 +117,12 @@ export async function getStudentExamProfile(profileId: string): Promise<StudentE
  * rather than making a self-HTTP-call, matching every other F13/F14
  * page's own established pattern.
  */
-export async function listStudentExamProfiles(studentId: string): Promise<StudentExamProfile[]> {
-  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]);
+export async function listStudentExamProfiles(studentId: string, opts: { includeArchived?: boolean } = {}): Promise<StudentExamProfile[]> {
+  // Track B: a profile the Student removed from their preparation (ARCHIVED) is not part of it any more.
+  const result = await db.query(
+    `SELECT * FROM student_exam_profiles WHERE student_id = $1 ${opts.includeArchived ? '' : `AND status <> 'ARCHIVED'`} ORDER BY created_at DESC`,
+    [studentId]
+  );
   return result.rows.map(toProfile);
 }
 

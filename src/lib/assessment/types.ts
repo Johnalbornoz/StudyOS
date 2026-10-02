@@ -127,6 +127,10 @@ export interface StudentExamProfile {
   timezone: string | null;
   institutionTargetId: string | null;
   status: ProfileStatus;
+  /** Track B: when the Student removed it from their preparation (ARCHIVED). */
+  archivedAt?: string | null;
+  /** Track B: the clean profile that replaced it ("Empezar de nuevo"). */
+  replacedByProfileId?: string | null;
 }
 
 export interface PreparationGoal {

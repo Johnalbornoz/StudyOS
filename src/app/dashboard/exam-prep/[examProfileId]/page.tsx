@@ -23,6 +23,7 @@ import {
 } from '@/lib/experience/exam-prep';
 import { StartSimulationPanel, type StartSimulationLabels } from './StartSimulationPanel';
 import { AttemptHistory } from './AttemptHistory';
+import { ProfileMenu } from '../ProfileMenu';
 import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
 import { getQualificationAggregate, listProfileAttempts, listVersionAreas } from '@/lib/exam-core/catalog.service';
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
@@ -65,6 +66,45 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   if (!profile || profile.studentId !== studentId) notFound();
 
   const definition = await getExamDefinition(profile.examDefinitionId);
+  const tr0 = t as Record<string, string>;
+  const profileMenuLabels: Record<string, string> = Object.fromEntries(
+    Object.entries(tr0).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
+  );
+
+  // Removed from the Student's preparation: never operates as an active preparation again
+  // (no readiness, no start panel); its completed results stay reachable.
+  if (profile.status === 'ARCHIVED') {
+    if (profile.replacedByProfileId) redirect(`/dashboard/exam-prep/${profile.replacedByProfileId}`);
+    const archivedAttempts = await listProfileAttempts(profile.id);
+    return (
+      <div className="xp-page xp-page--wide">
+        <PageIntro crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>} title={definition?.name ?? profile.examDefinitionId} lead={tr0['examPrep.profile.archived.lead']} />
+        <section className="card ex-status" aria-labelledby="ex-archived-title">
+          <h2 id="ex-archived-title" className="ex-status-title">{tr0['examPrep.profile.archived.title']}</h2>
+          <p className="ex-status-body">{tr0['examPrep.profile.archived.body']}</p>
+          <div className="xr-next-actions">
+            <ProfileMenu profileId={profile.id} examName={definition?.name ?? ''} hasInProgress={false} labels={profileMenuLabels} afterRemove="dashboard" actions={['restart']} />
+            <Link className="btn btn-secondary" href="/dashboard/exams">{t['exv2.page.cta']}</Link>
+          </div>
+        </section>
+        <section className="card ex-status" aria-labelledby="ex-history-title">
+          <h2 id="ex-history-title" className="ex-status-title">{t['examPrep.history.title']}</h2>
+          <AttemptHistory
+            locale={locale}
+            rows={archivedAttempts.filter((a) => a.status === 'COMPLETED').map((a) => ({
+              id: a.id,
+              name: `${definition?.name ?? ''} · ${a.instanceMode ? tr0[a.instanceMode === 'MOCK' ? (a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced') : `exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr0[`ex.type.${a.simulationType}`] ?? a.simulationType}`,
+              status: a.status,
+              createdAt: a.createdAt,
+              result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
+            }))}
+            labels={Object.fromEntries(Object.entries(tr0).filter(([k]) => k.startsWith('exv2.') || k.startsWith('examPrep.history.') || k.startsWith('examPrep.attempt.status.')))}
+          />
+        </section>
+      </div>
+    );
+  }
+
   const examVersion = profile.examVersionId
     ? await getExamVersion(profile.examVersionId)
     : await getPublishedExamVersion(profile.examDefinitionId);
@@ -115,6 +155,11 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
         crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
         title={definition?.name ?? profile.examDefinitionId}
         lead={dateLine}
+        actions={
+          <div className="ex-detail-actions">
+            <ProfileMenu profileId={profile.id} examName={definition?.name ?? ''} hasInProgress={!!openAttempt} labels={profileMenuLabels} afterRemove="dashboard" />
+          </div>
+        }
       />
       <p className="ui-hint" style={{ margin: 0 }}>
         {[definition?.examFamily ? tr[`exam.family.${definition.examFamily}`] ?? definition.examFamily : null, examVersion ? `${t['examPrep.version']}: ${examVersion.versionLabel}` : null, sitting ? `${t['exam.sitting']}: ${sitting}` : null, contentStatus ? tr[`exam.contentStatus.${contentStatus}`] : null]

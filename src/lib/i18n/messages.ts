@@ -1304,6 +1304,21 @@ export type MessageKey =
   | 'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS'
   | 'exv2.fact.calculator.allowed'
   | 'exv2.family.PAA'
+  | 'examPrep.profile.remove.action'
+  | 'examPrep.profile.remove.title'
+  | 'examPrep.profile.remove.body'
+  | 'examPrep.profile.remove.inProgress'
+  | 'examPrep.profile.remove.cta'
+  | 'examPrep.profile.restart.action'
+  | 'examPrep.profile.restart.title'
+  | 'examPrep.profile.restart.body'
+  | 'examPrep.profile.restart.inProgress'
+  | 'examPrep.profile.restart.cta'
+  | 'examPrep.profile.inProgress.ack'
+  | 'examPrep.profile.error'
+  | 'examPrep.profile.archived.title'
+  | 'examPrep.profile.archived.lead'
+  | 'examPrep.profile.archived.body'
   | 'exv2.menu.more'
   | 'exv2.delete.NOT_STARTED.action'
   | 'exv2.delete.NOT_STARTED.title'
@@ -3261,6 +3276,21 @@ const es: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'El simulacro completo incluye todas las áreas.',
   'exv2.fact.calculator.allowed': 'calculadora permitida',
   'exv2.family.PAA': 'PAA',
+  'examPrep.profile.remove.action': 'Quitar de mi preparación',
+  'examPrep.profile.remove.title': '¿Quieres quitar este examen de tu preparación?',
+  'examPrep.profile.remove.body': 'Se quitará de tu plan de preparación. Tus resultados anteriores y lo que ya aprendiste no se perderán.',
+  'examPrep.profile.remove.inProgress': 'Tienes un simulacro en curso. Al quitar esta preparación, ese intento se cancelará y no podrás continuarlo.',
+  'examPrep.profile.remove.cta': 'Quitar preparación',
+  'examPrep.profile.restart.action': 'Empezar de nuevo',
+  'examPrep.profile.restart.title': '¿Quieres empezar esta preparación de nuevo?',
+  'examPrep.profile.restart.body': 'Se creará una preparación nueva y limpia para este examen, con tu misma fecha y objetivo. Tus resultados anteriores y lo que ya aprendiste no se perderán.',
+  'examPrep.profile.restart.inProgress': 'Tienes un simulacro en curso. Al empezar de nuevo, ese intento se cancelará y no podrás continuarlo.',
+  'examPrep.profile.restart.cta': 'Empezar de nuevo',
+  'examPrep.profile.inProgress.ack': 'Entiendo que el simulacro en curso se cancelará.',
+  'examPrep.profile.error': 'No pudimos completar la acción. Inténtalo de nuevo.',
+  'examPrep.profile.archived.title': 'Quitaste este examen de tu preparación',
+  'examPrep.profile.archived.lead': 'Preparación quitada',
+  'examPrep.profile.archived.body': 'Ya no forma parte de tu plan. Tus resultados anteriores siguen disponibles abajo y lo que aprendiste se conserva. Puedes empezar una preparación nueva cuando quieras.',
   'exv2.menu.more': 'Más acciones',
   'exv2.delete.NOT_STARTED.action': 'Eliminar examen',
   'exv2.delete.NOT_STARTED.title': '¿Quieres eliminar este examen?',
@@ -5204,6 +5234,21 @@ const en: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'The full mock includes every area.',
   'exv2.fact.calculator.allowed': 'calculator allowed',
   'exv2.family.PAA': 'PAA',
+  'examPrep.profile.remove.action': 'Remove from my preparation',
+  'examPrep.profile.remove.title': 'Do you want to remove this exam from your preparation?',
+  'examPrep.profile.remove.body': 'It will be removed from your preparation plan. Your previous results and what you have learned will not be lost.',
+  'examPrep.profile.remove.inProgress': 'You have a simulation in progress. If you remove this preparation, that attempt will be cancelled and you will not be able to continue it.',
+  'examPrep.profile.remove.cta': 'Remove preparation',
+  'examPrep.profile.restart.action': 'Start over',
+  'examPrep.profile.restart.title': 'Do you want to start this preparation over?',
+  'examPrep.profile.restart.body': 'A new, clean preparation will be created for this exam, with the same date and goal. Your previous results and what you have learned will not be lost.',
+  'examPrep.profile.restart.inProgress': 'You have a simulation in progress. If you start over, that attempt will be cancelled and you will not be able to continue it.',
+  'examPrep.profile.restart.cta': 'Start over',
+  'examPrep.profile.inProgress.ack': 'I understand that the simulation in progress will be cancelled.',
+  'examPrep.profile.error': 'We could not complete the action. Please try again.',
+  'examPrep.profile.archived.title': 'You removed this exam from your preparation',
+  'examPrep.profile.archived.lead': 'Preparation removed',
+  'examPrep.profile.archived.body': 'It is no longer part of your plan. Your previous results are still available below and what you learned is kept. You can start a new preparation whenever you like.',
   'exv2.menu.more': 'More actions',
   'exv2.delete.NOT_STARTED.action': 'Delete exam',
   'exv2.delete.NOT_STARTED.title': 'Do you want to delete this exam?',
@@ -7147,6 +7192,21 @@ const de: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'Die vollständige Probeprüfung umfasst alle Bereiche.',
   'exv2.fact.calculator.allowed': 'Taschenrechner erlaubt',
   'exv2.family.PAA': 'PAA',
+  'examPrep.profile.remove.action': 'Aus meiner Vorbereitung entfernen',
+  'examPrep.profile.remove.title': 'Möchtest du diese Prüfung aus deiner Vorbereitung entfernen?',
+  'examPrep.profile.remove.body': 'Sie wird aus deinem Vorbereitungsplan entfernt. Deine bisherigen Ergebnisse und was du gelernt hast, gehen nicht verloren.',
+  'examPrep.profile.remove.inProgress': 'Du hast eine laufende Simulation. Wenn du diese Vorbereitung entfernst, wird dieser Versuch abgebrochen und du kannst ihn nicht fortsetzen.',
+  'examPrep.profile.remove.cta': 'Vorbereitung entfernen',
+  'examPrep.profile.restart.action': 'Neu beginnen',
+  'examPrep.profile.restart.title': 'Möchtest du diese Vorbereitung neu beginnen?',
+  'examPrep.profile.restart.body': 'Für diese Prüfung wird eine neue, saubere Vorbereitung mit demselben Datum und Ziel erstellt. Deine bisherigen Ergebnisse und was du gelernt hast, gehen nicht verloren.',
+  'examPrep.profile.restart.inProgress': 'Du hast eine laufende Simulation. Wenn du neu beginnst, wird dieser Versuch abgebrochen und du kannst ihn nicht fortsetzen.',
+  'examPrep.profile.restart.cta': 'Neu beginnen',
+  'examPrep.profile.inProgress.ack': 'Ich verstehe, dass die laufende Simulation abgebrochen wird.',
+  'examPrep.profile.error': 'Die Aktion konnte nicht abgeschlossen werden. Bitte versuche es erneut.',
+  'examPrep.profile.archived.title': 'Du hast diese Prüfung aus deiner Vorbereitung entfernt',
+  'examPrep.profile.archived.lead': 'Vorbereitung entfernt',
+  'examPrep.profile.archived.body': 'Sie ist nicht mehr Teil deines Plans. Deine bisherigen Ergebnisse findest du weiterhin unten, und was du gelernt hast, bleibt erhalten. Du kannst jederzeit eine neue Vorbereitung beginnen.',
   'exv2.menu.more': 'Weitere Aktionen',
   'exv2.delete.NOT_STARTED.action': 'Prüfung löschen',
   'exv2.delete.NOT_STARTED.title': 'Möchtest du diese Prüfung löschen?',
@@ -9090,6 +9150,21 @@ const fr: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'L’examen blanc complet comprend toutes les parties.',
   'exv2.fact.calculator.allowed': 'calculatrice autorisée',
   'exv2.family.PAA': 'PAA',
+  'examPrep.profile.remove.action': 'Retirer de ma préparation',
+  'examPrep.profile.remove.title': 'Veux-tu retirer cet examen de ta préparation ?',
+  'examPrep.profile.remove.body': 'Il sera retiré de ton plan de préparation. Tes résultats précédents et ce que tu as appris ne seront pas perdus.',
+  'examPrep.profile.remove.inProgress': 'Tu as une simulation en cours. Si tu retires cette préparation, cette tentative sera annulée et tu ne pourras pas la continuer.',
+  'examPrep.profile.remove.cta': 'Retirer la préparation',
+  'examPrep.profile.restart.action': 'Recommencer',
+  'examPrep.profile.restart.title': 'Veux-tu recommencer cette préparation ?',
+  'examPrep.profile.restart.body': 'Une nouvelle préparation, vierge, sera créée pour cet examen, avec la même date et le même objectif. Tes résultats précédents et ce que tu as appris ne seront pas perdus.',
+  'examPrep.profile.restart.inProgress': 'Tu as une simulation en cours. Si tu recommences, cette tentative sera annulée et tu ne pourras pas la continuer.',
+  'examPrep.profile.restart.cta': 'Recommencer',
+  'examPrep.profile.inProgress.ack': 'Je comprends que la simulation en cours sera annulée.',
+  'examPrep.profile.error': 'Nous n’avons pas pu terminer l’action. Réessaie.',
+  'examPrep.profile.archived.title': 'Tu as retiré cet examen de ta préparation',
+  'examPrep.profile.archived.lead': 'Préparation retirée',
+  'examPrep.profile.archived.body': 'Il ne fait plus partie de ton plan. Tes résultats précédents restent disponibles ci-dessous et ce que tu as appris est conservé. Tu peux commencer une nouvelle préparation quand tu veux.',
   'exv2.menu.more': 'Plus d’actions',
   'exv2.delete.NOT_STARTED.action': 'Supprimer l’examen',
   'exv2.delete.NOT_STARTED.title': 'Veux-tu supprimer cet examen ?',
@@ -11033,6 +11108,21 @@ const pt: Messages = {
   'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'O simulado completo inclui todas as áreas.',
   'exv2.fact.calculator.allowed': 'calculadora permitida',
   'exv2.family.PAA': 'PAA',
+  'examPrep.profile.remove.action': 'Remover da minha preparação',
+  'examPrep.profile.remove.title': 'Quer remover este exame da sua preparação?',
+  'examPrep.profile.remove.body': 'Ele será removido do seu plano de preparação. Seus resultados anteriores e o que você já aprendeu não serão perdidos.',
+  'examPrep.profile.remove.inProgress': 'Você tem um simulado em andamento. Ao remover esta preparação, essa tentativa será cancelada e você não poderá continuá-la.',
+  'examPrep.profile.remove.cta': 'Remover preparação',
+  'examPrep.profile.restart.action': 'Começar de novo',
+  'examPrep.profile.restart.title': 'Quer começar esta preparação de novo?',
+  'examPrep.profile.restart.body': 'Será criada uma preparação nova e limpa para este exame, com a mesma data e objetivo. Seus resultados anteriores e o que você já aprendeu não serão perdidos.',
+  'examPrep.profile.restart.inProgress': 'Você tem um simulado em andamento. Ao começar de novo, essa tentativa será cancelada e você não poderá continuá-la.',
+  'examPrep.profile.restart.cta': 'Começar de novo',
+  'examPrep.profile.inProgress.ack': 'Entendo que o simulado em andamento será cancelado.',
+  'examPrep.profile.error': 'Não foi possível concluir a ação. Tente novamente.',
+  'examPrep.profile.archived.title': 'Você removeu este exame da sua preparação',
+  'examPrep.profile.archived.lead': 'Preparação removida',
+  'examPrep.profile.archived.body': 'Ele não faz mais parte do seu plano. Seus resultados anteriores continuam disponíveis abaixo e o que você aprendeu é mantido. Você pode começar uma nova preparação quando quiser.',
   'exv2.menu.more': 'Mais ações',
   'exv2.delete.NOT_STARTED.action': 'Excluir exame',
   'exv2.delete.NOT_STARTED.title': 'Quer excluir este exame?',

@@ -68,6 +68,7 @@ export class ExamInstanceError extends Error {
       | 'TIMING_NOT_ALLOWED_FOR_MODE'
       | 'NO_ITEMS_FOR_FORM'
       | 'CONFIRMATION_REQUIRED'
+      | 'PROFILE_ARCHIVED'
       | 'ATTEMPT_IN_PROGRESS',
     detail?: string
   ) {
@@ -243,6 +244,10 @@ export async function createExamInstance(params: {
   focusObjectiveIds?: string[];
 }): Promise<ExamInstance> {
   if (params.focusObjectiveIds?.length && params.mode !== 'PRACTICE') throw new ExamInstanceError('INVALID_STATE', 'skill focus is practice-only');
+  // A preparation the Student removed (ARCHIVED) never gets new exams.
+  const prof = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1 AND student_id = $2`, [params.examProfileId, params.studentId]);
+  if (!prof.rows[0]) throw new ExamInstanceError('NOT_FOUND', 'exam profile');
+  if (prof.rows[0].status === 'ARCHIVED') throw new ExamInstanceError('PROFILE_ARCHIVED');
   const components = await listComponentsForVersion(params.examVersionId);
   const ids = [...new Set(params.componentIds)];
   if (ids.length === 0) throw new ExamInstanceError('COMPONENT_NOT_IN_VERSION', 'select at least one paper');
@@ -370,9 +375,12 @@ export async function deleteExamInstance(instanceId: string, params: { confirm: 
 export async function newInstanceFromExisting(instanceId: string): Promise<ExamInstance> {
   const prev = await getExamInstance(instanceId);
   if (!prev) throw new ExamInstanceError('NOT_FOUND');
+  // The old preparation may have been removed or restarted since: the new attempt goes to the ACTIVE one.
+  const prevProfile = (await db.query(`SELECT exam_definition_id, status FROM student_exam_profiles WHERE id = $1`, [prev.examProfileId])).rows[0];
+  const examProfileId = prevProfile?.status === 'ARCHIVED' ? await ensureExamProfile(prev.studentId, prevProfile.exam_definition_id, prev.examVersionId) : prev.examProfileId;
   return createExamInstance({
     studentId: prev.studentId,
-    examProfileId: prev.examProfileId,
+    examProfileId,
     examVersionId: prev.examVersionId,
     componentIds: prev.componentIds,
     mode: prev.mode,
@@ -467,9 +475,11 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
 
 /** Ensures the Student has an exam profile for the version's definition (reused when one exists). */
 export async function ensureExamProfile(studentId: string, examDefinitionId: string, examVersionId: string): Promise<string> {
+  // The Student's ACTIVE preparation for this exam (one at most); an archived one is never reused --
+  // choosing the exam again after "Quitar de mi preparación" starts a new, clean preparation.
   const existing = await db.query(
-    `SELECT id FROM student_exam_profiles WHERE student_id = $1 AND exam_definition_id = $2 AND (exam_version_id = $3 OR exam_version_id IS NULL) ORDER BY created_at DESC LIMIT 1`,
-    [studentId, examDefinitionId, examVersionId]
+    `SELECT id FROM student_exam_profiles WHERE student_id = $1 AND exam_definition_id = $2 AND status <> 'ARCHIVED' ORDER BY created_at DESC LIMIT 1`,
+    [studentId, examDefinitionId]
   );
   if (existing.rows[0]) {
     await db.query(`UPDATE student_exam_profiles SET exam_version_id = $2 WHERE id = $1 AND exam_version_id IS NULL`, [existing.rows[0].id, examVersionId]);

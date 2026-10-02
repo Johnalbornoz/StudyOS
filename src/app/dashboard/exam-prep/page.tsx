@@ -14,6 +14,7 @@ import { PageIntro } from '@/components/ui/PageIntro';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
 import { calendarDaysUntil } from '@/lib/experience/goal';
 import { CreateExamProfileForm } from './CreateExamProfileForm';
+import { ProfileCard } from './ProfileCard';
 
 /**
  * F14 Workstream A -- Student Exam Prep landing (task section 4). This
@@ -51,6 +52,9 @@ export default async function ExamPrepPage() {
     OFFICIAL_LICENSED: t['exam.contentStatus.OFFICIAL_LICENSED'],
   };
 
+  const profileMenuLabels: Record<string, string> = Object.fromEntries(
+    Object.entries(tr).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
+  );
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateLine = (examDate: string | null) => {
     if (!examDate) return t['examPrep.noExamDateSet'];
@@ -95,27 +99,36 @@ export default async function ExamPrepPage() {
         <>
           <ul className="ex-list">
             {rows.map(({ profile, definitionName, family, snapshot, openAttempt }) => (
-              <li key={profile.id} className="card ex-card">
-                <div>
-                  <p className="ex-goal-kicker">{family ? familyNames[family] ?? family : t['ex.goalKicker']}</p>
-                  <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
-                  <p className="ex-card-meta">{dateLine(profile.examDate)}</p>
-                  <div className="ex-card-state">
-                    {!profile.examVersionId ? (
-                      <StatusBadge label={t['examPrep.noExamVersion']} tone="neutral" />
-                    ) : snapshot && snapshot.overallStatus !== 'INSUFFICIENT_EVIDENCE' ? (
-                      <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`]} tone={toneForReadinessStatus(snapshot.overallStatus)} />
-                    ) : (
-                      <span>{t['ex.formingTitle']}</span>
-                    )}
-                  </div>
-                </div>
-                {openAttempt ? (
-                  <Link href={`/dashboard/exam-prep/attempt/${openAttempt.id}`} className="btn btn-primary">{t['examPrep.inProgress.resume']}</Link>
-                ) : (
-                  <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{t['ex.viewPrep']}</Link>
-                )}
-              </li>
+              <ProfileCard
+                key={profile.id}
+                profileId={profile.id}
+                examName={definitionName}
+                hasInProgress={!!openAttempt}
+                labels={profileMenuLabels}
+                info={
+                  <>
+                    <p className="ex-goal-kicker">{family ? familyNames[family] ?? family : t['ex.goalKicker']}</p>
+                    <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
+                    <p className="ex-card-meta">{dateLine(profile.examDate)}</p>
+                    <div className="ex-card-state">
+                      {!profile.examVersionId ? (
+                        <StatusBadge label={t['examPrep.noExamVersion']} tone="neutral" />
+                      ) : snapshot && snapshot.overallStatus !== 'INSUFFICIENT_EVIDENCE' ? (
+                        <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`]} tone={toneForReadinessStatus(snapshot.overallStatus)} />
+                      ) : (
+                        <span>{t['ex.formingTitle']}</span>
+                      )}
+                    </div>
+                  </>
+                }
+                primary={
+                  openAttempt ? (
+                    <Link href={`/dashboard/exam-prep/attempt/${openAttempt.id}`} className="btn btn-primary">{t['examPrep.inProgress.resume']}</Link>
+                  ) : (
+                    <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{t['ex.viewPrep']}</Link>
+                  )
+                }
+              />
             ))}
           </ul>
           {/* With an exam already set up, configuration is secondary. */}
