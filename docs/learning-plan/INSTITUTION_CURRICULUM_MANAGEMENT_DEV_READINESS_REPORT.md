@@ -8,11 +8,11 @@
 
 | Item | Value |
 |---|---|
-| Commit SHA | `{{SHA}}` |
-| Immutable DEV URL | {{URL}} |
+| Commit SHA | `eafac86a17eacb4e5fee709eb51a5fb5b4859b25` (this report was added afterwards in a docs-only commit) |
+| Immutable DEV URL | https://study-cpt73vi5p-study-so.vercel.app (deployment `dpl_9EkFMkGqHhc1AoUJZuap6tTUJ9Be`; `/api/version` and `/api/diagnostics/preview-db` verified) |
 | Shared alias | **not moved** |
 | DB fingerprint | `2a29b99ee14a22b4` (DEV) |
-| Migrations | `20261018_1500_track_a_institution_curriculum_v2.sql` (new) — ledger {{LEDGER}}, **0 pending**, **0 drift** |
+| Migrations | `20261018_1500_track_a_institution_curriculum_v2.sql` (new) — ledger 53 (Track A complete + 7 Track B externals 20261019–20261025_1000), **0 pending**, **0 drift** |
 | Data seed (DEV) | `seed-education-authorities.ts`: SEP (MX), MEN (CO), Secretaría de Educación del Distrito (Bogotá) and Secretaría de Educación de Antioquia (territorial, under MEN). Metadata only: `STRUCTURE_NOT_IMPORTED`, no invented objectives. |
 
 ## 2. Before / after
@@ -70,7 +70,13 @@
 | Typecheck | clean | — |
 | Build | OK | OK (Vercel) |
 | Migration cert | ALL CHECKS PASSED | — |
-{{SUITES}}
+| Roles HTTP E2E | 171 / 171 | 165 / 174 — the 9 failures all come from `GENERATION_FAILED`: hosted DEV AI daily cap reached (596 calls, `RATE_LIMIT`, resets 00:00 UTC). Environmental; unrelated to V2 |
+| Teacher HTTP E2E | 119 / 119 | 111 / 119 — same AI-cap root cause (student starts an AI activity → dependent result checks) |
+| Institution HTTP E2E | 100 / 100 | 100 / 100 |
+| Learning Plan HTTP E2E | 96 / 96 | 96 / 96 |
+| Class Progress HTTP E2E | 35 / 35 | 35 / 35 |
+| UX notifications + intelligence E2E | 53 / 53 | 53 / 53 |
+| **Curriculum V2 + governance E2E (new)** | **138 / 138** | **138 / 138** |
 
 The curriculum V2 HTTP E2E (`scripts/operations/track-a-curriculum-v2-e2e-http.ts`) covers scenarios 54–63 and 103–109 against real Clerk DEV identities, cross-checking the DB read-only:
 
@@ -109,7 +115,7 @@ The curriculum V2 HTTP E2E (`scripts/operations/track-a-curriculum-v2-e2e-http.t
 | STUDYUS_CONTENT_COVERAGE_SEPARATION | READY FOR MANUAL E2E |
 | INSTITUTION_CURRICULUM_SECURITY | PASS (automated) |
 | INSTITUTION_CURRICULUM_DATA_INTEGRITY | PASS (automated) |
-| HOSTED_DEV_READY_FOR_INSTITUTION_CURRICULUM_MANUAL_E2E | {{HOSTED_VERDICT}} |
+| HOSTED_DEV_READY_FOR_INSTITUTION_CURRICULUM_MANUAL_E2E | READY (all V2 / governance checks pass on hosted; AI-cap failures in roles / teacher are environmental and pre-existing) |
 | OFFICIAL_CURRICULUM_AUTHORITY_MODEL | READY FOR MANUAL E2E |
 | MEXICO_SEP_CURRICULUM_SUPPORT | READY FOR MANUAL E2E (metadata + provenance; official structure not imported) |
 | COLOMBIA_EDUCATION_AUTHORITY_SUPPORT | READY FOR MANUAL E2E (MEN + 2 territorial Secretarías; structure not imported) |
