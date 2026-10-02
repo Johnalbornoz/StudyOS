@@ -41,6 +41,11 @@ export const DEV_CLERK_INSTANCE = 'shining-impala-8101.clerk.accounts.dev';
 export const FIXTURE_TAG = 'studyus_track_a';
 export const INST_A_NAME = 'TA Institución A';
 export const INST_B_NAME = 'TA Institución B';
+export const INST_LP_NAME = 'TA Institución LP';
+export const LP_CLASS_NAME = 'LP Matemáticas 11';
+export const LP_EXAM_PURPOSE = 'TRACK_A_LP_E2E';
+/** DB-only synthetic learners of the LP class (no Clerk account, never sign in). */
+export const LP_SYNTHETIC_PREFIX = 'synthetic-ta-lp-';
 export const CANONICAL_CONCEPT_NAME = 'Linear Equations';
 
 export const IDENTITIES = {
@@ -64,6 +69,11 @@ export const IDENTITIES = {
   'coord-b': { first: 'Bernardo', last: 'Coordinador B', roles: ['TEACHER'] as const },
   'coord-a': { first: 'Andrea', last: 'Coordinadora A', roles: [] as const },
   'coord-x': { first: 'Ximena', last: 'Invitada X', roles: [] as const },
+  // Learning Plan Orchestrator E2E: an independent Student (no institution),
+  // the Teacher of "LP Matemáticas 11" and the coordinator of TA Institución LP.
+  'lp-student': { first: 'Lucía', last: 'Independiente', roles: ['STUDENT'] as const },
+  'lp-teacher': { first: 'Lorenzo', last: 'Docente LP', roles: ['TEACHER'] as const },
+  'lp-coord': { first: 'Laura', last: 'Coordinadora LP', roles: [] as const },
 } as const;
 /** Identities created by the invitation flow itself, never by `provision`. */
 export const SIGN_UP_LATER: ReadonlySet<string> = new Set(['coord-a', 'coord-x']);
@@ -246,6 +256,7 @@ async function manualPrep() {
 async function teacherReset() {
   assertDev();
   await institutionReset();
+  await learningPlanTeardown();
   const { upsertAcademicProfile } = await import('@/services/academic-profile.service');
   const user = async (tag: Tag) => (await db.query(`SELECT id FROM users WHERE email = $1`, [emailFor(tag)])).rows[0]?.id as string;
   const instA = (await db.query(`SELECT id FROM institutions WHERE name = $1`, [INST_A_NAME])).rows[0]?.id as string;
@@ -289,6 +300,101 @@ async function teacherReset() {
 }
 
 /**
+ * Learning Plan Orchestrator rows filed under fixture students / classes /
+ * institutions / users (plan entries + sources + events, recommendations,
+ * class plans, institution curricula, proposals). Children before parents;
+ * scoped strictly to the ids given (fixtures only).
+ */
+export async function purgeLearningPlanRows(scope: { studentIds?: string[]; classIds?: string[]; institutionIds?: string[]; userIds?: string[]; learnerConceptIds?: string[] }): Promise<void> {
+  const students = scope.studentIds ?? [];
+  const classes = scope.classIds ?? [];
+  const insts = scope.institutionIds ?? [];
+  const users = scope.userIds ?? [];
+  const concepts = scope.learnerConceptIds ?? [];
+  const q = (sql: string, p: unknown[]) => db.query(sql, p);
+  // Plan entries of the given learner concepts (and their sources) go with the concepts.
+  await q(
+    `DELETE FROM student_concept_sources s USING student_plan_entries e
+     WHERE s.student_id = e.student_id AND s.canonical_concept_id = e.canonical_concept_id AND e.learner_concept_id = ANY($1::uuid[])`,
+    [concepts]
+  );
+  await q(`DELETE FROM student_plan_entries WHERE learner_concept_id = ANY($1::uuid[])`, [concepts]);
+  await q(`DELETE FROM student_concept_sources WHERE student_id = ANY($1::uuid[]) OR class_id = ANY($2::uuid[]) OR institution_id = ANY($3::uuid[]) OR added_by_user_id = ANY($4::uuid[])`, [students, classes, insts, users]);
+  await q(`DELETE FROM student_plan_events WHERE student_id = ANY($1::uuid[]) OR actor_user_id = ANY($2::uuid[])`, [students, users]);
+  await q(`DELETE FROM learning_recommendations WHERE student_id = ANY($1::uuid[])`, [students]);
+  await q(`DELETE FROM student_plan_entries WHERE student_id = ANY($1::uuid[])`, [students]);
+  await q(`DELETE FROM curriculum_events WHERE class_id = ANY($1::uuid[]) OR institution_id = ANY($2::uuid[]) OR actor_user_id = ANY($3::uuid[])`, [classes, insts, users]);
+  await q(`DELETE FROM concept_proposals WHERE class_id = ANY($1::uuid[]) OR institution_id = ANY($2::uuid[]) OR requested_by_user_id = ANY($3::uuid[])`, [classes, insts, users]);
+  await q(`DELETE FROM class_plan_concepts WHERE class_id = ANY($1::uuid[]) OR added_by_user_id = ANY($2::uuid[])`, [classes, users]);
+  await q(`DELETE FROM institution_curriculum_concepts WHERE curriculum_id IN (SELECT id FROM institution_curricula WHERE institution_id = ANY($1::uuid[])) OR added_by_user_id = ANY($2::uuid[])`, [insts, users]);
+  await q(`DELETE FROM institution_curricula WHERE institution_id = ANY($1::uuid[])`, [insts]);
+}
+
+/**
+ * Learning Plan Orchestrator E2E teardown (DEV fixtures only): TA Institución
+ * LP with everything filed under it, the DB-only synthetic learners with all
+ * their rows, the independent Student's (lp-student) learning data, the LP
+ * exam attempts and what the LP class added to Sofía's plan. Every other
+ * fixture and every real account is untouched.
+ */
+export async function learningPlanTeardown(): Promise<void> {
+  assertDev();
+  const q = (sql: string, p: unknown[]) => db.query(sql, p);
+  const rows = async (sql: string, p: unknown[] = []) => (await db.query(sql, p)).rows.map((r: any) => r.id as string);
+  const insts = await rows(`SELECT id FROM institutions WHERE name = $1`, [INST_LP_NAME]);
+  const classIds = await rows(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  const synthetic = await rows(`SELECT id FROM students WHERE clerk_id LIKE $1`, [`${LP_SYNTHETIC_PREFIX}%`]);
+  const lpStudent = await rows(`SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE u.email = $1`, [emailFor('lp-student')]);
+  const sofia = await rows(`SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE u.email = $1`, [emailFor('student-a')]);
+  const lpUsers = await rows(`SELECT id FROM users WHERE email = ANY($1::text[])`, [[emailFor('lp-teacher'), emailFor('lp-coord')]]);
+  const learners = [...synthetic, ...lpStudent];
+
+  // Exam data of the LP scenarios.
+  const profiles = await rows(
+    `SELECT id FROM student_exam_profiles WHERE student_id = ANY($1::uuid[]) OR (student_id = ANY($2::uuid[]) AND purpose = $3)`,
+    [learners, sofia, LP_EXAM_PURPOSE]
+  );
+  const attempts = await rows(`SELECT id FROM exam_attempts WHERE student_exam_profile_id = ANY($1::uuid[])`, [profiles]);
+  await q(`DELETE FROM learning_recommendations WHERE exam_attempt_id = ANY($1::uuid[])`, [attempts]);
+  await q(`DELETE FROM exam_attempt_item_responses WHERE exam_attempt_id = ANY($1::uuid[])`, [attempts]);
+  if ((await db.query(`SELECT to_regclass('public.exam_attempt_results') IS NOT NULL AS p`)).rows[0].p) {
+    await q(`DELETE FROM exam_attempt_results WHERE exam_attempt_id = ANY($1::uuid[])`, [attempts]);
+  }
+  await q(`DELETE FROM exam_attempts WHERE id = ANY($1::uuid[])`, [attempts]);
+  await q(`DELETE FROM student_exam_profiles WHERE id = ANY($1::uuid[])`, [profiles]);
+
+  const interventions = await rows(`SELECT id FROM teacher_interventions WHERE institution_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [insts, learners]);
+  await q(`DELETE FROM teacher_intervention_executions WHERE teacher_intervention_id = ANY($1::uuid[])`, [interventions]);
+  await q(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
+
+  // What the LP class added to Sofía (and any fixture learner), then every LP plan / curriculum row.
+  await detachTeacherAddedConcepts(classIds);
+  await purgeLearningPlanRows({ studentIds: learners, classIds, institutionIds: insts, userIds: lpUsers });
+
+  // Learner concepts of the synthetic learners and of the independent Student (fixtures only).
+  const subjects = await rows(`SELECT id FROM subjects WHERE student_id = ANY($1::uuid[])`, [learners]);
+  const concepts = await rows(`SELECT id FROM concepts WHERE subject_id = ANY($1::uuid[])`, [subjects]);
+  await q(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [concepts]);
+  await q(`DELETE FROM mastery_records WHERE concept_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [concepts, learners]);
+  await q(`DELETE FROM concept_localizations WHERE concept_id = ANY($1::uuid[])`, [concepts]);
+  await q(`DELETE FROM concepts WHERE id = ANY($1::uuid[])`, [concepts]);
+  await q(`DELETE FROM subjects WHERE id = ANY($1::uuid[])`, [subjects]);
+
+  await q(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = ANY($1::uuid[]))`, [insts]);
+  await q(`DELETE FROM class_enrollments WHERE class_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [classIds, synthetic]);
+  await q(`DELETE FROM classes WHERE id = ANY($1::uuid[])`, [classIds]);
+  await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[])`, [lpUsers]);
+  await q(`DELETE FROM admin_audit_log WHERE target_id = ANY($1::text[])`, [insts]);
+  await q(`DELETE FROM institutions WHERE id = ANY($1::uuid[])`, [insts]);
+  await q(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[])`, [synthetic]);
+  await q(`DELETE FROM students WHERE id = ANY($1::uuid[])`, [synthetic]);
+  await q(`DELETE FROM profiles WHERE id = ANY($1::uuid[]) OR clerk_id LIKE $2`, [synthetic, `${LP_SYNTHETIC_PREFIX}%`]);
+  console.log(`learning-plan teardown: ${insts.length} LP institution, ${synthetic.length} synthetic learners, ${attempts.length} exam attempts removed`);
+}
+
+/**
  * Concepts a Teacher assignment added to FIXTURE learners' plans for these
  * (fixture) classes are removed with them, so every run starts with the
  * same plans; any other concept only loses its provenance link.
@@ -297,9 +403,10 @@ export async function detachTeacherAddedConcepts(classIds: string[]): Promise<vo
   if (classIds.length === 0) return;
   const fixtureConcepts = (await db.query(
     `SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN students st ON st.id = s.student_id JOIN users u ON u.id = st.user_id
-     WHERE c.origin = 'TEACHER_ASSIGNMENT' AND c.origin_class_id = ANY($1::uuid[]) AND u.email LIKE 'studyus-ta-%+clerk_test@example.com'`,
+     WHERE c.origin IN ('TEACHER_ASSIGNMENT', 'CLASS_PLAN') AND c.origin_class_id = ANY($1::uuid[]) AND u.email LIKE 'studyus-ta-%+clerk_test@example.com'`,
     [classIds]
   )).rows.map((r: any) => r.id);
+  await purgeLearningPlanRows({ classIds, learnerConceptIds: fixtureConcepts });
   if (fixtureConcepts.length > 0) {
     await db.query(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
     await db.query(`DELETE FROM mastery_records WHERE concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
@@ -329,6 +436,7 @@ export async function institutionReset() {
   await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts])).rows.map((r: any) => r.id));
   await q(`DELETE FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
+  await purgeLearningPlanRows({ institutionIds: insts });
   await q(`DELETE FROM institution_admin_invitations WHERE institution_id = ANY($1::uuid[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [insts]);
   await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM admin_audit_log WHERE target_id = ANY($1::text[])`, [insts]);
@@ -338,6 +446,7 @@ export async function institutionReset() {
     const rows = (await db.query(`SELECT id FROM users WHERE email = $1 OR clerk_id = $2`, [emailFor(tag), u?.id ?? '-'])).rows.map((r: any) => r.id);
     await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[])`, [rows]);
     await q(`DELETE FROM admin_audit_log WHERE actor_user_id = ANY($1::uuid[]) OR target_id = ANY($2::text[])`, [rows, rows]);
+    await purgeLearningPlanRows({ userIds: rows });
     await q(`DELETE FROM institution_memberships WHERE user_id = ANY($1::uuid[])`, [rows]);
     await q(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[])`, [rows]);
     await q(`DELETE FROM user_roles WHERE user_id = ANY($1::uuid[])`, [rows]);
@@ -381,10 +490,13 @@ async function cleanup() {
   }
   const userIds = (await db.query(`SELECT id FROM users WHERE clerk_id = ANY($1::text[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [clerkIds])).rows.map((r: any) => r.id);
   await institutionReset();
+  await learningPlanTeardown();
   const institutions = (await db.query(`SELECT id FROM institutions WHERE name = ANY($1::text[])`, [[INST_A_NAME, INST_B_NAME]])).rows.map((r: any) => r.id);
   const studentIds = (await db.query(`SELECT id FROM students WHERE user_id = ANY($1::uuid[]) OR clerk_id = ANY($2::text[])`, [userIds, clerkIds])).rows.map((r: any) => r.id);
   const profileIds = (await db.query(`SELECT id FROM profiles WHERE id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[]) OR clerk_id = ANY($3::text[])`, [studentIds, userIds, clerkIds])).rows.map((r: any) => r.id);
   const q = (sql: string, p: unknown[]) => db.query(sql, p);
+
+  await purgeLearningPlanRows({ studentIds, institutionIds: institutions, userIds, classIds: (await db.query(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [institutions])).rows.map((r: any) => r.id) });
 
   // Learning data a fixture student produced during the E2E (practice through
   // the canonical engine) -- removed with the fixture student, nothing else.
@@ -469,7 +581,7 @@ async function cleanup() {
 
 if (process.argv[1]?.endsWith('track-a-fixtures.ts')) {
   const [cmd, arg] = process.argv.slice(2);
-  const run = cmd === 'institution-reset' ? institutionReset() : cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | institution-reset | manual-prep | tokens <file> | signin <tag> | cleanup'));
+  const run = cmd === 'learning-plan-teardown' ? learningPlanTeardown() : cmd === 'institution-reset' ? institutionReset() : cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | institution-reset | learning-plan-teardown | manual-prep | tokens <file> | signin <tag> | cleanup'));
   run
     .catch((e) => {
       console.error(e instanceof Error ? e.message : e);

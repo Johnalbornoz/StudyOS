@@ -58,6 +58,8 @@ export interface LearnerConceptState {
   /** Last 30 days of graded answers: small slips vs real errors (grader's learner signal). */
   answerSignals: { minorSlips: number; mathErrors: number; misconceptions: number };
   prerequisiteGaps: Array<{ label: string; state: string }>;
+  /** Why the concept is in the learner's plan (SELF_SELECTED, TEACHER_ASSIGNMENT, EXAM_GAP, ...). Provenance only. */
+  sources: string[];
   /** The canonical decision could not be read (shown as "no disponible", never guessed). */
   decisionUnavailable: boolean;
 }
@@ -144,11 +146,12 @@ async function readConceptState(studentId: string, topic: { id: string; name: st
     misconceptions: { active: 0, critical: 0, recurring: 0, items: [] },
     answerSignals: { minorSlips: 0, mathErrors: 0, misconceptions: 0 },
     prerequisiteGaps: [],
+    sources: [],
     decisionUnavailable: false,
   };
   if (!conceptId) return empty;
 
-  const [decision, summary, history, memory, transfer, misconceptionCounts, misconceptionItems, signals] = await Promise.all([
+  const [decision, summary, history, memory, transfer, misconceptionCounts, misconceptionItems, signals, sourceRows] = await Promise.all([
     getCanonicalPedagogicalDecision({ studentId, conceptId }).then((r) => r.decision).catch(() => null),
     getConceptEvidenceSummary(studentId, conceptId),
     getConceptEvidenceHistory(studentId, conceptId, 5),
@@ -169,6 +172,10 @@ async function readConceptState(studentId: string, topic: { id: string; name: st
        WHERE qr.student_id = $1 AND qr.concept_id = $2 AND qr.created_at > NOW() - INTERVAL '30 days'
        GROUP BY g.learner_signal`,
       [studentId, conceptId]
+    ),
+    db.query(
+      `SELECT DISTINCT source_type FROM student_concept_sources WHERE student_id = $1 AND canonical_concept_id = $2 AND active = true`,
+      [studentId, topic.id]
     ),
   ]);
   const signalCount = (s: string) => signals.rows.find((r: any) => r.learner_signal === s)?.n ?? 0;
@@ -210,6 +217,7 @@ async function readConceptState(studentId: string, topic: { id: string; name: st
     },
     answerSignals: { minorSlips: signalCount('MINOR_SLIP'), mathErrors: signalCount('MATH_ERROR'), misconceptions: signalCount('MISCONCEPTION') },
     prerequisiteGaps: diagnoses.filter((d) => d.targetConceptId === conceptId).map((d) => ({ label: d.candidateLabel, state: d.state })),
+    sources: sourceRows.rows.map((r: any) => r.source_type),
     decisionUnavailable: decision === null,
   };
 }

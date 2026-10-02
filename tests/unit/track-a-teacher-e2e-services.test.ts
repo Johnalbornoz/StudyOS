@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const dbQueryMock = vi.fn();
-vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: vi.fn() } }));
+vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: vi.fn(async () => ({ query: (...a: any[]) => dbQueryMock(...a), release: vi.fn() })) } }));
 
 const canAccessClassMock = vi.fn();
 const canTeacherManageInterventionMock = vi.fn();
@@ -246,6 +246,7 @@ describe('deriveTeacherAttention (pure)', () => {
     misconceptions: { active: 0, critical: 0, recurring: 0, items: [] },
     answerSignals: { minorSlips: 0, mathErrors: 0, misconceptions: 0 },
     prerequisiteGaps: [],
+    sources: [],
     decisionUnavailable: false,
     ...over,
   });

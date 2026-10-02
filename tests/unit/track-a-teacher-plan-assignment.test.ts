@@ -44,30 +44,43 @@ beforeEach(() => {
   resolveMock.mockReset().mockResolvedValue(null);
 });
 
-describe('ensureConceptInLearnerPlan', () => {
-  it('1 / 9: a learner who already has the concept keeps it untouched (no write, progress preserved)', async () => {
+describe('ensureConceptInLearnerPlan (→ universal enrollment)', () => {
+  it('1 / 9: a learner who already has the concept keeps it untouched: no concept / record / mapping write; only the plan entry + TEACHER_ASSIGNMENT source are recorded', async () => {
     resolveMock.mockResolvedValue('existing-concept');
+    clientWorld({});
     expect(await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' })).toEqual({ conceptId: 'existing-concept', added: false });
-    expect(clientQueryMock).not.toHaveBeenCalled();
+    const sql = clientSqls();
+    expect(sql.some((x) => /INSERT INTO (concepts|mastery_records|concept_catalog_mapping|concept_localizations)\b/.test(x))).toBe(false);
+    expect(sql.some((x) => x.startsWith('INSERT INTO student_plan_entries'))).toBe(true);
+    const source = clientQueryMock.mock.calls.find((c) => String(c[0]).startsWith('INSERT INTO student_concept_sources'))!;
+    expect(source[1].slice(0, 4)).toEqual(['s1', CC, 'TEACHER_ASSIGNMENT', 'c1']);
+    expect(sql.some((x) => COGNITIVE.test(x))).toBe(false);
   });
 
   it('2 / 10: a learner without it gets it in the existing equivalent subject (Matemáticas = Mathematics), MATCHED by construction, origin TEACHER_ASSIGNMENT, no evidence / progress', async () => {
     clientWorld({ subjects: [{ id: 'sub-history', name: 'Historia' }, { id: 'sub-mate', name: 'Matemáticas' }] });
+    clientQueryMock.mockImplementation(async (sql: string) => {
+      if (sql.startsWith('INSERT INTO student_plan_entries')) return { rows: [{ inserted: true }] };
+      if (sql.includes('FROM canonical_concepts cc JOIN canonical_subjects')) return { rows: [{ id: CC, name: 'Linear Equations', subject_id: 'cs-math', subject_name: 'Mathematics' }] };
+      if (sql.startsWith('SELECT id, name FROM subjects')) return { rows: [{ id: 'sub-history', name: 'Historia' }, { id: 'sub-mate', name: 'Matemáticas' }] };
+      if (sql.startsWith('INSERT INTO concepts')) return { rows: [{ id: 'learner-concept', inserted: true }] };
+      return { rows: [] };
+    });
     const r = await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' });
     expect(r).toEqual({ conceptId: 'learner-concept', added: true });
     const sql = clientSqls();
     expect(sql[0]).toBe('BEGIN');
-    expect(sql.some((s) => s.includes('pg_advisory_xact_lock'))).toBe(true);
+    expect(sql.some((x) => x.includes('pg_advisory_xact_lock'))).toBe(true);
     const conceptInsert = clientQueryMock.mock.calls.find((c) => String(c[0]).startsWith('INSERT INTO concepts'))!;
     expect(conceptInsert[1]).toEqual(['sub-mate', canonicalConceptKey(CC), 'TEACHER_ASSIGNMENT', 'c1']);
     expect(String(conceptInsert[0])).toMatch(/ON CONFLICT \(subject_id, canonical_id\)/);
-    expect(sql.some((s) => s.startsWith('INSERT INTO subjects'))).toBe(false);
+    expect(sql.some((x) => x.startsWith('INSERT INTO subjects'))).toBe(false);
     const mapping = clientQueryMock.mock.calls.find((c) => String(c[0]).includes('INSERT INTO concept_catalog_mapping'))!;
-    expect(String(mapping[0])).toMatch(/'MATCHED', 'TEACHER_ASSIGNMENT'/);
-    expect(mapping[1]).toEqual(['learner-concept', CC]);
-    const mastery = sql.find((s) => s.includes('INSERT INTO mastery_records'))!;
+    expect(String(mapping[0])).toMatch(/'MATCHED', \$3/);
+    expect(mapping[1]).toEqual(['learner-concept', CC, 'TEACHER_ASSIGNMENT']);
+    const mastery = sql.find((x) => x.includes('INSERT INTO mastery_records'))!;
     expect(mastery).toMatch(/VALUES \(\$1, \$2, \$3, 0, 0, 0, 0, 0\) ON CONFLICT \(student_id, concept_id\) DO NOTHING/);
-    expect(sql.some((s) => COGNITIVE.test(s))).toBe(false);
+    expect(sql.some((x) => COGNITIVE.test(x))).toBe(false);
     expect(sql.at(-1)).toBe('COMMIT');
   });
 
@@ -82,16 +95,23 @@ describe('ensureConceptInLearnerPlan', () => {
     expect(subjectInsert[1]).toEqual(['s1', 'Matemáticas']);
   });
 
-  it('5: a concurrent / retried call finds the concept under the lock and adds nothing', async () => {
-    resolveMock.mockResolvedValueOnce(null).mockResolvedValueOnce('created-by-first-call');
+  it('5: a concurrent / retried call finds the concept under the lock and creates no second concept', async () => {
+    resolveMock.mockResolvedValueOnce('created-by-first-call');
     clientWorld({});
-    expect(await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' })).toEqual({ conceptId: 'created-by-first-call', added: false });
-    expect(clientSqls().some((s) => s.startsWith('INSERT'))).toBe(false);
+    expect((await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' })).conceptId).toBe('created-by-first-call');
+    expect(clientSqls().some((x) => x.startsWith('INSERT INTO concepts'))).toBe(false);
   });
 
-  it('a conflicting row (same deterministic key) is reused, not duplicated', async () => {
-    clientWorld({ subjects: [{ id: 'sub-mate', name: 'Mathematics' }], inserted: false });
-    expect((await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' })).added).toBe(false);
+  it('translations never duplicate: ONE unlinked learner concept labelled like the canonical concept (any language) is linked instead of creating a new one', async () => {
+    clientWorld({});
+    clientQueryMock.mockImplementation(async (sql: string) => {
+      if (sql.includes('JOIN concept_localizations cl ON cl.concept_id = c.id') && sql.includes('canonical_concept_localizations')) return { rows: [{ id: 'own-ecuaciones' }] };
+      return { rows: [] };
+    });
+    const r = await ensureConceptInLearnerPlan({ studentId: 's1', canonicalConceptId: CC, classId: 'c1' });
+    expect(r.conceptId).toBe('own-ecuaciones');
+    expect(clientSqls().some((x) => x.startsWith('INSERT INTO concepts'))).toBe(false);
+    expect(clientSqls().some((x) => x.includes("'MATCHED', 'PLAN_ENROLLMENT'"))).toBe(true);
   });
 });
 

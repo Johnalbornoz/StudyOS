@@ -5,16 +5,12 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
-import { getTeacherClass, listAssignableConceptsForClass, listClassAssignments } from '@/lib/teacher/class-assignment.service';
+import { getTeacherClass, listClassAssignments } from '@/lib/teacher/class-assignment.service';
 import { listClassLearnerAttention } from '@/lib/teacher/learner-view.service';
-import { listClassRosterForInstitution } from '@/services/institution.service';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
-import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
-import { InviteStudentForm, PostActionButton } from '@/app/dashboard/institution/[institutionId]/InstitutionForms';
-import { ClassAssignmentComposer } from './ClassAssignmentComposer';
 import { attentionLabels } from '../../attention-labels';
+import { ClassChrome } from './class-chrome';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -24,10 +20,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * class's teacher, an institution admin -- gets the same not-found a real
  * 404 would (never "exists but not yours").
  *
- * Context (institution · grade · subject), "who needs help" (read-only
- * projection of the canonical read models), the roster with consent-based
- * invitations, the assignment composer (topics of the class's subject only)
- * and every assignment's lifecycle per learner.
+ * Resumen tab: context (institution · grade · subject), "who needs help"
+ * (read-only projection of the canonical read models) and a summary of the
+ * class plan and tasks. Roster, tasks, plan and progress live in their own
+ * tabs (Plan de aprendizaje | Estudiantes | Tareas | Progreso).
  */
 export default async function TeacherClassPage({ params }: { params: Promise<{ classId: string }> }) {
   const { classId } = await params;
@@ -41,24 +37,13 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
 
   const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
-  const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : null);
-
-  const [roster, assignable, assignments, attention] = await Promise.all([
-    listClassRosterForInstitution(klass.institutionId, classId),
-    listAssignableConceptsForClass(actor.id, classId),
-    listClassAssignments(actor.id, classId),
-    listClassLearnerAttention(actor.id, classId),
-  ]);
-  const active = roster.filter((r) => r.status === 'ACTIVE');
+  const [assignments, attention] = await Promise.all([listClassAssignments(actor.id, classId), listClassLearnerAttention(actor.id, classId)]);
+  const latest = assignments[0];
   const labels = attentionLabels(t);
 
   return (
     <div className="ta-stack">
-      <PageHeader
-        title={klass.subjectName ? `${klass.name} · ${klass.subjectName}` : klass.name}
-        subtitle={[klass.institutionName, klass.gradeName].filter(Boolean).join(' · ')}
-        breadcrumb={<Link href="/dashboard/teacher">{t['nav.teacherClasses']}</Link>}
-      />
+      <ClassChrome klass={klass} active="overview" t={t} />
 
       {!klass.subjectId && <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tc.noSubject.body']} />}
 
@@ -106,142 +91,24 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
         )}
       </section>
 
-      <section className="card ta-card" aria-labelledby="roster-title">
-        <h2 id="roster-title">{t['teacher.roster.title']}</h2>
-        <InviteStudentForm
-          institutionId={klass.institutionId}
-          classId={classId}
-          endpoint={`/api/teacher/classes/${classId}/enrollments`}
-          labels={{
-            label: t['inst.class.invite.label'],
-            body: t['tc.invite.body'],
-            submit: t['inst.class.invite.submit'],
-            sent: t['inst.class.invite.sent'],
-            noAccount: t['inst.class.invite.noAccount'],
-            already: t['inst.class.invite.already'],
-            error: t['inst.common.error'],
-          }}
-        />
-        {roster.length === 0 ? (
-          <EmptyState title={t['teacher.roster.empty']} />
+      <section className="card ta-card" aria-labelledby="summary-title">
+        <h2 id="summary-title">{t['tcp.assignments.title']}</h2>
+        {latest ? (
+          <p className="ta-msg">
+            <strong>{latest.title}</strong> ·{' '}
+            {fillMessage(t['tc.assignments.counts'], { assigned: latest.counts.ASSIGNED, started: latest.counts.IN_PROGRESS, completed: latest.counts.COMPLETED, overdue: latest.counts.EXPIRED })}
+          </p>
         ) : (
-          <ul className="role-list">
-            {roster.map((r) => (
-              <li key={r.enrollmentId} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  {r.status === 'ACTIVE' ? (
-                    <Link href={`/dashboard/teacher/classes/${classId}/students/${r.studentId}`} style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
-                      {r.name}
-                    </Link>
-                  ) : (
-                    <strong style={{ overflowWrap: 'anywhere' }}>{r.name}</strong>
-                  )}
-                  {r.email && r.email !== r.name && <span className="ta-msg" style={{ overflowWrap: 'anywhere' }}>{r.email}</span>}
-                </span>
-                <span className="ta-actions">
-                  <span className={r.status === 'ACTIVE' ? 'chip chip-good' : 'chip chip-warn'}>{t[`inst.class.status.${r.status}`]}</span>
-                  <PostActionButton
-                    url={`/api/teacher/classes/${classId}/enrollments/${r.enrollmentId}/end`}
-                    label={r.status === 'ACTIVE' ? t['inst.class.remove'] : t['inst.class.withdraw']}
-                    errorLabel={t['inst.common.error']}
-                    confirmText={r.status === 'ACTIVE' ? fillMessage(t['tc.removeConfirm'], { name: r.name }) : undefined}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className="ta-msg">{t['teacherClass.assignments.empty']}</p>
         )}
-      </section>
-
-      <ClassAssignmentComposer
-        classId={classId}
-        concepts={assignable.concepts}
-        activeLearners={active.map((r) => ({ studentId: r.studentId, name: r.name }))}
-        subjectLinked={assignable.subjectLinked}
-        labels={{
-          title: t['teacherClass.compose.title'],
-          body: t['tc.compose.body'],
-          assignmentTitle: t['tc.compose.assignmentTitle'],
-          assignmentTitleHint: t['tc.compose.assignmentTitleHint'],
-          concept: t['teacherClass.compose.concept'],
-          noSubject: t['tc.noSubject.body'],
-          noConcepts: t['tc.compose.noConcepts'],
-          noLearners: t['teacherClass.compose.noLearners'],
-          instructions: t['teacherClass.compose.instructions'],
-          start: t['tc.compose.start'],
-          due: t['teacherClass.compose.due'],
-          recipients: t['tc.compose.recipients'],
-          wholeClass: t['tc.compose.wholeClass'],
-          selected: t['tc.compose.selected'],
-          selectAtLeastOne: t['tc.compose.selectAtLeastOne'],
-          publish: t['tc.compose.assign'],
-          publishing: t['teacherClass.compose.publishing'],
-          published: t['teacherClass.compose.published'],
-          publishedAdded: t['tc.compose.publishedAdded'],
-          skipped: t['tc.compose.skippedAuth'],
-          previewHave: t['tc.compose.preview.have'],
-          previewAdd: t['tc.compose.preview.add'],
-          error: t['teacherClass.compose.error'],
-          errors: {
-            CLASS_SUBJECT_REQUIRED: t['tc.noSubject.body'],
-            CONCEPT_NOT_IN_CLASS_SUBJECT: t['tc.error.conceptNotInSubject'],
-            RECIPIENT_NOT_IN_CLASS: t['tc.error.recipientNotInClass'],
-            INVALID_DATES: t['tc.error.invalidDates'],
-            NO_LEARNERS_TO_ASSIGN: t['tc.error.noLearnersToAssign'],
-            REQUEST_CONFLICT: t['inst.common.error'],
-          },
-        }}
-      />
-
-      <section aria-labelledby="assignments-title" className="ta-stack" style={{ gap: 'var(--space-3)' }}>
-        <h2 id="assignments-title" style={{ fontSize: 18 }}>{t['teacherClass.assignmentsTitle']}</h2>
-        {assignments.length === 0 ? (
-          <EmptyState title={t['teacherClass.assignments.empty']} />
-        ) : (
-          assignments.map((a) => (
-            <article key={a.assignmentGroupId} className="card" aria-label={a.title}>
-              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <strong>{a.title}</strong>
-                {a.title !== a.conceptName && <span className="ta-msg">{fillMessage(t['studentAssign.topic'], { topic: a.conceptName })}</span>}
-                <span className="ta-msg">
-                  {[
-                    fillMessage(t['tc.assignments.created'], { date: fmtDate(a.assignedAt) }),
-                    a.startsAt ? fillMessage(t['tc.assignments.starts'], { date: fmtDate(a.startsAt) }) : null,
-                    a.dueAt ? fillMessage(t['teacherClass.due'], { date: fmtDate(a.dueAt) }) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-                <span className="ta-msg">
-                  {fillMessage(t['tc.assignments.counts'], {
-                    assigned: a.counts.ASSIGNED,
-                    started: a.counts.IN_PROGRESS,
-                    completed: a.counts.COMPLETED,
-                    overdue: a.counts.EXPIRED,
-                  })}
-                </span>
-                {a.instructions && <span className="ta-msg">{a.instructions}</span>}
-              </div>
-              <div className="ta-table-row ta-table-head" aria-hidden>
-                <span>{t['teacherClass.learner']}</span>
-                <span>{t['teacherClass.status']}</span>
-                <span>{t['teacherClass.outcome']}</span>
-              </div>
-              {a.learners.map((l) => (
-                <div key={l.interventionId} className="ta-table-row">
-                  <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <Link href={`/dashboard/teacher/classes/${classId}/students/${l.studentId}`}>{l.studentName}</Link>
-                    <span className="ta-msg">{l.addedToPlan ? t['tc.assignments.addedToPlan'] : t['tc.assignments.hadConcept']}</span>
-                  </span>
-                  <span>
-                    <StatusBadge label={t[`assignments.status.${l.status}`]} tone={toneForInterventionStatus(l.status)} />
-                  </span>
-                  <span className="ta-msg">{l.result ? fillMessage(t['teacherClass.result'], { correct: l.result.correct, total: l.result.total }) : '—'}</span>
-                </div>
-              ))}
-            </article>
-          ))
-        )}
+        <span className="ta-actions">
+          <Link href={`/dashboard/teacher/classes/${classId}/assignments`} className="btn btn-secondary">
+            {t['tcp.nav.assignments']}
+          </Link>
+          <Link href={`/dashboard/teacher/classes/${classId}/plan`} className="btn btn-ghost">
+            {t['tcp.nav.plan']}
+          </Link>
+        </span>
       </section>
     </div>
   );

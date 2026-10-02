@@ -67,9 +67,9 @@ describe('LX-2E buildLearnerNav', () => {
     expect(nav().flatMap((g) => g.items).every((i) => i.temporaryMappingNote === undefined)).toBe(true);
   });
 
-  it('secondary group ("Más") holds Tutor, Exam Prep, assignments without pending work, study plan, learning debt', () => {
+  it('secondary group ("Más") holds Tutor, My plan (Track A learning plan), Exam Prep, assignments without pending work, study plan, learning debt', () => {
     const secondary = nav().find((g) => g.kind === 'SECONDARY')!;
-    expect(secondary.items.map((i) => i.key)).toEqual(['tutor', 'examPrep', 'assignments', 'studyPlan', 'debt']);
+    expect(secondary.items.map((i) => i.key)).toEqual(['tutor', 'myPlan', 'examPrep', 'assignments', 'studyPlan', 'debt']);
   });
 
   it('utility group holds account/profile/system; admin only when isAdmin', () => {

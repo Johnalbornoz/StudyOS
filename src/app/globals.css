@@ -2068,3 +2068,10 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 @media (max-width: 1023px) {
   .lx-workspace-trigger, .lx-workspace-option { min-height: var(--touch-target); }
 }
+
+/* Track A: class learner matrix (concept × phase); scrolls inside its card on phones. */
+.ta-matrix { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.ta-matrix th, .ta-matrix td { padding: var(--space-2); border-bottom: 1px solid var(--border-default); text-align: center; vertical-align: top; }
+.ta-matrix th[scope="row"], .ta-matrix thead th:first-child { text-align: left; min-width: 160px; }
+.ta-matrix summary { cursor: pointer; font-weight: 700; }
+.ta-matrix td ul { text-align: left; }

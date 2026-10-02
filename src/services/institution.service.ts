@@ -665,10 +665,25 @@ export async function endClassEnrollment(institutionId: string, classId: string,
     `UPDATE class_enrollments ce SET status = 'ENDED', ended_at = NOW()
      FROM classes c
      WHERE ce.id = $1 AND ce.class_id = $2 AND c.id = ce.class_id AND c.institution_id = $3 AND ce.status IN ('ACTIVE', 'PENDING')
-     RETURNING ce.id`,
+     RETURNING ce.id, ce.student_id`,
     [enrollmentId, classId, institutionId]
   );
-  return (r.rowCount ?? 0) > 0;
+  const ended = r.rows[0];
+  if (ended) {
+    // The class no longer contributes to this learner's plan; the plan entry and all learning history stay.
+    // (Inline on purpose: this module must not import the learning-plan stack.)
+    await db.query(
+      `WITH retired AS (
+         UPDATE student_concept_sources SET active = false, deactivated_at = now(), deactivation_reason = 'ENROLLMENT_ENDED'
+         WHERE class_id = $1 AND student_id = $2 AND active = true AND source_type IN ('CLASS_PLAN', 'TEACHER_ASSIGNMENT', 'INSTITUTION_CURRICULUM')
+         RETURNING student_id, canonical_concept_id, source_type, source_key
+       )
+       INSERT INTO student_plan_events (student_id, canonical_concept_id, event_type, source_type, source_key, detail)
+       SELECT student_id, canonical_concept_id, 'SOURCE_REMOVED', source_type, source_key, '{"reason":"ENROLLMENT_ENDED"}'::jsonb FROM retired`,
+      [classId, ended.student_id]
+    ).catch((e) => console.error('[institution] class source deactivation failed', (e as Error)?.message));
+  }
+  return Boolean(ended);
 }
 
 export interface StudentClassInvitation {

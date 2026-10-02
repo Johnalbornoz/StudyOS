@@ -11,8 +11,9 @@
 
 import { TEACHER_E2E_MESSAGES, type TeacherE2EMessageKey } from './teacher-e2e-messages';
 import { INSTITUTION_ADMIN_MESSAGES, type InstitutionAdminMessageKey } from './institution-admin-messages';
+import { LEARNING_PLAN_MESSAGES, type LearningPlanMessageKey } from './learning-plan-messages';
 
-export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey;
+export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey | LearningPlanMessageKey;
 
 type BaseRolesMessageKey =
   // account / multi-role
@@ -1297,11 +1298,11 @@ const pt: Catalog = {
 };
 
 export const ROLES_MESSAGES = {
-  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es },
-  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en },
-  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de },
-  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr },
-  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt },
+  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es, ...LEARNING_PLAN_MESSAGES.es },
+  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en, ...LEARNING_PLAN_MESSAGES.en },
+  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de, ...LEARNING_PLAN_MESSAGES.de },
+  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr, ...LEARNING_PLAN_MESSAGES.fr },
+  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt, ...LEARNING_PLAN_MESSAGES.pt },
 } as const;
 
 /**

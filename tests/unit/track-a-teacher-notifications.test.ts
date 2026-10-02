@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const dbQueryMock = vi.fn();
-vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a) } }));
+vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: vi.fn(async () => ({ query: (...a: any[]) => dbQueryMock(...a), release: vi.fn() })) } }));
 
 const canAccessClassMock = vi.fn();
 const canTeacherManageInterventionMock = vi.fn();

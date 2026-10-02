@@ -294,7 +294,7 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
       skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'NOT_AUTHORIZED' });
       continue;
     }
-    const planConcept = await ensureConceptInLearnerPlan({ studentId: l.id, canonicalConceptId: input.canonicalConceptId, classId: input.classId });
+    const planConcept = await ensureConceptInLearnerPlan({ studentId: l.id, canonicalConceptId: input.canonicalConceptId, classId: input.classId, actorUserId });
     try {
       const intervention = await assignTeacherIntervention(actorUserId, {
         classId: input.classId,

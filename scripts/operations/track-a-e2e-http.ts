@@ -20,7 +20,7 @@
 import { spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { db } from '@/lib/db';
-import { assertDev, institutionReset, detachTeacherAddedConcepts, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
+import { assertDev, institutionReset, learningPlanTeardown, detachTeacherAddedConcepts, INST_A_NAME, INST_B_NAME, emailFor, type Tag } from './track-a-fixtures';
 
 const BASE = (process.argv[2] ?? '').replace(/\/$/, '');
 const TOKENS: Record<Tag, string> = JSON.parse(readFileSync(process.argv[3] ?? '', 'utf-8'));
@@ -120,6 +120,7 @@ async function ids() {
 /** Back to the provisioned state (re-runnable): Institution A empty, no parent links, no role edits from a previous run. */
 async function reset(x: Awaited<ReturnType<typeof ids>>) {
   await institutionReset(); // the institution / coordinator E2E's institutions are not part of this world
+  await learningPlanTeardown(); // nor is the Learning Plan E2E's institution, class and independent learner
   const fixtureUsers = Object.values(x.users);
   const fixtureStudents = Object.values(x.students);
   const interventions = (await db.query(`SELECT id FROM teacher_interventions WHERE student_id = ANY($1::uuid[])`, [fixtureStudents])).rows.map((r: any) => r.id);
@@ -313,7 +314,8 @@ async function main() {
   check('A4.student-accepts-enrollment', (await post(`/api/student/class-invitations/${enrollmentId}/respond`, 'student-a', { accept: true })).status === 200);
   check('A4.admin-notified-enrollment', ((await get('/api/notifications/inbox', 'inst-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'CLASS_ENROLLMENT_ACCEPTED'));
   await page('8-teacher-class', '/dashboard/teacher', 'teacher-a', ['Matemáticas 10A']);
-  await page('8b-teacher-class-roster', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Sofía Estudiante A', 'Nueva tarea para la clase']);
+  await page('8b-teacher-class-roster', `/dashboard/teacher/classes/${classA}/students`, 'teacher-a', ['Sofía Estudiante A']);
+  await page('8c-teacher-class-composer', `/dashboard/teacher/classes/${classA}/assignments`, 'teacher-a', ['Nueva tarea para la clase']);
   await page('8c-institution-class', `/dashboard/institution/${x.instA}/classes/${classA}`, 'inst-a', ['Sofía Estudiante A', 'Inscrito', emailFor('teacher-a')]);
   const roster = (await get(`/api/teacher/classes/${classA}/roster`, 'teacher-a')).body?.data?.roster ?? [];
   check('A3.roster-has-student', roster.length === 1 && roster[0].studentId === x.students['student-a']);
@@ -334,7 +336,7 @@ async function main() {
   check('A5.publish', publish.status === 201 && publish.body?.data?.assigned?.length === 1, publish.text.slice(0, 200));
   const interventionId = publish.body?.data?.assigned?.[0]?.interventionId;
   check('A5.student-notified', ((await get('/api/notifications/inbox', 'student-a')).body?.data?.notifications ?? []).some((nn: any) => nn.type === 'ASSIGNMENT_PUBLISHED'));
-  await page('9-assignment-published', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Linear Equations', 'Asignada']);
+  await page('9-assignment-published', `/dashboard/teacher/classes/${classA}/assignments`, 'teacher-a', ['Linear Equations', 'Asignada']);
   await page('10-student-assignment-view', '/dashboard/assignments', 'student-a', ['Mis tareas', 'Comenzar', 'Practica antes del viernes.']);
   const pendingList = (await get('/api/student/teacher-interventions', 'student-a')).body?.data;
   check('A5.student-sees-assignment', JSON.stringify(pendingList ?? {}).includes(interventionId));
@@ -395,7 +397,7 @@ async function main() {
   const learnerOutcome = after.body?.data?.assignments?.[0]?.learners?.[0];
   check('A5.teacher-sees-completed', learnerOutcome?.status === 'COMPLETED', JSON.stringify(learnerOutcome ?? {}).slice(0, 200));
   check('A5.teacher-sees-result', typeof learnerOutcome?.result?.total === 'number' && learnerOutcome.result.total > 0, JSON.stringify(learnerOutcome?.result ?? null));
-  await page('11-teacher-result-view', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/]);
+  await page('11-teacher-result-view', `/dashboard/teacher/classes/${classA}/assignments`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/]);
   await page('12-parent-summary', '/dashboard/parent', 'parent-a', ['Familia']);
   check('A5.teacher-sees-progress', (await get(`/api/teacher/students/${x.students['student-a']}/overview`, 'teacher-a')).body?.data?.lastActivityAt != null);
   const parentOverview = await get(`/api/parent/learners/${x.students['student-a']}/overview`, 'parent-a');

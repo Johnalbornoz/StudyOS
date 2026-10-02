@@ -319,7 +319,7 @@ async function main() {
   const lv2 = (await get(`/api/teacher/classes/${classA}/students/${sofia}`, 'teacher-a')).body?.data;
   check('S15.learner-view-assignment-completed', lv2?.assignments?.some((a: any) => a.interventionId === interventionId && a.status === 'COMPLETED'));
   check('S15.evidence-grew', ((lv2?.concepts ?? []).find((c: any) => c.canonicalConceptId === x.canonical)?.evidence?.totalAttempts ?? 0) > (topic?.evidence?.totalAttempts ?? 0));
-  await page('15-teresa-results', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/, 'Repaso: ecuaciones lineales']);
+  await page('15-teresa-results', `/dashboard/teacher/classes/${classA}/assignments`, 'teacher-a', ['Completada', /\d+ de \d+ correctas/, 'Repaso: ecuaciones lineales']);
 
   // 15b -- auto-add to plan: Carla (no concept) + Sofía (has it) in ONE assignment; duplicate submit replays.
   const carla = x.students['student-c'];
@@ -349,7 +349,7 @@ async function main() {
   check('S15b.carla-sees-assignment', carlaList.some((i: any) => i.id === carlaRow?.interventionId));
   const carlaTopic = ((await get(`/api/teacher/classes/${classA}/students/${carla}`, 'teacher-a')).body?.data?.concepts ?? []).find((c: any) => c.canonicalConceptId === x.canonical);
   check('S15b.carla-learning-starts-at-learn', carlaTopic?.inLearnerPlan === true && carlaTopic?.stage === 'LEARN' && carlaTopic?.evidence?.totalAttempts === 0, JSON.stringify(carlaTopic ?? {}).slice(0, 160));
-  await page('15b-teacher-sees-who-got-it', `/dashboard/teacher/classes/${classA}`, 'teacher-a', ['Refuerzo: ecuaciones lineales', 'Lo incorporó a su plan con esta tarea', 'Ya lo tenía en su plan']);
+  await page('15b-teacher-sees-who-got-it', `/dashboard/teacher/classes/${classA}/assignments`, 'teacher-a', ['Refuerzo: ecuaciones lineales', 'Lo incorporó a su plan con esta tarea', 'Ya lo tenía en su plan']);
   check('S15b.foreign-student-refused', (await post(`/api/teacher/classes/${classA}/assignments`, 'teacher-a', { canonicalConceptId: x.canonical, studentIds: [studentB] })).status === 422);
 
   // 16 -- tenant security with real ids.

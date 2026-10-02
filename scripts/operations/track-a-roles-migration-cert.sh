@@ -170,4 +170,36 @@ $PSQL -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='co
 $PSQL -f "$PLAN_MIGRATION" >/dev/null
 echo "  OK -- plan-assignment rollback + re-apply"
 
+# --- 20261018_1400_track_a_learning_plan_orchestrator --------------------
+ORCH_MIGRATION="$MIGRATIONS_DIR/20261018_1400_track_a_learning_plan_orchestrator.sql"
+$PSQL -c "INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status, mapping_method) VALUES ('88888888-8888-4888-8888-888888888888', '99999999-9999-4999-8999-999999999990', 'MATCHED', 'TEACHER_ASSIGNMENT') ON CONFLICT (learner_concept_id) DO NOTHING" >/dev/null
+$PSQL -c "UPDATE concepts SET origin = 'TEACHER_ASSIGNMENT', origin_class_id = '44444444-4444-4444-8444-444444444444' WHERE id = '88888888-8888-4888-8888-888888888888'" >/dev/null
+$PSQL -f "$ORCH_MIGRATION" >/dev/null
+echo "  OK -- orchestrator migration idempotent"
+$PSQL -tAc "SELECT count(*) FROM student_plan_entries WHERE learner_concept_id = '88888888-8888-4888-8888-888888888888'" | grep -qx 1 || fail "existing MATCHED concept not backfilled into the plan"
+$PSQL -tAc "SELECT source_type FROM student_concept_sources WHERE student_id = '22222222-2222-4222-8222-222222222222'" | grep -qx TEACHER_ASSIGNMENT || fail "teacher-assignment provenance not backfilled"
+echo "  OK -- backfill: plan entry + TEACHER_ASSIGNMENT source"
+$PSQL -c "INSERT INTO concepts (id, subject_id, canonical_id) VALUES ('88888888-8888-4888-8888-888888888889', '77777777-7777-4777-8777-777777777777', 'CANON_DUP')" >/dev/null
+expect_reject "INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status, mapping_method) VALUES ('88888888-8888-4888-8888-888888888889', '99999999-9999-4999-8999-999999999990', 'MATCHED', 'MANUAL_REVIEW')" "second learner concept MATCHED to the same canonical concept for one student"
+$PSQL -c "INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status) VALUES ('88888888-8888-4888-8888-888888888889', NULL, 'UNRESOLVED')" >/dev/null
+echo "  OK -- an unmatched duplicate stays allowed (UNRESOLVED)"
+expect_reject "INSERT INTO student_plan_entries (student_id, canonical_concept_id, learner_concept_id) VALUES ('22222222-2222-4222-8222-222222222222', '99999999-9999-4999-8999-999999999990', '88888888-8888-4888-8888-888888888889')" "second plan entry for the same student + canonical concept"
+expect_reject "INSERT INTO student_concept_sources (student_id, canonical_concept_id, source_type) VALUES ('22222222-2222-4222-8222-222222222222', '66666666-6666-4666-8666-666666666666', 'SELF_SELECTED')" "source without a plan entry"
+expect_reject "INSERT INTO student_concept_sources (student_id, canonical_concept_id, source_type, source_key) VALUES ('22222222-2222-4222-8222-222222222222', '99999999-9999-4999-8999-999999999990', 'TEACHER_ASSIGNMENT', '44444444-4444-4444-8444-444444444444')" "duplicate source"
+$PSQL -c "INSERT INTO institution_curricula (id, institution_id, canonical_subject_id, title) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '33333333-3333-4333-8333-333333333333', (SELECT id FROM canonical_subjects LIMIT 1), 'Math')" >/dev/null
+expect_reject "INSERT INTO institution_curricula (institution_id, canonical_subject_id, title) VALUES ('33333333-3333-4333-8333-333333333333', (SELECT id FROM canonical_subjects LIMIT 1), 'Math 2')" "second ACTIVE curriculum for the same institution + subject + grade + year"
+$PSQL -c "INSERT INTO institution_curriculum_concepts (curriculum_id, canonical_concept_id, classification) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '99999999-9999-4999-8999-999999999990', 'REQUIRED')" >/dev/null
+expect_reject "INSERT INTO institution_curriculum_concepts (curriculum_id, canonical_concept_id, classification) VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '99999999-9999-4999-8999-999999999990', 'MANDATORY')" "unknown curriculum classification"
+$PSQL -c "INSERT INTO class_plan_concepts (class_id, canonical_concept_id, supplemental) VALUES ('44444444-4444-4444-8444-444444444444', '99999999-9999-4999-8999-999999999990', true)" >/dev/null
+expect_reject "INSERT INTO class_plan_concepts (class_id, canonical_concept_id) VALUES ('44444444-4444-4444-8444-444444444444', '99999999-9999-4999-8999-999999999990')" "duplicate class plan concept"
+expect_reject "INSERT INTO learning_recommendations (student_id, canonical_concept_id, recommendation_type) VALUES ('22222222-2222-4222-8222-222222222222', '99999999-9999-4999-8999-999999999990', 'WHATEVER')" "unknown recommendation type"
+echo "  OK -- curriculum / class plan / recommendation constraints"
+OROLLBACK="$WORKDIR/rollback5.sql"
+{ echo "BEGIN;"; sed -n '/^-- Rollback/,/^--   DELETE FROM schema_migrations/p' "$ORCH_MIGRATION" | grep -E '^--   ' | sed 's/^--   //' | grep -v schema_migrations; echo "COMMIT;"; } > "$OROLLBACK"
+$PSQL -c "DELETE FROM concept_catalog_mapping WHERE learner_concept_id = '88888888-8888-4888-8888-888888888889'; DELETE FROM concepts WHERE id = '88888888-8888-4888-8888-888888888889'" >/dev/null
+$PSQL -f "$OROLLBACK" >/dev/null
+$PSQL -tAc "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('student_plan_entries','class_plan_concepts','institution_curricula')" | grep -qx 0 || fail "orchestrator rollback incomplete"
+$PSQL -f "$ORCH_MIGRATION" >/dev/null
+echo "  OK -- orchestrator rollback + re-apply"
+
 echo "=== Track A roles migration certification: ALL CHECKS PASSED ==="

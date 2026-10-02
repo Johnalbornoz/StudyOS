@@ -40,7 +40,9 @@ export type RoleNotificationType =
   | 'ROLE_ADDED'
   | 'ROLE_REVOKED'
   | 'COORDINATOR_ASSIGNED'
-  | 'COORDINATOR_INVITATION_ACCEPTED';
+  | 'COORDINATOR_INVITATION_ACCEPTED'
+  | 'CURRICULUM_SUPPLEMENTAL_CONCEPT'
+  | 'CONCEPT_PROPOSAL_CREATED';
 
 export type NotificationPayload = Record<string, string | number | null>;
 

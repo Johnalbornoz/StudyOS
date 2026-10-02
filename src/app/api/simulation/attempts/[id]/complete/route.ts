@@ -14,6 +14,7 @@ import { getSimulationAttempt, completeSimulationAttempt } from '@/lib/simulatio
 import { runPostExamDiagnosis } from '@/lib/simulation/post-exam-diagnosis.service';
 import { computeReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { determineNextAction } from '@/lib/simulation/next-action.service';
+import { refreshExamGapRecommendations } from '@/lib/learning-plan/exam-bridge.service';
 import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -43,6 +44,8 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
   const postExamDiagnosis = await runPostExamDiagnosis(attempt.examAttemptId, attempt.studentId, attempt.examVersionId);
   const readinessSnapshot = await computeReadinessSnapshot({ studentId: attempt.studentId, examProfileId: attempt.examProfileId, examVersionId: attempt.examVersionId });
   const nextAction = await determineNextAction({ postExamDiagnosis, readinessSnapshot, simulationType: attempt.simulationType });
+  // Track A: exam gaps become learning recommendations for the learner (idempotent; never enrolls by itself).
+  await refreshExamGapRecommendations(attempt.studentId).catch((e) => console.error('[exam-bridge] refresh failed', (e as Error)?.message));
 
   logPilotEvent('exam_completed', {
     route: '/api/simulation/attempts/complete',

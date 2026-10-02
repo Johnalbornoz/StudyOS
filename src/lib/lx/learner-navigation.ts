@@ -109,6 +109,7 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
     titleKey: 'nav.groupMore',
     items: [
       { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },
+      { key: 'myPlan', href: '/dashboard/plan', labelKey: 'nav.myPlan', iconKey: 'Map' },
       { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
       ...(hasPendingAssignments ? [] : [assignments]),
       { key: 'studyPlan', href: '/dashboard/study-plan', labelKey: 'nav.studyPlan', iconKey: 'ListChecks' },

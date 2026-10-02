@@ -110,6 +110,12 @@ export default async function TeacherLearnerPage({ params }: { params: Promise<{
                   <dl className="ta-facts">
                     <dt>{t['tl.state.phase']}</dt>
                     <dd>{c.stage ? t[`conceptMission.stage.${c.stage}`] : t['tl.unavailable']}</dd>
+                    {c.sources.length > 0 && (
+                      <>
+                        <dt>{t['tcp.learner.sources']}</dt>
+                        <dd>{c.sources.map((s) => t[`lp.source.${s}` as MessageKey]).join(', ')}</dd>
+                      </>
+                    )}
                     <dt>{t['tl.state.next']}</dt>
                     <dd>{nextStep(c)}</dd>
                     <dt>{t['tl.state.practice']}</dt>
