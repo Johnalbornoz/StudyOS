@@ -9,6 +9,8 @@
  * source itself; LOW means a secondary source and is shown as such.
  */
 
+import { IB_DP_SOURCES } from './ib-dp.generated';
+
 export type SourceConfidence = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNVERIFIED';
 export type SourceLicense = 'PUBLIC' | 'LICENSED' | 'GENERATED' | 'INTERNAL';
 
@@ -28,7 +30,7 @@ export interface AssessmentSourceSeed {
 
 export const VERIFIED_AT = '2026-10-01T00:00:00.000Z';
 
-export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [
+const BASE_SOURCES: AssessmentSourceSeed[] = [
   // ---- IB DP Mathematics ----
   { key: 'ibo-math-aa-guide-2021', framework: 'IB', title: 'Mathematics: analysis and approaches guide (first assessment 2021)', publisher: 'IBO', url: 'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf', documentVersion: 'first assessment 2021', publicationYear: 2019, effectiveSession: 'May 2021 - November 2028', confidence: 'HIGH', license: 'PUBLIC' },
   { key: 'ibo-math-aa-brief-2021', framework: 'IB', title: 'DP Subject Brief: Mathematics: analysis and approaches (first assessments 2021)', publisher: 'IBO', url: 'https://www.ibo.org/contentassets/5895a05412144fe890312bad52b17044/subject-brief-dp-math-analysis-and-approaches-en.pdf', publicationYear: 2019, confidence: 'HIGH', license: 'PUBLIC' },
@@ -69,6 +71,10 @@ export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [
   // ---- PAA ----
   { key: 'cb-paa-preguntas-respuestas-2017', framework: 'PAA', title: 'PAA Preguntas y respuestas (PAA revisada)', publisher: 'College Board Puerto Rico y América Latina', url: 'https://latam.collegeboard.org/wp-content/uploads/2017/10/PAA-Preguntas-y-Respuestas-Puerto-Rico-2017.pdf', documentVersion: 'PAA revisada', publicationYear: 2017, confidence: 'HIGH', license: 'PUBLIC' },
   { key: 'cb-paa-guia-estudio-2018', framework: 'PAA', title: 'PAA Guía de estudio', publisher: 'College Board Puerto Rico y América Latina', url: 'https://latam.collegeboard.org/wp-content/uploads/2018/06/Guia_de_estudio_PAA.pdf', publicationYear: 2018, confidence: 'HIGH', license: 'PUBLIC' },
+  { key: 'cb-paa-guia-2021', framework: 'PAA', title: 'Guía de estudios PAA (2021)', publisher: 'College Board Puerto Rico y América Latina', url: 'https://latam.collegeboard.org/wp-content/uploads/2021/07/Guia_de_estudios_PAA.pdf', documentVersion: '2021', publicationYear: 2021, confidence: 'HIGH', license: 'PUBLIC', notes: 'Sections, item counts, timing, item formats, content areas, research items, scoring.' },
+  { key: 'cb-paa-practice-test-2018', framework: 'PAA', title: 'PAA — prueba de práctica oficial (en la guía de estudio)', publisher: 'College Board (re-hosted by UMIP, Panamá)', url: 'https://www.umip.ac.pa/documents/guia-estudio-paa.pdf', documentVersion: '2018', publicationYear: 2018, confidence: 'MEDIUM', license: 'PUBLIC', notes: 'Student-produced response rules (grid, positive values).' },
+  { key: 'cb-paa-manual-latam-2024', framework: 'PAA', title: 'PAA América Latina — Manual del examinador (2024)', publisher: 'College Board (re-hosted by UTP, Panamá)', url: 'https://utp.ac.pa/sites/default/files/documentos/2024/pdf/paa_al_manual_examinador.pdf', documentVersion: '2024', publicationYear: 2024, confidence: 'MEDIUM', license: 'PUBLIC', notes: 'Order of parts, breaks.' },
+  { key: 'cb-paa-usage-2024', framework: 'PAA', title: 'Comparativa del uso de las puntuaciones de la PAA en América Latina', publisher: 'College Board Puerto Rico y América Latina', url: 'https://latam.collegeboard.org/2024/02/28/comparativa-del-uso-de-las-puntuaciones-de-la-paa-en-america-latina/', publicationYear: 2024, confidence: 'HIGH', license: 'PUBLIC', notes: 'Institutions use Lectura y Redacción + Matemáticas for admission; English for diagnosis/placement.' },
   { key: 'cb-paa-program-page', framework: 'PAA', title: 'PAA program page', publisher: 'College Board Puerto Rico y América Latina', url: 'https://latam.collegeboard.org/paa/', publicationYear: null, confidence: 'MEDIUM', license: 'PUBLIC' },
   // ---- Cambridge ----
   { key: 'cie-0580-syllabus-2025-2027', framework: 'CAMBRIDGE', title: 'Cambridge IGCSE Mathematics 0580 syllabus for 2025, 2026 and 2027 (Version 3)', publisher: 'Cambridge International Education', url: 'https://www.cambridgeinternational.org/Images/662466-2025-2027-syllabus.pdf', documentVersion: 'v3', publicationYear: 2024, effectiveSession: '2025-2027', confidence: 'HIGH', license: 'PUBLIC' },
@@ -76,3 +82,6 @@ export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [
   // ---- StudyUS-authored practice content (never official) ----
   { key: 'studyus-practice-content', framework: 'STUDYUS', title: 'StudyUS practice items and rubrics, aligned to the cited framework formats', publisher: 'StudyUS', url: null, publicationYear: 2026, confidence: 'UNVERIFIED', license: 'GENERATED', notes: 'Original practice content. Never an official question, mark scheme or criterion.' },
 ];
+
+/** Registry = hand-reviewed base sources + the IB DP research sources (generated). */
+export const ASSESSMENT_SOURCES: AssessmentSourceSeed[] = [...BASE_SOURCES, ...IB_DP_SOURCES];

@@ -13,7 +13,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
 import { buildLearningBridge } from '@/lib/exam-core/learning-bridge.service';
 import { findInstanceByAttempt } from '@/lib/exam-core/exam-instance.service';
-import { ConceptRequestButton, RetakeButton } from './BridgeActions';
+import { ConceptRequestButton, RetakeButton, ReinforceButton } from './BridgeActions';
 import MathText from '@/components/MathText';
 
 /**
@@ -79,7 +79,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
       ) : (
         <>
           <section className="card xr-result" aria-labelledby="xr-score-title">
-            <h2 id="xr-score-title" className="xr-kicker">{t['examPrep.result.examScore']}</h2>
+            <h2 id="xr-score-title" className="xr-kicker">{view.reporting?.scaleNote === 'NO_OFFICIAL_SCALE' ? tr['exv2.result.estimatedReadiness'] : t['examPrep.result.examScore']}</h2>
             {/* Nothing gradable (e.g. every item unavailable) is "no score", never 0%. */}
             {result.maxScore === 0 ? (
               <p className="ui-hint">{t['examPrep.attempt.noGradedItems']}</p>
@@ -92,7 +92,12 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
               <p className="ui-hint">{t['examPrep.result.noPolicy']}</p>
             )}
             <p className="xr-raw">{t['examPrep.result.raw'].replace('{earned}', String(result.rawScore)).replace('{available}', String(result.maxScore))}</p>
-            <p className="ui-hint">{t['examPrep.result.examScoreNote']}</p>
+            <p className="ui-hint">{view.reporting?.scaleNote === 'NO_OFFICIAL_SCALE' ? tr['exv2.result.noOfficialScale'] : t['examPrep.result.examScoreNote']}</p>
+            {(view.completion || view.minutesUsed) && (
+              <p className="ui-hint">
+                {[view.completion ? fmt('exv2.result.completion', { answered: view.completion.answered, total: view.completion.total }) : null, view.minutesUsed ? fmt('exv2.result.minutesUsed', { n: view.minutesUsed }) : null].filter(Boolean).join(' · ')}
+              </p>
+            )}
             {result.scoringStatus === 'SCORED' && result.provenance?.final?.official === false && (
               <p className="ui-hint">
                 {t['examPrep.result.policy']}: {result.provenance?.scoringModel?.name ?? '—'} · {t['examPrep.result.unofficial']}
@@ -106,6 +111,47 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
               <p className="xr-score">{result.strictReadiness.percent === null ? '—' : `${result.strictReadiness.percent}%`}</p>
               <p className="xr-raw">{t['examPrep.result.raw'].replace('{earned}', String(result.strictReadiness.earned)).replace('{available}', String(result.strictReadiness.available))}</p>
               <p className="ui-hint">{tr['exv2.strict.note']}</p>
+            </section>
+          )}
+
+          {result.sectionResults.length > 1 && (
+            <section className="card xr-result" aria-labelledby="exv2-areas-title">
+              <h2 id="exv2-areas-title" className="xr-section-name">{tr['exv2.result.byArea']}</h2>
+              {(view.reporting?.groups ?? result.sectionResults.map((sr) => ({ key: sr.key, label: sr.name, sectionKeys: [sr.key], institutionDefined: false }))).map((g) => {
+                const secs = result.sectionResults.filter((sr) => g.sectionKeys.includes(sr.key));
+                if (secs.length === 0) return null;
+                const earned = secs.reduce((n, sr) => n + sr.earned, 0);
+                const available = secs.reduce((n, sr) => n + sr.available, 0);
+                return (
+                  <div key={g.key} className="exv2-area">
+                    <div className="xr-bar-head">
+                      <span className="xr-bar-name">{g.label}</span>
+                      <span className="xr-bar-value">{available > 0 ? pct(earned / available) : '—'} · {t['examPrep.result.raw'].replace('{earned}', String(earned)).replace('{available}', String(available))}</span>
+                    </div>
+                    {secs.map((sr) => {
+                      const skills = view.objectives.filter((o) => o.componentId === sr.componentId);
+                      return (
+                        <div key={sr.componentId}>
+                          {secs.length > 1 && <p className="ui-hint" style={{ margin: 0 }}><strong>{sr.name}</strong> · {pct(sr.fraction)}</p>}
+                          <ul className="xr-objectives">
+                            {skills.map((o) => (
+                              <li key={o.learningObjectiveId}>
+                                <span>{o.description}</span>{' '}
+                                <span className={`xr-pill ${o.classification === 'STRENGTH' ? 'is-good' : o.classification === 'GAP' ? 'is-warn' : ''}`}>{tr[`examPrep.result.class.${o.classification}`]} · {pct(o.fraction)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                    {g.institutionDefined && (
+                      <p className="ui-hint">
+                        {view.institutionPolicies.length > 0 ? tr['exv2.result.institutionPolicy'] : tr['exv2.result.institutionDefined']}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </section>
           )}
 
@@ -180,11 +226,13 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                 {bridge.map((b) => (
                   <li key={b.learningObjectiveId} className="exv2-bridge-item">
                     <p className="exv2-bridge-text">
-                      {fmt('exv2.bridge.need', { topic: b.description })}{' '}
+                      {fmt('exv2.bridge.need', { topic: b.action.kind === 'PROPOSE' ? b.description : b.action.conceptName })}{' '}
                       {b.questions > 0 && <span className="ui-hint">{fmt('exv2.bridge.missed', { missed: b.questionsMissed, total: b.questions })}</span>}
                     </p>
                     {b.action.kind === 'REINFORCE' ? (
                       <a className="btn btn-primary" href={b.action.href}>{tr['exv2.bridge.reinforce']}</a>
+                    ) : b.action.kind === 'ADD_AND_REINFORCE' ? (
+                      <ReinforceButton simulationAttemptId={attempt.id} learningObjectiveId={b.learningObjectiveId} canonicalConceptId={b.action.canonicalConceptId} language={locale} labels={v2} />
                     ) : b.action.proposalStatus === 'REJECTED' ? (
                       <span className="ui-hint">{tr['exv2.bridge.notAvailable']}</span>
                     ) : (

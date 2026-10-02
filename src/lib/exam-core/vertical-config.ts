@@ -78,6 +78,19 @@ export const ExamVerticalConfigSchema = z
     structureLabel: z.string().min(1).max(100),
     /** V2: mandatory versioning metadata + sources (required for every V2 configuration). */
     framework: FrameworkVersioningSchema.optional(),
+    /**
+     * V2: how results are reported (e.g. PAA: Lectura y Redacción together).
+     * `NO_OFFICIAL_SCALE`: no official raw->scale conversion is configured, so
+     * only a StudyUS estimated readiness is shown -- never a fake scaled score.
+     */
+    reporting: z
+      .object({
+        scaleNote: z.enum(['NO_OFFICIAL_SCALE', 'OFFICIAL_SCALE_CONFIGURED']).default('NO_OFFICIAL_SCALE'),
+        groups: z.array(z.object({ key: KEY, label: z.string().min(1).max(120), sectionKeys: z.array(z.string().min(1)).min(1), institutionDefined: z.boolean().optional() })).min(1).max(10),
+      })
+      .optional(),
+    /** V2: a structure-only configuration (sourced definitions + blueprint, no bank yet). */
+    structureOnly: z.boolean().optional(),
     commandTerms: z.array(z.object({ term: z.string().min(1).max(60), expectedReasoningType: z.string().max(40).optional(), description: z.string().max(500).optional() })).default([]),
     sections: z.array(SectionSchema).min(1).max(20),
     items: z.array(z.object({ objectiveCode: KEY, content: ApprovedItemContentSchema })).max(500),
@@ -98,6 +111,7 @@ export const ExamVerticalConfigSchema = z
     if (cfg.contentStatus !== 'OFFICIAL_LICENSED' && cfg.scoring.policy.provenance.official) {
       ctx.addIssue({ code: 'custom', message: 'only OFFICIAL_LICENSED content may carry an official scoring provenance', path: ['scoring', 'policy', 'provenance'] });
     }
+    if (cfg.reporting) for (const g of cfg.reporting.groups) for (const k of g.sectionKeys) if (!cfg.sections.some((s) => s.key === k)) ctx.addIssue({ code: 'custom', message: `reporting group ${g.key} references unknown section ${k}`, path: ['reporting'] });
     if (cfg.sections.some((s) => s.definition) && !cfg.framework) ctx.addIssue({ code: 'custom', message: 'a configuration with component definitions must declare framework versioning', path: ['framework'] });
     const sectionKeys = cfg.sections.map((s) => s.key);
     if (new Set(sectionKeys).size !== sectionKeys.length) ctx.addIssue({ code: 'custom', message: 'duplicate section key', path: ['sections'] });
@@ -118,7 +132,7 @@ export const ExamVerticalConfigSchema = z
     if (weights) for (const k of Object.keys(weights)) if (!sectionKeys.includes(k)) ctx.addIssue({ code: 'custom', message: `sectionWeights references unknown section ${k}`, path: ['scoring'] });
     for (const b of cfg.version.delivery.breaks) if (!sectionKeys.includes(b.afterSectionKey)) ctx.addIssue({ code: 'custom', message: `break references unknown section ${b.afterSectionKey}`, path: ['version', 'delivery'] });
     // Every planned position must be fillable from the bank when the content is a fixture (no AI dependency for certification).
-    if (cfg.contentStatus === 'DEV_CERT_FIXTURE') {
+    if (cfg.contentStatus === 'DEV_CERT_FIXTURE' && !cfg.structureOnly) {
       for (const s of cfg.sections) for (const o of s.objectives) {
         const need = o.targets.reduce((n, t) => n + t.count, 0);
         const have = cfg.items.filter((it) => it.objectiveCode === o.code).length;

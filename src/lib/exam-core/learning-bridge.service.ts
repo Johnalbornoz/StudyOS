@@ -31,6 +31,8 @@ export interface BridgeEntry {
   available: number;
   action:
     | { kind: 'REINFORCE'; conceptName: string; href: string }
+    /** Mapped to a canonical concept the Student does not study yet: "Reforzar ahora" adds it through the normal catalogue path. */
+    | { kind: 'ADD_AND_REINFORCE'; conceptName: string; canonicalConceptId: string }
     | { kind: 'PROPOSE'; proposalStatus: ProposalStatus | null; requested: boolean };
 }
 
@@ -87,9 +89,12 @@ export async function buildLearningBridge(params: { simulationAttemptId: string;
       const c = counts.get(o.learningObjectiveId) ?? { questions: 0, missed: 0 };
       const linked = o.concepts.find((x) => x.studentConceptId && x.subjectId);
       const p = proposalByKey.get(proposalKeyForObjective(o.learningObjectiveId));
+      const mapped = o.concepts[0];
       const action: BridgeEntry['action'] = linked
         ? { kind: 'REINFORCE', conceptName: linked.name, href: `/dashboard/subjects/${linked.subjectId}/concepts/${linked.studentConceptId}` }
-        : { kind: 'PROPOSE', proposalStatus: p?.status ?? null, requested: !!p?.requested };
+        : mapped
+          ? { kind: 'ADD_AND_REINFORCE', conceptName: mapped.name, canonicalConceptId: mapped.canonicalConceptId }
+          : { kind: 'PROPOSE', proposalStatus: p?.status ?? null, requested: !!p?.requested };
       return { learningObjectiveId: o.learningObjectiveId, description: o.description, code: o.code, classification: o.classification, questions: c.questions, questionsMissed: c.missed, earned: o.earned, available: o.available, action };
     })
     .sort((a, b) => (a.classification === b.classification ? b.questionsMissed - a.questionsMissed : a.classification === 'GAP' ? -1 : 1));

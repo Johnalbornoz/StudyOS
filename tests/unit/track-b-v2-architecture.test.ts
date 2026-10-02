@@ -14,7 +14,7 @@ import { createUploadIntent, verifyUploadIntent, signedMediaPath, verifyMediaSig
 import { benchmarkCases, gradeCases, computeMetrics } from '@/lib/exam-core/calibration/calibration';
 import { ASSESSMENT_CATALOG, flattenCatalog } from '@/lib/exam-core/catalog/structure';
 import { ASSESSMENT_SOURCES } from '@/lib/exam-core/catalog/sources';
-import { V2_VERTICALS } from '@/lib/exam-core/verticals/v2';
+import { allV2Configs } from '@/lib/exam-core/verticals/v2/all';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '@/lib/exam-core/vertical-config';
 import { assertResetAllowed, FixtureResetRefusedError } from '@/lib/exam-core/dev-fixture-reset';
 import { computeStrictReadiness } from '@/lib/exam-core/results.service';
@@ -137,7 +137,7 @@ describe('calibration suite', () => {
   });
 });
 
-const configs: ExamVerticalConfig[] = V2_VERTICALS.map((v) => {
+const configs: ExamVerticalConfig[] = allV2Configs().map((v) => {
   const p = parseExamVerticalConfig(v);
   if (!p.ok) throw new Error(p.issues.join(';'));
   return p.config;
@@ -203,10 +203,11 @@ describe('framework fidelity of the reference verticals', () => {
     expect([positions(cfg, (c) => c === 'saber.interpretacion'), positions(cfg, (c) => c === 'saber.formulacion'), positions(cfg, (c) => c === 'saber.argumentacion')]).toEqual([4, 5, 3]);
     expect(cfg.items.every((i) => i.content.answerFormat === 'single_choice' && i.content.options?.length === 4)).toBe(true);
   });
-  it('PAA: four domains, 3 positions each, pace proportional to 60 min / 55 items', () => {
-    const cfg = byKey.get('v2.paa.math')!;
-    for (const d of ['paa.aritmetica', 'paa.algebra', 'paa.geometria', 'paa.datos']) expect(positions(cfg, (c) => c === d)).toBe(3);
-    expect(cfg.sections[0].durationMinutes).toBe(Math.round((60 / 55) * 12));
+  it('PAA: one integral test, four areas in the official order and pace', () => {
+    const cfg = byKey.get('v2.paa')!;
+    expect(cfg.sections.map((s) => [s.key, s.definition!.officialItemCount, s.definition!.officialDurationMinutes])).toEqual([['lectura', 45, 50], ['redaccion', 25, 30], ['matematicas', 55, 60], ['ingles', 50, 40]]);
+    for (const d of ['paa.mat.aritmetica', 'paa.mat.algebra', 'paa.mat.geometria']) expect(positions(cfg, (c) => c === d)).toBe(3);
+    expect(cfg.sections[2].durationMinutes).toBe(Math.round((60 / 55) * 12));
   });
   it('Cambridge 0580 Extended: P2 / P4 = 100 marks, 120 min, 50 % each; non-calculator / scientific', () => {
     const d = byKey.get('v2.cambridge.0580-extended')!.sections.map((s) => s.definition!);
@@ -217,6 +218,7 @@ describe('framework fidelity of the reference verticals', () => {
       expect(c.contentStatus).toBe('DEV_CERT_FIXTURE');
       expect(c.scoring.policy.provenance.official).toBe(false);
       for (const it of c.items) expect(it.content.contentOrigin).toBe('FIXTURE');
+      if (c.structureOnly) expect(c.items).toHaveLength(0);
     }
   });
   it('fingerprints: same template for number-only variants, different for different questions', () => {

@@ -67,6 +67,8 @@ export async function startSimulationAttempt(params: {
   timezone?: string;
   /** Exam V2: only these components (an exam instance's selected papers). */
   assessmentComponentIds?: string[];
+  /** Exam V2: only these objectives (skill-level practice). */
+  learningObjectiveIds?: string[];
   /** Exam V2: per-item feedback override (a Mock / Challenge forces NEVER). */
   itemFeedback?: 'NEVER' | 'AFTER_EACH_ITEM';
   /**
@@ -94,6 +96,7 @@ export async function startSimulationAttempt(params: {
     timingMode: params.timingMode,
     readinessSnapshotId: params.readinessSnapshotId,
     assessmentComponentIds: params.assessmentComponentIds,
+    learningObjectiveIds: params.learningObjectiveIds,
   });
   const preset = params.presetItems ? await params.presetItems(plan) : {};
 

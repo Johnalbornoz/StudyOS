@@ -1,0 +1,2518 @@
+{
+ "researchedAt": "2026-10-01",
+ "subjects": [
+  {
+   "group": 1,
+   "key": "language-a-literature",
+   "name": "Language A: literature",
+   "curriculumVersion": "Language A: literature guide, first assessment 2021",
+   "firstAssessment": 2021,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Guided literary analysis",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 135
+     },
+     "marks": {
+      "SL": 20,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 35
+     },
+     "format": "Guided analysis of unseen literary passage(s): two passages from two different literary forms, each with a guiding question. SL: analyse one; HL: analyse both.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2: Comparative essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 105,
+      "HL": 105
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 25
+     },
+     "format": "Comparative essay on two literary works studied, answering one of four general questions.",
+     "resources": "Closed book (no access to studied works).",
+     "notes": null
+    },
+    {
+     "key": "hl-essay",
+     "name": "HL essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "HL": 20
+     },
+     "weightPercent": {
+      "HL": 20
+     },
+     "format": "Written coursework: 1,200–1,500-word essay on one work studied.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "io",
+     "name": "Individual oral",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 15,
+      "HL": 15
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Oral: prepared 10-minute response + 5 minutes teacher questions, on how a global issue is presented through content and form of one work originally in the language studied and one work in translation (supported by extracts).",
+     "resources": null,
+     "notes": "Internally assessed, externally moderated. School-supported self-taught (SSST) variant: 15-min prepared response, externally assessed."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Know, understand and interpret",
+    "AO2 Analyse and evaluate",
+    "AO3 Communicate"
+   ],
+   "sourceKeys": [
+    "ibo-guide-lang-a-lit",
+    "ibo-brief-lang-a-lit"
+   ],
+   "confidence": "HIGH",
+   "gaps": "No successor course announced on ibo.org curriculum updates page (checked 2026); last assessment unknown."
+  },
+  {
+   "group": 1,
+   "key": "language-a-language-and-literature",
+   "name": "Language A: language and literature",
+   "curriculumVersion": "Language A: language and literature guide, first assessment 2021",
+   "firstAssessment": 2021,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Guided textual analysis",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 135
+     },
+     "marks": {
+      "SL": 20,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 35
+     },
+     "format": "Guided analysis of unseen non-literary passage(s): two passages from different text types, each with a guiding question. SL: analyse one; HL: analyse both.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2: Comparative essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 105,
+      "HL": 105
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 25
+     },
+     "format": "Comparative essay on two literary works studied, answering one of four general questions.",
+     "resources": "Closed book.",
+     "notes": null
+    },
+    {
+     "key": "hl-essay",
+     "name": "HL essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "HL": 20
+     },
+     "weightPercent": {
+      "HL": 20
+     },
+     "format": "Written coursework: 1,200–1,500-word essay on one literary work or a non-literary body of work studied.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "io",
+     "name": "Individual oral",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 15,
+      "HL": 15
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Oral: 10-min prepared response + 5 min teacher questions on how one literary work and one non-literary body of work approach a common global issue.",
+     "resources": null,
+     "notes": "Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Know, understand and interpret",
+    "AO2 Analyse and evaluate",
+    "AO3 Communicate"
+   ],
+   "sourceKeys": [
+    "ibo-guide-lang-a-langlit",
+    "ibo-brief-lang-a-langlit"
+   ],
+   "confidence": "HIGH",
+   "gaps": "No successor announced; last assessment unknown."
+  },
+  {
+   "group": 1,
+   "key": "literature-and-performance",
+   "name": "Literature and performance (interdisciplinary, SL only)",
+   "curriculumVersion": "Literature and performance guide, first assessment 2024",
+   "firstAssessment": 2024,
+   "lastAssessment": null,
+   "levels": [
+    "SL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Comparative essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 105
+     },
+     "marks": {
+      "SL": 30
+     },
+     "weightPercent": {
+      "SL": 30
+     },
+     "format": "Comparative essay on two works studied, answering one of four general questions. Same component as Paper 2 of Language A courses.",
+     "resources": "Closed book.",
+     "notes": "Guide states 30 marks; the subject brief states 25 marks — guide used."
+    },
+    {
+     "key": "wa",
+     "name": "Written assignment",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 26
+     },
+     "weightPercent": {
+      "SL": 30
+     },
+     "format": "Essay of max 2,000 words critically examining an extract from a dramatic work explored through performance and the student's own staging choices.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "tp-io",
+     "name": "Transformative performance and individual oral",
+     "type": "INTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 25
+     },
+     "marks": {
+      "SL": 32
+     },
+     "weightPercent": {
+      "SL": 40
+     },
+     "format": "Two compulsory parts: transformative performance (10 min) of an extract from a non-dramatic literary work before a live audience; individual oral (15 min) explaining the transformation process.",
+     "resources": null,
+     "notes": "Internally assessed, externally moderated. minutes = 10 performance + 15 oral."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Know, understand and interpret",
+    "AO2 Analyse and evaluate",
+    "AO3 Communicate (incl. ideas, emotion, character and atmosphere through performance)"
+   ],
+   "sourceKeys": [
+    "ibo-guide-litperf",
+    "ibo-brief-litperf",
+    "ibo-update-litperf"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Still listed on ibo.org DP curriculum (2026). Satisfies Group 1 and Group 6 simultaneously."
+  },
+  {
+   "group": 2,
+   "key": "language-b",
+   "name": "Language B",
+   "curriculumVersion": "Language B guide, first assessment 2020 (enhanced course first assessment May 2029; assessment model unchanged)",
+   "firstAssessment": 2020,
+   "lastAssessment": 2028,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Productive skills — writing",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 25
+     },
+     "format": "One writing task from a choice of three (each a different theme), choosing an appropriate text type. SL 250–400 words; HL 450–600 words.",
+     "resources": "No dictionaries or reference material.",
+     "notes": null
+    },
+    {
+     "key": "p2-listening",
+     "name": "Paper 2: Receptive skills — listening",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 45,
+      "HL": 60
+     },
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 25
+     },
+     "format": "Comprehension exercises on three audio passages drawn from the five themes.",
+     "resources": "No dictionaries.",
+     "notes": "Paper 2 total: SL 1h45 / HL 2h, 65 marks, 50%."
+    },
+    {
+     "key": "p2-reading",
+     "name": "Paper 2: Receptive skills — reading",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 60,
+      "HL": 60
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 25
+     },
+     "format": "Comprehension exercises on three written texts drawn from the five themes.",
+     "resources": "No dictionaries.",
+     "notes": null
+    },
+    {
+     "key": "io",
+     "name": "Individual oral assessment",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 15,
+      "HL": 15
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 25
+     },
+     "format": "Oral: presentation + discussion + conversation. SL stimulus: visual image linked to a theme. HL stimulus: extract (~300 words) from one of two literary works studied.",
+     "resources": "Supervised preparation: SL 15 min, HL 20 min; max 10 bullet-point notes.",
+     "notes": "Duration 12–15 minutes (minutes field = upper bound). Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "Communicate clearly and effectively in a range of contexts and for a variety of purposes",
+    "Understand and use language appropriate to a range of interpersonal and/or intercultural contexts and audiences",
+    "Understand and use language to express and respond to a range of ideas with fluency and accuracy",
+    "Identify, organize and present ideas on a range of topics",
+    "Understand, analyse and reflect upon a range of written, audio, visual and audio-visual texts"
+   ],
+   "sourceKeys": [
+    "ibo-guide-lang-b",
+    "ibo-brief-lang-b-2020",
+    "ibo-brief-lang-b-2029",
+    "ibo-update-lang-b"
+   ],
+   "confidence": "HIGH",
+   "gaps": "lastAssessment 2028 inferred from successor's first assessment May 2029 (Nov 2028 presumed last session for 2020 version). 2029 brief gives no durations/marks; ibo.org says external assessment unchanged."
+  },
+  {
+   "group": 2,
+   "key": "language-ab-initio",
+   "name": "Language ab initio (SL only)",
+   "curriculumVersion": "Language ab initio guide, first assessment 2020 (enhanced course first assessment May 2029; assessment model unchanged)",
+   "firstAssessment": 2020,
+   "lastAssessment": 2028,
+   "levels": [
+    "SL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Productive skills — writing",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 60
+     },
+     "marks": {
+      "SL": 30
+     },
+     "weightPercent": {
+      "SL": 25
+     },
+     "format": "Two written tasks (A and B) of 70–150 words each, each from a choice of three, choosing a text type.",
+     "resources": "No dictionaries or reference material.",
+     "notes": null
+    },
+    {
+     "key": "p2-listening",
+     "name": "Paper 2: Receptive skills — listening",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 45
+     },
+     "marks": {
+      "SL": 25
+     },
+     "weightPercent": {
+      "SL": 25
+     },
+     "format": "Comprehension exercises on three audio passages.",
+     "resources": "No dictionaries.",
+     "notes": "Paper 2 total 1h45, 65 marks, 50%."
+    },
+    {
+     "key": "p2-reading",
+     "name": "Paper 2: Receptive skills — reading",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 60
+     },
+     "marks": {
+      "SL": 40
+     },
+     "weightPercent": {
+      "SL": 25
+     },
+     "format": "Comprehension exercises on three written texts.",
+     "resources": "No dictionaries.",
+     "notes": null
+    },
+    {
+     "key": "io",
+     "name": "Individual oral assessment",
+     "type": "INTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 10
+     },
+     "marks": {
+      "SL": 30
+     },
+     "weightPercent": {
+      "SL": 25
+     },
+     "format": "Oral: presentation on a visual stimulus, discussion with teacher, conversation on at least one additional theme.",
+     "resources": "15 min supervised preparation; max 10 bullet-point notes.",
+     "notes": "Duration 7–10 minutes. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "Communicate clearly and effectively in a range of contexts and for a variety of purposes",
+    "Understand and use language appropriate to a range of interpersonal and/or intercultural contexts and audiences",
+    "Understand and use language to express and respond to a range of ideas with fluency and accuracy",
+    "Identify, organize and present ideas on a range of topics",
+    "Understand, analyse and reflect upon a range of written, audio, visual and audio-visual texts"
+   ],
+   "sourceKeys": [
+    "ibo-guide-ab-initio",
+    "ibo-brief-ab-initio-2029",
+    "ibo-update-ab-initio"
+   ],
+   "confidence": "HIGH",
+   "gaps": "lastAssessment 2028 inferred from successor first assessment 2029."
+  },
+  {
+   "group": 2,
+   "key": "classical-languages",
+   "name": "Classical languages (Latin / Classical Greek)",
+   "curriculumVersion": "Classical languages guide, first assessment 2024",
+   "firstAssessment": 2024,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 120
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 30
+     },
+     "format": "SL: reading comprehension and translation on one unseen extract. HL: comprehension, translation and guided analysis on a set of two unseen extracts. One of two options chosen.",
+     "resources": "Dictionary use is part of Paper 1 (students use a dictionary to understand the extract).",
+     "notes": "Latin extracts ~130 words; Greek ~150 words."
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 32,
+      "HL": 32
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 30
+     },
+     "format": "Short-answer questions on an extract from a prescribed core text + extended response to a prompt. One of four options.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "hl-composition",
+     "name": "HL composition",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "HL": 25
+     },
+     "weightPercent": {
+      "HL": 20
+     },
+     "format": "Original prose composition in Latin or Classical Greek guided by intentions, with a rationale of no more than 10 entries.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Research dossier",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 28,
+      "HL": 28
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Annotated collection of 7–9 primary source materials answering a question on the classical language, literature or culture, introduced by an inspiration source.",
+     "resources": null,
+     "notes": "Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "1 Demonstrate understanding of the classical language and texts read in it",
+    "2 Interpret and analyse texts through literary, stylistic, historical and cultural contexts",
+    "3 Synthesize evidence from primary, secondary and reference sources",
+    "4 Construct arguments supported by analysis of texts and other products of classical cultures"
+   ],
+   "sourceKeys": [
+    "ibo-guide-classical",
+    "ibo-brief-classical"
+   ],
+   "confidence": "HIGH",
+   "gaps": null
+  },
+  {
+   "group": 3,
+   "key": "business-management",
+   "name": "Business management",
+   "curriculumVersion": "Business management guide, first assessment 2024",
+   "firstAssessment": 2024,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 25
+     },
+     "format": "Case study based on a pre-released statement (context/background). Section A structured questions (20 marks); Section B one of two extended responses (10 marks).",
+     "resources": "Calculator: four-function sufficient; GDCs allowed in examinations.",
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 105
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 50
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 30
+     },
+     "format": "Unseen stimulus material with a quantitative focus. Section A structured questions (SL 20 / HL 30); Section B one of two questions with structured parts + extended response (20).",
+     "resources": "Calculator: four-function sufficient; GDCs allowed.",
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 75
+     },
+     "marks": {
+      "HL": 25
+     },
+     "weightPercent": {
+      "HL": 25
+     },
+     "format": "One compulsory question on unseen stimulus material about a social enterprise.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Business research project",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Research project on a real business issue/problem of an organization using a conceptual lens; max 1,800 words.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation",
+    "AO4 Use and application of appropriate skills"
+   ],
+   "sourceKeys": [
+    "ibo-guide-bm",
+    "ibo-brief-bm"
+   ],
+   "confidence": "HIGH",
+   "gaps": null
+  },
+  {
+   "group": 3,
+   "key": "digital-society",
+   "name": "Digital society",
+   "curriculumVersion": "Digital society guide, first assessment 2024",
+   "firstAssessment": 2024,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 135
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 52
+     },
+     "weightPercent": {
+      "SL": 40,
+      "HL": 35
+     },
+     "format": "SL: two of four structured questions on syllabus + real-world examples. HL: Section A two of four structured questions; Section B one of two extended-response questions on the HL extension.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 75
+     },
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Four compulsory source-based questions (text, visuals, data, diagrams, infographics).",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 75
+     },
+     "marks": {
+      "HL": 30
+     },
+     "weightPercent": {
+      "HL": 25
+     },
+     "format": "Four compulsory questions addressing an intervention for an HL extension challenge topic outlined in a pre-released statement.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Inquiry project",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Inquiry into impacts/implications of a digital system: inquiry process document (max 1,500 words) + recorded multimedia presentation (max 10 minutes) + references.",
+     "resources": null,
+     "notes": "30 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "Understand, apply, analyse, evaluate and synthesize course topics, real-world examples, claims and perspectives, impacts and implications, emerging trends, and (HL) challenges and interventions",
+    "Develop digital society skills: managing inquiry, researching, critical and creative thinking, communicating in multiple modes"
+   ],
+   "sourceKeys": [
+    "ibo-guide-ds",
+    "ibo-brief-ds"
+   ],
+   "confidence": "HIGH",
+   "gaps": "AOs are not numbered AO1–AO4 in the brief."
+  },
+  {
+   "group": 3,
+   "key": "economics",
+   "name": "Economics",
+   "curriculumVersion": "Economics guide, first assessment 2022",
+   "firstAssessment": 2022,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 75
+     },
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Extended response: one question from a choice of three.",
+     "resources": "Calculators not permitted.",
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 105,
+      "HL": 105
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 40
+     },
+     "weightPercent": {
+      "SL": 40,
+      "HL": 30
+     },
+     "format": "Data response: one question from a choice of two; includes quantitative questions.",
+     "resources": "Calculator: four-function sufficient; GDC allowed.",
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 105
+     },
+     "marks": {
+      "HL": 60
+     },
+     "weightPercent": {
+      "HL": 30
+     },
+     "format": "Policy paper: two compulsory questions (30 marks each), quantitative and qualitative.",
+     "resources": "Calculator: four-function sufficient; GDC allowed.",
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Portfolio of three commentaries",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 45,
+      "HL": 45
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Three commentaries (max 800 words each) on news-media extracts, different syllabus units and different key concepts.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation",
+    "AO4 Use and application of appropriate skills"
+   ],
+   "sourceKeys": [
+    "ibo-guide-econ",
+    "ibo-brief-econ"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Paper 1 is 25 marks (caller's prior note did not state P1/P2 marks)."
+  },
+  {
+   "group": 3,
+   "key": "geography",
+   "name": "Geography",
+   "curriculumVersion": "Geography guide, first assessment 2019",
+   "firstAssessment": 2019,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Geographic themes",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 135
+     },
+     "marks": {
+      "SL": 40,
+      "HL": 60
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 35
+     },
+     "format": "Per option: one structured question + one extended answer from a choice of two. SL two options, HL three options.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2: Geographic perspectives — global change",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 75
+     },
+     "marks": {
+      "SL": 50,
+      "HL": 50
+     },
+     "weightPercent": {
+      "SL": 40,
+      "HL": 25
+     },
+     "format": "Three structured questions (one per core unit); infographic/visual stimulus with structured questions; one extended answer from a choice of two.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3: Geographic perspectives — global interactions",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 60
+     },
+     "marks": {
+      "HL": 28
+     },
+     "weightPercent": {
+      "HL": 20
+     },
+     "format": "Choice of three two-part extended answer questions, one per HL core extension unit.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Fieldwork written report",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 20
+     },
+     "format": "One written report (max 2,500 words) based on a fieldwork question, data collection, analysis and evaluation.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding of specified content",
+    "AO2 Application and analysis of knowledge and understanding",
+    "AO3 Synthesis and evaluation",
+    "AO4 Selection, use and application of a variety of appropriate skills and techniques"
+   ],
+   "sourceKeys": [
+    "ibo-guide-geo",
+    "ibo-brief-geo"
+   ],
+   "confidence": "HIGH",
+   "gaps": "No successor announced on ibo.org updates page as of 2026; calculator rules not found in guide."
+  },
+  {
+   "group": 3,
+   "key": "global-politics",
+   "name": "Global politics",
+   "curriculumVersion": "Global politics, first assessment 2026",
+   "firstAssessment": 2026,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 75
+     },
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Source-based: four compulsory structured questions on the core (Q1 3, Q2 4, Q3 6, Q4 12 marks per teacher site).",
+     "resources": null,
+     "notes": "Marks from teacher site (MEDIUM); duration/weight from IB brief."
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 40,
+      "HL": 30
+     },
+     "format": "Extended response: two essays — one from Section A (thematic studies) and one from Section B (integrating/cross-thematic questions).",
+     "resources": null,
+     "notes": "CONFLICT: IB brief says 1.5 h (consistent with stated external totals 2.75 h SL / 4.25 h HL); teacher site glopopolis.org says 1 h 45 min. Marks (30) from teacher site."
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 90
+     },
+     "marks": {
+      "HL": 28
+     },
+     "weightPercent": {
+      "HL": 30
+     },
+     "format": "Stimulus-based questions on HL extension (global political challenges), drawing on students' researched case studies.",
+     "resources": null,
+     "notes": "Marks from teacher site (MEDIUM)."
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Engagement project",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 24,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Written report on a political issue explored through engagement and research; HL adds a recommendation for addressing the issue.",
+     "resources": null,
+     "notes": "SL 25 hours, HL 30 hours. Marks from teacher site (MEDIUM). HL oral extension of the old course removed."
+    }
+   ],
+   "assessmentObjectives": [
+    "Knowledge and understanding",
+    "Application and analysis",
+    "Synthesis and evaluation",
+    "Use and application of appropriate skills"
+   ],
+   "sourceKeys": [
+    "ibo-brief-gp",
+    "ibo-update-gp",
+    "glopopolis-gp-2026"
+   ],
+   "confidence": "MEDIUM",
+   "gaps": "Official guide not retrievable; component marks and P2 duration (90 vs 105 min) not verified against the IB guide."
+  },
+  {
+   "group": 3,
+   "key": "history",
+   "name": "History (2020 version, outgoing)",
+   "curriculumVersion": "History guide, first assessment 2020",
+   "firstAssessment": 2020,
+   "lastAssessment": 2027,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 60,
+      "HL": 60
+     },
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Source-based paper: one of five prescribed subjects; four structured questions.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 30,
+      "HL": 30
+     },
+     "weightPercent": {
+      "SL": 45,
+      "HL": 25
+     },
+     "format": "Essay paper on 12 world history topics: two essays on two different topics.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 150
+     },
+     "marks": {
+      "HL": 45
+     },
+     "weightPercent": {
+      "HL": 35
+     },
+     "format": "Separate papers per regional option; three essay questions for the selected region.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Historical investigation",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 20
+     },
+     "format": "Historical investigation into a topic of the student's choice; max 2,200 words.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation",
+    "AO4 Use and application of appropriate skills"
+   ],
+   "sourceKeys": [
+    "ibo-guide-history-2020",
+    "ibo-brief-history-2020",
+    "ibo-update-history"
+   ],
+   "confidence": "HIGH",
+   "gaps": "lastAssessment 2027 inferred from successor first assessment May 2028."
+  },
+  {
+   "group": 3,
+   "key": "history-2028",
+   "name": "History (new course, first assessment 2028)",
+   "curriculumVersion": "History, first teaching Aug 2026, first assessment May 2028",
+   "firstAssessment": 2028,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 75,
+      "HL": 75
+     },
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Source-based on the five focused studies (paired case studies) linked by an overarching inquiry question; three static questions, all answered for one focused study.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 105,
+      "HL": 105
+     },
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 40,
+      "HL": 25
+     },
+     "format": "Section A: one of two concept questions. Section B: one of two questions on the thematic study, each with a short response and an essay response.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 120
+     },
+     "marks": {
+      "HL": 30
+     },
+     "weightPercent": {
+      "HL": 35
+     },
+     "format": "Separate papers per region; two essay questions from different regional studies, each evaluating a given argument.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Historical investigation",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Investigation in three sections: historical inquiry question; sources and perspectives; synthesis and evaluation. Max 7 sources.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated. Word limit not stated in brief."
+    }
+   ],
+   "assessmentObjectives": [
+    "Knowledge and understanding",
+    "Application and analysis",
+    "Evaluation and synthesis"
+   ],
+   "sourceKeys": [
+    "ibo-brief-history-2028",
+    "ibo-update-history"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Full 2028 guide not retrievable; IA word limit unverified."
+  },
+  {
+   "group": 3,
+   "key": "philosophy",
+   "name": "Philosophy",
+   "curriculumVersion": "Philosophy guide, first assessment 2025",
+   "firstAssessment": 2025,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 105,
+      "HL": 150
+     },
+     "marks": {
+      "SL": 50,
+      "HL": 75
+     },
+     "weightPercent": {
+      "SL": 50,
+      "HL": 40
+     },
+     "format": "Section A: one of two stimulus-based questions on the core theme. Section B: essay(s) on optional themes — SL one, HL two.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 60,
+      "HL": 60
+     },
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 20
+     },
+     "format": "Prescribed text: one two-part question (parts A and B).",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 75
+     },
+     "marks": {
+      "HL": 25
+     },
+     "weightPercent": {
+      "HL": 20
+     },
+     "format": "Unseen ~800-word philosophical text on a contemporary issue; one two-part question (HL extension).",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Philosophical analysis",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 25,
+      "HL": 25
+     },
+     "weightPercent": {
+      "SL": 25,
+      "HL": 20
+     },
+     "format": "2,000-word philosophical analysis of a non-philosophical stimulus.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation",
+    "AO4 Use and application of appropriate skills"
+   ],
+   "sourceKeys": [
+    "ibo-guide-phil",
+    "ibo-brief-phil"
+   ],
+   "confidence": "HIGH",
+   "gaps": null
+  },
+  {
+   "group": 3,
+   "key": "psychology",
+   "name": "Psychology",
+   "curriculumVersion": "Psychology guide, first assessment 2027 (first teaching Aug 2025)",
+   "firstAssessment": 2027,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Integration of concepts, content and contexts",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 35,
+      "HL": 35
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 25
+     },
+     "format": "Section A: two compulsory short-answer questions (two of three content areas). Section B: two compulsory application questions on unseen situations. Section C: one of two concept-based extended responses.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2: Applying concepts and content to research contexts",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 90
+     },
+     "marks": {
+      "SL": 35,
+      "HL": 35
+     },
+     "weightPercent": {
+      "SL": 35,
+      "HL": 25
+     },
+     "format": "Section A: four compulsory questions on class practicals. Section B: evaluation of an unseen research study with regard to two or more concepts.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p3",
+     "name": "Paper 3: Data analysis and interpretation",
+     "type": "EXTERNAL",
+     "levels": [
+      "HL"
+     ],
+     "minutes": {
+      "HL": 105
+     },
+     "marks": {
+      "HL": 30
+     },
+     "weightPercent": {
+      "HL": 30
+     },
+     "format": "Four source-based questions with quantitative and qualitative findings from one HL extension.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Research proposal",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 24,
+      "HL": 24
+     },
+     "weightPercent": {
+      "SL": 30,
+      "HL": 20
+     },
+     "format": "Research proposal using one of the four class-practical research methods to investigate a population of interest; max 2,200 words.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation"
+   ],
+   "sourceKeys": [
+    "ibo-brief-psych-2027",
+    "ibo-update-psych",
+    "ibo-guide-psych-2027"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Outgoing 2019 course: last assessment presumably Nov 2026 (inferred)."
+  },
+  {
+   "group": 3,
+   "key": "social-and-cultural-anthropology",
+   "name": "Social and cultural anthropology",
+   "curriculumVersion": "Social and cultural anthropology, first assessment 2019",
+   "firstAssessment": 2019,
+   "lastAssessment": null,
+   "levels": [
+    "SL",
+    "HL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1: Engaging with anthropology",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 120
+     },
+     "marks": null,
+     "weightPercent": {
+      "SL": 40,
+      "HL": 30
+     },
+     "format": "Three questions based on an unseen text; one question from six 'big questions'. HL adds one question on anthropological ethics from one of two stimuli.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2: Engaging with ethnography",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": {
+      "SL": 90,
+      "HL": 150
+     },
+     "marks": null,
+     "weightPercent": {
+      "SL": 40,
+      "HL": 45
+     },
+     "format": "Section A: one question connecting a key concept, area of inquiry and real-world issue. Section B: SL one question, HL two questions from other areas of inquiry.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Fieldwork",
+     "type": "INTERNAL",
+     "levels": [
+      "SL",
+      "HL"
+     ],
+     "minutes": null,
+     "marks": null,
+     "weightPercent": {
+      "SL": 20,
+      "HL": 25
+     },
+     "format": "SL: observation report, extension of fieldwork, second data collection and analysis, critical reflection. HL: proposal form, critical reflection, research report and reflection.",
+     "resources": null,
+     "notes": "SL 30 hours, HL 60 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding",
+    "AO2 Application and analysis",
+    "AO3 Synthesis and evaluation",
+    "AO4 Selection and use of a variety of skills"
+   ],
+   "sourceKeys": [
+    "ibo-brief-sca"
+   ],
+   "confidence": "MEDIUM",
+   "gaps": "Official guide not retrievable; component marks and IA word limits unknown. Structure/time/weights from IB brief (HIGH)."
+  },
+  {
+   "group": 3,
+   "key": "world-religions",
+   "name": "World religions (SL only, outgoing)",
+   "curriculumVersion": "World religions guide, first examinations 2013",
+   "firstAssessment": 2013,
+   "lastAssessment": 2028,
+   "levels": [
+    "SL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 75
+     },
+     "marks": {
+      "SL": 45
+     },
+     "weightPercent": {
+      "SL": 30
+     },
+     "format": "Stimulus-response: answer five of nine questions (one per religion), at least one from each of sections A, B, C.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 90
+     },
+     "marks": {
+      "SL": 30
+     },
+     "weightPercent": {
+      "SL": 45
+     },
+     "format": "Two essay questions (from 14) on guiding themes, one from each section.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Investigative study (written analysis)",
+     "type": "INTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 30
+     },
+     "weightPercent": {
+      "SL": 25
+     },
+     "format": "Structured written analysis based on an investigative study of any religion; 1,500–1,800 words.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "AO1 Knowledge and understanding of specified content",
+    "AO2 Application and analysis of knowledge and understanding",
+    "AO3 Synthesis and evaluation",
+    "AO4 Selection, use and application of appropriate skills and techniques"
+   ],
+   "sourceKeys": [
+    "ibo-guide-wr",
+    "ibo-brief-wr",
+    "ibo-update-rs"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Replaced by 'Religion and society' (first assessment May 2029); lastAssessment 2028 inferred."
+  },
+  {
+   "group": 3,
+   "key": "religion-and-society",
+   "name": "Religion and society (successor to world religions)",
+   "curriculumVersion": "Religion and society, first teaching Aug 2027, first assessment May 2029",
+   "firstAssessment": 2029,
+   "lastAssessment": null,
+   "levels": [
+    "SL"
+   ],
+   "components": [
+    {
+     "key": "p1",
+     "name": "Paper 1",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 75
+     },
+     "marks": {
+      "SL": 25
+     },
+     "weightPercent": {
+      "SL": 30
+     },
+     "format": "Section A: three questions on a short stimulus (part 1) using studied examples. Section B: one extended response on a short authentic text.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "p2",
+     "name": "Paper 2",
+     "type": "EXTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": {
+      "SL": 90
+     },
+     "marks": {
+      "SL": 27
+     },
+     "weightPercent": {
+      "SL": 40
+     },
+     "format": "Section A: two of four extended-response questions on part 2 content. Section B: one of two concept-focused essays.",
+     "resources": null,
+     "notes": null
+    },
+    {
+     "key": "ia",
+     "name": "Internal assessment: Inquiry report",
+     "type": "INTERNAL",
+     "levels": [
+      "SL"
+     ],
+     "minutes": null,
+     "marks": {
+      "SL": 25
+     },
+     "weightPercent": {
+      "SL": 30
+     },
+     "format": "Inquiry into an aspect of religious identity, expressions or experiences of a group/adherents, applying a course concept.",
+     "resources": null,
+     "notes": "20 hours. Internally assessed, externally moderated."
+    }
+   ],
+   "assessmentObjectives": [
+    "Knowing and understanding",
+    "Applying and analysing",
+    "Evaluating and synthesizing"
+   ],
+   "sourceKeys": [
+    "ibo-brief-rs",
+    "ibo-update-rs"
+   ],
+   "confidence": "HIGH",
+   "gaps": "SL-only inferred from 150 teaching hours and single assessment outline; not yet examined (outside Oct 2026 window)."
+  },
+  {
+   "group": "core",
+   "key": "theory-of-knowledge",
+   "name": "Theory of knowledge",
+   "curriculumVersion": "TOK guide, first assessment 2022",
+   "firstAssessment": 2022,
+   "lastAssessment": null,
+   "levels": [
+    "CORE"
+   ],
+   "components": [
+    {
+     "key": "exhibition",
+     "name": "TOK exhibition",
+     "type": "INTERNAL",
+     "levels": [
+      "CORE"
+     ],
+     "minutes": null,
+     "marks": {
+      "CORE": 10
+     },
+     "weightPercent": {
+      "CORE": 33.3
+     },
+     "format": "Individual exhibition of three objects with commentaries (max 950 words) on one IA prompt.",
+     "resources": null,
+     "notes": "8 hours. Weighting 1/3. Internally assessed, externally moderated."
+    },
+    {
+     "key": "essay",
+     "name": "TOK essay on a prescribed title",
+     "type": "EXTERNAL",
+     "levels": [
+      "CORE"
+     ],
+     "minutes": null,
+     "marks": {
+      "CORE": 10
+     },
+     "weightPercent": {
+      "CORE": 66.7
+     },
+     "format": "Essay (max 1,600 words) on one of six prescribed titles issued each session.",
+     "resources": null,
+     "notes": "10 hours. Weighting 2/3. Marked by IB examiners."
+    }
+   ],
+   "assessmentObjectives": [
+    "Demonstrate TOK thinking through critical examination of knowledge questions",
+    "Identify and explore links between knowledge questions and the world around us",
+    "Identify and explore links between knowledge questions and areas of knowledge",
+    "Develop relevant, clear and coherent arguments",
+    "Use examples and evidence effectively to support a discussion",
+    "Demonstrate awareness and evaluation of different points of view",
+    "Consider the implications of arguments and conclusions"
+   ],
+   "pointsMatrix": {
+    "description": "Diploma points from TOK grade x EE grade (max 3). Rows = EE grade, columns = TOK grade. E or N in either = failing condition.",
+    "rowsEE_colsTOK": {
+     "A": {
+      "A": 3,
+      "B": 3,
+      "C": 2,
+      "D": 2,
+      "E": "fail"
+     },
+     "B": {
+      "A": 3,
+      "B": 2,
+      "C": 2,
+      "D": 1,
+      "E": "fail"
+     },
+     "C": {
+      "A": 2,
+      "B": 2,
+      "C": 1,
+      "D": 0,
+      "E": "fail"
+     },
+     "D": {
+      "A": 2,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "E": "fail"
+     },
+     "E": {
+      "A": "fail",
+      "B": "fail",
+      "C": "fail",
+      "D": "fail",
+      "E": "fail"
+     }
+    },
+    "source": "ibo-guide-ee-2027 Figure 4"
+   },
+   "sourceKeys": [
+    "ibo-guide-tok",
+    "ibo-brief-tok",
+    "ibo-guide-ee-2027"
+   ],
+   "confidence": "HIGH",
+   "gaps": "TOK grade boundaries (A–E from combined 20-mark scale) are session-specific and not given."
+  },
+  {
+   "group": "core",
+   "key": "extended-essay",
+   "name": "Extended essay",
+   "curriculumVersion": "Extended essay guide, first assessment 2027",
+   "firstAssessment": 2027,
+   "lastAssessment": null,
+   "levels": [
+    "CORE"
+   ],
+   "components": [
+    {
+     "key": "essay",
+     "name": "Extended essay",
+     "type": "EXTERNAL",
+     "levels": [
+      "CORE"
+     ],
+     "minutes": null,
+     "marks": {
+      "CORE": 30
+     },
+     "weightPercent": null,
+     "format": "Independent research essay, max 4,000 words; subject-focused or interdisciplinary (two DP subjects) pathway. Criteria: Framework for the essay 6; Knowledge and understanding 6; Analysis and line of argument 6; Discussion and evaluation 8; Reflection 4.",
+     "resources": null,
+     "notes": "Graded A–E; contributes to up to 3 diploma points with TOK (see TOK pointsMatrix). Must achieve D or higher. 3 mandatory reflection sessions (final = viva voce 10–15 min); 500-word reflective statement on the Reflection and progress form; recommended supervision 3–5 hours."
+    }
+   ],
+   "assessmentObjectives": [
+    "Know and understand",
+    "Apply and analyse",
+    "Synthesize and evaluate",
+    "Communicate research"
+   ],
+   "sourceKeys": [
+    "ibo-guide-ee-2027",
+    "ibo-brief-ee-2027",
+    "ibo-update-ee"
+   ],
+   "confidence": "HIGH",
+   "gaps": "Previous EE (first assessment 2018, 34 marks, criteria A–E) presumably last assessed Nov 2026 (inferred). Grade boundaries not given."
+  },
+  {
+   "group": "core",
+   "key": "cas",
+   "name": "Creativity, activity, service (CAS)",
+   "curriculumVersion": "CAS guide published March 2015",
+   "firstAssessment": null,
+   "lastAssessment": null,
+   "levels": [
+    "CORE"
+   ],
+   "components": [],
+   "notAssessed": "CAS is not formally assessed and awards no marks or points; successful completion is a requirement for the diploma. Students engage in creativity, activity and service experiences for at least 18 months (ideally weekly), complete at least one CAS project, maintain a CAS portfolio (not formally assessed), have three formal documented interviews with the CAS coordinator/adviser (start, end of year 1, end), and provide evidence of achieving all seven learning outcomes.",
+   "assessmentObjectives": [
+    "LO1 Identify own strengths and develop areas for growth",
+    "LO2 Demonstrate that challenges have been undertaken, developing new skills in the process",
+    "LO3 Demonstrate how to initiate and plan a CAS experience",
+    "LO4 Show commitment to and perseverance in CAS experiences",
+    "LO5 Demonstrate the skills and recognize the benefits of working collaboratively",
+    "LO6 Demonstrate engagement with issues of global significance",
+    "LO7 Recognize and consider the ethics of choices and actions"
+   ],
+   "sourceKeys": [
+    "ibo-guide-cas",
+    "ibo-page-cas"
+   ],
+   "confidence": "HIGH",
+   "gaps": "first assessment year of the 2015 CAS guide not stated in the extracted text; CAS has no exams."
+  }
+ ],
+ "sources": [
+  {
+   "key": "ibo-guide-lang-a-lit",
+   "title": "Language A: literature guide (first assessment 2021)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/language-a-literature-guide.pdf",
+   "year": 2019,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-lang-a-langlit",
+   "title": "Language A: language and literature guide (first assessment 2021)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/language-a-language-literature-guide.pdf",
+   "year": 2019,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-lang-a-lit",
+   "title": "DP subject brief: Language A: literature",
+   "publisher": "IBO",
+   "url": "https://ibo.org/contentassets/5895a05412144fe890312bad52b17044/curriculum.brief-languagea.literature-eng.pdf",
+   "year": 2019,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-lang-a-langlit",
+   "title": "DP subject brief: Language A: language and literature",
+   "publisher": "IBO",
+   "url": "https://ibo.org/contentassets/5895a05412144fe890312bad52b17044/curriculum.brief-languagea.language.and.literature-eng.pdf",
+   "year": 2019,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-litperf",
+   "title": "Literature and performance guide (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/literature-performance-guide.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-litperf",
+   "title": "DP subject brief: Literature and performance (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/lit-performance-subject-brief-en.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-litperf",
+   "title": "Literature and performance updates page",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/literature-and-performance/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-lang-b",
+   "title": "Language B guide (first assessment 2020)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/language-b-guide.pdf",
+   "year": 2018,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-lang-b-2020",
+   "title": "DP subject brief: Language B (first assessment 2020)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/contentassets/5895a05412144fe890312bad52b17044/lang-b-2018-en.pdf",
+   "year": 2018,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-lang-b-2029",
+   "title": "DP subject brief: Language B (first assessment 2029)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/sb_lang_b_en.pdf",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-lang-b",
+   "title": "Language B updates page (new course first assessment May 2029; assessment model unchanged)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/language-b-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-ab-initio",
+   "title": "Language ab initio guide (first assessment 2020)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/language-ab-initio-guide.pdf",
+   "year": 2018,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-ab-initio-2029",
+   "title": "DP subject brief: Language ab initio (first assessment 2029)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/sb_ab_initio_en.pdf",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-ab-initio",
+   "title": "Language ab initio updates page",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/language-ab-initio-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-classical",
+   "title": "Classical languages guide (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/classical-languages-guide.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-classical",
+   "title": "DP subject brief: Classical languages (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/classical-language-sl-hl-en.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-bm",
+   "title": "Business management guide (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/business-management-guide.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-bm",
+   "title": "DP subject briefs: Business management SL/HL (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/business-management-hl-subject-brief-en.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-ds",
+   "title": "Digital society guide (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/digital-society-guide.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-ds",
+   "title": "DP subject brief: Digital society (first assessment 2024)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/recognition/pdfs/digital-society-subject-brief-en.pdf",
+   "year": 2022,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-econ",
+   "title": "Economics guide (first assessment 2022)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/economics-guide.pdf",
+   "year": 2020,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-econ",
+   "title": "DP subject briefs: Economics SL/HL (first assessment 2022)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/hl-economics-en.pdf",
+   "year": 2020,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-geo",
+   "title": "Geography guide (first assessment 2019)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/geography-guide.pdf",
+   "year": 2017,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-geo",
+   "title": "DP subject brief: Geography (first assessment 2019)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/contentassets/5895a05412144fe890312bad52b17044/geography-sl-hl-2017-en.pdf",
+   "year": 2017,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-gp",
+   "title": "DP subject brief: Global politics SL/HL (first assessment 2026)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/global-politics-sl-hl-subject-brief-en.pdf",
+   "year": 2024,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-gp",
+   "title": "Global politics updates page",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/global-politics-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "glopopolis-gp-2026",
+   "title": "Glopopolis: IB Global politics 2026 assessment (teacher site)",
+   "publisher": "school/teacher site",
+   "url": "https://www.glopopolis.org/2026/assessment",
+   "year": 2026,
+   "confidence": "MEDIUM"
+  },
+  {
+   "key": "ibo-guide-history-2020",
+   "title": "History guide (first assessment 2020)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/history-guide.pdf",
+   "year": 2017,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-history-2020",
+   "title": "DP subject briefs: History SL/HL (first assessment 2020)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/history-hl-2020-eng.pdf",
+   "year": 2017,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-history-2028",
+   "title": "DP subject brief: History (first assessment 2028)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/dp-history-sb-en.pdf",
+   "year": 2025,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-history",
+   "title": "History updates page (new course first teaching Aug 2026, first assessment May 2028)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/history-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-phil",
+   "title": "Philosophy guide (first assessment 2025)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/philosophy-guide.pdf",
+   "year": 2023,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-phil",
+   "title": "DP subject brief: Philosophy (first assessment 2025)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/dp-philosophy-brief-sl-hl-en.pdf",
+   "year": 2023,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-psych-2027",
+   "title": "Psychology guide (first assessment 2027)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/psychology-first-assessment-2027-guide-sbs.pdf",
+   "year": 2025,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-psych-2027",
+   "title": "DP subject brief: Psychology (first assessment 2027)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/dp_psychology_subjectbrief_en.pdf",
+   "year": 2025,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-psych",
+   "title": "Psychology updates page",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/psychology-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-sca",
+   "title": "DP subject brief: Social and cultural anthropology (first assessment 2019)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/contentassets/5895a05412144fe890312bad52b17044/social-and-cultural-anthropology-sl-hl-2017-en.pdf",
+   "year": 2017,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-wr",
+   "title": "World religions guide (first examinations 2013)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/world-religions-guide.pdf",
+   "year": 2011,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-wr",
+   "title": "DP subject brief: World religions SL",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/3_worldreligionssl.pdf",
+   "year": 2011,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-rs",
+   "title": "DP subject brief: Religion and society (first assessment 2029)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/sb_rel_soc_en.pdf",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-rs",
+   "title": "Religion and society update page (replaces world religions; first assessment May 2029)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/dp-religion-and-society-update/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-tok",
+   "title": "Theory of knowledge guide (first assessment 2022)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/theory-of-knowledge-tok-guide.pdf",
+   "year": 2020,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-tok",
+   "title": "DP subject brief: Theory of knowledge (first assessment 2022)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/programmes/dp/pdfs/tok-sb-english.pdf",
+   "year": 2020,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-ee-2027",
+   "title": "Extended essay guide (first assessment 2027), incl. Figure 4 TOK/EE points matrix",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/extended-essay-first-assessment-2027-guide-sbs.pdf",
+   "year": 2025,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-brief-ee-2027",
+   "title": "DP subject brief: Extended essay (first assessment 2027)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/ee_subjectbrief_en.pdf",
+   "year": 2025,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-update-ee",
+   "title": "DP extended essay updates page (criteria marks)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/dp-extended-essay-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-guide-cas",
+   "title": "Creativity, activity, service guide (published March 2015)",
+   "publisher": "IBO",
+   "url": "https://ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/cas-guide.pdf",
+   "year": 2015,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-page-cas",
+   "title": "ibo.org CAS curriculum page",
+   "publisher": "IBO",
+   "url": "https://ibo.org/programmes/diploma-programme/curriculum/dp-core/creativity-activity-and-service/",
+   "year": 2026,
+   "confidence": "HIGH"
+  },
+  {
+   "key": "ibo-updates-index",
+   "title": "ibo.org Latest curriculum updates index",
+   "publisher": "IBO",
+   "url": "https://ibo.org/university-admission/latest-curriculum-updates/",
+   "year": 2026,
+   "confidence": "HIGH"
+  }
+ ]
+}

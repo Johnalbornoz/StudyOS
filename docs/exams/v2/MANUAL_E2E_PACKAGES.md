@@ -91,6 +91,8 @@ Las fuentes salen de las guías de la IBO. El IA (exploración) se muestra, pero
 
 ## 2. IB Visual Arts (multimodal)
 
+Versión ampliada, con readiness y puente al aprendizaje: `MANUAL_E2E_IB_VISUAL_ARTS.md`. Ciencias: `MANUAL_E2E_IB_SCIENCES_HL.md`.
+
 **Ruta de selección.** IB → Programa del Diploma del IB → Grupo 6: Artes → Artes Visuales → NM (o NS).
 
 **Estructura esperada (NM):**
@@ -161,26 +163,9 @@ Los componentes figuran «sin tiempo oficial (trabajo de curso)». Las rúbricas
 
 **Simulacro, Práctica y Desafío.** Mismas comprobaciones comunes. El resultado no es un puntaje Icfes 0–100.
 
-## 5. PAA Matemáticas
+## 5. PAA
 
-**Ruta de selección.** PAA (revisada) → Matemáticas.
-
-**Estructura esperada:**
-
-- 55 preguntas en 60 min oficiales.
-- Dominios aritmética, álgebra, geometría y análisis de datos y probabilidad.
-- 4 opciones y algunas respuestas producidas por el estudiante.
-- Sin penalización.
-
-El formato reducido es de 12 preguntas (3 por dominio) en 13 min, el mismo ritmo.
-
-**Práctica:**
-
-- Fracción simplificada `17/12`.
-- Factorizar `x²−9`: `(x−3)(x+3)` es correcto; `x²−9` → parcial.
-- Área con unidad: `54 cm²`.
-
-**Simulacro y Desafío:** igual que las comprobaciones comunes. El resultado no es la escala 200–800.
+**Sustituido** por `MANUAL_E2E_PAA.md` (bloque de cierre de V2). La ruta «PAA → Matemáticas» como examen independiente ya no existe: `v2.paa.math` está RETIRED. La PAA es ahora una prueba integral («Simulacro completo») y se practica por área y por habilidad («Practicar un área»).
 
 ## 6. Cambridge IGCSE Mathematics 0580 (Extended)
 

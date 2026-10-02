@@ -408,10 +408,15 @@ function formMet(form: RequiredForm, literal: string, node: MathNode): boolean {
       return true;
     case 'EXACT':
       return !hasDecimalLiteral(literal);
-    case 'INTEGER':
-      return root.type === 'ConstantNode' && Number.isInteger((root as unknown as { value: number }).value);
+    case 'INTEGER': {
+      // A signed integer (-2, +6) is a unary sign around a constant.
+      let n = root;
+      const op = n.type === 'OperatorNode' ? (n as unknown as { fn: string; args: MathNode[] }) : null;
+      if (op && (op.fn === 'unaryMinus' || op.fn === 'unaryPlus') && op.args.length === 1) n = stripParens(op.args[0]);
+      return n.type === 'ConstantNode' && Number.isInteger((n as unknown as { value: number }).value);
+    }
     case 'DECIMAL':
-      return /^-?\d+(\.\d+)?$/.test(literal.trim());
+      return /^[-+]?\s*\d+(\.\d+)?$/.test(literal.trim());
     case 'SCIENTIFIC':
       return /^-?[1-9](\.\d+)?\s*\*\s*10\s*\^\s*\(?-?\d+\)?$/.test(literal.replace(/\s+/g, ''));
     case 'SIMPLIFIED_FRACTION': {
@@ -584,7 +589,14 @@ function gradeAgainst(studentLiteral: string, answer: string, key: MathKey, lang
     const sv = evaluate(s.node, {});
     const ev = evaluate(e.node, {});
     const dp = studentExpr.match(/\.(\d+)\s*$/)?.[1].length ?? 0;
-    if (sv !== null && ev !== null && dp > 0 && Math.abs(sv * factor - ev) <= 0.5 * 10 ** -dp + 1e-12) {
+    // Half a unit in the last place the student wrote, in the student's unit. An integer with
+    // trailing zeros (2510) counts as rounded only when it carries exactly the requested s.f.
+    let halfUlp = dp > 0 ? 0.5 * 10 ** -dp : 0;
+    if (dp === 0 && key.significantFigures !== undefined && significantFigures(studentExpr) === key.significantFigures) {
+      const zeros = studentExpr.trim().match(/(0+)$/)?.[1].length ?? 0;
+      halfUlp = zeros > 0 ? 0.5 * 10 ** zeros : 0;
+    }
+    if (sv !== null && ev !== null && halfUlp > 0 && Math.abs(sv * factor - ev) <= halfUlp * Math.abs(factor) + 1e-12) {
       correctness = 'EQUIVALENT';
       reasons.push('ROUNDED_VALUE');
     }

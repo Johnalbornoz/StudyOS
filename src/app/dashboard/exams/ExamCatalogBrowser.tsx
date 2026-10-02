@@ -26,6 +26,9 @@ interface NodeView {
   available: boolean;
   isExamLevel: boolean;
   hasChildren: boolean;
+  readiness: 'CATALOG_ONLY' | 'STRUCTURE_READY' | 'PRACTICE_READY' | 'FULL_MOCK_READY';
+  purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
+  notExaminable: boolean;
   versioning: { curriculumVersion: string | null; firstAssessment: number | null; lastAssessment: number | null; syllabusCode: string | null; frameworkVersion: string | null };
   sources: Array<{ title: string; publisher: string | null; url: string | null; confidence: string }>;
 }
@@ -33,7 +36,18 @@ interface NodeView {
 interface LevelView {
   nodeKey: string;
   label: string;
-  components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null }>;
+  purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
+  modes: Mode[];
+  componentsFixed: boolean;
+  components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null; readiness: string; officialMinutes: number | null; officialItems: number | null; officialMarks: number | null; calculator: string | null; plannedMinutes: number | null }>;
+}
+
+/** Student-facing readiness label (never the raw state). */
+export function readinessLabel(n: { readiness: string; notExaminable?: boolean }, l: L): string {
+  if (n.notExaminable) return l['exv2.readiness.notExaminable'];
+  if (n.readiness === 'FULL_MOCK_READY') return l['exv2.readiness.mock'];
+  if (n.readiness === 'PRACTICE_READY') return l['exv2.readiness.practice'];
+  return l['exv2.readiness.soon'];
 }
 
 type Mode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
@@ -65,6 +79,8 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<InstanceView | null>(null);
+  /** Narrower entries under the chosen one (e.g. PAA area -> skills). */
+  const [levelChildren, setLevelChildren] = useState<NodeView[]>([]);
 
   useEffect(() => {
     fetch('/api/exams/catalog', { cache: 'no-store' })
@@ -101,11 +117,26 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
         return;
       }
       setPath((p) => [...p, { key: n.key, label: n.label }]);
-      setLevel(b.data.level);
-      setPicked(b.data.level.components.map((c: LevelView['components'][number]) => c.componentId).slice(0, 1));
+      setLevelChildren([]);
+      if (n.hasChildren) {
+        const cr = await fetch(`/api/exams/catalog?${new URLSearchParams({ family: n.family, parent: n.key, lang: language })}`, { cache: 'no-store' }).catch(() => null);
+        const cb = cr ? await cr.json().catch(() => null) : null;
+        if (cr?.ok && cb) setLevelChildren(cb.data.nodes);
+      }
+      const lvl: LevelView = b.data.level;
+      setLevel(lvl);
+      const ready = lvl.components.filter((c) => c.readiness === 'PRACTICE_READY' || c.readiness === 'FULL_MOCK_READY');
+      setPicked(lvl.componentsFixed ? lvl.components.map((c) => c.componentId) : ready.map((c) => c.componentId).slice(0, 1));
+      setMode(lvl.modes.includes('MOCK') ? 'MOCK' : lvl.modes[0] ?? 'PRACTICE');
       setNodes(null);
       return;
     }
+    setPath((p) => [...p, { key: n.key, label: n.label }]);
+    await loadChildren(n.family, n.key);
+  }
+
+  async function openChildren(n: NodeView) {
+    setCreated(null);
     setPath((p) => [...p, { key: n.key, label: n.label }]);
     await loadChildren(n.family, n.key);
   }
@@ -192,7 +223,7 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
         <ul className="exv2-nodes">
           {nodes.map((n) => (
             <li key={n.key}>
-              <button type="button" className={`exv2-node${n.available ? '' : ' is-unavailable'}`} disabled={!n.available || (!n.hasChildren && !n.isExamLevel)} onClick={() => openNode(n)}>
+              <button type="button" className={`exv2-node${n.available ? '' : ' is-unavailable'}`} disabled={!n.hasChildren && !(n.isExamLevel && n.available)} onClick={() => (n.isExamLevel && !n.available ? n.hasChildren && openChildren(n) : openNode(n))}>
                 <span className="exv2-node-main">
                   <span className="exv2-node-label">{n.label}</span>
                   {(n.versioning.firstAssessment || n.versioning.syllabusCode) && (
@@ -202,7 +233,10 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
                   )}
                   {factText(n.facts, l).length > 0 && <span className="exv2-node-facts">{factText(n.facts, l).join(' · ')}</span>}
                 </span>
-                {!n.available ? <span className="xr-pill">{l['exv2.notAvailable']}</span> : n.isExamLevel ? <span className="xr-pill is-good">{l['exv2.choose']}</span> : <span aria-hidden className="exv2-chevron">›</span>}
+                <span className="exv2-node-side">
+                  <span className={`xr-pill${n.readiness === 'FULL_MOCK_READY' || n.readiness === 'PRACTICE_READY' ? ' is-good' : ''}`}>{readinessLabel(n, l)}</span>
+                  {n.hasChildren && <span aria-hidden className="exv2-chevron">›</span>}
+                </span>
               </button>
             </li>
           ))}
@@ -214,22 +248,26 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
         <div className="exv2-setup">
           <fieldset className="exv2-fieldset">
             <legend className="exv2-legend">{l['exv2.setup.components']}</legend>
-            {level.components.map((c) => (
+            {level.componentsFixed && <p className="ui-hint">{l['exv2.setup.fullTest']}</p>}
+            {level.components.map((c) => {
+              const usable = mode === 'PRACTICE' ? c.readiness === 'PRACTICE_READY' || c.readiness === 'FULL_MOCK_READY' : c.readiness === 'FULL_MOCK_READY';
+              return (
               <label key={c.componentId} className={`xr-choice${picked.includes(c.componentId) ? ' is-checked' : ''}`}>
-                <input type="checkbox" checked={picked.includes(c.componentId)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, c.componentId] : p.filter((x) => x !== c.componentId)))} />
+                <input type="checkbox" checked={picked.includes(c.componentId)} disabled={level.componentsFixed || !usable} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, c.componentId] : p.filter((x) => x !== c.componentId)))} />
                 <span aria-hidden />
                 <span className="exv2-comp">
                   <span className="xr-choice-text">{c.name}</span>
-                  <span className="exv2-node-facts">{[...factText(c.facts, l), c.untimed ? l['exv2.fact.untimed'] : null].filter(Boolean).join(' · ')}</span>
+                  <span className="exv2-node-facts">{[...factText(c.facts, l), c.untimed ? l['exv2.fact.untimed'] : null, !usable ? readinessLabel({ readiness: c.readiness }, l) : null].filter(Boolean).join(' · ')}</span>
                 </span>
               </label>
-            ))}
+              );
+            })}
           </fieldset>
 
           <fieldset className="exv2-fieldset">
             <legend className="exv2-legend">{l['exv2.setup.mode']}</legend>
             <div className="exv2-modes">
-              {(['PRACTICE', 'MOCK', 'CHALLENGE'] as Mode[]).map((m) => (
+              {level.modes.map((m) => (
                 <label key={m} className={`exv2-mode${mode === m ? ' is-checked' : ''}`}>
                   <input type="radio" name="exv2-mode" checked={mode === m} onChange={() => setMode(m)} />
                   <span className="exv2-mode-name">{l[`exv2.mode.${m}`]}</span>
@@ -261,10 +299,41 @@ export function ExamCatalogBrowser({ labels: l, language }: { labels: L; languag
             </div>
           )}
           {mode !== 'PRACTICE' && <p className="ui-hint">{allUntimed ? l['exv2.setup.untimedNote'] : l['exv2.setup.officialTiming']}</p>}
+          {mode !== 'PRACTICE' && picked.length > 0 && (
+            <div className="exv2-fidelity">
+              <p className="exv2-fidelity-main">{l['exv2.setup.beforeStart']}</p>
+              <ul className="exv2-reqs">
+                {level.components.filter((c) => picked.includes(c.componentId)).map((c) => (
+                  <li key={c.componentId}>
+                    {[
+                      c.name,
+                      c.officialMinutes ? (l['exv2.setup.officialMinutes'] ?? '{n}').replace('{n}', String(c.officialMinutes)) : null,
+                      c.plannedMinutes && !c.untimed ? (l['exv2.setup.plannedMinutes'] ?? '{n}').replace('{n}', String(c.plannedMinutes)) : null,
+                      c.officialItems ? (l['exv2.fact.items'] ?? '{n}').replace('{n}', String(c.officialItems)) : c.officialMarks ? (l['exv2.fact.marks'] ?? '{n}').replace('{n}', String(c.officialMarks)) : null,
+                      c.calculator ? l[`exv2.calculator.${c.calculator}`] : null,
+                    ].filter(Boolean).join(' · ')}
+                  </li>
+                ))}
+              </ul>
+              <p className="ui-hint">{l['exv2.setup.rules']}</p>
+            </div>
+          )}
 
-          <button type="button" className="btn btn-primary" disabled={busy || picked.length === 0} onClick={create}>
+          <button type="button" className="btn btn-primary" disabled={busy || picked.length === 0 || level.modes.length === 0} onClick={create}>
             {busy ? l['exv2.setup.creating'] : l['exv2.setup.create']}
           </button>
+          {levelChildren.length > 0 && (
+            <div className="exv2-fieldset">
+              <p className="exv2-legend">{l['exv2.setup.narrower']}</p>
+              <div className="exv2-chips">
+                {levelChildren.map((c) => (
+                  <button key={c.key} type="button" className="exv2-chip" disabled={!c.available} onClick={() => openNode(c)}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

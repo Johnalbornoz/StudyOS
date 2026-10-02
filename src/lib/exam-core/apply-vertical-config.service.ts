@@ -128,16 +128,16 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
     if (existingDef) {
       definitionId = existingDef.id;
       await client.query(
-        `UPDATE exam_definitions SET academic_programme_id = $2, name = $3, purpose = $4, domains = $5, academic_subject_id = $6, aggregation_group = $7, status = 'ACTIVE' WHERE id = $1`,
-        [definitionId, programmeId, cfg.definition.name, cfg.definition.purpose, cfg.definition.domains ?? null, definitionSubjectId, cfg.aggregation?.subjectGroup ?? null]
+        `UPDATE exam_definitions SET academic_programme_id = $2, name = $3, purpose = $4, domains = $5, academic_subject_id = $6, aggregation_group = $7, status = $8 WHERE id = $1`,
+        [definitionId, programmeId, cfg.definition.name, cfg.definition.purpose, cfg.definition.domains ?? null, definitionSubjectId, cfg.aggregation?.subjectGroup ?? null, cfg.structureOnly ? 'DRAFT' : 'ACTIVE']
       );
     } else {
       definitionId = (
         await one(
           client,
           `INSERT INTO exam_definitions (academic_programme_id, name, exam_family, purpose, domains, status, config_key, academic_subject_id, aggregation_group)
-           VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6, $7, $8) RETURNING id`,
-          [programmeId, cfg.definition.name, cfg.family, cfg.definition.purpose, cfg.definition.domains ?? null, cfg.key, definitionSubjectId, cfg.aggregation?.subjectGroup ?? null]
+           VALUES ($1, $2, $3, $4, $5, $9, $6, $7, $8) RETURNING id`,
+          [programmeId, cfg.definition.name, cfg.family, cfg.definition.purpose, cfg.definition.domains ?? null, cfg.key, definitionSubjectId, cfg.aggregation?.subjectGroup ?? null, cfg.structureOnly ? 'DRAFT' : 'ACTIVE']
         )
       ).id;
     }
@@ -151,7 +151,7 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         client,
         `INSERT INTO exam_versions (exam_definition_id, version_label, scoring_model_id, supported_modalities, navigation_rules, exam_year, exam_session)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-        [definitionId, cfg.version.label, scoringModelId, cfg.version.supportedModalities ?? null, JSON.stringify({ ...cfg.version.delivery, configFingerprint: fingerprint, contentStatus: cfg.contentStatus }), cfg.version.examYear ?? null, cfg.version.examSession ?? null]
+        [definitionId, cfg.version.label, scoringModelId, cfg.version.supportedModalities ?? null, JSON.stringify({ ...cfg.version.delivery, configFingerprint: fingerprint, contentStatus: cfg.contentStatus, ...(cfg.reporting ? { reporting: cfg.reporting } : {}), ...(cfg.structureOnly ? { structureOnly: true } : {}) }), cfg.version.examYear ?? null, cfg.version.examSession ?? null]
       )
     ).id;
     const blueprintId = (await one(client, `INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING id`, [versionId])).id;

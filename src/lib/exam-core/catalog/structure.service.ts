@@ -15,6 +15,32 @@
 import { db } from '@/lib/db';
 import { upsertSources } from './source-registry.service';
 import { ASSESSMENT_CATALOG, flattenCatalog, type CatalogFamily, type CatalogNode } from './structure';
+import { packageReadiness, modesFor, type ReadinessState, type ComponentReadiness } from './readiness';
+import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
+import { allV2Configs } from '../verticals/v2/all';
+
+/** Parsed configurations by key (the catalogue binds to these). */
+export function configsByKey(): Map<string, ExamVerticalConfig> {
+  const out = new Map<string, ExamVerticalConfig>();
+  for (const v of allV2Configs()) {
+    const p = parseExamVerticalConfig(v);
+    if (p.ok) out.set(p.config.key, p.config);
+  }
+  return out;
+}
+
+/** Readiness of a catalogue node from its binding (pure). Unbound -> CATALOG_ONLY. */
+export function nodeReadiness(node: CatalogNode, configs: Map<string, ExamVerticalConfig>): { state: ReadinessState; components: ComponentReadiness[]; modes: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'> } {
+  if (node.notExaminable || !node.bind) return { state: 'CATALOG_ONLY', components: [], modes: [] };
+  const cfg = configs.get(node.bind.configKey);
+  if (!cfg) return { state: 'CATALOG_ONLY', components: [], modes: [] };
+  const keys = node.bind.sectionKey ? [node.bind.sectionKey] : node.bind.sectionKeys;
+  const r = packageReadiness(cfg, keys, node.bind.objectiveCodes);
+  const modes = modesFor(r.state, node.modes);
+  // The state shown is what this entry OFFERS: an area-practice node over a mock-ready config is "practice", never "mock available".
+  const state: ReadinessState = r.state === 'FULL_MOCK_READY' && !modes.includes('MOCK') ? (modes.includes('PRACTICE') ? 'PRACTICE_READY' : 'STRUCTURE_READY') : r.state;
+  return { ...r, state, modes };
+}
 
 export interface ApplyStructureResult {
   write: boolean;
@@ -25,6 +51,7 @@ export interface ApplyStructureResult {
 
 export async function applyAssessmentStructure(options: { write: boolean }, families: CatalogFamily[] = ASSESSMENT_CATALOG): Promise<ApplyStructureResult> {
   const flat = flattenCatalog(families);
+  const configs = configsByKey();
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -38,7 +65,8 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
       let versionId: string | null = null;
       let componentId: string | null = null;
       if (node.bind) {
-        const def = (await client.query(`SELECT id FROM exam_definitions WHERE config_key = $1 AND status = 'ACTIVE'`, [node.bind.configKey])).rows[0];
+        // Structure-only definitions stay DRAFT (out of every startable catalogue) but carry the published structure.
+        const def = (await client.query(`SELECT id FROM exam_definitions WHERE config_key = $1 AND status IN ('ACTIVE', 'DRAFT')`, [node.bind.configKey])).rows[0];
         const ver = def ? (await client.query(`SELECT id FROM exam_versions WHERE exam_definition_id = $1 AND status = 'PUBLISHED' ORDER BY created_at DESC LIMIT 1`, [def.id])).rows[0] : null;
         definitionId = def?.id ?? null;
         versionId = ver?.id ?? null;
@@ -47,7 +75,8 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
         if (ok) bound++;
         else unresolved.push(node.key);
       }
-      const selectable = !!versionId && (!node.bind?.sectionKey || !!componentId);
+      const readiness = nodeReadiness(node, configs);
+      const selectable = !!versionId && (!node.bind?.sectionKey || !!componentId) && readiness.modes.length > 0;
       const r = await client.query(
         `INSERT INTO assessment_structure_nodes (family, parent_id, node_key, node_type, label, labels, description, order_index, curriculum_version, first_assessment, last_assessment,
            syllabus_code, framework_version, exam_definition_id, exam_version_id, assessment_component_id, selectable, status, source_ids, metadata)
@@ -77,7 +106,7 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
           componentId,
           selectable,
           (node.sourceKeys ?? []).map((k) => sourceIds.get(k)!).filter(Boolean),
-          JSON.stringify({ facts: node.facts ?? null, bind: node.bind ?? null }),
+          JSON.stringify({ facts: node.facts ?? null, bind: node.bind ?? null, purpose: node.purpose ?? null, notExaminable: !!node.notExaminable, readiness: { state: readiness.state, modes: readiness.modes, components: readiness.components } }),
         ]
       );
       idByKey.set(node.key, r.rows[0].id);
@@ -105,6 +134,10 @@ export interface StructureNodeView {
   available: boolean;
   /** The node where the Student picks papers / components and a mode. */
   isExamLevel: boolean;
+  /** CATALOG_ONLY | STRUCTURE_READY | PRACTICE_READY | FULL_MOCK_READY (own binding, else best descendant). */
+  readiness: ReadinessState;
+  purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
+  notExaminable: boolean;
   hasChildren: boolean;
   versioning: { curriculumVersion: string | null; firstAssessment: number | null; lastAssessment: number | null; syllabusCode: string | null; frameworkVersion: string | null };
   sources: Array<{ title: string; publisher: string | null; url: string | null; confidence: string }>;
@@ -128,10 +161,15 @@ export async function listStructureChildren(params: { family: string; parentKey:
   const r = await db.query(
     `SELECT n.*, (SELECT count(*) FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE')::int AS child_count,
             (WITH RECURSIVE sub AS (
-               SELECT c.id, c.selectable FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
+               SELECT c.id, c.selectable, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
                UNION ALL
-               SELECT c.id, c.selectable FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
+               SELECT c.id, c.selectable, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
              ) SELECT bool_or(selectable) FROM sub) AS descendant_selectable,
+            (WITH RECURSIVE sub AS (
+               SELECT c.id, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
+               UNION ALL
+               SELECT c.id, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
+             ) SELECT array_agg(DISTINCT sub.metadata->'readiness'->>'state') FROM sub) AS descendant_states,
             COALESCE((SELECT json_agg(json_build_object('title', s.title, 'publisher', s.publisher, 'url', s.url, 'confidence', s.confidence) ORDER BY s.source_key)
                         FROM assessment_sources s WHERE s.id = ANY(n.source_ids)), '[]'::json) AS sources
        FROM assessment_structure_nodes n
@@ -144,7 +182,13 @@ export async function listStructureChildren(params: { family: string; parentKey:
     const bind = n.metadata?.bind ?? null;
     // The exam level is the bound node above the components (IB HL, Cambridge Extended, PISA Mathematics...).
     const isExamLevel = !!bind && !COMPONENT_NODE_TYPES.has(n.node_type);
+    const order: ReadinessState[] = ['CATALOG_ONLY', 'STRUCTURE_READY', 'PRACTICE_READY', 'FULL_MOCK_READY'];
+    const states: ReadinessState[] = [n.metadata?.readiness?.state, ...((n.descendant_states as string[] | null) ?? [])].filter((x): x is ReadinessState => order.includes(x as ReadinessState));
+    const readiness = states.reduce<ReadinessState>((best, s) => (order.indexOf(s) > order.indexOf(best) ? s : best), 'CATALOG_ONLY');
     return {
+      readiness,
+      purpose: n.metadata?.purpose ?? null,
+      notExaminable: !!n.metadata?.notExaminable,
       key: n.node_key,
       family: n.family,
       type: n.node_type,
@@ -164,9 +208,17 @@ export interface ExamLevelSelection {
   nodeKey: string;
   family: string;
   label: string;
+  purpose: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE' | null;
   examDefinitionId: string;
   examVersionId: string;
-  components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null }>;
+  /** Modes this entry offers, already filtered by readiness. */
+  modes: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'>;
+  readiness: ReadinessState;
+  /** Skill-level practice: the objectives the instance is restricted to. */
+  focusObjectiveIds: string[];
+  /** A full test = all components together, never a pick of some. */
+  componentsFixed: boolean;
+  components: Array<{ componentId: string; nodeKey: string | null; name: string; facts: Record<string, string | number> | null; untimed: boolean; kind: string | null; readiness: ReadinessState; officialMinutes: number | null; officialItems: number | null; officialMarks: number | null; calculator: string | null; plannedMinutes: number | null }>;
 }
 
 /**
@@ -176,23 +228,40 @@ export interface ExamLevelSelection {
 export async function resolveExamLevel(nodeKey: string, language: string): Promise<ExamLevelSelection | null> {
   const n = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND selectable = true LIMIT 1`, [nodeKey])).rows[0];
   if (!n || !n.exam_version_id) return null;
+  const bind = n.metadata?.bind ?? {};
+  const readiness = n.metadata?.readiness ?? { state: 'CATALOG_ONLY', modes: [], components: [] };
   const comps = await db.query(
-    `SELECT ac.id, ac.name, ac.section_key, ac.duration_minutes, ac.timing_status, ac.definition, ac.simulation_capable,
+    `SELECT ac.id, ac.name, ac.section_key, ac.duration_minutes, ac.timing_status, ac.definition, ac.simulation_capable, ac.max_marks,
             (SELECT c.node_key FROM assessment_structure_nodes c WHERE c.assessment_component_id = ac.id AND c.status = 'ACTIVE' LIMIT 1) AS node_key,
             (SELECT c.metadata FROM assessment_structure_nodes c WHERE c.assessment_component_id = ac.id AND c.status = 'ACTIVE' LIMIT 1) AS node_metadata
        FROM assessment_components ac WHERE ac.exam_version_id = $1 AND ac.simulation_capable = true ORDER BY ac.sequence_order NULLS LAST, ac.created_at`,
     [n.exam_version_id]
   );
-  // A node bound to one component (PISA domain, Saber area) offers only that component.
-  const only = n.assessment_component_id as string | null;
+  // A node bound to one component (PISA domain, Saber area, PAA area) or a declared set offers only those.
+  const sectionKeys: string[] | null = bind.sectionKey ? [bind.sectionKey] : bind.sectionKeys ?? null;
+  let focusObjectiveIds: string[] = [];
+  if (Array.isArray(bind.objectiveCodes) && bind.objectiveCodes.length) {
+    const r = await db.query(
+      `SELECT DISTINCT lo.id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id
+         JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE b.exam_version_id = $1 AND lo.code = ANY($2::text[])`,
+      [n.exam_version_id, bind.objectiveCodes]
+    );
+    focusObjectiveIds = r.rows.map((x: any) => x.id);
+  }
+  const compReadiness = new Map<string, ReadinessState>((readiness.components ?? []).map((c: any) => [c.sectionKey, c.state]));
   return {
     nodeKey,
     family: n.family,
     label: localized(n.labels, n.label, language),
+    purpose: n.metadata?.purpose ?? null,
     examDefinitionId: n.exam_definition_id,
     examVersionId: n.exam_version_id,
+    modes: readiness.modes ?? [],
+    readiness: readiness.state,
+    focusObjectiveIds,
+    componentsFixed: n.metadata?.purpose === 'FULL_TEST',
     components: comps.rows
-      .filter((c: any) => !only || c.id === only)
+      .filter((c: any) => !sectionKeys || sectionKeys.includes(c.section_key))
       .map((c: any) => ({
         componentId: c.id,
         nodeKey: c.node_key,
@@ -200,6 +269,12 @@ export async function resolveExamLevel(nodeKey: string, language: string): Promi
         facts: c.node_metadata?.facts ?? null,
         untimed: c.timing_status !== 'CONFIGURED' || c.duration_minutes === null,
         kind: c.definition?.kind ?? null,
+        readiness: compReadiness.get(c.section_key) ?? 'CATALOG_ONLY',
+        officialMinutes: c.definition?.officialDurationMinutes ?? null,
+        officialItems: c.definition?.officialItemCount ?? null,
+        officialMarks: c.max_marks === null ? null : Number(c.max_marks),
+        calculator: c.definition?.calculatorPolicy ?? null,
+        plannedMinutes: c.duration_minutes ?? null,
       })),
   };
 }

@@ -7,10 +7,11 @@
  * catalogue data -- any signed-in user.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { listStructureChildren, listStructureFamilies } from '@/lib/exam-core/catalog/structure.service';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const gate = await requireActor('/api/exams/catalog', 120);
   if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
   const sp = new URL(request.url).searchParams;
@@ -22,3 +23,5 @@ export async function GET(request: NextRequest) {
   if (!family) return NextResponse.json({ success: true, data: { families: await listStructureFamilies() } });
   return NextResponse.json({ success: true, data: { nodes: await listStructureChildren({ family, parentKey: parent, language: lang }) } });
 }
+
+export const GET = withAiRequestMetrics('GET /api/exams/catalog', handleGET);

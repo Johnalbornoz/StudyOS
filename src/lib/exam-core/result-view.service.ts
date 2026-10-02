@@ -30,6 +30,8 @@ export interface ResultObjectiveView {
   earned: number;
   available: number;
   classification: 'STRENGTH' | 'DEVELOPING' | 'GAP' | 'NOT_ASSESSED';
+  /** V2: the section (component) the objective belongs to -- results by area / paper. */
+  componentId: string | null;
   concepts: Array<{ canonicalConceptId: string; name: string; studentConceptId: string | null; subjectId: string | null; masteryState: MasteryState | null }>;
 }
 
@@ -63,6 +65,13 @@ export interface AttemptResultView {
   objectives: ResultObjectiveView[];
   review: ResultItemReview[] | null;
   reviewPolicy: 'FULL' | 'SCORES_ONLY';
+  /** V2: reporting groups (e.g. PAA Lectura y Redacción) and whether an official scale exists. */
+  reporting: { scaleNote: 'NO_OFFICIAL_SCALE' | 'OFFICIAL_SCALE_CONFIGURED'; groups: Array<{ key: string; label: string; sectionKeys: string[]; institutionDefined?: boolean }> } | null;
+  /** V2: completion + time used. */
+  completion: { answered: number; total: number; missing: number } | null;
+  minutesUsed: number | null;
+  /** V2: how institutions the Student targets interpret the result (institution_exam_policies), when known. */
+  institutionPolicies: Array<{ admissionContext: string | null; sectionsConsidered: unknown }>;
   readinessStatus: string | null;
 }
 
@@ -142,7 +151,8 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
   if (!attempt) return null;
 
   const meta = await db.query(
-    `SELECT d.name AS definition_name, d.exam_family, v.version_label, v.exam_year, v.exam_session, v.navigation_rules->>'contentStatus' AS content_status, ea.status AS exam_status
+    `SELECT d.id AS definition_id, d.name AS definition_name, d.exam_family, v.version_label, v.exam_year, v.exam_session, v.navigation_rules->>'contentStatus' AS content_status, ea.status AS exam_status,
+            v.navigation_rules->'reporting' AS reporting, ea.started_at, ea.completed_at
        FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id
        JOIN exam_attempts ea ON ea.id = $2
       WHERE v.id = $1`,
@@ -153,6 +163,15 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
   const lifecycle = deriveExamLifecycle({ simulationStatus: attempt.status, examAttemptStatus: m.exam_status ?? null, resultStatus: result?.status ?? null });
   const nav = (attempt.navigationState ?? {}) as Partial<ExamNavState>;
   const reviewPolicy: 'FULL' | 'SCORES_ONLY' = nav.policy?.resultReview ?? 'FULL';
+
+  // V2: which component each objective was assessed in (from the frozen plan + targets).
+  const planRow = (await db.query(`SELECT sp.plan, ea.frozen_configuration FROM simulation_plans sp JOIN exam_attempts ea ON ea.id = $2 WHERE sp.id = $1`, [attempt.simulationPlanId, attempt.examAttemptId])).rows[0];
+  const targetById = new Map<string, any>((planRow?.frozen_configuration?.objectiveTargets ?? []).map((t: any) => [t.id, t]));
+  const componentByObjective = new Map<string, string>();
+  for (const t of planRow?.plan?.selectedTargets ?? []) {
+    const lo = targetById.get(t.blueprintObjectiveTargetId)?.learningObjectiveId;
+    if (lo && !componentByObjective.has(lo)) componentByObjective.set(lo, t.assessmentComponentId);
+  }
 
   // Objectives: exam performance + the canonical state of their mapped concepts (read-only).
   const objectives: ResultObjectiveView[] = [];
@@ -173,10 +192,12 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
       for (const mp of mappings.rows.filter((r: any) => r.learning_objective_id === o.learningObjectiveId)) {
         const studentConceptId = await resolveStudentConceptForCanonicalConcept(attempt.studentId, mp.canonical_concept_id);
         const state = studentConceptId ? await getConceptKnowledgeState(attempt.studentId, studentConceptId).catch(() => null) : null;
-        concepts.push({ canonicalConceptId: mp.canonical_concept_id, name: mp.name, studentConceptId, subjectId: state?.subjectId ?? null, masteryState: state?.masteryState ?? null });
+        // A concept just added from the bridge has no knowledge state yet; its subject is still known.
+        const subjectId = state?.subjectId ?? (studentConceptId ? ((await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [studentConceptId])).rows[0]?.subject_id ?? null) : null);
+        concepts.push({ canonicalConceptId: mp.canonical_concept_id, name: mp.name, studentConceptId, subjectId, masteryState: state?.masteryState ?? null });
       }
       const lo = loById.get(o.learningObjectiveId);
-      objectives.push({ learningObjectiveId: o.learningObjectiveId, code: lo?.code ?? null, description: lo?.description ?? o.learningObjectiveId, fraction: o.fraction, earned: o.earned, available: o.available, classification: o.classification, concepts });
+      objectives.push({ learningObjectiveId: o.learningObjectiveId, code: lo?.code ?? null, description: lo?.description ?? o.learningObjectiveId, fraction: o.fraction, earned: o.earned, available: o.available, classification: o.classification, componentId: componentByObjective.get(o.learningObjectiveId) ?? null, concepts });
     }
   }
 
@@ -247,6 +268,19 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
     simulationType: attempt.simulationType,
     timingMode: attempt.timingMode,
     lifecycle,
+    reporting: m.reporting ?? null,
+    completion: result?.provenance?.counts ? { answered: result.provenance.counts.answered, total: result.provenance.counts.total - (result.provenance.counts.excluded ?? 0), missing: result.provenance.counts.missing } : null,
+    minutesUsed: m.started_at && m.completed_at ? Math.max(1, Math.round((new Date(m.completed_at).getTime() - new Date(m.started_at).getTime()) / 60000)) : null,
+    institutionPolicies: m.definition_id
+      ? (
+          await db.query(
+            `SELECT p.admission_context, p.sections_considered FROM institution_exam_policies p
+               JOIN student_exam_profiles sp ON sp.institution_target_id = p.institution_id
+              WHERE sp.id = $1 AND p.exam_definition_id = $2 AND p.status = 'ACTIVE'`,
+            [attempt.examProfileId, m.definition_id]
+          ).catch(() => ({ rows: [] as any[] }))
+        ).rows.map((r: any) => ({ admissionContext: r.admission_context, sectionsConsidered: r.sections_considered }))
+      : [],
     exam: { definitionName: m.definition_name ?? '', family: m.exam_family ?? '', versionLabel: m.version_label ?? '', examYear: m.exam_year ?? null, examSession: m.exam_session ?? null, contentStatus: m.content_status ?? null },
     result,
     objectives,

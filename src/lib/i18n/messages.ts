@@ -1280,6 +1280,30 @@ export type MessageKey =
   | 'exv2.result.criteria'
   | 'exv2.result.evidence'
   | 'exv2.result.assessorNote'
+  | 'exv2.readiness.mock'
+  | 'exv2.readiness.practice'
+  | 'exv2.readiness.soon'
+  | 'exv2.readiness.notExaminable'
+  | 'exv2.setup.fullTest'
+  | 'exv2.setup.beforeStart'
+  | 'exv2.setup.officialMinutes'
+  | 'exv2.setup.plannedMinutes'
+  | 'exv2.setup.rules'
+  | 'exv2.setup.narrower'
+  | 'exv2.result.estimatedReadiness'
+  | 'exv2.result.noOfficialScale'
+  | 'exv2.result.completion'
+  | 'exv2.result.minutesUsed'
+  | 'exv2.result.byArea'
+  | 'exv2.result.institutionDefined'
+  | 'exv2.result.institutionPolicy'
+  | 'exv2.mode.MOCK.reduced'
+  | 'exv2.mode.MOCK.full'
+  | 'exv2.error.MODE_NOT_AVAILABLE'
+  | 'exv2.error.COMPONENT_NOT_READY'
+  | 'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS'
+  | 'exv2.fact.calculator.allowed'
+  | 'exv2.family.PAA'
   | 'exv2.result.reviewRequired'
   | 'exv2.result.itemReview'
   | 'exv2.result.portfolioAnswer'
@@ -3198,6 +3222,30 @@ const es: Messages = {
   'exv2.result.criteria': 'Criterios',
   'exv2.result.evidence': 'En qué se basa la nota',
   'exv2.result.assessorNote': 'Comentario de la evaluación',
+  'exv2.readiness.mock': 'Simulacro disponible',
+  'exv2.readiness.practice': 'Práctica disponible',
+  'exv2.readiness.soon': 'Próximamente',
+  'exv2.readiness.notExaminable': 'No se evalúa con examen',
+  'exv2.setup.fullTest': 'Prueba completa: incluye todas las áreas en el orden oficial.',
+  'exv2.setup.beforeStart': 'Antes de empezar',
+  'exv2.setup.officialMinutes': '{n} min oficiales',
+  'exv2.setup.plannedMinutes': '{n} min en este formato reducido',
+  'exv2.setup.rules': 'Durante el simulacro no hay pistas, tutor ni resultados por pregunta, y la dificultad no cambia. Las preguntas son práctica generada por StudyUS, no oficiales.',
+  'exv2.setup.narrower': 'O practica una habilidad concreta:',
+  'exv2.result.estimatedReadiness': 'Preparación estimada StudyUS',
+  'exv2.result.noOfficialScale': 'No es una puntuación oficial: no existe una tabla oficial de conversión publicada, así que StudyUS no muestra la escala oficial.',
+  'exv2.result.completion': 'Respondiste {answered} de {total}',
+  'exv2.result.minutesUsed': '{n} min usados',
+  'exv2.result.byArea': 'Resultados por área',
+  'exv2.result.institutionDefined': 'Cada institución decide cómo usa este resultado (admisión, ubicación o diagnóstico).',
+  'exv2.result.institutionPolicy': 'Tu institución objetivo tiene una política registrada para este resultado; consúltala en tu perfil de examen.',
+  'exv2.mode.MOCK.reduced': 'Simulacro de formato reducido',
+  'exv2.mode.MOCK.full': 'Simulacro completo',
+  'exv2.error.MODE_NOT_AVAILABLE': 'Ese modo no está disponible para esta opción.',
+  'exv2.error.COMPONENT_NOT_READY': 'Esa prueba aún no tiene preguntas para este modo.',
+  'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'El simulacro completo incluye todas las áreas.',
+  'exv2.fact.calculator.allowed': 'calculadora permitida',
+  'exv2.family.PAA': 'PAA',
 };
 
 const en: Messages = {
@@ -5102,6 +5150,30 @@ const en: Messages = {
   'exv2.result.criteria': 'Criteria',
   'exv2.result.evidence': 'What the mark is based on',
   'exv2.result.assessorNote': 'Assessment comment',
+  'exv2.readiness.mock': 'Mock available',
+  'exv2.readiness.practice': 'Practice available',
+  'exv2.readiness.soon': 'Coming soon',
+  'exv2.readiness.notExaminable': 'Not assessed by exam',
+  'exv2.setup.fullTest': 'Full test: all areas in the official order.',
+  'exv2.setup.beforeStart': 'Before you start',
+  'exv2.setup.officialMinutes': '{n} official min',
+  'exv2.setup.plannedMinutes': '{n} min in this reduced format',
+  'exv2.setup.rules': 'During the mock there are no hints, no tutor, no per-question results and the difficulty does not change. Questions are StudyUS practice, not official.',
+  'exv2.setup.narrower': 'Or practise one specific skill:',
+  'exv2.result.estimatedReadiness': 'StudyUS estimated readiness',
+  'exv2.result.noOfficialScale': 'Not an official score: no official conversion table is published, so StudyUS does not show the official scale.',
+  'exv2.result.completion': 'You answered {answered} of {total}',
+  'exv2.result.minutesUsed': '{n} min used',
+  'exv2.result.byArea': 'Results by area',
+  'exv2.result.institutionDefined': 'Each institution decides how it uses this result (admission, placement or diagnosis).',
+  'exv2.result.institutionPolicy': 'Your target institution has a recorded policy for this result; see your exam profile.',
+  'exv2.mode.MOCK.reduced': 'Reduced-format mock',
+  'exv2.mode.MOCK.full': 'Full-length mock',
+  'exv2.error.MODE_NOT_AVAILABLE': 'That mode is not available for this option.',
+  'exv2.error.COMPONENT_NOT_READY': 'That paper has no questions for this mode yet.',
+  'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'The full mock includes every area.',
+  'exv2.fact.calculator.allowed': 'calculator allowed',
+  'exv2.family.PAA': 'PAA',
 };
 
 const de: Messages = {
@@ -7006,6 +7078,30 @@ const de: Messages = {
   'exv2.result.criteria': 'Kriterien',
   'exv2.result.evidence': 'Worauf die Bewertung beruht',
   'exv2.result.assessorNote': 'Kommentar zur Bewertung',
+  'exv2.readiness.mock': 'Probeprüfung verfügbar',
+  'exv2.readiness.practice': 'Übung verfügbar',
+  'exv2.readiness.soon': 'Demnächst',
+  'exv2.readiness.notExaminable': 'Keine Prüfung',
+  'exv2.setup.fullTest': 'Vollständige Prüfung: alle Bereiche in offizieller Reihenfolge.',
+  'exv2.setup.beforeStart': 'Bevor du beginnst',
+  'exv2.setup.officialMinutes': '{n} offizielle Min.',
+  'exv2.setup.plannedMinutes': '{n} Min. in diesem reduzierten Format',
+  'exv2.setup.rules': 'Während der Probeprüfung gibt es keine Hinweise, keinen Tutor und keine Einzelergebnisse; die Schwierigkeit ändert sich nicht. Die Fragen sind StudyUS-Übungen, nicht offiziell.',
+  'exv2.setup.narrower': 'Oder übe eine bestimmte Fähigkeit:',
+  'exv2.result.estimatedReadiness': 'Geschätzte Bereitschaft (StudyUS)',
+  'exv2.result.noOfficialScale': 'Keine offizielle Punktzahl: Es gibt keine veröffentlichte Umrechnungstabelle.',
+  'exv2.result.completion': '{answered} von {total} beantwortet',
+  'exv2.result.minutesUsed': '{n} Min. genutzt',
+  'exv2.result.byArea': 'Ergebnisse nach Bereich',
+  'exv2.result.institutionDefined': 'Jede Institution entscheidet, wie sie dieses Ergebnis nutzt.',
+  'exv2.result.institutionPolicy': 'Deine Zielinstitution hat eine hinterlegte Regel für dieses Ergebnis.',
+  'exv2.mode.MOCK.reduced': 'Probeprüfung im reduzierten Format',
+  'exv2.mode.MOCK.full': 'Vollständige Probeprüfung',
+  'exv2.error.MODE_NOT_AVAILABLE': 'Dieser Modus ist hier nicht verfügbar.',
+  'exv2.error.COMPONENT_NOT_READY': 'Für diesen Teil gibt es noch keine Fragen.',
+  'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'Die vollständige Probeprüfung umfasst alle Bereiche.',
+  'exv2.fact.calculator.allowed': 'Taschenrechner erlaubt',
+  'exv2.family.PAA': 'PAA',
 };
 
 const fr: Messages = {
@@ -8910,6 +9006,30 @@ const fr: Messages = {
   'exv2.result.criteria': 'Critères',
   'exv2.result.evidence': 'Sur quoi repose la note',
   'exv2.result.assessorNote': 'Commentaire d’évaluation',
+  'exv2.readiness.mock': 'Examen blanc disponible',
+  'exv2.readiness.practice': 'Entraînement disponible',
+  'exv2.readiness.soon': 'Bientôt',
+  'exv2.readiness.notExaminable': 'Non évalué par examen',
+  'exv2.setup.fullTest': 'Épreuve complète : toutes les parties dans l’ordre officiel.',
+  'exv2.setup.beforeStart': 'Avant de commencer',
+  'exv2.setup.officialMinutes': '{n} min officielles',
+  'exv2.setup.plannedMinutes': '{n} min dans ce format réduit',
+  'exv2.setup.rules': 'Pendant l’examen blanc : ni indices, ni tuteur, ni résultat par question, et la difficulté ne change pas. Questions d’entraînement StudyUS, non officielles.',
+  'exv2.setup.narrower': 'Ou entraîne-toi sur une compétence précise :',
+  'exv2.result.estimatedReadiness': 'Préparation estimée StudyUS',
+  'exv2.result.noOfficialScale': 'Pas un score officiel : aucune table de conversion officielle n’est publiée.',
+  'exv2.result.completion': 'Tu as répondu à {answered} sur {total}',
+  'exv2.result.minutesUsed': '{n} min utilisées',
+  'exv2.result.byArea': 'Résultats par partie',
+  'exv2.result.institutionDefined': 'Chaque établissement décide comment il utilise ce résultat.',
+  'exv2.result.institutionPolicy': 'Ton établissement cible a une règle enregistrée pour ce résultat.',
+  'exv2.mode.MOCK.reduced': 'Examen blanc au format réduit',
+  'exv2.mode.MOCK.full': 'Examen blanc complet',
+  'exv2.error.MODE_NOT_AVAILABLE': 'Ce mode n’est pas disponible ici.',
+  'exv2.error.COMPONENT_NOT_READY': 'Cette épreuve n’a pas encore de questions pour ce mode.',
+  'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'L’examen blanc complet comprend toutes les parties.',
+  'exv2.fact.calculator.allowed': 'calculatrice autorisée',
+  'exv2.family.PAA': 'PAA',
 };
 
 const pt: Messages = {
@@ -10814,6 +10934,30 @@ const pt: Messages = {
   'exv2.result.criteria': 'Critérios',
   'exv2.result.evidence': 'Em que se baseia a nota',
   'exv2.result.assessorNote': 'Comentário da avaliação',
+  'exv2.readiness.mock': 'Simulado disponível',
+  'exv2.readiness.practice': 'Prática disponível',
+  'exv2.readiness.soon': 'Em breve',
+  'exv2.readiness.notExaminable': 'Não é avaliado por exame',
+  'exv2.setup.fullTest': 'Prova completa: todas as áreas na ordem oficial.',
+  'exv2.setup.beforeStart': 'Antes de começar',
+  'exv2.setup.officialMinutes': '{n} min oficiais',
+  'exv2.setup.plannedMinutes': '{n} min neste formato reduzido',
+  'exv2.setup.rules': 'Durante o simulado não há pistas, tutor nem resultados por pergunta, e a dificuldade não muda. As perguntas são prática StudyUS, não oficiais.',
+  'exv2.setup.narrower': 'Ou pratica uma competência específica:',
+  'exv2.result.estimatedReadiness': 'Preparação estimada StudyUS',
+  'exv2.result.noOfficialScale': 'Não é uma pontuação oficial: não há tabela oficial de conversão publicada.',
+  'exv2.result.completion': 'Respondeste {answered} de {total}',
+  'exv2.result.minutesUsed': '{n} min usados',
+  'exv2.result.byArea': 'Resultados por área',
+  'exv2.result.institutionDefined': 'Cada instituição decide como usa este resultado.',
+  'exv2.result.institutionPolicy': 'A tua instituição alvo tem uma política registada para este resultado.',
+  'exv2.mode.MOCK.reduced': 'Simulado em formato reduzido',
+  'exv2.mode.MOCK.full': 'Simulado completo',
+  'exv2.error.MODE_NOT_AVAILABLE': 'Esse modo não está disponível aqui.',
+  'exv2.error.COMPONENT_NOT_READY': 'Essa prova ainda não tem perguntas para este modo.',
+  'exv2.error.FULL_TEST_REQUIRES_ALL_COMPONENTS': 'O simulado completo inclui todas as áreas.',
+  'exv2.fact.calculator.allowed': 'calculadora permitida',
+  'exv2.family.PAA': 'PAA',
 };
 
 export const MESSAGES: Record<Locale, Messages> = { es, en, de, fr, pt };

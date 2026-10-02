@@ -100,10 +100,13 @@ export async function buildSimulationPlan(params: {
   readinessSnapshotId?: string;
   /** Exam V2: restrict the plan to these components (an exam instance's selected papers). */
   assessmentComponentIds?: string[];
+  /** Exam V2: restrict the plan to these objectives (skill-level practice). */
+  learningObjectiveIds?: string[];
 }): Promise<SimulationPlan> {
   const versionComponents = await listComponentsForVersion(params.examVersionId);
   const only = params.assessmentComponentIds && params.assessmentComponentIds.length > 0 ? new Set(params.assessmentComponentIds) : null;
-  const targets = orderTargetsBySection((await selectTargets(params)).filter((t) => !only || only.has(t.assessmentComponentId)), versionComponents);
+  const focus = params.learningObjectiveIds && params.learningObjectiveIds.length > 0 ? new Set(params.learningObjectiveIds) : null;
+  const targets = orderTargetsBySection((await selectTargets(params)).filter((t) => (!only || only.has(t.assessmentComponentId)) && (!focus || focus.has(t.learningObjectiveId))), versionComponents);
   if (targets.length === 0) throw new Error(`no blueprint targets selected for ${params.simulationType}`);
 
   const examVersion = await getExamVersion(params.examVersionId);

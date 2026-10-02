@@ -4,13 +4,19 @@
  * Challenge instances, frozen forms, math grading with method marks, strict
  * readiness, delete rules, retest novelty, the Exam -> Learning bridge, the
  * portfolio pipeline (upload -> scan -> thumbnail -> submission -> double
- * assessor), media security and the DEV fixture reset.
+ * assessor), media security and the DEV fixture reset. Completion block: PAA
+ * (full test, area / skill practice, results by area, Add-and-reinforce) and
+ * IB sciences (Physics / Chemistry HL mocks, structure-only levels, CAS).
+ *
+ * Requires the operator steps first: track-b-v2-apply.ts --write and
+ * track-b-v2-learning-catalog.ts --write (66 configurations are not re-applied here).
  *
  * DEV ONLY (fingerprint guard). Fixtures are clearly marked (`tb2-<run>-…`,
  * `@trackb.test`) and removed at the end; the V2 catalogue (verticals +
  * structure) is applied idempotently and kept.
  *
- *   npx tsx --env-file=.env.neon-dev scripts/operations/track-b-v2-scenarios.ts [--skip-ai]
+ *   npx tsx --env-file=.env.local scripts/operations/track-b-v2-scenarios.ts [--skip-ai]
+ * (.env.local of the Track B worktree = DEV; it carries the media signing secret)
  */
 import { createHash, randomBytes } from 'crypto';
 import sharp from 'sharp';
@@ -18,9 +24,8 @@ import { db } from '@/lib/db';
 import { getOrCreateCanonicalUser, assignSelfServiceRole } from '@/lib/identity';
 import { upsertStudentFromWebhook } from '@/lib/auth';
 import { updateMastery } from '@/services/mastery.service';
-import { applyExamVerticalConfig } from '@/lib/exam-core/apply-vertical-config.service';
 import { V2_VERTICALS } from '@/lib/exam-core/verticals/v2';
-import { applyAssessmentStructure, listStructureFamilies, listStructureChildren, resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
+import { listStructureFamilies, listStructureChildren, resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
 import { createExamInstance, startExamInstance, deleteExamInstance, newInstanceFromExisting, getExamInstance, ensureExamProfile, ExamInstanceError, toInstanceView, listExamInstances } from '@/lib/exam-core/exam-instance.service';
 import { listProfileAttempts } from '@/lib/exam-core/catalog.service';
 import { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission, SimulationItemAccessDeniedError, SimulationInvalidResponseError } from '@/lib/simulation/item-resolution.service';
@@ -32,6 +37,7 @@ import { findAnswerKeyLeak, type ExamItem } from '@/lib/exam-core/items';
 import { storeMedia, readMediaForOwner, MediaError } from '@/lib/exam-core/media/media.service';
 import { loadPortfolioContext, addArtifact, getSubmissionView, SubmissionError } from '@/lib/exam-core/submissions/submission.service';
 import { resetStudentExamFixtures } from '@/lib/exam-core/dev-fixture-reset';
+import { addConceptToStudentLearning } from '@/lib/exam-core/catalog/learning-links.service';
 import type { ExamNavState } from '@/lib/exam-core/navigation-state';
 
 const DEV_FP = '2a29b99ee14a22b4';
@@ -72,11 +78,23 @@ async function student(tag: string) {
   return { user, studentId };
 }
 
+/** A key answer written the way the key asks for it (significant figures / decimal places), keeping its unit. */
+function asStudentWould(math: { answers: string[]; significantFigures?: number; decimalPlaces?: number }): string {
+  const raw = math.answers[0];
+  const m = raw.match(/^(-?\d+(?:\.\d+)?)(\s+.*)?$/);
+  if (!m || (math.significantFigures === undefined && math.decimalPlaces === undefined)) return raw;
+  const v = Number(m[1]);
+  const num = math.decimalPlaces !== undefined ? v.toFixed(math.decimalPlaces) : Number(v.toPrecision(math.significantFigures)).toString();
+  // toString drops trailing zeros a s.f. count needs (0.0800): pad back with toPrecision when the value is not an integer.
+  const padded = math.significantFigures !== undefined && !Number.isInteger(Number(num)) ? v.toPrecision(math.significantFigures) : num;
+  return padded + (m[2] ?? '');
+}
+
 /** The correct answer for a SERVER-HELD item (built from its key -- the client never sees it). */
 function correctAnswer(item: ExamItem): string {
   const e = item.exam;
-  if (e.parts) return JSON.stringify(Object.fromEntries(e.parts.map((p) => [p.id, p.answerFormat === 'math' ? p.math!.answers[0] : p.correctAnswer])));
-  if (e.math) return e.math.answers[0];
+  if (e.parts) return JSON.stringify(Object.fromEntries(e.parts.map((p) => [p.id, p.answerFormat === 'math' ? asStudentWould(p.math!) : p.correctAnswer])));
+  if (e.math) return asStudentWould(e.math);
   return item.correctAnswer ?? '';
 }
 function wrongAnswer(item: ExamItem): string {
@@ -97,10 +115,12 @@ async function serverItem(simId: string, index: number): Promise<ExamItem | unde
 async function runAttempt(actor: string, simId: string, answer: (item: ExamItem, i: number) => string, max = 40) {
   let leak: string | null = null;
   let answered = 0;
+  let breaks = 0;
   for (let i = 0; i < max; i++) {
     const next = await getNextSimulationItem(actor, simId);
     if (next.outcome === 'COMPLETE') break;
     if (next.outcome === 'BREAK') {
+      breaks++;
       await db.query(`UPDATE simulation_attempts SET navigation_state = jsonb_set(navigation_state, '{breakUntil}', 'null') WHERE id = $1`, [simId]);
       continue;
     }
@@ -115,7 +135,7 @@ async function runAttempt(actor: string, simId: string, answer: (item: ExamItem,
   await finalizeOpenItemsForSubmission(actor, simId);
   await completeSimulationAttempt(simId);
   const result = await scoreAndRecordAttemptResult(simId);
-  return { leak, answered, result };
+  return { leak, answered, breaks, result };
 }
 
 async function main() {
@@ -123,19 +143,20 @@ async function main() {
   console.log(`track-b V2 scenarios -- db ${fingerprint()} -- run ${RUN}${SKIP_AI ? ' (AI skipped)' : ''}`);
 
   // ---- Catalogue ----
-  for (const cfg of V2_VERTICALS) await applyExamVerticalConfig(cfg, { write: true });
-  const structure = await applyAssessmentStructure({ write: true });
-  check('CAT.structure-applied', structure.unresolvedBindings.length === 0 && structure.bound >= 18, JSON.stringify(structure));
+  const bound = await count(`SELECT count(*) n FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND exam_version_id IS NOT NULL`);
+  const unready = await count(`SELECT count(*) n FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND exam_version_id IS NOT NULL AND NOT (metadata ? 'readiness')`);
+  check('CAT.structure-applied', bound >= 18 && unready === 0, `bound=${bound} withoutReadiness=${unready}`);
   const families = await listStructureFamilies();
   check('CAT.five-frameworks-available', ['IB', 'PISA', 'ICFES', 'PAA', 'CAMBRIDGE'].every((f) => families.find((x) => x.family === f)?.available), families.map((f) => `${f.family}:${f.available}`).join(','));
   const ibRoot = await listStructureChildren({ family: 'IB', parentKey: null, language: 'es' });
   const g5 = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp', language: 'es' });
   const aa = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.math-aa', language: 'es' });
   check('CAT.ib-dynamic-path', ibRoot[0]?.key === 'ib.dp' && g5.some((n) => n.key === 'ib.dp.g5' && n.available) && g5.some((n) => n.key === 'ib.dp.g1' && !n.available), g5.map((n) => `${n.key}:${n.available}`).join(','));
-  check('CAT.levels-localized-and-gated', aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.isExamLevel === true && aa.find((n) => n.key === 'ib.dp.math-aa.sl')?.available === false && aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.label === 'Nivel Superior (NS)');
+  const econ = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.economics', language: 'es' });
+  check('CAT.levels-localized-and-gated', aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.isExamLevel === true && aa.find((n) => n.key === 'ib.dp.math-aa.sl')?.available === true && aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.label === 'Nivel Superior (NS)' && econ.length > 0 && econ.every((n) => !n.available && n.readiness === 'STRUCTURE_READY'), econ.map((n) => `${n.key}:${n.available}:${n.readiness}`).join(','));
   const hl = (await resolveExamLevel('ib.dp.math-aa.hl', 'es'))!;
   check('CAT.ib-math-hl-three-papers', hl?.components.length === 3 && hl.components.map((c) => c.name).join('|') === 'Paper 1|Paper 2|Paper 3');
-  check('CAT.unavailable-not-resolvable', (await resolveExamLevel('ib.dp.math-aa.sl', 'es')) === null);
+  check('CAT.structure-only-not-startable', (await resolveExamLevel('ib.dp.economics.hl', 'es')) === null && (await resolveExamLevel('ib.dp.cas', 'es')) === null);
 
   const A = await student('a');
   const B = await student('b');
@@ -253,7 +274,7 @@ async function main() {
   } else check('BRIDGE.proposal-governed-and-idempotent', true, 'all weak objectives already linked to concepts');
 
   // ---- PAA Practice: adaptive level, per-item feedback, practice never frozen ----
-  const paa = await profileFor(A, 'paa.math');
+  const paa = await profileFor(A, 'paa.practice.matematicas');
   const pr = await createExamInstance({ studentId: A.studentId, examProfileId: paa.profileId, examVersionId: paa.lvl.examVersionId, componentIds: paa.lvl.components.map((c) => c.componentId), mode: 'PRACTICE' });
   check('PRACTICE.default-level-and-untimed', pr.practiceLevel === 'STANDARD' && pr.timingMode === 'UNTIMED' && pr.formFrozenAt === null);
   const ps = await startExamInstance(pr.id, { language: 'es' });
@@ -275,6 +296,77 @@ async function main() {
   const sm = await createExamInstance({ studentId: A.studentId, examProfileId: sab.profileId, examVersionId: sab.lvl.examVersionId, componentIds: [sab.lvl.components[0].componentId], mode: 'MOCK' });
   check('SABER.form-12-positions-reduced-vs-50', sm.form?.slots.length === 12 && sm.form?.fidelity === 'REDUCED' && sm.form?.coveragePercent === 24, `${sm.form?.coveragePercent}%`);
   await deleteExamInstance(sm.id, { confirm: false, ownerStudentId: A.studentId });
+
+  // ---- PAA: first level = Simulacro completo | Practicar un área ----
+  const paaKids = await listStructureChildren({ family: 'PAA', parentKey: 'paa', language: 'es' });
+  check('PAA.first-level-full-or-practice', paaKids.map((n) => n.key).join() === 'paa.full,paa.practice' && paaKids.every((n) => n.available), paaKids.map((n) => `${n.key}:${n.readiness}`).join(','));
+  const areas = await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice', language: 'es' });
+  check('PAA.practice-four-areas', areas.map((n) => n.key.split('.').pop()).join() === 'lectura,redaccion,matematicas,ingles');
+  const full = await profileFor(A, 'paa.full');
+  check('PAA.full-test-fixed-components-mock-challenge', full.lvl.componentsFixed && full.lvl.components.length === 4 && full.lvl.modes.join() === 'MOCK,CHALLENGE' && full.lvl.readiness === 'FULL_MOCK_READY', full.lvl.components.map((c) => `${c.name}:${c.officialMinutes}m/${c.plannedMinutes}m`).join(' | '));
+  const fm = await createExamInstance({ studentId: A.studentId, examProfileId: full.profileId, examVersionId: full.lvl.examVersionId, componentIds: full.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
+  check('PAA.full-mock-frozen-before-start', fm.status === 'READY' && !!fm.formFrozenAt && fm.timingMode === 'OFFICIAL_SIMULATION_TIMED', `${fm.form?.fidelity} ${fm.form?.coveragePercent}%`);
+  const fms = await startExamInstance(fm.id, { language: 'es' });
+  const fnav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [fms.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
+  check('PAA.full-mock-official-order', fnav.sections.map((x) => x.key).join() === 'lectura,redaccion,matematicas,ingles', fnav.sections.map((x) => `${x.key}:${x.durationSeconds}s`).join(','));
+  check('PAA.full-mock-no-help', fnav.policy?.itemFeedback === 'NEVER' && fnav.policy?.tutorAssistance === 'BLOCKED');
+  const frozenBefore = JSON.stringify(fm.form);
+  const fRun = await runAttempt(A.user.id, fms.simulationAttemptId!, (item, i) => (i % 3 === 0 ? wrongAnswer(item) : correctAnswer(item)), 60);
+  check('PAA.full-mock-breaks-between-blocks', fRun.breaks === 2, `breaks=${fRun.breaks}`);
+  check('PAA.full-mock-no-adaptation', JSON.stringify((await getExamInstance(fm.id))!.form) === frozenBefore && fRun.leak === null);
+  const fView = (await getAttemptResultView(fms.simulationAttemptId!))!;
+  const groups = fView.reporting?.groups ?? [];
+  check('PAA.results-by-area-no-fake-scale', fView.reporting?.scaleNote === 'NO_OFFICIAL_SCALE' && groups.map((g) => g.key).join() === 'lectura-redaccion,matematicas,ingles' && groups.find((g) => g.key === 'ingles')?.institutionDefined === true, groups.map((g) => g.label).join(' / '));
+  check('PAA.results-by-skill', fView.objectives.filter((o) => o.classification !== 'NOT_ASSESSED').length >= 8 && fView.objectives.every((o) => !!o.componentId), `${fView.objectives.length} objectives`);
+  check('PAA.completion-and-time', fView.completion !== null && fView.completion.answered === fRun.answered && fView.minutesUsed !== null, JSON.stringify(fView.completion));
+  // Bridge: a curated, PUBLISHED concept link -> "Reforzar ahora" materializes it in the Student's learning.
+  const fBridge = await buildLearningBridge({ simulationAttemptId: fms.simulationAttemptId!, studentId: A.studentId, objectives: fView.objectives });
+  const add = fBridge.find((b) => b.action.kind === 'ADD_AND_REINFORCE');
+  check('PAA.bridge-add-and-reinforce-offered', !!add, fBridge.map((b) => `${b.code}:${b.action.kind}`).join(' '));
+  if (add && add.action.kind === 'ADD_AND_REINFORCE') {
+    const canonicalBefore = await count(`SELECT count(*) n FROM canonical_concepts`);
+    const m1 = await addConceptToStudentLearning(A.studentId, add.action.canonicalConceptId, 'es');
+    const m2 = await addConceptToStudentLearning(A.studentId, add.action.canonicalConceptId, 'es');
+    check('PAA.bridge-materialized-idempotent-no-new-canonical', m1.studentConceptId === m2.studentConceptId && (await count(`SELECT count(*) n FROM canonical_concepts`)) === canonicalBefore);
+    const again = await buildLearningBridge({ simulationAttemptId: fms.simulationAttemptId!, studentId: A.studentId, objectives: (await getAttemptResultView(fms.simulationAttemptId!))!.objectives });
+    check('PAA.bridge-now-reinforce', again.find((b) => b.learningObjectiveId === add.learningObjectiveId)?.action.kind === 'REINFORCE');
+  }
+  check('PAA.full-mock-delete-keeps-result', (await deleteExamInstance(fm.id, { confirm: true, ownerStudentId: A.studentId })).resultPreserved);
+  check('SEC.other-student-cannot-delete-paa', await rejects(() => deleteExamInstance(fm.id, { confirm: true, ownerStudentId: B.studentId }), ExamInstanceError, 'NOT_FOUND'));
+  const fm2 = await newInstanceFromExisting(fm.id);
+  check('PAA.new-attempt-from-zero', fm2.id !== fm.id && fm2.simulationAttemptId === null && !!fm2.formFrozenAt);
+  await deleteExamInstance(fm2.id, { confirm: false, ownerStudentId: A.studentId });
+
+  // ---- PAA Practice: one area; then one skill ----
+  const lect = await profileFor(A, 'paa.practice.lectura');
+  check('PAA.area-practice-only-practice', lect.lvl.modes.join() === 'PRACTICE' && lect.lvl.components.length === 1 && lect.lvl.focusObjectiveIds.length === 0);
+  const skillNode = (await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice.lectura', language: 'es' })).find((n) => n.key.endsWith('.inferencia'))!;
+  const sk = await profileFor(A, skillNode.key);
+  check('PAA.skill-practice-focus', sk.lvl.focusObjectiveIds.length >= 1 && sk.lvl.modes.join() === 'PRACTICE', `${skillNode.key} focus=${sk.lvl.focusObjectiveIds.length}`);
+  check('PAA.skill-focus-is-practice-only', await rejects(() => createExamInstance({ studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'MOCK', focusObjectiveIds: sk.lvl.focusObjectiveIds }), ExamInstanceError));
+  const ski = await createExamInstance({ studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: sk.lvl.focusObjectiveIds });
+  const sks = await startExamInstance(ski.id, { language: 'es' });
+  const skRun = await runAttempt(A.user.id, sks.simulationAttemptId!, (item) => correctAnswer(item));
+  const skNav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [sks.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
+  const deliveredIds = Object.values(skNav.items).map((x) => x.item?.exam.approvedItemId).filter(Boolean) as string[];
+  const deliveredObjectives = (await db.query(`SELECT DISTINCT learning_objective_id::text AS id FROM approved_items WHERE id = ANY($1::uuid[])`, [deliveredIds])).rows.map((r: any) => r.id as string);
+  check('PAA.skill-practice-only-focus-items', deliveredIds.length >= 1 && deliveredObjectives.every((o) => sk.lvl.focusObjectiveIds.includes(o)), `${skRun.answered} answered, objectives=${deliveredObjectives.length}`);
+  await deleteExamInstance(ski.id, { confirm: true, ownerStudentId: A.studentId });
+
+  // ---- IB sciences: Physics HL / Chemistry HL full mocks (Paper 1A + 1B + 2) ----
+  for (const sci of ['physics', 'chemistry']) {
+    const lvl = await profileFor(A, `ib.dp.${sci}.hl`);
+    const names = lvl.lvl.components.map((c) => c.name).join('|');
+    check(`IB.${sci}-hl-papers-1a-1b-2`, lvl.lvl.components.length === 3 && !/Paper 3/.test(names) && lvl.lvl.modes.includes('MOCK'), names);
+    const m = await createExamInstance({ studentId: A.studentId, examProfileId: lvl.profileId, examVersionId: lvl.lvl.examVersionId, componentIds: lvl.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
+    check(`IB.${sci}-hl-mock-frozen-honest`, !!m.formFrozenAt && m.form?.fidelity === 'REDUCED', `${m.form?.coveragePercent}% of official length`);
+    const st = await startExamInstance(m.id, { language: 'en' });
+    const r = await runAttempt(A.user.id, st.simulationAttemptId!, (item) => correctAnswer(item), 60);
+    check(`IB.${sci}-hl-all-correct-full-marks`, r.result.rawScore === r.result.maxScore && r.result.maxScore > 0 && r.leak === null && r.breaks === 1, `${r.result.rawScore}/${r.result.maxScore} breaks=${r.breaks}`);
+    const v = (await getAttemptResultView(st.simulationAttemptId!))!;
+    check(`IB.${sci}-hl-results-by-paper`, new Set(v.objectives.map((o) => o.componentId)).size === 3);
+    await deleteExamInstance(m.id, { confirm: true, ownerStudentId: A.studentId });
+  }
 
   // ---- IB Visual Arts SL: portfolio pipeline ----
   const va = await profileFor(A, 'ib.dp.visual-arts.sl');
@@ -322,7 +414,7 @@ async function main() {
   check('RESET.dry-run-counts', (dry.deleted.exam_instances ?? 0) > 0 && (await count(`SELECT count(*) n FROM exam_instances WHERE student_id = $1`, [A.studentId])) > 0);
   await resetStudentExamFixtures({ studentId: A.studentId, confirm: 'RESET-DEV-FIXTURES' });
   check('RESET.student-exam-data-gone', (await count(`SELECT count(*) n FROM exam_instances WHERE student_id = $1`, [A.studentId])) === 0 && (await count(`SELECT count(*) n FROM simulation_attempts WHERE student_id = $1`, [A.studentId])) === 0 && (await count(`SELECT count(*) n FROM exam_media_objects m JOIN exam_submission_artifacts a ON a.media_object_id = m.id WHERE m.owner_student_id = $1`, [A.studentId])) === 0);
-  check('RESET.content-kept', (await count(`SELECT count(*) n FROM exam_definitions WHERE config_key LIKE 'v2.%'`)) === 7);
+  check('RESET.content-kept', (await count(`SELECT count(*) n FROM exam_definitions WHERE config_key LIKE 'v2.%' AND status = 'ACTIVE'`)) >= V2_VERTICALS.length);
 }
 
 const childRefs = new Map<string, { t: string; c: string }[]>();

@@ -9,6 +9,9 @@
  *
  * Every node with structural facts cites registered sources (sources.ts).
  */
+import { ibCatalogTree } from './ib-dp';
+import { V2_VERTICALS } from '../verticals/v2';
+
 export type NodeType =
   | 'PROGRAMME' | 'QUALIFICATION' | 'TEST' | 'SUBJECT' | 'AREA' | 'LEVEL' | 'VARIANT' | 'PAPER' | 'COMPONENT' | 'SECTION'
   | 'DOMAIN' | 'PROCESS' | 'CONTEXT' | 'COMPETENCY' | 'ASSERTION' | 'EVIDENCE' | 'PORTFOLIO' | 'PERFORMANCE' | 'PROJECT';
@@ -25,8 +28,17 @@ export interface CatalogNode {
   syllabusCode?: string;
   frameworkVersion?: string;
   sourceKeys?: string[];
-  /** Binds this node to a configured vertical (and optionally one of its components). */
-  bind?: { configKey: string; sectionKey?: string };
+  /**
+   * Binds this node to a configured vertical (and optionally one of its
+   * components, or a subset of objectives for skill-level practice).
+   */
+  bind?: { configKey: string; sectionKey?: string; sectionKeys?: string[]; objectiveCodes?: string[] };
+  /** Modes this entry offers (e.g. PAA "Simulacro completo" = MOCK/CHALLENGE, "Practicar" = PRACTICE). Readiness filters them further. */
+  modes?: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'>;
+  /** What the entry is for the Student (shown as a label): a full test, an area to practise, a skill... */
+  purpose?: 'FULL_TEST' | 'AREA_PRACTICE' | 'SKILL_PRACTICE';
+  /** Not an examinable entry (e.g. CAS): never offered as a mock or practice. */
+  notExaminable?: boolean;
   /** Facts shown in the selector (duration, marks, weighting...) -- display only. */
   facts?: Record<string, string | number>;
   children?: CatalogNode[];
@@ -41,104 +53,20 @@ const IB_MATH_SRC = ['ibo-math-aa-guide-2021', 'ibo-math-aa-brief-2021', 'ibo-ma
 const IB_AI_SRC = ['ibo-math-ai-guide-2021', 'ibo-math-dp-page'];
 const IB_VA_SRC = ['ibo-visual-arts-brief-2027', 'ibo-visual-arts-updates'];
 
+/** A skill-level practice entry (PAA, …): practice restricted to some objectives of one section. */
+const skill = (key: string, label: string, sectionKey: string, objectiveCodes: string[]): CatalogNode => ({ key, type: 'COMPETENCY', label, purpose: 'SKILL_PRACTICE', modes: ['PRACTICE'], bind: { configKey: 'v2.paa', sectionKey, objectiveCodes } });
+
 const paper = (key: string, label: string, facts: Record<string, string | number>, bind?: CatalogNode['bind'], sourceKeys?: string[]): CatalogNode => ({ key, type: 'PAPER', label, facts, bind, sourceKeys });
 const info = (key: string, type: NodeType, label: string, extra: Partial<CatalogNode> = {}): CatalogNode => ({ key, type, label, ...extra });
 
 export const ASSESSMENT_CATALOG: CatalogFamily[] = [
   {
     family: 'IB',
-    roots: [
-      {
-        key: 'ib.dp', type: 'PROGRAMME', label: 'IB Diploma Programme', labels: { es: 'Programa del Diploma del IB' },
-        children: [
-          info('ib.dp.g1', 'AREA', 'Group 1: Studies in language and literature', { labels: { es: 'Grupo 1: Estudios de lengua y literatura' }, children: [
-            info('ib.dp.lang-a-lit', 'SUBJECT', 'Language A: literature', { firstAssessment: 2021, sourceKeys: ['ibo-lang-a-lit-guide-2021'] }),
-            info('ib.dp.lang-a-langlit', 'SUBJECT', 'Language A: language and literature', { firstAssessment: 2021, sourceKeys: ['ibo-lang-a-langlit-guide-2021'] }),
-          ] }),
-          info('ib.dp.g2', 'AREA', 'Group 2: Language acquisition', { labels: { es: 'Grupo 2: Adquisición de lenguas' }, children: [
-            info('ib.dp.lang-b', 'SUBJECT', 'Language B', { firstAssessment: 2020, sourceKeys: ['ibo-lang-b-guide-2020'] }),
-            info('ib.dp.ab-initio', 'SUBJECT', 'Language ab initio', { firstAssessment: 2020, sourceKeys: ['ibo-ab-initio-guide-2020'] }),
-          ] }),
-          info('ib.dp.g3', 'AREA', 'Group 3: Individuals and societies', { labels: { es: 'Grupo 3: Individuos y sociedades' }, children: [
-            info('ib.dp.history', 'SUBJECT', 'History', { lastAssessment: 2027, sourceKeys: ['ibo-history-briefs-2017', 'ibo-history-brief-2028'], description: 'Current course last assessed 2027; new course first assessed 2028.' }),
-            info('ib.dp.economics', 'SUBJECT', 'Economics', { firstAssessment: 2022, sourceKeys: ['ibo-economics-guide-2022'] }),
-            info('ib.dp.psychology', 'SUBJECT', 'Psychology', { firstAssessment: 2027, sourceKeys: ['ibo-psychology-brief-2027'] }),
-            info('ib.dp.business', 'SUBJECT', 'Business management', { firstAssessment: 2024, sourceKeys: ['ibo-business-guide-2024'] }),
-            info('ib.dp.geography', 'SUBJECT', 'Geography', { firstAssessment: 2019, sourceKeys: ['ibo-geography-guide-2019'] }),
-            info('ib.dp.philosophy', 'SUBJECT', 'Philosophy', { firstAssessment: 2025, sourceKeys: ['ibo-philosophy-guide-2025'] }),
-          ] }),
-          info('ib.dp.g4', 'AREA', 'Group 4: Sciences', { labels: { es: 'Grupo 4: Ciencias' }, children: [
-            info('ib.dp.biology', 'SUBJECT', 'Biology', { firstAssessment: 2025, sourceKeys: ['ibo-biology-guide-2025'] }),
-            info('ib.dp.chemistry', 'SUBJECT', 'Chemistry', { firstAssessment: 2025, sourceKeys: ['ibo-chemistry-guide-2025'] }),
-            info('ib.dp.physics', 'SUBJECT', 'Physics', { firstAssessment: 2025, sourceKeys: ['ibo-physics-guide-2025'] }),
-            info('ib.dp.ess', 'SUBJECT', 'Environmental systems and societies', { firstAssessment: 2026, sourceKeys: ['ibo-ess-guide-2026'] }),
-            info('ib.dp.sehs', 'SUBJECT', 'Sports, exercise and health science', { firstAssessment: 2026, sourceKeys: ['ibo-sehs-guide-2026'] }),
-          ] }),
-          info('ib.dp.g5', 'AREA', 'Group 5: Mathematics', { labels: { es: 'Grupo 5: Matemáticas' }, children: [
-            {
-              key: 'ib.dp.math-aa', type: 'SUBJECT', label: 'Mathematics: analysis and approaches', labels: { es: 'Matemáticas: Análisis y Enfoques' },
-              curriculumVersion: 'first assessment 2021', firstAssessment: 2021, lastAssessment: 2028, frameworkVersion: '2021', sourceKeys: IB_MATH_SRC,
-              children: [
-                {
-                  key: 'ib.dp.math-aa.hl', type: 'LEVEL', label: 'HL', labels: { es: 'Nivel Superior (NS)' }, bind: { configKey: 'v2.ib.math-aa-hl' }, sourceKeys: IB_MATH_SRC,
-                  children: [
-                    paper('ib.dp.math-aa.hl.p1', 'Paper 1', { minutes: 120, marks: 110, weightPercent: 30, calculator: 'none' }, { configKey: 'v2.ib.math-aa-hl', sectionKey: 'p1' }, IB_MATH_SRC),
-                    paper('ib.dp.math-aa.hl.p2', 'Paper 2', { minutes: 120, marks: 110, weightPercent: 30, calculator: 'GDC' }, { configKey: 'v2.ib.math-aa-hl', sectionKey: 'p2' }, IB_MATH_SRC),
-                    paper('ib.dp.math-aa.hl.p3', 'Paper 3', { minutes: 60, marks: 55, weightPercent: 20, calculator: 'GDC' }, { configKey: 'v2.ib.math-aa-hl', sectionKey: 'p3' }, IB_MATH_SRC),
-                    info('ib.dp.math-aa.hl.ia', 'COMPONENT', 'Internal assessment: exploration', { facts: { marks: 20, weightPercent: 20 }, sourceKeys: IB_MATH_SRC, description: 'Coursework, not simulated.' }),
-                  ],
-                },
-                {
-                  key: 'ib.dp.math-aa.sl', type: 'LEVEL', label: 'SL', labels: { es: 'Nivel Medio (NM)' }, sourceKeys: IB_MATH_SRC,
-                  children: [
-                    paper('ib.dp.math-aa.sl.p1', 'Paper 1', { minutes: 90, marks: 80, weightPercent: 40, calculator: 'none' }, undefined, IB_MATH_SRC),
-                    paper('ib.dp.math-aa.sl.p2', 'Paper 2', { minutes: 90, marks: 80, weightPercent: 40, calculator: 'GDC' }, undefined, IB_MATH_SRC),
-                  ],
-                },
-              ],
-            },
-            {
-              key: 'ib.dp.math-ai', type: 'SUBJECT', label: 'Mathematics: applications and interpretation', labels: { es: 'Matemáticas: Aplicaciones e Interpretación' },
-              firstAssessment: 2021, lastAssessment: 2028, sourceKeys: IB_AI_SRC,
-              children: [info('ib.dp.math-ai.sl', 'LEVEL', 'SL', { sourceKeys: IB_AI_SRC }), info('ib.dp.math-ai.hl', 'LEVEL', 'HL', { sourceKeys: IB_AI_SRC })],
-            },
-          ] }),
-          info('ib.dp.g6', 'AREA', 'Group 6: The arts', { labels: { es: 'Grupo 6: Artes' }, children: [
-            {
-              key: 'ib.dp.visual-arts', type: 'SUBJECT', label: 'Visual arts', labels: { es: 'Artes Visuales' },
-              curriculumVersion: 'first assessment 2027', firstAssessment: 2027, frameworkVersion: '2027', sourceKeys: IB_VA_SRC,
-              children: [
-                {
-                  key: 'ib.dp.visual-arts.sl', type: 'LEVEL', label: 'SL', labels: { es: 'Nivel Medio (NM)' }, bind: { configKey: 'v2.ib.visual-arts-sl' }, sourceKeys: IB_VA_SRC,
-                  children: [
-                    { key: 'ib.dp.visual-arts.sl.aip', type: 'PORTFOLIO', label: 'Art-making inquiries portfolio', facts: { marks: 32, weightPercent: 40, assessment: 'external' }, bind: { configKey: 'v2.ib.visual-arts-sl', sectionKey: 'aip' }, sourceKeys: IB_VA_SRC },
-                    { key: 'ib.dp.visual-arts.sl.connections', type: 'PORTFOLIO', label: 'Connections study', facts: { marks: 24, weightPercent: 20, assessment: 'external' }, bind: { configKey: 'v2.ib.visual-arts-sl', sectionKey: 'connections' }, sourceKeys: IB_VA_SRC },
-                    { key: 'ib.dp.visual-arts.sl.resolved', type: 'PORTFOLIO', label: 'Resolved artworks', facts: { marks: 32, weightPercent: 40, assessment: 'internal' }, bind: { configKey: 'v2.ib.visual-arts-sl', sectionKey: 'resolved' }, sourceKeys: IB_VA_SRC },
-                  ],
-                },
-                {
-                  key: 'ib.dp.visual-arts.hl', type: 'LEVEL', label: 'HL', labels: { es: 'Nivel Superior (NS)' }, bind: { configKey: 'v2.ib.visual-arts-hl' }, sourceKeys: IB_VA_SRC,
-                  children: [
-                    { key: 'ib.dp.visual-arts.hl.aip', type: 'PORTFOLIO', label: 'Art-making inquiries portfolio', facts: { marks: 32, weightPercent: 30, assessment: 'external' }, bind: { configKey: 'v2.ib.visual-arts-hl', sectionKey: 'aip' }, sourceKeys: IB_VA_SRC },
-                    { key: 'ib.dp.visual-arts.hl.project', type: 'PROJECT', label: 'Artist project', facts: { marks: 40, weightPercent: 30, assessment: 'external' }, bind: { configKey: 'v2.ib.visual-arts-hl', sectionKey: 'project' }, sourceKeys: IB_VA_SRC },
-                    { key: 'ib.dp.visual-arts.hl.resolved', type: 'PORTFOLIO', label: 'Selected resolved artworks', facts: { marks: 40, weightPercent: 40, assessment: 'internal' }, bind: { configKey: 'v2.ib.visual-arts-hl', sectionKey: 'resolved' }, sourceKeys: IB_VA_SRC },
-                  ],
-                },
-              ],
-            },
-            info('ib.dp.theatre', 'SUBJECT', 'Theatre', { firstAssessment: 2024, sourceKeys: ['ibo-theatre-brief-2024'], children: [
-              info('ib.dp.theatre.proposal', 'PERFORMANCE', 'Production proposal'), info('ib.dp.theatre.research', 'PERFORMANCE', 'Research presentation'), info('ib.dp.theatre.collab', 'PROJECT', 'Collaborative project'), info('ib.dp.theatre.solo', 'PERFORMANCE', 'Solo theatre piece (HL)'),
-            ] }),
-            info('ib.dp.music', 'SUBJECT', 'Music', { firstAssessment: 2022, sourceKeys: ['ibo-music-brief-2022'], children: [
-              info('ib.dp.music.exploring', 'PORTFOLIO', 'Exploring music in context'), info('ib.dp.music.experimenting', 'PORTFOLIO', 'Experimenting with music'), info('ib.dp.music.presenting', 'PERFORMANCE', 'Presenting music'), info('ib.dp.music.cmm', 'PROJECT', 'The contemporary music-maker (HL)'),
-            ] }),
-            info('ib.dp.film', 'SUBJECT', 'Film', { firstAssessment: 2019, sourceKeys: ['ibo-film-brief-2019'], children: [
-              info('ib.dp.film.analysis', 'COMPONENT', 'Textual analysis'), info('ib.dp.film.comparative', 'COMPONENT', 'Comparative study'), info('ib.dp.film.portfolio', 'PORTFOLIO', 'Film portfolio'), info('ib.dp.film.collab', 'PROJECT', 'Collaborative film project (HL)'),
-            ] }),
-          ] }),
-        ],
-      },
-    ],
+    // Generated from the reviewed IB DP research: every group, subject, version, level and real component.
+    roots: [ibCatalogTree((configKey) => {
+      const cfg = V2_VERTICALS.find((v) => v.key === configKey);
+      return cfg ? cfg.sections.map((sec) => ({ key: sec.key, officialName: sec.definition?.officialName ?? sec.name })) : null;
+    })],
   },
   {
     family: 'PISA',
@@ -189,11 +117,53 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
     family: 'PAA',
     roots: [
       {
-        key: 'paa', type: 'TEST', label: 'PAA (revisada)', sourceKeys: ['cb-paa-preguntas-respuestas-2017'],
+        key: 'paa', type: 'TEST', label: 'PAA (Prueba de Aptitud Académica)', frameworkVersion: '2021', firstAssessment: 2017, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-preguntas-respuestas-2017', 'cb-paa-manual-latam-2024', 'cb-paa-usage-2024'],
+        description: 'Una sola prueba integral: Lectura, Redacción, Matemáticas e Inglés.',
         children: [
-          { key: 'paa.math', type: 'AREA', label: 'Matemáticas', facts: { items: 55, minutes: 60 }, bind: { configKey: 'v2.paa.math', sectionKey: 'math' }, sourceKeys: ['cb-paa-preguntas-respuestas-2017', 'cb-paa-guia-estudio-2018'] },
-          info('paa.lectura', 'AREA', 'Lectura y redacción'),
-          info('paa.ingles', 'AREA', 'Inglés como lengua extranjera'),
+          {
+            key: 'paa.full', type: 'VARIANT', label: 'Simulacro completo', purpose: 'FULL_TEST', modes: ['MOCK', 'CHALLENGE'],
+            description: 'Las cuatro áreas en el orden oficial, con pausas.', facts: { minutes: 180, items: 175 },
+            bind: { configKey: 'v2.paa' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-manual-latam-2024'],
+          },
+          {
+            key: 'paa.practice', type: 'AREA', label: 'Practicar un área', description: 'Práctica adaptativa por área o por habilidad.',
+            children: [
+              {
+                key: 'paa.practice.lectura', type: 'AREA', label: 'Lectura', purpose: 'AREA_PRACTICE', modes: ['PRACTICE'], facts: { items: 45, minutes: 50 },
+                bind: { configKey: 'v2.paa', sectionKey: 'lectura' }, sourceKeys: ['cb-paa-guia-2021'],
+                children: [
+                  skill('paa.practice.lectura.vocabulario', 'Vocabulario en contexto', 'lectura', ['paa.lect.vocabulario']),
+                  skill('paa.practice.lectura.explicitas', 'Ideas explícitas', 'lectura', ['paa.lect.explicitas']),
+                  skill('paa.practice.lectura.inferencia', 'Inferencias y evidencias', 'lectura', ['paa.lect.inferencia', 'paa.lect.evidencia']),
+                  skill('paa.practice.lectura.graficos', 'Información cuantitativa o gráfica', 'lectura', ['paa.lect.graficos']),
+                  skill('paa.practice.lectura.literario', 'Análisis literario', 'lectura', ['paa.lect.literario']),
+                ],
+              },
+              {
+                key: 'paa.practice.redaccion', type: 'AREA', label: 'Redacción', purpose: 'AREA_PRACTICE', modes: ['PRACTICE'], facts: { items: 25, minutes: 30 },
+                bind: { configKey: 'v2.paa', sectionKey: 'redaccion' }, sourceKeys: ['cb-paa-guia-2021'],
+                children: [
+                  skill('paa.practice.redaccion.elision', 'Elisión y adición', 'redaccion', ['paa.red.elision', 'paa.red.adicion']),
+                  skill('paa.practice.redaccion.sintesis', 'Generalización e integración', 'redaccion', ['paa.red.generalizacion', 'paa.red.integracion']),
+                  skill('paa.practice.redaccion.cohesion', 'Coherencia, cohesión y particularización', 'redaccion', ['paa.red.cohesion', 'paa.red.particularizacion']),
+                ],
+              },
+              {
+                key: 'paa.practice.matematicas', type: 'AREA', label: 'Matemáticas', purpose: 'AREA_PRACTICE', modes: ['PRACTICE'], facts: { items: 55, minutes: 60, calculator: 'none' },
+                bind: { configKey: 'v2.paa', sectionKey: 'matematicas' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-practice-test-2018'],
+                children: [
+                  skill('paa.practice.matematicas.aritmetica', 'Aritmética', 'matematicas', ['paa.mat.aritmetica']),
+                  skill('paa.practice.matematicas.algebra', 'Álgebra', 'matematicas', ['paa.mat.algebra']),
+                  skill('paa.practice.matematicas.geometria', 'Geometría', 'matematicas', ['paa.mat.geometria']),
+                  skill('paa.practice.matematicas.datos', 'Análisis de datos y probabilidad', 'matematicas', ['paa.mat.datos', 'paa.mat.probabilidad']),
+                ],
+              },
+              {
+                key: 'paa.practice.ingles', type: 'AREA', label: 'Inglés', purpose: 'AREA_PRACTICE', modes: ['PRACTICE'], facts: { items: 50, minutes: 40 },
+                bind: { configKey: 'v2.paa', sectionKey: 'ingles' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-usage-2024'],
+              },
+            ],
+          },
         ],
       },
     ],

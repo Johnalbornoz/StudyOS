@@ -48,6 +48,16 @@ async function handlePOST(request: NextRequest) {
   if (!level) return NextResponse.json({ error: 'NOT_AVAILABLE' }, { status: 404 });
   const allowed = new Set(level.components.map((c) => c.componentId));
   if (body.componentIds.some((id) => !allowed.has(id))) return NextResponse.json({ error: 'COMPONENT_NOT_IN_SELECTION' }, { status: 400 });
+  // The entry decides which modes exist (e.g. PAA full test = Mock/Challenge, area = Practice), filtered by readiness.
+  if (!level.modes.includes(body.mode)) return NextResponse.json({ error: 'MODE_NOT_AVAILABLE' }, { status: 409 });
+  // A full test is the whole package, never a pick of some components.
+  if (level.componentsFixed && (body.componentIds.length !== allowed.size || !level.components.every((c) => body.componentIds.includes(c.componentId)))) {
+    return NextResponse.json({ error: 'FULL_TEST_REQUIRES_ALL_COMPONENTS' }, { status: 400 });
+  }
+  const needed = body.mode === 'PRACTICE' ? ['PRACTICE_READY', 'FULL_MOCK_READY'] : ['FULL_MOCK_READY'];
+  if (level.components.filter((c) => body.componentIds.includes(c.componentId)).some((c) => !needed.includes(c.readiness))) {
+    return NextResponse.json({ error: 'COMPONENT_NOT_READY' }, { status: 409 });
+  }
   try {
     const examProfileId = await ensureExamProfile(studentId, level.examDefinitionId, level.examVersionId);
     const instance = await createExamInstance({
@@ -59,6 +69,7 @@ async function handlePOST(request: NextRequest) {
       rigor: body.rigor,
       practiceLevel: body.practiceLevel,
       timingMode: body.timingMode,
+      focusObjectiveIds: level.focusObjectiveIds.length ? level.focusObjectiveIds : undefined,
     });
     return NextResponse.json({ success: true, data: { instance: await toInstanceView(instance) } });
   } catch (err) {

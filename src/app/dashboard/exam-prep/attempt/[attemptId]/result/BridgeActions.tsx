@@ -41,3 +41,26 @@ export function RetakeButton({ instanceId, labels: l }: { instanceId: string; la
     </>
   );
 }
+
+export function ReinforceButton({ simulationAttemptId, learningObjectiveId, canonicalConceptId, language, labels: l }: { simulationAttemptId: string; learningObjectiveId: string; canonicalConceptId: string; language: string; labels: Record<string, string> }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  async function go() {
+    setBusy(true);
+    const r = await fetch('/api/exams/reinforce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ simulationAttemptId, learningObjectiveId, canonicalConceptId, language }) }).catch(() => null);
+    const b = r ? await r.json().catch(() => null) : null;
+    setBusy(false);
+    if (!r?.ok || !b?.data?.href) {
+      setError(true);
+      return;
+    }
+    router.push(b.data.href);
+  }
+  return (
+    <>
+      <button type="button" className="btn btn-primary" onClick={go} disabled={busy}>{l['exv2.bridge.reinforce']}</button>
+      {error && <span className="xr-error">{l['exv2.error.generic']}</span>}
+    </>
+  );
+}

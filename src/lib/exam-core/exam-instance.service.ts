@@ -42,6 +42,8 @@ export interface ExamInstance {
   examVersionId: string;
   structureNodeId: string | null;
   componentIds: string[];
+  /** Skill-level practice: only these objectives (empty = all). */
+  focusObjectiveIds: string[];
   mode: InstanceMode;
   rigor: Rigor;
   practiceLevel: PracticeLevel | null;
@@ -84,6 +86,7 @@ function toInstance(r: any): ExamInstance {
     examVersionId: r.exam_version_id,
     structureNodeId: r.structure_node_id,
     componentIds: r.component_ids,
+    focusObjectiveIds: r.focus_objective_ids ?? [],
     mode: r.mode,
     rigor: r.rigor,
     practiceLevel: r.practice_level,
@@ -110,12 +113,13 @@ export function timingFor(mode: InstanceMode, requested: TimingMode | undefined)
 /* Form assembly (DB reads -> pure assembleForm)                        */
 /* ------------------------------------------------------------------ */
 
-async function formInputs(examVersionId: string, componentIds: string[], studentId: string) {
+async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = []) {
   const blueprint = await getBlueprintForVersion(examVersionId);
   if (!blueprint) throw new ExamInstanceError('NO_ITEMS_FOR_FORM', 'version has no blueprint');
   const components = await listComponentsForVersion(examVersionId);
   const only = new Set(componentIds);
-  const targets = orderTargetsBySection((await listObjectiveTargets(blueprint.id)).filter((t) => only.has(t.assessmentComponentId)), components);
+  const focus = focusObjectiveIds.length ? new Set(focusObjectiveIds) : null;
+  const targets = orderTargetsBySection((await listObjectiveTargets(blueprint.id)).filter((t) => only.has(t.assessmentComponentId) && (!focus || focus.has(t.learningObjectiveId))), components);
   const positions: FormPosition[] = targets.map((t, index) => ({
     index,
     blueprintObjectiveTargetId: t.id,
@@ -164,7 +168,7 @@ async function formInputs(examVersionId: string, componentIds: string[], student
 }
 
 async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
-  const inputs = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId);
+  const inputs = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds);
   const form = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
   if (!form.slots.some((s) => s.approvedItemId) && instance.mode !== 'PRACTICE') throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
   await db.query(`UPDATE exam_instances SET form = $2, form_frozen_at = now(), difficulty_index = $3 WHERE id = $1`, [instance.id, JSON.stringify(form), form.difficultyIndex]);
@@ -235,7 +239,10 @@ export async function createExamInstance(params: {
   practiceLevel?: PracticeLevel;
   timingMode?: TimingMode;
   structureNodeId?: string;
+  /** Skill-level practice (PRACTICE only). */
+  focusObjectiveIds?: string[];
 }): Promise<ExamInstance> {
+  if (params.focusObjectiveIds?.length && params.mode !== 'PRACTICE') throw new ExamInstanceError('INVALID_STATE', 'skill focus is practice-only');
   const components = await listComponentsForVersion(params.examVersionId);
   const ids = [...new Set(params.componentIds)];
   if (ids.length === 0) throw new ExamInstanceError('COMPONENT_NOT_IN_VERSION', 'select at least one paper');
@@ -258,9 +265,9 @@ export async function createExamInstance(params: {
     }
   }
   const r = await db.query(
-    `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT') RETURNING *`,
-    [params.studentId, params.examProfileId, params.examVersionId, params.structureNodeId ?? null, ordered, params.mode, params.rigor ?? 'OFFICIAL_FIDELITY', practiceLevel, timingMode]
+    `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10) RETURNING *`,
+    [params.studentId, params.examProfileId, params.examVersionId, params.structureNodeId ?? null, ordered, params.mode, params.rigor ?? 'OFFICIAL_FIDELITY', practiceLevel, timingMode, params.focusObjectiveIds ?? []]
   );
   const instance = toInstance(r.rows[0]);
   if (instance.mode !== 'PRACTICE') {
@@ -313,6 +320,7 @@ export async function startExamInstance(instanceId: string, params: { language: 
     language: params.language,
     timezone: params.timezone,
     assessmentComponentIds: instance.componentIds,
+    learningObjectiveIds: instance.focusObjectiveIds.length ? instance.focusObjectiveIds : undefined,
     itemFeedback: instance.mode === 'PRACTICE' ? 'AFTER_EACH_ITEM' : 'NEVER',
     presetItems: (plan) => presetFromForm(instance, form, plan),
   });
@@ -371,6 +379,7 @@ export async function newInstanceFromExisting(instanceId: string): Promise<ExamI
     rigor: prev.rigor,
     timingMode: prev.mode === 'PRACTICE' ? prev.timingMode : undefined,
     structureNodeId: prev.structureNodeId ?? undefined,
+    focusObjectiveIds: prev.focusObjectiveIds.length ? prev.focusObjectiveIds : undefined,
   });
 }
 
