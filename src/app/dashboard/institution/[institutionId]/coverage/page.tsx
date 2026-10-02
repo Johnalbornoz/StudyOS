@@ -3,105 +3,119 @@ import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { getInstitutionOverview, getInstitutionCoverage, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { MetricCard } from '@/components/ui/MetricCard';
-import { InstitutionSubNav } from '../InstitutionSubNav';
+import { getCurriculumWorkCoverage } from '@/lib/institution/intelligence-context.service';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { IntelligenceHeader, NoCurriculum, loadContext } from '../intelligence-chrome';
 
 /**
- * F14 Workstream D -- Institution Coverage (task section 7/19-21).
- * Consumes F12's `getInstitutionCoverage`, which wraps F6's own
- * `computeMappingCoverage`/`computeContentCoverage` -- curriculum
- * content/mapping completeness, deliberately never mixed with learner
- * Mastery (F5) or per-student blueprint evidence coverage (F9), per the
- * service's own documented invariant. No structure-picker list exists
- * yet at the backend (a real, disclosed gap -- see
- * F14_INSTITUTION_EXPERIENCE.md) -- a `structureVersionId` is entered
- * directly via a plain GET form, the same raw-id convention F13's own
- * Teacher Exam assignment form already established.
+ * F14 / Track A -- Institution Coverage. The context (Programa → Versión
+ * curricular → Grado → Asignatura) is chosen among the institution's own
+ * curricula; the structure version is resolved server-side (never typed).
+ *  1. Curriculum WORK coverage: which curriculum concepts the institution's
+ *     classes and students are working on (class plans / personal plans,
+ *     aggregated counts) and which are still pending.
+ *  2. StudyUS CONTENT coverage of the curriculum's published structure
+ *     (F12 `getInstitutionCoverage`, unchanged) when the curriculum has a
+ *     published base.
  */
-export default async function InstitutionCoveragePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ institutionId: string }>;
-  searchParams: Promise<{ structureVersionId?: string }>;
-}) {
+export default async function InstitutionCoveragePage({ params, searchParams }: { params: Promise<{ institutionId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { institutionId } = await params;
-  const { structureVersionId } = await searchParams;
+  const sp = await searchParams;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
-
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
   const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
+  let ctx;
   try {
     overview = await getInstitutionOverview(actor.id, institutionId);
+    ctx = await loadContext(actor.id, institutionId, sp, t);
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
     throw error;
   }
 
-  let coverage: Awaited<ReturnType<typeof getInstitutionCoverage>> | null = null;
-  let coverageError: string | null = null;
-  if (structureVersionId) {
-    try {
-      coverage = await getInstitutionCoverage(actor.id, institutionId, { structureVersionId });
-    } catch (error) {
-      coverageError = error instanceof Error ? error.message : t['error.generic'];
-    }
+  const header = <IntelligenceHeader t={t} institutionId={institutionId} institutionName={overview.institutionName} tab="coverage" ctx={ctx} show={{ curriculum: true, period: false, class: false, exam: false }} />;
+  if (!ctx.selected) {
+    return (
+      <div>
+        {header}
+        <NoCurriculum t={t} institutionId={institutionId} />
+      </div>
+    );
   }
 
-  const subNavLabels = {
-    overview: t['institution.overview.title'],
-    grades: t['institution.grades.title'],
-    classes: t['institution.classes.title'],
-    teachers: t['institution.teachers.title'],
-    requests: t['institution.requests.title'],
-    subjects: t['ia.nav.subjects'],
-    curriculum: t['icur.nav'],
-    coordinators: t['ia.nav.coordinators'],
-    settings: t['ia.nav.settings'],
-    learners: t['institution.learners.title'],
-    coverage: t['institution.coverage.title'],
-    readiness: t['institution.readiness.title'],
-    interventions: t['institution.interventions.title'],
-    attention: t['institution.attention.title'],
-  };
+  const [work, platform] = await Promise.all([
+    getCurriculumWorkCoverage(institutionId, ctx.selected.curriculumId, locale),
+    ctx.structureVersionId ? getInstitutionCoverage(actor.id, institutionId, { structureVersionId: ctx.structureVersionId }).catch(() => null) : Promise.resolve(null),
+  ]);
 
   return (
     <div>
-      <PageHeader title={overview.institutionName} subtitle={t['institution.coverage.title']} />
-      <InstitutionSubNav institutionId={institutionId} active="coverage" labels={subNavLabels} />
+      {header}
+      <section className="card ta-card" aria-labelledby="work-title" data-section="work">
+        <h2 id="work-title" style={{ fontSize: 16 }}>{t['iix.coverage.work.title']}</h2>
+        {work.total === 0 || work.learnerTotal === 0 ? (
+          <p className="ta-msg">{t['iix.empty.coverage']}</p>
+        ) : (
+          <>
+            <div className="ta-grid">
+              <div className="card ta-metric">
+                <span className="ta-metric-value">
+                  {work.inClassPlans} / {work.total}
+                </span>
+                <span className="ta-metric-text">{fillMessage(t['iix.coverage.work.classes'], { n: work.inClassPlans, total: work.total })}</span>
+              </div>
+              <div className="card ta-metric">
+                <span className="ta-metric-value">
+                  {work.inStudentPlans} / {work.total}
+                </span>
+                <span className="ta-metric-text">{fillMessage(t['iix.coverage.work.students'], { n: work.inStudentPlans, total: work.total, learners: work.learnerTotal })}</span>
+              </div>
+            </div>
+            <h3 style={{ fontSize: 15 }}>{t['iix.coverage.pending']}</h3>
+            {work.pending.length === 0 ? <p className="ta-msg">{t['iix.coverage.allWorked']}</p> : <p className="ta-msg">{work.pending.map((c) => c.label).join(' · ')}</p>}
+            <details>
+              <summary>{t['iix.coverage.detail']}</summary>
+              <ul className="role-list ta-compact">
+                {work.concepts.map((c) => (
+                  <li key={c.conceptId}>
+                    <strong>{c.label}</strong> · {fillMessage(t['iix.coverage.concept'], { classes: c.classes, students: c.students })}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </>
+        )}
+      </section>
 
-      <form method="GET" className="card" style={{ display: 'flex', gap: 'var(--space-3)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)', alignItems: 'flex-end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 600 }}>
-          Structure Version ID
-          <input name="structureVersionId" defaultValue={structureVersionId} required />
-        </label>
-        <button type="submit" className="btn btn-primary">{t['common.save']}</button>
-      </form>
-
-      {coverageError && <p role="alert" style={{ color: 'var(--error)' }}>{coverageError}</p>}
-
-      {coverage && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-          <MetricCard
-            label={coverage.mappingCoverage.name}
-            value={`${coverage.mappingCoverage.numerator} / ${coverage.mappingCoverage.denominator}`}
-            populationDescription={coverage.mappingCoverage.population.description}
-            limitations={coverage.mappingCoverage.limitations}
-          />
-          <MetricCard
-            label={coverage.contentCoverage.name}
-            value={`${coverage.contentCoverage.numerator} / ${coverage.contentCoverage.denominator}`}
-            populationDescription={coverage.contentCoverage.population.description}
-            limitations={coverage.contentCoverage.limitations}
-          />
-        </div>
-      )}
+      <section className="card ta-card" aria-labelledby="platform-title" data-section="platform" style={{ marginTop: 'var(--space-4)' }}>
+        <h2 id="platform-title" style={{ fontSize: 16 }}>{t['iix.coverage.platform.title']}</h2>
+        {!ctx.structureVersionId ? (
+          <p className="ta-msg">{t['iix.coverage.platform.noBase']}</p>
+        ) : !platform || platform.mappingCoverage.value.total === 0 ? (
+          <EmptyState title={t['iix.empty.coverage']} />
+        ) : (
+          <div className="ta-grid">
+            <div className="card ta-metric">
+              <span className="ta-metric-label">{t['iix.coverage.platform.mapping']}</span>
+              <span className="ta-metric-value">
+                {platform.mappingCoverage.numerator} / {platform.mappingCoverage.denominator}
+              </span>
+            </div>
+            <div className="card ta-metric">
+              <span className="ta-metric-label">{t['iix.coverage.platform.content']}</span>
+              <span className="ta-metric-value">
+                {platform.contentCoverage.numerator} / {platform.contentCoverage.denominator}
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

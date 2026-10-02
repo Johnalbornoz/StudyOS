@@ -287,7 +287,7 @@ export async function requestChildLink(parentId: string, childEmail: string): Pr
     type: 'PARENT_LINK_REQUEST',
     title: 'Solicitud de acceso',
     message: `${parentName || 'Un familiar'} quiere ver tu progreso en StudyUS. Puedes aceptar o rechazar en tus notificaciones.`,
-    payload: { parentName },
+    payload: { parentName, parentId },
     actionHref: '/dashboard/notifications',
   });
   return 'SUBMITTED';

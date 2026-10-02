@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 import { currentUser } from '@clerk/nextjs/server';
 import { auth } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/services/admin.service';
-import { getUnreadNotifications } from '@/services/notifications.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -131,8 +130,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (activeWorkspace === 'STUDENT') {
       const studentId = await getOrCreateStudentId(clerkUserId);
-      const [notifications, debts, lang, daysThisWeek, pendingAssignments, fullAccess] = await Promise.all([
-        getUnreadNotifications(studentId).catch(() => []),
+      // Track A: the badge counts UNREAD notifications of the account inbox
+      // (persona + capabilities), the same rows /dashboard/notifications
+      // lists -- never pending business actions, never capped.
+      const [unreadNotifications, debts, lang, daysThisWeek, pendingAssignments, fullAccess] = await Promise.all([
+        countAccountUnread(canonicalUser.id, availableWorkspaces).catch(() => 0),
         getActiveDebts(studentId).catch(() => []),
         getInterfaceLanguage(studentId).catch(() => 'es' as const),
         getLearningDaysThisWeek(studentId).catch(() => 0),
@@ -142,7 +144,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         // open into a silent "has license" assumption.
         canUseCapability(canonicalUser.id, studentId, 'LEARNING_FULL_ACCESS').catch(() => false),
       ]);
-      notifCount = notifications.length;
+      notifCount = unreadNotifications;
       debtCount = debts.length;
       locale = lang;
       learningDaysThisWeek = daysThisWeek;
@@ -183,7 +185,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     activeWorkspace === 'PARENT' ? buildParentNav({ notifCount })
     : activeWorkspace === 'TEACHER' ? buildTeacherNav({ notifCount })
     : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav({ notifCount })
-    : activeWorkspace === 'ADMIN' ? buildAdminNav()
+    : activeWorkspace === 'ADMIN' ? buildAdminNav({ notifCount })
     : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
 
   // LX-2E: navigation organised around learner intent

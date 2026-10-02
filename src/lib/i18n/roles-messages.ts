@@ -13,8 +13,9 @@ import { TEACHER_E2E_MESSAGES, type TeacherE2EMessageKey } from './teacher-e2e-m
 import { INSTITUTION_ADMIN_MESSAGES, type InstitutionAdminMessageKey } from './institution-admin-messages';
 import { LEARNING_PLAN_MESSAGES, type LearningPlanMessageKey } from './learning-plan-messages';
 import { CLASS_PROGRESS_MESSAGES, type ClassProgressMessageKey } from './class-progress-messages';
+import { UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES, type UxNotificationsIntelligenceKey } from './ux-notifications-intelligence-messages';
 
-export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey | LearningPlanMessageKey | ClassProgressMessageKey;
+export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey | LearningPlanMessageKey | ClassProgressMessageKey | UxNotificationsIntelligenceKey;
 
 type BaseRolesMessageKey =
   // account / multi-role
@@ -308,7 +309,7 @@ const es: Catalog = {
   'adminInst.invite.roleRevoked': 'A esa persona se le retiró el rol de institución. Reactívalo desde su ficha de usuario.',
   'adminInst.invite.error': 'No se pudo asignar el administrador.',
 
-  'notifications.markAllRead': 'Marcar todo como leído',
+  'notifications.markAllRead': 'Marcar todas como leídas',
   'notifications.open': 'Ver',
   'notifications.new': 'Nueva',
   'notifications.subtitleRoles': 'Avisos de este espacio de trabajo.',
@@ -1299,11 +1300,11 @@ const pt: Catalog = {
 };
 
 export const ROLES_MESSAGES = {
-  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es, ...LEARNING_PLAN_MESSAGES.es, ...CLASS_PROGRESS_MESSAGES.es },
-  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en, ...LEARNING_PLAN_MESSAGES.en, ...CLASS_PROGRESS_MESSAGES.en },
-  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de, ...LEARNING_PLAN_MESSAGES.de, ...CLASS_PROGRESS_MESSAGES.de },
-  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr, ...LEARNING_PLAN_MESSAGES.fr, ...CLASS_PROGRESS_MESSAGES.fr },
-  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt, ...LEARNING_PLAN_MESSAGES.pt, ...CLASS_PROGRESS_MESSAGES.pt },
+  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es, ...LEARNING_PLAN_MESSAGES.es, ...CLASS_PROGRESS_MESSAGES.es, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.es },
+  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en, ...LEARNING_PLAN_MESSAGES.en, ...CLASS_PROGRESS_MESSAGES.en, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.en },
+  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de, ...LEARNING_PLAN_MESSAGES.de, ...CLASS_PROGRESS_MESSAGES.de, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.de },
+  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr, ...LEARNING_PLAN_MESSAGES.fr, ...CLASS_PROGRESS_MESSAGES.fr, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.fr },
+  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt, ...LEARNING_PLAN_MESSAGES.pt, ...CLASS_PROGRESS_MESSAGES.pt, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.pt },
 } as const;
 
 /**

@@ -198,3 +198,20 @@ export async function markAccountInboxRead(userId: string, workspaces: readonly 
   const counts = await Promise.all(workspaces.map((w) => markInboxRead(userId, w, ids)));
   return counts.reduce((a, b) => a + b, 0);
 }
+
+/**
+ * Mark unread again (the reader's own choice) -- same scope rule as
+ * markInboxRead: rows outside the caller's inbox are never touched.
+ */
+export async function markInboxUnread(userId: string, workspace: Workspace, ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const scope = await inboxScope(userId, workspace);
+  const params = [...scope.params, ids];
+  const r = await db.query(`UPDATE notifications n SET read_at = NULL WHERE ${scope.where} AND n.read_at IS NOT NULL AND n.id = ANY($${params.length}::uuid[])`, params);
+  return r.rowCount ?? 0;
+}
+
+export async function markAccountInboxUnread(userId: string, workspaces: readonly Workspace[], ids: string[]): Promise<number> {
+  const counts = await Promise.all(workspaces.map((w) => markInboxUnread(userId, w, ids)));
+  return counts.reduce((a, b) => a + b, 0);
+}

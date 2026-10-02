@@ -2,90 +2,71 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
-import { getMessages } from '@/lib/i18n/messages';
+import { getMessages, type MessageKey } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { getInstitutionOverview, getInstitutionInterventionSummary, InstitutionIntelligenceAccessDeniedError, NoActiveAnalyticsPolicyError } from '@/lib/institution-intelligence';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { PERIOD_DAYS } from '@/lib/institution/intelligence-context.service';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InlineAlert } from '@/components/ui/InlineAlert';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
-import { InstitutionSubNav } from '../InstitutionSubNav';
+import { IntelligenceHeader, loadContext } from '../intelligence-chrome';
 
 /**
- * F13 -- Institution Intervention Intelligence (task section 19/22).
- * Renders F12's own real status/type distribution verbatim -- "Completed"
- * here means the underlying activity was operationally finalized, never
- * a performance/quality claim (task section 22, INV-F13-...).
+ * F14 / Track A -- assignment activity (F12 `getInstitutionInterventionSummary`,
+ * cohort-suppressed distribution). Filtered by the governed context:
+ * period (sinceDays) and a class of the selected curriculum's grade /
+ * subject. Works without a curriculum (institution-wide), with a prompt to
+ * configure one.
  */
-export default async function InstitutionInterventionsPage({ params }: { params: Promise<{ institutionId: string }> }) {
+export default async function InstitutionInterventionsPage({ params, searchParams }: { params: Promise<{ institutionId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { institutionId } = await params;
+  const sp = await searchParams;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
-
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
   const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
+  let ctx;
   let summary;
   let policyOpenDecision = false;
   try {
     overview = await getInstitutionOverview(actor.id, institutionId);
-    summary = await getInstitutionInterventionSummary(actor.id, institutionId);
+    ctx = await loadContext(actor.id, institutionId, sp, t);
+    summary = await getInstitutionInterventionSummary(actor.id, institutionId, { classId: ctx.classId ?? undefined, sinceDays: PERIOD_DAYS[ctx.period] });
   } catch (error) {
     if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
-    if (error instanceof NoActiveAnalyticsPolicyError) {
-      policyOpenDecision = true;
-    } else {
-      throw error;
-    }
+    if (error instanceof NoActiveAnalyticsPolicyError) policyOpenDecision = true;
+    else throw error;
   }
-
-  const subNavLabels = {
-    overview: t['institution.overview.title'],
-    grades: t['institution.grades.title'],
-    classes: t['institution.classes.title'],
-    teachers: t['institution.teachers.title'],
-    requests: t['institution.requests.title'],
-    subjects: t['ia.nav.subjects'],
-    curriculum: t['icur.nav'],
-    coordinators: t['ia.nav.coordinators'],
-    settings: t['ia.nav.settings'],
-    learners: t['institution.learners.title'],
-    coverage: t['institution.coverage.title'],
-    readiness: t['institution.readiness.title'],
-    interventions: t['institution.interventions.title'],
-    attention: t['institution.attention.title'],
-  };
+  if (!overview || !ctx) notFound();
+  const total = summary && !summary.cohort.suppressed ? summary.cohort.value.distribution.value.total : 0;
 
   return (
     <div>
-      <PageHeader title={overview?.institutionName ?? ''} subtitle={t['institution.interventions.title']} />
-      <InstitutionSubNav institutionId={institutionId} active="interventions" labels={subNavLabels} />
-
+      <IntelligenceHeader t={t} institutionId={institutionId} institutionName={overview.institutionName} tab="interventions" ctx={ctx} show={{ curriculum: true, period: true, class: true, exam: false }} />
+      {!ctx.selected && <InlineAlert tone="info" title={t['iix.noCurriculum.title']} body={t['iix.noCurriculum.body']} />}
       {policyOpenDecision && <EmptyState title={t['empty.smallCohortSuppressed']} />}
-
-      {summary && !summary.cohort.suppressed && (
+      {summary && summary.cohort.suppressed && <EmptyState title={t['institution.learners.suppressedSmallCohort']} />}
+      {summary && !summary.cohort.suppressed && total === 0 && <EmptyState title={t['iix.empty.interventions']} />}
+      {summary && !summary.cohort.suppressed && total > 0 && (
         <>
+          <p className="ta-msg">{fillMessage(t['iix.interventions.total'], { n: total })}</p>
           <ul className="list-card card">
-            {(Object.entries(summary.cohort.value.distribution.value.byStatus) as Array<[keyof typeof summary.cohort.value.distribution.value.byStatus, number]>).map(
-              ([status, count]) => (
-                <li key={status} className="list-row">
-                  <div className="row-main">
-                    <StatusBadge label={status} tone={toneForInterventionStatus(status)} />
-                  </div>
-                  <div className="tabular" style={{ fontWeight: 700 }}>
-                    {count}
-                  </div>
-                </li>
-              )
-            )}
+            {(Object.entries(summary.cohort.value.distribution.value.byStatus) as Array<[keyof typeof summary.cohort.value.distribution.value.byStatus, number]>).map(([status, count]) => (
+              <li key={status} className="list-row">
+                <div className="row-main">
+                  <StatusBadge label={t[`assignments.status.${status}` as MessageKey] ?? status} tone={toneForInterventionStatus(status)} />
+                </div>
+                <div className="tabular" style={{ fontWeight: 700 }}>
+                  {count}
+                </div>
+              </li>
+            ))}
           </ul>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
-            {summary.cohort.value.distribution.limitations.join(' ')}
-          </p>
         </>
       )}
-
-      {summary && summary.cohort.suppressed && <EmptyState title={t['institution.learners.suppressedSmallCohort']} />}
     </div>
   );
 }

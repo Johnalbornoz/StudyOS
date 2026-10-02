@@ -2078,7 +2078,10 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 
 /* Track A: Teacher class progress intelligence. Desktop: analytics + table side by side;
    tablet: stacked cards; mobile: summary → recommendations → students → visuals. */
-.cpi-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; }
+.cpi-filters { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-2); align-items: flex-end; }
+.cpi-filters > .ta-field { flex: 1 1 180px; }
+.cpi-filters > .ta-actions { flex: 1 1 100%; }
+.iix-fixed { display: block; min-height: var(--touch-target); line-height: var(--touch-target); color: var(--text-primary); }
 .cpi-students-filter summary { cursor: pointer; }
 .cpi-layout { display: flex; flex-direction: column; gap: var(--space-4); }
 .cpi-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
@@ -2121,4 +2124,7 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
   .cpi-grid tr { display: block; border-bottom: 1px solid var(--border-default); padding: var(--space-2) 0; }
   .cpi-grid th, .cpi-grid td { display: block; border: 0; padding: var(--space-1) 0; }
   .cpi-grid td::before { content: attr(data-label) ': '; color: var(--text-muted); }
+}
+@media (max-width: 767px) {
+  .cpi-filters > .ta-field { flex-basis: 100%; }
 }

@@ -68,7 +68,7 @@ export function buildInstitutionNav(opts: { notifCount?: number } = {}): Learner
  * rendering inside the Student shell's nav. Same sections as the
  * console's own sub-navigation (`ADMIN_SECTIONS`).
  */
-export function buildAdminNav(): LearnerNavGroup[] {
+export function buildAdminNav(opts: { notifCount?: number } = {}): LearnerNavGroup[] {
   return [
     {
       kind: 'PRIMARY',
@@ -79,6 +79,11 @@ export function buildAdminNav(): LearnerNavGroup[] {
         label: section.label,
         iconKey: section.key === 'overview' ? 'ShieldCheck' : section.key === 'users' ? 'Users' : section.key === 'memberships' ? 'CreditCard' : section.key === 'institutions' ? 'School' : 'ClipboardList',
       })),
+    },
+    // Track A: the same account inbox and unread badge as every other role.
+    {
+      kind: 'UTILITY',
+      items: [{ key: 'notifications', href: '/dashboard/notifications', labelKey: 'nav.notifications', iconKey: 'Bell', badge: opts.notifCount || undefined }],
     },
   ];
 }

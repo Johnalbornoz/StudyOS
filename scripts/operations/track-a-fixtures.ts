@@ -386,6 +386,15 @@ export async function learningPlanTeardown(): Promise<void> {
   await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[])`, [lpUsers]);
+  // UX E2E residue: the independent Student's inbox and parent request, and LP-institution notices sent to other fixtures.
+  const lpStudentUser = await rows(`SELECT id FROM users WHERE email = $1`, [emailFor('lp-student')]);
+  await q(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [lpStudentUser, lpStudent]);
+  await q(
+    `DELETE FROM notifications WHERE recipient_user_id IN (SELECT id FROM users WHERE email LIKE 'studyus-ta-%+clerk_test@example.com')
+       AND (payload->>'institutionName' = $1 OR notification_type = 'PARENT_LINK_DECLINED')`,
+    [INST_LP_NAME]
+  );
+  await q(`DELETE FROM parent_student_relationships WHERE student_id = ANY($1::uuid[])`, [lpStudent]);
   await q(`DELETE FROM admin_audit_log WHERE target_id = ANY($1::text[])`, [insts]);
   await q(`DELETE FROM institutions WHERE id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM user_language_preferences WHERE user_id = ANY($1::uuid[])`, [synthetic]);

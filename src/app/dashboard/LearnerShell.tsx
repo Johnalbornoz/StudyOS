@@ -25,7 +25,7 @@
  * system is built; Focus Mode owns presentation only.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -284,7 +284,7 @@ function Footer({ displayName, streak, streakLabel, localeSwitcher }: { displayN
 }
 
 export default function LearnerShell({
-  groups,
+  groups: groupsProp,
   displayName,
   streak,
   streakLabel,
@@ -331,6 +331,29 @@ export default function LearnerShell({
   const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+
+  // Track A: the notifications badge counts UNREAD notifications only. The
+  // notifications page announces the new count right after it marks what it
+  // displayed as read (or after "mark all" / "mark unread"), so the badge
+  // updates without a reload; the next server render is the source of truth.
+  const serverUnread = groupsProp.flatMap((g) => g.items).find((i) => i.key === 'notifications')?.badge ?? 0;
+  const [unreadOverride, setUnreadOverride] = useState<number | null>(null);
+  useEffect(() => setUnreadOverride(null), [serverUnread]);
+  useEffect(() => {
+    const onUnread = (e: Event) => {
+      const count = (e as CustomEvent<{ count?: number }>).detail?.count;
+      if (typeof count === 'number') setUnreadOverride(count);
+    };
+    window.addEventListener('studyus:unread-notifications', onUnread);
+    return () => window.removeEventListener('studyus:unread-notifications', onUnread);
+  }, []);
+  const groups = useMemo(
+    () =>
+      unreadOverride === null
+        ? groupsProp
+        : groupsProp.map((g) => ({ ...g, items: g.items.map((i) => (i.key === 'notifications' ? { ...i, badge: unreadOverride > 0 ? unreadOverride : undefined } : i)) })),
+    [groupsProp, unreadOverride]
+  );
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 

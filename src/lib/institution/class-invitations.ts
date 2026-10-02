@@ -25,7 +25,7 @@ export async function inviteToClassAndNotify(
       type: 'CLASS_ENROLLMENT_INVITE',
       title: 'Invitación a una clase',
       message: `${institution?.name ?? ''} te invitó a la clase ${klass.name}. Acepta o rechaza en tus notificaciones.`,
-      payload: { institutionName: institution?.name ?? '', className: klass.name },
+      payload: { institutionName: institution?.name ?? '', className: klass.name, enrollmentId: result.enrollmentId },
       actionHref: '/dashboard/notifications',
     });
   }
