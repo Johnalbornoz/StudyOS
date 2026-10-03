@@ -102,3 +102,15 @@ describe('performance: Student launch paths do no bank work in SHADOW mode', () 
     }
   });
 });
+
+describe('pooler safety (found by the DEV regression run on 2026-10-03)', () => {
+  it('no session-level advisory lock in exam code: behind Neon\'s transaction pooler the unlock can orphan the lock', () => {
+    for (const f of [...walk('src/lib/exam-core'), ...walk('src/app/api/exam-preparation'), ...walk('src/app/api/exams')].filter((x) => x.endsWith('.ts'))) {
+      expect(read(f), f).not.toMatch(/pg_advisory_lock\(|pg_advisory_unlock\(|pg_try_advisory_lock\(/);
+    }
+  });
+  it('the preparation diagnostic takes the transaction-scoped launch lock', () => {
+    expect(read('src/lib/exam-core/objectives/preparation.service.ts')).toMatch(/acquireLaunchLock\(`exam-prep-diagnostic:\$\{profile\.id\}`\)/);
+  });
+});
+

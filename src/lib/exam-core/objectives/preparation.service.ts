@@ -31,6 +31,7 @@ import { examObjectives, objectiveByKey, objectiveForConfig, type ExamObjective 
 import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry } from './capabilities';
 import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput } from './preparation-plan';
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
+import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
 
 export class PreparationError extends Error {
   constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS', detail?: string) {
@@ -433,14 +434,14 @@ export async function startPreparationDiagnostic(studentId: string, profileId: s
   const { profile, objective } = await activeOwnedProfile(studentId, profileId);
   const caps = await objectiveCapabilities(objective);
   if (!caps.canRunDiagnostic) throw new PreparationError('CAPABILITY_NOT_AVAILABLE', 'DIAGNOSTIC');
-  // Double click / parallel retry: one diagnostic per preparation at a time (session advisory lock on this profile).
-  const lock = await db.connect();
+  // Double click / parallel retry: one diagnostic per preparation at a time. A TRANSACTION-scoped
+  // advisory lock pinned to one connection (safe behind Neon's transaction pooler, with a lock
+  // timeout); a session-level lock/unlock pair can orphan the lock there and hang the retry.
+  const lock = await acquireLaunchLock(`exam-prep-diagnostic:${profile.id}`);
   try {
-    await lock.query(`SELECT pg_advisory_lock(hashtext('exam-prep-diagnostic'), hashtext($1))`, [profile.id]);
     return await createOrResumeDiagnostic(profile, objective);
   } finally {
-    await lock.query(`SELECT pg_advisory_unlock(hashtext('exam-prep-diagnostic'), hashtext($1))`, [profile.id]).catch(() => undefined);
-    lock.release();
+    await lock.release();
   }
 }
 
