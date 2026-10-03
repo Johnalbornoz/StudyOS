@@ -28,6 +28,7 @@ import { orderTargetsBySection } from '@/lib/simulation/plan.service';
 import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { examItemFromApproved, examItemMarks } from './items';
+import { lifecycleSqlFor } from './question-bank/lifecycle';
 import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel } from './form-assembly';
 import type { ExamItemState } from './navigation-state';
 import type { TimingMode } from '@/lib/simulation/types';
@@ -114,7 +115,7 @@ export function timingFor(mode: InstanceMode, requested: TimingMode | undefined)
 /* Form assembly (DB reads -> pure assembleForm)                        */
 /* ------------------------------------------------------------------ */
 
-async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = []) {
+async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK') {
   const blueprint = await getBlueprintForVersion(examVersionId);
   if (!blueprint) throw new ExamInstanceError('NO_ITEMS_FOR_FORM', 'version has no blueprint');
   const components = await listComponentsForVersion(examVersionId);
@@ -130,9 +131,11 @@ async function formInputs(examVersionId: string, componentIds: string[], student
     difficultyRange: t.difficultyMin !== null && t.difficultyMax !== null ? { min: t.difficultyMin, max: t.difficultyMax } : null,
   }));
   const objectiveIds = [...new Set(positions.map((p) => p.learningObjectiveId).filter((x): x is string => !!x))];
+  // Question Bank content-use policy (server-authoritative): practice may use PILOT items, a Mock / Challenge
+  // only ACTIVE / CALIBRATED ones -- a mock is never filled with weaker content to reach its length.
   const poolRows = await db.query(
-    `SELECT id, learning_objective_id, question_type, content, difficulty_index, template_fingerprint, semantic_fingerprint, content_origin
-       FROM approved_items WHERE status = 'PUBLISHED' AND learning_objective_id = ANY($1::uuid[])`,
+    `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(mode === 'PRACTICE' ? 'PRACTICE' : 'REDUCED_MOCK')}`,
     [objectiveIds]
   );
   const pool: PoolItem[] = [];
@@ -169,7 +172,7 @@ async function formInputs(examVersionId: string, componentIds: string[], student
 }
 
 async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
-  const inputs = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds);
+  const inputs = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode);
   const form = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
   if (!form.slots.some((s) => s.approvedItemId) && instance.mode !== 'PRACTICE') throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
   await db.query(`UPDATE exam_instances SET form = $2, form_frozen_at = now(), difficulty_index = $3 WHERE id = $1`, [instance.id, JSON.stringify(form), form.difficultyIndex]);

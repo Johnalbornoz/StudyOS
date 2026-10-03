@@ -189,6 +189,8 @@ export const ApprovedItemContentSchema = z.object({
   tags: ItemBlueprintTagsSchema.optional(),
   /** Why each wrong option is attractive (selection items). */
   distractorRationale: z.record(z.string(), z.string().max(400)).optional(),
+  /** Question Bank Factory: the misconception each distractor is designed to reveal (server-side only). */
+  distractorMisconceptions: z.record(z.string(), z.string().regex(/^[A-Z][A-Z0-9_]{2,79}$/)).optional(),
   calculator: z.enum(['NONE', 'ALLOWED', 'SCIENTIFIC_REQUIRED', 'GDC_REQUIRED']).optional(),
 });
 export type ApprovedItemContent = z.infer<typeof ApprovedItemContentSchema>;
@@ -492,7 +494,7 @@ export type ExamClientItem = ReturnType<typeof toExamClientItem>;
 export const ANSWER_BEARING_KEYS = [
   'correctAnswer', 'acceptableAnswers', 'numericTolerance', 'explanation', 'matchingPairs', 'orderingItems', 'criterion', 'approvedItemId',
   // V2 keys: math / method / rubric internals never leave the server.
-  'answers', 'intermediates', 'modelAnswer', 'descriptors', 'guidance', 'distractorRationale', 'partialCredit', 'math', 'method', 'rubric', 'expected',
+  'answers', 'intermediates', 'modelAnswer', 'descriptors', 'guidance', 'distractorRationale', 'distractorMisconceptions', 'partialCredit', 'math', 'method', 'rubric', 'expected',
 ] as const;
 
 export function findAnswerKeyLeak(payload: unknown, path = '$'): string | null {

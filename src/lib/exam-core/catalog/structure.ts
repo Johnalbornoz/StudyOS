@@ -149,7 +149,7 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
         description: 'Una sola prueba integral: Lectura, Redacción, Matemáticas e Inglés.',
         children: [
           {
-            key: 'paa.full', type: 'VARIANT', label: 'Simulacro completo', purpose: 'FULL_TEST', modes: ['MOCK', 'CHALLENGE'],
+            key: 'paa.full', type: 'VARIANT', label: 'Las cuatro secciones', labels: { en: 'All four sections' }, purpose: 'FULL_TEST', modes: ['MOCK', 'CHALLENGE'],
             description: 'Las cuatro áreas en el orden oficial, con pausas.', facts: { minutes: 180, items: 175 },
             bind: { configKey: 'v2.paa' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-manual-latam-2024'],
           },

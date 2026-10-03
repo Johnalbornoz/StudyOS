@@ -18,6 +18,7 @@ import { ASSESSMENT_CATALOG, flattenCatalog, type CatalogFamily, type CatalogNod
 import { packageReadiness, modesFor, isMockReady, READINESS_ORDER, type ReadinessState, type ComponentReadiness } from './readiness';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
 import { allV2Configs } from '../verticals/v2/all';
+import { applyBankReadinessOverlay, readinessMode } from '../question-bank/capability-overlay.service';
 
 /** Parsed configurations by key (the catalogue binds to these). */
 export function configsByKey(): Map<string, ExamVerticalConfig> {
@@ -249,8 +250,11 @@ export interface ExamLevelSelection {
  * its published version and the components the Student may pick.
  */
 export async function resolveExamLevel(nodeKey: string, language: string): Promise<ExamLevelSelection | null> {
-  const n = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND selectable = true LIMIT 1`, [nodeKey])).rows[0];
-  if (!n || !n.exam_version_id) return null;
+  // Question Bank: in ENFORCE mode a node's readiness / selectability comes from the latest bank-health snapshot (same overlay as the capabilities).
+  const enforce = readinessMode() === 'ENFORCE';
+  const raw = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND (selectable = true OR $2) LIMIT 1`, [nodeKey, enforce])).rows[0];
+  const n = raw ? (await applyBankReadinessOverlay([raw]))[0] : null;
+  if (!n || !n.selectable || !n.exam_version_id) return null;
   const bind = n.metadata?.bind ?? {};
   const readiness = n.metadata?.readiness ?? { state: 'CATALOG_ONLY', modes: [], components: [] };
   const comps = await db.query(

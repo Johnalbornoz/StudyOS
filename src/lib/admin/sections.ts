@@ -4,7 +4,7 @@
  * workspace navigation render, so the two can never drift apart.
  * Labels are Spanish-only, matching the rest of the admin console.
  */
-export type AdminSection = 'overview' | 'users' | 'invitations' | 'requests' | 'institutions' | 'memberships' | 'test-accounts' | 'audit';
+export type AdminSection = 'overview' | 'users' | 'invitations' | 'requests' | 'institutions' | 'memberships' | 'test-accounts' | 'audit' | 'question-bank';
 
 export const ADMIN_HOME = '/dashboard/admin/overview';
 
@@ -17,4 +17,5 @@ export const ADMIN_SECTIONS: ReadonlyArray<{ key: AdminSection; href: string; la
   { key: 'memberships', href: '/dashboard/admin/memberships', label: 'Membresías y pagos' },
   { key: 'test-accounts', href: '/dashboard/admin/test-accounts', label: 'Cuentas de prueba' },
   { key: 'audit', href: '/dashboard/admin/audit', label: 'Auditoría' },
+  { key: 'question-bank', href: '/dashboard/admin/question-bank', label: 'Banco de preguntas' },
 ];

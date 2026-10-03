@@ -236,14 +236,14 @@ export function PreparationHome({ view, labels: l, language, dateLine }: { view:
           )}
           {c.reducedMocks.map((m) => (
             <li key={m.nodeKey}>
-              <strong>{l['prep.cap.reducedMock']} · {m.label}</strong>
+              <strong>{l['prep.cap.reducedMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${m.label}`}</strong>
               <span className="ui-hint">{m.lengthCoveragePercent !== null ? fill(l['prep.cap.reducedMockCoverage'], { n: m.lengthCoveragePercent }) : l['prep.cap.reducedMockNote']}</span>
               <Link className="btn btn-secondary prep-cta" href={practiceHref(m.nodeKey)}>{l['prep.cap.start']}</Link>
             </li>
           ))}
           {c.fullMocks.map((m) => (
             <li key={m.nodeKey}>
-              <strong>{l['prep.cap.fullMock']} · {m.label}</strong>
+              <strong>{l['prep.cap.fullMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${m.label}`}</strong>
               <span className="ui-hint">{l['prep.cap.fullMockNote']}</span>
               <Link className="btn btn-secondary prep-cta" href={practiceHref(m.nodeKey)}>{l['prep.cap.start']}</Link>
             </li>

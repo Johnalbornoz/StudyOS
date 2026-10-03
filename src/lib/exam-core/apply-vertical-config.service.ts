@@ -23,6 +23,7 @@ import { parseExamVerticalConfig, type ExamVerticalConfig } from './vertical-con
 import { upsertSources } from './catalog/source-registry.service';
 import { itemFingerprints } from './fingerprints';
 import { contentOriginOf } from './items';
+import { ensureBankIdentities } from './question-bank/bank.service';
 
 export class VerticalConfigError extends Error {
   constructor(public readonly code: 'INVALID_CONFIG' | 'CONFIG_CHANGED_FOR_EXISTING_VERSION' | 'NO_SYSTEM_IDENTITIES' | 'FAMILY_MISMATCH', detail: string) {
@@ -264,6 +265,9 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
       await client.query(`UPDATE approved_items SET status = 'PUBLISHED', published_at = now() WHERE id = $1 AND status = 'APPROVED'`, [created.id]);
       itemIdsByKey[it.content.key] = created.id;
     }
+
+    // --- Question Bank: every item written here becomes version 1 of a stable bank item (ACTIVE, provenance from its content) ---
+    await ensureBankIdentities(client);
 
     // --- Publish (blueprint, then the version -- superseding any previous PUBLISHED one) ---
     await client.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1`, [blueprintId]);

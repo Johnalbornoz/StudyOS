@@ -299,6 +299,30 @@ export const PROMPT_REGISTRY = {
     description:
       'Exam V2 ADJUDICATOR: called only when assessors A and B disagree beyond the rubric threshold. Sees both assessments and the response, and decides each disputed criterion within its maximum, giving a reason. Low confidence still ends in REVIEW_REQUIRED (human review), never a silent final mark.',
   }),
+  'question_bank.generate_items': definePrompt({
+    id: 'question_bank.generate_items',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:generateCandidates',
+    description:
+      'Question Bank Factory GENERATOR (background only, never on a Student request): writes a small batch of ORIGINAL StudyUS selected-response items for ONE blueprint cell (section contract, requirement, difficulty, demand, format) from exam structure, bank exemplars and optional anonymous aggregate signals -- never Student data. Supplies a verification expression (mathematics) or a verbatim evidence quote (reading) that StudyUS checks deterministically. Output is a DRAFT_AI candidate that must pass the validation pipeline.',
+  }),
+  'question_bank.validate_item': definePrompt({
+    id: 'question_bank.validate_item',
+    version: 'v1',
+    capability: 'CLASSIFICATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:validateCandidate',
+    description:
+      'Question Bank Factory INDEPENDENT VALIDATOR: a separate call that SOLVES a candidate item without seeing its key, and reports other defensible options, need for information outside the passage and implausible distractors. Judged deterministically against the key; Luna first, Terra only when Luna is not confident.',
+  }),
+  'question_bank.repair_item': definePrompt({
+    id: 'question_bank.repair_item',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:repairCandidate',
+    description:
+      'Question Bank Factory REPAIR: one bounded attempt to fix the exact automated-validation findings of a candidate; the result is a NEW item version that goes through the full validation pipeline again.',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;

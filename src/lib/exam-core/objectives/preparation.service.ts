@@ -30,6 +30,7 @@ import { createExamInstance, toInstanceView } from '../exam-instance.service';
 import { examObjectives, objectiveByKey, objectiveForConfig, type ExamObjective } from './objective-catalog';
 import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry } from './capabilities';
 import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput } from './preparation-plan';
+import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
 
 export class PreparationError extends Error {
   constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS', detail?: string) {
@@ -82,10 +83,11 @@ async function bridgeMappingsByConfig(configKeys: string[]): Promise<Map<string,
 export async function allObjectiveCapabilities(language = 'es'): Promise<Map<string, ExamPreparationCapabilities>> {
   const objectives = examObjectives();
   const [nodes, bridge] = await Promise.all([
-    db.query(`SELECT node_key, node_type, label, labels, selectable, metadata FROM assessment_structure_nodes WHERE status = 'ACTIVE'`),
+    db.query(`SELECT node_key, node_type, label, labels, selectable, metadata, exam_version_id, assessment_component_id FROM assessment_structure_nodes WHERE status = 'ACTIVE'`),
     bridgeMappingsByConfig([...new Set(objectives.flatMap((o) => o.configKeys))]),
   ]);
-  const rows = nodes.rows as any[];
+  // Question Bank: bank-derived readiness (ENFORCE) from precomputed snapshots; a no-op in SHADOW.
+  const rows = (await applyBankReadinessOverlay(nodes.rows as any[])) as any[];
   // Index rows by their objective (prefix match on the node key's ancestors).
   const byObjectiveNode = new Map<string, any[]>();
   const primaries = new Map(objectives.map((o) => [o.nodeKey, o]));
@@ -111,14 +113,15 @@ export async function allObjectiveCapabilities(language = 'es'): Promise<Map<str
 export async function objectiveCapabilities(o: ExamObjective, language = 'es'): Promise<ExamPreparationCapabilities> {
   const [nodes, bridge] = await Promise.all([
     db.query(
-      `SELECT node_key, node_type, label, labels, selectable, metadata FROM assessment_structure_nodes
+      `SELECT node_key, node_type, label, labels, selectable, metadata, exam_version_id, assessment_component_id FROM assessment_structure_nodes
         WHERE status = 'ACTIVE' AND (node_key = $1 OR node_key LIKE $2)`,
       [o.nodeKey, `${o.nodeKey.replace(/[%_]/g, (c) => `\\${c}`)}.%`]
     ),
     bridgeMappingsByConfig(o.configKeys),
   ]);
   const mappings = o.configKeys.reduce((a, k) => a + (bridge.get(k) ?? 0), 0);
-  return computeCapabilities(o, nodes.rows.map((row: any) => toEntry(row, language)), mappings);
+  const rows = await applyBankReadinessOverlay(nodes.rows as any[]);
+  return computeCapabilities(o, rows.map((row: any) => toEntry(row, language)), mappings);
 }
 
 // ---------------------------------------------------------------- profiles
