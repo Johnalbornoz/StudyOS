@@ -270,7 +270,8 @@ async function main() {
   const klass = await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'Matemáticas 10A', gradeId: gradeA, canonicalSubjectId: x.canonicalSubject });
   check('A4.create-class', klass.status === 201, klass.text.slice(0, 120));
   const classA = klass.body?.data?.class?.id;
-  check('SEC.class-under-foreign-grade', (await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'X', gradeId: x.gradeB })).status === 422);
+  // A foreign grade is never revealed: 404 (institution operations), and no class is created.
+  check('SEC.class-under-foreign-grade', (await post(`/api/institutions/${x.instA}/classes`, 'inst-a', { name: 'X', gradeId: x.gradeB })).status === 404 && (await n(`SELECT COUNT(*) n FROM classes WHERE institution_id = $1 AND name = 'X'`, [x.instA])) === 0);
   check('SEC.instA-not-instB-pending', denied(await get(`/api/institutions/${x.instB}/memberships/pending`, 'inst-a')));
   check('SEC.instA-not-instB-create', denied(await post(`/api/institutions/${x.instB}/classes`, 'inst-a', { name: 'intrusion' })));
   check('SEC.instA-not-instB-roster', denied(await get(`/api/institutions/${x.instB}/classes/${x.classB}/enrollments`, 'inst-a')));
@@ -362,6 +363,7 @@ async function main() {
   // Generation is all-or-nothing; a GENERATION_FAILED (503) writes nothing and is simply retried, as the Student would.
   let start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
   for (let attempt = 1; attempt < 4 && start.status === 503; attempt++) {
+    await new Promise((r) => setTimeout(r, 65_000)); // the shared DEV AI limit has a per-minute window: retry after it resets (never raise the cap)
     check(`A5.generation-retry-${attempt}-wrote-nothing`, (await n(`SELECT COUNT(*) n FROM teacher_intervention_executions WHERE teacher_intervention_id = $1`, [interventionId])) === 0);
     start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
   }

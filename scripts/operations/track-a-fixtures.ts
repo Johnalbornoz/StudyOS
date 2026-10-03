@@ -74,6 +74,10 @@ export const IDENTITIES = {
   'lp-student': { first: 'Lucía', last: 'Independiente', roles: ['STUDENT'] as const },
   'lp-teacher': { first: 'Lorenzo', last: 'Docente LP', roles: ['TEACHER'] as const },
   'lp-coord': { first: 'Laura', last: 'Coordinadora LP', roles: [] as const },
+  // Institution operational E2E (first-time setup over HTTP): the coordinator of
+  // "Institution E2E Ops" and a Teacher account with no institution until invited.
+  'ops-coord': { first: 'Olivia', last: 'Coordinadora Ops', roles: [] as const },
+  'ops-teacher': { first: 'Óscar', last: 'Docente Ops', roles: ['TEACHER'] as const },
 } as const;
 /** Identities created by the invitation flow itself, never by `provision`. */
 export const SIGN_UP_LATER: ReadonlySet<string> = new Set(['coord-a', 'coord-x']);
@@ -452,9 +456,10 @@ export async function institutionReset() {
   await q(`DELETE FROM teacher_assignments WHERE institution_membership_id IN (SELECT id FROM institution_memberships WHERE institution_id = ANY($1::uuid[]))`, [insts]);
   await q(`DELETE FROM class_enrollments WHERE class_id IN (SELECT id FROM classes WHERE institution_id = ANY($1::uuid[]))`, [insts]);
   await detachTeacherAddedConcepts((await db.query(`SELECT id FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts])).rows.map((r: any) => r.id));
+  // curricula / institution tasks reference classes and grades: purge them first
+  await purgeLearningPlanRows({ institutionIds: insts });
   await q(`DELETE FROM classes WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM grades WHERE institution_id = ANY($1::uuid[])`, [insts]);
-  await purgeLearningPlanRows({ institutionIds: insts });
   await q(`DELETE FROM institution_admin_invitations WHERE institution_id = ANY($1::uuid[]) OR email LIKE 'studyus-ta-%+clerk_test@example.com'`, [insts]);
   await q(`DELETE FROM institution_memberships WHERE institution_id = ANY($1::uuid[])`, [insts]);
   await q(`DELETE FROM admin_audit_log WHERE target_id = ANY($1::text[])`, [insts]);

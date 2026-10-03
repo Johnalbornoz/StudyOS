@@ -141,7 +141,8 @@ async function resetOwnArtifacts(inst: string, lpClass: string, lpCurriculum: st
   await q(`DELETE FROM teacher_interventions WHERE id = ANY($1::uuid[])`, [interventions]);
   await q(`DELETE FROM institution_assignment_targets WHERE assignment_id = ANY($1::uuid[])`, [assignments]);
   await q(`DELETE FROM institution_assignments WHERE id = ANY($1::uuid[])`, [assignments]);
-  await q(`DELETE FROM academic_governance_events WHERE institution_id = $1`, [inst]);
+  // keep the LP world's own audit (its explicit class binding); only this suite's events go
+  await q(`DELETE FROM academic_governance_events WHERE institution_id = $1 AND (object_id IS NULL OR object_id::text <> $2)`, [inst, lpClass]);
   await q(`DELETE FROM class_plan_concepts WHERE class_id = $1 AND owner_scope = 'INSTITUTION'`, [lpClass]);
   const v2Classes = (await qa(`SELECT id FROM classes WHERE institution_id = $1 AND name LIKE $2`, [inst, `${V2_PREFIX}%`])).map((r: any) => r.id);
   const v2Interventions = (await qa(`SELECT id FROM teacher_interventions WHERE class_id = ANY($1::uuid[])`, [v2Classes])).map((r: any) => r.id);
@@ -325,7 +326,12 @@ async function s57(w: World, st: any) {
   const replay = await post(url, 'lp-coord', { concepts: [{ canonicalConceptId: extra, status: 'EXCLUDED' }] });
   check('S57.no-op-not-audited', replay.status === 200 && replay.body?.data?.concepts === 0);
   st.extra = extra;
-  const otherSubject = (await q1(`SELECT id FROM canonical_concepts WHERE canonical_subject_id <> $1 AND status = 'ACTIVE' LIMIT 1`, [w.math])).id;
+  // another ACADEMIC DOMAIN (same-domain concepts, e.g. Matemáticas, are a governed equivalence and allowed)
+  const otherSubject = (await q1(
+    `SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id
+     WHERE cc.status = 'ACTIVE' AND cs.academic_domain_code IS DISTINCT FROM (SELECT academic_domain_code FROM canonical_subjects WHERE id = $1) LIMIT 1`,
+    [w.math]
+  )).id;
   check('S57.other-subject-concept-refused', (await post(url, 'lp-coord', { concepts: [{ canonicalConceptId: otherSubject, status: 'INCLUDED' }] })).status === 422);
   check('S57.structure-untouched', (await n(`SELECT COUNT(*) n FROM learning_objectives lo JOIN structure_nodes sn ON sn.id = lo.structure_node_id JOIN institution_curricula ic ON ic.base_structure_version_id = sn.structure_version_id WHERE ic.id = $1`, [id])) === structureBefore);
   check('S57.catalog-untouched', (await n(`SELECT COUNT(*) n FROM canonical_concepts WHERE canonical_subject_id = $1`, [w.math])) === catalogBefore);

@@ -300,7 +300,8 @@ async function main() {
   check('S14.teacher-cannot-start', denied(await post(`/api/student/teacher-interventions/${interventionId}/start`, 'teacher-a', { idempotencyKey: 'x' })));
   check('S14.studentB-cannot-start', denied(await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-b', { idempotencyKey: 'x' })));
   let start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
-  for (let attempt = 1; attempt < 4 && start.status === 503; attempt++) start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
+  // the shared DEV AI limit has a per-minute window: retry after it resets (never raise the cap)
+  for (let attempt = 1; attempt < 4 && start.status === 503; attempt++) start = await new Promise((r) => setTimeout(r, 65_000)).then(() => post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` }));
   check('S14.sofia-starts', start.status === 200 && start.body?.data?.outcome === 'STARTED', start.text.slice(0, 160));
   const quizId = start.body?.data?.executionReference;
   check('S14.status-started', ((await get(`/api/teacher/classes/${classA}/assignments`, 'teacher-a')).body?.data?.assignments?.[0]?.learners?.[0]?.status) === 'IN_PROGRESS');
