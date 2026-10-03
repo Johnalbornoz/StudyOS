@@ -98,7 +98,9 @@ async function main() {
   const apply = process.argv.includes('--apply');
   const url = new URL(process.env.DATABASE_URL ?? '');
   const fp = createHash('sha256').update(`${url.hostname}|${url.pathname.slice(1)}`).digest('hex').slice(0, 16);
-  if (fp !== DEV_DB_FINGERPRINT) throw new Error(`Refusing: DB fingerprint ${fp} is not DEV ${DEV_DB_FINGERPRINT}`);
+  // DEV by default; another non-production target only when named explicitly (SEED_ALLOW_FP=<its fingerprint>).
+  if (fp === '6671e7382d808d06') throw new Error('Refusing: PRODUCTION database');
+  if (fp !== DEV_DB_FINGERPRINT && process.env.SEED_ALLOW_FP !== fp) throw new Error(`Refusing: DB fingerprint ${fp} is not DEV ${DEV_DB_FINGERPRINT} (set SEED_ALLOW_FP=${fp} to target it explicitly)`);
   const c = new Client({ connectionString: process.env.DATABASE_URL });
   await c.connect();
   const created = { organizations: 0, programmes: 0, qualifications: 0, subjects: 0, versions: 0 };
