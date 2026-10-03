@@ -11,6 +11,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { TeacherMembershipPanel } from './TeacherMembershipPanel';
+import { listMyTeacherInvitations } from '@/lib/institution/institution-operations.service';
+import { TeacherInvitationActions } from '../institution/[institutionId]/OpsActions';
 
 /**
  * F13 / Track A (A3) -- Teacher workspace home. Everything is derived from
@@ -26,6 +28,9 @@ export default async function TeacherHomePage() {
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
   const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
+  const tr = t as unknown as Record<string, string>;
+  const opsL = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('iops.')));
+  const invitations = await listMyTeacherInvitations(actor.id);
 
   const [classes, memberships, institutions] = await Promise.all([
     listTeacherClasses(actor.id),
@@ -38,6 +43,20 @@ export default async function TeacherHomePage() {
   return (
     <div className="ta-stack">
       <PageHeader title={t['teacherHome.title']} subtitle={t['teacherHome.subtitle']} />
+
+      {invitations.length > 0 && (
+        <section className="card ta-card" aria-labelledby="teacher-invitations-title" data-teacher-invitations>
+          <h2 id="teacher-invitations-title">{tr['iops.tinv.title']}</h2>
+          <ul className="role-list">
+            {invitations.map((inv) => (
+              <li key={inv.membershipId} className="ta-entity-row">
+                <span>{fillMessage(tr['iops.tinv.body'], { institution: inv.institutionName })}</span>
+                <TeacherInvitationActions membershipId={inv.membershipId} l={opsL} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {pending.length > 0 && classes.length === 0 && (
         <InlineAlert

@@ -339,7 +339,7 @@ export async function createClass(
   return result.rows[0];
 }
 
-async function isActiveCanonicalSubject(canonicalSubjectId: string): Promise<boolean> {
+export async function isActiveCanonicalSubject(canonicalSubjectId: string): Promise<boolean> {
   const r = await db.query(`SELECT 1 FROM canonical_subjects WHERE id = $1 AND status = 'ACTIVE'`, [canonicalSubjectId]);
   return r.rows.length > 0;
 }
@@ -486,6 +486,9 @@ export interface InstitutionClassRow {
   institutionCurriculumId: string | null;
   /** Canonical academic domain ("Área académica"): the class's own, else its catalog subject's. Never a binding. */
   academicDomain: string | null;
+  /** Track A: ACTIVE / ARCHIVED (an archived class keeps its whole history). */
+  status: 'ACTIVE' | 'ARCHIVED';
+  period: string | null;
   activeEnrollmentCount: number;
   pendingEnrollmentCount: number;
   teachers: Array<{ assignmentId: string; userId: string; email: string | null; name: string | null }>;
@@ -505,7 +508,7 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
   const r = await db.query(
     `
     SELECT c.id, c.name, c.grade_id, g.name AS grade_name, c.canonical_subject_id, cs.name AS subject_name, c.institution_curriculum_id,
-      COALESCE(c.academic_domain_code, cs.academic_domain_code) AS academic_domain,
+      COALESCE(c.academic_domain_code, cs.academic_domain_code) AS academic_domain, c.status, c.period,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'ACTIVE') AS active_count,
       (SELECT COUNT(*)::int FROM class_enrollments ce WHERE ce.class_id = c.id AND ce.status = 'PENDING') AS pending_count,
       COALESCE((
@@ -520,7 +523,7 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
     LEFT JOIN grades g ON g.id = c.grade_id
     LEFT JOIN canonical_subjects cs ON cs.id = c.canonical_subject_id
     WHERE c.institution_id = $1
-    ORDER BY g.name NULLS LAST, c.name
+    ORDER BY c.status, g.name NULLS LAST, c.name
     `,
     [institutionId]
   );
@@ -534,6 +537,8 @@ export async function listInstitutionClassesWithStaff(institutionId: string): Pr
     subjectName: row.subject_name,
     institutionCurriculumId: row.institution_curriculum_id ?? null,
     academicDomain: row.academic_domain ?? null,
+    status: row.status ?? 'ACTIVE',
+    period: row.period ?? null,
     activeEnrollmentCount: row.active_count,
     pendingEnrollmentCount: row.pending_count,
     teachers: (row.teachers ?? []).map((tch: any) => ({

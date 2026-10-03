@@ -14,11 +14,14 @@ import {
 } from '@/services/institution.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { InviteStudentForm, AssignTeacherForm, PostActionButton, SetClassSubjectForm } from '../../InstitutionForms';
+import { PostActionButton, SetClassSubjectForm } from '../../InstitutionForms';
 import { ClassCurriculumSelect } from '../../curriculum/CurriculumManager';
 import { listInstitutionCurriculumSubjects, listAcademicDomains } from '@/lib/institution/curriculum-management.service';
 import { curriculumContextLabel, rankCurriculumCandidates } from '@/lib/institution/curriculum-identity';
 import { classBindingLabels } from '@/lib/institution/admin-labels';
+import { listGrades } from '@/lib/institution/institution-operations.service';
+import { opsLabels } from '@/lib/institution/page-context';
+import { ClassForm, ClassTeacherSelect, AddStudentForm, StudentClassAction, RowMenu } from '../../OpsActions';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,6 +32,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * names and enrollment state only; per-learner learning data stays behind
  * the teacher relationship and the cohort-suppressed F12 read models.
  */
+const thisClassStatus = (classes: Array<{ id: string; status: string }>, id: string) => classes.find((c) => c.id === id)?.status ?? 'ACTIVE';
+const staffMembership = (teacher: { userId: string }, staff: { userId: string }) => teacher.userId === staff.userId;
+
 export default async function InstitutionClassPage({ params }: { params: Promise<{ institutionId: string; classId: string }> }) {
   const { institutionId, classId } = await params;
   const { userId: clerkUserId } = await auth();
@@ -49,14 +55,17 @@ export default async function InstitutionClassPage({ params }: { params: Promise
   const klass = await getClassInInstitution(institutionId, classId);
   if (!klass) notFound();
 
-  const [roster, classes, teachers, subjects, curricula, domains] = await Promise.all([
+  const [roster, classes, teachers, subjects, curricula, domains, grades] = await Promise.all([
     listClassRosterForInstitution(institutionId, classId),
     listInstitutionClassesWithStaff(institutionId),
     listApprovedTeachers(institutionId),
     listLinkableSubjects(),
     listInstitutionCurriculumSubjects(institutionId, { includeArchived: true }),
     listAcademicDomains(locale),
+    listGrades(institutionId),
   ]);
+  const l = opsLabels(t as unknown as Record<string, string>);
+  const archived = thisClassStatus(classes, classId) === 'ARCHIVED';
   const thisClass = classes.find((c) => c.id === classId);
   const currentCurriculum = curricula.find((c) => c.curriculumId === thisClass?.institutionCurriculumId) ?? null;
   const curriculumLabel = (c: (typeof curricula)[number]) => curriculumContextLabel(c, t['cur2.wizard.allGrades']);
@@ -71,6 +80,34 @@ export default async function InstitutionClassPage({ params }: { params: Promise
         subtitle={[overview.institutionName, klass.gradeName, klass.subjectName].filter(Boolean).join(' · ')}
         breadcrumb={<Link href={`/dashboard/institution/${institutionId}/classes`}>{t['institution.classes.title']}</Link>}
       />
+      <div className="ta-entity-row" data-class-status={archived ? 'ARCHIVED' : 'ACTIVE'}>
+        <span className="ta-row">
+          <span className={`chip${archived ? '' : ' chip-good'}`}>{l[`iops.common.status.${archived ? 'ARCHIVED' : 'ACTIVE'}`]}</span>
+          {currentCurriculum && <Link href={`/dashboard/institution/${institutionId}/curriculum/${currentCurriculum.curriculumId}`}>{l['iops.classes.plan']}</Link>}
+          <Link href={`/dashboard/institution/${institutionId}/tasks`}>{l['iops.classes.assignments']}</Link>
+        </span>
+        <RowMenu
+          label={klass.name}
+          l={l}
+          items={archived ? [{ label: l['iops.common.reactivate'], action: { url: `${base}/classes/${classId}/reactivate` } }] : [{ label: l['iops.common.archive'], action: { url: `${base}/classes/${classId}/archive`, confirm: l['iops.classes.archiveHint'] } }]}
+        />
+      </div>
+      {archived && <p className="ta-msg">{l['iops.classes.archiveHint']}</p>}
+      {!archived && (
+        <section className="card ta-card" id="class-edit">
+          <ClassForm
+            id="class-edit-form"
+            institutionId={institutionId}
+            classId={classId}
+            grades={grades.map((g) => ({ id: g.id, name: g.name }))}
+            domains={domains}
+            curricula={[]}
+            teachers={[]}
+            initial={{ name: klass.name, gradeId: klass.gradeId ?? null, academicDomain: thisClass?.academicDomain ?? null, period: thisClass?.period ?? null }}
+            l={l}
+          />
+        </section>
+      )}
 
       <section className="card ta-card" aria-labelledby="class-curriculum-title" data-class-curriculum>
         <h2 id="class-curriculum-title">{t['cur2.teacher.curriculum']}</h2>
@@ -118,37 +155,23 @@ export default async function InstitutionClassPage({ params }: { params: Promise
             ))}
           </ul>
         )}
-        <AssignTeacherForm
-          institutionId={institutionId}
-          teachers={teachers}
-          fixedScope={{ classId }}
-          labels={{
-            title: t['inst.class.assignTeacher'],
-            selectTeacher: t['inst.class.selectTeacher'],
-            submit: t['inst.class.assignTeacher'],
-            none: t['inst.class.noApprovedTeachers'],
-            saved: t['inst.common.saved'],
-            error: t['inst.teachers.assignError'],
-            scopeRequired: t['inst.teachers.scopeRequired'],
-          }}
-        />
+        {!archived && (
+          <div id="class-teacher">
+            <ClassTeacherSelect
+              institutionId={institutionId}
+              classId={classId}
+              current={staff.length === 1 ? (teachers.find((x) => staffMembership(x, staff[0]))?.membershipId ?? null) : null}
+              teachers={teachers.map((x) => ({ membershipId: x.membershipId, label: x.name ? `${x.name} (${x.email})` : x.email ?? x.membershipId }))}
+              l={l}
+            />
+          </div>
+        )}
       </section>
 
       <section className="card ta-card" aria-labelledby="roster-title">
         <h2 id="roster-title">{t['inst.class.rosterTitle']}</h2>
-        <InviteStudentForm
-          institutionId={institutionId}
-          classId={classId}
-          labels={{
-            label: t['inst.class.invite.label'],
-            body: t['inst.class.invite.body'],
-            submit: t['inst.class.invite.submit'],
-            sent: t['inst.class.invite.sent'],
-            noAccount: t['inst.class.invite.noAccount'],
-            already: t['inst.class.invite.already'],
-            error: t['inst.common.error'],
-          }}
-        />
+        {!archived && <AddStudentForm institutionId={institutionId} classes={[]} fixedClassId={classId} l={l} />}
+        <p className="ta-msg">{l['iops.students.historyNote']}</p>
         {roster.length === 0 ? (
           <EmptyState title={t['inst.class.rosterEmpty']} />
         ) : (
@@ -161,6 +184,17 @@ export default async function InstitutionClassPage({ params }: { params: Promise
                 </span>
                 <span className="ta-actions">
                   <span className={r.status === 'ACTIVE' ? 'chip chip-good' : 'chip chip-warn'}>{t[`inst.class.status.${r.status}`]}</span>
+                  {r.status === 'ACTIVE' && !archived && (
+                    <StudentClassAction
+                      institutionId={institutionId}
+                      studentId={r.studentId}
+                      mode="move"
+                      fromOptions={[{ id: classId, label: klass.name }]}
+                      toOptions={classes.filter((c) => c.id !== classId && c.status === 'ACTIVE').map((c) => ({ id: c.id, label: [c.name, c.gradeName].filter(Boolean).join(' · ') }))}
+                      l={l}
+                    />
+                  )}
+                  <Link href={`/dashboard/institution/${institutionId}/students/${r.studentId}`}>{l['iops.common.view']}</Link>
                   <PostActionButton
                     url={`${base}/classes/${classId}/enrollments/${r.enrollmentId}/end`}
                     label={r.status === 'ACTIVE' ? t['inst.class.remove'] : t['inst.class.withdraw']}

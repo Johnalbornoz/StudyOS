@@ -15,8 +15,9 @@ import { LEARNING_PLAN_MESSAGES, type LearningPlanMessageKey } from './learning-
 import { CLASS_PROGRESS_MESSAGES, type ClassProgressMessageKey } from './class-progress-messages';
 import { UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES, type UxNotificationsIntelligenceKey } from './ux-notifications-intelligence-messages';
 import { CURRICULUM_V2_MESSAGES, type CurriculumV2MessageKey } from './curriculum-v2-messages';
+import { INSTITUTION_OPS_MESSAGES, type InstitutionOpsMessageKey } from './institution-ops-messages';
 
-export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey | LearningPlanMessageKey | ClassProgressMessageKey | UxNotificationsIntelligenceKey | CurriculumV2MessageKey;
+export type RolesMessageKey = BaseRolesMessageKey | TeacherE2EMessageKey | InstitutionAdminMessageKey | LearningPlanMessageKey | ClassProgressMessageKey | UxNotificationsIntelligenceKey | CurriculumV2MessageKey | InstitutionOpsMessageKey;
 
 type BaseRolesMessageKey =
   // account / multi-role
@@ -1301,11 +1302,11 @@ const pt: Catalog = {
 };
 
 export const ROLES_MESSAGES = {
-  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es, ...LEARNING_PLAN_MESSAGES.es, ...CLASS_PROGRESS_MESSAGES.es, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.es, ...CURRICULUM_V2_MESSAGES.es },
-  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en, ...LEARNING_PLAN_MESSAGES.en, ...CLASS_PROGRESS_MESSAGES.en, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.en, ...CURRICULUM_V2_MESSAGES.en },
-  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de, ...LEARNING_PLAN_MESSAGES.de, ...CLASS_PROGRESS_MESSAGES.de, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.de, ...CURRICULUM_V2_MESSAGES.de },
-  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr, ...LEARNING_PLAN_MESSAGES.fr, ...CLASS_PROGRESS_MESSAGES.fr, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.fr, ...CURRICULUM_V2_MESSAGES.fr },
-  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt, ...LEARNING_PLAN_MESSAGES.pt, ...CLASS_PROGRESS_MESSAGES.pt, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.pt, ...CURRICULUM_V2_MESSAGES.pt },
+  es: { ...es, ...TEACHER_E2E_MESSAGES.es, ...INSTITUTION_ADMIN_MESSAGES.es, ...LEARNING_PLAN_MESSAGES.es, ...CLASS_PROGRESS_MESSAGES.es, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.es, ...CURRICULUM_V2_MESSAGES.es, ...INSTITUTION_OPS_MESSAGES.es },
+  en: { ...en, ...TEACHER_E2E_MESSAGES.en, ...INSTITUTION_ADMIN_MESSAGES.en, ...LEARNING_PLAN_MESSAGES.en, ...CLASS_PROGRESS_MESSAGES.en, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.en, ...CURRICULUM_V2_MESSAGES.en, ...INSTITUTION_OPS_MESSAGES.en },
+  de: { ...de, ...TEACHER_E2E_MESSAGES.de, ...INSTITUTION_ADMIN_MESSAGES.de, ...LEARNING_PLAN_MESSAGES.de, ...CLASS_PROGRESS_MESSAGES.de, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.de, ...CURRICULUM_V2_MESSAGES.de, ...INSTITUTION_OPS_MESSAGES.de },
+  fr: { ...fr, ...TEACHER_E2E_MESSAGES.fr, ...INSTITUTION_ADMIN_MESSAGES.fr, ...LEARNING_PLAN_MESSAGES.fr, ...CLASS_PROGRESS_MESSAGES.fr, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.fr, ...CURRICULUM_V2_MESSAGES.fr, ...INSTITUTION_OPS_MESSAGES.fr },
+  pt: { ...pt, ...TEACHER_E2E_MESSAGES.pt, ...INSTITUTION_ADMIN_MESSAGES.pt, ...LEARNING_PLAN_MESSAGES.pt, ...CLASS_PROGRESS_MESSAGES.pt, ...UX_NOTIFICATIONS_INTELLIGENCE_MESSAGES.pt, ...CURRICULUM_V2_MESSAGES.pt, ...INSTITUTION_OPS_MESSAGES.pt },
 } as const;
 
 /**

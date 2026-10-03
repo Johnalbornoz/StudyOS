@@ -85,6 +85,7 @@ export async function getTeacherAssignedClasses(actorUserId: string): Promise<Te
       AND im.status = 'APPROVED'
       AND ta.status = 'ACTIVE'
       AND c.institution_id = im.institution_id
+      AND c.status = 'ACTIVE' -- an archived class leaves the teacher's working list (its history stays)
     ORDER BY c.name
     `,
     [actorUserId]

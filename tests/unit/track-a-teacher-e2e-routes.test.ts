@@ -38,6 +38,11 @@ const inviteMock = vi.fn();
 vi.mock('@/lib/institution/class-invitations', () => ({ inviteToClassAndNotify: (...a: any[]) => inviteMock(...a) }));
 const endEnrollmentMock = vi.fn();
 const setClassSubjectMock = vi.fn();
+const updateClassV2Mock = vi.fn();
+vi.mock('@/lib/institution/institution-operations.service', async () => {
+  const actual = await vi.importActual<any>('@/lib/institution/institution-operations.service');
+  return { ...actual, updateClassV2: (...a: any[]) => updateClassV2Mock(...a) };
+});
 vi.mock('@/services/institution.service', () => ({
   listClassRosterForInstitution: vi.fn(async () => []),
   endClassEnrollment: (...a: any[]) => endEnrollmentMock(...a),
@@ -153,12 +158,14 @@ describe('Institution admin links the class subject', () => {
     canAccessInstitutionMock.mockResolvedValue(false);
     expect((await classPATCH(req({ canonicalSubjectId: SUBJ }), p({ id: INST, classId: CLASS }))).status).toBe(403);
     expect(setClassSubjectMock).not.toHaveBeenCalled();
+    expect(updateClassV2Mock).not.toHaveBeenCalled();
   });
 
   it('inactive subject → 422; foreign class → 404', async () => {
-    setClassSubjectMock.mockRejectedValueOnce(new Error('SUBJECT_NOT_AVAILABLE'));
+    const { InstitutionOpsError } = await import('@/lib/institution/institution-operations.service');
+    updateClassV2Mock.mockRejectedValueOnce(new InstitutionOpsError('SUBJECT_NOT_AVAILABLE'));
     expect((await classPATCH(req({ canonicalSubjectId: SUBJ }), p({ id: INST, classId: CLASS }))).status).toBe(422);
-    setClassSubjectMock.mockResolvedValueOnce(false);
+    updateClassV2Mock.mockRejectedValueOnce(new InstitutionOpsError('NOT_FOUND'));
     expect((await classPATCH(req({ canonicalSubjectId: SUBJ }), p({ id: INST, classId: CLASS }))).status).toBe(404);
   });
 });

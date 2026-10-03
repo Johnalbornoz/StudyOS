@@ -2142,3 +2142,22 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .cur2-wizard .btn, .cur2-bulk .btn, .cur2-institution-task .btn { min-height: var(--touch-target); }
 .cur2-objective { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); }
 .ta-choice:focus-within, .cur2-objective:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--radius-md); }
+
+/* ---- Track A: institution workspace operations (row menus, quick actions, setup) ---- */
+.ta-rowmenu { display: inline-flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); position: relative; }
+.ta-menu { position: relative; }
+.ta-menu > summary { list-style: none; cursor: pointer; min-width: var(--touch-target, 44px); min-height: var(--touch-target, 44px); display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); font-size: var(--fs-lg, 18px); line-height: 1; }
+.ta-menu > summary::-webkit-details-marker { display: none; }
+.ta-menu > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ta-menu > ul { position: absolute; right: 0; z-index: 20; min-width: 12rem; margin: var(--space-1) 0 0; padding: var(--space-1); list-style: none; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.12)); }
+.ta-menu-item { display: flex; width: 100%; min-height: var(--touch-target, 44px); align-items: center; padding: 0 var(--space-3); border: 0; background: none; color: var(--text-primary); text-align: left; text-decoration: none; font: inherit; cursor: pointer; border-radius: var(--radius-sm, 6px); }
+.ta-menu-item:hover, .ta-menu-item:focus-visible { background: var(--bg-subtle); }
+.ta-menu-item.is-danger { color: var(--error); }
+.ta-quick { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ta-quick .btn { min-height: var(--touch-target, 44px); }
+.ta-setup-steps { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.ta-setup-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.ta-setup-step.is-done { background: var(--success-subtle); }
+.ta-entity-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ta-entity-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1 1 16rem; }
+.ta-entity-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

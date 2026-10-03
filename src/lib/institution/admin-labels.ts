@@ -77,6 +77,7 @@ export function institutionSubNavLabels(t: Messages) {
     overview: t['institution.overview.title'],
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
+    students: t['iops.nav.students'],
     teachers: t['institution.teachers.title'],
     requests: t['institution.requests.title'],
     subjects: t['ia.nav.subjects'],

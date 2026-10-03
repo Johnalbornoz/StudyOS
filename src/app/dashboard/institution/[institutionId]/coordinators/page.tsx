@@ -43,7 +43,7 @@ export default async function InstitutionCoordinatorsPage({ params }: { params: 
         apiBase={`/api/institutions/${institutionId}`}
         coordinators={coordinators.map((c) => ({ ...c, isSelf: c.kind === 'MEMBER' && c.id === myMembership }))}
         locale={locale}
-        labels={coordinatorsLabels(t, t['ia.coord.bodyCoordinator'])}
+        labels={{ ...coordinatorsLabels(t, t['ia.coord.bodyCoordinator']), reactivate: t['iops.coord.reactivate'] }}
       />
     </div>
   );

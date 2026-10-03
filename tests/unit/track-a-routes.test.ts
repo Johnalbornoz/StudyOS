@@ -41,6 +41,11 @@ const getClassInInstitutionMock = vi.fn();
 const inviteStudentToClassMock = vi.fn();
 const respondToClassInvitationMock = vi.fn();
 const requestTeacherMembershipMock = vi.fn();
+const createClassV2Mock = vi.fn();
+vi.mock('@/lib/institution/institution-operations.service', async () => {
+  const actual = await vi.importActual<any>('@/lib/institution/institution-operations.service');
+  return { ...actual, createClassV2: (...a: any[]) => createClassV2Mock(...a) };
+});
 vi.mock('@/services/institution.service', () => ({
   createClass: (...a: any[]) => createClassMock(...a),
   listInstitutionClassesWithStaff: vi.fn(async () => []),
@@ -151,11 +156,15 @@ describe('Institution admin routes', () => {
     canAccessInstitutionMock.mockResolvedValue(false);
     expect((await classesPOST(req({ name: 'X' }), p({ id: INST }))).status).toBe(403);
     expect(createClassMock).not.toHaveBeenCalled();
+    expect(createClassV2Mock).not.toHaveBeenCalled();
   });
 
-  it('a grade of another institution -> 422 (never a cross-tenant class)', async () => {
-    createClassMock.mockRejectedValue(new Error('SCOPE_OUTSIDE_INSTITUTION'));
-    expect((await classesPOST(req({ name: 'X', gradeId: CLASS }), p({ id: INST }))).status).toBe(422);
+  it('a grade of another institution -> 404 (never a cross-tenant class, never revealed)', async () => {
+    const { InstitutionOpsError } = await import('@/lib/institution/institution-operations.service');
+    createClassV2Mock.mockRejectedValue(new InstitutionOpsError('NOT_FOUND'));
+    expect((await classesPOST(req({ name: 'X', gradeId: CLASS }), p({ id: INST }))).status).toBe(404);
+    createClassV2Mock.mockRejectedValue(new InstitutionOpsError('GRADE_REQUIRED'));
+    expect((await classesPOST(req({ name: 'X' }), p({ id: INST }))).status).toBe(422);
   });
 
   it('malformed ids are a clean 404, never a DB cast error', async () => {

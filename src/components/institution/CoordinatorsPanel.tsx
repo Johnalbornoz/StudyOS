@@ -41,6 +41,8 @@ export interface CoordinatorsLabels {
   error: string;
   copyLink: string;
   linkCopied: string;
+  /** Track A: reactivate a removed (INACTIVE) coordinator of this institution. */
+  reactivate?: string;
 }
 
 export function CoordinatorsPanel({ apiBase, coordinators, locale, labels, canManage = true }: { apiBase: string; coordinators: CoordinatorView[]; locale: string; labels: CoordinatorsLabels; canManage?: boolean }) {
@@ -106,6 +108,11 @@ export function CoordinatorsPanel({ apiBase, coordinators, locale, labels, canMa
                 {canManage && c.kind === 'MEMBER' && c.status === 'ACTIVE' && !c.isSelf && (
                   <button type="button" className="btn btn-ghost" onClick={() => act(`${apiBase}/coordinators/${c.id}/remove`, labels.removeConfirm.replace('{name}', c.name ?? c.email ?? ''))}>
                     {labels.remove}
+                  </button>
+                )}
+                {canManage && labels.reactivate && c.kind === 'MEMBER' && c.status === 'INACTIVE' && (
+                  <button type="button" className="btn btn-ghost" onClick={() => act(`${apiBase}/coordinators/${c.id}/reactivate`)}>
+                    {labels.reactivate}
                   </button>
                 )}
                 {canManage && c.kind === 'INVITATION' && c.status === 'PENDING' && (

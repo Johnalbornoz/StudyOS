@@ -1,137 +1,102 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect, notFound } from 'next/navigation';
-import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getUserInterfaceLanguage } from '@/lib/i18n/language';
-import { getMessages } from '@/lib/i18n/messages';
-import { fillMessage } from '@/lib/i18n/roles-messages';
-import { getInstitutionOverview, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
-import {
-  listApprovedTeachers,
-  listInstitutionTeacherAssignments,
-  listInstitutionClassesWithStaff,
-  listInstitutionGrades,
-} from '@/services/institution.service';
+import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { institutionSubNavLabels } from '@/lib/institution/admin-labels';
+import { institutionPageContext, opsLabels } from '@/lib/institution/page-context';
+import { listTeachers } from '@/lib/institution/institution-operations.service';
+import { listInstitutionClassesWithStaff } from '@/services/institution.service';
 import { InstitutionSubNav } from '../InstitutionSubNav';
-import { AssignTeacherForm, PostActionButton } from '../InstitutionForms';
+import { InviteTeacherForm, AssignClassForm, RowMenu, type MenuItem } from '../OpsActions';
+
+const TONE: Record<string, string> = { APPROVED: 'chip chip-good', INVITED: 'chip chip-warn', PENDING: 'chip chip-warn', SUSPENDED: 'chip chip-critical', REJECTED: 'chip', REVOKED: 'chip' };
 
 /**
- * F14 / Track A (A4) -- approved teachers of THIS institution, by email
- * (never a raw id), their active class / grade scopes, assigning a scope
- * (which MUST name a class or a grade -- a scope-less assignment granted
- * nothing) and revoking a teacher. A plain roster: no score or ranking.
+ * Track A -- Teachers: invite an existing teacher account, approve / reject requests, assign to
+ * classes, remove a class assignment, suspend / reactivate the institutional relation, see every
+ * state (Invitado / Pendiente / Aprobado / Suspendido / Rechazado / Retirado). ⋯ menu per row.
  */
 export default async function InstitutionTeachersPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
-  const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) redirect('/sign-in');
-
-  const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
-  const t = getMessages(locale);
-
-  let overview;
-  try {
-    overview = await getInstitutionOverview(actor.id, institutionId);
-  } catch (error) {
-    if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
-    throw error;
-  }
-  const [teachers, assignments, classes, grades] = await Promise.all([
-    listApprovedTeachers(institutionId),
-    listInstitutionTeacherAssignments(institutionId),
-    listInstitutionClassesWithStaff(institutionId),
-    listInstitutionGrades(institutionId),
-  ]);
-  const scopes = [
-    ...classes.map((c) => ({ value: `class:${c.id}`, label: fillMessage(t['inst.teachers.scopeClass'], { name: c.subjectName ? `${c.name} (${c.subjectName})` : c.name }) })),
-    ...grades.map((g) => ({ value: `grade:${g.id}`, label: fillMessage(t['inst.teachers.scopeGrade'], { name: g.name }) })),
-  ];
-
-  const subNavLabels = {
-    overview: t['institution.overview.title'],
-    grades: t['institution.grades.title'],
-    classes: t['institution.classes.title'],
-    teachers: t['institution.teachers.title'],
-    requests: t['institution.requests.title'],
-    subjects: t['ia.nav.subjects'],
-    curriculum: t['icur.nav'],
-    tasks: t['cur2.tasks.nav'],
-    coordinators: t['ia.nav.coordinators'],
-    settings: t['ia.nav.settings'],
-    learners: t['institution.learners.title'],
-    coverage: t['institution.coverage.title'],
-    readiness: t['institution.readiness.title'],
-    interventions: t['institution.interventions.title'],
-    attention: t['institution.attention.title'],
-  };
+  const { t, tr, overview } = await institutionPageContext(institutionId);
+  const [teachers, classes] = await Promise.all([listTeachers(institutionId), listInstitutionClassesWithStaff(institutionId)]);
+  const l = opsLabels(tr);
+  const base = `/dashboard/institution/${institutionId}`;
+  const api = `/api/institutions/${institutionId}`;
+  const activeClasses = classes.filter((c) => c.status === 'ACTIVE');
 
   return (
     <div className="ta-stack">
       <div>
         <PageHeader title={overview.institutionName} subtitle={t['institution.teachers.title']} />
-        <InstitutionSubNav institutionId={institutionId} active="teachers" labels={subNavLabels} />
+        <InstitutionSubNav institutionId={institutionId} active="teachers" labels={institutionSubNavLabels(t)} />
       </div>
 
+      <section className="card ta-card">
+        <InviteTeacherForm institutionId={institutionId} l={l} />
+      </section>
+
       {teachers.length === 0 ? (
-        <EmptyState title={t['inst.teachers.empty']} />
+        <section className="card ta-card" data-empty="teachers">
+          <p>{l['iops.teachers.empty']}</p>
+          <a className="btn btn-primary" href="#invite-teacher-title">
+            {l['iops.teachers.invite']}
+          </a>
+        </section>
       ) : (
-        <>
-          {scopes.length > 0 && (
-            <section className="card ta-card" aria-label={t['inst.teachers.assignTo']}>
-              <AssignTeacherForm
-                institutionId={institutionId}
-                teachers={teachers}
-                scopes={scopes}
-                labels={{
-                  title: t['inst.teachers.assignTo'],
-                  selectTeacher: t['inst.class.selectTeacher'],
-                  scope: t['inst.teachers.assignTo'],
-                  submit: t['institution.teachers.assign'],
-                  none: t['inst.teachers.empty'],
-                  saved: t['inst.common.saved'],
-                  error: t['inst.teachers.assignError'],
-                  scopeRequired: t['inst.teachers.scopeRequired'],
-                }}
-              />
-            </section>
-          )}
-          <ul className="list-card card" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {teachers.map((teacher) => {
-              const mine = assignments.filter((a) => a.membershipId === teacher.membershipId);
-              return (
-                <li key={teacher.membershipId} className="list-row" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                  <div className="row-main" style={{ flexBasis: 240 }}>
-                    <div className="row-title" style={{ overflowWrap: 'anywhere' }}>{teacher.name && teacher.email ? `${teacher.name} · ${teacher.email}` : (teacher.name ?? teacher.email ?? teacher.userId)}</div>
-                    {mine.length === 0 ? (
-                      <div className="row-sub">{t['inst.teachers.noAssignments']}</div>
-                    ) : (
-                      <ul style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {mine.map((a) => (
-                          <li key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                            <span className="row-sub" style={{ margin: 0 }}>
-                              {a.className
-                                ? fillMessage(t['inst.teachers.scopeClass'], { name: a.className })
-                                : fillMessage(t['inst.teachers.scopeGrade'], { name: a.gradeName ?? '' })}
-                            </span>
-                            <PostActionButton url={`/api/institutions/assignments/${a.id}/end`} label={t['inst.class.endAssignment']} errorLabel={t['inst.common.error']} />
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  <PostActionButton
-                    url={`/api/institutions/${institutionId}/memberships/${teacher.membershipId}/revoke`}
-                    label={t['institution.teachers.revoke']}
-                    errorLabel={t['inst.common.error']}
-                    confirmText={`${t['institution.teachers.revoke']}: ${teacher.name ?? teacher.email ?? ''}?`}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </>
+        <ul className="list-card card" aria-label={t['institution.teachers.title']}>
+          {teachers.map((teacher) => {
+            const who = teacher.name && teacher.email ? `${teacher.name} · ${teacher.email}` : teacher.name ?? teacher.email ?? teacher.userId;
+            const assigned = new Set(teacher.classes.map((c) => c.classId));
+            const items: MenuItem[] = [
+              { label: l['iops.common.view'], href: `${base}/teachers/${teacher.membershipId}` },
+              ...(teacher.status === 'PENDING'
+                ? [
+                    { label: l['iops.teachers.approve'], action: { url: `${api}/memberships/${teacher.membershipId}/decide`, body: { decision: 'APPROVED' } } },
+                    { label: l['iops.teachers.reject'], danger: true, action: { url: `${api}/memberships/${teacher.membershipId}/decide`, body: { decision: 'REJECTED' }, confirm: l['iops.common.confirm'] } },
+                  ]
+                : []),
+              ...(teacher.status === 'APPROVED'
+                ? [
+                    { label: l['iops.teachers.suspend'], action: { url: `${api}/teachers/${teacher.membershipId}/suspend`, confirm: l['iops.teachers.suspendHint'] } },
+                    { label: tr['institution.teachers.revoke'], danger: true, action: { url: `${api}/memberships/${teacher.membershipId}/revoke`, confirm: `${tr['institution.teachers.revoke']}: ${who}?` } },
+                  ]
+                : []),
+              ...(teacher.status === 'SUSPENDED' ? [{ label: l['iops.teachers.reactivate'], action: { url: `${api}/teachers/${teacher.membershipId}/reactivate` } }] : []),
+              ...(['REJECTED', 'REVOKED'].includes(teacher.status) && teacher.email ? [{ label: l['iops.teachers.invite'], action: { url: `${api}/teachers`, body: { email: teacher.email } } }] : []),
+            ];
+            return (
+              <li key={teacher.membershipId} className="list-row ta-entity-row" data-teacher={teacher.membershipId} data-status={teacher.status}>
+                <div className="ta-entity-main">
+                  <Link href={`${base}/teachers/${teacher.membershipId}`} className="row-title" style={{ color: 'inherit', overflowWrap: 'anywhere' }}>
+                    {who}
+                  </Link>
+                  <span className="row-sub">
+                    {l['iops.teachers.classes']}:{' '}
+                    {teacher.classes.length ? teacher.classes.map((c) => c.className ?? c.gradeName).join(', ') : l['iops.teachers.noClasses']}
+                  </span>
+                  {teacher.status === 'APPROVED' && teacher.classes.length > 0 && (
+                    <span className="ta-row">
+                      {teacher.classes.map((c) => (
+                        <RowMenu
+                          key={c.assignmentId}
+                          label={`${l['iops.teachers.unassign']}: ${c.className ?? c.gradeName ?? ''}`}
+                          l={l}
+                          items={[{ label: `${l['iops.teachers.unassign']}: ${c.className ?? c.gradeName ?? ''}`, action: { url: `/api/institutions/assignments/${c.assignmentId}/end` } }]}
+                        />
+                      ))}
+                    </span>
+                  )}
+                  {teacher.status === 'APPROVED' && (
+                    <AssignClassForm institutionId={institutionId} membershipId={teacher.membershipId} classes={activeClasses.filter((c) => !assigned.has(c.id)).map((c) => ({ id: c.id, label: [c.name, c.gradeName].filter(Boolean).join(' · ') }))} l={l} />
+                  )}
+                </div>
+                <div className="ta-entity-actions">
+                  <span className={TONE[teacher.status] ?? 'chip'}>{l[`iops.teachers.status.${teacher.status}`]}</span>
+                  <RowMenu items={items} label={who} l={l} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
