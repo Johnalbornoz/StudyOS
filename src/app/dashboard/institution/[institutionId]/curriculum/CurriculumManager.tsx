@@ -443,7 +443,7 @@ export function ClassCurriculumSelect({
       <span className="ta-form ta-row" style={{ alignItems: 'flex-end' }}>
         <label className="ta-field">
           <span>{labels.associated}</span>
-          <select value={value} onChange={(e) => setValue(e.target.value)}>
+          <select className="cur2-binding-select" value={value} onChange={(e) => setValue(e.target.value)}>
             <option value="">{current ? labels.none : labels.select}</option>
             {compatible.length > 0 && (
               <optgroup label={domainLabel ? labels.compatibleGroup.replace('{domain}', domainLabel) : labels.associated}>

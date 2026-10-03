@@ -2164,3 +2164,5 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 
 /* Track A: class detail -- a select is as wide as its longest option (long curriculum context labels); keep it inside its card on phones. */
 .cls-detail select { width: 100%; max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+/* Shared class -> curriculum binding select (class detail + curriculum page): long context labels never widen the page. */
+.cur2-binding-select { width: 100%; max-width: 100%; min-width: 0; text-overflow: ellipsis; }
