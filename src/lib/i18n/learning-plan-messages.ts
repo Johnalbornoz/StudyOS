@@ -22,7 +22,7 @@ export type LearningPlanMessageKey =
   | 'lp.class.REQUIRED' | 'lp.class.RECOMMENDED' | 'lp.class.OPTIONAL' | 'lp.class.SUPPLEMENTAL'
   | 'lp.rec.empty' | 'lp.rec.reason.EXAM_GAP' | 'lp.rec.reason.CLASS_PLAN' | 'lp.rec.reason.INSTITUTION_REQUIRED' | 'lp.rec.reason.PREREQUISITE'
   | 'lp.rec.reason.NEXT_CONCEPT' | 'lp.rec.reason.NEXT_FIRST' | 'lp.rec.add' | 'lp.rec.reinforce' | 'lp.rec.dismiss' | 'lp.rec.already' | 'lp.rec.goTo'
-  | 'lp.exam.empty' | 'lp.exam.setup' | 'lp.exam.open' | 'lp.exam.title' | 'lp.exam.readiness' | 'lp.exam.unmapped'
+  | 'lp.exam.empty' | 'lp.exam.setup' | 'lp.exam.open' | 'lp.exam.title' | 'lp.exam.readiness' | 'lp.exam.unmapped' | 'lp.exam.mappingNotAvailable'
   | 'lp.exam.status.NEEDS_REINFORCEMENT' | 'lp.exam.status.NOT_STARTED' | 'lp.exam.status.IN_PROGRESS' | 'lp.exam.status.CONSOLIDATED' | 'lp.exam.back'
   | 'lp.error' | 'lp.phase.NOT_STARTED'
   | 'tcp.nav.overview' | 'tcp.nav.plan' | 'tcp.nav.students' | 'tcp.nav.assignments' | 'tcp.nav.progress'
@@ -128,6 +128,7 @@ const es: Catalog = {
   'lp.exam.title': 'Plan de preparación',
   'lp.exam.readiness': 'Preparación actual: {status}',
   'lp.exam.unmapped': '{n} {n:objetivo del examen aún no está|objetivos del examen aún no están} vinculados a conceptos.',
+  'lp.exam.mappingNotAvailable': 'Este objetivo todavía no tiene una estructura de examen vinculada a conceptos. Tu preparación se conserva; los conceptos aparecerán cuando el mapeo esté disponible.',
   'lp.exam.status.NEEDS_REINFORCEMENT': 'Necesita refuerzo',
   'lp.exam.status.NOT_STARTED': 'Sin empezar',
   'lp.exam.status.IN_PROGRESS': 'En curso',
@@ -326,6 +327,7 @@ const en: Catalog = {
   'lp.exam.title': 'Preparation plan',
   'lp.exam.readiness': 'Current readiness: {status}',
   'lp.exam.unmapped': '{n} exam {n:objective is|objectives are} not linked to concepts yet.',
+  'lp.exam.mappingNotAvailable': 'This objective is not yet linked to an exam structure with concepts. Your preparation is kept; concepts will appear once the mapping is available.',
   'lp.exam.status.NEEDS_REINFORCEMENT': 'Needs reinforcement',
   'lp.exam.status.NOT_STARTED': 'Not started',
   'lp.exam.status.IN_PROGRESS': 'In progress',
@@ -462,6 +464,7 @@ const de: Catalog = {
   'icur.nav': 'Lehrplan',
   'icur.title': 'Lehrplan der Institution',
   'cprop.title': 'Konzeptvorschläge',
+  'lp.exam.mappingNotAvailable': 'Dieses Ziel ist noch keiner Prüfungsstruktur mit Konzepten zugeordnet. Deine Vorbereitung bleibt erhalten; die Konzepte erscheinen, sobald die Zuordnung verfügbar ist.',
 };
 
 const fr: Catalog = {
@@ -482,6 +485,7 @@ const fr: Catalog = {
   'icur.nav': 'Programme',
   'icur.title': 'Programme de l’établissement',
   'cprop.title': 'Propositions de concepts',
+  'lp.exam.mappingNotAvailable': 'Cet objectif n’est pas encore relié à une structure d’examen avec des concepts. Ta préparation est conservée ; les concepts apparaîtront dès que la correspondance sera disponible.',
 };
 
 const pt: Catalog = {
@@ -502,6 +506,7 @@ const pt: Catalog = {
   'icur.nav': 'Currículo',
   'icur.title': 'Currículo institucional',
   'cprop.title': 'Propostas de conceitos',
+  'lp.exam.mappingNotAvailable': 'Este objetivo ainda não está ligado a uma estrutura de exame com conceitos. Sua preparação é mantida; os conceitos aparecerão quando o mapeamento estiver disponível.',
 };
 
 export const LEARNING_PLAN_MESSAGES = { es, en, de, fr, pt } as const;

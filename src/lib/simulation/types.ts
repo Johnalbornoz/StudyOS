@@ -19,6 +19,18 @@ export interface SimulationPlanTarget {
   allocatedSeconds: number | null;
 }
 
+/** Track B: one section of a plan = one assessment component, contiguous in `selectedTargets`. */
+export interface SimulationPlanSection {
+  componentId: string;
+  key: string;
+  name: string;
+  order: number;
+  startIndex: number;
+  endIndex: number;
+  /** Section time limit; null when untimed or not configured. */
+  durationSeconds: number | null;
+}
+
 export interface SimulationPlan {
   id: string;
   studentId: string;
@@ -30,6 +42,8 @@ export interface SimulationPlan {
   timingAllocation: { mode: TimingMode; totalSeconds: number | null };
   toolRules: Record<string, Record<string, unknown> | null>;
   scoringConfiguration: { scoringModelId: string | null };
+  /** Track B: present on every plan built after Track B; derived on read for older plans. */
+  sections?: SimulationPlanSection[];
   createdAt: string;
 }
 

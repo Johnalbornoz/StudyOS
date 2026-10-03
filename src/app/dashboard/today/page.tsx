@@ -1,3 +1,4 @@
+import { objectiveByKey } from '@/lib/exam-core/objectives/objective-catalog';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { after } from 'next/server';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
@@ -162,7 +163,7 @@ export default async function TodayPage() {
   ]);
   const noConceptYet = !!mySubjects && mySubjects.length > 0 && mySubjects.every((sub) => !sub.has_concepts);
   const goalProfile = selectGoalProfile(examProfiles, todayIso);
-  const goalDefinition = goalProfile ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
+  const goalDefinition = goalProfile?.examDefinitionId ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
 
   const caminoItems = (horizon?.items ?? []).slice(0, 4);
   const caminoLabels = caminoItems.length
@@ -239,7 +240,8 @@ export default async function TodayPage() {
   const deferred = snapshot?.dailyPlan.deferred ?? [];
 
   const firstName = user?.firstName?.trim();
-  const goalName = goalDefinition?.name ?? null;
+  // Objective first: a catalogue-only objective has no exam definition, only its governed objective label.
+  const goalName = (goalProfile?.objectiveKey ? objectiveByKey(goalProfile.objectiveKey)?.label : null) ?? goalDefinition?.name ?? null;
   const goalDays = goalProfile?.examDate ? calendarDaysUntil(goalProfile.examDate, todayIso) : null;
   const goalWhen =
     goalDays === null ? null : goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays));

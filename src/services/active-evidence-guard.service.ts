@@ -53,7 +53,9 @@ import type { ActivityType, EvidenceMode } from '@/lib/activity-taxonomy';
 export type ActiveEvidenceReason =
   | 'NO_ACTIVE_RESTRICTED_EVIDENCE'
   | 'ACTIVE_QUIZ_SESSION'
-  | 'ACTIVE_VERIFICATION';
+  | 'ACTIVE_VERIFICATION'
+  /** Track B: an open exam simulation (ACTIVE or PAUSED) -- its responses are independent ASSESSMENT evidence. */
+  | 'ACTIVE_EXAM_SIMULATION';
 
 export interface ActiveEvidenceCollectionState {
   allowed: boolean;
@@ -182,5 +184,32 @@ export async function canProvideInstructionalAssistance(input: ActiveInstruction
  * obviously mean at the call site. Zero new query shape.
  */
 export async function getActiveRestrictedEvidenceForStudent(studentId: string): Promise<ActiveEvidenceCollectionState> {
-  return getActiveInstructionRestriction({ studentId, subjectId: null });
+  const state = await getActiveInstructionRestriction({ studentId, subjectId: null });
+  if (!state.allowed) return state;
+  // Track B: an open exam simulation restricts the Tutor student-wide (one
+  // more bounded, indexed read -- only when nothing above already blocked).
+  const exam = await getOpenExamSimulationForStudent(studentId);
+  return exam ? { allowed: false, reason: 'ACTIVE_EXAM_SIMULATION', activityType: 'MOCK_EXAM', evidenceMode: 'ASSESSMENT', sessionId: exam.id } : state;
+}
+
+/**
+ * Track B -- exam integrity. Every exam-simulation response is written as
+ * independent (`aiAssistanceType: 'NONE'`) evidence, so while a simulation is
+ * ACTIVE or PAUSED the Tutor must not assist -- whatever the subject, whatever
+ * the conversation. An attempt idle beyond its frozen inactivity expiry no
+ * longer restricts (it is expired and cannot be resumed: the next access to it
+ * closes it). `simulation_attempts` is indexed on (student_id, created_at DESC).
+ */
+export async function getOpenExamSimulationForStudent(studentId: string): Promise<{ id: string } | null> {
+  const result = await db.query(
+    `SELECT id FROM simulation_attempts
+      WHERE student_id = $1 AND status IN ('ACTIVE','PAUSED')
+        AND COALESCE(
+              (navigation_state->>'lastActivityAt')::timestamptz,
+              GREATEST(created_at, COALESCE(resumed_at, created_at))
+            ) > now() - make_interval(hours => COALESCE((navigation_state->'policy'->>'inactivityExpiryHours')::int, 24))
+      ORDER BY created_at DESC LIMIT 1`,
+    [studentId]
+  );
+  return result.rows[0] ? { id: result.rows[0].id } : null;
 }

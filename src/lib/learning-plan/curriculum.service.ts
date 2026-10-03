@@ -19,6 +19,7 @@
 import { db } from '@/lib/db';
 import { catalogSubjectByName } from '@/lib/experience/subject-catalog';
 import { canonicalConceptLabels } from './labels';
+import { learnerExamProfiles, resolveExamProfiles } from './exam-profile-resolution';
 
 export interface CurriculumOption {
   academicSubjectId: string;
@@ -113,14 +114,14 @@ export async function resolveCurriculumContext(
     const requested = options.find((o) => o.academicSubjectId === requestedAcademicSubjectId);
     if (requested) return { context: requested, options, reason: 'REQUESTED' };
   }
-  const exams = await db.query(
-    `SELECT ed.academic_subject_id FROM student_exam_profiles sep JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
-     WHERE sep.student_id = $1 AND sep.status = 'ACTIVE' AND ed.academic_subject_id IS NOT NULL ORDER BY sep.created_at DESC`,
-    [studentId]
-  ).catch(() => ({ rows: [] as any[] }));
-  for (const row of exams.rows) {
-    const match = options.find((o) => o.academicSubjectId === row.academic_subject_id);
-    if (match) return { context: match, options, reason: 'EXAM_PROFILE' };
+  // R1: definition-based and objective-first profiles (newest first); objective-first resolves through the governed objective.
+  const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
+  const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
+  for (const p of profiles) {
+    for (const subjectId of resolved.get(p.id)?.academicSubjectIds ?? []) {
+      const match = options.find((o) => o.academicSubjectId === subjectId);
+      if (match) return { context: match, options, reason: 'EXAM_PROFILE' };
+    }
   }
   const profile = await db.query(`SELECT curriculum_type, ib_programme FROM student_academic_profile WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as any[] }));
   if (profile.rows[0]?.curriculum_type === 'ib' && profile.rows[0]?.ib_programme === 'DP') {

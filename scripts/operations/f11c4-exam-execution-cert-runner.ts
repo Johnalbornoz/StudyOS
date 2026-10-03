@@ -406,7 +406,7 @@ async function main() {
   assert(attemptCountAfterRace === attemptCountBeforeRace + 1, `Case Q (CRITICAL, task §31): exactly ONE new real F9 simulation_attempts row was created by the concurrent race (before=${attemptCountBeforeRace}, after=${attemptCountAfterRace}) -- not merely a harmless orphan, a structurally ELIMINATED race (the lock-serialized claim-and-create model, unlike Practice's post-generation UNIQUE-constraint recovery)`);
 
   console.log('--- CASE T: failure recovery -- exam context resolution failure rolls back cleanly, zero false completion, zero duplicate Evidence, retry succeeds ---');
-  const orphanExamDef = await db.query(`INSERT INTO exam_definitions (name, exam_family, status) VALUES ('F11C4 Orphan Exam Def', 'ADMISSION_EXAM', 'ACTIVE') RETURNING id`);
+  const orphanExamDef = await db.query(`INSERT INTO exam_definitions (name, exam_family, status) VALUES ('F11C4 Orphan Exam Def', 'PAA', 'ACTIVE') RETURNING id`);
   const brokenProfile = await createStudentExamProfile({ studentId: STUDENT_1, examDefinitionId: orphanExamDef.rows[0].id, purpose: 'ADMISSION_PREP' });
   const brokenIntervention = await assignTeacherIntervention(fxMain.teacher.actorUserId, {
     classId: fxMain.classA.id, studentId: STUDENT_1, interventionType: 'EXAM_PRACTICE',

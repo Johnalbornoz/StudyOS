@@ -1,23 +1,31 @@
 /**
- * F9 -- POST /api/simulation/attempts/[id]/complete
+ * F9 / Track B -- POST /api/simulation/attempts/[id]/complete
  *
- * Finalizes the attempt (idempotent -- completeSimulationAttempt only
- * transitions from ACTIVE/PAUSED, a second call fails controlled, task
- * §54), runs F8's real post-exam diagnosis, recomputes a fresh
- * readiness snapshot, and returns the next-action recommendation.
+ * Submission: commits autosaved drafts and marks every other open item
+ * MISSING (finalizeOpenItemsForSubmission), completes the attempt, then SCORES
+ * it with the scoring policy frozen on the attempt and records exactly one
+ * result (exam_attempt_results, UNIQUE per attempt). Then runs F8's real
+ * post-exam diagnosis, recomputes a readiness snapshot, and returns the
+ * next-action recommendation.
+ *
+ * Idempotent: a retried submission of an already-submitted attempt returns
+ * the SAME stored result (and never re-diagnoses, never re-scores, never
+ * creates a second attempt or result). Owner-only.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt, completeSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { finalizeOpenItemsForSubmission, SimulationItemNotActiveError } from '@/lib/simulation/item-resolution.service';
 import { runPostExamDiagnosis } from '@/lib/simulation/post-exam-diagnosis.service';
-import { computeReadinessSnapshot } from '@/lib/readiness/readiness.service';
+import { computeReadinessSnapshot, getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { determineNextAction } from '@/lib/simulation/next-action.service';
-import { refreshExamGapRecommendations } from '@/lib/learning-plan/exam-bridge.service';
-import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
+import { finalizeExamCompletion } from '@/lib/exam-core/post-completion';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+
+const ROUTE = '/api/simulation/attempts/complete';
 
 async function handlePOST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,32 +40,59 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
   const allowed = await canAccessLearner(actor.id, attempt.studentId, 'LEARNER_INTERVENTION_CREATE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
+  if (attempt.status === 'COMPLETED') {
+    // Retry of a submission that already happened: same result; the idempotent post-completion flow re-runs (R2).
+    const { result } = await finalizeExamCompletion(id, attempt.studentId, ROUTE);
+    const readinessSnapshot = await getLatestReadinessSnapshot(attempt.examProfileId).catch(() => null);
+    return NextResponse.json({ success: true, data: { attempt, result, readinessSnapshot, alreadySubmitted: true } });
+  }
+  if (attempt.status === 'ABANDONED') return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
+
+  try {
+    await finalizeOpenItemsForSubmission(actor.id, id);
+  } catch (err) {
+    if (err instanceof SimulationItemNotActiveError) return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
+    throw err;
+  }
+
   let completed;
   try {
     completed = await completeSimulationAttempt(id);
-  } catch (err) {
-    // Idempotent-or-safely-rejected (task §29/§54): a second finalization request never re-scores or re-diagnoses.
+  } catch {
+    // A concurrent submission won the race: return ITS result, never a second one.
+    const current = await getSimulationAttempt(id);
+    if (current?.status === 'COMPLETED') {
+      const { result } = await finalizeExamCompletion(id, current.studentId, ROUTE);
+      return NextResponse.json({ success: true, data: { attempt: current, result, alreadySubmitted: true } });
+    }
     return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
   }
 
-  const scoreSummary = await getSimulationScoreSummary(attempt.examAttemptId);
+  const { result } = await finalizeExamCompletion(id, attempt.studentId, ROUTE);
   const postExamDiagnosis = await runPostExamDiagnosis(attempt.examAttemptId, attempt.studentId, attempt.examVersionId);
   const readinessSnapshot = await computeReadinessSnapshot({ studentId: attempt.studentId, examProfileId: attempt.examProfileId, examVersionId: attempt.examVersionId });
   const nextAction = await determineNextAction({ postExamDiagnosis, readinessSnapshot, simulationType: attempt.simulationType });
-  // Track A: exam gaps become learning recommendations for the learner (idempotent; never enrolls by itself).
-  await refreshExamGapRecommendations(attempt.studentId).catch((e) => console.error('[exam-bridge] refresh failed', (e as Error)?.message));
 
   logPilotEvent('exam_completed', {
     route: '/api/simulation/attempts/complete',
     studentId: attempt.studentId,
     simulationType: attempt.simulationType,
-    rawScore: scoreSummary.rawScore,
-    maxScore: scoreSummary.maxScore,
+    rawScore: result.rawScore,
+    maxScore: result.maxScore,
+    scoringStatus: result.scoringStatus,
   });
 
   return NextResponse.json({
     success: true,
-    data: { attempt: completed, scoreSummary, postExamDiagnosis, readinessSnapshot, nextAction },
+    data: {
+      attempt: completed,
+      result,
+      // Back-compat for older clients: the same raw marks the result recorded.
+      scoreSummary: { rawScore: result.rawScore, maxScore: result.maxScore },
+      postExamDiagnosis,
+      readinessSnapshot,
+      nextAction,
+    },
   });
 }
 

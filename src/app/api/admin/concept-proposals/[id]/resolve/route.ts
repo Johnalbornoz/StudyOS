@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
 import { allUuids, readJson } from '@/lib/institution/route-guard';
 import { resolveConceptProposal, ProposalError } from '@/lib/learning-plan/concept-proposals.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const Schema = z.object({ action: z.enum(['MAP_TO_EXISTING', 'MERGE', 'APPROVE', 'REJECT']), canonicalConceptId: z.string().uuid().nullable().optional(), note: z.string().trim().max(1000).nullable().optional() });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const guard = await guardAdminUsersRoute('admin.concept-proposals.resolve');
   if ('error' in guard) return guard.error;
@@ -21,3 +22,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/admin/concept-proposals/[id]/resolve', handlePOST);

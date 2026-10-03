@@ -31,7 +31,10 @@ const GAP_DIMENSION_MAP: Array<{ dimension: 'KNOWLEDGE_READINESS' | 'SKILL_READI
 
 async function computeSimulationPerformanceStats(studentId: string, examVersionId: string, client: DbExecutor) {
   const attempts = await client.query(
-    `SELECT sa.exam_attempt_id FROM simulation_attempts sa WHERE sa.student_id = $1 AND sa.exam_version_id = $2 AND sa.status = 'COMPLETED'`,
+    // Track B: an INVALIDATED result no longer counts as simulation history.
+    `SELECT sa.exam_attempt_id FROM simulation_attempts sa
+      WHERE sa.student_id = $1 AND sa.exam_version_id = $2 AND sa.status = 'COMPLETED'
+        AND NOT EXISTS (SELECT 1 FROM exam_attempt_results r WHERE r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'INVALIDATED')`,
     [studentId, examVersionId]
   );
   const attemptIds: string[] = attempts.rows.map((r: any) => r.exam_attempt_id);

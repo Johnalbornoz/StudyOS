@@ -1,0 +1,161 @@
+{
+  "researchedAt": "2026-10-01",
+  "versionNotes": "Revised PAA ('cuarta generación'): introduced Oct 2017 in Puerto Rico and Aug 2018 in Latin America (cb-qa-pr-2017, cb-guia-2021). The newest official College Board study guide found is © 2021 (latam.collegeboard.org/wp-content/uploads/2021/07/Guia_de_estudios_PAA.pdf; the same file is re-hosted by PUCMM in 2026/07, so it still appears to be current). The 2018 and 2020 guide editions and the 2017 Q&A give English 50 min and a total of 3:05. The 2021 guide gives 2h20 for Lectura+Redacción+Matemáticas, 40 min for Inglés and a total of 3:00, which matches the official practice test (50+30+60+40). The 2021 guide contradicts itself: its ESLAT page still says 50 items in 50 min. The 2024 Latin America examiner manual adds a 5th 30-min part and two 10-min breaks (230 min). No official 2022–2026 'especificaciones' document with content percentages was found. No official public description of the ePAA (digital) item structure was found.",
+  "sections": [
+    {
+      "key": "lectura",
+      "name": "Lectura (part of the 'Lectura y Redacción' scored area)",
+      "items": 45,
+      "itemsNote": "Lectura y Redacción = 70 items in 2 sections (cb-qa-pr-2017). The official practice test labels Parte 1 '50 minutos, 45 ejercicios'. That practice test has 5 text sets: items 1-11, 12-18, 19-25, 26-32 and 33-45, the last on a paired reading (cb-practice-test-2018).",
+      "minutes": 50,
+      "formats": [
+        "Multiple choice, 4 options (A-D)",
+        "Item sets based on a single passage or a paired passage ('lectura doble') on the same or related topics",
+        "Each passage is preceded by a one-line statement of its topic; technical vocabulary is glossed in a note",
+        "Some passages include tables, graphs or illustrations",
+        "Paired evidence items: an inference item followed by 'select the BEST evidence (line ranges)'",
+        "Items ordered by difficulty within each area; passage-based items follow the order of the text"
+      ],
+      "calculator": "N/A",
+      "skills": [
+        "Vocabulario en contexto (polysemous words and phrases; clues such as synonymy, definition and context)",
+        "Ideas explícitas e implícitas: sentido literal; datos, detalles y ejemplos; propósito o tesis; resumen; tema",
+        "Análisis, interpretación e inferencias: inferencia (inducción, deducción, implicación); identificación de evidencias para validar inferencias; comparación y contraste de información y argumentos; relación general-específico; causa y efecto; diferenciación de tipos de discurso; estructura del texto",
+        "Análisis de información cuantitativa o de gráficos (tables, graphs, illustrations in the text)",
+        "Análisis literario: géneros literarios; in narrative texts ambiente, espacio, tiempo, personajes, voz narrativa; in poetry voz poética, estrofas, versos, rima; tipos de discurso (narración, descripción, exposición, argumentación); estructura; figuras retóricas (metáfora, símil, personificación, onomatopeya, metonimia, paradoja, ironía, hipérbole, imágenes sensoriales)",
+        "Topics: ciencias naturales, estudios sociales, historia, humanidades, tecnología, literatura"
+      ],
+      "contentCategories": [
+        {"name": "Vocabulario en contexto", "percent": "not published"},
+        {"name": "Ideas explícitas e implícitas", "percent": "not published"},
+        {"name": "Análisis, interpretación e inferencias", "percent": "not published"},
+        {"name": "Análisis de información cuantitativa o de gráficos", "percent": "not published"},
+        {"name": "Análisis literario", "percent": "not published"},
+        {"name": "Reported subscores (10-40): Lectura, Análisis de textos literarios, Análisis de textos no literarios, Vocabulario en contexto, Análisis/interpretación/inferencias", "percent": "not published"}
+      ],
+      "sourceKeys": ["cb-guia-2021", "cb-qa-pr-2017", "cb-practice-test-2018"],
+      "confidence": "HIGH"
+    },
+    {
+      "key": "redaccion",
+      "name": "Redacción (part of the 'Lectura y Redacción' scored area)",
+      "items": 25,
+      "itemsNote": "Official practice test Parte 2: '30 minutos, 25 ejercicios', using 4 text segments (I-IV) with about 5-9 items each. The 2017 Q&A gives 70 items in total for Lectura y Redacción (45+25).",
+      "minutes": 30,
+      "formats": [
+        "Multiple choice, 4 options",
+        "Indirect writing: a numbered text segment ('Segmento I…') of enunciados (1)…(n); items ask which enunciado can be omitted, which adds information stylistically, which best summarizes, the best title, or which INDIRECTLY expresses X; options quote fragments with their enunciado number"
+      ],
+      "calculator": "N/A",
+      "skills": [
+        "Elisión: recognize redundant or unnecessary information that can be omitted without losing needed content",
+        "Adición: an expansion that enriches the text stylistically (figurative language)",
+        "Generalización: a sentence that succinctly recaps particularized content",
+        "Integración: a global summary of the whole segment, e.g. the best title or headline",
+        "Particularización: indirect expression of a specific trait or relation (e.g. metonymy)",
+        "Overall focus: coherencia y cohesión del texto (cb-qa-pr-2017)"
+      ],
+      "contentCategories": [
+        {"name": "Elisión / Adición / Generalización / Integración / Particularización", "percent": "not published"}
+      ],
+      "sourceKeys": ["cb-guia-2021", "cb-qa-pr-2017", "cb-practice-test-2018"],
+      "confidence": "HIGH"
+    },
+    {
+      "key": "matematicas",
+      "name": "Matemáticas",
+      "items": 55,
+      "itemsNote": "55 items ('2 secciones, 55 ejercicios' per cb-qa-pr-2017). In the official practice test, items 1-45 are multiple choice and items 46-55 are student-produced responses (10 SPR). The official count of SPR items on live forms was not found.",
+      "minutes": 60,
+      "formats": [
+        "Multiple choice, 4 options",
+        "Student-produced response ('suplir la respuesta', SPR): 4-column grid; answers are positive integers, fractions or decimals only; no negatives, radicals or mixed numbers; at most 4 characters; decimals must use maximum precision (2/3 -> .666 or .667); any correct answer accepted when several exist",
+        "Reference info printed at the start: circle area and circumference, triangle angle sum, symbol definitions, notes on figures"
+      ],
+      "calculator": "Not allowed. All items are solvable without a calculator; only students whose reasonable accommodation requires one may use it (cb-qa-pr-2017). The 2024 LatAm manual permits only a No. 2 pencil, an eraser and a sharpener.",
+      "skills": [
+        "Aritmética: propiedades y operaciones de los números reales; razón, proporción y porcentaje; patrones numéricos; teoría de números (divisibilidad, factorización prima, múltiplos, MCD, MCM); notación científica; valor posicional; estimación; exponentes enteros",
+        "Álgebra: expresiones algebraicas (simplificación, evaluación, factorización); ecuaciones e inecuaciones lineales en una variable; exponentes racionales y radicales; polinomios; ecuaciones cuadráticas, racionales, con radicales y con valor absoluto; variación; patrones algebraicos; rectas; funciones (dominio, campo de valores, evaluación, gráficas); funciones lineales, cuadráticas y exponenciales; operaciones con funciones; relaciones de cambio; sistemas de ecuaciones 2x2; razones trigonométricas; sucesiones",
+        "Geometría: coordenadas cartesianas; transformaciones; distancia y punto medio; rectas y ángulos; semejanza y congruencia; Teorema de Pitágoras; triángulos y cuadriláteros (perímetro, área); círculos y polígonos; volumen y área de superficie de sólidos",
+        "Análisis de datos y Probabilidad: media, mediana y moda; medidas de dispersión; tablas, gráficas y figuras; combinaciones y permutaciones; probabilidad de un evento; probabilidad condicional; población y muestra; variables discretas y continuas",
+        "Emphasis on reasoning, non-routine problem solving and real-world contexts"
+      ],
+      "contentCategories": [
+        {"name": "Aritmética", "percent": "not published"},
+        {"name": "Álgebra", "percent": "not published"},
+        {"name": "Geometría", "percent": "not published"},
+        {"name": "Análisis de datos y Probabilidad", "percent": "not published"}
+      ],
+      "sourceKeys": ["cb-guia-2021", "cb-qa-pr-2017", "cb-practice-test-2018", "cb-manual-latam-2024"],
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ingles",
+      "name": "Inglés (ESLAT – English as a Second Language Achievement Test)",
+      "items": 50,
+      "itemsNote": "50 multiple-choice items in 1 section. Official practice-test layout: 1-20 Language usage and vocabulary; 21-35 Reading comprehension (4 texts in the practice test; the guide says 4-6 texts, from short ads and labels to about 500 words, with 3 or more items each); 36-50 Indirect writing (36-38 correct the underlined part, 39-42 sentence combining, 43-46 find the error among A/B/C or 'No error' (D), 47-50 paragraph revision). Directions are in Spanish; items are in English.",
+      "minutes": 40,
+      "formats": [
+        "Multiple choice, 4 options",
+        "Sentence completion with a blank ('- - - -')",
+        "Short and long reading texts with item sets",
+        "Error identification: 3 underlined parts plus 'No error'",
+        "Sentence combining",
+        "Revision of 1-2 draft paragraphs (expository or argumentative)"
+      ],
+      "calculator": "N/A",
+      "skills": [
+        "Uso del lenguaje y vocabulario: vocabulary in practical, everyday, personal-information and academic contexts; word order and sentence structure (affirmative/negative, yes/no and wh- questions, adjectives and adverbs, complements, parallel series); function words (prepositions, pronouns, possessive adjectives, connectors, determiners); inflection (tense, agreement, voice, non-finite forms, auxiliaries, comparatives and superlatives, noun plural and possessive forms, parallel structure)",
+        "Comprensión de lectura: identify information, topic and main idea; establish relationships; vocabulary in context; fact vs opinion; conclusions and inferences; author's tone; author's purpose",
+        "Redacción indirecta: improve, combine and correct sentences; identify errors; improve paragraphs (best opening or closing sentence, logical sequence, sentences that don't belong, shifts in topic, transitions and connectors, combining or replacing phrases, punctuation, best title)"
+      ],
+      "contentCategories": [
+        {"name": "Lengua y vocabulario (practice test: 20/50 items)", "percent": "not published officially"},
+        {"name": "Lectura (practice test: 15/50 items)", "percent": "not published officially"},
+        {"name": "Redacción indirecta (practice test: 15/50 items)", "percent": "not published officially"}
+      ],
+      "sourceKeys": ["cb-guia-2021", "cb-qa-pr-2017", "cb-practice-test-2018"],
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "investigacion",
+      "name": "Unscored research items / extra 30-min part (Latin America paper administration)",
+      "items": null,
+      "itemsNote": "The 2024 LatAm examiner manual lists 5 parts: 1 = 50, 2 = 30, 3 = 60, 4 = 30, 5 = 40 minutes. It does not name them. Matching against the guide and practice test makes Parte 4 the extra 30-min block, consistent with the guide's note that research items may appear anywhere and that test time is extended for them. Unofficial prep sites call it a 'sección aleatoria' of about 25 items in Lectura or Matemáticas; this is NOT confirmed officially.",
+      "minutes": 30,
+      "formats": ["Unknown officially; presumably the same formats as the operational sections"],
+      "calculator": "Unknown",
+      "skills": [],
+      "contentCategories": [],
+      "sourceKeys": ["cb-manual-latam-2024", "cb-guia-2021", "unitips-blog"],
+      "confidence": "LOW"
+    }
+  ],
+  "totalMinutes": 180,
+  "totalMinutesNote": "180 scored minutes per the 2021 guide (Lectura 50 + Redacción 30 + Matemáticas 60 + Inglés 40). Older editions (2017 Q&A, 2018/2020 guides) give 185 min (75 + 60 + English 50). The 2024 LatAm administration totals 230 min including a 30-min extra part and two 10-min breaks, plus about 15 min for a non-academic questionnaire before the test.",
+  "order": ["Lectura (Parte 1, 50 min)", "Redacción (Parte 2, 30 min)", "Receso 10 min", "Matemáticas (Parte 3, 60 min)", "Parte 4 (30 min, unnamed; likely research/unscored, LOW confidence)", "Receso 10 min", "Inglés (Parte 5, 40 min)"],
+  "unscoredItems": {
+    "exists": true,
+    "note": "Official guide (2020 and 2021 editions): 'Ocasionalmente, incluimos ejercicios para fines investigativos… pueden encontrarse en cualquier parte de la prueba, y el tiempo del examen se extenderá… no se utilizarán para propósitos de calificación.' Their existence is HIGH confidence. That they occupy a fixed 30-min Parte 4 in LatAm is an inference (LOW confidence). Students may not go back to or ahead into other parts during a part's time."
+  },
+  "scoring": {
+    "scale": "200-800 per part (Lectura y Redacción; Matemáticas; Inglés), with a theoretical mean of 500 and percentiles 1-99. Subscores on a 10-40 scale: 6 in Lectura y Redacción (Lectura, Análisis de textos literarios, Análisis de textos no literarios, Vocabulario en contexto, Análisis/interpretación/inferencias, Redacción), 4 in Matemáticas (Aritmética, Álgebra, Geometría, Análisis de datos y Probabilidad) and 3 in Inglés (Lengua y vocabulario, Lectura, Redacción indirecta). Subscores cannot be added up to a total.",
+    "penalty": "None. The total number of correct answers is converted to a scaled score, and wrong answers are not penalized ('No habrá penalidad por respuesta incorrecta').",
+    "reporting": "Lectura and Redacción are taught and timed separately but reported together as ONE 200-800 score, 'Lectura y Redacción'; Redacción appears only as a 10-40 subscore. There is no official composite. Students often add the part scores, but College Board recommends interpreting each separately. The report includes a bar chart against the mean of that administration. Institutions usually take the highest score. The LatAm site mentions descriptors by component and sub-area and a 'convertidor de puntuaciones' for institutions.",
+    "englishNote": "English (ESLAT) is a separate scored part (200-800 with 3 subscores). Most institutions use Lectura y Redacción + Matemáticas for admission and use English for diagnosis, placement, advanced or honors course selection and similar (cb-qa-pr-2017). The 2017 Q&A treats it as a separate add-on ('sin incluir la parte de Inglés…'). No official source states that English is optional for the candidate; that depends on the institution or administration (UNKNOWN).",
+    "institutionalUse": "LatAm 2024 survey of 41 institutions in 8 countries: admission 85%, scholarships 27%, placement 24%, selection 20%, identification 17%, research 10%, accreditation 7%. Paper PAA 68%, ePAA 17%, both 15%. Each institution sets its own criteria and weights, combined with high-school grades.",
+    "sourceKeys": ["cb-qa-pr-2017", "cb-guia-2021", "cb-latam-paa-page", "cb-latam-usage-2024"]
+  },
+  "variants": "Puerto Rico vs Latin America: the same revised PAA framework (same components, 200-800 scale, same study guide covering both). It rolled out Oct 2017 in PR and Aug 2018 in LatAm. Documented administrative differences: in PR the English Achievement test is 'maintained' and administered alongside (cb-qa-pr-2017); the LatAm 2024 manual shows a 5-part, 230-min administration with breaks. No official document describes content differences (e.g. localized passages) between PR and LatAm forms (UNKNOWN). Paper vs digital: the paper PAA uses a bubble sheet and a grid for SPR. A digital/online modality ('ePAA', 'modalidad en línea en ciertas regiones') exists in LatAm, but its item counts, timing, adaptivity and SPR entry were NOT found in any official public source (UNKNOWN). The 2021 guide's change from 3:05 to 3:00 (English 50 to 40 min) is not explained officially.",
+  "sources": [
+    {"key": "cb-qa-pr-2017", "title": "PAA revisada: Preguntas y respuestas (Octubre 2017)", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/wp-content/uploads/2017/10/PAA-Preguntas-y-Respuestas-Puerto-Rico-2017.pdf", "year": 2017, "confidence": "HIGH"},
+    {"key": "cb-guia-2018", "title": "Guía de estudio PAA (© 2018)", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/wp-content/uploads/2018/06/Guia_de_estudio_PAA.pdf", "year": 2018, "confidence": "HIGH"},
+    {"key": "cb-guia-2020", "title": "Guía de estudio PAA (© 2020)", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/wp-content/uploads/2020/04/Guia_de_estudios_PAA_WEB_.pdf", "year": 2020, "confidence": "HIGH"},
+    {"key": "cb-guia-2021", "title": "Guía de estudio PAA (© 2021) – linked from latam.collegeboard.org/publicaciones/guia-de-estudio-paa/; identical file re-hosted by PUCMM in 2026", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/wp-content/uploads/2021/07/Guia_de_estudios_PAA.pdf", "year": 2021, "confidence": "HIGH"},
+    {"key": "cb-practice-test-2018", "title": "PAA Prueba de práctica (© 2018 College Entrance Examination Board), appended to the 2020 guide re-hosted by UMIP", "publisher": "College Board (hosted by Universidad Marítima Internacional de Panamá)", "url": "https://www.umip.ac.pa/documents/guia-estudio-paa.pdf", "year": 2018, "confidence": "MEDIUM"},
+    {"key": "cb-manual-latam-2024", "title": "Administración de la PAA – Manual de instrucciones, América Latina (© 2024)", "publisher": "College Board (hosted by Universidad Tecnológica de Panamá)", "url": "https://utp.ac.pa/sites/default/files/documentos/2024/pdf/paa_al_manual_examinador.pdf", "year": 2024, "confidence": "MEDIUM"},
+    {"key": "cb-latam-paa-page", "title": "PAA – College Board (program page)", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/paa/", "year": 2026, "confidence": "HIGH"},
+    {"key": "cb-latam-usage-2024", "title": "Comparativa del uso de las puntuaciones de la PAA en América Latina", "publisher": "College Board Puerto Rico y América Latina", "url": "https://latam.collegeboard.org/2024/02/28/comparativa-del-uso-de-las-puntuaciones-de-la-paa-en-america-latina/", "year": 2024, "confidence": "HIGH"},
+    {"key": "unitips-blog", "title": "Todo lo que necesitas saber sobre la PAA de College Board (unofficial prep blog)", "publisher": "Unitips (unofficial)", "url": "https://blog.unitips.mx/conoce-la-paa-de-collegeboard", "year": null, "confidence": "LOW"}
+  ]
+}

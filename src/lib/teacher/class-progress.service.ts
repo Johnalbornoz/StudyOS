@@ -23,6 +23,7 @@ import { deriveExamGaps } from '@/lib/learning-plan/exam-bridge.service';
 import { canonicalConceptLabels } from '@/lib/learning-plan/labels';
 import { getTeacherClass, type TeacherClassContext } from './class-assignment.service';
 import { computeClassProgress, type ProgressInputs, type ProgressConcept, type ClassProgressComputed } from './class-progress.compute';
+import { learnerExamProfiles, resolveExamProfiles } from '@/lib/learning-plan/exam-profile-resolution';
 
 export const PERIODS = ['7d', '30d', 'period', 'all'] as const;
 export type ProgressPeriod = (typeof PERIODS)[number];
@@ -185,18 +186,29 @@ export async function getClassProgress(actorUserId: string, classId: string, fil
   const gaps = await deriveExamGaps(learnerIds, conceptIds);
   const attemptIds = [...new Set(gaps.map((g) => g.examAttemptId))];
   const objectiveIds = [...new Set(gaps.map((g) => g.learningObjectiveId))];
-  const [examMeta, examDates] = await Promise.all([
-    q(`SELECT ea.id AS attempt_id, ed.name AS exam_name
-       FROM exam_attempts ea JOIN student_exam_profiles sep ON sep.id = ea.student_exam_profile_id JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
+  // R1: objective-first profiles (exam_definition_id NULL since Track B 20261025) keep their exam name and dates.
+  const [examMeta, datedProfiles] = await Promise.all([
+    q(`SELECT ea.id AS attempt_id, COALESCE(ed.name, sep.objective_context->>'label', sep.objective_key, '') AS exam_name
+       FROM exam_attempts ea JOIN student_exam_profiles sep ON sep.id = ea.student_exam_profile_id LEFT JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
        WHERE ea.id = ANY($1::uuid[])`, [attemptIds]),
-    // Exam dates only for exams whose blueprint covers this class subject.
-    q(`SELECT sep.student_id, ed.name AS exam_name, sep.exam_date FROM student_exam_profiles sep JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
-       WHERE sep.student_id = ANY($1::uuid[]) AND sep.exam_date IS NOT NULL AND EXISTS (
-         SELECT 1 FROM exam_versions ev JOIN assessment_blueprints b ON b.exam_version_id = ev.id JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
-         JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED'
-         JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.canonical_subject_id = $2
-         WHERE ev.exam_definition_id = ed.id)`, [learnerIds, klass.subjectId]),
+    (queries += 1, learnerExamProfiles(learnerIds)).then((ps) => ps.filter((p) => p.examDate !== null)),
   ]);
+  queries += datedProfiles.length ? 1 : 0; // resolver (definitions + latest versions)
+  const resolvedDated = await resolveExamProfiles(datedProfiles);
+  const datedVersionIds = [...new Set([...resolvedDated.values()].flatMap((r) => r.versionIds))];
+  // Exam dates only for exams whose blueprint covers this class subject.
+  const coveringVersions = datedVersionIds.length
+    ? new Set<string>((await q(
+        `SELECT DISTINCT b.exam_version_id FROM assessment_blueprints b JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
+           JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED'
+           JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.canonical_subject_id = $2
+          WHERE b.exam_version_id = ANY($1::uuid[])`, [datedVersionIds, klass.subjectId])).rows.map((r: any) => r.exam_version_id))
+    : new Set<string>();
+  const examDates = {
+    rows: datedProfiles
+      .filter((p) => (resolvedDated.get(p.id)?.versionIds ?? []).some((v) => coveringVersions.has(v)))
+      .map((p) => ({ student_id: p.studentId, exam_name: resolvedDated.get(p.id)?.name ?? '', exam_date: p.examDate })),
+  };
   const loCodes = objectiveIds.length
     ? new Map<string, string>((await q(`SELECT id, code FROM learning_objectives WHERE id = ANY($1::uuid[])`, [objectiveIds])).rows.map((r: any) => [r.id, r.code]))
     : new Map<string, string>();

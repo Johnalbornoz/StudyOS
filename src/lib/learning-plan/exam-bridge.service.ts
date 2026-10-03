@@ -20,6 +20,7 @@ import { canonicalConceptLabels } from './labels';
 import { enrollCanonicalConcept, planIndex } from './personal-plan.service';
 import { getCanonicalPedagogicalDecision } from '@/lib/pedagogical-decision/canonical-decision.service';
 import type { PedagogicalStage } from '@/lib/pedagogical-engine/types';
+import { resolveExamProfiles, type ExamMappingStatus } from './exam-profile-resolution';
 
 /** An objective scored below this share of its available points is a gap (policy constant, documented). */
 export const EXAM_GAP_THRESHOLD = 0.5;
@@ -216,6 +217,8 @@ export interface ExamPreparationPlan {
   readiness: string | null;
   areas: Array<{ label: string; concepts: ExamPrepConcept[] }>;
   unmappedObjectives: number;
+  /** Objective-first profiles resolve through the governed objective; no resolvable exam structure = MAPPING_NOT_AVAILABLE (never dropped). */
+  mappingStatus: ExamMappingStatus;
 }
 
 export class ExamPlanError extends Error {
@@ -235,16 +238,18 @@ export function examPrepStatus(stage: PedagogicalStage | null, inPlan: boolean, 
 
 /** Blueprint × learner model for ONE of the learner's own exam profiles (ownership checked here). */
 export async function getExamPreparationPlan(studentId: string, examProfileId: string, locale: string): Promise<ExamPreparationPlan> {
-  const profile = await db.query(
-    `SELECT sep.id, ed.name AS exam_name, COALESCE(sep.exam_version_id, (SELECT ev.id FROM exam_versions ev WHERE ev.exam_definition_id = ed.id AND ev.status = 'PUBLISHED' ORDER BY ev.created_at DESC LIMIT 1)) AS exam_version_id
-     FROM student_exam_profiles sep JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
-     WHERE sep.id = $1 AND sep.student_id = $2`,
+  // R1: definition-based AND objective-first profiles (exam_definition_id may be NULL since Track B 20261025).
+  const row = (await db.query(
+    `SELECT id, exam_definition_id, exam_version_id, objective_key, objective_context FROM student_exam_profiles WHERE id = $1 AND student_id = $2`,
     [examProfileId, studentId]
-  );
-  const p = profile.rows[0];
-  if (!p) throw new ExamPlanError('NOT_FOUND');
+  )).rows[0];
+  if (!row) throw new ExamPlanError('NOT_FOUND');
+  const resolved = (await resolveExamProfiles([
+    { id: row.id, examDefinitionId: row.exam_definition_id, examVersionId: row.exam_version_id, objectiveKey: row.objective_key, objectiveContext: row.objective_context },
+  ])).get(row.id)!;
+  const p = { exam_name: resolved.name, exam_version_ids: resolved.versionIds };
   const [version, targets, readiness] = await Promise.all([
-    db.query(`SELECT COALESCE(version_label, curriculum_version, syllabus_code) AS label FROM exam_versions WHERE id = $1`, [p.exam_version_id]),
+    db.query(`SELECT COALESCE(version_label, curriculum_version, syllabus_code) AS label FROM exam_versions WHERE id = ANY($1::uuid[]) ORDER BY created_at DESC LIMIT 1`, [p.exam_version_ids]),
     db.query(
       `SELECT bot.learning_objective_id, COALESCE(ac.name, ac.section_key, '') AS area, ocm.canonical_concept_id, sk.name AS skill
        FROM assessment_blueprints b
@@ -252,9 +257,9 @@ export async function getExamPreparationPlan(studentId: string, examProfileId: s
        LEFT JOIN assessment_components ac ON ac.id = bot.assessment_component_id
        LEFT JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED' AND ocm.relation_type IN ('FULL', 'PARTIAL')
        LEFT JOIN skills sk ON sk.id = bot.skill_id
-       WHERE b.exam_version_id = $1
+       WHERE b.exam_version_id = ANY($1::uuid[])
        ORDER BY ac.sequence_order NULLS LAST, ac.name`,
-      [p.exam_version_id]
+      [p.exam_version_ids]
     ),
     db.query(`SELECT overall_status FROM readiness_snapshots WHERE student_id = $1 AND exam_profile_id = $2 ORDER BY calculated_at DESC LIMIT 1`, [studentId, examProfileId]).catch(() => ({ rows: [] as any[] })),
   ]);
@@ -310,5 +315,5 @@ export async function getExamPreparationPlan(studentId: string, examProfileId: s
       skills: t.skill ? [t.skill] : [],
     });
   }
-  return { examName: p.exam_name, versionLabel: version.rows[0]?.label ?? null, readiness: readiness.rows[0]?.overall_status ?? null, areas: areas.filter((a) => a.concepts.length > 0), unmappedObjectives: unmapped };
+  return { examName: p.exam_name, versionLabel: version.rows[0]?.label ?? null, readiness: readiness.rows[0]?.overall_status ?? null, areas: areas.filter((a) => a.concepts.length > 0), unmappedObjectives: unmapped, mappingStatus: resolved.mappingStatus };
 }

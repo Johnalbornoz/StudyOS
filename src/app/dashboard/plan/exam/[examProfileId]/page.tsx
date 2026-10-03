@@ -43,6 +43,7 @@ export default async function ExamPreparationPlanPage({ params }: { params: Prom
       </p>
       {plan.readiness && <p className="ta-msg">{fillMessage(t['lp.exam.readiness'], { status: plan.readiness })}</p>}
       {plan.unmappedObjectives > 0 && <p className="ta-msg">{fillMessage(t['lp.exam.unmapped'], { n: plan.unmappedObjectives })}</p>}
+      {plan.mappingStatus === 'MAPPING_NOT_AVAILABLE' && <p className="ta-msg" role="status" data-mapping-status="MAPPING_NOT_AVAILABLE">{t['lp.exam.mappingNotAvailable']}</p>}
       {plan.areas.length === 0 ? (
         <EmptyState title={t['lp.explore.empty']} />
       ) : (

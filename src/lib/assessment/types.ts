@@ -27,6 +27,12 @@ export interface ExamDefinition {
   purpose: string | null;
   domains: string[] | null;
   status: CatalogStatus;
+  /** Track B: stable configuration key (configuration-driven verticals); null for hand-made definitions. */
+  configKey?: string | null;
+  /** Track B: optional subject anchor (Qualification -> Subject). */
+  academicSubjectId?: string | null;
+  /** Track B: subject group inside a qualification aggregation (AICE). */
+  aggregationGroup?: string | null;
 }
 
 export interface ScoringModel {
@@ -47,6 +53,9 @@ export interface ExamVersion {
   scoringModelId: string | null;
   supportedModalities: string[] | null;
   status: ExamVersionStatus;
+  /** Track B: OPTIONAL sitting year / session -- never required. */
+  examYear?: number | null;
+  examSession?: string | null;
 }
 
 export interface AssessmentComponent {
@@ -63,6 +72,10 @@ export interface AssessmentComponent {
   procedureRequired: boolean;
   simulationCapable: boolean;
   supportStatus: SupportStatus;
+  /** Track B: section order inside the version (null = after every ordered section). */
+  sequenceOrder?: number | null;
+  /** Track B: stable section key inside the version (scoring/delivery policies refer to it). */
+  sectionKey?: string | null;
 }
 
 export interface CommandTerm {
@@ -105,8 +118,16 @@ export interface ApprovedItem {
 export interface StudentExamProfile {
   id: string;
   studentId: string;
-  examDefinitionId: string;
+  /** Track B (objective first): null for a catalogue-only objective with no configured exam yet. */
+  examDefinitionId: string | null;
   examVersionId: string | null;
+  /** Track B: the governed catalogue objective (e.g. 'pisa.2022', 'ib.dp.physics.hl', 'cie.asal.9709.as'). */
+  objectiveKey?: string | null;
+  objectiveFramework?: string | null;
+  objectiveContext?: Record<string, unknown> | null;
+  targetInstitutionName?: string | null;
+  targetQualification?: string | null;
+  source?: 'STUDENT' | 'EXAM_INSTANCE' | 'INSTITUTION' | null;
   purpose: string | null;
   programmeContext: string | null;
   subjectFocus: string | null;
@@ -114,6 +135,10 @@ export interface StudentExamProfile {
   timezone: string | null;
   institutionTargetId: string | null;
   status: ProfileStatus;
+  /** Track B: when the Student removed it from their preparation (ARCHIVED). */
+  archivedAt?: string | null;
+  /** Track B: the clean profile that replaced it ("Empezar de nuevo"). */
+  replacedByProfileId?: string | null;
 }
 
 export interface PreparationGoal {

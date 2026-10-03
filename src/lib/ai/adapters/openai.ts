@@ -5,9 +5,16 @@ import { measureProviderCall } from '../request-metrics';
 const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_EMBEDDINGS_ENDPOINT = 'https://api.openai.com/v1/embeddings';
 
+/** Exam V2: a user message may carry images (Chat Completions content parts). Text-only callers keep passing a string. */
+export type OpenAIContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } };
+
 export interface OpenAIChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | OpenAIContentPart[];
+}
+
+function contentForMetrics(content: OpenAIChatMessage['content']): string {
+  return typeof content === 'string' ? content : content.map((p) => (p.type === 'text' ? p.text : '[image]')).join('\n');
 }
 
 /** LX-4P-PERF-R1B B2 -- a strict JSON Schema for OpenAI Structured Outputs. */
@@ -74,7 +81,7 @@ function resolveOpenAIReasoningEffort(model: string, requestedEffort: ReasoningE
 
 /** The one place StudyUs constructs a request to OpenAI's Chat Completions API. */
 export async function callOpenAIChat(params: OpenAIChatParams, signal: AbortSignal): Promise<OpenAIChatResult> {
-  return measureProviderCall('openai', params.model, params.messages.map((m) => `${m.role}:${m.content}`), () =>
+  return measureProviderCall('openai', params.model, params.messages.map((m) => `${m.role}:${contentForMetrics(m.content)}`), () =>
     callOpenAIChatUnmeasured(params, signal),
   );
 }

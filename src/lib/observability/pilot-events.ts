@@ -27,7 +27,8 @@ export type PilotEventName =
   | 'workspace_switched'
   | 'authorization_denied'
   | 'ai_generation_failed'
-  | 'rate_limited';
+  | 'rate_limited'
+  | 'exam_gap_refresh_failed';
 
 export interface PilotEventFields {
   correlationId?: string;

@@ -274,7 +274,13 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
 
   async function ExamTab() {
     const profiles = await listStudentExamProfiles(studentId);
-    const named = await Promise.all(profiles.map(async (p) => ({ ...p, name: (await getExamDefinition(p.examDefinitionId))?.name ?? '' })));
+    // Track B objective-first profiles may have no exam definition: fall back to the objective's own label.
+    const named = await Promise.all(profiles.map(async (p) => ({
+      ...p,
+      name: (p.examDefinitionId ? (await getExamDefinition(p.examDefinitionId))?.name : null)
+        ?? (typeof p.objectiveContext?.label === 'string' ? p.objectiveContext.label : null)
+        ?? p.objectiveKey ?? '',
+    })));
     return (
       <>
         {named.length === 0 ? (

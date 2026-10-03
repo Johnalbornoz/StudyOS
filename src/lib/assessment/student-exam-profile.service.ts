@@ -7,7 +7,7 @@
  * not re-implement it, matching the established pattern of every prior
  * phase's service layer.
  */
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import type { GoalType, PreparationGoal, StudentExamProfile } from './types';
 
 function toProfile(r: any): StudentExamProfile {
@@ -16,6 +16,12 @@ function toProfile(r: any): StudentExamProfile {
     studentId: r.student_id,
     examDefinitionId: r.exam_definition_id,
     examVersionId: r.exam_version_id,
+    objectiveKey: r.objective_key ?? null,
+    objectiveFramework: r.objective_framework ?? null,
+    objectiveContext: r.objective_context ?? null,
+    targetInstitutionName: r.target_institution_name ?? null,
+    targetQualification: r.target_qualification ?? null,
+    source: r.source ?? null,
     purpose: r.purpose,
     programmeContext: r.programme_context,
     subjectFocus: r.subject_focus,
@@ -23,6 +29,8 @@ function toProfile(r: any): StudentExamProfile {
     timezone: r.timezone,
     institutionTargetId: r.institution_target_id,
     status: r.status,
+    archivedAt: r.archived_at ? (r.archived_at instanceof Date ? r.archived_at.toISOString() : r.archived_at) : null,
+    replacedByProfileId: r.replaced_by_profile_id ?? null,
   };
 }
 function toGoal(r: any): PreparationGoal {
@@ -31,7 +39,8 @@ function toGoal(r: any): PreparationGoal {
 
 export async function createStudentExamProfile(params: {
   studentId: string;
-  examDefinitionId: string;
+  /** Optional for a catalogue-only objective (then objectiveKey is required). */
+  examDefinitionId?: string | null;
   examVersionId?: string;
   purpose?: string;
   programmeContext?: string;
@@ -39,14 +48,29 @@ export async function createStudentExamProfile(params: {
   examDate?: string;
   timezone?: string;
   institutionTargetId?: string;
-}): Promise<StudentExamProfile> {
-  const result = await db.query(
+  objectiveKey?: string;
+  objectiveFramework?: string;
+  objectiveNodeId?: string | null;
+  objectiveContext?: Record<string, unknown>;
+  targetInstitutionName?: string;
+  targetQualification?: string;
+  source?: 'STUDENT' | 'EXAM_INSTANCE' | 'INSTITUTION';
+}, client: DbExecutor = db): Promise<StudentExamProfile> {
+  if (!params.examDefinitionId && !params.objectiveKey) throw new Error('EXAM_PROFILE_TARGET_REQUIRED');
+  // Track B: at most one non-archived profile per Student and exam
+  // (uq_student_exam_profiles_one_active) and per Student and objective
+  // (uq_student_exam_profiles_one_active_objective). A double click or a retry
+  // gets the SAME active profile back instead of a duplicate preparation.
+  const result = await client.query(
     `INSERT INTO student_exam_profiles (
-       student_id, exam_definition_id, exam_version_id, purpose, programme_context, subject_focus, exam_date, timezone, institution_target_id
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+       student_id, exam_definition_id, exam_version_id, purpose, programme_context, subject_focus, exam_date, timezone, institution_target_id,
+       objective_key, objective_framework, objective_node_id, objective_context, target_institution_name, target_qualification, source
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+     ON CONFLICT DO NOTHING
+     RETURNING *`,
     [
       params.studentId,
-      params.examDefinitionId,
+      params.examDefinitionId ?? null,
       params.examVersionId ?? null,
       params.purpose ?? null,
       params.programmeContext ?? null,
@@ -54,9 +78,23 @@ export async function createStudentExamProfile(params: {
       params.examDate ?? null,
       params.timezone ?? null,
       params.institutionTargetId ?? null,
+      params.objectiveKey ?? null,
+      params.objectiveFramework ?? null,
+      params.objectiveNodeId ?? null,
+      params.objectiveContext ? JSON.stringify(params.objectiveContext) : null,
+      params.targetInstitutionName ?? null,
+      params.targetQualification ?? null,
+      params.source ?? null,
     ]
   );
-  return toProfile(result.rows[0]);
+  if (result.rows[0]) return toProfile(result.rows[0]);
+  const existing = await client.query(
+    `SELECT * FROM student_exam_profiles
+      WHERE student_id = $1 AND status <> 'ARCHIVED' AND (($2::text IS NOT NULL AND objective_key = $2) OR ($3::uuid IS NOT NULL AND exam_definition_id = $3))
+      ORDER BY (objective_key = $2) DESC NULLS LAST, created_at DESC LIMIT 1`,
+    [params.studentId, params.objectiveKey ?? null, params.examDefinitionId ?? null]
+  );
+  return toProfile(existing.rows[0]);
 }
 
 export async function addPreparationGoal(params: { studentExamProfileId: string; goalType: GoalType; targetValue?: string; competencyId?: string }): Promise<PreparationGoal> {
@@ -108,8 +146,12 @@ export async function getStudentExamProfile(profileId: string): Promise<StudentE
  * rather than making a self-HTTP-call, matching every other F13/F14
  * page's own established pattern.
  */
-export async function listStudentExamProfiles(studentId: string): Promise<StudentExamProfile[]> {
-  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]);
+export async function listStudentExamProfiles(studentId: string, opts: { includeArchived?: boolean } = {}): Promise<StudentExamProfile[]> {
+  // Track B: a profile the Student removed from their preparation (ARCHIVED) is not part of it any more.
+  const result = await db.query(
+    `SELECT * FROM student_exam_profiles WHERE student_id = $1 ${opts.includeArchived ? '' : `AND status <> 'ARCHIVED'`} ORDER BY created_at DESC`,
+    [studentId]
+  );
   return result.rows.map(toProfile);
 }
 

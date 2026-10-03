@@ -5,11 +5,53 @@
  */
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
-import { getComponent } from '@/lib/assessment/component.service';
+import { getComponent, listComponentsForVersion } from '@/lib/assessment/component.service';
 import { getExamVersion } from '@/lib/assessment/exam-definition.service';
 import { canFullMockBeOffered } from '@/lib/assessment/full-mock-guard.service';
 import type { BlueprintObjectiveTarget } from '@/lib/assessment/types';
-import type { SimulationPlan, SimulationPlanTarget, SimulationType, TimingMode } from './types';
+import type { AssessmentComponent } from '@/lib/assessment/types';
+import type { SimulationPlan, SimulationPlanSection, SimulationPlanTarget, SimulationType, TimingMode } from './types';
+
+/**
+ * Track B: targets are grouped by section (component) in the version's
+ * section order, keeping blueprint order inside a section -- a stable sort,
+ * so the same blueprint always yields the same plan order.
+ */
+export function orderTargetsBySection<T extends { assessmentComponentId: string }>(targets: T[], components: AssessmentComponent[]): T[] {
+  const order = new Map(components.map((c, i) => [c.id, i]));
+  return targets
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => (order.get(a.t.assessmentComponentId) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.t.assessmentComponentId) ?? Number.MAX_SAFE_INTEGER) || a.i - b.i)
+    .map((x) => x.t);
+}
+
+/** Contiguous runs of the same component in `selectedTargets` (works for pre-Track-B plans too). */
+export function deriveSections(
+  selectedTargets: Array<{ assessmentComponentId: string }>,
+  components: Array<Pick<AssessmentComponent, 'id' | 'name' | 'durationMinutes' | 'timingStatus'> & { sectionKey?: string | null }>,
+  timingMode: TimingMode
+): SimulationPlanSection[] {
+  const byId = new Map(components.map((c) => [c.id, c]));
+  const sections: SimulationPlanSection[] = [];
+  selectedTargets.forEach((t, index) => {
+    const last = sections[sections.length - 1];
+    if (last && last.componentId === t.assessmentComponentId) {
+      last.endIndex = index;
+      return;
+    }
+    const c = byId.get(t.assessmentComponentId);
+    sections.push({
+      componentId: t.assessmentComponentId,
+      key: c?.sectionKey ?? t.assessmentComponentId,
+      name: c?.name ?? t.assessmentComponentId,
+      order: sections.length,
+      startIndex: index,
+      endIndex: index,
+      durationSeconds: timingMode !== 'UNTIMED' && c && c.timingStatus === 'CONFIGURED' && c.durationMinutes !== null ? c.durationMinutes * 60 : null,
+    });
+  });
+  return sections;
+}
 
 export class TimingConfigurationError extends Error {
   constructor(componentName: string) {
@@ -56,8 +98,15 @@ export async function buildSimulationPlan(params: {
   academicSubjectId?: string;
   timingMode: TimingMode;
   readinessSnapshotId?: string;
+  /** Exam V2: restrict the plan to these components (an exam instance's selected papers). */
+  assessmentComponentIds?: string[];
+  /** Exam V2: restrict the plan to these objectives (skill-level practice). */
+  learningObjectiveIds?: string[];
 }): Promise<SimulationPlan> {
-  const targets = await selectTargets(params);
+  const versionComponents = await listComponentsForVersion(params.examVersionId);
+  const only = params.assessmentComponentIds && params.assessmentComponentIds.length > 0 ? new Set(params.assessmentComponentIds) : null;
+  const focus = params.learningObjectiveIds && params.learningObjectiveIds.length > 0 ? new Set(params.learningObjectiveIds) : null;
+  const targets = orderTargetsBySection((await selectTargets(params)).filter((t) => (!only || only.has(t.assessmentComponentId)) && (!focus || focus.has(t.learningObjectiveId))), versionComponents);
   if (targets.length === 0) throw new Error(`no blueprint targets selected for ${params.simulationType}`);
 
   const examVersion = await getExamVersion(params.examVersionId);
@@ -96,8 +145,11 @@ export async function buildSimulationPlan(params: {
     });
   }
 
+  const sections = deriveSections(selectedTargets, versionComponents, params.timingMode);
+
   const plan = {
     simulationType: params.simulationType,
+    sections,
     frameworkVersion: { examVersionId: params.examVersionId, blueprintId: blueprint?.id ?? null },
     selectedTargets,
     timingAllocation: { mode: params.timingMode, totalSeconds: params.timingMode === 'UNTIMED' ? null : totalSeconds },
@@ -138,6 +190,7 @@ export async function getSimulationPlanById(id: string): Promise<SimulationPlan 
     timingAllocation: plan.timingAllocation,
     toolRules: plan.toolRules,
     scoringConfiguration: plan.scoringConfiguration,
+    sections: plan.sections,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
   };
 }

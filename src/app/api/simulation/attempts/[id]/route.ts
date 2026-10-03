@@ -4,6 +4,8 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
+import { db } from '@/lib/db';
+import { deriveExamLifecycle, getAttemptResult } from '@/lib/exam-core/results.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,8 +21,16 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   const allowed = await canAccessLearner(actor.id, attempt.studentId, 'LEARNER_PROGRESS_VIEW');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  const scoreSummary = await getSimulationScoreSummary(attempt.examAttemptId);
-  return NextResponse.json({ success: true, data: { attempt, scoreSummary } });
+  const [scoreSummary, result, examRow] = await Promise.all([
+    getSimulationScoreSummary(attempt.examAttemptId),
+    getAttemptResult(attempt.examAttemptId),
+    db.query(`SELECT status FROM exam_attempts WHERE id = $1`, [attempt.examAttemptId]),
+  ]);
+  const lifecycle = deriveExamLifecycle({ simulationStatus: attempt.status, examAttemptStatus: examRow.rows[0]?.status ?? null, resultStatus: result?.status ?? null });
+  // The server-held navigation state carries answer keys -- never returned here.
+  const { navigationState: _hidden, ...publicAttempt } = attempt;
+  void _hidden;
+  return NextResponse.json({ success: true, data: { attempt: publicAttempt, lifecycle, scoreSummary, result } });
 }
 
 // AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).

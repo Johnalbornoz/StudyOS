@@ -9,7 +9,34 @@
 import { db } from '@/lib/db';
 import { startExamAttempt, completeExamAttempt, getExamAttempt } from '@/lib/assessment/exam-attempt.service';
 import { buildSimulationPlan } from './plan.service';
+import { parseDeliveryPolicy, resolveDeliveryPolicy, isModeAllowed } from '@/lib/exam-core/delivery-policy';
+import { initNavState, isInactiveExpired, type ExamNavState, type ExamItemState } from '@/lib/exam-core/navigation-state';
+import type { SimulationPlan } from './types';
 import type { SimulationAttempt, SimulationType, TimingMode } from './types';
+
+/** Track B: the version's delivery policy (navigation_rules) is present but invalid -- the attempt never starts on a guessed policy. */
+export class DeliveryPolicyConfigurationError extends Error {
+  constructor(detail: string) {
+    super(`DELIVERY_POLICY_INVALID: ${detail}`);
+    this.name = 'DeliveryPolicyConfigurationError';
+  }
+}
+
+/** Track B: the exam preparation profile was removed by the Student (ARCHIVED) -- it never starts a new simulation. */
+export class ExamProfileArchivedError extends Error {
+  constructor() {
+    super('PROFILE_ARCHIVED');
+    this.name = 'ExamProfileArchivedError';
+  }
+}
+
+/** Track B: the version's delivery policy does not offer this simulation type / timing mode. */
+export class SimulationModeNotAllowedError extends Error {
+  constructor(public readonly reason: string) {
+    super(reason);
+    this.name = 'SimulationModeNotAllowedError';
+  }
+}
 
 function toAttempt(row: any): SimulationAttempt {
   return {
@@ -46,7 +73,30 @@ export async function startSimulationAttempt(params: {
   institutionExamPolicyId?: string;
   language: string;
   timezone?: string;
+  /** Exam V2: only these components (an exam instance's selected papers). */
+  assessmentComponentIds?: string[];
+  /** Exam V2: only these objectives (skill-level practice). */
+  learningObjectiveIds?: string[];
+  /** Exam V2: per-item feedback override (a Mock / Challenge forces NEVER). */
+  itemFeedback?: 'NEVER' | 'AFTER_EACH_ITEM';
+  /**
+   * Exam V2: a FROZEN form. Called with the built plan, returns the server-held
+   * items to preset per plan position, so nothing is sourced or generated
+   * during the attempt. Positions it leaves out are sourced as usual.
+   */
+  presetItems?: (plan: SimulationPlan) => Promise<Record<number, ExamItemState>>;
 }): Promise<{ examAttempt: Awaited<ReturnType<typeof getExamAttempt>>; simulationAttempt: SimulationAttempt; planId: string }> {
+  // Track B: validate the profile and the version's delivery policy BEFORE writing anything.
+  const profileRow = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1`, [params.examProfileId]);
+  if (profileRow.rows[0]?.status === 'ARCHIVED') throw new ExamProfileArchivedError();
+  const versionRow = await db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [params.examVersionId]);
+  const parsedPolicy = parseDeliveryPolicy(versionRow.rows[0]?.navigation_rules ?? null);
+  if (!parsedPolicy.ok) throw new DeliveryPolicyConfigurationError(parsedPolicy.detail);
+  const modeCheck = isModeAllowed(parsedPolicy.policy, params.simulationType, params.timingMode);
+  if (!modeCheck.allowed) throw new SimulationModeNotAllowedError(modeCheck.reason!);
+  const deliveryPolicy = resolveDeliveryPolicy(parsedPolicy.policy, params.simulationType, params.timingMode);
+  if (params.itemFeedback === 'NEVER' || (params.itemFeedback === 'AFTER_EACH_ITEM' && params.timingMode !== 'OFFICIAL_SIMULATION_TIMED')) deliveryPolicy.itemFeedback = params.itemFeedback;
+
   const plan = await buildSimulationPlan({
     studentId: params.studentId,
     examVersionId: params.examVersionId,
@@ -55,7 +105,10 @@ export async function startSimulationAttempt(params: {
     academicSubjectId: params.academicSubjectId,
     timingMode: params.timingMode,
     readinessSnapshotId: params.readinessSnapshotId,
+    assessmentComponentIds: params.assessmentComponentIds,
+    learningObjectiveIds: params.learningObjectiveIds,
   });
+  const preset = params.presetItems ? await params.presetItems(plan) : {};
 
   const examAttempt = await startExamAttempt({
     studentExamProfileId: params.examProfileId,
@@ -64,10 +117,12 @@ export async function startSimulationAttempt(params: {
   });
 
   // INV-F9-10 restated: official simulation timing never permits pause. Training/Mini Mock may -- never hard-coded uniformly (task §25).
-  const pauseAllowed = params.timingMode !== 'OFFICIAL_SIMULATION_TIMED';
+  const pauseAllowed = deliveryPolicy.pauseAllowed;
 
+  // Track B: the resolved delivery policy + section layout are FROZEN on the attempt.
   const navigationRules = (examAttempt?.frozenConfiguration as any)?.examVersion?.navigationRules ?? null;
-  const navigationState = { currentTargetIndex: 0, visitedTargetIds: [], mode: navigationRules ? 'CONFIGURED' : 'UNKNOWN', rules: navigationRules };
+  const navigationState = initNavState({ policy: deliveryPolicy, sections: plan.sections ?? [], now: new Date().toISOString(), rules: navigationRules });
+  for (const [index, state] of Object.entries(preset)) navigationState.items[String(index)] = state;
 
   const result = await db.query(
     `
@@ -125,7 +180,21 @@ export async function pauseSimulationAttempt(id: string): Promise<SimulationAtte
 }
 
 export async function resumeSimulationAttempt(id: string): Promise<SimulationAttempt> {
-  const result = await db.query(`UPDATE simulation_attempts SET status = 'ACTIVE', resumed_at = now(), paused_at = NULL WHERE id = $1 AND status = 'PAUSED' RETURNING *`, [id]);
+  // Track B: the paused interval is added to the running section's clock
+  // (server timestamps only), so a pause never consumes section time; the
+  // revision bump invalidates any in-flight compare-and-swap write.
+  const result = await db.query(
+    `UPDATE simulation_attempts
+        SET status = 'ACTIVE', resumed_at = now(), paused_at = NULL,
+            navigation_state = CASE WHEN (navigation_state->>'v') = '2' THEN
+              jsonb_set(jsonb_set(jsonb_set(navigation_state,
+                '{sectionPausedSeconds}', to_jsonb(COALESCE((navigation_state->>'sectionPausedSeconds')::int, 0) + GREATEST(0, EXTRACT(EPOCH FROM (now() - paused_at))::int))),
+                '{lastActivityAt}', to_jsonb(to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))),
+                '{rev}', to_jsonb(COALESCE((navigation_state->>'rev')::int, 0) + 1))
+            ELSE navigation_state END
+      WHERE id = $1 AND status = 'PAUSED' RETURNING *`,
+    [id]
+  );
   if (result.rows.length === 0) throw new Error(`simulation attempt ${id} could not be resumed from its current status`);
   return toAttempt(result.rows[0]);
 }
@@ -142,5 +211,30 @@ export async function completeSimulationAttempt(id: string): Promise<SimulationA
 export async function abandonSimulationAttempt(id: string): Promise<SimulationAttempt> {
   const result = await db.query(`UPDATE simulation_attempts SET status = 'ABANDONED' WHERE id = $1 AND status IN ('ACTIVE','PAUSED') RETURNING *`, [id]);
   if (result.rows.length === 0) throw new Error(`simulation attempt ${id} could not be abandoned from its current status`);
+  // Track B: the wrapped F7 exam attempt follows (it used to stay IN_PROGRESS forever).
+  await db.query(`UPDATE exam_attempts SET status = 'ABANDONED' WHERE id = $1 AND status = 'IN_PROGRESS'`, [result.rows[0].exam_attempt_id]);
   return toAttempt(result.rows[0]);
+}
+
+/** Track B: the Student's open (ACTIVE / PAUSED) attempt for a profile, if any -- a start never silently creates a second one. */
+export async function findOpenSimulationAttemptForProfile(examProfileId: string): Promise<SimulationAttempt | null> {
+  const result = await db.query(
+    `SELECT * FROM simulation_attempts WHERE exam_profile_id = $1 AND status IN ('ACTIVE','PAUSED') ORDER BY created_at DESC LIMIT 1`,
+    [examProfileId]
+  );
+  return result.rows.length === 0 ? null : toAttempt(result.rows[0]);
+}
+
+/**
+ * Track B integrity: closes (ABANDONED) an open attempt idle beyond the
+ * inactivity expiry frozen in its delivery policy. Returns true when it did.
+ */
+export async function expireSimulationAttemptIfInactive(attempt: SimulationAttempt): Promise<boolean> {
+  if (attempt.status !== 'ACTIVE' && attempt.status !== 'PAUSED') return false;
+  const nav = attempt.navigationState as Partial<ExamNavState>;
+  const lastActivityAt = typeof nav?.lastActivityAt === 'string' ? nav.lastActivityAt : attempt.resumedAt ?? attempt.createdAt;
+  if (!isInactiveExpired({ ...(nav as ExamNavState), lastActivityAt }, Date.now())) return false;
+  await db.query(`UPDATE simulation_attempts SET status = 'ABANDONED' WHERE id = $1 AND status IN ('ACTIVE','PAUSED')`, [attempt.id]);
+  await db.query(`UPDATE exam_attempts SET status = 'ABANDONED' WHERE id = $1 AND status = 'IN_PROGRESS'`, [attempt.examAttemptId]);
+  return true;
 }

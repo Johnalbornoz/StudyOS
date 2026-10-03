@@ -29,14 +29,29 @@ export async function createApprovedItem(actorUserId: string, params: { learning
   return toItem(result.rows[0]);
 }
 
+const BANK_LIFECYCLE_FOR_STATUS: Record<string, string> = { PROPOSED: 'VALIDATING', IN_REVIEW: 'REVIEW_REQUIRED', APPROVED: 'VALIDATED', PUBLISHED: 'ACTIVE', REJECTED: 'REJECTED', RETIRED: 'RETIRED' };
+
 async function transitionItem(itemId: string, from: string[], to: string, extra: { reviewedBy?: string; setPublishedAt?: boolean } = {}): Promise<ApprovedItem> {
   const current = await db.query(`SELECT status FROM approved_items WHERE id = $1`, [itemId]);
   if (current.rows.length === 0) throw new Error(`approved item ${itemId} not found`);
   if (!from.includes(current.rows[0].status)) throw new Error(`cannot transition item from ${current.rows[0].status} to ${to}`);
+  // A version registered in the Question Bank keeps its lifecycle consistent with the workflow status (audited).
+  const lifecycle = BANK_LIFECYCLE_FOR_STATUS[to] ?? null;
   const result = extra.reviewedBy
-    ? await db.query(`UPDATE approved_items SET status = $1, reviewed_by = $2, reviewed_at = now()${extra.setPublishedAt ? ', published_at = now()' : ''} WHERE id = $3 RETURNING *`, [to, extra.reviewedBy, itemId])
-    : await db.query(`UPDATE approved_items SET status = $1 WHERE id = $2 RETURNING *`, [to, itemId]);
-  return toItem(result.rows[0]);
+    ? await db.query(
+        `UPDATE approved_items SET status = $1, reviewed_by = $2, reviewed_at = now()${extra.setPublishedAt ? ', published_at = now()' : ''},
+                bank_lifecycle_status = CASE WHEN bank_lifecycle_status IS NULL THEN NULL ELSE $4 END WHERE id = $3 RETURNING *`,
+        [to, extra.reviewedBy, itemId, lifecycle]
+      )
+    : await db.query(`UPDATE approved_items SET status = $1, bank_lifecycle_status = CASE WHEN bank_lifecycle_status IS NULL THEN NULL ELSE $3 END WHERE id = $2 RETURNING *`, [to, itemId, lifecycle]);
+  const row = result.rows[0];
+  if (row?.bank_item_id && row.bank_lifecycle_status) {
+    await db.query(
+      `INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id) VALUES ($1, $2, NULL, $3, $4, $5, $6)`,
+      [row.bank_item_id, row.id, row.bank_lifecycle_status, `F7_WORKFLOW:${to}`, extra.reviewedBy ? 'ADMIN' : 'SYSTEM', extra.reviewedBy ?? null]
+    );
+  }
+  return toItem(row);
 }
 
 export async function proposeApprovedItem(itemId: string): Promise<ApprovedItem> {

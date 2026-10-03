@@ -15,11 +15,17 @@
  * page; Progress remains reachable from the learner shell.
  */
 
-export type FirstDestinationReason = 'ONBOARDING_NO_SUBJECT' | 'RESUME_TODAY';
+export type FirstDestinationReason = 'ONBOARDING_NO_SUBJECT' | 'RESUME_TODAY' | 'RESUME_EXAM_PREPARATION';
 
 export interface LearnerSetupState {
   /** true once the learner has created at least one subject (subjects are the unit every canonical engine consumes). */
   hasSubject: boolean;
+  /**
+   * Track B (objective first): true once the learner chose an exam goal. A
+   * Student may start by "Quiero prepararme para un examen" without building a
+   * subject first; that Student resumes in their exam preparation.
+   */
+  hasExamGoal?: boolean;
 }
 
 export interface FirstDestination {
@@ -29,9 +35,11 @@ export interface FirstDestination {
 
 export const ONBOARDING_PATH = '/dashboard/onboarding' as const;
 export const START_PATH = '/dashboard/today' as const;
+export const EXAM_PREPARATION_PATH = '/dashboard/exam-prep' as const;
 
 export function resolveFirstDestination(state: LearnerSetupState): FirstDestination {
   if (!state.hasSubject) {
+    if (state.hasExamGoal) return { path: EXAM_PREPARATION_PATH, reason: 'RESUME_EXAM_PREPARATION' };
     return { path: ONBOARDING_PATH, reason: 'ONBOARDING_NO_SUBJECT' };
   }
   return { path: START_PATH, reason: 'RESUME_TODAY' };
@@ -43,5 +51,6 @@ export function resolveFirstDestination(state: LearnerSetupState): FirstDestinat
  * or null to stay.
  */
 export function onboardingRouteRedirect(state: LearnerSetupState): string | null {
-  return state.hasSubject ? START_PATH : null;
+  if (state.hasSubject) return START_PATH;
+  return state.hasExamGoal ? EXAM_PREPARATION_PATH : null;
 }

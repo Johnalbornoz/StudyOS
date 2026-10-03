@@ -732,7 +732,7 @@ async function startExamReinforcementExecution(
     // profile itself does not pin one. Only a PUBLISHED version may
     // be started -- a RETIRED/SUPERSEDED/DRAFT version is a controlled
     // rejection (Case B), never silently substituted.
-    const examVersionId = profile.examVersionId ?? (await getPublishedExamVersion(profile.examDefinitionId))?.id ?? null;
+    const examVersionId = profile.examVersionId ?? (profile.examDefinitionId ? (await getPublishedExamVersion(profile.examDefinitionId))?.id ?? null : null);
     if (!examVersionId) {
       await client.query('ROLLBACK');
       throw new StudentInterventionNotStartableError(`no resolvable exam version for exam profile ${intervention.exam_profile_id}`);

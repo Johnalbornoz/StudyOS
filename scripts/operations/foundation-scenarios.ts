@@ -154,8 +154,8 @@ async function main() {
   check('S4.teacher-cannot-start-for-learner', !(await canAccessLearner(tch.user.id, studentA, 'LEARNER_INTERVENTION_CREATE')));
 
   // ---------------- SCENARIO 5: EXAM OWNERSHIP / VERSION INTEGRITY ----------------
-  const def1 = await createExamDefinition({ name: `Foundation Exam ${RUN}`, examFamily: 'FOUNDATION_TEST' });
-  const def2 = await createExamDefinition({ name: `Foundation Exam other ${RUN}`, examFamily: 'FOUNDATION_TEST' });
+  const def1 = await createExamDefinition({ name: `Foundation Exam ${RUN}`, examFamily: 'PAA' });
+  const def2 = await createExamDefinition({ name: `Foundation Exam other ${RUN}`, examFamily: 'PAA' });
   created.examDefinitions.push(def1.id, def2.id);
   const v1 = await createExamVersion({ examDefinitionId: def1.id, versionLabel: 'v1' });
   const vOther = await createExamVersion({ examDefinitionId: def2.id, versionLabel: 'v1' });

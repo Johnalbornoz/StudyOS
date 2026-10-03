@@ -83,7 +83,8 @@ export async function getBlueprintForVersion(examVersionId: string): Promise<Ass
 }
 
 export async function listObjectiveTargets(blueprintId: string): Promise<BlueprintObjectiveTarget[]> {
-  const result = await db.query(`SELECT * FROM blueprint_objective_targets WHERE blueprint_id = $1`, [blueprintId]);
+  // Track B: deterministic order (the plan builder groups these into sections).
+  const result = await db.query(`SELECT * FROM blueprint_objective_targets WHERE blueprint_id = $1 ORDER BY created_at ASC, id ASC`, [blueprintId]);
   return result.rows.map(toTarget);
 }
 

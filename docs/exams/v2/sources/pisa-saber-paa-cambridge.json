@@ -1,0 +1,112 @@
+{
+  "accessedAt": "2026-10-01",
+  "method": "Web research against primary publishers (OECD, Icfes, College Board PR/LatAm, Cambridge International). Numbers are copied from the cited documents; null = not stated by the source.",
+  "pisaMath": {
+    "frameworkVersion": "PISA 2022 Mathematics Framework (PISA 2022 Assessment and Analytical Framework, OECD 2023)",
+    "categoryRule": "Each item contributes to exactly one of: reasoning, formulate, employ, interpret/evaluate.",
+    "processes": [
+      { "key": "reason", "name": "Mathematical reasoning", "targetPercent": 25 },
+      { "key": "formulate", "name": "Formulating situations mathematically", "targetPercent": 25 },
+      { "key": "employ", "name": "Employing mathematical concepts, facts and procedures", "targetPercent": 25 },
+      { "key": "interpret", "name": "Interpreting, applying and evaluating mathematical outcomes", "targetPercent": 25 }
+    ],
+    "contentCategories": [
+      { "key": "change_relationships", "name": "Change and relationships", "targetPercent": 25 },
+      { "key": "space_shape", "name": "Space and shape", "targetPercent": 25 },
+      { "key": "quantity", "name": "Quantity", "targetPercent": 25 },
+      { "key": "uncertainty_data", "name": "Uncertainty and data", "targetPercent": 25 }
+    ],
+    "contexts": [
+      { "key": "personal", "name": "Personal", "targetPercent": null },
+      { "key": "occupational", "name": "Occupational", "targetPercent": null },
+      { "key": "societal", "name": "Societal", "targetPercent": null },
+      { "key": "scientific", "name": "Scientific", "targetPercent": null }
+    ],
+    "itemFormats": ["open constructed-response", "closed constructed-response", "selected-response (simple or complex multiple choice)"],
+    "itemFormatRule": "About equal numbers of each item format type.",
+    "unitStructure": "Shared stimulus (text, tables, charts, graphs, diagrams) + one or more items.",
+    "reporting": "Described proficiency levels (Below 1c, 1c, 1b, 1a, 2-6); results for systems via plausible values; no individual student scores.",
+    "sources": [
+      { "key": "oecd-pisa-2022-framework", "url": "https://s3.amazonaws.com/archivos.agenciaeducacion.cl/Marco+de+Evaluaci%C3%B3n+y+An%C3%A1lisis+Prueba+PISA+2022+(en+Ingl%C3%A9s).pdf", "title": "PISA 2022 Assessment and Analytical Framework (Ch. 2 Mathematics, Tables 2.1/2.2)", "publisher": "OECD (mirror: Agencia de Calidad de la Educación, Chile)", "publicationYear": 2023, "confidence": "HIGH" },
+      { "key": "oecd-pisa-2022-math-site", "url": "https://pisa2022-maths.oecd.org/", "title": "PISA 2022 Mathematics Framework (interactive site)", "publisher": "OECD", "publicationYear": null, "confidence": "HIGH" },
+      { "key": "nces-pisa-2022-technical-notes", "url": "https://nces.ed.gov/surveys/pisa/pisa2022/technical-notes/index.asp", "title": "PISA 2022 U.S. Results - Technical Notes", "publisher": "NCES", "publicationYear": 2023, "confidence": "MEDIUM" }
+    ]
+  },
+  "saber11Math": {
+    "frameworkName": "Marco de referencia para la evaluación - Prueba de matemáticas Saber 11.º (Icfes, 2019)",
+    "competencias": [
+      { "key": "interpretacion", "name": "Interpretación y representación", "weightPercent": 34, "afirmacion": "Comprende y transforma la información cuantitativa y esquemática presentada en distintos formatos.", "evidencias": ["1.1 Da cuenta de las características básicas de la información presentada en diferentes formatos como series, gráficas, tablas y esquemas.", "1.2 Transforma la representación de una o más piezas de información."] },
+      { "key": "formulacion", "name": "Formulación y ejecución", "weightPercent": 43, "afirmacion": "Frente a un problema que involucre información cuantitativa, plantea e implementa estrategias que lleven a soluciones adecuadas.", "evidencias": ["2.1 Diseña planes para la solución de problemas que involucran información cuantitativa o esquemática.", "2.2 Ejecuta un plan de solución para un problema que involucra información cuantitativa o esquemática.", "2.3 Resuelve un problema que involucra información cuantitativa o esquemática."] },
+      { "key": "argumentacion", "name": "Argumentación", "weightPercent": 23, "afirmacion": "Valida procedimientos y estrategias matemáticas utilizadas para dar solución a problemas.", "evidencias": ["3.1 Plantea afirmaciones que sustentan o refutan una interpretación dada a la información disponible en el marco de la solución de un problema.", "3.2 Argumenta a favor o en contra de un procedimiento para resolver un problema a la luz de criterios presentados o establecidos.", "3.3 Establece la validez o pertinencia de una solución propuesta a un problema dado."] }
+    ],
+    "contentCategories": [
+      { "key": "estadistica", "name": "Estadística", "rangePercent": "35-40" },
+      { "key": "algebra_calculo", "name": "Álgebra y cálculo", "rangePercent": "35-40" },
+      { "key": "geometria", "name": "Geometría", "rangePercent": "20-35" }
+    ],
+    "contentCategoriesConfidence": "MEDIUM (table extraction ambiguous)",
+    "contextTypes": ["familiares o personales", "laborales u ocupacionales", "comunitarios o sociales", "matemáticos o científicos"],
+    "itemType": "Selección múltiple con única respuesta (number of options not verified)",
+    "numberOfItems": 50,
+    "sessions": "Two sessions of 4 h 30 min; 25 math questions per session in the standard booklet.",
+    "scoreScale": "0-100 per test (IRT 3PL, mean 50, SD 10); global 0-500 (Resolución Icfes 268 de 2020).",
+    "sources": [
+      { "key": "icfes-marco-matematicas-saber11", "url": "https://www.icfes.gov.co/wp-content/uploads/2024/11/Marco-de-referencia-Prueba-de-matematicas-saber-11-1.pdf", "title": "Marco de referencia para la evaluación - Prueba de matemáticas Saber 11.º", "publisher": "Icfes", "publicationYear": 2019, "confidence": "HIGH" },
+      { "key": "icfes-guia-saber11-2026", "url": "https://www.icfes.gov.co/wp-content/uploads/2025/12/02-diciembre-guia-de-orientacion-saber-11-2026.pdf", "title": "Guía de orientación del Examen Saber 11.º 2026", "publisher": "Icfes", "publicationYear": 2025, "confidence": "HIGH" },
+      { "key": "icfes-resolucion-268-2020", "url": "https://normograma.icfes.gov.co/compilacion/docs/resolucion_icfes_0268_2020.htm", "title": "Resolución 268 de 2020", "publisher": "Icfes", "publicationYear": 2020, "confidence": "HIGH" }
+    ]
+  },
+  "paaMath": {
+    "examName": "PAA - Prueba de Aptitud Académica (College Board Puerto Rico y América Latina)",
+    "currentVersion": "PAA revisada (Puerto Rico Oct 2017; América Latina Aug 2018)",
+    "sections": [{ "name": "Matemáticas (2 secciones)", "items": 55, "minutes": 60 }],
+    "allSections": [
+      { "name": "Lectura y Redacción (2 secciones)", "items": 70, "minutes": 75 },
+      { "name": "Matemáticas (2 secciones)", "items": 55, "minutes": 60 },
+      { "name": "Inglés (1 sección)", "items": 50, "minutes": 50 }
+    ],
+    "mathDomains": ["Aritmética", "Álgebra", "Geometría", "Análisis de datos y probabilidad"],
+    "itemFormat": "Selección múltiple, 4 opciones; algunos ejercicios de respuesta suplida por el estudiante.",
+    "scoring": "200-800 per part; subparts 10-40; number correct converted to scale; no penalty for wrong answers.",
+    "sources": [
+      { "key": "cb-paa-preguntas-respuestas-2017", "url": "https://latam.collegeboard.org/wp-content/uploads/2017/10/PAA-Preguntas-y-Respuestas-Puerto-Rico-2017.pdf", "title": "PAA Preguntas y respuestas (PAA revisada)", "publisher": "College Board Puerto Rico y América Latina", "publicationYear": 2017, "confidence": "HIGH" },
+      { "key": "cb-paa-guia-estudio-2018", "url": "https://latam.collegeboard.org/wp-content/uploads/2018/06/Guia_de_estudio_PAA.pdf", "title": "PAA Guía de estudio", "publisher": "College Board Puerto Rico y América Latina", "publicationYear": 2018, "confidence": "HIGH" },
+      { "key": "cb-paa-program-page", "url": "https://latam.collegeboard.org/paa/", "title": "PAA program page", "publisher": "College Board Puerto Rico y América Latina", "publicationYear": null, "confidence": "MEDIUM" }
+    ]
+  },
+  "cambridgeIgcseMath0580": {
+    "syllabusCode": "0580",
+    "syllabusYears": "2025-2027 (version 3)",
+    "tiers": [{ "key": "core", "name": "Core", "papers": ["Paper 1", "Paper 3"], "grades": "C-G" }, { "key": "extended", "name": "Extended", "papers": ["Paper 2", "Paper 4"], "grades": "A*-E" }],
+    "components": [
+      { "key": "p1", "name": "Paper 1 Non-calculator (Core)", "durationMinutes": 90, "marks": 80, "weightingPercent": 50, "calculator": "NONE" },
+      { "key": "p2", "name": "Paper 2 Non-calculator (Extended)", "durationMinutes": 120, "marks": 100, "weightingPercent": 50, "calculator": "NONE" },
+      { "key": "p3", "name": "Paper 3 Calculator (Core)", "durationMinutes": 90, "marks": 80, "weightingPercent": 50, "calculator": "SCIENTIFIC_REQUIRED" },
+      { "key": "p4", "name": "Paper 4 Calculator (Extended)", "durationMinutes": 120, "marks": 100, "weightingPercent": 50, "calculator": "SCIENTIFIC_REQUIRED" }
+    ],
+    "assessmentObjectives": [
+      { "code": "AO1", "name": "Knowledge and understanding of mathematical techniques", "rangeCore": "60-70", "rangeExtended": "40-50" },
+      { "code": "AO2", "name": "Analyse, interpret and communicate mathematically", "rangeCore": "30-40", "rangeExtended": "50-60" }
+    ],
+    "commandWords": ["Calculate", "Construct", "Determine", "Describe", "Explain", "Give", "Plot", "Show (that)", "Sketch", "State", "Work out", "Write", "Write down"],
+    "sources": [
+      { "key": "cie-0580-syllabus-2025-2027", "url": "https://www.cambridgeinternational.org/Images/662466-2025-2027-syllabus.pdf", "title": "Cambridge IGCSE Mathematics 0580 syllabus for 2025, 2026 and 2027 (Version 3)", "publisher": "Cambridge International Education", "publicationYear": 2024, "confidence": "HIGH" },
+      { "key": "cie-0580-page", "url": "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-igcse-mathematics-0580/", "title": "Cambridge IGCSE Mathematics (0580)", "publisher": "Cambridge International Education", "publicationYear": null, "confidence": "HIGH" }
+    ]
+  },
+  "cambridgeAsMath9709": {
+    "syllabusCode": "9709",
+    "syllabusYears": "2026-2027 (version 4)",
+    "components": [
+      { "key": "p1", "name": "Paper 1 Pure Mathematics 1", "durationMinutes": 110, "marks": 75, "weightingAS": 60, "weightingAL": 30 },
+      { "key": "p2", "name": "Paper 2 Pure Mathematics 2", "durationMinutes": 75, "marks": 50, "weightingAS": 40, "weightingAL": null },
+      { "key": "p3", "name": "Paper 3 Pure Mathematics 3", "durationMinutes": 110, "marks": 75, "weightingAS": null, "weightingAL": 30 },
+      { "key": "p4", "name": "Paper 4 Mechanics", "durationMinutes": 75, "marks": 50, "weightingAS": 40, "weightingAL": 20 },
+      { "key": "p5", "name": "Paper 5 Probability & Statistics 1", "durationMinutes": 75, "marks": 50, "weightingAS": 40, "weightingAL": 20 },
+      { "key": "p6", "name": "Paper 6 Probability & Statistics 2", "durationMinutes": 75, "marks": 50, "weightingAS": null, "weightingAL": 20 }
+    ],
+    "sources": [
+      { "key": "cie-9709-syllabus-2026-2027", "url": "https://www.cambridgeinternational.org/Images/697427-2026-2027-syllabus.pdf", "title": "Cambridge International AS & A Level Mathematics 9709 syllabus for 2026 and 2027 (Version 4)", "publisher": "Cambridge International Education", "publicationYear": 2025, "confidence": "HIGH" }
+    ]
+  }
+}

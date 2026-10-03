@@ -3,7 +3,7 @@
  * catalog. Closes a real data gap on Preview: `activeExamDefinitionCount`
  * and `publishedExamVersionCount` are both 0, so Student A's real,
  * already-deployed self-service Exam Profile flow (`/dashboard/exam-prep`,
- * `CreateExamProfileForm.tsx`, `listAvailableExamOptions()`) correctly
+ * `listAvailableExamOptions()`) correctly
  * shows "no exams published yet" -- there is genuinely nothing to select.
  *
  * PILOT CONFIGURATION / NON-OFFICIAL FIXTURE. This is NOT an official
