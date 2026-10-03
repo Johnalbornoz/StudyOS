@@ -74,7 +74,7 @@ export default async function InstitutionClassPage({ params }: { params: Promise
   const base = `/api/institutions/${institutionId}`;
 
   return (
-    <div className="ta-stack">
+    <div className="ta-stack cls-detail">
       <PageHeader
         title={klass.name}
         subtitle={[overview.institutionName, klass.gradeName, klass.subjectName].filter(Boolean).join(' · ')}
