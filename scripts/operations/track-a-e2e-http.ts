@@ -363,7 +363,6 @@ async function main() {
   // Generation is all-or-nothing; a GENERATION_FAILED (503) writes nothing and is simply retried, as the Student would.
   let start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
   for (let attempt = 1; attempt < 4 && start.status === 503; attempt++) {
-    await new Promise((r) => setTimeout(r, 65_000)); // the shared DEV AI limit has a per-minute window: retry after it resets (never raise the cap)
     check(`A5.generation-retry-${attempt}-wrote-nothing`, (await n(`SELECT COUNT(*) n FROM teacher_intervention_executions WHERE teacher_intervention_id = $1`, [interventionId])) === 0);
     start = await post(`/api/student/teacher-interventions/${interventionId}/start`, 'student-a', { idempotencyKey: `assignment:${interventionId}` });
   }
