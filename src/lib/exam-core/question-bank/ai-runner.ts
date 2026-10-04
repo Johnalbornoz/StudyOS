@@ -34,7 +34,7 @@ export interface AICallUsage {
 
 export interface FactoryAI {
   generate(ctx: GenerationContext): Promise<{ candidates: GeneratedCandidate[]; usage: AICallUsage }>;
-  validate(content: ApprovedItemContent, strong: boolean): Promise<{ verdict: ValidatorVerdict | null; usage: AICallUsage }>;
+  validate(content: ApprovedItemContent, strong: boolean, requirement?: string | null): Promise<{ verdict: ValidatorVerdict | null; usage: AICallUsage }>;
   repair(ctx: GenerationContext, previous: GeneratedCandidate, issues: Array<{ code: string; detail?: string }>): Promise<{ candidate: GeneratedCandidate | null; usage: AICallUsage }>;
 }
 
@@ -77,11 +77,11 @@ export const gatewayFactoryAI: FactoryAI = {
     return { candidates: out.result ?? [], usage: usageOf(out.execution) };
   },
 
-  async validate(content, strong) {
+  async validate(content, strong, requirement) {
     const route = resolveModels(strong ? 'EXPLANATION_EVALUATION' : 'CLASSIFICATION');
     const prompt = getPrompt('question_bank.validate_item');
     const system = validatorSystemPrompt();
-    const user = validatorUserPrompt(content);
+    const user = validatorUserPrompt(content, requirement);
     assertPromptPrivacy(system + user);
     const ids = (content.options ?? []).map((o) => o.id);
     const out = await executeAI({

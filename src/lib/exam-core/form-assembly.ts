@@ -64,6 +64,15 @@ export interface PoolItem {
 export interface StudentUsage {
   approvedItemIds: Set<string>;
   templateFingerprints: Set<string>;
+  /** Question Bank V2 exposure memory (all optional: absent = the previous behaviour). */
+  /** Items this Student saw within the reuse cooldown (repeated only when nothing unseen is equivalent). */
+  recentApprovedItemIds?: Set<string>;
+  /** Distinct Students who have seen each item (lower global exposure is preferred). */
+  globalExposure?: Map<string, number>;
+  /** Other Students of the same group / exam who met each item recently (cross-Student collision). */
+  peerExposure?: Map<string, number>;
+  /** Exposure ceiling used to normalize the global exposure (Students per question). */
+  exposureCeiling?: number;
 }
 
 export interface FormSlot {
@@ -100,6 +109,10 @@ export interface AssembledForm {
   /** For a Challenge / Mock: whether the mean difficulty landed in the mode's band. */
   difficultyBandMet: boolean;
   notes: string[];
+  /** Question Bank V2: unfilled positions per objective -- the structured shortage signal for inventory demand. */
+  shortages?: Array<{ learningObjectiveId: string | null; missing: number }>;
+  /** Question Bank V2: positions filled with an item this Student had already seen (pool exhausted). */
+  repeatedForStudent?: number;
 }
 
 const DEFAULT_INDEX = 1.0;
@@ -137,10 +150,17 @@ export function assembleForm(params: {
       slots.push({ index: pos.index, blueprintObjectiveTargetId: pos.blueprintObjectiveTargetId, assessmentComponentId: pos.assessmentComponentId, approvedItemId: null, marks: 0, difficultyIndex: null, contentOrigin: null, unfilledReason: 'NO_BANK_ITEM' });
       continue;
     }
+    // Academic constraints are the filters above; among equivalent candidates the cost prefers, in order:
+    // closeness to the target difficulty, unseen by this Student (recently seen weighs most), lower global
+    // exposure, fewer collisions with other Students; the seeded rank only breaks exact ties (never pure random).
+    const u = params.usage;
+    const ceiling = Math.max(1, u.exposureCeiling ?? 8);
     const cost = (it: PoolItem) => {
       let c = Math.abs((it.difficultyIndex ?? DEFAULT_INDEX) - target);
-      if (params.usage.approvedItemIds.has(it.id)) c += 2;
-      else if (it.templateFingerprint && params.usage.templateFingerprints.has(it.templateFingerprint)) c += 1;
+      if (u.approvedItemIds.has(it.id)) c += 2 + (u.recentApprovedItemIds?.has(it.id) ? 1 : 0);
+      else if (it.templateFingerprint && u.templateFingerprints.has(it.templateFingerprint)) c += 1;
+      if (u.globalExposure) c += 0.5 * Math.min(1, (u.globalExposure.get(it.id) ?? 0) / ceiling);
+      if (u.peerExposure) c += 0.75 * Math.min(1, (u.peerExposure.get(it.id) ?? 0) / 3);
       if (prevStimulus && it.stimulusKey === prevStimulus) c -= 3;
       return c;
     };
@@ -189,7 +209,12 @@ export function assembleForm(params: {
   else if (!marksComplete) notes.push('BELOW_OFFICIAL_SIZE');
   if (!difficultyBandMet) notes.push(params.mode === 'CHALLENGE' ? 'CHALLENGE_BAND_NOT_REACHED' : 'MOCK_BAND_NOT_REACHED');
 
-  return { v: 1, mode: params.mode, targetDifficulty: target, difficultyIndex, slots, components, fidelity: allFilled && marksComplete ? 'FULL' : 'REDUCED', coveragePercent, difficultyBandMet, notes };
+  const missingByObjective = new Map<string | null, number>();
+  const objectiveOfPosition = new Map(params.positions.map((p) => [p.index, p.learningObjectiveId]));
+  for (const s of slots) if (!s.approvedItemId) missingByObjective.set(objectiveOfPosition.get(s.index) ?? null, (missingByObjective.get(objectiveOfPosition.get(s.index) ?? null) ?? 0) + 1);
+  const shortages = [...missingByObjective.entries()].map(([learningObjectiveId, missing]) => ({ learningObjectiveId, missing }));
+  const repeatedForStudent = filled.filter((s) => params.usage.approvedItemIds.has(s.approvedItemId!)).length;
+  return { v: 1, mode: params.mode, targetDifficulty: target, difficultyIndex, slots, components, fidelity: allFilled && marksComplete ? 'FULL' : 'REDUCED', coveragePercent, difficultyBandMet, notes, shortages, repeatedForStudent };
 }
 
 /** Practice adapts between sessions: a strong result moves the Student up a level, a weak one down. */

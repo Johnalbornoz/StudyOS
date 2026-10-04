@@ -72,3 +72,29 @@ export function cellLabel(c: { componentName: string; objectiveDescription: stri
   const req = (c.objectiveDescription ?? c.objectiveCode).split(':')[0].replace(/\.$/, '');
   return `${c.componentName} · ${req}${c.difficultyRange ? ` · dificultad ${c.difficultyRange.min}–${c.difficultyRange.max}` : ''}`;
 }
+
+/* ---------------- Question Bank V2: quality / demand labels ---------------- */
+
+export const DIFFICULTY_LABEL: Record<string, string> = { LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta' };
+export const USAGE_LABEL: Record<string, string> = {
+  PRACTICE: 'Práctica',
+  DIAGNOSTIC: 'Diagnóstico',
+  QUIZ: 'Quiz',
+  REDUCED_MOCK: 'Simulacro reducido',
+  FULL_MOCK: 'Simulacro completo',
+  FORMAL_ASSESSMENT: 'Evaluación formal',
+};
+export const ALIGNMENT_LABEL: Record<string, string> = { PRACTICE: 'Práctica', EXAM_STYLE: 'Estilo examen', MOCK_READY: 'Apta para simulacro', OFFICIAL: 'Oficial' };
+export const REVIEW_LABEL: Record<string, string> = {
+  APPROVED: 'Aprobada',
+  PENDING: 'Pendiente',
+  REJECTED: 'Rechazada',
+  CORRECTION_REQUESTED: 'Corrección solicitada',
+  NOT_REQUIRED: 'No requerida (contenido no generado)',
+};
+const INVENTORY_TONE: Record<string, string> = { GREEN: 'chip-good', YELLOW: 'chip-warn', RED: 'chip-critical' };
+const INVENTORY_LABEL: Record<string, string> = { GREEN: 'Suficiente', YELLOW: 'Se acerca a la escasez', RED: 'Insuficiente' };
+export function InventoryStatus({ status }: { status: string }) {
+  return <span className={`chip ${INVENTORY_TONE[status] ?? ''}`}>{INVENTORY_LABEL[status] ?? status}</span>;
+}
+export const pct = (x: number | null | undefined) => (x === null || x === undefined ? '—' : `${Math.round(x * 100)} %`);

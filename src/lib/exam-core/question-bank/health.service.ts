@@ -112,7 +112,7 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
     ? (
         await db.query(
           `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.status, ai.bank_lifecycle_status, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint,
-                  ai.content_origin, ai.calibration_confidence, ai.bank_item_id, qi.provenance, qi.retired_at, qi.current_version_id
+                  ai.content_origin, ai.calibration_confidence, ai.bank_item_id, ai.usage_eligibility, ai.exam_alignment, ai.validated_difficulty, qi.provenance, qi.retired_at, qi.current_version_id
              FROM approved_items ai LEFT JOIN question_bank_items qi ON qi.id = ai.bank_item_id
             WHERE ai.learning_objective_id = ANY($1::uuid[])`,
           [objectiveIds]
@@ -160,6 +160,9 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
       isCurrentVersion: isCurrent,
       retired: !!r.retired_at,
       calibrationConfidence: (r.calibration_confidence ?? null) as CalibrationConfidence | null,
+      usage: r.usage_eligibility ?? null,
+      alignment: r.exam_alignment ?? null,
+      validatedDifficulty: r.validated_difficulty ?? null,
     });
     // Same basis as the catalogue readiness: the largest item of the objective decides its marks per position.
     maxMarks[r.learning_objective_id] = Math.max(maxMarks[r.learning_objective_id] ?? 0, marks);

@@ -31,6 +31,8 @@ import { effectiveConfigFor, raiseConsumptionAlerts } from './runtime-settings.s
 import type { EffectiveFactoryConfig } from './runtime-settings';
 import { candidateToContent, type GeneratedCandidate, type GenerationContext } from './prompts';
 import { addRequestCounters, cellSpecFor, claimNextRequest, completeRequest, deferRequest, enqueueGaps, reclaimExpiredLeases, releaseRequest, type GenerationRequest } from './queue.service';
+import { GENERATED_DEFAULT_ALIGNMENT, GENERATED_DEFAULT_USAGE } from './quality';
+import { difficultyPlan } from './demand';
 import { judgeValidatorVerdict, runDeterministicValidation, type CellSpec, type ExistingItemText, type ValidationIssue } from './validation';
 
 export type RunStatus = 'COMPLETED' | 'STOPPED_BUDGET' | 'STOPPED_RESERVE' | 'STOPPED_RATE_LIMIT' | 'STOPPED_MAX_PER_RUN' | 'STOPPED_DEADLINE' | 'FAILED' | 'SKIPPED_DISABLED' | 'SKIPPED_LOCKED';
@@ -72,6 +74,14 @@ export interface FactoryRunResult {
 const ZERO = (): RunCounters => ({ aiCalls: 0, inputTokens: 0, outputTokens: 0, costUSD: 0, candidates: 0, validated: 0, accepted: 0, rejected: 0, repaired: 0, reviewRequired: 0, promoted: 0, rateLimitEvents: 0 });
 const STOP_STATUS: Record<Exclude<BudgetStop, null>, RunStatus> = { DISABLED: 'SKIPPED_DISABLED', HARD_LIMIT: 'STOPPED_BUDGET', DAILY_BUDGET: 'STOPPED_BUDGET', MAX_PER_RUN: 'STOPPED_MAX_PER_RUN', AI_RESERVE: 'STOPPED_RESERVE' };
 const shortHash = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 10);
+
+/** At most this many candidates per AI generation call (larger requests are chunked). */
+export const GENERATION_CHUNK = 5;
+
+/** A validated generated candidate enters PILOT as EXAM_STYLE, practice-side uses only, until a human certifies it. */
+async function markPilotQuality(versionId: string): Promise<void> {
+  await db.query(`UPDATE approved_items SET usage_eligibility = $2, exam_alignment = $3 WHERE id = $1 AND (exam_alignment IS NULL OR exam_alignment = 'PRACTICE')`, [versionId, [...GENERATED_DEFAULT_USAGE], GENERATED_DEFAULT_ALIGNMENT]);
+}
 
 /** Factory AI calls already made today (UTC), across every run. */
 export async function factoryCallsToday(): Promise<number> {
@@ -188,11 +198,30 @@ interface CandidateOutcome {
 }
 
 /** Validates one version (deterministic, then the independent validator when needed). Never promotes on doubt. */
-async function validateVersion(ctx: RequestContext, versionId: string, content: Record<string, unknown>, verification: { verificationExpression: string | null; evidenceQuote: string | null }, spec: CellSpec, existing: ExistingItemText[]): Promise<{ outcome: 'PASS' | 'REJECTED' | 'REPAIR_REQUIRED' | 'REVIEW_REQUIRED' | 'DEFERRED'; issues: ValidationIssue[]; stop: Spend | null; validator: Record<string, unknown> | null }> {
+async function validateVersion(ctx: RequestContext, versionId: string, content: Record<string, unknown>, verification: { verificationExpression: string | null; evidenceQuote: string | null }, spec: CellSpec, existing: ExistingItemText[], requirement: string | null = null): Promise<{ outcome: 'PASS' | 'REJECTED' | 'REPAIR_REQUIRED' | 'REVIEW_REQUIRED' | 'DEFERRED'; issues: ValidationIssue[]; stop: Spend | null; validator: Record<string, unknown> | null }> {
   await transitionVersion({ versionId, to: 'VALIDATING', reason: 'VALIDATION_STARTED', actor: { kind: 'SYSTEM' }, runId: ctx.runId });
   const det = runDeterministicValidation(content, spec, verification, existing);
+  const declaredDifficulty = typeof (content as any).difficulty === 'number' ? (content as any).difficulty : undefined;
+  if (det.outcome === 'PASS' && det.content) {
+    // V2: a deterministically verified item still gets ONE light independent check (objective alignment,
+    // difficulty plausibility, ambiguity) -- the verified key keeps precedence; findings reach the reviewer.
+    if (canSpend(ctx) === 'OK') {
+      const { verdict, usage } = await ctx.ai.validate(det.content, false, requirement);
+      await spend(ctx, usage);
+      if (verdict) {
+        const judged = judgeValidatorVerdict(verdict, det.content.correctAnswer, spec, true, { declaredDifficulty, deterministicKey: true });
+        const outcome = judged.outcome === 'ESCALATE' ? 'PASS' : judged.outcome;
+        const validator = { model: usage.model, escalated: false, verdict, role: 'ALIGNMENT_CHECK' };
+        await recordValidationReport(versionId, { stage: 'DETERMINISTIC+ALIGNMENT', outcome, issues: [...det.issues, ...judged.issues], deterministicallyVerified: det.deterministicallyVerified, validator, verification });
+        return { outcome, issues: [...det.issues, ...judged.issues], stop: null, validator };
+      }
+    }
+    const issues = [...det.issues, { stage: 'AI_VALIDATOR' as const, code: 'ALIGNMENT_CHECK_NOT_RUN', severity: 'WARN' as const }];
+    await recordValidationReport(versionId, { stage: 'DETERMINISTIC', outcome: 'PASS', issues, deterministicallyVerified: det.deterministicallyVerified, verification });
+    return { outcome: 'PASS', issues, stop: null, validator: null };
+  }
   if (det.outcome !== 'NEEDS_AI_VALIDATION') {
-    const outcome = det.outcome === 'PASS' ? 'PASS' : det.outcome;
+    const outcome = det.outcome;
     await recordValidationReport(versionId, { stage: 'DETERMINISTIC', outcome, issues: det.issues, deterministicallyVerified: det.deterministicallyVerified, verification });
     return { outcome, issues: det.issues, stop: null, validator: null };
   }
@@ -204,7 +233,7 @@ async function validateVersion(ctx: RequestContext, versionId: string, content: 
       await recordValidationReport(versionId, { stage: 'AI_VALIDATOR', outcome: 'DEFERRED', reason: allowed, issues: det.issues, verification });
       return { outcome: 'DEFERRED', issues: det.issues, stop: allowed, validator: null };
     }
-    const { verdict, usage } = await ctx.ai.validate(det.content!, escalated);
+    const { verdict, usage } = await ctx.ai.validate(det.content!, escalated, requirement);
     const s = await spend(ctx, usage);
     if (!verdict) {
       if (s === 'RATE_LIMIT') {
@@ -215,7 +244,7 @@ async function validateVersion(ctx: RequestContext, versionId: string, content: 
       await recordValidationReport(versionId, { stage: 'AI_VALIDATOR', outcome: 'VALIDATOR_UNAVAILABLE', errorCode: usage.errorCode, model: usage.model, verification });
       return { outcome: 'REVIEW_REQUIRED', issues: [{ stage: 'AI_VALIDATOR', code: 'VALIDATOR_UNAVAILABLE', severity: 'REVIEW', detail: usage.errorCode ?? undefined }], stop: null, validator: null };
     }
-    const judged = judgeValidatorVerdict(verdict, det.content!.correctAnswer, spec, escalated);
+    const judged = judgeValidatorVerdict(verdict, det.content!.correctAnswer, spec, escalated, { declaredDifficulty });
     if (judged.outcome === 'ESCALATE' && !escalated) {
       escalated = true;
       continue;
@@ -227,8 +256,10 @@ async function validateVersion(ctx: RequestContext, versionId: string, content: 
   }
 }
 
-async function processCandidate(ctx: RequestContext, req: GenerationRequest, inputs: VersionHealthInputs, gctx: GenerationContext, candidate: GeneratedCandidate, existing: ExistingItemText[]): Promise<CandidateOutcome> {
-  const spec = gctx.spec;
+async function processCandidate(ctx: RequestContext, req: GenerationRequest, inputs: VersionHealthInputs, gctx: GenerationContext, candidate: GeneratedCandidate, existing: ExistingItemText[], targetDifficulty?: number): Promise<CandidateOutcome> {
+  // V2 demand batch: each candidate is validated against ITS planned difficulty.
+  const spec = targetDifficulty ? { ...gctx.spec, targetDifficulty } : gctx.spec;
+  const requirement = `${gctx.objectiveCode}: ${gctx.objectiveDescription}`;
   const cell = inputs.cells.find((c) => c.cellKey === req.cellKey)!;
   const itemKey = `qb.${cell.objectiveCode}.${shortHash(`${candidate.question}|${ctx.runId}|${req.id}`)}`;
   const toVersion = (c: GeneratedCandidate) => {
@@ -255,7 +286,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
   }
   ctx.counters.candidates += 1;
   let versionId = created.versionId;
-  let v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing);
+  let v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement);
   let repaired = false;
   if (v.outcome === 'DEFERRED') return { final: 'DEFERRED', repaired, stop: v.stop };
 
@@ -278,7 +309,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
       return { final: 'REJECTED', repaired: false, stop: null };
     }
     repaired = true;
-    v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing);
+    v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement);
     if (v.outcome === 'DEFERRED') return { final: 'DEFERRED', repaired: true, stop: v.stop };
     // One repair only: a repaired version that still needs repair is rejected.
     if (v.outcome === 'REPAIR_REQUIRED') v = { ...v, outcome: 'REJECTED' };
@@ -287,6 +318,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
   if (v.outcome === 'PASS') {
     await transitionVersion({ versionId, to: 'VALIDATED', reason: 'VALIDATION_PASSED', actor: { kind: 'SYSTEM' }, runId: ctx.runId, detail: { validator: v.validator ? 'AI_INDEPENDENT' : 'DETERMINISTIC' } });
     await transitionVersion({ versionId, to: 'PILOT', reason: 'PILOT_ENTRY', actor: { kind: 'SYSTEM' }, runId: ctx.runId });
+    await markPilotQuality(versionId);
     ctx.counters.validated += 1;
     ctx.counters.promoted += 1;
     existing.push({ versionId, question: String(current.content.question), stimulusText: (current.content.stimulus as any)?.text ?? null });
@@ -305,28 +337,49 @@ async function processRequest(ctx: RequestContext, req: GenerationRequest): Prom
     return null;
   }
   const spec = cellSpecFor(cell, inputs);
-  const gctx = await generationContext(inputs, req, spec);
-  const allowed = canSpend(ctx);
-  if (allowed !== 'OK') {
-    await releaseRequest(req.id, ctx.leaseOwner, `BUDGET:${allowed}`);
-    return allowed;
-  }
-  const { candidates, usage } = await ctx.ai.generate(gctx);
-  const s = await spend(ctx, usage);
-  await addRequestCounters(req.id, { provider: usage.provider, model: usage.model, runId: ctx.runId });
-  if (s === 'RATE_LIMIT') {
-    await deferRequest(req.id, ctx.leaseOwner, `RATE_LIMIT:${usage.errorCode ?? ''}`);
-    return 'RATE_LIMIT';
-  }
-  if (candidates.length === 0) {
-    await deferRequest(req.id, ctx.leaseOwner, `NO_CANDIDATES:${usage.errorCode ?? 'EMPTY'}`);
-    return null;
-  }
+  const baseCtx = await generationContext(inputs, req, spec);
+  // V2: a demand batch carries a difficulty mix; generation runs in chunks of at most 5 items per AI call,
+  // each chunk budget-checked (a large request never becomes one unbounded call).
+  const plan = difficultyPlan(req.generationParams.difficultyMix ?? {}, req.requestedCount);
+  const hasMix = !!req.generationParams.difficultyMix;
   const existing: ExistingItemText[] = inputs.texts.filter((t) => t.learningObjectiveId === cell.learningObjectiveId).map((t) => ({ versionId: t.versionId, question: t.question, stimulusText: t.stimulusText }));
   let stop: Spend | null = null;
-  for (const candidate of candidates) {
-    if (stop) break;
-    const out = await processCandidate(ctx, req, inputs, gctx, candidate, existing);
+  let produced = 0;
+  for (let offset = 0; offset < req.requestedCount && !stop; offset += GENERATION_CHUNK) {
+    const chunk = Math.min(GENERATION_CHUNK, req.requestedCount - offset);
+    const chunkPlan = hasMix ? plan.slice(offset, offset + chunk) : null;
+    const gctx = { ...baseCtx, count: chunk, difficultyPlan: chunkPlan, avoidStems: existing.map((e) => e.question) };
+    const allowed = canSpend(ctx);
+    if (allowed !== 'OK') {
+      if (produced === 0) {
+        await releaseRequest(req.id, ctx.leaseOwner, `BUDGET:${allowed}`);
+        return allowed;
+      }
+      stop = allowed;
+      break;
+    }
+    const { candidates, usage } = await ctx.ai.generate(gctx);
+    const s = await spend(ctx, usage);
+    await addRequestCounters(req.id, { provider: usage.provider, model: usage.model, runId: ctx.runId });
+    if (s === 'RATE_LIMIT') {
+      if (produced === 0) {
+        await deferRequest(req.id, ctx.leaseOwner, `RATE_LIMIT:${usage.errorCode ?? ''}`);
+        return 'RATE_LIMIT';
+      }
+      stop = 'RATE_LIMIT';
+      break;
+    }
+    if (candidates.length === 0) {
+      if (produced === 0 && offset + chunk >= req.requestedCount) {
+        await deferRequest(req.id, ctx.leaseOwner, `NO_CANDIDATES:${usage.errorCode ?? 'EMPTY'}`);
+        return null;
+      }
+      continue;
+    }
+    for (const [i, candidate] of candidates.entries()) {
+      if (stop) break;
+      produced += 1;
+      const out = await processCandidate(ctx, req, inputs, gctx, candidate, existing, chunkPlan?.[i]);
     await addRequestCounters(req.id, {
       candidates: 1,
       accepted: out.final === 'PILOT' ? 1 : 0,
@@ -337,8 +390,9 @@ async function processRequest(ctx: RequestContext, req: GenerationRequest): Prom
     if (out.final === 'PILOT') ctx.counters.accepted += 1;
     else if (out.final === 'REJECTED') ctx.counters.rejected += 1;
     else if (out.final !== 'DEFERRED') ctx.counters.reviewRequired += 1;
-    if (out.repaired) ctx.counters.repaired += 1;
-    stop = out.stop;
+      if (out.repaired) ctx.counters.repaired += 1;
+      stop = out.stop;
+    }
   }
   await completeRequest(req.id, ctx.leaseOwner);
   return stop;
@@ -364,11 +418,12 @@ async function resumeDeferredValidations(ctx: RequestContext, versionIds: string
     const spec = cellSpecFor(cell, inputs);
     const existing = inputs.texts.filter((t) => t.learningObjectiveId === cell.learningObjectiveId && t.versionId !== r.id).map((t) => ({ versionId: t.versionId, question: t.question, stimulusText: t.stimulusText }));
     const verification = r.validation_report?.verification ?? { verificationExpression: null, evidenceQuote: null };
-    const v = await validateVersion(ctx, r.id, r.content, verification, spec, existing);
+    const v = await validateVersion(ctx, r.id, r.content, verification, spec, existing, `${cell.objectiveCode}: ${cell.objectiveDescription ?? ''}`);
     if (v.outcome === 'DEFERRED') return v.stop;
     if (v.outcome === 'PASS') {
       await transitionVersion({ versionId: r.id, to: 'VALIDATED', reason: 'VALIDATION_PASSED', actor: { kind: 'SYSTEM' }, runId: ctx.runId });
       await transitionVersion({ versionId: r.id, to: 'PILOT', reason: 'PILOT_ENTRY', actor: { kind: 'SYSTEM' }, runId: ctx.runId });
+      await markPilotQuality(r.id);
       ctx.counters.validated += 1;
       ctx.counters.promoted += 1;
       ctx.counters.accepted += 1;

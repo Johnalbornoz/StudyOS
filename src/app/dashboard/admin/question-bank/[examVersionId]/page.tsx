@@ -9,6 +9,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { AdminSubNav } from '../../AdminSubNav';
 import { Table, TD, ROW, YesNo, CellState, LENGTH_BASIS_LABEL, cellLabel } from '../ui';
 import { RefreshHealthButton, GenerateSmallBatchButton } from '../BankActions';
+import { GenerateDemandButton } from '../DemandActions';
+import { InventoryStatus, DIFFICULTY_LABEL, pct } from '../ui';
+import { loadVersionHealthInputs } from '@/lib/exam-core/question-bank/health.service';
+import { versionDemand } from '@/lib/exam-core/question-bank/demand.service';
 
 /** Drill-down of one exam version: readiness with its reasons, then every blueprint cell (gap view). */
 export default async function QuestionBankExamPage({ params }: { params: Promise<{ examVersionId: string }> }) {
@@ -30,6 +34,10 @@ export default async function QuestionBankExamPage({ params }: { params: Promise
   const batch = cfg ? (cfg.demoMode ? Math.min(5, cfg.maxBatch) : cfg.maxBatch) : 0;
   const snap = detail.snapshot;
   const canGenerate = !!cfg?.enabled && detail.generation.supported;
+  // Demand-driven inventory (Question Bank V2): read-only aggregates from real Students.
+  const demandInputs = await loadVersionHealthInputs(examVersionId);
+  const demand = demandInputs ? await versionDemand(demandInputs).catch(() => null) : null;
+  const demandRows = demand ? [...demand.cells].sort((a, b) => ({ RED: 0, YELLOW: 1, GREEN: 2 } as const)[a.status] - ({ RED: 0, YELLOW: 1, GREEN: 2 } as const)[b.status] || b.deficit - a.deficit) : [];
   const sections = snap ? [...new Set(snap.cells.map((c) => c.componentName))] : [];
   const gates = snap
     ? [
@@ -55,6 +63,31 @@ export default async function QuestionBankExamPage({ params }: { params: Promise
         {cfg?.enabled && cfg.demoMode && <div style={{ color: 'var(--text-muted)' }}>Modo Demo activo: puedes pedir preguntas para cualquier celda; cada pregunta se valida y entra en piloto.</div>}
         {snap && <div style={{ color: 'var(--text-muted)' }}>Calculado {new Date(snap.computedAt).toLocaleString('es')} · contenido oficial: {Math.round((snap.summary.officialContentCoverage ?? 0) * 100)}%</div>}
       </section>
+
+      {demand && (
+        <section style={{ marginBottom: 'var(--space-6)' }} aria-labelledby="demand-title">
+          <h2 id="demand-title" style={{ fontSize: 15, marginBottom: 'var(--space-2)' }}>Demanda e inventario (próximos {demand.policy.horizonDays} días)</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 0 }}>
+            {demand.studentsPreparing} estudiante(s) preparan este examen. Inventario requerido = exposiciones esperadas ÷ {demand.policy.targetMaxStudentsPerQuestion} estudiantes por pregunta. Es una estimación operativa, no una cifra exacta.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
+            {demandRows.map((c) => (
+              <article key={c.cellKey} className="card" style={{ padding: 'var(--space-3)', fontSize: 13 }}>
+                <strong style={{ fontSize: 14 }}>{(c.conceptNames[0] ?? c.objectiveDescription ?? c.objectiveCode).split(':')[0]}</strong>
+                <div style={{ color: 'var(--text-muted)' }}>{c.componentName} · {c.objectiveCode}</div>
+                <div style={{ marginTop: 6 }}>Estudiantes trabajando: <strong>{c.studentsInProcess}</strong>{c.studentsRetentionDue ? ` · repaso pendiente ${c.studentsRetentionDue}` : ''}{c.studentsAssigned ? ` · asignado ${c.studentsAssigned}` : ''}</div>
+                <div>Preguntas requeridas: <strong>{c.requiredUnique}</strong> · aprobadas disponibles: <strong>{c.approved}</strong> · déficit: <strong>{c.deficit}</strong></div>
+                <div style={{ fontFamily: 'ui-monospace, monospace', margin: '4px 0' }}>
+                  {(['LOW', 'MEDIUM', 'HIGH'] as const).map((b) => <div key={b}>{DIFFICULTY_LABEL[b].padEnd(6, ' ')} {c.approvedByBand[b]} / {c.requiredByBand[b]}</div>)}
+                </div>
+                <div>Repetición esperada: {pct(c.expectedRepeatRate)} · cobertura: {c.estimatedDaysOfCoverage === null ? 'sin demanda' : `${c.estimatedDaysOfCoverage} días`}</div>
+                <div style={{ margin: '6px 0' }}><InventoryStatus status={c.status} />{c.recommendation.inPipeline ? <span style={{ color: 'var(--text-muted)' }}> · {c.recommendation.inPipeline} en preparación o revisión</span> : null}</div>
+                {canGenerate && cfg && c.recommendation.generate > 0 && <GenerateDemandButton examVersionId={examVersionId} cellKey={c.cellKey} mix={c.recommendation.mix} maxBatch={cfg.maxBatch} />}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {!snap ? (
         <p>Sin instantánea de salud. Usa «Recalcular salud».</p>

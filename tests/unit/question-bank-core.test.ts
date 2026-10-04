@@ -92,12 +92,13 @@ describe('eligibility: practice may use PILOT, mocks never do, retired never', (
   });
   it('legacy PUBLISHED rows without a lifecycle behave as ACTIVE (no regression of existing mocks)', () => {
     expect(effectiveLifecycle({ lifecycle: null, status: 'PUBLISHED' })).toBe('ACTIVE');
-    expect(lifecycleSqlFor('REDUCED_MOCK')).toBe("(ai.bank_lifecycle_status IS NULL OR ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE'))");
+    expect(lifecycleSqlFor('REDUCED_MOCK')).toBe("((ai.bank_lifecycle_status IS NULL OR ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE')) AND (ai.usage_eligibility IS NULL OR 'REDUCED_MOCK' = ANY(ai.usage_eligibility)) AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL')))");
     expect(lifecycleSqlFor('PRACTICE')).toContain("'PILOT'");
   });
   it('the mock form query of the instance service applies the policy (PILOT excluded from Mock / Challenge)', () => {
     const svc = readFileSync(join(ROOT, 'src/lib/exam-core/exam-instance.service.ts'), 'utf8');
-    expect(svc).toMatch(/lifecycleSqlFor\(mode === 'PRACTICE' \? 'PRACTICE' : 'REDUCED_MOCK'\)/);
+    expect(svc).toMatch(/const use = mode === 'PRACTICE' \? 'PRACTICE' : fullLength \? 'FULL_MOCK' : 'REDUCED_MOCK'/);
+    expect(svc).toMatch(/lifecycleSqlFor\(use\)/);
   });
 });
 

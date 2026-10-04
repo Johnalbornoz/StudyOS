@@ -49,6 +49,10 @@ export interface BankItemFact {
   isCurrentVersion: boolean;
   retired: boolean;
   calibrationConfidence: CalibrationConfidence | null;
+  /** V2 quality metadata (NULL / absent = legacy row = every use). */
+  usage?: readonly string[] | null;
+  alignment?: string | null;
+  validatedDifficulty?: number | null;
 }
 
 export interface QueueFact {

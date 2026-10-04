@@ -27,8 +27,10 @@ export const maxDuration = 300;
 const Body = z.strictObject({
   examVersionId: z.string().uuid(),
   cellKey: z.string().min(3).max(400),
-  count: z.number().int().min(1).max(10),
+  count: z.number().int().min(1).max(25),
   idempotencyKey: z.string().regex(/^[A-Za-z0-9._:-]{8,80}$/).optional(),
+  /** V2 demand-driven batch: generate this difficulty mix (from the inventory recommendation). */
+  difficultyMix: z.strictObject({ LOW: z.number().int().min(0).max(25), MEDIUM: z.number().int().min(0).max(25), HIGH: z.number().int().min(0).max(25) }).optional(),
 });
 
 async function handlePOST(request: NextRequest) {
@@ -46,7 +48,9 @@ async function handlePOST(request: NextRequest) {
   if (!adapterFor(inputs.meta.family).generation.supported) return NextResponse.json({ error: 'GENERATION_NOT_SUPPORTED_FOR_FAMILY' }, { status: 409 });
   if (!inputs.cells.some((c) => c.cellKey === parsed.data.cellKey)) return NextResponse.json({ error: 'CELL_NOT_FOUND' }, { status: 404 });
 
-  const { request: req, created } = await enqueueManual({ inputs, cellKey: parsed.data.cellKey, count: parsed.data.count, requestedBy: guard.admin.actor.id, idempotencyKey: parsed.data.idempotencyKey ?? null, maxBatch: cfg.maxBatch });
+  const mix = parsed.data.difficultyMix;
+  if (mix && mix.LOW + mix.MEDIUM + mix.HIGH !== parsed.data.count) return NextResponse.json({ error: 'MIX_DOES_NOT_MATCH_COUNT' }, { status: 400 });
+  const { request: req, created } = await enqueueManual({ inputs, cellKey: parsed.data.cellKey, count: parsed.data.count, requestedBy: guard.admin.actor.id, idempotencyKey: parsed.data.idempotencyKey ?? null, maxBatch: cfg.maxBatch, difficultyMix: mix ?? null, demand: mix ? { source: 'ADMIN_DEMAND_CTA' } : null });
   if (req.status === 'PENDING') {
     after(() =>
       runWithAiMetrics('ADMIN question-bank generate', async () => {

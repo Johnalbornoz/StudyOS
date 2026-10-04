@@ -16,7 +16,7 @@ import type { CellSpec } from './validation';
 import type { BlueprintCell } from './cells';
 import type { VersionHealthInputs } from './health.service';
 
-export type RequestReason = 'EMPTY' | 'FORM_BLOCKER' | 'LOW_VARIETY' | 'LOW_CALIBRATION' | 'MISCONCEPTION_COVERAGE' | 'MANUAL_SMALL_BATCH';
+export type RequestReason = 'EMPTY' | 'FORM_BLOCKER' | 'LOW_VARIETY' | 'LOW_CALIBRATION' | 'MISCONCEPTION_COVERAGE' | 'MANUAL_SMALL_BATCH' | 'DEMAND_SHORTAGE';
 
 export interface GenerationRequest {
   id: string;
@@ -28,7 +28,7 @@ export interface GenerationRequest {
   requestedCount: number;
   priority: 'P0' | 'P1' | 'P2' | 'P3';
   reason: RequestReason;
-  generationParams: { spec?: CellSpec; aggregate?: { summary: string; sampleSize: number; misconceptionCode?: string } | null };
+  generationParams: { spec?: CellSpec; aggregate?: { summary: string; sampleSize: number; misconceptionCode?: string } | null; difficultyMix?: Partial<Record<'LOW' | 'MEDIUM' | 'HIGH', number>>; demand?: Record<string, unknown> };
   language: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   attemptCount: number;
@@ -61,6 +61,9 @@ const toRequest = (r: any): GenerationRequest => ({
   repaired: r.repaired,
   reviewRequired: r.review_required,
 });
+
+/** DB bound on one request (chunked into AI calls of 5 by the factory). */
+export const MAX_REQUEST_COUNT = 25;
 
 export function reasonForPriority(priority: CellHealth['priority']): RequestReason {
   return priority === 'P0' ? 'EMPTY' : priority === 'P1' ? 'FORM_BLOCKER' : priority === 'P2' ? 'LOW_VARIETY' : 'LOW_CALIBRATION';
@@ -132,16 +135,28 @@ export async function enqueueGaps(inputs: VersionHealthInputs, health: BankHealt
 }
 
 /** A controlled small batch for ONE cell, requested by an authorised admin. Returns the open request (existing or new). */
-export async function enqueueManual(p: { inputs: VersionHealthInputs; cellKey: string; count: number; requestedBy: string; idempotencyKey: string | null; maxBatch: number }): Promise<{ request: GenerationRequest; created: boolean }> {
+export async function enqueueManual(p: {
+  inputs: VersionHealthInputs;
+  cellKey: string;
+  count: number;
+  requestedBy: string;
+  idempotencyKey: string | null;
+  maxBatch: number;
+  /** V2 demand-driven request: the difficulty mix to generate and the demand that justified it. */
+  difficultyMix?: Partial<Record<'LOW' | 'MEDIUM' | 'HIGH', number>> | null;
+  demand?: Record<string, unknown> | null;
+}): Promise<{ request: GenerationRequest; created: boolean }> {
   const cell = p.inputs.cells.find((c) => c.cellKey === p.cellKey);
   if (!cell) throw new Error('CELL_NOT_FOUND');
-  const count = Math.max(1, Math.min(p.maxBatch, p.count));
+  const count = Math.max(1, Math.min(p.maxBatch, MAX_REQUEST_COUNT, p.count));
   const spec = cellSpecFor(cell, p.inputs);
+  const reason: RequestReason = p.difficultyMix ? 'DEMAND_SHORTAGE' : 'MANUAL_SMALL_BATCH';
+  const params = { spec, ...(p.difficultyMix ? { difficultyMix: p.difficultyMix } : {}), ...(p.demand ? { demand: p.demand } : {}) };
   const ins = await db.query(
     `INSERT INTO question_bank_generation_requests (exam_version_id, blueprint_id, cell_key, learning_objective_id, assessment_component_id, requested_count, priority, reason, generation_params, language, requested_by, idempotency_key)
-     VALUES ($1, $2, $3, $4, $5, $6, 'P1', 'MANUAL_SMALL_BATCH', $7, $8, $9, $10)
+     VALUES ($1, $2, $3, $4, $5, $6, 'P1', $11, $7, $8, $9, $10)
      ON CONFLICT DO NOTHING RETURNING *`,
-    [p.inputs.meta.examVersionId, p.inputs.meta.blueprintId, cell.cellKey, cell.learningObjectiveId, cell.componentId, count, JSON.stringify({ spec }), spec.language, p.requestedBy, p.idempotencyKey]
+    [p.inputs.meta.examVersionId, p.inputs.meta.blueprintId, cell.cellKey, cell.learningObjectiveId, cell.componentId, count, JSON.stringify(params), spec.language, p.requestedBy, p.idempotencyKey, reason]
   );
   if (ins.rows[0]) return { request: toRequest(ins.rows[0]), created: true };
   const open = await db.query(

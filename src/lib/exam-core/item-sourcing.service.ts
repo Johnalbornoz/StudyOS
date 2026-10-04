@@ -22,6 +22,7 @@ import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/studen
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { ComponentDefinitionSchema, componentDefinitionForAI } from './component-definition';
 import { examItemFromApproved, examItemFromGenerated, validateExamItemStructure, type ExamItem } from './items';
+import { lifecycleSqlFor } from './question-bank/lifecycle';
 
 export type ItemUnavailableReason = 'NO_CURRICULUM_MAPPING' | 'CONCEPT_NOT_MATCHED' | 'NO_ITEM_GENERATED';
 
@@ -44,14 +45,21 @@ export async function selectApprovedBankItem(params: {
   target: ItemSourcingTarget;
   excludeApprovedItemIds: string[];
   preferredStimulusKey: string | null;
+  /** Question Bank V2 exposure memory: prefer items this Student has not seen, then lower global exposure. */
+  studentId?: string;
 }): Promise<ExamItem | null> {
+  // Practice-usable versions only (usage eligibility + lifecycle; a legacy row keeps every use).
   const result = await db.query(
-    `SELECT id, learning_objective_id, content FROM approved_items
-      WHERE learning_objective_id = $1 AND status = 'PUBLISHED'
-        AND ($2::text IS NULL OR question_type = $2)
-        AND NOT (id = ANY($3::uuid[]))`,
-    [params.target.learningObjectiveId, params.target.questionType, params.excludeApprovedItemIds]
+    `SELECT ai.id, ai.learning_objective_id, ai.content,
+            EXISTS (SELECT 1 FROM exam_item_usage u WHERE u.approved_item_id = ai.id AND u.student_id = $4::uuid) AS seen,
+            (SELECT count(DISTINCT u.student_id) FROM exam_item_usage u WHERE u.approved_item_id = ai.id)::int AS exposure
+       FROM approved_items ai
+      WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE')}
+        AND ($2::text IS NULL OR ai.question_type = $2)
+        AND NOT (ai.id = ANY($3::uuid[]))`,
+    [params.target.learningObjectiveId, params.target.questionType, params.excludeApprovedItemIds, params.studentId ?? null]
   );
+  const seen = new Map(result.rows.map((r: any) => [r.id as string, { seen: !!r.seen, exposure: Number(r.exposure ?? 0) }]));
   const candidates = result.rows
     .map((row: any) => examItemFromApproved(row))
     .filter((item): item is ExamItem => item !== null)
@@ -62,6 +70,10 @@ export async function selectApprovedBankItem(params: {
     const aKeep = params.preferredStimulusKey !== null && a.exam.stimulus?.key === params.preferredStimulusKey ? 0 : 1;
     const bKeep = params.preferredStimulusKey !== null && b.exam.stimulus?.key === params.preferredStimulusKey ? 0 : 1;
     if (aKeep !== bKeep) return aKeep - bKeep;
+    const sa = seen.get(a.id)!;
+    const sb = seen.get(b.id)!;
+    if (sa.seen !== sb.seen) return Number(sa.seen) - Number(sb.seen);
+    if (sa.exposure !== sb.exposure) return sa.exposure - sb.exposure;
     return variantRank(params.attemptId, a.id).localeCompare(variantRank(params.attemptId, b.id));
   });
   return candidates[0];
@@ -136,6 +148,16 @@ export async function sourceExamItem(params: {
   language: string;
 }): Promise<ItemSourcingResult> {
   const banked = await selectApprovedBankItem(params);
-  if (banked) return { outcome: 'READY', item: banked };
+  if (banked) {
+    // Exposure memory: this Student has now seen this version (best effort; never blocks delivery).
+    await db
+      .query(
+        `INSERT INTO exam_item_usage (student_id, approved_item_id, semantic_fingerprint, template_fingerprint, delivery_use)
+         SELECT $1, ai.id, ai.semantic_fingerprint, ai.template_fingerprint, 'PRACTICE' FROM approved_items ai WHERE ai.id = $2`,
+        [params.studentId, banked.exam.approvedItemId]
+      )
+      .catch(() => undefined);
+    return { outcome: 'READY', item: banked };
+  }
   return generateValidatedItem({ studentId: params.studentId, target: params.target, language: params.language });
 }

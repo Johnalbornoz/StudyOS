@@ -90,6 +90,15 @@ export default async function QuestionBankOperationsPage() {
       </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+        <StatCard label="Generadas (total)" value={ops.exposure.generated} />
+        <StatCard label="Aprobadas por revisión" value={ops.exposure.approved} />
+        <StatCard label="Rechazadas (revisión o validación)" value={ops.exposure.rejected} />
+        <StatCard label="Pendientes de revisión" value={ops.exposure.pendingReview} tone={ops.exposure.pendingReview ? 'warn' : 'default'} />
+        <StatCard label="Inventario activo" value={ops.exposure.activeInventory} />
+        <StatCard label={`Preguntas reutilizadas (${ops.exposure.horizonDays} d)`} value={ops.exposure.questionsReused} />
+        <StatCard label="Exposiciones promedio por pregunta" value={Math.round(ops.exposure.averageExposuresPerQuestion * 10) / 10} />
+        <StatCard label="Tasa de repetición (%)" value={Math.round(ops.exposure.repeatRate * 100)} tone={ops.exposure.repeatRate > 0.2 ? 'warn' : 'default'} />
+        <StatCard label="Tasa de colisión (%)" value={Math.round(ops.exposure.collisionRate * 100)} />
         <StatCard label="Pendientes" value={ops.queue.pending} />
         <StatCard label="En curso" value={ops.queue.running} />
         <StatCard label="Fallidas" value={ops.queue.failed} tone={ops.queue.failed ? 'warn' : 'default'} />

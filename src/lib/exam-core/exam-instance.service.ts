@@ -29,7 +29,9 @@ import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt 
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { examItemFromApproved, examItemMarks } from './items';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
-import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel } from './form-assembly';
+import { DEFAULT_REUSE_POLICY } from './question-bank/policy';
+import { DEFAULT_DEMAND_POLICY } from './question-bank/demand';
+import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel, type StudentUsage } from './form-assembly';
 import type { ExamItemState } from './navigation-state';
 import type { TimingMode } from '@/lib/simulation/types';
 
@@ -131,11 +133,16 @@ async function formInputs(examVersionId: string, componentIds: string[], student
     difficultyRange: t.difficultyMin !== null && t.difficultyMax !== null ? { min: t.difficultyMin, max: t.difficultyMax } : null,
   }));
   const objectiveIds = [...new Set(positions.map((p) => p.learningObjectiveId).filter((x): x is string => !!x))];
+  // A mock whose positions reach every selected component's published item count is a FULL-length form:
+  // it draws only items certified for FULL_MOCK; otherwise a Mock / Challenge draws REDUCED_MOCK items.
+  const officialCounts = await db.query(`SELECT id, definition->>'officialItemCount' AS n FROM assessment_components WHERE id = ANY($1::uuid[])`, [[...only]]);
+  const fullLength = officialCounts.rows.length > 0 && officialCounts.rows.every((r: any) => r.n !== null && positions.filter((p) => p.assessmentComponentId === r.id).length >= Number(r.n));
+  const use = mode === 'PRACTICE' ? 'PRACTICE' : fullLength ? 'FULL_MOCK' : 'REDUCED_MOCK';
   // Question Bank content-use policy (server-authoritative): practice may use PILOT items, a Mock / Challenge
   // only ACTIVE / CALIBRATED ones -- a mock is never filled with weaker content to reach its length.
   const poolRows = await db.query(
     `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
-       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(mode === 'PRACTICE' ? 'PRACTICE' : 'REDUCED_MOCK')}`,
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use)}`,
     [objectiveIds]
   );
   const pool: PoolItem[] = [];
@@ -155,11 +162,27 @@ async function formInputs(examVersionId: string, componentIds: string[], student
       contentOrigin: r.content_origin ?? item.exam.contentOrigin ?? null,
     });
   }
-  const usageRows = await db.query(`SELECT approved_item_id, template_fingerprint FROM exam_item_usage WHERE student_id = $1`, [studentId]);
-  const usage = { approvedItemIds: new Set<string>(), templateFingerprints: new Set<string>() };
+  // Exposure memory (Question Bank V2): what THIS Student has seen (recently = within the reuse cooldown),
+  // how many Students have seen each candidate, and how many OTHER Students met it in the planning horizon.
+  const usageRows = await db.query(`SELECT approved_item_id, template_fingerprint, used_at > now() - ($2::int * interval '1 day') AS recent FROM exam_item_usage WHERE student_id = $1`, [studentId, DEFAULT_REUSE_POLICY.studentExposureCooldownDays]);
+  const usage: StudentUsage = { approvedItemIds: new Set<string>(), templateFingerprints: new Set<string>(), recentApprovedItemIds: new Set<string>(), globalExposure: new Map(), peerExposure: new Map(), exposureCeiling: DEFAULT_DEMAND_POLICY.targetMaxStudentsPerQuestion };
   for (const u of usageRows.rows) {
     if (u.approved_item_id) usage.approvedItemIds.add(u.approved_item_id);
+    if (u.approved_item_id && u.recent) usage.recentApprovedItemIds!.add(u.approved_item_id);
     if (u.template_fingerprint) usage.templateFingerprints.add(u.template_fingerprint);
+  }
+  const poolIds = pool.map((p) => p.id);
+  if (poolIds.length) {
+    const exposure = await db.query(
+      `SELECT approved_item_id, count(DISTINCT student_id)::int AS students,
+              count(DISTINCT student_id) FILTER (WHERE student_id <> $2 AND used_at > now() - ($3::int * interval '1 day'))::int AS peers
+         FROM exam_item_usage WHERE approved_item_id = ANY($1::uuid[]) GROUP BY 1`,
+      [poolIds, studentId, DEFAULT_DEMAND_POLICY.horizonDays]
+    );
+    for (const e of exposure.rows) {
+      usage.globalExposure!.set(e.approved_item_id, e.students);
+      usage.peerExposure!.set(e.approved_item_id, e.peers);
+    }
   }
   const officialMarksByComponent: Record<string, number | null> = {};
   const officialItemsByComponent: Record<string, number | null> = {};
@@ -168,20 +191,20 @@ async function formInputs(examVersionId: string, componentIds: string[], student
     officialMarksByComponent[row.id] = row.max_marks === null ? null : Number(row.max_marks);
     officialItemsByComponent[row.id] = row.item_count === null ? null : Number(row.item_count);
   }
-  return { positions, pool, usage, officialMarksByComponent, officialItemsByComponent };
+  return { positions, pool, usage, officialMarksByComponent, officialItemsByComponent, use };
 }
 
 async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
-  const inputs = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode);
+  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode);
   const form = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
   if (!form.slots.some((s) => s.approvedItemId) && instance.mode !== 'PRACTICE') throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
   await db.query(`UPDATE exam_instances SET form = $2, form_frozen_at = now(), difficulty_index = $3 WHERE id = $1`, [instance.id, JSON.stringify(form), form.difficultyIndex]);
   const used = form.slots.filter((s) => s.approvedItemId).map((s) => s.approvedItemId!);
   if (used.length > 0) {
     await db.query(
-      `INSERT INTO exam_item_usage (student_id, approved_item_id, semantic_fingerprint, template_fingerprint, exam_instance_id)
-       SELECT $1, ai.id, ai.semantic_fingerprint, ai.template_fingerprint, $2 FROM approved_items ai WHERE ai.id = ANY($3::uuid[])`,
-      [instance.studentId, instance.id, used]
+      `INSERT INTO exam_item_usage (student_id, approved_item_id, semantic_fingerprint, template_fingerprint, exam_instance_id, delivery_use)
+       SELECT $1, ai.id, ai.semantic_fingerprint, ai.template_fingerprint, $2, $4 FROM approved_items ai WHERE ai.id = ANY($3::uuid[])`,
+      [instance.studentId, instance.id, used, use]
     );
   }
   return form;

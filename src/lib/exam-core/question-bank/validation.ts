@@ -23,9 +23,10 @@ import { itemFingerprints, normalizeForFingerprint } from '../fingerprints';
 import { gradeMath } from '../math/math-engine';
 import { DEFAULT_NOVELTY_POLICY, type NoveltyPolicy } from './policy';
 
-export type IssueSeverity = 'REJECT' | 'REPAIR' | 'REVIEW';
+/** WARN: shown to the human reviewer, never blocks (V2). */
+export type IssueSeverity = 'REJECT' | 'REPAIR' | 'REVIEW' | 'WARN';
 export interface ValidationIssue {
-  stage: 'SCHEMA' | 'BLUEPRINT' | 'ANSWER' | 'DISTRACTORS' | 'NOVELTY' | 'PROVENANCE' | 'AI_VALIDATOR';
+  stage: 'SCHEMA' | 'BLUEPRINT' | 'ANSWER' | 'DISTRACTORS' | 'NOVELTY' | 'PROVENANCE' | 'AI_VALIDATOR' | 'CONTENT';
   code: string;
   severity: IssueSeverity;
   detail?: string;
@@ -225,6 +226,36 @@ export function validateNovelty(c: ApprovedItemContent, existing: ExistingItemTe
   return dedupe(out);
 }
 
+// Generation artifacts only (case-sensitive: Spanish "todo", "null" in prose etc. are legitimate words).
+const MALFORMED = /\bundefined\b|\[object Object\]|\bNaN\b|\{\{|\}\}|<\/?(div|span|p|br|b|i|strong|em|ul|li)\b[^>]*>|[Ll]orem ipsum/;
+
+/** Malformed content: placeholders, template / markup leftovers, unbalanced inline math. */
+export function validateWellFormed(c: ApprovedItemContent): ValidationIssue[] {
+  const out: ValidationIssue[] = [];
+  const texts = [c.question, c.explanation, c.stimulus?.text ?? '', ...(c.options ?? []).map((o) => o.text)];
+  if (texts.some((t) => MALFORMED.test(t))) out.push({ stage: 'CONTENT', code: 'MALFORMED_CONTENT', severity: 'REPAIR' });
+  if (texts.some((t) => ((t.match(/(?<!\\)\$/g) ?? []).length % 2) === 1)) out.push({ stage: 'CONTENT', code: 'UNBALANCED_MATH_DELIMITERS', severity: 'REPAIR' });
+  if (!c.explanation || c.explanation.trim().length < 15) out.push({ stage: 'CONTENT', code: 'EXPLANATION_MISSING', severity: 'REPAIR' });
+  return out;
+}
+
+const numericForm = (s: string) => s.replace(/[−–—]/g, '-').replace(/\s+/g, '').replace(/,/g, '.').replace(/[$]/g, '').toLowerCase();
+
+/** Answer / explanation consistency (deterministic, conservative): the explanation should arrive at the key. */
+export function validateExplanationConsistency(c: ApprovedItemContent, spec: Pick<CellSpec, 'domain'>): ValidationIssue[] {
+  const key = (c.options ?? []).find((o) => o.id === c.correctAnswer);
+  if (!key || !c.explanation) return [];
+  const exp = numericForm(c.explanation);
+  if (spec.domain === 'MATH' && /^-?\d+([./]\d+)?$/.test(numericForm(key.text))) {
+    return exp.includes(numericForm(key.text)) ? [] : [{ stage: 'CONTENT', code: 'EXPLANATION_DOES_NOT_STATE_KEY', severity: 'WARN', detail: key.text }];
+  }
+  // Verbal key: the explanation should share some content with the key option.
+  const kt = tokens(key.text);
+  const et = tokens(c.explanation);
+  const shared = [...kt].filter((t) => et.has(t)).length;
+  return kt.size >= 3 && shared === 0 ? [{ stage: 'CONTENT', code: 'EXPLANATION_UNRELATED_TO_KEY', severity: 'WARN' }] : [];
+}
+
 export function validateProvenanceClaims(c: ApprovedItemContent): ValidationIssue[] {
   const text = [c.question, c.explanation, ...(c.options ?? []).map((o) => o.text), c.stimulus?.title ?? ''].join(' ');
   return OFFICIAL_CLAIM.test(text) ? [{ stage: 'PROVENANCE', code: 'CLAIMS_OFFICIAL', severity: 'REJECT' }] : [];
@@ -253,9 +284,9 @@ export function runDeterministicValidation(raw: unknown, spec: CellSpec, verific
   if (!schema.content) return { outcome: 'REJECTED', issues: schema.issues, deterministicallyVerified: false, content: null };
   const c = schema.content;
   const answer = validateAnswer(c, spec, verification);
-  const issues = [...schema.issues, ...validateBlueprint(c, spec), ...answer.issues, ...validateDistractors(c), ...validateNovelty(c, existing, novelty), ...validateProvenanceClaims(c)];
+  const issues = [...schema.issues, ...validateBlueprint(c, spec), ...answer.issues, ...validateDistractors(c), ...validateNovelty(c, existing, novelty), ...validateProvenanceClaims(c), ...validateWellFormed(c), ...validateExplanationConsistency(c, spec)];
   const outcome: ValidationOutcome = worst(issues) ?? (answer.needsAiValidation ? 'NEEDS_AI_VALIDATION' : 'PASS');
-  return { outcome, issues, deterministicallyVerified: answer.deterministicallyVerified && issues.length === 0, content: c };
+  return { outcome, issues, deterministicallyVerified: answer.deterministicallyVerified && issues.filter((i) => i.severity !== 'WARN').length === 0, content: c };
 }
 
 export function worst(issues: ValidationIssue[]): 'REJECTED' | 'REPAIR_REQUIRED' | 'REVIEW_REQUIRED' | null {
@@ -279,21 +310,38 @@ export interface ValidatorVerdict {
   requiresOutsideInformation: boolean;
   /** Distractors that are not plausible (trivially wrong). */
   implausibleDistractorIds: string[];
+  /** V2: the item actually assesses the stated requirement (concept / objective alignment). */
+  assessesRequirement?: boolean;
+  /** V2: the validator's own difficulty estimate (plausibility of the declared difficulty). */
+  estimatedDifficulty?: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export type ValidatorJudgement = { outcome: 'PASS' | 'REPAIR_REQUIRED' | 'REVIEW_REQUIRED' | 'ESCALATE'; issues: ValidationIssue[] };
 
 export const VALIDATOR_MIN_CONFIDENCE = 0.75;
 
-export function judgeValidatorVerdict(v: ValidatorVerdict, keyOptionId: string, spec: Pick<CellSpec, 'stimulusOnlyEvidence'>, escalated: boolean): ValidatorJudgement {
+export function judgeValidatorVerdict(v: ValidatorVerdict, keyOptionId: string, spec: Pick<CellSpec, 'stimulusOnlyEvidence'>, escalated: boolean, extra: { declaredDifficulty?: number; deterministicKey?: boolean } = {}): ValidatorJudgement {
   const issues: ValidationIssue[] = [];
   const add = (code: string, severity: IssueSeverity, detail?: string) => issues.push({ stage: 'AI_VALIDATOR', code, severity, detail });
+  if (v.assessesRequirement === false) add('DOES_NOT_ASSESS_REQUIREMENT', 'REPAIR');
+  if (v.estimatedDifficulty && extra.declaredDifficulty !== undefined) {
+    const order = ['LOW', 'MEDIUM', 'HIGH'];
+    const declared = extra.declaredDifficulty <= 2 ? 'LOW' : extra.declaredDifficulty === 3 ? 'MEDIUM' : 'HIGH';
+    if (Math.abs(order.indexOf(v.estimatedDifficulty) - order.indexOf(declared)) >= 2) add('DIFFICULTY_IMPLAUSIBLE', 'WARN', `${declared} vs ${v.estimatedDifficulty}`);
+  }
+  // The exam math engine already verified the key: a disagreeing validator is shown to the reviewer, it does not override.
+  if (extra.deterministicKey) {
+    if (v.selectedOptionId !== keyOptionId) add('VALIDATOR_DISAGREES_WITH_VERIFIED_KEY', 'WARN', `${v.selectedOptionId} vs ${keyOptionId}`);
+    if (v.alternativeDefensibleOptionIds.filter((id) => id !== v.selectedOptionId).length) add('AMBIGUOUS_MULTIPLE_DEFENSIBLE', 'REPAIR');
+    const w0 = worst(issues);
+    return { outcome: (w0 === 'REJECTED' ? 'REPAIR_REQUIRED' : w0 ?? 'PASS') as ValidatorJudgement['outcome'], issues };
+  }
   const alternatives = v.alternativeDefensibleOptionIds.filter((id) => id !== v.selectedOptionId);
   if (alternatives.length) add('AMBIGUOUS_MULTIPLE_DEFENSIBLE', 'REPAIR', alternatives.join(','));
   if (v.requiresOutsideInformation && spec.stimulusOnlyEvidence) add('REQUIRES_INFORMATION_NOT_IN_STIMULUS', 'REPAIR');
   if (v.implausibleDistractorIds.length >= 2) add('IMPLAUSIBLE_DISTRACTORS', 'REPAIR', v.implausibleDistractorIds.join(','));
   if (v.confidence < VALIDATOR_MIN_CONFIDENCE) {
-    if (!escalated && issues.length === 0) return { outcome: 'ESCALATE', issues: [{ stage: 'AI_VALIDATOR', code: 'LOW_CONFIDENCE', severity: 'REVIEW', detail: v.confidence.toFixed(2) }] };
+    if (!escalated && issues.every((i) => i.severity === 'WARN')) return { outcome: 'ESCALATE', issues: [...issues, { stage: 'AI_VALIDATOR', code: 'LOW_CONFIDENCE', severity: 'REVIEW', detail: v.confidence.toFixed(2) }] };
     add('LOW_CONFIDENCE', 'REVIEW', v.confidence.toFixed(2));
   }
   if (v.selectedOptionId !== keyOptionId) add('VALIDATOR_DISAGREES_WITH_KEY', v.confidence >= VALIDATOR_MIN_CONFIDENCE ? 'REPAIR' : 'REVIEW', `${v.selectedOptionId} vs ${keyOptionId}`);

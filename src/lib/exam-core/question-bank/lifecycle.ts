@@ -13,6 +13,9 @@
  * invalid transition fails twice, never silently.
  */
 
+import { MOCK_USAGES, usageAllows, type UsageType } from './quality';
+import type { Provenance } from './policy';
+
 export const LIFECYCLE_STATES = [
   'DRAFT_AI', 'VALIDATING', 'VALIDATED', 'PILOT', 'CALIBRATED', 'ACTIVE',
   'REPAIR_REQUIRED', 'REVIEW_REQUIRED', 'REJECTED', 'SUSPENDED', 'RETIRED', 'SUPERSEDED',
@@ -139,6 +142,10 @@ export const DEFAULT_ELIGIBILITY: EligibilityPolicy = {
 
 export interface EligibilityFacts {
   lifecycle: LifecycleState | null;
+  /** V2 quality metadata (NULL = legacy row = every use). */
+  usage?: readonly string[] | null;
+  alignment?: string | null;
+  provenance?: string;
   /** approved_items.status (legacy rows without a lifecycle). */
   status: string;
   isCurrentVersion: boolean;
@@ -152,11 +159,16 @@ export function effectiveLifecycle(f: Pick<EligibilityFacts, 'lifecycle' | 'stat
   return f.status === 'PUBLISHED' ? 'ACTIVE' : null;
 }
 
+/** The usage type a delivery use requires (V2 usage eligibility). */
+export const USAGE_FOR_USE: Record<DeliveryUse, UsageType> = { PRACTICE: 'PRACTICE', REDUCED_MOCK: 'REDUCED_MOCK', FULL_MOCK: 'FULL_MOCK', FULL_MOCK_CALIBRATED: 'FULL_MOCK' };
+
 export function isEligible(f: EligibilityFacts, use: DeliveryUse, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY): boolean {
   if (f.retired || !f.isCurrentVersion || f.status !== 'PUBLISHED') return false;
   const state = effectiveLifecycle(f);
   if (!state || !policy.states[use].includes(state)) return false;
   if (use === 'FULL_MOCK_CALIBRATED' && !confidenceAtLeast(f.calibrationConfidence, policy.calibratedMinConfidence)) return false;
+  // V2: the version must be eligible for this use (a PRACTICE-only item never enters a mock).
+  if (!usageAllows(f.usage ?? null, f.alignment ?? null, (f.provenance ?? 'FIXTURE') as Provenance, USAGE_FOR_USE[use])) return false;
   return true;
 }
 
@@ -165,5 +177,8 @@ export function lifecycleSqlFor(use: DeliveryUse, policy: EligibilityPolicy = DE
   const states = policy.states[use].map((s) => `'${s}'`).join(', ');
   // A legacy row without a lifecycle is the grandfathered ACTIVE state (only when ACTIVE is allowed).
   const legacy = policy.states[use].includes('ACTIVE') ? 'ai.bank_lifecycle_status IS NULL OR ' : '';
-  return `(${legacy}ai.bank_lifecycle_status IN (${states}))`;
+  // V2 usage eligibility + exam alignment (NULL = legacy row = every use). Constants only: no input reaches this SQL.
+  const usage = USAGE_FOR_USE[use];
+  const alignment = MOCK_USAGES.includes(usage) ? ` AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL'))` : '';
+  return `((${legacy}ai.bank_lifecycle_status IN (${states})) AND (ai.usage_eligibility IS NULL OR '${usage}' = ANY(ai.usage_eligibility))${alignment})`;
 }

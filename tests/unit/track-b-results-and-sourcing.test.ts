@@ -95,8 +95,10 @@ describe('approved bank sourcing', () => {
     await selectApprovedBankItem({ attemptId: 'a1', target: { learningObjectiveId: 'lo-1', questionType: 'multiple_choice', difficultyRange: null }, excludeApprovedItemIds: ['used'], preferredStimulusKey: null });
     const [sql, params] = queryMock.mock.calls[0];
     expect(sql).toMatch(/status = 'PUBLISHED'/);
-    expect(sql).toMatch(/NOT \(id = ANY/);
-    expect(params).toEqual(['lo-1', 'multiple_choice', ['used']]);
+    expect(sql).toMatch(/NOT \(ai\.id = ANY/);
+    // Question Bank V2: practice-usable versions only, unseen-first for the Student (null = no Student context).
+    expect(sql).toMatch(/'PRACTICE' = ANY\(ai\.usage_eligibility\)/);
+    expect(params).toEqual(['lo-1', 'multiple_choice', ['used'], null]);
   });
 
   it('variant selection is deterministic per attempt and differs across attempts', async () => {

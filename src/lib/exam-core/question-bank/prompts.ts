@@ -40,6 +40,8 @@ export interface GenerationContext {
   /** Normalized stems already in the bank: the candidate must differ. */
   avoidStems: string[];
   aggregate?: AggregateSignal | null;
+  /** V2 demand-driven batch: the target difficulty (1..5) of each item, in order. */
+  difficultyPlan?: number[] | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -143,7 +145,9 @@ export function generationUserPrompt(ctx: GenerationContext): string {
     `REQUIREMENT (${ctx.objectiveCode}): ${ctx.objectiveDescription}`,
     `ITEMS TO WRITE: ${ctx.count} (reason: ${ctx.reason})`,
     `FORMAT: single best answer, ${s.optionCount} options${s.questionType ? `, question type ${s.questionType}` : ''}`,
-    `DIFFICULTY (1-5): ${s.difficultyRange ? `${s.difficultyRange.min}-${s.difficultyRange.max}` : s.targetDifficulty}`,
+    ctx.difficultyPlan?.length
+      ? `DIFFICULTY (1-5) of each item, in this order: ${ctx.difficultyPlan.join(', ')} (1-2 low, 3 medium, 4-5 high)`
+      : `DIFFICULTY (1-5): ${s.difficultyRange ? `${s.difficultyRange.min}-${s.difficultyRange.max}` : s.targetDifficulty}`,
     s.cognitiveDemand ? `COGNITIVE DEMAND: ${s.cognitiveDemand}` : '',
     `PASSAGE: ${s.stimulusRequired ? 'required -- one new passage shared by all items of this batch' : 'not needed'}`,
     `DOMAIN: ${s.domain === 'MATH' ? 'mathematics (verificationExpression REQUIRED)' : 'verbal / reading (evidenceQuote required when there is a passage)'}`,
@@ -244,13 +248,15 @@ export const VALIDATOR_SCHEMA = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['selectedOptionId', 'confidence', 'alternativeDefensibleOptionIds', 'requiresOutsideInformation', 'implausibleDistractorIds', 'note'],
+    required: ['selectedOptionId', 'confidence', 'alternativeDefensibleOptionIds', 'requiresOutsideInformation', 'implausibleDistractorIds', 'assessesRequirement', 'estimatedDifficulty', 'note'],
     properties: {
       selectedOptionId: { type: 'string' },
       confidence: { type: 'number' },
       alternativeDefensibleOptionIds: { type: 'array', items: { type: 'string' } },
       requiresOutsideInformation: { type: 'boolean' },
       implausibleDistractorIds: { type: 'array', items: { type: 'string' } },
+      assessesRequirement: { type: 'boolean' },
+      estimatedDifficulty: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH'] },
       note: { type: 'string' },
     },
   },
@@ -262,13 +268,16 @@ export function validatorSystemPrompt(): string {
     'Solve it carefully and pick the single best option. Then report honestly:',
     '- any OTHER option a careful, well-prepared reader could defend as correct;',
     '- whether answering needs information that the passage does not give (when there is a passage);',
-    '- distractors that are not plausible at all (trivially wrong for any reader).',
+    '- distractors that are not plausible at all (trivially wrong for any reader);',
+    '- whether the item really assesses the stated REQUIREMENT (when one is given);',
+    '- how hard it is for the target Student: LOW, MEDIUM or HIGH.',
     'confidence is your probability (0-1) that your chosen option is the unique best answer. Return JSON only.',
   ].join('\n');
 }
 
-export function validatorUserPrompt(content: Pick<ApprovedItemContent, 'question' | 'options' | 'stimulus' | 'language'>): string {
+export function validatorUserPrompt(content: Pick<ApprovedItemContent, 'question' | 'options' | 'stimulus' | 'language'>, requirement?: string | null): string {
   return [
+    requirement ? `REQUIREMENT the item should assess: ${requirement}` : '',
     content.stimulus ? `PASSAGE${content.stimulus.title ? ` (${content.stimulus.title})` : ''}:\n${content.stimulus.text}` : '',
     `QUESTION (${content.language}): ${content.question}`,
     `OPTIONS:\n${(content.options ?? []).map((o) => `${o.id}) ${o.text}`).join('\n')}`,
@@ -290,6 +299,8 @@ export function parseValidatorOutput(parsed: any, optionIds: string[]): { value:
       alternativeDefensibleOptionIds: Array.isArray(parsed?.alternativeDefensibleOptionIds) ? parsed.alternativeDefensibleOptionIds.filter(ok) : [],
       requiresOutsideInformation: parsed?.requiresOutsideInformation === true,
       implausibleDistractorIds: Array.isArray(parsed?.implausibleDistractorIds) ? parsed.implausibleDistractorIds.filter(ok) : [],
+      assessesRequirement: typeof parsed?.assessesRequirement === 'boolean' ? parsed.assessesRequirement : undefined,
+      estimatedDifficulty: ['LOW', 'MEDIUM', 'HIGH'].includes(parsed?.estimatedDifficulty) ? parsed.estimatedDifficulty : undefined,
     },
     errors,
   };

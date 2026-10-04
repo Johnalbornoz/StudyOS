@@ -27,7 +27,8 @@ export default async function QuestionBankHealthPage() {
       <PageHeader title="Salud del banco de preguntas" subtitle="Qué puede construir StudyUs para cada examen: práctica, simulacro reducido y simulacro completo, calculado ensamblando formularios reales." />
       <AdminSubNav active="question-bank" />
       <p style={{ marginBottom: 'var(--space-4)' }}>
-        <Link href="/dashboard/admin/question-bank/operations" className="btn btn-ghost">Operaciones de generación →</Link>
+        <Link href="/dashboard/admin/question-bank/operations" className="btn btn-ghost">Operaciones de generación →</Link>{' '}
+        <Link href="/dashboard/admin/question-bank/review" className="btn btn-ghost">Revisión académica →</Link>
       </p>
       {rows.length === 0 ? (
         <EmptyState title="No hay versiones de examen publicadas." />

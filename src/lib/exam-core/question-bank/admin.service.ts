@@ -9,6 +9,7 @@ import { adapterFor } from './adapters';
 import { listBankVersions, latestSnapshots, bankVersionMeta, type StoredSnapshot } from './health.service';
 import { listRequests } from './queue.service';
 import { budgetSnapshot, listRuns } from './factory.service';
+import { exposureMetrics } from './review-admin.service';
 import type { CellHealthState } from './health';
 
 export interface BankOverviewRow {
@@ -111,7 +112,7 @@ export async function bankHealthDetail(examVersionId: string) {
 }
 
 export async function operationsView() {
-  const [requests, runs, budget, recent] = await Promise.all([
+  const [requests, runs, budget, recent, exposure] = await Promise.all([
     listRequests(100),
     listRuns(30),
     budgetSnapshot(),
@@ -123,9 +124,11 @@ export async function operationsView() {
         WHERE qi.provenance = 'STUDYUS_GENERATED' AND qi.generation_request_id IS NOT NULL
         ORDER BY ai.created_at DESC LIMIT 100`
     ),
+    exposureMetrics(),
   ]);
   const byStatus = (s: string) => requests.filter((r) => r.status === s).length;
   return {
+    exposure,
     budget,
     queue: { pending: byStatus('PENDING'), running: byStatus('RUNNING'), completed: byStatus('COMPLETED'), failed: byStatus('FAILED'), cancelled: byStatus('CANCELLED') },
     requests,

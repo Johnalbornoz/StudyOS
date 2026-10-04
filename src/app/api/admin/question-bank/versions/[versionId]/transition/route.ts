@@ -26,6 +26,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   if (!z.string().uuid().safeParse(versionId).success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT', message: parsed.error.issues[0]?.message }, { status: 400 });
+  // ACTIVE is a certification: it goes through the human review (Approve), never a bare transition.
+  if (parsed.data.to === 'ACTIVE') return NextResponse.json({ error: 'USE_REVIEW_TO_APPROVE' }, { status: 409 });
   try {
     const r = await transitionVersion({ versionId, to: parsed.data.to, reason: `ADMIN:${parsed.data.reason}`, actor: { kind: 'ADMIN', userId: guard.admin.actor.id } });
     return NextResponse.json({ success: true, data: r });

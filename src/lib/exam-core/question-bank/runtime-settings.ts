@@ -28,8 +28,8 @@ type Env = Record<string, string | undefined>;
 
 export const FACTORY_SETTINGS_KEY = 'question_bank.factory';
 
-/** Demo Mode ceilings: product-sized, still bounded (DB allows 1..10 candidates per request). */
-export const DEMO_MAX_BATCH = 10;
+/** Demo Mode ceilings: product-sized, still bounded (DB allows 1..25 candidates per request, generated in AI calls of 5). */
+export const DEMO_MAX_BATCH = 25;
 /** Runaway-loop protection per run in Demo Mode (calls). */
 export const DEMO_RUNAWAY_MAX_PER_RUN = 60;
 

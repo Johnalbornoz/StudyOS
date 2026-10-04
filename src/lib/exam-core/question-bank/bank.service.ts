@@ -190,6 +190,15 @@ export async function createNextVersion(p: { bankItemId: string; version: NewVer
     const author = p.actor.kind === 'ADMIN' ? p.actor.userId : await systemAuthorId(c);
     const prev = item.rows[0].current_version_id as string | null;
     const versionId = await insertVersion(c, p.bankItemId, n, p.version, p.lifecycle, author, prev);
+    // V2: a new version inherits the quality metadata of the version it replaces (usage, alignment,
+    // validated difficulty) -- a correction changes content, not where the item may be used.
+    if (prev) {
+      await c.query(
+        `UPDATE approved_items n SET usage_eligibility = o.usage_eligibility, exam_alignment = o.exam_alignment, validated_difficulty = o.validated_difficulty
+           FROM approved_items o WHERE n.id = $1 AND o.id = $2`,
+        [versionId, prev]
+      );
+    }
     await audit(c, p.bankItemId, versionId, null, p.lifecycle, p.reason, p.actor, p.runId ?? null, { versionNumber: n, supersedes: prev });
     if (p.replaceNow && prev) {
       await transitionVersion({ versionId: prev, to: 'SUPERSEDED', reason: `REPLACED_BY_V${n}`, actor: p.actor, runId: p.runId }, c);
