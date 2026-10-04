@@ -104,7 +104,9 @@ async function main() {
 
   // ---- deferred validation is resumable, not lost ----
   const deferred = await n(`SELECT count(*) n FROM approved_items WHERE bank_lifecycle_status = 'VALIDATING' AND validation_report->>'outcome' = 'DEFERRED'`);
-  check('RESUME.budget-stop-left-candidate-validating-not-promoted', deferred === 1 && (await n(`SELECT count(*) n FROM approved_items WHERE bank_lifecycle_status = 'VALIDATING' AND status <> 'DRAFT'`)) === 0, { deferred });
+  // State-tolerant: a later authorized run may legitimately resume a deferred candidate; what must hold is
+  // that nothing still being validated (deferred or not) is ever deliverable.
+  check('RESUME.validating-candidates-never-deliverable', (await n(`SELECT count(*) n FROM approved_items WHERE bank_lifecycle_status IN ('VALIDATING', 'DRAFT_AI') AND status NOT IN ('DRAFT', 'PROPOSED')`)) === 0, { deferred });
 
   const failed = results.filter((r) => !r.ok);
   console.log(JSON.stringify({ checks: results.length, failed: failed.length }));

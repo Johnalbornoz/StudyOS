@@ -137,6 +137,13 @@ ROLLBACK;"
 EXPECT "rollback statements apply" "$($PG_BIN/psql -h "$SOCKDIR" -U postgres -v ON_ERROR_STOP=1 -tAq -c "$ROLLBACK_SQL" "$DBNAME" | grep -c rollback-ok)" "1"
 EXPECT "tables intact after ROLLBACK" "$(Q "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('question_bank_items','question_bank_lifecycle_events','question_bank_cell_targets','question_bank_generation_requests','question_bank_factory_runs','question_bank_health_snapshots','question_bank_item_stats')")" "7"
 
+echo "--- [4b] later migrations on top (the code under test reads their columns) ---"
+for f in "$MIGRATIONS_DIR"/*.sql; do
+  [ "$(basename "$f")" \> "$TARGET" ] || continue
+  $PSQL -f "$f" >/dev/null
+  echo "  applied $(basename "$f")"
+done
+
 echo "--- [5/5] factory integration on the ephemeral DB (fake AI, no provider) ---"
 if [ "${CERT_INTEGRATION:-1}" = "1" ]; then
   Q "DELETE FROM exam_attempt_item_responses; DELETE FROM exam_attempts; DELETE FROM student_exam_profiles; DELETE FROM students;" >/dev/null
@@ -179,6 +186,24 @@ if [ "${CERT_SHADOW:-1}" = "1" ]; then
   echo "  shadow: $UP upgrade(s), $DOWN downgrade(s) vs the persisted catalogue readiness"
 else
   echo "  SKIPPED (CERT_SHADOW=0)"
+fi
+
+echo "--- [7] Question Bank V2 refinement (20261028_1000) on the fully configured DB ---"
+if [ "${CERT_SHADOW:-1}" = "1" ] && [ "${CERT_QBV2:-1}" = "1" ]; then
+  V2="20261028_1000_question_bank_quality_exposure_demand.sql"
+  $PG_BIN/psql -h "$SOCKDIR" -U postgres -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS_DIR/$V2" "$SHADOW_DB" >/dev/null
+  EXPECT "20261028_1000 idempotent (re-applied)" "$($PG_BIN/psql -h "$SOCKDIR" -U postgres -tAq -c "SELECT count(*) FROM approved_items WHERE usage_eligibility IS NULL AND bank_item_id IS NOT NULL" "$SHADOW_DB")" "0"
+  REJ() { if $PG_BIN/psql -h "$SOCKDIR" -U postgres -v ON_ERROR_STOP=1 -tAq -c "$2" "$SHADOW_DB" >/dev/null 2>&1; then echo "  FAIL -- accepted: $1"; exit 1; fi; echo "  OK -- rejected: $1"; }
+  REJ "mock usage without mock-ready alignment" "UPDATE approved_items SET exam_alignment = 'EXAM_STYLE' WHERE id = (SELECT id FROM approved_items WHERE 'REDUCED_MOCK' = ANY(usage_eligibility) LIMIT 1)"
+  REJ "OFFICIAL alignment on fixture content" "UPDATE approved_items SET exam_alignment = 'OFFICIAL' WHERE id = (SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' LIMIT 1)"
+  REJ "unknown usage type" "UPDATE approved_items SET usage_eligibility = ARRAY['EVERYTHING'] WHERE id = (SELECT id FROM approved_items LIMIT 1)"
+  REJ "a rejection without notes" "INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by) SELECT ai.id, ai.bank_item_id, 'REJECTED', (SELECT id FROM users LIMIT 1) FROM approved_items ai LIMIT 1"
+  (cd "$REPO_ROOT" && TRACK_B_ALLOW_EPHEMERAL="$FP" NODE_ENV=production npx tsx scripts/operations/qb-v2-integration.ts) | tee "$WORKDIR/qbv2.log" | grep -v '^\[' || true
+  cp "$WORKDIR/qbv2.log" "${CERT_OUT_DIR:-$WORKDIR}/qb-v2-integration.log" 2>/dev/null || true
+  if ! grep -q '"failed":0' "$WORKDIR/qbv2.log"; then echo "  FAIL -- V2 integration checks failed"; exit 1; fi
+  echo "  OK -- V2 integration: $(grep -o '"checks":[0-9]*' "$WORKDIR/qbv2.log") checks, 0 failed"
+else
+  echo "  SKIPPED"
 fi
 
 echo "=== QUESTION_BANK_MIGRATION_CERT = PASS ==="

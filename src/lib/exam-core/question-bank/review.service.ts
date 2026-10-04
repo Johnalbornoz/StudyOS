@@ -78,8 +78,15 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
         await transitionVersion({ versionId: p.versionId, to: row.provenance === 'STUDYUS_GENERATED' ? 'PILOT' : 'ACTIVE', reason: 'REVIEW:CLEARED', actor }, c);
       }
     } else if (decision === 'REJECTED') {
+      // Through the governed table: a delivered / piloting version is first held for review, then rejected.
+      if (['PILOT', 'CALIBRATED', 'ACTIVE', 'SUSPENDED'].includes(row.bank_lifecycle_status)) {
+        await transitionVersion({ versionId: p.versionId, to: 'REVIEW_REQUIRED', reason: 'REVIEW:HOLD_BEFORE_REJECTION', actor }, c);
+      }
       to = 'REJECTED';
     } else {
+      if (row.bank_lifecycle_status === 'VALIDATED') {
+        await transitionVersion({ versionId: p.versionId, to: 'PILOT', reason: 'REVIEW:PILOT_BEFORE_CORRECTION', actor }, c);
+      }
       to = 'REVIEW_REQUIRED';
     }
     await transitionVersion({ versionId: p.versionId, to, reason: `REVIEW:${decision}${p.input.notes ? `:${p.input.notes.slice(0, 200)}` : ''}`, actor, detail: { reviewId: ins.rows[0].id, usage: decided.usage, alignment: decided.alignment, validatedDifficulty: p.input.validatedDifficulty } }, c);

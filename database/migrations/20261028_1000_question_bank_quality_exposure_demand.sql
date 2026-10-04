@@ -35,7 +35,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approved_items_usage_check') THEN
     ALTER TABLE public.approved_items ADD CONSTRAINT approved_items_usage_check CHECK (usage_eligibility IS NULL OR (
-      cardinality(usage_eligibility) >= 1 AND usage_eligibility <@ ARRAY['PRACTICE', 'DIAGNOSTIC', 'QUIZ', 'REDUCED_MOCK', 'FULL_MOCK', 'FORMAL_ASSESSMENT']::text[])));
+      cardinality(usage_eligibility) >= 1 AND usage_eligibility <@ ARRAY['PRACTICE', 'DIAGNOSTIC', 'QUIZ', 'REDUCED_MOCK', 'FULL_MOCK', 'FORMAL_ASSESSMENT']::text[]));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approved_items_alignment_check') THEN
     ALTER TABLE public.approved_items ADD CONSTRAINT approved_items_alignment_check CHECK (exam_alignment IS NULL OR exam_alignment IN ('PRACTICE', 'EXAM_STYLE', 'MOCK_READY', 'OFFICIAL'));

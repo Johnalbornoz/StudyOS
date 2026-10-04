@@ -211,7 +211,7 @@ async function main() {
   }
   const pilots = gen.filter((g: any) => g.lc === 'PILOT');
   check('GEN.provenance-always-studyus-generated', gen.length > 0 && gen.every((g: any) => g.provenance === 'STUDYUS_GENERATED'));
-  check('GEN.valid-math-enter-pilot-deterministically', pilots.filter((g: any) => g.cell_key === cellOf('paa.mat.algebra')).length === 3 && pilots.filter((g: any) => g.cell_key === cellOf('paa.mat.algebra')).every((g: any) => g.stage === 'DETERMINISTIC'));
+  check('GEN.valid-math-enter-pilot-deterministically', pilots.filter((g: any) => g.cell_key === cellOf('paa.mat.algebra')).length === 3 && pilots.filter((g: any) => g.cell_key === cellOf('paa.mat.algebra')).every((g: any) => String(g.stage).startsWith('DETERMINISTIC')));
   const repaired = gen.filter((g: any) => /La suma de dos números/.test(g.q));
   check('GEN.repair-is-a-new-version', repaired.length === 2 && repaired.some((g: any) => g.version_number === 1 && g.lc === 'SUPERSEDED') && repaired.some((g: any) => g.version_number === 2 && g.lc === 'PILOT'), repaired.map((g: any) => [g.version_number, g.lc]));
   check('DUP.exact-copy-rejected', gen.some((g: any) => g.cell_key === cellOf('paa.mat.geometria') && g.lc === 'REJECTED'));

@@ -138,7 +138,7 @@ describe('Student exposure memory and cross-Student collision', () => {
   });
   it('exposures are recorded with what they were for; instance + per-position sourcing both record them', () => {
     expect(read('src/lib/exam-core/exam-instance.service.ts')).toMatch(/exam_instance_id, delivery_use\)/);
-    expect(read('src/lib/exam-core/item-sourcing.service.ts')).toMatch(/INSERT INTO exam_item_usage .*delivery_use/s);
+    expect(read('src/lib/exam-core/item-sourcing.service.ts')).toMatch(/INSERT INTO exam_item_usage [\s\S]*delivery_use/);
   });
 });
 
