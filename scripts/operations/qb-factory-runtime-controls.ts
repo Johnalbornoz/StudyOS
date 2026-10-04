@@ -8,6 +8,8 @@
  *   configure-demo    (Preview only) applies the Preview demo configuration through the
  *                                    governed, audited settings service:
  *                                    factory ON, on-demand ON, Demo Mode ON, scheduled OFF.
+ *   demo-run          (DEV only)     ONE real on-demand generation of 5 questions in Demo Mode
+ *                                    (soft budget 1 call) + governance checks; restores settings.
  *   show                             prints the stored + effective settings.
  *
  *   QB_RUNTIME_FP=<fp> npx tsx --env-file=<env> scripts/operations/qb-factory-runtime-controls.ts <mode>
@@ -96,6 +98,48 @@ async function verify() {
   }
 }
 
+/**
+ * DEV only: ONE real on-demand generation of 5 questions in Demo Mode with the soft
+ * budget set to 1 call (proves batch > 3 and a non-blocking soft budget), then checks
+ * governance (validated, never ACTIVE, provenance STUDYUS_GENERATED) and restores settings.
+ */
+async function demoRun() {
+  const { loadVersionHealthInputs, listBankVersions } = await import('@/lib/exam-core/question-bank/health.service');
+  const { enqueueManual } = await import('@/lib/exam-core/question-bank/queue.service');
+  const { runFactory } = await import('@/lib/exam-core/question-bank/factory.service');
+  const { adapterFor } = await import('@/lib/exam-core/question-bank/adapters');
+  const before = (await db.query(`SELECT value, version, updated_by, updated_at FROM platform_settings WHERE key = $1`, [FACTORY_SETTINGS_KEY])).rows[0] ?? null;
+  const actor = await operatorId();
+  try {
+    await updateFactorySettings(actor, { factoryEnabled: true, onDemandEnabled: true, scheduledEnabled: false, demoMode: true, dailySoftBudget: 1 });
+    const cfg = await effectiveConfigFor('MANUAL');
+    const version = (await listBankVersions()).find((v) => v.configKey === (process.env.QB_DEMO_EXAM ?? 'v2.paa'));
+    if (!version) throw new Error('exam version not found');
+    const inputs = (await loadVersionHealthInputs(version.examVersionId))!;
+    if (!adapterFor(inputs.meta.family).generation.supported) throw new Error('family does not support generation');
+    const cell = inputs.cells.find((c) => c.questionType === 'MCQ_SINGLE' || c.questionType === 'MULTIPLE_CHOICE') ?? inputs.cells[0];
+    const { request, created } = await enqueueManual({ inputs, cellKey: cell.cellKey, count: 5, requestedBy: actor, idempotencyKey: `demo-run:${Date.now()}`, maxBatch: cfg.maxBatch });
+    check('5 questions accepted in ONE request (batch above 3)', created && request.requestedCount === 5, `request ${request.id} count ${request.requestedCount}`);
+    const r = await runFactory({ trigger: 'MANUAL', requestedBy: actor, examVersionIds: [version.examVersionId], onlyRequestId: request.id, cfg });
+    console.log(JSON.stringify({ run: r.runId, status: r.status, counters: r.counters, notes: r.notes }));
+    check('soft budget (1 call) did not block the demo run', r.status !== 'STOPPED_BUDGET' && r.counters.aiCalls > 1, `status ${r.status}, calls ${r.counters.aiCalls}`);
+    const items = (
+      await db.query(
+        `SELECT ai.bank_lifecycle_status, ai.status, qi.provenance, ai.validation_report->>'outcome' AS outcome FROM question_bank_items qi JOIN approved_items ai ON ai.bank_item_id = qi.id WHERE qi.generation_request_id = $1`,
+        [request.id]
+      )
+    ).rows;
+    console.log(JSON.stringify({ candidates: items }));
+    check('governance unchanged: every candidate validated, none ACTIVE, provenance STUDYUS_GENERATED', items.length > 0 && items.every((i: any) => i.bank_lifecycle_status !== 'ACTIVE' && i.provenance === 'STUDYUS_GENERATED'), `${items.length} candidate version(s)`);
+    const req = (await db.query(`SELECT status, candidates_created, accepted, rejected, repaired FROM question_bank_generation_requests WHERE id = $1`, [request.id])).rows[0];
+    console.log(JSON.stringify({ request: req }));
+  } finally {
+    if (before) await db.query(`UPDATE platform_settings SET value = $2, version = $3, updated_by = $4, updated_at = $5 WHERE key = $1`, [FACTORY_SETTINGS_KEY, before.value, before.version, before.updated_by, before.updated_at]);
+    else await db.query(`DELETE FROM platform_settings WHERE key = $1`, [FACTORY_SETTINGS_KEY]);
+    console.log(`restored stored settings to ${before ? 'previous value' : 'none (environment default)'}`);
+  }
+}
+
 async function configureDemo() {
   const actor = await operatorId();
   await updateFactorySettings(actor, { factoryEnabled: true, onDemandEnabled: true, demoMode: true, scheduledEnabled: false });
@@ -110,6 +154,9 @@ async function main() {
   if (mode === 'verify') {
     if (fp !== DEV) throw new Error('REFUSING: verify runs on DEV only');
     await verify();
+  } else if (mode === 'demo-run') {
+    if (fp !== DEV) throw new Error('REFUSING: demo-run runs on DEV only');
+    await demoRun();
   } else if (mode === 'configure-demo') {
     if (fp !== PREVIEW) throw new Error('REFUSING: configure-demo runs on Preview only');
     await configureDemo();
