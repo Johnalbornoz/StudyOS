@@ -43,7 +43,9 @@ export type RoleNotificationType =
   | 'COORDINATOR_ASSIGNED'
   | 'COORDINATOR_INVITATION_ACCEPTED'
   | 'CURRICULUM_SUPPLEMENTAL_CONCEPT'
-  | 'CONCEPT_PROPOSAL_CREATED';
+  | 'CONCEPT_PROPOSAL_CREATED'
+  // Platform Admin: AI consumption threshold crossed (informational; never blocks).
+  | 'AI_CONSUMPTION_ALERT';
 
 export type NotificationPayload = Record<string, string | number | null>;
 

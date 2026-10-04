@@ -3,7 +3,8 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requireStudyUSAdmin } from '@/lib/admin/authorization';
 import { bankHealthDetail } from '@/lib/exam-core/question-bank/admin.service';
-import { factoryConfig } from '@/lib/exam-core/question-bank/policy';
+import { effectiveConfigFor } from '@/lib/exam-core/question-bank/runtime-settings.service';
+import type { EffectiveFactoryConfig } from '@/lib/exam-core/question-bank/runtime-settings';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { AdminSubNav } from '../../AdminSubNav';
 import { Table, TD, ROW, YesNo, CellState, LENGTH_BASIS_LABEL, cellLabel } from '../ui';
@@ -19,12 +20,14 @@ export default async function QuestionBankExamPage({ params }: { params: Promise
   if (!/^[0-9a-f-]{36}$/i.test(examVersionId)) notFound();
   const detail = await bankHealthDetail(examVersionId);
   if (!detail) notFound();
-  let cfg: ReturnType<typeof factoryConfig> | null = null;
+  let cfg: EffectiveFactoryConfig | null = null;
   try {
-    cfg = factoryConfig();
+    cfg = await effectiveConfigFor('MANUAL');
   } catch {
     cfg = null;
   }
+  // Demo Mode: every cell of a supported exam may be requested, 5 questions per request (still validated, still PILOT).
+  const batch = cfg ? (cfg.demoMode ? Math.min(5, cfg.maxBatch) : cfg.maxBatch) : 0;
   const snap = detail.snapshot;
   const canGenerate = !!cfg?.enabled && detail.generation.supported;
   const sections = snap ? [...new Set(snap.cells.map((c) => c.componentName))] : [];
@@ -48,7 +51,8 @@ export default async function QuestionBankExamPage({ params }: { params: Promise
       <section className="card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-6)', fontSize: 13.5 }}>
         <div>Generación: {detail.generation.supported ? 'admitida' : 'no admitida'} — {detail.generation.note}</div>
         <div>Unidades: {detail.unitPolicy.mode === 'UNIT' ? `por unidad (estímulo compartido, mínimo ${detail.unitPolicy.minItemsPerUnit} preguntas)` : 'por pregunta'}</div>
-        {!cfg?.enabled && <div style={{ color: 'var(--text-muted)' }}>La fábrica está desactivada en este entorno: solo medición.</div>}
+        {!cfg?.enabled && <div style={{ color: 'var(--text-muted)' }}>La generación bajo demanda está desactivada (Banco de preguntas → Operaciones): solo medición.</div>}
+        {cfg?.enabled && cfg.demoMode && <div style={{ color: 'var(--text-muted)' }}>Modo Demo activo: puedes pedir preguntas para cualquier celda; cada pregunta se valida y entra en piloto.</div>}
         {snap && <div style={{ color: 'var(--text-muted)' }}>Calculado {new Date(snap.computedAt).toLocaleString('es')} · contenido oficial: {Math.round((snap.summary.officialContentCoverage ?? 0) * 100)}%</div>}
       </section>
 
@@ -101,7 +105,7 @@ export default async function QuestionBankExamPage({ params }: { params: Promise
                     <TD>{c.priority}{c.reducedBlocker ? ' · bloquea reducido' : ''}</TD>
                     <TD><CellState state={c.state} /></TD>
                     <TD muted>{c.calibrationConfidence === 'INSUFFICIENT_DATA' ? 'sin datos' : c.calibrationConfidence}</TD>
-                    <TD>{canGenerate && c.generationNeed > 0 && cfg ? <GenerateSmallBatchButton examVersionId={examVersionId} cellKey={c.cellKey} maxBatch={cfg.maxBatch} /> : null}</TD>
+                    <TD>{canGenerate && cfg && (c.generationNeed > 0 || cfg.demoMode) ? <GenerateSmallBatchButton examVersionId={examVersionId} cellKey={c.cellKey} maxBatch={batch} /> : null}</TD>
                   </tr>
                 ))}
               </Table>

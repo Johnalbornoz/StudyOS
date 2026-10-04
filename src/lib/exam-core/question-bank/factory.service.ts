@@ -11,8 +11,10 @@
  *      the next run;
  *   5. recompute health and record the coverage delta.
  *
- * Disabled unless QUESTION_BANK_FACTORY_ENABLED=true. One run at a time
- * (unique RUNNING row). Never called from a Student request.
+ * Availability and consumption controls are the Platform Admin runtime
+ * settings (runtime-settings.ts; the environment is only the bootstrap
+ * default and the emergency kill switch). One run at a time (unique RUNNING
+ * row). Never called from a Student request.
  */
 import { createHash, randomUUID } from 'crypto';
 import { db } from '@/lib/db';
@@ -24,7 +26,9 @@ import { createGeneratedItem, createNextVersion, ensureBankIdentities, recordVal
 import { refreshItemStats } from './calibration.service';
 import type { BankHealth } from './health';
 import { listBankVersions, loadVersionHealthInputs, refreshVersionHealth, type VersionHealthInputs } from './health.service';
-import { budgetStop, factoryConfig, type BudgetState, type BudgetStop, type FactoryConfig } from './policy';
+import { budgetStop, type BudgetState, type BudgetStop, type FactoryConfig } from './policy';
+import { effectiveConfigFor, raiseConsumptionAlerts } from './runtime-settings.service';
+import type { EffectiveFactoryConfig } from './runtime-settings';
 import { candidateToContent, type GeneratedCandidate, type GenerationContext } from './prompts';
 import { addRequestCounters, cellSpecFor, claimNextRequest, completeRequest, deferRequest, enqueueGaps, reclaimExpiredLeases, releaseRequest, type GenerationRequest } from './queue.service';
 import { judgeValidatorVerdict, runDeterministicValidation, type CellSpec, type ExistingItemText, type ValidationIssue } from './validation';
@@ -66,7 +70,7 @@ export interface FactoryRunResult {
 }
 
 const ZERO = (): RunCounters => ({ aiCalls: 0, inputTokens: 0, outputTokens: 0, costUSD: 0, candidates: 0, validated: 0, accepted: 0, rejected: 0, repaired: 0, reviewRequired: 0, promoted: 0, rateLimitEvents: 0 });
-const STOP_STATUS: Record<Exclude<BudgetStop, null>, RunStatus> = { DISABLED: 'SKIPPED_DISABLED', DAILY_BUDGET: 'STOPPED_BUDGET', MAX_PER_RUN: 'STOPPED_MAX_PER_RUN', AI_RESERVE: 'STOPPED_RESERVE' };
+const STOP_STATUS: Record<Exclude<BudgetStop, null>, RunStatus> = { DISABLED: 'SKIPPED_DISABLED', HARD_LIMIT: 'STOPPED_BUDGET', DAILY_BUDGET: 'STOPPED_BUDGET', MAX_PER_RUN: 'STOPPED_MAX_PER_RUN', AI_RESERVE: 'STOPPED_RESERVE' };
 const shortHash = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 10);
 
 /** Factory AI calls already made today (UTC), across every run. */
@@ -88,7 +92,9 @@ export async function platformAiRemaining(): Promise<number | null> {
   }
 }
 
-export async function budgetSnapshot(cfg: FactoryConfig = factoryConfig()): Promise<{ config: Omit<FactoryConfig, 'examConfigKeys'> & { examConfigKeys: string[] }; usedToday: number; platformRemaining: number | null; stop: BudgetStop }> {
+/** Budget state for on-demand use (default: the effective runtime configuration of a MANUAL request). */
+export async function budgetSnapshot(given?: FactoryConfig): Promise<{ config: Omit<FactoryConfig, 'examConfigKeys'> & { examConfigKeys: string[] }; usedToday: number; platformRemaining: number | null; stop: BudgetStop }> {
+  const cfg = given ?? (await effectiveConfigFor('MANUAL'));
   const [usedToday, platformRemaining] = await Promise.all([factoryCallsToday(), platformAiRemaining()]);
   return { config: cfg, usedToday, platformRemaining, stop: budgetStop(cfg, { usedToday, usedThisRun: 0, platformRemaining }) };
 }
@@ -382,17 +388,21 @@ async function resumeDeferredValidations(ctx: RequestContext, versionIds: string
 /* ------------------------------------------------------------------ */
 
 export async function runFactory(opts: { trigger: 'SCHEDULED' | 'MANUAL' | 'CLI'; requestedBy?: string | null; examVersionIds?: string[]; onlyRequestId?: string; ai?: FactoryAI; cfg?: FactoryConfig; skipGapAnalysis?: boolean }): Promise<FactoryRunResult> {
-  const cfg = opts.cfg ?? factoryConfig();
+  const cfg: FactoryConfig = opts.cfg ?? (await effectiveConfigFor(opts.trigger));
+  const disabledNote = (cfg as Partial<EffectiveFactoryConfig>).unavailableReason ?? 'FACTORY_DISABLED';
   const counters = ZERO();
   const notes: string[] = [];
   const [usedToday, platformRemaining] = await Promise.all([factoryCallsToday(), platformAiRemaining()]);
-  const budgetInfo = { dailyBudget: cfg.dailyBudget, maxPerRun: cfg.maxPerRun, minRemainingAiReserve: cfg.minRemainingAiReserve, usedTodayAtStart: usedToday, platformRemainingAtStart: platformRemaining };
+  const budgetInfo = {
+    dailyBudget: cfg.dailyBudget, softBudgetEnforced: cfg.softBudgetEnforced, hardDailyLimit: cfg.hardDailyLimit, maxPerRun: cfg.maxPerRun, maxBatch: cfg.maxBatch,
+    demoMode: (cfg as Partial<EffectiveFactoryConfig>).demoMode ?? false, minRemainingAiReserve: cfg.minRemainingAiReserve, usedTodayAtStart: usedToday, platformRemainingAtStart: platformRemaining,
+  };
   if (!cfg.enabled) {
     const r = await db.query(
       `INSERT INTO question_bank_factory_runs (trigger, status, environment, requested_by, finished_at, budget, notes) VALUES ($1, 'SKIPPED_DISABLED', $2, $3, now(), $4, $5) RETURNING id`,
-      [opts.trigger, process.env.VERCEL_TARGET_ENV ?? process.env.VERCEL_ENV ?? 'local', opts.requestedBy ?? null, JSON.stringify(budgetInfo), JSON.stringify(['QUESTION_BANK_FACTORY_ENABLED is not true'])]
+      [opts.trigger, process.env.VERCEL_TARGET_ENV ?? process.env.VERCEL_ENV ?? 'local', opts.requestedBy ?? null, JSON.stringify(budgetInfo), JSON.stringify([disabledNote])]
     );
-    return { runId: r.rows[0].id, status: 'SKIPPED_DISABLED', counters, requestsProcessed: 0, requestsCreated: 0, coverage: [], notes: ['QUESTION_BANK_FACTORY_ENABLED is not true'] };
+    return { runId: r.rows[0].id, status: 'SKIPPED_DISABLED', counters, requestsProcessed: 0, requestsCreated: 0, coverage: [], notes: [disabledNote] };
   }
   const run = await startRun(opts.trigger, opts.requestedBy ?? null, cfg, budgetInfo);
   if (run.locked) return { runId: run.id, status: 'SKIPPED_LOCKED', counters, requestsProcessed: 0, requestsCreated: 0, coverage: [], notes: ['another factory run is RUNNING'] };
@@ -486,6 +496,8 @@ export async function runFactory(opts: { trigger: 'SCHEDULED' | 'MANUAL' | 'CLI'
         JSON.stringify(notes), status === 'FAILED' ? notes[notes.length - 1] ?? null : null,
       ]
     );
+    // Informational only (50 / 75 / 90 %): raised once per day and threshold, never blocks.
+    if (counters.aiCalls > 0) await raiseConsumptionAlerts();
   }
   return { runId: run.id, status, counters, requestsProcessed, requestsCreated, coverage, notes };
 }

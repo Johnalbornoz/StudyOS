@@ -6,7 +6,7 @@
  * back to make an authorization decision -- audit is a record, not a
  * gate. Never accepts a secret/credential value in any field.
  */
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 
 export type AdminAuditAction =
   | 'INVITE_SENT'
@@ -44,12 +44,14 @@ export type AdminAuditAction =
   | 'COORDINATOR_INVITED'
   | 'COORDINATOR_INVITATION_ACCEPTED'
   | 'COORDINATOR_INVITATION_REVOKED'
-  | 'COORDINATOR_REMOVED';
+  | 'COORDINATOR_REMOVED'
+  // Platform runtime configuration (platform_settings), e.g. Question Bank Factory controls.
+  | 'PLATFORM_SETTING_UPDATED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;
@@ -63,8 +65,9 @@ function resolveEnvironment(): string {
   return process.env.VERCEL_ENV ?? 'development';
 }
 
-export async function recordAdminAction(input: RecordAdminActionInput): Promise<void> {
-  await db.query(
+/** `client` lets a caller write the audit row in the same transaction as the change it records. */
+export async function recordAdminAction(input: RecordAdminActionInput, client: DbExecutor = db): Promise<void> {
+  await client.query(
     `
     INSERT INTO admin_audit_log
       (actor_user_id, action, target_type, target_id, previous_state, new_state, reason, result, environment, correlation_id)

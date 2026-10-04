@@ -19,7 +19,7 @@ function walk(dir: string): string[] {
 describe('bank management is Platform-Admin only (object-level, server-side)', () => {
   const adminRoutes = walk('src/app/api/admin/question-bank').filter((f) => f.endsWith('route.ts'));
   it('every admin question-bank route guards with STUDYUS_ADMIN before touching input', () => {
-    expect(adminRoutes.length).toBe(5);
+    expect(adminRoutes.length).toBe(6); // + settings (runtime Factory controls)
     for (const f of adminRoutes) {
       const src = read(f);
       expect(src, f).toMatch(/guardAdminUsersRoute\(/);
@@ -44,7 +44,9 @@ describe('bank management is Platform-Admin only (object-level, server-side)', (
   it('the generation action is bounded: strict body, max batch, enabled + budget + family checks, audited requester', () => {
     const src = read('src/app/api/admin/question-bank/generate/route.ts');
     expect(src).toMatch(/z\.strictObject/);
-    expect(src).toMatch(/count: z\.number\(\)\.int\(\)\.min\(1\)\.max\(5\)/);
+    // Demo Mode may request up to 10 (the DB bound per request); outside Demo Mode the effective max batch (3) still applies.
+    expect(src).toMatch(/count: z\.number\(\)\.int\(\)\.min\(1\)\.max\(10\)/);
+    expect(src).toMatch(/parsed\.data\.count > cfg\.maxBatch/);
     expect(src).toMatch(/FACTORY_DISABLED/);
     expect(src).toMatch(/BATCH_TOO_LARGE/);
     expect(src).toMatch(/BUDGET_EXHAUSTED/);

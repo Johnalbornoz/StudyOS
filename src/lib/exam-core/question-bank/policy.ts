@@ -41,8 +41,12 @@ type Env = Record<string, string | undefined>;
 export interface FactoryConfig {
   /** Master switch. Unset / anything but "true" = the factory never calls AI. */
   enabled: boolean;
-  /** Factory AI calls per UTC day (generation + validation + repair), across all runs. */
+  /** Factory AI calls per UTC day (generation + validation + repair), across all runs -- the SOFT budget. */
   dailyBudget: number;
+  /** Whether the soft daily budget stops the factory (Demo Mode turns it into a warning only). */
+  softBudgetEnforced: boolean;
+  /** HARD safety ceiling of factory AI calls per UTC day (runaway protection) -- always enforced. */
+  hardDailyLimit: number;
   /** AI calls one run may make. */
   maxPerRun: number;
   /** Stop when the SHARED platform AI day cap has fewer than this many calls left. */
@@ -72,9 +76,12 @@ function int(env: Env, name: string, fallback: number, min: number, max: number)
  * calls in reserve. The factory never raises (or touches) the shared AI cap.
  */
 export function factoryConfig(env: Env = process.env): FactoryConfig {
+  const dailyBudget = int(env, 'QUESTION_BANK_DAILY_BUDGET', 20, 0, 2000);
   return {
     enabled: env.QUESTION_BANK_FACTORY_ENABLED === 'true',
-    dailyBudget: int(env, 'QUESTION_BANK_DAILY_BUDGET', 20, 0, 2000),
+    dailyBudget,
+    softBudgetEnforced: true,
+    hardDailyLimit: Math.max(dailyBudget, int(env, 'QUESTION_BANK_HARD_DAILY_LIMIT', 1000, 1, 100_000)),
     maxPerRun: int(env, 'QUESTION_BANK_MAX_PER_RUN', 6, 0, 200),
     minRemainingAiReserve: int(env, 'QUESTION_BANK_MIN_REMAINING_AI_RESERVE', 500, 0, 1_000_000),
     maxBatch: int(env, 'QUESTION_BANK_MAX_BATCH', 3, 1, 5),
@@ -85,7 +92,7 @@ export function factoryConfig(env: Env = process.env): FactoryConfig {
   };
 }
 
-export type BudgetStop = 'DISABLED' | 'DAILY_BUDGET' | 'MAX_PER_RUN' | 'AI_RESERVE' | null;
+export type BudgetStop = 'DISABLED' | 'HARD_LIMIT' | 'DAILY_BUDGET' | 'MAX_PER_RUN' | 'AI_RESERVE' | null;
 
 export interface BudgetState {
   usedToday: number;
@@ -100,7 +107,8 @@ export interface BudgetState {
  */
 export function budgetStop(cfg: FactoryConfig, s: BudgetState, calls = 1): BudgetStop {
   if (!cfg.enabled) return 'DISABLED';
-  if (s.usedToday + calls > cfg.dailyBudget) return 'DAILY_BUDGET';
+  if (s.usedToday + calls > cfg.hardDailyLimit) return 'HARD_LIMIT';
+  if (cfg.softBudgetEnforced && s.usedToday + calls > cfg.dailyBudget) return 'DAILY_BUDGET';
   if (s.usedThisRun + calls > cfg.maxPerRun) return 'MAX_PER_RUN';
   if (s.platformRemaining === null || s.platformRemaining - calls < cfg.minRemainingAiReserve) return 'AI_RESERVE';
   return null;

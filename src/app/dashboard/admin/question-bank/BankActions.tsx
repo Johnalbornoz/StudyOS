@@ -30,8 +30,9 @@ export function RefreshHealthButton({ examVersionId }: { examVersionId: string }
 }
 
 const ERRORS: Record<string, string> = {
-  FACTORY_DISABLED: 'La fábrica está desactivada en este entorno.',
-  BUDGET_EXHAUSTED: 'Presupuesto de IA agotado o reserva compartida alcanzada.',
+  FACTORY_DISABLED: 'La fábrica de preguntas está desactivada.',
+  ON_DEMAND_DISABLED: 'La generación bajo demanda está desactivada.',
+  BUDGET_EXHAUSTED: 'Se alcanzó una protección técnica de consumo de IA. Inténtalo más tarde.',
   BATCH_TOO_LARGE: 'Lote demasiado grande.',
   GENERATION_NOT_SUPPORTED_FOR_FAMILY: 'Esta familia no admite generación automática.',
   CELL_NOT_FOUND: 'Celda no encontrada.',
@@ -58,7 +59,7 @@ export function GenerateSmallBatchButton({ examVersionId, cellKey, maxBatch }: {
           router.refresh();
         }}
       >
-        {busy ? 'Encolando…' : `Generar lote pequeño (${maxBatch})`}
+        {busy ? 'Encolando…' : `Generar ${maxBatch} preguntas`}
       </button>
       {msg && <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{msg}</span>}
     </span>
