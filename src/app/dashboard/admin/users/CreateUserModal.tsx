@@ -65,7 +65,7 @@ export default function CreateUserModal({ onClose, onCreated }: { onClose: () =>
       else if (body.error === 'COORDINATOR_REQUIRES_DIRECT_CREATION') setError('Un coordinador solo puede crearse con contraseña temporal, no por invitación.');
       else if (body.error === 'PARTIAL_CREATION') {
         setPartialClerkId(body.clerkUserId);
-        setError('La cuenta se creó en Clerk pero no se completó en StudyUS. Puedes reintentar la reconciliación abajo.');
+        setError('La cuenta se creó en Clerk pero no se completó en StudyUs. Puedes reintentar la reconciliación abajo.');
       } else setError('No se pudo crear la cuenta.');
     } finally {
       setBusy(false);
@@ -108,7 +108,7 @@ export default function CreateUserModal({ onClose, onCreated }: { onClose: () =>
         <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
           {mode === 'invite'
             ? 'Recomendado: la persona recibe un correo de Clerk y completa su propio registro.'
-            : 'Tú defines una contraseña inicial. Clerk no ofrece una bandera nativa de "cambio obligatorio en el primer acceso" — en su lugar, StudyUS exige el cambio en su propia pantalla antes de permitir el uso del producto: la persona podrá iniciar sesión con esta contraseña temporal, pero no verá nada más hasta establecer una propia.'}
+            : 'Tú defines una contraseña inicial. Clerk no ofrece una bandera nativa de "cambio obligatorio en el primer acceso" — en su lugar, StudyUs exige el cambio en su propia pantalla antes de permitir el uso del producto: la persona podrá iniciar sesión con esta contraseña temporal, pero no verá nada más hasta establecer una propia.'}
         </p>
       </div>
 
@@ -158,7 +158,7 @@ export default function CreateUserModal({ onClose, onCreated }: { onClose: () =>
             <p style={{ fontSize: 12, color: 'var(--danger, red)', marginBottom: 'var(--space-2)' }}>Las contraseñas no coinciden.</p>
           )}
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 'var(--space-3)' }}>
-            La persona deberá cambiarla obligatoriamente al iniciar sesión. StudyUS nunca guarda esta contraseña más allá de este envío.
+            La persona deberá cambiarla obligatoriamente al iniciar sesión. StudyUs nunca guarda esta contraseña más allá de este envío.
           </p>
         </>
       )}
@@ -186,7 +186,7 @@ export default function CreateUserModal({ onClose, onCreated }: { onClose: () =>
       )}
 
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 'var(--space-3)' }}>
-        No es posible crear cuentas Admin StudyUS desde este formulario bajo ninguna circunstancia.
+        No es posible crear cuentas Admin StudyUs desde este formulario bajo ninguna circunstancia.
       </p>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 'var(--space-4)' }}>

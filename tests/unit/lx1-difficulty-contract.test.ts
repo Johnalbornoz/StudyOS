@@ -36,7 +36,7 @@ describe('LX-1R -- no invented difficulty policy in the source', () => {
 });
 
 describe('LX-1E difficulty semantics & ownership', () => {
-  it('StudyUS owns target difficulty (invariant asserted, not implemented)', () => {
+  it('StudyUs owns target difficulty (invariant asserted, not implemented)', () => {
     expect(DIFFICULTY_IS_STUDYUS_OWNED).toBe(true);
   });
 

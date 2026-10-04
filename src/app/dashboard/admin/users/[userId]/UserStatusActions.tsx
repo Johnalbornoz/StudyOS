@@ -35,7 +35,7 @@ export default function UserStatusActions({ userId, status }: { userId: string; 
       setReason('');
       router.refresh();
     } else if (res.status === 409) {
-      setError('No se puede suspender/archivar al único Admin StudyUS activo.');
+      setError('No se puede suspender/archivar al único Admin StudyUs activo.');
     } else {
       setError('No se pudo completar la acción.');
     }

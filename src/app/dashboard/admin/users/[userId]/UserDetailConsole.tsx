@@ -9,7 +9,7 @@ import SessionsActions from './SessionsActions';
 import DangerZoneActions from './DangerZoneActions';
 
 const ROLE_LABELS: Record<string, string> = {
-  STUDENT: 'Estudiante', PARENT: 'Padre/Madre', TEACHER: 'Profesor', INSTITUTION_ADMIN: 'Coordinador', STUDYUS_ADMIN: 'Admin StudyUS',
+  STUDENT: 'Estudiante', PARENT: 'Padre/Madre', TEACHER: 'Profesor', INSTITUTION_ADMIN: 'Coordinador', STUDYUS_ADMIN: 'Admin StudyUs',
 };
 const STATUS_LABELS: Record<string, string> = { ACTIVE: 'Activa', SUSPENDED: 'Suspendida', ARCHIVED: 'Archivada' };
 
@@ -105,7 +105,7 @@ export default function UserDetailConsole({ userId, viewerUserId }: { userId: st
             )}
             <UserRoleActions userId={detail.userId} currentRoles={detail.roles} />
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 'var(--space-3)' }}>
-              Añadir un rol nunca concede automáticamente relaciones, membresías ni licencias. Admin StudyUS no puede otorgarse desde esta pantalla; Coordinador institucional requiere el flujo institucional autorizado.
+              Añadir un rol nunca concede automáticamente relaciones, membresías ni licencias. Admin StudyUs no puede otorgarse desde esta pantalla; Coordinador institucional requiere el flujo institucional autorizado.
             </p>
           </div>
         )}

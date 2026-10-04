@@ -7,9 +7,9 @@
  *       "voice allowed because answerFormat === text" / "audio allowed
  *       because the browser supports it" in its own JSX.
  *   R2: the privacy claim about SpeechRecognition being "entirely
- *       browser/OS-local" is corrected -- StudyUS does not control
+ *       browser/OS-local" is corrected -- StudyUs does not control
  *       whether the BROWSER's own implementation processes audio
- *       on-device or via vendor infrastructure; only that StudyUS's own
+ *       on-device or via vendor infrastructure; only that StudyUs's own
  *       backend never receives it.
  *   R3: STT locale now derives from `expectedResponseLanguage`, TTS
  *       from `activityLanguage` -- two fields on the same
@@ -123,7 +123,7 @@ describe('LX-8R1 tests 7-8 -- voice review/no-auto-submit behavior unchanged by 
  * R2 -- PRIVACY CLAIM CORRECTION (tests 9-10)                      *
  * ============================================================== */
 describe('LX-8R1 R2 tests 9-10 -- corrected privacy model', () => {
-  it('9. StudyUS backend receives no raw audio upload -- no fetch/upload call anywhere carries audio', () => {
+  it('9. StudyUs backend receives no raw audio upload -- no fetch/upload call anywhere carries audio', () => {
     expect(VOICE_INPUT_SRC).not.toMatch(/fetch\(|FormData|Blob\(|MediaRecorder/);
   });
 
@@ -132,7 +132,7 @@ describe('LX-8R1 R2 tests 9-10 -- corrected privacy model', () => {
     expect(raw).not.toMatch(/entirely browser\/OS-local/);
     expect(raw).not.toMatch(/never leaves the device/i);
     expect(raw).toMatch(/does not intentionally persist or upload/i);
-    expect(raw).toMatch(/outside this runtime'?s control|outside StudyUS'?s runtime control/i);
+    expect(raw).toMatch(/outside this runtime'?s control|outside StudyUs'?s runtime control/i);
     expect(raw).toMatch(/Production use with minors/i);
     // and the LX-8 report itself must not still be quoted/relied on as current -- this repair supersedes it in code, which is what matters for behavior.
     expect(raw).toMatch(/vendor'?s own cloud service|vendor infrastructure/i);

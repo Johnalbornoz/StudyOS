@@ -586,7 +586,7 @@ export async function gateUnitWithTerraFallback(
  * `count` stays whatever the caller resolved (canonical Evidence
  * Sufficiency for Practice; per-concept cap for cumulative / exam /
  * diagnostic) -- this never restores 20-question Practice and never
- * changes a count; it only makes THIS count reliable: StudyUS decides
+ * changes a count; it only makes THIS count reliable: StudyUs decides
  * the exact number of questions in a valid activity, never the
  * provider. `[]` (never a shorter-than-`count` array) is the ONE
  * recoverable "couldn't prepare" signal every caller (route.ts's

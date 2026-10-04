@@ -77,7 +77,7 @@ export interface AIExecutionMetadata {
    * provider actually returned a response (absent for a call-level
    * failure such as a timeout, network error, or provider refusal --
    * no response was ever obtained to read usage from). Never fabricated;
-   * a StudyUS-side validation/parsing rejection does NOT erase these --
+   * a StudyUs-side validation/parsing rejection does NOT erase these --
    * they reflect what the provider already billed, regardless of
    * `success`/`validationStatus`.
    */
@@ -93,7 +93,7 @@ export interface AIExecutionMetadata {
    * provider's own JSON error body: never the API key, never
    * authorization headers, never the prompt/question content, never
    * student PII. `providerErrorMessage` is the PROVIDER's own error
-   * description (e.g. "Unknown parameter: 'foo'"), not StudyUS content.
+   * description (e.g. "Unknown parameter: 'foo'"), not StudyUs content.
    */
   providerHttpStatus?: number;
   providerErrorType?: string | null;

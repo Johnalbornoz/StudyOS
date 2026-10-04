@@ -45,7 +45,7 @@ export const QUIZ_MODE_CONFIG: Record<
   },
   retention_check: {
     // Retention Review (Activity Type RETENTION_CHECK, Evidence Mode
-    // INDEPENDENT) -- StudyUS needs unassisted proof the student still
+    // INDEPENDENT) -- StudyUs needs unassisted proof the student still
     // remembers, so this is short and low-friction like quick_check,
     // just tagged with a different Activity Type/Evidence Mode.
     guidance:

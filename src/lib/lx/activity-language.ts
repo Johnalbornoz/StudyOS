@@ -4,7 +4,7 @@ import { LOCALES } from '@/lib/i18n/messages';
 /**
  * LX-8 R9-R11 -- ACTIVITY LANGUAGE AUTHORITY (formalized).
  *
- * StudyUS already draws this distinction functionally -- it was just
+ * StudyUs already draws this distinction functionally -- it was just
  * never given its own name/module. `getInterfaceLanguage`
  * (src/lib/i18n/language.ts) governs the shell/nav/account.
  * `resolveQuizLanguage` (same file) already decides what language ONE
@@ -39,10 +39,10 @@ export function buildActivityLanguageContext(activityLanguage: Locale): Activity
 /**
  * R11: deterministic locale fallback for a BCP-47 tag the platform
  * handed us (e.g. from `navigator.language`, or a browser voice's own
- * `.lang`) down to StudyUS's fixed 5-locale set. Never guesses a
+ * `.lang`) down to StudyUs's fixed 5-locale set. Never guesses a
  * DIFFERENT language -- only strips region/script subtags
  * ("es-MX" -> "es", "pt-BR" -> "pt"). Returns null when even the base
- * subtag isn't one of StudyUS's locales -- callers must show an
+ * subtag isn't one of StudyUs's locales -- callers must show an
  * explicit unavailable state (R11), never silently substitute another
  * language's content.
  */
@@ -52,7 +52,7 @@ export function fallbackToSupportedLocale(bcp47: string): Locale | null {
 }
 
 /**
- * The BCP-47 tag StudyUS asks the browser's TTS/STT APIs for, for a
+ * The BCP-47 tag StudyUs asks the browser's TTS/STT APIs for, for a
  * given activityLanguage. One deterministic mapping, never derived
  * from interface language. Region choice is a fixed product default,
  * not a guess -- these are the same 5 locales `Locale` already covers.

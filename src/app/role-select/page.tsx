@@ -203,12 +203,12 @@ export default function RoleSelectPage() {
 
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: 'var(--space-8) var(--space-4)' }}>
-      <h1 style={{ fontSize: 20, marginBottom: 'var(--space-4)' }}>Tu cuenta en StudyUS</h1>
+      <h1 style={{ fontSize: 20, marginBottom: 'var(--space-4)' }}>Tu cuenta en StudyUs</h1>
 
       {state.roles.length === 0 ? (
         <>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-            ¿Cómo vas a usar StudyUS? Elige una opción para continuar.
+            ¿Cómo vas a usar StudyUs? Elige una opción para continuar.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {SELF_SERVICE_ROLES.map((role) => (

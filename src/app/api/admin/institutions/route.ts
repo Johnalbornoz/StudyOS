@@ -2,7 +2,7 @@
  * F2 -- POST /api/admin/institutions
  *
  * The only path to create an Institution. Gated by `isAdminEmail`, the
- * same StudyUS-admin allowlist already used by the existing
+ * same StudyUs-admin allowlist already used by the existing
  * `/api/admin/*` routes -- not a new admin mechanism.
  */
 import { auth, currentUser } from '@clerk/nextjs/server';

@@ -10,7 +10,7 @@ const ROLE_LABELS: Record<string, string> = {
   PARENT: 'Padre/Madre',
   TEACHER: 'Profesor',
   INSTITUTION_ADMIN: 'Coordinador',
-  STUDYUS_ADMIN: 'Admin StudyUS',
+  STUDYUS_ADMIN: 'Admin StudyUs',
 };
 const STATUS_LABELS: Record<string, string> = { ACTIVE: 'Activa', SUSPENDED: 'Suspendida', ARCHIVED: 'Archivada' };
 const STATUS_TONE: Record<string, string> = { ACTIVE: 'chip-good', SUSPENDED: 'chip-critical', ARCHIVED: 'chip-warn' };

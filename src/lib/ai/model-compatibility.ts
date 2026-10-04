@@ -9,7 +9,7 @@
  * `question_generation_slot`'s configured budget. The provider's own
  * error named the model's actual supported set: 'none', 'low',
  * 'medium', 'high', 'xhigh'. `'minimal'` was never a value any routed
- * model accepts -- StudyUS invented it locally and never validated it
+ * model accepts -- StudyUs invented it locally and never validated it
  * against what the provider actually supports.
  *
  * `ReasoningEffort` is now the CANONICAL type used everywhere
@@ -25,12 +25,12 @@
  */
 import { LUNA, TERRA } from './model-routing';
 
-/** The canonical reasoning-effort vocabulary every StudyUS budget/call site may declare. Matches the gpt-5.6 family's own documented supported values. */
+/** The canonical reasoning-effort vocabulary every StudyUs budget/call site may declare. Matches the gpt-5.6 family's own documented supported values. */
 export const REASONING_EFFORT_LEVELS = ['none', 'low', 'medium', 'high', 'xhigh'] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORT_LEVELS)[number];
 
 /**
- * Known-safe normalization for a value StudyUS code might still carry
+ * Known-safe normalization for a value StudyUs code might still carry
  * that is not itself a canonical `ReasoningEffort` (e.g. a stray
  * `'minimal'` from before this phase, or copied from another provider's
  * vocabulary). Used ONLY as a defense-in-depth fallback when the

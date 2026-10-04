@@ -1026,7 +1026,7 @@ export function planChunks(requestedCount: number, maxPerChunk: number = MAX_QUE
  *     request for the missing amount (+ a small safe surplus) before
  *     this function will ever return. If that one recovery round still
  *     cannot close the gap, this returns `[]` (`QUESTION_COUNT_INSUFFICIENT`)
- *     -- StudyUS decides the exact number of questions in a valid
+ *     -- StudyUs decides the exact number of questions in a valid
  *     Practice/Review activity; a shorter-than-requested quiz is never
  *     published.
  *   - Deterministic, AI-free duplicate protection after merging:
@@ -1272,7 +1272,7 @@ ${shapeExamples}
     }
     log('PRACTICE_QUALITY_GATE_COMPLETE', { acceptedCount: deduped.length, duplicatesRemoved });
 
-    // LX-9R6-R1 C2/C3: StudyUS decides the exact number of questions in
+    // LX-9R6-R1 C2/C3: StudyUs decides the exact number of questions in
     // a valid Practice/Review activity -- a per-chunk shortfall or a
     // cross-chunk duplicate must never silently degrade the PUBLISHED
     // count below `count`. If the aggregate result (after every chunk's
@@ -1708,7 +1708,7 @@ export async function generateRetentionCheckQuestions(
     ): Promise<RetentionChunkOutcome> => {
       const shapeExamples = buildShapeExamplesBlock(types, false);
       const maxTokens = Math.min(16000, 900 * count + 1500);
-      const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT} for this retention check. Generate EXACTLY ${count} CANDIDATE questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. Candidates are quality-reviewed after generation; StudyUS will select the best ${RETENTION_REQUIRED_COUNT} across both chunks, so not every candidate you write will necessarily be used -- write every one to the same high standard regardless. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
+      const userMessage = `This is chunk ${chunkIndex + 1} of ${RETENTION_CHUNK_COUNT} for this retention check. Generate EXACTLY ${count} CANDIDATE questions for this concept using only the provided material -- cover different aspects of the concept from what the other chunk will contribute. Candidates are quality-reviewed after generation; StudyUs will select the best ${RETENTION_REQUIRED_COUNT} across both chunks, so not every candidate you write will necessarily be used -- write every one to the same high standard regardless. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake. ${diversificationNote}${exclusionNote ? `\n\n${exclusionNote}` : ''}
 
 Output a JSON object (no markdown fences) with this exact shape -- a "questions" array containing exactly ${count} elements, each element's shape depending on its "type":
 {"questions": [
@@ -2390,7 +2390,7 @@ interface QuestionBatchParseOutcome {
  * `parsed` as if it were always an array. Once the model (correctly)
  * returned an object (`{"questions": [...]}"`), `.filter` on a plain
  * object threw, and that uncaught throw inside `validate` was what
- * `executeAI` classified as `INVALID_RESPONSE` -- a StudyUS contract
+ * `executeAI` classified as `INVALID_RESPONSE` -- a StudyUs contract
  * mismatch, not a provider or quality defect. This function makes that
  * shape check explicit and never throws; a mismatch becomes an ordinary
  * `{valid:false}` (-> `VALIDATION_ERROR`, correctly classified) instead

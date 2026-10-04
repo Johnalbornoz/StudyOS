@@ -5,10 +5,10 @@
  *
  * Institution Admin is never self-service (INV-F2-12 / carries
  * forward F1's structural restriction): `inviteInstitutionAdmin` is
- * gated by `isAdminEmail` (the same StudyUS-admin allowlist already
+ * gated by `isAdminEmail` (the same StudyUs-admin allowlist already
  * used by `src/services/admin.service.ts`) at the route boundary, not
  * inside this file -- this file only performs the write once a caller
- * has already been confirmed authorized. No StudyUS Admin Console is
+ * has already been confirmed authorized. No StudyUs Admin Console is
  * built; this is the minimum controlled mechanism the task allows.
  */
 import { db } from '@/lib/db';

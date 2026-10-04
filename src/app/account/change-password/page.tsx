@@ -32,7 +32,7 @@ export default async function ChangePasswordPage() {
     <div style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem' }}>
       <h1 style={{ fontSize: 20, marginBottom: 'var(--space-2)' }}>Debes establecer una contraseña propia</h1>
       <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 'var(--space-4)' }}>
-        Un administrador creó tu cuenta con una contraseña temporal. Por seguridad, debes reemplazarla antes de continuar. No podrás usar StudyUS hasta completar este paso.
+        Un administrador creó tu cuenta con una contraseña temporal. Por seguridad, debes reemplazarla antes de continuar. No podrás usar StudyUs hasta completar este paso.
       </p>
       <ChangePasswordForm />
     </div>

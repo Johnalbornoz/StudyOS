@@ -12,7 +12,7 @@ import { getMessages, Locale } from '@/lib/i18n/messages';
  * LX-8R2 R1/R7 -- the voice-to-math PIPELINE: mic -> transcript (owned
  * entirely by `VoiceInputButton`/SpeechRecognition, unchanged) ->
  * attempt a deterministic math parse (`parseMathSpeech`, no AI/LLM
- * call, see math-speech-parser.ts) -> show "StudyUS understood:" with
+ * call, see math-speech-parser.ts) -> show "StudyUs understood:" with
  * the parsed expression rendered as real math -> learner explicitly
  * accepts, re-records, or discards. Only explicit acceptance calls
  * `onAccept` and updates the answer's `MathResponse` state (R7) --

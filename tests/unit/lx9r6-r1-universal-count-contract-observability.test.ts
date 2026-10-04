@@ -4,7 +4,7 @@
  * 13-24, Regression 25-30).
  *
  * Standing product invariant this phase closes the last gaps on:
- * StudyUS decides the number of questions in a valid activity -- a
+ * StudyUs decides the number of questions in a valid activity -- a
  * generated activity either contains EXACTLY the canonical required
  * count, or generation fails recoverably. Before this phase,
  * generatePracticeQuestions (topic_practice/review) and

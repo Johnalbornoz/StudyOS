@@ -2,7 +2,7 @@
  * CANON-R3 -- THE ONE EVIDENCE ADAPTER.
  *
  * `mapStudyUSEvidenceToPedagogicalEvidence` is the single, auditable
- * place real StudyUS evidence is converted into the frozen Pedagogical
+ * place real StudyUs evidence is converted into the frozen Pedagogical
  * Engine v1.0's `RawEvidenceItem[]` contract. Every mapping decision
  * below is grounded in a directly-inspected real source (see each
  * field's own comment and `types.ts`'s `StudyUSEvidenceRow` grounding
@@ -82,14 +82,14 @@ function orderTransferChallengeScores(challenges: StudyUSTransferChallengeScore[
  *     never forced into the nearest stage)
  *
  *   LEARN_CHECK -> LEARN_CHECK: a forward-compatible hook
- *   only -- StudyUS has no existing quiz_mode or ActivityType
+ *   only -- StudyUs has no existing quiz_mode or ActivityType
  *   producing this value today (audited), so in real data
  *   this entry is never actually exercised; see
  *   `LEARN_CHECK_SOURCE_UNAVAILABLE` below for the gap this
  *   surfaces instead.
  */
 const ACTIVITY_TYPE_MAP: Record<string, PedagogicalActivityType | 'UNSUPPORTED'> = {
-  // CANON-R3 Part 6: StudyUS has no real source producing this value
+  // CANON-R3 Part 6: StudyUs has no real source producing this value
   // today (audited: neither ActivityType nor quiz_mode includes it) --
   // this entry exists ONLY as the forward-compatible "if YES, map it
   // directly" hook the spec requires, never triggered by real data.
@@ -212,7 +212,7 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
       unresolved.push({
         reason: 'TRANSFER_DEPTH_TAXONOMY_MISMATCH',
         evidenceId: row.id,
-        detail: `rawTransferDistance=${row.rawTransferDistance} uses StudyUS's real NEAR/MID/FAR taxonomy, which this adapter does not remap onto the engine's NEAR/CONTEXTUAL/HIGHER vocabulary -- no documented, defensible correspondence exists.`,
+        detail: `rawTransferDistance=${row.rawTransferDistance} uses StudyUs's real NEAR/MID/FAR taxonomy, which this adapter does not remap onto the engine's NEAR/CONTEXTUAL/HIGHER vocabulary -- no documented, defensible correspondence exists.`,
       });
     }
   }
@@ -247,7 +247,7 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
   if (row.transferFailureDiagnostic !== undefined) {
     item.transferFailureDiagnostic = row.transferFailureDiagnostic;
   } else if (resolved === 'TRANSFER') {
-    warnings.push(`Row ${row.id}: transferFailureDiagnostic not supplied -- StudyUS has no live source for this yet; Transfer failures default to APPLICATION_CONTEXT_WEAKNESS per Policy V2 Section 7.`);
+    warnings.push(`Row ${row.id}: transferFailureDiagnostic not supplied -- StudyUs has no live source for this yet; Transfer failures default to APPLICATION_CONTEXT_WEAKNESS per Policy V2 Section 7.`);
   }
 
   return item;
@@ -257,7 +257,7 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
  * CANON-R3 Part 3/6 -- the ONE adapter entry point. `learnCheckAvailable`
  * lets a caller pass a real LEARN_CHECK-equivalent row set when one
  * genuinely exists for this concept (Part 6: "If YES: map it directly");
- * StudyUS has no such source today, so callers should normally omit it
+ * StudyUs has no such source today, so callers should normally omit it
  * entirely and this function records `LEARN_CHECK_SOURCE_UNAVAILABLE`
  * once per call, never silently reinterpreting a Practice/Prove/Transfer
  * row as a comprehension check.
@@ -273,7 +273,7 @@ export function mapStudyUSEvidenceToPedagogicalEvidence(rows: StudyUSEvidenceRow
       reason: 'LEARN_CHECK_SOURCE_UNAVAILABLE',
       evidenceId: null,
       detail:
-        'StudyUS has no quiz_mode or ActivityType representing an initial comprehension checkpoint today (audited: quick_check, topic_practice, review, retention_check, cumulative_assessment, exam_simulation, diagnostic_check). LEARN cannot be evaluated for this evidence set under the frozen v1 engine -- never inferred from Practice/Prove/Transfer evidence.',
+        'StudyUs has no quiz_mode or ActivityType representing an initial comprehension checkpoint today (audited: quick_check, topic_practice, review, retention_check, cumulative_assessment, exam_simulation, diagnostic_check). LEARN cannot be evaluated for this evidence set under the frozen v1 engine -- never inferred from Practice/Prove/Transfer evidence.',
     });
   }
 

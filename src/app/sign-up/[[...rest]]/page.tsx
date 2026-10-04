@@ -9,7 +9,7 @@ import { getMessages } from '@/lib/i18n/messages';
  * LX-2C -- registration framing. Clerk remains the sole authentication
  * authority: the `<SignUp />` component below is unmodified (no fields
  * added, no config invented). This page only wraps it with enough
- * StudyUS context that a visitor coming from the marketing site knows
+ * StudyUs context that a visitor coming from the marketing site knows
  * what they are signing up for and what happens next.
  */
 export default async function SignUpPage() {
@@ -28,8 +28,8 @@ export default async function SignUpPage() {
         padding: 'var(--space-12) var(--space-4)',
       }}
     >
-      <Link href={`/${locale}`} aria-label="StudyUS" style={{ display: 'inline-flex' }}>
-        <Image src="/logo.png" alt="StudyUS" width={109} height={36} priority style={{ height: 36, width: 'auto' }} />
+      <Link href={`/${locale}`} aria-label="StudyUs" style={{ display: 'inline-flex' }}>
+        <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={109} height={36} priority style={{ height: 36, width: 'auto' }} />
       </Link>
 
       <div style={{ maxWidth: 400, textAlign: 'center' }}>

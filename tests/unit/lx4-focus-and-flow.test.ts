@@ -99,7 +99,7 @@ describe('LX-4J -- evidence difficulty is the actual generated difficulty, not a
     expect(diffContract).not.toMatch(/masteryScore.*[<>]=?\s*\d+/);
   });
 
-  it('the homepage still does not claim StudyUS "adjusts difficulty"', () => {
+  it('the homepage still does not claim StudyUs "adjusts difficulty"', () => {
     const messages = read('src/lib/i18n/messages.ts');
     const section4 = messages.match(/'marketing\.section4Body':[^\n]*/g) ?? [];
     for (const line of section4) {

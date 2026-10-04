@@ -291,7 +291,7 @@ describe('practice/review chunking: a corrupted question within a chunk reduces 
   // LX-9R6-R1: before this phase, a corrupted item being filtered out of
   // one or more chunks could leave the FINAL published count below the
   // requested `count` -- "partial tolerance" was the celebrated design.
-  // The standing product invariant is now the opposite: StudyUS decides
+  // The standing product invariant is now the opposite: StudyUs decides
   // the exact number of questions in a valid activity. A corrupted item
   // being filtered still reduces the CANDIDATE pool exactly as before
   // (LaTeX safety itself is unchanged) -- but the resulting deficit is

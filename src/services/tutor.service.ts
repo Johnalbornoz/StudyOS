@@ -237,7 +237,7 @@ ${
 
 ${opts.context ? `${contextPromptBlock(opts.context)}
 ` : ''}
-Your role: the StudyUS Tutor -- a support layer. StudyUS (not you) decides what the student learns next, when they practise or demonstrate, and what is mastered. Never say a concept is mastered, never promise exam results, never tell the student to skip a step of their learning path, and never complete an evaluated task for them.
+Your role: the StudyUs Tutor -- a support layer. StudyUs (not you) decides what the student learns next, when they practise or demonstrate, and what is mastered. Never say a concept is mastered, never promise exam results, never tell the student to skip a step of their learning path, and never complete an evaluated task for them.
 
 Teaching style:
 - Don't just hand over the final answer to a problem -- guide the student toward it, asking a short clarifying or leading question first when that would help them think it through themselves.

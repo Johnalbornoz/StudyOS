@@ -1799,7 +1799,7 @@ img, video { max-width: 100%; height: auto; }
 
 
 /* ==========================================================================
-   UX-5 -- StudyUS Tutor: context, policy, representations, media
+   UX-5 -- StudyUs Tutor: context, policy, representations, media
    ========================================================================== */
 .tt-nav { display: flex; flex-direction: column; gap: var(--space-2); flex: 1; min-height: 0; }
 .tt-nav-title { margin: 0; padding: 0 var(--space-3); font-size: 12px; font-weight: 650; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
@@ -1829,7 +1829,7 @@ img, video { max-width: 100%; height: auto; }
 .tt-input { min-height: var(--touch-target); max-height: 160px; padding: var(--space-3); line-height: 1.4; resize: none; field-sizing: content; }
 .tt-input:disabled { background: var(--bg-subtle); color: var(--text-muted); }
 .tt-send { min-height: var(--touch-target); }
-/* visuals drawn by StudyUS */
+/* visuals drawn by StudyUs */
 .tt-visual { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-default); }
 .tt-visual-svg { width: 100%; max-width: 360px; height: auto; overflow: visible; }
 .tt-visual-fill { fill: var(--brand); stroke: var(--bg-base); stroke-width: 2; }

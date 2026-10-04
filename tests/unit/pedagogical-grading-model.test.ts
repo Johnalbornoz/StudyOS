@@ -1,5 +1,5 @@
 /**
- * PEDAGOGICAL_GRADING_MODEL -- StudyUS grades like a teacher, not like a
+ * PEDAGOGICAL_GRADING_MODEL -- StudyUs grades like a teacher, not like a
  * string comparator. Mathematical correctness (notation-independent), task
  * completion (each requested component) and reasoning quality are judged
  * separately; one deterministic rule yields CORRECT / ALMOST / INCORRECT;

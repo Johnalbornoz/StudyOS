@@ -1,5 +1,5 @@
 /**
- * LX-4P-PERF-R1B B3/B4/B11 -- executable StudyUS Question Quality Contract.
+ * LX-4P-PERF-R1B B3/B4/B11 -- executable StudyUs Question Quality Contract.
  *
  * DETERMINISTIC checks on a `GeneratedQuestion` that COULD reach a
  * learner. Runs BEFORE any AI verification. Pure, no I/O.

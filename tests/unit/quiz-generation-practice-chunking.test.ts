@@ -334,7 +334,7 @@ describe('generatePracticeQuestions: deterministic cross-chunk duplicate removal
     // LX-9R6-R1: before this phase, a total collapse to one surviving
     // duplicate across every chunk (AND the aggregate recovery round,
     // which sees the exact same fixture) was accepted as "the dedup
-    // logic worked, so 1 question is fine." It no longer is: StudyUS
+    // logic worked, so 1 question is fine." It no longer is: StudyUs
     // decided this activity needs `count` questions, and 1 is not that.
     executeAIMock.mockReset().mockImplementation(async () => ({ result: [fakeQuestion(0, 'Same question every time')], execution: {} as any, provenance: {} as any }));
     const questions = await generatePracticeQuestions('c1', 's1', 'subj1', { count: 20 });

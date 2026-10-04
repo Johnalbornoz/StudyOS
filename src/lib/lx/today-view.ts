@@ -35,7 +35,7 @@ export type TodayState =
   | 'CONSOLIDATED'
   /** The snapshot read succeeded; there is no evidence yet to ground a recommendation (a new/cold profile). */
   | 'NO_ACTIVE_LEARNING_PATH'
-  /** The canonical read itself failed -- StudyUS does not know what's next. Never invent a fallback action here. */
+  /** The canonical read itself failed -- StudyUs does not know what's next. Never invent a fallback action here. */
   | 'UNRESOLVED';
 
 export interface TodayStateInputs {

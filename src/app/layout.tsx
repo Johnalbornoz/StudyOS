@@ -16,18 +16,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "StudyUS | Don't study more. Study better.",
+    default: `${SITE_NAME} | Don't study more. Study better.`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "StudyUS is an adaptive study coach: it finds what you need, focuses you on what matters today and checks that you can do it on your own, remember it and apply it.",
+    "StudyUs is an adaptive study coach: it finds what you need, focuses you on what matters today and checks that you can do it on your own, remember it and apply it.",
   robots: {
     index: true,
     follow: true,
   },
-  icons: {
-    icon: "/icon.png",
-  },
+  // Icons come from the Next.js file conventions (src/app/favicon.ico, icon.png, apple-icon.png): hashed URLs, no stale favicon.
+  applicationName: SITE_NAME,
+  appleWebApp: { title: SITE_NAME },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

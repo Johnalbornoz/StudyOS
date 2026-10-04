@@ -2,7 +2,7 @@
  * Phase 3B: Assessment Confidence -- a concept Phase 3B owns and keeps
  * strictly separate from Knowledge Confidence.
  *
- * Knowledge Confidence ("how strong is StudyUS's overall evidence that
+ * Knowledge Confidence ("how strong is StudyUs's overall evidence that
  * the student knows this concept?") belongs to Phase 2.2's Knowledge
  * State/evidence-sufficiency interpretation and is never touched here.
  *

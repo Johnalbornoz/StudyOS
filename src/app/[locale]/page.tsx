@@ -91,7 +91,7 @@ export default async function MarketingHomePage({ params }: { params: Promise<{ 
       '@type': 'Organization',
       name: SITE_NAME,
       url: SITE_URL,
-      logo: `${SITE_URL}/logo.png`,
+      logo: `${SITE_URL}/brand/studyus-wordmark-v2.png`,
     },
     {
       '@context': 'https://schema.org',

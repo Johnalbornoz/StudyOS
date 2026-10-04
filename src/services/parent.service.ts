@@ -91,7 +91,7 @@ export async function linkChildByEmail(
     student.id,
     'PARENT_LINK_REQUEST',
     'Solicitud de acceso',
-    `${parentName} quiere ver tu progreso en StudyUS. Puedes aceptar o rechazar en tus notificaciones.`
+    `${parentName} quiere ver tu progreso en StudyUs. Puedes aceptar o rechazar en tus notificaciones.`
   );
 
   return { studentId: student.id, name: student.name || student.email, email: student.email, status: 'pending' };

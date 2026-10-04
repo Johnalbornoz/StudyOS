@@ -36,7 +36,7 @@ export default function DangerZoneActions({ userId, isSelf }: { userId: string; 
     const body = await res.json().catch(() => ({}));
     if (body.error === 'CONFIRMATION_MISMATCH') setError('El correo no coincide. Escribe exactamente el correo de esta cuenta.');
     else if (body.error === 'DELETION_BLOCKED') setError(`No se puede eliminar: ${body.dependencies?.join(', ')}`);
-    else if (body.error === 'LAST_ADMIN_PROTECTED') setError('No se puede eliminar al único Admin StudyUS activo.');
+    else if (body.error === 'LAST_ADMIN_PROTECTED') setError('No se puede eliminar al único Admin StudyUs activo.');
     else if (body.error === 'SELF_DELETION_FORBIDDEN') setError('No puedes eliminar tu propia cuenta.');
     else setError('No se pudo completar la eliminación.');
   }

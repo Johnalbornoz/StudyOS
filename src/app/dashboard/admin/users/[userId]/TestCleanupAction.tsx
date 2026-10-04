@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const DEP_LABELS: Record<string, string> = {
   NOT_MARKED_TEST: 'La cuenta no está marcada como prueba.',
-  STUDYUS_ADMIN_ROLE: 'Tiene el rol Admin StudyUS.',
+  STUDYUS_ADMIN_ROLE: 'Tiene el rol Admin StudyUs.',
   ADMINISTERS_INSTITUTION: 'Administra una institución.',
   HAS_ACCEPTED_RELATIONSHIP: 'Tiene una relación padre-estudiante aceptada.',
   HAS_REAL_PAYMENT: 'Tiene un pago real registrado.',

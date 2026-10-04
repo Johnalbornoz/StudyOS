@@ -7,7 +7,7 @@ import type { AIErrorCode, AIProvider } from './types';
  * either the raw HTTP status or content the PROVIDER itself put in its
  * own JSON error body (`error.type`/`error.code`/`error.param`/
  * `error.message`) -- never the API key, never authorization headers,
- * never StudyUS's own prompt/question content, never student PII.
+ * never StudyUs's own prompt/question content, never student PII.
  */
 export interface ProviderErrorDetail {
   status: number;
@@ -47,7 +47,7 @@ export class AIExecutionError extends Error {
  * (`CONFIGURATION_ERROR`: HTTP 401/403) will fail again, identically, on
  * ANY model -- the request that was rejected is the one about to be
  * resent. Every other code (`TIMEOUT`, `RATE_LIMIT`, the transient-
- * provider-failure sense of `PROVIDER_ERROR`, and the StudyUS-side
+ * provider-failure sense of `PROVIDER_ERROR`, and the StudyUs-side
  * `VALIDATION_ERROR`/`INVALID_RESPONSE` codes, where a DIFFERENT model
  * genuinely might behave differently) remains retryable, preserving
  * every existing bounded-fallback behavior.

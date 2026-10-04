@@ -109,7 +109,7 @@ export function compareCanonicalDecisions(
     return outcome(
       'ADAPTER_DATA_GAP',
       ['NEW_LEARN_BLOCKED_BECAUSE_LEARN_CHECK_NOT_AVAILABLE'],
-      `New engine reports LEARN because no LEARN_CHECK-equivalent evidence source exists in real StudyUS data for this concept -- this is an adapter limitation, not a new-engine defect. Old model reported ${oldSnapshot.stage} using a different (more permissive) definition of "has learned."`,
+      `New engine reports LEARN because no LEARN_CHECK-equivalent evidence source exists in real StudyUs data for this concept -- this is an adapter limitation, not a new-engine defect. Old model reported ${oldSnapshot.stage} using a different (more permissive) definition of "has learned."`,
     );
   }
 
@@ -128,7 +128,7 @@ export function compareCanonicalDecisions(
     return outcome(
       'ADAPTER_DATA_GAP',
       ['TRANSFER_BREAKDOWN_UNAVAILABLE'],
-      `Transfer evidence for this concept has no 3-challenge breakdown in real StudyUS data (Transfer tasks are recorded individually, not as one 3-challenge attempt) -- the new engine cannot evaluate Transfer qualification at all for this evidence, regardless of what the old model concluded.`,
+      `Transfer evidence for this concept has no 3-challenge breakdown in real StudyUs data (Transfer tasks are recorded individually, not as one 3-challenge attempt) -- the new engine cannot evaluate Transfer qualification at all for this evidence, regardless of what the old model concluded.`,
     );
   }
 

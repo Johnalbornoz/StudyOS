@@ -142,7 +142,7 @@ describe('Parts 1/5/6/7/8 -- getCanonicalPedagogicalDecision', () => {
     expect(learn?.satisfactionBasis).toBe('LEGACY_MIGRATION_BASELINE');
   });
 
-  it('real StudyUS evidence rows are mapped through the CANON-R3 adapter (never a second, re-implemented mapping) before reaching the engine', async () => {
+  it('real StudyUs evidence rows are mapped through the CANON-R3 adapter (never a second, re-implemented mapping) before reaching the engine', async () => {
     fetchStudyUSEvidenceRowsMock.mockResolvedValue([
       { id: 'e1', sourceType: 'PRACTICE_QUIZ', result: 'correct', scorePercent: 90, difficulty: 3, timestamp: '2026-09-10T00:00:00.000Z', hintsUsed: 0, aiAssistanceType: 'NONE', activityType: 'PRACTICE', itemCount: 3, correctCount: 3 },
     ]);

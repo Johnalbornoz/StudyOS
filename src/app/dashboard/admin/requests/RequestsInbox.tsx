@@ -69,7 +69,7 @@ export default function RequestsInbox() {
       </section>
 
       <section>
-        <h2 style={{ fontSize: 15, marginBottom: 'var(--space-2)' }}>Inconsistencias Clerk ↔ StudyUS</h2>
+        <h2 style={{ fontSize: 15, marginBottom: 'var(--space-2)' }}>Inconsistencias Clerk ↔ StudyUs</h2>
         {data.syncErrors.length === 0 ? (
           <EmptyState title="No se detectaron inconsistencias en la muestra reciente." />
         ) : (

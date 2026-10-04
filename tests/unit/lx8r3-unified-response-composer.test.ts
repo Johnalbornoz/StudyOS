@@ -77,7 +77,7 @@ describe('LX-8R3 R3 -- Enter creates the next block; Shift+Enter is a plain line
 /* ================================================================ *
  * R4 -- REMOVE REDUNDANT CUSTOM TOOLBAR.                             *
  * ================================================================ */
-describe('LX-8R3 R4 -- the redundant StudyUS math-symbol toolbar is removed from the unified surface', () => {
+describe('LX-8R3 R4 -- the redundant StudyUs math-symbol toolbar is removed from the unified surface', () => {
   it('MathExpressionEditor is always mounted with showToolbar={false} inside the composer -- no custom button row renders here', () => {
     expect(COMPOSER_SRC).toMatch(/showToolbar=\{false\}/);
   });

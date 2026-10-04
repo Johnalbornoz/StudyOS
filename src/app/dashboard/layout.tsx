@@ -25,7 +25,7 @@ import WorkspaceSwitcher, { type WorkspaceOption } from './WorkspaceSwitcher';
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
 export const metadata: Metadata = {
-  title: { absolute: 'StudyUS' },
+  title: { absolute: 'StudyUs' },
   robots: { index: false, follow: false },
 };
 

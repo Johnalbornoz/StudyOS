@@ -98,7 +98,7 @@ describe('R1 -- usage pipeline traced end-to-end via executeAI(parseUsage)', () 
   });
 });
 
-describe('R3 -- usage survives every StudyUS-side rejection, not just SUCCESS', () => {
+describe('R3 -- usage survives every StudyUs-side rejection, not just SUCCESS', () => {
   const usageRaw = openaiRaw({ prompt_tokens: 555, completion_tokens: 44 });
 
   it('(4) structured validation failure (validate returns invalid) preserves provider usage', async () => {

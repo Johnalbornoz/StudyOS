@@ -153,7 +153,7 @@ export function contextPromptBlock(ctx: TutorContext): string {
   if (ctx.learning.subject) lines.push(`Subject: ${ctx.learning.subject.name}`);
   if (ctx.learning.topic) lines.push(`Topic: ${ctx.learning.topic}`);
   if (ctx.learning.concept) lines.push(`Concept the student is working on: ${ctx.learning.concept.label}`);
-  if (ctx.learning.stage) lines.push(`Where the student is on this concept (decided by StudyUS, not by you): ${ctx.learning.stage}`);
+  if (ctx.learning.stage) lines.push(`Where the student is on this concept (decided by StudyUs, not by you): ${ctx.learning.stage}`);
   if (ctx.learning.entryMode) {
     lines.push(`The student opened the Tutor from ${ENTRY_MODE_TEXT[ctx.learning.entryMode]} and will go back to it: help them understand, do not do the activity for them`);
   }

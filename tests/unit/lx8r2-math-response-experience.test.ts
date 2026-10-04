@@ -124,7 +124,7 @@ describe('LX-8R2 R6 -- native typesetting, LaTeX stays internal', () => {
  * degradation on parse failure, no auto-guessing.                    *
  * ================================================================ */
 describe('LX-8R2 R7 -- voice-to-math pipeline never silently guesses, always requires explicit acceptance', () => {
-  it('a successful parse is shown for review ("StudyUS understood") and requires an explicit accept click before onAccept fires', () => {
+  it('a successful parse is shown for review ("StudyUs understood") and requires an explicit accept click before onAccept fires', () => {
     expect(VOICE_INPUT_SRC).toMatch(/mathExpression\.voiceUnderstood/);
     expect(VOICE_INPUT_SRC).toMatch(/function acceptParsed\(\)/);
     expect(VOICE_INPUT_SRC).toMatch(/onClick=\{acceptParsed\}/);

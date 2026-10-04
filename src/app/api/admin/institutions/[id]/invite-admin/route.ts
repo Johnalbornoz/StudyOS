@@ -6,7 +6,7 @@
  * registration or role self-selection (F1's assignSelfServiceRole
  * cannot accept this role at the type level; this route is a
  * deliberately separate, narrower mechanism, not an extension of it).
- * `targetClerkUserId` is a Clerk user id the StudyUS admin already
+ * `targetClerkUserId` is a Clerk user id the StudyUs admin already
  * knows out of band (e.g. from the Clerk dashboard) -- this is the
  * minimum controlled mechanism the task allows; no Admin Console is
  * built.

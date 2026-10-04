@@ -119,7 +119,7 @@ export async function createMercadoPagoCheckout(
       Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
     },
     body: JSON.stringify({
-      reason: 'StudyUS - Suscripción mensual',
+      reason: 'StudyUs - Suscripción mensual',
       payer_email: studentEmail,
       back_url: backUrl,
       auto_recurring: {
