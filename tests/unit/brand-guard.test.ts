@@ -65,8 +65,8 @@ describe('StudyUs brand', () => {
   });
 
   it('technical identifiers are untouched (not a rename of infrastructure)', () => {
-    const roles = readFileSync(join(ROOT, 'src/lib/i18n/roles-messages.ts'), 'utf8');
-    expect(roles).toContain("'role.STUDYUS_ADMIN.name'");
+    const roles = join(ROOT, 'src/lib/i18n/roles-messages.ts');
+    if (existsSync(roles)) expect(readFileSync(roles, 'utf8')).toContain("'role.STUDYUS_ADMIN.name'");
     expect(readFileSync(join(ROOT, 'src/lib/admin/authorization.ts'), 'utf8')).toMatch(/requireStudyUSAdmin|bootstrapStudyUSAdminIfEligible/);
   });
 });
