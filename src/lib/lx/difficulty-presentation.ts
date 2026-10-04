@@ -1,6 +1,6 @@
 /**
  * UX/CANON-R1 PART A/B -- the ONE presentation authority for canonical
- * difficulty. StudyUS already determines difficulty canonically
+ * difficulty. StudyUs already determines difficulty canonically
  * (`resolveTargetDifficulty` / a question's own `difficulty` field,
  * 1-5) -- this module NEVER re-derives, re-computes, or overrides that
  * number. It only maps an ALREADY-canonical value to a localized,

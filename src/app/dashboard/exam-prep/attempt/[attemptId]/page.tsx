@@ -41,7 +41,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   // Exam V2: the instance (if any) this attempt belongs to -- portfolio uploads are scoped to it.
   const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
   if (instance?.status === 'DELETED') notFound();
-  // The content-origin label names the framework ("Práctica generada por StudyUS, alineada al formato de IB").
+  // The content-origin label names the framework ("Práctica generada por StudyUs, alineada al formato de IB").
   const familyRow = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [attempt.examVersionId]).catch(() => ({ rows: [] as any[] }));
   const frameworkName = (t as Record<string, string>)[`exam.family.${familyRow.rows[0]?.exam_family}`] ?? familyRow.rows[0]?.exam_family ?? '';
   const v2Labels: Record<string, string> = Object.fromEntries(Object.entries(t as Record<string, string>).filter(([k]) => k.startsWith('exv2.')).map(([k, v]) => [k, v.replace('{framework}', frameworkName)]));

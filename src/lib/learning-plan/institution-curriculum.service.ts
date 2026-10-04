@@ -6,7 +6,7 @@
  * academic year / period.
  *
  *  - It never creates, edits or deletes canonical concepts (catalog
- *    governance stays with StudyUS).
+ *    governance stays with StudyUs).
  *  - Removing a concept marks it REMOVED (audited); learner histories,
  *    class history and every learner state stay untouched.
  *  - REQUIRED concepts are institutional intent; they are NOT auto-enrolled

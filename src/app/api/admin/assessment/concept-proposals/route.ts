@@ -3,7 +3,7 @@
  * Curator governance of LearningConceptProposals: list, and decide
  * (MAPPED_TO_EXISTING / MERGED need an existing canonical concept;
  * APPROVED_NEW records the decision -- the concept itself is created through
- * the normal concept tooling, never here; REJECTED). StudyUS admin only.
+ * the normal concept tooling, never here; REJECTED). StudyUs admin only.
  */
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';

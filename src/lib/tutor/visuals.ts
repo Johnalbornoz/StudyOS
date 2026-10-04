@@ -1,8 +1,8 @@
 /**
- * UX-5 -- pedagogical visuals, rendered by StudyUS.
+ * UX-5 -- pedagogical visuals, rendered by StudyUs.
  *
  * The model may propose ONE visual as a small JSON spec inside a fenced
- * ```studyus-visual block. StudyUS validates it strictly and draws it
+ * ```studyus-visual block. StudyUs validates it strictly and draws it
  * itself (SVG): exact mathematics, no raster generation, nothing the model
  * can put on screen except bars, ticks and short labels. An invalid spec
  * is dropped; the text around it still renders (a visual never blocks the

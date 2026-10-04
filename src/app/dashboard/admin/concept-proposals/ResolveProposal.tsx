@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-/** Track A -- StudyUS catalog governance resolves one concept proposal. */
+/** Track A -- StudyUs catalog governance resolves one concept proposal. */
 export function ResolveProposal({
   proposalId,
   candidates,

@@ -32,7 +32,7 @@ export default function UserRoleActions({ userId, currentRoles }: { userId: stri
     const res = await fetch(`/api/admin/users/${userId}/roles/${role}`, { method: 'DELETE' });
     setBusy(false);
     if (res.ok) router.refresh();
-    else if (res.status === 409) setError('No se puede quitar el único Admin StudyUS activo.');
+    else if (res.status === 409) setError('No se puede quitar el único Admin StudyUs activo.');
     else setError('No se pudo revocar el rol.');
   }
 

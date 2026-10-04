@@ -350,7 +350,7 @@ export async function verifyAttemptResultReproducible(simulationAttemptId: strin
 }
 
 /**
- * Invalidation (StudyUS admin / integrity process only): stamps the result,
+ * Invalidation (StudyUs admin / integrity process only): stamps the result,
  * never deletes or re-scores it. An invalidated result is excluded from
  * readiness simulation history. It never writes or removes cognition.
  */

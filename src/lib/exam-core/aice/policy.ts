@@ -4,7 +4,7 @@
  * Every rule comes from cambridgeinternational.org (docs/exams/v2/sources/
  * aice-diploma.json, retrieved 2026-10-01) and carries its source key and
  * confidence. Rules Cambridge does not state publicly are NOT guessed: they are
- * marked `confirmed: false` and the StudyUS behaviour chosen for them is the
+ * marked `confirmed: false` and the StudyUs behaviour chosen for them is the
  * conservative one, shown to the Student as a planning assumption.
  *
  * The AICE Diploma is a group award over Cambridge International AS & A Level
@@ -58,7 +58,7 @@ export const AICE_DIPLOMA_POLICY = {
   } as PolicyRule<{ A: Record<string, number>; AS: Record<string, number> }>,
   maxScore: { value: 420, sourceKey: 'cie-aice-qualification', confirmed: true } as PolicyRule<number>,
   awardBands: { value: [{ band: 'DISTINCTION', min: 360, max: 420 }, { band: 'MERIT', min: 250, max: 359 }, { band: 'PASS', min: 140, max: 249 }] as Array<{ band: 'DISTINCTION' | 'MERIT' | 'PASS'; min: number; max: number }>, sourceKey: 'cie-aice-qualification', confirmed: true } as PolicyRule<Array<{ band: 'DISTINCTION' | 'MERIT' | 'PASS'; min: number; max: number }>>,
-  // ---- not stated publicly: conservative StudyUS behaviour, disclosed ----
+  // ---- not stated publicly: conservative StudyUs behaviour, disclosed ----
   oneCountedInstancePerSyllabus: { value: true, sourceKey: 'cie-aice-qualification', confirmed: false, note: 'A syllabus counts once (its A Level, or its AS Level -- never both).' } as PolicyRule<boolean>,
   bestEligibleRetake: { value: true, sourceKey: 'cie-aice-qualification', confirmed: false, note: 'With several results for the same syllabus and level, the best eligible one is used.' } as PolicyRule<boolean>,
   scoreMethod: { value: 'SUM_OF_COUNTED_RESULTS_CAPPED', sourceKey: 'cie-aice-qualification', confirmed: false, note: 'Points of the counted results (core included), capped at 420; Cambridge only states "best overall outcome".' } as PolicyRule<string>,

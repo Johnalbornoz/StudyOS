@@ -216,7 +216,7 @@ describe('Explorer / preparation UI contract', () => {
     expect(home).toMatch(/prep\.cap\.reducedMock/);
     expect(home).toMatch(/c\.fullMocks\.map/);
     const es = readFileSync(join(ROOT, 'src/lib/i18n/messages.ts'), 'utf-8');
-    expect(es).toMatch(/'prep\.home\.estimateNote': 'Es una orientación de StudyUS a partir de tu evidencia\. No es una predicción del resultado oficial\.'/);
+    expect(es).toMatch(/'prep\.home\.estimateNote': 'Es una orientación de StudyUs a partir de tu evidencia\. No es una predicción del resultado oficial\.'/);
     expect(es).not.toMatch(/'prep\.[^']+': '[^']*[Ss]imulacro oficial/);
   });
 });

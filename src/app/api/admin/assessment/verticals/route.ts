@@ -4,7 +4,7 @@
  * GET lists the DEV certification vertical configurations and whether each is
  * applied. POST applies ONE configuration (a catalog key, or an explicit
  * configuration document) -- dry-run by default (`write: false` runs inside a
- * rolled-back transaction). StudyUS admin only (same allowlist gate as every
+ * rolled-back transaction). StudyUs admin only (same allowlist gate as every
  * /api/admin/assessment route). A configuration is the ONLY way a vertical is
  * created: no per-vertical code path exists.
  */

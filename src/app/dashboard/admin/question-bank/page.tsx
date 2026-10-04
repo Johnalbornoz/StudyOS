@@ -10,7 +10,7 @@ import { Table, TD, ROW, YesNo, CellState } from './ui';
 
 /**
  * Question Bank Health (Platform Admin / Exam Content). Bank health is not
- * Student readiness: it says whether StudyUS can BUILD practice and forms for
+ * Student readiness: it says whether StudyUs can BUILD practice and forms for
  * each exam version, from the latest precomputed snapshot.
  */
 export default async function QuestionBankHealthPage() {
@@ -24,7 +24,7 @@ export default async function QuestionBankHealthPage() {
 
   return (
     <div>
-      <PageHeader title="Salud del banco de preguntas" subtitle="Qué puede construir StudyUS para cada examen: práctica, simulacro reducido y simulacro completo, calculado ensamblando formularios reales." />
+      <PageHeader title="Salud del banco de preguntas" subtitle="Qué puede construir StudyUs para cada examen: práctica, simulacro reducido y simulacro completo, calculado ensamblando formularios reales." />
       <AdminSubNav active="question-bank" />
       <p style={{ marginBottom: 'var(--space-4)' }}>
         <Link href="/dashboard/admin/question-bank/operations" className="btn btn-ghost">Operaciones de generación →</Link>

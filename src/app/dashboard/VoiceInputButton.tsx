@@ -26,20 +26,20 @@ import { logInteraction } from '@/lib/lx/multimodal-observability';
  *
  * LX-8R1 R2 -- PRIVACY MODEL (corrected; do not restate the old,
  * overclaiming version of this comment):
- *   - StudyUS does not intentionally persist or upload raw microphone
+ *   - StudyUs does not intentionally persist or upload raw microphone
  *     audio through its own backend in this browser-native
  *     implementation. This component holds only the resulting text
  *     (`transcript`), and only for as long as the review step lasts --
  *     never an audio blob, never a recording.
- *   - StudyUS's OWN backend receives no audio at all in this
+ *   - StudyUs's OWN backend receives no audio at all in this
  *     implementation (there is no upload endpoint, no fetch carrying
  *     audio anywhere in this file).
- *   - What StudyUS does NOT control: whether the BROWSER's own
+ *   - What StudyUs does NOT control: whether the BROWSER's own
  *     `SpeechRecognition` implementation performs recognition on-device
  *     or by sending audio to the browser vendor's own cloud service
  *     (e.g. Chrome's implementation is vendor-cloud-backed on many
  *     platforms). That behavior is outside this runtime's control and
- *     is NOT something this component -- or StudyUS -- can promise
+ *     is NOT something this component -- or StudyUs -- can promise
  *     either way.
  *   - Browser-native STT therefore requires explicit privacy/security
  *     review and approval before Production use with minors, if
@@ -57,7 +57,7 @@ import { logInteraction } from '@/lib/lx/multimodal-observability';
  * LX-8R1 R3 -- LANGUAGE AUTHORITY: recognition locale comes from
  * `expectedResponseLanguage` (what the learner's answer is expected to
  * be IN), never from the activity's own content/instruction language.
- * They are numerically identical today (StudyUS does not yet have a
+ * They are numerically identical today (StudyUs does not yet have a
  * language-learning surface where they'd diverge), but this component
  * only ever reads the `expectedResponseLanguage` prop -- a future
  * instructionLanguage != expectedResponseLanguage case changes nothing

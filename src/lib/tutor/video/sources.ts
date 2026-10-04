@@ -8,7 +8,7 @@
  *
  * Trust is recorded, never inferred: popularity, subscriber counts and views
  * are NOT inputs. A source records WHY it is trusted (`rationale`) and who
- * reviewed it. StudyUS does not claim any external certification that does
+ * reviewed it. StudyUs does not claim any external certification that does
  * not exist.
  *
  * DEV ships EMPTY on purpose: no channel id is added without a real review
@@ -37,7 +37,7 @@ export interface ApprovedSource {
   /** Age bands the source is approved for. */
   ageBands: Exclude<AgeBand, 'UNKNOWN'>[];
   status: SourceStatus;
-  /** Why StudyUS trusts it (institution, publisher, reviewed provenance...). */
+  /** Why StudyUs trusts it (institution, publisher, reviewed provenance...). */
   rationale: string;
   reviewedBy: string;
   reviewedAt: string;

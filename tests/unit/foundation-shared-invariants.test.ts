@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 // Track A product amendment (2026-10-01): one canonical user, ONE primary
-// persona; institution / StudyUS administration are capabilities. The
+// persona; institution / StudyUs administration are capabilities. The
 // additive-persona assertions (4b) were replaced; the security invariants
 // (no duplicate user, audited grants, revoked never re-granted, privileged
 // roles never self-service) are unchanged.

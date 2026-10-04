@@ -3,7 +3,7 @@ import type { VisualAid } from '@/services/quiz-generation.service';
 /**
  * LX-8 R15-R20 -- VISUAL SEMANTIC CONTRACT.
  *
- * StudyUS already renders visuals deterministically -- `VisualAid`
+ * StudyUs already renders visuals deterministically -- `VisualAid`
  * (quiz-generation.service.ts) is either `kind: 'diagram'` (inline,
  * sanitized SVG the content model writes directly) or `kind: 'chart'`
  * (a small labeled dataset the client renders as SVG bars/lines,

@@ -460,8 +460,8 @@ export default function LearnerShell({
   }, [open]);
 
   const logo = (
-    <Link href="/dashboard/today" aria-label="StudyUS" style={{ display: 'inline-flex', padding: '0 var(--space-2)' }}>
-      <Image src="/logo.png" alt="StudyUS" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
+    <Link href="/dashboard/today" aria-label="StudyUs" style={{ display: 'inline-flex', padding: '0 var(--space-2)' }}>
+      <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
     </Link>
   );
 

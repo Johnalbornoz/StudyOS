@@ -6,9 +6,9 @@
  * "Systems of Linear Equations" ~ "Linear Systems"), so an existing concept
  * is reused instead of duplicated.
  *
- * Only StudyUS catalog governance (Platform Admin) resolves a proposal:
+ * Only StudyUs catalog governance (Platform Admin) resolves a proposal:
  * MAPPED_TO_EXISTING / MERGED (to an existing canonical concept), APPROVED
- * (StudyUS creates the canonical concept) or REJECTED.
+ * (StudyUs creates the canonical concept) or REJECTED.
  */
 import { db } from '@/lib/db';
 import { normalizeName } from '@/lib/experience/subject-catalog';
@@ -81,7 +81,7 @@ export async function createConceptProposal(params: {
     await notifyInstitutionAdmins(params.institutionId, {
       type: 'CONCEPT_PROPOSAL_CREATED',
       title: 'Nueva propuesta de concepto',
-      message: `Se propuso el concepto «${params.title.trim()}». StudyUS lo revisará.`,
+      message: `Se propuso el concepto «${params.title.trim()}». StudyUs lo revisará.`,
       payload: { title: params.title.trim() },
       actionHref: `/dashboard/institution/${params.institutionId}/curriculum`,
     });

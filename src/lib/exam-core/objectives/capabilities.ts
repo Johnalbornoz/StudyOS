@@ -7,8 +7,8 @@
  *   CATALOG_ONLY        -> the objective can be added to the preparation
  *   STRUCTURE_READY     -> + "what is assessed" (structure, requirements)
  *   PRACTICE_READY      -> + practice (by area / skill) and a diagnostic
- *   REDUCED_MOCK_READY  -> + a reduced-format StudyUS mock
- *   FULL_MOCK_READY     -> + a full-length StudyUS mock
+ *   REDUCED_MOCK_READY  -> + a reduced-format StudyUs mock
+ *   FULL_MOCK_READY     -> + a full-length StudyUs mock
  *
  * Pure: it reads the persisted catalogue entries of the objective (state,
  * modes, selectable -- written by the governed apply) and the bridge mapping
@@ -21,7 +21,7 @@ import type { ExamObjective } from './objective-catalog';
 export type Mode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
 export type Capability = 'STRUCTURE' | 'PRACTICE' | 'DIAGNOSTIC' | 'REDUCED_MOCK' | 'FULL_MOCK' | 'LEARNING_BRIDGE';
 export type UnavailableReason =
-  | 'NOT_CONFIGURED' // catalogue only: no verified StudyUS structure yet
+  | 'NOT_CONFIGURED' // catalogue only: no verified StudyUs structure yet
   | 'STRUCTURE_ONLY' // structure configured, no practice bank yet
   | 'BANK_IN_PROGRESS' // structure configured, some items, not enough to practise
   | 'PRACTICE_ONLY' // practice exists, no mock form yet
@@ -119,7 +119,7 @@ export function computeCapabilities(objective: Pick<ExamObjective, 'key' | 'kind
   };
 }
 
-/** Short, Student-facing status of an objective (Explorer card): what StudyUS can do for it today. */
+/** Short, Student-facing status of an objective (Explorer card): what StudyUs can do for it today. */
 export type ObjectiveStatusKey = 'canAdd' | 'structure' | 'practice' | 'reducedMock' | 'fullMock' | 'bankInProgress' | 'plan';
 export function objectiveStatusKey(c: Pick<ExamPreparationCapabilities, 'canPlanDiploma' | 'canRunFullMock' | 'canRunReducedMock' | 'canPractice' | 'canViewStructure' | 'unavailableReasons'>): ObjectiveStatusKey {
   if (c.canPlanDiploma) return 'plan';

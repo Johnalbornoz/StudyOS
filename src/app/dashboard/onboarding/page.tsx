@@ -13,7 +13,7 @@ import SubjectPicker from '../subjects/SubjectPicker';
 
 /**
  * LX-2D / UX-5 closure -- first-time onboarding: no product tour, no
- * StudyUS vocabulary. The page asks "¿Qué quieres aprender?" and offers
+ * StudyUs vocabulary. The page asks "¿Qué quieres aprender?" and offers
  * the subjects the Student's profile implies (SubjectPicker); choosing one
  * continues straight into concept choice in Aprender.
  *

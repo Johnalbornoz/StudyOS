@@ -7,7 +7,7 @@
  *     Engine's own read model (`getConceptKnowledgeState`) -- READ ONLY;
  *   - readiness from F9's latest snapshot.
  * It never computes mastery and never recommends from the score: the "next
- * StudyUS step" is the mapped concept's own canonical page (or Today, the
+ * StudyUs step" is the mapped concept's own canonical page (or Today, the
  * orchestrated next step), never a second recommendation engine.
  *
  * Item review respects the attempt's frozen policy (FULL vs SCORES_ONLY) and

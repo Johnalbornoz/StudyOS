@@ -1,4 +1,4 @@
-/** Track A -- POST { action: MAP_TO_EXISTING | MERGE | APPROVE | REJECT, canonicalConceptId?, note? } (StudyUS catalog governance only). */
+/** Track A -- POST { action: MAP_TO_EXISTING | MERGE | APPROVE | REJECT, canonicalConceptId?, note? } (StudyUs catalog governance only). */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';

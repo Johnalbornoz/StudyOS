@@ -1,7 +1,7 @@
 /**
  * Exam V2 -- POST /api/admin/assessment/structure  { write?: boolean }
  * Applies the assessment structure catalogue (sources + nodes + bindings to
- * configured verticals). Dry run by default. StudyUS admin only.
+ * configured verticals). Dry run by default. StudyUs admin only.
  */
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';

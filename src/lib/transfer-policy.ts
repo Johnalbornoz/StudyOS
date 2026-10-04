@@ -21,7 +21,7 @@
  * ARCHITECTURAL BOUNDARY. Phase 7 owns transfer QUALIFICATION and
  * transfer DEPTH. It does NOT own:
  *   - WHAT the learner should do next (Phase 4),
- *   - HOW StudyUS should teach (Phase 5),
+ *   - HOW StudyUs should teach (Phase 5),
  *   - Mastery / Knowledge State (Phase 2),
  *   - memory / retention (Phase 6).
  * Nothing here reads or writes any of those. `computeTransferScore`

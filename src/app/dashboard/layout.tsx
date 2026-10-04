@@ -26,7 +26,7 @@ import WorkspaceSwitcher, { type WorkspaceOption } from './WorkspaceSwitcher';
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
 export const metadata: Metadata = {
-  title: { absolute: 'StudyUS' },
+  title: { absolute: 'StudyUs' },
   robots: { index: false, follow: false },
 };
 
@@ -216,7 +216,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ADMIN: t['workspace.admin'],
   };
 
-  // Capabilities (institution administration, StudyUS administration) are
+  // Capabilities (institution administration, StudyUs administration) are
   // ordinary links, plus a way back to the persona from a capability page.
   const personaWorkspace = personaWorkspaceOf(availableWorkspaces);
   const capabilityItems: ResolvedNavGroup['items'] = [];

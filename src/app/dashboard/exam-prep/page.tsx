@@ -21,7 +21,7 @@ import { ProfileCard } from './ProfileCard';
 /**
  * Track B -- objective first: "¿Para qué examen quieres prepararte?" Every
  * catalogue objective can be chosen; the Student's preparations list what
- * StudyUS can do today for each.
+ * StudyUs can do today for each.
  *
  * F14 Workstream A -- Student Exam Prep landing (task section 4). This
  * is the FIRST Student-facing surface over F9 (readiness.service.ts /

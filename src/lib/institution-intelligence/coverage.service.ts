@@ -2,7 +2,7 @@
  * F12 -- Curriculum Coverage Intelligence (task section 15/16). Uses
  * F6's own, unmodified, structure-scoped `computeMappingCoverage`/
  * `computeContentCoverage` (never per-learner, never re-derived) --
- * these numbers describe StudyUS's platform/content completeness for a
+ * these numbers describe StudyUs's platform/content completeness for a
  * curriculum structure and are the SAME regardless of which
  * institution is asking; the institution parameter here exists only to
  * authorize the request, exactly like any other F12 entry point. This
@@ -35,7 +35,7 @@ export async function getInstitutionCoverage(actorUserId: string, institutionId:
   const lifetime = { type: 'LIFETIME' as const, asOf: nowIso() };
   const sharedLimitations = [
     'this is platform/content coverage (F6), NOT learner mastery (F5) and NOT per-student exam-blueprint evidence coverage (F9) -- these three are never mixed (INV-F12-10)',
-    'a structure with zero learners in this institution shows the same coverage numbers as one with many -- coverage describes StudyUS content completeness, not this institution\'s population',
+    'a structure with zero learners in this institution shows the same coverage numbers as one with many -- coverage describes StudyUs content completeness, not this institution\'s population',
   ];
 
   return {

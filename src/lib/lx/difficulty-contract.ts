@@ -9,7 +9,7 @@
  * LX-1R finding: the first LX-1 attempt then INVENTED a difficulty
  * policy -- mastery-score bands (0-20->1 ... 80-100->5) and activity
  * biases (Practice -1, Transfer +1). No such authority exists in
- * StudyUS. That derivation has been REMOVED.
+ * StudyUs. That derivation has been REMOVED.
  *
  * LX-9R3's own report proved section E below was never actually wired
  * anywhere: `generate-and-take/route.ts` still resolved every ordinary
@@ -22,7 +22,7 @@
  *   A. Difficulty SEMANTICS -- three distinct notions kept separate.
  *   B. SCALE -- 1-5 is retained purely as the current technical
  *      representation (`GeneratedQuestion.difficulty`).
- *   C. OWNERSHIP invariant -- StudyUS, never the learner, selects a
+ *   C. OWNERSHIP invariant -- StudyUs, never the learner, selects a
  *      target challenge level.
  *   D. EVIDENCE CONSISTENCY -- the difficulty written on a
  *      `learning_evidence` row must be the actual generated question
@@ -78,7 +78,7 @@ function clampToScale(n: number): QuestionDifficultyValue {
 // --- C. OWNERSHIP invariant (assertion, not a function) ---
 /**
  * `DIFFICULTY_IS_STUDYUS_OWNED = true`: a canonical learning activity's
- * target difficulty will be selected by StudyUS. The learner may
+ * target difficulty will be selected by StudyUs. The learner may
  * eventually SEE it; the learner never SETS it. LX-1 states the
  * invariant; it does not implement the selection.
  */
@@ -152,7 +152,7 @@ export type MasteryStateLike =
 
 /**
  * The ONLY two purpose-driving facts this authority takes, beyond
- * Knowledge State: `ActivityType` (StudyUS's own existing taxonomy,
+ * Knowledge State: `ActivityType` (StudyUs's own existing taxonomy,
  * activity-taxonomy.ts) IS the "activity purpose" input D1 asks for --
  * EvidenceMode, LearnerJourneyStage, and TeachingIntent/SupportLevel
  * are each a coarser or finer PROJECTION of the same underlying

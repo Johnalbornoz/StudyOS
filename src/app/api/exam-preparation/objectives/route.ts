@@ -2,7 +2,7 @@
  * Exam preparation -- GET /api/exam-preparation/objectives?q=&framework=
  *
  * Every objective of the governed catalogue, ALL selectable, each with what
- * StudyUS can do for it today (server-computed capabilities) and the Student's
+ * StudyUs can do for it today (server-computed capabilities) and the Student's
  * own active preparation for it, if any. Filters and search never hide an
  * objective because of its readiness.
  */

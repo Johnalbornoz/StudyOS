@@ -1,13 +1,13 @@
 /**
  * Exam V2 -- AssessmentCalibrationSuite (section 23).
  *
- * No claim that StudyUS marks like an official examiner is allowed without
+ * No claim that StudyUs marks like an official examiner is allowed without
  * evidence. The suite holds cases (item + response + expected marks) and a
  * runner that grades them with the CURRENT graders and measures agreement.
  *
  *   origin OFFICIAL_EXEMPLAR / RELEASED_SAMPLE -- published, marked scripts
  *                                                  (none are held today: licensing);
- *   origin BENCHMARK_FIXTURE                    -- StudyUS-authored cases with
+ *   origin BENCHMARK_FIXTURE                    -- StudyUs-authored cases with
  *                                                  expected marks set by the item's key.
  *
  * `equivalenceClaimAllowed` is true only with >= 30 official cases at >= 80%
@@ -42,7 +42,7 @@ const itemFrom = (cfg: ExamVerticalConfigInput, key: string) => {
   return it.content;
 };
 
-/** StudyUS benchmark cases: one correct, one partially correct, one wrong per deterministic strategy. */
+/** StudyUs benchmark cases: one correct, one partially correct, one wrong per deterministic strategy. */
 export const BENCHMARK_CASES: Array<Omit<CalibrationCase, 'origin' | 'needsAI'> & { cfg: ExamVerticalConfigInput }> = [
   { key: 'bm.ib.log.correct-with-working', framework: 'IB', componentRef: 'aahl.p1', cfg: IB_MATH_AA_HL_V2, itemKey: 'aahl.p1.alg.log', response: '{"latex":"4","working":"x(x-2)=8\\nx^2-2x-8=0"}', expectedMarks: 5, maxMarks: 5 },
   { key: 'bm.ib.log.method-only', framework: 'IB', componentRef: 'aahl.p1', cfg: IB_MATH_AA_HL_V2, itemKey: 'aahl.p1.alg.log', response: '{"latex":"-2","working":"x^2-2x-8=0"}', expectedMarks: 2, maxMarks: 5 },
@@ -119,7 +119,7 @@ export function computeMetrics(results: CaseResult[]): CalibrationMetrics {
     meanAbsoluteError: mae(graded),
     byFramework,
     equivalenceClaimAllowed: allowed,
-    equivalenceReason: official.length === 0 ? 'NO_OFFICIAL_EXEMPLARS: agreement is measured on StudyUS benchmark fixtures only.' : allowed ? 'THRESHOLDS_MET' : 'THRESHOLDS_NOT_MET',
+    equivalenceReason: official.length === 0 ? 'NO_OFFICIAL_EXEMPLARS: agreement is measured on StudyUs benchmark fixtures only.' : allowed ? 'THRESHOLDS_MET' : 'THRESHOLDS_NOT_MET',
   };
 }
 

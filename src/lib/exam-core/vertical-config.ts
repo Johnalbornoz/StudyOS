@@ -6,7 +6,7 @@
  *
  * A configuration declares, explicitly, what it is: `contentStatus` says
  * whether its items/sections are DEV certification fixtures, original
- * StudyUS content or licensed official content. Engine support and official
+ * StudyUs content or licensed official content. Engine support and official
  * content coverage are never conflated: a DEV_CERT_FIXTURE configuration can
  * never carry an official scoring provenance.
  */
@@ -81,7 +81,7 @@ export const ExamVerticalConfigSchema = z
     /**
      * V2: how results are reported (e.g. PAA: Lectura y Redacción together).
      * `NO_OFFICIAL_SCALE`: no official raw->scale conversion is configured, so
-     * only a StudyUS estimated readiness is shown -- never a fake scaled score.
+     * only a StudyUs estimated readiness is shown -- never a fake scaled score.
      */
     reporting: z
       .object({

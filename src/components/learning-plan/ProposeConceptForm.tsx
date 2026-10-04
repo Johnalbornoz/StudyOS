@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 /**
- * Track A -- propose a concept that does not exist in the StudyUS catalog.
+ * Track A -- propose a concept that does not exist in the StudyUs catalog.
  * Nobody but catalog governance creates canonical concepts; the response
  * lists likely existing equivalents so an existing concept is reused.
  */

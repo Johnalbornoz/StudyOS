@@ -6,7 +6,7 @@
  * not modify -- see docs/CANON_R3_SHADOW_INTEGRATION.md's ENGINE FREEZE
  * VERIFICATION section). Unlike the pure engine, code here MAY reference
  * application/domain types (`ActivityType`, `ConceptKnowledgeState`,
- * etc.) -- it is the boundary that translates real StudyUS data into the
+ * etc.) -- it is the boundary that translates real StudyUs data into the
  * engine's own contract, never the other way around.
  *
  * NOTHING in this directory has authority over learner-facing behavior.
@@ -104,7 +104,7 @@ export interface StudyUSEvidenceRow {
    */
   hasItemCriticalMisconception?: boolean;
   /**
-   * GROUNDING NOTE: real StudyUS transfer distances are NEAR/MID/FAR
+   * GROUNDING NOTE: real StudyUs transfer distances are NEAR/MID/FAR
    * (concept_transfer_state's own CHECK constraint), NOT the new
    * engine's NEAR/CONTEXTUAL/HIGHER vocabulary. This module never
    * remaps one taxonomy onto the other -- see the TRANSFER CHALLENGE
@@ -117,7 +117,7 @@ export interface StudyUSEvidenceRow {
    * breakdown for a canonical Transfer attempt (see
    * `StudyUSTransferChallengeScore` above and
    * `new-evidence-capture-contract.ts`'s `V1TransferCapture`). GROUNDING
-   * NOTE (unchanged from CANON-R3): real StudyUS Transfer evidence is
+   * NOTE (unchanged from CANON-R3): real StudyUs Transfer evidence is
    * still recorded per INDIVIDUAL task (`transfer_task_instances`) today
    * -- there is no live write path yet that administers and persists 3
    * challenges together as one canonical attempt (canonical Transfer
@@ -136,7 +136,7 @@ export interface StudyUSEvidenceRow {
    * Section 7's 3 non-misconception Transfer failure classifications).
    * NEVER inferred from `transferChallenges`/`scorePercent` by this
    * adapter -- `undefined` unless a caller supplies an explicit,
-   * independently-sourced diagnostic value. StudyUS has no live source
+   * independently-sourced diagnostic value. StudyUs has no live source
    * for this yet; documented as an adapter gap, never guessed.
    */
   transferFailureDiagnostic?: TransferFailureDiagnostic;
@@ -168,7 +168,7 @@ export interface EvidenceAdapterResult {
   unresolved: AdapterUnresolvedMapping[];
   warnings: string[];
   confidence: AdapterConfidence;
-  /** How many raw StudyUS rows were considered, regardless of whether each one ultimately mapped. */
+  /** How many raw StudyUs rows were considered, regardless of whether each one ultimately mapped. */
   rowsConsidered: number;
   /** A deterministic fingerprint of the RAW (pre-adapter) evidence rows -- see `evidence-snapshot-fingerprint.ts`. Distinct from the engine's own `canonicalRevision` (Part 18): this one lets a caller confirm OLD and NEW were computed from the identical underlying evidence set, independent of any later wall-clock `now`. */
   evidenceSnapshotFingerprint: string;

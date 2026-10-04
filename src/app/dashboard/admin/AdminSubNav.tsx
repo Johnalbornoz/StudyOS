@@ -7,7 +7,7 @@ import { ADMIN_SECTIONS, type AdminSection } from '@/lib/admin/sections';
  * established by `InstitutionSubNav` (a proven, consistent convention
  * in this codebase for "you are inside a distinct workspace") rather
  * than inventing a second navigation system or a separate dark-themed
- * shell -- reuses StudyUS's own design tokens throughout, just with
+ * shell -- reuses StudyUs's own design tokens throughout, just with
  * its own persistent header band so the console reads as its own
  * place, not a page bolted onto the student dashboard.
  */

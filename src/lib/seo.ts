@@ -5,11 +5,12 @@
  * `src/app/robots.ts` and `src/app/dashboard/layout.tsx`'s `noindex`.
  */
 
+import { BRAND_NAME } from './brand';
 import type { Locale } from '@/lib/i18n/messages';
 import { LOCALES } from '@/lib/i18n/messages';
 
 export const SITE_URL = 'https://www.studyus.pro';
-export const SITE_NAME = 'StudyUS';
+export const SITE_NAME = BRAND_NAME;
 
 // Matches the language the root `/` route has always defaulted to
 // (see the pre-existing `getMessages('es')` call in the original

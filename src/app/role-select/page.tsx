@@ -4,7 +4,7 @@
  * Track A -- the account page and first-time profile choice.
  *
  * Product amendment (2026-10-01): ONE canonical user, ONE primary persona
- * (STUDENT / PARENT / TEACHER); institution and StudyUS administration are
+ * (STUDENT / PARENT / TEACHER); institution and StudyUs administration are
  * capabilities, not personas.
  *  - No persona yet: choose exactly ONE (the server refuses a second one,
  *    409 PERSONA_EXISTS). After choosing, the user goes straight into that

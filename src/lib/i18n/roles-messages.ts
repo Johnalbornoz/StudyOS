@@ -81,7 +81,7 @@ type BaseRolesMessageKey =
   | 'inst.requests.teacherRequest' | 'inst.requests.status.APPROVED' | 'inst.requests.status.REJECTED' | 'inst.requests.status.REVOKED'
   | 'inst.common.error' | 'inst.common.saved'
   | 'inst.overview.teachersDesc' | 'inst.overview.classesDesc' | 'inst.overview.learnersDesc' | 'inst.overview.enrollmentsDesc'
-  // StudyUS admin -- institutions
+  // StudyUs admin -- institutions
   | 'adminInst.create.title' | 'adminInst.create.name' | 'adminInst.create.submit' | 'adminInst.create.done'
   | 'adminInst.invite.title' | 'adminInst.invite.email' | 'adminInst.invite.submit' | 'adminInst.invite.done'
   | 'adminInst.invite.userNotFound' | 'adminInst.invite.roleRevoked' | 'adminInst.invite.error'
@@ -97,8 +97,8 @@ type BaseRolesMessageKey =
 type Catalog = Record<BaseRolesMessageKey, string>;
 
 const es: Catalog = {
-  'account.subtitle': 'Tu cuenta usa StudyUS como {persona}.',
-  'account.firstBody': 'Elige un perfil. Define cómo usarás StudyUS con esta cuenta.',
+  'account.subtitle': 'Tu cuenta usa StudyUs como {persona}.',
+  'account.firstBody': 'Elige un perfil. Define cómo usarás StudyUs con esta cuenta.',
   'account.chooseNote': 'Cada cuenta tiene un único perfil. Para cambiarlo más adelante, contacta a soporte.',
   'account.choose': 'Elegir',
   'account.goToWorkspace': 'Ir a mi espacio de {persona}',
@@ -114,7 +114,7 @@ const es: Catalog = {
   'capability.admin': 'Administración',
   'capability.backToPersona': 'Volver a mi espacio',
   'account.title': 'Tu cuenta',
-  'account.firstTitle': '¿Cómo vas a usar StudyUS?',
+  'account.firstTitle': '¿Cómo vas a usar StudyUs?',
   'account.error.generic': 'No se pudo completar la acción. Intenta de nuevo.',
   'account.error.workspace': 'Ese espacio no está disponible para tu cuenta.',
   'account.backToDashboard': 'Volver al panel',
@@ -126,7 +126,7 @@ const es: Catalog = {
   'role.TEACHER.desc': 'Trabaja con las clases que tu institución te asigne.',
   'role.INSTITUTION_ADMIN.name': 'Institución',
   'role.INSTITUTION_ADMIN.desc': 'Administra docentes, grados, clases y estudiantes de tu institución.',
-  'role.STUDYUS_ADMIN.name': 'Administración de StudyUS',
+  'role.STUDYUS_ADMIN.name': 'Administración de StudyUs',
   'role.STUDYUS_ADMIN.desc': 'Consola de la plataforma.',
   'account.family.title': 'Familia con acceso a tu progreso',
   'account.family.body': 'Solo las personas que tú autorizas pueden ver tu progreso, y nunca pueden cambiar nada. Puedes retirar el acceso cuando quieras.',
@@ -146,7 +146,7 @@ const es: Catalog = {
   'parentHome.readOnly': 'Solo lectura',
   'parentHome.childSwitcher': 'Ver el progreso de',
   'parentHome.addChild.title': 'Añadir a tu hijo o hija',
-  'parentHome.addChild.body': 'Escribe el correo de su cuenta de StudyUS. Recibirá tu solicitud y decidirá si la acepta; hasta entonces no verás ningún dato.',
+  'parentHome.addChild.body': 'Escribe el correo de su cuenta de StudyUs. Recibirá tu solicitud y decidirá si la acepta; hasta entonces no verás ningún dato.',
   'parentHome.addChild.label': 'Correo de su cuenta',
   'parentHome.addChild.submit': 'Enviar solicitud',
   'parentHome.addChild.sent': 'Listo. Si ese correo pertenece a una cuenta de estudiante, recibirá tu solicitud. Te avisaremos cuando la acepte.',
@@ -175,7 +175,7 @@ const es: Catalog = {
   'parentHome.attention.TECHNIQUE_PRACTICE_NEEDED': 'Le ayudaría practicar la técnica de examen.',
   'parentHome.attention.FLUENCY_PRACTICE_NEEDED': 'Le ayudaría ganar fluidez y velocidad.',
   'parentHome.attention.MORE_EVIDENCE_NEEDED': 'Aún no hay suficiente práctica para valorarlo.',
-  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUS todavía no cubre todo el examen.',
+  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUs todavía no cubre todo el examen.',
   'parentHome.examTitle': 'Preparación de examen',
   'parentHome.examNone': 'No tiene un examen activo.',
   'parentHome.examDate': 'Fecha del examen',
@@ -338,8 +338,8 @@ const es: Catalog = {
 };
 
 const en: Catalog = {
-  'account.subtitle': 'Your account uses StudyUS as {persona}.',
-  'account.firstBody': 'Choose a profile. It defines how you use StudyUS with this account.',
+  'account.subtitle': 'Your account uses StudyUs as {persona}.',
+  'account.firstBody': 'Choose a profile. It defines how you use StudyUs with this account.',
   'account.chooseNote': 'Each account has one profile. To change it later, contact support.',
   'account.choose': 'Choose',
   'account.goToWorkspace': 'Go to my {persona} space',
@@ -355,7 +355,7 @@ const en: Catalog = {
   'capability.admin': 'Administration',
   'capability.backToPersona': 'Back to my space',
   'account.title': 'Your account',
-  'account.firstTitle': 'How will you use StudyUS?',
+  'account.firstTitle': 'How will you use StudyUs?',
   'account.error.generic': 'Something went wrong. Please try again.',
   'account.error.workspace': 'That space isn’t available for your account.',
   'account.backToDashboard': 'Back to dashboard',
@@ -367,7 +367,7 @@ const en: Catalog = {
   'role.TEACHER.desc': 'Work with the classes your institution assigns you.',
   'role.INSTITUTION_ADMIN.name': 'Institution',
   'role.INSTITUTION_ADMIN.desc': 'Manage your institution’s teachers, grades, classes and students.',
-  'role.STUDYUS_ADMIN.name': 'StudyUS administration',
+  'role.STUDYUS_ADMIN.name': 'StudyUs administration',
   'role.STUDYUS_ADMIN.desc': 'Platform console.',
   'account.family.title': 'Family with access to your progress',
   'account.family.body': 'Only people you authorise can see your progress, and they can never change anything. You can remove access at any time.',
@@ -387,7 +387,7 @@ const en: Catalog = {
   'parentHome.readOnly': 'Read-only',
   'parentHome.childSwitcher': 'Showing progress for',
   'parentHome.addChild.title': 'Add your child',
-  'parentHome.addChild.body': 'Enter the email of their StudyUS account. They’ll receive your request and decide whether to accept it; until then you won’t see any data.',
+  'parentHome.addChild.body': 'Enter the email of their StudyUs account. They’ll receive your request and decide whether to accept it; until then you won’t see any data.',
   'parentHome.addChild.label': 'Their account email',
   'parentHome.addChild.submit': 'Send request',
   'parentHome.addChild.sent': 'Done. If that email belongs to a student account, they’ll receive your request. We’ll let you know when they accept.',
@@ -416,7 +416,7 @@ const en: Catalog = {
   'parentHome.attention.TECHNIQUE_PRACTICE_NEEDED': 'Practising exam technique would help.',
   'parentHome.attention.FLUENCY_PRACTICE_NEEDED': 'Building fluency and speed would help.',
   'parentHome.attention.MORE_EVIDENCE_NEEDED': 'Not enough practice yet to judge.',
-  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUS doesn’t cover the whole exam yet.',
+  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUs doesn’t cover the whole exam yet.',
   'parentHome.examTitle': 'Exam preparation',
   'parentHome.examNone': 'No active exam.',
   'parentHome.examDate': 'Exam date',
@@ -579,8 +579,8 @@ const en: Catalog = {
 };
 
 const de: Catalog = {
-  'account.subtitle': 'Dein Konto nutzt StudyUS als {persona}.',
-  'account.firstBody': 'Wähle ein Profil. Es legt fest, wie du StudyUS mit diesem Konto nutzt.',
+  'account.subtitle': 'Dein Konto nutzt StudyUs als {persona}.',
+  'account.firstBody': 'Wähle ein Profil. Es legt fest, wie du StudyUs mit diesem Konto nutzt.',
   'account.chooseNote': 'Jedes Konto hat ein einziges Profil. Wende dich zum späteren Ändern an den Support.',
   'account.choose': 'Wählen',
   'account.goToWorkspace': 'Zu meinem Bereich als {persona}',
@@ -596,7 +596,7 @@ const de: Catalog = {
   'capability.admin': 'Verwaltung',
   'capability.backToPersona': 'Zurück zu meinem Bereich',
   'account.title': 'Dein Konto',
-  'account.firstTitle': 'Wie wirst du StudyUS nutzen?',
+  'account.firstTitle': 'Wie wirst du StudyUs nutzen?',
   'account.error.generic': 'Das hat nicht geklappt. Bitte versuche es erneut.',
   'account.error.workspace': 'Dieser Bereich ist für dein Konto nicht verfügbar.',
   'account.backToDashboard': 'Zurück zur Übersicht',
@@ -608,7 +608,7 @@ const de: Catalog = {
   'role.TEACHER.desc': 'Arbeite mit den Klassen, die dir deine Einrichtung zuweist.',
   'role.INSTITUTION_ADMIN.name': 'Einrichtung',
   'role.INSTITUTION_ADMIN.desc': 'Verwalte Lehrkräfte, Jahrgänge, Klassen und Lernende deiner Einrichtung.',
-  'role.STUDYUS_ADMIN.name': 'StudyUS-Verwaltung',
+  'role.STUDYUS_ADMIN.name': 'StudyUs-Verwaltung',
   'role.STUDYUS_ADMIN.desc': 'Plattformkonsole.',
   'account.family.title': 'Familie mit Zugriff auf deinen Fortschritt',
   'account.family.body': 'Nur Personen, die du freigibst, sehen deinen Fortschritt – und sie können nie etwas ändern. Du kannst den Zugriff jederzeit entziehen.',
@@ -628,7 +628,7 @@ const de: Catalog = {
   'parentHome.readOnly': 'Nur lesen',
   'parentHome.childSwitcher': 'Fortschritt von',
   'parentHome.addChild.title': 'Dein Kind hinzufügen',
-  'parentHome.addChild.body': 'Gib die E-Mail seines StudyUS-Kontos ein. Es erhält deine Anfrage und entscheidet, ob es sie annimmt; bis dahin siehst du keine Daten.',
+  'parentHome.addChild.body': 'Gib die E-Mail seines StudyUs-Kontos ein. Es erhält deine Anfrage und entscheidet, ob es sie annimmt; bis dahin siehst du keine Daten.',
   'parentHome.addChild.label': 'E-Mail des Kontos',
   'parentHome.addChild.submit': 'Anfrage senden',
   'parentHome.addChild.sent': 'Erledigt. Falls diese E-Mail zu einem Schülerkonto gehört, erhält es deine Anfrage. Wir benachrichtigen dich, wenn sie angenommen wird.',
@@ -657,7 +657,7 @@ const de: Catalog = {
   'parentHome.attention.TECHNIQUE_PRACTICE_NEEDED': 'Üben der Prüfungstechnik würde helfen.',
   'parentHome.attention.FLUENCY_PRACTICE_NEEDED': 'Mehr Sicherheit und Tempo würden helfen.',
   'parentHome.attention.MORE_EVIDENCE_NEEDED': 'Noch zu wenig Übung für eine Einschätzung.',
-  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUS deckt die Prüfung noch nicht vollständig ab.',
+  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUs deckt die Prüfung noch nicht vollständig ab.',
   'parentHome.examTitle': 'Prüfungsvorbereitung',
   'parentHome.examNone': 'Keine aktive Prüfung.',
   'parentHome.examDate': 'Prüfungsdatum',
@@ -820,8 +820,8 @@ const de: Catalog = {
 };
 
 const fr: Catalog = {
-  'account.subtitle': 'Ton compte utilise StudyUS en tant que {persona}.',
-  'account.firstBody': 'Choisis un profil. Il définit comment tu utilises StudyUS avec ce compte.',
+  'account.subtitle': 'Ton compte utilise StudyUs en tant que {persona}.',
+  'account.firstBody': 'Choisis un profil. Il définit comment tu utilises StudyUs avec ce compte.',
   'account.chooseNote': 'Chaque compte a un seul profil. Pour le changer plus tard, contacte le support.',
   'account.choose': 'Choisir',
   'account.goToWorkspace': 'Aller à mon espace {persona}',
@@ -837,7 +837,7 @@ const fr: Catalog = {
   'capability.admin': 'Administration',
   'capability.backToPersona': 'Retour à mon espace',
   'account.title': 'Ton compte',
-  'account.firstTitle': 'Comment vas-tu utiliser StudyUS ?',
+  'account.firstTitle': 'Comment vas-tu utiliser StudyUs ?',
   'account.error.generic': 'L’action n’a pas abouti. Réessaie.',
   'account.error.workspace': 'Cet espace n’est pas disponible pour ton compte.',
   'account.backToDashboard': 'Retour au tableau de bord',
@@ -849,7 +849,7 @@ const fr: Catalog = {
   'role.TEACHER.desc': 'Travaille avec les classes que ton établissement t’attribue.',
   'role.INSTITUTION_ADMIN.name': 'Établissement',
   'role.INSTITUTION_ADMIN.desc': 'Gère les enseignants, niveaux, classes et élèves de ton établissement.',
-  'role.STUDYUS_ADMIN.name': 'Administration StudyUS',
+  'role.STUDYUS_ADMIN.name': 'Administration StudyUs',
   'role.STUDYUS_ADMIN.desc': 'Console de la plateforme.',
   'account.family.title': 'Famille ayant accès à tes progrès',
   'account.family.body': 'Seules les personnes que tu autorises voient tes progrès, et elles ne peuvent jamais rien modifier. Tu peux retirer l’accès à tout moment.',
@@ -869,7 +869,7 @@ const fr: Catalog = {
   'parentHome.readOnly': 'Lecture seule',
   'parentHome.childSwitcher': 'Progrès de',
   'parentHome.addChild.title': 'Ajouter ton enfant',
-  'parentHome.addChild.body': 'Saisis l’e-mail de son compte StudyUS. Il recevra ta demande et décidera de l’accepter ; d’ici là, tu ne verras aucune donnée.',
+  'parentHome.addChild.body': 'Saisis l’e-mail de son compte StudyUs. Il recevra ta demande et décidera de l’accepter ; d’ici là, tu ne verras aucune donnée.',
   'parentHome.addChild.label': 'E-mail de son compte',
   'parentHome.addChild.submit': 'Envoyer la demande',
   'parentHome.addChild.sent': 'C’est fait. Si cet e-mail correspond à un compte élève, il recevra ta demande. Nous te préviendrons quand elle sera acceptée.',
@@ -898,7 +898,7 @@ const fr: Catalog = {
   'parentHome.attention.TECHNIQUE_PRACTICE_NEEDED': 'S’entraîner à la méthode d’examen aiderait.',
   'parentHome.attention.FLUENCY_PRACTICE_NEEDED': 'Gagner en aisance et en rapidité aiderait.',
   'parentHome.attention.MORE_EVIDENCE_NEEDED': 'Pas encore assez d’entraînement pour en juger.',
-  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUS ne couvre pas encore tout l’examen.',
+  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'StudyUs ne couvre pas encore tout l’examen.',
   'parentHome.examTitle': 'Préparation à l’examen',
   'parentHome.examNone': 'Aucun examen actif.',
   'parentHome.examDate': 'Date de l’examen',
@@ -1061,8 +1061,8 @@ const fr: Catalog = {
 };
 
 const pt: Catalog = {
-  'account.subtitle': 'Sua conta usa o StudyUS como {persona}.',
-  'account.firstBody': 'Escolha um perfil. Ele define como você usa o StudyUS com esta conta.',
+  'account.subtitle': 'Sua conta usa o StudyUs como {persona}.',
+  'account.firstBody': 'Escolha um perfil. Ele define como você usa o StudyUs com esta conta.',
   'account.chooseNote': 'Cada conta tem um único perfil. Para mudá-lo depois, fale com o suporte.',
   'account.choose': 'Escolher',
   'account.goToWorkspace': 'Ir para meu espaço de {persona}',
@@ -1078,7 +1078,7 @@ const pt: Catalog = {
   'capability.admin': 'Administração',
   'capability.backToPersona': 'Voltar ao meu espaço',
   'account.title': 'Sua conta',
-  'account.firstTitle': 'Como você vai usar o StudyUS?',
+  'account.firstTitle': 'Como você vai usar o StudyUs?',
   'account.error.generic': 'Não foi possível concluir a ação. Tente novamente.',
   'account.error.workspace': 'Esse espaço não está disponível para a sua conta.',
   'account.backToDashboard': 'Voltar ao painel',
@@ -1090,7 +1090,7 @@ const pt: Catalog = {
   'role.TEACHER.desc': 'Trabalhe com as turmas que sua instituição atribuir a você.',
   'role.INSTITUTION_ADMIN.name': 'Instituição',
   'role.INSTITUTION_ADMIN.desc': 'Administre professores, séries, turmas e estudantes da sua instituição.',
-  'role.STUDYUS_ADMIN.name': 'Administração do StudyUS',
+  'role.STUDYUS_ADMIN.name': 'Administração do StudyUs',
   'role.STUDYUS_ADMIN.desc': 'Console da plataforma.',
   'account.family.title': 'Família com acesso ao seu progresso',
   'account.family.body': 'Só as pessoas que você autoriza veem seu progresso, e elas nunca podem mudar nada. Você pode retirar o acesso quando quiser.',
@@ -1110,7 +1110,7 @@ const pt: Catalog = {
   'parentHome.readOnly': 'Somente leitura',
   'parentHome.childSwitcher': 'Progresso de',
   'parentHome.addChild.title': 'Adicionar seu filho ou filha',
-  'parentHome.addChild.body': 'Digite o e-mail da conta dele no StudyUS. Ele receberá sua solicitação e decidirá se aceita; até lá você não verá nenhum dado.',
+  'parentHome.addChild.body': 'Digite o e-mail da conta dele no StudyUs. Ele receberá sua solicitação e decidirá se aceita; até lá você não verá nenhum dado.',
   'parentHome.addChild.label': 'E-mail da conta',
   'parentHome.addChild.submit': 'Enviar solicitação',
   'parentHome.addChild.sent': 'Pronto. Se esse e-mail pertencer a uma conta de estudante, ela receberá sua solicitação. Avisaremos quando for aceita.',
@@ -1139,7 +1139,7 @@ const pt: Catalog = {
   'parentHome.attention.TECHNIQUE_PRACTICE_NEEDED': 'Praticar a técnica de prova ajudaria.',
   'parentHome.attention.FLUENCY_PRACTICE_NEEDED': 'Ganhar fluência e velocidade ajudaria.',
   'parentHome.attention.MORE_EVIDENCE_NEEDED': 'Ainda não há prática suficiente para avaliar.',
-  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'O StudyUS ainda não cobre toda a prova.',
+  'parentHome.attention.PLATFORM_COVERAGE_INCOMPLETE': 'O StudyUs ainda não cobre toda a prova.',
   'parentHome.examTitle': 'Preparação para a prova',
   'parentHome.examNone': 'Nenhuma prova ativa.',
   'parentHome.examDate': 'Data da prova',

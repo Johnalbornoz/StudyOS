@@ -3,7 +3,7 @@
  *
  * Integrity process: stamps a SCORED attempt result as INVALIDATED (with a
  * reason). Never deletes, never re-scores, never touches cognition -- the
- * result simply stops counting as exam history. StudyUS admin only.
+ * result simply stops counting as exam history. StudyUs admin only.
  */
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';

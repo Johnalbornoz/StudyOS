@@ -6,7 +6,7 @@
  *
  * Track A:
  *  - gated by `guardAdminUsersRoute` (STUDYUS_ADMIN role + allowlist);
- *  - the target is named by EMAIL of an existing StudyUS account (the
+ *  - the target is named by EMAIL of an existing StudyUs account (the
  *    person signs in once first) or, as before, by Clerk user id;
  *  - the institution must exist and be ACTIVE (404 otherwise);
  *  - an INSTITUTION_ADMIN role an administrator REVOKED is not silently

@@ -44,7 +44,7 @@ export type ActivityType =
  * Review has two cognitive purposes that are deliberately split into
  * two Activity Types rather than one REVIEW type with a flag:
  * REVIEW (reinforcement -- AI may assist, evidenceMode PRACTICE) and
- * RETENTION_CHECK (StudyUS needs proof the student still remembers --
+ * RETENTION_CHECK (StudyUs needs proof the student still remembers --
  * no AI assistance, evidenceMode INDEPENDENT). Which one fires for a
  * given "Repasar" moment is a caller decision (student-initiated vs.
  * scheduler-triggered), not something this table decides.

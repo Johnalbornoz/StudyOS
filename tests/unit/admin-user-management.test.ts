@@ -354,7 +354,7 @@ describe('createUserFull -- transactional, reconcilable creation (Membresías/Us
     expect(getOrCreateCanonicalUserMock).not.toHaveBeenCalled();
   });
 
-  it('every temporary-password creation sets password_change_required -- not a simulated "force change" flag, but StudyUS\'s own real gate (no native Clerk mechanism exists for this, verified against @clerk/backend\'s own UserApi.d.ts)', async () => {
+  it('every temporary-password creation sets password_change_required -- not a simulated "force change" flag, but StudyUs\'s own real gate (no native Clerk mechanism exists for this, verified against @clerk/backend\'s own UserApi.d.ts)', async () => {
     usersCreateMock.mockResolvedValueOnce({ id: 'clerk-new-1' });
     getOrCreateCanonicalUserMock.mockResolvedValueOnce({ id: 'user-new-1', clerkId: 'clerk-new-1', email: 'x@test.com', status: 'ACTIVE', activeWorkspace: null, passwordChangeRequired: false });
     await createUserFull(ACTOR, { email: 'x@test.com', temporaryPassword: 'Aa1!aaaa', initialRole: null });

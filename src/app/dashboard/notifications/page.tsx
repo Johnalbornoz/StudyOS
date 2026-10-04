@@ -13,7 +13,7 @@ import { InboxReadControls, MarkUnreadButton } from './InboxReadState';
 
 /**
  * Track A -- one notifications page for every account: the inbox of the
- * account's ONE persona plus its capabilities (institution / StudyUS
+ * account's ONE persona plus its capabilities (institution / StudyUs
  * administration), server-resolved.
  *
  * READ state and BUSINESS state are separate: opening this page marks the

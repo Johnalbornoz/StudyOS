@@ -10,7 +10,7 @@
  *
  * A curriculum CONTEXT is one academic subject (e.g. IB DP Mathematics:
  * analysis and approaches, PAA Matemáticas) in its published version. When
- * the learner has no specific programme, the GENERAL StudyUS curriculum is
+ * the learner has no specific programme, the GENERAL StudyUs curriculum is
  * every ACTIVE canonical concept of the subject (catalog-equivalent subjects
  * merged: "Mathematics" = "Matemáticas"), so nobody starts from an empty page.
  *
@@ -102,7 +102,7 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
 /**
  * Which curriculum fits this learner for this subject, most specific first:
  * an explicitly chosen one, an exam they prepare (student_exam_profiles), their
- * academic profile (IB Diploma), else the general StudyUS curriculum.
+ * academic profile (IB Diploma), else the general StudyUs curriculum.
  */
 export async function resolveCurriculumContext(
   studentId: string,

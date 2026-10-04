@@ -1,7 +1,7 @@
 /**
  * LX-1D (repaired in LX-1R) -- EVIDENCE SUFFICIENCY & QUESTION-COUNT CONTRACT.
  *
- * Answers "how much evidence does StudyUS need?" using CANONICAL policy
+ * Answers "how much evidence does StudyUs need?" using CANONICAL policy
  * ONLY. When a canonical authority does not state a count, the correct
  * result is UNRESOLVED -- never an invented heuristic.
  *

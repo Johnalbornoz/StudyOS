@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Track A (A4) -- StudyUS admin controls: create an institution and assign
+ * Track A (A4) -- StudyUs admin controls: create an institution and assign
  * its administrator by the email of an existing account. Both routes are
  * STUDYUS_ADMIN-only (role + allowlist) and audited server-side.
  */

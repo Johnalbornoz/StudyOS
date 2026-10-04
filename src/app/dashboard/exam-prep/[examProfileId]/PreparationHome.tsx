@@ -3,14 +3,14 @@
  *
  *   Tu objetivo                 the exam / subject level, its context, the Student's goal details
  *   Próximo paso recomendado    ONE clear action
- *   Tu preparación              "Preparación estimada StudyUS" -- orientation, never official readiness
+ *   Tu preparación              "Preparación estimada StudyUs" -- orientation, never official readiness
  *   Qué ya tienes cubierto      what the existing learner model / results already demonstrate
  *   Qué conviene reforzar       prioritized, explained recommendations (never "no sabes")
  *   Actividades disponibles     only what readiness allows; "En preparación" says why the rest is not
  *   Qué evalúa                  governed structure only -- nothing is invented
  *
  * Never a dead end: a catalogue-only objective still shows what was chosen,
- * what is known about it and what StudyUS is preparing.
+ * what is known about it and what StudyUs is preparing.
  */
 import Link from 'next/link';
 import type { PreparationView } from '@/lib/exam-core/objectives/preparation.service';
@@ -123,7 +123,7 @@ export function PreparationHome({ view, labels: l, language, dateLine }: { view:
           </div>
         </section>
 
-        {/* Tu preparación -- Preparación estimada StudyUS */}
+        {/* Tu preparación -- Preparación estimada StudyUs */}
         <section className="card prep-section" aria-labelledby="prep-estimate-title">
           <h2 id="prep-estimate-title" className="ex-status-title">{l['prep.home.estimate']}</h2>
           <p className="ui-hint">{l['prep.home.reuseNote']}</p>

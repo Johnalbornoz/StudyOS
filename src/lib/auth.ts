@@ -90,7 +90,7 @@ export async function verifyAuth(): Promise<AuthContext | null> {
  * 'teacher' could read -- and, via record-evidence, write independent
  * evidence -- for a taught student. Those were a second, non-canonical role
  * model (canonical roles live in user_roles) and let a non-owner manipulate
- * cognitive state. Teacher / Parent / Institution / StudyUS-admin reads go
+ * cognitive state. Teacher / Parent / Institution / StudyUs-admin reads go
  * through their own scoped read models (src/lib/authorization,
  * src/lib/teacher, src/lib/parent, src/lib/admin), never through this guard.
  * `role` is kept in the signature so callers are unchanged; it no longer

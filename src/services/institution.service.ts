@@ -5,10 +5,10 @@
  *
  * Institution Admin is never self-service (INV-F2-12 / carries
  * forward F1's structural restriction): `inviteInstitutionAdmin` is
- * gated by `isAdminEmail` (the same StudyUS-admin allowlist already
+ * gated by `isAdminEmail` (the same StudyUs-admin allowlist already
  * used by `src/services/admin.service.ts`) at the route boundary, not
  * inside this file -- this file only performs the write once a caller
- * has already been confirmed authorized. No StudyUS Admin Console is
+ * has already been confirmed authorized. No StudyUs Admin Console is
  * built; this is the minimum controlled mechanism the task allows.
  */
 import { db } from '@/lib/db';
@@ -280,7 +280,7 @@ export async function decideMembership(
  *
  * Track A: TEACHER memberships only. An institution admin can never revoke
  * another admin's (or their own) INSTITUTION_ADMIN membership through the
- * teacher console -- admin membership is a StudyUS-admin decision.
+ * teacher console -- admin membership is a StudyUs-admin decision.
  */
 export async function revokeMembership(membershipId: string, reviewerUserId: string): Promise<boolean> {
   const client = await db.connect();
@@ -344,7 +344,7 @@ export async function isActiveCanonicalSubject(canonicalSubjectId: string): Prom
   return r.rows.length > 0;
 }
 
-/** ACTIVE catalog subjects an Institution Admin can link a class to (the catalog itself is StudyUS-owned; nobody here creates one). */
+/** ACTIVE catalog subjects an Institution Admin can link a class to (the catalog itself is StudyUs-owned; nobody here creates one). */
 export async function listLinkableSubjects(): Promise<Array<{ id: string; name: string }>> {
   const r = await db.query(`SELECT id, name FROM canonical_subjects WHERE status = 'ACTIVE' ORDER BY name`);
   return r.rows.map((row: any) => ({ id: row.id, name: row.name }));

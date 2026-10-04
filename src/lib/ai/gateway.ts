@@ -31,7 +31,7 @@ export interface ExecuteAIOptions<TRaw, TResult> {
   /**
    * LX-4P-PERF-R1G -- optional: extracts REAL provider usage from the
    * raw response. Called once, right after `call` resolves, BEFORE
-   * `validate` -- a StudyUS validation/parsing failure happens AFTER
+   * `validate` -- a StudyUs validation/parsing failure happens AFTER
    * the provider already consumed (and billed) tokens, so usage must
    * never depend on `validate` succeeding. Never fabricated: return
    * nulls for any field the provider didn't report. Omitted entirely
@@ -95,7 +95,7 @@ export async function executeAI<TRaw, TResult>(opts: ExecuteAIOptions<TRaw, TRes
   // LX-4P-PERF-R1G: set once `raw` is obtained (below), read by every
   // `finish()` call from then on -- success, a thrown validate, or a
   // rejected validation all see the SAME real usage/cost, because a
-  // StudyUS-side rejection never un-consumes the tokens the provider
+  // StudyUs-side rejection never un-consumes the tokens the provider
   // already billed. Stays null when `call` itself failed (no response
   // was ever obtained) or the capability didn't opt in via `parseUsage`.
   let usage: ProviderUsage | null = null;

@@ -11,7 +11,7 @@
  *   guardAdminUsersRoute) and invites coordinators.
  * - A coordinator manages the coordinators of ITS OWN institution only
  *   (callers gate with requireInstitutionAdminActor).
- * - Inviting an email that already has an account (StudyUS or Clerk)
+ * - Inviting an email that already has an account (StudyUs or Clerk)
  *   assigns the membership to THAT account (no duplicate). Otherwise a
  *   one-time invitation is created (only its hash is stored); accepting it
  *   requires being signed in with the invited email.
@@ -293,7 +293,7 @@ const clerk = () => createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY!
 async function findAccountByEmail(email: string): Promise<string | null> {
   const local = await db.query(`SELECT id FROM users WHERE lower(email) = $1 AND status = 'ACTIVE' ORDER BY created_at LIMIT 1`, [email]);
   if (local.rows[0]) return local.rows[0].id;
-  // An account that exists in Clerk but never opened StudyUS is still the SAME person: link it, never create a second one.
+  // An account that exists in Clerk but never opened StudyUs is still the SAME person: link it, never create a second one.
   try {
     const found = await clerk().users.getUserList({ emailAddress: [email] });
     const clerkUser = found.data[0];

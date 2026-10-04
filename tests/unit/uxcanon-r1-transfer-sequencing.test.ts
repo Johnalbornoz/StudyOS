@@ -425,7 +425,7 @@ describe('UX/CANON-R1 24 -- legitimate Transfer evaluation (submit route) remain
  * REQUIRED TESTS 25-26 -- Results/continuation copy integrity.         *
  * ================================================================= */
 describe('UX/CANON-R1 25 -- Results copy does not claim "no more activity" when Retention remains', () => {
-  it('continuation.waitingBody no longer states a bare, permanent-sounding "no activity needed" -- it now says "for now" AND that StudyUS will notify the learner', async () => {
+  it('continuation.waitingBody no longer states a bare, permanent-sounding "no activity needed" -- it now says "for now" AND that StudyUs will notify the learner', async () => {
     const { getMessages } = await import('@/lib/i18n/messages');
     for (const locale of ['es', 'en', 'de', 'fr', 'pt'] as const) {
       const t = getMessages(locale);
@@ -546,7 +546,7 @@ describe('UX/CANON-R1 PART U -- live regression: Fuerza centrípeta (Solo Check 
     expect(generateStructuredTransferActivityMock).not.toHaveBeenCalled();
   });
 
-  it('after valid Retention is demonstrated, StudyUS correctly determines the next canonical Transfer action -- the existing premature evidence does not need to be deleted for this to work', () => {
+  it('after valid Retention is demonstrated, StudyUs correctly determines the next canonical Transfer action -- the existing premature evidence does not need to be deleted for this to work', () => {
     // Retention now demonstrated; the 100% transfer evidence from
     // BEFORE is still there (never deleted, PART K/20) -- per PART K,
     // whether it AUTOMATICALLY counts toward a fresh Transfer

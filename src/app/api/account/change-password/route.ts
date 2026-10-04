@@ -14,7 +14,7 @@ import {
  * Server-controlled password change (Alternative B -- see
  * F15_ADMIN_USER_MANAGEMENT.md §26). The installed Clerk SDK/API
  * exposes no password-specific, server-verifiable timestamp; the only
- * reliable evidence that a change happened is StudyUS's own server
+ * reliable evidence that a change happened is StudyUs's own server
  * performing it and observing Clerk's real response. This endpoint IS
  * that evidence -- it replaces the earlier, insecure design where the
  * browser called Clerk directly and then separately telephoned this
@@ -22,13 +22,13 @@ import {
  * forge by skipping the first step entirely.
  *
  * HONEST BOUNDARY: unlike the rest of this admin console, the new
- * password DOES transit through this StudyUS server on its way to
+ * password DOES transit through this StudyUs server on its way to
  * Clerk's Backend API (`clerkClient().users.updateUser`) -- it is
  * received in this request's body, held only in local variables for
  * the duration of this one request, passed to Clerk, and never
  * logged, persisted, echoed back, or reused after this handler
  * returns. This is not the same claim made elsewhere in this console
- * ("the password never touches a StudyUS server") -- that claim does
+ * ("the password never touches a StudyUs server") -- that claim does
  * not apply to this endpoint, and this comment exists so it is never
  * repeated here by mistake.
  */

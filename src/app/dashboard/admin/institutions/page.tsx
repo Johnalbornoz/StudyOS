@@ -14,7 +14,7 @@ import { AdminSubNav } from '../AdminSubNav';
 
 /**
  * Platform Admin -- institutions. Track A: create an institution with its
- * profile, then open it to manage its coordinators. Only a StudyUS admin
+ * profile, then open it to manage its coordinators. Only a StudyUs admin
  * (canonical role + allowlist) reaches this page or its routes.
  */
 export default async function AdminInstitutionsPage() {

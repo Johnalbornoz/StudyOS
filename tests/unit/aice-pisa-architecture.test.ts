@@ -160,7 +160,7 @@ describe('PISA 2022 -- domains, units and scoring', () => {
     for (const o of open) expect(o.content.rubric!.criteria[0].descriptors.map((d) => d.marks)).toEqual(['0', '1', '2']); // no / partial / full credit
     for (const d of ['math', 'reading', 'science']) expect(open.some((o) => cfg.sections.find((s) => s.key === d)!.objectives.some((x) => x.code === o.objectiveCode)), d).toBe(true);
   });
-  it('no official PISA score, scale or level -- raw marks and StudyUS readiness only', () => {
+  it('no official PISA score, scale or level -- raw marks and StudyUs readiness only', () => {
     expect(cfg.reporting?.scaleNote).toBe('NO_OFFICIAL_SCALE');
     expect(cfg.scoring.policy.transform.type).toBe('NONE');
     expect(cfg.sections.every((s) => s.definition!.limitations.join(' ').length > 0)).toBe(true);

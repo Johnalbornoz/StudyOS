@@ -22,7 +22,7 @@ import StageTrack from '../StageTrack';
 /**
  * UX-4 -- TU CONOCIMIENTO.
  *
- * What StudyUS knows about what the Student knows, as a Subject -> Topic ->
+ * What StudyUs knows about what the Student knows, as a Subject -> Topic ->
  * Concept map. A presentation of the SAME authoritative assembly My Path
  * already builds (`loadMyPathContext` + `buildSubjectPathView`: the
  * hierarchy from `getSubjectHierarchy`, each concept's canonical-aware

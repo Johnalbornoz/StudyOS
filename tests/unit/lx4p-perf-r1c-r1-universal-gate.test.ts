@@ -2,7 +2,7 @@
  * LX-4P-PERF-R1C-R1 -- UNIVERSAL QUESTION QUALITY GATE.
  *
  * Invariant: every AI-generated question that can reach a learner passes
- * the StudyUS Question Quality Gate -- the count never decides whether
+ * the StudyUs Question Quality Gate -- the count never decides whether
  * validation runs.
  *
  * This file audits the learner-facing generation paths (source

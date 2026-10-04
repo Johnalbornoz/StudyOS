@@ -251,7 +251,7 @@ export async function verifyQuestionQuality(input: {
     );
     return result;
   } catch (err) {
-    // LX-4P-PERF-R1G: a StudyUS-side validation rejection (thrown as
+    // LX-4P-PERF-R1G: a StudyUs-side validation rejection (thrown as
     // AIExecutionFailure) still carries whatever real usage the provider
     // returned -- that call was already billed. A `call`-level failure
     // (timeout, network error) never obtained a response, so `execution`

@@ -2,7 +2,7 @@
  * Track A -- POST /api/parent/child-requests
  *
  * A Parent asks to be linked to a Student by the Student's email. The
- * response is IDENTICAL whether or not the email belongs to a StudyUS
+ * response is IDENTICAL whether or not the email belongs to a StudyUs
  * student (and whether a request already existed), so this can never be
  * used to discover accounts. A match only creates a PENDING relationship
  * that grants nothing until the Student accepts it

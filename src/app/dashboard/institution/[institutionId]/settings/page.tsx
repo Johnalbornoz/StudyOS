@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { InstitutionProfileForm } from '@/components/institution/InstitutionProfileForm';
 import { InstitutionSubNav } from '../InstitutionSubNav';
 
-/** Track A -- a coordinator edits the descriptive data of its own institution (name and status stay with StudyUS). */
+/** Track A -- a coordinator edits the descriptive data of its own institution (name and status stay with StudyUs). */
 export default async function InstitutionSettingsPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
   const { userId: clerkUserId } = await auth();

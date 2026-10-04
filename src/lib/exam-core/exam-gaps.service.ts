@@ -103,7 +103,7 @@ export interface GoalAggregate {
   /** Distinct Students with at least one active exam preparation. */
   studentsPreparing: number;
   byFramework: Array<{ framework: string; students: number }>;
-  /** Each objective prepared, with what StudyUS can do for it today (capability status, not a Student result). */
+  /** Each objective prepared, with what StudyUs can do for it today (capability status, not a Student result). */
   byObjective: Array<{ objectiveKey: string; label: string; framework: string; students: number; status: string; canPractice: boolean; canRunMock: boolean }>;
   /** Per Student (Teacher of those Students only): their exam goals. */
   perStudent: Array<{ studentId: string; goals: Array<{ objectiveKey: string; label: string; examDate: string | null }> }>;

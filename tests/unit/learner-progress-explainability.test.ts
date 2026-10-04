@@ -55,9 +55,9 @@ describe('Student E2E equivalent (Regla de tres simple directa, DEV)', () => {
     expect(x.steps[1].counter).toEqual({ done: 1, required: 2 });
   });
 
-  it('reads as: falta 1 práctica aprobada; al completarla StudyUS vuelve a evaluar Demostrar', () => {
+  it('reads as: falta 1 práctica aprobada; al completarla StudyUs vuelve a evaluar Demostrar', () => {
     expect(fillLine(es, x.remaining)).toBe('Te falta 1 práctica aprobada (≥80%).');
-    expect(fillLine(es, x.after!)).toBe('Al completarla, StudyUS volverá a evaluar si estás listo para Demostrar.');
+    expect(fillLine(es, x.after!)).toBe('Al completarla, StudyUs volverá a evaluar si estás listo para Demostrar.');
   });
 });
 

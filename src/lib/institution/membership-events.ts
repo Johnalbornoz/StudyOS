@@ -1,6 +1,6 @@
 /**
  * Track A -- the side effects of an institutional membership decision,
- * shared by the institution-admin console and the StudyUS admin inbox so
+ * shared by the institution-admin console and the StudyUs admin inbox so
  * both audit and signal identically: one admin_audit_log row (role
  * decisions are audited) and one notification to the teacher. Neither is a
  * gate: the decision is already committed when this runs.

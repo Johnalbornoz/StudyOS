@@ -85,14 +85,14 @@ export default function TeachingIntro({
    * active learning surface -- both the content fetches (explanation,
    * guided practice) AND every chrome string here (titles, "Reveal the
    * next step", "Continue", "Skip to practice", "your step", "Check").
-   * The global StudyUS shell stays on interface_language; this surface
+   * The global StudyUs shell stays on interface_language; this surface
    * does not. (Supersedes the LX-4P-R2 R13 uiLocale split.)
    */
   locale: Locale;
   /**
    * LX-4P-PERF-R1E-R1 R2/R5: destination for the "Exit the activity"
    * action when a canonically REQUIRED GUIDE stage fails to prepare.
-   * StudyUS decides the learning path -- there is no "skip GUIDE"; the
+   * StudyUs decides the learning path -- there is no "skip GUIDE"; the
    * only way out of a failed GUIDE besides retrying is leaving the
    * activity entirely (never a silent fall-through to Practice).
    */

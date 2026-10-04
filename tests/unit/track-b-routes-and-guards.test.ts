@@ -134,7 +134,7 @@ describe('result route: authorized against the attempt\'s own student', () => {
   });
 });
 
-describe('admin exam routes: StudyUS admin only', () => {
+describe('admin exam routes: StudyUs admin only', () => {
   it('a non-admin can neither list/apply vertical configurations nor invalidate a result', async () => {
     expect((await (verticalsGET as any)()).status).toBe(403);
     expect((await verticalsPOST(jsonReq({ key: 'dev-cert.paa', write: true }))).status).toBe(403);

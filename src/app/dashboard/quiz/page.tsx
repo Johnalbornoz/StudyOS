@@ -2684,11 +2684,11 @@ function QuizPageContent() {
             difficulty dots because, at the time, there was no canonical
             learner-relative difficulty authority -- showing a
             five-level scale would have implied one that didn't exist.
-            StudyUS now DOES canonically determine difficulty
+            StudyUs now DOES canonically determine difficulty
             (resolveTargetDifficulty), so showing it is no longer a
             false claim -- it is SYSTEM-DEFINED, LEARNER-VISIBLE, and
             NOT LEARNER-EDITABLE: no selector, no slider, no
-            preference, StudyUS remains the sole authority. */}
+            preference, StudyUs remains the sole authority. */}
         <div className="ls-meta">
           <DifficultyIndicator value={q.difficulty} t={at} />
           {typeof q.calculatorAllowed === 'boolean' && (

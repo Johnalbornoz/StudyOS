@@ -46,7 +46,7 @@ const readingCandidate = (over: Partial<GeneratedCandidate> = {}): GeneratedCand
 const toContent = (c: GeneratedCandidate, spec: CellSpec, key = 'qb.test.1') => candidateToContent(c, { itemKey: key, spec, stimulusKey: c.stimulusText ? 'qb.lectura.abc' : null, difficultyIndex: 1 });
 
 describe('candidate -> immutable version content', () => {
-  it('always StudyUS-generated (never official), schema-valid, key shuffled deterministically, rationale per distractor', () => {
+  it('always StudyUs-generated (never official), schema-valid, key shuffled deterministically, rationale per distractor', () => {
     const { content, verification } = toContent(mathCandidate(), mathSpec);
     const parsed = ApprovedItemContentSchema.parse(content);
     expect(parsed.contentOrigin).toBe('GENERATED');

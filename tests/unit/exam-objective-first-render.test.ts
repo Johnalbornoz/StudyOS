@@ -47,7 +47,7 @@ describe('PreparationHome render', () => {
     expect(html).toContain(l['prep.next.SET_GOAL_DETAILS']);
     expect(html).not.toContain(l['prep.cap.reducedMock']);
   });
-  it('with a plan: covered / reinforce / explained reasons / reduced mock with coverage; "Preparación estimada StudyUS"', () => {
+  it('with a plan: covered / reinforce / explained reasons / reduced mock with coverage; "Preparación estimada StudyUs"', () => {
     const objective = objectiveByKey('pisa.2022')!;
     const capabilities = computeCapabilities(objective, [{ key: 'pisa.2022.math', type: 'DOMAIN', label: 'Matemáticas', purpose: null, state: 'REDUCED_MOCK_READY', modes: ['PRACTICE', 'MOCK'], selectable: true, bankInProgress: false, sectionBound: true, lengthCoveragePercent: 27 }], 5);
     const learner = { studentConceptId: 'sc', subjectId: 'sub', masteryState: 'VALIDATED_MASTERY' as const, validationReadiness: 'READY' as const, memoryStatus: 'STABLE' as const, retentionDue: false, criticalMisconceptions: 0, evidenceCount: 5 };

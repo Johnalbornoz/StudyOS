@@ -16,8 +16,8 @@ import { IntelligenceHeader, NoCurriculum, loadContext } from '../intelligence-c
  *    programme + grade, curriculum content in class plans / students' plans /
  *    pending (aggregated counts; coverage is NOT mastery), with a subject
  *    drill-down (topics → objectives → concepts).
- *  Block 2 -- StudyUS content coverage (F12 `getInstitutionCoverage`, unchanged):
- *    how much of the published structure is mapped to StudyUS concepts and
+ *  Block 2 -- StudyUs content coverage (F12 `getInstitutionCoverage`, unchanged):
+ *    how much of the published structure is mapped to StudyUs concepts and
  *    resources. Never mixed with block 1.
  */
 export default async function InstitutionCoveragePage({ params, searchParams }: { params: Promise<{ institutionId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {

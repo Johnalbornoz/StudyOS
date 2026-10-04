@@ -281,7 +281,7 @@ export const PROMPT_REGISTRY = {
     capability: 'GRADING',
     service: 'src/lib/exam-core/assessment/double-assessor.service.ts:assessWithRubric',
     description:
-      'Exam V2 ASSESSOR A: criterion-first analytic assessment of an interpretive exam response (or an Arts submission, with images) against a StudyUS rubric that is passed in as data -- never invents criteria or marks. Returns per-criterion marks within each maximum, evidence quotes, a rationale and a confidence. Feeds REVIEW_REQUIRED and adjudication; never self-certifies.',
+      'Exam V2 ASSESSOR A: criterion-first analytic assessment of an interpretive exam response (or an Arts submission, with images) against a StudyUs rubric that is passed in as data -- never invents criteria or marks. Returns per-criterion marks within each maximum, evidence quotes, a rationale and a confidence. Feeds REVIEW_REQUIRED and adjudication; never self-certifies.',
   }),
   'exam.rubric_assessor_b': definePrompt({
     id: 'exam.rubric_assessor_b',
@@ -305,7 +305,7 @@ export const PROMPT_REGISTRY = {
     capability: 'QUESTION_GENERATION',
     service: 'src/lib/exam-core/question-bank/ai-runner.ts:generateCandidates',
     description:
-      'Question Bank Factory GENERATOR (background only, never on a Student request): writes a small batch of ORIGINAL StudyUS selected-response items for ONE blueprint cell (section contract, requirement, difficulty, demand, format) from exam structure, bank exemplars and optional anonymous aggregate signals -- never Student data. Supplies a verification expression (mathematics) or a verbatim evidence quote (reading) that StudyUS checks deterministically. Output is a DRAFT_AI candidate that must pass the validation pipeline.',
+      'Question Bank Factory GENERATOR (background only, never on a Student request): writes a small batch of ORIGINAL StudyUs selected-response items for ONE blueprint cell (section contract, requirement, difficulty, demand, format) from exam structure, bank exemplars and optional anonymous aggregate signals -- never Student data. Supplies a verification expression (mathematics) or a verbatim evidence quote (reading) that StudyUs checks deterministically. Output is a DRAFT_AI candidate that must pass the validation pipeline.',
   }),
   'question_bank.validate_item': definePrompt({
     id: 'question_bank.validate_item',

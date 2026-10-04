@@ -1,7 +1,7 @@
 /**
  * LX-3B / LX-3R -- CONCEPT MISSION READ MODEL (pure presentation).
  *
- * Turns already-canonical StudyUS learning truth for ONE (student,
+ * Turns already-canonical StudyUs learning truth for ONE (student,
  * concept) into the single presentation structure the Concept Mission
  * screen renders:
  *

@@ -1,4 +1,4 @@
-/** Track A -- POST: a coordinator proposes a concept that does not exist (StudyUS reviews; existing equivalents suggested). */
+/** Track A -- POST: a coordinator proposes a concept that does not exist (StudyUs reviews; existing equivalents suggested). */
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { allUuids, readJson, requireInstitutionAdminActor } from '@/lib/institution/route-guard';

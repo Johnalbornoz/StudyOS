@@ -92,7 +92,7 @@ export async function linkChildByEmail(
     student.id,
     'PARENT_LINK_REQUEST',
     'Solicitud de acceso',
-    `${parentName} quiere ver tu progreso en StudyUS. Puedes aceptar o rechazar en tus notificaciones.`
+    `${parentName} quiere ver tu progreso en StudyUs. Puedes aceptar o rechazar en tus notificaciones.`
   );
 
   return { studentId: student.id, name: student.name || student.email, email: student.email, status: 'pending' };
@@ -229,7 +229,7 @@ export type ChildLinkRequestOutcome = 'SUBMITTED' | 'RATE_LIMITED';
  * Track A -- the PARENT-initiated direction, consent-first and with no
  * account-existence oracle:
  *  - the caller learns nothing about whether the email belongs to a
- *    StudyUS student (the route returns the same response for match,
+ *    StudyUs student (the route returns the same response for match,
  *    no match, already pending and already linked);
  *  - a match only ever creates a PENDING relationship, which grants no
  *    access (`isActiveParentOf` counts 'accepted' only) until the
@@ -286,7 +286,7 @@ export async function requestChildLink(parentId: string, childEmail: string): Pr
     workspace: 'STUDENT',
     type: 'PARENT_LINK_REQUEST',
     title: 'Solicitud de acceso',
-    message: `${parentName || 'Un familiar'} quiere ver tu progreso en StudyUS. Puedes aceptar o rechazar en tus notificaciones.`,
+    message: `${parentName || 'Un familiar'} quiere ver tu progreso en StudyUs. Puedes aceptar o rechazar en tus notificaciones.`,
     payload: { parentName, parentId },
     actionHref: '/dashboard/notifications',
   });

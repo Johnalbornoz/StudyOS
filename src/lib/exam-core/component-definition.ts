@@ -38,7 +38,7 @@ export const ComponentDefinitionSchema = z.object({
   commandTerms: z.array(z.string().min(1).max(60)).max(60).default([]),
   /** For a portfolio / performance component: what a submission contains (limits as published). */
   submissionLimits: z.array(z.string().min(1).max(200)).max(12).default([]),
-  /** What StudyUS deliberately does NOT reproduce (e.g. official descriptors that are not public). */
+  /** What StudyUs deliberately does NOT reproduce (e.g. official descriptors that are not public). */
   limitations: z.array(z.string().min(1).max(300)).max(10).default([]),
   sourceKeys: z.array(z.string().min(1).max(80)).min(1).max(10),
 });

@@ -11,7 +11,7 @@
  * this phase's spec).
  *
  * GROUNDING (direct schema audit, database/baseline/STUDYUS_BASELINE_2026_08.sql):
- * StudyUS has NO global, shared concept catalog and NO separate
+ * StudyUs has NO global, shared concept catalog and NO separate
  * enrollment/assignment junction table. `subjects.student_id` is a
  * direct, NOT NULL foreign key -- a subject row is already owned by
  * exactly one student (subjects are created per-student, never shared).

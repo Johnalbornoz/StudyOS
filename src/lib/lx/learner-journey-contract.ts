@@ -1,7 +1,7 @@
 /**
  * LX-1B -- CANONICAL LEARNER JOURNEY CONTRACT.
  *
- * A PURE PRESENTATION-LAYER translation from already-canonical StudyUS
+ * A PURE PRESENTATION-LAYER translation from already-canonical StudyUs
  * learning truth into the learner-visible journey vocabulary:
  *
  *   NOT_STARTED -> LEARN -> PRACTICE -> READY_TO_PROVE -> PROVE
@@ -19,7 +19,7 @@
  *    Phase 6 `MemoryStatus` + the already-derived `retentionDue`
  *    overlay (memory-policy / memory-read.service), and Phase 7
  *    `TransferDepth` (transfer-policy / transfer-read.service).
- *  - `LearningState` already encodes StudyUS's own precedence
+ *  - `LearningState` already encodes StudyUs's own precedence
  *    (misconception > prerequisite > repair > verification >
  *    independence > retention > transfer > validated > developing).
  *    This function MIRRORS that precedence; it never re-orders it and

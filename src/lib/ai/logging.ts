@@ -74,7 +74,7 @@ export function logAIDebugRaw(executionId: string, label: string, content: strin
  * HTTP error, distinct from the always-emitted `[ai]` execution summary
  * so a 400/401/403/etc. is trivially greppable on its own. Only ever
  * emits the provider's OWN error envelope fields (never the API key,
- * never authorization headers, never StudyUS's own prompt/question
+ * never authorization headers, never StudyUs's own prompt/question
  * content, never student PII) plus the same execution-identity fields
  * `[ai]` already carries.
  */

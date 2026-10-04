@@ -22,8 +22,8 @@ export default async function MarketingLayout({
   return (
     <div className="lp-shell" lang={locale}>
       <header className="mkt-header">
-        <Link href={`/${locale}`} className="mkt-logo" aria-label="StudyUS">
-          <Image src="/logo.png" alt="StudyUS" width={112} height={37} priority style={{ height: 32, width: 'auto' }} />
+        <Link href={`/${locale}`} className="mkt-logo" aria-label="StudyUs">
+          <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={112} height={37} priority style={{ height: 32, width: 'auto' }} />
         </Link>
         <nav className="mkt-nav">
           <Link href={`/${locale}/how-it-works`} className="mkt-navlink">
@@ -38,7 +38,7 @@ export default async function MarketingLayout({
 
       <footer className="lp-footer">
         <div className="lp-footer-brand">
-          <Image src="/logo.png" alt="StudyUS" width={91} height={30} style={{ height: 26, width: 'auto' }} />
+          <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={91} height={30} style={{ height: 26, width: 'auto' }} />
           <span>{t['marketing.footerTagline']}</span>
         </div>
         <nav className="lp-footer-locales" aria-label={t['landing.languagesLabel']}>

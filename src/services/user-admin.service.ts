@@ -80,7 +80,7 @@ export class EmailAlreadyExistsError extends Error {
     super('EMAIL_ALREADY_EXISTS');
   }
 }
-/** Clerk succeeded but a later stage failed -- the caller must show "Clerk creado, StudyUS pendiente" and offer reconciliation, never silently retry from scratch (which would create a second Clerk account for the same admin action). */
+/** Clerk succeeded but a later stage failed -- the caller must show "Clerk creado, StudyUs pendiente" and offer reconciliation, never silently retry from scratch (which would create a second Clerk account for the same admin action). */
 export class PartialUserCreationError extends Error {
   constructor(public clerkUserId: string, public stage: string, public cause: string) {
     super('PARTIAL_USER_CREATION');
@@ -561,7 +561,7 @@ export async function cleanupTestIdentity(actorUserId: string, targetUserId: str
 }
 
 // ---------------------------------------------------------------------
-// Clerk <-> StudyUS consistency
+// Clerk <-> StudyUs consistency
 // ---------------------------------------------------------------------
 
 export interface SyncCheckResult {
@@ -592,7 +592,7 @@ export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckRe
       missing.push(row.id);
     }
   }
-  // Track A: identify each affected account from its own StudyUS records
+  // Track A: identify each affected account from its own StudyUs records
   // (its Clerk user is, by definition, missing).
   const accounts: SyncErrorAccount[] = missing.length
     ? (
@@ -723,7 +723,7 @@ export async function reconcileUserCreation(
   // temporary password (an invitation never calls reconcileUserCreation
   // at all -- see createUserFull) -- so it unconditionally requires a
   // real password change before first use. Not a simulated "force
-  // change" flag: this is StudyUS's own gate (dashboard/layout.tsx),
+  // change" flag: this is StudyUs's own gate (dashboard/layout.tsx),
   // cleared only after Clerk's own `user.updatePassword()` succeeds --
   // see /account/change-password.
   await db.query(`UPDATE users SET password_change_required = true, password_change_required_at = NOW() WHERE id = $1 AND password_change_required = false`, [canonicalUser.id]);
@@ -756,7 +756,7 @@ export async function reconcileUserCreation(
  *      current/temporary credential (never trusts a client claim of
  *      "I already changed it").
  *   2. `updateUser({ password, signOutOfOtherSessions: true })` --
- *      the real password change, executed by StudyUS's own backend
+ *      the real password change, executed by StudyUs's own backend
  *      using the Backend API (secret-key privileged), not by the
  *      user's browser talking to Clerk directly.
  * If either Clerk call throws, this function throws too and
@@ -768,7 +768,7 @@ export async function reconcileUserCreation(
  * parameters and the two request bodies sent to Clerk's API client --
  * it is never logged, never persisted, never returned, and goes out
  * of scope the moment this function returns or throws. It DOES transit
- * through this StudyUS server (see the route's own doc comment) on its
+ * through this StudyUs server (see the route's own doc comment) on its
  * way to Clerk; it is not simulated to bypass the server.
  */
 export async function changeOwnPasswordAndClearRequirement(
@@ -805,7 +805,7 @@ export async function confirmPasswordChanged(canonicalUserId: string): Promise<v
 
 // ---------------------------------------------------------------------
 // Deletion impact analysis and permanent deletion -- conservative by
-// design: a real, permanent delete of StudyUS data is only ever
+// design: a real, permanent delete of StudyUs data is only ever
 // offered when there is nothing to retain. Otherwise the only path is
 // Archive (already implemented above), plus a real, permanent deletion
 // of the Clerk account is still possible on its own via TEST cleanup

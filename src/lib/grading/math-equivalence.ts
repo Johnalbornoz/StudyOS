@@ -1,5 +1,5 @@
 /**
- * Mathematical equivalence for grading -- StudyUS grades like a teacher,
+ * Mathematical equivalence for grading -- StudyUs grades like a teacher,
  * not like a string comparator. Two answers that denote the same value
  * (or the same equation) are the same answer, whatever their notation:
  *

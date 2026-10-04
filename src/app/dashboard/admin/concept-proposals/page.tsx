@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /**
- * Track A -- StudyUS catalog governance: concept proposals from teachers and
+ * Track A -- StudyUs catalog governance: concept proposals from teachers and
  * coordinators. Equivalent existing concepts are suggested first so the
  * catalog is reused, not duplicated. Spanish-only like the admin console.
  */

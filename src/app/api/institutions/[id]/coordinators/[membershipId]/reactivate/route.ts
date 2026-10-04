@@ -1,7 +1,7 @@
 /**
  * Track A -- POST /api/institutions/[id]/coordinators/[membershipId]/reactivate
  * Reactivate a REMOVED coordinator of THIS institution (an account whose coordinator role was revoked by
- * StudyUS -> 422 ROLE_REVOKED). Audited; foreign -> 404.
+ * StudyUs -> 422 ROLE_REVOKED). Audited; foreign -> 404.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

@@ -176,7 +176,7 @@ export async function markInboxRead(userId: string, workspace: Workspace, ids?: 
 
 /**
  * Track A product amendment: ONE account inbox -- the persona's plus every
- * capability the account holds (institution / StudyUS administration), so
+ * capability the account holds (institution / StudyUs administration), so
  * an institution request is never hidden because its admin is also, say, a
  * Teacher. Each part is still scoped by (user, workspace).
  */

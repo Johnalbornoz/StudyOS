@@ -34,7 +34,7 @@ export interface GuidedPracticeStep {
 }
 
 export interface GuidedPractice {
-  /** The problem the learner and StudyUS work through together. */
+  /** The problem the learner and StudyUs work through together. */
   problem: string;
   steps: GuidedPracticeStep[];
   /** One sentence tying it back to the idea. */

@@ -14,7 +14,7 @@
  * NOT_FOUND) and audited in academic_governance_events.
  *
  * Coverage (ANALYTICS, separate): which curriculum content is in class plans /
- * students' plans. It is NOT mastery and NOT StudyUS content coverage.
+ * students' plans. It is NOT mastery and NOT StudyUs content coverage.
  */
 import { db } from '@/lib/db';
 import { bindingDomainAllowed, curriculumContextLabel, rankCurriculumCandidates } from './curriculum-identity';

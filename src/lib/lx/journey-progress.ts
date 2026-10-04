@@ -40,7 +40,7 @@ export interface JourneyProgressPresentation {
 
 /**
  * Fixed stage anchors (R4). Discrete, not manufactured from quiz count/
- * attempts/time spent (R5) -- StudyUS has no canonical intra-stage
+ * attempts/time spent (R5) -- StudyUs has no canonical intra-stage
  * progress signal today, so each stage gets one fixed value rather than
  * a fake decimal. Strictly increasing so every required ordering test
  * (LEARN < PRACTICE < PROVE < RETAIN < TRANSFER < CONSOLIDATED) holds by

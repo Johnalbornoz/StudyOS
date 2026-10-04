@@ -1,7 +1,7 @@
 /**
  * Track A -- /api/admin/institutions/[id]/coordinators (Platform Admin only)
  * GET: coordinators of the institution (members + invitations).
- * POST { email, name? }: add a coordinator. An existing account (StudyUS or
+ * POST { email, name? }: add a coordinator. An existing account (StudyUs or
  *   Clerk) is assigned directly (no second account); otherwise a one-time
  *   invitation is created and Clerk emails a sign-up link back to the
  *   acceptance page. The institution must be ACTIVE (409).

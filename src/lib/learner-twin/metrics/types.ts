@@ -40,7 +40,7 @@ export type MetricUnavailableReason =
   | 'INSUFFICIENT_POLICY'
   | 'NOT_APPLICABLE'
   // D6: the metric is conceptually applicable and was requested, but
-  // StudyUS could not compute/read it during THIS operation (an
+  // StudyUs could not compute/read it during THIS operation (an
   // unexpected error in the reader). Operational/unavailability
   // metadata only -- it never means the learner failed, lacks
   // evidence, the metric doesn't apply, or the metric wasn't

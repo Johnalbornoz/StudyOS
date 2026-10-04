@@ -44,7 +44,7 @@ export interface WorkspaceEntryInput {
 export function decideWorkspaceEntry({ available, stored, defaultWorkspace }: WorkspaceEntryInput): WorkspaceEntry {
   if (available.length === 0) return { kind: 'REDIRECT', to: ROLE_SELECT_PATH };
   // Track A: the account's ONE persona is its home; capabilities
-  // (institution / StudyUS admin) are where a capability-only account lands.
+  // (institution / StudyUs admin) are where a capability-only account lands.
   const active = personaWorkspaceOf(available, stored) ?? (stored && available.includes(stored) ? stored : null) ?? defaultWorkspace ?? available[0];
   if (active === 'STUDENT') return { kind: 'STUDENT' };
   return { kind: 'REDIRECT', to: WORKSPACE_HOME[active] };

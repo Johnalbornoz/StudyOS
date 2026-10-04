@@ -6,7 +6,7 @@
  *
  * Preparing for an exam is NOT replaying the curriculum from its first
  * concept: every requirement of the exam is classified against what the
- * Student already has (the canonical learner state and StudyUS results).
+ * Student already has (the canonical learner state and StudyUs results).
  * Absence of evidence is never a weakness.
  *
  * Exams can share CONTENT but not their form of assessment or their purpose
@@ -59,7 +59,7 @@ export interface RequirementInput {
   area: string;
   /** Share of the blueprint's item targets (0..1). */
   weight: number;
-  /** Latest StudyUS result for this requirement in THIS exam (practice, diagnostic or mock). */
+  /** Latest StudyUs result for this requirement in THIS exam (practice, diagnostic or mock). */
   ownEvidence: ExamEvidence | null;
   concepts: Array<{
     canonicalConceptId: string;

@@ -63,7 +63,7 @@ export const LIFECYCLE_LABEL: Record<string, string> = {
 
 export const LENGTH_BASIS_LABEL: Record<string, string> = {
   BLUEPRINT_IS_FULL: 'blueprint de longitud completa',
-  ITEMS_PROPORTIONAL: 'longitud oficial repartida según el blueprint (política StudyUS)',
+  ITEMS_PROPORTIONAL: 'longitud oficial repartida según el blueprint (política StudyUs)',
   MARKS_ESTIMATED: 'longitud estimada por puntos',
   UNKNOWN: 'longitud oficial no publicada',
 };

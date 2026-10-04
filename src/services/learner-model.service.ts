@@ -505,7 +505,7 @@ export interface ConceptEvidenceHistoryItem {
 /**
  * Every individual quiz/exam attempt recorded for a concept, most
  * recent first -- the raw event log behind the aggregate counts in
- * "Why StudyUS thinks this". Distinct from that summary: this is for
+ * "Why StudyUs thinks this". Distinct from that summary: this is for
  * a student who wants to see each attempt, not just a total.
  */
 export async function getConceptEvidenceHistory(
@@ -546,7 +546,7 @@ export interface ConceptEvidenceSummary {
 
 /**
  * The evidence behind a concept's numbers, summarized for "Why
- * StudyUS thinks this" on Concept Detail -- never raw-event-log, but
+ * StudyUs thinks this" on Concept Detail -- never raw-event-log, but
  * every number here is a direct count/aggregate over real
  * learning_evidence rows, not an LLM's characterization of them.
  */

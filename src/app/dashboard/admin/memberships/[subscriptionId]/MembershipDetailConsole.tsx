@@ -79,13 +79,13 @@ const ACTION_META: Record<ActionKind, { title: string; endpoint: string; body: (
     title: 'Registrar reembolso',
     endpoint: 'refund-dispute',
     body: (reason) => ({ type: 'REFUND', notes: reason }),
-    disclosure: 'Esto solo registra y concilia el reembolso en StudyUS. Acción requerida en el proveedor de pagos: el reembolso real debe emitirse allí.',
+    disclosure: 'Esto solo registra y concilia el reembolso en StudyUs. Acción requerida en el proveedor de pagos: el reembolso real debe emitirse allí.',
   },
   dispute: {
     title: 'Registrar disputa',
     endpoint: 'refund-dispute',
     body: (reason) => ({ type: 'DISPUTE', notes: reason }),
-    disclosure: 'Esto solo registra la disputa en StudyUS para su seguimiento. Acción requerida en el proveedor de pagos.',
+    disclosure: 'Esto solo registra la disputa en StudyUs para su seguimiento. Acción requerida en el proveedor de pagos.',
   },
 };
 
@@ -124,7 +124,7 @@ export default function MembershipDetailConsole({ initialDetail }: { initialDeta
       setActiveAction(null);
       setReason('');
       if (body?.data?.providerActionRequired) {
-        setNotice('Registrado en StudyUS. Acción requerida en el proveedor de pagos para completar el reembolso o resolver la disputa.');
+        setNotice('Registrado en StudyUs. Acción requerida en el proveedor de pagos para completar el reembolso o resolver la disputa.');
       } else {
         setNotice(`${meta.title}: hecho.`);
       }

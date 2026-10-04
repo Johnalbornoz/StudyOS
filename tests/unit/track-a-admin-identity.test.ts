@@ -44,7 +44,7 @@ describe('requester identity', () => {
     expect(r).toMatchObject({ id: 'm1', institutionId: 'inst-A', institutionName: 'Colegio A', requesterName: 'Teresa Docente', requesterEmail: 'teresa@example.com', membershipRole: 'TEACHER' });
   });
 
-  it('a teacher with no StudyUS name gets the Clerk name; with none at all, the email alone (rendering never blocked)', async () => {
+  it('a teacher with no StudyUs name gets the Clerk name; with none at all, the email alone (rendering never blocked)', async () => {
     dbQueryMock.mockResolvedValue({ rows: [{ id: 'u1', email: 't@example.com', clerk_id: 'c1', name: null }, { id: 'u2', email: 'x@example.com', clerk_id: 'c2', name: null }] });
     getUserListMock.mockResolvedValue({ data: [{ id: 'c1', firstName: 'Teresa', lastName: 'Docente' }] });
     const ids = await resolveDisplayIdentities(['u1', 'u2']);
@@ -87,7 +87,7 @@ describe('requester identity', () => {
   });
 });
 
-describe('Clerk <-> StudyUS inconsistencies', () => {
+describe('Clerk <-> StudyUs inconsistencies', () => {
   it('identifies the affected account (name, email, state, roles) from its own records', async () => {
     dbQueryMock.mockImplementation(async (sql: string) => {
       if (sql.includes('SELECT id, clerk_id FROM users')) return { rows: [{ id: 'ok', clerk_id: 'c-ok' }, { id: 'gone', clerk_id: 'c-gone' }] };

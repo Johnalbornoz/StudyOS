@@ -2,7 +2,7 @@
  * LX-1 -- CANONICAL LEARNING & EVIDENCE CONTRACTS.
  *
  * Pure, deterministic, additive contracts that translate existing
- * canonical StudyUS learning truth into the vocabulary the future
+ * canonical StudyUs learning truth into the vocabulary the future
  * learner journey (LX-2+) will present. NONE of these modules:
  *   - reads a raw score / threshold / evidence row directly,
  *   - grades an answer,

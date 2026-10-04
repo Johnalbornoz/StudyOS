@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * UX-5 -- the StudyUS Tutor.
+ * UX-5 -- the StudyUs Tutor.
  *
  * A contextual pedagogical support layer, not a chat product: it shows
  * what it is helping with (subject · concept), whether help is available

@@ -193,7 +193,7 @@ export async function createObjectivePreparation(studentId: string, input: Creat
   }
   const created = !before;
   if (created) {
-    // Demand telemetry: which objectives Students choose, and what StudyUS could offer at that moment. No personal data beyond the event's own student row.
+    // Demand telemetry: which objectives Students choose, and what StudyUs could offer at that moment. No personal data beyond the event's own student row.
     await track(studentId, 'exam_objective_selected', {
       objectiveKey: o.key,
       framework: o.framework,
@@ -295,7 +295,7 @@ async function learnerStates(studentId: string, canonicalIds: string[]): Promise
 
 const asClass = (c: string): ExamEvidence['classification'] | null => (c === 'STRENGTH' || c === 'DEVELOPING' || c === 'GAP' ? c : null);
 
-/** Latest StudyUS evidence per requirement code in THIS exam, and per canonical concept from OTHER exams (context only). */
+/** Latest StudyUs evidence per requirement code in THIS exam, and per canonical concept from OTHER exams (context only). */
 async function examEvidence(studentId: string, codes: string[], canonicalIds: string[], configKeys: string[]) {
   const byCode = new Map<string, ExamEvidence>();
   const byConcept = new Map<string, ExamEvidence>();

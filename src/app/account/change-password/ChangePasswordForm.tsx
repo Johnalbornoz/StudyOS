@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
  * Server-controlled password change (Alternative B -- see
  * F15_ADMIN_USER_MANAGEMENT.md §26). This form no longer calls Clerk
  * directly from the browser: it posts the current and new password to
- * StudyUS's own `/api/account/change-password`, which verifies the
+ * StudyUs's own `/api/account/change-password`, which verifies the
  * current credential and performs the real change against Clerk's
  * Backend API itself, only then clearing the server-side requirement.
  * The earlier design (browser calls Clerk, then separately tells this

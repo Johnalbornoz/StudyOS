@@ -4,7 +4,7 @@
  * "¿Para qué examen quieres prepararte?" -- objective-first exam selection.
  *
  * EVERY exam / subject level of the governed catalogue can be chosen. The
- * status shown is a short summary of what StudyUS can do for it today; it never
+ * status shown is a short summary of what StudyUs can do for it today; it never
  * disables, hides or blocks an objective ("Exam availability ≠ activity
  * availability"). Search and filters narrow by name / framework / region only,
  * never by readiness. The detail of capabilities lives inside the preparation.

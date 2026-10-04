@@ -99,7 +99,7 @@ describe('Coordinator invitation / assignment', () => {
     expect(writes()).toEqual([]);
   });
 
-  it('an EXISTING StudyUS account is assigned directly (no invitation, no second account)', async () => {
+  it('an EXISTING StudyUs account is assigned directly (no invitation, no second account)', async () => {
     respond((sql, p) =>
       institutionLookup(sql, p) ??
       (sql.includes('FROM users WHERE lower(email) = $1')
@@ -239,7 +239,7 @@ describe('Coordinator removal policy', () => {
 
 describe('Structural guards', () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
-  it('institution creation and Platform Admin coordinator routes are gated by the StudyUS admin guard', () => {
+  it('institution creation and Platform Admin coordinator routes are gated by the StudyUs admin guard', () => {
     for (const f of [
       'src/app/api/admin/institutions/route.ts',
       'src/app/api/admin/institutions/[id]/route.ts',

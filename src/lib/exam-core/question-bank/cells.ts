@@ -12,7 +12,7 @@
  * published length, full = reduced (BLUEPRINT_IS_FULL). When it is shorter
  * (e.g. PAA: 36 of 175 items), the published item count of each component is
  * apportioned over its cells in proportion to the governed blueprint weights
- * (largest remainder, deterministic) -- a StudyUS assembly policy derived from
+ * (largest remainder, deterministic) -- a StudyUs assembly policy derived from
  * the blueprint, NOT an official per-skill distribution, and labelled so.
  * Without a published length, the full form is UNKNOWN and is never claimed.
  */

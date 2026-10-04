@@ -2,7 +2,7 @@
  * Track A -- GET /api/student/curriculum?subject=<catalogKey>&context=<academicSubjectId>
  * The suggested curriculum for one of MY subjects (or any catalog subject),
  * resolved from my context (exam profile, academic profile) or the general
- * StudyUS curriculum, overlaid with my plan status. Available ≠ in plan.
+ * StudyUs curriculum, overlaid with my plan status. Available ≠ in plan.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStudentActor } from '@/lib/learning-plan/route-actors';

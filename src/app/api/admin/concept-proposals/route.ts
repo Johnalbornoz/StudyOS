@@ -1,4 +1,4 @@
-/** Track A -- GET /api/admin/concept-proposals (StudyUS catalog governance only). */
+/** Track A -- GET /api/admin/concept-proposals (StudyUs catalog governance only). */
 import { NextResponse } from 'next/server';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
 import { listConceptProposals } from '@/lib/learning-plan/concept-proposals.service';

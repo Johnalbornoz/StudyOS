@@ -5,8 +5,8 @@
  * viewer's own institution); this module never decides access and never
  * accepts identity data from the client.
  *
- * Name sources, in order: the account's own StudyUS records (student name,
- * profile full name), then its Clerk profile (teachers have no StudyUS
+ * Name sources, in order: the account's own StudyUs records (student name,
+ * profile full name), then its Clerk profile (teachers have no StudyUs
  * profile row), else null -- the UI then shows the email alone. A Clerk
  * failure never blocks rendering.
  */

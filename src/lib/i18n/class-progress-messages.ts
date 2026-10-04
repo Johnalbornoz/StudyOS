@@ -4,7 +4,7 @@
  */
 const es = {
   'cpi.title': 'Progreso de la clase',
-  'cpi.subtitle': 'Todo se calcula con la evidencia real de tus estudiantes y el estado de aprendizaje oficial de StudyUS. Nada es una predicción.',
+  'cpi.subtitle': 'Todo se calcula con la evidencia real de tus estudiantes y el estado de aprendizaje oficial de StudyUs. Nada es una predicción.',
   'cpi.filters': 'Filtros',
   'cpi.filter.period': 'Periodo',
   'cpi.period.7d': 'Últimos 7 días',
@@ -60,7 +60,7 @@ const es = {
   'cpi.gapReason.REINFORCE': 'refuerzo indicado por su evidencia',
   'cpi.gapReason.MISCONCEPTION': 'error conceptual activo',
   'cpi.trend.title': 'Evolución semanal',
-  'cpi.trend.subtitle': 'Evidencias que StudyUS validó en cada fase, por semana (y cuántos estudiantes las aportaron).',
+  'cpi.trend.subtitle': 'Evidencias que StudyUs validó en cada fase, por semana (y cuántos estudiantes las aportaron).',
   'cpi.trend.week': 'Semana del {date}',
   'cpi.trend.evidence': '{n} {n:evidencia|evidencias}',
   'cpi.trend.students': '{n} {n:estudiante|estudiantes}',
@@ -126,7 +126,7 @@ type Catalog = Record<ClassProgressMessageKey, string>;
 
 const en: Catalog = {
   'cpi.title': 'Class progress',
-  'cpi.subtitle': 'Everything is computed from your students’ real evidence and StudyUS’s official learning state. Nothing is a prediction.',
+  'cpi.subtitle': 'Everything is computed from your students’ real evidence and StudyUs’s official learning state. Nothing is a prediction.',
   'cpi.filters': 'Filters',
   'cpi.filter.period': 'Period',
   'cpi.period.7d': 'Last 7 days',
@@ -182,7 +182,7 @@ const en: Catalog = {
   'cpi.gapReason.REINFORCE': 'reinforcement indicated by their evidence',
   'cpi.gapReason.MISCONCEPTION': 'active misconception',
   'cpi.trend.title': 'Weekly trend',
-  'cpi.trend.subtitle': 'Evidence StudyUS validated in each phase, per week (and how many students contributed).',
+  'cpi.trend.subtitle': 'Evidence StudyUs validated in each phase, per week (and how many students contributed).',
   'cpi.trend.week': 'Week of {date}',
   'cpi.trend.evidence': '{n} {n:piece of evidence|pieces of evidence}',
   'cpi.trend.students': '{n} {n:student|students}',

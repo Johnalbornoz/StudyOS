@@ -94,7 +94,7 @@ export default function AssessmentPanel({
       setHistory(historyBody.data?.results || []);
       // UX-4 (readiness consistency): the legacy subject-level readiness %
       // (/api/exam-readiness/score) is no longer fetched or shown to the
-      // Student. StudyUS has ONE Student-facing readiness -- the F9
+      // Student. StudyUs has ONE Student-facing readiness -- the F9
       // exam-profile status in "Preparación de examen" -- and a second,
       // differently-computed "Preparación X%" contradicted it. The API and
       // its calculation are unchanged.
