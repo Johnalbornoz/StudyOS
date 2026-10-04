@@ -387,6 +387,7 @@ export async function learningPlanTeardown(): Promise<void> {
   // Learner concepts of the synthetic learners and of the independent Student (fixtures only).
   const subjects = await rows(`SELECT id FROM subjects WHERE student_id = ANY($1::uuid[])`, [learners]);
   const concepts = await rows(`SELECT id FROM concepts WHERE subject_id = ANY($1::uuid[])`, [subjects]);
+  await purgeConceptDependents(concepts);
   await q(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [concepts]);
   await q(`DELETE FROM mastery_records WHERE concept_id = ANY($1::uuid[]) OR student_id = ANY($2::uuid[])`, [concepts, learners]);
   await q(`DELETE FROM concept_localizations WHERE concept_id = ANY($1::uuid[])`, [concepts]);
@@ -417,6 +418,29 @@ export async function learningPlanTeardown(): Promise<void> {
 }
 
 /**
+ * Every row of the GIVEN fixture learner concepts in tables that reference concepts (discovered from the
+ * catalog, so new learning tables are covered), deleted in dependency order; AI execution audit rows are
+ * kept and only unlinked. DEV fixtures only -- callers pass fixture concept ids exclusively.
+ */
+export async function purgeConceptDependents(conceptIds: string[]): Promise<void> {
+  if (conceptIds.length === 0) return;
+  const fks = (await db.query(
+    `SELECT conrelid::regclass::text AS t, a.attname AS col FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+      WHERE c.contype = 'f' AND c.confrelid = 'public.concepts'::regclass`
+  )).rows as Array<{ t: string; col: string }>;
+  let pending = fks.filter((f) => f.t !== 'concepts');
+  for (let pass = 0; pass < 6 && pending.length; pass++) {
+    const failed: typeof pending = [];
+    for (const f of pending) {
+      const sql = f.t === 'ai_execution_events' ? `UPDATE ${f.t} SET ${f.col} = NULL WHERE ${f.col} = ANY($1::uuid[])` : `DELETE FROM ${f.t} WHERE ${f.col} = ANY($1::uuid[])`;
+      await db.query(sql, [conceptIds]).catch(() => failed.push(f));
+    }
+    pending = failed;
+  }
+  if (pending.length) throw new Error(`purgeConceptDependents: could not clear ${pending.map((f) => f.t + '.' + f.col).join(', ')}`);
+}
+
+/**
  * Concepts a Teacher assignment added to FIXTURE learners' plans for these
  * (fixture) classes are removed with them, so every run starts with the
  * same plans; any other concept only loses its provenance link.
@@ -430,6 +454,7 @@ export async function detachTeacherAddedConcepts(classIds: string[]): Promise<vo
   )).rows.map((r: any) => r.id);
   await purgeLearningPlanRows({ classIds, learnerConceptIds: fixtureConcepts });
   if (fixtureConcepts.length > 0) {
+    await purgeConceptDependents(fixtureConcepts);
     await db.query(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
     await db.query(`DELETE FROM mastery_records WHERE concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
     await db.query(`DELETE FROM concept_localizations WHERE concept_id = ANY($1::uuid[])`, [fixtureConcepts]);
