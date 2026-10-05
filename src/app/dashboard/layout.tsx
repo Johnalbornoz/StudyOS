@@ -16,6 +16,8 @@ import LicenseBanner from './LicenseBanner';
 import { getInterfaceLanguage, getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { buildLearnerNav } from '@/lib/lx/learner-navigation';
+import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { examPrepNavPrimary } from '@/lib/exam-journey/ux.server';
 import { buildParentNav, buildTeacherNav, buildInstitutionNav, buildAdminNav } from '@/lib/lx/workspace-navigation';
 import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
 import { PATHNAME_HEADER, resolveShellContext } from '@/lib/admin/shell-context';
@@ -54,6 +56,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let notifCount = 0;
   let debtCount = 0;
   let assignmentCount = 0;
+  let examPrepPrimary = false;
   // LX-9 A5: renamed from a raw consecutive-day "streak" to a bounded,
   // non-punitive "learning days this week" count -- see
   // gamification.service.ts::getLearningDaysThisWeek's own doc comment.
@@ -150,6 +153,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       learningDaysThisWeek = daysThisWeek;
       assignmentCount = pendingAssignments;
       hasActiveLicense = fullAccess;
+      // Student Exam Journey (entry UX only): "Exámenes" is primary only while a target is in active preparation.
+      if (isStudentJourneyUxEnabled()) examPrepPrimary = await examPrepNavPrimary(studentId);
     } else {
       // `getUnreadNotifications`/`getActiveDebts` are Student-domain
       // concepts (queried by `students.id`) that have not been
@@ -186,7 +191,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : activeWorkspace === 'TEACHER' ? buildTeacherNav({ notifCount })
     : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav({ notifCount })
     : activeWorkspace === 'ADMIN' ? buildAdminNav({ notifCount })
-    : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
+    : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount, examPrepPrimary });
 
   // LX-2E: navigation organised around learner intent
   // (Today / My Path / Progress), resolved to plain strings for the

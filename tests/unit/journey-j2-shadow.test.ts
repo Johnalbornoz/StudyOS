@@ -123,8 +123,43 @@ describe('shadow only: no Student-visible surface consumes the resolver', () => 
   walk(join(ROOT, 'src'));
   const users = files.filter((f) => !f.includes(`${join('src', 'lib', 'exam-journey')}`) && /@\/lib\/exam-journey\//.test(readFileSync(f, 'utf-8'))).map((f) => relative(ROOT, f)).sort();
 
-  it('only the two Exam Prep pages (shadow hook) and the shadow inspection API import the journey', () => {
-    expect(users).toEqual(['src/app/api/exam-preparation/journey/route.ts', 'src/app/dashboard/exam-prep/[examProfileId]/page.tsx', 'src/app/dashboard/exam-prep/page.tsx']);
+  // J3.5 UX phase (approved behaviour change): the entry UX consumes the journey, but ONLY behind
+  // STUDENT_JOURNEY_V2=UX. The importer list stays exact; every entry point is flag-gated in its own
+  // source, and the two presentation components are imported only by gated pages.
+  const UX_ENTRY_POINTS = [
+    'src/app/api/exam-preparation/[id]/schedule/route.ts',
+    'src/app/dashboard/exam-prep/discover/page.tsx',
+    'src/app/dashboard/layout.tsx',
+    'src/app/dashboard/onboarding/page.tsx',
+    'src/app/dashboard/profile/page.tsx',
+    'src/app/page.tsx',
+    'src/lib/student/onboarding-gate.server.ts',
+  ];
+  const UX_COMPONENTS: Record<string, string[]> = {
+    'src/app/dashboard/exam-prep/journey/ExamTargetOverview.tsx': ['src/app/dashboard/exam-prep/[examProfileId]/page.tsx', 'src/app/dashboard/exam-prep/page.tsx'],
+    'src/app/dashboard/profile/InstitutionalContextCard.tsx': ['src/app/dashboard/profile/page.tsx'],
+  };
+  const SHADOW_FILES = ['src/app/api/exam-preparation/journey/route.ts', 'src/app/dashboard/exam-prep/[examProfileId]/page.tsx', 'src/app/dashboard/exam-prep/page.tsx'];
+
+  it('only the shadow hooks / inspection API and the flag-gated entry UX import the journey', () => {
+    expect(users).toEqual([...SHADOW_FILES, ...UX_ENTRY_POINTS, ...Object.keys(UX_COMPONENTS)].sort());
+  });
+
+  it('every UX entry point is gated by STUDENT_JOURNEY_V2=UX in its own source', () => {
+    for (const f of [...UX_ENTRY_POINTS, 'src/app/dashboard/exam-prep/page.tsx', 'src/app/dashboard/exam-prep/[examProfileId]/page.tsx']) {
+      expect(readFileSync(join(ROOT, f), 'utf-8'), f).toMatch(/isStudentJourneyUxEnabled\(\)/);
+    }
+  });
+
+  it('the UX presentation components are imported only by gated pages', () => {
+    for (const [component, allowed] of Object.entries(UX_COMPONENTS)) {
+      const name = component.split('/').pop()!.replace(/\.tsx$/, '');
+      const importers = files
+        .filter((f) => relative(ROOT, f) !== component && new RegExp(`/${name}'`).test(readFileSync(f, 'utf-8')))
+        .map((f) => relative(ROOT, f))
+        .sort();
+      expect(importers, component).toEqual(allowed.sort());
+    }
   });
 
   it('the page hooks are flag-guarded, run after the response, and render nothing from it', () => {

@@ -18,7 +18,12 @@ import { allObjectiveCapabilities, profileObjective } from '@/lib/exam-core/obje
 import { objectiveStatusKey } from '@/lib/exam-core/objectives/capabilities';
 import { ProfileCard } from './ProfileCard';
 import { after } from 'next/server';
-import { isStudentJourneyShadowEnabled } from '@/lib/exam-journey/feature-flag';
+import { isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { getStudentExamJourneys, getStudentInstitutionalContext, loadExamTargetRows } from '@/lib/exam-journey/ux.server';
+import { isActivePreparation, presentNextAction, studentBlockerKeys, targetScheduleLines } from '@/lib/exam-journey/ux';
+import { scheduleFactsFromRow } from '@/lib/exam-journey/exam-target';
+import { ScheduleSummary } from './journey/ExamTargetOverview';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
 
 /**
@@ -78,6 +83,75 @@ export default async function ExamPrepPage() {
       <PreparationChooser objectives={picker.objectives} frameworks={picker.frameworks} suggested={picker.suggested} frameworkReasons={picker.frameworkReasons} hasAcademicContext={picker.hasAcademicContext} labels={prepLabels} />
     </section>
   );
+
+  // Student Exam Journey V2 (J1.4 / J3.3 / J3.5, STUDENT_JOURNEY_V2=UX): one card per target, each with its
+  // OWN date (with its source), state, next step and blockers -- never a merged readiness, no percentages.
+  if (isStudentJourneyUxEnabled()) {
+    const [journeys, targetRows, context] = await Promise.all([
+      rows.length ? getStudentExamJourneys(studentId) : Promise.resolve([]),
+      rows.length ? loadExamTargetRows(studentId) : Promise.resolve(new Map()),
+      getStudentInstitutionalContext(studentId).catch(() => null),
+    ]);
+    const byTarget = new Map(journeys.map((j) => [j.examTargetId, j]));
+    const institutionDefinesPath = !!context?.institutions.some((i) => i.classes.some((c) => c.subject.value !== null));
+    const jxLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('jx.')));
+    const ordered = rows
+      .map((row) => ({ ...row, resolution: byTarget.get(row.profile.id) ?? null, stored: targetRows.get(row.profile.id) ?? null }))
+      .sort((a, b) => Number(!!b.resolution && isActivePreparation(b.resolution)) - Number(!!a.resolution && isActivePreparation(a.resolution)));
+    return (
+      <div className="xp-page xp-page--wide">
+        <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={tr['prep.lead']} />
+        {institutionDefinesPath ? <p className="ui-hint jx-exams-note" data-programme-note>{tr['jx.inst.exams.note']}</p> : null}
+
+        {ordered.length > 0 && (
+          <section aria-labelledby="prep-mine-title" className="prep-mine">
+            <h2 id="prep-mine-title" className="exv2-title">{tr['prep.mine.title']}</h2>
+            <ul className="ex-list">
+              {ordered.map(({ profile, objective, family, definitionName, openAttempt, resolution, stored }) => {
+                const blockers = resolution ? studentBlockerKeys(resolution) : [];
+                return (
+                  <ProfileCard
+                    key={profile.id}
+                    profileId={profile.id}
+                    examName={definitionName}
+                    hasInProgress={!!openAttempt}
+                    labels={profileMenuLabels}
+                    info={
+                      <div className="jx-target" data-target-state={resolution?.state ?? 'UNRESOLVED'}>
+                        <p className="ex-goal-kicker">{objective ? tr[`prep.fw.${objective.framework}`] : family ? familyNames[family] ?? family : t['ex.goalKicker']}</p>
+                        <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
+                        {stored ? <ScheduleSummary lines={targetScheduleLines(scheduleFactsFromRow(stored))} labels={jxLabels} locale={locale} /> : null}
+                        {resolution ? (
+                          <>
+                            <p className="ex-card-meta">{tr[`jx.state.${resolution.state}`]}</p>
+                            <p className="ex-card-meta" data-next-action={resolution.recommendedNextAction.kind}>
+                              {fillMessage(tr['jx.card.next'], { action: tr[presentNextAction(resolution.recommendedNextAction.kind).labelKey] })}
+                            </p>
+                          </>
+                        ) : null}
+                        {blockers.length > 0 ? <ul className="jx-notices" data-blockers>{blockers.map((k) => <li key={k} className="jx-notice">{tr[k]}</li>)}</ul> : null}
+                        {profile.targetInstitutionName ? <p className="jx-notice" data-requirement="unconfirmed">{fillMessage(tr['jx.requirement.unconfirmed'], { institution: profile.targetInstitutionName })}</p> : null}
+                      </div>
+                    }
+                    primary={
+                      openAttempt ? (
+                        <Link href={`/dashboard/exam-prep/attempt/${openAttempt.id}`} className="btn btn-primary">{t['examPrep.inProgress.resume']}</Link>
+                      ) : (
+                        <Link href={`/dashboard/exam-prep/${profile.id}`} className="btn btn-primary">{tr['jx.card.view']}</Link>
+                      )
+                    }
+                  />
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        <p className="jx-discover-link"><Link className="btn btn-secondary prep-cta" href="/dashboard/exam-prep/discover">{tr['jx.disc.link']}</Link></p>
+        {chooser}
+      </div>
+    );
+  }
 
   return (
     <div className="xp-page xp-page--wide">
