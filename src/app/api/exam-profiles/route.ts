@@ -12,6 +12,7 @@
  * pattern), not this route's, since F7 does not yet gate any capability
  * behind a paid tier.
  */
+import { studentAudienceDefinitionSql, studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
@@ -33,7 +34,12 @@ export async function GET(request: NextRequest) {
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   // Track B: a preparation the Student removed (ARCHIVED) is no longer part of it.
-  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' ORDER BY created_at DESC`, [studentId]);
+  // QB-0: technical / internal exams (dev-cert.*, legacy pilot) are never listed as a learner's exams.
+  const result = await db.query(
+    `SELECT p.* FROM student_exam_profiles p LEFT JOIN exam_definitions d ON d.id = p.exam_definition_id
+      WHERE p.student_id = $1 AND p.status <> 'ARCHIVED' AND (p.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('d')}) ORDER BY p.created_at DESC`,
+    [studentId]
+  );
   return NextResponse.json({ success: true, data: { profiles: result.rows } });
 }
 
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
        FROM exam_definitions d
        LEFT JOIN exam_versions v ON v.id = $2
       WHERE d.id = $1
-        AND d.status = 'ACTIVE'
+        AND ${studentVisibleDefinitionSql('d')}
         AND ($2::uuid IS NULL OR (
           v.exam_definition_id = d.id
           AND v.status = 'PUBLISHED'

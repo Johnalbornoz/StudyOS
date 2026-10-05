@@ -123,13 +123,13 @@ async function main() {
   const B = await student('b');
 
   // ================================================================ AICE: catalogue + routes
-  const groups = await listStructureChildren({ family: 'CAMBRIDGE', parentKey: 'cie.aice', language: 'es' });
+  const groups = await listStructureChildren({ family: 'CAMBRIDGE', parentKey: 'cie.aice', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('AICE.catalog-core-and-groups', groups.map((g) => g.key).join() === 'cie.aice.core,cie.aice.g1,cie.aice.g2,cie.aice.g3,cie.aice.g4', groups.map((g) => `${g.key}:${g.readiness}`).join(' '));
-  const lvl = (await resolveExamLevel('cie.aice.g1.9709.as', 'es'))!;
+  const lvl = (await resolveExamLevel('cie.aice.g1.9709.as', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   check('AICE.9709-as-components-and-routes', lvl.components.map((c) => c.name.split(' ').slice(0, 2).join(' ')).join('|') === 'Paper 1|Paper 2|Paper 4|Paper 5' && lvl.routes.length === 3 && lvl.routes.every((r) => r.key === 'AS_ONLY' && r.componentIds.length === 2), lvl.routes.map((r) => r.componentIds.length).join());
-  const lvlA = (await resolveExamLevel('cie.aice.g1.9709.a', 'es'))!;
+  const lvlA = (await resolveExamLevel('cie.aice.g1.9709.a', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   check('AICE.9709-a-linear-and-staged', lvlA.routes.filter((r) => r.key === 'A_LEVEL_LINEAR').length === 2 && lvlA.routes.filter((r) => r.key === 'A_LEVEL_STAGED' && r.stage === 1).length === 3, `${lvlA.routes.length} options`);
-  check('AICE.catalog-only-subject-not-startable', (await resolveExamLevel('cie.aice.g1.9990.a', 'es')) === null);
+  check('AICE.catalog-only-subject-not-startable', (await resolveExamLevel('cie.aice.g1.9990.a', 'es', { audience: 'TECHNICAL_DEMO' })) === null);
 
   // ================================================================ AICE: Diploma plan
   const plan = await createPlan(A.studentId);
@@ -179,7 +179,7 @@ async function main() {
   // ================================================================ AICE: 9709 Mock on an official route + bridge
   const prof = await ensureExamProfile(A.studentId, lvl.examDefinitionId, lvl.examVersionId);
   const route = lvl.routes.find((r) => r.componentIds.length === 2 && r.componentIds.every((id) => lvl.components.find((c) => c.componentId === id)?.name.startsWith('Paper 1') || lvl.components.find((c) => c.componentId === id)?.name.startsWith('Paper 4')))!;
-  const mock = await createExamInstance({ studentId: A.studentId, examProfileId: prof, examVersionId: lvl.examVersionId, componentIds: route.componentIds, mode: 'MOCK' });
+  const mock = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: prof, examVersionId: lvl.examVersionId, componentIds: route.componentIds, mode: 'MOCK' });
   check('AICE.9709-mock-frozen-reduced', !!mock.formFrozenAt && mock.form?.fidelity === 'REDUCED', `${mock.form?.coveragePercent}%`);
   const ms = (await startExamInstance(mock.id, { language: 'en' })).simulationAttemptId!;
   const mnav = await nav(ms);
@@ -203,17 +203,18 @@ async function main() {
   check('AICE.security-other-student-cannot-read-attempt', await rejects(() => getNextSimulationItem(B.user.id, ms), (x) => x instanceof SimulationItemAccessDeniedError));
 
   // ================================================================ PISA: catalogue + readiness states
-  const pisaRoot = await listStructureChildren({ family: 'PISA', parentKey: 'pisa.2022', language: 'es' });
-  check('PISA.domains-and-simulation', pisaRoot.map((n) => n.key).join() === 'pisa.2022.full,pisa.2022.math,pisa.2022.reading,pisa.2022.science' && pisaRoot.every((n) => n.readiness === 'REDUCED_MOCK_READY'), pisaRoot.map((n) => `${n.key}:${n.readiness}`).join(' '));
-  const reading = (await resolveExamLevel('pisa.2022.reading', 'es'))!;
-  check('PISA.domain-detail', !!reading.description && reading.modes.join() === 'PRACTICE,MOCK' && reading.bank?.items === 14 && reading.bank.lengthCoveragePercent === null);
-  const ibEcon = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.economics', language: 'es' });
+  const pisaRoot = await listStructureChildren({ family: 'PISA', parentKey: 'pisa.2022', language: 'es', audience: 'TECHNICAL_DEMO' });
+  // QB D3 (engine view, after the governed re-apply): PISA stops at PRACTICE_READY -- a competency benchmark, never a mock.
+  check('PISA.domains-and-benchmark', pisaRoot.map((n) => n.key).join() === 'pisa.2022.full,pisa.2022.math,pisa.2022.reading,pisa.2022.science' && pisaRoot.every((n) => n.readiness === 'PRACTICE_READY'), pisaRoot.map((n) => `${n.key}:${n.readiness}`).join(' '));
+  const reading = (await resolveExamLevel('pisa.2022.reading', 'es', { audience: 'TECHNICAL_DEMO' }))!;
+  check('PISA.domain-detail', !!reading.description && reading.modes.join() === 'PRACTICE' && reading.bank?.items === 14 && reading.bank.lengthCoveragePercent === null);
+  const ibEcon = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.economics', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('READINESS.structure-only-shown-as-such', ibEcon.every((n) => n.readiness === 'STRUCTURE_READY' && !n.bankInProgress));
 
   // ================================================================ PISA: practice by process (Reading -> evaluate & reflect)
-  const evalNode = (await resolveExamLevel('pisa.2022.reading.evaluate', 'es'))!;
+  const evalNode = (await resolveExamLevel('pisa.2022.reading.evaluate', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   const pprof = await ensureExamProfile(A.studentId, evalNode.examDefinitionId, evalNode.examVersionId);
-  const pi = await createExamInstance({ studentId: A.studentId, examProfileId: pprof, examVersionId: evalNode.examVersionId, componentIds: evalNode.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: evalNode.focusObjectiveIds });
+  const pi = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: pprof, examVersionId: evalNode.examVersionId, componentIds: evalNode.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: evalNode.focusObjectiveIds });
   const ps = (await startExamInstance(pi.id, { language: 'es' })).simulationAttemptId!;
   check('PISA.practice-feedback-on', (await nav(ps)).policy?.itemFeedback === 'AFTER_EACH_ITEM');
   const pr = await run(A.user.id, ps, (item) => correct(item));
@@ -221,15 +222,17 @@ async function main() {
   check('PISA.process-practice-only-focus', pr.delivered.length >= 3 && objIds.every((o) => evalNode.focusObjectiveIds.includes(o)), `${pr.delivered.length} items`);
 
   // ================================================================ PISA: three-domain simulation
-  const full = (await resolveExamLevel('pisa.2022.full', 'es'))!;
-  check('PISA.simulation-three-domains-fixed', full.componentsFixed && full.components.length === 3 && full.modes.join() === 'MOCK');
-  const sim = await createExamInstance({ studentId: A.studentId, examProfileId: pprof, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'MOCK' });
-  const frozen = JSON.stringify(sim.form);
+  const full = (await resolveExamLevel('pisa.2022.full', 'es', { audience: 'TECHNICAL_DEMO' }))!;
+  // QB D3: the three-domain entry is a competency benchmark (practice), and a MOCK is refused.
+  check('PISA.benchmark-three-domains-fixed', full.componentsFixed && full.components.length === 3 && full.modes.join() === 'PRACTICE');
+  check('PISA.mock-refused-competency-benchmark', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: pprof, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'MOCK' }), code('MODE_NOT_AVAILABLE')));
+  const sim = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: pprof, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'PRACTICE' });
   const ss = (await startExamInstance(sim.id, { language: 'es' })).simulationAttemptId!;
+  const frozen = JSON.stringify((await getExamInstance(sim.id))!.form);
   const snav = await nav(ss);
-  check('PISA.simulation-frozen-no-help', !!sim.formFrozenAt && snav.policy?.itemFeedback === 'NEVER' && snav.policy?.tutorAssistance === 'BLOCKED' && snav.sections.map((s) => s.key).join() === 'math,reading,science');
+  check('PISA.benchmark-practice-three-domains', snav.policy?.itemFeedback === 'AFTER_EACH_ITEM' && snav.sections.map((s) => s.key).join() === 'math,reading,science');
   const sr = await run(A.user.id, ss, (item, i) => (i % 4 === 0 ? wrong(item) : correct(item)));
-  check('PISA.simulation-complete-no-regeneration', JSON.stringify((await getExamInstance(sim.id))!.form) === frozen && sr.breaks === 2 && sr.leak === null && sr.result.maxScore > 0, `${sr.result.rawScore}/${sr.result.maxScore} breaks=${sr.breaks}`);
+  check('PISA.benchmark-complete-no-regeneration', JSON.stringify((await getExamInstance(sim.id))!.form) === frozen && sr.leak === null && sr.result.maxScore > 0, `${sr.result.rawScore}/${sr.result.maxScore} breaks=${sr.breaks}`);
   check('PISA.simulation-shared-stimulus-units', sr.delivered.some((d) => d.exam.stimulus) && new Set(sr.delivered.filter((d) => d.exam.stimulus).map((d) => d.exam.stimulus!.key)).size >= 3);
   const sv = (await getAttemptResultView(ss))!;
   check('PISA.results-by-domain-no-pisa-score', sv.reporting?.scaleNote === 'NO_OFFICIAL_SCALE' && sv.reporting?.groups.map((g) => g.key).join() === 'math,reading,science');
@@ -252,8 +255,8 @@ async function main() {
   await deleteExamInstance(sim.id, { confirm: true, ownerStudentId: A.studentId });
   check('PISA.delete-keeps-result', (await getAttemptResult(ea))?.responseSetHash === before?.responseSetHash && (await getExamInstance(sim.id))?.status === 'DELETED');
   check('PISA.foreign-delete-denied', await rejects(() => deleteExamInstance(pi.id, { confirm: true, ownerStudentId: B.studentId }), (x) => x instanceof ExamInstanceError && x.code === 'NOT_FOUND'));
-  const again = await newInstanceFromExisting(sim.id);
-  check('PISA.new-attempt-fresh-ids', again.id !== sim.id && again.simulationAttemptId === null && !!again.formFrozenAt);
+  const again = await newInstanceFromExisting(sim.id, { contentAudience: 'TECHNICAL_DEMO' });
+  check('PISA.new-attempt-fresh-ids', again.id !== sim.id && again.simulationAttemptId === null && again.mode === 'PRACTICE');
 }
 
 const childRefs = new Map<string, { t: string; c: string }[]>();

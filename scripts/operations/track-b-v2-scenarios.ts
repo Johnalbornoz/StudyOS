@@ -146,29 +146,29 @@ async function main() {
   const bound = await count(`SELECT count(*) n FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND exam_version_id IS NOT NULL`);
   const unready = await count(`SELECT count(*) n FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND exam_version_id IS NOT NULL AND NOT (metadata ? 'readiness')`);
   check('CAT.structure-applied', bound >= 18 && unready === 0, `bound=${bound} withoutReadiness=${unready}`);
-  const families = await listStructureFamilies();
+  const families = await listStructureFamilies('TECHNICAL_DEMO');
   check('CAT.five-frameworks-available', ['IB', 'PISA', 'ICFES', 'PAA', 'CAMBRIDGE'].every((f) => families.find((x) => x.family === f)?.available), families.map((f) => `${f.family}:${f.available}`).join(','));
-  const ibRoot = await listStructureChildren({ family: 'IB', parentKey: null, language: 'es' });
-  const g5 = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp', language: 'es' });
-  const aa = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.math-aa', language: 'es' });
+  const ibRoot = await listStructureChildren({ family: 'IB', parentKey: null, language: 'es', audience: 'TECHNICAL_DEMO' });
+  const g5 = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp', language: 'es', audience: 'TECHNICAL_DEMO' });
+  const aa = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.math-aa', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('CAT.ib-dynamic-path', ibRoot[0]?.key === 'ib.dp' && g5.some((n) => n.key === 'ib.dp.g5' && n.available) && g5.some((n) => n.key === 'ib.dp.g1' && !n.available), g5.map((n) => `${n.key}:${n.available}`).join(','));
-  const econ = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.economics', language: 'es' });
+  const econ = await listStructureChildren({ family: 'IB', parentKey: 'ib.dp.economics', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('CAT.levels-localized-and-gated', aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.isExamLevel === true && aa.find((n) => n.key === 'ib.dp.math-aa.sl')?.available === true && aa.find((n) => n.key === 'ib.dp.math-aa.hl')?.label === 'Nivel Superior (NS)' && econ.length > 0 && econ.every((n) => !n.available && n.readiness === 'STRUCTURE_READY'), econ.map((n) => `${n.key}:${n.available}:${n.readiness}`).join(','));
-  const hl = (await resolveExamLevel('ib.dp.math-aa.hl', 'es'))!;
+  const hl = (await resolveExamLevel('ib.dp.math-aa.hl', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   check('CAT.ib-math-hl-three-papers', hl?.components.length === 3 && hl.components.map((c) => c.name).join('|') === 'Paper 1|Paper 2|Paper 3');
-  check('CAT.structure-only-not-startable', (await resolveExamLevel('ib.dp.economics.hl', 'es')) === null && (await resolveExamLevel('ib.dp.cas', 'es')) === null);
+  check('CAT.structure-only-not-startable', (await resolveExamLevel('ib.dp.economics.hl', 'es', { audience: 'TECHNICAL_DEMO' })) === null && (await resolveExamLevel('ib.dp.cas', 'es', { audience: 'TECHNICAL_DEMO' })) === null);
 
   const A = await student('a');
   const B = await student('b');
   const profileFor = async (s: { studentId: string }, node: string) => {
-    const lvl = (await resolveExamLevel(node, 'es'))!;
+    const lvl = (await resolveExamLevel(node, 'es', { audience: 'TECHNICAL_DEMO' }))!;
     return { lvl, profileId: await ensureExamProfile(s.studentId, lvl.examDefinitionId, lvl.examVersionId) };
   };
 
   // ---- IB Math AA HL: MOCK on Paper 1 (frozen form, deterministic math grading) ----
   const ib = await profileFor(A, 'ib.dp.math-aa.hl');
   const p1 = ib.lvl.components[0].componentId;
-  const mock = await createExamInstance({ studentId: A.studentId, examProfileId: ib.profileId, examVersionId: ib.lvl.examVersionId, componentIds: [p1], mode: 'MOCK' });
+  const mock = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: ib.profileId, examVersionId: ib.lvl.examVersionId, componentIds: [p1], mode: 'MOCK' });
   check('MOCK.ready-and-frozen', mock.status === 'READY' && !!mock.formFrozenAt && mock.timingMode === 'OFFICIAL_SIMULATION_TIMED');
   check('MOCK.reduced-and-honest', mock.form?.fidelity === 'REDUCED' && (mock.form?.coveragePercent ?? 100) < 100, `${mock.form?.coveragePercent}%`);
   check('MOCK.difficulty-in-band', mock.form?.difficultyBandMet === true, String(mock.form?.difficultyIndex));
@@ -198,7 +198,7 @@ async function main() {
   check('MOCK.instance-completed', (await getExamInstance(mock.id))?.status === 'COMPLETED');
 
   // ---- Retest from zero: a NEW instance, unseen items preferred ----
-  const retake = await newInstanceFromExisting(mock.id);
+  const retake = await newInstanceFromExisting(mock.id, { contentAudience: 'TECHNICAL_DEMO' });
   const overlap = retake.form!.slots.filter((s) => s.approvedItemId && mock.form!.slots.some((m) => m.approvedItemId === s.approvedItemId)).length;
   check('RETEST.new-instance-from-zero', retake.id !== mock.id && retake.status === 'READY' && retake.simulationAttemptId === null);
   check('RETEST.prefers-unseen-items', overlap < retake.form!.slots.filter((s) => s.approvedItemId).length, `overlap=${overlap}`);
@@ -225,10 +225,10 @@ async function main() {
   const afterResult = await getAttemptResult(mockExamAttemptId);
   check('DELETE.completed-soft-delete-result-preserved', del2.resultPreserved && del2.instance.status === 'DELETED' && afterResult?.status === 'SCORED' && afterResult.responseSetHash === before.result?.responseSetHash && afterResult.rawScore === before.result?.rawScore);
   check('DELETE.completed-evidence-and-responses-preserved', before.evidence >= 1 && (await count(evidenceSql, [A.studentId, mockExamAttemptId])) === before.evidence && (await count(`SELECT count(*) n FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [mockExamAttemptId])) === before.responses && before.responses > 0, `evidence=${before.evidence} responses=${before.responses}`);
-  check('DELETE.completed-hidden-from-visible-history', !(await listExamInstances(A.studentId)).some((i) => i.id === mock.id) && !(await listProfileAttempts(ib.profileId)).some((a) => a.id === simId));
+  check('DELETE.completed-hidden-from-visible-history', !(await listExamInstances(A.studentId, undefined, { includeTechnicalDemo: true })).some((i) => i.id === mock.id) && !(await listProfileAttempts(ib.profileId)).some((a) => a.id === simId));
 
   // ---- In-progress delete -> attempt cancelled, never resumable -> NEW ATTEMPT FROM ZERO ----
-  const ip = await createExamInstance({ studentId: A.studentId, examProfileId: ib.profileId, examVersionId: ib.lvl.examVersionId, componentIds: [p1], mode: 'MOCK' });
+  const ip = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: ib.profileId, examVersionId: ib.lvl.examVersionId, componentIds: [p1], mode: 'MOCK' });
   const ipStarted = await startExamInstance(ip.id, { language: 'en' });
   const ipFirst = await getNextSimulationItem(A.user.id, ipStarted.simulationAttemptId!);
   if (ipFirst.outcome === 'ITEM_READY') {
@@ -242,7 +242,7 @@ async function main() {
   check('DELETE.in-progress-cancels-attempt-idempotent', ipDel.attemptAbandoned && ipDel.instance.status === 'DELETED' && ipDel2.instance.status === 'DELETED' && (await getSimulationAttempt(ipStarted.simulationAttemptId!))?.status === 'ABANDONED');
   check('DELETE.deleted-attempt-not-resumable', await rejects(() => getNextSimulationItem(A.user.id, ipStarted.simulationAttemptId!), Error));
   check('DELETE.evidence-kept', (await count(`SELECT count(*) n FROM exam_attempt_item_responses r JOIN simulation_attempts s ON s.exam_attempt_id = r.exam_attempt_id WHERE s.id = $1`, [ipStarted.simulationAttemptId])) >= 1);
-  const fresh = await newInstanceFromExisting(ip.id);
+  const fresh = await newInstanceFromExisting(ip.id, { contentAudience: 'TECHNICAL_DEMO' });
   const freshStarted = await startExamInstance(fresh.id, { language: 'en' });
   const freshNav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [freshStarted.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
   check('NEW_ATTEMPT_FROM_ZERO', fresh.id !== ip.id && freshStarted.simulationAttemptId !== ipStarted.simulationAttemptId && Object.values(freshNav.items).every((s) => !s.draft && s.status !== 'ANSWERED') && freshNav.sectionStartedAt === null && freshNav.sectionIndex === 0 && (await count(`SELECT count(*) n FROM exam_attempt_item_responses r JOIN simulation_attempts s ON s.exam_attempt_id = r.exam_attempt_id WHERE s.id = $1`, [freshStarted.simulationAttemptId])) === 0);
@@ -250,8 +250,8 @@ async function main() {
 
   // ---- Cambridge: Challenge vs Mock difficulty; partial credit + strict ----
   const cie = await profileFor(A, 'cie.igcse.0580.extended');
-  const cMock = await createExamInstance({ studentId: A.studentId, examProfileId: cie.profileId, examVersionId: cie.lvl.examVersionId, componentIds: cie.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
-  const cChal = await createExamInstance({ studentId: A.studentId, examProfileId: cie.profileId, examVersionId: cie.lvl.examVersionId, componentIds: cie.lvl.components.map((c) => c.componentId), mode: 'CHALLENGE' });
+  const cMock = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: cie.profileId, examVersionId: cie.lvl.examVersionId, componentIds: cie.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
+  const cChal = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: cie.profileId, examVersionId: cie.lvl.examVersionId, componentIds: cie.lvl.components.map((c) => c.componentId), mode: 'CHALLENGE' });
   check('CHALLENGE.harder-than-mock', (cChal.difficultyIndex ?? 0) >= (cMock.difficultyIndex ?? 0), `${cChal.difficultyIndex} vs ${cMock.difficultyIndex}`);
   check('CHALLENGE.labelled-target', cChal.form?.targetDifficulty === 1.1);
   await deleteExamInstance(cMock.id, { confirm: false, ownerStudentId: A.studentId });
@@ -275,36 +275,36 @@ async function main() {
 
   // ---- PAA Practice: adaptive level, per-item feedback, practice never frozen ----
   const paa = await profileFor(A, 'paa.practice.matematicas');
-  const pr = await createExamInstance({ studentId: A.studentId, examProfileId: paa.profileId, examVersionId: paa.lvl.examVersionId, componentIds: paa.lvl.components.map((c) => c.componentId), mode: 'PRACTICE' });
+  const pr = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: paa.profileId, examVersionId: paa.lvl.examVersionId, componentIds: paa.lvl.components.map((c) => c.componentId), mode: 'PRACTICE' });
   check('PRACTICE.default-level-and-untimed', pr.practiceLevel === 'STANDARD' && pr.timingMode === 'UNTIMED' && pr.formFrozenAt === null);
   const ps = await startExamInstance(pr.id, { language: 'es' });
   const pnav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [ps.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
   check('PRACTICE.item-feedback-on', pnav.policy?.itemFeedback === 'AFTER_EACH_ITEM');
   const run3 = await runAttempt(A.user.id, ps.simulationAttemptId!, (item) => correctAnswer(item));
-  const pr2 = await createExamInstance({ studentId: A.studentId, examProfileId: paa.profileId, examVersionId: paa.lvl.examVersionId, componentIds: paa.lvl.components.map((c) => c.componentId), mode: 'PRACTICE' });
+  const pr2 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: paa.profileId, examVersionId: paa.lvl.examVersionId, componentIds: paa.lvl.components.map((c) => c.componentId), mode: 'PRACTICE' });
   check('PRACTICE.level-adapts-up-after-strong-session', pr2.practiceLevel === 'ADVANCED', `${run3.result.rawScore}/${run3.result.maxScore} -> ${pr2.practiceLevel}`);
   await deleteExamInstance(pr2.id, { confirm: false, ownerStudentId: A.studentId });
 
   // ---- PISA / Saber: blueprint distribution in the frozen form ----
   const pisa = await profileFor(A, 'pisa.2022.math');
-  const pm = await createExamInstance({ studentId: A.studentId, examProfileId: pisa.profileId, examVersionId: pisa.lvl.examVersionId, componentIds: [pisa.lvl.components[0].componentId], mode: 'MOCK' });
-  const objCodes = (await db.query(`SELECT lo.code FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.id = ANY($1::uuid[])`, [pm.form!.slots.map((s) => s.blueprintObjectiveTargetId)])).rows.map((r: any) => r.code as string);
+  // QB D3: PISA is a competency benchmark -- a fixed-form MOCK is refused even as a technical demo.
+  check('PISA.mock-refused-competency-benchmark', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: pisa.profileId, examVersionId: pisa.lvl.examVersionId, componentIds: [pisa.lvl.components[0].componentId], mode: 'MOCK' }), ExamInstanceError, 'MODE_NOT_AVAILABLE'));
+  const objCodes = (await db.query(`SELECT lo.code FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND t.assessment_component_id = $2`, [pisa.lvl.examVersionId, pisa.lvl.components[0].componentId])).rows.map((r: any) => r.code as string);
   const perProcess = ['formular', 'emplear', 'interpretar', 'razonar'].map((p) => objCodes.filter((c) => c.endsWith(`.${p}`)).length);
-  check('PISA.form-25pct-per-process', perProcess.every((n) => n === 2), perProcess.join('/'));
-  await deleteExamInstance(pm.id, { confirm: false, ownerStudentId: A.studentId });
+  check('PISA.blueprint-25pct-per-process', perProcess.every((n) => n === 2), perProcess.join('/'));
   const sab = await profileFor(A, 'saber11.math');
-  const sm = await createExamInstance({ studentId: A.studentId, examProfileId: sab.profileId, examVersionId: sab.lvl.examVersionId, componentIds: [sab.lvl.components[0].componentId], mode: 'MOCK' });
+  const sm = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: sab.profileId, examVersionId: sab.lvl.examVersionId, componentIds: [sab.lvl.components[0].componentId], mode: 'MOCK' });
   check('SABER.form-12-positions-reduced-vs-50', sm.form?.slots.length === 12 && sm.form?.fidelity === 'REDUCED' && sm.form?.coveragePercent === 24, `${sm.form?.coveragePercent}%`);
   await deleteExamInstance(sm.id, { confirm: false, ownerStudentId: A.studentId });
 
   // ---- PAA: first level = Simulacro completo | Practicar un área ----
-  const paaKids = await listStructureChildren({ family: 'PAA', parentKey: 'paa', language: 'es' });
+  const paaKids = await listStructureChildren({ family: 'PAA', parentKey: 'paa', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('PAA.first-level-full-or-practice', paaKids.map((n) => n.key).join() === 'paa.full,paa.practice' && paaKids.every((n) => n.available), paaKids.map((n) => `${n.key}:${n.readiness}`).join(','));
-  const areas = await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice', language: 'es' });
+  const areas = await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice', language: 'es', audience: 'TECHNICAL_DEMO' });
   check('PAA.practice-four-areas', areas.map((n) => n.key.split('.').pop()).join() === 'lectura,redaccion,matematicas,ingles');
   const full = await profileFor(A, 'paa.full');
   check('PAA.full-test-fixed-components-mock-challenge', full.lvl.componentsFixed && full.lvl.components.length === 4 && full.lvl.modes.join() === 'MOCK,CHALLENGE' && full.lvl.readiness === 'REDUCED_MOCK_READY', full.lvl.components.map((c) => `${c.name}:${c.officialMinutes}m/${c.plannedMinutes}m`).join(' | '));
-  const fm = await createExamInstance({ studentId: A.studentId, examProfileId: full.profileId, examVersionId: full.lvl.examVersionId, componentIds: full.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
+  const fm = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: full.profileId, examVersionId: full.lvl.examVersionId, componentIds: full.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
   check('PAA.full-mock-frozen-before-start', fm.status === 'READY' && !!fm.formFrozenAt && fm.timingMode === 'OFFICIAL_SIMULATION_TIMED', `${fm.form?.fidelity} ${fm.form?.coveragePercent}%`);
   const fms = await startExamInstance(fm.id, { language: 'es' });
   const fnav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [fms.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
@@ -333,18 +333,18 @@ async function main() {
   }
   check('PAA.full-mock-delete-keeps-result', (await deleteExamInstance(fm.id, { confirm: true, ownerStudentId: A.studentId })).resultPreserved);
   check('SEC.other-student-cannot-delete-paa', await rejects(() => deleteExamInstance(fm.id, { confirm: true, ownerStudentId: B.studentId }), ExamInstanceError, 'NOT_FOUND'));
-  const fm2 = await newInstanceFromExisting(fm.id);
+  const fm2 = await newInstanceFromExisting(fm.id, { contentAudience: 'TECHNICAL_DEMO' });
   check('PAA.new-attempt-from-zero', fm2.id !== fm.id && fm2.simulationAttemptId === null && !!fm2.formFrozenAt);
   await deleteExamInstance(fm2.id, { confirm: false, ownerStudentId: A.studentId });
 
   // ---- PAA Practice: one area; then one skill ----
   const lect = await profileFor(A, 'paa.practice.lectura');
   check('PAA.area-practice-only-practice', lect.lvl.modes.join() === 'PRACTICE' && lect.lvl.components.length === 1 && lect.lvl.focusObjectiveIds.length === 0);
-  const skillNode = (await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice.lectura', language: 'es' })).find((n) => n.key.endsWith('.inferencia'))!;
+  const skillNode = (await listStructureChildren({ family: 'PAA', parentKey: 'paa.practice.lectura', language: 'es', audience: 'TECHNICAL_DEMO' })).find((n) => n.key.endsWith('.inferencia'))!;
   const sk = await profileFor(A, skillNode.key);
   check('PAA.skill-practice-focus', sk.lvl.focusObjectiveIds.length >= 1 && sk.lvl.modes.join() === 'PRACTICE', `${skillNode.key} focus=${sk.lvl.focusObjectiveIds.length}`);
-  check('PAA.skill-focus-is-practice-only', await rejects(() => createExamInstance({ studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'MOCK', focusObjectiveIds: sk.lvl.focusObjectiveIds }), ExamInstanceError));
-  const ski = await createExamInstance({ studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: sk.lvl.focusObjectiveIds });
+  check('PAA.skill-focus-is-practice-only', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'MOCK', focusObjectiveIds: sk.lvl.focusObjectiveIds }), ExamInstanceError));
+  const ski = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: sk.profileId, examVersionId: sk.lvl.examVersionId, componentIds: sk.lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: sk.lvl.focusObjectiveIds });
   const sks = await startExamInstance(ski.id, { language: 'es' });
   const skRun = await runAttempt(A.user.id, sks.simulationAttemptId!, (item) => correctAnswer(item));
   const skNav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [sks.simulationAttemptId])).rows[0].navigation_state as ExamNavState;
@@ -358,7 +358,7 @@ async function main() {
     const lvl = await profileFor(A, `ib.dp.${sci}.hl`);
     const names = lvl.lvl.components.map((c) => c.name).join('|');
     check(`IB.${sci}-hl-papers-1a-1b-2`, lvl.lvl.components.length === 3 && !/Paper 3/.test(names) && lvl.lvl.modes.includes('MOCK'), names);
-    const m = await createExamInstance({ studentId: A.studentId, examProfileId: lvl.profileId, examVersionId: lvl.lvl.examVersionId, componentIds: lvl.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
+    const m = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: lvl.profileId, examVersionId: lvl.lvl.examVersionId, componentIds: lvl.lvl.components.map((c) => c.componentId), mode: 'MOCK' });
     check(`IB.${sci}-hl-mock-frozen-honest`, !!m.formFrozenAt && m.form?.fidelity === 'REDUCED', `${m.form?.coveragePercent}% of official length`);
     const st = await startExamInstance(m.id, { language: 'en' });
     const r = await runAttempt(A.user.id, st.simulationAttemptId!, (item) => correctAnswer(item), 60);
@@ -371,8 +371,10 @@ async function main() {
   // ---- IB Visual Arts SL: portfolio pipeline ----
   const va = await profileFor(A, 'ib.dp.visual-arts.sl');
   const aip = va.lvl.components.find((c) => c.name === 'Art-making inquiries portfolio')!.componentId;
-  const vm = await createExamInstance({ studentId: A.studentId, examProfileId: va.profileId, examVersionId: va.lvl.examVersionId, componentIds: [aip], mode: 'MOCK' });
-  check('ARTS.coursework-untimed-even-in-mock', vm.timingMode === 'UNTIMED' && !!vm.formFrozenAt);
+  // QB D4: a portfolio counts for the exam but is not mockable -- it is worked as (untimed) practice.
+  check('ARTS.portfolio-mock-refused', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: va.profileId, examVersionId: va.lvl.examVersionId, componentIds: [aip], mode: 'MOCK' }), ExamInstanceError, 'COMPONENT_NOT_MOCKABLE'));
+  const vm = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: va.profileId, examVersionId: va.lvl.examVersionId, componentIds: [aip], mode: 'PRACTICE' });
+  check('ARTS.coursework-untimed', vm.timingMode === 'UNTIMED');
   const vs = await startExamInstance(vm.id, { language: 'en' });
   const vnext = await getNextSimulationItem(A.user.id, vs.simulationAttemptId!);
   const vq = vnext.outcome === 'ITEM_READY' ? (vnext.question as any) : null;

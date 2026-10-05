@@ -15,6 +15,7 @@
  * A recommendation never enrolls anything by itself; accepting it reuses the
  * learner's existing concept when there is one (no duplicate, progress kept).
  */
+import { fixtureResponseSql, technicalExamAttemptSql } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
 import { canonicalConceptLabels } from './labels';
 import { enrollCanonicalConcept, planIndex } from './personal-plan.service';
@@ -46,6 +47,7 @@ export async function deriveExamGaps(studentIds: string[], canonicalConceptIds?:
      JOIN student_exam_profiles sep ON sep.id = ea.student_exam_profile_id
      JOIN exam_attempt_item_responses r ON r.exam_attempt_id = ea.id
      WHERE sep.student_id = ANY($1::uuid[]) AND ea.status = 'COMPLETED' AND r.learning_objective_id IS NOT NULL AND r.max_score > 0
+       AND NOT ${fixtureResponseSql('r')} AND NOT ${technicalExamAttemptSql('ea.id')}
      GROUP BY sep.student_id, ea.id, r.learning_objective_id, ea.completed_at`,
     [studentIds]
   );
@@ -55,7 +57,8 @@ export async function deriveExamGaps(studentIds: string[], canonicalConceptIds?:
     const scored = await db.query(
       `SELECT ear.student_id, ear.exam_attempt_id, (o->>'learningObjectiveId')::uuid AS learning_objective_id, COALESCE((o->>'fraction')::float, 0) AS fraction, ear.scored_at AS at
        FROM exam_attempt_results ear, jsonb_array_elements(COALESCE(ear.objective_results, '[]'::jsonb)) o
-       WHERE ear.student_id = ANY($1::uuid[]) AND ear.invalidated_at IS NULL AND o->>'classification' = 'GAP' AND o ? 'learningObjectiveId'`,
+       WHERE ear.student_id = ANY($1::uuid[]) AND ear.invalidated_at IS NULL AND o->>'classification' = 'GAP' AND o ? 'learningObjectiveId'
+         AND NOT ${technicalExamAttemptSql('ear.exam_attempt_id')}`,
       [studentIds]
     ).catch(() => ({ rows: [] as any[] }));
     objectiveRows.push(...scored.rows.map((r: any) => ({ ...r, fraction: Math.min(Number(r.fraction), EXAM_GAP_THRESHOLD - 0.0001) })));

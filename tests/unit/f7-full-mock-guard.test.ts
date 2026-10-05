@@ -43,11 +43,28 @@ describe('canFullMockBeOffered', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'bp-1', exam_version_id: 'v1', status: 'PUBLISHED' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'target-1', blueprint_id: 'bp-1', learning_objective_id: 'obj-1', assessment_component_id: 'comp-1' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'comp-1', name: 'Mathematics Section', support_status: 'SUPPORTED', timing_status: 'CONFIGURED', tool_rule_status: 'CONFIGURED' }] })
-      .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false }] });
+      .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false, has_bank_items: true }] });
     const result = await canFullMockBeOffered('v1');
     expect(result.ready).toBe(true);
     expect(result.reasons).toEqual([]);
     expect(result.miniMockObjectiveIds).toEqual(['obj-1']);
+  });
+
+  it('QB-0: a mapped objective with no real bank content is mini-mock practice, never a full mock of a Student exam', async () => {
+    const seq = (bank: Record<string, unknown>) =>
+      queryMock
+        .mockResolvedValueOnce({ rows: [{ id: 'v1', exam_definition_id: 'def-1', scoring_model_id: 'sm-1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'bp-1', exam_version_id: 'v1', status: 'PUBLISHED' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'target-1', blueprint_id: 'bp-1', learning_objective_id: 'obj-1', assessment_component_id: 'comp-1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'comp-1', name: 'Mathematics Section', support_status: 'SUPPORTED', timing_status: 'CONFIGURED', tool_rule_status: 'CONFIGURED' }] })
+        .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false, ...bank }] });
+    seq({ has_bank_items: false, technical: false });
+    const student = await canFullMockBeOffered('v1');
+    expect(student.ready).toBe(false);
+    expect(student.reasons).toEqual(['NO_REAL_MOCK_CONTENT: obj-1']);
+    expect(student.miniMockObjectiveIds).toEqual(['obj-1']);
+    seq({ has_bank_items: false, technical: true });
+    expect((await canFullMockBeOffered('v1')).ready).toBe(true); // technical certification exam: engine demo semantics unchanged
   });
 
   it('an unmapped objective produces OBJECTIVE_NOT_MAPPED even when its component is otherwise fine', async () => {

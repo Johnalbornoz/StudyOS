@@ -79,7 +79,11 @@ describe('usage eligibility + exam alignment', () => {
   });
   it('legacy rows (NULL) keep every use they had (non-regression), never FORMAL_ASSESSMENT by default', () => {
     expect(effectiveUsage(null)).toEqual(['PRACTICE', 'DIAGNOSTIC', 'QUIZ', 'REDUCED_MOCK', 'FULL_MOCK']);
-    expect(isEligible(facts({ provenance: 'FIXTURE', usage: null, alignment: null }), 'FULL_MOCK')).toBe(true);
+    expect(isEligible(facts({ provenance: 'STUDYUS_GENERATED', usage: null, alignment: null }), 'FULL_MOCK')).toBe(true);
+    // QB D5: a DEV fixture keeps its uses only for a technical demo; it is never Student content.
+    expect(isEligible(facts({ provenance: 'FIXTURE', usage: null, alignment: null }), 'FULL_MOCK', undefined, 'TECHNICAL_DEMO')).toBe(true);
+    expect(isEligible(facts({ provenance: 'FIXTURE', usage: null, alignment: null }), 'FULL_MOCK')).toBe(false);
+    expect(isEligible(facts({ provenance: 'FIXTURE', usage: null, alignment: null }), 'PRACTICE')).toBe(false);
   });
   it('the delivery SQL applies usage and alignment for mocks only', () => {
     expect(lifecycleSqlFor('PRACTICE')).toMatch(/'PRACTICE' = ANY\(ai\.usage_eligibility\)/);

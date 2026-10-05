@@ -8,6 +8,7 @@
  * versioned policy: the Student never sends credits, groups outside the
  * subject's eligible groups, grades or points.
  */
+import { stateSql } from '../catalog/readiness-view';
 import { db } from '@/lib/db';
 import { AICE_DIPLOMA_POLICY, availableSeries, creditsFor, seriesIndex, type AiceGroup, type AiceLevel, type ExamSeries, type SeriesMonth } from './policy';
 import { evaluateDiplomaPlan, evaluateDiplomaResults, countedGroupFor, type SubjectRule, type DiplomaEvaluation, type PlanEvaluation } from './diploma';
@@ -143,8 +144,8 @@ export async function getPlanView(studentId: string, opts: { now?: Date } = {}):
   const keys = rows.map((r: any) => configKeyFor(r.syllabus_code, r.level));
   const nodes = keys.length
     ? (await db.query(
-        `SELECT DISTINCT ON (metadata->'bind'->>'configKey') metadata->'bind'->>'configKey' AS config_key, node_key, metadata->'readiness'->>'state' AS state
-           FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND node_type = 'LEVEL' AND metadata->'bind'->>'configKey' = ANY($1::text[]) ORDER BY metadata->'bind'->>'configKey', node_key`,
+        `SELECT DISTINCT ON (n.metadata->'bind'->>'configKey') n.metadata->'bind'->>'configKey' AS config_key, n.node_key, ${stateSql('n', 'STUDENT')} AS state
+           FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' AND node_type = 'LEVEL' AND metadata->'bind'->>'configKey' = ANY($1::text[]) ORDER BY metadata->'bind'->>'configKey', node_key`,
         [keys]
       )).rows
     : [];

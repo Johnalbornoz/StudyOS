@@ -10,6 +10,7 @@
  * Smart default: the only curriculum when there is one; otherwise one with a
  * published base, grade-specific, most recently adopted.
  */
+import { studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
 import { requireInstitutionAccess } from '@/lib/institution-intelligence';
 
@@ -88,7 +89,7 @@ export async function getIntelligenceContext(
        JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
        JOIN learning_objectives lo ON lo.id = bot.learning_objective_id
        JOIN structure_nodes sn ON sn.id = lo.structure_node_id
-       WHERE ev.status = 'PUBLISHED' AND (
+       WHERE ev.status = 'PUBLISHED' AND ${studentVisibleDefinitionSql('ed')} AND (
          ($1::uuid IS NOT NULL AND sn.structure_version_id = $1)
          OR ($1::uuid IS NULL AND EXISTS (SELECT 1 FROM objective_concept_mappings ocm JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id
                                           WHERE ocm.learning_objective_id = lo.id AND ocm.status = 'PUBLISHED' AND cc.canonical_subject_id = $2)))

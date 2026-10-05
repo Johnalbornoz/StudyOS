@@ -29,6 +29,9 @@ import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt 
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { examItemFromApproved, examItemMarks } from './items';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
+import { contentAudienceFor, examAudienceOf, studentAudienceDefinitionSql, type ContentAudience } from './audience';
+import { assessmentSemanticsOf, componentCapabilities } from './fidelity';
+import { parseDefinition } from './question-bank/certification-input';
 import { DEFAULT_REUSE_POLICY } from './question-bank/policy';
 import { DEFAULT_DEMAND_POLICY } from './question-bank/demand';
 import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel, type StudentUsage } from './form-assembly';
@@ -59,6 +62,8 @@ export interface ExamInstance {
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  /** STUDENT: real content only. TECHNICAL_DEMO: engine demo on fixtures (in-process only; never from a Student route). */
+  contentAudience: ContentAudience;
 }
 
 export class ExamInstanceError extends Error {
@@ -72,7 +77,11 @@ export class ExamInstanceError extends Error {
       | 'NO_ITEMS_FOR_FORM'
       | 'CONFIRMATION_REQUIRED'
       | 'PROFILE_ARCHIVED'
-      | 'ATTEMPT_IN_PROGRESS',
+      | 'ATTEMPT_IN_PROGRESS'
+      | 'EXAM_NOT_AVAILABLE'
+      | 'FORM_INCOMPLETE'
+      | 'MODE_NOT_AVAILABLE'
+      | 'COMPONENT_NOT_MOCKABLE',
     detail?: string
   ) {
     super(detail ? `${code}: ${detail}` : code);
@@ -103,6 +112,8 @@ function toInstance(r: any): ExamInstance {
     createdAt: iso(r.created_at)!,
     startedAt: iso(r.started_at),
     completedAt: iso(r.completed_at),
+    // Column added by 20261031_1000; a row from before it (or a DB without it) is a Student instance.
+    contentAudience: r.content_audience === 'TECHNICAL_DEMO' ? 'TECHNICAL_DEMO' : 'STUDENT',
   };
 }
 
@@ -117,7 +128,7 @@ export function timingFor(mode: InstanceMode, requested: TimingMode | undefined)
 /* Form assembly (DB reads -> pure assembleForm)                        */
 /* ------------------------------------------------------------------ */
 
-async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK') {
+async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK', audience: ContentAudience = 'STUDENT') {
   const blueprint = await getBlueprintForVersion(examVersionId);
   if (!blueprint) throw new ExamInstanceError('NO_ITEMS_FOR_FORM', 'version has no blueprint');
   const components = await listComponentsForVersion(examVersionId);
@@ -140,9 +151,10 @@ async function formInputs(examVersionId: string, componentIds: string[], student
   const use = mode === 'PRACTICE' ? 'PRACTICE' : fullLength ? 'FULL_MOCK' : 'REDUCED_MOCK';
   // Question Bank content-use policy (server-authoritative): practice may use PILOT items, a Mock / Challenge
   // only ACTIVE / CALIBRATED ones -- a mock is never filled with weaker content to reach its length.
+  // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
   const poolRows = await db.query(
     `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
-       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use)}`,
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)}`,
     [objectiveIds]
   );
   const pool: PoolItem[] = [];
@@ -195,9 +207,15 @@ async function formInputs(examVersionId: string, componentIds: string[], student
 }
 
 async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
-  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode);
-  const form = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
-  if (!form.slots.some((s) => s.approvedItemId) && instance.mode !== 'PRACTICE') throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
+  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode, instance.contentAudience);
+  const assembled = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
+  const form: AssembledForm = { ...assembled, contentAudience: instance.contentAudience };
+  if (instance.mode !== 'PRACTICE') {
+    if (!form.slots.some((s) => s.approvedItemId)) throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
+    // A frozen Mock / Challenge never shrinks: every required position is filled, or there is no form.
+    const empty = form.slots.filter((s) => !s.approvedItemId).length;
+    if (empty > 0) throw new ExamInstanceError('FORM_INCOMPLETE', `${empty}/${form.slots.length} required positions have no eligible item`);
+  }
   await db.query(`UPDATE exam_instances SET form = $2, form_frozen_at = now(), difficulty_index = $3 WHERE id = $1`, [instance.id, JSON.stringify(form), form.difficultyIndex]);
   const used = form.slots.filter((s) => s.approvedItemId).map((s) => s.approvedItemId!);
   if (used.length > 0) {
@@ -230,10 +248,15 @@ async function syncFromAttempt(instance: ExamInstance): Promise<ExamInstance> {
   return r.rows[0] ? toInstance(r.rows[0]) : instance;
 }
 
-export async function listExamInstances(studentId: string, examProfileId?: string): Promise<ExamInstance[]> {
+/** `internal.includeTechnicalDemo`: in-process scenarios only (a Student route never passes it). */
+export async function listExamInstances(studentId: string, examProfileId?: string, internal: { includeTechnicalDemo?: boolean } = {}): Promise<ExamInstance[]> {
   const r = await db.query(
-    `SELECT * FROM exam_instances WHERE student_id = $1 AND status <> 'DELETED' AND ($2::uuid IS NULL OR exam_profile_id = $2) ORDER BY created_at DESC LIMIT 100`,
-    [studentId, examProfileId ?? null]
+    // QB-0: the Student's history never lists a technical demo or a technical / internal exam.
+    `SELECT i.* FROM exam_instances i JOIN exam_versions v ON v.id = i.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
+      WHERE i.student_id = $1 AND i.status <> 'DELETED' AND ($2::uuid IS NULL OR i.exam_profile_id = $2)
+        AND ($3::boolean OR (${studentAudienceDefinitionSql('d')} AND to_jsonb(i)->>'content_audience' IS DISTINCT FROM 'TECHNICAL_DEMO'))
+      ORDER BY i.created_at DESC LIMIT 100`,
+    [studentId, examProfileId ?? null, !!internal.includeTechnicalDemo]
   );
   const out: ExamInstance[] = [];
   for (const row of r.rows) out.push(await syncFromAttempt(toInstance(row)));
@@ -268,8 +291,19 @@ export async function createExamInstance(params: {
   structureNodeId?: string;
   /** Skill-level practice (PRACTICE only). */
   focusObjectiveIds?: string[];
+  /**
+   * In-process only (certification scenarios, engine demos): TECHNICAL_DEMO lets the engine run on DEV
+   * fixtures. No Student route passes it; a technical / internal exam is always TECHNICAL_DEMO.
+   */
+  contentAudience?: ContentAudience;
 }): Promise<ExamInstance> {
   if (params.focusObjectiveIds?.length && params.mode !== 'PRACTICE') throw new ExamInstanceError('INVALID_STATE', 'skill focus is practice-only');
+  const def = (await db.query(`SELECT d.config_key, d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [params.examVersionId])).rows[0];
+  if (!def) throw new ExamInstanceError('NOT_FOUND', 'exam version');
+  const examAudience = examAudienceOf(def.config_key);
+  // A technical / internal exam is never started as a Student exam (e.g. a retake of an old certification instance).
+  if (examAudience !== 'STUDENT' && params.contentAudience !== 'TECHNICAL_DEMO') throw new ExamInstanceError('EXAM_NOT_AVAILABLE', 'technical or internal exam');
+  const contentAudience = contentAudienceFor(examAudience, params.contentAudience);
   // A preparation the Student removed (ARCHIVED) never gets new exams.
   const prof = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1 AND student_id = $2`, [params.examProfileId, params.studentId]);
   if (!prof.rows[0]) throw new ExamInstanceError('NOT_FOUND', 'exam profile');
@@ -284,6 +318,18 @@ export async function createExamInstance(params: {
   }
   const selected = components.filter((c) => ids.includes(c.id));
   const ordered = selected.map((c) => c.id);
+  if (params.mode !== 'PRACTICE') {
+    // D3: a competency benchmark (PISA) is practised and benchmarked, never reproduced as a fixed-form mock.
+    if (assessmentSemanticsOf(def.exam_family) === 'COMPETENCY_BENCHMARK') throw new ExamInstanceError('MODE_NOT_AVAILABLE', 'competency benchmark: practice only');
+    // D4: coursework / portfolio / IA / project / oral / practical components count for the exam, but have no mock.
+    const defs = (await db.query(`SELECT id, definition FROM assessment_components WHERE id = ANY($1::uuid[])`, [ordered])).rows;
+    for (const c of defs) {
+      const definition = parseDefinition(c.definition);
+      // An engine demo of a technical vertical without a verified definition (dev-cert) is not a mock claim.
+      if (!definition && contentAudience === 'TECHNICAL_DEMO') continue;
+      if (!componentCapabilities({ definition, simulationCapable: true, family: def.exam_family }).mockable) throw new ExamInstanceError('COMPONENT_NOT_MOCKABLE', c.id);
+    }
+  }
   // Coursework (portfolio / project) has no official time: such a selection is untimed in every mode.
   const untimedComponents = selected.some((c) => c.timingStatus !== 'CONFIGURED' || c.durationMinutes === null);
   const timingMode = untimedComponents ? 'UNTIMED' : timingFor(params.mode, params.timingMode);
@@ -295,11 +341,19 @@ export async function createExamInstance(params: {
       practiceLevel = last ? nextPracticeLevel(last.level, last.fraction) : 'STANDARD';
     }
   }
-  const r = await db.query(
-    `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10) RETURNING *`,
-    [params.studentId, params.examProfileId, params.examVersionId, params.structureNodeId ?? null, ordered, params.mode, params.rigor ?? 'OFFICIAL_FIDELITY', practiceLevel, timingMode, params.focusObjectiveIds ?? []]
-  );
+  const values = [params.studentId, params.examProfileId, params.examVersionId, params.structureNodeId ?? null, ordered, params.mode, params.rigor ?? 'OFFICIAL_FIDELITY', practiceLevel, timingMode, params.focusObjectiveIds ?? []];
+  // Only a technical demo writes the audience column (20261031_1000); a Student instance relies on its default.
+  const r = contentAudience === 'TECHNICAL_DEMO'
+    ? await db.query(
+        `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids, content_audience)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10, 'TECHNICAL_DEMO') RETURNING *`,
+        values
+      )
+    : await db.query(
+        `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10) RETURNING *`,
+        values
+      );
   const instance = toInstance(r.rows[0]);
   if (instance.mode !== 'PRACTICE') {
     try {
@@ -327,7 +381,7 @@ async function presetFromForm(instance: ExamInstance, form: AssembledForm, plan:
     const item = row ? examItemFromApproved(row) : null;
     const ctx = { assessmentComponentId: t.assessmentComponentId, learningObjectiveId: row?.learning_objective_id ?? null, commandTermId: t.commandTermId };
     if (item) preset[index] = { status: 'DELIVERED', item, ctx, deliveredAt: now };
-    // A frozen form never generates: an unfilled position is excluded (the form says REDUCED).
+    // A frozen form never generates; freezeForm refuses a Mock / Challenge with an unfilled position.
     else if (instance.mode !== 'PRACTICE') preset[index] = { status: 'EXCLUDED', unavailableReason: 'NO_ITEM_GENERATED', ctx };
   });
   return preset;
@@ -398,7 +452,7 @@ export async function deleteExamInstance(instanceId: string, params: { confirm: 
 }
 
 /** A new attempt is always a NEW instance from zero (same papers, mode and rigor; a Mock gets a fresh form). */
-export async function newInstanceFromExisting(instanceId: string): Promise<ExamInstance> {
+export async function newInstanceFromExisting(instanceId: string, internal: { contentAudience?: ContentAudience } = {}): Promise<ExamInstance> {
   const prev = await getExamInstance(instanceId);
   if (!prev) throw new ExamInstanceError('NOT_FOUND');
   // The old preparation may have been removed or restarted since: the new attempt goes to the ACTIVE one.
@@ -414,6 +468,9 @@ export async function newInstanceFromExisting(instanceId: string): Promise<ExamI
     timingMode: prev.mode === 'PRACTICE' ? prev.timingMode : undefined,
     structureNodeId: prev.structureNodeId ?? undefined,
     focusObjectiveIds: prev.focusObjectiveIds.length ? prev.focusObjectiveIds : undefined,
+    // A Student retake is always a Student instance: the audience of a technical demo is never inherited
+    // (an in-process scenario may ask for TECHNICAL_DEMO again explicitly).
+    contentAudience: internal.contentAudience,
   });
 }
 

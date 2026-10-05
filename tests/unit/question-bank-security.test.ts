@@ -3,6 +3,7 @@
  * (section 88): admin-only management, no keys outside the server, no extra
  * work on Student launch paths in SHADOW mode.
  */
+import { READINESS_MODEL } from '@/lib/exam-core/catalog/readiness';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
@@ -80,18 +81,26 @@ describe('performance: Student launch paths do no bank work in SHADOW mode', () 
     latestSnapshots.mockClear();
     delete process.env.QUESTION_BANK_READINESS_MODE;
   });
-  it('SHADOW: the overlay returns the rows untouched without any query', async () => {
+  it('SHADOW: the overlay returns current-model rows untouched without any query', async () => {
     const { applyBankReadinessOverlay } = await import('@/lib/exam-core/question-bank/capability-overlay.service');
-    const rows = [{ node_key: 'paa.full', selectable: true, metadata: { readiness: { state: 'REDUCED_MOCK_READY', modes: ['MOCK'] } }, exam_version_id: 'v' }];
+    const rows = [{ node_key: 'paa.full', selectable: true, metadata: { readiness: { model: READINESS_MODEL, state: 'REDUCED_MOCK_READY', modes: ['MOCK'] } }, exam_version_id: 'v' }];
     expect(await applyBankReadinessOverlay(rows)).toBe(rows);
+    expect(latestSnapshots).not.toHaveBeenCalled();
+  });
+  it('QB-1: a row persisted before the real-content model (fixture-derived) offers a Student nothing, with no query', async () => {
+    const { applyBankReadinessOverlay } = await import('@/lib/exam-core/question-bank/capability-overlay.service');
+    const rows = [{ node_key: 'paa.full', selectable: true, metadata: { readiness: { state: 'REDUCED_MOCK_READY', modes: ['MOCK'], components: [{ sectionKey: 'lectura', state: 'REDUCED_MOCK_READY' }] } }, exam_version_id: 'v' }];
+    const [out] = await applyBankReadinessOverlay(rows);
+    expect(out.selectable).toBe(false);
+    expect(out.metadata.readiness).toMatchObject({ state: 'STRUCTURE_READY', modes: [], components: [{ sectionKey: 'lectura', state: 'STRUCTURE_READY' }] });
     expect(latestSnapshots).not.toHaveBeenCalled();
   });
   it('ENFORCE: one precomputed-snapshot read for all rows (never a recomputation)', async () => {
     process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
     const { applyBankReadinessOverlay } = await import('@/lib/exam-core/question-bank/capability-overlay.service');
     const rows = [
-      { node_key: 'paa.full', selectable: true, metadata: { readiness: { state: 'REDUCED_MOCK_READY', modes: ['MOCK'] }, bind: {} }, exam_version_id: 'v' },
-      { node_key: 'paa.practice.matematicas', selectable: true, metadata: { readiness: { state: 'PRACTICE_READY', modes: ['PRACTICE'] }, bind: { sectionKey: 'matematicas' } }, exam_version_id: 'v', assessment_component_id: 'c' },
+      { node_key: 'paa.full', selectable: true, metadata: { readiness: { model: READINESS_MODEL, state: 'REDUCED_MOCK_READY', modes: ['MOCK'] }, bind: {} }, exam_version_id: 'v' },
+      { node_key: 'paa.practice.matematicas', selectable: true, metadata: { readiness: { model: READINESS_MODEL, state: 'PRACTICE_READY', modes: ['PRACTICE'] }, bind: { sectionKey: 'matematicas' } }, exam_version_id: 'v', assessment_component_id: 'c' },
     ];
     const out = await applyBankReadinessOverlay(rows);
     expect(latestSnapshots).toHaveBeenCalledTimes(1);

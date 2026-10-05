@@ -73,7 +73,7 @@ describe('versions: immutability and no-delete are enforced by the database', ()
 });
 
 describe('eligibility: practice may use PILOT, mocks never do, retired never', () => {
-  const base = { lifecycle: 'ACTIVE' as LifecycleState, status: 'PUBLISHED', isCurrentVersion: true, retired: false, calibrationConfidence: 'INSUFFICIENT_DATA' as const };
+  const base = { lifecycle: 'ACTIVE' as LifecycleState, status: 'PUBLISHED', isCurrentVersion: true, retired: false, calibrationConfidence: 'INSUFFICIENT_DATA' as const, provenance: 'STUDYUS_GENERATED' as const };
   it('PILOT: practice yes, reduced/full mock no', () => {
     const pilot = { ...base, lifecycle: 'PILOT' as LifecycleState };
     expect(isEligible(pilot, 'PRACTICE')).toBe(true);
@@ -92,13 +92,17 @@ describe('eligibility: practice may use PILOT, mocks never do, retired never', (
   });
   it('legacy PUBLISHED rows without a lifecycle behave as ACTIVE (no regression of existing mocks)', () => {
     expect(effectiveLifecycle({ lifecycle: null, status: 'PUBLISHED' })).toBe('ACTIVE');
-    expect(lifecycleSqlFor('REDUCED_MOCK')).toBe("((ai.bank_lifecycle_status IS NULL OR ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE')) AND (ai.usage_eligibility IS NULL OR 'REDUCED_MOCK' = ANY(ai.usage_eligibility)) AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL')))");
+    // TECHNICAL_DEMO (engine view): the historical predicate, unchanged.
+    expect(lifecycleSqlFor('REDUCED_MOCK', undefined, 'TECHNICAL_DEMO')).toBe("((ai.bank_lifecycle_status IS NULL OR ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE')) AND (ai.usage_eligibility IS NULL OR 'REDUCED_MOCK' = ANY(ai.usage_eligibility)) AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL')))");
+    // STUDENT (default): the same predicate AND never a DEV fixture (column origin, content origin / status, bank provenance).
+    expect(lifecycleSqlFor('REDUCED_MOCK')).toBe(lifecycleSqlFor('REDUCED_MOCK', undefined, 'TECHNICAL_DEMO').slice(0, -1) + " AND NOT (ai.content_origin = 'FIXTURE' OR ai.content->>'contentOrigin' = 'FIXTURE' OR ai.content->>'contentStatus' = 'DEV_CERT_FIXTURE' OR EXISTS (SELECT 1 FROM question_bank_items fx_qi WHERE fx_qi.id = ai.bank_item_id AND fx_qi.provenance = 'FIXTURE')))");
     expect(lifecycleSqlFor('PRACTICE')).toContain("'PILOT'");
   });
   it('the mock form query of the instance service applies the policy (PILOT excluded from Mock / Challenge)', () => {
     const svc = readFileSync(join(ROOT, 'src/lib/exam-core/exam-instance.service.ts'), 'utf8');
     expect(svc).toMatch(/const use = mode === 'PRACTICE' \? 'PRACTICE' : fullLength \? 'FULL_MOCK' : 'REDUCED_MOCK'/);
-    expect(svc).toMatch(/lifecycleSqlFor\(use\)/);
+    // QB-0: and the instance's content audience (a Student instance never draws a DEV fixture).
+    expect(svc).toMatch(/lifecycleSqlFor\(use, undefined, audience\)/);
   });
 });
 

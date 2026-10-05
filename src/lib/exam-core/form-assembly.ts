@@ -20,6 +20,7 @@
  *     A form the bank cannot fill completely is REDUCED and says so -- it is
  *     never presented as a full paper.
  */
+import type { ContentAudience } from './audience';
 import { createHash } from 'crypto';
 
 export type InstanceMode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
@@ -103,8 +104,14 @@ export interface AssembledForm {
   difficultyIndex: number | null;
   slots: FormSlot[];
   components: ComponentFidelity[];
-  /** FULL: every position filled and every component's planned marks reach its official marks. */
+  /**
+   * LENGTH fidelity only: FULL = every position filled and every component's planned marks reach its official
+   * marks. It is never a certification -- MOCK_READY comes from the Mock Certification gate
+   * (question-bank/mock-certification.ts), never from this flag.
+   */
   fidelity: 'FULL' | 'REDUCED';
+  /** Which content the form was drawn from (absent on forms frozen before QB-0 = STUDENT). */
+  contentAudience?: ContentAudience;
   coveragePercent: number;
   /** For a Challenge / Mock: whether the mean difficulty landed in the mode's band. */
   difficultyBandMet: boolean;

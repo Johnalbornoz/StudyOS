@@ -13,6 +13,7 @@
  * invalid transition fails twice, never silently.
  */
 
+import { contentAudienceSql, type ContentAudience } from '../audience';
 import { MOCK_USAGES, usageAllows, type UsageType } from './quality';
 import type { Provenance } from './policy';
 
@@ -162,8 +163,13 @@ export function effectiveLifecycle(f: Pick<EligibilityFacts, 'lifecycle' | 'stat
 /** The usage type a delivery use requires (V2 usage eligibility). */
 export const USAGE_FOR_USE: Record<DeliveryUse, UsageType> = { PRACTICE: 'PRACTICE', REDUCED_MOCK: 'REDUCED_MOCK', FULL_MOCK: 'FULL_MOCK', FULL_MOCK_CALIBRATED: 'FULL_MOCK' };
 
-export function isEligible(f: EligibilityFacts, use: DeliveryUse, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY): boolean {
+/**
+ * May this version be delivered for `use`? `audience` STUDENT (the default) never accepts a DEV fixture
+ * (unknown provenance counts as a fixture); TECHNICAL_DEMO is the in-process engine / certification context.
+ */
+export function isEligible(f: EligibilityFacts, use: DeliveryUse, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY, audience: ContentAudience = 'STUDENT'): boolean {
   if (f.retired || !f.isCurrentVersion || f.status !== 'PUBLISHED') return false;
+  if (audience === 'STUDENT' && (f.provenance ?? 'FIXTURE') === 'FIXTURE') return false;
   const state = effectiveLifecycle(f);
   if (!state || !policy.states[use].includes(state)) return false;
   if (use === 'FULL_MOCK_CALIBRATED' && !confidenceAtLeast(f.calibrationConfidence, policy.calibratedMinConfidence)) return false;
@@ -173,12 +179,14 @@ export function isEligible(f: EligibilityFacts, use: DeliveryUse, policy: Eligib
 }
 
 /** SQL predicate fragment for the lifecycle states a delivery use may draw from (alias `ai`). */
-export function lifecycleSqlFor(use: DeliveryUse, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY): string {
+export function lifecycleSqlFor(use: DeliveryUse, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY, audience: ContentAudience = 'STUDENT'): string {
   const states = policy.states[use].map((s) => `'${s}'`).join(', ');
   // A legacy row without a lifecycle is the grandfathered ACTIVE state (only when ACTIVE is allowed).
   const legacy = policy.states[use].includes('ACTIVE') ? 'ai.bank_lifecycle_status IS NULL OR ' : '';
   // V2 usage eligibility + exam alignment (NULL = legacy row = every use). Constants only: no input reaches this SQL.
   const usage = USAGE_FOR_USE[use];
   const alignment = MOCK_USAGES.includes(usage) ? ` AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL'))` : '';
-  return `((${legacy}ai.bank_lifecycle_status IN (${states})) AND (ai.usage_eligibility IS NULL OR '${usage}' = ANY(ai.usage_eligibility))${alignment})`;
+  // Content audience: a Student delivery never draws a DEV fixture (TECHNICAL_DEMO adds nothing).
+  const content = audience === 'STUDENT' ? ` AND ${contentAudienceSql('STUDENT', 'ai')}` : '';
+  return `((${legacy}ai.bank_lifecycle_status IN (${states})) AND (ai.usage_eligibility IS NULL OR '${usage}' = ANY(ai.usage_eligibility))${alignment}${content})`;
 }

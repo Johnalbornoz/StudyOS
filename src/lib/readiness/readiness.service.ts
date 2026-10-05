@@ -5,6 +5,7 @@
  * dimension-classification algorithms and persists an append-only
  * snapshot. Never writes Canonical V2 state; never calls AI.
  */
+import { fixtureResponseSql, technicalExamAttemptSql } from '@/lib/exam-core/audience';
 import { db, type DbExecutor } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
 import { canFullMockBeOffered } from '@/lib/assessment/full-mock-guard.service';
@@ -29,12 +30,14 @@ const GAP_DIMENSION_MAP: Array<{ dimension: 'KNOWLEDGE_READINESS' | 'SKILL_READI
   { dimension: 'SPEED_FLUENCY_READINESS', gapType: 'SPEED_FLUENCY_GAP' },
 ];
 
+// QB-0: prediction evidence never comes from a technical attempt or from DEV fixture content.
 async function computeSimulationPerformanceStats(studentId: string, examVersionId: string, client: DbExecutor) {
   const attempts = await client.query(
     // Track B: an INVALIDATED result no longer counts as simulation history.
     `SELECT sa.exam_attempt_id FROM simulation_attempts sa
       WHERE sa.student_id = $1 AND sa.exam_version_id = $2 AND sa.status = 'COMPLETED'
-        AND NOT EXISTS (SELECT 1 FROM exam_attempt_results r WHERE r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'INVALIDATED')`,
+        AND NOT EXISTS (SELECT 1 FROM exam_attempt_results r WHERE r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'INVALIDATED')
+        AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}`,
     [studentId, examVersionId]
   );
   const attemptIds: string[] = attempts.rows.map((r: any) => r.exam_attempt_id);
@@ -42,7 +45,7 @@ async function computeSimulationPerformanceStats(studentId: string, examVersionI
 
   const scores = await client.query(
     `SELECT assessment_component_id, SUM(score) AS total_score, SUM(max_score) AS total_max
-     FROM exam_attempt_item_responses WHERE exam_attempt_id = ANY($1::uuid[]) GROUP BY assessment_component_id`,
+     FROM exam_attempt_item_responses r WHERE r.exam_attempt_id = ANY($1::uuid[]) AND NOT ${fixtureResponseSql('r')} GROUP BY assessment_component_id`,
     [attemptIds]
   );
   const byComponent: Record<string, number> = {};

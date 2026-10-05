@@ -56,6 +56,8 @@ export function overlayNodeReadiness(p: {
   bind: NodeBinding | null;
   snapshot: Pick<BankHealth, 'cells' | 'components'> | null;
   mode: 'SHADOW' | 'ENFORCE';
+  /** D3 / D4: false for a non-mockable package (PISA, coursework): the bank never adds a Mock / Challenge mode. */
+  mockable?: boolean;
 }): OverlayResult {
   const same = { ...p.persisted, changed: false, bankState: null };
   if (!p.bind || !p.snapshot || p.snapshot.components.length === 0) return same;
@@ -65,7 +67,7 @@ export function overlayNodeReadiness(p: {
   const bankState = bankStateOf(r);
   if (p.mode === 'SHADOW' || p.persisted.state === 'CATALOG_ONLY') return { ...same, bankState };
 
-  const modes = modesFor(bankState, p.declaredModes) as Mode[];
+  const modes = modesFor(bankState, p.declaredModes, { mockable: p.mockable }) as Mode[];
   // What the entry OFFERS (same rule as the catalogue): a node that cannot run a mock is never shown as mock-ready.
   const state: ReadinessState = isMockReady(bankState) && !modes.includes('MOCK') ? (modes.includes('PRACTICE') ? 'PRACTICE_READY' : 'STRUCTURE_READY') : bankState;
   const components = p.snapshot.components

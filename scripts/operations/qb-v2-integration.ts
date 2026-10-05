@@ -157,9 +157,9 @@ async function main() {
   const profile = async (sid: string) => (await one(`SELECT id FROM student_exam_profiles WHERE student_id = $1`, [sid])).id;
   const ids = (f: any) => f.slots.map((s: any) => s.approvedItemId).filter(Boolean) as string[];
   // Student A's first form, then Student B (sees A's exposure as peer collision), then A's second attempt (unseen-first).
-  const a1 = await createExamInstance({ studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
-  const b1 = await createExamInstance({ studentId: students[1], examProfileId: await profile(students[1]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
-  const a2 = await createExamInstance({ studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
+  const a1 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
+  const b1 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[1], examProfileId: await profile(students[1]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
+  const a2 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
   // Minimum possible overlap per objective = max(0, need_first + need_second - eligible items).
   const needs = (await db.query(`SELECT t.learning_objective_id lo, count(*)::int need FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 GROUP BY 1`, [paa.examVersionId])).rows;
   const eligible = new Map<string, number>();

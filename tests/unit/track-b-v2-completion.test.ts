@@ -64,10 +64,14 @@ describe('PAA -- one integral test, area blueprints, separate Practice', () => {
     const configs = configsByKey();
     const full = node('paa.full');
     expect(full.purpose).toBe('FULL_TEST');
-    expect(nodeReadiness(full, configs).modes).toEqual(['MOCK', 'CHALLENGE']);
+    // Engine view (TECHNICAL_DEMO): the modes the catalogue CAN offer once real content exists.
+    expect(nodeReadiness(full, configs, 'TECHNICAL_DEMO').modes).toEqual(['MOCK', 'CHALLENGE']);
     for (const k of ['paa.practice.lectura', 'paa.practice.redaccion', 'paa.practice.matematicas', 'paa.practice.ingles', 'paa.practice.lectura.inferencia', 'paa.practice.matematicas.algebra']) {
-      expect(nodeReadiness(node(k), configs).modes, k).toEqual(['PRACTICE']);
+      expect(nodeReadiness(node(k), configs, 'TECHNICAL_DEMO').modes, k).toEqual(['PRACTICE']);
+      // QB D5: Student view on fixture-only content -> nothing startable.
+      expect(nodeReadiness(node(k), configs).modes, k).toEqual([]);
     }
+    expect(nodeReadiness(full, configs).modes).toEqual([]);
     for (const f of flat.filter((x) => x.family === 'PAA' && x.node.bind?.objectiveCodes)) {
       for (const code of f.node.bind!.objectiveCodes!) expect(cfg.sections.some((s) => s.objectives.some((o) => o.code === code)), code).toBe(true);
     }
@@ -134,16 +138,21 @@ describe('IB DP -- complete catalogue, real structures only', () => {
     const keys = new Set(ASSESSMENT_SOURCES.map((s) => s.key));
     for (const cfg of parsed.values()) for (const k of [...(cfg.framework?.sourceKeys ?? []), ...cfg.sections.flatMap((s) => s.definition?.sourceKeys ?? [])]) expect(keys.has(k), `${cfg.key}: ${k}`).toBe(true);
   });
-  it('coverage is reported separately and honestly', () => {
-    const cov = ibCoverage();
+  it('coverage is reported separately and honestly (engine view vs Student view)', () => {
+    const cov = ibCoverage('TECHNICAL_DEMO');
     expect(cov.catalogPercent).toBe(100);
     expect(cov.structurePercent).toBe(100);
     expect(cov.reducedMockPercent).toBeLessThan(cov.structurePercent);
-    expect(cov.fullMockPercent).toBeLessThan(cov.reducedMockPercent); // only Visual arts reaches the official length
-    expect(cov.practicePercent).toBeGreaterThan(0);
-    const m = ibSubjectReadinessMatrix();
+    // QB D4: Visual arts is coursework -- never mockable -- so no IB subject reaches a full-length mock.
+    expect(cov.fullMockPercent).toBe(0);
+    expect(cov.practicePercent).toBeGreaterThan(cov.reducedMockPercent);
+    const m = ibSubjectReadinessMatrix('TECHNICAL_DEMO');
     expect(m.find((r) => r.subject === 'Physics')).toMatchObject({ SL: 'REDUCED_MOCK_READY', HL: 'REDUCED_MOCK_READY', reducedMock: 'READY', fullMock: 'NOT_CONFIGURED', learningBridge: 'READY', officialContentCoveragePercent: 0 });
     expect(m.find((r) => r.subject === 'Economics')).toMatchObject({ structure: 'READY', practice: 'NOT_CONFIGURED', fullMock: 'NOT_CONFIGURED' });
+    // QB D5: the Student view counts real content only -- today, none.
+    const student = ibCoverage();
+    expect(student).toMatchObject({ structurePercent: 100, practicePercent: 0, reducedMockPercent: 0, fullMockPercent: 0 });
+    expect(ibSubjectReadinessMatrix().find((r) => r.subject === 'Physics')).toMatchObject({ SL: 'STRUCTURE_READY', HL: 'STRUCTURE_READY', practice: 'NOT_CONFIGURED' });
   });
 });
 
@@ -159,7 +168,10 @@ describe('readiness model', () => {
     cfg.items = cfg.items.filter((i) => i.content.key !== 'physics-hl.p2.projectile' && i.objectiveCode !== 'phy.p2.fields' || i.objectiveCode === 'phy.p2.fields' && false);
     cfg.items.push(...parsed.get('v2.ib.physics-hl')!.items.filter((i) => i.objectiveCode === 'phy.p2.fields'));
     cfg.sections.find((s) => s.key === 'p2')!.objectives.find((o) => o.code === 'phy.p2.fields')!.targets[0].count = 2;
-    expect(componentReadiness(cfg, 'p2').state).toBe('PRACTICE_READY');
+    expect(componentReadiness(cfg, 'p2', undefined, 'TECHNICAL_DEMO').state).toBe('PRACTICE_READY');
+  });
+  it('QB D3 / D4: a non-mockable package never offers Mock / Challenge, whatever its state', () => {
+    expect(modesFor('FULL_MOCK_READY', ['PRACTICE', 'MOCK', 'CHALLENGE'], { mockable: false })).toEqual(['PRACTICE']);
   });
 });
 
@@ -232,8 +244,9 @@ describe('Learning Bridge links', () => {
 describe('readiness shown = what the entry offers', () => {
   it('PAA area/skill practice over a mock-ready config is PRACTICE_READY (never "Simulacro disponible")', () => {
     const configs = configsByKey();
-    expect(nodeReadiness(node('paa.full'), configs).state).toBe('REDUCED_MOCK_READY'); // 36 of 175 official items
-    for (const k of ['paa.practice.lectura', 'paa.practice.lectura.inferencia']) expect(nodeReadiness(node(k), configs).state, k).toBe('PRACTICE_READY');
+    expect(nodeReadiness(node('paa.full'), configs, 'TECHNICAL_DEMO').state).toBe('REDUCED_MOCK_READY'); // 36 of 175 official items (engine view)
+    for (const k of ['paa.practice.lectura', 'paa.practice.lectura.inferencia']) expect(nodeReadiness(node(k), configs, 'TECHNICAL_DEMO').state, k).toBe('PRACTICE_READY');
+    expect(nodeReadiness(node('paa.full'), configs).state).toBe('STRUCTURE_READY'); // Student view: fixtures are not content
   });
 });
 

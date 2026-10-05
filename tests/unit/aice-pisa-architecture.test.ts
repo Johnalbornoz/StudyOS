@@ -84,12 +84,24 @@ describe('AICE -- syllabus-specific architecture', () => {
     const eco = parsed.get('v2.aice.9708-a')!;
     for (const k of ['p2', 'p4']) expect(eco.items.filter((i) => eco.sections.find((s) => s.key === k)!.objectives.some((o) => o.code === i.objectiveCode)).every((i) => i.content.rubric)).toBe(true);
   });
-  it('readiness is honest: reduced where the bank is reduced; 9239 / 9093 reach the official marks per component', () => {
-    expect(packageReadiness(parsed.get('v2.aice.9709-as')!).state).toBe('REDUCED_MOCK_READY');
-    expect(packageReadiness(parsed.get('v2.aice.9702-a')!).state).toBe('REDUCED_MOCK_READY');
-    expect(packageReadiness(parsed.get('v2.aice.9708-as')!).state).toBe('REDUCED_MOCK_READY');
-    expect(componentReadiness(parsed.get('v2.aice.9708-as')!, 'p2').state).toBe('FULL_MOCK_READY');
-    expect(packageReadiness(parsed.get('v2.aice.9239-as')!).state).toBe('FULL_MOCK_READY');
+  it('engine view (TECHNICAL_DEMO): reduced where the bank is reduced; written papers reach the official marks per component', () => {
+    const T = 'TECHNICAL_DEMO' as const;
+    expect(packageReadiness(parsed.get('v2.aice.9709-as')!, undefined, undefined, T).state).toBe('REDUCED_MOCK_READY');
+    expect(packageReadiness(parsed.get('v2.aice.9702-a')!, undefined, undefined, T).state).toBe('REDUCED_MOCK_READY');
+    expect(packageReadiness(parsed.get('v2.aice.9708-as')!, undefined, undefined, T).state).toBe('REDUCED_MOCK_READY');
+    expect(componentReadiness(parsed.get('v2.aice.9708-as')!, 'p2', undefined, T).state).toBe('FULL_MOCK_READY');
+    // QB D4: 9239 C2 (essay coursework) / C3 (presentation) count for the exam but are never mockable; the written C1 decides the mock.
+    const gp = packageReadiness(parsed.get('v2.aice.9239-as')!, undefined, undefined, T);
+    expect(gp.components.filter((c) => !c.mockable).map((c) => c.sectionKey)).toEqual(['c2', 'c3']);
+    expect(gp.components.filter((c) => !c.mockable).every((c) => c.state === 'PRACTICE_READY')).toBe(true);
+    expect(gp.state).toBe('FULL_MOCK_READY');
+  });
+  it('Student view (QB D5): DEV fixtures are not content -- no AICE syllabus is practice- or mock-ready for a Student', () => {
+    for (const code of REF) for (const lv of ['as', 'a']) {
+      const r = packageReadiness(parsed.get(`v2.aice.${code}-${lv}`)!);
+      expect(r.state, `${code}-${lv}`).toBe('STRUCTURE_READY');
+      expect(r.components.every((c) => c.bankItems === 0 && !c.bankInProgress)).toBe(true);
+    }
   });
   it('no official content and no official grade claimed', () => {
     for (const code of REF) for (const lv of ['as', 'a']) {
@@ -166,18 +178,24 @@ describe('PISA 2022 -- domains, units and scoring', () => {
     expect(cfg.sections.every((s) => s.definition!.limitations.join(' ').length > 0)).toBe(true);
     expect(cfg.contentStatus).toBe('DEV_CERT_FIXTURE');
   });
-  it('readiness per domain is independent and REDUCED (official length not reached / not published)', () => {
-    const r = packageReadiness(cfg);
-    expect(r.components.map((c) => [c.sectionKey, c.state])).toEqual([['math', 'REDUCED_MOCK_READY'], ['reading', 'REDUCED_MOCK_READY'], ['science', 'REDUCED_MOCK_READY']]);
+  it('QB D3: a competency benchmark -- per domain at most PRACTICE_READY (engine view), never mockable; nothing for a Student on fixtures', () => {
+    const r = packageReadiness(cfg, undefined, undefined, 'TECHNICAL_DEMO');
+    expect(r.mockable).toBe(false);
+    expect(r.components.map((c) => [c.sectionKey, c.state, c.mockable])).toEqual([['math', 'PRACTICE_READY', false], ['reading', 'PRACTICE_READY', false], ['science', 'PRACTICE_READY', false]]);
     expect(r.components.find((c) => c.sectionKey === 'reading')!.lengthCoveragePercent).toBeNull();
+    expect(packageReadiness(cfg).state).toBe('STRUCTURE_READY');
   });
-  it('catalogue: cross-domain simulation, three domains, practice by official process / competency', () => {
+  it('catalogue (QB D3): three-domain competency benchmark, three domains, practice by official process / competency -- never a PISA Mock', () => {
     const flat = flattenCatalog();
     const configs = configsByKey();
     const node = (k: string) => flat.find((f) => f.node.key === k)!.node;
-    expect(nodeReadiness(node('pisa.2022.full'), configs)).toMatchObject({ state: 'REDUCED_MOCK_READY', modes: ['MOCK'] });
-    for (const d of ['math', 'reading', 'science']) expect(nodeReadiness(node(`pisa.2022.${d}`), configs).modes).toEqual(['PRACTICE', 'MOCK']);
-    expect(nodeReadiness(node('pisa.2022.reading.evaluate'), configs)).toMatchObject({ state: 'PRACTICE_READY', modes: ['PRACTICE'] });
+    const T = 'TECHNICAL_DEMO' as const;
+    expect(nodeReadiness(node('pisa.2022.full'), configs, T)).toMatchObject({ state: 'PRACTICE_READY', modes: ['PRACTICE'], mockable: false });
+    expect(node('pisa.2022.full').label).toMatch(/estilo PISA/);
+    for (const d of ['math', 'reading', 'science']) expect(nodeReadiness(node(`pisa.2022.${d}`), configs, T).modes).toEqual(['PRACTICE']);
+    expect(nodeReadiness(node('pisa.2022.reading.evaluate'), configs, T)).toMatchObject({ state: 'PRACTICE_READY', modes: ['PRACTICE'] });
+    // Student view: fixture content -> structure only, nothing startable.
+    expect(nodeReadiness(node('pisa.2022.full'), configs)).toMatchObject({ state: 'STRUCTURE_READY', modes: [] });
     expect(node('pisa.2022.science').description).toMatch(/Explicar fenómenos/);
   });
   it('every PISA objective links to a curated concept (no automatic concept creation)', () => {

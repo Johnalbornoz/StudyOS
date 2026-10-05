@@ -7,6 +7,7 @@
  * goals (objective first: which exam each prepares), and their
  * AICE Diploma subjects with their readiness. Never other classes' Students.
  */
+import { stateSql } from '@/lib/exam-core/catalog/readiness-view';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
@@ -34,7 +35,7 @@ async function handleGET(request: NextRequest) {
   const aice = ids.length
     ? (await db.query(
         `SELECT p.student_id, e.syllabus_code, e.level, e.expected_series_year, e.expected_series_month,
-                (SELECT n.metadata->'readiness'->>'state' FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' AND n.node_type = 'LEVEL'
+                (SELECT ${stateSql('n', 'STUDENT')} FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' AND n.node_type = 'LEVEL'
                   AND n.metadata->'bind'->>'configKey' = 'v2.aice.' || e.syllabus_code || '-' || CASE e.level WHEN 'AS' THEN 'as' ELSE 'a' END LIMIT 1) AS readiness
            FROM aice_diploma_plans p JOIN aice_plan_entries e ON e.plan_id = p.id
           WHERE p.student_id = ANY($1::uuid[]) AND p.status = 'ACTIVE' ORDER BY e.syllabus_code`,

@@ -15,6 +15,7 @@
  * Nothing is invented: when no definition / version can be resolved the
  * profile is MAPPING_NOT_AVAILABLE -- reported, never silently dropped.
  */
+import { examAudienceOf } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
 import { objectiveByKey } from '@/lib/exam-core/objectives/objective-catalog';
 
@@ -62,6 +63,8 @@ export async function resolveExamProfiles(profiles: ProfileForResolution[]): Pro
   for (const p of profiles) {
     if (p.examDefinitionId) {
       const d = byId.get(p.examDefinitionId);
+      // QB-0: a technical / internal exam (dev-cert.*, legacy pilot) never resolves into a Student plan.
+      if (d && examAudienceOf(d.config_key) !== 'STUDENT') continue;
       const versionId = p.examVersionId ?? d?.latest_version_id ?? null;
       out.set(p.id, {
         profileId: p.id,

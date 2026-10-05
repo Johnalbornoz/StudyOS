@@ -23,6 +23,7 @@ import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { ComponentDefinitionSchema, componentDefinitionForAI } from './component-definition';
 import { examItemFromApproved, examItemFromGenerated, validateExamItemStructure, type ExamItem } from './items';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
+import { contentAudienceFor, examAudienceOf, type ContentAudience } from './audience';
 
 export type ItemUnavailableReason = 'NO_CURRICULUM_MAPPING' | 'CONCEPT_NOT_MATCHED' | 'NO_ITEM_GENERATED';
 
@@ -47,6 +48,8 @@ export async function selectApprovedBankItem(params: {
   preferredStimulusKey: string | null;
   /** Question Bank V2 exposure memory: prefer items this Student has not seen, then lower global exposure. */
   studentId?: string;
+  /** STUDENT (default): never a DEV fixture. */
+  contentAudience?: ContentAudience;
 }): Promise<ExamItem | null> {
   // Practice-usable versions only (usage eligibility + lifecycle; a legacy row keeps every use).
   const result = await db.query(
@@ -54,7 +57,7 @@ export async function selectApprovedBankItem(params: {
             EXISTS (SELECT 1 FROM exam_item_usage u WHERE u.approved_item_id = ai.id AND u.student_id = $4::uuid) AS seen,
             (SELECT count(DISTINCT u.student_id) FROM exam_item_usage u WHERE u.approved_item_id = ai.id)::int AS exposure
        FROM approved_items ai
-      WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE')}
+      WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, params.contentAudience ?? 'STUDENT')}
         AND ($2::text IS NULL OR ai.question_type = $2)
         AND NOT (ai.id = ANY($3::uuid[]))`,
     [params.target.learningObjectiveId, params.target.questionType, params.excludeApprovedItemIds, params.studentId ?? null]
@@ -139,6 +142,26 @@ export async function generateValidatedItem(params: {
   return { outcome: 'UNAVAILABLE', reason: 'NO_ITEM_GENERATED' };
 }
 
+/**
+ * The content audience of a delivery: TECHNICAL_DEMO for a technical / internal exam or an in-process technical
+ * demo instance, STUDENT otherwise (and whenever it cannot be resolved). `to_jsonb(i)` keeps this working on a
+ * database where the instance audience column (20261031_1000) is not applied yet.
+ */
+export async function deliveryContentAudience(attemptId: string): Promise<ContentAudience> {
+  const r = await db
+    .query(
+      `SELECT d.config_key, to_jsonb(i)->>'content_audience' AS instance_audience
+         FROM simulation_attempts sa JOIN exam_versions v ON v.id = sa.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
+         LEFT JOIN exam_instances i ON i.simulation_attempt_id = sa.id
+        WHERE sa.id = $1 LIMIT 1`,
+      [attemptId]
+    )
+    .catch(() => ({ rows: [] as any[] }));
+  const row = r.rows[0];
+  if (!row) return 'STUDENT';
+  return contentAudienceFor(examAudienceOf(row.config_key), row.instance_audience === 'TECHNICAL_DEMO' ? 'TECHNICAL_DEMO' : 'STUDENT');
+}
+
 export async function sourceExamItem(params: {
   attemptId: string;
   studentId: string;
@@ -147,7 +170,7 @@ export async function sourceExamItem(params: {
   preferredStimulusKey: string | null;
   language: string;
 }): Promise<ItemSourcingResult> {
-  const banked = await selectApprovedBankItem(params);
+  const banked = await selectApprovedBankItem({ ...params, contentAudience: await deliveryContentAudience(params.attemptId) });
   if (banked) {
     // Exposure memory: this Student has now seen this version (best effort; never blocks delivery).
     await db

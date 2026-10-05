@@ -7,6 +7,7 @@
  * not re-implement it, matching the established pattern of every prior
  * phase's service layer.
  */
+import { studentAudienceDefinitionSql, studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
 import { db, type DbExecutor } from '@/lib/db';
 import type { GoalType, PreparationGoal, StudentExamProfile } from './types';
 
@@ -123,12 +124,14 @@ export async function isExamProfileOwnedByStudent(examProfileId: string, student
  * targets. Without this a caller could start an attempt on a DRAFT /
  * SUPERSEDED version, or on another exam's version, through an owned
  * profile -- freezing a configuration the catalog never published.
+ * QB-0: and only a Student-visible exam (never a technical / internal one).
  */
 export async function isExamVersionStartableForProfile(examProfileId: string, examVersionId: string): Promise<boolean> {
   const result = await db.query(
     `SELECT 1 FROM student_exam_profiles p
      JOIN exam_versions v ON v.exam_definition_id = p.exam_definition_id
-     WHERE p.id = $1 AND v.id = $2 AND v.status = 'PUBLISHED'`,
+     JOIN exam_definitions d ON d.id = p.exam_definition_id
+     WHERE p.id = $1 AND v.id = $2 AND v.status = 'PUBLISHED' AND ${studentVisibleDefinitionSql('d')}`,
     [examProfileId, examVersionId]
   );
   return result.rows.length > 0;
@@ -148,8 +151,10 @@ export async function getStudentExamProfile(profileId: string): Promise<StudentE
  */
 export async function listStudentExamProfiles(studentId: string, opts: { includeArchived?: boolean } = {}): Promise<StudentExamProfile[]> {
   // Track B: a profile the Student removed from their preparation (ARCHIVED) is not part of it any more.
+  // QB-0: a technical / internal exam (dev-cert.*, legacy pilot) is never part of a Student's preparation.
   const result = await db.query(
-    `SELECT * FROM student_exam_profiles WHERE student_id = $1 ${opts.includeArchived ? '' : `AND status <> 'ARCHIVED'`} ORDER BY created_at DESC`,
+    `SELECT p.* FROM student_exam_profiles p LEFT JOIN exam_definitions d ON d.id = p.exam_definition_id
+      WHERE p.student_id = $1 ${opts.includeArchived ? '' : `AND p.status <> 'ARCHIVED'`} AND (p.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('d')}) ORDER BY p.created_at DESC`,
     [studentId]
   );
   return result.rows.map(toProfile);

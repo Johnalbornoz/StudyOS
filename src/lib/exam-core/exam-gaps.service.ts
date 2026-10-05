@@ -10,6 +10,7 @@
  * concept, as numbers of distinct Students -- never individual answers.
  * One query for the whole set (no per-Student round trips).
  */
+import { studentAudienceDefinitionSql, technicalExamAttemptSql } from './audience';
 import { db } from '@/lib/db';
 
 export interface GapAggregate {
@@ -34,6 +35,7 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
           WHERE sa.student_id = ANY($1::uuid[]) AND sa.hidden_at IS NULL
             AND NOT EXISTS (SELECT 1 FROM exam_instances i WHERE i.simulation_attempt_id = sa.id AND i.status = 'DELETED')
             AND ($2::text[] IS NULL OR d.exam_family = ANY($2::text[]))
+            AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}
           ORDER BY sa.student_id, d.id, sa.created_at DESC
        ), gaps AS (
          SELECT l.student_id, l.family, l.exam, (o->>'learningObjectiveId')::uuid AS objective_id
@@ -92,7 +94,7 @@ export async function examParticipation(studentIds: string[]): Promise<Array<{ f
   const r = await db.query(
     `SELECT d.exam_family AS family, d.name AS exam, count(DISTINCT p.student_id)::int AS students
        FROM student_exam_profiles p JOIN exam_definitions d ON d.id = p.exam_definition_id
-      WHERE p.student_id = ANY($1::uuid[]) AND p.status <> 'ARCHIVED'
+      WHERE p.student_id = ANY($1::uuid[]) AND p.status <> 'ARCHIVED' AND ${studentAudienceDefinitionSql('d')}
       GROUP BY 1, 2 ORDER BY 3 DESC`,
     [studentIds]
   );

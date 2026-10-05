@@ -38,6 +38,15 @@ export const ComponentDefinitionSchema = z.object({
   commandTerms: z.array(z.string().min(1).max(60)).max(60).default([]),
   /** For a portfolio / performance component: what a submission contains (limits as published). */
   submissionLimits: z.array(z.string().min(1).max(200)).max(12).default([]),
+  /**
+   * D2 -- is the FULL-FORM blueprint distribution (which objectives / sections / marks one complete form holds)
+   * sourced? Absent = UNKNOWN, and UNKNOWN stays UNKNOWN: a mock is never certified on an invented or
+   * proportional distribution. An official / licensed source later sets DOCUMENTED with its source keys,
+   * without any change to the architecture. Optional (no default) so existing configuration hashes are unchanged.
+   */
+  blueprintSpecification: z
+    .object({ status: z.enum(['DOCUMENTED', 'PARTIAL', 'UNKNOWN']), sourceKeys: z.array(z.string().min(1).max(80)).max(10).default([]), note: z.string().max(300).optional() })
+    .optional(),
   /** What StudyUs deliberately does NOT reproduce (e.g. official descriptors that are not public). */
   limitations: z.array(z.string().min(1).max(300)).max(10).default([]),
   sourceKeys: z.array(z.string().min(1).max(80)).min(1).max(10),

@@ -13,6 +13,7 @@
 import { IB_DP_SUBJECTS } from './ib-dp.generated';
 import { NOT_CURRENT, FULL_CONFIG_KEYS, structureConfigKey, ibStructureConfigs, GROUP_LABELS } from './ib-dp';
 import { packageReadiness, atLeast, type ReadinessState } from './readiness';
+import type { ContentAudience } from '../audience';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
 import { V2_VERTICALS } from '../verticals/v2';
 import { allLearningLinks } from './objective-learning-links';
@@ -52,7 +53,8 @@ const cell = (states: ReadinessState[], min: ReadinessState): Cell => {
   return n === states.length ? 'READY' : n > 0 ? 'PARTIAL' : 'NOT_CONFIGURED';
 };
 
-export function ibSubjectReadinessMatrix(): MatrixRow[] {
+/** `audience` STUDENT (default): real content only; TECHNICAL_DEMO: the engine view (fixtures count). */
+export function ibSubjectReadinessMatrix(audience: ContentAudience = 'STUDENT'): MatrixRow[] {
   const cfgs = configs();
   const links = allLearningLinks();
   const rows: MatrixRow[] = [];
@@ -63,7 +65,7 @@ export function ibSubjectReadinessMatrix(): MatrixRow[] {
     const stateFor = (l: 'SL' | 'HL' | 'CORE'): ReadinessState => {
       const key = FULL_CONFIG_KEYS[`${s.key}:${l}`] ?? structureConfigKey(s.key, l);
       const cfg = cfgs.get(key);
-      return cfg ? packageReadiness(cfg).state : 'CATALOG_ONLY';
+      return cfg ? packageReadiness(cfg, undefined, undefined, audience).state : 'CATALOG_ONLY';
     };
     const states = examinable ? levels.map(stateFor) : [];
     const objectiveCodes = levels.flatMap((l) => {
@@ -103,7 +105,7 @@ export interface IbCoverage {
   fullMockPercent: number;
 }
 
-export function ibCoverage(): IbCoverage {
+export function ibCoverage(audience: ContentAudience = 'STUDENT'): IbCoverage {
   const cfgs = configs();
   const current = IB_DP_SUBJECTS.filter((s) => !NOT_CURRENT.has(s.key));
   const pairs: ReadinessState[] = [];
@@ -111,7 +113,7 @@ export function ibCoverage(): IbCoverage {
     if (s.key === 'cas') continue;
     for (const l of (['SL', 'HL', 'CORE'] as const).filter((x) => s.levels.includes(x))) {
       const cfg = cfgs.get(FULL_CONFIG_KEYS[`${s.key}:${l}`] ?? structureConfigKey(s.key, l));
-      pairs.push(cfg ? packageReadiness(cfg).state : 'CATALOG_ONLY');
+      pairs.push(cfg ? packageReadiness(cfg, undefined, undefined, audience).state : 'CATALOG_ONLY');
     }
   }
   const pct = (min: ReadinessState) => Math.round((pairs.filter((x) => atLeast(x, min)).length / pairs.length) * 1000) / 10;

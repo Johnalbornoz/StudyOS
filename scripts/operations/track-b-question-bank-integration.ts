@@ -242,7 +242,7 @@ async function main() {
   const profileId = (await one(`INSERT INTO student_exam_profiles (student_id, exam_definition_id, exam_version_id) VALUES ($1, $2, $3) RETURNING id`, [studentId, defId, paa.versionId])).id;
   const compIds = Object.values(paa.componentIdsBySection);
   const pilotIds = new Set((await db.query(`SELECT id FROM approved_items WHERE bank_lifecycle_status = 'PILOT'`)).rows.map((r: any) => r.id));
-  const mock = await createExamInstance({ studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' });
+  const mock = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' });
   const mockIds = mock.form!.slots.map((s) => s.approvedItemId).filter(Boolean) as string[];
   check('POLICY.mock-never-uses-pilot', mockIds.length === 36 && mockIds.every((id) => !pilotIds.has(id)), { filled: mockIds.length });
   check('POLICY.reduced-mock-still-full-36', mock.form!.slots.every((s) => s.approvedItemId));
@@ -284,7 +284,7 @@ async function main() {
   const resp = await one(`SELECT approved_item_id, item_snapshot FROM exam_attempt_item_responses WHERE id = $1`, [respId]);
   check('HIST.old-attempt-resolves-v1', resp.approved_item_id === v1 && resp.item_snapshot.explanation === v1Row.content.explanation);
   check('HIST.v2-is-current', (await one(`SELECT current_version_id FROM question_bank_items WHERE id = $1`, [v1Row.bank_item_id])).current_version_id === v2.versionId && v2.versionNumber === 2);
-  const mock2 = await createExamInstance({ studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' });
+  const mock2 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' });
   const mock2Ids = mock2.form!.slots.map((s) => s.approvedItemId);
   check('HIST.new-form-never-gets-v1', !mock2Ids.includes(v1));
   const pool = await count(`SELECT count(*) n FROM approved_items WHERE id = $1 AND status = 'PUBLISHED'`, [v2.versionId]);
@@ -295,7 +295,7 @@ async function main() {
   await transitionVersion({ versionId: victim, to: 'RETIRED', reason: 'retire for certification', actor: { kind: 'ADMIN', userId: admin } });
   const retiredItem = await one(`SELECT qi.retired_at IS NOT NULL AS retired, ai.status FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1`, [victim]);
   check('RETIRE.item-retired-history-kept', retiredItem.retired === true && retiredItem.status === 'RETIRED' && (await count(`SELECT count(*) n FROM question_bank_lifecycle_events WHERE approved_item_id = $1`, [victim])) >= 2);
-  const mock3 = await createExamInstance({ studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' }).catch(() => null);
+  const mock3 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId, examProfileId: profileId, examVersionId: paa.versionId, componentIds: compIds, mode: 'MOCK' }).catch(() => null);
   check('RETIRE.never-enters-new-form', !mock3 || !mock3.form!.slots.some((s) => s.approvedItemId === victim));
   let badTransition = '';
   try {

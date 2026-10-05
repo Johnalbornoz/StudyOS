@@ -105,8 +105,8 @@ async function main() {
   const B = await identity('b', 'STUDENT');
   const T = await identity('t', 'TEACHER');
   const P = await identity('p', 'PARENT');
-  const lvl = (await resolveExamLevel('paa.practice.lectura.inferencia', 'es'))!;
-  const practice = (profileId: string) => createExamInstance({ studentId: A.studentId, examProfileId: profileId, examVersionId: lvl.examVersionId, componentIds: lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: lvl.focusObjectiveIds });
+  const lvl = (await resolveExamLevel('paa.practice.lectura.inferencia', 'es', { audience: 'TECHNICAL_DEMO' }))!;
+  const practice = (profileId: string) => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: profileId, examVersionId: lvl.examVersionId, componentIds: lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: lvl.focusObjectiveIds });
   const legacy = (await db.query(`SELECT d.id AS definition_id, v.id AS version_id FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED' WHERE d.config_key = 'dev-cert.paa'`)).rows[0];
   const icfes = (await db.query(`SELECT d.id AS definition_id, v.id AS version_id FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED' WHERE d.config_key = 'dev-cert.icfes.saber11'`)).rows[0];
 
@@ -164,7 +164,7 @@ async function main() {
       (await count(`SELECT count(*) n FROM exam_instances WHERE exam_profile_id = $1`, [readded])) === 0
   );
   // A retake of the old completed exam goes to the ACTIVE preparation, never the archived one.
-  const retake = await newInstanceFromExisting(done.id);
+  const retake = await newInstanceFromExisting(done.id, { contentAudience: 'TECHNICAL_DEMO' });
   check('9.retake-uses-active-profile', retake.examProfileId === readded && retake.simulationAttemptId === null);
 
   // 10. At most one active profile per exam (parallel creates, raw duplicate insert)

@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { selectableSql } from '@/lib/exam-core/catalog/readiness-view';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -35,7 +36,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
   const instances = await Promise.all((await listExamInstances(studentId)).map(toInstanceView));
   // Deep link to one selectable exam level (validated: it must exist and be selectable).
   const initialNode = node && /^[a-z0-9._-]{1,120}$/.test(node)
-    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND selectable = true`, [node, locale])).rows[0] ?? null)
+    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')}`, [node, locale])).rows[0] ?? null)
     : null;
   const picker = initialNode ? null : await loadPickerData(studentId, locale);
   // The AICE Diploma planner is offered only where it applies: eligible for this Student, or a plan they already have.

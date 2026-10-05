@@ -78,12 +78,13 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
         sourceKeys: ['oecd-pisa-2022-framework', 'oecd-pisa-2018-framework', 'oecd-pisa-2022-results-vol1'],
         children: [
           {
-            key: 'pisa.2022.full', type: 'VARIANT', label: 'Simulacro de los tres dominios', labels: { en: 'Three-domain simulation' }, purpose: 'FULL_TEST', modes: ['MOCK'],
-            description: 'Matemáticas, Lectura y Ciencias en una sola sesión, en formato reducido. No es la prueba oficial PISA.',
+            // D3: PISA is a competency benchmark (rotated booklets, no single official form): practice / benchmark only, never "PISA Mock".
+            key: 'pisa.2022.full', type: 'VARIANT', label: 'Evaluación de competencias de los tres dominios (estilo PISA)', labels: { en: 'Three-domain competency benchmark (PISA-style)' }, purpose: 'FULL_TEST', modes: ['PRACTICE'],
+            description: 'Práctica de Matemáticas, Lectura y Ciencias en una sola sesión, alineada al marco PISA. PISA no tiene una forma oficial única: esto no es un simulacro de la prueba.',
             bind: { configKey: 'v2.pisa.2022', sectionKeys: ['math', 'reading', 'science'] }, sourceKeys: ['oecd-pisa-2022-results-vol1'],
           },
           {
-            key: 'pisa.2022.math', type: 'DOMAIN', label: 'Mathematics', labels: { es: 'Matemáticas' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math' },
+            key: 'pisa.2022.math', type: 'DOMAIN', label: 'Mathematics', labels: { es: 'Matemáticas' }, modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'math' },
             description: 'Razonar matemáticamente y resolver problemas del mundo real: formular, emplear e interpretar, en cantidad, cambio y relaciones, espacio y forma, incertidumbre y datos.',
             sourceKeys: ['oecd-pisa-2022-framework', 'oecd-pisa-2022-math-site'],
             children: [
@@ -96,7 +97,7 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
             ],
           },
           {
-            key: 'pisa.2022.reading', type: 'DOMAIN', label: 'Reading', labels: { es: 'Lectura' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading' },
+            key: 'pisa.2022.reading', type: 'DOMAIN', label: 'Reading', labels: { es: 'Lectura' }, modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'reading' },
             description: 'Comprender, usar, evaluar y reflexionar sobre textos de una o varias fuentes, continuos, discontinuos y mixtos (marco de Lectura 2018, usado en PISA 2022).',
             sourceKeys: ['oecd-pisa-2018-framework'],
             children: [
@@ -106,7 +107,7 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
             ],
           },
           {
-            key: 'pisa.2022.science', type: 'DOMAIN', label: 'Science', labels: { es: 'Ciencias' }, modes: ['PRACTICE', 'MOCK'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science' },
+            key: 'pisa.2022.science', type: 'DOMAIN', label: 'Science', labels: { es: 'Ciencias' }, modes: ['PRACTICE'], bind: { configKey: 'v2.pisa.2022', sectionKey: 'science' },
             description: 'Explicar fenómenos, evaluar y diseñar investigaciones e interpretar datos y pruebas, con conocimiento de contenido, procedimental y epistémico (marco de Ciencias 2015, usado en PISA 2022).',
             sourceKeys: ['oecd-pisa-2018-framework'],
             children: [

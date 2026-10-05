@@ -20,6 +20,7 @@
  * minimum diversity policy; FULL_MOCK_CALIBRATED uses only items with enough
  * field evidence.
  */
+import type { ContentAudience } from '../audience';
 import { assembleForm, type FormPosition, type PoolItem } from '../form-assembly';
 import { DEFAULT_ELIGIBILITY, isEligible, type CalibrationConfidence, type DeliveryUse, type EligibilityPolicy, type LifecycleState, effectiveLifecycle } from './lifecycle';
 import { cellTargets, DEFAULT_REUSE_POLICY, countsAsOfficial, type CellTargetOverride, type CellTargets, type Provenance, type ReusePolicy } from './policy';
@@ -177,6 +178,8 @@ export interface BankHealthInput {
   reuse?: ReusePolicy;
   /** Minimum distinct full forms before FULL_MOCK_READY (diversity policy). */
   minDistinctFullForms?: number;
+  /** STUDENT (default): DEV fixtures never count as bank content; TECHNICAL_DEMO: engine certification on fixtures. */
+  audience?: ContentAudience;
 }
 
 const ZERO_PROVENANCE = (): Record<Provenance, number> => ({ OFFICIAL: 0, LICENSED: 0, STUDYUS_GENERATED: 0, FIXTURE: 0 });
@@ -189,8 +192,8 @@ export function itemMatchesCell(item: Pick<BankItemFact, 'learningObjectiveId' |
 }
 
 /** Items eligible for a use, after the family's unit policy (a unit with too few eligible items cannot be delivered as a unit). */
-export function eligiblePool(items: BankItemFact[], use: DeliveryUse, unitPolicy: UnitPolicy, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY): BankItemFact[] {
-  const eligible = items.filter((i) => isEligible(i, use, policy));
+export function eligiblePool(items: BankItemFact[], use: DeliveryUse, unitPolicy: UnitPolicy, policy: EligibilityPolicy = DEFAULT_ELIGIBILITY, audience: ContentAudience = 'STUDENT'): BankItemFact[] {
+  const eligible = items.filter((i) => isEligible(i, use, policy, audience));
   if (unitPolicy.mode !== 'UNIT') return eligible;
   const perUnit = new Map<string, number>();
   for (const i of eligible) if (i.stimulusKey) perUnit.set(i.stimulusKey, (perUnit.get(i.stimulusKey) ?? 0) + 1);
@@ -282,10 +285,10 @@ export function computeBankHealth(input: BankHealthInput): BankHealth {
   const reuse = input.reuse ?? DEFAULT_REUSE_POLICY;
   const unitMode = input.unitPolicy.mode === 'UNIT';
   const current = input.items.filter((i) => i.isCurrentVersion);
-  const practicePool = eligiblePool(current, 'PRACTICE', input.unitPolicy, eligibility);
-  const reducedPool = eligiblePool(current, 'REDUCED_MOCK', input.unitPolicy, eligibility);
-  const fullPool = eligiblePool(current, 'FULL_MOCK', input.unitPolicy, eligibility);
-  const calibratedPool = eligiblePool(current, 'FULL_MOCK_CALIBRATED', input.unitPolicy, eligibility);
+  const practicePool = eligiblePool(current, 'PRACTICE', input.unitPolicy, eligibility, input.audience);
+  const reducedPool = eligiblePool(current, 'REDUCED_MOCK', input.unitPolicy, eligibility, input.audience);
+  const fullPool = eligiblePool(current, 'FULL_MOCK', input.unitPolicy, eligibility, input.audience);
+  const calibratedPool = eligiblePool(current, 'FULL_MOCK_CALIBRATED', input.unitPolicy, eligibility, input.audience);
   const inSet = (pool: BankItemFact[]) => new Set(pool.map((p) => p.versionId));
   const practiceIds = inSet(practicePool);
   const mockIds = inSet(fullPool);

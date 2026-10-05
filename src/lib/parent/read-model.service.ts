@@ -13,6 +13,7 @@
  * field-classification decisions.
  */
 
+import { studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
 import { isActiveParentOf } from '@/lib/authorization';
 import { getStudentMastery } from '@/services/mastery.service';
@@ -227,6 +228,7 @@ async function getActiveExamProfile(studentId: string): Promise<ActiveExamProfil
     FROM student_exam_profiles sep
     LEFT JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
     WHERE sep.student_id = $1 AND sep.status = 'ACTIVE'
+      AND (sep.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('ed')})
     ORDER BY sep.created_at DESC
     LIMIT 1
     `,

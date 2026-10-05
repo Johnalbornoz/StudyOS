@@ -164,16 +164,16 @@ async function main() {
   check('S71.structure-visible', v71.capabilities.canViewStructure && (v71.objective.catalogParts.length > 0 || (v71.plan?.requirements.length ?? 0) > 0), `parts=${v71.objective.catalogParts.length} reqs=${v71.plan?.requirements.length ?? 0}`);
   check('S71.framework-visible', v71.objective.context.programme === 'IB Diploma Programme' && !!v71.objective.context.level);
   check('S71.practice-unavailable', !v71.capabilities.canPractice && v71.capabilities.unavailableReasons.some((r) => r.capability === 'PRACTICE' && (r.reason === 'STRUCTURE_ONLY' || r.reason === 'BANK_IN_PROGRESS')));
-  check('S71.no-fake-items', (await resolveExamLevel('ib.dp.economics.hl', 'es')) === null && (await count(`SELECT count(*) n FROM exam_instances WHERE exam_profile_id = $1`, [p71.profile.id])) === 0);
+  check('S71.no-fake-items', (await resolveExamLevel('ib.dp.economics.hl', 'es', { audience: 'TECHNICAL_DEMO' })) === null && (await count(`SELECT count(*) n FROM exam_instances WHERE exam_profile_id = $1`, [p71.profile.id])) === 0);
 
   // ================================================================ 72 PRACTICE_READY: practice -> gap -> plan -> same learner state
   const X = await student('cross');
   const pPaa = await createObjectivePreparation(X.studentId, { objectiveKey: 'paa', examDate: new Date(Date.now() + 20 * 86400000).toISOString().slice(0, 10) });
   check('S72.paa-selectable-practice-available', pPaa.capabilities.canPractice && pPaa.capabilities.canRunDiagnostic);
-  const area = (await resolveExamLevel('paa.practice.matematicas', 'es'))!;
+  const area = (await resolveExamLevel('paa.practice.matematicas', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   const prof = await ensureExamProfile(X.studentId, area.examDefinitionId, area.examVersionId);
   check('S72.activity-uses-the-same-preparation', prof === pPaa.profile.id);
-  const inst = await createExamInstance({ studentId: X.studentId, examProfileId: prof, examVersionId: area.examVersionId, componentIds: area.components.map((c) => c.componentId), mode: 'PRACTICE' });
+  const inst = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: X.studentId, examProfileId: prof, examVersionId: area.examVersionId, componentIds: area.components.map((c) => c.componentId), mode: 'PRACTICE' });
   const sim = (await startExamInstance(inst.id, { language: 'es' })).simulationAttemptId!;
   await runAll(X.user.id, sim, wrong);
   const v72 = (await getPreparationView(X.studentId, pPaa.profile.id))!;
@@ -202,24 +202,24 @@ async function main() {
   check('S76.also-relevant-real-mapping', (sharedConcept?.alsoRelevantFor ?? []).some((x) => x.startsWith('PAA')), (sharedConcept?.alsoRelevantFor ?? []).join());
   check('S76.no-duplicate-concept', (await count(`SELECT count(*) n FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN concept_catalog_mapping m ON m.learner_concept_id = c.id WHERE s.student_id = $1 AND m.canonical_concept_id = $2`, [X.studentId, ccId])) === 1);
 
-  // ================================================================ 73 REDUCED MOCK (PISA)
-  check('S73.preparation-selectable-reduced', v76.capabilities.canRunReducedMock && !v76.capabilities.canRunFullMock && v76.capabilities.reducedMocks.some((m) => m.nodeKey === 'pisa.2022.math' && m.lengthCoveragePercent === 27));
-  const full = (await resolveExamLevel('pisa.2022.full', 'es'))!;
+  // ================================================================ 73 PISA = COMPETENCY BENCHMARK (QB D3; Student view: no fixture content -> no mock)
+  check('S73.preparation-no-pisa-mock', !v76.capabilities.canRunReducedMock && !v76.capabilities.canRunFullMock);
+  const full = (await resolveExamLevel('pisa.2022.full', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   const mockProf = await ensureExamProfile(X.studentId, full.examDefinitionId, full.examVersionId);
-  const mock = await createExamInstance({ studentId: X.studentId, examProfileId: mockProf, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'MOCK' });
-  const mockView = await toInstanceView(mock);
-  check('S73.mock-labelled-reduced', mockProf === pPisa.profile.id && mockView.form?.fidelity === 'REDUCED', `${mockView.form?.fidelity} ${mockView.form?.coveragePercent}%`);
-  const ms = (await startExamInstance(mock.id, { language: 'es' })).simulationAttemptId!;
+  check('S73.pisa-mock-refused', mockProf === pPisa.profile.id && (await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: X.studentId, examProfileId: mockProf, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'MOCK' }), 'MODE_NOT_AVAILABLE')));
+  const bench = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: X.studentId, examProfileId: mockProf, examVersionId: full.examVersionId, componentIds: full.components.map((c) => c.componentId), mode: 'PRACTICE' });
+  const ms = (await startExamInstance(bench.id, { language: 'es' })).simulationAttemptId!;
   await runAll(X.user.id, ms, wrong);
   const rv = (await getAttemptResultView(ms))!;
   check('S73.no-official-score-claim', rv.reporting?.scaleNote === 'NO_OFFICIAL_SCALE');
 
   // ================================================================ 74 FULL MOCK gate
-  const fullObj = objectives.find((o) => statusOf(o.key).canRunFullMock)!;
-  check('S74.full-mock-only-when-full-ready', !!fullObj && objectives.filter((o) => statusOf(o.key).canRunFullMock).every((o) => statusOf(o.key).readiness === 'FULL_MOCK_READY'), fullObj?.key);
-  const practiceOnly = (await resolveExamLevel('paa.practice.matematicas', 'es'))!;
+  // QB-0..3: with fixture-only content no objective may offer a full mock to a Student.
+  const fullObj = objectives.find((o) => statusOf(o.key).canRunFullMock);
+  check('S74.no-full-mock-without-real-content', !fullObj, fullObj?.key);
+  const practiceOnly = (await resolveExamLevel('paa.practice.matematicas', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   check('S74.mock-on-practice-entry-denied', !practiceOnly.modes.includes('MOCK'));
-  check('S74.catalog-only-launch-denied', (await resolveExamLevel(catalogOnly.nodeKey, 'es')) === null);
+  check('S74.catalog-only-launch-denied', (await resolveExamLevel(catalogOnly.nodeKey, 'es', { audience: 'TECHNICAL_DEMO' })) === null);
 
   // ================================================================ 75 EXISTING KNOWLEDGE (A transfer, B retain, C practice)
   const E = await student('known');

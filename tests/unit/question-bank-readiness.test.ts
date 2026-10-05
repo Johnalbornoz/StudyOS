@@ -13,6 +13,9 @@ import { parseExamVerticalConfig } from '@/lib/exam-core/vertical-config';
 import { PAA_V2, PISA_2022_V2, AICE_9709_AS, AICE_9702_AS } from '@/lib/exam-core/verticals/v2';
 import type { LifecycleState } from '@/lib/exam-core/question-bank/lifecycle';
 
+/** These suites exercise the bank-health ENGINE on the DEV fixture bank: the technical-demo view (QB-0). */
+const TECH = 'TECHNICAL_DEMO' as const;
+
 // ------------------------------------------------------------------ synthetic exam: two sections
 const comps: ComponentInput[] = [
   { id: 'cm', sectionKey: 'math', name: 'Math', order: 0, officialItemCount: 4, maxMarks: null, simulationCapable: true },
@@ -32,7 +35,7 @@ const item = (lo: string, over: Partial<BankItemFact> = {}): BankItemFact => {
 };
 const many = (lo: string, k: number, over: Partial<BankItemFact> = {}) => Array.from({ length: k }, () => item(lo, over));
 const health = (items: BankItemFact[], opts: { comps?: ComponentInput[]; queue?: any[] } = {}) =>
-  computeBankHealth({ cells: deriveBlueprintCells(targets, opts.comps ?? comps), components: opts.comps ?? comps, items, queue: opts.queue ?? [], unitPolicy: { mode: 'ITEM' } });
+  computeBankHealth({ audience: TECH,  cells: deriveBlueprintCells(targets, opts.comps ?? comps), components: opts.comps ?? comps, items, queue: opts.queue ?? [], unitPolicy: { mode: 'ITEM' } });
 
 describe('section 73 -- readiness is proved by assembly, never by a total count', () => {
   it('1. sufficient TOTAL count but a missing blueprint cell -> Full Mock false (and reduced false)', () => {
@@ -98,8 +101,8 @@ describe('section 73 -- readiness is proved by assembly, never by a total count'
     const c: ComponentInput[] = [{ id: 'cm', sectionKey: 'math', name: 'Math', order: 0, officialItemCount: 2, maxMarks: null, simulationCapable: true }];
     const cells = deriveBlueprintCells([target('t1', 'lo.a', 'cm'), target('t2', 'lo.a', 'cm')], c);
     const clones = many('lo.a', 2, { templateFingerprint: 'same' });
-    expect(computeBankHealth({ cells, components: c, items: clones, queue: [], unitPolicy: { mode: 'ITEM' } }).readiness.fullMock.ready).toBe(false);
-    expect(computeBankHealth({ cells, components: c, items: [...clones, item('lo.a')], queue: [], unitPolicy: { mode: 'ITEM' } }).readiness.fullMock.ready).toBe(true);
+    expect(computeBankHealth({ audience: TECH,  cells, components: c, items: clones, queue: [], unitPolicy: { mode: 'ITEM' } }).readiness.fullMock.ready).toBe(false);
+    expect(computeBankHealth({ audience: TECH,  cells, components: c, items: [...clones, item('lo.a')], queue: [], unitPolicy: { mode: 'ITEM' } }).readiness.fullMock.ready).toBe(true);
   });
 });
 
@@ -138,12 +141,18 @@ describe('cell health states and deterministic gap priority', () => {
 
 describe('section 76 -- PAA onboarded into bank health (governed blueprint, current fixture bank)', () => {
   const input = configHealthInput(PAA_V2);
-  const h = computeBankHealth({ cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: adapterFor('PAA').unitPolicy });
+  const h = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: adapterFor('PAA').unitPolicy });
   it('ingests the current PAA bank: 47 fixture items, 20 cells, no official content', () => {
     expect(h.totals.items).toBe(47);
     expect(h.totals.byProvenance.FIXTURE).toBe(47);
     expect(h.officialContentCoverage).toBe(0);
     expect(h.totals.cells).toBe(20);
+  });
+  it('QB D5: for Students the same fixture bank is no content at all -- every cell EMPTY / P0, nothing ready', () => {
+    const student = computeBankHealth({ cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: adapterFor('PAA').unitPolicy });
+    expect(student.readiness.practice.ready).toBe(false);
+    expect(student.readiness.reducedMock.ready).toBe(false);
+    expect(student.cells.every((c) => c.state === 'EMPTY' && c.priority === 'P0')).toBe(true);
   });
   it('the reduced mock remains assemblable (non-regression of the governed 36-position form)', () => {
     expect(h.readiness.practice.ready).toBe(true);
@@ -151,7 +160,7 @@ describe('section 76 -- PAA onboarded into bank health (governed blueprint, curr
     // Same verdict as the catalogue readiness computed from the configuration.
     const parsed = parseExamVerticalConfig(PAA_V2);
     if (!parsed.ok) throw new Error('config');
-    expect(packageReadiness(parsed.config).state).toBe('REDUCED_MOCK_READY');
+    expect(packageReadiness(parsed.config, undefined, undefined, TECH).state).toBe('REDUCED_MOCK_READY');
   });
   it('Full Mock stays false for real reasons: every cell is below its full-length requirement, and the governed blueprint is reduced', () => {
     expect(h.readiness.fullMock.ready).toBe(false);
@@ -167,7 +176,7 @@ describe('section 76 -- PAA onboarded into bank health (governed blueprint, curr
   it('a small validated batch increases the correct cell only (pilot -> practice coverage), never mock readiness', () => {
     const loAlg = input.objectiveIdByCode['paa.mat.algebra'];
     const batch = [1, 2, 3].map((k) => item(loAlg, { lifecycle: 'PILOT', provenance: 'STUDYUS_GENERATED', versionId: `gen${k}`, bankItemId: `genb${k}` }));
-    const after = computeBankHealth({ cells: input.cells, components: input.components, items: [...input.items, ...batch], queue: [], unitPolicy: { mode: 'ITEM' } });
+    const after = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: [...input.items, ...batch], queue: [], unitPolicy: { mode: 'ITEM' } });
     const before = h.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!;
     const now = after.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!;
     expect(now.counts.practiceEligible - before.counts.practiceEligible).toBe(3);
@@ -179,7 +188,7 @@ describe('section 76 -- PAA onboarded into bank health (governed blueprint, curr
   });
   it('invalid generated content (rejected) does not improve any cell', () => {
     const loAlg = input.objectiveIdByCode['paa.mat.algebra'];
-    const after = computeBankHealth({ cells: input.cells, components: input.components, items: [...input.items, item(loAlg, { lifecycle: 'REJECTED', status: 'REJECTED' })], queue: [], unitPolicy: { mode: 'ITEM' } });
+    const after = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: [...input.items, item(loAlg, { lifecycle: 'REJECTED', status: 'REJECTED' })], queue: [], unitPolicy: { mode: 'ITEM' } });
     expect(after.cells.map((c) => c.counts.practiceEligible)).toEqual(h.cells.map((c) => c.counts.practiceEligible));
   });
 });
@@ -189,19 +198,19 @@ describe('section 77 -- PISA: the factory understands units (shared stimulus), n
     const c: ComponentInput[] = [{ id: 'cm', sectionKey: 'math', name: 'Math', order: 0, officialItemCount: 2, maxMarks: null, simulationCapable: true }];
     const cells = deriveBlueprintCells([target('t1', 'lo.a', 'cm'), target('t2', 'lo.a', 'cm')], c);
     const lone = [item('lo.a', { stimulusKey: 'unit1' }), item('lo.a', { stimulusKey: 'unit2' })];
-    const asItems = computeBankHealth({ cells, components: c, items: lone, queue: [], unitPolicy: { mode: 'ITEM' } });
-    const asUnits = computeBankHealth({ cells, components: c, items: lone, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
+    const asItems = computeBankHealth({ audience: TECH,  cells, components: c, items: lone, queue: [], unitPolicy: { mode: 'ITEM' } });
+    const asUnits = computeBankHealth({ audience: TECH,  cells, components: c, items: lone, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
     expect(asItems.readiness.reducedMock.ready).toBe(true);
     expect(asUnits.readiness.reducedMock.ready).toBe(false);
     const units = [item('lo.a', { stimulusKey: 'u1' }), item('lo.a', { stimulusKey: 'u1' }), item('lo.a', { stimulusKey: 'u1' }), item('lo.a', { stimulusKey: 'u1' })];
-    const one = computeBankHealth({ cells, components: c, items: units, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
+    const one = computeBankHealth({ audience: TECH,  cells, components: c, items: units, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
     expect(one.cells[0].counts.mockEligible).toBe(4);
     expect(one.cells[0].counts.distinctUnits).toBe(1);
     expect(one.cells[0].state).toBe('FORM_READY'); // 4 items but a single unit: repetition risk
   });
   it('PISA 2022 configuration: health computed with the unit policy; the reduced mock still assembles', () => {
     const input = configHealthInput(PISA_2022_V2);
-    const h = computeBankHealth({ cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
+    const h = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
     expect(input.items.some((i) => i.stimulusKey)).toBe(true);
     expect(h.cells.length).toBeGreaterThan(0);
     expect(h.readiness.fullMock.ready).toBe(false);
@@ -213,7 +222,7 @@ describe('section 78 -- AICE: 9709 content never satisfies 9702', () => {
     const math = configHealthInput(AICE_9709_AS);
     const phys = configHealthInput(AICE_9702_AS);
     for (const it of math.items) for (const cell of phys.cells) expect(itemMatchesCell(it, cell)).toBe(false);
-    const h = computeBankHealth({ cells: phys.cells, components: phys.components, items: [...math.items], queue: [], unitPolicy: { mode: 'ITEM' } });
+    const h = computeBankHealth({ audience: TECH,  cells: phys.cells, components: phys.components, items: [...math.items], queue: [], unitPolicy: { mode: 'ITEM' } });
     expect(h.cells.every((c) => c.counts.total === 0)).toBe(true);
     expect(h.readiness.practice.ready).toBe(false);
   });
@@ -224,8 +233,8 @@ describe('section 79 -- one canonical concept, different exams: different items,
     const paa = configHealthInput(PAA_V2);
     const pisa = configHealthInput(PISA_2022_V2);
     const paaAlg = paa.items.filter((i) => i.learningObjectiveId === paa.objectiveIdByCode['paa.mat.algebra']);
-    const h = computeBankHealth({ cells: pisa.cells, components: pisa.components, items: [...pisa.items, ...paaAlg.map((i) => ({ ...i, calibrationConfidence: 'HIGH_CONFIDENCE' as const }))], queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
-    const base = computeBankHealth({ cells: pisa.cells, components: pisa.components, items: pisa.items, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
+    const h = computeBankHealth({ audience: TECH,  cells: pisa.cells, components: pisa.components, items: [...pisa.items, ...paaAlg.map((i) => ({ ...i, calibrationConfidence: 'HIGH_CONFIDENCE' as const }))], queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
+    const base = computeBankHealth({ audience: TECH,  cells: pisa.cells, components: pisa.components, items: pisa.items, queue: [], unitPolicy: adapterFor('PISA').unitPolicy });
     expect(h.cells.map((c) => c.counts)).toEqual(base.cells.map((c) => c.counts));
   });
 });
@@ -233,7 +242,7 @@ describe('section 79 -- one canonical concept, different exams: different items,
 describe('dynamic capability overlay (server-authoritative)', () => {
   const snapshot = (() => {
     const input = configHealthInput(PAA_V2);
-    return computeBankHealth({ cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: { mode: 'ITEM' } });
+    return computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: input.items, queue: [], unitPolicy: { mode: 'ITEM' } });
   })();
   const persisted = { state: 'REDUCED_MOCK_READY' as const, modes: ['MOCK', 'CHALLENGE'] as Array<'MOCK' | 'CHALLENGE'>, components: [], selectable: true };
   it('SHADOW never changes what a node offers (only reports the calculated state)', () => {
@@ -251,7 +260,7 @@ describe('dynamic capability overlay (server-authoritative)', () => {
   it('ENFORCE downgrades when content is retired, and an area-practice node never becomes a mock', () => {
     const input = configHealthInput(PAA_V2);
     const retiredVoc = input.items.map((i) => (i.learningObjectiveId === input.objectiveIdByCode['paa.lect.vocabulario'] ? { ...i, retired: true } : i));
-    const hurt = computeBankHealth({ cells: input.cells, components: input.components, items: retiredVoc, queue: [], unitPolicy: { mode: 'ITEM' } });
+    const hurt = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: retiredVoc, queue: [], unitPolicy: { mode: 'ITEM' } });
     const full = overlayNodeReadiness({ persisted, declaredModes: ['MOCK', 'CHALLENGE'], bound: true, bind: {}, snapshot: hurt, mode: 'ENFORCE' });
     expect(full.state).toBe('STRUCTURE_READY');
     expect(full.selectable).toBe(false);

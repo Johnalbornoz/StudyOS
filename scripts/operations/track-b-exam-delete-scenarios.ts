@@ -115,9 +115,9 @@ async function main() {
   const B = await student('b');
 
   // ---------------- Exam V2 instances (PAA skill practice: Lectura -> Inferencias) ----------------
-  const lvl = (await resolveExamLevel('paa.practice.lectura.inferencia', 'es'))!;
+  const lvl = (await resolveExamLevel('paa.practice.lectura.inferencia', 'es', { audience: 'TECHNICAL_DEMO' }))!;
   const profileId = await ensureExamProfile(A.studentId, lvl.examDefinitionId, lvl.examVersionId);
-  const make = () => createExamInstance({ studentId: A.studentId, examProfileId: profileId, examVersionId: lvl.examVersionId, componentIds: lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: lvl.focusObjectiveIds });
+  const make = () => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: profileId, examVersionId: lvl.examVersionId, componentIds: lvl.components.map((c) => c.componentId), mode: 'PRACTICE', focusObjectiveIds: lvl.focusObjectiveIds });
 
   // 1. READY
   const ready = await make();
@@ -154,7 +154,7 @@ async function main() {
   check('6.result-audit-retained', afterResult?.status === 'SCORED' && afterResult.responseSetHash === before.result?.responseSetHash && afterResult.rawScore === before.result?.rawScore && (await responsesOf(doneEa)) === before.responses && before.responses > 0, `${afterResult?.rawScore}/${afterResult?.maxScore} responses=${before.responses}`);
 
   // 7. New attempt from zero = fresh ids
-  const again = await newInstanceFromExisting(done.id);
+  const again = await newInstanceFromExisting(done.id, { contentAudience: 'TECHNICAL_DEMO' });
   const againSim = (await startExamInstance(again.id, { language: 'es' })).simulationAttemptId!;
   const againEa = (await getSimulationAttempt(againSim))!.examAttemptId;
   const nav = (await db.query(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [againSim])).rows[0].navigation_state as ExamNavState;
@@ -197,7 +197,7 @@ async function main() {
   check('9.double-delete-safe', twice1.alreadyDeleted && twice1.resultPreserved && twice2.alreadyDeleted && twice3.instance.status === 'DELETED' && (await getAttemptResult(doneEa))?.responseSetHash === before.result?.responseSetHash);
 
   // 10. Absent from the normal history
-  const visibleInstances = (await listExamInstances(A.studentId)).map((i) => i.id);
+  const visibleInstances = (await listExamInstances(A.studentId, undefined, { includeTechnicalDemo: true })).map((i) => i.id);
   const v2History = (await listProfileAttempts(profileId)).map((a) => a.id);
   const legacyHistory = (await listProfileAttempts(legacyProfile.id)).map((a) => a.id);
   check(

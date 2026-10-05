@@ -18,6 +18,8 @@
  *       the exam bridge (one learner state per canonical concept), provenance
  *       EXAM_PREPARATION recorded once.
  */
+import { technicalExamAttemptSql } from '../audience';
+import { readinessFor, selectableSql } from '../catalog/readiness-view';
 import { db } from '@/lib/db';
 import { track } from '@/lib/analytics';
 import { createStudentExamProfile, getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
@@ -315,7 +317,7 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
        JOIN exam_versions v ON v.id = sa.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
        CROSS JOIN LATERAL jsonb_array_elements(r.objective_results) o
        JOIN learning_objectives lo ON lo.id = (o->>'learningObjectiveId')::uuid
-      WHERE sa.student_id = $1 AND o->>'classification' IN ('STRENGTH', 'DEVELOPING', 'GAP')
+      WHERE sa.student_id = $1 AND o->>'classification' IN ('STRENGTH', 'DEVELOPING', 'GAP') AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}
         AND (lo.code = ANY($2::text[]) OR EXISTS (SELECT 1 FROM objective_concept_mappings m WHERE m.learning_objective_id = lo.id AND m.status = 'PUBLISHED' AND m.canonical_concept_id = ANY($3::uuid[])))
       ORDER BY r.created_at DESC`,
     [studentId, codes, canonicalIds]
@@ -465,14 +467,14 @@ async function createOrResumeDiagnostic(profile: StudentExamProfile, objective: 
     await db.query(
       `SELECT n.exam_version_id, n.metadata, d.id AS definition_id FROM assessment_structure_nodes n
          JOIN exam_definitions d ON d.id = n.exam_definition_id AND d.status = 'ACTIVE'
-        WHERE n.status = 'ACTIVE' AND n.selectable = true AND n.exam_version_id IS NOT NULL AND (n.node_key = $1 OR n.node_key LIKE $2)`,
+        WHERE n.status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')} AND n.exam_version_id IS NOT NULL AND (n.node_key = $1 OR n.node_key LIKE $2)`,
       [objective.nodeKey, `${objective.nodeKey}.%`]
     )
   ).rows as any[];
   // Practice-ready components per version, from the persisted readiness.
   const byVersion = new Map<string, { definitionId: string; sections: Set<string> }>();
   for (const r of rows) {
-    for (const c of (r.metadata?.readiness?.components ?? []) as Array<{ sectionKey: string; state: ReadinessState }>) {
+    for (const c of (readinessFor({ ...r, selectable: true }, 'STUDENT').readiness.components ?? []) as Array<{ sectionKey: string; state: ReadinessState }>) {
       if (!['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'].includes(c.state)) continue;
       if (!byVersion.has(r.exam_version_id)) byVersion.set(r.exam_version_id, { definitionId: r.definition_id, sections: new Set() });
       byVersion.get(r.exam_version_id)!.sections.add(c.sectionKey);

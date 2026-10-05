@@ -9,6 +9,7 @@ import { flattenCatalog } from '../catalog/structure';
 import { factoryConfig } from './policy';
 import { latestSnapshots } from './health.service';
 import { overlayNodeReadiness, type Mode, type NodeBinding } from './readiness-overlay';
+import { withAudienceReadiness } from '../catalog/readiness-view';
 
 let declared: Map<string, Mode[] | undefined> | null = null;
 function declaredModes(nodeKey: string): Mode[] | undefined {
@@ -32,8 +33,12 @@ export function readinessMode(): 'SHADOW' | 'ENFORCE' {
   }
 }
 
-/** Returns the rows with `metadata.readiness` / `selectable` replaced by the bank-derived readiness (ENFORCE only). */
-export async function applyBankReadinessOverlay<T extends OverlayRow>(rows: T[]): Promise<T[]> {
+/**
+ * Returns the rows with `metadata.readiness` / `selectable` as a Student may see them: first the QB-1 view (a row
+ * persisted before the real-content model offers no modes), then -- ENFORCE only -- the bank-derived readiness.
+ */
+export async function applyBankReadinessOverlay<T extends OverlayRow>(input: T[]): Promise<T[]> {
+  const rows = withAudienceReadiness(input, 'STUDENT');
   if (readinessMode() !== 'ENFORCE') return rows;
   const versionIds = [...new Set(rows.map((r) => r.exam_version_id).filter((x): x is string => !!x))];
   if (versionIds.length === 0) return rows;
@@ -49,6 +54,7 @@ export async function applyBankReadinessOverlay<T extends OverlayRow>(rows: T[])
       bind,
       snapshot: snap ? { cells: snap.cells, components: snap.components } : null,
       mode: 'ENFORCE',
+      mockable: typeof r.mockable === 'boolean' ? r.mockable : undefined,
     });
     if (!out.changed) return row;
     const components = (r.components ?? []).map((c: any) => ({ ...c, state: out.components.find((x) => x.sectionKey === c.sectionKey)?.state ?? c.state }));

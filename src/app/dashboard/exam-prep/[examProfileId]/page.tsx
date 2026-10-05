@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { examAudienceOf } from '@/lib/exam-core/audience';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -68,6 +69,8 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   if (!profile || profile.studentId !== studentId) notFound();
 
   const definition = profile.examDefinitionId ? await getExamDefinition(profile.examDefinitionId) : null;
+  // QB-0: a technical / internal exam (dev-cert.*, legacy pilot) is never a Student preparation, even by direct URL.
+  if (definition && examAudienceOf(definition.configKey) !== 'STUDENT') notFound();
   const objective = await profileObjective(profile);
   const examName = objective?.label ?? definition?.name ?? '';
   const tr0 = t as Record<string, string>;

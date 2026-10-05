@@ -15,7 +15,12 @@
 import { db } from '@/lib/db';
 import { upsertSources } from './source-registry.service';
 import { ASSESSMENT_CATALOG, flattenCatalog, type CatalogFamily, type CatalogNode } from './structure';
-import { packageReadiness, modesFor, isMockReady, READINESS_ORDER, type ReadinessState, type ComponentReadiness } from './readiness';
+import { packageReadiness, modesFor, isMockReady, READINESS_MODEL, READINESS_ORDER, type ReadinessState, type ComponentReadiness } from './readiness';
+import { bankInProgressSql, readinessFor, selectableSql, stateSql } from './readiness-view';
+import type { ContentAudience } from '../audience';
+import { assessExam } from '../question-bank/mock-certification';
+import { certificationInputFromConfig } from '../question-bank/certification-input';
+import type { ContentReadiness, EngineCapability } from '../fidelity';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
 import { allV2Configs } from '../verticals/v2/all';
 import { applyBankReadinessOverlay, readinessMode } from '../question-bank/capability-overlay.service';
@@ -30,17 +35,49 @@ export function configsByKey(): Map<string, ExamVerticalConfig> {
   return out;
 }
 
-/** Readiness of a catalogue node from its binding (pure). Unbound -> CATALOG_ONLY. */
-export function nodeReadiness(node: CatalogNode, configs: Map<string, ExamVerticalConfig>): { state: ReadinessState; components: ComponentReadiness[]; modes: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'> } {
-  if (node.notExaminable || !node.bind) return { state: 'CATALOG_ONLY', components: [], modes: [] };
+/**
+ * Readiness of a catalogue node from its binding (pure). Unbound -> CATALOG_ONLY.
+ * `audience` STUDENT (default): real content only; TECHNICAL_DEMO: the engine view (fixtures count).
+ */
+export function nodeReadiness(node: CatalogNode, configs: Map<string, ExamVerticalConfig>, audience: ContentAudience = 'STUDENT'): { state: ReadinessState; components: ComponentReadiness[]; modes: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'>; mockable: boolean } {
+  if (node.notExaminable || !node.bind) return { state: 'CATALOG_ONLY', components: [], modes: [], mockable: false };
   const cfg = configs.get(node.bind.configKey);
-  if (!cfg) return { state: 'CATALOG_ONLY', components: [], modes: [] };
+  if (!cfg) return { state: 'CATALOG_ONLY', components: [], modes: [], mockable: false };
   const keys = node.bind.sectionKey ? [node.bind.sectionKey] : node.bind.sectionKeys;
-  const r = packageReadiness(cfg, keys, node.bind.objectiveCodes);
-  const modes = modesFor(r.state, node.modes);
+  const r = packageReadiness(cfg, keys, node.bind.objectiveCodes, audience);
+  const modes = modesFor(r.state, node.modes, { mockable: r.mockable });
   // The state shown is what this entry OFFERS: an area-practice node over a mock-ready config is "practice", never "mock available".
   const state: ReadinessState = isMockReady(r.state) && !modes.includes('MOCK') ? (modes.includes('PRACTICE') ? 'PRACTICE_READY' : 'STRUCTURE_READY') : r.state;
   return { ...r, state, modes };
+}
+
+export interface NodeFidelity {
+  engineCapability: EngineCapability;
+  contentReadiness: ContentReadiness;
+  /** Certified (Mock Certification gate). Never inferred from length or from the engine. */
+  mockReady: boolean;
+  mockApplicability: string;
+  assessmentSemantics: string;
+  nonMockableComponents: string[];
+}
+
+/** The two dimensions of a bound node, from its configuration (pure). Unbound -> null. */
+export function nodeFidelity(node: CatalogNode, configs: Map<string, ExamVerticalConfig>): NodeFidelity | null {
+  if (node.notExaminable || !node.bind) return null;
+  const cfg = configs.get(node.bind.configKey);
+  if (!cfg) return null;
+  const keys = node.bind.sectionKey ? [node.bind.sectionKey] : node.bind.sectionKeys;
+  const a = assessExam(certificationInputFromConfig(cfg, keys));
+  // A skill-focused entry is practice by construction: it never reproduces a paper.
+  const skillOnly = !!node.bind.objectiveCodes?.length;
+  return {
+    engineCapability: a.engineCapability,
+    contentReadiness: skillOnly && a.contentReadiness !== 'NONE' ? 'PRACTICE_READY' : a.contentReadiness,
+    mockReady: !skillOnly && a.mockReady,
+    mockApplicability: skillOnly ? 'NOT_APPLICABLE_SKILL_PRACTICE' : a.mockApplicability,
+    assessmentSemantics: a.semantics,
+    nonMockableComponents: a.nonMockableComponents,
+  };
 }
 
 export interface ApplyStructureResult {
@@ -76,7 +113,10 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
         if (ok) bound++;
         else unresolved.push(node.key);
       }
-      const readiness = nodeReadiness(node, configs);
+      // QB-1: Students see real-content readiness; the engine (technical demo) view is stored beside it, never instead.
+      const readiness = nodeReadiness(node, configs, 'STUDENT');
+      const engine = nodeReadiness(node, configs, 'TECHNICAL_DEMO');
+      const fidelity = nodeFidelity(node, configs);
       const selectable = !!versionId && (!node.bind?.sectionKey || !!componentId) && readiness.modes.length > 0;
       const r = await client.query(
         `INSERT INTO assessment_structure_nodes (family, parent_id, node_key, node_type, label, labels, description, order_index, curriculum_version, first_assessment, last_assessment,
@@ -107,7 +147,12 @@ export async function applyAssessmentStructure(options: { write: boolean }, fami
           componentId,
           selectable,
           (node.sourceKeys ?? []).map((k) => sourceIds.get(k)!).filter(Boolean),
-          JSON.stringify({ facts: node.facts ?? null, bind: node.bind ?? null, purpose: node.purpose ?? null, notExaminable: !!node.notExaminable, readiness: { state: readiness.state, modes: readiness.modes, components: readiness.components, bankInProgress: readiness.components.some((c) => c.bankInProgress) } }),
+          JSON.stringify({
+            facts: node.facts ?? null, bind: node.bind ?? null, purpose: node.purpose ?? null, notExaminable: !!node.notExaminable,
+            readiness: { model: READINESS_MODEL, audience: 'STUDENT', state: readiness.state, modes: readiness.modes, components: readiness.components, bankInProgress: readiness.components.some((c) => c.bankInProgress), mockable: readiness.mockable },
+            engineReadiness: { model: READINESS_MODEL, audience: 'TECHNICAL_DEMO', state: engine.state, modes: engine.modes, components: engine.components, mockable: engine.mockable },
+            fidelity,
+          }),
         ]
       );
       idByKey.set(node.key, r.rows[0].id);
@@ -154,32 +199,33 @@ function localized(labels: Record<string, string> | null, label: string, languag
   return (labels && labels[language]) || label;
 }
 
-export async function listStructureFamilies(): Promise<Array<{ family: string; roots: number; available: boolean }>> {
+export async function listStructureFamilies(audience: ContentAudience = 'STUDENT'): Promise<Array<{ family: string; roots: number; available: boolean }>> {
   const r = await db.query(
-    `SELECT family, count(*) FILTER (WHERE parent_id IS NULL)::int AS roots, bool_or(selectable) AS available
-       FROM assessment_structure_nodes WHERE status = 'ACTIVE' GROUP BY family ORDER BY family`
+    `SELECT n.family, count(*) FILTER (WHERE n.parent_id IS NULL)::int AS roots, bool_or(${selectableSql('n', audience)}) AS available
+       FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' GROUP BY n.family ORDER BY n.family`
   );
   return r.rows.map((x: any) => ({ family: x.family, roots: x.roots, available: !!x.available }));
 }
 
-export async function listStructureChildren(params: { family: string; parentKey: string | null; language: string }): Promise<StructureNodeView[]> {
+export async function listStructureChildren(params: { family: string; parentKey: string | null; language: string; /** In-process scenarios only: the engine view. */ audience?: ContentAudience }): Promise<StructureNodeView[]> {
+  const audience = params.audience ?? 'STUDENT';
   const r = await db.query(
     `SELECT n.*, (SELECT count(*) FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE')::int AS child_count,
             (WITH RECURSIVE sub AS (
-               SELECT c.id, c.selectable, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
+               SELECT c.id, ${selectableSql('c', audience)} AS selectable, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
                UNION ALL
-               SELECT c.id, c.selectable, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
+               SELECT c.id, ${selectableSql('c', audience)} AS selectable, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
              ) SELECT bool_or(selectable) FROM sub) AS descendant_selectable,
             (WITH RECURSIVE sub AS (
                SELECT c.id, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
                UNION ALL
                SELECT c.id, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
-             ) SELECT array_agg(DISTINCT sub.metadata->'readiness'->>'state') FROM sub) AS descendant_states,
+             ) SELECT array_agg(DISTINCT ${stateSql('sub', audience)}) FROM sub) AS descendant_states,
             (WITH RECURSIVE sub AS (
                SELECT c.id, c.metadata FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE'
                UNION ALL
                SELECT c.id, c.metadata FROM assessment_structure_nodes c JOIN sub ON c.parent_id = sub.id WHERE c.status = 'ACTIVE'
-             ) SELECT bool_or(COALESCE((sub.metadata->'readiness'->>'bankInProgress')::boolean, false)) FROM sub) AS descendant_bank,
+             ) SELECT bool_or(${bankInProgressSql('sub', audience)}) FROM sub) AS descendant_bank,
             COALESCE((SELECT json_agg(json_build_object('title', s.title, 'publisher', s.publisher, 'url', s.url, 'confidence', s.confidence) ORDER BY s.source_key)
                         FROM assessment_sources s WHERE s.id = ANY(n.source_ids)), '[]'::json) AS sources
        FROM assessment_structure_nodes n
@@ -188,7 +234,10 @@ export async function listStructureChildren(params: { family: string; parentKey:
       ORDER BY n.order_index, n.label`,
     [params.family, params.parentKey]
   );
-  return r.rows.map((n: any) => {
+  return r.rows.map((row: any) => {
+    // QB-1: the audience's readiness view (a pre-QB-1 row is never a Student truth).
+    const view = readinessFor(row, audience);
+    const n = { ...row, selectable: view.selectable, metadata: { ...row.metadata, readiness: view.readiness } };
     const bind = n.metadata?.bind ?? null;
     // The exam level is the bound node above the components (IB HL, Cambridge Extended, PISA Mathematics...).
     const isExamLevel = !!bind && !COMPONENT_NODE_TYPES.has(n.node_type);
@@ -249,11 +298,13 @@ export interface ExamLevelSelection {
  * Resolves an exam-level node (bound to a vertical, e.g. "Math AA HL") into
  * its published version and the components the Student may pick.
  */
-export async function resolveExamLevel(nodeKey: string, language: string): Promise<ExamLevelSelection | null> {
+export async function resolveExamLevel(nodeKey: string, language: string, internal: { /** In-process scenarios only (never a Student route): the engine view. */ audience?: ContentAudience } = {}): Promise<ExamLevelSelection | null> {
+  const audience = internal.audience ?? 'STUDENT';
   // Question Bank: in ENFORCE mode a node's readiness / selectability comes from the latest bank-health snapshot (same overlay as the capabilities).
   const enforce = readinessMode() === 'ENFORCE';
-  const raw = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND (selectable = true OR $2) LIMIT 1`, [nodeKey, enforce])).rows[0];
-  const n = raw ? (await applyBankReadinessOverlay([raw]))[0] : null;
+  const raw = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND (selectable = true OR $2) LIMIT 1`, [nodeKey, enforce || audience === 'TECHNICAL_DEMO'])).rows[0];
+  // Student: the QB-1 view (fixture-derived rows never offer modes) + the bank overlay. Technical demo: the engine view.
+  const n = !raw ? null : audience === 'TECHNICAL_DEMO' ? (() => { const v = readinessFor(raw, 'TECHNICAL_DEMO'); return { ...raw, selectable: v.selectable, metadata: { ...raw.metadata, readiness: v.readiness } }; })() : (await applyBankReadinessOverlay([raw]))[0];
   if (!n || !n.selectable || !n.exam_version_id) return null;
   const bind = n.metadata?.bind ?? {};
   const readiness = n.metadata?.readiness ?? { state: 'CATALOG_ONLY', modes: [], components: [] };

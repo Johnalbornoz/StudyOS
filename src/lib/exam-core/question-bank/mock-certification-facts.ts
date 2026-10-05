@@ -21,6 +21,8 @@ export interface BankVersionRow {
   calibration_confidence: string | null;
   is_current_version: boolean;
   retired: boolean;
+  /** Published skill mappings of the item's objective (optional). */
+  skill_ids?: string[] | null;
 }
 
 // Markers are case-sensitive on purpose: Spanish "todo" is a word, "TODO" is a marker.
@@ -79,6 +81,8 @@ export function bankItemFacts(row: BankVersionRow): BankItemFacts {
     grading: effective ? gradingModeOf(effective) : 'UNKEYED',
     placeholderSignals,
     unresolvedDependencies: ABSENT_FIGURE.test(text) ? ['REFERENCES_ABSENT_FIGURE'] : [],
+    commandTerm: parsed.data.commandTerm ?? null,
+    skillIds: row.skill_ids ?? [],
   };
 }
 
