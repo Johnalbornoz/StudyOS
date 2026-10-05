@@ -7,6 +7,9 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { resolveFirstDestination } from '@/lib/lx/first-destination';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
+import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
+import { INSTITUTIONAL_PATH_COUNT_SQL } from '@/lib/student/onboarding-gate.server';
+import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 
 export const metadata: Metadata = {
   alternates: {
@@ -29,16 +32,19 @@ export default async function Home() {
     // onboarding. This is a routing decision only -- no mastery logic.
     let hasSubject = false;
     let hasExamGoal = false;
+    let hasInstitutionalPath = false;
     try {
       const studentId = await getOrCreateStudentId(userId);
       const res = await query(`SELECT 1 FROM subjects WHERE student_id = $1 LIMIT 1`, [studentId]);
       hasSubject = res.rows.length > 0;
       // Objective first: a Student who started with an exam goal resumes in their preparation.
-      if (!hasSubject) hasExamGoal = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId])).rows.length > 0;
+      if (!hasSubject) hasExamGoal = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId])).rows.length > 0;
+      // Entry UX: an institution-defined academic path goes straight to Today.
+      if (!hasSubject && isStudentJourneyUxEnabled()) hasInstitutionalPath = ((await query(`SELECT ${INSTITUTIONAL_PATH_COUNT_SQL} AS n FROM students s WHERE s.id = $1`, [studentId])).rows[0]?.n ?? 0) > 0;
     } catch {
       // fall through to onboarding on any read failure -- safe default
     }
-    redirect(resolveFirstDestination({ hasSubject, hasExamGoal }).path);
+    redirect(resolveFirstDestination({ hasSubject, hasExamGoal, hasInstitutionalPath }).path);
   }
 
   const headerList = await headers();

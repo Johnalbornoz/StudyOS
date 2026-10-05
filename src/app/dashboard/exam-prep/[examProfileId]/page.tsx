@@ -29,6 +29,13 @@ import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.se
 import { getQualificationAggregate, listProfileAttempts, listVersionAreas } from '@/lib/exam-core/catalog.service';
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
 import { parseDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
+import { after } from 'next/server';
+import { isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { getStudentExamJourneys, loadExamTargetRow, scheduleColumnsAvailable } from '@/lib/exam-journey/ux.server';
+import { scheduleFactsFromRow } from '@/lib/exam-journey/exam-target';
+import { targetScheduleLines } from '@/lib/exam-journey/ux';
+import { ExamTargetOverview, parseOverviewTab } from '../journey/ExamTargetOverview';
+import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
 import { db } from '@/lib/db';
 import { getPreparationView, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { PreparationHome } from './PreparationHome';
@@ -55,9 +62,9 @@ const DIMENSION_LABEL_KEY = {
  * carried by `unsupportedPlatformAreas`/reasonCodes, not a separate
  * top-level enum value this page would otherwise have to invent.
  */
-export default async function ExamPrepDetailPage({ params, searchParams }: { params: Promise<{ examProfileId: string }>; searchParams: Promise<{ area?: string }> }) {
+export default async function ExamPrepDetailPage({ params, searchParams }: { params: Promise<{ examProfileId: string }>; searchParams: Promise<{ area?: string; tab?: string }> }) {
   const { examProfileId } = await params;
-  const { area } = await searchParams;
+  const { area, tab } = await searchParams;
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
 
@@ -67,6 +74,8 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
 
   const profile = await getStudentExamProfile(examProfileId);
   if (!profile || profile.studentId !== studentId) notFound();
+  // Student Exam Journey V2 (J2): shadow only -- computed and logged after the response, never rendered.
+  if (isStudentJourneyShadowEnabled()) after(() => runStudentExamJourneyShadow(studentId, 'dashboard/exam-prep/[examProfileId]'));
 
   const definition = profile.examDefinitionId ? await getExamDefinition(profile.examDefinitionId) : null;
   // QB-0: a technical / internal exam (dev-cert.*, legacy pilot) is never a Student preparation, even by direct URL.
@@ -123,6 +132,53 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
 
   // Objective first: every governed objective (catalogue-only included) opens the preparation home.
   const view = objective ? await getPreparationView(studentId, profile.id, locale) : null;
+
+  // Student Exam Journey V2 (J3.5, STUDENT_JOURNEY_V2=UX): Resumen / Preparar / Resultados from the
+  // Journey resolution. Falls back to the preparation home below when no resolution exists.
+  if (view && isStudentJourneyUxEnabled()) {
+    const [journeys, row, attempts, newFields] = await Promise.all([getStudentExamJourneys(studentId), loadExamTargetRow(profile.id, studentId), listProfileAttempts(profile.id), scheduleColumnsAvailable()]);
+    const resolution = journeys.find((j) => j.examTargetId === profile.id);
+    if (resolution && row) {
+      const completed = attempts.filter((a) => a.status === 'COMPLETED');
+      const jxLabels: Record<string, string> = Object.fromEntries(
+        Object.entries(tr).filter(([k]) => k.startsWith('jx.') || k.startsWith('prep.') || k.startsWith('exv2.') || k.startsWith('examPrep.history.') || k.startsWith('examPrep.attempt.status.'))
+      );
+      return (
+        <div className="xp-page xp-page--wide">
+          <PageIntro
+            crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
+            title={view.objective.label}
+            lead={[tr[`prep.fw.${view.objective.framework}`], view.objective.context.level, view.objective.context.version].filter(Boolean).join(' · ')}
+            actions={
+              <div className="ex-detail-actions">
+                <ProfileMenu profileId={profile.id} examName={view.objective.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />
+              </div>
+            }
+          />
+          <ExamTargetOverview
+            profileId={profile.id}
+            resolution={resolution}
+            view={view}
+            scheduleLines={targetScheduleLines(scheduleFactsFromRow(row))}
+            newScheduleFieldsAvailable={newFields}
+            tab={parseOverviewTab(tab, completed.length > 0)}
+            attempts={completed.map((a) => ({
+              id: a.id,
+              name: `${view.objective.label} · ${
+                a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+              }`,
+              status: a.status,
+              createdAt: a.createdAt,
+              result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
+            }))}
+            destinationInstitution={profile.targetInstitutionName ?? null}
+            labels={jxLabels}
+            locale={locale}
+          />
+        </div>
+      );
+    }
+  }
   if (view) {
     const attempts = await listProfileAttempts(profile.id);
     const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.')));

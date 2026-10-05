@@ -8,6 +8,21 @@
  *      inferred from merely having a `students` row;
  *   2. at least one subject (created by the student -- never automatically).
  *
+ * Student Exam Journey V2 -- J0 (G-01): a VALID EXAM TARGET (a non-archived
+ * `student_exam_profiles` row) is a first academic object on its own. A
+ * Student who has one is READY without any subject and without a complete
+ * school profile (the Independent Exam Student, e.g. PAA or a Saber 11
+ * retake). While the first-subject step is pending, Exam Preparation stays
+ * reachable so the Student can choose "Quiero prepararme para un examen"
+ * and create that target. No subject is ever created to satisfy the gate.
+ *
+ * Student Exam Journey -- entry UX (only with STUDENT_JOURNEY_V2=UX, `journeyUx`):
+ *   - an ACTIVE enrollment in an active class with a subject means the institution
+ *     already defines the Student's academic path: READY, never the profile wizard
+ *     (the Student is not asked for institution-owned facts);
+ *   - before any profile, Exam Preparation and the invitation inbox stay reachable,
+ *     so "Prepararme para un examen" never requires a school profile first.
+ *
  * Until then every Student route redirects to the current onboarding step.
  * The gate only applies when the request's effective workspace is STUDENT
  * (same resolution as the dashboard shell), so admin/parent/teacher/
@@ -21,6 +36,16 @@ import { WORKSPACE_PRIORITY, workspaceForRole, type Role, type Workspace } from 
 export const ACADEMIC_PROFILE_PATH = '/dashboard/profile';
 export const FIRST_SUBJECT_PATH = '/dashboard/onboarding';
 export const NEW_SUBJECT_PATH = '/dashboard/subjects/new';
+/** The exam-preparation intent of the onboarding ("Quiero prepararme para un examen"). */
+export const EXAM_PREPARATION_PATH = '/dashboard/exam-prep';
+export const NOTIFICATIONS_PATH = '/dashboard/notifications';
+
+/**
+ * SQL predicate (over `student_exam_profiles`) of a VALID EXAM TARGET. The ONE
+ * definition shared by the gate, the first destination and the onboarding
+ * bounce, so they can never disagree about whether a target exists.
+ */
+export const VALID_EXAM_TARGET_PREDICATE = `status <> 'ARCHIVED'`;
 
 /** /dashboard subtrees that belong to other workspaces and authorize themselves. */
 const NON_STUDENT_PREFIXES = ['/dashboard/admin', '/dashboard/parent', '/dashboard/teacher', '/dashboard/institution'];
@@ -56,7 +81,11 @@ export function isAcademicProfileComplete(p: AcademicProfileFields | null): bool
 
 export type StudentOnboardingStage = 'ACADEMIC_PROFILE' | 'FIRST_SUBJECT' | 'READY';
 
-export function studentOnboardingStage(profile: AcademicProfileFields | null, subjectCount: number): StudentOnboardingStage {
+export function studentOnboardingStage(profile: AcademicProfileFields | null, subjectCount: number, examTargetCount = 0, institutionalPathCount = 0): StudentOnboardingStage {
+  // J0: a valid exam target is enough on its own -- no subject, no school profile required.
+  if (examTargetCount > 0) return 'READY';
+  // J1 (entry UX): the institution defines the academic path -- nothing to ask the Student.
+  if (institutionalPathCount > 0) return 'READY';
   if (!isAcademicProfileComplete(profile)) return 'ACADEMIC_PROFILE';
   if (subjectCount < 1) return 'FIRST_SUBJECT';
   return 'READY';
@@ -68,6 +97,12 @@ export interface GateState {
   storedWorkspace: Workspace | null;
   profile: AcademicProfileFields | null;
   subjectCount: number;
+  /** Valid exam targets (`VALID_EXAM_TARGET_PREDICATE`). Absent = 0 (callers predating J0). */
+  examTargetCount?: number;
+  /** Active enrollments in active classes with a subject (the institution defines the path). */
+  institutionalPathCount?: number;
+  /** STUDENT_JOURNEY_V2=UX: the approved entry UX rules apply. Absent = false (unchanged behaviour). */
+  journeyUx?: boolean;
 }
 
 /** Redirect target for this request, or null to let it through. */
@@ -87,13 +122,17 @@ export function decideStudentOnboardingGate(pathname: string, state: GateState |
   });
   if (workspace !== 'STUDENT') return null;
 
-  const stage = studentOnboardingStage(state.profile, state.subjectCount);
+  const ux = state.journeyUx === true;
+  const stage = studentOnboardingStage(state.profile, state.subjectCount, state.examTargetCount ?? 0, ux ? state.institutionalPathCount ?? 0 : 0);
   if (stage === 'READY') return null;
 
   if (stage === 'ACADEMIC_PROFILE') {
-    return underPrefix(pathname, ACADEMIC_PROFILE_PATH) ? null : ACADEMIC_PROFILE_PATH;
+    // Entry UX: the first choice lives on the profile page; Exam Prep (Path B) and invitations stay reachable.
+    const allowedBeforeProfile = ux ? [ACADEMIC_PROFILE_PATH, EXAM_PREPARATION_PATH, NOTIFICATIONS_PATH] : [ACADEMIC_PROFILE_PATH];
+    return allowedBeforeProfile.some((p) => underPrefix(pathname, p)) ? null : ACADEMIC_PROFILE_PATH;
   }
-  // FIRST_SUBJECT: the profile may still be reviewed; the subject-creation flow stays reachable.
-  const allowed = [ACADEMIC_PROFILE_PATH, FIRST_SUBJECT_PATH, NEW_SUBJECT_PATH];
+  // FIRST_SUBJECT: the profile may still be reviewed; the subject-creation flow stays reachable,
+  // and so does the exam-preparation intent (J0): choosing an exam target needs no subject.
+  const allowed = [ACADEMIC_PROFILE_PATH, FIRST_SUBJECT_PATH, NEW_SUBJECT_PATH, EXAM_PREPARATION_PATH];
   return allowed.some((p) => underPrefix(pathname, p)) ? null : FIRST_SUBJECT_PATH;
 }

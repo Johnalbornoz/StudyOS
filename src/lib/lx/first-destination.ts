@@ -26,6 +26,12 @@ export interface LearnerSetupState {
    * subject first; that Student resumes in their exam preparation.
    */
   hasExamGoal?: boolean;
+  /**
+   * Entry UX (STUDENT_JOURNEY_V2=UX only): an active enrollment in a class with a subject.
+   * The institution already defines the path, so the Student goes to Today, never to the
+   * subject picker that would re-ask what the institution provided.
+   */
+  hasInstitutionalPath?: boolean;
 }
 
 export interface FirstDestination {
@@ -38,6 +44,7 @@ export const START_PATH = '/dashboard/today' as const;
 export const EXAM_PREPARATION_PATH = '/dashboard/exam-prep' as const;
 
 export function resolveFirstDestination(state: LearnerSetupState): FirstDestination {
+  if (!state.hasSubject && state.hasInstitutionalPath) return { path: START_PATH, reason: 'RESUME_TODAY' };
   if (!state.hasSubject) {
     if (state.hasExamGoal) return { path: EXAM_PREPARATION_PATH, reason: 'RESUME_EXAM_PREPARATION' };
     return { path: ONBOARDING_PATH, reason: 'ONBOARDING_NO_SUBJECT' };
@@ -51,6 +58,6 @@ export function resolveFirstDestination(state: LearnerSetupState): FirstDestinat
  * or null to stay.
  */
 export function onboardingRouteRedirect(state: LearnerSetupState): string | null {
-  if (state.hasSubject) return START_PATH;
+  if (state.hasSubject || state.hasInstitutionalPath) return START_PATH;
   return state.hasExamGoal ? EXAM_PREPARATION_PATH : null;
 }

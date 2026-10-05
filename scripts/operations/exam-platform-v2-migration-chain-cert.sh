@@ -2,9 +2,10 @@
 # Exam Platform V2 integration -- full migration chain on an EPHEMERAL local Postgres (never Neon, never hosted).
 #
 #   baseline + ledger -> the REAL governed runner (scripts/db-migrate.ts) -> db-status (0 pending / 0 drift)
-#   -> schema checks for 20261031 / 20261101 / 20261102 -> second db-migrate run (idempotent: nothing to apply)
+#   -> schema checks for 20261031 / 20261101 (QB) / 20261102 (QB) / 20261103 (Journey) -> second db-migrate run (idempotent)
 #   -> exam-platform-v2-integration-cert.ts (Saber V2.1 apply, real formInputs OFF vs SHADOW, QB targeting)
-#   -> Question Bank mock-certification CLI (read-only) for Saber.
+#   -> Question Bank mock-certification CLI (read-only) for Saber
+#   -> track-b-v2-apply --write + learning catalogue -> exam-platform-v2-journey-cert.ts (Student Journey V2, E1-E12).
 #
 # Usage: PG_BIN=/opt/homebrew/opt/postgresql@18/bin ./scripts/operations/exam-platform-v2-migration-chain-cert.sh [workdir]
 # TCP on 127.0.0.1 (a long scratchpad path does not fit a unix socket). Prints no credential.
@@ -57,6 +58,10 @@ echo "--- [4] schema checks"
 "${PSQL[@]}" -tAc "SELECT 'content_audience='||count(*) FROM information_schema.columns WHERE table_name='exam_instances' AND column_name='content_audience'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'constraints_col='||count(*) FROM information_schema.columns WHERE table_name='blueprint_objective_targets' AND column_name='constraints'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'constraints_check='||count(*) FROM pg_constraint WHERE conname='blueprint_objective_targets_constraints_check'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'review_checklist_col='||count(*) FROM information_schema.columns WHERE table_name='question_bank_reviews' AND column_name='review_checklist'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'journey_schedule_cols='||count(*) FROM information_schema.columns WHERE table_name='student_exam_profiles' AND column_name IN ('official_session_key','official_session_source','authoritative_exam_date','authoritative_exam_date_provenance','personal_target_date','estimated_exam_month','field_provenance')" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'journey_schedule_checks='||count(*) FROM pg_constraint WHERE conrelid='public.student_exam_profiles'::regclass AND conname IN ('student_exam_profiles_session_pair_check','student_exam_profiles_session_source_check','student_exam_profiles_session_key_format_check','student_exam_profiles_authoritative_date_pair_check','student_exam_profiles_authoritative_date_provenance_check','student_exam_profiles_estimated_month_format_check','student_exam_profiles_field_provenance_object_check')" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'ledger_202611='||string_agg(version||':'||name, ' ' ORDER BY version) FROM schema_migrations WHERE version LIKE '202611%'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'ledger_rows='||count(*)||' last='||max(version) FROM schema_migrations" "$DBNAME"
 echo "--- [5] second db-migrate run (idempotent)"
 npx tsx scripts/db-migrate.ts 2>&1 | tail -3
@@ -64,4 +69,11 @@ echo "--- [6] integration cert (Saber V2.1 apply, real formInputs OFF vs SHADOW,
 npx tsx --tsconfig tsconfig.json scripts/operations/exam-platform-v2-integration-cert.ts
 echo "--- [7] Question Bank mock certification (read-only) for Saber"
 npx tsx --tsconfig tsconfig.json scripts/operations/qb-mock-certification.ts --exam v2.saber11.math 2>&1 | tail -25
+echo "--- [8] V2 catalogue + structure (track-b-v2-apply --write) and learning catalogue (ephemeral only)"
+FP=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(require('crypto').createHash('sha256').update(u.hostname+'|'+u.pathname.slice(1)).digest('hex').slice(0,16))")
+"${PSQL[@]}" -c "INSERT INTO users (clerk_id, email, is_system) VALUES ('system:cert-editor', NULL, true), ('system:cert-reviewer', NULL, true) ON CONFLICT (clerk_id) DO NOTHING" "$DBNAME"
+TRACK_B_ALLOW_EPHEMERAL="$FP" npx tsx --tsconfig tsconfig.json scripts/operations/track-b-v2-apply.ts --write 2>&1 | tail -3
+TRACK_B_ALLOW_EPHEMERAL="$FP" npx tsx --tsconfig tsconfig.json scripts/operations/track-b-v2-learning-catalog.ts --write 2>&1 | tail -2 | cut -c1-300
+echo "--- [9] Student Journey V2 on the unified line (E1-E12)"
+npx tsx --tsconfig tsconfig.json scripts/operations/exam-platform-v2-journey-cert.ts
 echo "EXAM_PLATFORM_V2_MIGRATION_CHAIN_CERT = DONE"

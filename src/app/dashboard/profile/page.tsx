@@ -8,6 +8,10 @@ import { getAcademicProfile } from '@/services/academic-profile.service';
 import { getProfileCurriculum } from '@/services/academic-profile-catalogue.service';
 import { loadClassProgrammes } from '@/lib/exam-core/eligibility/academic-context';
 import AcademicProfileWizard from './AcademicProfileWizard';
+import { query } from '@/lib/db';
+import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { getStudentInstitutionalContext } from '@/lib/exam-journey/ux.server';
+import { EntryChoice, InstitutionalContextCard } from './InstitutionalContextCard';
 
 /**
  * Student Academic Profile. Once saved it is shown as a summary (never asked again
@@ -15,7 +19,7 @@ import AcademicProfileWizard from './AcademicProfileWizard';
  * Institution are listed beside it: authoritative for that class, never merged
  * into the personal profile; a different programme is shown as such.
  */
-export default async function AcademicProfilePage() {
+export default async function AcademicProfilePage({ searchParams }: { searchParams?: Promise<{ entry?: string }> } = {}) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return (
@@ -34,6 +38,56 @@ export default async function AcademicProfilePage() {
   const [profile, curriculum, classRows] = await Promise.all([getAcademicProfile(studentId), getProfileCurriculum(studentId), loadClassProgrammes(studentId).catch(() => [])]);
   const classCurricula = classRows.filter((r) => r.programme_id);
   const completed = !!profile?.profileCompleted;
+
+  // Student Exam Journey -- entry UX (STUDENT_JOURNEY_V2=UX only).
+  if (isStudentJourneyUxEnabled()) {
+    const context = await getStudentInstitutionalContext(studentId);
+    const institutionDefinesPath = context.institutions.some((i) => i.classes.some((c) => c.subject.value !== null));
+    if (institutionDefinesPath) {
+      // J1.3: what the institution provided is shown, never asked again; the Student's own
+      // declaration stays separate (and never overwrites the institution).
+      return (
+        <div className="acp-page">
+          <div className="acp-intro">
+            <h1>{t['profile.title']}</h1>
+          </div>
+          <InstitutionalContextCard context={context} labels={tr} />
+          {completed || context.conflicts.length > 0 ? (
+            <details className="card ui-disclosure jx-personal">
+              <summary className="jx-summary">{tr['jx.inst.personal.title']}</summary>
+              <div className="ui-disclosure-body">
+                <p className="ui-hint">{tr['jx.inst.personal.lead']}</p>
+                <AcademicProfileWizard
+                  t={tr}
+                  initial={{
+                    countryOfStudy: profile?.countryOfStudy ?? null,
+                    schoolYear: profile?.schoolYear ?? null,
+                    curriculumType: profile?.curriculumType ?? null,
+                    curriculumScope: curriculum?.scope ?? null,
+                    academicProgrammeId: curriculum?.programmeId ?? null,
+                    academicQualificationId: curriculum?.qualificationId ?? null,
+                    academicSubjectIds: curriculum?.subjects.map((x) => x.id) ?? [],
+                    academicYear: profile?.academicYear ?? null,
+                    profileCompleted: completed,
+                  }}
+                />
+              </div>
+            </details>
+          ) : null}
+        </div>
+      );
+    }
+    const entry = (await searchParams)?.entry;
+    const hasTarget = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }))).rows.length > 0;
+    if (!profile && !hasTarget && entry !== 'curriculum') {
+      // J3.3: ONE first decision before any form -- an exam needs no school profile.
+      return (
+        <div className="acp-page">
+          <EntryChoice labels={tr} />
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="acp-page">

@@ -2466,3 +2466,36 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .acp-class-list { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-sm); }
 .acp-conflict { background: var(--warning-subtle); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); list-style-position: inside; margin-left: calc(-1 * var(--space-4)); }
 .acp-change { align-self: flex-start; min-height: var(--touch-target); }
+
+/* Student Exam Journey V2 -- entry UX (J1.3 / J1.4 / J3.3 / J3.4 / J3.5). Tokens only: dark mode follows. */
+.jx-card { display: flex; flex-direction: column; gap: var(--space-3); }
+.jx-facts dd { color: var(--text-primary); }
+.jx-subjects { margin: 0; padding-left: var(--space-5); }
+.jx-notices { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.jx-notice { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--info-subtle); color: var(--text-primary); font-size: var(--fs-sm); }
+.jx-conflict { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--warning); border-radius: var(--radius-md); background: var(--warning-subtle); }
+.jx-conflict-list { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.jx-summary { min-height: var(--touch-target); }
+.jx-personal { margin-top: var(--space-4); }
+.jx-choices { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.jx-choice { display: flex; align-items: center; gap: var(--space-3); min-height: var(--touch-target); padding: 0 var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); cursor: pointer; }
+.jx-choice input { width: 20px; height: 20px; accent-color: var(--brand); }
+.jx-choice:has(input:checked) { border-color: var(--brand-ink); background: var(--brand-subtle); }
+.jx-choice:focus-within { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+.jx-date-input { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-top: var(--space-3); }
+.jx-date-input label, .jx-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.jx-date-input .ui-input, .jx-field .ui-input { min-height: var(--touch-target); }
+.jx-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border-default); overflow-x: auto; }
+.jx-tab { display: inline-flex; align-items: center; min-height: var(--touch-target); padding: 0 var(--space-4); color: var(--text-secondary); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+.jx-tab.is-active { color: var(--brand-ink); border-bottom-color: var(--brand-ink); }
+.jx-tab:focus-visible, .jx-back:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+.jx-target { display: flex; flex-direction: column; gap: var(--space-2); }
+.jx-exams-note { margin: 0; }
+.jx-discover-link { margin: 0; }
+.jx-suggestions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.jx-suggestion { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.jx-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.jx-back { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+@media (max-width: 480px) {
+  .jx-card .prep-cta, .jx-suggestion .prep-cta, .jx-form .prep-cta { width: 100%; }
+}

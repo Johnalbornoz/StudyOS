@@ -55,6 +55,12 @@ export interface LearnerNavInputs {
   notifCount: number;
   /** F14 -- pending Teacher-assigned interventions, badge count only (never a domain decision). */
   assignmentCount?: number;
+  /**
+   * Student Exam Journey (entry UX): at least one Exam Target is in ACTIVE preparation, as
+   * decided by the journey resolver (never by the mere existence of a target or a distant
+   * milestone). Absent / false = the UX-5 structure, unchanged.
+   */
+  examPrepPrimary?: boolean;
 }
 
 /**
@@ -79,6 +85,8 @@ export interface LearnerNavInputs {
  */
 export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
   const hasPendingAssignments = (inputs.assignmentCount ?? 0) > 0;
+  const examPrimary = inputs.examPrepPrimary === true;
+  const examPrep: LearnerNavItem = { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck', ...(examPrimary ? { mobileTab: true } : {}) };
   const assignments: LearnerNavItem = {
     key: 'assignments',
     href: '/dashboard/assignments',
@@ -99,6 +107,7 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
         mobileTab: true,
         activePrefixes: ['/dashboard/path', '/dashboard/knowledge', '/dashboard/subjects'],
       },
+      ...(examPrimary ? [{ ...examPrep, activePrefixes: ['/dashboard/exams'] }] : []),
       { key: 'progress', href: '/dashboard', labelKey: 'nav.progress', iconKey: 'LayoutDashboard', mobileTab: true },
       ...(hasPendingAssignments ? [assignments] : []),
     ],
@@ -110,7 +119,7 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
     items: [
       { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },
       { key: 'myPlan', href: '/dashboard/plan', labelKey: 'nav.myPlan', iconKey: 'Map' },
-      { key: 'examPrep', href: '/dashboard/exam-prep', labelKey: 'nav.examPrep', iconKey: 'ClipboardCheck' },
+      ...(examPrimary ? [] : [examPrep]),
       ...(hasPendingAssignments ? [] : [assignments]),
       { key: 'studyPlan', href: '/dashboard/study-plan', labelKey: 'nav.studyPlan', iconKey: 'ListChecks' },
       { key: 'debt', href: '/dashboard/learning-debt', labelKey: 'nav.debt', iconKey: 'RotateCcw', badge: inputs.debtCount },
