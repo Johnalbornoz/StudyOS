@@ -200,6 +200,7 @@ Además:
 - **Las mismas variantes se derivan para todas las configs:** `PRACTICE` y `DIAGNOSTIC` comparten estructura porque así funciona hoy el runtime. Si en el futuro un diagnóstico necesita estructura propia, será una variante declarada.
 - **El alcance `SECTION` no restringe celdas:** BP-0 no asocia celdas a secciones oficiales, así que la sección queda en la identidad y la huella pero no filtra ítems.
 - **La identidad del examen sigue siendo la clave de configuración.** `v2.ib.math-aa-hl` (escrita a mano, con banco y sin IA) y `v2.ib.s.math-aa-hl` (solo estructura, con IA) son **el mismo examen con dos identidades**. Unificarlas pide una identidad canónica independiente de la configuración.
+  - **Corrección (BP-3, 2026-10-05):** `v2.ib.s.math-aa-hl` no forma parte de las 88 configuraciones aplicadas; `ibStructureConfigs()` la omite por `FULL_CONFIG_KEYS`. El alias existe entre la config aplicada y la estructura generada con fuentes. Ver [BP3 §7](BP3_RUNTIME_RESOLUTION_SHADOW.md).
 - **Ninguna configuración actual alcanza la longitud oficial:** 0 `FULL_MOCK` derivados. Todos los mocks actuales son `REDUCED_MOCK` declarados como tales.
 - **Ruta escalonada:** en AICE 9709 A, la ruta escalonada lista dos veces el mismo conjunto {p1,p3,p4,p5}, que solo difieren en el orden por convocatoria. Se colapsan en una sola estructura (`EQUIVALENT_ROUTE_SETS_COLLAPSED`); el escalonamiento es secuencia de sesiones, no estructura.
 

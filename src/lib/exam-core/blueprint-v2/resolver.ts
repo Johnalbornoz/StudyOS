@@ -44,6 +44,8 @@ export interface ResolveBlueprintRequest {
   route?: { routeKey: string; componentSet?: string[] };
   sessionKey?: string;
   variantKey?: string;
+  /** BP-3 (additive): the exact components the flow uses (e.g. exam_instances.component_ids), when it knows them but not the route key. */
+  componentKeys?: string[];
 }
 
 export interface BlueprintCatalog {
@@ -96,6 +98,7 @@ export function resolveBlueprint(catalog: BlueprintCatalog, req: ResolveBlueprin
     }
     if (req.sessionKey && v.sessionApplicability.type === 'SESSIONS' && !v.sessionApplicability.sessionKeys.includes(req.sessionKey)) reasons.push(`SESSION_NOT_APPLICABLE: ${v.sessionApplicability.sessionKeys.join(', ')}`);
     if (req.variantKey && id.variant.key !== req.variantKey) reasons.push(`VARIANT_MISMATCH: ${id.variant.key}`);
+    if (req.componentKeys && sortedSet(req.componentKeys) !== sortedSet(v.componentKeys)) reasons.push(`COMPONENTS_MISMATCH: ${sortedSet(v.componentKeys)}`);
     return { variant: v, reasons };
   });
   const listed = candidates.map((c) => ({ identityKey: c.variant.identityKey, compatible: c.reasons.length === 0, reasons: c.reasons }));
