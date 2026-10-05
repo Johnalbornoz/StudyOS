@@ -20,6 +20,7 @@ import { db } from '@/lib/db';
 import { bindingDomainAllowed, curriculumContextLabel, rankCurriculumCandidates } from './curriculum-identity';
 import { canonicalConceptLabels } from '@/lib/learning-plan/labels';
 import { recordGovernanceEvent } from './academic-governance';
+import { curriculumScope, type CurriculumScope } from '@/lib/curriculum/catalog-scope';
 
 export const CLASSIFICATIONS = ['REQUIRED', 'RECOMMENDED', 'OPTIONAL', 'SUPPLEMENTAL'] as const;
 export type Classification = (typeof CLASSIFICATIONS)[number];
@@ -72,6 +73,8 @@ export interface CurriculumSourceOption {
   country: string | null;
   sourceType: string;
   authorityLevel: string | null;
+  /** NATIONAL (a country's authority) or INTERNATIONAL (IB, Cambridge, ...), derived from catalogue metadata. */
+  scope: CurriculumScope;
   structureImported: boolean;
   objectives: number;
   canonicalSubjectId: string;
@@ -112,6 +115,7 @@ export async function listCurriculumSourceOptions(): Promise<CurriculumSourceOpt
     country: x.country,
     sourceType: x.source_type,
     authorityLevel: x.authority_level,
+    scope: curriculumScope({ country: x.country, sourceType: x.source_type }),
     structureImported: x.source_locator !== 'STRUCTURE_NOT_IMPORTED' && x.objectives > 0,
     objectives: x.objectives,
     canonicalSubjectId: x.canonical_subject_id,
