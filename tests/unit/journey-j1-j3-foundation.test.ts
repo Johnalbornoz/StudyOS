@@ -364,8 +364,8 @@ describe('shadow coverage (local, deterministic; NOT hosted)', () => {
 });
 
 // ------------------------------------------------------------------ migration contract
-describe('migration 20261101_1000 -- additive only', () => {
-  const sql = read('database/migrations/20261101_1000_student_exam_target_schedule.sql');
+describe('migration 20261103_1000 -- additive only', () => {
+  const sql = read('database/migrations/20261103_1000_student_exam_target_schedule.sql');
   const code = sql.replace(/--.*$/gm, '');
   it('adds nullable / defaulted columns and constraints on the new columns only; drops, renames and backfills nothing', () => {
     expect(code).not.toMatch(/\bDROP\b|\bRENAME\b|\bUPDATE\b|\bDELETE\b|\bTRUNCATE\b/i);

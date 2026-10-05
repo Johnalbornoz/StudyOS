@@ -94,7 +94,7 @@ Item 4 is the one addition to the approved list of six. It exists so that the me
 - **Without any date the target stays valid:** blocker `EXAM_DATE_UNKNOWN`, next action `SET_EXAM_DATE`. The Student is never sent back to onboarding (T10).
 - `validateTargetSchedule` (for the future write path) **refuses** and never fixes: a personal date after the sitting, an estimate next to an exact date, or malformed values.
 
-## 6. Migration — `20261101_1000_student_exam_target_schedule.sql`
+## 6. Migration — `20261103_1000_student_exam_target_schedule.sql`
 
 **Why it is needed:**
 - `exam_date` is one unsourced date.
