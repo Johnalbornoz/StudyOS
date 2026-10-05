@@ -12,6 +12,8 @@
 import type { ReadinessState } from '@/lib/exam-core/catalog/readiness';
 import type { Capability, UnavailableReason } from '@/lib/exam-core/objectives/capabilities';
 import type { RecommendationAction, RequirementStatus } from '@/lib/exam-core/objectives/preparation-plan';
+import type { ContextField, InstitutionalContextSummary } from './institutional-context';
+import type { TargetDateSource, TargetScheduleFacts } from './exam-target';
 
 // ------------------------------------------------------------------ phases / states (design §B.3)
 
@@ -67,7 +69,9 @@ export type BlockerCode =
   | 'NO_CONCEPT_MAPPINGS' // no reviewed requirement -> concept links: no learning bridge
   | 'PREDICTION_MODEL_UNAVAILABLE' // O-02 NO_MODEL: no projection of any kind
   | 'PREDICTION_NOT_READY' // a model exists, the evidence does not support a projection yet
-  | 'REQUIRED_COMPONENT_MISSING'; // a non-simulated component (e.g. IA) has no usable estimate
+  | 'REQUIRED_COMPONENT_MISSING' // a non-simulated component (e.g. IA) has no usable estimate
+  | 'INSTITUTION_CONTEXT_INCOMPLETE' // J1: a fact the target needs is institution-owned and missing (never asked to the Student)
+  | 'ACADEMIC_CONTEXT_CONFLICT'; // J1: institution and Student (or two institutional sources) disagree on a fact the target needs
 
 export type BlockerScope = 'TARGET' | 'STRUCTURE' | 'PRACTICE' | 'DIAGNOSTIC' | 'MOCK' | 'LEARNING_BRIDGE' | 'PREDICTION';
 export type DetailValue = string | number | boolean | null;
@@ -107,6 +111,8 @@ export interface LearnerFacts {
     activeEnrollments: number;
     classProgrammes: Array<{ classId: string; programmeId: string | null; academicSubjectId: string | null }>;
     assignedObjectiveKeys: string[];
+    /** J1.2: the resolved institutional context (status, missing links, conflicts, provenance). Absent = not loaded. */
+    context?: InstitutionalContextSummary;
   };
   subjectCount: number;
   examTargetCount: number;
@@ -134,6 +140,14 @@ export interface ExamTargetFacts {
   optedInEarly: boolean;
   previousResult: { scale: string; value: string; provenance: ResultProvenance } | null;
   actualResult: { scale: string; value: string; provenance: ResultProvenance } | null;
+  /**
+   * J3.2: the target's schedule facts (official session, authoritative / Student-reported exam
+   * date, personal target date, estimated month). Absent = legacy: `examDate` is both the sitting
+   * and the planning date (pre-J3 behaviour, unchanged).
+   */
+  schedule?: TargetScheduleFacts;
+  /** J1.2: institutional context fields this target needs to resolve (none today). */
+  contextDependencies?: ContextField[];
 }
 
 /** Academic facts from the catalogue / Blueprint (what the exam IS). */
@@ -279,6 +293,13 @@ export type ReasonCode =
   | 'EXAM_SAT_NOT_CONFIRMED'
   | 'FINAL_WINDOW'
   | 'READY_WINDOW'
+  // schedule (J3.2)
+  | 'DATE_NOT_OFFICIAL'
+  | 'DATE_PRECISION_MONTH'
+  | 'OFFICIAL_SESSION_WITHOUT_DATE'
+  // institutional context (J1.2)
+  | 'INSTITUTION_CONTEXT_INCOMPLETE'
+  | 'ACADEMIC_CONTEXT_CONFLICT'
   // evidence
   | 'LEARNING_EVIDENCE_UNAVAILABLE'
   | 'NO_MAPPED_REQUIREMENTS'
@@ -377,5 +398,21 @@ export interface StudentExamJourneyResolution {
   predictionStatus: PredictionStatus;
   /** O-06: the recorded exam result with its provenance; `verified` only for verified provenances. */
   examResult: { provenance: ResultProvenance; verified: boolean } | null;
+  /** J1.2: the institutional context the learner was resolved with (null = not loaded / not affiliated data absent). */
+  academicContext: {
+    status: InstitutionalContextSummary['status'];
+    confidence: InstitutionalContextSummary['confidence'];
+    completeness: 'COMPLETE' | 'PARTIAL' | 'NONE';
+    missing: string[];
+    conflicts: string[];
+  } | null;
+  /** J3.2: which date sources drove the resolution (null for no target). */
+  schedule: {
+    targetDateSource: TargetDateSource;
+    officialSession: 'KNOWN' | 'UNKNOWN';
+    sittingDateSource: TargetDateSource | null;
+    planningDateSource: TargetDateSource | null;
+    planningPrecision: 'DAY' | 'MONTH' | null;
+  } | null;
   resolutionReasons: ResolutionReason[];
 }

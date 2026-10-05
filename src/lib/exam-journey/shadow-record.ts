@@ -8,6 +8,7 @@
  * through it.
  */
 import type { StudentExamJourneyResolution } from './types';
+import { INSTITUTIONAL_CONTEXT_RESOLVER_VERSION, type InstitutionalContextSummary } from './institutional-context';
 
 export const JOURNEY_SHADOW_EVENT = 'student_exam_journey_shadow';
 export const JOURNEY_SHADOW_LOG_PREFIX = '[journey-shadow]';
@@ -61,5 +62,42 @@ export function buildJourneyShadowRecord(resolution: StudentExamJourneyResolutio
 
 /** One single-line JSON record on stdout (captured by the platform's runtime logs). */
 export function emitJourneyShadowRecord(record: JourneyShadowRecord, log: (line: string) => void = console.info): void {
+  log(`${JOURNEY_SHADOW_LOG_PREFIX} ${JSON.stringify(record)}`);
+}
+
+// ------------------------------------------------------------------ J1.2: institutional context (one per Student)
+
+export const INSTITUTION_CONTEXT_SHADOW_EVENT = 'student_institution_context_shadow';
+
+/** Built field by field from the summary: codes, enums and counts only -- no ids, names or values. */
+export interface InstitutionContextShadowRecord {
+  event: typeof INSTITUTION_CONTEXT_SHADOW_EVENT;
+  resolver_version: string;
+  as_of: string;
+  route: string;
+  institution_context_status: string;
+  confidence: string;
+  defines_academic_path: boolean;
+  missing_links: string[];
+  conflicts: string[];
+  provenance_summary: Record<string, number>;
+}
+
+export function buildInstitutionContextShadowRecord(summary: InstitutionalContextSummary, route: string, asOf: string): InstitutionContextShadowRecord {
+  return {
+    event: INSTITUTION_CONTEXT_SHADOW_EVENT,
+    resolver_version: INSTITUTIONAL_CONTEXT_RESOLVER_VERSION,
+    as_of: asOf,
+    route: route.slice(0, 80),
+    institution_context_status: summary.status,
+    confidence: summary.confidence,
+    defines_academic_path: summary.definesAcademicPath,
+    missing_links: [...new Set(summary.missing.map((m) => `${m.code}:${m.owner}:${m.severity}`))].sort(),
+    conflicts: [...new Set(summary.conflicts.map((c) => `${c.field}:${c.kind}`))].sort(),
+    provenance_summary: Object.fromEntries(Object.entries(summary.provenanceSummary).sort(([a], [b]) => a.localeCompare(b))) as Record<string, number>,
+  };
+}
+
+export function emitInstitutionContextShadowRecord(record: InstitutionContextShadowRecord, log: (line: string) => void = console.info): void {
   log(`${JOURNEY_SHADOW_LOG_PREFIX} ${JSON.stringify(record)}`);
 }

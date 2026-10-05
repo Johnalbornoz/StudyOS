@@ -22,6 +22,7 @@
 import { atLeast } from '@/lib/exam-core/catalog/readiness';
 import { calendarDaysUntil } from '@/lib/experience/goal';
 import { JOURNEY_POLICY_V1, preparationWindowDays, type JourneyPolicy } from './policy';
+import { resolveTargetSchedule } from './exam-target';
 import {
   STATE_PHASE,
   type ExamInstanceFact,
@@ -53,6 +54,16 @@ const share = (part: number, whole: number) => (whole > 0 ? part / whole : null)
 // ------------------------------------------------------------------ learner layer
 
 export function resolveLearner(learner: LearnerFacts): { learner: LearnerResolution; reasons: ResolutionReason[] } {
+  const ctx = learner.institution.context;
+  if (ctx && ctx.definesAcademicPath && (ctx.status === 'COMPLETE' || ctx.status === 'INCOMPLETE' || ctx.status === 'CONFLICT')) {
+    // J1.2: the institution defines the academic path even when a link (e.g. curriculum -> programme)
+    // is missing: that gap is the institution's to fill, never a question for the Student.
+    const reasons: ResolutionReason[] = [{ code: 'ACADEMIC_CONTEXT_FROM_INSTITUTION', detail: { status: ctx.status, confidence: ctx.confidence } }];
+    const blocking = ctx.missing.filter((m) => m.severity === 'BLOCKING' && m.owner === 'INSTITUTION');
+    if (blocking.length) reasons.push({ code: 'INSTITUTION_CONTEXT_INCOMPLETE', detail: { missing: [...new Set(blocking.map((m) => m.code))].sort().join(',') } });
+    if (ctx.conflicts.length) reasons.push({ code: 'ACADEMIC_CONTEXT_CONFLICT', detail: { fields: [...new Set(ctx.conflicts.map((c) => `${c.field}:${c.kind}`))].sort().join(',') } });
+    return { learner: { state: 'ACADEMIC_PATH_DEFINED', contextSource: 'INSTITUTION', requiresAcademicInput: false }, reasons };
+  }
   const institutionProgrammes = learner.institution.classProgrammes.filter((c) => c.programmeId);
   if (learner.institution.activeEnrollments > 0 && institutionProgrammes.length > 0) {
     // P1: the institution already told us -- the Student is never asked again.
@@ -147,6 +158,7 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
   const { learner, reasons: learnerReasons } = resolveLearner(facts.learner);
   reasons.push(...learnerReasons);
 
+  let scheduleSummary: StudentExamJourneyResolution['schedule'] = null;
   const out = (state: JourneyState, action: { kind: NextActionKind; mockNumber?: number; reasonCode: ReasonCode }, statuses: Pick<StudentExamJourneyResolution, 'readinessStatus' | 'mockStatus' | 'predictionStatus'>): StudentExamJourneyResolution => ({
     resolverVersion: JOURNEY_RESOLVER_VERSION,
     policyVersion: policy.version,
@@ -160,6 +172,8 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
     recommendedNextAction: action,
     ...statuses,
     examResult: target?.actualResult ? { provenance: target.actualResult.provenance, verified: VERIFIED_RESULT_PROVENANCES.includes(target.actualResult.provenance) } : null,
+    academicContext: academicContext(facts),
+    schedule: scheduleSummary,
     resolutionReasons: reasons,
   });
 
@@ -183,7 +197,25 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
   const lastMock = mocks[mocks.length - 1] ?? null;
   const diagnosticDone = instances.some((i) => i.purpose === 'DIAGNOSTIC' && i.status === 'COMPLETED');
   const engaged = instances.some((i) => i.status === 'IN_PROGRESS' || i.status === 'COMPLETED');
-  const daysToExam = target.examDate ? calendarDaysUntil(day(target.examDate), facts.asOf) : null;
+  // J3.2 -- schedule. Without schedule facts (legacy), `examDate` is both the sitting and the planning date.
+  const sched = target.schedule ? resolveTargetSchedule(target.schedule) : null;
+  const legacyDate = target.examDate ? day(target.examDate) : null;
+  const sittingIso = sched ? sched.sittingDate?.value ?? null : legacyDate;
+  const planning = sched ? sched.planningDate : legacyDate ? { value: legacyDate, precision: 'DAY' as const, source: 'STUDENT_REPORTED_EXAM_DATE' as const, official: false } : null;
+  // A month estimate is never turned into a date: only its first day bounds the pacing arithmetic (earliest = conservative).
+  const planningIso = planning ? (planning.precision === 'MONTH' ? `${planning.value}-01` : planning.value) : null;
+  /** Days to the date preparation is paced against (window, final preparation, mock timing). */
+  const daysToExam = planningIso ? calendarDaysUntil(planningIso, facts.asOf) : null;
+  /** Days to the sitting itself (exam-ready, exam completed). Never a personal or estimated date. */
+  const daysToSitting = sittingIso ? calendarDaysUntil(sittingIso, facts.asOf) : null;
+  scheduleSummary = sched
+    ? { targetDateSource: sched.targetDateSource, officialSession: sched.officialSession === 'UNKNOWN' ? 'UNKNOWN' : 'KNOWN', sittingDateSource: sched.sittingDate?.source ?? null, planningDateSource: sched.planningDate?.source ?? null, planningPrecision: sched.planningDate?.precision ?? null }
+    : { targetDateSource: legacyDate ? 'STUDENT_REPORTED_EXAM_DATE' : 'UNKNOWN', officialSession: 'UNKNOWN', sittingDateSource: legacyDate ? 'STUDENT_REPORTED_EXAM_DATE' : null, planningDateSource: legacyDate ? 'STUDENT_REPORTED_EXAM_DATE' : null, planningPrecision: legacyDate ? 'DAY' : null };
+  if (sched) {
+    if (sched.planningDate && !sched.planningDate.official) reasons.push({ code: 'DATE_NOT_OFFICIAL', detail: { source: sched.planningDate.source } });
+    if (sched.planningDate?.precision === 'MONTH') reasons.push({ code: 'DATE_PRECISION_MONTH' });
+    if (sched.officialSession !== 'UNKNOWN' && !sched.sittingDate?.source.endsWith('SESSION')) reasons.push({ code: 'OFFICIAL_SESSION_WITHOUT_DATE', detail: { source: sched.officialSession.source } });
+  }
   const institutionLinked = target.source === 'INSTITUTION' || target.source === 'INSTITUTION_ASSIGNMENT' || target.confirmation === 'ASSIGNED';
 
   if (target.confirmation === 'ASSIGNED') reasons.push({ code: 'TARGET_ASSIGNED_BY_INSTITUTION' });
@@ -235,6 +267,13 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
   if (facts.exam.openAttempt) {
     blockers.push({ code: 'ATTEMPT_IN_PROGRESS', scope: 'MOCK' });
     reasons.push({ code: 'OPEN_ATTEMPT' });
+  }
+
+  // J1.2 -- a target that needs an institutional fact the institution has not provided (or that is in conflict).
+  const ctxSummary = facts.learner.institution.context;
+  for (const field of target.contextDependencies ?? []) {
+    if (ctxSummary?.conflicts.some((c) => c.field === field)) blockers.push({ code: 'ACADEMIC_CONTEXT_CONFLICT', scope: 'TARGET', detail: { field } });
+    else if (ctxSummary?.missingFields.includes(field)) blockers.push({ code: 'INSTITUTION_CONTEXT_INCOMPLETE', scope: 'TARGET', detail: { field } });
   }
 
   // ---------------------------------------------------------------- statuses
@@ -293,14 +332,14 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
     return out('RESULT_RECORDED', { kind: 'REVIEW_RESULT', reasonCode: 'ACTUAL_RESULT_RECORDED' }, statuses);
   }
   if (unconfirmed) return out('FUTURE_EXAM_IDENTIFIED', { kind: 'CONFIRM_TARGET', reasonCode: 'TARGET_UNCONFIRMED' }, statuses);
-  if ((daysToExam !== null && daysToExam < 0) || target.status === 'COMPLETED') {
+  if ((daysToSitting !== null && daysToSitting < 0) || target.status === 'COMPLETED') {
     reasons.push({ code: 'EXAM_DATE_PASSED' });
     const sat = target.satConfirmed || target.status === 'COMPLETED';
     if (!sat) reasons.push({ code: 'EXAM_SAT_NOT_CONFIRMED' });
     return out('EXAM_COMPLETED', sat ? { kind: 'RECORD_RESULT', reasonCode: 'EXAM_DATE_PASSED' } : { kind: 'CONFIRM_EXAM_SAT', reasonCode: 'EXAM_SAT_NOT_CONFIRMED' }, statuses);
   }
-  if (daysToExam !== null && daysToExam <= policy.readyWindowDays) {
-    reasons.push({ code: 'READY_WINDOW', detail: { daysToExam } });
+  if (daysToSitting !== null && daysToSitting <= policy.readyWindowDays) {
+    reasons.push({ code: 'READY_WINDOW', detail: { daysToExam: daysToSitting } });
     return out('EXAM_READY', resume ?? { kind: 'EXAM_DAY_LOGISTICS', reasonCode: 'READY_WINDOW' }, statuses);
   }
   if (daysToExam !== null && daysToExam <= policy.finalWindowDays) {
@@ -394,6 +433,18 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
   }
   if (activitySince) return out('REINFORCEMENT_ACTIVE', resume ?? nextMock ?? { kind: 'REINFORCE_GAPS', reasonCode: 'ACTIVITY_SINCE_LAST_MOCK' }, statuses);
   return out('MOCK_2_COMPLETED', resume ?? { kind: 'REVIEW_MOCK_RESULT', reasonCode: 'MOCK_COMPLETED' }, statuses);
+}
+
+function academicContext(facts: StudentExamJourneyFacts): StudentExamJourneyResolution['academicContext'] {
+  const ctx = facts.learner.institution.context;
+  if (!ctx) return null;
+  return {
+    status: ctx.status,
+    confidence: ctx.confidence,
+    completeness: ctx.status === 'COMPLETE' ? 'COMPLETE' : ctx.status === 'INCOMPLETE' || ctx.status === 'CONFLICT' ? 'PARTIAL' : 'NONE',
+    missing: [...new Set(ctx.missing.filter((m) => m.severity === 'BLOCKING').map((m) => m.code))].sort(),
+    conflicts: [...new Set(ctx.conflicts.map((c) => `${c.field}:${c.kind}`))].sort(),
+  };
 }
 
 /** Preparation activity after the last mock: a completed non-mock instance, or learning on the target's concepts. */

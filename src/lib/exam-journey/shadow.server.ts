@@ -11,12 +11,16 @@ import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { isStudentJourneyShadowEnabled } from './feature-flag';
 import { loadStudentExamJourneyFacts } from './facts.server';
 import { resolveStudentExamJourney } from './resolver';
-import { buildJourneyShadowRecord, emitJourneyShadowRecord } from './shadow-record';
+import { buildInstitutionContextShadowRecord, buildJourneyShadowRecord, emitInstitutionContextShadowRecord, emitJourneyShadowRecord } from './shadow-record';
 import type { StudentExamJourneyResolution } from './types';
 
 export async function resolveStudentExamJourneys(studentId: string, asOf: string): Promise<StudentExamJourneyResolution[]> {
+  return (await resolveWithContext(studentId, asOf)).resolutions;
+}
+
+async function resolveWithContext(studentId: string, asOf: string) {
   const bundles = await loadStudentExamJourneyFacts(studentId, asOf);
-  return bundles.map((facts) => resolveStudentExamJourney(facts));
+  return { resolutions: bundles.map((facts) => resolveStudentExamJourney(facts)), context: bundles[0]?.learner.institution.context ?? null };
 }
 
 export async function runStudentExamJourneyShadow(
@@ -27,8 +31,10 @@ export async function runStudentExamJourneyShadow(
   if (!isStudentJourneyShadowEnabled(opts.env)) return null;
   try {
     const asOf = opts.asOf ?? new Date().toISOString().slice(0, 10);
-    const resolutions = await resolveStudentExamJourneys(studentId, asOf);
+    const { resolutions, context } = await resolveWithContext(studentId, asOf);
     for (const resolution of resolutions) emitJourneyShadowRecord(buildJourneyShadowRecord(resolution, route), opts.log);
+    // J1.2: one institutional-context line per Student (only when the context was loaded).
+    if (context) emitInstitutionContextShadowRecord(buildInstitutionContextShadowRecord(context, route, asOf), opts.log);
     return resolutions;
   } catch (error) {
     logOperationalWarning({ subsystem: 'student-exam-journey', operation: 'shadow-resolve', error, context: { route } });

@@ -29,6 +29,9 @@ import type { PreparationPlan } from '@/lib/exam-core/objectives/preparation-pla
 import { learningFactsFromPlan } from './plan-facts';
 import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
 import type { StudentExamProfile } from '@/lib/assessment/types';
+import { INSTITUTIONAL_ENROLLMENTS_SQL, studentDeclaredContext, toEnrollmentFact } from './institutional-context.server';
+import { resolveInstitutionalAcademicContext, summariseInstitutionalContext } from './institutional-context';
+import { scheduleFactsFromRow, type ExamTargetRow } from './exam-target';
 import type {
   BlueprintReadinessFacts,
   ContentReadinessFacts,
@@ -43,13 +46,18 @@ import type {
 const NO_PREDICTION_MODEL: PredictionCapabilityFacts = { modelClass: 'NO_MODEL', components: [], estimates: [] };
 
 export async function loadLearnerFacts(studentId: string, examTargetCount: number): Promise<LearnerFacts> {
-  const [profile, curriculum, classRows, assignments, subjects] = await Promise.all([
+  const [profile, curriculum, classRows, assignments, subjects, enrollments] = await Promise.all([
     getAcademicProfile(studentId).catch(() => null),
     getProfileCurriculum(studentId).catch(() => null),
     loadClassProgrammes(studentId),
     loadClassExamAssignmentsForStudent(studentId),
     db.query(`SELECT count(*)::int AS n FROM subjects WHERE student_id = $1`, [studentId]),
+    db.query(INSTITUTIONAL_ENROLLMENTS_SQL, [studentId]),
   ]);
+  // J1.2: the institutional context (two layers, provenance, missing links, conflicts) -- summary only.
+  const context = summariseInstitutionalContext(
+    resolveInstitutionalAcademicContext({ enrollments: enrollments.rows.map(toEnrollmentFact), student: studentDeclaredContext(profile, curriculum) })
+  );
   const enrolledClasses = new Set([...classRows.map((r) => r.class_id), ...assignments.map((a) => a.classId)]);
   return {
     academicProfile: profile
@@ -65,6 +73,7 @@ export async function loadLearnerFacts(studentId: string, examTargetCount: numbe
       activeEnrollments: enrolledClasses.size,
       classProgrammes: classRows.map((r) => ({ classId: r.class_id, programmeId: r.programme_id, academicSubjectId: r.academic_subject_id })),
       assignedObjectiveKeys: [...new Set(assignments.map((a) => a.objectiveKey))],
+      context,
     },
     subjectCount: subjects.rows[0]?.n ?? 0,
     examTargetCount,
@@ -146,7 +155,7 @@ export function toInstanceFact(row: any): ExamInstanceFact {
   };
 }
 
-function targetFacts(profile: StudentExamProfile | null, objective: ExamObjective | null, objectiveKey: string, assignedKeys: Set<string>): ExamTargetFacts {
+function targetFacts(profile: StudentExamProfile | null, objective: ExamObjective | null, objectiveKey: string, assignedKeys: Set<string>, row: ExamTargetRow | null): ExamTargetFacts {
   const assigned = profile?.source === 'INSTITUTION' || assignedKeys.has(objectiveKey);
   return {
     examTargetId: profile?.id ?? null,
@@ -164,11 +173,15 @@ function targetFacts(profile: StudentExamProfile | null, objective: ExamObjectiv
     optedInEarly: false,
     previousResult: null,
     actualResult: null,
+    // J3.2: schedule facts from the stored row (official session / authoritative / Student-reported / personal / estimate).
+    schedule: scheduleFactsFromRow(row ?? { id: profile?.id ?? '' }),
+    // J1.2: no target derives an institutional fact today; the hook exists for the ones that will.
+    contextDependencies: [],
   };
 }
 
-async function factsForTarget(studentId: string, asOf: string, learner: LearnerFacts, profile: StudentExamProfile | null, objective: ExamObjective | null, objectiveKey: string): Promise<StudentExamJourneyFacts> {
-  const target = targetFacts(profile, objective, objectiveKey, new Set(learner.institution.assignedObjectiveKeys));
+async function factsForTarget(studentId: string, asOf: string, learner: LearnerFacts, profile: StudentExamProfile | null, objective: ExamObjective | null, objectiveKey: string, row: ExamTargetRow | null): Promise<StudentExamJourneyFacts> {
+  const target = targetFacts(profile, objective, objectiveKey, new Set(learner.institution.assignedObjectiveKeys), row);
   if (!objective) {
     // The target names no objective of the governed catalogue: nothing is known about the exam.
     return { asOf, learner, target, blueprint: null, content: null, learning: null, exam: { instances: [], openAttempt: false }, prediction: NO_PREDICTION_MODEL };
@@ -200,10 +213,16 @@ export async function loadStudentExamJourneyFacts(studentId: string, asOf: strin
   const objectives = await Promise.all(profiles.map((p) => profileObjective(p).catch(() => null)));
   const preparedKeys = new Set(profiles.map((p, i) => objectives[i]?.key ?? p.objectiveKey ?? '').filter(Boolean));
   const pendingAssignments = learner.institution.assignedObjectiveKeys.filter((k) => !preparedKeys.has(k));
+  // Whole rows as JSON: columns a database has not migrated yet read as absent (UNKNOWN), never as an error.
+  const rows = new Map<string, ExamTargetRow>(
+    profiles.length
+      ? (await db.query(`SELECT to_jsonb(p) AS row FROM student_exam_profiles p WHERE p.id = ANY($1::uuid[])`, [profiles.map((p) => p.id)])).rows.map((r: any) => [r.row.id, r.row as ExamTargetRow])
+      : []
+  );
 
   const bundles = await Promise.all([
-    ...profiles.map((p, i) => factsForTarget(studentId, asOf, learner, p, objectives[i], objectives[i]?.key ?? p.objectiveKey ?? `exam-definition:${p.examDefinitionId}`)),
-    ...pendingAssignments.map((key) => factsForTarget(studentId, asOf, learner, null, objectiveByKey(key), key)),
+    ...profiles.map((p, i) => factsForTarget(studentId, asOf, learner, p, objectives[i], objectives[i]?.key ?? p.objectiveKey ?? `exam-definition:${p.examDefinitionId}`, rows.get(p.id) ?? null)),
+    ...pendingAssignments.map((key) => factsForTarget(studentId, asOf, learner, null, objectiveByKey(key), key, null)),
   ]);
   if (bundles.length > 0) return bundles;
   return [{ asOf, learner, target: null, blueprint: null, content: null, learning: null, exam: { instances: [], openAttempt: false }, prediction: NO_PREDICTION_MODEL }];
