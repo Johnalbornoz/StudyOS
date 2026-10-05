@@ -1,6 +1,6 @@
 /**
- * Blueprint Engine V2 -- BP-0 foundation + BP-1 exam definition / session / outcome (shadow only; no runtime consumer).
- * Spec: docs/exams/blueprint-v2/EXAM_BLUEPRINT_ENGINE_V2_SPEC.md; blocks: BP0_FOUNDATION.md, BP1_EXAM_DEFINITION_SESSION_OUTCOME.md.
+ * Blueprint Engine V2 -- BP-0 foundation + BP-1 exam definition / session / outcome + BP-2 variants / resolution (shadow only; no runtime consumer).
+ * Spec: docs/exams/blueprint-v2/EXAM_BLUEPRINT_ENGINE_V2_SPEC.md; blocks: BP0_FOUNDATION.md, BP1_EXAM_DEFINITION_SESSION_OUTCOME.md, ../BP2_BLUEPRINT_VARIANTS_CARDINALITY.md.
  */
 export * from './provenance';
 export * from './units';
@@ -14,3 +14,6 @@ export * from './session';
 export * from './outcome';
 export * from './exam-definition';
 export * from './exam-compiler';
+// BP-2
+export * from './variant';
+export * from './resolver';
