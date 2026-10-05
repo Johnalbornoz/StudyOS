@@ -1,6 +1,6 @@
 # Student Exam Journey V2 — architecture, state machine, decision tree, data contracts
 
-- **Status:** DESIGN PROPOSAL. Nothing is implemented. No UI, no migration, no deploy.
+- **Status:** design certified at `edb63dc8`. Section O decisions O-01 to O-04 are **APPROVED** (§O). J0 (exam-only access) and J2 (journey resolver, shadow mode) are implemented on this branch (§P). No new UX, no migration, no deploy.
 - **Base:** `bf98086` · branch `design/student-exam-journey-v2`.
 - **Read first:** [`00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md`](00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md). Gap IDs `G-xx` refer to it.
 - **Scope rule:** this track decides **what the student sees and does next**. It **consumes** the Exam Blueprint Engine (what the exam is and how it is scored) and the Question Bank (what can be executed). It never invents an academic rule. When a dependency is missing it shows an explicit state (`BLUEPRINT_INCOMPLETE`, `CONTENT_UNAVAILABLE`, `PREDICTION_MODEL_UNAVAILABLE`, …).
@@ -20,7 +20,8 @@ Contents:
 - L Data Requirements
 - M Acceptance Scenarios
 - N Implementation proposal
-- O Open decisions
+- O Decisions (O-01 to O-04 approved)
+- P Implementation status (J0, J2)
 
 ---
 
@@ -100,11 +101,11 @@ After onboarding, there is **no path flag** anywhere in the product. Behaviour d
 
 | Layer | Owns | Does NOT own |
 |---|---|---|
-| **Blueprint Engine** (Track B / other track) | Exam catalogue, versions, sessions, components, weights, max marks, assessment type (external/internal), boundaries or conversion model + provenance, readiness ladder, recommended preparation window, eligibility rules | What the student does next |
+| **Blueprint Engine** (Track B / other track) | Exam catalogue, versions, sessions, components, weights, max marks, assessment type (external/internal), boundaries or conversion model + provenance and O-02 classification, readiness ladder, sessions / dates, prerequisites, structural rules, real exam restrictions, eligibility rules | What the student does next, and **when** to recommend preparation (O-01) |
 | **Question Bank** | Item inventory, usage eligibility per mode, coverage, health | Whether the student *should* take a mock |
 | **Exam Core** | Instances, delivery, scoring, results, learning bridge | Sequencing (Mock 1 → reinforcement → Mock 2) |
 | **Learning OS** | Concept state, canonical stages, plan, Today ranking | Exam phases |
-| **Journey layer (this track)** | Academic context resolution, targets lifecycle, journey state, home decision, projection *assembly* (combining Blueprint model + Exam Core results + estimates), UX states | Academic rules, scales, boundaries, item selection |
+| **Journey layer (this track)** | Academic context resolution, targets lifecycle, journey state, home decision, preparation pacing (windows, mock guidance: O-01, O-04), projection *assembly* (combining Blueprint model + Exam Core results + estimates), UX states | Academic rules, scales, boundaries, item selection |
 
 ### A.3 Information architecture (validated proposal)
 
@@ -174,19 +175,25 @@ The 24 states in the brief are grouped into **7 phases**. The phase drives navig
 | `PROJECTION` | `ADDITIONAL_COMPONENTS_REQUIRED`, `FULL_PREDICTION_AVAILABLE` | Completing the picture with non-simulated components (IA, coursework). |
 | `CLOSING` | `FINAL_PREPARATION`, `EXAM_READY`, `EXAM_COMPLETED`, `RESULT_RECORDED` | Final weeks, the exam itself, and the result loop back into learning. |
 
-**Blockers are orthogonal to states.** A blocker never replaces the state. It explains why the journey cannot advance and what the student can do instead:
+**Blockers are orthogonal to states.** A blocker never replaces the state. It explains why an action **cannot** happen (O-04: a recommendation is never a blocker). Names below are the implemented codes (`src/lib/exam-journey/types.ts`):
 
 | Blocker | Raised when | Typical effect |
 |---|---|---|
 | `BLUEPRINT_INCOMPLETE` | Blueprint readiness < `STRUCTURE_READY`, or no published version for the session | The target stays in `HORIZON`/`ACTIVATION`, and learning continues on the mapped concepts |
-| `CONTENT_UNAVAILABLE(mode)` | QB/capabilities say the mode can't run (`STRUCTURE_ONLY`, `BANK_IN_PROGRESS`, `PRACTICE_ONLY`) | The diagnostic, practice or mock step is replaced by "en preparación" with a notify option |
-| `MOCK_REDUCED_ONLY` | Only a reduced mock form exists (`REDUCED_ONLY`) | The mock runs, but is labelled "Simulacro reducido" and counts toward the sequence with fidelity `REDUCED` |
-| `PREDICTION_MODEL_UNAVAILABLE` | The Blueprint gives no conversion/boundary model with provenance (today: **all exams**, G-03) | Prediction states are skipped. Results show performance by component, never a grade |
+| `BLUEPRINT_VERSION_INVALID` | The syllabus / version is known to be invalid for the target | No practice or mock on that version |
+| `CONTENT_UNAVAILABLE(mode)` | QB/capabilities say the mode can't run (`STRUCTURE_ONLY`, `BANK_IN_PROGRESS`, `PRACTICE_ONLY`), or the content facts are missing | The diagnostic, practice or mock step is replaced by "en preparación" with a notify option |
+| `INSTITUTIONAL_RELEASE_REQUIRED` | An institution-gated exam not yet released to the student | The mock cannot start |
+| `ATTEMPT_IN_PROGRESS` | Exam Core allows one open attempt per preparation | Resume first |
+
+A reduced mock form is **not** a blocker: the mock runs, labelled "Simulacro reducido", and counts toward the sequence with fidelity `REDUCED` (reason `MOCK_REDUCED_FORM_ONLY`).
+
+| `PREDICTION_MODEL_UNAVAILABLE` | O-02 `NO_MODEL`: the Blueprint gives no classified conversion/boundary model (today: **all exams**, G-03) | Prediction states are skipped. Results show performance by component, never a grade |
+| `PREDICTION_NOT_READY` | A model exists, but the evidence does not support a projection (no scored mock, or no mock covering the simulated components) | Results by component; the projection waits for the evidence |
 | `NO_CONCEPT_MAPPINGS` | Learning bridge has 0 mappings | Reinforcement after a mock is limited to practice by area |
-| `COMPONENT_ESTIMATE_MISSING` | The prediction model has non-simulated components without an estimate | The state is `ADDITIONAL_COMPONENTS_REQUIRED` |
+| `REQUIRED_COMPONENT_MISSING` | The prediction model has non-simulated components without a usable estimate (O-03: an institution student's own estimate does not count) | The state is `ADDITIONAL_COMPONENTS_REQUIRED` |
 | `EXAM_DATE_UNKNOWN` | No date and no session | Phase is computed as if the exam were outside the window, plus a "set your date" secondary CTA |
-| `ACADEMIC_CONTEXT_CONFLICT` | Student-declared vs institution context disagree on programme/level for this target | Target shows "confirm with your school". No silent overwrite |
-| `TARGET_NOT_CONFIRMED` | `confirmation = SUGGESTED / NOT_CONFIRMED` (Discovery) | The target is visible, but cannot leave `HORIZON` until the student confirms |
+| `ACADEMIC_CONTEXT_CONFLICT` | Student-declared vs institution context disagree on programme/level for this target | Target shows "confirm with your school". No silent overwrite. *Deferred to J1 (needs `resolveLearnerAcademicContext`); not emitted by the J2 resolver.* |
+| `TARGET_EXAM_UNCONFIRMED` | `confirmation = SUGGESTED / NOT_CONFIRMED` (Discovery) | The target is visible, but cannot leave `HORIZON` until the student confirms |
 
 ### B.4 State diagram (target level)
 
@@ -240,7 +247,7 @@ stateDiagram-v2
 |---|---|
 | IB DP subject (HL/SL) with IA, prediction model available | All, including `ADDITIONAL_COMPONENTS_REQUIRED` |
 | IB DP subject, **no** prediction model (today) | Up to `MOCK_2_COMPLETED`. Prediction states are skipped (blocker `PREDICTION_MODEL_UNAVAILABLE`). `PROJECTION` phase is hidden |
-| PAA (reduced mock only, no scale today) | `ACTIVATION` → `PREPARATION` → `SIMULATION` with `MOCK_REDUCED_ONLY`. No prediction states. `CLOSING` |
+| PAA (reduced mock only, no scale today) | `ACTIVATION` → `PREPARATION` → `SIMULATION` with a reduced form (`MOCK_REDUCED_FORM_ONLY`). No prediction states. `CLOSING` |
 | Saber 11 / ICFES (retake) | As PAA. `previous_result` seeds the starting point. The Diagnostic may be skipped if the previous result + evidence are rich (it is still offered) |
 | Cambridge Checkpoint (Year 9), low stakes | `HORIZON` → `ACTIVATION` → light `PREPARATION` → optional single mock → `CLOSING`. No Mock 2, no prediction (policy `lowStakes=true`) |
 | Exam with structure only (`STRUCTURE_READY`) | `HORIZON` → `ACTIVATION` with `CONTENT_UNAVAILABLE`. Learning on mapped concepts, nothing more |
@@ -248,12 +255,12 @@ stateDiagram-v2
 
 ### B.5 Transition table (guards)
 
-All thresholds marked ⚙ are **journey policy** (UX pacing), versioned in `exam-journey-policy` and overridable per exam *only* by the Blueprint Engine. They are not academic rules. Initial values are proposals to validate (§O).
+All thresholds marked ⚙ are **journey policy** (UX pacing), versioned in `src/lib/exam-journey/policy.ts` (`journey-policy-v1`). Per **O-01** they are never Blueprint data and never exam-specific: the Blueprint supplies the facts (date/session, components, availability), the journey decides the pacing from the date, readiness, evidence and the intensity required. The preparation window is `8 + 18 × gapShare` weeks, where `gapShare` = 1 − weighted ready share (unknown = 1).
 
 | From → To | Guard (all must hold) | Facts read |
 |---|---|---|
 | — → `FUTURE_EXAM_IDENTIFIED` | target exists (any source) | `exam_targets` |
-| `FUTURE_EXAM_IDENTIFIED` → `EXAM_PREPARATION_NOT_DUE` | `confirmation ∈ {CONFIRMED, ASSIGNED}` ∧ `today < windowStart` | target, Blueprint `prepWindowWeeks` ⚙ |
+| `FUTURE_EXAM_IDENTIFIED` → `EXAM_PREPARATION_NOT_DUE` | `confirmation ∈ {CONFIRMED, ASSIGNED}` ∧ `today < windowStart` | target, journey policy window ⚙ (O-01), readiness |
 | `…NOT_DUE` → `FOUNDATION_BUILDING` | ≥1 target-mapped concept has canonical evidence in the last 30 days ⚙ | learning bridge mappings, canonical stages |
 | → `EXAM_READINESS_AVAILABLE` | `today ≥ windowStart` **or** student "Empezar a prepararme ahora" (opt-in, logged) ∧ Blueprint ≥ `STRUCTURE_READY` | dates, capabilities |
 | → `DIAGNOSTIC_DUE` | `canRunDiagnostic` ∧ no completed diagnostic for this target ∧ (mapped requirements with evidence < 50 % ⚙) | preparation plan counts (existing `nextStep` rule) |
@@ -269,7 +276,7 @@ All thresholds marked ⚙ are **journey policy** (UX pacing), versioned in `exam
 | → `FULL_PREDICTION_AVAILABLE` | every component has mock evidence or a current estimate | — |
 | → `FINAL_PREPARATION` | `examDate − today ≤ finalWindowDays` (21 ⚙) | dates |
 | → `EXAM_READY` | `examDate − today ≤ readyWindowDays` (3 ⚙) | dates |
-| → `EXAM_COMPLETED` | `today > examDate` ∧ (student confirms sat **or** institution marks session sat) | `exam_targets.sat_confirmed_at` |
+| → `EXAM_COMPLETED` | `today > examDate` (or the profile is `COMPLETED`). Sat confirmation decides the next action: `CONFIRM_EXAM_SAT` until confirmed, then `RECORD_RESULT` | `exam_targets.sat_confirmed_at` |
 | → `RESULT_RECORDED` | an `ACTUAL_RESULT` external grade exists | `exam_external_grades` |
 
 **Dates:** the exam date comes from `target.examDate`. If that is absent, it comes from `session → Blueprint session calendar` (e.g. IB `M27`). If both are absent, the blocker is `EXAM_DATE_UNKNOWN`, and the target is treated as outside the window (the student can still opt in).
@@ -502,7 +509,7 @@ A help indicator line always reads one of: "Con ayuda" · "Sin ayuda" · "Reglas
 | 5 | No open attempt for the target | Exam Core |
 
 - **If 1 or 2 fail:** blocker `CONTENT_UNAVAILABLE(MOCK)` / `BLUEPRINT_INCOMPLETE`. The stepper shows "Simulacro: en preparación por StudyUs", and the student can ask to be notified.
-- **If 3 or 4 fail:** the stepper shows "Simulacro 1 se desbloquea cuando…" with progress. The student **can still start it** through "Quiero hacerlo igual" (logged opt-in): the gate guides the student, it does not lock them out. This keeps P6 without paternalism.
+- **If 3 or 4 fail (O-04, APPROVED):** the mock is *not recommended*, never locked. The stepper shows "Te recomendamos reforzar antes del Simulacro 1" with progress, and the student **can still start it** ("Quiero hacerlo igual", logged opt-in). Low readiness is never by itself a reason to block. Conditions 1–2 (and an institutional release, an invalid version or a technical incompatibility) are the only hard blocks.
 
 **Mock journey screens:** Unlocked card → **Instrucciones** (duration, sections, tools, rules, "no tutor", fidelity disclosure REDUCED/FULL) → **Entorno de examen** (existing ItemRunner, delivery policy) → **Entrega** → **Puntuación** (processing state; REVIEW_REQUIRED items pending) → **Análisis** (by component, by requirement, time management, vs diagnostic) → **Plan de refuerzo**.
 
@@ -511,7 +518,7 @@ A help indicator line always reads one of: "Con ayuda" · "Sin ayuda" · "Reglas
 ### G.5 Reinforcement → Mock 2
 
 - On Mock *n* scoring, the system generates `exam_reinforcement_plans` (new, thin): the top weak requirements (by marks lost × weight), mapped to concept actions (learning bridge) + practice + paper training, with a **horizon** of 14 days ⚙ (or less if the exam is near).
-- **Mock-2 gate:** (≥ 14 days ⚙ since Mock 1 **and** ≥ 60 % ⚙ of the reinforcement plan items attempted) **or** `examDate − today ≤ 4 weeks` ⚙. Same opt-in escape as Mock 1.
+- **Mock-2 gate:** (≥ 14 days ⚙ since Mock 1 **and** ≥ 60 % ⚙ of the reinforcement plan items attempted) **or** `examDate − today ≤ 4 weeks` ⚙. Same opt-in escape as Mock 1. *Policy v1 (J2), until reinforcement plans exist (J5): "≥ 1 completed preparation activity, or learning on the target concepts, since the last mock" replaces the 60 % criterion.*
 - **After Mock 2:** a comparison screen.
   - Per component: Δ marks %.
   - Per requirement: improved / same / dropped.
@@ -550,7 +557,7 @@ These three are shown **side by side**, never averaged.
 2. **Non-simulated components** (Math AA HL: the Exploration/IA): an **estimate in marks on the official criterion scale supplied by the Blueprint** (e.g. "x / 20", per criterion A–E when the Blueprint provides criteria).
    - **Never** "what grade will your teacher give you, 4/5/6". The input is modelled on the component's mark scheme (§H.4).
 3. **Weighting:** Blueprint `component.weightingPercent` (e.g. 30/30/20/20 for AA HL, owned by Blueprint).
-4. **Boundary model:** Blueprint `predictionModel` with `provenance` (e.g. "IB grade boundaries, May 2025 session, subject report") and `status AVAILABLE | APPROXIMATE | UNAVAILABLE`. **The journey never contains boundary numbers.**
+4. **Boundary model:** Blueprint `predictionModel` with `provenance` (e.g. "IB grade boundaries, May 2025 session, subject report") and the **O-02** class `OFFICIAL_OR_KNOWN_MODEL | HISTORICAL_ESTIMATE | NO_MODEL`. **The journey never contains boundary numbers.**
 
 ### H.3 States, step by step
 
@@ -559,7 +566,7 @@ These three are shown **side by side**, never averaged.
 | Before Mock 1 | Proyección: **Aún no disponible** | "Completa tu primer simulacro para crear tu primera proyección." |
 | `EARLY_PREDICTION_AVAILABLE` (after Mock 1) | **Proyección temprana**: grade-equivalent on the simulated components + range | "Equivalente en los exámenes escritos: 5 (rango 4–5). Basado en: Simulacro 1. No incluye la Exploración (20 %)." |
 | `UPDATED_PREDICTION_AVAILABLE` (after Mock 2) | **Proyección actualizada** + trend | "Basado en: Simulacro 1, Simulacro 2 y tu tendencia (+6 % en Paper 1)." |
-| `ADDITIONAL_COMPONENTS_REQUIRED` | Card: "Para una proyección completa falta: Exploración (20 %)" | Institution-linked: "Tu profesor aún no ha registrado una estimación." + "Añadir mi propia estimación". Independent: "Añadir estimación (marcas de 0 a 20)". |
+| `ADDITIONAL_COMPONENTS_REQUIRED` | Card: "Para una proyección completa falta: Exploración (20 %)" | Institution-linked: "Tu profesor aún no ha registrado una estimación." + "Probar un escenario con mi estimación" (O-03: what-if only, never completes the projection). Independent: "Añadir estimación (marcas de 0 a 20)". |
 | `FULL_PREDICTION_AVAILABLE` | **Proyección StudyUs**: grade 1–7 + range + breakdown | see H.5 |
 
 The range width shrinks with the evidence: 1 mock → ±1 grade-band equivalent, 2+ mocks → narrower ⚙. A `REDUCED` fidelity mock or a `STUDENT_ESTIMATE` component widens the range. Every projection lists its **basis** explicitly.
@@ -575,7 +582,7 @@ Componente: Exploración matemática (Internal Assessment) · 20 % · evaluada p
 Etiqueta resultante: [Estimación del estudiante] | [Estimación del profesor] | [Marcado por el profesor]
 ```
 
-- **Precedence:** `MODERATED` > `TEACHER_MARKED` > `TEACHER_ESTIMATE` > `STUDENT_ESTIMATE`. All of them are stored, and the highest-precedence current one is used. When a teacher value arrives later, the student value is kept but marked superseded, and the projection shows "Actualizado con la estimación de tu profesor".
+- **Precedence (O-03, APPROVED):** `STUDENT_ESTIMATE` < `TEACHER_ESTIMATE` < `TEACHER_MARKED` < `MODERATED`. All of them are stored with source/provenance, and the highest-precedence current one is used. An **institution-linked** student's own estimate is a scenario / what-if only: it never overwrites institutional data and never completes the StudyUs projection. An independent student's estimate completes it, labelled "Estimación del estudiante". Teacher Predicted Grade and StudyUs Projection stay separate concepts (§H.1).
 - The criteria, max marks and descriptors come from Blueprint `component.definition`. If the Blueprint lacks the mark scale for a component, the estimate cannot be entered (`BLUEPRINT_INCOMPLETE` on that component), and the projection stays at the written-papers level.
 
 ### H.5 Full projection screen
@@ -598,7 +605,7 @@ Etiqueta resultante: [Estimación del estudiante] | [Estimación del profesor] |
 - weight × current gap × learning-bridge reinforcement availability;
 - ties broken by lowest current %.
 
-If the model is `APPROXIMATE`, the copy says "≈".
+If the model is a `HISTORICAL_ESTIMATE` (O-02), the copy says "≈" and shows the range; it is never presented as an official result.
 
 ### H.6 Diploma level (45 points), later
 
@@ -662,16 +669,16 @@ The rules are evaluated in order. The first match is the **primary CTA**, and at
 | Code | Trigger | Student sees (es) | Primary action | Never |
 |---|---|---|---|---|
 | `NO_EXAM_TARGET` | 0 targets | "Aún no tienes un examen objetivo. No lo necesitas para aprender." | "Añadir un examen" (secondary on Exámenes; nothing on Home) | push an exam on a learner |
-| `TARGET_NOT_CONFIRMED` | discovery suggestion | "Examen objetivo no confirmado · Confirma los requisitos con {institución}" | "Confirmar" / "Cambiar" | claim a university requirement |
+| `TARGET_EXAM_UNCONFIRMED` | discovery suggestion | "Examen objetivo no confirmado · Confirma los requisitos con {institución}" | "Confirmar" / "Cambiar" | claim a university requirement |
 | `EXAM_DATE_UNKNOWN` | no date/session | "¿Cuándo lo presentas? Así ajustamos el ritmo." | session picker | invent a date |
 | `BLUEPRINT_INCOMPLETE` | readiness < STRUCTURE_READY / no version for session | "StudyUs todavía está preparando la estructura de este examen. Mientras tanto puedes aprender los temas que evalúa." | Continue learning on mapped concepts (or general subject) + "Avísame" | show practice/mocks |
 | `CONTENT_UNAVAILABLE(PRACTICE/DIAGNOSTIC)` | `STRUCTURE_ONLY` / `BANK_IN_PROGRESS` | "La práctica de {área} está en preparación." | Learn the concepts / "Avísame" | fallback to generic AI items silently |
 | `CONTENT_UNAVAILABLE(MOCK)` | `PRACTICE_ONLY` | "El simulacro de {examen} aún no está disponible. Puedes entrenar por Paper." | Paper training | label practice as "mock" |
-| `MOCK_REDUCED_ONLY` | `REDUCED_ONLY` | Badge "Simulacro reducido · {x}% de la duración oficial" | Start | hide the reduction |
-| `PREDICTION_MODEL_UNAVAILABLE` | Blueprint has no model | "Para {examen} aún no ofrecemos una proyección de nota. Te mostramos tu desempeño por área." | Reinforcement | show any grade/score number on an official scale |
-| `INSUFFICIENT_EVIDENCE` | projection asked before Mock 1 | "Completa tu primer simulacro para crear tu primera proyección." | Mock gate progress | extrapolate from practice |
-| `COMPONENT_ESTIMATE_MISSING` (institution) | IA estimate absent, linked to teacher | "Tu profesor aún no registra la estimación de la Exploración." | "Añadir mi estimación (se marcará como estimación propia)" | ask "¿qué nota te dará?" |
-| `COMPONENT_ESTIMATE_MISSING` (independent) | — | "Añade tu estimación de la Exploración (0–20) para completar la proyección." | estimate form | — |
+| reduced form (reason `MOCK_REDUCED_FORM_ONLY`) | `REDUCED_ONLY` | Badge "Simulacro reducido · {x}% de la duración oficial" | Start | hide the reduction |
+| `PREDICTION_MODEL_UNAVAILABLE` | O-02 `NO_MODEL` | "Para {examen} aún no ofrecemos una proyección de nota. Te mostramos tu desempeño por área." | Reinforcement | show any grade/score number on an official scale |
+| `PREDICTION_NOT_READY` | projection asked before Mock 1 (or no mock covers the simulated components) | "Completa tu primer simulacro para crear tu primera proyección." | Mock gate progress | extrapolate from practice |
+| `REQUIRED_COMPONENT_MISSING` (institution) | IA estimate absent, linked to teacher | "Tu profesor aún no registra la estimación de la Exploración." | "Probar un escenario con mi estimación" (what-if, O-03) | ask "¿qué nota te dará?"; let the student estimate replace the teacher's |
+| `REQUIRED_COMPONENT_MISSING` (independent) | — | "Añade tu estimación de la Exploración (0–20) para completar la proyección." | estimate form | — |
 | `TEACHER_PREDICTION_MISSING` | none | (nothing; slot hidden) | — | show an empty "Predicted: —" box as pressure |
 | `ACADEMIC_CONTEXT_CONFLICT` | student vs institution disagree | "Tu colegio te tiene en HL y tú indicaste SL. Confírmalo con tu colegio." | "Avisar a mi coordinador" | overwrite either side |
 | `NO_ACADEMIC_PROFILE` (Path C) | — | onboarding | — | block Path B on it (G-01) |
@@ -728,13 +735,13 @@ interface BlueprintJourneyContract {
     estimateScale: { kind: 'MARKS'; max: number; criteria?: Array<{ code: string; max: number; descriptor: string }> } | null; // NEW
   }>;
   predictionModel: {                               // NEW
-    status: 'AVAILABLE' | 'APPROXIMATE' | 'UNAVAILABLE';
+    modelClass: 'OFFICIAL_OR_KNOWN_MODEL' | 'HISTORICAL_ESTIMATE' | 'NO_MODEL'; // O-02
     resultScale: { kind: 'GRADE_1_7' | 'SCORE_RANGE' | 'LETTER' | 'LEVEL'; values: string[] } | null;
     provenance: { source: string; session: string | null; verifiedAt: string } | null;
     // boundaries/conversion kept inside the Blueprint; the journey calls project(...)
   };
   resultScale: { kind: string; min?: number; max?: number; values?: string[] } | null; // for target/previous/actual results — NEW
-  journeyHints: { prepWindowWeeks?: number; lowStakes?: boolean; diagnosticMinutes?: number } | null; // NEW, optional overrides
+  examFacts: { lowStakes?: boolean; diagnosticMinutes?: number } | null; // NEW, academic facts only -- O-01: no preparation-window or other UX pacing here
 }
 // Blueprint-owned pure function (so boundaries never leave the Blueprint):
 function project(objectiveKey, sessionCode, componentPercents: Record<string, number>): { grade: string; range: [string, string]; marksToNext: Record<string, number> } | null;
@@ -797,7 +804,7 @@ interface ExamProjectionView {
   status: 'NOT_READY' | 'MODEL_UNAVAILABLE' | 'EARLY' | 'UPDATED' | 'PARTIAL_COMPONENTS' | 'FULL';
   grade: string | null; range: [string, string] | null;
   basis: Array<{ kind: 'MOCK' | 'COMPONENT_ESTIMATE'; ref: string; label: string; source?: EstimateSource }>;
-  model: { status: 'AVAILABLE' | 'APPROXIMATE'; provenanceLabel: string } | null;
+  model: { modelClass: 'OFFICIAL_OR_KNOWN_MODEL' | 'HISTORICAL_ESTIMATE'; provenanceLabel: string } | null;
   target: string | null; gap: number | null;
   strongest: string | null; weakest: string | null;
   marksToNext: Array<{ componentId: string; marks: number }>;
@@ -945,7 +952,7 @@ Each scenario runs on DEV fixtures (no Production), with frozen dates (clock inj
 
 ## N. Implementation proposal (after approval of A–M)
 
-Same cadence as the master plan: DEV / throwaway DB → regression → frozen SHA → Preview candidate → manual Preview E2E → PASS. Student v1 stays the default; V2 runs behind `STUDENT_JOURNEY_V2` (per-student flag, default OFF), first in **SHADOW** (compute + log, render nothing new), as was done for readiness.
+Same cadence as the master plan: DEV / throwaway DB → regression → frozen SHA → Preview candidate → manual Preview E2E → PASS. Student v1 stays the default; V2 runs behind `STUDENT_JOURNEY_V2` (environment flag, exact value `SHADOW`, default OFF -- same model as `CANONICAL_ENGINE_V1_ENABLED` / `QUESTION_BANK_READINESS_MODE`), first in **SHADOW** (compute + log, render nothing new), as was done for readiness.
 
 | Step | Content | Depends on | Risk |
 |---|---|---|---|
@@ -962,12 +969,48 @@ Same cadence as the master plan: DEV / throwaway DB → regression → frozen SH
 
 ---
 
-## O. Open decisions (for the user / other tracks)
+## O. Decisions
 
-1. **Preparation windows (⚙ values):** e.g. IB = start of DP2 or 40 weeks; PAA / Saber 11 = 16 weeks; Checkpoint = 8 weeks. Should the Blueprint own them per exam, or should the journey policy own them with Blueprint overrides? *Recommendation: journey policy owns the defaults; the Blueprint may override.*
-2. **Boundary / prediction models:** which sources the Blueprint Engine may use (published IB subject reports, approximate models), and whether `APPROXIMATE` models can be shown to students at all. *Recommendation: `APPROXIMATE` allowed only with "≈" and a range; never `AVAILABLE` without a cited session.*
-3. **IA estimates:** may an institution-linked student add a self-estimate when the teacher hasn't? *Recommendation: yes, labelled and superseded later.*
-4. **Mock gate strictness:** guidance with opt-in (proposed) vs hard lock.
-5. **Path B subjects:** auto-create exam-area subjects lazily (proposed) vs a dedicated "exam space" without subjects. The latter needs Learning OS changes.
+### Approved (2026-10-05)
+
+**O-01 — Preparation windows: shared responsibility. APPROVED.**
+- The **Blueprint / exam definition** defines academic facts: session/date, components, exam availability, academic prerequisites, structural rules, real exam restrictions.
+- The **Student Journey** decides when to recommend preparation, from the exam date/session, readiness, historical evidence, current mastery and the preparation intensity required.
+- UX rules such as "start preparation 90 days before" are **never** put in the Blueprint.
+- Implemented: `src/lib/exam-journey/policy.ts` (`journey-policy-v1`), window = `8 + 18 × gapShare` weeks; the Blueprint contract carries no pacing (§L.1).
+
+**O-02 — Approximate prediction models: allowed, explicitly classified. APPROVED.**
+- Classes: `OFFICIAL_OR_KNOWN_MODEL`, `HISTORICAL_ESTIMATE`, `NO_MODEL`.
+- An estimate is never shown as an official result. Without a sufficiently reliable basis: `PREDICTION_MODEL_UNAVAILABLE`. No grade boundaries or models are invented.
+- Implemented: `PredictionModelClass`; `predictionStatus.official` is the literal `false`. The J2 loader reports `NO_MODEL` for every exam today: `score_conversion_models` has no O-02 classification and no Blueprint prediction contract exists yet, so nothing can be classified honestly.
+
+**O-03 — Student IA estimate: what-if only for institution students. APPROVED.**
+- An institution student may enter a personal estimate of a component such as the IA **only as a scenario / what-if**. It never overwrites institutional data.
+- Precedence: `STUDENT_ESTIMATE` < `TEACHER_ESTIMATE` < `TEACHER_MARKED` < `MODERATED`. Source/provenance is always kept.
+- Teacher Predicted Grade and StudyUs Projection are different concepts.
+- Implemented: `ESTIMATE_PRECEDENCE` in the resolver; an institution-linked `STUDENT_ESTIMATE` keeps `REQUIRED_COMPONENT_MISSING` (reason `STUDENT_ESTIMATE_SCENARIO_ONLY`).
+
+**O-04 — Mock access: recommendation, not hard lock. APPROVED.**
+- A student may sit a Mock even when StudyUs recommends reinforcing first.
+- Hard block only when the Mock cannot run correctly: `BLUEPRINT_INCOMPLETE`, `CONTENT_UNAVAILABLE`, invalid syllabus/version, institutional exam not yet released, technical incompatibility.
+- Low readiness is never by itself a reason to block.
+- Implemented: `mockStatus.startable` is false only with a blocker (`STRUCTURE` / `MOCK` scope or `BLUEPRINT_VERSION_INVALID`); guidance codes are recommendations. Verified over a 2,800-combination fact matrix.
+
+### Still open (not decided in this phase)
+
+5. **Path B subjects:** auto-create exam-area subjects lazily on the first learning launch vs a dedicated "exam space" without subjects. J0 constraint already in force: no artificial subject is ever created to satisfy access.
 6. **Actual result verification:** student-reported only for now, with institution verification later (Track A).
 7. **Cambridge Checkpoint catalogue** (Blueprint), and **join codes / session on assignments** (Track A): this track only requests them.
+
+---
+
+## P. Implementation status — J0 + J2 (this branch)
+
+| Item | Where | Notes |
+|---|---|---|
+| J0 gate | `src/lib/student/onboarding-gate.ts`, `.server.ts` | A valid exam target (`VALID_EXAM_TARGET_PREDICATE`: `status <> 'ARCHIVED'`) makes the student READY with no subject and no school profile. `/dashboard/exam-prep` stays reachable during the first-subject step. One shared predicate for the gate, `app/page.tsx` and the onboarding bounce. |
+| J2 contract | `src/lib/exam-journey/types.ts` | 7 phases, 22 target states + 3 learner states, blockers, facts (input) and resolution (output). |
+| J2 resolver | `src/lib/exam-journey/resolver.ts` | Pure, deterministic, no clock, no DB, no exam-specific branching, no entry-path flag. |
+| J2 policy | `src/lib/exam-journey/policy.ts` | `journey-policy-v1` (O-01, O-04). |
+| J2 facts | `src/lib/exam-journey/facts.server.ts` | Read-only; reuses capabilities, preparation plan, academic context and Exam Core instances. Facts not stored yet are null/false. |
+| Shadow | `feature-flag.ts`, `shadow-record.ts`, `shadow.server.ts` | `STUDENT_JOURNEY_V2=SHADOW`. Exam Prep pages schedule it with `after()`; one `[journey-shadow]` JSON line per target, no student id. `GET /api/exam-preparation/journey` (owner-only, 404 when OFF) for DEV inspection. No UX reads it. |

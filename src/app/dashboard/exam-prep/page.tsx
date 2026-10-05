@@ -17,6 +17,9 @@ import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 import { allObjectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { objectiveStatusKey } from '@/lib/exam-core/objectives/capabilities';
 import { ProfileCard } from './ProfileCard';
+import { after } from 'next/server';
+import { isStudentJourneyShadowEnabled } from '@/lib/exam-journey/feature-flag';
+import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
 
 /**
  * Track B -- objective first: "¿Para qué examen quieres prepararte?" Every
@@ -35,6 +38,8 @@ export default async function ExamPrepPage() {
   if (!clerkUserId) redirect('/sign-in');
 
   const studentId = await getOrCreateStudentId(clerkUserId);
+  // Student Exam Journey V2 (J2): shadow only -- computed and logged after the response, never rendered.
+  if (isStudentJourneyShadowEnabled()) after(() => runStudentExamJourneyShadow(studentId, 'dashboard/exam-prep'));
   const locale = await getInterfaceLanguage(studentId).catch(() => 'es' as const);
   const t = getMessages(locale);
   const tr = t as Record<string, string>;

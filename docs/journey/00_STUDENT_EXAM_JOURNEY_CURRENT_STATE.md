@@ -43,6 +43,7 @@ StudyUs already has most of the **parts** of the journey, but no **journey**.
 - `first-destination.ts:40-45` already models `RESUME_EXAM_PREPARATION` for an exam-goal-only learner. The proxy gate contradicts it. If an exam profile ever exists without a subject (for example one created by an institution or the API), `onboardingRouteRedirect` sends the student to exam-prep and the gate sends them back: a redirect loop.
 - The gate also ignores `student_exam_profiles` and `class_enrollments` (`onboarding-gate.server.ts:10-21`).
 - *Evidence level:* code reading of a pure function. Not executed in a browser.
+- **Status (J0): FIXED** on `design/student-exam-journey-v2`. Reproduced by test before the fix: the redirect loop `/ → /dashboard/exam-prep → /dashboard/onboarding → /dashboard/exam-prep` and the blocked exam intent (`tests/unit/journey-j0-exam-only-access.test.ts` fails 9/15 on the pre-J0 gate, passes 15/15 after). See `STUDENT_EXAM_JOURNEY_V2.md` §P.
 
 **G-02 · The institution student is asked everything the institution already knows.**
 - The profile is always self-declared (`AcademicProfileWizard.tsx`). `grades.academic_programme_id / academic_year / academic_level` and the class subjects are never read for the student. In `academic-context.ts:96-117`, grade comes only from the profile.

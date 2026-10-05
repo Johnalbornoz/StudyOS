@@ -6,6 +6,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { onboardingRouteRedirect } from '@/lib/lx/first-destination';
+import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
 import { loadSubjectPickerData } from '@/lib/experience/subject-picker.server';
 import { PageIntro } from '@/components/ui/PageIntro';
@@ -43,7 +44,7 @@ export default async function OnboardingPage() {
   const tr = t as Record<string, string>;
 
   const subjectRes = await query(`SELECT 1 FROM subjects WHERE student_id = $1 LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }));
-  const goalRes = await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }));
+  const goalRes = await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }));
   const bounce = onboardingRouteRedirect({ hasSubject: subjectRes.rows.length > 0, hasExamGoal: goalRes.rows.length > 0 });
   if (bounce) redirect(bounce);
 

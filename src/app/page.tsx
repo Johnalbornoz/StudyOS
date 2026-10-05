@@ -7,6 +7,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { resolveFirstDestination } from '@/lib/lx/first-destination';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
+import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
 
 export const metadata: Metadata = {
   alternates: {
@@ -34,7 +35,7 @@ export default async function Home() {
       const res = await query(`SELECT 1 FROM subjects WHERE student_id = $1 LIMIT 1`, [studentId]);
       hasSubject = res.rows.length > 0;
       // Objective first: a Student who started with an exam goal resumes in their preparation.
-      if (!hasSubject) hasExamGoal = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId])).rows.length > 0;
+      if (!hasSubject) hasExamGoal = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId])).rows.length > 0;
     } catch {
       // fall through to onboarding on any read failure -- safe default
     }

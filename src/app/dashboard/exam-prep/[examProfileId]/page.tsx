@@ -28,6 +28,9 @@ import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.se
 import { getQualificationAggregate, listProfileAttempts, listVersionAreas } from '@/lib/exam-core/catalog.service';
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
 import { parseDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
+import { after } from 'next/server';
+import { isStudentJourneyShadowEnabled } from '@/lib/exam-journey/feature-flag';
+import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
 import { db } from '@/lib/db';
 import { getPreparationView, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { PreparationHome } from './PreparationHome';
@@ -66,6 +69,8 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
 
   const profile = await getStudentExamProfile(examProfileId);
   if (!profile || profile.studentId !== studentId) notFound();
+  // Student Exam Journey V2 (J2): shadow only -- computed and logged after the response, never rendered.
+  if (isStudentJourneyShadowEnabled()) after(() => runStudentExamJourneyShadow(studentId, 'dashboard/exam-prep/[examProfileId]'));
 
   const definition = profile.examDefinitionId ? await getExamDefinition(profile.examDefinitionId) : null;
   const objective = await profileObjective(profile);

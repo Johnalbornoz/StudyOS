@@ -5,7 +5,7 @@
  */
 import { db } from '@/lib/db';
 import type { Role, Workspace } from '@/lib/identity/types';
-import { decideStudentOnboardingGate, type GateState } from './onboarding-gate';
+import { decideStudentOnboardingGate, VALID_EXAM_TARGET_PREDICATE, type GateState } from './onboarding-gate';
 
 const GATE_STATE_SQL = `
   SELECT u.status,
@@ -13,7 +13,8 @@ const GATE_STATE_SQL = `
          ARRAY(SELECT ur.role FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'ACTIVE') AS roles,
          p.profile_completed, p.country_of_study, p.school_year, p.curriculum_type,
          p.ib_programme, p.ib_year, p.academic_year,
-         COALESCE((SELECT count(*) FROM subjects sub WHERE sub.student_id = s.id), 0)::int AS subject_count
+         COALESCE((SELECT count(*) FROM subjects sub WHERE sub.student_id = s.id), 0)::int AS subject_count,
+         COALESCE((SELECT count(*) FROM student_exam_profiles ep WHERE ep.student_id = s.id AND ep.${VALID_EXAM_TARGET_PREDICATE}), 0)::int AS exam_target_count
   FROM users u
   LEFT JOIN students s ON s.clerk_id = u.clerk_id
   LEFT JOIN student_academic_profile p ON p.student_id = s.id
@@ -41,6 +42,7 @@ export async function loadGateState(clerkUserId: string): Promise<GateState | nu
         }
       : null,
     subjectCount: row.subject_count ?? 0,
+    examTargetCount: row.exam_target_count ?? 0,
   };
 }
 
