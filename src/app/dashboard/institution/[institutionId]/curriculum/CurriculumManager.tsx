@@ -2,6 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  availableScopes,
+  countryLabel,
+  internationalAuthorities,
+  internationalProgrammes,
+  nationalCountries,
+  nationalProgrammes,
+  programmeQualifications,
+  type CurriculumScope,
+} from '@/lib/curriculum/catalog-scope';
 
 /**
  * Track A -- Institution Curriculum Management V2 (coordinator client pieces).
@@ -25,6 +35,9 @@ export interface SourceOption {
   jurisdiction: string | null;
   country: string | null;
   sourceType: string;
+  /** NATIONAL / INTERNATIONAL, derived server-side from catalogue metadata. */
+  scope: CurriculumScope;
+  authorityId?: string;
   structureImported: boolean;
   objectives: number;
 }
@@ -45,10 +58,15 @@ async function send(url: string, method: string, body?: unknown): Promise<{ ok: 
   }
 }
 const optionLabel = (o: SourceOption) => [o.code, o.level, o.versionLabel !== `${o.code} ${o.level}` ? o.versionLabel : null].filter(Boolean).join(' · ') || o.versionLabel;
-const countryName = (code: string | null, labels: L) => (code === 'MX' ? 'México' : code === 'CO' ? 'Colombia' : code ? code : labels.international);
 
 /**
- * Wizard: País → Autoridad / Programa → Grado → Asignaturas (multi) + nivel/versión → Revisión.
+ * Wizard (catalogue-driven, adaptive):
+ *   1 Tipo          Nacional / Internacional (only the scopes the catalogue offers)
+ *   2 Fuente        Nacional: País → autoridad / programa · Internacional: organización (IB, Cambridge, …) → programa
+ *   3 Nivel         Nacional: grado de la institución · Internacional: cualificación (AS / A Level …) when the programme has several
+ *   4 Asignaturas   one or many governed subjects (+ level / version)
+ *   5 Confirmación
+ * Exams (PISA, PAA, Saber) never appear: the server lists CURRICULUM programmes only.
  * With a preset programme + grade (the "Añadir asignatura" button of a group) it opens at step 4.
  */
 export function AddSubjectsWizard({
@@ -66,29 +84,45 @@ export function AddSubjectsWizard({
 }) {
   const router = useRouter();
   const presetSource = preset ? sources.find((s) => s.programmeId === preset.programmeId) : undefined;
+  const scopes = useMemo(() => availableScopes(sources), [sources]);
   const [step, setStep] = useState(preset ? 4 : 1);
-  const [country, setCountry] = useState<string | null>(presetSource ? presetSource.country ?? '' : null);
+  const [scope, setScope] = useState<CurriculumScope | null>(presetSource ? presetSource.scope : scopes.length === 1 ? scopes[0] : null);
+  const [country, setCountry] = useState<string>(presetSource?.country ?? '');
+  const [authority, setAuthority] = useState<string>(presetSource ? presetSource.authorityId ?? presetSource.authority : '');
   const [programmeId, setProgrammeId] = useState<string>(preset?.programmeId ?? '');
-  const [gradeId, setGradeId] = useState<string>(preset ? preset.gradeId ?? '' : grades[0]?.id ?? '');
+  const [qualification, setQualification] = useState<string>('');
+  const [gradeId, setGradeId] = useState<string>(preset ? preset.gradeId ?? '' : '');
   const [year, setYear] = useState('');
   const [picked, setPicked] = useState<Record<string, string>>({}); // subject name → academicSubjectId|versionId
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
-  const countries = useMemo(() => [...new Set(sources.map((s) => s.country ?? ''))], [sources]);
-  const programmes = useMemo(() => {
-    const m = new Map<string, SourceOption>();
-    for (const s of sources) if ((s.country ?? '') === country && !m.has(s.programmeId)) m.set(s.programmeId, s);
-    return [...m.values()];
-  }, [sources, country]);
+  const countries = useMemo(() => nationalCountries(sources), [sources]);
+  const authorities = useMemo(() => internationalAuthorities(sources), [sources]);
+  const programmes = useMemo(
+    () => (scope === 'NATIONAL' ? (country ? nationalProgrammes(sources, country) : []) : scope === 'INTERNATIONAL' && authority ? internationalProgrammes(sources, authority) : []) as SourceOption[],
+    [sources, scope, country, authority]
+  );
+  const qualifications = useMemo(() => (programmeId ? programmeQualifications(sources, programmeId) : []), [sources, programmeId]);
+  const needsQualification = scope === 'INTERNATIONAL' && qualifications.length > 1;
   const subjects = useMemo(() => {
     const m = new Map<string, SourceOption[]>();
-    for (const s of sources.filter((x) => x.programmeId === programmeId)) m.set(s.subject, [...(m.get(s.subject) ?? []), s]);
+    for (const s of sources.filter((x) => x.programmeId === programmeId && (!needsQualification || !qualification || x.qualification === qualification))) m.set(s.subject, [...(m.get(s.subject) ?? []), s]);
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [sources, programmeId]);
+  }, [sources, programmeId, needsQualification, qualification]);
   const optionFor = (key: string) => sources.find((s) => `${s.academicSubjectId}|${s.versionId}` === key);
   const chosen = Object.values(picked).map(optionFor).filter(Boolean) as SourceOption[];
   const total = 5;
+  const programme = sources.find((s) => s.programmeId === programmeId);
+
+  function chooseScope(next: CurriculumScope) {
+    setScope(next);
+    setCountry(next === 'NATIONAL' && countries.length === 1 ? countries[0] : '');
+    setAuthority(next === 'INTERNATIONAL' && authorities.length === 1 ? authorities[0].key : '');
+    setProgrammeId('');
+    setQualification('');
+    setPicked({});
+  }
 
   async function confirm() {
     setBusy(true);
@@ -105,57 +139,118 @@ export function AddSubjectsWizard({
     router.refresh();
   }
 
+  const canNext =
+    (step === 1 && scope !== null) ||
+    (step === 2 && Boolean(programmeId)) ||
+    (step === 3 && (!needsQualification || Boolean(qualification))) ||
+    (step === 4 && chosen.length > 0);
+
   return (
-    <div className="ta-form ta-stack cur2-wizard" style={{ gap: 'var(--space-3)' }} aria-label={labels.addSubjects}>
+    <div className="ta-form ta-stack cur2-wizard" style={{ gap: 'var(--space-3)' }} aria-label={labels.addSubjects} data-step={step} data-scope={scope ?? ''}>
       <p className="ta-msg" aria-live="polite">
         {fill(labels.step, { n: step, total })}
       </p>
       {step === 1 && (
-        <fieldset className="ta-choices">
-          <legend>{labels.country}</legend>
-          {countries.map((c) => (
-            <label key={c || 'intl'} className="ta-choice">
-              <input type="radio" name="cur2-country" checked={country === c} onChange={() => { setCountry(c); setProgrammeId(''); }} /> {countryName(c || null, labels)}
-            </label>
-          ))}
-        </fieldset>
-      )}
-      {step === 2 && (
-        <fieldset className="ta-choices">
-          <legend>{labels.authority}</legend>
-          {programmes.map((p) => (
-            <label key={p.programmeId} className="ta-choice">
-              <input type="radio" name="cur2-programme" checked={programmeId === p.programmeId} onChange={() => setProgrammeId(p.programmeId)} />
+        <fieldset className="ta-choices cur2-scope" data-testid="curriculum-scope">
+          <legend>{labels['type.title']}</legend>
+          {scopes.length === 0 && <p className="ta-msg">{labels.noOptions}</p>}
+          {scopes.map((s) => (
+            <label key={s} className={`ta-choice cur2-scope-card${scope === s ? ' is-selected' : ''}`} data-scope-option={s}>
+              <input type="radio" name="cur2-scope" checked={scope === s} onChange={() => chooseScope(s)} />
               <span>
-                <strong>{p.programme}</strong>
-                <span className="ta-msg">
-                  {' '}
-                  · {p.authority}
-                  {p.jurisdiction ? ` · ${p.jurisdiction}` : ''}
-                  {p.stage ? ` · ${p.stage}` : ''} <span className="chip">{labels[`source.${p.sourceType}`] ?? p.sourceType}</span>
-                </span>
+                <strong>{labels[`type.${s}`]}</strong>
+                <span className="ta-msg" style={{ display: 'block' }}>{labels[`type.${s}.help`]}</span>
               </span>
             </label>
           ))}
         </fieldset>
       )}
-      {step === 3 && (
-        <div className="ta-row">
-          <label className="ta-field">
-            <span>{labels.grade}</span>
-            <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
-              <option value="">{labels.allGrades}</option>
-              {grades.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
+      {step === 2 && scope === 'NATIONAL' && (
+        <>
+          <fieldset className="ta-choices" data-testid="curriculum-country">
+            <legend>{labels.country}</legend>
+            {countries.map((c) => (
+              <label key={c} className="ta-choice" data-country={c}>
+                <input type="radio" name="cur2-country" checked={country === c} onChange={() => { setCountry(c); setProgrammeId(''); setPicked({}); }} /> {countryLabel(c)}
+              </label>
+            ))}
+          </fieldset>
+          {country && (
+            <fieldset className="ta-choices" data-testid="curriculum-programme">
+              <legend>{labels.authority}</legend>
+              {programmes.map((p) => (
+                <label key={p.programmeId} className="ta-choice" data-programme={p.programmeId}>
+                  <input type="radio" name="cur2-programme" checked={programmeId === p.programmeId} onChange={() => { setProgrammeId(p.programmeId); setPicked({}); }} />
+                  <span>
+                    <strong>{p.programme}</strong>
+                    <span className="ta-msg">
+                      {' '}
+                      · {p.authority}
+                      {p.jurisdiction ? ` · ${p.jurisdiction}` : ''}
+                      {p.stage ? ` · ${p.stage}` : ''}
+                    </span>
+                  </span>
+                </label>
               ))}
-            </select>
-          </label>
-          <label className="ta-field">
-            <span>{labels.year}</span>
-            <input type="text" maxLength={20} placeholder="2026-2027" value={year} onChange={(e) => setYear(e.target.value)} />
-          </label>
+            </fieldset>
+          )}
+        </>
+      )}
+      {step === 2 && scope === 'INTERNATIONAL' && (
+        <>
+          <fieldset className="ta-choices" data-testid="curriculum-authority">
+            <legend>{labels.organization}</legend>
+            {authorities.map((a) => (
+              <label key={a.key} className="ta-choice" data-authority={a.name}>
+                <input type="radio" name="cur2-authority" checked={authority === a.key} onChange={() => { setAuthority(a.key); setProgrammeId(''); setQualification(''); setPicked({}); }} /> {a.name}
+              </label>
+            ))}
+          </fieldset>
+          {authority && (
+            <fieldset className="ta-choices" data-testid="curriculum-programme">
+              <legend>{labels.programme}</legend>
+              {programmes.map((p) => (
+                <label key={p.programmeId} className="ta-choice" data-programme={p.programmeId}>
+                  <input type="radio" name="cur2-programme" checked={programmeId === p.programmeId} onChange={() => { setProgrammeId(p.programmeId); setQualification(''); setPicked({}); }} />
+                  <span>
+                    <strong>{p.programme}</strong>
+                    {p.stage ? <span className="ta-msg"> · {p.stage}</span> : null}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+        </>
+      )}
+      {step === 3 && (
+        <div className="ta-stack" style={{ gap: 'var(--space-2)' }}>
+          {needsQualification && (
+            <fieldset className="ta-choices" data-testid="curriculum-qualification">
+              <legend>{labels.qualification}</legend>
+              {qualifications.map((q) => (
+                <label key={q} className="ta-choice">
+                  <input type="radio" name="cur2-qualification" checked={qualification === q} onChange={() => { setQualification(q); setPicked({}); }} /> {q}
+                </label>
+              ))}
+            </fieldset>
+          )}
+          <div className="ta-row">
+            <label className="ta-field">
+              <span>{scope === 'INTERNATIONAL' ? labels.gradeOptional : labels.grade}</span>
+              <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
+                <option value="">{labels.allGrades}</option>
+                {grades.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="ta-field">
+              <span>{labels.year}</span>
+              <input type="text" maxLength={20} placeholder="2026-2027" value={year} onChange={(e) => setYear(e.target.value)} />
+            </label>
+          </div>
         </div>
       )}
       {step === 4 && (
@@ -205,8 +300,9 @@ export function AddSubjectsWizard({
         <div className="ta-stack" style={{ gap: 'var(--space-1)' }}>
           <strong>{labels.review}</strong>
           <span className="ta-msg">
-            {chosen[0]?.programme} · {grades.find((g) => g.id === gradeId)?.name ?? labels.allGrades}
-            {year ? ` · ${year}` : ''}
+            {[programme ? labels[`type.${programme.scope}`] : null, programme?.country ? countryLabel(programme.country) : null, programme?.authority, programme?.programme, qualification || null, grades.find((g) => g.id === gradeId)?.name ?? labels.allGrades, year || null]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
           <ul className="role-list ta-compact">
             {chosen.map((c) => (
@@ -224,13 +320,8 @@ export function AddSubjectsWizard({
           </button>
         )}
         {step < total && (
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={(step === 1 && country === null) || (step === 2 && !programmeId) || (step === 4 && chosen.length === 0)}
-            onClick={() => setStep((s) => s + 1)}
-          >
-            {labels.next}
+          <button type="button" className="btn btn-primary" disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
+            {labels.continue ?? labels.next}
           </button>
         )}
         {step === total && (

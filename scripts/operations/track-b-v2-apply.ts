@@ -12,6 +12,7 @@ import { applyExamVerticalConfig } from '@/lib/exam-core/apply-vertical-config.s
 import { RETIRED_V2_CONFIG_KEYS } from '@/lib/exam-core/verticals/v2';
 import { allV2Configs } from '@/lib/exam-core/verticals/v2/all';
 import { applyAssessmentStructure } from '@/lib/exam-core/catalog/structure.service';
+import { classifyCurriculumCatalog } from '@/lib/curriculum/catalog-classification.service';
 
 const DEV_FP = '2a29b99ee14a22b4';
 const WRITE = process.argv.includes('--write');
@@ -38,6 +39,9 @@ async function main() {
   // The structure binds to PUBLISHED versions: in a dry run the verticals above were rolled back, so bindings resolve only after --write.
   const s = await applyAssessmentStructure({ write: WRITE });
   console.log(JSON.stringify({ structure: s }));
+  // Curriculum programmes written above (IB, Cambridge) become selectable in institution curriculum configuration
+  // only once classified (international scope + canonical subject) -- same governed rules as migration 20261018_1500.
+  console.log(JSON.stringify({ curriculumCatalog: await classifyCurriculumCatalog({ write: WRITE }) }));
   await db.end();
 }
 

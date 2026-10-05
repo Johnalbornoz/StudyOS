@@ -11,6 +11,7 @@ import { institutionSubNavLabels, classBindingLabels } from '@/lib/institution/a
 import { listInstitutionGrades, listInstitutionClassesWithStaff } from '@/services/institution.service';
 import { listInstitutionCurriculumSubjects, listCurriculumSourceOptions, listAcademicDomains, type CurriculumSubjectRow } from '@/lib/institution/curriculum-management.service';
 import { curriculumContextLabel, rankCurriculumCandidates } from '@/lib/institution/curriculum-identity';
+import { curriculumScope, countryLabel } from '@/lib/curriculum/catalog-scope';
 import { listSupplementalSuggestions, listAdoptableSubjects, CURRICULUM_CLASSIFICATIONS } from '@/lib/learning-plan/institution-curriculum.service';
 import { listConceptProposals } from '@/lib/learning-plan/concept-proposals.service';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -59,7 +60,10 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
   const archived = all.filter((s) => s.status === 'ARCHIVED');
   const tk = (k: string) => t[k as MessageKey] ?? k;
   const wl = Object.fromEntries(
-    ['step', 'country', 'international', 'authority', 'grade', 'allGrades', 'subjects', 'subjectsHelp', 'version', 'year', 'review', 'next', 'back', 'confirm', 'cancel', 'done', 'noOptions'].map((k) => [k, tk(`cur2.wizard.${k}`)])
+    [
+      'step', 'country', 'international', 'authority', 'grade', 'allGrades', 'subjects', 'subjectsHelp', 'version', 'year', 'review', 'next', 'back', 'confirm', 'cancel', 'done', 'noOptions',
+      'type.title', 'type.NATIONAL', 'type.NATIONAL.help', 'type.INTERNATIONAL', 'type.INTERNATIONAL.help', 'organization', 'programme', 'qualification', 'gradeOptional', 'continue',
+    ].map((k) => [k, tk(`cur2.wizard.${k}`)])
   ) as Record<string, string>;
   Object.assign(wl, { addSubjects: t['cur2.addSubjects'], error: t['cur2.error'], structureNotImported: t['cur2.structureNotImported'] });
   for (const s of ['GOVERNMENT_AUTHORITY', 'INTERNATIONAL_PROGRAMME', 'INSTITUTION_DEFINED', 'STUDYUS_REFERENCE']) wl[`source.${s}`] = tk(`cur2.source.${s}`);
@@ -83,6 +87,15 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
     g.rows.push(s);
     groups.set(key, g);
   }
+  // Configured curricula (one per programme, any number per institution; national and international side by side).
+  const configured = new Map<string, { key: string; scope: 'NATIONAL' | 'INTERNATIONAL'; country: string | null; authority: string | null; programme: string; subjects: number; anchor: string }>();
+  for (const g of groups.values()) {
+    const key = g.programmeId ?? `own:${g.programme}`;
+    const first = g.rows[0];
+    const e = configured.get(key) ?? { key, scope: curriculumScope({ country: first.country, sourceType: first.sourceType }), country: first.country, authority: first.authority, programme: g.programme, subjects: 0, anchor: `cur2-group-${g.programmeId ?? 'own'}-${g.gradeId ?? 'all'}` };
+    e.subjects += g.rows.length;
+    configured.set(key, e);
+  }
   const alternativesFor = (s: CurriculumSubjectRow) => sources.filter((o) => o.programmeId === s.programmeId && o.canonicalSubjectId === s.canonicalSubjectId && o.subject === s.subject);
   const classifications = Object.fromEntries(CURRICULUM_CLASSIFICATIONS.map((c) => [c, t[`lp.class.${c}` as MessageKey]])) as Record<(typeof CURRICULUM_CLASSIFICATIONS)[number], string>;
   const curriculumLabel = (s: CurriculumSubjectRow) => [s.subject, s.code, s.level, s.gradeName ?? t['cur2.wizard.allGrades'], s.versionLabel && !s.versionLabel.startsWith(s.code ?? '§') ? s.versionLabel : null].filter(Boolean).join(' · ');
@@ -93,6 +106,10 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
         <PageHeader title={overview.institutionName} subtitle={t['cur2.config.title']} />
         <InstitutionSubNav institutionId={institutionId} active="curriculum" labels={institutionSubNavLabels(t)} />
       </div>
+      <section aria-labelledby="cur2-v2-heading" className="ta-stack" style={{ gap: 'var(--space-1)' }}>
+        <h2 id="cur2-v2-heading" style={{ fontSize: 19 }}>{tk('cur2.v2.heading')}</h2>
+        <p className="ta-msg">{tk('cur2.v2.intro')}</p>
+      </section>
       <p className="ta-msg iix-help">
         {t['cur2.config.subtitle']}{' '}
         <Link href={`/dashboard/institution/${institutionId}/coverage`}>{t['cur2.config.toCoverage']}</Link>
@@ -109,8 +126,25 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
         </section>
       ) : (
         <>
+          <section className="card ta-card" aria-labelledby="cur2-configured" data-testid="configured-curricula">
+            <h2 id="cur2-configured" style={{ fontSize: 17 }}>{tk('cur2.configured.title')}</h2>
+            <ul className="cur2-configured-list">
+              {[...configured.values()].map((c) => (
+                <li key={c.key} className="cur2-configured" data-scope={c.scope}>
+                  <span className="chip">{tk(`cur2.wizard.type.${c.scope}`)}</span>
+                  <span className="cur2-configured-body">
+                    <strong>{c.scope === 'NATIONAL' && c.country ? countryLabel(c.country) : c.authority ?? '—'}</strong>
+                    <span className="ta-msg">
+                      {[c.scope === 'NATIONAL' ? c.authority : null, c.programme].filter(Boolean).join(' · ')} · {fillMessage(tk('cur2.configured.subjects'), { n: c.subjects })}
+                    </span>
+                  </span>
+                  <a className="btn btn-ghost" href={`#${c.anchor}`}>{tk('cur2.configured.view')}</a>
+                </li>
+              ))}
+            </ul>
+          </section>
           {[...groups.values()].map((g) => (
-            <section key={`${g.programmeId}|${g.gradeId}`} className="card ta-card cur2-group" aria-label={`${g.programme} — ${g.gradeName ?? t['cur2.wizard.allGrades']}`}>
+            <section key={`${g.programmeId}|${g.gradeId}`} id={`cur2-group-${g.programmeId ?? 'own'}-${g.gradeId ?? 'all'}`} className="card ta-card cur2-group" aria-label={`${g.programme} — ${g.gradeName ?? t['cur2.wizard.allGrades']}`}>
               <div className="ta-coordinator">
                 <h2 style={{ fontSize: 17 }}>
                   {g.programme} — {g.gradeName ?? t['cur2.wizard.allGrades']}
@@ -172,8 +206,8 @@ export default async function InstitutionCurriculumPage({ params }: { params: Pr
               )}
             </section>
           ))}
-          <details className="card ta-card">
-            <summary className="btn btn-primary">+ {t['cur2.addSubjects']}</summary>
+          <details className="card ta-card" data-testid="add-curriculum">
+            <summary className="btn btn-primary">{tk('cur2.addAnother')}</summary>
             <AddSubjectsWizard institutionId={institutionId} sources={sources} grades={grades} labels={wl} />
           </details>
         </>
