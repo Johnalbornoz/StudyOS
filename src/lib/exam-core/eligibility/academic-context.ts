@@ -7,11 +7,11 @@
  *            binding only) -> institution_curricula -> catalogue programme + subject.
  *            Authoritative for the class's learning.
  *   PROFILE  student_academic_profile: country, school year (normalised grade) and the
- *            curriculum the Student declared. The legacy profile has no catalogue link,
- *            so only declarations that resolve to exactly one framework are used today
- *            (IB + DP, or IB at the DP stage -> the programmes that host IB DP exams). When the Academic Profile
- *            stores catalogue programme / subject ids, they are read HERE and nothing
- *            else changes.
+ *            catalogue programme + subjects the Student selected (Phase A:
+ *            academic_programme_id, student_academic_subjects). A profile saved before
+ *            the catalogue link falls back to its legacy declaration, used only when it
+ *            resolves to exactly one framework (IB + DP, or IB at the DP stage -> the
+ *            programmes that host IB DP exams).
  *
  * Both sources are kept side by side (never merged): a Student may follow IB at
  * school and Cambridge privately; each programme gives its own reason.
@@ -20,6 +20,7 @@
  */
 import { db } from '@/lib/db';
 import { getAcademicProfile } from '@/services/academic-profile.service';
+import { getProfileCurriculum, type ProfileCurriculum } from '@/services/academic-profile-catalogue.service';
 import { normaliseGradeLevel } from './grade-level';
 import { programmesForFramework, type ContextProgramme, type EligibilityGraph, type StudentAcademicContext, type ClassExamAssignment } from './rules';
 
@@ -68,11 +69,13 @@ export async function loadClassExamAssignmentsForStudent(studentId: string): Pro
 /** Pure: assembles the context (exported for tests). */
 export function buildAcademicContext(input: {
   profile: { countryOfStudy?: string | null; schoolYear?: string | null; curriculumType?: string | null; ibProgramme?: string | null; ibYear?: string | null; profileCompleted?: boolean } | null;
+  /** The catalogue selection of the Academic Profile (Phase A), when the Student made one. */
+  profileCurriculum?: Pick<ProfileCurriculum, 'programmeId' | 'programme' | 'subjects'> | null;
   classRows: ClassProgrammeRow[];
   assignments: ClassExamAssignment[];
   graph: EligibilityGraph;
 }): StudentAcademicContext {
-  const { profile, classRows, assignments, graph } = input;
+  const { profile, profileCurriculum, classRows, assignments, graph } = input;
   const programmes: ContextProgramme[] = [];
 
   for (const row of classRows) {
@@ -91,7 +94,17 @@ export function buildAcademicContext(input: {
   // Legacy declaration with a single, unambiguous catalogue meaning: IB Diploma Programme
   // (declared DP, or IB without a programme at the DP stage -- grades 11-12).
   const gradeLevel = normaliseGradeLevel(profile);
-  const ibDiploma = profile?.curriculumType === 'ib' && (profile.ibProgramme === 'DP' || (!profile.ibProgramme && gradeLevel !== null && gradeLevel >= 11));
+  if (profileCurriculum?.programmeId) {
+    // Phase A: the programme the Student selected from the catalogue, with their subjects.
+    programmes.push({
+      programmeId: profileCurriculum.programmeId,
+      programmeName: profileCurriculum.programme ?? '',
+      academicSubjectIds: profileCurriculum.subjects.map((s) => s.id),
+      subjectNames: profileCurriculum.subjects.map((s) => (s.level ? `${s.name} ${s.level}` : s.name)),
+      source: 'PROFILE',
+    });
+  }
+  const ibDiploma = !profileCurriculum?.programmeId && profile?.curriculumType === 'ib' && (profile.ibProgramme === 'DP' || (!profile.ibProgramme && gradeLevel !== null && gradeLevel >= 11));
   if (ibDiploma) {
     for (const gp of programmesForFramework(graph, 'IB_DP')) {
       if (programmes.some((p) => p.programmeId === gp.programmeId && p.source === 'PROFILE')) continue;
@@ -113,10 +126,11 @@ export function buildAcademicContext(input: {
 }
 
 export async function loadStudentAcademicContext(studentId: string, graph: EligibilityGraph): Promise<StudentAcademicContext> {
-  const [profile, classRows, assignments] = await Promise.all([
+  const [profile, profileCurriculum, classRows, assignments] = await Promise.all([
     getAcademicProfile(studentId).catch(() => null),
+    getProfileCurriculum(studentId).catch(() => null),
     loadClassProgrammes(studentId),
     loadClassExamAssignmentsForStudent(studentId),
   ]);
-  return buildAcademicContext({ profile, classRows, assignments, graph });
+  return buildAcademicContext({ profile, profileCurriculum, classRows, assignments, graph });
 }

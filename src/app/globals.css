@@ -2437,3 +2437,32 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .elig-assign-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
 .elig-assign-form .ui-field { flex: 1 1 240px; min-width: 0; }
 .elig-assign-form select { max-width: 100%; }
+
+/* Student Academic Profile (Phase A) -- curriculum selection */
+.acp-page { display: flex; flex-direction: column; gap: var(--space-5); }
+.acp-intro h1 { margin: 0; }
+.acp-lead { color: var(--text-secondary); margin: var(--space-2) 0 0; font-size: 15px; max-width: 62ch; }
+.acp-wizard { max-width: 560px; width: 100%; min-width: 0; }
+.acp-progress { display: flex; gap: var(--space-1); margin-bottom: var(--space-6); }
+.acp-progress-bar { flex: 1; height: 4px; border-radius: var(--radius-full); background: var(--border-default); }
+.acp-progress-bar.is-done { background: var(--brand); }
+.acp-step { color: var(--text-muted); margin-bottom: var(--space-4); }
+.acp-question { margin-bottom: var(--space-4); overflow-wrap: anywhere; }
+.acp-options { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.acp-option { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--space-1); width: 100%; min-height: 46px; height: auto; padding: var(--space-2) var(--space-3); text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.acp-option-label { font-weight: 600; }
+.acp-option-hint { font-size: var(--fs-sm); color: var(--text-secondary); font-weight: 400; }
+.acp-group { margin: var(--space-3) 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); }
+.acp-hint { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); overflow-wrap: anywhere; }
+.acp-more { align-self: flex-start; min-height: var(--touch-target); }
+.acp-subjects { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 360px; overflow-y: auto; }
+.acp-subject { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); cursor: pointer; overflow-wrap: anywhere; }
+.acp-subject input { width: 20px; height: 20px; flex: none; }
+.acp-nav { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-6); }
+.acp-done { text-align: center; padding: var(--space-4) 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+.acp-summary { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; }
+.acp-summary h2 { font-size: 16px; line-height: 22px; margin: 0; }
+.acp-summary-line { margin: 0; overflow-wrap: anywhere; }
+.acp-class-list { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-sm); }
+.acp-conflict { background: var(--warning-subtle); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); list-style-position: inside; margin-left: calc(-1 * var(--space-4)); }
+.acp-change { align-self: flex-start; min-height: var(--touch-target); }

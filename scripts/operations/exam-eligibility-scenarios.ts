@@ -14,6 +14,11 @@
  *   E10 eligibility is read-only          -> no row of learning / exam state changes while resolving
  *   E11 personal goal                     -> unrelated objective still selectable, recorded as not recommended
  *
+ * Phase A (Academic Profile -> catalogue):
+ *   A1 governed grade ranges      A2 options by grade (no IGCSE for grade 7)   A3 Cambridge / IB offered at grade 11
+ *   A4 save Cambridge + persist   A5 change -> legacy coherent, subjects ENDED, audited, history kept
+ *   A6 catalogue validation       A7 class precedence (side by side, never merged)   A8 learning-plan context follows the profile
+ *
  * Fixtures (`eel-<run>-…`, `@eligibility.test`, institution "EEL <run>") are removed at the end.
  *
  *   ELIGIBILITY_ALLOW_FP=<fp> npx tsx --env-file=<env> scripts/operations/exam-eligibility-scenarios.ts
@@ -30,6 +35,9 @@ import { createObjectivePreparation } from '@/lib/exam-core/objectives/preparati
 import { loadEligibilityGraph } from '@/lib/exam-core/eligibility/graph';
 import { resolveStudentExamEligibility } from '@/lib/exam-core/eligibility/eligibility.service';
 import { assignExamToClass, listClassExamAssignments, revokeClassExamAssignment, ExamAssignmentError } from '@/lib/exam-core/eligibility/class-exam-assignment.service';
+import { AcademicProfileSelectionError, getProfileCurriculum, listStudentCurriculumOptions, saveAcademicProfileSelection } from '@/services/academic-profile-catalogue.service';
+import { getAcademicProfile } from '@/services/academic-profile.service';
+import { resolveCurriculumContext } from '@/lib/learning-plan/curriculum.service';
 
 const PRODUCTION_FP = '6671e7382d808d06';
 const ALLOWED_FP = new Set(['2a29b99ee14a22b4', ...(process.env.ELIGIBILITY_ALLOW_FP ? [process.env.ELIGIBILITY_ALLOW_FP] : [])]);
@@ -195,6 +203,98 @@ async function main() {
   const goal = await createObjectivePreparation(co.studentId, { objectiveKey: 'cie.igcse.0580.extended' });
   const goalRow = (await db.query(`SELECT source, objective_context FROM student_exam_profiles WHERE id = $1`, [goal.profile.id])).rows[0];
   check('E11.personal-goal-allowed-and-recorded', goal.created && goalRow.source === 'STUDENT' && goalRow.objective_context?.eligibility?.recommended === false);
+
+  await phaseA();
+}
+
+async function programmeByName(name: string) {
+  const r = await db.query(`SELECT id FROM academic_programmes WHERE name = $1 AND programme_type = 'CURRICULUM' AND status = 'ACTIVE' ORDER BY created_at LIMIT 1`, [name]);
+  return r.rows[0]?.id as string | undefined;
+}
+async function rejectsWith(fn: () => Promise<unknown>, code: string) {
+  try {
+    await fn();
+    return false;
+  } catch (e) {
+    return e instanceof AcademicProfileSelectionError && e.code === code;
+  }
+}
+
+async function phaseA() {
+  // ---------------------------------------------------------------- A1
+  const ranges = (await db.query(`SELECT name, grade_min, grade_max FROM academic_programmes WHERE programme_type = 'CURRICULUM' AND status = 'ACTIVE'`)).rows;
+  check('A1.every-catalogued-curriculum-has-a-stage', ranges.every((r: any) => r.grade_min !== null && r.grade_max !== null), ranges.filter((r: any) => r.grade_min === null).map((r: any) => r.name).join(', '));
+  check('A1.ib-dp-11-12', ranges.some((r: any) => r.name === 'IB Diploma Programme' && r.grade_min === 11 && r.grade_max === 12));
+
+  // ---------------------------------------------------------------- A2 / A3
+  const o7 = await listStudentCurriculumOptions('MX', '1° Secundaria');
+  const all7 = [...o7.national.programmes, ...o7.international.flatMap((a) => a.programmes)];
+  check('A2.grade7-national-secundaria', o7.national.programmes.some((p) => p.name.startsWith('Educación Secundaria') && p.compatible) && o7.national.programmes.every((p) => p.country === 'MX'));
+  check('A2.grade7-no-igcse-ib', !all7.some((p) => p.compatible && /IGCSE|Diploma Programme|AICE/.test(p.name)), all7.filter((p) => p.compatible).map((p) => p.name).join(', '));
+  check('A2.no-exam-is-a-curriculum', !all7.some((p) => /PISA|PAA|Saber/.test(p.name)));
+  const o11 = await listStudentCurriculumOptions('CO', '11');
+  const comp11 = o11.international.flatMap((a) => a.programmes).filter((p) => p.compatible).map((p) => p.name);
+  check('A3.grade11-cambridge-and-ib', comp11.includes('IB Diploma Programme') && comp11.includes('Cambridge AICE Diploma') && !comp11.includes('Cambridge IGCSE'), comp11.join(', '));
+  check('A3.national-is-country-only', o11.national.programmes.length > 0 && o11.national.programmes.every((p) => p.country === 'CO'));
+
+  // ---------------------------------------------------------------- A4 Cambridge self-selected, persisted
+  const s = await student('acp', null);
+  const igcse = await programmeByName('Cambridge IGCSE');
+  const o9 = await listStudentCurriculumOptions('MX', '3° Secundaria');
+  const igcseOption = o9.international.flatMap((a) => a.programmes).find((p) => p.id === igcse)!;
+  await saveAcademicProfileSelection(s.studentId, { countryOfStudy: 'MX', schoolYear: '3° Secundaria', curriculumScope: 'INTERNATIONAL', academicProgrammeId: igcse!, academicQualificationId: null, academicSubjectIds: [igcseOption.subjects[0].id], academicYear: '2026', profileCompleted: true }, s.user.id);
+  const reread = await getProfileCurriculum(s.studentId); // a new request (logout / login) reads the same row
+  const legacy = await getAcademicProfile(s.studentId);
+  check('A4.persisted', reread?.programmeId === igcse && reread?.scope === 'INTERNATIONAL' && reread.subjects.length === 1 && reread.gradeLevel === 9 && !!reread.qualificationId, JSON.stringify({ p: reread?.programme, q: reread?.qualification, s: reread?.subjects.map((x) => x.name) }));
+  check('A4.onboarding-complete', !!legacy?.profileCompleted && legacy.curriculumType === 'other');
+  const rA4 = await recommended(s.studentId);
+  check('A4.eligibility-cambridge-from-profile', rA4.frameworks.has('CIE_IGCSE') && !rA4.frameworks.has('IB_DP') && rA4.byKey.get('cie.igcse.0580.extended')!.reasons[0].code === 'CURRICULUM_SUBJECT', [...rA4.frameworks].join());
+
+  // ---------------------------------------------------------------- A5 change keeps history
+  const prepBefore = await createObjectivePreparation(s.studentId, { objectiveKey: 'cie.igcse.0580.extended' });
+  const ib = await programmeByName('IB Diploma Programme');
+  const ibOptions = (await listStudentCurriculumOptions('MX', '2° Preparatoria')).international.flatMap((a) => a.programmes).find((p) => p.id === ib)!;
+  await saveAcademicProfileSelection(s.studentId, { countryOfStudy: 'MX', schoolYear: '2° Preparatoria', curriculumScope: 'INTERNATIONAL', academicProgrammeId: ib!, academicQualificationId: null, academicSubjectIds: ibOptions.subjects.slice(0, 2).map((x) => x.id), academicYear: '2026', profileCompleted: true }, s.user.id);
+  const after = await getAcademicProfile(s.studentId);
+  check('A5.legacy-coherent-ib-dp', after?.curriculumType === 'ib' && after.ibProgramme === 'DP' && after.ibYear === 'DP1', JSON.stringify({ t: after?.curriculumType, p: after?.ibProgramme, y: after?.ibYear }));
+  check('A5.old-subject-ended-not-deleted', (await count(`SELECT count(*) n FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NOT NULL`, [s.studentId])) === 1 && (await count(`SELECT count(*) n FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL`, [s.studentId])) === 2);
+  const events = (await db.query(`SELECT action, old_values, new_values FROM academic_governance_events WHERE object_type = 'STUDENT_ACADEMIC_PROFILE' AND object_id = $1 ORDER BY created_at`, [s.studentId])).rows;
+  check('A5.audited', events.length === 2 && events[0].action === 'CURRICULUM_SELECT' && events[1].action === 'CURRICULUM_CHANGE' && events[1].old_values.academicProgrammeId === igcse && events[1].new_values.academicProgrammeId === ib);
+  check('A5.preparation-kept', (await count(`SELECT count(*) n FROM student_exam_profiles WHERE id = $1 AND status = 'ACTIVE'`, [prepBefore.profile.id])) === 1);
+  const rA5 = await recommended(s.studentId);
+  check('A5.eligibility-recalculated', rA5.frameworks.has('IB_DP') && !rA5.frameworks.has('CIE_IGCSE'), [...rA5.frameworks].join());
+  await saveAcademicProfileSelection(s.studentId, { countryOfStudy: 'MX', schoolYear: '2° Preparatoria', curriculumScope: 'INTERNATIONAL', academicProgrammeId: ib!, academicQualificationId: null, academicSubjectIds: ibOptions.subjects.slice(0, 2).map((x) => x.id), academicYear: '2026', profileCompleted: true }, s.user.id);
+  check('A5.resave-same-no-new-event', (await count(`SELECT count(*) n FROM academic_governance_events WHERE object_type = 'STUDENT_ACADEMIC_PROFILE' AND object_id = $1`, [s.studentId])) === 2);
+
+  // ---------------------------------------------------------------- A6 validation
+  const sep = await programmeByName('Educación Secundaria — Plan de Estudio 2022');
+  const aice = await programmeByName('Cambridge AICE Diploma');
+  const base = { countryOfStudy: 'CO' as const, schoolYear: '11', academicQualificationId: null, academicSubjectIds: [], academicYear: '2026', profileCompleted: true };
+  check('A6.other-country-national-refused', await rejectsWith(() => saveAcademicProfileSelection(s.studentId, { ...base, curriculumScope: 'NATIONAL', academicProgrammeId: sep! }, s.user.id), 'COUNTRY_MISMATCH'));
+  check('A6.scope-mismatch-refused', await rejectsWith(() => saveAcademicProfileSelection(s.studentId, { ...base, curriculumScope: 'NATIONAL', academicProgrammeId: ib! }, s.user.id), 'SCOPE_MISMATCH'));
+  check('A6.aice-needs-qualification', await rejectsWith(() => saveAcademicProfileSelection(s.studentId, { ...base, curriculumScope: 'INTERNATIONAL', academicProgrammeId: aice! }, s.user.id), 'QUALIFICATION_REQUIRED'));
+  check('A6.foreign-subject-refused', await rejectsWith(() => saveAcademicProfileSelection(s.studentId, { ...base, curriculumScope: 'INTERNATIONAL', academicProgrammeId: ib!, academicSubjectIds: [igcseOption.subjects[0].id] }, s.user.id), 'SUBJECT_NOT_IN_PROGRAMME'));
+  const examProgramme = (await db.query(`SELECT id FROM academic_programmes WHERE programme_type <> 'CURRICULUM' LIMIT 1`)).rows[0].id;
+  check('A6.exam-is-not-a-curriculum', await rejectsWith(() => saveAcademicProfileSelection(s.studentId, { ...base, curriculumScope: 'INTERNATIONAL', academicProgrammeId: examProgramme }, s.user.id), 'PROGRAMME_NOT_FOUND'));
+  check('A6.refusals-left-profile-intact', (await getProfileCurriculum(s.studentId))?.programmeId === ib);
+
+  // ---------------------------------------------------------------- A7 institution precedence
+  const camClass = await institutionWithClass('acp-cam', 'Cambridge IGCSE');
+  await db.query(`INSERT INTO class_enrollments (class_id, student_id) VALUES ($1, $2)`, [camClass.classId, s.studentId]);
+  const rA7 = await recommended(s.studentId);
+  const sources = rA7.byKey.get('cie.igcse.0580.extended')!.reasons.map((r) => r.className ? 'CLASS' : 'PROFILE');
+  check('A7.side-by-side', rA7.frameworks.has('IB_DP') && rA7.frameworks.has('CIE_IGCSE') && sources.includes('CLASS'), [...rA7.frameworks].join());
+  check('A7.class-never-rewrites-profile', (await getProfileCurriculum(s.studentId))?.programmeId === ib);
+
+  // ---------------------------------------------------------------- A8 learning-plan context follows the profile
+  const t = await student('acp-aice', null);
+  const aiceOpts = (await listStudentCurriculumOptions('CO', '11')).international.flatMap((a) => a.programmes).find((p) => p.id === aice)!;
+  const asQual = aiceOpts.qualifications.find((q) => /AS/.test(q.name))!;
+  const mathAs = aiceOpts.subjects.find((x) => x.qualificationId === asQual.id && /Math/i.test(x.name));
+  await saveAcademicProfileSelection(t.studentId, { countryOfStudy: 'CO', schoolYear: '11', curriculumScope: 'INTERNATIONAL', academicProgrammeId: aice!, academicQualificationId: asQual.id, academicSubjectIds: mathAs ? [mathAs.id] : [], academicYear: '2026', profileCompleted: true }, t.user.id);
+  const ctx = await resolveCurriculumContext(t.studentId, 'mathematics');
+  const hasOption = ctx.options.some((o) => o.programmeId === aice);
+  check('A8.learning-context-follows-profile', !hasOption || (ctx.reason === 'ACADEMIC_PROFILE' && ctx.context?.programmeId === aice), `${ctx.reason} ${ctx.context?.programme ?? '-'} (programme has a published maths curriculum: ${hasOption})`);
 }
 
 // ------------------------------------------------------------------ cleanup
@@ -239,6 +339,8 @@ async function cleanup() {
   await db.query(`UPDATE student_exam_profiles SET replaced_by_profile_id = NULL WHERE student_id = ANY($1::uuid[])`, [studentIds]);
   await db.query(`DELETE FROM preparation_goals WHERE student_exam_profile_id IN (SELECT id FROM student_exam_profiles WHERE student_id = ANY($1::uuid[]))`, [studentIds]).catch(() => undefined);
   await db.query(`DELETE FROM student_exam_profiles WHERE student_id = ANY($1::uuid[])`, [studentIds]);
+  await db.query(`DELETE FROM student_academic_subjects WHERE student_id = ANY($1::uuid[])`, [studentIds]);
+  await db.query(`DELETE FROM academic_governance_events WHERE object_type = 'STUDENT_ACADEMIC_PROFILE' AND object_id = ANY($1::uuid[])`, [studentIds]);
   await db.query(`DELETE FROM student_academic_profile WHERE student_id = ANY($1::uuid[])`, [studentIds]);
   await db.query(`DELETE FROM admin_audit_log WHERE actor_user_id = ANY($1::uuid[]) OR target_id = ANY($2::text[])`, [userIds, userIds]);
   await db.query(`DELETE FROM user_roles WHERE user_id = ANY($1::uuid[])`, [userIds]);

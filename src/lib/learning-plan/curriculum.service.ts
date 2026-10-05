@@ -26,6 +26,8 @@ export interface CurriculumOption {
   structureVersionId: string;
   name: string;
   programme: string;
+  /** Catalogue programme of the academic subject (matches the Academic Profile selection). */
+  programmeId?: string;
   qualification: string | null;
   level: string | null;
   versionLabel: string;
@@ -72,7 +74,7 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
   const subjectIds = await canonicalSubjectIdsForCatalogKey(catalogKey);
   if (subjectIds.length === 0) return [];
   const r = await db.query(
-    `SELECT asub.id AS academic_subject_id, sv.id AS structure_version_id, asub.name, asub.level, ap.name AS programme, aq.name AS qualification, sv.version_label,
+    `SELECT asub.id AS academic_subject_id, sv.id AS structure_version_id, asub.name, asub.level, ap.name AS programme, aq.name AS qualification, sv.version_label, ap.id AS programme_id,
        COUNT(DISTINCT ocm.canonical_concept_id)::int AS concept_count
      FROM objective_concept_mappings ocm
      JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.status = 'ACTIVE'
@@ -83,7 +85,7 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
      JOIN academic_programmes ap ON ap.id = asub.programme_id
      LEFT JOIN academic_qualifications aq ON aq.id = asub.qualification_id
      WHERE ocm.status = 'PUBLISHED' AND cc.canonical_subject_id = ANY($1::uuid[])
-     GROUP BY 1, 2, 3, 4, 5, 6, 7
+     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
      ORDER BY concept_count DESC, ap.name, asub.name`,
     [subjectIds]
   );
@@ -92,6 +94,7 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
     structureVersionId: row.structure_version_id,
     name: row.name,
     programme: row.programme,
+    programmeId: row.programme_id,
     qualification: row.qualification,
     level: row.level,
     versionLabel: row.version_label,
@@ -102,7 +105,8 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
 /**
  * Which curriculum fits this learner for this subject, most specific first:
  * an explicitly chosen one, an exam they prepare (student_exam_profiles), their
- * academic profile (IB Diploma), else the general StudyUs curriculum.
+ * academic profile (the catalogue programme / subjects they selected; legacy:
+ * IB Diploma), else the general StudyUs curriculum.
  */
 export async function resolveCurriculumContext(
   studentId: string,
@@ -123,8 +127,17 @@ export async function resolveCurriculumContext(
       if (match) return { context: match, options, reason: 'EXAM_PROFILE' };
     }
   }
-  const profile = await db.query(`SELECT curriculum_type, ib_programme FROM student_academic_profile WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as any[] }));
-  if (profile.rows[0]?.curriculum_type === 'ib' && profile.rows[0]?.ib_programme === 'DP') {
+  const profile = await db.query(`SELECT curriculum_type, ib_programme, academic_programme_id FROM student_academic_profile WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as any[] }));
+  const programmeId: string | null = profile.rows[0]?.academic_programme_id ?? null;
+  if (programmeId) {
+    // Phase A: the selected subject of that programme first, else any published subject of the programme.
+    const selected = await db.query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL`, [studentId]).catch(() => ({ rows: [] as any[] }));
+    const ids = new Set(selected.rows.map((r: any) => r.academic_subject_id as string));
+    const inProgramme = options.filter((o) => o.programmeId === programmeId);
+    const match = inProgramme.find((o) => ids.has(o.academicSubjectId)) ?? inProgramme[0];
+    if (match) return { context: match, options, reason: 'ACADEMIC_PROFILE' };
+  }
+  if (!programmeId && profile.rows[0]?.curriculum_type === 'ib' && profile.rows[0]?.ib_programme === 'DP') {
     const ib = options.find((o) => /IB/i.test(o.programme));
     if (ib) return { context: ib, options, reason: 'ACADEMIC_PROFILE' };
   }
