@@ -1,6 +1,7 @@
 # Student Exam Journey V2 — architecture, state machine, decision tree, data contracts
 
-- **Status:** design certified at `edb63dc8`. Section O decisions O-01 to O-07 are **APPROVED** (§O). J0 (exam-only access) and J2 (journey resolver, shadow mode) are implemented on this branch (§P) and shadow-validated locally against real DEV data and an ephemeral copy: `LOCAL_SHADOW_VALIDATED` (see [`STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md`](STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md)). No new UX, no migration, no deploy.
+- **Status:** design certified at `edb63dc8`. Section O decisions O-01 to O-07 are **APPROVED** (§O). J0 (exam-only access) and J2 (journey resolver, shadow mode) are implemented on this branch (§P) and shadow-validated locally against real DEV data (read-only) and an ephemeral copy: **`LOCAL_SHADOW_VALIDATED_WITH_DEV_DATA`**, reported in J2.1 as `LOCAL_SHADOW_VALIDATED` (see [`STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md`](STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md)). This is **not** `DEV_SHADOW_VALIDATED`: the flag was never activated on hosted DEV. No new UX, no migration, no deploy.
+- **Next designs (J1 / J3, design only):** [`J1_INSTITUTIONAL_CONTEXT_DESIGN.md`](J1_INSTITUTIONAL_CONTEXT_DESIGN.md) · [`J3_INDEPENDENT_EXAM_ENTRY_DESIGN.md`](J3_INDEPENDENT_EXAM_ENTRY_DESIGN.md) · [`J1_J3_WIREFLOW.md`](J1_J3_WIREFLOW.md). They refine §C (decision tree), §D (institutional journey), §E (independent exam journey), §A.3 (information architecture: a 3-tab proposal, pending approval) and §L (target contract) without changing the state machine.
 - **Base:** `bf98086` · branch `design/student-exam-journey-v2`.
 - **Read first:** [`00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md`](00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md). Gap IDs `G-xx` refer to it.
 - **Scope rule:** this track decides **what the student sees and does next**. It **consumes** the Exam Blueprint Engine (what the exam is and how it is scored) and the Question Bank (what can be executed). It never invents an academic rule. When a dependency is missing it shows an explicit state (`BLUEPRINT_INCOMPLETE`, `CONTENT_UNAVAILABLE`, `PREDICTION_MODEL_UNAVAILABLE`, …).
@@ -1020,6 +1021,8 @@ Same cadence as the master plan: DEV / throwaway DB → regression → frozen SH
 ---
 
 ## P. Implementation status — J0 + J2 (this branch)
+
+> J1 / J3 status (2026-10-05): designed in the documents linked in the header. J1.1–J1.2 and J3.1–J3.2 are ready for implementation; the remaining blocks are gated as listed there. Nothing below changed in that phase.
 
 | Item | Where | Notes |
 |---|---|---|
