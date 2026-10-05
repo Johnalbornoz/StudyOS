@@ -15,6 +15,11 @@
 export const JOURNEY_POLICY_V1 = {
   version: 'journey-policy-v1',
   /**
+   * Every value below is an EXPERIMENTAL PRODUCT HEURISTIC (UX pacing), never an
+   * academic rule: versioned, replaceable, never a hard block (O-01, O-04).
+   */
+  classification: 'EXPERIMENTAL_PRODUCT_HEURISTIC',
+  /**
    * Preparation window = minWeeks + (maxWeeks - minWeeks) x gapShare, where
    * gapShare = 1 - weighted ready share of the mapped requirements (unknown
    * evidence counts as gap). More to close -> the window opens earlier.

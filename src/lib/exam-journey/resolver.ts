@@ -39,6 +39,7 @@ import {
   type ResolutionReason,
   type StudentExamJourneyFacts,
   type StudentExamJourneyResolution,
+  VERIFIED_RESULT_PROVENANCES,
 } from './types';
 
 export const JOURNEY_RESOLVER_VERSION = 'student-exam-journey-resolver-v1';
@@ -84,11 +85,13 @@ function readinessStatus(facts: StudentExamJourneyFacts, reasons: ResolutionReas
   const l = facts.learning;
   if (!l) {
     reasons.push({ code: 'LEARNING_EVIDENCE_UNAVAILABLE' });
-    return { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null };
+    return { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null, crossExamEvidenceRisk: false };
   }
+  const crossExamEvidenceRisk = l.crossExamEvidenceConcepts > 0;
+  if (crossExamEvidenceRisk) reasons.push({ code: 'CROSS_EXAM_EVIDENCE_RISK', detail: { concepts: l.crossExamEvidenceConcepts, otherExamOnlyRequirements: l.otherExamOnlyRequirements } });
   if (l.mappedRequirements === 0) {
     reasons.push({ code: 'NO_MAPPED_REQUIREMENTS' });
-    return { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null };
+    return { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null, crossExamEvidenceRisk };
   }
   const evidenceCoverage = share(l.mappedWithEvidence, l.mappedRequirements);
   return {
@@ -96,6 +99,7 @@ function readinessStatus(facts: StudentExamJourneyFacts, reasons: ResolutionReas
     mappedRequirements: l.mappedRequirements,
     evidenceCoverage,
     readyShare: l.weightedReadyShare,
+    crossExamEvidenceRisk,
   };
 }
 
@@ -155,12 +159,13 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
     blockers,
     recommendedNextAction: action,
     ...statuses,
+    examResult: target?.actualResult ? { provenance: target.actualResult.provenance, verified: VERIFIED_RESULT_PROVENANCES.includes(target.actualResult.provenance) } : null,
     resolutionReasons: reasons,
   });
 
   const target = facts.target;
   const notApplicable = {
-    readinessStatus: { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null } as ReadinessStatus,
+    readinessStatus: { status: 'NOT_AVAILABLE', mappedRequirements: 0, evidenceCoverage: null, readyShare: null, crossExamEvidenceRisk: false } as ReadinessStatus,
     mockStatus: { status: 'NOT_APPLICABLE', startable: false, fidelity: null, completedMocks: 0, nextMockNumber: null, guidance: [] } as MockStatus,
     predictionStatus: { status: 'NOT_APPLICABLE', modelClass: facts.prediction.modelClass, basisMocks: 0, missingComponentIds: [], official: false } as PredictionStatus,
   };
@@ -183,7 +188,7 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
 
   if (target.confirmation === 'ASSIGNED') reasons.push({ code: 'TARGET_ASSIGNED_BY_INSTITUTION' });
   if (target.examTargetId === null) reasons.push({ code: 'TARGET_NOT_YET_A_PREPARATION' });
-  if (target.previousResult) reasons.push({ code: 'PREVIOUS_RESULT_RECORDED', detail: { scale: target.previousResult.scale } });
+  if (target.previousResult) reasons.push({ code: 'PREVIOUS_RESULT_RECORDED', detail: { scale: target.previousResult.scale, provenance: target.previousResult.provenance } });
 
   // ---------------------------------------------------------------- blockers (impossibility only)
   const unconfirmed = target.confirmation === 'SUGGESTED' || target.confirmation === 'NOT_CONFIRMED';
@@ -281,7 +286,10 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
 
   // ---------------------------------------------------------------- CLOSING / unconfirmed (date-driven, highest precedence)
   if (target.actualResult) {
-    reasons.push({ code: 'ACTUAL_RESULT_RECORDED', detail: { source: target.actualResult.source } });
+    // O-06: recorded with its provenance; a Student-reported result is never treated as verified or official.
+    const provenance = target.actualResult.provenance;
+    reasons.push({ code: 'ACTUAL_RESULT_RECORDED', detail: { provenance } });
+    reasons.push({ code: VERIFIED_RESULT_PROVENANCES.includes(provenance) ? 'RESULT_VERIFIED' : provenance === 'INSTITUTION_REPORTED' ? 'RESULT_INSTITUTION_REPORTED' : 'RESULT_STUDENT_REPORTED' });
     return out('RESULT_RECORDED', { kind: 'REVIEW_RESULT', reasonCode: 'ACTUAL_RESULT_RECORDED' }, statuses);
   }
   if (unconfirmed) return out('FUTURE_EXAM_IDENTIFIED', { kind: 'CONFIRM_TARGET', reasonCode: 'TARGET_UNCONFIRMED' }, statuses);
@@ -304,10 +312,12 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
   const windowDays = preparationWindowDays(policy, readiness.readyShare);
   const openByDate = daysToExam !== null && daysToExam <= windowDays;
   const windowOpen = openByDate || engaged || target.optedInEarly;
-  if (openByDate) reasons.push({ code: 'WINDOW_OPEN_BY_DATE', detail: { daysToExam, windowDays } });
-  else if (engaged) reasons.push({ code: 'WINDOW_OPEN_BY_ENGAGEMENT' });
-  else if (target.optedInEarly) reasons.push({ code: 'WINDOW_OPEN_BY_OPT_IN' });
-  else reasons.push({ code: 'WINDOW_NOT_OPEN', detail: { daysToExam, windowDays } });
+  // The window is journey policy (O-01): an experimental, versioned product heuristic -- visible as such.
+  const windowPolicy = { policy: policy.version, classification: policy.classification };
+  if (openByDate) reasons.push({ code: 'WINDOW_OPEN_BY_DATE', detail: { daysToExam, windowDays, ...windowPolicy } });
+  else if (engaged) reasons.push({ code: 'WINDOW_OPEN_BY_ENGAGEMENT', detail: windowPolicy });
+  else if (target.optedInEarly) reasons.push({ code: 'WINDOW_OPEN_BY_OPT_IN', detail: windowPolicy });
+  else reasons.push({ code: 'WINDOW_NOT_OPEN', detail: { daysToExam, windowDays, ...windowPolicy } });
 
   if (!windowOpen || blueprintIncomplete || versionInvalid) {
     const last = facts.learning?.lastMappedLearningEvidenceAt ?? null;
@@ -316,8 +326,12 @@ export function resolveStudentExamJourney(facts: StudentExamJourneyFacts, policy
     const state: JourneyState = recent ? 'FOUNDATION_BUILDING' : 'EXAM_PREPARATION_NOT_DUE';
     if (resume) return out(state, resume, statuses);
     if (daysToExam === null) return out(state, { kind: 'SET_EXAM_DATE', reasonCode: 'EXAM_DATE_UNKNOWN' }, statuses);
-    if (blueprintIncomplete && !ct?.learningBridge && facts.learner.subjectCount === 0) return out(state, { kind: 'NOTIFY_WHEN_AVAILABLE', reasonCode: 'BLUEPRINT_NOT_CONFIGURED' }, statuses);
-    return out(state, { kind: 'CONTINUE_LEARNING', reasonCode: blueprintIncomplete ? 'BLUEPRINT_NOT_CONFIGURED' : 'WINDOW_NOT_OPEN' }, statuses);
+    const reasonCode: ReasonCode = blueprintIncomplete ? 'BLUEPRINT_NOT_CONFIGURED' : 'WINDOW_NOT_OPEN';
+    // Learning drives the horizon -- but only when there is something to learn (own subjects or the exam's
+    // learning bridge). Otherwise the most useful honest step is what the exam assesses, or a notification.
+    if (facts.learner.subjectCount > 0 || ct?.learningBridge) return out(state, { kind: 'CONTINUE_LEARNING', reasonCode }, statuses);
+    if (bp?.structureVisible) return out(state, { kind: 'REVIEW_STRUCTURE', reasonCode }, statuses);
+    return out(state, { kind: 'NOTIFY_WHEN_AVAILABLE', reasonCode }, statuses);
   }
 
   // ---------------------------------------------------------------- ACTIVATION

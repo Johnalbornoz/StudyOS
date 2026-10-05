@@ -26,6 +26,7 @@ import { buildProfilePlan, objectiveCapabilities, profileObjective } from '@/lib
 import { objectiveByKey, type ExamObjective } from '@/lib/exam-core/objectives/objective-catalog';
 import type { ExamPreparationCapabilities } from '@/lib/exam-core/objectives/capabilities';
 import type { PreparationPlan } from '@/lib/exam-core/objectives/preparation-plan';
+import { learningFactsFromPlan } from './plan-facts';
 import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
 import type { StudentExamProfile } from '@/lib/assessment/types';
 import type {
@@ -70,11 +71,16 @@ export async function loadLearnerFacts(studentId: string, examTargetCount: numbe
   };
 }
 
+/**
+ * A published exam version exists for the objective. Structure-only verticals keep their
+ * definition in DRAFT on purpose (no practice yet) over a PUBLISHED version: the structure
+ * (Blueprint) exists; what is missing is content, which the capability facts report.
+ */
 async function publishedVersionExists(objective: ExamObjective): Promise<boolean> {
   if (!objective.configKeys.length) return false;
   const r = await db.query(
     `SELECT 1 FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-      WHERE d.config_key = ANY($1::text[]) AND d.status = 'ACTIVE' LIMIT 1`,
+      WHERE d.config_key = ANY($1::text[]) AND d.status IN ('ACTIVE', 'DRAFT') LIMIT 1`,
     [objective.configKeys]
   );
   return r.rows.length > 0;
@@ -106,23 +112,12 @@ function contentFacts(caps: ExamPreparationCapabilities): ContentReadinessFacts 
 
 async function learningFacts(studentId: string, plan: PreparationPlan | null): Promise<LearningEvidenceFacts | null> {
   if (!plan) return null;
-  const mapped = plan.requirements.filter((r) => r.status !== 'NOT_YET_MAPPED');
-  const mappedWeight = mapped.reduce((a, r) => a + r.weight, 0);
-  const readyWeight = mapped.filter((r) => r.status === 'ALREADY_STRONG' || r.status === 'NEEDS_CONFIRMATION').reduce((a, r) => a + r.weight, 0);
   const conceptIds = [...new Set(plan.requirements.flatMap((r) => r.concepts.map((c) => c.learner?.studentConceptId)).filter((id): id is string => !!id))];
   // Learning evidence only: exam-simulation rows are exam evidence, not learning (design G-08).
   const last = conceptIds.length
     ? (await db.query(`SELECT max("timestamp") AS at FROM learning_evidence WHERE student_id = $1 AND concept_id = ANY($2::uuid[]) AND source_type <> 'EXAM_SIMULATION'`, [studentId, conceptIds])).rows[0]?.at ?? null
     : null;
-  const top = plan.recommendations[0] ?? null;
-  return {
-    mappedRequirements: plan.coverage.mapped,
-    mappedWithEvidence: plan.coverage.mappedWithEvidence,
-    counts: plan.counts,
-    weightedReadyShare: mappedWeight > 0 ? readyWeight / mappedWeight : null,
-    topRecommendation: top ? { action: top.recommendation.action, band: top.priority.band } : null,
-    lastMappedLearningEvidenceAt: last ? new Date(last).toISOString() : null,
-  };
+  return learningFactsFromPlan(plan, last ? new Date(last).toISOString() : null);
 }
 
 const INSTANCES_SQL = `

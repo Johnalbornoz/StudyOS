@@ -66,6 +66,8 @@ const learning = (over: Partial<LearningEvidenceFacts> = {}): LearningEvidenceFa
   weightedReadyShare: 0,
   topRecommendation: null,
   lastMappedLearningEvidenceAt: null,
+  crossExamEvidenceConcepts: 0,
+  otherExamOnlyRequirements: 0,
   ...over,
 });
 let seq = 0;
@@ -207,7 +209,7 @@ describe('Case 4 -- independent PAA Student, no subjects, valid PAA target (cert
 
 describe('Case 5 -- independent ICFES / Saber 11 retake with a previous result', () => {
   it('resolves without any institution; the previous result is a fact, never a projection', () => {
-    const r = resolve(facts({ target: target({ framework: 'SABER11', objectiveKey: 'saber11', examDate: '2027-03-07', previousResult: { scale: 'SABER11_GLOBAL', value: '285' } }) }));
+    const r = resolve(facts({ target: target({ framework: 'SABER11', objectiveKey: 'saber11', examDate: '2027-03-07', previousResult: { scale: 'SABER11_GLOBAL', value: '285', provenance: 'STUDENT_REPORTED' } }) }));
     expect(r.learner.state).toBe('EXAM_ONLY_PROFILE');
     expect(r.learner.contextSource).toBeNull();
     expect(reasons(r)).toEqual(expect.arrayContaining(['PREVIOUS_RESULT_RECORDED', 'WINDOW_OPEN_BY_DATE']));
@@ -373,7 +375,7 @@ describe('closing, confirmation, open attempts, programme plans', () => {
     expect(passed.state).toBe('EXAM_COMPLETED');
     expect(passed.recommendedNextAction.kind).toBe('CONFIRM_EXAM_SAT');
     expect(resolve(facts({ target: target({ examDate: '2026-10-01', satConfirmed: true }) })).recommendedNextAction.kind).toBe('RECORD_RESULT');
-    const done = resolve(facts({ target: target({ examDate: '2026-10-01', actualResult: { scale: 'X', value: '6', source: 'STUDENT_REPORTED' } }) }));
+    const done = resolve(facts({ target: target({ examDate: '2026-10-01', actualResult: { scale: 'X', value: '6', provenance: 'STUDENT_REPORTED' } }) }));
     expect(done.state).toBe('RESULT_RECORDED');
     expect(done.phase).toBe('CLOSING');
   });

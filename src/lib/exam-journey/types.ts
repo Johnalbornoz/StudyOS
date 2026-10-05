@@ -85,6 +85,13 @@ export type EstimateSource = 'STUDENT_ESTIMATE' | 'TEACHER_ESTIMATE' | 'TEACHER_
 /** O-02: the ONLY prediction model classes. */
 export type PredictionModelClass = 'OFFICIAL_OR_KNOWN_MODEL' | 'HISTORICAL_ESTIMATE' | 'NO_MODEL';
 export type ProvenanceSource = 'INSTITUTION' | 'STUDENT';
+/**
+ * O-06 (APPROVED): provenance of an exam result. Only VERIFIED_DOCUMENT and
+ * OFFICIAL_INTEGRATION are verified; a result a Student types in is never
+ * verified, and StudyUs never alters an official result.
+ */
+export type ResultProvenance = 'STUDENT_REPORTED' | 'INSTITUTION_REPORTED' | 'VERIFIED_DOCUMENT' | 'OFFICIAL_INTEGRATION';
+export const VERIFIED_RESULT_PROVENANCES: readonly ResultProvenance[] = ['VERIFIED_DOCUMENT', 'OFFICIAL_INTEGRATION'];
 
 export interface LearnerFacts {
   /** The Student's own academic profile (self-declared), or null when there is none. */
@@ -125,8 +132,8 @@ export interface ExamTargetFacts {
   satConfirmed: boolean;
   /** Logged "start preparing now" opt-in -- not stored yet: false today. */
   optedInEarly: boolean;
-  previousResult: { scale: string; value: string } | null;
-  actualResult: { scale: string; value: string; source: 'STUDENT_REPORTED' | 'INSTITUTION_VERIFIED' | 'OFFICIAL_STATEMENT' } | null;
+  previousResult: { scale: string; value: string; provenance: ResultProvenance } | null;
+  actualResult: { scale: string; value: string; provenance: ResultProvenance } | null;
 }
 
 /** Academic facts from the catalogue / Blueprint (what the exam IS). */
@@ -162,6 +169,15 @@ export interface LearningEvidenceFacts {
   topRecommendation: { action: RecommendationAction; band: 'HIGH' | 'MEDIUM' | 'LOW' } | null;
   /** Latest learning evidence on the target's mapped concepts (ISO timestamp). */
   lastMappedLearningEvidenceAt: string | null;
+  /**
+   * G6: mapped concepts on which ANOTHER exam has results. The shared learner
+   * state of those concepts may include that exam's simulation evidence (legacy
+   * knowledge-state scoring counts EXAM_SIMULATION), so this target's readiness
+   * can be influenced by another exam. Reported, never hidden.
+   */
+  crossExamEvidenceConcepts: number;
+  /** Requirements whose only evidence is another exam's result (context only: excluded from readiness). */
+  otherExamOnlyRequirements: number;
 }
 
 export interface ExamInstanceFact {
@@ -272,6 +288,7 @@ export type ReasonCode =
   | 'PRACTICE_COMPLETED'
   | 'PAPER_TRAINING_COMPLETED'
   | 'HIGH_PRIORITY_GAP'
+  | 'CROSS_EXAM_EVIDENCE_RISK'
   // mocks (O-04)
   | 'MOCK_GUIDANCE_MET'
   | 'MOCK_GUIDANCE_NOT_MET'
@@ -287,8 +304,11 @@ export type ReasonCode =
   | 'MOCK_COMPONENT_COVERAGE_INCOMPLETE'
   | 'STUDENT_ESTIMATE_SCENARIO_ONLY'
   | 'TEACHER_COMPONENT_INPUT_PENDING'
-  // closing
+  // closing (O-06)
   | 'ACTUAL_RESULT_RECORDED'
+  | 'RESULT_STUDENT_REPORTED'
+  | 'RESULT_INSTITUTION_REPORTED'
+  | 'RESULT_VERIFIED'
   | 'OPEN_ATTEMPT';
 
 export interface ResolutionReason {
@@ -311,6 +331,8 @@ export interface ReadinessStatus {
   evidenceCoverage: number | null;
   /** Weighted share at ALREADY_STRONG / NEEDS_CONFIRMATION (0..1). */
   readyShare: number | null;
+  /** G6: this target's readiness may be influenced by another exam's evidence. */
+  crossExamEvidenceRisk: boolean;
 }
 
 export interface MockStatus {
@@ -353,5 +375,7 @@ export interface StudentExamJourneyResolution {
   readinessStatus: ReadinessStatus;
   mockStatus: MockStatus;
   predictionStatus: PredictionStatus;
+  /** O-06: the recorded exam result with its provenance; `verified` only for verified provenances. */
+  examResult: { provenance: ResultProvenance; verified: boolean } | null;
   resolutionReasons: ResolutionReason[];
 }

@@ -1,6 +1,6 @@
 # Student Exam Journey V2 — architecture, state machine, decision tree, data contracts
 
-- **Status:** design certified at `edb63dc8`. Section O decisions O-01 to O-04 are **APPROVED** (§O). J0 (exam-only access) and J2 (journey resolver, shadow mode) are implemented on this branch (§P). No new UX, no migration, no deploy.
+- **Status:** design certified at `edb63dc8`. Section O decisions O-01 to O-07 are **APPROVED** (§O). J0 (exam-only access) and J2 (journey resolver, shadow mode) are implemented on this branch (§P) and shadow-validated locally against real DEV data and an ephemeral copy: `LOCAL_SHADOW_VALIDATED` (see [`STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md`](STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md)). No new UX, no migration, no deploy.
 - **Base:** `bf98086` · branch `design/student-exam-journey-v2`.
 - **Read first:** [`00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md`](00_STUDENT_EXAM_JOURNEY_CURRENT_STATE.md). Gap IDs `G-xx` refer to it.
 - **Scope rule:** this track decides **what the student sees and does next**. It **consumes** the Exam Blueprint Engine (what the exam is and how it is scored) and the Question Bank (what can be executed). It never invents an academic rule. When a dependency is missing it shows an explicit state (`BLUEPRINT_INCOMPLETE`, `CONTENT_UNAVAILABLE`, `PREDICTION_MODEL_UNAVAILABLE`, …).
@@ -20,7 +20,7 @@ Contents:
 - L Data Requirements
 - M Acceptance Scenarios
 - N Implementation proposal
-- O Decisions (O-01 to O-04 approved)
+- O Decisions (O-01 to O-07 approved)
 - P Implementation status (J0, J2)
 
 ---
@@ -255,7 +255,7 @@ stateDiagram-v2
 
 ### B.5 Transition table (guards)
 
-All thresholds marked ⚙ are **journey policy** (UX pacing), versioned in `src/lib/exam-journey/policy.ts` (`journey-policy-v1`). Per **O-01** they are never Blueprint data and never exam-specific: the Blueprint supplies the facts (date/session, components, availability), the journey decides the pacing from the date, readiness, evidence and the intensity required. The preparation window is `8 + 18 × gapShare` weeks, where `gapShare` = 1 − weighted ready share (unknown = 1).
+All thresholds marked ⚙ are **journey policy** (UX pacing), versioned in `src/lib/exam-journey/policy.ts` (`journey-policy-v1`). Per **O-01** they are never Blueprint data and never exam-specific: the Blueprint supplies the facts (date/session, components, availability), the journey decides the pacing from the date, readiness, evidence and the intensity required. The preparation window is `8 + 18 × gapShare` weeks, where `gapShare` = 1 − weighted ready share (unknown = 1). **This window is an `EXPERIMENTAL_PRODUCT_HEURISTIC`** (`journey-policy-v1`): versioned, replaceable, visible in every `WINDOW_*` resolution reason, never an academic rule and never a hard block.
 
 | From → To | Guard (all must hold) | Facts read |
 |---|---|---|
@@ -996,11 +996,26 @@ Same cadence as the master plan: DEV / throwaway DB → regression → frozen SH
 - Low readiness is never by itself a reason to block.
 - Implemented: `mockStatus.startable` is false only with a blocker (`STRUCTURE` / `MOCK` scope or `BLUEPRINT_VERSION_INVALID`); guidance codes are recommendations. Verified over a 2,800-combination fact matrix.
 
-### Still open (not decided in this phase)
+### Approved (2026-10-05, shadow-validation phase)
 
-5. **Path B subjects:** auto-create exam-area subjects lazily on the first learning launch vs a dedicated "exam space" without subjects. J0 constraint already in force: no artificial subject is ever created to satisfy access.
-6. **Actual result verification:** student-reported only for now, with institution verification later (Track A).
-7. **Cambridge Checkpoint catalogue** (Blueprint), and **join codes / session on assignments** (Track A): this track only requests them.
+**O-05 — Subjects for Path B (independent exam student). APPROVED.**
+- An independent exam student does **not** create academic subjects before creating an Exam Target. The Exam Target may be the first academic object.
+- Once selected, the Exam Definition / Blueprint mapping may derive domains, subjects, sections, concepts, skills and prerequisites. These exam-derived learning scopes do **not** automatically create normal curriculum subjects unless the learner actually has a curriculum-learning context.
+- Principle: `Exam Target ≠ Academic Subject enrollment`. E.g. PAA → Mathematics / Reading / Writing resolved internally, without three standard Student subjects. A later curriculum context may coexist.
+- Status: J0 already in force (no subject created for access); contract tests assert no journey action creates subjects. Observation for J3: a Student-initiated "Añadir a mi plan" from an exam plan creates a normal subject today (`learning-links.service.ts:173`). This is user-initiated, not automatic.
+
+**O-06 — Result verification / actual exam results. APPROVED.**
+- Provenance vocabulary: `STUDENT_REPORTED`, `INSTITUTION_REPORTED`, `VERIFIED_DOCUMENT`, `OFFICIAL_INTEGRATION`. A Student-entered result is never automatically verified.
+- A final result may be stored and used for progress history, prediction calibration, longitudinal evidence and comparison against projections, always with its provenance. StudyUs never alters an official result.
+- Without verification it is represented as **"Student-reported result"**, never "Official result". The Journey may reach `EXAM_COMPLETED` / record the result with a Student-reported provenance; any state requiring official verification stays separate (none exists yet).
+- No document verification or integration is built. Contract: `ResultProvenance` on previous and actual results; resolution `examResult: { provenance, verified }` with `verified` only for `VERIFIED_DOCUMENT` / `OFFICIAL_INTEGRATION`. This supersedes the earlier ad-hoc labels (`INSTITUTION_VERIFIED`, `OFFICIAL_STATEMENT`) used in §H.1 and §L.2.
+
+**O-07 — Checkpoint / join code / institutional assessments. APPROVED.**
+- Institution-assigned assessments and public / independent exam targets are different assignment paths that converge into the same Assessment / Exam Core.
+- An institution can create / assign a checkpoint, diagnostic, benchmark, mock, assessment instance or exam-preparation milestone, and distribute it through class / student assignment.
+- A Join Code is an access / distribution mechanism: `Join Code ≠ Exam Definition`, `Join Code ≠ Blueprint`. It resolves to an already-defined assignment / assessment instance.
+- Institution learners: Institution → Assignment → Assessment/Exam Instance → Student Attempt. Independent learners: Exam Target → Blueprint → Assessment/Mock Instance → Student Attempt. Both reuse the same execution engine where appropriate.
+- Not every institution assessment becomes an Exam Target: checkpoint / progress assessments may exist without a final external exam. No join codes are built in this phase. Contract tests assert that only class **exam** assignments become targets.
 
 ---
 
@@ -1013,4 +1028,12 @@ Same cadence as the master plan: DEV / throwaway DB → regression → frozen SH
 | J2 resolver | `src/lib/exam-journey/resolver.ts` | Pure, deterministic, no clock, no DB, no exam-specific branching, no entry-path flag. |
 | J2 policy | `src/lib/exam-journey/policy.ts` | `journey-policy-v1` (O-01, O-04). |
 | J2 facts | `src/lib/exam-journey/facts.server.ts` | Read-only; reuses capabilities, preparation plan, academic context and Exam Core instances. Facts not stored yet are null/false. |
-| Shadow | `feature-flag.ts`, `shadow-record.ts`, `shadow.server.ts` | `STUDENT_JOURNEY_V2=SHADOW`. Exam Prep pages schedule it with `after()`; one `[journey-shadow]` JSON line per target, no student id. `GET /api/exam-preparation/journey` (owner-only, 404 when OFF) for DEV inspection. No UX reads it. |
+| Shadow | `feature-flag.ts`, `shadow-record.ts`, `shadow.server.ts` | `STUDENT_JOURNEY_V2=SHADOW`. Exam Prep pages schedule it with `after()`; one `[journey-shadow]` JSON line per target, no student id. `GET /api/exam-preparation/journey` (owner-only, 404 when OFF, marked `internal: JOURNEY_SHADOW_DIAGNOSTIC`) for DEV inspection. No UX reads it. |
+| Plan facts | `plan-facts.ts` | Another exam's evidence is context only: excluded from this target's ready share / coverage; cross-exam influence flagged (`CROSS_EXAM_EVIDENCE_RISK`, G6). |
+
+**Shadow validation (2026-10-05): `LOCAL_SHADOW_VALIDATED`**, not hosted. 10 scenarios: 5 PASS, 5 PASS_WITH_EXPECTED_DIFFERENCE, 0 FAIL. Three journey defects were found and fixed:
+- structure-only exams reported as `BLUEPRINT_INCOMPLETE`;
+- an unactionable HORIZON action;
+- other-exam evidence counted as readiness.
+
+One current-app bug documented: G6, PISA skips its diagnostic after a PAA mock. Recommendation: `READY_FOR_J1_J3_DESIGN`. Full report: [`STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md`](STUDENT_EXAM_JOURNEY_V2_SHADOW_VALIDATION.md).
