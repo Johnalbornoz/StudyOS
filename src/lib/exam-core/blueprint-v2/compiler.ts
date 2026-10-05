@@ -28,6 +28,7 @@ import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-co
 import { EXAM_FAMILY_DESCRIPTORS } from '../taxonomy';
 import { hashCanonical } from '../scoring/scoring-policy';
 import { cellKeyOf } from '../question-bank/cells';
+import { normalizeConstraints } from '../slot-constraints';
 import {
   combineProvenance,
   defaultSourceRegistry,
@@ -368,7 +369,9 @@ function compileComponent(section: Section, order: number, raw: RawSection | und
   const reasoningByCell = new Map<string, string | null>();
   for (const o of section.objectives) {
     for (const t of o.targets) {
-      const key = cellKeyOf(section.key, o.code, t.questionType ?? null, t.difficultyMin ?? null, t.difficultyMax ?? null, t.commandTerm ?? null);
+      // Slot requirements are part of the cell identity exactly as the runtime keys them (apply writes them normalized).
+      const constraints = normalizeConstraints(t.constraints);
+      const key = cellKeyOf(section.key, o.code, t.questionType ?? null, t.difficultyMin ?? null, t.difficultyMax ?? null, t.commandTerm ?? null, constraints);
       const existing = cells.get(key);
       if (existing) {
         existing.positions += t.count;
@@ -387,6 +390,7 @@ function compileComponent(section: Section, order: number, raw: RawSection | und
           difficulty: t.difficultyMin !== undefined || t.difficultyMax !== undefined ? { scale: 'DECLARED_1_5', min: t.difficultyMin ?? null, max: t.difficultyMax ?? null } : null,
           commandTerm: t.commandTerm ?? null,
           reasoningRequirement: t.reasoningRequirement ?? null,
+          ...(constraints.length ? { constraints } : {}),
         },
         marks: { source: 'ITEM_MARKSCHEME' },
       });
@@ -426,8 +430,23 @@ function compileComponent(section: Section, order: number, raw: RawSection | und
       blueprintWeight: policy(section.weight, 'StudyUs blueprint allocation weight, not an official component weight'),
     },
     cells: cellList,
+    ...(allocationOf(d, ctx) ? { allocation: allocationOf(d, ctx)! } : {}),
     plannedPositions,
     lengthFidelity,
+  };
+}
+
+/** definition.blueprintSpecification -> the blueprint's allocation, with provenance per origin (never laundered). */
+function allocationOf(d: Section['definition'], ctx: Ctx): BlueprintComponent['allocation'] | null {
+  const spec = d?.blueprintSpecification;
+  if (!spec || (!spec.margins?.length && !spec.cells && !spec.policies?.length)) return null;
+  const prov = (origin: 'OFFICIAL' | 'OFFICIAL_DERIVED' | 'STUDYUS_POLICY', keys: readonly string[], path: string) =>
+    origin === 'STUDYUS_POLICY' ? UNKNOWN_PROVENANCE : ctx.sourced(keys, path);
+  return {
+    status: spec.status,
+    margins: (spec.margins ?? []).map((m) => ({ dimension: m.dimension, totals: m.totals, origin: m.provenance, provenance: prov(m.provenance, m.sourceKeys, `allocation.margins.${m.dimension}`), note: m.note ?? null })),
+    cells: spec.cells ? { counts: spec.cells.counts.map((c) => ({ constraints: normalizeConstraints(c.constraints), count: c.count })), origin: spec.cells.provenance, provenance: prov(spec.cells.provenance, spec.cells.sourceKeys, 'allocation.cells'), note: spec.cells.note ?? null } : null,
+    policies: (spec.policies ?? []).map((x) => ({ key: x.key, origin: x.provenance, provenance: prov(x.provenance, x.sourceKeys, `allocation.policies.${x.key}`), note: x.note ?? null })),
   };
 }
 

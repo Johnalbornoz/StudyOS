@@ -71,7 +71,7 @@ export function structuralFullMockDiagnostic(def: ExamDefinitionV2, general: Blu
     fullLengthStructure: (mine.some((v) => v.identity.purpose === 'FULL_MOCK') ? 'YES' : mine.some((v) => v.identity.purpose === 'REDUCED_MOCK') ? 'NO' : 'UNKNOWN') as TriState,
   };
   if (def.lifecycle.configuration === 'STRUCTURE_ONLY') return { examDefinitionKey: key, status: 'NOT_ASSEMBLABLE', reasons: [{ code: 'NO_ITEM_BLUEPRINT' }], structuralCapabilities: caps };
-  if (mine.some((v) => v.identity.purpose === 'FULL_MOCK')) return { examDefinitionKey: key, status: 'STRUCTURAL_FULL_MOCK_SUPPORTED', reasons: [], structuralCapabilities: caps };
+  if (mine.some((v) => v.identity.purpose === 'FULL_MOCK')) return { examDefinitionKey: key, status: 'STRUCTURAL_FULL_MOCK_SUPPORTED', reasons: def.components.filter((c) => c.mockable === 'UNKNOWN').map((c) => ({ code: 'MOCKABILITY_UNKNOWN' as const, componentKey: c.key, detail: 'official timing not published' })), structuralCapabilities: caps };
   const nonMockable = def.components.filter((c) => c.mockable === 'NO').map((c) => ({ code: 'NON_MOCKABLE_COMPONENT' as const, componentKey: c.key, componentClass: c.componentClass }));
   if (mine.some((v) => v.identity.purpose === 'REDUCED_MOCK')) {
     return { examDefinitionKey: key, status: 'STRUCTURAL_FULL_MOCK_NOT_AT_OFFICIAL_LENGTH', reasons: [{ code: 'NOT_AT_OFFICIAL_LENGTH', detail: 'only a disclosed reduced form' }, ...def.components.filter((c) => c.mockable === 'UNKNOWN').map((c) => ({ code: 'MOCKABILITY_UNKNOWN' as const, componentKey: c.key }))], structuralCapabilities: caps };

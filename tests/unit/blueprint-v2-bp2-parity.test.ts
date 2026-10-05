@@ -27,7 +27,10 @@ describe('88 configurations as blueprint variants', () => {
       expect(MOCK_ORDINAL_PATTERN.test(v.identityKey)).toBe(false);
       expect(v.origin.type).toBe('COMPILED_FROM_CONFIG');
     }
-    expect(c.r.variants.some((v) => v.identity.purpose === 'FULL_MOCK')).toBe(false); // no current configuration is at official length
+    // Only Saber 11 V2.1 (50/50 slots, QB 802d9be) is at official length; every FULL_MOCK is a FULL_LENGTH structure.
+    const fullMocks = c.r.variants.filter((v) => v.identity.purpose === 'FULL_MOCK');
+    expect(fullMocks.length > 0).toBe(c.key === 'v2.saber11.math');
+    for (const v of fullMocks) expect(v.structure.lengthClass).toBe('FULL_LENGTH');
   });
 
   it('the whole catalog validates (no duplicate identities, no overlaps)', () => {

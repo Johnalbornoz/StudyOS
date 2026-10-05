@@ -5,6 +5,7 @@
  */
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
+import { blueprintV2Mode } from '@/lib/exam-core/blueprint-v2/flag';
 import { getComponent, listComponentsForVersion } from '@/lib/assessment/component.service';
 import { getExamVersion } from '@/lib/assessment/exam-definition.service';
 import { canFullMockBeOffered } from '@/lib/assessment/full-mock-guard.service';
@@ -111,6 +112,19 @@ export async function buildSimulationPlan(params: {
 
   const examVersion = await getExamVersion(params.examVersionId);
   const blueprint = await getBlueprintForVersion(params.examVersionId);
+  // Blueprint V2 SHADOW (BP-4A): only the legacy F9 path (no instance components). An exam-instance plan was
+  // already observed once in formInputs -- one shadow observation per flow. Observe only; nothing is returned.
+  if (!only && blueprint && blueprintV2Mode() === 'SHADOW') {
+    const { shadowObserveSimulationPlan } = await import('@/lib/exam-core/blueprint-v2/runtime-hook');
+    const all = await listObjectiveTargets(blueprint.id);
+    await shadowObserveSimulationPlan({
+      examVersionId: params.examVersionId,
+      legacyBlueprintId: blueprint.id,
+      simulationType: params.simulationType,
+      components: versionComponents.map((c) => ({ id: c.id, sectionKey: c.sectionKey ?? null })),
+      allTargets: all.map((t) => ({ id: t.id, learningObjectiveId: t.learningObjectiveId, assessmentComponentId: t.assessmentComponentId, questionType: t.questionType, difficultyMin: t.difficultyMin, difficultyMax: t.difficultyMax, commandTermId: t.commandTermId, ...(t.constraints?.length ? { constraints: t.constraints.map((c) => ({ ...c })) } : {}) })),
+    });
+  }
 
   const selectedTargets: SimulationPlanTarget[] = [];
   const toolRules: Record<string, Record<string, unknown> | null> = {};

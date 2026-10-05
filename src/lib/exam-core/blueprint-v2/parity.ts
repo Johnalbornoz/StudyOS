@@ -10,6 +10,7 @@
  */
 import { parseExamVerticalConfig } from '../vertical-config';
 import { deriveBlueprintCells, type BlueprintTargetInput, type ComponentInput } from '../question-bank/cells';
+import { normalizeConstraints } from '../slot-constraints';
 import type { BlueprintV2 } from './schema';
 
 export interface RuntimeShape {
@@ -51,6 +52,8 @@ export function runtimeShapeOf(input: unknown): RuntimeShape {
             difficultyMin: t.difficultyMin ?? null,
             difficultyMax: t.difficultyMax ?? null,
             commandTerm: t.commandTerm ?? null,
+            // apply writes normalizeConstraints(target.constraints) into blueprint_objective_targets.constraints (20261102)
+            ...(normalizeConstraints(t.constraints).length ? { constraints: normalizeConstraints(t.constraints) } : {}),
           });
         }
       }
@@ -91,4 +94,24 @@ export function checkParity(input: unknown, bp: BlueprintV2): ParityDiff[] {
   d('cells', [...rt.cells].sort((a, b) => a.cellKey.localeCompare(b.cellKey)), bpCells);
   d('commandTerms', rt.commandTerms, bp.commandTerms.map((t) => t.term));
   return diffs;
+}
+
+/**
+ * BP-4A: the legacy rows as the runtime reads them (blueprint_objective_targets
+ * with their ids, components with section keys) -- for driving the real shadow
+ * hooks without a database. Objective ids are `objective:<code>` and command
+ * term ids are the term itself, so an in-memory store can map them back.
+ */
+export function runtimeTargetsOf(input: unknown): {
+  targets: Array<{ id: string; learningObjectiveId: string; assessmentComponentId: string; questionType: string | null; difficultyMin: number | null; difficultyMax: number | null; commandTermId: string | null; constraints?: ReturnType<typeof normalizeConstraints> }>;
+  components: Array<{ id: string; sectionKey: string }>;
+} {
+  const parsed = parseExamVerticalConfig(input);
+  if (!parsed.ok) throw new Error(`invalid configuration: ${parsed.issues.join('; ')}`);
+  const targets: ReturnType<typeof runtimeTargetsOf>['targets'] = [];
+  const components = parsed.config.sections.map((s) => ({ id: `component:${s.key}`, sectionKey: s.key }));
+  for (const s of parsed.config.sections) for (const o of s.objectives) for (const t of o.targets) for (let n = 0; n < t.count; n++) {
+    targets.push({ id: `target:${s.key}:${o.code}:${targets.length}`, learningObjectiveId: `objective:${o.code}`, assessmentComponentId: `component:${s.key}`, questionType: t.questionType ?? null, difficultyMin: t.difficultyMin ?? null, difficultyMax: t.difficultyMax ?? null, commandTermId: t.commandTerm ?? null, ...(normalizeConstraints(t.constraints).length ? { constraints: normalizeConstraints(t.constraints) } : {}) });
+  }
+  return { targets, components };
 }

@@ -17,6 +17,7 @@
 import { z } from 'zod';
 import { PROVENANCE_KINDS } from './provenance';
 import { SCORE_UNITS } from './units';
+import { SLOT_DIMENSIONS, SlotConstraintSchema } from '../slot-constraints';
 
 export const BLUEPRINT_SCHEMA_ID = 'studyus.blueprint/v2' as const;
 
@@ -131,6 +132,11 @@ export const EligibilityPredicateSchema = z.object({
   difficulty: z.object({ scale: z.literal('DECLARED_1_5'), min: z.number().int().min(1).max(5).nullable(), max: z.number().int().min(1).max(5).nullable() }).nullable(),
   commandTerm: z.string().min(1).max(60).nullable(),
   reasoningRequirement: z.string().max(200).nullable(),
+  /**
+   * Structured slot requirements (Exam Core contract `slot-constraints.ts`, owned by the Blueprint): an item is
+   * eligible only if EVERY one matches. Present only when the slot declares any (documents without them are unchanged).
+   */
+  constraints: z.array(SlotConstraintSchema).min(1).max(6).optional(),
 });
 export type EligibilityPredicate = z.infer<typeof EligibilityPredicateSchema>;
 
@@ -147,6 +153,8 @@ export const CellSchema = z.object({
 export type BlueprintCell = z.infer<typeof CellSchema>;
 
 export const COMPONENT_ASSESSMENT = ['EXTERNAL', 'INTERNAL', 'NOT_APPLICABLE'] as const;
+/** Origin of a declared allocation (ComponentDefinition.blueprintSpecification). */
+export const ALLOCATION_ORIGINS = ['OFFICIAL', 'OFFICIAL_DERIVED', 'STUDYUS_POLICY'] as const;
 
 export const ComponentSchema = z.object({
   key: KEY,
@@ -180,6 +188,19 @@ export const ComponentSchema = z.object({
     blueprintWeight: policySchema(z.number().positive()).nullable(),
   }),
   cells: z.array(CellSchema),
+  /**
+   * The declared full-form allocation of the slot requirements (definition.blueprintSpecification): margins per
+   * dimension, the cell matrix and other policies, each with its origin. OFFICIAL / OFFICIAL_DERIVED carry the
+   * provenance of their sources; STUDYUS_POLICY is never authoritative. Present only when declared.
+   */
+  allocation: z
+    .object({
+      status: z.enum(['DOCUMENTED', 'PARTIAL', 'UNKNOWN']),
+      margins: z.array(z.object({ dimension: z.enum(SLOT_DIMENSIONS), totals: z.record(z.string(), z.number().int().min(0)), origin: z.enum(ALLOCATION_ORIGINS), provenance: ProvenanceSchema, note: z.string().nullable() })),
+      cells: z.object({ counts: z.array(z.object({ constraints: z.array(SlotConstraintSchema).min(1), count: z.number().int().min(1) })), origin: z.enum(ALLOCATION_ORIGINS), provenance: ProvenanceSchema, note: z.string().nullable() }).nullable(),
+      policies: z.array(z.object({ key: z.string().min(1), origin: z.enum(ALLOCATION_ORIGINS), provenance: ProvenanceSchema, note: z.string().nullable() })),
+    })
+    .optional(),
   plannedPositions: z.number().int().min(0),
   /** OFFICIAL_LENGTH / REDUCED by item count; DEPENDS_ON_ITEM_MARKS when only marks are published (items carry marks, the blueprint does not). */
   lengthFidelity: z.enum(['OFFICIAL_LENGTH', 'REDUCED', 'DEPENDS_ON_ITEM_MARKS', 'UNKNOWN']),

@@ -375,7 +375,8 @@ describe('parity across the applied catalogue (truth over green)', () => {
     expect(r.notOfferedByRuntime).toHaveLength(50);
   });
   it('no MATCH is claimed where the runtime is ambiguous or unsupported', () => {
-    expect(r.totals).toEqual({ MATCH: 174, LEGACY_ONLY: 44, MISSING_CONTEXT: 56 });
+    // Saber 11 V2.1 (QB 802d9be) is full length: its Student Full Mock request now MATCHes (174 -> 175).
+    expect(r.totals).toEqual({ MATCH: 175, LEGACY_ONLY: 43, MISSING_CONTEXT: 56 });
     for (const x of r.records) {
       if (x.parity_status === 'MATCH') expect(x.v2_structure_fingerprint).toBe(x.legacy_structure_fingerprint);
       if (x.parity_status !== 'MATCH') expect(x.v2_blueprint_identity === null || x.parity_status === 'STRUCTURAL_MISMATCH').toBe(true);

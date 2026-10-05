@@ -1,6 +1,12 @@
 /**
  * Blueprint SLOT CONSTRAINTS -- structured assembly requirements of one required slot (pure).
  *
+ * OWNERSHIP (architecture decision, 2026-10-05): this is the Exam Core structural contract owned by the
+ * Blueprint Engine -- it DEFINES what a slot requires (quantity, competence, content category, marks, ...,
+ * with the allocation provenance in ComponentDefinition.blueprintSpecification). The Question Bank CONSUMES
+ * it to evaluate fulfillment (eligibility, coverage, readiness, certification). There is no second model:
+ * Blueprint V2 (src/lib/exam-core/blueprint-v2) compiles cells and eligibility predicates from this module.
+ *
  * A competence x content combination (e.g. "Formulación y ejecución x Geometría") is NOT a learning
  * objective: it is an Exam Blueprint assembly constraint. A slot keeps its learning objective (what it
  * measures, linked to the canonical curriculum) and its dedicated columns (question type, difficulty band,

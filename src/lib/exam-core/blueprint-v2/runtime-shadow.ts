@@ -127,10 +127,9 @@ export function contextForQbCertification(p: { examVersionId: string; examDefini
 // 2. Flag
 // ---------------------------------------------------------------------------
 
-export type BlueprintV2Mode = 'OFF' | 'SHADOW';
-export function blueprintV2Mode(env: Record<string, string | undefined> = process.env): BlueprintV2Mode {
-  return env.EXAM_BLUEPRINT_V2 === 'SHADOW' ? 'SHADOW' : 'OFF';
-}
+// Defined in the dependency-free ./flag so runtime flows can check it without loading Blueprint V2.
+import { blueprintV2Mode } from './flag';
+export { blueprintV2Mode, type BlueprintV2Mode } from './flag';
 
 // ---------------------------------------------------------------------------
 // 3. Legacy snapshot + a structure fingerprint both sides can compute

@@ -254,13 +254,15 @@ describe('PAA', () => {
 
 // ---------------------------------------------------------------------------
 describe('ICFES Saber 11', () => {
-  it('V2 Matemáticas: the unpublished duration is UNKNOWN; the StudyUs pace is policy', () => {
+  it('V2.1 Matemáticas (QB 802d9be): 50 slots at official length; the unpublished duration is UNKNOWN; the StudyUs pace is policy', () => {
     const bp = ok(SABER11_MATH_V2).blueprint;
     const m = comp(bp, 'math');
+    expect(bp.identity.versionLabel).toBe('V2.1 Saber 11 2026 · 50 posiciones');
     expect(m.official.durationMinutes.status).toBe('UNKNOWN');
-    expect(m.delivery.durationMinutes?.value).toBe(18);
+    expect(m.delivery.durationMinutes).toEqual({ origin: 'STUDYUS_POLICY', value: 75, note: expect.any(String) });
     expect(m.official.itemCount).toMatchObject({ status: 'STATED', value: 50 });
-    expect(m.lengthFidelity).toBe('REDUCED');
+    expect(m.plannedPositions).toBe(50);
+    expect(m.lengthFidelity).toBe('OFFICIAL_LENGTH');
     expect(m.distributions.map((d) => d.dimension)).toEqual(['Competencia', 'Contenido']);
     expect(bp.components.map((c) => c.key)).toEqual(['math']); // the other tests are not invented
   });

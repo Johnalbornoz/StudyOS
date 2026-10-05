@@ -19,6 +19,7 @@ import { BlueprintV2Schema, type BlueprintV2 } from './schema';
 import { checkPipelineStructure, resolvePipeline } from './pipeline';
 import { isAuthoritativeFact, type Fact } from './provenance';
 import { hashCanonical } from '../scoring/scoring-policy';
+import { blueprintAllocationProblems, constraintSignature } from '../slot-constraints';
 
 export interface BlueprintIssue {
   code: string;
@@ -62,6 +63,22 @@ export function validateBlueprint(input: unknown): BlueprintValidation {
   for (const c of bp.components) {
     const planned = c.cells.reduce((n, x) => n + x.positions, 0);
     if (planned !== c.plannedPositions) err('PLANNED_POSITIONS_MISMATCH', `components.${c.key}.plannedPositions`, `cells add up to ${planned}, the component states ${c.plannedPositions}`);
+  }
+
+  // ---- slot requirements: a declared allocation must be realised exactly by the cells (shared Exam Core contract) ----
+  for (const c of bp.components) {
+    if (!c.allocation) continue;
+    const signatures = new Map<string, number>();
+    for (const x of c.cells) {
+      const sig = constraintSignature(x.eligibility.constraints);
+      signatures.set(sig, (signatures.get(sig) ?? 0) + x.positions);
+    }
+    const spec = { margins: c.allocation.margins.map((m) => ({ dimension: m.dimension, totals: m.totals })), ...(c.allocation.cells ? { cells: { counts: c.allocation.cells.counts } } : {}) };
+    for (const p of blueprintAllocationProblems(spec, signatures)) err('ALLOCATION_NOT_REALISED', `components.${c.key}.allocation`, p);
+    for (const a of [...c.allocation.margins, ...(c.allocation.cells ? [c.allocation.cells] : []), ...c.allocation.policies]) {
+      if (a.origin === 'STUDYUS_POLICY' && a.provenance.authority !== 'NONE') err('POLICY_ALLOCATION_WITH_AUTHORITY', `components.${c.key}.allocation`, 'a STUDYUS_POLICY allocation can never be authoritative');
+      if (a.origin !== 'STUDYUS_POLICY' && a.provenance.sourceKeys.length === 0) err('MISSING_PROVENANCE', `components.${c.key}.allocation`, `${a.origin} allocation without sources`);
+    }
   }
 
   // ---- references --------------------------------------------------------

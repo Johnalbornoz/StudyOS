@@ -382,8 +382,10 @@ export function compileBlueprintVariants(config: unknown, options: CompileVarian
         if ('error' in covered) continue;
         const comps = def.components.filter((c) => covered.keys.includes(c.key));
         if (comps.some((c) => c.mockable === 'NO')) continue; // coursework cannot be sat as a mock
-        const full = comps.every((c) => c.mockable === 'YES') && general.components.filter((c) => covered.keys.includes(c.key)).every((c) => c.lengthFidelity === 'OFFICIAL_LENGTH');
-        derived(full ? 'FULL_MOCK' : 'REDUCED_MOCK', scope, full ? 'every component at official length and mockable' : 'a timed simulation of a reduced form (disclosed as reduced)');
+        // Full length is a structural fact; a full-length form is never labelled reduced. When an official duration is not
+        // published (mockable UNKNOWN, e.g. Saber 11), the variant is FULL_MOCK with structuralCapability.mockable UNKNOWN.
+        const full = general.components.filter((c) => covered.keys.includes(c.key)).every((c) => c.lengthFidelity === 'OFFICIAL_LENGTH');
+        derived(full ? 'FULL_MOCK' : 'REDUCED_MOCK', scope, full ? (comps.every((c) => c.mockable === 'YES') ? 'every component at official length and mockable' : 'every component at official length; official timing not published (mockability UNKNOWN)') : 'a timed simulation of a reduced form (disclosed as reduced)');
       }
     }
   }

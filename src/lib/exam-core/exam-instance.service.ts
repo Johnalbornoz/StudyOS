@@ -38,6 +38,7 @@ import { DEFAULT_DEMAND_POLICY } from './question-bank/demand';
 import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel, type StudentUsage } from './form-assembly';
 import type { ExamItemState } from './navigation-state';
 import type { TimingMode } from '@/lib/simulation/types';
+import { blueprintV2Mode } from './blueprint-v2/flag';
 
 export type InstanceStatus = 'DRAFT' | 'READY' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED' | 'DELETED';
 export type Rigor = 'OFFICIAL_FIDELITY' | 'STRICT_READINESS';
@@ -129,13 +130,15 @@ export function timingFor(mode: InstanceMode, requested: TimingMode | undefined)
 /* Form assembly (DB reads -> pure assembleForm)                        */
 /* ------------------------------------------------------------------ */
 
-async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK', audience: ContentAudience = 'STUDENT') {
+/** Exported for the Blueprint V2 shadow regression (OFF vs SHADOW must return identical inputs). */
+export async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK', audience: ContentAudience = 'STUDENT', shadow: { instanceId: string | null } = { instanceId: null }) {
   const blueprint = await getBlueprintForVersion(examVersionId);
   if (!blueprint) throw new ExamInstanceError('NO_ITEMS_FOR_FORM', 'version has no blueprint');
   const components = await listComponentsForVersion(examVersionId);
   const only = new Set(componentIds);
   const focus = focusObjectiveIds.length ? new Set(focusObjectiveIds) : null;
-  const targets = orderTargetsBySection((await listObjectiveTargets(blueprint.id)).filter((t) => only.has(t.assessmentComponentId) && (!focus || focus.has(t.learningObjectiveId))), components);
+  const allTargets = await listObjectiveTargets(blueprint.id);
+  const targets = orderTargetsBySection(allTargets.filter((t) => only.has(t.assessmentComponentId) && (!focus || focus.has(t.learningObjectiveId))), components);
   const positions: FormPosition[] = targets.map((t, index) => ({
     index,
     blueprintObjectiveTargetId: t.id,
@@ -151,6 +154,22 @@ async function formInputs(examVersionId: string, componentIds: string[], student
   const officialCounts = await db.query(`SELECT id, definition->>'officialItemCount' AS n FROM assessment_components WHERE id = ANY($1::uuid[])`, [[...only]]);
   const fullLength = officialCounts.rows.length > 0 && officialCounts.rows.every((r: any) => r.n !== null && positions.filter((p) => p.assessmentComponentId === r.id).length >= Number(r.n));
   const use = mode === 'PRACTICE' ? 'PRACTICE' : fullLength ? 'FULL_MOCK' : 'REDUCED_MOCK';
+  // Blueprint V2 SHADOW (BP-4A): observe only. The legacy blueprint above stays authoritative; the hook gets copies
+  // of ids, returns nothing, never throws. With the flag OFF nothing is imported or computed.
+  if (blueprintV2Mode() === 'SHADOW') {
+    const { shadowObserveFormInputs } = await import('./blueprint-v2/runtime-hook');
+    await shadowObserveFormInputs({
+      examVersionId,
+      legacyBlueprintId: blueprint.id,
+      mode,
+      runtimeUse: use,
+      selectedComponentIds: [...componentIds],
+      focusObjectiveIds: [...focusObjectiveIds],
+      instanceId: shadow.instanceId,
+      components: components.map((c) => ({ id: c.id, sectionKey: c.sectionKey ?? null })),
+      allTargets: allTargets.map((t) => ({ id: t.id, learningObjectiveId: t.learningObjectiveId, assessmentComponentId: t.assessmentComponentId, questionType: t.questionType, difficultyMin: t.difficultyMin, difficultyMax: t.difficultyMax, commandTermId: t.commandTermId, ...(t.constraints?.length ? { constraints: t.constraints.map((c) => ({ ...c })) } : {}) })),
+    });
+  }
   // Question Bank content-use policy (server-authoritative): practice may use PILOT items, a Mock / Challenge
   // only ACTIVE / CALIBRATED ones -- a mock is never filled with weaker content to reach its length.
   // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
@@ -210,7 +229,7 @@ async function formInputs(examVersionId: string, componentIds: string[], student
 }
 
 async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
-  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode, instance.contentAudience);
+  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode, instance.contentAudience, { instanceId: instance.id });
   const assembled = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
   const form: AssembledForm = { ...assembled, contentAudience: instance.contentAudience };
   if (instance.mode !== 'PRACTICE') {
