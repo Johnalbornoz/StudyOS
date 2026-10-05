@@ -4,6 +4,7 @@
  * report to reason about a configuration's own bank exactly as the DB-backed
  * health does (same cells, same assembly), with synthetic stable ids.
  */
+import { itemDimensionValues } from '../slot-constraints';
 import { createHash } from 'crypto';
 import { examItemFromApproved, examItemMarks } from '../items';
 import { itemFingerprints } from '../fingerprints';
@@ -56,6 +57,7 @@ export function configHealthInput(input: ExamVerticalConfigInput, lifecycle: Lif
             difficultyMin: t.difficultyMin ?? null,
             difficultyMax: t.difficultyMax ?? null,
             commandTerm: t.commandTerm ?? null,
+            ...(t.constraints?.length ? { constraints: t.constraints } : {}),
           });
         }
       }
@@ -76,6 +78,7 @@ export function configHealthInput(input: ExamVerticalConfigInput, lifecycle: Lif
       bankItemId: id,
       learningObjectiveId: loId,
       questionType: it.content.type,
+      dimensions: itemDimensionValues(it.content, marks),
       difficulty: ex.difficulty,
       difficultyIndex: it.content.difficultyIndex ?? null,
       marks,

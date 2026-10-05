@@ -10,6 +10,7 @@
  * content coverage are never conflated: a DEV_CERT_FIXTURE configuration can
  * never carry an official scoring provenance.
  */
+import { blueprintAllocationProblems, constraintSignature, normalizeConstraints, SlotConstraintSchema } from './slot-constraints';
 import { z } from 'zod';
 import { EXAM_FAMILIES } from './taxonomy';
 import { ScoringPolicySchema } from './scoring/scoring-policy';
@@ -25,6 +26,8 @@ const TargetSchema = z.object({
   difficultyMax: z.number().int().min(1).max(5).optional(),
   commandTerm: z.string().min(1).max(60).optional(),
   reasoningRequirement: z.string().max(200).optional(),
+  /** Structured assembly constraints of these slots (competence, content category, marks, ...); optional. */
+  constraints: z.array(SlotConstraintSchema).min(1).max(6).optional(),
   /** How many plan positions (items) this target contributes. */
   count: z.number().int().min(1).max(40).default(1),
 });
@@ -92,6 +95,13 @@ export const ExamVerticalConfigSchema = z
     /** V2: a structure-only configuration (sourced definitions + blueprint, no bank yet). */
     structureOnly: z.boolean().optional(),
     /**
+     * Where the blueprint's positions are filled from. Absent / CONFIG_FIXTURES: the configuration's own
+     * fixture items must fill every position (engine certification without AI). QUESTION_BANK: positions are
+     * filled from the governed Question Bank (real, human-approved content); the configuration's items are only
+     * technical examples, so a full-length blueprint never has to be padded with fixtures.
+     */
+    bankSource: z.enum(['CONFIG_FIXTURES', 'QUESTION_BANK']).optional(),
+    /**
      * V2: the official assessment routes / component combinations (e.g. Cambridge
      * 9709 AS: P1+P2, P1+P4, P1+P5). A Mock must take one complete combination
      * (or one stage of a staged route); none is assumed when absent.
@@ -142,6 +152,21 @@ export const ExamVerticalConfigSchema = z
       if (!codes.includes(item.objectiveCode)) ctx.addIssue({ code: 'custom', message: `item references unknown objective ${item.objectiveCode}`, path: ['items', i] });
       if (item.content.contentStatus !== cfg.contentStatus) ctx.addIssue({ code: 'custom', message: 'item contentStatus must match the configuration contentStatus', path: ['items', i] });
     }
+    // Slot constraints: one value per dimension; a declared allocation (margins / cells) must be realised EXACTLY by the slots.
+    for (const s of cfg.sections) {
+      const signatures = new Map<string, number>();
+      for (const o of s.objectives) for (const t of o.targets) {
+        try {
+          normalizeConstraints(t.constraints);
+        } catch {
+          ctx.addIssue({ code: 'custom', message: `contradictory slot constraints in ${o.code}`, path: ['sections', s.key] });
+        }
+        const sig = constraintSignature(t.constraints);
+        signatures.set(sig, (signatures.get(sig) ?? 0) + t.count);
+      }
+      const spec = s.definition?.blueprintSpecification;
+      for (const p of blueprintAllocationProblems(spec, signatures)) ctx.addIssue({ code: 'custom', message: p, path: ['sections', s.key] });
+    }
     const terms = new Set(cfg.commandTerms.map((t) => t.term));
     for (const s of cfg.sections) for (const o of s.objectives) for (const t of o.targets) {
       if (t.commandTerm && !terms.has(t.commandTerm)) ctx.addIssue({ code: 'custom', message: `unknown command term ${t.commandTerm}`, path: ['sections', s.key] });
@@ -151,7 +176,7 @@ export const ExamVerticalConfigSchema = z
     if (weights) for (const k of Object.keys(weights)) if (!sectionKeys.includes(k)) ctx.addIssue({ code: 'custom', message: `sectionWeights references unknown section ${k}`, path: ['scoring'] });
     for (const b of cfg.version.delivery.breaks) if (!sectionKeys.includes(b.afterSectionKey)) ctx.addIssue({ code: 'custom', message: `break references unknown section ${b.afterSectionKey}`, path: ['version', 'delivery'] });
     // Every planned position must be fillable from the bank when the content is a fixture (no AI dependency for certification).
-    if (cfg.contentStatus === 'DEV_CERT_FIXTURE' && !cfg.structureOnly) {
+    if (cfg.contentStatus === 'DEV_CERT_FIXTURE' && !cfg.structureOnly && cfg.bankSource !== 'QUESTION_BANK') {
       for (const s of cfg.sections) for (const o of s.objectives) {
         const need = o.targets.reduce((n, t) => n + t.count, 0);
         const have = cfg.items.filter((it) => it.objectiveCode === o.code).length;

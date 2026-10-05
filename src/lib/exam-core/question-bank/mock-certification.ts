@@ -23,6 +23,7 @@
  *   NONE -> PRACTICE_READY -> SECTION_FIDELITY -> ONE_MOCK_READY -> MULTI_MOCK_READY -> PRODUCTION_DEPTH
  * where mock depth is the number of item-disjoint complete certified forms.
  */
+import { blueprintAllocationProblems, constraintMismatches, constraintSignature, normalizeConstraints, type ItemDimensionValues, type SlotConstraint } from '../slot-constraints';
 import { isEligible, type EligibilityFacts } from './lifecycle';
 import type { ExamAudience } from '../audience';
 import { assessmentSemanticsOf, type AssessmentSemantics, type ContentReadiness, type EngineCapability } from '../fidelity';
@@ -48,6 +49,8 @@ export interface ComponentSpec {
   sections: string[];
   /** D2: UNKNOWN stays UNKNOWN until an official / licensed source documents the full-form distribution. */
   blueprintSpecification: BlueprintSpecificationStatus;
+  /** Declared allocation (margins / cells) the slots must realise exactly; null when none is declared. */
+  allocation?: Parameters<typeof blueprintAllocationProblems>[0] | null;
 }
 
 export interface PositionSpec {
@@ -62,8 +65,8 @@ export interface PositionSpec {
   skillId?: string | null;
   commandTerm?: string | null;
   marks?: number | null;
-  /** Second blueprint dimension (e.g. Saber 11 content category in a competence x content matrix). */
-  contentCategory?: string | null;
+  /** Structured slot constraints (competence, content category, ...): every one must match. */
+  constraints?: SlotConstraint[];
 }
 
 export interface BankItemFacts extends EligibilityFacts {
@@ -86,7 +89,8 @@ export interface BankItemFacts extends EligibilityFacts {
   /** Skills the item evidences (published mappings of its objective). */
   skillIds?: string[];
   commandTerm?: string | null;
-  contentCategory?: string | null;
+  /** Structured dimension values the item declares (itemDimensionValues). */
+  dimensions?: ItemDimensionValues;
 }
 
 export interface CertificationInput {
@@ -169,6 +173,8 @@ export function itemBlockers(item: BankItemFacts, profile: CertificationProfile)
     if (isFixture(item)) out.push('DEV_FIXTURE');
     else if (item.provenance && !CERTIFIABLE_PROVENANCE.has(item.provenance)) out.push('UNKNOWN_PROVENANCE');
     else if (!item.provenance) out.push('MISSING_PROVENANCE');
+    // Generated content enters a certified mock only after a HUMAN approval (ACTIVE / CALIBRATED; DB-enforced).
+    if (item.provenance === 'STUDYUS_GENERATED' && !['ACTIVE', 'CALIBRATED'].includes(item.lifecycle ?? '')) out.push('NOT_HUMAN_APPROVED');
     if (!isEligible(item, 'FULL_MOCK', undefined, 'STUDENT') && !isFixture(item)) out.push('NOT_FULL_MOCK_ELIGIBLE');
     if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
     if (item.placeholderSignals.length) out.push('PLACEHOLDER');
@@ -209,7 +215,8 @@ export function constraintMisses(item: BankItemFacts, p: PositionSpec): string[]
   if (p.skillId && !(item.skillIds ?? []).includes(p.skillId)) out.push('SKILL');
   if (p.commandTerm && norm(item.commandTerm) !== norm(p.commandTerm)) out.push('COMMAND_TERM');
   if (p.marks !== null && p.marks !== undefined && item.marks !== p.marks) out.push('MARKS');
-  if (p.contentCategory && norm(item.contentCategory) !== norm(p.contentCategory)) out.push('CONTENT_CATEGORY');
+  // Structured slot constraints: EVERY declared dimension must match (no fallback on a partial match).
+  for (const d of constraintMismatches(p.constraints, item.dimensions)) out.push(d);
   return out;
 }
 const fits = (item: BankItemFacts, p: PositionSpec) => constraintMisses(item, p).length === 0;
@@ -267,7 +274,7 @@ const constraintsOf = (p: PositionSpec) => [
   p.skillId ? `skill ${p.skillId}` : '',
   p.commandTerm ? `command term "${p.commandTerm}"` : '',
   p.marks !== null && p.marks !== undefined ? `${p.marks} marks` : '',
-  p.contentCategory ? `content ${p.contentCategory}` : '',
+  ...normalizeConstraints(p.constraints).map((c) => `${c.dimension}=${c.value}`),
 ].filter(Boolean);
 
 export function certifyBlueprint(input: CertificationInput, profile: CertificationProfile, opts: CertificationOptions = {}): CertificationResult {
@@ -319,6 +326,10 @@ export function certifyBlueprint(input: CertificationInput, profile: Certificati
       if (spec.officialItemCount === null && spec.officialMarks === null) g1.push(`${c.key}: OFFICIAL_SIZE_UNKNOWN`);
       if (c.undefinedPositions) g1.push(`${c.key}: BLUEPRINT_BELOW_OFFICIAL_LENGTH (${c.positions}/${spec.officialItemCount} items)`);
       if (spec.blueprintSpecification !== 'DOCUMENTED') g1.push(`${c.key}: BLUEPRINT_DISTRIBUTION_${spec.blueprintSpecification}`);
+      // A declared allocation (official margins / StudyUs policy cells) must be realised EXACTLY by the slots.
+      const sigs = new Map<string, number>();
+      for (const p of input.positions.filter((x) => x.componentKey === c.key)) sigs.set(constraintSignature(p.constraints), (sigs.get(constraintSignature(p.constraints)) ?? 0) + 1);
+      for (const prob of blueprintAllocationProblems(spec.allocation ?? null, sigs)) g1.push(`${c.key}: ${prob}`);
       const covered = new Set(input.positions.filter((p) => p.componentKey === c.key && p.sectionKey).map((p) => p.sectionKey!));
       for (const sec of spec.sections) if (!covered.has(sec)) g1.push(`${c.key}: REQUIRED_SECTION_MISSING ${sec}`);
     }

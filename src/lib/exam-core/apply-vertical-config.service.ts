@@ -16,6 +16,7 @@
  *   (DRAFT -> PROPOSED -> APPROVED -> PUBLISHED) with creator != reviewer,
  *   both technical (is_system) identities. No user is ever created here.
  */
+import { normalizeConstraints } from './slot-constraints';
 import { db } from '@/lib/db';
 import type { PoolClient } from 'pg';
 import { hashCanonical } from './scoring/scoring-policy';
@@ -233,12 +234,23 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         );
         objectiveIdsByCode[objective.code] = objectiveId;
         for (const target of objective.targets) {
+          const constraints = normalizeConstraints(target.constraints);
           for (let n = 0; n < target.count; n++) {
-            await client.query(
-              `INSERT INTO blueprint_objective_targets (blueprint_id, learning_objective_id, assessment_component_id, target_item_count, question_type, command_term_id, reasoning_requirement, difficulty_min, difficulty_max)
-               VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8)`,
-              [blueprintId, objectiveId, componentId, target.questionType ?? null, target.commandTerm ? termIds.get(target.commandTerm) ?? null : null, target.reasoningRequirement ?? null, target.difficultyMin ?? null, target.difficultyMax ?? null]
-            );
+            const values = [blueprintId, objectiveId, componentId, target.questionType ?? null, target.commandTerm ? termIds.get(target.commandTerm) ?? null : null, target.reasoningRequirement ?? null, target.difficultyMin ?? null, target.difficultyMax ?? null];
+            // Slot constraints (20261102_1000) are written only when declared: a config without them applies on any schema.
+            if (constraints.length) {
+              await client.query(
+                `INSERT INTO blueprint_objective_targets (blueprint_id, learning_objective_id, assessment_component_id, target_item_count, question_type, command_term_id, reasoning_requirement, difficulty_min, difficulty_max, constraints)
+                 VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9)`,
+                [...values, JSON.stringify(constraints)]
+              );
+            } else {
+              await client.query(
+                `INSERT INTO blueprint_objective_targets (blueprint_id, learning_objective_id, assessment_component_id, target_item_count, question_type, command_term_id, reasoning_requirement, difficulty_min, difficulty_max)
+                 VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8)`,
+                values
+              );
+            }
           }
         }
       }

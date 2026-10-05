@@ -20,6 +20,7 @@
  * minimum diversity policy; FULL_MOCK_CALIBRATED uses only items with enough
  * field evidence.
  */
+import { constraintMismatches, type ItemDimensionValues } from '../slot-constraints';
 import type { ContentAudience } from '../audience';
 import { assembleForm, type FormPosition, type PoolItem } from '../form-assembly';
 import { DEFAULT_ELIGIBILITY, isEligible, type CalibrationConfidence, type DeliveryUse, type EligibilityPolicy, type LifecycleState, effectiveLifecycle } from './lifecycle';
@@ -54,6 +55,8 @@ export interface BankItemFact {
   usage?: readonly string[] | null;
   alignment?: string | null;
   validatedDifficulty?: number | null;
+  /** Structured dimension values the item declares (competence, content category, marks, ...). */
+  dimensions?: ItemDimensionValues;
 }
 
 export interface QueueFact {
@@ -184,7 +187,8 @@ export interface BankHealthInput {
 
 const ZERO_PROVENANCE = (): Record<Provenance, number> => ({ OFFICIAL: 0, LICENSED: 0, STUDYUS_GENERATED: 0, FIXTURE: 0 });
 
-export function itemMatchesCell(item: Pick<BankItemFact, 'learningObjectiveId' | 'questionType' | 'difficulty'>, cell: Pick<BlueprintCell, 'learningObjectiveId' | 'questionType' | 'difficultyRange'>): boolean {
+export function itemMatchesCell(item: Pick<BankItemFact, 'learningObjectiveId' | 'questionType' | 'difficulty' | 'dimensions'>, cell: Pick<BlueprintCell, 'learningObjectiveId' | 'questionType' | 'difficultyRange' | 'constraints'>): boolean {
+  if (constraintMismatches(cell.constraints, item.dimensions).length) return false;
   if (item.learningObjectiveId !== cell.learningObjectiveId) return false;
   if (cell.questionType && item.questionType !== cell.questionType) return false;
   if (cell.difficultyRange && (item.difficulty < cell.difficultyRange.min || item.difficulty > cell.difficultyRange.max)) return false;

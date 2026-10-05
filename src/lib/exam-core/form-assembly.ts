@@ -20,6 +20,7 @@
  *     A form the bank cannot fill completely is REDUCED and says so -- it is
  *     never presented as a full paper.
  */
+import { constraintMismatches, type ItemDimensionValues, type SlotConstraint } from './slot-constraints';
 import type { ContentAudience } from './audience';
 import { createHash } from 'crypto';
 
@@ -47,6 +48,8 @@ export interface FormPosition {
   learningObjectiveId: string | null;
   questionType: string | null;
   difficultyRange: { min: number; max: number } | null;
+  /** Structured slot constraints: an item fills the position only if EVERY one matches. */
+  constraints?: SlotConstraint[];
 }
 
 export interface PoolItem {
@@ -60,6 +63,8 @@ export interface PoolItem {
   semanticFingerprint: string | null;
   stimulusKey: string | null;
   contentOrigin: string | null;
+  /** Structured dimension values the item declares (competence, content category, marks, ...). */
+  dimensions?: ItemDimensionValues;
 }
 
 export interface StudentUsage {
@@ -151,7 +156,8 @@ export function assembleForm(params: {
         !usedIds.has(it.id) &&
         (!it.templateFingerprint || !usedTemplates.has(it.templateFingerprint)) &&
         (!pos.questionType || it.questionType === pos.questionType) &&
-        (!pos.difficultyRange || (it.difficulty >= pos.difficultyRange.min && it.difficulty <= pos.difficultyRange.max))
+        (!pos.difficultyRange || (it.difficulty >= pos.difficultyRange.min && it.difficulty <= pos.difficultyRange.max)) &&
+        constraintMismatches(pos.constraints, it.dimensions).length === 0
     );
     if (candidates.length === 0) {
       slots.push({ index: pos.index, blueprintObjectiveTargetId: pos.blueprintObjectiveTargetId, assessmentComponentId: pos.assessmentComponentId, approvedItemId: null, marks: 0, difficultyIndex: null, contentOrigin: null, unfilledReason: 'NO_BANK_ITEM' });

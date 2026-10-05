@@ -15,13 +15,14 @@
  *      then reported as unavailable -- never delivered, never graded, never
  *      evidence.
  */
+import { constraintMismatches, itemDimensionValues, type SlotConstraint } from './slot-constraints';
 import { createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-metadata-bridge.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { ComponentDefinitionSchema, componentDefinitionForAI } from './component-definition';
-import { examItemFromApproved, examItemFromGenerated, validateExamItemStructure, type ExamItem } from './items';
+import { examItemFromApproved, examItemFromGenerated, examItemMarks, validateExamItemStructure, type ExamItem } from './items';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
 import { contentAudienceFor, examAudienceOf, type ContentAudience } from './audience';
 
@@ -33,6 +34,8 @@ export interface ItemSourcingTarget {
   assessmentComponentId?: string;
   questionType: string | null;
   difficultyRange: { min: number; max: number } | null;
+  /** Structured slot constraints (competence, content category, ...): every one must match. */
+  constraints?: SlotConstraint[];
 }
 
 export type ItemSourcingResult = { outcome: 'READY'; item: ExamItem } | { outcome: 'UNAVAILABLE'; reason: ItemUnavailableReason };
@@ -66,7 +69,8 @@ export async function selectApprovedBankItem(params: {
   const candidates = result.rows
     .map((row: any) => examItemFromApproved(row))
     .filter((item): item is ExamItem => item !== null)
-    .filter((item) => !params.target.difficultyRange || (item.difficulty >= params.target.difficultyRange.min && item.difficulty <= params.target.difficultyRange.max));
+    .filter((item) => !params.target.difficultyRange || (item.difficulty >= params.target.difficultyRange.min && item.difficulty <= params.target.difficultyRange.max))
+    .filter((item) => constraintMismatches(params.target.constraints, itemDimensionValues({ tags: item.exam.tags as Record<string, unknown> | null, marks: null }, examItemMarks(item))).length === 0);
   if (candidates.length === 0) return null;
 
   candidates.sort((a, b) => {
@@ -89,6 +93,8 @@ export function validateGeneratedItemForTarget(item: ExamItem, target: ItemSourc
   if (target.questionType && item.type !== target.questionType) reasons.push(`QUESTION_TYPE_MISMATCH:${item.type}`);
   if (target.difficultyRange && (item.difficulty < target.difficultyRange.min || item.difficulty > target.difficultyRange.max)) reasons.push(`DIFFICULTY_OUT_OF_RANGE:${item.difficulty}`);
   if (item.learningObjectiveId && item.learningObjectiveId !== target.learningObjectiveId) reasons.push('OBJECTIVE_MISMATCH');
+  // A slot's structured constraints bind generated items too (an untagged item never fills a constrained slot).
+  for (const d of constraintMismatches(target.constraints, itemDimensionValues({ tags: item.exam.tags as Record<string, unknown> | null, marks: null }, examItemMarks(item)))) reasons.push(`CONSTRAINT_MISMATCH:${d}`);
   return { valid: reasons.length === 0, reasons };
 }
 

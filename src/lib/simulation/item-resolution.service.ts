@@ -339,7 +339,7 @@ export async function getNextSimulationItem(actorUserId: string, attemptId: stri
         const sourced = await sourceExamItem({
           attemptId: attempt.id,
           studentId: attempt.studentId,
-          target: { learningObjectiveId: objectiveTarget.learningObjectiveId, assessmentComponentId: target.assessmentComponentId, questionType: target.questionType, difficultyRange: target.difficultyRange },
+          target: { learningObjectiveId: objectiveTarget.learningObjectiveId, assessmentComponentId: target.assessmentComponentId, questionType: target.questionType, difficultyRange: target.difficultyRange, ...(objectiveTarget.constraints?.length ? { constraints: objectiveTarget.constraints } : {}) },
           excludeApprovedItemIds: usedApprovedItemIds(nav),
           preferredStimulusKey: precedingStimulusKey(nav, section, index),
           language: attempt.language,

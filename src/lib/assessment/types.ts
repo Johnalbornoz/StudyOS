@@ -5,6 +5,7 @@
  * Nothing here has a studentId except Student Exam Profile/Preparation
  * Goal/Exam Attempt -- everything else is canonical/framework-scoped.
  */
+import type { SlotConstraint } from '@/lib/exam-core/slot-constraints';
 
 export type CatalogStatus = 'DRAFT' | 'ACTIVE' | 'RETIRED';
 export type ExamVersionStatus = 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED' | 'RETIRED';
@@ -103,6 +104,8 @@ export interface BlueprintObjectiveTarget {
   difficultyMin: number | null;
   difficultyMax: number | null;
   skillId: string | null;
+  /** Structured slot constraints (competence, content category, ...); present only when the slot declares any. */
+  constraints?: SlotConstraint[];
 }
 
 export interface ApprovedItem {

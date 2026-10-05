@@ -21,6 +21,7 @@
  * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
  * is always a NEW instance from zero; an instance is never reset.
  */
+import { itemDimensionValues } from './slot-constraints';
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
 import { listComponentsForVersion } from '@/lib/assessment/component.service';
@@ -142,6 +143,7 @@ async function formInputs(examVersionId: string, componentIds: string[], student
     learningObjectiveId: t.learningObjectiveId,
     questionType: t.questionType,
     difficultyRange: t.difficultyMin !== null && t.difficultyMax !== null ? { min: t.difficultyMin, max: t.difficultyMax } : null,
+    ...(t.constraints?.length ? { constraints: t.constraints } : {}),
   }));
   const objectiveIds = [...new Set(positions.map((p) => p.learningObjectiveId).filter((x): x is string => !!x))];
   // A mock whose positions reach every selected component's published item count is a FULL-length form:
@@ -172,6 +174,7 @@ async function formInputs(examVersionId: string, componentIds: string[], student
       semanticFingerprint: r.semantic_fingerprint,
       stimulusKey: item.exam.stimulus?.key ?? null,
       contentOrigin: r.content_origin ?? item.exam.contentOrigin ?? null,
+      dimensions: itemDimensionValues(r.content, examItemMarks(item)),
     });
   }
   // Exposure memory (Question Bank V2): what THIS Student has seen (recently = within the reuse cooldown),

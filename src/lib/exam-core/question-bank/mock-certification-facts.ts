@@ -3,6 +3,7 @@
  * identity) into the facts the Mock Certification gate reasons about.
  * Pure: no database access.
  */
+import { itemDimensionValues } from '../slot-constraints';
 import { ApprovedItemContentSchema, examItemMarks, validateExamItemStructure, examItemFromApproved, type ExamItem } from '../items';
 import type { BankItemFacts, GradingMode } from './mock-certification';
 import type { CalibrationConfidence, LifecycleState } from './lifecycle';
@@ -82,7 +83,7 @@ export function bankItemFacts(row: BankVersionRow): BankItemFacts {
     placeholderSignals,
     unresolvedDependencies: ABSENT_FIGURE.test(text) ? ['REFERENCES_ABSENT_FIGURE'] : [],
     commandTerm: parsed.data.commandTerm ?? null,
-    contentCategory: parsed.data.tags?.contentCategory ?? null,
+    dimensions: itemDimensionValues(parsed.data as never, effective ? examItemMarks(effective) : parsed.data.marks),
     skillIds: row.skill_ids ?? [],
   };
 }

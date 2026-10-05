@@ -4,6 +4,7 @@
  * (INV-F6-05/INV-F7-05, adversarial case K).
  */
 import { db } from '@/lib/db';
+import { constraintsFromJson } from '@/lib/exam-core/slot-constraints';
 import type { AssessmentBlueprint, BlueprintObjectiveTarget } from './types';
 
 function toBlueprint(r: any): AssessmentBlueprint {
@@ -22,6 +23,11 @@ function toTarget(r: any): BlueprintObjectiveTarget {
     difficultyMin: r.difficulty_min,
     difficultyMax: r.difficulty_max,
     skillId: r.skill_id,
+    // Column from 20261102_1000; absent (older schema) or [] = no constraint, and the key is omitted.
+    ...(() => {
+      const c = constraintsFromJson(r.constraints ?? []);
+      return c.length ? { constraints: c } : {};
+    })(),
   };
 }
 

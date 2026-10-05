@@ -62,8 +62,8 @@ describe('QB-2: slot constraints are enforced whenever the blueprint states them
     expect(constraintMisses(it0, pos({ marks: 6 }))).toEqual(['MARKS']);
     expect(constraintMisses(it0, pos({ difficultyMin: 4, difficultyMax: 5 }))).toEqual(['DIFFICULTY']);
     // Second dimension (competence x content matrix, e.g. Saber 11 policy).
-    expect(constraintMisses(item({ contentCategory: 'Geometría' }), pos({ contentCategory: 'geometría' }))).toEqual([]);
-    expect(constraintMisses(item({ contentCategory: 'Estadística' }), pos({ contentCategory: 'Geometría' }))).toEqual(['CONTENT_CATEGORY']);
+    expect(constraintMisses(item({ dimensions: { CONTENT_CATEGORY: 'GEOMETRIA' } }), pos({ constraints: [{ dimension: 'CONTENT_CATEGORY', value: 'GEOMETRIA' }] }))).toEqual([]);
+    expect(constraintMisses(item({ dimensions: { CONTENT_CATEGORY: 'ESTADISTICA' } }), pos({ constraints: [{ dimension: 'CONTENT_CATEGORY', value: 'GEOMETRIA' }] }))).toEqual(['CONTENT_CATEGORY']);
   });
   it('an unmet constraint leaves the position empty, and the report says why', () => {
     const r = certifyBlueprint(exam([pos({ commandTerm: 'Evaluate', marks: 6 })], [item({ commandTerm: 'Explain', marks: 2 })]), 'CERTIFIED');
@@ -213,17 +213,23 @@ describe('audience and capability rules (pure)', () => {
 });
 
 describe('configuration adapter (catalogue): today\'s configs are engine demos, not content', () => {
-  for (const [name, input] of [['PAA', PAA_V2], ['Saber 11 Matemáticas', SABER11_MATH_V2]] as const) {
-    it(`${name}: TECHNICAL_DEMO engine, NONE content, no mock`, () => {
-      const parsed = parseExamVerticalConfig(input);
-      if (!parsed.ok) throw new Error('config');
-      const a = assessExam(certificationInputFromConfig(parsed.config));
-      expect(a).toMatchObject({ engineCapability: 'TECHNICAL_DEMO', contentReadiness: 'NONE', mockReady: false });
-      expect(a.certified!.ineligibleReasons.DEV_FIXTURE).toBe(parsed.config.items.length);
-      // D2: no PAA / Saber component documents its full-form distribution yet.
-      expect(gate(a.certified!, 1).detail.some((d) => d.includes('BLUEPRINT_DISTRIBUTION_UNKNOWN'))).toBe(true);
-    });
-  }
+  it('PAA: TECHNICAL_DEMO engine, NONE content, no mock; distribution UNKNOWN (D2)', () => {
+    const parsed = parseExamVerticalConfig(PAA_V2);
+    if (!parsed.ok) throw new Error('config');
+    const a = assessExam(certificationInputFromConfig(parsed.config));
+    expect(a).toMatchObject({ engineCapability: 'TECHNICAL_DEMO', contentReadiness: 'NONE', mockReady: false });
+    expect(a.certified!.ineligibleReasons.DEV_FIXTURE).toBe(parsed.config.items.length);
+    expect(gate(a.certified!, 1).detail.some((d) => d.includes('BLUEPRINT_DISTRIBUTION_UNKNOWN'))).toBe(true);
+  });
+  it('Saber 11 Matemáticas V2.1: documented 50-slot blueprint (gate 1 passes), but no real content -- NONE, no mock, and the engine cannot fill 50 from 15 fixtures', () => {
+    const parsed = parseExamVerticalConfig(SABER11_MATH_V2);
+    if (!parsed.ok) throw new Error('config');
+    const a = assessExam(certificationInputFromConfig(parsed.config));
+    expect(a).toMatchObject({ engineCapability: 'NONE', contentReadiness: 'NONE', mockReady: false });
+    expect(a.certified!.ineligibleReasons.DEV_FIXTURE).toBe(parsed.config.items.length);
+    expect(gate(a.certified!, 1).pass).toBe(true);
+    expect(gate(a.certified!, 2).pass).toBe(false);
+  });
 });
 
 describe('bankItemFacts', () => {

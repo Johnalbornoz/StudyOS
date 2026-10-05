@@ -200,9 +200,9 @@ describe('framework fidelity of the reference verticals', () => {
     for (const p of ['formular', 'emplear', 'interpretar', 'razonar']) expect(positions(cfg, (c) => c.endsWith(`.${p}`))).toBe(2);
     for (const c of ['cantidad', 'incertidumbre', 'cambio', 'espacio']) expect(positions(cfg, (x) => x.startsWith(`pisa.${c}.`))).toBe(2);
   });
-  it('Saber 11: competencias 4/5/3 of 12 (closest to 34/43/23 %); all selected-response', () => {
+  it('Saber 11 (V2.1): competencias 17/22/11 of the official 50 (34/43/23 %); all selected-response', () => {
     const cfg = byKey.get('v2.saber11.math')!;
-    expect([positions(cfg, (c) => c === 'saber.interpretacion'), positions(cfg, (c) => c === 'saber.formulacion'), positions(cfg, (c) => c === 'saber.argumentacion')]).toEqual([4, 5, 3]);
+    expect([positions(cfg, (c) => c === 'saber.interpretacion'), positions(cfg, (c) => c === 'saber.formulacion'), positions(cfg, (c) => c === 'saber.argumentacion')]).toEqual([17, 22, 11]);
     expect(cfg.items.every((i) => i.content.answerFormat === 'single_choice' && i.content.options?.length === 4)).toBe(true);
   });
   it('PAA: one integral test, four areas in the official order and pace', () => {

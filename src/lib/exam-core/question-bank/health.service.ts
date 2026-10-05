@@ -6,6 +6,7 @@
  * stored in `question_bank_health_snapshots`; Student launch paths only ever
  * read the latest snapshot row -- never recompute coverage on Start.
  */
+import { constraintsFromJson, itemDimensionValues } from '../slot-constraints';
 import { db } from '@/lib/db';
 import { examItemFromApproved, examItemMarks } from '../items';
 import { ComponentDefinitionSchema } from '../component-definition';
@@ -74,7 +75,8 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
   const [compRows, targetRows, queueRows, targetOverrideRows] = await Promise.all([
     db.query(`SELECT id, section_key, name, sequence_order, definition, max_marks, simulation_capable FROM assessment_components WHERE exam_version_id = $1 ORDER BY sequence_order NULLS LAST, created_at`, [examVersionId]),
     db.query(
-      `SELECT t.id, t.learning_objective_id, lo.code AS objective_code, lo.description AS objective_description, t.assessment_component_id, t.question_type, t.difficulty_min, t.difficulty_max, ct.term AS command_term
+      `SELECT t.id, t.learning_objective_id, lo.code AS objective_code, lo.description AS objective_description, t.assessment_component_id, t.question_type, t.difficulty_min, t.difficulty_max, ct.term AS command_term,
+              to_jsonb(t)->'constraints' AS constraints
          FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id LEFT JOIN command_terms ct ON ct.id = t.command_term_id
         WHERE t.blueprint_id = $1 ORDER BY t.created_at, t.id`,
       [meta.blueprintId]
@@ -106,6 +108,7 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
     difficultyMin: t.difficulty_min,
     difficultyMax: t.difficulty_max,
     commandTerm: t.command_term,
+    ...(constraintsFromJson(t.constraints).length ? { constraints: constraintsFromJson(t.constraints) } : {}),
   }));
   const objectiveIds = [...new Set(targets.map((t) => t.learningObjectiveId))];
   const itemRows = objectiveIds.length
@@ -154,6 +157,7 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
       templateFingerprint: r.template_fingerprint,
       semanticFingerprint: r.semantic_fingerprint,
       stimulusKey: item.exam.stimulus?.key ?? null,
+      dimensions: itemDimensionValues(r.content, marks),
       provenance,
       lifecycle: (r.bank_lifecycle_status ?? null) as LifecycleState | null,
       status: r.status,

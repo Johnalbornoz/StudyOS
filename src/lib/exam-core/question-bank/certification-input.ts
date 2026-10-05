@@ -3,6 +3,7 @@
  * mockability, sections and blueprint specification, shared by the read-only
  * CLI (database rows) and the catalogue (vertical configurations).
  */
+import { normalizeConstraints } from '../slot-constraints';
 import { ComponentDefinitionSchema, type ComponentDefinition } from '../component-definition';
 import { componentCapabilities } from '../fidelity';
 import { examAudienceOf } from '../audience';
@@ -36,6 +37,7 @@ export function componentSpecFrom(p: { key: string; name: string; definition: un
     mockable: componentCapabilities({ definition: def, simulationCapable: p.simulationCapable, family: p.family }).mockable,
     sections: def?.sections.map((s) => s.key) ?? [],
     blueprintSpecification: blueprintSpecificationOf(def),
+    allocation: def?.blueprintSpecification ?? null,
   };
 }
 
@@ -51,7 +53,7 @@ export function certificationInputFromConfig(cfg: ExamVerticalConfig, sectionKey
     for (const o of s.objectives) {
       for (const t of o.targets) {
         for (let i = 0; i < t.count; i++) {
-          positions.push({ componentKey: s.key, objectiveId: o.code, objectiveCode: o.code, questionType: t.questionType ?? null, difficultyMin: t.difficultyMin ?? null, difficultyMax: t.difficultyMax ?? null, commandTerm: t.commandTerm ?? null });
+          positions.push({ componentKey: s.key, objectiveId: o.code, objectiveCode: o.code, questionType: t.questionType ?? null, difficultyMin: t.difficultyMin ?? null, difficultyMax: t.difficultyMax ?? null, commandTerm: t.commandTerm ?? null, ...(t.constraints ? { constraints: normalizeConstraints(t.constraints) } : {}) });
         }
       }
     }

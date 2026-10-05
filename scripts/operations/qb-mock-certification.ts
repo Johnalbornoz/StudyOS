@@ -6,7 +6,10 @@
  *                      PRODUCTION_DEPTH, from real (non-fixture) content and the CERTIFIED gate only.
  * plus the Student catalogue gate (definition / engine / real content / blueprint fidelity / mock readiness).
  *
- *   npx tsx --env-file=<env> scripts/operations/qb-mock-certification.ts [--json] [--exam <config_key>] [--detail]
+ *   npx tsx --env-file=<env> scripts/operations/qb-mock-certification.ts [--json] [--exam <config_key>] [--detail] [--blueprint-from-config]
+ *
+ * --blueprint-from-config: certify the blueprint of the CODE configuration (e.g. a new version not applied yet)
+ * against the database bank (items matched to its objectives by code). Read-only either way.
  *
  * Runs inside a READ ONLY transaction and refuses the Production database.
  */
@@ -14,7 +17,9 @@ import { createHash } from 'crypto';
 import { Client } from 'pg';
 import { assessExam, type CertificationInput, type ExamAssessment } from '@/lib/exam-core/question-bank/mock-certification';
 import { bankItemFacts, type BankVersionRow } from '@/lib/exam-core/question-bank/mock-certification-facts';
-import { componentSpecFrom } from '@/lib/exam-core/question-bank/certification-input';
+import { certificationInputFromConfig, componentSpecFrom } from '@/lib/exam-core/question-bank/certification-input';
+import { constraintsFromJson } from '@/lib/exam-core/slot-constraints';
+import { configsByKey } from '@/lib/exam-core/catalog/structure.service';
 import { parseScoringPolicy } from '@/lib/exam-core/scoring/scoring-policy';
 import { examAudienceOf } from '@/lib/exam-core/audience';
 
@@ -85,7 +90,8 @@ async function main() {
       const keyOf = new Map(components.map((c: any) => [c.id, c.key]));
       const targets = v.blueprint_id
         ? (await client.query(`
-            SELECT t.assessment_component_id, t.learning_objective_id, lo.code, t.question_type, t.difficulty_min, t.difficulty_max, t.target_item_count, t.skill_id, ct.term AS command_term
+            SELECT t.assessment_component_id, t.learning_objective_id, lo.code, t.question_type, t.difficulty_min, t.difficulty_max, t.target_item_count, t.skill_id, ct.term AS command_term,
+                   to_jsonb(t)->'constraints' AS constraints
               FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id
               LEFT JOIN command_terms ct ON ct.id = t.command_term_id
              WHERE t.blueprint_id = $1 ORDER BY t.created_at, t.id`, [v.blueprint_id])).rows
@@ -94,6 +100,7 @@ async function main() {
       const positions = targets.flatMap((t: any) => Array.from({ length: Math.max(1, Number(t.target_item_count ?? 1)) }, () => ({
         componentKey: keyOf.get(t.assessment_component_id) ?? '?', objectiveId: t.learning_objective_id, objectiveCode: t.code, questionType: t.question_type,
         difficultyMin: t.difficulty_min, difficultyMax: t.difficulty_max, skillId: t.skill_id, commandTerm: t.command_term,
+        ...(constraintsFromJson(t.constraints).length ? { constraints: constraintsFromJson(t.constraints) } : {}),
       })));
       const objectiveIds = [...new Set(targets.map((p: any) => p.learning_objective_id))];
       // Same pool as form assembly: every bank version of the blueprint's objectives.
@@ -109,6 +116,23 @@ async function main() {
              WHERE ai.learning_objective_id = ANY($1::uuid[])`, [objectiveIds])).rows
         : [];
       const policy = parseScoringPolicy(v.scoring_config ?? null);
+      const codeCfg = flag('--blueprint-from-config') && v.config_key ? configsByKey().get(v.config_key) : undefined;
+      if (codeCfg) {
+        // The code blueprint vs the DB bank: DB items re-keyed to their objective CODE (what the config positions use).
+        const fromConfig = certificationInputFromConfig(codeCfg);
+        const codes = [...new Set(fromConfig.positions.map((p) => p.objectiveId))];
+        const bank: BankVersionRow[] = (await client.query(`
+            SELECT ai.id, lo.code AS learning_objective_id, ai.question_type, ai.content, ai.status, ai.bank_lifecycle_status, ai.usage_eligibility, ai.exam_alignment,
+                   COALESCE(qi.provenance, CASE WHEN ai.content_origin = 'GENERATED' THEN 'STUDYUS_GENERATED' WHEN ai.content_origin IS NOT NULL THEN ai.content_origin
+                                                WHEN ai.content->>'contentStatus' = 'DEV_CERT_FIXTURE' THEN 'FIXTURE' WHEN ai.content->>'contentStatus' = 'OFFICIAL_LICENSED' THEN 'LICENSED' END) AS provenance,
+                   ai.template_fingerprint, ai.calibration_confidence, (qi.id IS NULL OR qi.current_version_id = ai.id) AS is_current_version, (qi.retired_at IS NOT NULL) AS retired
+              FROM approved_items ai JOIN learning_objectives lo ON lo.id = ai.learning_objective_id LEFT JOIN question_bank_items qi ON qi.id = ai.bank_item_id
+             WHERE lo.code = ANY($1::text[]) AND (qi.exam_version_id IS NULL OR qi.exam_version_id IN (SELECT id FROM exam_versions WHERE exam_definition_id = (SELECT exam_definition_id FROM exam_versions WHERE id = $2)))`,
+          [codes, v.id])).rows;
+        const assessment = assessExam({ ...fromConfig, items: bank.map(bankItemFacts), scoring: { policyConfigured: policy.ok, official: policy.ok && policy.policy.provenance.official, projectionCalibrated: v.projection } });
+        results.push({ definitionStatus: v.definition_status, assessment: { ...assessment, versionLabel: `${codeCfg.version.label} (code blueprint)` }, gate: catalogGate(assessment, v.definition_status) });
+        continue;
+      }
       const input: CertificationInput = {
         examKey: v.config_key ?? `(no config) ${v.name}`, examName: v.name, family: v.exam_family, versionLabel: v.version_label, audience: examAudienceOf(v.config_key),
         blueprintPublished: v.blueprint_status === 'PUBLISHED',

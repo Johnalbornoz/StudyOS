@@ -16,6 +16,7 @@
  * the blueprint, NOT an official per-skill distribution, and labelled so.
  * Without a published length, the full form is UNKNOWN and is never claimed.
  */
+import { constraintSignature, normalizeConstraints, type SlotConstraint } from '../slot-constraints';
 
 export interface BlueprintTargetInput {
   id: string;
@@ -27,6 +28,8 @@ export interface BlueprintTargetInput {
   difficultyMin: number | null;
   difficultyMax: number | null;
   commandTerm: string | null;
+  /** Structured slot constraints (competence, content category, ...): a separate cell per combination. */
+  constraints?: SlotConstraint[];
 }
 
 export interface ComponentInput {
@@ -53,6 +56,8 @@ export interface BlueprintCell {
   questionType: string | null;
   difficultyRange: { min: number; max: number } | null;
   commandTerm: string | null;
+  /** Structured slot constraints shared by the cell's slots (absent = none). */
+  constraints?: SlotConstraint[];
   /** Positions of one form of the governed (possibly reduced) blueprint. */
   reducedPositions: number;
   /** Positions of one full-length form (see header). */
@@ -61,8 +66,10 @@ export interface BlueprintCell {
   targetIds: string[];
 }
 
-export function cellKeyOf(sectionKey: string, objectiveCode: string, questionType: string | null, dmin: number | null, dmax: number | null, commandTerm: string | null): string {
-  return [sectionKey, objectiveCode, questionType ?? '*', `${dmin ?? '*'}-${dmax ?? '*'}`, commandTerm ?? '*'].join('|');
+export function cellKeyOf(sectionKey: string, objectiveCode: string, questionType: string | null, dmin: number | null, dmax: number | null, commandTerm: string | null, constraints?: SlotConstraint[] | null): string {
+  // Slots with structured constraints form their own cells; a key without constraints is unchanged (existing cells keep their keys).
+  const sig = constraintSignature(constraints);
+  return [sectionKey, objectiveCode, questionType ?? '*', `${dmin ?? '*'}-${dmax ?? '*'}`, commandTerm ?? '*', ...(sig ? [sig] : [])].join('|');
 }
 
 /** Largest-remainder apportionment of `total` over `weights` (ties broken by order). Sum is exactly `total`. */
@@ -86,7 +93,7 @@ export function deriveBlueprintCells(targets: BlueprintTargetInput[], components
   for (const t of targets) {
     const comp = compById.get(t.assessmentComponentId);
     if (!comp) continue;
-    const key = cellKeyOf(comp.sectionKey, t.objectiveCode, t.questionType, t.difficultyMin, t.difficultyMax, t.commandTerm);
+    const key = cellKeyOf(comp.sectionKey, t.objectiveCode, t.questionType, t.difficultyMin, t.difficultyMax, t.commandTerm, t.constraints);
     let cell = cells.get(key);
     if (!cell) {
       cell = {
@@ -101,6 +108,7 @@ export function deriveBlueprintCells(targets: BlueprintTargetInput[], components
         questionType: t.questionType,
         difficultyRange: t.difficultyMin !== null && t.difficultyMax !== null ? { min: t.difficultyMin, max: t.difficultyMax } : null,
         commandTerm: t.commandTerm,
+        ...(t.constraints?.length ? { constraints: normalizeConstraints(t.constraints) } : {}),
         reducedPositions: 0,
         fullPositions: 0,
         lengthBasis: 'UNKNOWN',

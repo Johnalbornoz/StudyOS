@@ -5,6 +5,11 @@
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts calibration --max-calls 40 [--confirm-ai]
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts status [--json]
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts packet --out <file.md>
+ *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts review-report [--batch calibration-1]
+ *
+ * `review-report` (read-only) summarises the HUMAN review of a batch: approved / correction requested /
+ * rejected, the failed checklist dimensions, and the final acceptance rate over ALL generated candidates
+ * (automatic rejections included). It never approves anything.
  *
  * `calibration` generates ONLY calibration batch 1 (10 items over the 3x3 policy matrix, StudyUs difficulty
  * 3 / 5 / 2). Without --confirm-ai it is a dry run (prints the requests, writes nothing). With it: one bounded
@@ -21,6 +26,7 @@ import { runFactory } from '@/lib/exam-core/question-bank/factory.service';
 import { enqueueManual } from '@/lib/exam-core/question-bank/queue.service';
 import { loadVersionHealthInputs } from '@/lib/exam-core/question-bank/health.service';
 import { systemAuthorId } from '@/lib/exam-core/question-bank/bank.service';
+import { constraintSignature, dimensionKey } from '@/lib/exam-core/slot-constraints';
 import {
   calibrationRequests, planProblems, COMPETENCIES, CONTENTS, CROSS_DISTRIBUTION, DIFFICULTY_POLICY, POLICY_NOTES, REVIEW_CHECKLIST, SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY, SABER11_MATH_SOURCES,
 } from '@/lib/exam-core/question-bank/pilots/saber11-math';
@@ -67,9 +73,15 @@ async function calibration() {
   const inputs = await loadVersionHealthInputs(version.id);
   if (!inputs) throw new Error('no bank inputs for the Saber version');
   const requests = calibrationRequests();
-  const cellOf = (code: string) => inputs.cells.find((c) => c.objectiveCode === code);
-  for (const r of requests) if (!cellOf(r.objectiveCode)) throw new Error(`objective not in the blueprint: ${r.objectiveCode}`);
-  console.log(JSON.stringify({ version, requests: requests.map((r) => ({ cell: cellOf(r.objectiveCode)!.cellKey, content: r.pilot.contentCategory, difficulty: r.pilot.difficulty, count: r.count, idempotencyKey: r.idempotencyKey })) }, null, 1));
+  // With the V2.1 blueprint each competence x content combination is its own cell (slot constraints); on the
+  // V2 (12-slot) blueprint the competence objective's single cell is used and the content goes in the pilot params.
+  const cellFor = (r: (typeof requests)[number]) => {
+    const want = [`COMPETENCE=${dimensionKey(r.pilot.competencyLabel)}`, `CONTENT_CATEGORY=${dimensionKey(r.pilot.contentCategory)}`];
+    const constrained = inputs.cells.find((c) => c.objectiveCode === r.objectiveCode && want.every((w) => constraintSignature(c.constraints).split(';').includes(w)));
+    return constrained ?? inputs.cells.find((c) => c.objectiveCode === r.objectiveCode && !c.constraints?.length);
+  };
+  for (const r of requests) if (!cellFor(r)) throw new Error(`no blueprint cell for ${r.objectiveCode} x ${r.pilot.contentCategory}`);
+  console.log(JSON.stringify({ version, requests: requests.map((r) => ({ cell: cellFor(r)!.cellKey, content: r.pilot.contentCategory, difficulty: r.pilot.difficulty, count: r.count, idempotencyKey: r.idempotencyKey })) }, null, 1));
   if (!flag('--confirm-ai')) {
     console.log('DRY RUN: nothing enqueued or generated (add --confirm-ai).');
     return;
@@ -84,7 +96,7 @@ async function calibration() {
       results.push({ idempotencyKey: r.idempotencyKey, skipped: 'BUDGET' });
       continue;
     }
-    const { request, created } = await enqueueManual({ inputs, cellKey: cellOf(r.objectiveCode)!.cellKey, count: r.count, requestedBy, idempotencyKey: r.idempotencyKey, maxBatch: 3, difficultyMix: r.difficultyMix, pilot: r.pilot });
+    const { request, created } = await enqueueManual({ inputs, cellKey: cellFor(r)!.cellKey, count: r.count, requestedBy, idempotencyKey: r.idempotencyKey, maxBatch: 3, difficultyMix: r.difficultyMix, pilot: r.pilot });
     // Idempotent re-run: a request already completed (or another open request of the cell) is never regenerated.
     if (!created) {
       results.push({ idempotencyKey: r.idempotencyKey, skipped: `EXISTING_${request.status}`, requestId: request.id });
@@ -150,6 +162,38 @@ async function packet() {
   console.log(`packet: ${current.length} items -> ${out}`);
 }
 
+async function reviewReport() {
+  const batch = opt('--batch') ?? 'calibration-1';
+  const version = await saberVersion();
+  // One row per generated candidate (bank item): its current version, latest human decision and checklist.
+  const rows = (await db.query(
+    `SELECT qi.item_key, cur.bank_lifecycle_status AS lifecycle, gr.generation_params->'pilot'->>'competency' AS competency, cur.content->'tags'->>'contentCategory' AS content,
+            r.decision, r.review_checklist, r.review_notes, r.reviewed_at, (r.reviewed_by = cur.created_by) AS self_review
+       FROM question_bank_items qi JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
+       JOIN approved_items cur ON cur.id = qi.current_version_id
+       LEFT JOIN LATERAL (SELECT * FROM question_bank_reviews rv WHERE rv.bank_item_id = qi.id ORDER BY rv.reviewed_at DESC LIMIT 1) r ON true
+      WHERE qi.exam_version_id = $1 AND gr.generation_params->'pilot'->>'pilotKey' = $2 AND gr.generation_params->'pilot'->>'batch' = $3
+      ORDER BY qi.created_at`,
+    [version.id, SABER11_MATH_PILOT_KEY, batch]
+  )).rows;
+  const count = (f: (r: any) => boolean) => rows.filter(f).length;
+  const failedByDimension: Record<string, number> = Object.fromEntries(REVIEW_CHECKLIST.map(([k]) => [k, 0]));
+  for (const r of rows) for (const [k, v] of Object.entries((r.review_checklist ?? {}) as Record<string, boolean>)) if (v === false) failedByDimension[k] = (failedByDimension[k] ?? 0) + 1;
+  const approved = count((r) => r.decision === 'APPROVED');
+  const report = {
+    batch, generatedCandidates: rows.length,
+    automaticallyRejected: count((r) => !r.decision && r.lifecycle === 'REJECTED'),
+    awaitingHumanReview: count((r) => !r.decision && r.lifecycle !== 'REJECTED'),
+    human: { approved, correctionRequested: count((r) => r.decision === 'CORRECTION_REQUESTED'), rejected: count((r) => r.decision === 'REJECTED') },
+    failedChecklistByDimension: failedByDimension,
+    finalAcceptanceRate: rows.length ? Math.round((approved / rows.length) * 1000) / 1000 : null,
+    reviewComplete: rows.length > 0 && count((r) => !r.decision && r.lifecycle !== 'REJECTED') === 0,
+    selfReviews: count((r) => r.self_review === true),
+    items: rows.map((r: any) => ({ item: r.item_key, competency: r.competency, content: r.content, lifecycle: r.lifecycle, decision: r.decision ?? (r.lifecycle === 'REJECTED' ? 'AUTO_REJECTED' : 'PENDING_HUMAN_REVIEW'), failed: Object.entries((r.review_checklist ?? {}) as Record<string, boolean>).filter(([, v]) => v === false).map(([k]) => k), notes: r.review_notes ?? null })),
+  };
+  console.log(JSON.stringify(report, null, 1));
+}
+
 async function main() {
   const cmd = args[0];
   if (cmd === 'plan') return plan();
@@ -158,6 +202,7 @@ async function main() {
   if (cmd === 'calibration') await calibration();
   else if (cmd === 'status') await status();
   else if (cmd === 'packet') await packet();
+  else if (cmd === 'review-report') await reviewReport();
   else throw new Error('usage: plan | calibration --max-calls N [--confirm-ai] | status [--json] | packet --out <file.md>');
 }
 

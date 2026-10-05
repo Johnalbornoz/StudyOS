@@ -293,9 +293,8 @@ async function main() {
   const perProcess = ['formular', 'emplear', 'interpretar', 'razonar'].map((p) => objCodes.filter((c) => c.endsWith(`.${p}`)).length);
   check('PISA.blueprint-25pct-per-process', perProcess.every((n) => n === 2), perProcess.join('/'));
   const sab = await profileFor(A, 'saber11.math');
-  const sm = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: sab.profileId, examVersionId: sab.lvl.examVersionId, componentIds: [sab.lvl.components[0].componentId], mode: 'MOCK' });
-  check('SABER.form-12-positions-reduced-vs-50', sm.form?.slots.length === 12 && sm.form?.fidelity === 'REDUCED' && sm.form?.coveragePercent === 24, `${sm.form?.coveragePercent}%`);
-  await deleteExamInstance(sm.id, { confirm: false, ownerStudentId: A.studentId });
+  // V2.1 (50 required slots with competence x content constraints): the 15 config fixtures cannot fill a full form, even as a technical demo -- no partial mock.
+  check('SABER.v21-50-slots-no-partial-mock', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: sab.profileId, examVersionId: sab.lvl.examVersionId, componentIds: [sab.lvl.components[0].componentId], mode: 'MOCK' }), ExamInstanceError, 'FORM_INCOMPLETE'));
 
   // ---- PAA: first level = Simulacro completo | Practicar un área ----
   const paaKids = await listStructureChildren({ family: 'PAA', parentKey: 'paa', language: 'es', audience: 'TECHNICAL_DEMO' });

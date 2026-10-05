@@ -9,16 +9,39 @@
  *   - contextos: familiar/personal, laboral/ocupacional, comunitario/social,
  *     matemático/científico;
  *   - formato: selección múltiple con única respuesta (A-D); ~50 preguntas en la prueba.
- * A form has 12 positions: 4 / 5 / 3 by competencia (33% / 42% / 25%, the
- * closest split of 12 to the official percentages).
+ * Version V2.1 (2026-10-05): ONE full-length form = 50 required slots.
+ *   - competence totals 17 / 22 / 11 and content totals 19 / 19 / 12: OFFICIAL_DERIVED (integer allocation
+ *     inside the published percentages / ranges, with sources);
+ *   - the 3x3 competence x content cell counts (6/7/4, 9/8/5, 4/4/3): STUDYUS_POLICY -- not an official
+ *     Icfes matrix;
+ *   - difficulty BASIC / INTERMEDIATE / ADVANCED 30 / 50 / 20 %: STUDYUS_POLICY calibration target, not a
+ *     slot constraint yet (collected from human review first) and never an Icfes performance level.
+ * Each slot keeps its competence learning objective and adds structured constraints (COMPETENCE,
+ * CONTENT_CATEGORY, MARKS); a competence x content combination is never a learning objective.
+ * Slots are filled from the governed Question Bank (bankSource QUESTION_BANK): the fixtures below are
+ * technical examples only and never make the form assemblable for Students.
+ * (V2 had 12 positions, 4 / 5 / 3, the closest split of 12 to the official percentages.)
  *
  * Icfes reports 0-100 per test with its own scaling; the practice percentage
- * is NOT an Icfes score. Icfes does not publish a per-area time: StudyUS uses
- * ~1.5 min per item and says so.
+ * is NOT an Icfes score. Icfes does not publish a per-area time: StudyUs uses
+ * ~1.5 min per item (StudyUs policy) and says so.
  */
 import type { ExamVerticalConfigInput } from '../../vertical-config';
 import { FIXTURE_PROVENANCE } from '../fixture-builders';
 import { mc } from './builders';
+import { dimensionKey, type SlotConstraint } from '../../slot-constraints';
+import { COMPETENCIES, CONTENTS, CROSS_DISTRIBUTION, DIFFICULTY_POLICY, POLICY_NOTES, type Saber11Competency, type Saber11Content } from '../../question-bank/pilots/saber11-math';
+
+/** One required-slot target per competence x content cell of the approved StudyUs policy matrix. */
+const competenceKey = (c: Saber11Competency) => dimensionKey(COMPETENCIES[c].label);
+const contentKey = (c: Saber11Content) => dimensionKey(CONTENTS[c].label);
+const cellConstraints = (c: Saber11Competency, k: Saber11Content): SlotConstraint[] => [
+  { dimension: 'COMPETENCE', value: competenceKey(c) },
+  { dimension: 'CONTENT_CATEGORY', value: contentKey(k) },
+  { dimension: 'MARKS', value: '1' },
+];
+const CONTENT_ORDER: Saber11Content[] = ['ALGEBRA_CALCULO', 'ESTADISTICA', 'GEOMETRIA'];
+const targetsFor = (c: Saber11Competency) => CONTENT_ORDER.map((k) => ({ questionType: 'multiple_choice', constraints: cellConstraints(c, k), count: CROSS_DISTRIBUTION[c][k] }));
 
 const es = 'es';
 const SOURCES = ['icfes-marco-matematicas-saber11', 'icfes-guia-saber11-2026', 'icfes-resolucion-268-2020'];
@@ -37,11 +60,11 @@ export const SABER11_MATH_V2: ExamVerticalConfigInput = {
   subject: { name: 'Matemáticas' },
   definition: {
     name: 'Saber 11.° — Matemáticas (práctica)',
-    purpose: 'Práctica con la estructura de la prueba de Matemáticas de Saber 11.°: competencias, afirmaciones, contenidos y contextos. Preguntas originales de StudyUS; no es un puntaje Icfes.',
+    purpose: 'Práctica con la estructura de la prueba de Matemáticas de Saber 11.°: competencias, afirmaciones, contenidos y contextos. Preguntas originales de StudyUs; no es un puntaje Icfes.',
     domains: ['Estadística', 'Álgebra y cálculo', 'Geometría'],
   },
   version: {
-    label: 'V2 Saber 11 2026',
+    label: 'V2.1 Saber 11 2026 · 50 posiciones',
     examYear: 2026,
     examSession: 'Calendario A / B',
     supportedModalities: ['PAPER', 'DIGITAL'],
@@ -49,7 +72,9 @@ export const SABER11_MATH_V2: ExamVerticalConfigInput = {
   },
   framework: { frameworkKey: 'icfes-saber11-math', curriculumVersion: 'Marco de referencia de Matemáticas Saber 11.° (2019)', firstAssessment: 2019, lastAssessment: null, syllabusCode: null, frameworkVersion: '2026', sourceKeys: SOURCES },
   scoring: { name: 'Saber 11 práctica -- porcentaje (no es puntaje Icfes)', scoringType: 'BINARY', policy: { engine: 'exam-scoring-v1', strategy: 'RAW', transform: { type: 'NONE' }, unit: '%', provenance: FIXTURE_PROVENANCE } },
+  // Same structure label as V2: the competence learning objectives (and every item linked to them) are reused.
   structureLabel: 'V2 Saber 11 2026',
+  bankSource: 'QUESTION_BANK',
   commandTerms: [],
   sections: [
     {
@@ -57,7 +82,8 @@ export const SABER11_MATH_V2: ExamVerticalConfigInput = {
       name: 'Matemáticas',
       componentType: 'SECTION',
       subject: { name: 'Matemáticas' },
-      durationMinutes: 18,
+      // StudyUs policy: 50 items x ~1.5 min. Icfes does not publish a per-area time; never presented as official.
+      durationMinutes: 75,
       toolRules: { calculator: false },
       targetDifficultyIndex: 1.0,
       definition: {
@@ -74,13 +100,32 @@ export const SABER11_MATH_V2: ExamVerticalConfigInput = {
           { dimension: 'Competencia', values: { 'Interpretación y representación': '34%', 'Formulación y ejecución': '43%', 'Argumentación': '23%' } },
           { dimension: 'Contenido', values: { 'Estadística': '35-40%', 'Álgebra y cálculo': '35-40%', 'Geometría': '20-35%' } },
         ],
-        limitations: ['Icfes does not publish a per-area time; StudyUS uses ~1.5 min per item.', 'The practice percentage is not an Icfes 0-100 score.'],
+        limitations: ['Icfes does not publish a per-area time; StudyUs uses ~1.5 min per item (StudyUs policy).', 'The practice percentage is not an Icfes 0-100 score.', 'The competence x content cell counts are StudyUs policy, not an official Icfes matrix.'],
         sourceKeys: SOURCES,
+        blueprintSpecification: {
+          status: 'DOCUMENTED',
+          sourceKeys: SOURCES,
+          note: 'Official Icfes margins (competence %, content ranges); the cell allocation and the difficulty target are StudyUs policy.',
+          margins: [
+            { dimension: 'COMPETENCE', provenance: 'OFFICIAL_DERIVED', sourceKeys: SOURCES, note: '34 / 43 / 23 % of 50 items (approved integer allocation).', totals: Object.fromEntries((Object.keys(COMPETENCIES) as Saber11Competency[]).map((c) => [competenceKey(c), COMPETENCIES[c].items])) },
+            { dimension: 'CONTENT_CATEGORY', provenance: 'OFFICIAL_DERIVED', sourceKeys: SOURCES, note: 'Inside the published ranges 35-40 / 35-40 / 20-35 %.', totals: Object.fromEntries(CONTENT_ORDER.map((k) => [contentKey(k), CONTENTS[k].items])) },
+          ],
+          cells: {
+            provenance: 'STUDYUS_POLICY',
+            note: POLICY_NOTES.crossDistribution,
+            counts: (Object.keys(CROSS_DISTRIBUTION) as Saber11Competency[]).flatMap((c) => CONTENT_ORDER.map((k) => ({ constraints: cellConstraints(c, k), count: CROSS_DISTRIBUTION[c][k] }))),
+          },
+          policies: [
+            { key: 'difficulty', provenance: 'STUDYUS_POLICY', note: `${POLICY_NOTES.difficulty} Target ${Object.entries(DIFFICULTY_POLICY).map(([k, d]) => `${k} ${d.percent}%`).join(' / ')}; not a slot constraint until human review calibrates the generator.` },
+            { key: 'timing', provenance: 'STUDYUS_POLICY', note: POLICY_NOTES.timing },
+            { key: 'scoring', provenance: 'STUDYUS_POLICY', note: POLICY_NOTES.scoring },
+          ],
+        },
       },
       objectives: [
-        { code: 'saber.interpretacion', description: 'Interpretación y representación: comprende y transforma información cuantitativa y esquemática.', targets: [{ count: 4 }] },
-        { code: 'saber.formulacion', description: 'Formulación y ejecución: plantea e implementa estrategias para resolver problemas.', targets: [{ count: 5 }] },
-        { code: 'saber.argumentacion', description: 'Argumentación: valida procedimientos y estrategias matemáticas.', targets: [{ count: 3 }] },
+        { code: 'saber.interpretacion', description: 'Interpretación y representación: comprende y transforma información cuantitativa y esquemática.', targets: targetsFor('INTERPRETACION') },
+        { code: 'saber.formulacion', description: 'Formulación y ejecución: plantea e implementa estrategias para resolver problemas.', targets: targetsFor('FORMULACION') },
+        { code: 'saber.argumentacion', description: 'Argumentación: valida procedimientos y estrategias matemáticas.', targets: targetsFor('ARGUMENTACION') },
       ],
     },
   ],
