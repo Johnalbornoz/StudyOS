@@ -8,6 +8,7 @@
  * the same cell at once, and a crashed worker's lease expires back to PENDING.
  * Attempts are bounded (no infinite retry) with exponential backoff.
  */
+import type { PilotCellParams } from './pilots/saber11-math';
 import { db } from '@/lib/db';
 import { adapterFor } from './adapters';
 import { prioritizeGaps, type BankHealth, type CellHealth } from './health';
@@ -28,7 +29,7 @@ export interface GenerationRequest {
   requestedCount: number;
   priority: 'P0' | 'P1' | 'P2' | 'P3';
   reason: RequestReason;
-  generationParams: { spec?: CellSpec; aggregate?: { summary: string; sampleSize: number; misconceptionCode?: string } | null; difficultyMix?: Partial<Record<'LOW' | 'MEDIUM' | 'HIGH', number>>; demand?: Record<string, unknown> };
+  generationParams: { spec?: CellSpec; aggregate?: { summary: string; sampleSize: number; misconceptionCode?: string } | null; difficultyMix?: Partial<Record<'LOW' | 'MEDIUM' | 'HIGH', number>>; demand?: Record<string, unknown>; /** A governed population pilot (content category, competence, assertion, locale, review checklist). */ pilot?: PilotCellParams };
   language: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   attemptCount: number;
@@ -145,13 +146,16 @@ export async function enqueueManual(p: {
   /** V2 demand-driven request: the difficulty mix to generate and the demand that justified it. */
   difficultyMix?: Partial<Record<'LOW' | 'MEDIUM' | 'HIGH', number>> | null;
   demand?: Record<string, unknown> | null;
+  /** A governed population pilot: the exact cell requirement beyond the blueprint (content category, competence, ...). */
+  pilot?: PilotCellParams | null;
 }): Promise<{ request: GenerationRequest; created: boolean }> {
   const cell = p.inputs.cells.find((c) => c.cellKey === p.cellKey);
   if (!cell) throw new Error('CELL_NOT_FOUND');
   const count = Math.max(1, Math.min(p.maxBatch, MAX_REQUEST_COUNT, p.count));
   const spec = cellSpecFor(cell, p.inputs);
-  const reason: RequestReason = p.difficultyMix ? 'DEMAND_SHORTAGE' : 'MANUAL_SMALL_BATCH';
-  const params = { spec, ...(p.difficultyMix ? { difficultyMix: p.difficultyMix } : {}), ...(p.demand ? { demand: p.demand } : {}) };
+  // A pilot batch is an explicit manual batch (with its own difficulty plan), never a demand signal.
+  const reason: RequestReason = p.pilot ? 'MANUAL_SMALL_BATCH' : p.difficultyMix ? 'DEMAND_SHORTAGE' : 'MANUAL_SMALL_BATCH';
+  const params = { spec, ...(p.difficultyMix ? { difficultyMix: p.difficultyMix } : {}), ...(p.demand ? { demand: p.demand } : {}), ...(p.pilot ? { pilot: p.pilot } : {}) };
   const ins = await db.query(
     `INSERT INTO question_bank_generation_requests (exam_version_id, blueprint_id, cell_key, learning_objective_id, assessment_component_id, requested_count, priority, reason, generation_params, language, requested_by, idempotency_key)
      VALUES ($1, $2, $3, $4, $5, $6, 'P1', $11, $7, $8, $9, $10)

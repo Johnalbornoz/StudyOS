@@ -3,6 +3,8 @@
  * exposure / repetition metrics. Admin-only (content-authorised): the detail shows the answer
  * and explanation the reviewer must certify. Exposure figures are aggregates; no Student identity.
  */
+import { REVIEW_CHECKLIST } from './pilots/saber11-math';
+const CHECKLIST_LABEL = new Map<string, string>(REVIEW_CHECKLIST.map(([k, l]) => [k, l]));
 import { db } from '@/lib/db';
 import { difficultyView, effectiveAlignment, effectiveUsage, reviewStatusOf, type DifficultyBand, type ReviewDecision } from './quality';
 import type { Provenance } from './policy';
@@ -88,6 +90,7 @@ export async function reviewQueue(f: ReviewQueueFilters, limit = 200) {
 export async function questionDetail(versionId: string) {
   const r = await db.query(
     `SELECT ai.*, qi.provenance, qi.item_key, qi.cell_key, qi.current_version_id, qi.retired_at, qi.exam_version_id, qi.generation_metadata,
+            (SELECT gr.generation_params->'pilot' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS pilot_params,
             lo.code AS objective_code, lo.description AS objective_description, d.name AS exam_name, d.exam_family, v.version_label,
             u.email AS author_email, u.is_system AS author_is_system
        FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id
@@ -156,6 +159,16 @@ export async function questionDetail(versionId: string) {
     versions: versions.rows.map((v: any) => ({ versionId: v.id, version: v.version_number, lifecycle: v.bank_lifecycle_status, createdAt: iso(v.created_at) })),
     audit: events.rows.map((v: any) => ({ from: v.from_status, to: v.to_status, reason: v.reason, actor: v.actor_kind === 'ADMIN' ? v.email : v.actor_kind, at: iso(v.created_at) })),
     generation: x.generation_metadata ?? null,
+    /** A governed pilot: the framework coordinates the reviewer verifies and the checklist an approval requires. */
+    pilot: x.pilot_params
+      ? {
+          key: x.pilot_params.pilotKey ?? null,
+          batch: x.pilot_params.batch ?? null,
+          requested: { competency: x.pilot_params.competencyLabel ?? null, contentCategory: x.pilot_params.contentCategory ?? null, difficulty: x.pilot_params.difficulty ?? [], locale: x.pilot_params.locale ?? null },
+          tags: { competency: c.tags?.competency ?? null, assertion: c.tags?.assertion ?? null, evidence: c.tags?.evidence ?? null, contentCategory: c.tags?.contentCategory ?? null },
+          checklist: ((x.pilot_params.reviewChecklist ?? []) as string[]).map((k) => ({ key: k, label: CHECKLIST_LABEL.get(k) ?? k })),
+        }
+      : null,
   };
 }
 

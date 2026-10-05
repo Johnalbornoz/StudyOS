@@ -235,6 +235,8 @@ export function validateWellFormed(c: ApprovedItemContent): ValidationIssue[] {
   const texts = [c.question, c.explanation, c.stimulus?.text ?? '', ...(c.options ?? []).map((o) => o.text)];
   if (texts.some((t) => MALFORMED.test(t))) out.push({ stage: 'CONTENT', code: 'MALFORMED_CONTENT', severity: 'REPAIR' });
   if (texts.some((t) => ((t.match(/(?<!\\)\$/g) ?? []).length % 2) === 1)) out.push({ stage: 'CONTENT', code: 'UNBALANCED_MATH_DELIMITERS', severity: 'REPAIR' });
+  // The item renderer only understands $...$ / $$...$$ (lib/math-text): \( \) or \[ \] would reach the Student as raw text.
+  if (texts.some((t) => /\\[([]/.test(t))) out.push({ stage: 'CONTENT', code: 'UNSUPPORTED_MATH_DELIMITERS', severity: 'REPAIR' });
   if (!c.explanation || c.explanation.trim().length < 15) out.push({ stage: 'CONTENT', code: 'EXPLANATION_MISSING', severity: 'REPAIR' });
   return out;
 }

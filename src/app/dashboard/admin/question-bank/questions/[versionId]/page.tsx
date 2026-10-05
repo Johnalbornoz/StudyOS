@@ -53,6 +53,16 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
           <Row k="Concepto" v={d.concepts.length ? d.concepts.join(', ') : 'sin concepto vinculado'} />
           <Row k="Objetivo" v={`${d.objective.code} — ${d.objective.description ?? ''}`} />
           <Row k="Idioma" v={d.content.language} />
+          {d.pilot && (
+            <>
+              <Row k="Piloto" v={`${d.pilot.key ?? '—'} · ${d.pilot.batch ?? '—'}`} />
+              <Row k="Solicitado" v={`${d.pilot.requested.competency ?? '—'} · ${d.pilot.requested.contentCategory ?? '—'} · dificultad StudyUs ${(d.pilot.requested.difficulty as string[]).join(', ') || '—'} · ${d.pilot.requested.locale ?? '—'}`} />
+              <Row k="Competencia (ítem)" v={d.pilot.tags.competency ?? 'sin etiqueta'} />
+              <Row k="Afirmación" v={d.pilot.tags.assertion ?? 'sin etiqueta'} />
+              <Row k="Evidencia (propuesta por el generador; verificar con el marco Icfes)" v={d.pilot.tags.evidence ?? 'sin evidencia'} />
+              <Row k="Categoría de contenido" v={d.pilot.tags.contentCategory ?? 'sin etiqueta'} />
+            </>
+          )}
         </section>
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
           <section className="card" style={{ padding: 'var(--space-4)', fontSize: 13.5 }}>
@@ -68,7 +78,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
             <Row k="Exposición" v={`${d.exposure.totalUses} usos · ${d.exposure.uniqueStudents} estudiantes · repetición ${pct(d.exposure.repeatRate)} · último uso ${d.exposure.lastUsed ? new Date(d.exposure.lastUsed).toLocaleDateString('es') : '—'}`} />
           </section>
           {reviewable && d.lifecycle !== 'REJECTED' && d.lifecycle !== 'SUPERSEDED' && d.lifecycle !== 'RETIRED' && (
-            <ReviewActions versionId={d.versionId} official={official} initial={{ difficulty: d.difficulty.validatedScale ?? d.difficulty.declaredScale, usage: [...d.usage].filter((u) => u !== 'FORMAL_ASSESSMENT'), alignment: d.alignment }} />
+            <ReviewActions versionId={d.versionId} official={official} initial={{ difficulty: d.difficulty.validatedScale ?? d.difficulty.declaredScale, usage: [...d.usage].filter((u) => u !== 'FORMAL_ASSESSMENT'), alignment: d.alignment }} checklist={d.pilot?.checklist ?? []} />
           )}
         </div>
       </div>

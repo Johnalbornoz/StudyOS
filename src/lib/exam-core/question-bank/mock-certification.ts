@@ -62,6 +62,8 @@ export interface PositionSpec {
   skillId?: string | null;
   commandTerm?: string | null;
   marks?: number | null;
+  /** Second blueprint dimension (e.g. Saber 11 content category in a competence x content matrix). */
+  contentCategory?: string | null;
 }
 
 export interface BankItemFacts extends EligibilityFacts {
@@ -84,6 +86,7 @@ export interface BankItemFacts extends EligibilityFacts {
   /** Skills the item evidences (published mappings of its objective). */
   skillIds?: string[];
   commandTerm?: string | null;
+  contentCategory?: string | null;
 }
 
 export interface CertificationInput {
@@ -176,11 +179,17 @@ export function itemBlockers(item: BankItemFacts, profile: CertificationProfile)
   return out;
 }
 
-/** Practice eligibility for the content ladder: real, deliverable, keyed content (PILOT included, per the practice policy). */
+/**
+ * What COUNTS toward PRACTICE_READY: approved real content -- deliverable, keyed, and, for StudyUs-generated
+ * content, human-approved (ACTIVE / CALIBRATED: the DB only lets generated content reach them with an APPROVED
+ * review). A PILOT item may be delivered for practice under the practice policy, but it never makes an exam
+ * practice-ready on its own.
+ */
 export function practiceBlockers(item: BankItemFacts): string[] {
   const out: string[] = [];
   if (isFixture(item)) out.push('DEV_FIXTURE');
   if (!isEligible(item, 'PRACTICE', undefined, 'STUDENT')) out.push('NOT_PRACTICE_ELIGIBLE');
+  else if (item.provenance === 'STUDYUS_GENERATED' && !['ACTIVE', 'CALIBRATED'].includes(item.lifecycle ?? '')) out.push('NOT_HUMAN_APPROVED');
   if (item.structureProblems.length) out.push('STRUCTURE_INVALID');
   if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
   if (item.placeholderSignals.includes('PLACEHOLDER_TEXT')) out.push('PLACEHOLDER');
@@ -200,6 +209,7 @@ export function constraintMisses(item: BankItemFacts, p: PositionSpec): string[]
   if (p.skillId && !(item.skillIds ?? []).includes(p.skillId)) out.push('SKILL');
   if (p.commandTerm && norm(item.commandTerm) !== norm(p.commandTerm)) out.push('COMMAND_TERM');
   if (p.marks !== null && p.marks !== undefined && item.marks !== p.marks) out.push('MARKS');
+  if (p.contentCategory && norm(item.contentCategory) !== norm(p.contentCategory)) out.push('CONTENT_CATEGORY');
   return out;
 }
 const fits = (item: BankItemFacts, p: PositionSpec) => constraintMisses(item, p).length === 0;
@@ -257,6 +267,7 @@ const constraintsOf = (p: PositionSpec) => [
   p.skillId ? `skill ${p.skillId}` : '',
   p.commandTerm ? `command term "${p.commandTerm}"` : '',
   p.marks !== null && p.marks !== undefined ? `${p.marks} marks` : '',
+  p.contentCategory ? `content ${p.contentCategory}` : '',
 ].filter(Boolean);
 
 export function certifyBlueprint(input: CertificationInput, profile: CertificationProfile, opts: CertificationOptions = {}): CertificationResult {

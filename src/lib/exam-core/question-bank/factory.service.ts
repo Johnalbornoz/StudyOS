@@ -187,6 +187,7 @@ async function generationContext(inputs: VersionHealthInputs, req: GenerationReq
     exemplars: own.filter((t) => t.published).slice(0, 3).map((t) => ({ stimulusTitle: t.stimulusTitle, question: t.question, options: t.options })),
     avoidStems: own.map((t) => t.question),
     aggregate: req.generationParams.aggregate ?? null,
+    pilot: req.generationParams.pilot ?? null,
   };
 }
 
@@ -256,15 +257,30 @@ async function validateVersion(ctx: RequestContext, versionId: string, content: 
   }
 }
 
+/**
+ * Pilot: a PASS also needs the framework coordinates the human reviewer will verify -- the requested content
+ * category and competence on the item, and the generator's evidence claim. Missing -> human review, never PILOT.
+ */
+function pilotChecked<T extends { outcome: string; issues: ValidationIssue[] }>(v: T, gctx: GenerationContext, content: Record<string, unknown>): T {
+  if (!gctx.pilot || v.outcome !== 'PASS') return v;
+  const tags = (content.tags ?? {}) as Record<string, unknown>;
+  const missing = [!tags.contentCategory && 'CONTENT_CATEGORY', !tags.competency && 'COMPETENCY', !tags.evidence && 'FRAMEWORK_EVIDENCE'].filter(Boolean) as string[];
+  if (!missing.length) return v;
+  return { ...v, outcome: 'REVIEW_REQUIRED', issues: [...v.issues, { stage: 'BLUEPRINT', code: 'PILOT_TAGS_MISSING', severity: 'REVIEW', detail: missing.join(',') } as ValidationIssue] };
+}
+
 async function processCandidate(ctx: RequestContext, req: GenerationRequest, inputs: VersionHealthInputs, gctx: GenerationContext, candidate: GeneratedCandidate, existing: ExistingItemText[], targetDifficulty?: number): Promise<CandidateOutcome> {
   // V2 demand batch: each candidate is validated against ITS planned difficulty.
   const spec = targetDifficulty ? { ...gctx.spec, targetDifficulty } : gctx.spec;
-  const requirement = `${gctx.objectiveCode}: ${gctx.objectiveDescription}`;
+  // Pilot: the independent validator judges the full cell requirement (competence + content category), not only the objective.
+  const requirement = gctx.pilot
+    ? `${gctx.objectiveCode}: ${gctx.objectiveDescription} | Competencia: ${gctx.pilot.competencyLabel} | Afirmación: ${gctx.pilot.assertion} | Categoría de contenido: ${gctx.pilot.contentCategory}`
+    : `${gctx.objectiveCode}: ${gctx.objectiveDescription}`;
   const cell = inputs.cells.find((c) => c.cellKey === req.cellKey)!;
   const itemKey = `qb.${cell.objectiveCode}.${shortHash(`${candidate.question}|${ctx.runId}|${req.id}`)}`;
   const toVersion = (c: GeneratedCandidate) => {
     const stimulusKey = c.stimulusText ? `qb.${cell.sectionKey}.${shortHash(c.stimulusText)}` : null;
-    return candidateToContent(c, { itemKey, spec, stimulusKey, difficultyIndex: Math.round((1 + (Math.min(5, Math.max(1, c.difficulty)) - spec.targetDifficulty) * 0.05) * 100) / 100 });
+    return candidateToContent(c, { itemKey, spec, stimulusKey, difficultyIndex: Math.round((1 + (Math.min(5, Math.max(1, c.difficulty)) - spec.targetDifficulty) * 0.05) * 100) / 100, pilot: gctx.pilot ?? null });
   };
   let current = toVersion(candidate);
   let created: { bankItemId: string; versionId: string };
@@ -276,7 +292,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
       cellKey: cell.cellKey,
       language: spec.language,
       generationRequestId: req.id,
-      generationMetadata: { runId: ctx.runId, reason: req.reason, priority: req.priority, prompt: 'question_bank.generate_items@v1', targetDifficulty: spec.targetDifficulty },
+      generationMetadata: { runId: ctx.runId, reason: req.reason, priority: req.priority, prompt: 'question_bank.generate_items@v1', targetDifficulty: spec.targetDifficulty, ...(gctx.pilot ? { pilot: { key: gctx.pilot.pilotKey, batch: gctx.pilot.batch, competency: gctx.pilot.competency, contentCategory: gctx.pilot.contentCategory } } : {}) },
       version: { content: current.content, learningObjectiveId: cell.learningObjectiveId, questionType: String(current.content.type), targetDifficulty: spec.targetDifficulty },
       runId: ctx.runId,
     });
@@ -286,7 +302,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
   }
   ctx.counters.candidates += 1;
   let versionId = created.versionId;
-  let v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement);
+  let v = pilotChecked(await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement), gctx, current.content);
   let repaired = false;
   if (v.outcome === 'DEFERRED') return { final: 'DEFERRED', repaired, stop: v.stop };
 
@@ -309,7 +325,7 @@ async function processCandidate(ctx: RequestContext, req: GenerationRequest, inp
       return { final: 'REJECTED', repaired: false, stop: null };
     }
     repaired = true;
-    v = await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement);
+    v = pilotChecked(await validateVersion(ctx, versionId, current.content, current.verification, spec, existing, requirement), gctx, current.content);
     if (v.outcome === 'DEFERRED') return { final: 'DEFERRED', repaired: true, stop: v.stop };
     // One repair only: a repaired version that still needs repair is rejected.
     if (v.outcome === 'REPAIR_REQUIRED') v = { ...v, outcome: 'REJECTED' };
@@ -336,7 +352,10 @@ async function processRequest(ctx: RequestContext, req: GenerationRequest): Prom
     await deferRequest(req.id, ctx.leaseOwner, 'CELL_NO_LONGER_IN_BLUEPRINT');
     return null;
   }
-  const spec = cellSpecFor(cell, inputs);
+  const cellSpec = cellSpecFor(cell, inputs);
+  // Pilot: a mathematics pilot always recomputes its keys (MATH domain); a passage is optional, never forced.
+  const pilot = req.generationParams.pilot;
+  const spec: CellSpec = pilot?.domain === 'MATH' ? { ...cellSpec, domain: 'MATH', stimulusRequired: false, stimulusOnlyEvidence: false } : cellSpec;
   const baseCtx = await generationContext(inputs, req, spec);
   // V2: a demand batch carries a difficulty mix; generation runs in chunks of at most 5 items per AI call,
   // each chunk budget-checked (a large request never becomes one unbounded call).

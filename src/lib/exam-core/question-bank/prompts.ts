@@ -12,6 +12,7 @@
  * Terminology: the factory uses aggregate analytics to choose what to generate
  * and to improve prompts; it never trains or fine-tunes a model.
  */
+import type { PilotCellParams } from './pilots/saber11-math';
 import { createHash } from 'crypto';
 import type { ApprovedItemContent } from '../items';
 import type { CandidateVerification, CellSpec, ValidatorVerdict } from './validation';
@@ -42,6 +43,8 @@ export interface GenerationContext {
   aggregate?: AggregateSignal | null;
   /** V2 demand-driven batch: the target difficulty (1..5) of each item, in order. */
   difficultyPlan?: number[] | null;
+  /** A governed population pilot: content category, competence, assertion and locale the item must meet. */
+  pilot?: PilotCellParams | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -82,7 +85,7 @@ export const GENERATION_SCHEMA = {
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['stimulusTitle', 'stimulusText', 'question', 'options', 'correctIndex', 'explanation', 'difficulty', 'cognitiveDemand', 'skill', 'distractorRationales', 'distractorMisconceptions', 'evidenceQuote', 'verificationExpression'],
+          required: ['stimulusTitle', 'stimulusText', 'question', 'options', 'correctIndex', 'explanation', 'difficulty', 'cognitiveDemand', 'skill', 'distractorRationales', 'distractorMisconceptions', 'evidenceQuote', 'verificationExpression', 'frameworkEvidence'],
           properties: {
             stimulusTitle: { type: ['string', 'null'] },
             stimulusText: { type: ['string', 'null'] },
@@ -97,6 +100,7 @@ export const GENERATION_SCHEMA = {
             distractorMisconceptions: { type: 'array', items: { type: ['string', 'null'] } },
             evidenceQuote: { type: ['string', 'null'] },
             verificationExpression: { type: ['string', 'null'] },
+            frameworkEvidence: { type: ['string', 'null'] },
           },
         },
       },
@@ -118,6 +122,8 @@ export interface GeneratedCandidate {
   distractorMisconceptions: Array<string | null>;
   evidenceQuote: string | null;
   verificationExpression: string | null;
+  /** Pilot: which evidence of the framework assertion the item collects (a CLAIM for the human reviewer to verify). */
+  frameworkEvidence?: string | null;
 }
 
 export function generationSystemPrompt(language: string): string {
@@ -130,6 +136,7 @@ export function generationSystemPrompt(language: string): string {
     'For every option give a rationale (empty string for the correct one) and, when it reflects a known misconception, a short UPPER_SNAKE code.',
     'MATHEMATICS: verificationExpression must be a plain arithmetic/algebraic expression (no words, no units) whose value IS the correct option',
     '(e.g. "(120-90)/90*100"); StudyUS recomputes it. Otherwise null.',
+    'Write any mathematical notation between $...$ (inline) or $$...$$ (display) only -- never \\( \\) or \\[ \\].',
     'READING with a passage: evidenceQuote must be copied VERBATIM from the passage and must support the key; the answer must follow from the passage alone.',
     'Items that need a passage get a NEW original passage (stimulusTitle + stimulusText, 120-260 words). Otherwise both are null.',
     `Write everything in the item language: ${language}. Return JSON only.`,
@@ -151,6 +158,15 @@ export function generationUserPrompt(ctx: GenerationContext): string {
     s.cognitiveDemand ? `COGNITIVE DEMAND: ${s.cognitiveDemand}` : '',
     `PASSAGE: ${s.stimulusRequired ? 'required -- one new passage shared by all items of this batch' : 'not needed'}`,
     `DOMAIN: ${s.domain === 'MATH' ? 'mathematics (verificationExpression REQUIRED)' : 'verbal / reading (evidenceQuote required when there is a passage)'}`,
+    ...(ctx.pilot
+      ? [
+          `CONTENT CATEGORY (required): ${ctx.pilot.contentCategory}`,
+          `COMPETENCE (required): ${ctx.pilot.competencyLabel}. ASSERTION: ${ctx.pilot.assertion}`,
+          'frameworkEvidence: state in one sentence which evidence of this assertion the item collects (a human reviewer verifies it against the official framework; do not quote the framework).',
+          'DIFFICULTY is the StudyUs scale (2 basic, 3 intermediate, 4 advanced) -- never an official performance level.',
+          `LANGUAGE: Spanish as used in Colombia (${ctx.pilot.locale}); everyday contexts plausible for Colombian students.`,
+        ]
+      : []),
     ctx.aggregate ? `AGGREGATE SIGNAL (anonymous): ${ctx.aggregate.summary}. Write items that distinguish this misconception${ctx.aggregate.misconceptionCode ? ` (${ctx.aggregate.misconceptionCode})` : ''}.` : '',
     ctx.exemplars.length
       ? `STYLE REFERENCE (do NOT copy; write different situations, numbers and wording):\n${ctx.exemplars.map((e, i) => `${i + 1}. ${e.stimulusTitle ? `[${e.stimulusTitle}] ` : ''}${e.question} | ${e.options.join(' / ')}`).join('\n')}`
@@ -185,6 +201,7 @@ export function parseGenerationOutput(parsed: any, expected: { count: number; op
       distractorMisconceptions: Array.isArray(it.distractorMisconceptions) ? it.distractorMisconceptions.map((m: unknown) => (typeof m === 'string' && m ? m : null)) : [],
       evidenceQuote: typeof it.evidenceQuote === 'string' && it.evidenceQuote.trim() ? it.evidenceQuote : null,
       verificationExpression: typeof it.verificationExpression === 'string' && it.verificationExpression.trim() ? it.verificationExpression : null,
+      frameworkEvidence: typeof it.frameworkEvidence === 'string' && it.frameworkEvidence.trim() ? it.frameworkEvidence.trim() : null,
     });
   }
   if (out.length === 0) errors.push('no usable items');
@@ -203,7 +220,7 @@ function seededPermutation(n: number, seed: string): number[] {
  * + `contentStatus: ORIGINAL` (provenance STUDYUS_GENERATED), whatever the
  * model wrote. Returns the verification material separately.
  */
-export function candidateToContent(c: GeneratedCandidate, ctx: { itemKey: string; spec: CellSpec; stimulusKey: string | null; difficultyIndex: number }): { content: Record<string, unknown>; verification: CandidateVerification } {
+export function candidateToContent(c: GeneratedCandidate, ctx: { itemKey: string; spec: CellSpec; stimulusKey: string | null; difficultyIndex: number; pilot?: PilotCellParams | null }): { content: Record<string, unknown>; verification: CandidateVerification } {
   const order = seededPermutation(c.options.length, ctx.itemKey);
   const options = order.map((orig, i) => ({ id: OPTION_LETTERS[i], text: c.options[orig] }));
   const idOf = (orig: number) => OPTION_LETTERS[order.indexOf(orig)];
@@ -231,7 +248,11 @@ export function candidateToContent(c: GeneratedCandidate, ctx: { itemKey: string
     difficultyIndex: ctx.difficultyIndex,
     marks: 1,
     scoringStrategy: 'EXACT',
-    tags: { skill: c.skill.slice(0, 80) || undefined, cognitiveDemand: c.cognitiveDemand || undefined, responseFormat: 'SELECTED_RESPONSE' },
+    tags: {
+      skill: c.skill.slice(0, 80) || undefined, cognitiveDemand: c.cognitiveDemand || undefined, responseFormat: 'SELECTED_RESPONSE',
+      // Pilot: the requested framework coordinates (the reviewer confirms them); evidence is the generator's claim.
+      ...(ctx.pilot ? { competency: ctx.pilot.competencyLabel, assertion: ctx.pilot.assertion.slice(0, 300), contentCategory: ctx.pilot.contentCategory, evidence: c.frameworkEvidence?.slice(0, 300) || undefined } : {}),
+    },
     distractorRationale: Object.keys(rationale).length ? rationale : undefined,
     distractorMisconceptions: Object.keys(misconceptions).length ? misconceptions : undefined,
     ...(c.stimulusText && ctx.stimulusKey ? { stimulus: { key: ctx.stimulusKey, title: c.stimulusTitle ?? undefined, text: c.stimulusText.trim() } } : {}),

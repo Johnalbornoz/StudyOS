@@ -61,6 +61,9 @@ describe('QB-2: slot constraints are enforced whenever the blueprint states them
     expect(constraintMisses(it0, pos({ commandTerm: 'Evaluate' }))).toEqual(['COMMAND_TERM']);
     expect(constraintMisses(it0, pos({ marks: 6 }))).toEqual(['MARKS']);
     expect(constraintMisses(it0, pos({ difficultyMin: 4, difficultyMax: 5 }))).toEqual(['DIFFICULTY']);
+    // Second dimension (competence x content matrix, e.g. Saber 11 policy).
+    expect(constraintMisses(item({ contentCategory: 'Geometría' }), pos({ contentCategory: 'geometría' }))).toEqual([]);
+    expect(constraintMisses(item({ contentCategory: 'Estadística' }), pos({ contentCategory: 'Geometría' }))).toEqual(['CONTENT_CATEGORY']);
   });
   it('an unmet constraint leaves the position empty, and the report says why', () => {
     const r = certifyBlueprint(exam([pos({ commandTerm: 'Evaluate', marks: 6 })], [item({ commandTerm: 'Explain', marks: 2 })]), 'CERTIFIED');
@@ -143,7 +146,11 @@ describe('assessExam: engine capability and content readiness are separate dimen
   });
   it('the ladder: PRACTICE_READY -> SECTION_FIDELITY -> ONE_MOCK_READY -> MULTI_MOCK_READY -> PRODUCTION_DEPTH', () => {
     const two = (n: number) => Array.from({ length: n }, () => item());
-    const practiceOnly = assessExam(exam([pos(), pos()], [item({ lifecycle: 'PILOT' })]));
+    // A PILOT (automatically validated, not yet human-approved) generated item never counts as approved content.
+    const pilotOnly = assessExam(exam([pos(), pos()], [item({ lifecycle: 'PILOT' })]));
+    expect(pilotOnly.contentReadiness).toBe('NONE');
+    expect(pilotOnly.practice.blockers).toEqual({ NOT_HUMAN_APPROVED: 1 });
+    const practiceOnly = assessExam(exam([pos(), pos()], [item({ usage: ['PRACTICE'], alignment: 'EXAM_STYLE' })]));
     expect(practiceOnly.contentReadiness).toBe('PRACTICE_READY');
     expect(assessExam(exam([pos(), pos()], two(2))).contentReadiness).toBe('ONE_MOCK_READY');
     expect(assessExam(exam([pos(), pos()], two(4))).contentReadiness).toBe('MULTI_MOCK_READY');

@@ -47,6 +47,7 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
   return withTx(async (c) => {
     const r = await c.query(
       `SELECT ai.id, ai.bank_item_id, ai.bank_lifecycle_status, ai.created_by, ai.validation_report, ai.learning_objective_id, qi.provenance,
+              (SELECT gr.generation_params->'pilot'->'reviewChecklist' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS required_checklist,
               EXISTS (SELECT 1 FROM blueprint_objective_targets t WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
          FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1 FOR UPDATE OF ai`,
       [p.versionId]
@@ -54,17 +55,26 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
     const row = r.rows[0];
     if (!row) throw new ReviewError('NOT_REVIEWABLE', 'not found');
     const decided = checkReview(
-      { provenance: row.provenance as Provenance, lifecycle: row.bank_lifecycle_status, createdBy: row.created_by, automatedOutcome: row.validation_report?.outcome ?? (row.provenance === 'STUDYUS_GENERATED' ? null : 'PASS'), inBlueprintCell: row.in_cell },
+      { provenance: row.provenance as Provenance, lifecycle: row.bank_lifecycle_status, createdBy: row.created_by, automatedOutcome: row.validation_report?.outcome ?? (row.provenance === 'STUDYUS_GENERATED' ? null : 'PASS'), inBlueprintCell: row.in_cell, requiredChecklist: Array.isArray(row.required_checklist) ? row.required_checklist : null },
       p.input,
       p.reviewerUserId
     );
     const decision = p.input.decision;
-    const ins = await c.query(
-      `INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by, review_notes, validated_difficulty, usage_eligibility, exam_alignment, automated_validation)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-      [p.versionId, row.bank_item_id, decision, p.reviewerUserId, p.input.notes?.trim() || null, p.input.validatedDifficulty, decision === 'APPROVED' ? decided.usage : null, decision === 'APPROVED' ? decided.alignment : null,
-       row.validation_report ? JSON.stringify({ outcome: row.validation_report.outcome ?? null, stage: row.validation_report.stage ?? null, issues: (row.validation_report.issues ?? []).map((i: any) => i.code) }) : null]
-    );
+    const automated = row.validation_report ? JSON.stringify({ outcome: row.validation_report.outcome ?? null, stage: row.validation_report.stage ?? null, issues: (row.validation_report.issues ?? []).map((i: any) => i.code) }) : null;
+    const baseValues = [p.versionId, row.bank_item_id, decision, p.reviewerUserId, p.input.notes?.trim() || null, p.input.validatedDifficulty, decision === 'APPROVED' ? decided.usage : null, decision === 'APPROVED' ? decided.alignment : null, automated];
+    // The checklist column (20261101_1000) is written only when a checklist is given (pilot items).
+    const checklist = p.input.checklist && Object.keys(p.input.checklist).length ? p.input.checklist : null;
+    const ins = checklist
+      ? await c.query(
+          `INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by, review_notes, validated_difficulty, usage_eligibility, exam_alignment, automated_validation, review_checklist)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+          [...baseValues, JSON.stringify(checklist)]
+        )
+      : await c.query(
+          `INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by, review_notes, validated_difficulty, usage_eligibility, exam_alignment, automated_validation)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+          baseValues
+        );
     const actor = { kind: 'ADMIN' as const, userId: p.reviewerUserId };
     let to: LifecycleState;
     if (decision === 'APPROVED') {

@@ -82,6 +82,7 @@ export function bankItemFacts(row: BankVersionRow): BankItemFacts {
     placeholderSignals,
     unresolvedDependencies: ABSENT_FIGURE.test(text) ? ['REFERENCES_ABSENT_FIGURE'] : [],
     commandTerm: parsed.data.commandTerm ?? null,
+    contentCategory: parsed.data.tags?.contentCategory ?? null,
     skillIds: row.skill_ids ?? [],
   };
 }

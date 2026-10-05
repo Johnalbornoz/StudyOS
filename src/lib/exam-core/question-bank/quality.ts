@@ -91,6 +91,8 @@ export interface ReviewInput {
   validatedDifficulty: number | null;
   usage: UsageType[] | null;
   alignment: ExamAlignment | null;
+  /** Structured review checklist (key -> confirmed). Required on APPROVED when the subject declares one. */
+  checklist?: Record<string, boolean> | null;
 }
 
 export interface ReviewSubject {
@@ -101,10 +103,12 @@ export interface ReviewSubject {
   automatedOutcome: string | null;
   /** Belongs to an exam blueprint cell (a structure the item was validated against). */
   inBlueprintCell: boolean;
+  /** A governed pilot's review checklist: every key must be confirmed before APPROVED (null = none declared). */
+  requiredChecklist?: readonly string[] | null;
 }
 
 export class ReviewError extends Error {
-  constructor(public readonly code: 'SELF_REVIEW' | 'NOT_REVIEWABLE' | 'AUTOMATED_VALIDATION_NOT_PASSED' | 'OFFICIAL_NOT_ALLOWED' | 'MOCK_USE_NEEDS_MOCK_READY' | 'MOCK_READY_NEEDS_BLUEPRINT' | 'NOTES_REQUIRED' | 'INVALID_USAGE', detail = '') {
+  constructor(public readonly code: 'SELF_REVIEW' | 'NOT_REVIEWABLE' | 'AUTOMATED_VALIDATION_NOT_PASSED' | 'OFFICIAL_NOT_ALLOWED' | 'MOCK_USE_NEEDS_MOCK_READY' | 'MOCK_READY_NEEDS_BLUEPRINT' | 'NOTES_REQUIRED' | 'INVALID_USAGE' | 'CHECKLIST_INCOMPLETE', detail = '') {
     super(detail ? `${code}: ${detail}` : code);
     this.name = 'ReviewError';
   }
@@ -124,6 +128,11 @@ export function checkReview(subject: ReviewSubject, input: ReviewInput, reviewer
   if (input.decision !== 'APPROVED') {
     if (!input.notes || input.notes.trim().length < 5) throw new ReviewError('NOTES_REQUIRED');
     return { usage: [...GENERATED_DEFAULT_USAGE], alignment: GENERATED_DEFAULT_ALIGNMENT };
+  }
+  // A governed pilot: the reviewer confirms every declared point (answer, distractors, competence, ...).
+  if (subject.requiredChecklist?.length) {
+    const missing = subject.requiredChecklist.filter((k) => input.checklist?.[k] !== true);
+    if (missing.length) throw new ReviewError('CHECKLIST_INCOMPLETE', missing.join(','));
   }
   // Generated content needs a passed automated validation before a human may approve it.
   if (subject.provenance === 'STUDYUS_GENERATED' && !(PASSING_AUTOMATED as readonly string[]).includes(subject.automatedOutcome ?? '')) {
