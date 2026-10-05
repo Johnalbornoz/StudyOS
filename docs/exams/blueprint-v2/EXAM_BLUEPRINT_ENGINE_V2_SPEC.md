@@ -162,7 +162,7 @@ Prioridad: **P0** bloquea un criterio de aceptación · **P1** riesgo de correcc
 1. **Seis capas con dependencia unidireccional:** Curriculum ← Assessment ← Blueprint ← Instance. Learner y Pathway leen las tres primeras. Ninguna capa inferior conoce la UX.
 2. **Curriculum Model** = qué se aprende. **Assessment Model** = reglas de evaluación de una familia o examen, independientes de una sesión concreta. **Exam Session** = convocatoria concreta. **Blueprint** = reglas de construcción de un instrumento. **Instance** = un instrumento concreto (Mock 1, Mock 2…).
 3. **Toda capa es opcional por examen.** Ejemplos: PAA no tiene Qualification, Subject Level ni grade boundaries; PISA no tiene puntaje individual. Una capa ausente es un estado explícito (`NOT_APPLICABLE`), no un *null* ambiguo, y es distinta de `UNKNOWN` (aplica, pero no hay fuente).
-4. **Toda regla académica es dato con procedencia**: `source_key`, `status` (OFFICIAL_PUBLISHED | OFFICIAL_LICENSED | STUDYUS_POLICY | UNKNOWN) y `confirmed`. El código nunca contiene umbrales, pesos ni escalas oficiales.
+4. **Toda regla académica es dato con procedencia** (K-05): `OFFICIAL_PUBLIC` | `OFFICIAL_LICENSED` | `INSTITUTION_SUPPLIED` | `VERIFIED_HISTORICAL` | `THIRD_PARTY_REFERENCE` | `UNKNOWN`, más `sourceKeys`, autoridad y `confirmed`. Las decisiones de StudyUs (formulario reducido, ritmo, dificultad) son `STUDYUS_POLICY`, un tipo de valor distinto que nunca se hace pasar por dato de evaluación. Una referencia de terceros nunca resuelve una etapa. El código nunca contiene umbrales, pesos, escalas, fechas de sesión ni transformaciones oficiales.
 5. **Unidades tipadas** en todo el pipeline: `MARKS`, `WEIGHTED_MARKS`, `PERCENT`, `SCALED_SCORE`, `GRADE`, `QUALIFICATION_POINTS`, `PROFICIENCY_LEVEL`. «Points» solo existe como `QUALIFICATION_POINTS` (IB Diploma, AICE) o cuando la familia lo nombra oficialmente.
 
 ### C.2 Entidades y relaciones
@@ -238,7 +238,7 @@ Acciones: **REUSE** (sin cambio) · **EXTEND** (columnas o semántica aditivas) 
 |---|---|---|---|
 | **PathwayDefinition** | — | NEW `assessment_pathways` | `(pathway_key, programme_id?, country?, label, source_key, status)` |
 | **PathwayStep** | `FRAMEWORK_FOLLOWS` (código) | NEW `pathway_steps` | `(pathway_id, programme_stage_id, ordinal, exam_definition_id?, assessment_kind, timing {relative: END_OF_STAGE\|YEAR_N_TERM_T\|SESSION}, obligation MANDATORY\|OPTIONAL\|INSTITUTION_DECIDED\|UNKNOWN, follows_step_id)` |
-| **AssessmentEligibilityRule** | `ASSESSMENT_ELIGIBILITY_RULES` (código) | PROMOTE `assessment_eligibility_rules` | `(exam_definition_id \| family_id, countries[], grade_min/max, age_min/max, programme_ids[], conditions jsonb, source_key, status)`. El backfill reproduce `rules.ts` 1:1 (paridad 55/55). |
+| **AssessmentEligibilityRule** | `ASSESSMENT_ELIGIBILITY_RULES` (código) | PROMOTE `assessment_eligibility_rules` | `(exam_definition_id \| family_id, countries[], grade_min/max, age_min/max, programme_ids[], conditions jsonb, source_key, status)`. El backfill reproduce `rules.ts`, **excepto la restricción PAA MX/PR** (K-06): el país solo informa descubrimiento, recomendación y disponibilidad local, nunca la elegibilidad académica. Un requisito no confirmado devuelve `TARGET_REQUIREMENT_UNCONFIRMED`, no `INELIGIBLE`. |
 | **InstitutionAssessmentEvent** | `class_exam_assignments` (solo objetivo) | NEW `institution_assessment_events` | `(institution_id, grade_id?, class_id?, series_id?, kind MOCK\|IA_DEADLINE\|CHECKPOINT\|INTERNAL_EXAM, scheduled_on)`. `class_exam_assignments` se conserva tal cual. |
 
 ### C.3 Diagrama de relaciones (núcleo)
@@ -644,7 +644,7 @@ Leyenda: ✅ modelable con datos existentes · 🟡 modelable, faltan datos con 
 | M6 | `scoring_models.engine_version`; `exam_attempt_results.stage_outputs`, `pipeline_hash` | Ninguno (v1 sigue) | Resultados v1 intactos. |
 | M7 | `assessment_routes`, `assessment_objectives`; `command_terms.scope_*` | Desde `navigation_rules.assessmentRoutes` y `definition.assessmentObjectives` | El jsonb sigue siendo leído por el código actual hasta su migración. |
 | M8 | `programme_stages`, `subject_level_definitions`, `structure_versions.purpose` | Etapas solo con fuente. `purpose='ASSESSMENT_SPEC'` para `source_locator LIKE 'exam-vertical-config:%'`. | Curriculum UI y catálogo filtran CURRICULUM; las vistas de examen no cambian. |
-| M9 | `assessment_pathways`, `pathway_steps`, `assessment_eligibility_rules`, `institution_assessment_events`, `student_academic_periods`, `student_period_subjects` | Las reglas copian `rules.ts` 1:1. Los periodos se derivan del perfil actual y de las inscripciones activas (source INFERRED). | `rules.ts` queda como fallback hasta lograr paridad 55/55. |
+| M9 | `assessment_pathways`, `pathway_steps`, `assessment_eligibility_rules`, `institution_assessment_events`, `student_academic_periods`, `student_period_subjects` | Las reglas copian `rules.ts` salvo la restricción de país de PAA (K-06; la retira un hotfix previo). Los periodos se derivan del perfil actual y de las inscripciones activas (source INFERRED). | `rules.ts` queda como fallback hasta lograr paridad 55/55. |
 | M10 | `assessment_series`, `exam_instances.series_*`, `blueprint_id`; `student_exam_profiles.target_session_id`, `subject_level_id`, `route_key`, `target_outcome` | Instancias existentes → sin serie (NULL) | Mocks existentes siguen funcionando. |
 
 El **loader de exámenes** (`apply-vertical-config`) deja de crear `structure_versions` con purpose CURRICULUM. Crea `ASSESSMENT_SPEC` solo cuando la familia no tiene un currículo propio enlazado (PAA, PISA, Saber 11). Para IB y Cambridge, los targets apuntan a objetivos del currículo (sílabo) cuando exista el mapeo publicado; mientras no exista, siguen apuntando a los ASSESSMENT_SPEC actuales. Así no se pierden filas ni referencias.
@@ -667,7 +667,7 @@ Reversible = desactivar el flag de lectura nueva o ignorar las columnas nuevas.
 
 | Bloque | Alcance | DB | Flag / modo | Certificación mínima |
 |---|---|---|---|---|
-| **BP-0** | Este spec + ADR + tipos y schemas zod (`BlueprintDocumentV2`, `ScoringPipelineV2`, `ExamPathResolution`, `ReadinessRequest`, `PredictionRulesBundle`) + **compilador** `configToBlueprintV2(cfg)` (puro) | No | — | Unit: las 80 configs compilan; huellas estables; invariantes §E.2 |
+| **BP-0** ✅ | Unidades tipadas, provenance (K-05), schema Blueprint V2, pipeline + evaluador, compilador `compileBlueprint(cfg)`, validador y paridad en SHADOW. Detalle: [`BP0_FOUNDATION.md`](BP0_FOUNDATION.md). `ExamPathResolution`, `ReadinessRequest` y `PredictionRulesBundle` quedan para BP-6 a BP-8. | No | — (sin consumidor en runtime) | 88 configs compilan con paridad 0; huellas estables; validador; prueba de que nada se inventa |
 | **BP-1** | `assessment_families` + `exam_sessions` (M1, M2) + `structure_versions.purpose` (parte de M8) | Sí | lecturas SHADOW | Cert de migración; paridad taxonomía (enum ≡ tabla); regresión V2 / objective-first / eligibility |
 | **BP-2** | Multiplicidad de Blueprint + celdas (M3, M4); persistencia del documento compilado | Sí | `BLUEPRINT_V2_READ=shadow` | **Paridad de ensamblaje**: para las 30 configs con banco, el formulario v2 es idéntico al actual con el mismo seed |
 | **BP-3** | Predicado único `isItemEligibleForCell` + `eligibilitySql` (G7, G13) | No | shadow diff → enforce | Diff de elegibilidad 0 en las configs actuales; tests de banco (25 + 33) |
@@ -687,16 +687,13 @@ Reversible = desactivar el flag de lectura nueva o ignorar las columnas nuevas.
 
 ---
 
-## K. Decisiones pendientes (del usuario)
+## K. Decisiones (cerradas el 2026-10-05)
 
-1. **Orden.** ¿Arrancar BP-0 (sin DB) inmediatamente? Recomendado: sí. BP-1+ requieren coordinar escrituras en DEV con las otras sesiones (Group 2 E–J del master plan).
-2. **Relación con el master plan.** BP-1…BP-9 se solapan con fases de Group 2 (E–J). Hay que decidir si este trabajo **es** Group 2 o corre después de Group 1 PASS. Group 1 aún espera el E2E manual.
-3. **G10 — estimación IB inventada en el quiz V1** (flujo certificado). Opciones:
-   - (a) retirar la nota estimada;
-   - (b) reemplazarla por weighted % con la etiqueta «sin boundaries oficiales»;
-   - (c) dejarla con un disclaimer reforzado hasta BP-4.
-
-   Es un cambio de un flujo Student existente, así que necesita tu decisión.
-4. **G6 — fuga de evidencia entre exámenes.** Corregir el plan de Track A cambia lo que ve el Student en `/dashboard/plan/exam/[id]`. ¿Lo corregimos en BP-7 o como hotfix independiente antes?
-5. **Fuentes oficiales.** Para cargar boundaries, conversiones y fechas de sesión (IB, Cambridge, PAA, Saber) se necesita definir quién provee las fuentes con licencia; IB entrega boundaries a los colegios. Sin eso, el sistema queda deliberadamente en UNKNOWN.
-6. **Elegibilidad PAA solo MX/PR.** Está en código sin documento. ¿Se mantiene como regla de datos con esa cobertura o se amplía con fuente?
+| ID | Decisión | Consecuencia |
+|---|---|---|
+| K-01 | **BP-0 APPROVED**, solo BP-0: tipos, schemas, unidades tipadas, contratos, compilador, validación y tests. Sin DB, sin UI, sin cambios de scoring ni de comportamiento visible para el Student. | Implementado en `feat/exam-blueprint-bp0`; ver [`BP0_FOUNDATION.md`](BP0_FOUNDATION.md). |
+| K-02 | BP-1…BP-9 = **Group 2 — Exam Architecture V2**. Pueden desarrollarse en ramas aisladas mientras Group 1 espera su E2E. | Group 1 sigue siendo *promotion gate*. No se mezclan grupos ni se promueve Group 2 sin sus gates. |
+| K-03 | **Retirar de la UI del Student la nota IB inventada (quiz V1).** Provisional: `Practice score` = marks obtenidos / máximos (+ % cuando sea correcto), con el aviso «This practice score is not an IB predicted grade.» Nunca «IB Grade: N» sin pipeline + boundaries certificados. | **Hotfix independiente** de BP-0. Dependencia: la nota IB vuelve solo vía Scoring Pipeline V2 (BP-4) + boundaries por sesión con provenance autoritativa. |
+| K-04 | **G6 es P0 Student-facing**: hotfix independiente antes de BP-7. Las recomendaciones de un examen solo consumen evidencia aplicable a ese contexto (exam target, exam definition, subject, level/version, según los identificadores disponibles). Si no se puede demostrar, no se usa: se prefiere `NOT_ENOUGH_EXAM_SPECIFIC_EVIDENCE`. | Hotfix fuera de BP-0; BP-7 implementa la arquitectura definitiva. |
+| K-05 | **Gobernanza de fuentes**: provenance explícita (`OFFICIAL_PUBLIC`, `OFFICIAL_LICENSED`, `INSTITUTION_SUPPLIED`, `VERIFIED_HISTORICAL`, `THIRD_PARTY_REFERENCE`, `UNKNOWN`). Nunca se inventan boundaries, escalas, pesos, fechas de sesión ni transformaciones. El pipeline se detiene en la última etapa resoluble, sin fallback silencioso. | Representado en los contratos BP-0 (`provenance.ts`, `pipeline.ts`). Persistencia en BP-1 / BP-4. |
+| K-06 | **Retirar la semántica «PAA solo si país = MX o PR»** salvo fuente autoritativa explícita. El país participa en descubrimiento, recomendación, disponibilidad local y *matching* institucional, pero no es una puerta académica. Un Student independiente puede fijar PAA como Exam Target. Si el registro o la aceptación son desconocidos: `TARGET_REQUIREMENT_UNCONFIRMED`, no `INELIGIBLE`. No se inventan listas de países. | Cambio del runtime de elegibilidad fuera de BP-0 (hotfix o BP-6). Hoy `rules.ts` no bloquea la selección (la elegibilidad solo ordena y explica), pero sí deja de recomendar PAA fuera de MX/PR: eso es lo que cambia. |
