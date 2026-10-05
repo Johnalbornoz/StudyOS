@@ -281,10 +281,13 @@ async function main() {
   // ================================================================ 79 INSTITUTIONAL / academic context
   const I = await student('inst', { country: 'US', curriculum: 'ib' });
   const pickI = await loadPickerData(I.studentId, 'es');
-  check('S79.context-suggests-compatible', pickI.suggested.includes('IB_DP') && pickI.frameworks[0].key === 'IB_DP');
+  // Exam eligibility: the IB context RECOMMENDS IB DP (Cambridge / PAA not recommended); the rest stays reachable on request.
+  const recommendedI = new Set(pickI.objectives.filter((o) => o.recommended).map((o) => o.framework));
+  check('S79.context-recommends-compatible', pickI.suggested[0] === 'IB_DP' && recommendedI.has('IB_DP') && !recommendedI.has('CIE_IGCSE') && !recommendedI.has('PAA'), [...recommendedI].join(','));
   check('S79.does-not-force-or-hide', pickI.objectives.length === objectives.length);
   const pI = await createObjectivePreparation(I.studentId, { objectiveKey: 'paa' });
-  check('S79.unrelated-goal-allowed', pI.created);
+  const ctxI = (await db.query(`SELECT objective_context, source FROM student_exam_profiles WHERE id = $1`, [pI.profile.id])).rows[0];
+  check('S79.unrelated-goal-allowed', pI.created && ctxI.source === 'STUDENT' && ctxI.objective_context?.eligibility?.recommended === false);
 
   // ================================================================ 62/63 teacher / institution aggregates, scoped
   const goalsXI = await examGoalsFor([X.studentId, I.studentId], { includePerStudent: true });

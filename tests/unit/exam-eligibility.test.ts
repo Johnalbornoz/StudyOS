@@ -171,6 +171,10 @@ describe('academic context adapter', () => {
     expect(c.gradeLevel).toBe(12);
     expect(c.country).toBe('MX');
   });
+  it('IB without a programme counts as DP only at the DP stage (grade 11+)', () => {
+    expect(buildAcademicContext({ ...base, profile: { countryOfStudy: 'US', schoolYear: '11', curriculumType: 'ib', ibProgramme: null, profileCompleted: true } }).programmes.map((p) => p.programmeId)).toEqual([IB_DP]);
+    expect(buildAcademicContext({ ...base, profile: { countryOfStudy: 'US', schoolYear: 'Grade 9', curriculumType: 'ib', ibProgramme: null, profileCompleted: true } }).programmes).toEqual([]);
+  });
   it('IB MYP and "national" declare no exam programme (none catalogued)', () => {
     expect(buildAcademicContext({ ...base, profile: { countryOfStudy: 'CO', schoolYear: '9', curriculumType: 'ib', ibProgramme: 'MYP', profileCompleted: true } }).programmes).toEqual([]);
     expect(buildAcademicContext({ ...base, profile: { countryOfStudy: 'CO', schoolYear: '11', curriculumType: 'national', profileCompleted: true } }).programmes).toEqual([]);

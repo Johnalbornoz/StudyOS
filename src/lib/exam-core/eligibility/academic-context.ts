@@ -9,7 +9,7 @@
  *   PROFILE  student_academic_profile: country, school year (normalised grade) and the
  *            curriculum the Student declared. The legacy profile has no catalogue link,
  *            so only declarations that resolve to exactly one framework are used today
- *            (IB + DP -> the programmes that host IB DP exams). When the Academic Profile
+ *            (IB + DP, or IB at the DP stage -> the programmes that host IB DP exams). When the Academic Profile
  *            stores catalogue programme / subject ids, they are read HERE and nothing
  *            else changes.
  *
@@ -88,8 +88,11 @@ export function buildAcademicContext(input: {
     });
   }
 
-  // Legacy declaration with a single, unambiguous catalogue meaning.
-  if (profile?.curriculumType === 'ib' && profile.ibProgramme === 'DP') {
+  // Legacy declaration with a single, unambiguous catalogue meaning: IB Diploma Programme
+  // (declared DP, or IB without a programme at the DP stage -- grades 11-12).
+  const gradeLevel = normaliseGradeLevel(profile);
+  const ibDiploma = profile?.curriculumType === 'ib' && (profile.ibProgramme === 'DP' || (!profile.ibProgramme && gradeLevel !== null && gradeLevel >= 11));
+  if (ibDiploma) {
     for (const gp of programmesForFramework(graph, 'IB_DP')) {
       if (programmes.some((p) => p.programmeId === gp.programmeId && p.source === 'PROFILE')) continue;
       programmes.push({ programmeId: gp.programmeId, programmeName: gp.programmeName, academicSubjectIds: [], subjectNames: [], source: 'PROFILE' });
@@ -102,7 +105,7 @@ export function buildAcademicContext(input: {
 
   return {
     country,
-    gradeLevel: normaliseGradeLevel(profile),
+    gradeLevel,
     programmes,
     assignments,
     profileCompleted: !!profile?.profileCompleted,
