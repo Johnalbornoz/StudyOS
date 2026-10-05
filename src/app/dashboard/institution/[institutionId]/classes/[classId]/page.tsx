@@ -22,6 +22,7 @@ import { classBindingLabels } from '@/lib/institution/admin-labels';
 import { listGrades } from '@/lib/institution/institution-operations.service';
 import { opsLabels } from '@/lib/institution/page-context';
 import { ClassForm, ClassTeacherSelect, AddStudentForm, StudentClassAction, RowMenu } from '../../OpsActions';
+import { ClassExamAssignments } from '@/components/exam-eligibility/ClassExamAssignments';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -123,6 +124,8 @@ export default async function InstitutionClassPage({ params }: { params: Promise
           labels={classBindingLabels(t as Record<string, string>)}
         />
       </section>
+
+      {!archived && <ClassExamAssignments apiBase={`${base}/classes/${classId}/exam-assignments`} labels={Object.fromEntries(Object.entries(t as Record<string, string>).filter(([k]) => k.startsWith('elig.assign.') || k.startsWith('prep.fw.')))} />}
 
       <section className="card ta-card" aria-labelledby="subject-title">
         <h2 id="subject-title">{t['inst.class.subjectTitle']}</h2>

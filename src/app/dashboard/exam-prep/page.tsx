@@ -12,7 +12,7 @@ import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
 import { calendarDaysUntil } from '@/lib/experience/goal';
-import { ObjectivePicker } from './ObjectivePicker';
+import { PreparationChooser } from './PreparationChooser';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 import { allObjectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { objectiveStatusKey } from '@/lib/exam-core/objectives/capabilities';
@@ -57,7 +57,7 @@ export default async function ExamPrepPage() {
   const profileMenuLabels: Record<string, string> = Object.fromEntries(
     Object.entries(tr).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
   );
-  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.')));
+  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.')));
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateLine = (examDate: string | null) => {
     if (!examDate) return t['examPrep.noExamDateSet'];
@@ -69,8 +69,8 @@ export default async function ExamPrepPage() {
 
   const chooser = (
     <section className="prep-choose" id="prep-choose" aria-labelledby="prep-choose-title">
-      {rows.length > 0 ? <h2 id="prep-choose-title" className="exv2-title">{tr['prep.question']}</h2> : <h2 id="prep-choose-title" className="sr-only">{tr['prep.question']}</h2>}
-      <ObjectivePicker objectives={picker.objectives} frameworks={picker.frameworks} suggested={picker.suggested} labels={prepLabels} />
+      <h2 id="prep-choose-title" className="sr-only">{tr['prep.question']}</h2>
+      <PreparationChooser objectives={picker.objectives} frameworks={picker.frameworks} suggested={picker.suggested} frameworkReasons={picker.frameworkReasons} hasAcademicContext={picker.hasAcademicContext} labels={prepLabels} />
     </section>
   );
 

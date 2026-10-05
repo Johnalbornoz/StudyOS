@@ -24,6 +24,9 @@ export interface PickerObjective {
   status: string;
   preparationId: string | null;
   searchText: string;
+  /** Exam eligibility: recommended for this Student, and why (already in the Student's language). */
+  recommended?: boolean;
+  reason?: string | null;
 }
 
 export interface PickerFramework { key: string; region: string }
@@ -31,7 +34,7 @@ export interface PickerFramework { key: string; region: string }
 const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const PAGE = 40;
 
-export function ObjectivePicker({ objectives, frameworks, suggested, labels: l }: { objectives: PickerObjective[]; frameworks: PickerFramework[]; suggested: string[]; labels: L }) {
+export function ObjectivePicker({ objectives, frameworks, suggested, frameworkReasons = {}, labels: l }: { objectives: PickerObjective[]; frameworks: PickerFramework[]; suggested: string[]; frameworkReasons?: Record<string, string>; labels: L }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [framework, setFramework] = useState<string>('ALL');
@@ -55,8 +58,8 @@ export function ObjectivePicker({ objectives, frameworks, suggested, labels: l }
   const results = objectives.filter(
     (o) => (framework === 'ALL' || o.framework === framework) && (region === 'ALL' || regionOf.get(o.framework) === region) && words.every((w) => o.searchText.includes(w))
   );
-  const visibleFrameworks = frameworks.filter((f) => region === 'ALL' || f.region === region);
-  const regions = [...new Set(frameworks.map((f) => f.region))];
+  const visibleFrameworks = frameworks.filter((f) => (region === 'ALL' || f.region === region) && byFramework.has(f.key));
+  const regions = [...new Set(frameworks.filter((f) => byFramework.has(f.key)).map((f) => f.region))];
 
   async function choose(o: PickerObjective) {
     if (o.preparationId) {
@@ -94,6 +97,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, labels: l }
       <div className="prep-row-main">
         <span className="prep-row-name">{o.label}</span>
         {contextLine(o) ? <span className="ui-hint">{contextLine(o)}</span> : null}
+        {o.reason ? <span className="ui-hint elig-reason">{o.reason}</span> : null}
         <span className={`xr-pill prep-status prep-status--${o.status}`}>{l[`prep.status.${o.status}`]}</span>
       </div>
       <button type="button" className={o.preparationId ? 'btn btn-secondary prep-cta' : 'btn btn-primary prep-cta'} onClick={() => choose(o)} disabled={!!busy && busy !== o.key} aria-busy={busy === o.key} aria-label={`${ctaLabel(o)}: ${o.label}`}>
@@ -136,8 +140,9 @@ export function ObjectivePicker({ objectives, frameworks, suggested, labels: l }
               <li key={f.key} className="card prep-fw">
                 <div className="prep-fw-head">
                   <h3 className="prep-fw-name">{l[`prep.fw.${f.key}`]}</h3>
-                  {suggested.includes(f.key) ? <span className="xr-pill is-good">{l['prep.suggested']}</span> : null}
+                  {suggested.includes(f.key) && !frameworkReasons[f.key] ? <span className="xr-pill is-good">{l['prep.suggested']}</span> : null}
                 </div>
+                {frameworkReasons[f.key] ? <p className="ui-hint elig-reason">{frameworkReasons[f.key]}</p> : null}
                 <p className="ui-hint prep-fw-desc">{l[`prep.fwDesc.${f.key}`]}</p>
                 <p className="prep-fw-meta">
                   {single ? (single.context.version ? `${l['prep.goal.version']}: ${single.context.version}` : '') : (l['prep.fw.options'] ?? '{n}').replace('{n}', String(list.length))}

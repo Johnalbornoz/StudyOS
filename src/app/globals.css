@@ -2424,3 +2424,16 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 @media (max-width: 480px) {
   .prep-row .prep-cta, .prep-fw .prep-cta { width: 100%; }
 }
+
+/* Exam eligibility -- recommended preparations + class exam assignments */
+.elig-chooser { display: flex; flex-direction: column; gap: var(--space-5); }
+.elig-recommended, .elig-explore { display: flex; flex-direction: column; gap: var(--space-3); }
+.elig-reason { margin: 0; color: var(--text-secondary); overflow-wrap: anywhere; }
+.elig-empty { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.elig-empty-title { margin: 0; font-weight: 600; }
+.elig-explore-note { margin: 0 0 var(--space-3); }
+.elig-assign-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.elig-assign-name { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.elig-assign-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
+.elig-assign-form .ui-field { flex: 1 1 240px; min-width: 0; }
+.elig-assign-form select { max-width: 100%; }

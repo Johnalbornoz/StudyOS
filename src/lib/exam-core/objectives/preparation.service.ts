@@ -32,6 +32,7 @@ import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabiliti
 import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput } from './preparation-plan';
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
 import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
+import { objectiveEligibilityForStudent } from '../eligibility/eligibility.service';
 
 export class PreparationError extends Error {
   constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS', detail?: string) {
@@ -160,11 +161,15 @@ export interface CreatePreparationInput {
 export async function createObjectivePreparation(studentId: string, input: CreatePreparationInput): Promise<{ profile: StudentExamProfile; created: boolean; capabilities: ExamPreparationCapabilities }> {
   const o = objectiveByKey(input.objectiveKey);
   if (!o) throw new PreparationError('OBJECTIVE_NOT_FOUND');
-  const [def, node, capabilities] = await Promise.all([
+  const [def, node, capabilities, eligibility] = await Promise.all([
     startableDefinition(o),
     db.query(`SELECT id FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE'`, [o.nodeKey]),
     objectiveCapabilities(o),
+    objectiveEligibilityForStudent(studentId, o),
   ]);
+  // Exam eligibility is recorded, never enforced: a Student may still choose an unrelated objective on purpose (personal goal).
+  const assigned = eligibility.reasons.some((r) => r.code === 'INSTITUTION_ASSIGNED');
+  const eligibilityContext = { recommended: eligibility.eligible, reasons: [...new Set(eligibility.reasons.map((r) => r.code))] };
   const before = (await db.query(`SELECT id FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' AND (objective_key = $2 OR ($3::uuid IS NOT NULL AND exam_definition_id = $3))`, [studentId, o.key, def?.definitionId ?? null])).rows[0];
   const profile = await createStudentExamProfile({
     studentId,
@@ -173,7 +178,7 @@ export async function createObjectivePreparation(studentId: string, input: Creat
     objectiveKey: o.key,
     objectiveFramework: o.framework,
     objectiveNodeId: node.rows[0]?.id ?? null,
-    objectiveContext: { label: o.label, ...o.context },
+    objectiveContext: { label: o.label, ...o.context, eligibility: eligibilityContext },
     examDate: input.examDate,
     purpose: input.purpose,
     targetInstitutionName: input.targetInstitutionName,
@@ -181,7 +186,7 @@ export async function createObjectivePreparation(studentId: string, input: Creat
     programmeContext: o.context.programme ?? undefined,
     subjectFocus: o.context.subject ?? undefined,
     timezone: input.timezone,
-    source: input.source ?? 'STUDENT',
+    source: input.source ?? (assigned ? 'INSTITUTION' : 'STUDENT'),
   });
   // A preparation that existed for the same exam before objectives (legacy / created from an instance) is ADOPTED.
   if (!profile.objectiveKey) {
@@ -204,6 +209,8 @@ export async function createObjectivePreparation(studentId: string, input: Creat
       status: objectiveStatusKey(capabilities),
       practiceAvailable: capabilities.canPractice,
       mockAvailable: capabilities.canRunReducedMock || capabilities.canRunFullMock,
+      recommended: eligibility.eligible,
+      eligibilityReasons: eligibilityContext.reasons,
     });
   }
   return { profile: (await getStudentExamProfile(profile.id))!, created, capabilities };

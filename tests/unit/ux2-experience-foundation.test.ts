@@ -873,7 +873,8 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
   // preparation (it IS the page title), below "Mis preparaciones" otherwise; never hidden.
   it('no profile: choosing the exam is the page; with profiles: the chooser follows "Mis preparaciones"', () => {
     expect(examList).toMatch(/title=\{rows\.length === 0 \? tr\['prep\.question'\] : t\['examPrep\.title'\]\}/);
-    expect(examList).toMatch(/<ObjectivePicker /);
+    // Exam eligibility: the chooser shows the Student's recommended preparations first (PreparationChooser wraps ObjectivePicker).
+    expect(examList).toMatch(/<PreparationChooser /);
     expect(examList.indexOf("tr['prep.mine.title']")).toBeLessThan(examList.indexOf('{chooser}'));
   });
 

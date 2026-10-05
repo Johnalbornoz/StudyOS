@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { attentionLabels } from '../../attention-labels';
 import { ClassChrome } from './class-chrome';
+import { ClassExamAssignments } from '@/components/exam-eligibility/ClassExamAssignments';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -110,6 +111,8 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
           </Link>
         </span>
       </section>
+
+      <ClassExamAssignments apiBase={`/api/teacher/classes/${classId}/exam-assignments`} labels={Object.fromEntries(Object.entries(t as Record<string, string>).filter(([k]) => k.startsWith('elig.assign.') || k.startsWith('prep.fw.')))} />
     </div>
   );
 }

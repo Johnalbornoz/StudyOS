@@ -10,7 +10,7 @@ import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { ExamCatalogBrowser } from './ExamCatalogBrowser';
 import { InstanceCard } from './InstanceCard';
-import { ObjectivePicker } from '../exam-prep/ObjectivePicker';
+import { PreparationChooser } from '../exam-prep/PreparationChooser';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 
 /**
@@ -38,7 +38,11 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
     ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND selectable = true`, [node, locale])).rows[0] ?? null)
     : null;
   const picker = initialNode ? null : await loadPickerData(studentId, locale);
-  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('prep.')));
+  // The AICE Diploma planner is offered only where it applies: eligible for this Student, or a plan they already have.
+  const showAicePlanner = initialNode
+    ? true
+    : picker!.suggested.includes('CIE_AICE') || (await db.query(`SELECT 1 FROM aice_diploma_plans WHERE student_id = $1 AND status = 'ACTIVE' LIMIT 1`, [studentId])).rows.length > 0;
+  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.')));
   const active = instances.filter((i) => i.status === 'DRAFT' || i.status === 'READY' || i.status === 'IN_PROGRESS');
   const past = instances.filter((i) => i.status === 'COMPLETED' || i.status === 'ARCHIVED');
 
@@ -48,7 +52,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
         title={initialNode ? t['exv2.page.title'] : t['prep.question']}
         lead={initialNode ? t['exv2.page.lead'] : t['prep.lead']}
         crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
-        actions={<Link className="btn btn-secondary" href="/dashboard/exams/aice">{t['exv2.aice.diplomaPlan']}</Link>}
+        actions={showAicePlanner ? <Link className="btn btn-secondary" href="/dashboard/exams/aice">{t['exv2.aice.diplomaPlan']}</Link> : undefined}
       />
       {active.length > 0 && (
         <section aria-labelledby="exv2-active" className="exv2-list">
@@ -61,7 +65,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
       {initialNode ? (
         <ExamCatalogBrowser labels={labels} language={locale} initialNode={initialNode} />
       ) : (
-        <ObjectivePicker objectives={picker!.objectives} frameworks={picker!.frameworks} suggested={picker!.suggested} labels={prepLabels} />
+        <PreparationChooser objectives={picker!.objectives} frameworks={picker!.frameworks} suggested={picker!.suggested} frameworkReasons={picker!.frameworkReasons} hasAcademicContext={picker!.hasAcademicContext} labels={prepLabels} />
       )}
       {past.length > 0 && (
         <section aria-labelledby="exv2-past" className="exv2-list">
