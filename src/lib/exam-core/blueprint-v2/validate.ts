@@ -114,6 +114,8 @@ export function validateBlueprint(input: unknown): BlueprintValidation {
   }
   const expected = resolvePipeline(bp.scoring.pipeline, bp.scoring.resolution.outcomeDeclared);
   if (hashCanonical(expected) !== hashCanonical(bp.scoring.resolution)) err('RESOLUTION_MISMATCH', 'scoring.resolution', `the stated resolution does not follow from the pipeline (expected stop at ${expected.stoppedAt ?? 'end'})`);
+  // BP-1: a blueprint is session-agnostic -- a session-dependent stage can only resolve for a given session.
+  for (const s of bp.scoring.pipeline) if (s.dependency.resolvedPer === 'SESSION' && s.dependency.status === 'RESOLVED') err('SESSION_FACT_RESOLVED_WITHOUT_SESSION', `scoring.pipeline.${s.kind}`, `${s.kind} depends on the session and cannot be RESOLVED in a session-agnostic blueprint`);
   if (bp.session.status === 'RESOLVED') err('SESSION_RESOLUTION_UNSUPPORTED', 'session', 'sessions are not modelled in BP-0; a blueprint cannot claim a resolved session');
 
   // ---- provenance --------------------------------------------------------
