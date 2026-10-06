@@ -12,6 +12,7 @@ import { query } from '@/lib/db';
 import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 import { getStudentInstitutionalContext } from '@/lib/exam-journey/ux.server';
 import { EntryChoice, InstitutionalContextCard } from './InstitutionalContextCard';
+import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
 
 /**
  * Student Academic Profile. Once saved it is shown as a summary (never asked again
@@ -78,7 +79,7 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
       );
     }
     const entry = (await searchParams)?.entry;
-    const hasTarget = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }))).rows.length > 0;
+    const hasTarget = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }))).rows.length > 0;
     if (!profile && !hasTarget && entry !== 'curriculum') {
       // J3.3: ONE first decision before any form -- an exam needs no school profile.
       return (

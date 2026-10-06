@@ -58,7 +58,7 @@ Leyenda de riesgo: **C** crítico · **M** material · **m** menor · **—** si
 | 19 | Tutor IA (`src/services/tutor.service.ts`) | Responde cualquier tema; grounding opcional; sin citas | IA dentro de 1 línea de política | IA dentro de Knowledge Authority + Sensitive Content Policy | **C** | **P0**: política de contenido sensible + ruta de crisis. P1: grounding/citas/controles de desafío. |
 | 20 | Explicación de concepto (`concept-explanation.service.ts:85-187`) | Generada, cacheada y servida como explicación canónica, sin revisión ni procedencia; fallback a conocimiento general | IA | Contenido gobernado; IA explica dentro de límites | M | P1: marcar procedencia/grounding; P2: explicaciones gobernadas. |
 | 21 | Extracción de conceptos (`concept-extraction.service.ts:44,196-256`) | IA crea `concepts` y `mastery_records` del estudiante (el estudiante elige de candidatos en document-import) | IA + estudiante | Estudiante aprueba (universo personal); nunca canónico | m | Mantener (universo personal). Documentar como HUMAN_APPROVES. |
-| 22 | Ruta legacy `/api/concepts/extract` ✔ (`src/app/api/concepts/extract/route.ts:14-39`) | IA inserta conceptos en **cualquier** `subjectId` sin verificar propiedad; sin llamadores en UI | IA, sin control | Nadie (ruta muerta) | **C (seguridad)** | **P0**: eliminar la ruta. |
+| 22 | Ruta legacy `/api/concepts/extract` ✔ (`src/app/api/concepts/extract/route.ts:14-39`) | IA inserta conceptos en **cualquier** `subjectId` sin verificar propiedad; sin llamadores en UI | IA, sin control | Nadie (ruta muerta) | **C (seguridad)** | **P0**: eliminar la ruta. — **CERRADO** (ruta eliminada en `942dc9d`; ver D-05). |
 | 23 | Aristas de prerrequisitos IA (`concept-graph.service.ts:244-338`) | `source='AI_INFERRED'`, `status='active'` inmediato; alimentan diagnóstico | IA | IA propone; regla/curador aprueba | M | P1: estado `proposed` + umbral; P2: curaduría. |
 | 24 | Jerarquía de temas IA (`topic-hierarchy.service.ts:84,146-177`) | DELETE + rebuild desde salida IA | IA | IA dentro de política (navegación, bajo riesgo) | m | P2: no destructivo / versionado. |
 | 25 | Generación de preguntas on-demand (`gated-question-generation.service.ts:1-23`) | Gate determinístico + verificador IA, sin humano | Sistema dentro de política | SYSTEM_EXECUTES_WITHIN_POLICY (práctica) | m | Mantener; P1 "Reportar problema". |
@@ -180,7 +180,7 @@ No existe política (prompt, código ni doc) para política, religión, ideolog�
 | D-02 | Submit de sesión INDEPENDENT/ASSESSMENT tras expiración cuenta como evidencia SOLO | Crítico | ✔ | P0 |
 | D-03 | Explain & Defend: rúbrica filtrada antes de responder y controlada por el cliente; altera mastery | Crítico | ✔ | P0 |
 | D-04 | Sin política de contenido sensible / crisis para menores en IA generativa | Crítico | ✔ | P0 |
-| D-05 | `/api/concepts/extract`: IDOR + escritura IA sin control; ruta sin uso | Crítico (seguridad) | ✔ | P0 |
+| D-05 | `/api/concepts/extract`: IDOR + escritura IA sin control; ruta sin uso | Crítico (seguridad) | ✔ | P0 — **CERRADO** (`942dc9d`) |
 | D-06 | UI promete "revisión humana" de nota que ningún humano realiza | Material (veracidad) | ✔ | P0 (copy) |
 | D-07 | Copy de mandato en hero/continuación/resultado/prompt del Tutor | Material | ✔ | P1 |
 | D-08 | Actividad no elegible; remediación sin salida; tiers 1-5 sin "ahora no" | Material | — | P1 |

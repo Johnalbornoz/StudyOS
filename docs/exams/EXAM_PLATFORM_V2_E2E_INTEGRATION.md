@@ -185,7 +185,7 @@ No hubo validación manual en navegador (no hay fixture Clerk local); la UX se v
 ## 14. Gates pendientes para DEV
 
 1. ~~G6 hotfix~~ — **hecho** (§16).
-2. Operador: aplicar `20261102_1000` y `20261103_1000` en DEV con el runner gobernado; `track-b-v2-apply --write` (Saber V2.1 sustituye a V2 de 12 slots, decisión pendiente del operador).
+2. Operador: aplicar `20261102_1000` y `20261103_1000` en DEV con el runner gobernado; `track-b-v2-apply --write` (Saber V2.1 sustituye a V2 de 12 slots: **decidido**, ver `QB_HUMAN_REVIEW_FOUNDATION.md` §8).
 3. Operador: `EXAM_BLUEPRINT_V2=SHADOW` + `STUDENT_JOURNEY_V2=UX` solo en el entorno `dev` de Vercel; deploy inmutable de este SHA.
 4. Fixture de sign-in (Clerk DEV) para el E2E manual del navegador.
 5. Revisión humana del lote 1 de Saber (8 PILOT) — no bloquea E2E-A (Saber debe verse "en preparación").
@@ -204,7 +204,7 @@ No hubo validación manual en navegador (no hay fixture Clerk local); la UX se v
 | 7 Journey UX respeta la readiness de contenido QB | PASS |
 | 8 FULL_MOCK estructural ≠ contenido disponible | PASS |
 | 9 fixtures nunca Student | PASS |
-| 10 targets múltiples separados (estado Journey) | PASS (readiness: G6 pendiente) |
+| 10 targets múltiples separados (estado Journey) | PASS (readiness: G6 resuelto en `65edebe`, §16) |
 | 11 Student v1 sin cambios con flags OFF | PASS |
 | 12 regresión completa | PASS |
 | 13 cadena de migraciones determinista | PASS |

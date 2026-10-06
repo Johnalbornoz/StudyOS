@@ -15,11 +15,6 @@ export async function getActiveReadinessPolicy(client: DbExecutor = db): Promise
   return toPolicy(result.rows[0]);
 }
 
-export async function getReadinessPolicyById(id: string, client: DbExecutor = db): Promise<ReadinessPolicyVersion | null> {
-  const result = await client.query(`SELECT * FROM readiness_policy_versions WHERE id = $1`, [id]);
-  return result.rows.length === 0 ? null : toPolicy(result.rows[0]);
-}
-
 export async function createReadinessPolicyVersion(rules: ReadinessPolicyRules): Promise<ReadinessPolicyVersion> {
   const client = await db.connect();
   try {

@@ -175,7 +175,7 @@ export async function sendNotification(
     // Check if student wants this type of notification
     const eventKey = getEventKey(event);
     if (!prefs[eventKey]) {
-      console.log(`Student ${studentId} opted out of ${event}`);
+      console.log('[notifications]', JSON.stringify({ event, outcome: 'OPTED_OUT' }));
       return;
     }
 
@@ -190,7 +190,7 @@ export async function sendNotification(
       }
     }
 
-    console.log(`Notification sent to ${studentId}: ${event}`);
+    console.log('[notifications]', JSON.stringify({ event, outcome: 'SENT', channels }));
   } catch (error) {
     console.error('Error sending notification:', error);
   }
@@ -204,14 +204,10 @@ async function sendEmail(
   template: NotificationTemplate
 ): Promise<void> {
   try {
-    // TODO: Integrate with email service (SendGrid, AWS SES, etc.)
-    console.log(`📧 EMAIL TO ${email}`);
-    console.log(`   Subject: ${template.subject}`);
-    console.log(`   Title: ${template.title}`);
-    console.log(`   Message: ${template.message}`);
-    if (template.actionUrl) {
-      console.log(`   Action: ${template.actionLabel} (${template.actionUrl})`);
-    }
+    // No email provider is integrated: nothing is sent. Never log the address or the message (PII / free text).
+    void email;
+    void template;
+    console.log('[notifications]', JSON.stringify({ channel: 'email', delivered: false, reason: 'NO_EMAIL_PROVIDER' }));
   } catch (error) {
     console.error('Error sending email:', error);
   }
@@ -225,10 +221,10 @@ async function sendPushNotification(
   template: NotificationTemplate
 ): Promise<void> {
   try {
-    // TODO: Integrate with FCM or APNs
-    console.log(`📱 PUSH TO ${studentId}`);
-    console.log(`   Title: ${template.title}`);
-    console.log(`   Message: ${template.message}`);
+    // No push provider is integrated: nothing is sent. Never log the recipient or the message.
+    void studentId;
+    void template;
+    console.log('[notifications]', JSON.stringify({ channel: 'push', delivered: false, reason: 'NO_PUSH_PROVIDER' }));
   } catch (error) {
     console.error('Error sending push:', error);
   }

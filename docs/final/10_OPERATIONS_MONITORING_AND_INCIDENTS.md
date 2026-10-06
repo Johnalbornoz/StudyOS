@@ -28,7 +28,7 @@ A support/incident severity model was defined (see `docs/implementation/f15/F15_
 
 ## Kill switches
 
-`AI_ENABLED=false` is a real, working partial containment — disables AI-generation-dependent paths. No dedicated flag exists yet for Exam Prep / Teacher assignments / Institution Intelligence specifically (`IVG-F15-12`, **DEFERRED**) — see [07_AI_ARCHITECTURE_AND_SAFETY.md](07_AI_ARCHITECTURE_AND_SAFETY.md).
+~~`AI_ENABLED=false` is a real, working partial containment~~ **[Corrected 2026-10-06, technical cleanup]** `AI_ENABLED` does **not** exist in the code and never has (verified on `main`, `develop`, the Production SHA `9597ac8` and this line). There is **no AI kill switch**. Real containment today: redeploy a prior Vercel deployment (instant rollback). An invalid `AI_MAX_CALLS_PER_DAY` makes every AI call fail with `CONFIGURATION_ERROR`, but that is an error path, not a supported switch. A real kill switch is an open operational item (see `TECHNICAL_CLEANUP_REPORT.md`). No dedicated flag exists yet for Exam Prep / Teacher assignments / Institution Intelligence specifically (`IVG-F15-12`, **DEFERRED**) — see [07_AI_ARCHITECTURE_AND_SAFETY.md](07_AI_ARCHITECTURE_AND_SAFETY.md).
 
 ## Rollback
 

@@ -12,7 +12,7 @@ import { parseExamVerticalConfig, type ExamVerticalConfigInput } from '../vertic
 import { deriveBlueprintCells, type BlueprintTargetInput, type ComponentInput, type BlueprintCell } from './cells';
 import type { BankItemFact } from './health';
 import { provenanceFromOrigin } from './policy';
-import type { LifecycleState } from './lifecycle';
+import { deliveryStatusFor, type LifecycleState } from './lifecycle';
 
 const uuidFrom = (s: string) => {
   const h = createHash('sha256').update(s).digest('hex');
@@ -87,7 +87,7 @@ export function configHealthInput(input: ExamVerticalConfigInput, lifecycle: Lif
       stimulusKey: ex.exam.stimulus?.key ?? null,
       provenance: provenanceFromOrigin(ex.exam.contentOrigin),
       lifecycle,
-      status: ['PILOT', 'CALIBRATED', 'ACTIVE'].includes(lifecycle) ? 'PUBLISHED' : 'APPROVED',
+      status: deliveryStatusFor(lifecycle) === 'PUBLISHED' ? 'PUBLISHED' : 'APPROVED',
       isCurrentVersion: true,
       retired: false,
       calibrationConfidence: 'INSUFFICIENT_DATA',

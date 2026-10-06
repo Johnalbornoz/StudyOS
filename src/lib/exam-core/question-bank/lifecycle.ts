@@ -44,8 +44,6 @@ export const LIFECYCLE_TRANSITIONS: Record<LifecycleState, readonly LifecycleSta
   SUPERSEDED: [],
 };
 
-export const TERMINAL_STATES: readonly LifecycleState[] = ['REJECTED', 'RETIRED', 'SUPERSEDED'];
-
 export type ApprovedItemStatus = 'DRAFT' | 'PROPOSED' | 'IN_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'RETIRED';
 
 /** The `approved_items.status` a lifecycle state implies (the delivery contract). */

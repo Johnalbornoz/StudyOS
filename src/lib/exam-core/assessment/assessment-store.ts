@@ -35,24 +35,3 @@ export async function recordAssessments(target: { responseId?: string; submissio
   }
   return n;
 }
-
-export async function listAssessments(target: { responseId?: string; submissionId?: string }): Promise<RubricAssessment[]> {
-  const r = await db.query(
-    `SELECT role, model, prompt_id, prompt_version, criterion_scores, total, max_total, confidence, rationale, evidence
-       FROM exam_response_assessments WHERE ${target.responseId ? 'response_id' : 'submission_id'} = $1 ORDER BY created_at, role`,
-    [target.responseId ?? target.submissionId]
-  );
-  return r.rows.map((row: any) => ({
-    role: row.role,
-    model: row.model,
-    promptId: row.prompt_id,
-    promptVersion: row.prompt_version,
-    executionId: null,
-    criterionScores: row.criterion_scores,
-    total: Number(row.total),
-    maxTotal: Number(row.max_total),
-    confidence: row.confidence === null ? 0 : Number(row.confidence),
-    rationale: row.rationale ?? '',
-    evidence: row.evidence ?? [],
-  }));
-}

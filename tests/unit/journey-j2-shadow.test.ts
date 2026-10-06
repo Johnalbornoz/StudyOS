@@ -107,7 +107,8 @@ describe('facts loader -- read-only, honest about missing facts', () => {
     expect(src).not.toMatch(/'OFFICIAL_OR_KNOWN_MODEL'|'HISTORICAL_ESTIMATE'/);
   });
   it('learning recency excludes exam-simulation evidence (exam evidence is not learning)', () => {
-    expect(src).toMatch(/source_type <> 'EXAM_SIMULATION'/);
+    // The G6 evidence-scope contract decides which rows are exam evidence (one rule).
+    expect(src).toMatch(/AND NOT \$\{examAttemptEvidenceSql\('le'\)\}/);
   });
 });
 

@@ -159,8 +159,3 @@ export async function listStudentExamProfiles(studentId: string, opts: { include
   );
   return result.rows.map(toProfile);
 }
-
-export async function listGoalsForProfile(profileId: string): Promise<PreparationGoal[]> {
-  const result = await db.query(`SELECT * FROM preparation_goals WHERE student_exam_profile_id = $1`, [profileId]);
-  return result.rows.map(toGoal);
-}

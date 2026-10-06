@@ -125,11 +125,6 @@ export async function recordExamAttemptItemResponse(params: {
   }
 }
 
-export async function getAttemptItemResponse(responseId: string): Promise<any | null> {
-  const result = await db.query(`SELECT * FROM exam_attempt_item_responses WHERE id = $1`, [responseId]);
-  return result.rows.length === 0 ? null : result.rows[0];
-}
-
 export async function listResponsesForAttempt(examAttemptId: string): Promise<any[]> {
   const result = await db.query(`SELECT * FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [examAttemptId]);
   return result.rows;

@@ -84,7 +84,6 @@ export function bandFor(points: number, policy: AicePolicy = AICE_DIPLOMA_POLICY
 }
 
 export const seriesIndex = (s: ExamSeries) => s.year * 12 + (s.month - 1);
-export const seriesLabelKey = (s: ExamSeries) => `${s.month === 3 ? 'MARCH' : s.month === 6 ? 'JUNE' : 'NOVEMBER'}`;
 
 /** Series a Student can sit: June and November everywhere; March only where Cambridge offers it. */
 export function availableSeries(fromYear: number, years: number, countryCode: string | null, policy: AicePolicy = AICE_DIPLOMA_POLICY): ExamSeries[] {

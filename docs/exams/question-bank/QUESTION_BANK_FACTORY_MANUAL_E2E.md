@@ -78,7 +78,7 @@
 ## 8. Confirm an accepted item increases the correct blueprint coverage
 
 1. Back on PAA, click **Recalcular salud**.
-2. **Expect** Matemáticas · Álgebra: **Piloto = number accepted**. Eligible (mock) is unchanged at 4: pilot items are practice-only. The deficit is unchanged, and generation need drops while pilots are in the pipeline.
+2. **Expect** Matemáticas · Álgebra: **Piloto = number accepted**. Eligible (mock) is unchanged at 4: pilot items await human review and are not Student-deliverable (not practice either, since `0fce26b`). The deficit is unchanged, and generation need drops while pilots are in the pipeline.
 3. **Expect** no other cell changed.
 4. On the health table, **expect** the PAA *Piloto* count went up by the accepted number, and *Activas* is unchanged.
 

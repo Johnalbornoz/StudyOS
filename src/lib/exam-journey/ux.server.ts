@@ -7,6 +7,7 @@
  */
 import { cache } from 'react';
 import { db } from '@/lib/db';
+import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
 import { resolveStudentExamJourneys } from './shadow.server';
 import { loadInstitutionalAcademicContext } from './institutional-context.server';
 import type { ExamTargetRow } from './exam-target';
@@ -21,7 +22,7 @@ export const getStudentInstitutionalContext = cache(async (studentId: string) =>
 /** Navigation: "Exámenes" is primary only while a target is in active preparation. Fails closed (secondary). */
 export async function examPrepNavPrimary(studentId: string): Promise<boolean> {
   try {
-    const has = await db.query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' LIMIT 1`, [studentId]);
+    const has = await db.query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId]);
     if (!has.rows.length) return false;
     return examPrepIsPrimary(await getStudentExamJourneys(studentId));
   } catch {

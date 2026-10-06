@@ -18,7 +18,6 @@ import { db } from '@/lib/db';
 import { itemFingerprints } from '../fingerprints';
 import { ApprovedItemContentSchema, contentOriginOf } from '../items';
 import { assertTransition, deliveryStatusFor, LifecycleTransitionError, type LifecycleState, type TransitionActor } from './lifecycle';
-import { provenanceFromOrigin, type Provenance } from './policy';
 
 export class BankError extends Error {
   constructor(public readonly code: 'NOT_FOUND' | 'NO_SYSTEM_IDENTITY' | 'INVALID_CONTENT' | 'RETIRED', detail?: string) {
@@ -93,7 +92,7 @@ export async function transitionVersion(p: TransitionParams, outer?: PoolClient)
       [p.versionId, p.to, status, p.actor.kind === 'ADMIN' ? p.actor.userId : null]
     );
     // A newer version becoming deliverable supersedes the version it replaces (never earlier: no delivery gap).
-    if (['PILOT', 'CALIBRATED', 'ACTIVE'].includes(p.to) && row.current_version_id && row.current_version_id !== p.versionId) {
+    if (deliveryStatusFor(p.to) === 'PUBLISHED' && row.current_version_id && row.current_version_id !== p.versionId) {
       const prev = await c.query(`SELECT bank_lifecycle_status, status FROM approved_items WHERE id = $1 FOR UPDATE`, [row.current_version_id]);
       const prevState = (prev.rows[0]?.bank_lifecycle_status ?? null) as LifecycleState | null;
       if (prevState && !['REJECTED', 'RETIRED', 'SUPERSEDED'].includes(prevState)) {
@@ -258,11 +257,6 @@ export async function ensureBankIdentities(outer?: PoolClient): Promise<number> 
     );
     return ids.length;
   }, outer);
-}
-
-export function provenanceOfContent(content: unknown): Provenance {
-  const parsed = ApprovedItemContentSchema.safeParse(content);
-  return parsed.success ? provenanceFromOrigin(contentOriginOf(parsed.data)) : 'STUDYUS_GENERATED';
 }
 
 export { LifecycleTransitionError };

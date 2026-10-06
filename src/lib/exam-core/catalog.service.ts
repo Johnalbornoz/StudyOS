@@ -3,11 +3,11 @@
  * (taxonomy order), and the qualification aggregate (AICE).
  *
  * Read-only. Only ACTIVE definitions with a PUBLISHED version are offered
- * (same rule as the existing `listAvailableExamOptions`). Year/session are
+ * Year/session are
  * shown only when a version carries them.
  */
-import { db, type DbExecutor } from '@/lib/db';
-import { EXAM_FAMILIES, toExamFamily, type ExamFamily } from './taxonomy';
+import { db } from '@/lib/db';
+import type { ExamFamily } from './taxonomy';
 
 export interface CatalogExamOption {
   examDefinitionId: string;
@@ -28,40 +28,6 @@ export interface CatalogExamOption {
 export interface CatalogFamilyGroup {
   family: ExamFamily | 'OTHER';
   options: CatalogExamOption[];
-}
-
-export async function listExamCatalog(client: DbExecutor = db): Promise<CatalogFamilyGroup[]> {
-  const result = await client.query(
-    `SELECT d.id AS exam_definition_id, d.name AS exam_definition_name, d.exam_family, d.purpose,
-            v.id AS exam_version_id, v.version_label, v.exam_year, v.exam_session,
-            v.navigation_rules->>'contentStatus' AS content_status,
-            s.name AS subject_name, s.level AS subject_level, q.name AS qualification_name
-       FROM exam_definitions d
-       JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       LEFT JOIN academic_subjects s ON s.id = d.academic_subject_id
-       LEFT JOIN academic_qualifications q ON q.id = s.qualification_id
-      WHERE d.status = 'ACTIVE'
-      ORDER BY d.name ASC, v.version_label ASC`
-  );
-  const options: CatalogExamOption[] = result.rows.map((r: any) => ({
-    examDefinitionId: r.exam_definition_id,
-    examDefinitionName: r.exam_definition_name,
-    examFamily: toExamFamily(r.exam_family),
-    rawFamily: r.exam_family,
-    purpose: r.purpose,
-    examVersionId: r.exam_version_id,
-    versionLabel: r.version_label,
-    examYear: r.exam_year ?? null,
-    examSession: r.exam_session ?? null,
-    contentStatus: r.content_status ?? null,
-    subjectName: r.subject_name ?? null,
-    subjectLevel: r.subject_level ?? null,
-    qualificationName: r.qualification_name ?? null,
-  }));
-  const groups: CatalogFamilyGroup[] = EXAM_FAMILIES.map((family) => ({ family, options: options.filter((o) => o.examFamily === family) })).filter((g) => g.options.length > 0);
-  const other = options.filter((o) => o.examFamily === null);
-  if (other.length > 0) groups.push({ family: 'OTHER', options: other });
-  return groups;
 }
 
 export interface QualificationAggregate {

@@ -118,20 +118,8 @@ export function weightedScore(parts: ReadonlyArray<{ score: ComponentScore; weig
   return brand('WEIGHTED_SCORE', { value: Math.round(value * 1e6) / 1e6, coveredWeightPercent: Math.round(covered * 1e6) / 1e6, componentKeys: [...keys].sort() });
 }
 
-/** @internal built only from an authoritative conversion / boundary set (pipeline.ts). */
-export function scaledScore(value: number, scaleKey: string): ScaledScore {
-  if (!Number.isFinite(value)) throw new ScoreUnitError('scaled score must be finite');
-  return brand('SCALED_SCORE', { value, scaleKey });
-}
-
 /** @internal built only from an authoritative boundary set (pipeline.ts). */
 export function grade(label: string, scaleKey: string): Grade {
   if (!label) throw new ScoreUnitError('grade label must not be empty');
   return brand('GRADE', { label, scaleKey });
-}
-
-/** @internal built only from an authoritative qualification rule. */
-export function qualificationPoints(value: number, ruleKey: string): QualificationPoints {
-  finiteNonNegative(value, 'qualification points');
-  return brand('QUALIFICATION_POINTS', { value, ruleKey });
 }

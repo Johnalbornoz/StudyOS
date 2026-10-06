@@ -2,8 +2,8 @@
  * F15-C1 -- Pilot-only, idempotent seed for a minimal, functional exam
  * catalog. Closes a real data gap on Preview: `activeExamDefinitionCount`
  * and `publishedExamVersionCount` are both 0, so Student A's real,
- * already-deployed self-service Exam Profile flow (`/dashboard/exam-prep`,
- * `listAvailableExamOptions()`) correctly
+ * already-deployed self-service Exam Profile flow (`/dashboard/exam-prep`)
+ * correctly
  * shows "no exams published yet" -- there is genuinely nothing to select.
  *
  * PILOT CONFIGURATION / NON-OFFICIAL FIXTURE. This is NOT an official
@@ -13,13 +13,9 @@
  * already-certified F4/F6/F7 services, so a real pilot student can
  * exercise the real, already-shipped self-service flow end to end.
  *
- * Callable from two places, both invoking the SAME logic (never
- * duplicated): the CLI script (`scripts/operations/seed-preview-pilot-
- * exam-catalog.ts`, for a local/dev database with a real `.env.local`)
- * and a temporary Preview-only API route (for the real Preview
- * database, since that DATABASE_URL is a Vercel secret this agent will
- * never materialize locally -- the route runs this same function
- * inside Vercel's own runtime instead).
+ * Callable from the CLI script (`scripts/operations/seed-preview-pilot-
+ * exam-catalog.ts`). The temporary Preview-only API route that once
+ * also called it has been removed.
  *
  * Safety / scope (all of these are load-bearing, not decorative):
  *   - Every entity is looked up by a stable natural key (organization

@@ -36,7 +36,6 @@ export type EngineCapability = 'NONE' | 'TECHNICAL_DEMO';
 export const CONTENT_READINESS_ORDER = ['NONE', 'PRACTICE_READY', 'SECTION_FIDELITY', 'ONE_MOCK_READY', 'MULTI_MOCK_READY', 'PRODUCTION_DEPTH'] as const;
 export type ContentReadiness = (typeof CONTENT_READINESS_ORDER)[number];
 export const contentAtLeast = (s: ContentReadiness, min: ContentReadiness) => CONTENT_READINESS_ORDER.indexOf(s) >= CONTENT_READINESS_ORDER.indexOf(min);
-export const isMockReadyContent = (s: ContentReadiness) => contentAtLeast(s, 'ONE_MOCK_READY');
 
 export type AssessmentSemantics = 'EXAM_PREPARATION' | 'COMPETENCY_BENCHMARK';
 

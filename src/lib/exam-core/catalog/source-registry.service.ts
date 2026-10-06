@@ -4,7 +4,6 @@
  * structural fact is only ever linked to a registered source.
  */
 import type { PoolClient } from 'pg';
-import { db } from '@/lib/db';
 import { ASSESSMENT_SOURCES, VERIFIED_AT, type AssessmentSourceSeed } from './sources';
 
 type Exec = Pick<PoolClient, 'query'>;
@@ -38,10 +37,4 @@ export async function upsertSources(client: Exec, keys?: string[]): Promise<Map<
   }
   const rows = await client.query(`SELECT id, source_key FROM assessment_sources WHERE source_key = ANY($1::text[])`, [wanted]);
   return new Map(rows.rows.map((r: any) => [r.source_key, r.id]));
-}
-
-export async function listSourcesByIds(ids: string[]): Promise<Array<{ key: string; title: string; publisher: string | null; url: string | null; confidence: string; license: string; effectiveSession: string | null }>> {
-  if (ids.length === 0) return [];
-  const r = await db.query(`SELECT source_key, title, publisher, url, confidence, license_status, effective_session FROM assessment_sources WHERE id = ANY($1::uuid[]) ORDER BY source_key`, [ids]);
-  return r.rows.map((x: any) => ({ key: x.source_key, title: x.title, publisher: x.publisher, url: x.url, confidence: x.confidence, license: x.license_status, effectiveSession: x.effective_session }));
 }

@@ -12,7 +12,7 @@
  * belongs to one exam's blueprint.
  */
 import { DEFAULT_CALIBRATION_POLICY, type CalibrationPolicy } from './policy';
-import type { CalibrationConfidence, LifecycleState } from './lifecycle';
+import { deliveryStatusFor, type CalibrationConfidence, type LifecycleState } from './lifecycle';
 
 export interface ResponseObservation {
   /** score / max of this item in this response. */
@@ -103,7 +103,7 @@ export function calibrateItem(
 export function calibrationDecision(state: LifecycleState | null, cal: ItemCalibration): { to: LifecycleState; reason: string } | null {
   if (state === null) return null;
   const strong = cal.confidence === 'MODERATE_CONFIDENCE' || cal.confidence === 'HIGH_CONFIDENCE';
-  if (cal.flags.length > 0 && strong && ['PILOT', 'CALIBRATED', 'ACTIVE'].includes(state)) return { to: 'REVIEW_REQUIRED', reason: `MONITORING:${cal.flags.join(',')}` };
+  if (cal.flags.length > 0 && strong && deliveryStatusFor(state) === 'PUBLISHED') return { to: 'REVIEW_REQUIRED', reason: `MONITORING:${cal.flags.join(',')}` };
   if (state === 'PILOT' && strong && cal.flags.length === 0) return { to: 'CALIBRATED', reason: `CALIBRATION:${cal.confidence}:n=${cal.sampleSize}` };
   return null;
 }

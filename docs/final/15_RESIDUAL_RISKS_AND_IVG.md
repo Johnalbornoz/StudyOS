@@ -31,7 +31,7 @@
 | R6 / `IVG-F15-10` | No backup/restore automation, no RPO/RTO | Database operations | Operator rehearses one real restore | Recommended, not hard-gated | Yes |
 | `IVG-F15-05` | Correlation ID not end-to-end | Observability | Wired through every downstream log call | No | Yes |
 | `IVG-F15-11` | No paging/alerting tooling | Operations | Real alerting integration | No | Yes |
-| `IVG-F15-12` | No kill switch beyond `AI_ENABLED` | Operations | Feature-level flags | No | Yes, beyond small pilot |
+| `IVG-F15-12` | No kill switch at all — `AI_ENABLED` was never implemented (corrected 2026-10-06; documented as existing until then) | Operations | Feature-level flags | No | Yes, beyond small pilot |
 | `IVG-F15-06` | Authenticated-flow latency unmeasured | QA | Rolls into the E2E session | Yes, for full confidence | Yes |
 | `IVG-F15-07` | Real concurrency/load unmeasured | Performance | A real load test at Production concurrency | No, small cohort | Yes |
 | `IVG-F15-08` | Authenticated responsive uncertified | QA | Rolls into the E2E session | Yes, for full confidence | No |

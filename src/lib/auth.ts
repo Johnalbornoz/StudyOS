@@ -43,10 +43,9 @@
  *   provisioning path. If you need a student's ID, call
  *   `getOrCreateStudentId` (or read `students.clerk_id`/`profiles.clerk_id`
  *   for lookups) -- never mint a UUID or write directly to `students`/
- *   `profiles`/`student_profiles` from anywhere else. (See
- *   `src/services/student.service.ts` for a documented example of what
- *   NOT to do -- a dead, pre-existing alternate path that would violate
- *   this contract if it were ever wired up again.)
+ *   `profiles`/`student_profiles` from anywhere else. (A dead alternate
+ *   provisioning path, `src/services/student.service.ts`, violated this
+ *   contract and was removed in the technical cleanup.)
  * - Any future consolidation of `students`/`profiles` into one table is
  *   out of scope here and belongs to a separate migration project.
  */

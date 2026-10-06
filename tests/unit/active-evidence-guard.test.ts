@@ -17,7 +17,6 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 
 import {
   getActiveInstructionRestriction,
-  canProvideInstructionalAssistance,
   getActiveRestrictedEvidenceForStudent,
 } from '@/services/active-evidence-guard.service';
 
@@ -142,13 +141,6 @@ describe('release tests 12-16: unrestricted/inactive states allow', () => {
   it('resolved verification (no pending row) allows (release test 16)', async () => {
     queryMock.mockResolvedValue({ rows: [] });
     expect((await getActiveInstructionRestriction({ studentId: STUDENT, subjectId: SUBJECT })).allowed).toBe(true);
-  });
-});
-
-describe('canProvideInstructionalAssistance -- convenience boolean form', () => {
-  it('mirrors getActiveInstructionRestriction.allowed', async () => {
-    getStudentActiveQuizzesMock.mockResolvedValue([quiz({ activityType: 'SOLO_CHECK', evidenceMode: 'INDEPENDENT' })]);
-    expect(await canProvideInstructionalAssistance({ studentId: STUDENT, subjectId: SUBJECT })).toBe(false);
   });
 });
 

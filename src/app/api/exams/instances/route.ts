@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireActor, requireOwnerOf, ownStudentId } from '@/lib/exam-core/route-auth';
 import { resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
+import { atLeast, isMockReady } from '@/lib/exam-core/catalog/readiness';
 import { createExamInstance, ensureExamProfile, listExamInstances, toInstanceView, ExamInstanceError } from '@/lib/exam-core/exam-instance.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -59,8 +60,8 @@ async function handlePOST(request: NextRequest) {
     const picked = [...new Set(body.componentIds)].sort().join();
     if (!level.routes.some((r) => [...r.componentIds].sort().join() === picked)) return NextResponse.json({ error: 'ROUTE_REQUIRED' }, { status: 400 });
   }
-  const needed = body.mode === 'PRACTICE' ? ['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'] : ['REDUCED_MOCK_READY', 'FULL_MOCK_READY'];
-  if (level.components.filter((c) => body.componentIds.includes(c.componentId)).some((c) => !needed.includes(c.readiness))) {
+  const ready = (s: Parameters<typeof isMockReady>[0]) => (body.mode === 'PRACTICE' ? atLeast(s, 'PRACTICE_READY') : isMockReady(s));
+  if (level.components.filter((c) => body.componentIds.includes(c.componentId)).some((c) => !ready(c.readiness))) {
     return NextResponse.json({ error: 'COMPONENT_NOT_READY' }, { status: 409 });
   }
   try {

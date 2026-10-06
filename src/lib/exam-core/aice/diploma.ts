@@ -147,7 +147,6 @@ export interface DiplomaEvaluation {
   assumptions: string[];
 }
 
-const gradeRank = (level: AiceLevel, grade: string) => pointsFor(level, grade);
 
 function* subsets<T>(arr: T[], start = 0, acc: T[] = []): Generator<T[]> {
   yield acc;
@@ -233,8 +232,3 @@ export function evaluateDiplomaResults(
     assumptions,
   };
 }
-
-/** Points only make a Diploma with a valid composition (exported for the UI copy). */
-export const diplomaBandOrNull = (e: Pick<DiplomaEvaluation, 'compositionValid' | 'band'>) => (e.compositionValid ? e.band : null);
-
-export const gradeOrder = gradeRank;

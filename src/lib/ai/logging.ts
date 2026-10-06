@@ -8,12 +8,8 @@ import { currentAiOperation } from './request-metrics';
  * validationStatus, fallbackUsed, errorCode, and (LX-4P-PERF-R1G) REAL
  * provider token usage + estimated cost, when the call site opted in.
  * Never the student's name, email, raw prompt, raw response, or any
- * credential.
- *
- * Raw prompt/response content can optionally be inspected in local
- * development ONLY, and only when explicitly opted into via
- * STUDYUS_AI_DEBUG_RAW=1 -- never enabled by default, never in
- * production (see logAIDebugRaw below).
+ * credential. There is no raw prompt/response logging path at all
+ * (the former opt-in STUDYUS_AI_DEBUG_RAW hook had no caller and was removed).
  */
 export function logAIExecution(execution: AIExecutionMetadata): void {
   const operation = currentAiOperation();
@@ -55,18 +51,6 @@ export function logAIExecution(execution: AIExecutionMetadata): void {
   } else {
     console.warn('[ai]', JSON.stringify(line));
   }
-}
-
-/**
- * Explicit, opt-in-only debug hook for raw prompt/response content
- * during local development. Requires STUDYUS_AI_DEBUG_RAW=1 in the
- * environment -- absent by default in every environment, including
- * local dev. Never call this with anything that isn't already meant
- * to be inspectable (it still never logs credentials).
- */
-export function logAIDebugRaw(executionId: string, label: string, content: string): void {
-  if (process.env.STUDYUS_AI_DEBUG_RAW !== '1') return;
-  console.debug('[ai:debug-raw]', executionId, label, content);
 }
 
 /**

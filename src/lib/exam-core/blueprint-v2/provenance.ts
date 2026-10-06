@@ -129,10 +129,6 @@ export function isAuthoritativeFact<T>(f: Fact<T>): f is { status: 'STATED'; val
   return f.status === 'STATED' && isAuthoritative(f.provenance);
 }
 
-export function factValue<T>(f: Fact<T>): T | null {
-  return f.status === 'STATED' ? f.value : null;
-}
-
 /**
  * Provenance of a value derived from several facts (e.g. a weighting stage
  * built from every component's weight): the WEAKEST kind wins, sources are

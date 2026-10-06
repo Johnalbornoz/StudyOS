@@ -153,12 +153,6 @@ export async function getActiveInstructionRestriction(input: ActiveInstructionRe
   return ALLOWED;
 }
 
-/** Convenience boolean form for a call site that only needs the gate, not the structured reason. */
-export async function canProvideInstructionalAssistance(input: ActiveInstructionRestrictionInput): Promise<boolean> {
-  const state = await getActiveInstructionRestriction(input);
-  return state.allowed;
-}
-
 /**
  * Phase 5-R4: the student-wide form. Fresh finding: `conversation.subject_id`
  * is itself client-chosen at conversation-creation time (S1) -- a

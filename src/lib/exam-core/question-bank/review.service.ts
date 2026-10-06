@@ -17,7 +17,7 @@ import { checkReview, ReviewError, type ExamAlignment, type ReviewDecision, type
 import { runDeterministicValidation } from './validation';
 import { cellSpecFor } from './queue.service';
 import { loadVersionHealthInputs } from './health.service';
-import type { LifecycleState } from './lifecycle';
+import { deliveryStatusFor, type LifecycleState } from './lifecycle';
 import type { Provenance } from './policy';
 import { attentionPointsFor, difficultyInternal, PilotReviewAssessmentSchema, proposalFromContent } from './pilots/human-review';
 
@@ -133,7 +133,7 @@ export async function correctVersion(p: { versionId: string; editorUserId: strin
   if (!row) throw new ReviewError('NOT_REVIEWABLE', 'not found');
   if (row.current_version_id !== p.versionId) throw new ReviewError('NOT_REVIEWABLE', 'only the current version can be corrected');
   const content = { ...row.content, ...Object.fromEntries(Object.entries(p.patch).filter(([, v]) => v !== undefined)) };
-  const delivered = ['PILOT', 'CALIBRATED', 'ACTIVE'].includes(row.bank_lifecycle_status);
+  const delivered = !!row.bank_lifecycle_status && deliveryStatusFor(row.bank_lifecycle_status as LifecycleState) === 'PUBLISHED';
   const next = await createNextVersion({
     bankItemId: row.bank_item_id,
     version: { content, learningObjectiveId: row.learning_objective_id, questionType: row.question_type, targetDifficulty: typeof content.difficulty === 'number' ? content.difficulty : null },

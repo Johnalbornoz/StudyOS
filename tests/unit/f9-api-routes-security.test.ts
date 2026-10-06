@@ -106,7 +106,6 @@ import { POST as attemptsPOST } from '@/app/api/simulation/attempts/route';
 import { GET as attemptGET } from '@/app/api/simulation/attempts/[id]/route';
 import { POST as pausePOST } from '@/app/api/simulation/attempts/[id]/pause/route';
 import { POST as resumePOST } from '@/app/api/simulation/attempts/[id]/resume/route';
-import { POST as responsesPOST } from '@/app/api/simulation/attempts/[id]/responses/route';
 import { POST as completePOST } from '@/app/api/simulation/attempts/[id]/complete/route';
 import { GET as adminPolicyGET, POST as adminPolicyPOST } from '@/app/api/admin/readiness/policy/route';
 import { GET as adminScoreModelsGET, POST as adminScoreModelsPOST } from '@/app/api/admin/readiness/score-conversion-models/route';
@@ -175,10 +174,6 @@ const LEARNER_ROUTES: Array<{ name: string; call: () => Promise<any> }> = [
   { name: 'simulation/attempts/[id] GET', call: () => attemptGET(urlReq('https://studyus.test/api/simulation/attempts/sa-1'), withParams('sa-1')) },
   { name: 'simulation/attempts/[id]/pause POST', call: () => pausePOST(jsonReq({}), withParams('sa-1')) },
   { name: 'simulation/attempts/[id]/resume POST', call: () => resumePOST(jsonReq({}), withParams('sa-1')) },
-  {
-    name: 'simulation/attempts/[id]/responses POST',
-    call: () => responsesPOST(jsonReq({ assessmentComponentId: VALID_ID, question: { answerFormat: 'single_choice' }, studentAnswer: 'A' }), withParams('sa-1')),
-  },
   { name: 'simulation/attempts/[id]/complete POST', call: () => completePOST(jsonReq({}), withParams('sa-1')) },
 ];
 
@@ -364,5 +359,14 @@ describe('case M/54: finalization is idempotent-or-safely-rejected, never re-sco
     expect(res.status).toBe(409);
     expect(runPostExamDiagnosisMock).not.toHaveBeenCalled();
     expect(determineNextActionMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('the retired client-graded responses route stays removed (technical cleanup)', () => {
+  it('POST /api/simulation/attempts/[id]/responses no longer exists: answers go only through .../next-item (server-held item)', async () => {
+    const { existsSync } = await import('fs');
+    const { join } = await import('path');
+    expect(existsSync(join(process.cwd(), 'src/app/api/simulation/attempts/[id]/responses'))).toBe(false);
+    expect(existsSync(join(process.cwd(), 'src/app/api/simulation/attempts/[id]/next-item/route.ts'))).toBe(true);
   });
 });

@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { conceptKnowledgeLabel } from '../objectives/preparation-plan';
 import { computeCellDemand, DEFAULT_DEMAND_POLICY, type CellDemand, type DemandPolicy } from './demand';
-import { isEligible } from './lifecycle';
+import { effectiveLifecycle, isEligible, STUDENT_DELIVERABLE_STATES } from './lifecycle';
 import { bandOf, type DifficultyBand } from './quality';
 import type { VersionHealthInputs } from './health.service';
 
@@ -119,7 +119,10 @@ export async function versionDemand(inputs: VersionHealthInputs, policy?: Demand
     }
     // Approved, practice-usable inventory of the cell, by effective difficulty band (validated, else declared).
     const own = inputs.items.filter((i) => i.isCurrentVersion && i.learningObjectiveId === cell.learningObjectiveId);
-    const approvedItems = own.filter((i) => ['ACTIVE', 'CALIBRATED'].includes(i.lifecycle ?? (i.status === 'PUBLISHED' ? 'ACTIVE' : '')) && isEligible(i, 'PRACTICE'));
+    const approvedItems = own.filter((i) => {
+      const state = effectiveLifecycle(i);
+      return state !== null && STUDENT_DELIVERABLE_STATES.includes(state) && isEligible(i, 'PRACTICE');
+    });
     const byBand: Record<DifficultyBand, number> = { LOW: 0, MEDIUM: 0, HIGH: 0 };
     for (const i of approvedItems) byBand[bandOf(i.validatedDifficulty ?? i.difficulty) ?? 'MEDIUM'] += 1;
     const pipeline = own.filter((i) => ['PILOT', 'VALIDATING', 'VALIDATED', 'DRAFT_AI'].includes(i.lifecycle ?? '')).length + (queuedBy.get(cell.cellKey) ?? 0);

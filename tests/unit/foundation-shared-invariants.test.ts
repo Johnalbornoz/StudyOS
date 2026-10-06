@@ -8,7 +8,7 @@
  * later track cannot silently regress them.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const dbQueryMock = vi.fn();
@@ -163,7 +163,7 @@ describe('ASSIGNMENT (13-14)', () => {
 
 describe('EXAM (15-19)', () => {
   it('15+16. every attempt-scoped route resolves the attempt and authorizes against attempt.studentId', () => {
-    for (const r of ['complete', 'pause', 'resume', 'abandon', 'responses']) {
+    for (const r of ['complete', 'pause', 'resume', 'abandon']) {
       const s = read(`src/app/api/simulation/attempts/[id]/${r}/route.ts`);
       expect(s, r).toMatch(/canAccessLearner\(actor\.id, attempt\.studentId, 'LEARNER_INTERVENTION_CREATE'\)/);
     }
@@ -178,10 +178,11 @@ describe('EXAM (15-19)', () => {
     expect(svc).toMatch(/v\.exam_definition_id = p\.exam_definition_id[\s\S]*v\.status = 'PUBLISHED'/);
   });
 
-  it('17+18. no route grades a client-supplied question (the forgeable /responses path is retired: 410, never graded)', () => {
-    const s = read('src/app/api/simulation/attempts/[id]/responses/route.ts');
-    expect(s).not.toMatch(/recordSimulationItemResponse/);
-    expect(s).toMatch(/status: 410/);
+  it('17+18. no route grades a client-supplied question (the forgeable /responses path is removed; grading only via the server-held item)', () => {
+    expect(existsSync(join(process.cwd(), 'src/app/api/simulation/attempts/[id]/responses'))).toBe(false);
+    const walkRoutes = (dir: string): string[] =>
+      readdirSync(join(process.cwd(), dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkRoutes(join(dir, e.name)) : e.name === 'route.ts' ? [join(dir, e.name)] : []));
+    for (const f of walkRoutes('src/app/api')) expect(read(f), f).not.toMatch(/recordSimulationItemResponse/);
   });
 
   it('18b. exam layers never write mastery directly -- only through the canonical updateMastery evidence pipeline', () => {

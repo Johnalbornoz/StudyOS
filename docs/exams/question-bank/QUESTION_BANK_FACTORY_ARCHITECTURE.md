@@ -72,7 +72,7 @@ exceptions: REPAIR_REQUIRED · REVIEW_REQUIRED · REJECTED · SUSPENDED · RETIR
 
 | Use | Lifecycle states | Extra |
 |---|---|---|
-| Practice | PILOT, CALIBRATED, ACTIVE | — |
+| Practice | CALIBRATED, ACTIVE (PILOT never: human review first — `0fce26b`) | — |
 | Reduced mock | CALIBRATED, ACTIVE | — |
 | Full mock | CALIBRATED, ACTIVE | full-length form must assemble and be deliverable |
 | Full mock calibrated | CALIBRATED, ACTIVE | calibration confidence ≥ MODERATE |
@@ -182,7 +182,7 @@ Shadow comparison on all 80 governed configurations (364 bound nodes, local cert
 
 7. **Repair**: at most one bounded AI repair. It creates a **new version** that goes through the whole pipeline again. If it still fails, the item is REJECTED.
 
-Accepted candidates land in **PILOT**: practice-eligible, never mock-eligible, never ACTIVE without an admin or field evidence.
+Accepted candidates land in **PILOT**: awaiting human review, **never Student-deliverable** (practice, diagnostic or mock), and never ACTIVE without a recorded human approval (since `0fce26b`; see `docs/exams/QB_HUMAN_REVIEW_FOUNDATION.md`).
 
 **Cost:** deterministic → routed primary model (Luna) → stronger model (Terra) only for unconfident validations. Mathematics items normally need **one** generation call and **no** validator call.
 

@@ -14,7 +14,7 @@ export { PROMPT_REGISTRY, getPrompt } from './prompt-registry';
 export type { PromptId, PromptDefinition } from './prompt-registry';
 export { ok, invalid, validateJson, checks, clamp } from './validation';
 export type { RawTextResponse } from './validation';
-export { logAIExecution, logAIDebugRaw } from './logging';
+export { logAIExecution } from './logging';
 export { callAnthropicMessages } from './adapters/anthropic';
 export type { AnthropicMessagesParams, AnthropicMessagesResult, AnthropicMessage, AnthropicContentBlock } from './adapters/anthropic';
 export { callOpenAIChat, callOpenAIEmbedding } from './adapters/openai';

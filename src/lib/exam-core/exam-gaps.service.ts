@@ -132,7 +132,7 @@ export async function examGoalsFor(studentIds: string[], opts: { includePerStude
   const rows = (
     await db.query(
       `SELECT p.student_id, p.objective_key, d.config_key, p.exam_date FROM student_exam_profiles p LEFT JOIN exam_definitions d ON d.id = p.exam_definition_id
-        WHERE p.student_id = ANY($1::uuid[]) AND p.status <> 'ARCHIVED'`,
+        WHERE p.student_id = ANY($1::uuid[]) AND p.status <> 'ARCHIVED' AND (p.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('d')})`,
       [studentIds]
     )
   ).rows as Array<{ student_id: string; objective_key: string | null; config_key: string | null; exam_date: string | Date | null }>;

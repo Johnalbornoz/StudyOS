@@ -21,6 +21,7 @@ import { getProfileCurriculum } from '@/services/academic-profile-catalogue.serv
 import { loadClassExamAssignmentsForStudent, loadClassProgrammes } from '@/lib/exam-core/eligibility/academic-context';
 import { normaliseGradeLevel } from '@/lib/exam-core/eligibility/grade-level';
 import { isAcademicProfileComplete } from '@/lib/student/onboarding-gate';
+import { examAttemptEvidenceSql } from '@/lib/exam-core/evidence-scope';
 import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
 import { buildProfilePlan, objectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { objectiveByKey, type ExamObjective } from '@/lib/exam-core/objectives/objective-catalog';
@@ -122,9 +123,10 @@ function contentFacts(caps: ExamPreparationCapabilities): ContentReadinessFacts 
 async function learningFacts(studentId: string, plan: PreparationPlan | null): Promise<LearningEvidenceFacts | null> {
   if (!plan) return null;
   const conceptIds = [...new Set(plan.requirements.flatMap((r) => r.concepts.map((c) => c.learner?.studentConceptId)).filter((id): id is string => !!id))];
-  // Learning evidence only: exam-simulation rows are exam evidence, not learning (design G-08).
+  // Learning evidence only (design G-08): exam-attempt evidence is exam evidence, not learning -- the G6
+  // evidence-scope contract decides which rows those are (one rule, exam-core/evidence-scope.ts).
   const last = conceptIds.length
-    ? (await db.query(`SELECT max("timestamp") AS at FROM learning_evidence WHERE student_id = $1 AND concept_id = ANY($2::uuid[]) AND source_type <> 'EXAM_SIMULATION'`, [studentId, conceptIds])).rows[0]?.at ?? null
+    ? (await db.query(`SELECT max(le."timestamp") AS at FROM learning_evidence le WHERE le.student_id = $1 AND le.concept_id = ANY($2::uuid[]) AND NOT ${examAttemptEvidenceSql('le')}`, [studentId, conceptIds])).rows[0]?.at ?? null
     : null;
   return learningFactsFromPlan(plan, last ? new Date(last).toISOString() : null);
 }

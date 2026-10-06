@@ -10,7 +10,7 @@ const CHECKLIST_LABEL = new Map<string, string>(REVIEW_CHECKLIST.map(([k, l]) =>
 import { db } from '@/lib/db';
 import { difficultyView, effectiveAlignment, effectiveUsage, reviewStatusOf, type DifficultyBand, type ReviewDecision } from './quality';
 import type { Provenance } from './policy';
-import type { CalibrationConfidence } from './lifecycle';
+import { STUDENT_DELIVERABLE_STATES, type CalibrationConfidence } from './lifecycle';
 
 export interface ReviewQueueFilters {
   examVersionId?: string;
@@ -203,7 +203,7 @@ export async function exposureMetrics(horizonDays = 14) {
              count(*) FILTER (WHERE qi.provenance = 'STUDYUS_GENERATED' AND cv.bank_lifecycle_status = 'REJECTED')::int AS rejected,
              count(*) FILTER (WHERE qi.provenance = 'STUDYUS_GENERATED' AND cv.bank_lifecycle_status IN ('PILOT', 'VALIDATED', 'REVIEW_REQUIRED')
                               AND NOT EXISTS (SELECT 1 FROM question_bank_reviews r WHERE r.approved_item_id = cv.id AND r.decision = 'APPROVED'))::int AS pending_review,
-             count(*) FILTER (WHERE cv.bank_lifecycle_status IN ('ACTIVE', 'CALIBRATED') AND qi.retired_at IS NULL)::int AS active_inventory
+             count(*) FILTER (WHERE cv.bank_lifecycle_status IN (${STUDENT_DELIVERABLE_STATES.map((s) => `'${s}'`).join(', ')}) AND qi.retired_at IS NULL)::int AS active_inventory
         FROM question_bank_items qi JOIN approved_items cv ON cv.id = qi.current_version_id`),
     db.query(
       `WITH u AS (SELECT * FROM exam_item_usage WHERE used_at > now() - ($1::int * interval '1 day') AND approved_item_id IS NOT NULL),

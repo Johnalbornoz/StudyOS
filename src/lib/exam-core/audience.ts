@@ -29,8 +29,6 @@ export function examAudienceOf(configKey: string | null | undefined): ExamAudien
   return 'STUDENT';
 }
 
-export const isStudentAudience = (configKey: string | null | undefined) => examAudienceOf(configKey) === 'STUDENT';
-
 /** The content an exam's deliveries draw from: a technical / internal exam is, by definition, a demo of the engine. */
 export function contentAudienceFor(exam: ExamAudience, requested?: ContentAudience): ContentAudience {
   return exam === 'STUDENT' ? requested ?? 'STUDENT' : 'TECHNICAL_DEMO';

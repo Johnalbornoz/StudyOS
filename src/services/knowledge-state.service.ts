@@ -104,7 +104,8 @@ function average(rows: EvidenceRow[], limit = 10): number | null {
   return Math.round(recent.reduce((sum, r) => sum + scoreOf(r), 0) / recent.length);
 }
 
-const UNDERSTANDING_FALLBACK_SOURCES = new Set([
+/** Evidence sources that count toward understanding (fallback) / application -- the ONE definition (also read by the explanation service). */
+export const UNDERSTANDING_FALLBACK_SOURCES: ReadonlySet<string> = new Set([
   'PRACTICE_QUIZ',
   'PRACTICE_QUESTION',
   'CUMULATIVE_ASSESSMENT',
@@ -113,7 +114,7 @@ const UNDERSTANDING_FALLBACK_SOURCES = new Set([
   'TOPIC_ASSESSMENT',
   'REAL_SCHOOL_EXAM',
 ]);
-const APPLICATION_SOURCES = new Set(['CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT']);
+export const APPLICATION_SOURCES: ReadonlySet<string> = new Set(['CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT']);
 
 /**
  * Understanding: EXPLANATION evidence (rubric-graded reasoning) if any

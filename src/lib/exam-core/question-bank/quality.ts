@@ -26,7 +26,6 @@ export const ALIGNMENTS = ['PRACTICE', 'EXAM_STYLE', 'MOCK_READY', 'OFFICIAL'] a
 export type ExamAlignment = (typeof ALIGNMENTS)[number];
 
 export type DifficultyBand = 'LOW' | 'MEDIUM' | 'HIGH';
-export const DIFFICULTY_BANDS: readonly DifficultyBand[] = ['LOW', 'MEDIUM', 'HIGH'];
 
 /** 1-2 LOW, 3 MEDIUM, 4-5 HIGH. */
 export function bandOf(difficulty: number | null | undefined): DifficultyBand | null {
@@ -34,7 +33,6 @@ export function bandOf(difficulty: number | null | undefined): DifficultyBand | 
   const d = Math.round(difficulty);
   return d <= 2 ? 'LOW' : d === 3 ? 'MEDIUM' : 'HIGH';
 }
-export const BAND_CENTER: Record<DifficultyBand, number> = { LOW: 2, MEDIUM: 3, HIGH: 4 };
 
 /**
  * Observed band from the empirical difficulty (share of marks obtained; higher = easier).

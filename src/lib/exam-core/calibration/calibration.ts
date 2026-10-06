@@ -14,8 +14,6 @@
  * exact agreement and >= 95% within one mark. With zero official cases it is
  * always false -- the report says why.
  */
-import { createHash } from 'crypto';
-import { db } from '@/lib/db';
 import { ApprovedItemContentSchema, examItemFromApproved, type ExamItem } from '../items';
 import { gradeExamItem } from '../item-grading';
 import type { AssessorRunner } from '../assessment/double-assessor.service';
@@ -137,19 +135,4 @@ export async function gradeCases(cases: Array<CalibrationCase & { content: unkno
     out.push({ key: c.key, framework: c.framework, origin: c.origin, expected: c.expectedMarks, awarded, max: c.maxMarks, absError: Math.abs(awarded - c.expectedMarks) });
   }
   return out;
-}
-
-/** Persists the cases (upsert) and one run row. */
-export async function recordCalibrationRun(cases: Array<CalibrationCase & { content: unknown }>, results: CaseResult[], metrics: CalibrationMetrics): Promise<string> {
-  for (const c of cases) {
-    await db.query(
-      `INSERT INTO assessment_calibration_cases (case_key, framework, component_ref, origin, item_content, response, expected_marks, max_marks)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (case_key) DO UPDATE SET item_content = EXCLUDED.item_content, response = EXCLUDED.response, expected_marks = EXCLUDED.expected_marks, max_marks = EXCLUDED.max_marks`,
-      [c.key, c.framework, c.componentRef, c.origin, JSON.stringify(c.content), JSON.stringify({ text: c.response }), c.expectedMarks, c.maxMarks]
-    );
-  }
-  const runKey = `${GRADER_VERSION}:${createHash('sha256').update(JSON.stringify(results)).digest('hex').slice(0, 16)}:${Date.now()}`;
-  await db.query(`INSERT INTO assessment_calibration_runs (run_key, grader_version, case_count, metrics, case_results) VALUES ($1, $2, $3, $4, $5)`, [runKey, GRADER_VERSION, results.length, JSON.stringify(metrics), JSON.stringify(results)]);
-  return runKey;
 }

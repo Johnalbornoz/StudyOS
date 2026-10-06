@@ -8,6 +8,8 @@
  */
 import { db } from '@/lib/db';
 import {
+  APPLICATION_SOURCES,
+  UNDERSTANDING_FALLBACK_SOURCES,
   classifyApplication,
   classifyIndependence,
   classifyUnderstanding,
@@ -32,10 +34,6 @@ export interface KnowledgeStateExplanation {
   totalEvidenceCount: number;
 }
 
-const UNDERSTANDING_FALLBACK_SOURCES = new Set([
-  'PRACTICE_QUIZ', 'PRACTICE_QUESTION', 'CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'GUIDED_EXERCISE', 'TOPIC_ASSESSMENT', 'REAL_SCHOOL_EXAM',
-]);
-const APPLICATION_SOURCES = new Set(['CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT']);
 
 export async function explainKnowledgeState(studentId: string, conceptId: string): Promise<KnowledgeStateExplanation> {
   const evidenceRows = await db.query(
