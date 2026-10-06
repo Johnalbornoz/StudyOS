@@ -72,11 +72,11 @@ describe('versions: immutability and no-delete are enforced by the database', ()
   });
 });
 
-describe('eligibility: practice may use PILOT, mocks never do, retired never', () => {
+describe('eligibility: PILOT is never Student-deliverable (human review first), retired never', () => {
   const base = { lifecycle: 'ACTIVE' as LifecycleState, status: 'PUBLISHED', isCurrentVersion: true, retired: false, calibrationConfidence: 'INSUFFICIENT_DATA' as const, provenance: 'STUDYUS_GENERATED' as const };
-  it('PILOT: practice yes, reduced/full mock no', () => {
+  it('PILOT (automated pass, awaiting human review): no practice, no reduced / full mock', () => {
     const pilot = { ...base, lifecycle: 'PILOT' as LifecycleState };
-    expect(isEligible(pilot, 'PRACTICE')).toBe(true);
+    expect(isEligible(pilot, 'PRACTICE')).toBe(false);
     expect(isEligible(pilot, 'REDUCED_MOCK')).toBe(false);
     expect(isEligible(pilot, 'FULL_MOCK')).toBe(false);
   });
@@ -96,7 +96,8 @@ describe('eligibility: practice may use PILOT, mocks never do, retired never', (
     expect(lifecycleSqlFor('REDUCED_MOCK', undefined, 'TECHNICAL_DEMO')).toBe("((ai.bank_lifecycle_status IS NULL OR ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE')) AND (ai.usage_eligibility IS NULL OR 'REDUCED_MOCK' = ANY(ai.usage_eligibility)) AND (ai.exam_alignment IS NULL OR ai.exam_alignment IN ('MOCK_READY', 'OFFICIAL')))");
     // STUDENT (default): the same predicate AND never a DEV fixture (column origin, content origin / status, bank provenance).
     expect(lifecycleSqlFor('REDUCED_MOCK')).toBe(lifecycleSqlFor('REDUCED_MOCK', undefined, 'TECHNICAL_DEMO').slice(0, -1) + " AND NOT (ai.content_origin = 'FIXTURE' OR ai.content->>'contentOrigin' = 'FIXTURE' OR ai.content->>'contentStatus' = 'DEV_CERT_FIXTURE' OR EXISTS (SELECT 1 FROM question_bank_items fx_qi WHERE fx_qi.id = ai.bank_item_id AND fx_qi.provenance = 'FIXTURE')))");
-    expect(lifecycleSqlFor('PRACTICE')).toContain("'PILOT'");
+    expect(lifecycleSqlFor('PRACTICE')).not.toContain("'PILOT'");
+    expect(lifecycleSqlFor('PRACTICE')).toContain("ai.bank_lifecycle_status IN ('CALIBRATED', 'ACTIVE')");
   });
   it('the mock form query of the instance service applies the policy (PILOT excluded from Mock / Challenge)', () => {
     const svc = readFileSync(join(ROOT, 'src/lib/exam-core/exam-instance.service.ts'), 'utf8');

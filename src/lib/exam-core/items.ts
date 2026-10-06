@@ -44,8 +44,9 @@ export const SCORING_STRATEGIES = [
 ] as const;
 export type ScoringStrategyKind = (typeof SCORING_STRATEGIES)[number];
 
-export const CONTENT_ORIGINS = ['OFFICIAL', 'LICENSED', 'GENERATED', 'FIXTURE'] as const;
-export type ContentOrigin = (typeof CONTENT_ORIGINS)[number];
+import { CONTENT_ORIGINS, type ContentOrigin } from './content-origin';
+export { CONTENT_ORIGINS };
+export type { ContentOrigin };
 
 /** V2 -- mathematical answer key (math-engine.ts). */
 export const MathKeySchema = z.object({

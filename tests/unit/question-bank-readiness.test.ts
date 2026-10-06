@@ -74,20 +74,21 @@ describe('section 73 -- readiness is proved by assembly, never by a total count'
     expect(h.readiness.reducedMock.ready).toBe(false);
     expect(h.cells.find((c) => c.objectiveCode === 'lo.voc')?.counts.retired).toBe(1);
   });
-  it('6. a PILOT item follows the eligibility policy: practice yes, mock no', () => {
+  it('6. a PILOT item follows the eligibility policy: awaiting human review = no practice, no mock', () => {
     const items = [...many('lo.alg', 1), ...many('lo.geo', 1), ...many('lo.inf', 1), item('lo.voc', { lifecycle: 'PILOT' })];
     const h = health(items);
-    expect(h.readiness.practice.ready).toBe(true);
+    expect(h.readiness.practice.ready).toBe(false);
     expect(h.readiness.reducedMock.ready).toBe(false);
     const voc = h.cells.find((c) => c.objectiveCode === 'lo.voc')!;
-    expect(voc.counts).toMatchObject({ pilot: 1, practiceEligible: 1, mockEligible: 0 });
+    expect(voc.counts).toMatchObject({ pilot: 1, practiceEligible: 0, mockEligible: 0 });
   });
-  it('7. readiness changes after valid content enters the bank', () => {
+  it('7. readiness changes after valid (human-approved) content enters the bank -- never on a PILOT', () => {
     const items = [...many('lo.alg', 1), ...many('lo.geo', 1), ...many('lo.inf', 1)];
     expect(health(items).readiness.practice.ready).toBe(false);
     const withPilot = [...items, item('lo.voc', { lifecycle: 'PILOT' })];
-    expect(health(withPilot).readiness.practice.ready).toBe(true);
+    expect(health(withPilot).readiness.practice.ready).toBe(false);
     const promoted = withPilot.map((i) => (i.learningObjectiveId === 'lo.voc' ? { ...i, lifecycle: 'ACTIVE' as LifecycleState } : i));
+    expect(health(promoted).readiness.practice.ready).toBe(true);
     expect(health(promoted).readiness.reducedMock.ready).toBe(true);
   });
   it('invalid (rejected / validating) content never improves readiness', () => {
@@ -173,14 +174,17 @@ describe('section 76 -- PAA onboarded into bank health (governed blueprint, curr
     const alg = h.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!;
     expect(alg).toMatchObject({ fullPositions: 14, reducedPositions: 3, deficit: 42 - 4 });
   });
-  it('a small validated batch increases the correct cell only (pilot -> practice coverage), never mock readiness', () => {
+  it('a small validated batch (PILOT) is counted in its cell as pilot only: no practice / mock coverage until human approval', () => {
     const loAlg = input.objectiveIdByCode['paa.mat.algebra'];
     const batch = [1, 2, 3].map((k) => item(loAlg, { lifecycle: 'PILOT', provenance: 'STUDYUS_GENERATED', versionId: `gen${k}`, bankItemId: `genb${k}` }));
     const after = computeBankHealth({ audience: TECH,  cells: input.cells, components: input.components, items: [...input.items, ...batch], queue: [], unitPolicy: { mode: 'ITEM' } });
     const before = h.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!;
     const now = after.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!;
-    expect(now.counts.practiceEligible - before.counts.practiceEligible).toBe(3);
+    expect(now.counts.practiceEligible - before.counts.practiceEligible).toBe(0);
     expect(now.counts.pilot).toBe(3);
+    // Human approval (ACTIVE) is what makes them practice coverage -- in the same cell only.
+    const approved = computeBankHealth({ audience: TECH, cells: input.cells, components: input.components, items: [...input.items, ...batch.map((b) => ({ ...b, lifecycle: 'ACTIVE' as const }))], queue: [], unitPolicy: { mode: 'ITEM' } });
+    expect(approved.cells.find((c) => c.objectiveCode === 'paa.mat.algebra')!.counts.practiceEligible - before.counts.practiceEligible).toBe(3);
     expect(now.counts.mockEligible).toBe(before.counts.mockEligible);
     for (const c of after.cells.filter((x) => x.objectiveCode !== 'paa.mat.algebra')) expect(c.counts).toEqual(h.cells.find((x) => x.cellKey === c.cellKey)!.counts);
     expect(after.readiness.fullMock.ready).toBe(false);

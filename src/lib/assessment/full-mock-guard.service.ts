@@ -3,7 +3,8 @@
  * readiness check -- never the simulator itself. Prepares F9.
  */
 import { db } from '@/lib/db';
-import { contentAudienceSql, studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
+import { studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
+import { lifecycleSqlFor } from '@/lib/exam-core/question-bank/lifecycle';
 import { getExamVersion } from './exam-definition.service';
 import { getBlueprintForVersion, listObjectiveTargets } from './blueprint.service';
 import { getComponent } from './component.service';
@@ -42,9 +43,13 @@ export async function canFullMockBeOffered(examVersionId: string): Promise<FullM
          EXISTS(SELECT 1 FROM objective_concept_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_concept,
          EXISTS(SELECT 1 FROM objective_skill_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_skill,
          EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED'
-                  AND (${contentAudienceSql('STUDENT', 'ai')} OR EXISTS (SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}))) AS has_bank_items,
+                  AND (${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} OR EXISTS (SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}))) AS has_bank_items,
+         EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED'
+                  AND (${lifecycleSqlFor('FULL_MOCK', undefined, 'STUDENT')} OR EXISTS (SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}))) AS has_mock_items,
          EXISTS(SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}) AS technical`,
       // QB-0: a Student exam's bank never counts DEV fixtures; a technical / internal exam is an engine demo (fixtures count).
+      // Student exams count only Student-deliverable versions (DEFAULT_ELIGIBILITY: human-approved, never PILOT):
+      // has_bank_items = practice-deliverable, has_mock_items = full-mock-deliverable.
       [target.learningObjectiveId, examVersion.examDefinitionId ?? null]
     );
     const isMapped = mappingCheck.rows[0].has_concept || mappingCheck.rows[0].has_skill;
@@ -56,7 +61,7 @@ export async function canFullMockBeOffered(examVersionId: string): Promise<FullM
     if (!isDeliverable) reasons.push(`OBJECTIVE_NOT_MAPPED: ${target.learningObjectiveId}`);
     // QB-0: a FULL mock of a Student exam is never made of on-the-fly generated items -- every objective needs
     // real (non-fixture) bank content. Mapping-only objectives still serve mini-mock practice below.
-    else if (mappingCheck.rows[0].technical !== true && mappingCheck.rows[0].has_bank_items !== true) reasons.push(`NO_REAL_MOCK_CONTENT: ${target.learningObjectiveId}`);
+    else if (mappingCheck.rows[0].technical !== true && mappingCheck.rows[0].has_mock_items !== true) reasons.push(`NO_REAL_MOCK_CONTENT: ${target.learningObjectiveId}`);
 
     if (componentOk && isDeliverable) miniMockObjectiveIds.push(target.learningObjectiveId);
   }

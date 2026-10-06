@@ -171,7 +171,8 @@ describe('what counts toward content readiness', () => {
     expect(practiceBlockers(correctionRequired())).toContain('NOT_PRACTICE_ELIGIBLE');
     expect(practiceBlockers(rejected())).toContain('NOT_PRACTICE_ELIGIBLE');
     expect(practiceBlockers(fixture())).toContain('DEV_FIXTURE');
-    expect(practiceBlockers(autoPass())).toEqual(['NOT_HUMAN_APPROVED']);
+    // An automated PASS (PILOT) is neither human-approved nor Student-deliverable.
+    expect(practiceBlockers(autoPass())).toEqual(expect.arrayContaining(['NOT_HUMAN_APPROVED', 'NOT_PRACTICE_ELIGIBLE']));
   });
   it('HUMAN_APPROVED counts only where eligible: a retired or superseded approved version does not', () => {
     expect(practiceBlockers(item(OBJ.F, COMP.F, CONT.AC, { retired: true }))).toContain('NOT_PRACTICE_ELIGIBLE');
@@ -289,8 +290,8 @@ describe('E2E-A: item-level Student practice eligibility (delivery rules as they
     expect(isEligible(facts('REVIEW_REQUIRED'), 'PRACTICE', undefined, 'STUDENT')).toBe(false);
     expect(isEligible(facts('REJECTED', { usage: null, alignment: null }), 'PRACTICE', undefined, 'STUDENT')).toBe(false);
   });
-  it('FINDING (documented, not changed here): the practice delivery policy also accepts an un-reviewed PILOT item', () => {
-    expect(isEligible(facts('PILOT'), 'PRACTICE', undefined, 'STUDENT')).toBe(true);
+  it('POLICY FIX: an un-reviewed PILOT item is never delivered to a Student (practice, diagnostic or mock)', () => {
+    for (const use of ['PRACTICE', 'REDUCED_MOCK', 'FULL_MOCK', 'FULL_MOCK_CALIBRATED'] as const) expect(isEligible(facts('PILOT'), use, undefined, 'STUDENT'), use).toBe(false);
   });
 });
 

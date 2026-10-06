@@ -6,9 +6,14 @@
  *               SUPERSEDED (a newer version of the same item replaced this one).
  *
  * The lifecycle lives on the item VERSION (an `approved_items` row) and is
- * kept consistent with the pre-existing `approved_items.status` that every
- * delivery query reads: a version is PUBLISHED exactly when it is PILOT,
- * CALIBRATED or ACTIVE. The same transition table is enforced by the database
+ * kept consistent with the pre-existing `approved_items.status`: a version is
+ * PUBLISHED exactly when it is PILOT, CALIBRATED or ACTIVE.
+ *
+ * PUBLISHED is NOT "Student-deliverable". A PILOT version passed automated
+ * validation only and awaits a qualified human reviewer (pilots/human-review.ts):
+ * it is never shown to a Student. Student delivery is decided by ONE rule,
+ * `DEFAULT_ELIGIBILITY` -- through `isEligible` (in memory) and
+ * `lifecycleSqlFor` (SQL); every Student-facing selector uses one of them. The same transition table is enforced by the database
  * trigger `question_bank_version_guard` (migration 20261026_1000) -- an
  * invalid transition fails twice, never silently.
  */
@@ -127,19 +132,26 @@ export interface EligibilityPolicy {
 }
 
 /**
- * Practice may use PILOT items; every mock uses only ACTIVE / CALIBRATED items;
- * the calibrated full form additionally needs field evidence. A mock is never
- * filled with weaker content to reach its length.
+ * The ONE Student delivery rule. Every Student use (practice -- which also serves diagnostics --, reduced and
+ * full mocks) draws only from human-approved content: ACTIVE (human review PASS) or CALIBRATED (ACTIVE plus
+ * field evidence). PILOT (automated pass, awaiting human review), REVIEW_REQUIRED (correction required),
+ * REJECTED (human or automated) and every earlier state are never Student-deliverable: the Student is never
+ * the academic reviewer. The calibrated full form additionally needs field evidence; a mock is never filled
+ * with weaker content to reach its length. DEV fixtures are excluded by audience (see `isEligible`).
+ * Admin / reviewer / technical tools read PILOT directly, never through this rule.
  */
 export const DEFAULT_ELIGIBILITY: EligibilityPolicy = {
   states: {
-    PRACTICE: ['PILOT', 'CALIBRATED', 'ACTIVE'],
+    PRACTICE: ['CALIBRATED', 'ACTIVE'],
     REDUCED_MOCK: ['CALIBRATED', 'ACTIVE'],
     FULL_MOCK: ['CALIBRATED', 'ACTIVE'],
     FULL_MOCK_CALIBRATED: ['CALIBRATED', 'ACTIVE'],
   },
   calibratedMinConfidence: 'MODERATE_CONFIDENCE',
 };
+
+/** Lifecycle states a Student may ever receive: derived from `DEFAULT_ELIGIBILITY` (never a second list). */
+export const STUDENT_DELIVERABLE_STATES: readonly LifecycleState[] = [...new Set(Object.values(DEFAULT_ELIGIBILITY.states).flat())];
 
 export interface EligibilityFacts {
   lifecycle: LifecycleState | null;

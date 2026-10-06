@@ -28,7 +28,11 @@ import { cellTargets, DEFAULT_REUSE_POLICY, countsAsOfficial, type CellTargetOve
 import type { BlueprintCell, ComponentInput, LengthBasis } from './cells';
 import type { UnitPolicy } from './adapters';
 
-export const HEALTH_ENGINE_VERSION = 'qb-health-v1';
+/**
+ * Version of the bank-health engine. v2: Student pools follow the human-review delivery rule (PILOT is never
+ * Student-deliverable); a v1 snapshot counted PILOT as practice content and is never read for Students.
+ */
+export const HEALTH_ENGINE_VERSION = 'qb-health-v2';
 
 export type CellHealthState = 'EMPTY' | 'INSUFFICIENT' | 'FORM_READY' | 'VARIETY_LOW' | 'HEALTHY' | 'CALIBRATED';
 export type GapPriority = 'P0' | 'P1' | 'P2' | 'P3' | 'P4';

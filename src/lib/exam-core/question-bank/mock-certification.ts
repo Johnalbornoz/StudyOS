@@ -24,7 +24,7 @@
  * where mock depth is the number of item-disjoint complete certified forms.
  */
 import { blueprintAllocationProblems, constraintMismatches, constraintSignature, normalizeConstraints, type ItemDimensionValues, type SlotConstraint } from '../slot-constraints';
-import { isEligible, type EligibilityFacts } from './lifecycle';
+import { isEligible, STUDENT_DELIVERABLE_STATES, type EligibilityFacts, type LifecycleState } from './lifecycle';
 import type { ExamAudience } from '../audience';
 import { assessmentSemanticsOf, type AssessmentSemantics, type ContentReadiness, type EngineCapability } from '../fidelity';
 
@@ -174,7 +174,7 @@ export function itemBlockers(item: BankItemFacts, profile: CertificationProfile)
     else if (item.provenance && !CERTIFIABLE_PROVENANCE.has(item.provenance)) out.push('UNKNOWN_PROVENANCE');
     else if (!item.provenance) out.push('MISSING_PROVENANCE');
     // Generated content enters a certified mock only after a HUMAN approval (ACTIVE / CALIBRATED; DB-enforced).
-    if (item.provenance === 'STUDYUS_GENERATED' && !['ACTIVE', 'CALIBRATED'].includes(item.lifecycle ?? '')) out.push('NOT_HUMAN_APPROVED');
+    if (item.provenance === 'STUDYUS_GENERATED' && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
     if (!isEligible(item, 'FULL_MOCK', undefined, 'STUDENT') && !isFixture(item)) out.push('NOT_FULL_MOCK_ELIGIBLE');
     if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
     if (item.placeholderSignals.length) out.push('PLACEHOLDER');
@@ -195,7 +195,8 @@ export function practiceBlockers(item: BankItemFacts): string[] {
   const out: string[] = [];
   if (isFixture(item)) out.push('DEV_FIXTURE');
   if (!isEligible(item, 'PRACTICE', undefined, 'STUDENT')) out.push('NOT_PRACTICE_ELIGIBLE');
-  else if (item.provenance === 'STUDYUS_GENERATED' && !['ACTIVE', 'CALIBRATED'].includes(item.lifecycle ?? '')) out.push('NOT_HUMAN_APPROVED');
+  // Why, for generated content: no human approval yet (PILOT / REVIEW_REQUIRED / ...). Same canonical rule.
+  if (item.provenance === 'STUDYUS_GENERATED' && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
   if (item.structureProblems.length) out.push('STRUCTURE_INVALID');
   if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
   if (item.placeholderSignals.includes('PLACEHOLDER_TEXT')) out.push('PLACEHOLDER');

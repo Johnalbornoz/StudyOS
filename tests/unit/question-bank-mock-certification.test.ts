@@ -149,7 +149,8 @@ describe('assessExam: engine capability and content readiness are separate dimen
     // A PILOT (automatically validated, not yet human-approved) generated item never counts as approved content.
     const pilotOnly = assessExam(exam([pos(), pos()], [item({ lifecycle: 'PILOT' })]));
     expect(pilotOnly.contentReadiness).toBe('NONE');
-    expect(pilotOnly.practice.blockers).toEqual({ NOT_HUMAN_APPROVED: 1 });
+    // ... and is never Student-deliverable either (human review first).
+    expect(pilotOnly.practice.blockers).toEqual({ NOT_PRACTICE_ELIGIBLE: 1, NOT_HUMAN_APPROVED: 1 });
     const practiceOnly = assessExam(exam([pos(), pos()], [item({ usage: ['PRACTICE'], alignment: 'EXAM_STYLE' })]));
     expect(practiceOnly.contentReadiness).toBe('PRACTICE_READY');
     expect(assessExam(exam([pos(), pos()], two(2))).contentReadiness).toBe('ONE_MOCK_READY');

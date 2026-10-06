@@ -43,7 +43,7 @@ describe('canFullMockBeOffered', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'bp-1', exam_version_id: 'v1', status: 'PUBLISHED' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'target-1', blueprint_id: 'bp-1', learning_objective_id: 'obj-1', assessment_component_id: 'comp-1' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'comp-1', name: 'Mathematics Section', support_status: 'SUPPORTED', timing_status: 'CONFIGURED', tool_rule_status: 'CONFIGURED' }] })
-      .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false, has_bank_items: true }] });
+      .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false, has_bank_items: true, has_mock_items: true }] });
     const result = await canFullMockBeOffered('v1');
     expect(result.ready).toBe(true);
     expect(result.reasons).toEqual([]);
@@ -65,6 +65,25 @@ describe('canFullMockBeOffered', () => {
     expect(student.miniMockObjectiveIds).toEqual(['obj-1']);
     seq({ has_bank_items: false, technical: true });
     expect((await canFullMockBeOffered('v1')).ready).toBe(true); // technical certification exam: engine demo semantics unchanged
+    // Practice-deliverable bank content that is not full-mock-deliverable (practice-only usage) is still no real MOCK content.
+    seq({ has_bank_items: true, has_mock_items: false, technical: false });
+    const practiceOnly = await canFullMockBeOffered('v1');
+    expect(practiceOnly.reasons).toEqual(['NO_REAL_MOCK_CONTENT: obj-1']);
+  });
+
+  it('human review policy: the bank checks use the ONE Student delivery rule (PILOT never counts)', async () => {
+    const { lifecycleSqlFor } = await import('@/lib/exam-core/question-bank/lifecycle');
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ id: 'v1', exam_definition_id: 'def-1', scoring_model_id: 'sm-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'bp-1', exam_version_id: 'v1', status: 'PUBLISHED' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'target-1', blueprint_id: 'bp-1', learning_objective_id: 'obj-1', assessment_component_id: 'comp-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'comp-1', name: 'Mathematics Section', support_status: 'SUPPORTED', timing_status: 'CONFIGURED', tool_rule_status: 'CONFIGURED' }] })
+      .mockResolvedValueOnce({ rows: [{ has_concept: true, has_skill: false, has_bank_items: false, has_mock_items: false, technical: false }] });
+    await canFullMockBeOffered('v1');
+    const sql = String(queryMock.mock.calls.at(-1)?.[0]);
+    expect(sql).toContain(lifecycleSqlFor('PRACTICE', undefined, 'STUDENT'));
+    expect(sql).toContain(lifecycleSqlFor('FULL_MOCK', undefined, 'STUDENT'));
+    expect(sql).not.toMatch(/'PILOT'/);
   });
 
   it('an unmapped objective produces OBJECTIVE_NOT_MAPPED even when its component is otherwise fine', async () => {

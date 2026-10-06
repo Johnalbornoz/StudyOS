@@ -7,7 +7,7 @@
  * `question_bank_cell_targets`; the factory switches and budgets come from the
  * environment and are OFF / conservative by default.
  */
-import type { ContentOrigin } from '../items';
+import type { ContentOrigin } from '../content-origin';
 
 /* ------------------------------------------------------------------ */
 /* Provenance                                                           */

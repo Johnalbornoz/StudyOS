@@ -170,8 +170,9 @@ export async function formInputs(examVersionId: string, componentIds: string[], 
       allTargets: allTargets.map((t) => ({ id: t.id, learningObjectiveId: t.learningObjectiveId, assessmentComponentId: t.assessmentComponentId, questionType: t.questionType, difficultyMin: t.difficultyMin, difficultyMax: t.difficultyMax, commandTermId: t.commandTermId, ...(t.constraints?.length ? { constraints: t.constraints.map((c) => ({ ...c })) } : {}) })),
     });
   }
-  // Question Bank content-use policy (server-authoritative): practice may use PILOT items, a Mock / Challenge
-  // only ACTIVE / CALIBRATED ones -- a mock is never filled with weaker content to reach its length.
+  // Question Bank content-use policy (server-authoritative, `DEFAULT_ELIGIBILITY`): every Student use -- practice,
+  // diagnostic, Mock / Challenge -- draws only human-approved ACTIVE / CALIBRATED items (never PILOT); a mock is
+  // never filled with weaker content to reach its length.
   // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
   const poolRows = await db.query(
     `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin

@@ -255,13 +255,16 @@ const toSnapshot = (r: any): StoredSnapshot => ({
   components: r.cells?.components ?? [],
 });
 
-/** Latest snapshot per version (one indexed query; what capability reads use). */
-export async function latestSnapshots(examVersionIds?: string[]): Promise<Map<string, StoredSnapshot>> {
+/**
+ * Latest snapshot per version (one indexed query; what capability reads use). `currentEngineOnly` (Student
+ * readiness) ignores snapshots of an older engine -- computed under an older delivery rule -- until recomputed.
+ */
+export async function latestSnapshots(examVersionIds?: string[], opts: { currentEngineOnly?: boolean } = {}): Promise<Map<string, StoredSnapshot>> {
   const r = await db.query(
     `SELECT DISTINCT ON (exam_version_id) id, exam_version_id, computed_at, engine_version, summary, readiness, cells
-       FROM question_bank_health_snapshots WHERE ($1::uuid[] IS NULL OR exam_version_id = ANY($1::uuid[]))
+       FROM question_bank_health_snapshots WHERE ($1::uuid[] IS NULL OR exam_version_id = ANY($1::uuid[])) AND ($2::text IS NULL OR engine_version = $2)
       ORDER BY exam_version_id, computed_at DESC`,
-    [examVersionIds ?? null]
+    [examVersionIds ?? null, opts.currentEngineOnly ? HEALTH_ENGINE_VERSION : null]
   );
   return new Map(r.rows.map((row: any) => [row.exam_version_id, toSnapshot(row)]));
 }

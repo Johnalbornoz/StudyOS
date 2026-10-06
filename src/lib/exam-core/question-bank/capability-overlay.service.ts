@@ -42,7 +42,8 @@ export async function applyBankReadinessOverlay<T extends OverlayRow>(input: T[]
   if (readinessMode() !== 'ENFORCE') return rows;
   const versionIds = [...new Set(rows.map((r) => r.exam_version_id).filter((x): x is string => !!x))];
   if (versionIds.length === 0) return rows;
-  const snapshots = await latestSnapshots(versionIds);
+  // Student readiness: only snapshots computed under the current delivery rule (a stale one = no bank overlay).
+  const snapshots = await latestSnapshots(versionIds, { currentEngineOnly: true });
   return rows.map((row) => {
     const snap = row.exam_version_id ? snapshots.get(row.exam_version_id) : undefined;
     const r = row.metadata?.readiness ?? {};

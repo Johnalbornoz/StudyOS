@@ -250,7 +250,11 @@ To run it later on DEV:
 3. A test Student identity (`+clerk_test` / synthetic) starts practice on `saber11.math`.
 4. Check that only `ACTIVE` items were served (`exam_item_usage`), that the answer is scored, and that evidence is recorded and appears in the Journey.
 
-## Finding requiring a decision (not changed here): un-reviewed PILOT items are practice-deliverable
+## Finding — RESOLVED by the Student delivery policy fix (`fix(qb): require human approval for Student item delivery`)
+
+PILOT is no longer Student-deliverable for any use. `DEFAULT_ELIGIBILITY.states.PRACTICE = ['CALIBRATED', 'ACTIVE']`, and every Student selector uses it. Details are in `docs/exams/QB_HUMAN_REVIEW_FOUNDATION.md` §4–5. The original finding is kept below for traceability.
+
+### Original finding: un-reviewed PILOT items were practice-deliverable
 
 `DEFAULT_ELIGIBILITY.states.PRACTICE = ['PILOT', 'CALIBRATED', 'ACTIVE']` (`lifecycle.ts`). Bank health also counts PILOT as `practiceEligible`.
 
