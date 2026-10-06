@@ -3,7 +3,9 @@
  * exposure / repetition metrics. Admin-only (content-authorised): the detail shows the answer
  * and explanation the reviewer must certify. Exposure figures are aggregates; no Student identity.
  */
-import { REVIEW_CHECKLIST } from './pilots/saber11-math';
+import { REVIEW_CHECKLIST, COMPETENCIES, CONTENTS, type Saber11Competency, type Saber11Content } from './pilots/saber11-math';
+import { attentionPointsFor, proposalFromContent, v21CellCheck } from './pilots/human-review';
+import { saber11V21DeclaredCells } from './pilots/saber11-v21-cells';
 const CHECKLIST_LABEL = new Map<string, string>(REVIEW_CHECKLIST.map(([k, l]) => [k, l]));
 import { db } from '@/lib/db';
 import { difficultyView, effectiveAlignment, effectiveUsage, reviewStatusOf, type DifficultyBand, type ReviewDecision } from './quality';
@@ -149,6 +151,10 @@ export async function questionDetail(versionId: string) {
       stage: x.validation_report?.stage ?? null,
       findings: ((x.validation_report?.issues ?? []) as any[]).map((i) => ({ code: i.code, severity: i.severity, detail: i.detail ?? null })),
       validatorModel: x.validation_report?.validator?.model ?? null,
+      /** The independent AI validator's verdict (an automated signal for the reviewer, never an approval). */
+      validatorVerdict: x.validation_report?.validator?.verdict
+        ? { selectedOption: x.validation_report.validator.verdict.selectedOptionId ?? null, estimatedDifficulty: x.validation_report.validator.verdict.estimatedDifficulty ?? null, implausibleDistractors: x.validation_report.validator.verdict.implausibleDistractorIds ?? [], alternativeDefensible: x.validation_report.validator.verdict.alternativeDefensibleOptionIds ?? [] }
+        : null,
     },
     humanReview: {
       status: reviewStatusOf({ provenance: x.provenance, latestDecision: latest ?? null, lifecycle: x.bank_lifecycle_status }),
@@ -167,6 +173,22 @@ export async function questionDetail(versionId: string) {
           requested: { competency: x.pilot_params.competencyLabel ?? null, contentCategory: x.pilot_params.contentCategory ?? null, difficulty: x.pilot_params.difficulty ?? [], locale: x.pilot_params.locale ?? null },
           tags: { competency: c.tags?.competency ?? null, assertion: c.tags?.assertion ?? null, evidence: c.tags?.evidence ?? null, contentCategory: c.tags?.contentCategory ?? null },
           checklist: ((x.pilot_params.reviewChecklist ?? []) as string[]).map((k) => ({ key: k, label: CHECKLIST_LABEL.get(k) ?? k })),
+          /** What the generator PROPOSED (the reviewer confirms or corrects each), never a decision. */
+          proposal: proposalFromContent(c),
+          /** Automated pre-review observations the reviewer confirms or rejects (never decisions). */
+          attentionPoints: attentionPointsFor(x.item_key, x.pilot_params.batch ?? ''),
+          /** Competence x content cell vs the request and the V2.1 blueprint (50 slots). */
+          cell: x.pilot_params.competency
+            ? v21CellCheck({
+                requested: { competency: x.pilot_params.competency as Saber11Competency, content: (Object.keys(CONTENTS) as Saber11Content[]).find((k) => CONTENTS[k].label === x.pilot_params.contentCategory) ?? null },
+                objectiveCode: x.objective_code,
+                proposal: proposalFromContent(c),
+                marks: c.marks,
+                declaredSignatures: new Set(saber11V21DeclaredCells().keys()),
+              })
+            : null,
+          competencyOptions: (Object.keys(COMPETENCIES) as Saber11Competency[]).map((k) => ({ key: k, label: COMPETENCIES[k].label })),
+          contentOptions: (Object.keys(CONTENTS) as Saber11Content[]).map((k) => ({ key: k, label: CONTENTS[k].label })),
         }
       : null,
   };

@@ -106,7 +106,7 @@ describe('human review checklist (mandatory for pilot items)', () => {
   it('the migration and the service re-check it; the admin UI cannot approve with the checklist incomplete', () => {
     expect(readFileSync(join(ROOT, 'database/migrations/20261101_1000_question_bank_review_checklist.sql'), 'utf8')).toMatch(/decision <> 'APPROVED' OR NOT jsonb_path_exists\(review_checklist, '\$\.\* \? \(@ == false\)'\)/);
     expect(readFileSync(join(ROOT, 'src/lib/exam-core/question-bank/review.service.ts'), 'utf8')).toMatch(/generation_params->'pilot'->'reviewChecklist'/);
-    expect(readFileSync(join(ROOT, 'src/app/dashboard/admin/question-bank/ReviewActions.tsx'), 'utf8')).toMatch(/disabled=\{busy \|\| usage\.length === 0 \|\| !checklistComplete\}/);
+    expect(readFileSync(join(ROOT, 'src/app/dashboard/admin/question-bank/ReviewActions.tsx'), 'utf8')).toMatch(/disabled=\{busy \|\| usage\.length === 0 \|\| !checklistComplete \|\| !canApprove\}/);
   });
 });
 

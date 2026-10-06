@@ -5,11 +5,19 @@
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts calibration --max-calls 40 [--confirm-ai]
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts status [--json]
  *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts packet --out <file.md>
- *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts review-report [--batch calibration-1]
+ *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts review-report [--batch calibration-1] [--markdown <file.md>]
+ *   npx tsx --env-file=<DEV env> scripts/operations/qb-pilot-saber11.ts review-package --out <file.md> [--batch calibration-1]
  *
  * `review-report` (read-only) summarises the HUMAN review of a batch: approved / correction requested /
  * rejected, the failed checklist dimensions, and the final acceptance rate over ALL generated candidates
- * (automatic rejections included). It never approves anything.
+ * (automatic rejections included), the proposed-vs-human competence / content / difficulty comparison, the
+ * answer-key accuracy, the Batch 2 recommendation and whether real content exists for the E2E. It never
+ * approves anything: an item without a human review row is AWAITING_HUMAN_REVIEW, whatever its automated PASS.
+ *
+ * `review-package` (read-only) writes the reviewer's package: per item identity, question, key, solution,
+ * proposed classification, Blueprint V2.1 cell check, automated checks / warnings / validator signal, the
+ * attention points to confirm or reject, and the 9-point checklist. Decisions are recorded ONLY by the human
+ * reviewer, with their own account, in Admin -> Banco de preguntas -> Revisión.
  *
  * `calibration` generates ONLY calibration batch 1 (10 items over the 3x3 policy matrix, StudyUs difficulty
  * 3 / 5 / 2). Without --confirm-ai it is a dry run (prints the requests, writes nothing). With it: one bounded
@@ -30,6 +38,10 @@ import { constraintSignature, dimensionKey } from '@/lib/exam-core/slot-constrai
 import {
   calibrationRequests, planProblems, COMPETENCIES, CONTENTS, CROSS_DISTRIBUTION, DIFFICULTY_POLICY, POLICY_NOTES, REVIEW_CHECKLIST, SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY, SABER11_MATH_SOURCES,
 } from '@/lib/exam-core/question-bank/pilots/saber11-math';
+import { attentionPointsFor, buildHumanReviewReport, HUMAN_DECISION_LABEL, PilotReviewAssessmentSchema, proposalFromContent, v21CellCheck, type ReviewReportRow } from '@/lib/exam-core/question-bank/pilots/human-review';
+import { saber11V21DeclaredCells } from '@/lib/exam-core/question-bank/pilots/saber11-v21-cells';
+import { isEligible } from '@/lib/exam-core/question-bank/lifecycle';
+import type { Saber11Competency, Saber11Content } from '@/lib/exam-core/question-bank/pilots/saber11-math';
 
 const DEV_FP = '2a29b99ee14a22b4';
 const args = process.argv.slice(2);
@@ -162,36 +174,136 @@ async function packet() {
   console.log(`packet: ${current.length} items -> ${out}`);
 }
 
-async function reviewReport() {
-  const batch = opt('--batch') ?? 'calibration-1';
+const CONTENT_BY_LABEL = (label: unknown): Saber11Content | null => (Object.keys(CONTENTS) as Saber11Content[]).find((k) => CONTENTS[k].label === label) ?? null;
+
+async function hasAssessmentColumn(): Promise<boolean> {
+  const r = await db.query(`SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'question_bank_reviews' AND column_name = 'review_assessment'`);
+  return r.rows.length > 0;
+}
+
+/** One row per generated candidate of the batch: current version, automated outcome and latest HUMAN review. */
+async function batchRows(batch: string) {
   const version = await saberVersion();
-  // One row per generated candidate (bank item): its current version, latest human decision and checklist.
-  const rows = (await db.query(
-    `SELECT qi.item_key, cur.bank_lifecycle_status AS lifecycle, gr.generation_params->'pilot'->>'competency' AS competency, cur.content->'tags'->>'contentCategory' AS content,
-            r.decision, r.review_checklist, r.review_notes, r.reviewed_at, (r.reviewed_by = cur.created_by) AS self_review
+  const withAssessment = await hasAssessmentColumn();
+  return (await db.query(
+    `SELECT qi.item_key, qi.provenance, qi.retired_at, gr.id AS request_id, gr.idempotency_key, gr.generation_params->'pilot' AS pilot, qi.generation_metadata,
+            cur.id AS version_id, cur.version_number, cur.bank_lifecycle_status AS lifecycle, cur.status, cur.usage_eligibility, cur.exam_alignment, cur.content, cur.validation_report, cur.question_type,
+            lo.code AS objective_code,
+            r.decision, r.review_checklist, r.review_notes, r.reviewed_at, ${withAssessment ? 'r.review_assessment' : 'NULL::jsonb AS review_assessment'},
+            (r.reviewed_by = cur.created_by OR ru.is_system IS TRUE) AS invalid_reviewer
        FROM question_bank_items qi JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
        JOIN approved_items cur ON cur.id = qi.current_version_id
+       JOIN learning_objectives lo ON lo.id = cur.learning_objective_id
        LEFT JOIN LATERAL (SELECT * FROM question_bank_reviews rv WHERE rv.bank_item_id = qi.id ORDER BY rv.reviewed_at DESC LIMIT 1) r ON true
+       LEFT JOIN users ru ON ru.id = r.reviewed_by
       WHERE qi.exam_version_id = $1 AND gr.generation_params->'pilot'->>'pilotKey' = $2 AND gr.generation_params->'pilot'->>'batch' = $3
-      ORDER BY qi.created_at`,
+      ORDER BY gr.created_at, qi.created_at`,
     [version.id, SABER11_MATH_PILOT_KEY, batch]
   )).rows;
-  const count = (f: (r: any) => boolean) => rows.filter(f).length;
-  const failedByDimension: Record<string, number> = Object.fromEntries(REVIEW_CHECKLIST.map(([k]) => [k, 0]));
-  for (const r of rows) for (const [k, v] of Object.entries((r.review_checklist ?? {}) as Record<string, boolean>)) if (v === false) failedByDimension[k] = (failedByDimension[k] ?? 0) + 1;
-  const approved = count((r) => r.decision === 'APPROVED');
-  const report = {
-    batch, generatedCandidates: rows.length,
-    automaticallyRejected: count((r) => !r.decision && r.lifecycle === 'REJECTED'),
-    awaitingHumanReview: count((r) => !r.decision && r.lifecycle !== 'REJECTED'),
-    human: { approved, correctionRequested: count((r) => r.decision === 'CORRECTION_REQUESTED'), rejected: count((r) => r.decision === 'REJECTED') },
-    failedChecklistByDimension: failedByDimension,
-    finalAcceptanceRate: rows.length ? Math.round((approved / rows.length) * 1000) / 1000 : null,
-    reviewComplete: rows.length > 0 && count((r) => !r.decision && r.lifecycle !== 'REJECTED') === 0,
-    selfReviews: count((r) => r.self_review === true),
-    items: rows.map((r: any) => ({ item: r.item_key, competency: r.competency, content: r.content, lifecycle: r.lifecycle, decision: r.decision ?? (r.lifecycle === 'REJECTED' ? 'AUTO_REJECTED' : 'PENDING_HUMAN_REVIEW'), failed: Object.entries((r.review_checklist ?? {}) as Record<string, boolean>).filter(([, v]) => v === false).map(([k]) => k), notes: r.review_notes ?? null })),
+}
+
+function toReportRow(r: any, i: number): ReviewReportRow {
+  const parsed = r.review_assessment ? PilotReviewAssessmentSchema.safeParse(r.review_assessment) : null;
+  return {
+    ordinal: i + 1,
+    itemKey: r.item_key,
+    autoStatus: r.lifecycle === 'REJECTED' && !r.decision ? 'AUTO_REJECTED' : 'PASSED_AUTOMATED_VALIDATION',
+    autoIssues: ((r.validation_report?.issues ?? []) as any[]).map((x) => x.code),
+    lifecycle: r.lifecycle,
+    proposal: proposalFromContent(r.content),
+    decision: r.decision ?? null,
+    checklist: r.review_checklist ?? null,
+    assessment: parsed?.success ? parsed.data : null,
+    notes: r.review_notes ?? null,
+    invalidReviewer: r.invalid_reviewer === true,
+    practiceEligible: isEligible({ lifecycle: r.lifecycle, usage: r.usage_eligibility, alignment: r.exam_alignment, provenance: r.provenance, status: r.status, isCurrentVersion: true, retired: !!r.retired_at, calibrationConfidence: null }, 'PRACTICE', undefined, 'STUDENT'),
   };
+}
+
+async function reviewReport() {
+  const batch = opt('--batch') ?? 'calibration-1';
+  const rows = await batchRows(batch);
+  const report = { batch, generatedAt: new Date().toISOString(), assessmentColumn: await hasAssessmentColumn(), ...buildHumanReviewReport(rows.map(toReportRow)) };
   console.log(JSON.stringify(report, null, 1));
+  const md = opt('--markdown');
+  if (md) {
+    const t = report.items;
+    const lines = [
+      `# Saber 11 Matemáticas — ${batch} — reporte de revisión humana`, '',
+      `Estado: **${report.status}** · generado ${report.generatedAt} (DEV, solo lectura).`, '',
+      `Funnel: generados ${report.funnel.generated} · AUTO_REJECTED ${report.funnel.autoRejected} · esperando revisión humana ${report.funnel.awaitingHumanReview} · HUMAN_APPROVED ${report.funnel.humanApproved} · CORRECTION_REQUIRED ${report.funnel.correctionRequired} · REJECTED ${report.funnel.humanRejected}.`,
+      `Fallos de la lista de revisión: ${report.checklistFailureBasis.text}`, '',
+      '| Item | Auto status | Human decision | Correct answer (key / reviewed) | Competence proposed | Competence reviewed | Content proposed | Content reviewed | Difficulty proposed | Difficulty reviewed | Checklist failures | Correction required | Reviewer notes |',
+      '|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+      ...t.map((x) => `| ${x.item} | ${x.autoStatus}${x.autoIssues.length ? ` (${x.autoIssues.join(', ')})` : ''} | ${x.humanDecision} | ${x.answerKey ?? '—'} / ${x.reviewedAnswer ?? '—'} | ${x.competenceProposed ?? '—'} | ${x.competenceReviewed ?? '—'} | ${x.contentProposed ?? '—'} | ${x.contentReviewed ?? '—'} | ${x.difficultyProposed ?? '—'} | ${x.difficultyReviewed ?? '—'} | ${x.checklistFailures.join(', ') || '—'} | ${x.correctionRequired ?? '—'} | ${(x.reviewerNotes ?? '—').replace(/\|/g, '/').replace(/\n/g, ' ')} |`),
+      '', '```json', JSON.stringify({ funnel: report.funnel, rates: report.rates, checklistFailures: report.checklistFailures, answerKeyAccuracy: report.answerKeyAccuracy, batch2: report.batch2, e2e: report.e2e }, null, 1), '```', '',
+    ];
+    writeFileSync(md, lines.join('\n'));
+    console.error(`markdown -> ${md}`);
+  }
+}
+
+async function reviewPackage() {
+  const out = opt('--out');
+  if (!out) throw new Error('--out <file.md> required');
+  const batch = opt('--batch') ?? 'calibration-1';
+  const rows = await batchRows(batch);
+  const declared = new Set(saber11V21DeclaredCells().keys());
+  const label = (k: string | null, table: Record<string, { label: string }>) => (k ? table[k]?.label ?? k : 'sin etiqueta');
+  const DIFF: Record<string, string> = { BASIC: 'BÁSICA', INTERMEDIATE: 'INTERMEDIA', ADVANCED: 'AVANZADA' };
+  const sent = rows.filter((r: any) => !(r.lifecycle === 'REJECTED' && !r.decision));
+  const lines: string[] = [
+    `# Saber 11 Matemáticas — Human Review Batch 1 — paquete del revisor`, '',
+    `Batch = **Saber 11 Math Calibration 1** (\`${batch}\`). Generado ${new Date().toISOString()} desde DEV (fp ${fingerprint()}), solo lectura.`,
+    'Contenido ORIGINAL generado por StudyUs con asistencia de IA. No es contenido oficial del Icfes.', '',
+    `**${sent.length} ítems para revisión humana** (pasaron la validación automática) · ${rows.length - sent.length} rechazados automáticamente (no se revisan; cuentan en la tasa final).`, '',
+    '> **La validación automática NO es una aprobación humana.** Cada ítem sigue en espera de revisión humana hasta que un revisor calificado registre una decisión explícita.', '',
+    '## Cómo registrar la decisión', '',
+    '- Dónde: Admin → Banco de preguntas → Revisión → ítem (con **tu propia cuenta**; quien revisa nunca es el autor ni una identidad del sistema).',
+    '- Decisiones: **HUMAN_APPROVED** (Aprobar) · **CORRECTION_REQUIRED** (Solicitar corrección) · **REJECTED** (Rechazar).',
+    '- Para cualquier decisión: responde **Sí / No** a los 9 puntos, elige la competencia, la categoría de contenido, la dificultad StudyUs y la respuesta correcta según tu revisión, y confirma o descarta cada punto de atención.',
+    '- Aprobar exige los 9 puntos en «Sí». Solicitar corrección exige al menos un «No», un comentario y notas de corrección. Rechazar exige al menos un «No» y el motivo.',
+    '- **Prerrequisito (operador, antes de registrar):** el entorno donde se registra debe tener la migración `20261104_1000_question_bank_review_assessment` aplicada y el código de esta revisión desplegado. Sin ellos, el formulario no captura la clasificación del revisor y la base de datos rechaza la decisión de piloto (`PILOT_ASSESSMENT_REQUIRED`).', '',
+    'Lista de revisión (contrato vigente, 9 puntos):', ...REVIEW_CHECKLIST.map(([k, l]) => `- **${k}** — ${l}`), '',
+    `Política StudyUs (no oficial): ${POLICY_NOTES.difficulty} ${POLICY_NOTES.crossDistribution}`, '',
+  ];
+  rows.forEach((r: any, i: number) => {
+    const c = r.content ?? {};
+    const prop = proposalFromContent(c);
+    const pilot = r.pilot ?? {};
+    const auto = r.lifecycle === 'REJECTED' && !r.decision;
+    const cell = v21CellCheck({ requested: { competency: pilot.competency as Saber11Competency, content: CONTENT_BY_LABEL(pilot.contentCategory) }, objectiveCode: r.objective_code, proposal: prop, marks: c.marks, declaredSignatures: declared });
+    const issues = ((r.validation_report?.issues ?? []) as any[]);
+    const v = r.validation_report?.validator?.verdict;
+    lines.push('---', '', `## Ítem ${i + 1} ${auto ? '— AUTO_REJECTED (no se revisa)' : `— ${r.decision ? HUMAN_DECISION_LABEL[r.decision as 'APPROVED'] : 'AWAITING_HUMAN_REVIEW'}`}`, '');
+    lines.push('**Identidad**', '', `- Candidato: \`${r.item_key}\` · versión v${r.version_number} (\`${r.version_id}\`)`, `- Batch: Saber 11 Math Calibration 1 · solicitud \`${r.idempotency_key}\``, `- Estado del ciclo de vida: ${r.lifecycle}`, '');
+    if (c.stimulus) lines.push(`> **${c.stimulus.title ?? 'Contexto'}**`, ...String(c.stimulus.text).split('\n').map((l: string) => `> ${l}`), '');
+    lines.push('**Pregunta**', '', c.question ?? '—', '');
+    for (const o of c.options ?? []) lines.push(`- **${o.id})** ${o.text}${o.id === c.correctAnswer ? '  ← **clave propuesta**' : ''}`);
+    lines.push('', `**Clave propuesta:** ${c.correctAnswer ?? '—'}`, '', `**Solución / explicación:** ${c.explanation ?? '—'}`, '');
+    if (c.distractorRationale) lines.push('**Racionales de distractores (del generador):**', ...Object.entries(c.distractorRationale as Record<string, string>).map(([k, t]) => `- ${k}: ${t}`), '');
+    lines.push('**Clasificación propuesta (generador — confirmar o corregir)**', '',
+      `- Competencia: ${label(prop.competency, COMPETENCIES)}`,
+      `- Afirmación: ${c.tags?.assertion ?? '—'}`,
+      `- Evidencia (afirmada por el generador; verificar con el marco Icfes): ${c.tags?.evidence ?? '—'}`,
+      `- Categoría de contenido: ${label(prop.contentCategory, CONTENTS)}`,
+      `- Dificultad StudyUs: ${prop.difficulty ? DIFF[prop.difficulty] : '—'} (escala interna ${c.difficulty ?? '—'}; nunca un nivel de desempeño Icfes)`,
+      `- Idioma / locale: ${c.language ?? '—'} / ${pilot.locale ?? '—'}`,
+      `- Puntos (marks): ${c.marks ?? '—'} · tipo: ${r.question_type ?? c.type ?? '—'} (${c.answerFormat ?? '—'})`, '');
+    lines.push('**Celda Blueprint**', '', `- Solicitada: ${pilot.competency ?? '—'} × ${CONTENT_BY_LABEL(pilot.contentCategory) ?? '—'} · objetivo \`${r.objective_code}\``, `- Propuesta por el ítem: **${cell.cell}** · ${cell.declaredInV21 ? 'declarada en Blueprint Saber V2.1 (50 posiciones)' : 'NO declarada en V2.1'}${cell.problems.length ? ` · ⚠ ${cell.problems.join(', ')}` : ' · coincide con la solicitud'}`, '');
+    lines.push('**Validación automática (no es aprobación humana)**', '',
+      `- Resultado: ${r.validation_report?.outcome ?? '—'} · etapa ${r.validation_report?.stage ?? '—'}`,
+      `- Clave recomputada (MATH): ${r.validation_report?.verification?.verificationExpression ?? '—'}`,
+      `- Hallazgos: ${issues.length ? issues.map((x) => `${x.code} (${x.severity})`).join(', ') : 'ninguno'}`,
+      `- Validador independiente: ${v ? `eligió ${v.selectedOptionId}, dificultad estimada ${v.estimatedDifficulty}, distractores implausibles ${(v.implausibleDistractorIds ?? []).join(', ') || 'ninguno'}, alternativas defendibles ${(v.alternativeDefensibleOptionIds ?? []).join(', ') || 'ninguna'}` : '—'}`, '');
+    if (!auto) {
+      const aps = attentionPointsFor(r.item_key, batch);
+      lines.push('**Puntos de atención (confirmar o descartar; NO son decisiones)**', '', ...aps.map((a) => `- [ ] Confirmo · [ ] No confirmo — ${a.text} \`${a.code}\``), '');
+      lines.push('**Decisión del revisor (se registra en Admin)**', '', ...REVIEW_CHECKLIST.map(([k, l]) => `- [ ] Sí · [ ] No — ${k}: ${l}`), '', '- Competencia según el revisor: ____ · Contenido: ____ · Dificultad StudyUs: ____ · Respuesta correcta: ____', '- Decisión: [ ] HUMAN_APPROVED · [ ] CORRECTION_REQUIRED · [ ] REJECTED', '');
+    }
+  });
+  writeFileSync(out, lines.join('\n'));
+  console.log(`review package: ${rows.length} candidates (${sent.length} for human review) -> ${out}`);
 }
 
 async function main() {
@@ -203,7 +315,8 @@ async function main() {
   else if (cmd === 'status') await status();
   else if (cmd === 'packet') await packet();
   else if (cmd === 'review-report') await reviewReport();
-  else throw new Error('usage: plan | calibration --max-calls N [--confirm-ai] | status [--json] | packet --out <file.md>');
+  else if (cmd === 'review-package') await reviewPackage();
+  else throw new Error('usage: plan | calibration --max-calls N [--confirm-ai] | status [--json] | packet --out <file.md> | review-report [--batch b] [--markdown f.md] | review-package --out <file.md>');
 }
 
 main()

@@ -16,6 +16,7 @@
  */
 import type { CalibrationConfidence } from './lifecycle';
 import type { Provenance } from './policy';
+import { pilotDecisionProblems, type PilotProposal } from './pilots/human-review';
 
 export const USAGE_TYPES = ['PRACTICE', 'DIAGNOSTIC', 'QUIZ', 'REDUCED_MOCK', 'FULL_MOCK', 'FORMAL_ASSESSMENT'] as const;
 export type UsageType = (typeof USAGE_TYPES)[number];
@@ -91,8 +92,10 @@ export interface ReviewInput {
   validatedDifficulty: number | null;
   usage: UsageType[] | null;
   alignment: ExamAlignment | null;
-  /** Structured review checklist (key -> confirmed). Required on APPROVED when the subject declares one. */
+  /** Structured review checklist (key -> confirmed). Every declared point must be answered on ANY decision. */
   checklist?: Record<string, boolean> | null;
+  /** A governed pilot's structured human assessment (pilots/human-review.ts). Required for pilot items. */
+  assessment?: unknown;
 }
 
 export interface ReviewSubject {
@@ -105,10 +108,12 @@ export interface ReviewSubject {
   inBlueprintCell: boolean;
   /** A governed pilot's review checklist: every key must be confirmed before APPROVED (null = none declared). */
   requiredChecklist?: readonly string[] | null;
+  /** A governed pilot item: what the generator proposed and the automated attention points the reviewer must answer. */
+  pilot?: { proposal: PilotProposal; attentionPointCodes: readonly string[] } | null;
 }
 
 export class ReviewError extends Error {
-  constructor(public readonly code: 'SELF_REVIEW' | 'NOT_REVIEWABLE' | 'AUTOMATED_VALIDATION_NOT_PASSED' | 'OFFICIAL_NOT_ALLOWED' | 'MOCK_USE_NEEDS_MOCK_READY' | 'MOCK_READY_NEEDS_BLUEPRINT' | 'NOTES_REQUIRED' | 'INVALID_USAGE' | 'CHECKLIST_INCOMPLETE', detail = '') {
+  constructor(public readonly code: 'SELF_REVIEW' | 'NOT_REVIEWABLE' | 'AUTOMATED_VALIDATION_NOT_PASSED' | 'OFFICIAL_NOT_ALLOWED' | 'MOCK_USE_NEEDS_MOCK_READY' | 'MOCK_READY_NEEDS_BLUEPRINT' | 'NOTES_REQUIRED' | 'INVALID_USAGE' | 'CHECKLIST_INCOMPLETE' | 'CHECKLIST_FAILURE_REQUIRED' | 'PILOT_REVIEW_INVALID', detail = '') {
     super(detail ? `${code}: ${detail}` : code);
     this.name = 'ReviewError';
   }
@@ -125,15 +130,22 @@ export const PASSING_AUTOMATED = ['PASS'] as const;
 export function checkReview(subject: ReviewSubject, input: ReviewInput, reviewerUserId: string): { usage: UsageType[]; alignment: ExamAlignment } {
   if (subject.createdBy === reviewerUserId) throw new ReviewError('SELF_REVIEW', 'the author / editor of a version cannot certify it');
   if (!subject.lifecycle || !(REVIEWABLE_STATES as readonly string[]).includes(subject.lifecycle)) throw new ReviewError('NOT_REVIEWABLE', subject.lifecycle ?? 'none');
-  if (input.decision !== 'APPROVED') {
-    if (!input.notes || input.notes.trim().length < 5) throw new ReviewError('NOTES_REQUIRED');
-    return { usage: [...GENERATED_DEFAULT_USAGE], alignment: GENERATED_DEFAULT_ALIGNMENT };
-  }
-  // A governed pilot: the reviewer confirms every declared point (answer, distractors, competence, ...).
+  // A governed pilot: EVERY decision answers every declared point explicitly (true / false -- never "not
+  // evaluated"); approving needs all of them confirmed; correcting / rejecting names at least one failure.
   if (subject.requiredChecklist?.length) {
-    const missing = subject.requiredChecklist.filter((k) => input.checklist?.[k] !== true);
-    if (missing.length) throw new ReviewError('CHECKLIST_INCOMPLETE', missing.join(','));
+    const unanswered = subject.requiredChecklist.filter((k) => typeof input.checklist?.[k] !== 'boolean');
+    if (unanswered.length) throw new ReviewError('CHECKLIST_INCOMPLETE', unanswered.join(','));
+    const failed = subject.requiredChecklist.filter((k) => input.checklist?.[k] === false);
+    if (input.decision === 'APPROVED' && failed.length) throw new ReviewError('CHECKLIST_INCOMPLETE', failed.join(','));
+    if (input.decision !== 'APPROVED' && failed.length === 0) throw new ReviewError('CHECKLIST_FAILURE_REQUIRED');
   }
+  if (input.decision !== 'APPROVED' && (!input.notes || input.notes.trim().length < 5)) throw new ReviewError('NOTES_REQUIRED');
+  // ... and records what the reviewer determined (competence, content category, StudyUs difficulty, correct option).
+  if (subject.pilot) {
+    const problems = pilotDecisionProblems({ decision: input.decision, checklist: input.checklist, assessment: input.assessment, proposal: subject.pilot.proposal, requiredChecklist: subject.requiredChecklist ?? [], attentionPointCodes: subject.pilot.attentionPointCodes });
+    if (problems.length) throw new ReviewError('PILOT_REVIEW_INVALID', problems.join(','));
+  }
+  if (input.decision !== 'APPROVED') return { usage: [...GENERATED_DEFAULT_USAGE], alignment: GENERATED_DEFAULT_ALIGNMENT };
   // Generated content needs a passed automated validation before a human may approve it.
   if (subject.provenance === 'STUDYUS_GENERATED' && !(PASSING_AUTOMATED as readonly string[]).includes(subject.automatedOutcome ?? '')) {
     throw new ReviewError('AUTOMATED_VALIDATION_NOT_PASSED', subject.automatedOutcome ?? 'none');

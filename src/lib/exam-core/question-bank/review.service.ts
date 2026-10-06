@@ -19,6 +19,7 @@ import { cellSpecFor } from './queue.service';
 import { loadVersionHealthInputs } from './health.service';
 import type { LifecycleState } from './lifecycle';
 import type { Provenance } from './policy';
+import { attentionPointsFor, difficultyInternal, PilotReviewAssessmentSchema, proposalFromContent } from './pilots/human-review';
 
 async function withTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
   const c = await db.connect();
@@ -46,25 +47,39 @@ export interface ReviewResult {
 export async function reviewVersion(p: { versionId: string; reviewerUserId: string; input: ReviewInput }): Promise<ReviewResult> {
   return withTx(async (c) => {
     const r = await c.query(
-      `SELECT ai.id, ai.bank_item_id, ai.bank_lifecycle_status, ai.created_by, ai.validation_report, ai.learning_objective_id, qi.provenance,
+      `SELECT ai.id, ai.bank_item_id, ai.bank_lifecycle_status, ai.created_by, ai.validation_report, ai.learning_objective_id, ai.content, qi.provenance, qi.item_key,
               (SELECT gr.generation_params->'pilot'->'reviewChecklist' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS required_checklist,
+              (SELECT gr.generation_params->'pilot'->>'batch' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS pilot_batch,
               EXISTS (SELECT 1 FROM blueprint_objective_targets t WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
          FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1 FOR UPDATE OF ai`,
       [p.versionId]
     );
     const row = r.rows[0];
     if (!row) throw new ReviewError('NOT_REVIEWABLE', 'not found');
+    const requiredChecklist = Array.isArray(row.required_checklist) ? row.required_checklist : null;
+    // A governed pilot item: the reviewer also records what THEY determine (pilots/human-review.ts).
+    const pilot = requiredChecklist?.length ? { proposal: proposalFromContent(row.content), attentionPointCodes: attentionPointsFor(row.item_key, row.pilot_batch ?? '').map((x) => x.code) } : null;
     const decided = checkReview(
-      { provenance: row.provenance as Provenance, lifecycle: row.bank_lifecycle_status, createdBy: row.created_by, automatedOutcome: row.validation_report?.outcome ?? (row.provenance === 'STUDYUS_GENERATED' ? null : 'PASS'), inBlueprintCell: row.in_cell, requiredChecklist: Array.isArray(row.required_checklist) ? row.required_checklist : null },
+      { provenance: row.provenance as Provenance, lifecycle: row.bank_lifecycle_status, createdBy: row.created_by, automatedOutcome: row.validation_report?.outcome ?? (row.provenance === 'STUDYUS_GENERATED' ? null : 'PASS'), inBlueprintCell: row.in_cell, requiredChecklist, pilot },
       p.input,
       p.reviewerUserId
     );
     const decision = p.input.decision;
+    const assessment = pilot ? PilotReviewAssessmentSchema.parse(p.input.assessment) : null;
+    // Pilot: the validated difficulty IS the reviewer's StudyUs difficulty (never a pre-filled default).
+    const validatedDifficulty = assessment ? difficultyInternal(assessment.reviewedDifficulty) : p.input.validatedDifficulty;
     const automated = row.validation_report ? JSON.stringify({ outcome: row.validation_report.outcome ?? null, stage: row.validation_report.stage ?? null, issues: (row.validation_report.issues ?? []).map((i: any) => i.code) }) : null;
-    const baseValues = [p.versionId, row.bank_item_id, decision, p.reviewerUserId, p.input.notes?.trim() || null, p.input.validatedDifficulty, decision === 'APPROVED' ? decided.usage : null, decision === 'APPROVED' ? decided.alignment : null, automated];
+    const baseValues = [p.versionId, row.bank_item_id, decision, p.reviewerUserId, p.input.notes?.trim() || null, validatedDifficulty, decision === 'APPROVED' ? decided.usage : null, decision === 'APPROVED' ? decided.alignment : null, automated];
     // The checklist column (20261101_1000) is written only when a checklist is given (pilot items).
     const checklist = p.input.checklist && Object.keys(p.input.checklist).length ? p.input.checklist : null;
-    const ins = checklist
+    // The structured assessment column (20261104_1000) is written only for pilot items.
+    const ins = assessment
+      ? await c.query(
+          `INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by, review_notes, validated_difficulty, usage_eligibility, exam_alignment, automated_validation, review_checklist, review_assessment)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+          [...baseValues, JSON.stringify(checklist), JSON.stringify(assessment)]
+        )
+      : checklist
       ? await c.query(
           `INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by, review_notes, validated_difficulty, usage_eligibility, exam_alignment, automated_validation, review_checklist)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
@@ -78,7 +93,7 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
     const actor = { kind: 'ADMIN' as const, userId: p.reviewerUserId };
     let to: LifecycleState;
     if (decision === 'APPROVED') {
-      await c.query(`UPDATE approved_items SET usage_eligibility = $2, exam_alignment = $3, validated_difficulty = COALESCE($4, validated_difficulty) WHERE id = $1`, [p.versionId, decided.usage, decided.alignment, p.input.validatedDifficulty]);
+      await c.query(`UPDATE approved_items SET usage_eligibility = $2, exam_alignment = $3, validated_difficulty = COALESCE($4, validated_difficulty) WHERE id = $1`, [p.versionId, decided.usage, decided.alignment, validatedDifficulty]);
       to = row.bank_lifecycle_status === 'CALIBRATED' ? 'CALIBRATED' : 'ACTIVE';
       if (row.bank_lifecycle_status === 'VALIDATED' && row.provenance === 'STUDYUS_GENERATED') {
         await transitionVersion({ versionId: p.versionId, to: 'PILOT', reason: 'REVIEW:PILOT_BEFORE_ACTIVE', actor }, c);
@@ -99,7 +114,7 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
       }
       to = 'REVIEW_REQUIRED';
     }
-    await transitionVersion({ versionId: p.versionId, to, reason: `REVIEW:${decision}${p.input.notes ? `:${p.input.notes.slice(0, 200)}` : ''}`, actor, detail: { reviewId: ins.rows[0].id, usage: decided.usage, alignment: decided.alignment, validatedDifficulty: p.input.validatedDifficulty } }, c);
+    await transitionVersion({ versionId: p.versionId, to, reason: `REVIEW:${decision}${p.input.notes ? `:${p.input.notes.slice(0, 200)}` : ''}`, actor, detail: { reviewId: ins.rows[0].id, usage: decided.usage, alignment: decided.alignment, validatedDifficulty } }, c);
     return { reviewId: ins.rows[0].id, decision, lifecycle: to, usage: decision === 'APPROVED' ? decided.usage : null, alignment: decision === 'APPROVED' ? decided.alignment : null };
   });
 }

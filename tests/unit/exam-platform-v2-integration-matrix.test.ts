@@ -138,9 +138,9 @@ describe('E12: one deterministic migration chain', () => {
     const versions = files.map((f) => f.match(/^(\d{8}_\d{4})_/)?.[1] ?? f);
     expect(versions.length).toBe(new Set(versions).size);
   });
-  it('QB 20261101_1000 / QB 20261102_1000 / Journey 20261103_1000, in that order', () => {
+  it('QB 20261101_1000 / QB 20261102_1000 / Journey 20261103_1000 / QB human review 20261104_1000, in that order', () => {
     const tail = files.filter((f) => f.startsWith('202611'));
-    expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql']);
+    expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql', '20261104_1000_question_bank_review_assessment.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

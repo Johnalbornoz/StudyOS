@@ -22,6 +22,8 @@ const Body = z.strictObject({
   alignment: z.enum(['PRACTICE', 'EXAM_STYLE', 'MOCK_READY', 'OFFICIAL']).optional(),
   /** A governed pilot's review checklist (key -> confirmed). */
   checklist: z.record(z.string().regex(/^[A-Z_]{2,40}$/), z.boolean()).optional(),
+  /** A governed pilot's structured HUMAN assessment (checked by the service against pilots/human-review.ts). */
+  assessment: z.record(z.string(), z.unknown()).optional(),
 });
 
 async function handlePOST(request: NextRequest, { params }: { params: Promise<{ versionId: string }> }) {
@@ -33,10 +35,10 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT', message: parsed.error.issues[0]?.message }, { status: 400 });
   const b = parsed.data;
   try {
-    const r = await reviewVersion({ versionId, reviewerUserId: guard.admin.actor.id, input: { decision: b.decision, notes: b.notes ?? null, validatedDifficulty: b.validatedDifficulty ?? null, usage: b.usage ?? null, alignment: b.alignment ?? null, checklist: b.checklist ?? null } });
+    const r = await reviewVersion({ versionId, reviewerUserId: guard.admin.actor.id, input: { decision: b.decision, notes: b.notes ?? null, validatedDifficulty: b.validatedDifficulty ?? null, usage: b.usage ?? null, alignment: b.alignment ?? null, checklist: b.checklist ?? null, assessment: b.assessment ?? null } });
     return NextResponse.json({ success: true, data: r });
   } catch (err) {
-    if (err instanceof ReviewError) return NextResponse.json({ error: err.code }, { status: err.code === 'SELF_REVIEW' ? 403 : 409 });
+    if (err instanceof ReviewError) return NextResponse.json({ error: err.code, detail: err.message.split(': ')[1] ?? null }, { status: err.code === 'SELF_REVIEW' ? 403 : 409 });
     if (err instanceof LifecycleTransitionError) return NextResponse.json({ error: err.code }, { status: 409 });
     if ((err as any)?.code === '23514') return NextResponse.json({ error: 'RULE_VIOLATION', message: String((err as Error).message).split(':')[0] }, { status: 409 });
     throw err;

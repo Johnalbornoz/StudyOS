@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { AdminSubNav } from '../../../AdminSubNav';
 import { Table, TD, ROW, DIFFICULTY_LABEL, USAGE_LABEL, ALIGNMENT_LABEL, REVIEW_LABEL, LIFECYCLE_LABEL, pct } from '../../ui';
 import { ReviewActions } from '../../ReviewActions';
+import { PILOT_REVIEW_CONTRACT } from '@/lib/exam-core/question-bank/pilots/human-review';
 
 const PROVENANCE_LABEL: Record<string, string> = { OFFICIAL: 'Oficial', LICENSED: 'Licenciada', STUDYUS_GENERATED: 'Generada por StudyUs (IA)', FIXTURE: 'Contenido de certificación StudyUs' };
 const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
@@ -61,6 +62,16 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
               <Row k="Afirmación" v={d.pilot.tags.assertion ?? 'sin etiqueta'} />
               <Row k="Evidencia (propuesta por el generador; verificar con el marco Icfes)" v={d.pilot.tags.evidence ?? 'sin evidencia'} />
               <Row k="Categoría de contenido" v={d.pilot.tags.contentCategory ?? 'sin etiqueta'} />
+              {d.pilot.cell && (
+                <Row
+                  k="Celda Blueprint V2.1 (competencia × contenido)"
+                  v={`${d.pilot.cell.cell} · ${d.pilot.cell.declaredInV21 ? 'declarada en V2.1' : 'NO declarada en V2.1'}${d.pilot.cell.problems.length ? ` · ${d.pilot.cell.problems.join(', ')}` : ''}`}
+                />
+              )}
+              <Row
+                k="Validador independiente (IA; no es una aprobación)"
+                v={d.automatedValidation.validatorVerdict ? `eligió ${d.automatedValidation.validatorVerdict.selectedOption ?? '—'} · dificultad estimada ${d.automatedValidation.validatorVerdict.estimatedDifficulty ?? '—'} · distractores implausibles ${d.automatedValidation.validatorVerdict.implausibleDistractors.join(', ') || 'ninguno'}` : '—'}
+              />
             </>
           )}
         </section>
@@ -78,7 +89,9 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
             <Row k="Exposición" v={`${d.exposure.totalUses} usos · ${d.exposure.uniqueStudents} estudiantes · repetición ${pct(d.exposure.repeatRate)} · último uso ${d.exposure.lastUsed ? new Date(d.exposure.lastUsed).toLocaleDateString('es') : '—'}`} />
           </section>
           {reviewable && d.lifecycle !== 'REJECTED' && d.lifecycle !== 'SUPERSEDED' && d.lifecycle !== 'RETIRED' && (
-            <ReviewActions versionId={d.versionId} official={official} initial={{ difficulty: d.difficulty.validatedScale ?? d.difficulty.declaredScale, usage: [...d.usage].filter((u) => u !== 'FORMAL_ASSESSMENT'), alignment: d.alignment }} checklist={d.pilot?.checklist ?? []} />
+            <ReviewActions versionId={d.versionId} official={official} initial={{ difficulty: d.difficulty.validatedScale ?? d.difficulty.declaredScale, usage: [...d.usage].filter((u) => u !== 'FORMAL_ASSESSMENT'), alignment: d.alignment }} checklist={d.pilot?.checklist ?? []}
+              pilot={d.pilot ? { contract: PILOT_REVIEW_CONTRACT, proposal: d.pilot.proposal, attentionPoints: d.pilot.attentionPoints, competencyOptions: d.pilot.competencyOptions, contentOptions: d.pilot.contentOptions, options: d.content.options } : null}
+            />
           )}
         </div>
       </div>

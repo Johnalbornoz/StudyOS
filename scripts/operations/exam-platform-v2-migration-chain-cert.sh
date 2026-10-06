@@ -2,7 +2,7 @@
 # Exam Platform V2 integration -- full migration chain on an EPHEMERAL local Postgres (never Neon, never hosted).
 #
 #   baseline + ledger -> the REAL governed runner (scripts/db-migrate.ts) -> db-status (0 pending / 0 drift)
-#   -> schema checks for 20261031 / 20261101 (QB) / 20261102 (QB) / 20261103 (Journey) -> second db-migrate run (idempotent)
+#   -> schema checks for 20261031 / 20261101 (QB) / 20261102 (QB) / 20261103 (Journey) / 20261104 (QB human review) -> second db-migrate run (idempotent)
 #   -> exam-platform-v2-integration-cert.ts (Saber V2.1 apply, real formInputs OFF vs SHADOW, QB targeting)
 #   -> Question Bank mock-certification CLI (read-only) for Saber
 #   -> track-b-v2-apply --write + learning catalogue -> exam-platform-v2-journey-cert.ts (Student Journey V2, E1-E12)
@@ -60,6 +60,9 @@ echo "--- [4] schema checks"
 "${PSQL[@]}" -tAc "SELECT 'constraints_col='||count(*) FROM information_schema.columns WHERE table_name='blueprint_objective_targets' AND column_name='constraints'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'constraints_check='||count(*) FROM pg_constraint WHERE conname='blueprint_objective_targets_constraints_check'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'review_checklist_col='||count(*) FROM information_schema.columns WHERE table_name='question_bank_reviews' AND column_name='review_checklist'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'review_assessment_col='||count(*) FROM information_schema.columns WHERE table_name='question_bank_reviews' AND column_name='review_assessment'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'review_pilot_guard='||count(*) FROM pg_trigger WHERE tgname='question_bank_review_pilot_guard'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'review_assessment_checks='||count(*) FROM pg_constraint WHERE conname IN ('question_bank_reviews_assessment_check','question_bank_reviews_nonapproval_failure_check')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'journey_schedule_cols='||count(*) FROM information_schema.columns WHERE table_name='student_exam_profiles' AND column_name IN ('official_session_key','official_session_source','authoritative_exam_date','authoritative_exam_date_provenance','personal_target_date','estimated_exam_month','field_provenance')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'journey_schedule_checks='||count(*) FROM pg_constraint WHERE conrelid='public.student_exam_profiles'::regclass AND conname IN ('student_exam_profiles_session_pair_check','student_exam_profiles_session_source_check','student_exam_profiles_session_key_format_check','student_exam_profiles_authoritative_date_pair_check','student_exam_profiles_authoritative_date_provenance_check','student_exam_profiles_estimated_month_format_check','student_exam_profiles_field_provenance_object_check')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'ledger_202611='||string_agg(version||':'||name, ' ' ORDER BY version) FROM schema_migrations WHERE version LIKE '202611%'" "$DBNAME"
