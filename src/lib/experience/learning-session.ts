@@ -158,6 +158,9 @@ export const outcomeKey = (o: ActivityOutcome) => `xs.outcome.${o}` as const;
 export type SubmitFailure = 'NETWORK' | 'SERVER' | 'EXPIRED';
 export function classifySubmitFailure(input: { status?: number | null; errorCode?: string | null; thrown?: boolean }): SubmitFailure {
   if (input.errorCode === 'QUIZ_NOT_FOUND') return 'EXPIRED';
+  // Human Agency P0-2/P0-3: an expired Independent attempt / an expired or unknown
+  // Explain & Defend task can never be submitted -- never offer a retry loop.
+  if (input.errorCode === 'SESSION_EXPIRED' || input.errorCode === 'TASK_EXPIRED' || input.errorCode === 'TASK_NOT_FOUND') return 'EXPIRED';
   if (input.thrown || !input.status) return 'NETWORK';
   return 'SERVER';
 }

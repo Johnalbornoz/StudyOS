@@ -3,6 +3,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { suggestConceptNames } from '@/services/concept-extraction.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
@@ -32,6 +33,10 @@ async function handleGET(request: NextRequest) {
   if (subject.rowCount === 0) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
+
+  // Human Agency P0-4 (Layer B): deterministic safety gate before the model.
+  const safetyBlock = await studentTextSafetyResponse(partial, { studentId, surface: 'CONCEPT_SUGGEST', locale: language });
+  if (safetyBlock) return safetyBlock;
 
   const suggestions = await suggestConceptNames(subject.rows[0].name, partial, language);
   return NextResponse.json({ success: true, data: { suggestions } });

@@ -6,6 +6,8 @@
  * Concepts are language-independent (canonical IDs)
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { db } from '@/lib/db';
 import { updateChunkConceptMappings } from './embedding.service';
 import { parseAIJson } from '@/lib/ai-json';
@@ -437,6 +439,8 @@ export async function suggestConceptNames(
   if (!partialText || partialText.trim().length < 2) {
     return [];
   }
+  // Human Agency P0-4 (Layer B, defence in depth).
+  assertNoSafetySignal(partialText);
 
   const languageName = LOCALE_FULL_NAME[language] || language;
 
@@ -461,7 +465,7 @@ export async function suggestConceptNames(
             provider: route.provider,
             model: route.primary,
             maxTokens: 300,
-            system: `You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY this JSON object, no markdown, no explanation: {"suggestions": [...]}`,
+            system: withStudentFacingPolicy(`You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY this JSON object, no markdown, no explanation: {"suggestions": [...]}`),
             user: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON object: {"suggestions": ["...", ...]}.`,
           },
           signal

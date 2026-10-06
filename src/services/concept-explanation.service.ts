@@ -1,4 +1,5 @@
 import { query } from '@/lib/db';
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
@@ -149,7 +150,7 @@ Use 2 to 4 "sections", each covering one distinct angle of the concept (e.g. def
           model: route.primary,
           maxTokens: budget.maxOutputTokens,
           reasoningEffort: budget.reasoningEffort,
-          system: systemPrompt,
+          system: withStudentFacingPolicy(systemPrompt),
           user: `Explain "${conceptLabel}" to me.`,
         },
         signal

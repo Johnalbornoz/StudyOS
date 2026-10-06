@@ -1,0 +1,6 @@
+{
+  "allowlistVersion": "crisis-resources-v1",
+  "maxVerificationAgeDays": 365,
+  "_policy": "Every entry MUST be verified by a named human against the publisher's own official source before it is added. Never add an entry generated, suggested or looked up by an AI system. Unverified, stale or malformed entries are ignored at runtime and the Student sees generic guidance instead.",
+  "resources": []
+}

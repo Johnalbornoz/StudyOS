@@ -16,6 +16,8 @@
  * from different vendors. Every verdict is validated before it is used:
  * each criterion present exactly once, marks within [0, max].
  */
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { executeAI } from '@/lib/ai/gateway';
 import { callModel, parseCallModelUsage } from '@/lib/ai/adapters/call-model';
 import { getPrompt, type PromptId } from '@/lib/ai/prompt-registry';
@@ -205,7 +207,7 @@ export const runAssessorWithGateway: AssessorRunner = async (role, input, prior)
             provider: route.provider,
             model: route.primary,
             maxTokens: 2500,
-            system: systemFor(role, input.language),
+            system: withStudentFacingPolicy(systemFor(role, input.language)),
             user: userFor(input, prior),
             jsonSchema: ASSESSOR_SCHEMA,
             images: input.images?.map((im) => ({ mediaType: im.mediaType, base64: im.base64 })),
@@ -267,6 +269,8 @@ export function combineAssessments(rubric: RubricContent, a: RubricAssessment | 
 }
 
 export async function assessWithRubric(input: AssessmentInput, runner: AssessorRunner = runAssessorWithGateway): Promise<DoubleAssessmentOutcome> {
+  // Human Agency P0-4 (Layer B, defence in depth): signalled Student text never reaches an assessor model.
+  assertNoSafetySignal(input.response);
   const [a, b] = await Promise.all([runner('ASSESSOR_A', input), runner('ASSESSOR_B', input)]);
   let adj: RubricAssessment | null = null;
   if (a && b && assessorsDisagree(a, b, input.rubric)) adj = await runner('ADJUDICATOR', input, [a, b]);

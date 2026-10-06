@@ -100,7 +100,8 @@ export function PortfolioPanel({ instanceId, targetIndex, requirements, labels: 
     try {
       const r = await fetch(`${base}/artifacts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'STATEMENT', text: statement }) });
       const b = await r.json().catch(() => null);
-      if (!r.ok) setError(l[`exv2.portfolio.error.${b?.error}`] ?? l['exv2.portfolio.uploadError']);
+      // Human Agency P0-4: a fixed safety response is shown verbatim (server-reviewed copy).
+      if (!r.ok) setError(b?.error === 'SAFETY_RESPONSE' && typeof b.message === 'string' ? b.message : l[`exv2.portfolio.error.${b?.error}`] ?? l['exv2.portfolio.uploadError']);
       await refresh();
     } finally {
       setBusy(null);

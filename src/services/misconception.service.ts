@@ -5,6 +5,7 @@
  * can match against, not a new string each time.
  */
 
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { db, type DbExecutor } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -381,6 +382,9 @@ export async function classifyMisconception(
   /** Phase 0E2 Step 11: optional, purely additive. */
   context?: { studentId?: string; subjectId?: string }
 ): Promise<{ signature: MisconceptionSignature; isNew: boolean; aiExecution: AIProvenance } | null> {
+  // Human Agency P0-4 (Layer B, defence in depth): Student text carrying a safety
+  // signal never reaches a model (the route answers with the fixed response first).
+  assertNoSafetySignal(studentAnswer);
   const existing = await getSignaturesForConcept(conceptId);
   const languageName = LOCALE_FULL_NAME[language] || language;
 

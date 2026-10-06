@@ -28,6 +28,7 @@ import { PortfolioPanel, type PortfolioRequirements } from './PortfolioPanel';
 const MathExpressionEditor = dynamic(() => import('@/components/MathExpressionEditor'), { ssr: false });
 import { QuestionAnswerFields } from '@/components/quiz/QuestionAnswerFields';
 import { encodeClientAnswer } from '@/lib/quiz/client-answer-encoding';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 
 type AnswerFormat = 'single_choice' | 'multi_choice' | 'text' | 'matching' | 'ordering' | 'classification';
 
@@ -322,6 +323,8 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
   const [unavailableReason, setUnavailableReason] = useState<string | null>(null);
   const [staged, setStaged] = useState<unknown>(undefined);
   const [error, setError] = useState<string | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastFeedback, setLastFeedback] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -461,6 +464,7 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
     setPhase('submitting');
     setError(null);
     setNotice(null);
+    setSafety(null);
     try {
       const res = await fetch(`/api/simulation/attempts/${attemptId}/next-item`, {
         method: 'POST',
@@ -469,6 +473,13 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
         body: JSON.stringify({ action: 'submit', targetIndex, studentAnswer: answer, idempotencyKey: `submit:${attemptId}:${targetIndex}` }),
       });
       const body = await res.json().catch(() => ({}));
+      const safetyResponse = safetyFromBody(body);
+      if (safetyResponse) {
+        // Human Agency P0-4: nothing was recorded or graded; show the fixed response.
+        setSafety(safetyResponse);
+        setPhase('ready');
+        return;
+      }
       if (!res.ok) {
         setError(res.status === 422 ? labels.invalidAnswer : labels.submitError);
         if (body?.error === 'SECTION_CLOSED') await loadItem();
@@ -523,6 +534,14 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
       if (!res.ok) {
         setError(labels.finalizeError);
         setPhase(question ? 'ready' : 'complete');
+        return;
+      }
+      const done = await res.json().catch(() => null);
+      if (done?.data?.safety) {
+        // Human Agency P0-4: a handed-in draft carried a safety signal. The
+        // attempt is complete; show the fixed response before the result.
+        setSafety(done.data.safety as SafetyNoticeData);
+        setPhase('complete');
         return;
       }
       router.push(`/dashboard/exam-prep/attempt/${attemptId}/result`);
@@ -585,6 +604,18 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
     );
   }
 
+  if (phase === 'complete' && safety) {
+    // The attempt was handed in; a draft carried a safety signal (never graded).
+    return (
+      <div className="xr">
+        <SafetyNotice safety={safety} />
+        <button type="button" className="btn btn-primary" style={{ marginTop: 'var(--space-3)' }} onClick={() => router.push(`/dashboard/exam-prep/attempt/${attemptId}/result`)}>
+          {labels.complete}
+        </button>
+      </div>
+    );
+  }
+
   if (phase === 'complete' || phase === 'handingIn') {
     return (
       <div className="card xr-card">
@@ -642,6 +673,7 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
     <div className="xr">
       {header}
       {notice && <p className="xr-notice" role="status">{notice}</p>}
+      {safety && <SafetyNotice safety={safety} />}
       {navStrip}
       {question?.stimulus && (
         <section className="card xr-stimulus" aria-label={question.stimulus.title ?? undefined}>

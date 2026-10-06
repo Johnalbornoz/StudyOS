@@ -10,6 +10,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import { classifySubmitFailure, submitFailureKey, type SubmitFailure } from '@/lib/experience/learning-session';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 
 export default function ExplainDefendPage() {
   const searchParams = useSearchParams();
@@ -22,7 +23,6 @@ export default function ExplainDefendPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [phase, setPhase] = useState<'loading' | 'answering' | 'submitting' | 'done' | 'error'>('loading');
   const [prompt, setPrompt] = useState('');
-  const [expectedElements, setExpectedElements] = useState<string[]>([]);
   const [response, setResponse] = useState('');
   const [feedback, setFeedback] = useState<{ feedback: string; scorePercent: number } | null>(null);
   // Phase 1D: stamped once, right when the prompt becomes visible.
@@ -37,6 +37,8 @@ export default function ExplainDefendPage() {
   // learner's text and re-sends with the SAME activityId (the server's
   // evidence idempotency key), so a retry can never double-count.
   const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const t = getMessages(locale);
 
@@ -63,7 +65,6 @@ export default function ExplainDefendPage() {
         return;
       }
       setPrompt(body.data.prompt);
-      setExpectedElements(body.data.expectedElements || []);
       activityIdRef.current = body.data.activityId;
       setPhase('answering');
       // Phase 1D: the prompt just became visible/answerable.
@@ -79,18 +80,18 @@ export default function ExplainDefendPage() {
     const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     setSubmitFailure(null);
+    setSafety(null);
     let res: Response;
     try {
     res = await fetch('/api/cognitive/explain/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        // Human Agency P0-3: the question and its rubric live on the server
+        // (keyed by activityId); the browser sends only the answer.
         studentId,
         subjectId,
         conceptId,
-        conceptLabel,
-        prompt,
-        expectedElements,
         studentResponse: response,
         language: locale,
         remediationStepId,
@@ -105,6 +106,12 @@ export default function ExplainDefendPage() {
       return;
     }
     const body = await res.json().catch(() => null);
+    const safetyResponse = safetyFromBody(body);
+    if (safetyResponse) {
+      setSafety(safetyResponse);
+      setPhase('answering');
+      return;
+    }
     if (!res.ok || !body?.data) {
       setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
       setPhase('answering');
@@ -172,6 +179,7 @@ export default function ExplainDefendPage() {
               rows={6}
               className="ui-input ls-textarea"
             />
+            {safety && <SafetyNotice safety={safety} />}
             {submitFailure && (
               <InlineAlert tone="error" title={t['xs.submitFailedTitle']} body={t[submitFailureKey(submitFailure)]} />
             )}

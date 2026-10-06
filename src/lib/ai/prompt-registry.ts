@@ -198,13 +198,6 @@ export const PROMPT_REGISTRY = {
     service: 'embedding.service.ts:generateEmbedding',
     description: 'text-embedding-3-small vector embedding of a content chunk, for pgvector semantic search.',
   }),
-  'legacy.concept_extraction': definePrompt({
-    id: 'legacy.concept_extraction',
-    version: 'v1',
-    capability: 'CLASSIFICATION',
-    service: 'ai.service.ts:extractConceptsFromText',
-    description: "Older, simpler concept-extraction path used by /api/concepts/extract -- parallel to concept-extraction.service.ts's, not yet consolidated.",
-  }),
   'legacy.image_transcription': definePrompt({
     id: 'legacy.image_transcription',
     version: 'v1',

@@ -9,6 +9,7 @@ import { getTeachingIntentForConcept } from '@/services/adaptive-teaching.servic
 import { toTeachingGenerationContext } from '@/lib/adaptive-teaching-generation';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 const HintSchema = z.object({
   studentId: z.string().uuid(),
@@ -35,6 +36,10 @@ async function handlePOST(request: NextRequest) {
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
+  const assistanceLocked = await instructionalAssistanceLockedResponse(validated.studentId);
+  if (assistanceLocked) return assistanceLocked;
 
   // AI hint generation is a real, billable AI call -- gated server-side
   // like every other AI-generation entry point, defense-in-depth on top

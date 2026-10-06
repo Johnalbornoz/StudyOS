@@ -3,6 +3,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { getErrorPatternGuidance } from '@/services/error-intelligence.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 async function handleGET(request: NextRequest) {
   const authContext = await verifyAuth();
@@ -27,6 +28,10 @@ async function handleGET(request: NextRequest) {
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
+  const assistanceLocked = await instructionalAssistanceLockedResponse(studentId);
+  if (assistanceLocked) return assistanceLocked;
 
   const subject = await query(`SELECT name FROM subjects WHERE id = $1 AND student_id = $2`, [subjectId, studentId]);
   if (subject.rowCount === 0) {

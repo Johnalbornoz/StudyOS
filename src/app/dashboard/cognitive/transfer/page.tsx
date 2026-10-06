@@ -10,6 +10,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import { classifySubmitFailure, submitFailureKey, type SubmitFailure } from '@/lib/experience/learning-session';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 
 type TransferDistance = 'NEAR' | 'MID' | 'FAR';
 
@@ -40,6 +41,8 @@ export default function TransferPage() {
   // learner's text and re-sends with the SAME activityId (the server's
   // evidence idempotency key), so a retry can never double-count.
   const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const t = getMessages(locale);
 
@@ -82,6 +85,7 @@ export default function TransferPage() {
     const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     setSubmitFailure(null);
+    setSafety(null);
     let res: Response;
     try {
     res = await fetch('/api/cognitive/transfer/submit', {
@@ -108,6 +112,12 @@ export default function TransferPage() {
       return;
     }
     const body = await res.json().catch(() => null);
+    const safetyResponse = safetyFromBody(body);
+    if (safetyResponse) {
+      setSafety(safetyResponse);
+      setPhase('answering');
+      return;
+    }
     if (!res.ok || !body?.data) {
       setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
       setPhase('answering');
@@ -194,6 +204,7 @@ export default function TransferPage() {
               rows={6}
               className="ui-input ls-textarea"
             />
+            {safety && <SafetyNotice safety={safety} />}
             {submitFailure && (
               <InlineAlert tone="error" title={t['xs.submitFailedTitle']} body={t[submitFailureKey(submitFailure)]} />
             )}

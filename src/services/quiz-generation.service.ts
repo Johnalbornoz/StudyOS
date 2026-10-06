@@ -11,6 +11,8 @@
  * All questions are grounded in student's actual content
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { randomUUID } from 'crypto';
 import { retrieveContext } from './rag.service';
 import { normalizeText } from './content-chunking.service';
@@ -559,7 +561,7 @@ export async function generateQuestionsForConcept(
               promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: visualAidRate > 0,
             }),
             jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
-            system: systemPrompt,
+            system: withStudentFacingPolicy(systemPrompt),
             user: `Generate UP TO ${count} questions for this concept using only the provided material -- fewer is fine and expected if the material doesn't genuinely support that many distinct, non-redundant questions. Never pad with repetitive or trivial questions just to reach ${count}; prioritize quality and coverage of distinct ideas in the material over hitting the maximum. For each question, pick whichever type from the allowed list actually fits that piece of content best -- the mix should emerge from what the material calls for, not from forcing variety for its own sake.
 
 Output a JSON object (no markdown fences) with this exact shape -- a "questions" array, one element per question, each element's shape depending on its "type":
@@ -779,7 +781,7 @@ ${shapeExample}
                 promptId: prompt.id, promptVersion: prompt.version, types: QUICK_CHECK_TYPES, difficulty, language, hasVisualAid: false,
               }),
               jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA,
-              system: systemPrompt, user: userMessage,
+              system: withStudentFacingPolicy(systemPrompt), user: userMessage,
             },
             signal
           ),
@@ -1166,7 +1168,7 @@ ${shapeExamples}
             promptCacheKey: questionGenerationCacheKey({
               promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: visualAidRate > 0,
             }),
-            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage,
+            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: withStudentFacingPolicy(systemPrompt), user: userMessage,
           }, signal),
         validate: (raw) => {
           // LX-4P-PERF-R1F: same object-root boundary as every other
@@ -1732,7 +1734,7 @@ ${shapeExamples}
             promptCacheKey: questionGenerationCacheKey({
               promptId: prompt.id, promptVersion: prompt.version, types, difficulty, language, hasVisualAid: false,
             }),
-            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: systemPrompt, user: userMessage,
+            jsonSchema: GENERATED_QUESTION_BATCH_SCHEMA, system: withStudentFacingPolicy(systemPrompt), user: userMessage,
           }, signal),
         validate: (raw) => {
           // LX-4P-PERF-R1F: same object-root boundary as every other
@@ -2812,6 +2814,9 @@ export async function gradeAnswer(
   /** Phase 0E2 Step 11: optional, purely additive -- enriches the persisted ai_execution_events row when the caller has it. */
   context?: { studentId?: string; subjectId?: string }
 ): Promise<GradeAnswerResult> {
+  // Human Agency P0-4 (Layer B, defence in depth): signalled Student text never
+  // reaches the grading model (routes answer with the fixed safety response).
+  assertNoSafetySignal(studentAnswer);
   const det = deterministicEvidence(question, studentAnswer, language);
 
   // A numeric problem whose only requirement is the value, answered with a
@@ -2887,7 +2892,7 @@ Mathematical check of the final value: ${MATH_CHECK_FACT[det.result]}`;
     context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId: question.conceptId, sourceComponent: 'quiz-generation.service.ts:gradeAnswer' },
     call: (signal) =>
       callModel(
-        { provider: GRADE_ROUTE.provider, model: GRADE_ROUTE.primary, maxTokens: 1536, system: systemPrompt, user: userPrompt, jsonSchema: PEDAGOGICAL_GRADE_SCHEMA },
+        { provider: GRADE_ROUTE.provider, model: GRADE_ROUTE.primary, maxTokens: 1536, system: withStudentFacingPolicy(systemPrompt), user: userPrompt, jsonSchema: PEDAGOGICAL_GRADE_SCHEMA },
         signal
       ),
     validate: (raw) =>
@@ -3184,7 +3189,7 @@ Give 2-3 hints following the rules above.`;
             model: HINT_ROUTE.primary,
             maxTokens: HINT_BUDGET.maxOutputTokens,
             reasoningEffort: HINT_BUDGET.reasoningEffort,
-            system: systemPrompt,
+            system: withStudentFacingPolicy(systemPrompt),
             user: userPrompt,
             jsonSchema: QUESTION_HINTS_SCHEMA,
           },

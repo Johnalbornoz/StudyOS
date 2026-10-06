@@ -31,6 +31,9 @@ import {
   SimulationInvalidResponseError,
 } from '@/lib/simulation/item-resolution.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { isSafetySignalError } from '@/lib/safety/safety-gate';
+import { safetyResponseForError } from '@/lib/safety/safety-route';
 
 function mapError(error: unknown) {
   if (error instanceof SimulationItemNotFoundError) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -116,6 +119,15 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     logPilotEvent('question_answered', { route: '/api/simulation/attempts/next-item', attemptId: id, targetIndex: result.targetIndex, done: result.done });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    // Human Agency P0-4: thrown only after the attempt's ownership was verified
+    // inside the service; nothing was recorded and no model was called.
+    if (isSafetySignalError(error)) {
+      const attempt = await getSimulationAttempt(id);
+      if (attempt) {
+        const safety = await safetyResponseForError(error, { studentId: attempt.studentId, surface: 'EXAM_RESPONSE', locale: attempt.language || 'es' });
+        if (safety) return safety;
+      }
+    }
     return mapError(error);
   }
 }

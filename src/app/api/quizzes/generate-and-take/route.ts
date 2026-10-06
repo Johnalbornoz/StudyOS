@@ -56,6 +56,8 @@ import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyConceptsAcc
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { db } from '@/lib/db';
+import { getMessages } from '@/lib/i18n/messages';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 import {
   generateQuickCheckQuestions,
   generatePracticeQuestions,
@@ -1555,12 +1557,29 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // the common sequential-retry case, where a genuinely-completed
     // quiz is resubmitted after its first response was lost in
     // transit.
+    // Human Agency P0-4 (Layer B): deterministic safety gate first -- no grading
+    // model sees a signalled answer and nothing is recorded for it.
+    const safetyBlock = await studentTextSafetyResponse(validated.answers.map((a) => a.answer), { studentId: validated.studentId, surface: 'QUIZ_ANSWER', locale: quizSession.language });
+    if (safetyBlock) return safetyBlock;
+
     if (quizSession.status === 'completed') {
       return NextResponse.json({
         success: true,
         alreadySubmitted: true,
         message: 'This quiz was already submitted. Its results were not changed.',
       });
+    }
+    // Human Agency P0-2: an INDEPENDENT / ASSESSMENT attempt past its
+    // certified expiry produces NO evidence. From that instant the
+    // cross-surface guard no longer restricts the Tutor (same DB-clock
+    // predicate), so the system can no longer vouch that the Student
+    // remained unaided -- reject; never accept-and-downgrade, never extend.
+    // PRACTICE is unchanged.
+    if (quizSession.isExpired && quizSession.evidenceMode !== 'PRACTICE') {
+      return NextResponse.json(
+        { error: 'SESSION_EXPIRED', message: getMessages(quizSession.language)['quiz.sessionExpired'] },
+        { status: 410 }
+      );
     }
     const cachedQuestions = quizSession.questions;
     const language = quizSession.language;

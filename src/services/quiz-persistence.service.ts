@@ -150,6 +150,14 @@ export interface QuizSession {
   language: string;
   createdAt: Date;
   expiresAt: Date;
+  /**
+   * Human Agency P0-2: decided by the DATABASE clock (`now() >= expires_at`),
+   * the exact complement of the cross-surface guard's "active" predicate
+   * (`expires_at > NOW()`, getStudentActiveQuizzes) -- so a session can never
+   * be both "no longer restricting the Tutor" and "still accepted as
+   * restricted evidence".
+   */
+  isExpired: boolean;
   status: 'active' | 'completed' | 'expired';
   hintsUsedQuestions: number[];
   v1Marker: QuizSessionV1Marker | null;
@@ -540,7 +548,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, language, status, created_at, expires_at,
+             questions, language, status, created_at, expires_at, (now() >= expires_at) AS is_expired,
              quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
              pedagogical_policy_version, canonical_revision, canonical_stage,
              canonical_activity_contract, target_skill_ids, target_competency_ids
@@ -606,6 +614,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       language: row.language,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
+      isExpired: row.is_expired === true,
       status: row.status,
       hintsUsedQuestions: row.hints_used_questions || [],
       v1Marker,
@@ -652,6 +661,7 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
         questions: row.questions,
         createdAt: new Date(row.created_at),
         expiresAt: new Date(row.expires_at),
+        isExpired: false, // filtered above: expires_at > NOW()
         status: row.status,
         hintsUsedQuestions: [],
         // This listing query doesn't select the v1 marker columns --

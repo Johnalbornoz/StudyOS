@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
 import { getMessages, type Locale } from '@/lib/i18n/messages';
 import { matchConcepts, isSameConcept, type FinderConcept } from '@/lib/experience/concept-finder';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 
 /**
  * UX-5 closure -- "¿Qué quieres aprender?" inside a subject.
@@ -39,6 +40,7 @@ export default function ConceptFinder({
   const [q, setQ] = useState('');
   const [proposals, setProposals] = useState<string[]>([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const seq = useRef(0);
@@ -62,6 +64,8 @@ export default function ConceptFinder({
         );
         const body = await res.json().catch(() => null);
         if (id !== seq.current) return;
+        // Human Agency P0-4: fixed safety response (no suggestions, no AI involved).
+        setSafety(safetyFromBody(body));
         const list: string[] = res.ok && Array.isArray(body?.data?.suggestions) ? body.data.suggestions : [];
         // never propose as "new" something the Student already has
         setProposals(list.filter((p) => typeof p === 'string' && p.trim() && !concepts.some((c) => isSameConcept(c.title, p))).slice(0, 4));
@@ -99,6 +103,7 @@ export default function ConceptFinder({
 
   return (
     <div className="cf">
+      {safety && <SafetyNotice safety={safety} />}
       <label className="cf-search">
         <span className="sr-only">{t['cf.label'].replace('{subject}', subjectName)}</span>
         <Search size={18} strokeWidth={2} aria-hidden />

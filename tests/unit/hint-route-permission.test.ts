@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const verifyAuthMock = vi.fn();
 const verifyStudentAccessMock = vi.fn();
+// Human Agency P0-1: the student-wide assistance guard is certified separately
+// (human-agency-p0-1-assistance-guard.test.ts); here no restricted evidence is active.
+vi.mock('@/lib/ai/instructional-assistance-guard', () => ({ instructionalAssistanceLockedResponse: async () => null }));
 vi.mock('@/lib/auth', () => ({
   verifyAuth: () => verifyAuthMock(),
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),

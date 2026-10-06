@@ -6,7 +6,8 @@
 #   -> exam-platform-v2-integration-cert.ts (Saber V2.1 apply, real formInputs OFF vs SHADOW, QB targeting)
 #   -> Question Bank mock-certification CLI (read-only) for Saber
 #   -> track-b-v2-apply --write + learning catalogue -> exam-platform-v2-journey-cert.ts (Student Journey V2, E1-E12)
-#   -> g6-exam-evidence-isolation-cert.ts (G6: exam evidence isolated by target).
+#   -> g6-exam-evidence-isolation-cert.ts (G6: exam evidence isolated by target)
+#   -> human-agency-p0-cert.ts (Human Agency P0-1..P0-4 on real rows) -> HA migrations rollback + re-apply.
 #
 # Usage: PG_BIN=/opt/homebrew/opt/postgresql@18/bin ./scripts/operations/exam-platform-v2-migration-chain-cert.sh [workdir]
 # TCP on 127.0.0.1 (a long scratchpad path does not fit a unix socket). Prints no credential.
@@ -65,6 +66,8 @@ echo "--- [4] schema checks"
 "${PSQL[@]}" -tAc "SELECT 'review_assessment_checks='||count(*) FROM pg_constraint WHERE conname IN ('question_bank_reviews_assessment_check','question_bank_reviews_nonapproval_failure_check')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'journey_schedule_cols='||count(*) FROM information_schema.columns WHERE table_name='student_exam_profiles' AND column_name IN ('official_session_key','official_session_source','authoritative_exam_date','authoritative_exam_date_provenance','personal_target_date','estimated_exam_month','field_provenance')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'journey_schedule_checks='||count(*) FROM pg_constraint WHERE conrelid='public.student_exam_profiles'::regclass AND conname IN ('student_exam_profiles_session_pair_check','student_exam_profiles_session_source_check','student_exam_profiles_session_key_format_check','student_exam_profiles_authoritative_date_pair_check','student_exam_profiles_authoritative_date_provenance_check','student_exam_profiles_estimated_month_format_check','student_exam_profiles_field_provenance_object_check')" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'ha_explain_task_table='||count(*) FROM information_schema.tables WHERE table_name='explain_defend_task_instances'" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'ha_safety_tables='||count(*) FROM information_schema.tables WHERE table_name IN ('safety_contact_designations','safety_signal_events')" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'ledger_202611='||string_agg(version||':'||name, ' ' ORDER BY version) FROM schema_migrations WHERE version LIKE '202611%'" "$DBNAME"
 "${PSQL[@]}" -tAc "SELECT 'ledger_rows='||count(*)||' last='||max(version) FROM schema_migrations" "$DBNAME"
 echo "--- [5] second db-migrate run (idempotent)"
@@ -82,4 +85,13 @@ echo "--- [9] Student Journey V2 on the unified line (E1-E12)"
 npx tsx --tsconfig tsconfig.json scripts/operations/exam-platform-v2-journey-cert.ts
 echo "--- [10] G6 exam evidence isolation (PAA -> PISA, real writers / readers)"
 npx tsx --tsconfig tsconfig.json scripts/operations/g6-exam-evidence-isolation-cert.ts | grep -v '^\[' | tail -2
+echo "--- [11] Human Agency P0 real-Postgres certification (guard, expiry boundary, rubric authority, safety routing)"
+HA_CERT_EPHEMERAL="$FP" npx tsx --tsconfig tsconfig.json scripts/operations/human-agency-p0-cert.ts | grep -v '^\['
+echo "--- [12] Human Agency migrations: documented rollback, then re-apply (governed runner), 0 pending"
+"${PSQL[@]}" -c "DROP TABLE IF EXISTS public.safety_signal_events; DROP TABLE IF EXISTS public.safety_contact_designations; DELETE FROM schema_migrations WHERE version = '20261105_1100';" "$DBNAME"
+"${PSQL[@]}" -c "DROP TABLE IF EXISTS public.explain_defend_task_instances; DELETE FROM schema_migrations WHERE version = '20261105_1000';" "$DBNAME"
+"${PSQL[@]}" -tAc "SELECT 'ha_tables_after_rollback='||count(*) FROM information_schema.tables WHERE table_name IN ('explain_defend_task_instances','safety_contact_designations','safety_signal_events')" "$DBNAME"
+npx tsx scripts/db-migrate.ts 2>&1 | tail -3
+npx tsx scripts/db-status.ts 2>&1 | tail -4
+"${PSQL[@]}" -tAc "SELECT 'ha_tables_after_reapply='||count(*) FROM information_schema.tables WHERE table_name IN ('explain_defend_task_instances','safety_contact_designations','safety_signal_events')" "$DBNAME"
 echo "EXAM_PLATFORM_V2_MIGRATION_CHAIN_CERT = DONE"

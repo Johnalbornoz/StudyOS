@@ -6,6 +6,8 @@
  * claims (see computeTransferScore).
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { db, type DbExecutor } from '@/lib/db';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -90,7 +92,7 @@ Output ONLY this JSON, no markdown fences, no other text:
     promptId: prompt.id,
     promptVersion: 'v1',
     call: (signal) =>
-      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 500, system: systemPrompt, user: 'Write the transfer question.' }, signal),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 500, system: withStudentFacingPolicy(systemPrompt), user: 'Write the transfer question.' }, signal),
     validate: (raw) =>
       validateJson<{ context: string; prompt: string }>({ text: raw.text || '{}' }, (parsed) => ({
         value: { context: parsed.context, prompt: parsed.prompt },
@@ -150,7 +152,7 @@ Output ONLY this JSON, no markdown fences, no other text:
     promptVersion: registered.version, // v2
     context: { ...aiContext, sourceComponent: 'transfer.service.ts:generateStructuredTransferActivity' },
     call: (signal) =>
-      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: systemPrompt, user: 'Write the structured transfer task.' }, signal),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: withStudentFacingPolicy(systemPrompt), user: 'Write the structured transfer task.' }, signal),
     validate: (raw) =>
       validateJson<{ context: string; prompt: string; noveltyDimensions: string[]; contextDomain: string | null }>(
         { text: raw.text || '{}' },
@@ -214,6 +216,9 @@ export async function evaluateTransferResponse(
   /** Phase 0E2 Step 11: optional, purely additive. */
   context?: { studentId?: string; subjectId?: string; conceptId?: string }
 ): Promise<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string; aiExecution: AIProvenance }> {
+  // Human Agency P0-4 (Layer B, defence in depth): Student text carrying a safety
+  // signal never reaches a model (the route answers with the fixed response first).
+  assertNoSafetySignal(studentResponse);
   const languageName = LOCALE_FULL_NAME[language] || language;
   // 7D3 (v2): grade the TRANSFER -- did the student APPLY "${conceptLabel}"
   // to this new context and reach a sound result? Merely restating,
@@ -243,7 +248,7 @@ Output ONLY this JSON, no markdown fences, no other text:
     promptVersion: registeredPrompt.version,
     context: { ...context, sourceComponent: 'transfer.service.ts:evaluateTransferResponse' },
     call: (signal) =>
-      callModel({ provider: resolveModels('TRANSFER_EVALUATION').provider, model: resolveModels('TRANSFER_EVALUATION').primary, maxTokens: 300, system: systemPrompt, user: 'Grade this.' }, signal),
+      callModel({ provider: resolveModels('TRANSFER_EVALUATION').provider, model: resolveModels('TRANSFER_EVALUATION').primary, maxTokens: 300, system: withStudentFacingPolicy(systemPrompt), user: 'Grade this.' }, signal),
     validate: (raw) =>
       validateJson<{ result: 'correct' | 'partial' | 'incorrect'; feedback: string }>({ text: raw.text || '{}' }, (parsed) => ({
         value: {

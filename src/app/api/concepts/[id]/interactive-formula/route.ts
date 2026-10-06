@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getInteractiveFormula } from '@/services/concept-explanation.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 async function handleGET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,6 +36,10 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<{ i
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
+  const assistanceLocked = await instructionalAssistanceLockedResponse(studentId);
+  if (assistanceLocked) return assistanceLocked;
 
   try {
     const interactiveFormula = await getInteractiveFormula(studentId, id, language);

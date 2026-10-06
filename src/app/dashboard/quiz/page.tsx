@@ -1,5 +1,6 @@
 'use client';
 
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -469,6 +470,8 @@ function QuizPageContent() {
   const [localizeFailedFallback, setLocalizeFailedFallback] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   // RELEASE-R1 PART D: set only for a canonical-state MISMATCH
   // (INVALID_GENERATION_CONTRACT/ZERO_GAP_PRACTICE_MISMATCH) -- never for
   // a genuine generation/provider failure. Drives a DIFFERENT recovery
@@ -1172,6 +1175,13 @@ function QuizPageContent() {
         body: JSON.stringify({ studentId, questionIndex: index, answer: encodeCurrentAnswer(q) }),
       });
       const body = await res.json().catch(() => null);
+      const safetyResponse = safetyFromBody(body);
+      if (safetyResponse) {
+        // Human Agency P0-4: the server's fixed safety response (no AI involved).
+        setSafety(safetyResponse);
+        setAnswerCheck({ index, status: 'unavailable' });
+        return;
+      }
       if (!res.ok || !body?.data) {
         setAnswerCheck({ index, status: 'unavailable' });
         return;
@@ -1245,6 +1255,12 @@ function QuizPageContent() {
         }),
       });
       const body = await res.json().catch(() => null);
+      const safetyResponse = safetyFromBody(body);
+      if (safetyResponse) {
+        // Human Agency P0-4: nothing was graded or recorded; show the fixed response.
+        setSafety(safetyResponse);
+        return;
+      }
       if (!res.ok || !body) {
         // UX-3: visible and recoverable -- a transport/server failure is
         // never presented as an incorrect answer, and nothing is scored.
@@ -2983,6 +2999,8 @@ function QuizPageContent() {
             )}
           </div>
         )}
+
+        {safety && <SafetyNotice safety={safety} />}
 
         {/* UX-3: a failed submission is visible, announced, and recoverable.
             The answers stay exactly as entered; nothing was scored. */}

@@ -9,6 +9,7 @@
  * primary was not confident about. Every prompt passes `assertPromptPrivacy`
  * before a provider is contacted.
  */
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { executeAI } from '@/lib/ai/gateway';
 import { callModel, parseCallModelUsage } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
@@ -57,7 +58,8 @@ export const gatewayFactoryAI: FactoryAI = {
   async generate(ctx) {
     const route = resolveModels('QUESTION_GENERATION');
     const prompt = getPrompt('question_bank.generate_items');
-    const system = generationSystemPrompt(ctx.spec.language);
+    // Items are later delivered to Students: the canonical Student-facing policy applies (P0-4 Layer A).
+    const system = withStudentFacingPolicy(generationSystemPrompt(ctx.spec.language));
     const user = generationUserPrompt(ctx);
     assertPromptPrivacy(system + user);
     const out = await executeAI({
@@ -104,7 +106,8 @@ export const gatewayFactoryAI: FactoryAI = {
   async repair(ctx, previous, issues) {
     const route = resolveModels('QUESTION_GENERATION');
     const prompt = getPrompt('question_bank.repair_item');
-    const system = generationSystemPrompt(ctx.spec.language);
+    // Items are later delivered to Students: the canonical Student-facing policy applies (P0-4 Layer A).
+    const system = withStudentFacingPolicy(generationSystemPrompt(ctx.spec.language));
     const user = repairUserPrompt(ctx, previous, issues);
     assertPromptPrivacy(system + user);
     const out = await executeAI({

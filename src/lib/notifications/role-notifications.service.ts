@@ -45,7 +45,11 @@ export type RoleNotificationType =
   | 'CURRICULUM_SUPPLEMENTAL_CONCEPT'
   | 'CONCEPT_PROPOSAL_CREATED'
   // Platform Admin: AI consumption threshold crossed (informational; never blocks).
-  | 'AI_CONSUMPTION_ALERT';
+  | 'AI_CONSUMPTION_ALERT'
+  // Human Agency P0-4: deterministic safety signal routed to a designated
+  // Safeguarding Lead / StudyUs Safety Operator (learner name only).
+  | 'SAFETY_SIGNAL'
+  | 'SAFETY_IMMEDIATE_DANGER';
 
 export type NotificationPayload = Record<string, string | number | null>;
 

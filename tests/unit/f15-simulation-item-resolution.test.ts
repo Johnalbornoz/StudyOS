@@ -359,7 +359,7 @@ describe('timing and submission integrity', () => {
       })
     );
     const r = await finalizeOpenItemsForSubmission('actor-1', 'attempt-1');
-    expect(r).toEqual({ committedDrafts: 1, missing: 1 });
+    expect(r).toEqual({ committedDrafts: 1, missing: 1, safetySignal: null }); // Human Agency P0-4: no draft carried a safety signal
     expect(recordSimulationItemResponseMock.mock.calls[0][0]).toMatchObject({ studentAnswer: 'A', idempotencyKey: 'final:attempt-1:0' });
     const written = writtenNav[0];
     expect(written.items['1'].status).toBe('EXCLUDED');

@@ -26,6 +26,7 @@ import { canUseAI, type AIFeature } from '@/lib/ai-permission-policy';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 const HELP_ACTIONS = ['HINT', 'EXAMPLE', 'REMINDER', 'ANOTHER_ANGLE', 'FIRST_STEP'] as const;
 type HelpAction = (typeof HELP_ACTIONS)[number];
@@ -60,6 +61,10 @@ async function handlePOST(request: NextRequest) {
   if (!(await verifyStudentAccess(authContext.userId, v.studentId, authContext.role))) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
+  const assistanceLocked = await instructionalAssistanceLockedResponse(v.studentId);
+  if (assistanceLocked) return assistanceLocked;
 
   const session = await getQuizSession(v.quizId);
   if (!session || session.studentId !== v.studentId) {

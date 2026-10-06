@@ -30,6 +30,7 @@
  * deduplication was audited (B13) but not implemented this phase; see
  * the report's CONDITIONS section.
  */
+import { STUDENT_FACING_POLICY } from '@/lib/ai/policy/student-facing-policy';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -195,7 +196,8 @@ describe('LX-9 tutor migration -- Luna-first, one bounded Terra fallback, real t
     callModelMock.mockResolvedValueOnce({ text: 'luna reply', raw: {}, provider: 'openai', model: 'gpt-5.6-luna' });
     await sendMessage('conv-1', 's1', 'hi', 'en');
     const [params] = callModelMock.mock.calls[0];
-    expect(params.system.length).toBeLessThan(budgetFor('tutor_reply').maxContextChars + 5000); // some slack for the fixed instructional text around it
+    // + the canonical Student-facing policy block (Human Agency P0-4 Layer A), a fixed-size constant.
+    expect(params.system.length).toBeLessThan(budgetFor('tutor_reply').maxContextChars + 5000 + STUDENT_FACING_POLICY.length); // some slack for the fixed instructional text around it
   });
 
   it('23. maxTokens for the tutor call comes from the tutor_reply token budget, not a bare literal', async () => {

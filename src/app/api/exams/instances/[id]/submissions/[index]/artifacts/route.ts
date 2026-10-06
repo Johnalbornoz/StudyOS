@@ -8,6 +8,7 @@
  * never trusted), thumbnailed and stored owner-scoped. A rejected file is
  * reported with its reason and never attached.
  */
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireActor, ownStudentId } from '@/lib/exam-core/route-auth';
@@ -33,6 +34,10 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     if (type.startsWith('application/json')) {
       const parsed = TextSchema.safeParse(await request.json().catch(() => null));
       if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
+      // Human Agency P0-4 (Layer B): this text is later assessed by AI; a safety
+      // signal is answered with the fixed response and never stored for grading.
+      const safetyBlock = await studentTextSafetyResponse(parsed.data.text, { studentId, surface: 'EXAM_RESPONSE', locale: request.headers.get('accept-language')?.slice(0, 2) || 'es' });
+      if (safetyBlock) return safetyBlock;
       const out = await addArtifact(ctx, { kind: parsed.data.kind, text: parsed.data.text, caption: parsed.data.caption });
       return NextResponse.json({ success: true, data: out });
     }

@@ -23,6 +23,8 @@
  * swapped on refresh; a committed item can never be answered twice
  * (UNIQUE exam_attempt_id + target_index).
  */
+import { detectSafetySignal } from '@/lib/safety/safety-signal-detector';
+import { assertNoSafetySignal, isSafetySignalError, type ActiveSafetySignal } from '@/lib/safety/safety-gate';
 import { db } from '@/lib/db';
 import { isOwner } from '@/lib/authorization';
 import { getSimulationAttempt } from './attempt.service';
@@ -435,6 +437,11 @@ export async function submitSimulationItemAnswer(
       if (problem) throw new SimulationInvalidResponseError(problem);
     }
 
+    // Human Agency P0-4 (Layer B): a safety signal is never graded (no model
+    // call) and nothing is recorded -- the item stays open; the route answers
+    // with the fixed safety response (SafetySignalError).
+    assertNoSafetySignal(studentAnswer);
+
     const rec = await commitAnswer(loaded, index, studentAnswer, idempotencyKey ?? `submit:${attemptId}:${index}`);
     if (rec.grade.status === 'INVALID' && !rec.duplicate) {
       // Multi-part / text shape problems are only detectable by the grader; the response is kept as INVALID (0 marks, no evidence).
@@ -499,17 +506,34 @@ export async function endSimulationBreak(actorUserId: string, attemptId: string)
  * MISSING, and an item the platform could not prepare becomes EXCLUDED.
  * Allowed from ACTIVE and PAUSED (a paused attempt may be handed in).
  */
-export async function finalizeOpenItemsForSubmission(actorUserId: string, attemptId: string): Promise<{ committedDrafts: number; missing: number }> {
+export async function finalizeOpenItemsForSubmission(actorUserId: string, attemptId: string): Promise<{ committedDrafts: number; missing: number; safetySignal: ActiveSafetySignal | null }> {
   return withCas(actorUserId, attemptId, ['ACTIVE', 'PAUSED'], async (loaded) => {
     const { nav, plan, sections } = loaded;
     let committedDrafts = 0;
     let missing = 0;
+    let safetySignal: ActiveSafetySignal | null = null;
     for (let i = 0; i < plan.selectedTargets.length; i++) {
       if (isResolved(nav, i)) continue;
       const state = nav.items[String(i)];
-      if (state?.status === 'DELIVERED' && state.draft) {
-        await commitAnswer(loaded, i, state.draft, `final:${loaded.attempt.id}:${i}`);
-        committedDrafts++;
+      const draftSignal = state?.status === 'DELIVERED' && state.draft ? detectSafetySignal(state.draft) : 'NO_SIGNAL';
+      if (draftSignal !== 'NO_SIGNAL') {
+        // Human Agency P0-4: a draft carrying a safety signal is never sent to
+        // a grader/model and never becomes evidence -- the position is MISSING
+        // and the caller records the signal (event + routed notification).
+        nav.items[String(i)] = { ...state!, status: 'MISSING' };
+        missing++;
+        safetySignal = safetySignal === 'IMMEDIATE_DANGER_SIGNAL' ? safetySignal : draftSignal;
+      } else if (state?.status === 'DELIVERED' && state.draft) {
+        try {
+          await commitAnswer(loaded, i, state.draft, `final:${loaded.attempt.id}:${i}`);
+          committedDrafts++;
+        } catch (e) {
+          // A portfolio statement (assessed with the draft) can carry the signal.
+          if (!isSafetySignalError(e)) throw e;
+          nav.items[String(i)] = { ...state, status: 'MISSING' };
+          missing++;
+          safetySignal = safetySignal === 'IMMEDIATE_DANGER_SIGNAL' ? safetySignal : e.status;
+        }
       } else if (state?.status === 'UNAVAILABLE') {
         nav.items[String(i)] = { ...state, status: 'EXCLUDED' };
       } else {
@@ -520,6 +544,6 @@ export async function finalizeOpenItemsForSubmission(actorUserId: string, attemp
     nav.sectionIndex = sections.length;
     nav.breakUntil = null;
     nav.lastActivityAt = new Date().toISOString();
-    return { result: { committedDrafts, missing }, write: true };
+    return { result: { committedDrafts, missing, safetySignal }, write: true };
   });
 }

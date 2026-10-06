@@ -15,6 +15,7 @@ import { loadTransferTaskInstance } from '@/services/transfer-task-instance.serv
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const Schema = z.object({
   studentId: z.string().uuid(),
@@ -49,6 +50,11 @@ async function handlePOST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    // Human Agency P0-4 (Layer B): deterministic safety gate FIRST -- before any
+    // other check and before any model call.
+    const safetyBlock = await studentTextSafetyResponse(validated.studentResponse, { studentId: validated.studentId, surface: 'TRANSFER', locale: validated.language || 'es' });
+    if (safetyBlock) return safetyBlock;
 
     // Phase 7 (7B1): resolve the ONE canonical task id. Both-but-different
     // is a client bug, not something to guess through.

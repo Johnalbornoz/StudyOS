@@ -16,6 +16,7 @@
  * activity (the GUIDE stage), same bounded-cost profile as
  * `/api/quizzes/hint`. Every path has a deterministic, safe fallback.
  */
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { parseAIJson } from '@/lib/ai-json';
@@ -126,7 +127,7 @@ Write everything in ${languageName}. Output ONLY this JSON, no markdown fences:
             model: route.primary,
             maxTokens: budget.maxOutputTokens,
             reasoningEffort: budget.reasoningEffort,
-            system: systemPrompt,
+            system: withStudentFacingPolicy(systemPrompt),
             user: `Let's work through "${conceptLabel}" together.`,
           },
           signal,

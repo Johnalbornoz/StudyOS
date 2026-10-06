@@ -24,6 +24,7 @@ import { determineNextAction } from '@/lib/simulation/next-action.service';
 import { finalizeExamCompletion } from '@/lib/exam-core/post-completion';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { handleSafetySignal, type SafetyResponse } from '@/services/safety-signal.service';
 
 const ROUTE = '/api/simulation/attempts/complete';
 
@@ -48,8 +49,15 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
   }
   if (attempt.status === 'ABANDONED') return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
 
+  let safety: SafetyResponse | null = null;
   try {
-    await finalizeOpenItemsForSubmission(actor.id, id);
+    const finalized = await finalizeOpenItemsForSubmission(actor.id, id);
+    // Human Agency P0-4: a handed-in draft carried a safety signal -- it was
+    // never graded; record the event, route the notification, and return the
+    // fixed response alongside the (still completed) result.
+    if (finalized.safetySignal) {
+      safety = await handleSafetySignal({ studentId: attempt.studentId, status: finalized.safetySignal, surface: 'EXAM_RESPONSE', locale: attempt.language || 'es' });
+    }
   } catch (err) {
     if (err instanceof SimulationItemNotActiveError) return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
     throw err;
@@ -92,6 +100,7 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
       postExamDiagnosis,
       readinessSnapshot,
       nextAction,
+      ...(safety ? { safety } : {}),
     },
   });
 }
