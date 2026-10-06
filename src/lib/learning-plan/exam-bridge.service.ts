@@ -29,6 +29,8 @@ export const EXAM_GAP_THRESHOLD = 0.5;
 export interface ExamGap {
   studentId: string;
   canonicalConceptId: string;
+  /** G6: the exam target (student_exam_profiles.id) whose attempt showed the gap. */
+  examProfileId: string;
   examAttemptId: string;
   learningObjectiveId: string;
   fraction: number;
@@ -37,38 +39,49 @@ export interface ExamGap {
 
 const iso = (v: any) => (v instanceof Date ? v.toISOString() : String(v));
 
-/** Read-only: current exam gaps of these learners, one (latest) per learner + canonical concept. */
-export async function deriveExamGaps(studentIds: string[], canonicalConceptIds?: string[] | null): Promise<ExamGap[]> {
+/**
+ * Read-only: current exam gaps of these learners, one (latest) per learner + canonical concept.
+ *
+ * G6: a gap belongs to the exam TARGET whose attempt showed it. "Latest result per objective" is decided
+ * within one target, so another exam (or another target of the same exam) can neither close nor open this
+ * target's gap through a shared objective or concept. With `examProfileId`, only that target's attempts are
+ * read (an exam-specific reader); without it, every target's gaps are returned, each still tagged with its
+ * target (concept-level learning recommendations, teacher / institution views).
+ */
+export async function deriveExamGaps(studentIds: string[], canonicalConceptIds?: string[] | null, opts: { examProfileId?: string } = {}): Promise<ExamGap[]> {
   if (studentIds.length === 0) return [];
-  const objectiveRows: Array<{ student_id: string; exam_attempt_id: string; learning_objective_id: string; fraction: number; at: any }> = [];
+  const targetFilter = opts.examProfileId ?? null;
+  const objectiveRows: Array<{ student_id: string; exam_profile_id: string; exam_attempt_id: string; learning_objective_id: string; fraction: number; at: any }> = [];
   const own = await db.query(
-    `SELECT sep.student_id, ea.id AS exam_attempt_id, r.learning_objective_id, SUM(r.score)::float / NULLIF(SUM(r.max_score), 0) AS fraction, ea.completed_at AS at
+    `SELECT sep.student_id, sep.id AS exam_profile_id, ea.id AS exam_attempt_id, r.learning_objective_id, SUM(r.score)::float / NULLIF(SUM(r.max_score), 0) AS fraction, ea.completed_at AS at
      FROM exam_attempts ea
      JOIN student_exam_profiles sep ON sep.id = ea.student_exam_profile_id
      JOIN exam_attempt_item_responses r ON r.exam_attempt_id = ea.id
      WHERE sep.student_id = ANY($1::uuid[]) AND ea.status = 'COMPLETED' AND r.learning_objective_id IS NOT NULL AND r.max_score > 0
+       AND ($2::uuid IS NULL OR ea.student_exam_profile_id = $2::uuid)
        AND NOT ${fixtureResponseSql('r')} AND NOT ${technicalExamAttemptSql('ea.id')}
-     GROUP BY sep.student_id, ea.id, r.learning_objective_id, ea.completed_at`,
-    [studentIds]
+     GROUP BY sep.student_id, sep.id, ea.id, r.learning_objective_id, ea.completed_at`,
+    [studentIds, targetFilter]
   );
   objectiveRows.push(...own.rows);
   const hasResults = await db.query(`SELECT to_regclass('public.exam_attempt_results') IS NOT NULL AS present`);
   if (hasResults.rows[0]?.present) {
     const scored = await db.query(
-      `SELECT ear.student_id, ear.exam_attempt_id, (o->>'learningObjectiveId')::uuid AS learning_objective_id, COALESCE((o->>'fraction')::float, 0) AS fraction, ear.scored_at AS at
-       FROM exam_attempt_results ear, jsonb_array_elements(COALESCE(ear.objective_results, '[]'::jsonb)) o
+      `SELECT ear.student_id, ea.student_exam_profile_id AS exam_profile_id, ear.exam_attempt_id, (o->>'learningObjectiveId')::uuid AS learning_objective_id, COALESCE((o->>'fraction')::float, 0) AS fraction, ear.scored_at AS at
+       FROM exam_attempt_results ear JOIN exam_attempts ea ON ea.id = ear.exam_attempt_id, jsonb_array_elements(COALESCE(ear.objective_results, '[]'::jsonb)) o
        WHERE ear.student_id = ANY($1::uuid[]) AND ear.invalidated_at IS NULL AND o->>'classification' = 'GAP' AND o ? 'learningObjectiveId'
+         AND ($2::uuid IS NULL OR ea.student_exam_profile_id = $2::uuid)
          AND NOT ${technicalExamAttemptSql('ear.exam_attempt_id')}`,
-      [studentIds]
+      [studentIds, targetFilter]
     ).catch(() => ({ rows: [] as any[] }));
     objectiveRows.push(...scored.rows.map((r: any) => ({ ...r, fraction: Math.min(Number(r.fraction), EXAM_GAP_THRESHOLD - 0.0001) })));
   }
-  // Only the LATEST result per learner × objective counts: an objective failed
-  // once and passed in a later attempt is no longer a gap.
+  // Only the LATEST result per learner × target × objective counts: an objective failed
+  // once and passed in a later attempt OF THE SAME TARGET is no longer a gap (G6).
   const latestByObjective = new Map<string, (typeof objectiveRows)[number]>();
   for (const r of objectiveRows) {
     if (r.fraction === null) continue;
-    const k = `${r.student_id}:${r.learning_objective_id}`;
+    const k = `${r.student_id}:${r.exam_profile_id}:${r.learning_objective_id}`;
     const prior = latestByObjective.get(k);
     if (!prior || iso(prior.at) < iso(r.at) || (iso(prior.at) === iso(r.at) && Number(r.fraction) < Number(prior.fraction))) latestByObjective.set(k, r);
   }
@@ -86,7 +99,7 @@ export async function deriveExamGaps(studentIds: string[], canonicalConceptIds?:
     for (const conceptId of conceptsByObjective.get(g.learning_objective_id) ?? []) {
       if (canonicalConceptIds && !canonicalConceptIds.includes(conceptId)) continue;
       const k = `${g.student_id}:${conceptId}`;
-      const candidate: ExamGap = { studentId: g.student_id, canonicalConceptId: conceptId, examAttemptId: g.exam_attempt_id, learningObjectiveId: g.learning_objective_id, fraction: Number(g.fraction), at: iso(g.at) };
+      const candidate: ExamGap = { studentId: g.student_id, canonicalConceptId: conceptId, examProfileId: g.exam_profile_id, examAttemptId: g.exam_attempt_id, learningObjectiveId: g.learning_objective_id, fraction: Number(g.fraction), at: iso(g.at) };
       const prior = latest.get(k);
       if (!prior || prior.at < candidate.at) latest.set(k, candidate);
     }
@@ -270,7 +283,8 @@ export async function getExamPreparationPlan(studentId: string, examProfileId: s
   const [labels, plan, gaps, recs] = await Promise.all([
     canonicalConceptLabels(conceptIds, locale),
     planIndex(studentId),
-    deriveExamGaps([studentId], conceptIds),
+    // G6: this preparation's gaps come only from this target's own attempts.
+    deriveExamGaps([studentId], conceptIds, { examProfileId }),
     db.query(`SELECT id, canonical_concept_id FROM learning_recommendations WHERE student_id = $1 AND status = 'OPEN'`, [studentId]),
   ]);
   const gapIds = new Set(gaps.map((g) => g.canonicalConceptId));

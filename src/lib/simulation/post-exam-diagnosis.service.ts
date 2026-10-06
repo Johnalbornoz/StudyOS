@@ -23,6 +23,9 @@ export async function runPostExamDiagnosis(examAttemptId: string, studentId: str
     [examAttemptId]
   );
 
+  // G6: the diagnosis of THIS attempt reads only evidence in its own target's exam scope (the attempt's NOT NULL FK).
+  const examTargetId = ((await db.query(`SELECT student_exam_profile_id FROM exam_attempts WHERE id = $1`, [examAttemptId])).rows?.[0]?.student_exam_profile_id as string | undefined) ?? undefined;
+
   const diagnoses: StoredGapDiagnosis[] = [];
 
   for (const row of responses.rows) {
@@ -46,6 +49,7 @@ export async function runPostExamDiagnosis(examAttemptId: string, studentId: str
     const diagnosis = await runDiagnosis({
       studentId,
       conceptId: studentConceptId,
+      examTargetId,
       scope: { skillId, learningObjectiveId: row.learning_objective_id, examVersionId, assessmentComponentId: row.assessment_component_id, commandTermId },
     });
     diagnoses.push(diagnosis);

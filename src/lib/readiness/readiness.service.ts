@@ -6,6 +6,7 @@
  * snapshot. Never writes Canonical V2 state; never calls AI.
  */
 import { fixtureResponseSql, technicalExamAttemptSql } from '@/lib/exam-core/audience';
+import { inExamScopeSql } from '@/lib/exam-core/evidence-scope';
 import { db, type DbExecutor } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
 import { canFullMockBeOffered } from '@/lib/assessment/full-mock-guard.service';
@@ -31,14 +32,15 @@ const GAP_DIMENSION_MAP: Array<{ dimension: 'KNOWLEDGE_READINESS' | 'SKILL_READI
 ];
 
 // QB-0: prediction evidence never comes from a technical attempt or from DEV fixture content.
-async function computeSimulationPerformanceStats(studentId: string, examVersionId: string, client: DbExecutor) {
+// G6: simulation history is the history of THIS target (another target of the same version is not it).
+async function computeSimulationPerformanceStats(studentId: string, examVersionId: string, examProfileId: string, client: DbExecutor) {
   const attempts = await client.query(
     // Track B: an INVALIDATED result no longer counts as simulation history.
     `SELECT sa.exam_attempt_id FROM simulation_attempts sa
-      WHERE sa.student_id = $1 AND sa.exam_version_id = $2 AND sa.status = 'COMPLETED'
+      WHERE sa.student_id = $1 AND sa.exam_version_id = $2 AND sa.exam_profile_id = $3 AND sa.status = 'COMPLETED'
         AND NOT EXISTS (SELECT 1 FROM exam_attempt_results r WHERE r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'INVALIDATED')
         AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}`,
-    [studentId, examVersionId]
+    [studentId, examVersionId, examProfileId]
   );
   const attemptIds: string[] = attempts.rows.map((r: any) => r.exam_attempt_id);
   if (attemptIds.length === 0) return { completedAttemptCount: 0, averageScorePercent: null as number | null, byComponent: {} as Record<string, number>, attemptIds };
@@ -61,13 +63,14 @@ async function computeSimulationPerformanceStats(studentId: string, examVersionI
   return { completedAttemptCount: attemptIds.length, averageScorePercent: totalMax > 0 ? (totalScore / totalMax) * 100 : null, byComponent, attemptIds };
 }
 
-async function computeEvidenceSufficiencyStats(studentConceptIds: string[], client: DbExecutor) {
+/** G6: only evidence in THIS target's exam scope (longitudinal learning + its own attempts). */
+async function computeEvidenceSufficiencyStats(studentConceptIds: string[], examProfileId: string, client: DbExecutor) {
   if (studentConceptIds.length === 0) {
     return { totalQualifyingEvidenceCount: 0, independentEvidenceCount: 0, distinctQuestionTypeCount: 0, distinctContextCount: 0, mostRecentEvidenceAgeDays: null as number | null };
   }
   const result = await client.query(
-    `SELECT ai_assistance_type, activity_type, metadata, "timestamp" FROM learning_evidence WHERE concept_id = ANY($1::uuid[])`,
-    [studentConceptIds]
+    `SELECT le.ai_assistance_type, le.activity_type, le.metadata, le."timestamp" FROM learning_evidence le WHERE le.concept_id = ANY($1::uuid[]) AND ${inExamScopeSql('le', '$2')}`,
+    [studentConceptIds, examProfileId]
   );
   const rows = result.rows;
   const independentCount = rows.filter((r: any) => r.ai_assistance_type === 'NONE').length;
@@ -93,7 +96,7 @@ export async function computeReadinessSnapshot(params: { studentId: string; exam
   const blueprint = await getBlueprintForVersion(params.examVersionId);
   const targets = blueprint ? await listObjectiveTargets(blueprint.id) : [];
 
-  const coverageResults = await Promise.all(targets.map((t) => classifyBlueprintTargetCoverage(t, params.studentId, params.examVersionId)));
+  const coverageResults = await Promise.all(targets.map((t) => classifyBlueprintTargetCoverage(t, params.studentId, params.examVersionId, params.examProfileId)));
   const coverageSummary = summarizeBlueprintCoverage(coverageResults);
 
   const diagnosisIds = coverageResults.filter((c) => c.diagnosisId).map((c) => c.diagnosisId as string);
@@ -112,10 +115,10 @@ export async function computeReadinessSnapshot(params: { studentId: string; exam
   }
   dimensions.push(classifyBlueprintCoverageDimension(coverageSummary, policy.rules));
 
-  const simPerf = await computeSimulationPerformanceStats(params.studentId, params.examVersionId, db);
+  const simPerf = await computeSimulationPerformanceStats(params.studentId, params.examVersionId, params.examProfileId, db);
   dimensions.push(classifySimulationPerformanceDimension(simPerf, policy.rules));
 
-  const evidenceStats = await computeEvidenceSufficiencyStats(studentConceptIds, db);
+  const evidenceStats = await computeEvidenceSufficiencyStats(studentConceptIds, params.examProfileId, db);
   dimensions.push(classifyEvidenceSufficiencyDimension(evidenceStats, policy.rules));
 
   const fullMock = await canFullMockBeOffered(params.examVersionId);

@@ -94,7 +94,7 @@ DB cert (Student independiente, PAA + Saber):
 - Blockers separados (PAA: `CONTENT_UNAVAILABLE`×3; Saber: `EXAM_DATE_UNKNOWN`, `CONTENT_UNAVAILABLE`×3, …).
 - No hay readiness combinada.
 
-**El aislamiento de readiness NO está resuelto** (G6, §12). `ReadinessStatus.crossExamEvidenceRisk` sigue marcando el riesgo y la UX oculta los porcentajes contaminados.
+**G6 resuelto** (§16, `G6_EXAM_EVIDENCE_ISOLATION.md`): readiness, gaps, diagnóstico, cobertura y siguiente acción quedan aislados por target. `crossExamEvidenceRisk` solo reporta la mezcla residual del Knowledge State compartido. La UX sigue sin mostrar porcentajes.
 
 ## 8. Interacción Blueprint ↔ Journey
 
@@ -107,7 +107,7 @@ DB cert (Student independiente, PAA + Saber):
 - Readiness de contenido → `objectiveCapabilities` → `applyBankReadinessOverlay` (audiencia STUDENT; fixtures nunca cuentan) → `contentFacts` del Journey.
 - Audiencia: `listStudentExamProfiles` excluye `dev-cert.*` y definiciones sin `config_key` (piloto interno); DB cert E6 confirma que el Journey solo resuelve los targets Student.
 - Puerta por URL directa: `[examProfileId]/page.tsx` hace `notFound()` para audiencia ≠ STUDENT antes de la rama UX.
-- **Observación (no bloqueante):** el onboarding gate (`onboarding-gate.server.ts`, `VALID_EXAM_TARGET_PREDICATE`) cuenta cualquier `student_exam_profiles` no archivado, incluidos los técnicos. Un perfil técnico solo puede existir por datos de harness (la API rechaza crearlo); el efecto máximo es saltar el paso de asignaturas y aterrizar en un Exam Prep vacío. No otorga capacidad de examen. Se registra para el hotfix G6 o J4.
+- **Observación (no bloqueante):** el onboarding gate (`onboarding-gate.server.ts`, `VALID_EXAM_TARGET_PREDICATE`) cuenta cualquier `student_exam_profiles` no archivado, incluidos los técnicos. Un perfil técnico solo puede existir por datos de harness (la API rechaza crearlo); el efecto máximo es saltar el paso de asignaturas y aterrizar en un Exam Prep vacío. No otorga capacidad de examen. **Corregido en G6** (§16): solo cuentan targets Student-valid.
 
 ## 10. Defectos legacy L1 / L2 (no corregidos)
 
@@ -139,7 +139,7 @@ Escenarios E2E-A previstos: PAA independiente, Saber 11, institucional (contexto
 
 ## 12. G6 — ruta exacta en la línea integrada
 
-No se corrigió G6 (el merge no lo exigía). Mapa verificado sobre el árbol integrado.
+Mapa de partida (antes de G6). Corregido en el hotfix G6: ver §16 y `G6_EXAM_EVIDENCE_ISOLATION.md`.
 
 **Causa raíz.** La evidencia de examen se selecciona por `student_id` y se une al examen objetivo a través de `learning_objectives` → `objective_concept_mappings` → `canonical_concepts`. Ninguna de esas lecturas filtra por la identidad del target (`simulation_attempts.exam_profile_id`, `exam_attempts.student_exam_profile_id` o `exam_versions.exam_definition_id`). Además, la ruta de escritura amplifica el problema: `simulation/scoring.service.ts` `recordSimulationItemResponse` (L114–142) llama a `updateMastery` con `sourceType 'EXAM_SIMULATION'`, que escribe en `learning_evidence` / `concept_knowledge_state` compartidos. El `metadata` guarda `examAttemptId` y `framework.examVersionId`, pero no el perfil. `services/knowledge-state.service.ts` (L111–116, L393) cuenta esa evidencia como comprensión y aplicación. `technicalExamAttemptSql` (audiencia) **no** es un filtro de target.
 
@@ -184,7 +184,7 @@ No hubo validación manual en navegador (no hay fixture Clerk local); la UX se v
 
 ## 14. Gates pendientes para DEV
 
-1. **G6 hotfix** en esta línea (siguiente tarea).
+1. ~~G6 hotfix~~ — **hecho** (§16).
 2. Operador: aplicar `20261102_1000` y `20261103_1000` en DEV con el runner gobernado; `track-b-v2-apply --write` (Saber V2.1 sustituye a V2 de 12 slots, decisión pendiente del operador).
 3. Operador: `EXAM_BLUEPRINT_V2=SHADOW` + `STUDENT_JOURNEY_V2=UX` solo en el entorno `dev` de Vercel; deploy inmutable de este SHA.
 4. Fixture de sign-in (Clerk DEV) para el E2E manual del navegador.
@@ -211,3 +211,15 @@ No hubo validación manual en navegador (no hay fixture Clerk local); la UX se v
 | 14 sin cambios hosted | PASS |
 
 **`EXAM_PLATFORM_INTEGRATION_PASS` · `READY_FOR_G6_HOTFIX` · `READY_FOR_DEV_E2E_AFTER_G6`** (más los pasos de operador del §14).
+
+## 16. Estado G6 (hotfix sobre esta línea)
+
+Detalle en `docs/exams/G6_EXAM_EVIDENCE_ISOLATION.md`.
+
+- **Resultado:** **`G6_HOTFIX_PASS`**. Base `d4de854`. Sin migración: la cadena sigue terminando en `20261103_1000`.
+- **Contrato:** la evidencia de un intento lleva su target (`metadata.examScope`, o el `examAttemptId` previo vía la FK del intento). Los lectores exam-specific solo consumen el alcance del target, es decir, conocimiento longitudinal más sus propios intentos. La evidencia de otros targets y la `UNSCOPED_LEGACY` sigue en el Knowledge State, pero no decide nada de otro examen.
+- **Reproducción PAA → PISA** (`g6-exam-evidence-isolation-cert.ts`, Postgres efímero, catálogo real):
+  - en `d4de854`, PISA pasa de `DIAGNOSTIC` a `PRACTICE` tras un intento PAA, y además aparecen 16 gaps ajenos y 6 evidencias en el snapshot → **16/30**;
+  - tras G6 → **34/34**.
+- **Onboarding:** targets técnicos, internos y retirados ya no cuentan. El target independiente Student-valid sigue funcionando sin asignaturas.
+- **Mismo examen:** dos targets activos son imposibles por índice único. Si se archiva y recrea, el alcance es por target (decisión explícita).

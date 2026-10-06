@@ -5,7 +5,8 @@
 #   -> schema checks for 20261031 / 20261101 (QB) / 20261102 (QB) / 20261103 (Journey) -> second db-migrate run (idempotent)
 #   -> exam-platform-v2-integration-cert.ts (Saber V2.1 apply, real formInputs OFF vs SHADOW, QB targeting)
 #   -> Question Bank mock-certification CLI (read-only) for Saber
-#   -> track-b-v2-apply --write + learning catalogue -> exam-platform-v2-journey-cert.ts (Student Journey V2, E1-E12).
+#   -> track-b-v2-apply --write + learning catalogue -> exam-platform-v2-journey-cert.ts (Student Journey V2, E1-E12)
+#   -> g6-exam-evidence-isolation-cert.ts (G6: exam evidence isolated by target).
 #
 # Usage: PG_BIN=/opt/homebrew/opt/postgresql@18/bin ./scripts/operations/exam-platform-v2-migration-chain-cert.sh [workdir]
 # TCP on 127.0.0.1 (a long scratchpad path does not fit a unix socket). Prints no credential.
@@ -46,7 +47,7 @@ echo "--- [1] baseline + ledger"
 SUM=$(shasum -a 256 "$REPO_ROOT/database/baseline/STUDYUS_BASELINE_2026_08.sql" | awk '{print $1}')
 "${PSQL[@]}" -c "INSERT INTO schema_migrations (version, name, checksum) VALUES ('STUDYUS_BASELINE_2026_08', 'Live schema baseline (pg_dump snapshot, Phase 0D)', '$SUM')" "$DBNAME"
 # Policy v1 row the schema-only baseline omits (the app refuses to run without it).
-"${PSQL[@]}" -c "INSERT INTO mastery_policies (version, practice_threshold, prove_threshold, retain_threshold, transfer_threshold, mastery_threshold, require_transfer, min_days_between_attempts, max_attempts_per_day, retain_min_days, retain_window_days) SELECT 1, 80, 80, 75, 75, 70, true, 0, 3, 2, 3 WHERE NOT EXISTS (SELECT 1 FROM mastery_policies)" "$DBNAME" 2>/dev/null || echo "  (mastery_policies seed skipped: schema differs; not needed by this cert)"
+"${PSQL[@]}" -c "INSERT INTO mastery_policies (version, minimum_understanding, minimum_independence, minimum_application, minimum_retention, minimum_transfer, requires_transfer, maximum_critical_misconceptions, minimum_evidence_count, minimum_independent_evidence_count, retention_min_gap_days, validation_window_days) SELECT 1, 80, 80, 75, 75, 70, true, 0, 3, 2, 3, 14 WHERE NOT EXISTS (SELECT 1 FROM mastery_policies)" "$DBNAME"
 
 export DATABASE_URL="postgresql://postgres@127.0.0.1:$PORT/$DBNAME"
 cd "$REPO_ROOT"
@@ -76,4 +77,6 @@ TRACK_B_ALLOW_EPHEMERAL="$FP" npx tsx --tsconfig tsconfig.json scripts/operation
 TRACK_B_ALLOW_EPHEMERAL="$FP" npx tsx --tsconfig tsconfig.json scripts/operations/track-b-v2-learning-catalog.ts --write 2>&1 | tail -2 | cut -c1-300
 echo "--- [9] Student Journey V2 on the unified line (E1-E12)"
 npx tsx --tsconfig tsconfig.json scripts/operations/exam-platform-v2-journey-cert.ts
+echo "--- [10] G6 exam evidence isolation (PAA -> PISA, real writers / readers)"
+npx tsx --tsconfig tsconfig.json scripts/operations/g6-exam-evidence-isolation-cert.ts | grep -v '^\[' | tail -2
 echo "EXAM_PLATFORM_V2_MIGRATION_CHAIN_CERT = DONE"

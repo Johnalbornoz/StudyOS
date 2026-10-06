@@ -184,10 +184,11 @@ export interface LearningEvidenceFacts {
   /** Latest learning evidence on the target's mapped concepts (ISO timestamp). */
   lastMappedLearningEvidenceAt: string | null;
   /**
-   * G6: mapped concepts on which ANOTHER exam has results. The shared learner
-   * state of those concepts may include that exam's simulation evidence (legacy
-   * knowledge-state scoring counts EXAM_SIMULATION), so this target's readiness
-   * can be influenced by another exam. Reported, never hidden.
+   * G6: mapped concepts whose knowledge THIS target uses although it also rests
+   * partly on another exam's attempt evidence (one longitudinal Knowledge State
+   * per concept; the plan never lets it reach "already strong" here). Evidence
+   * that is entirely another exam's is excluded from the plan, not counted here.
+   * Reported, never hidden.
    */
   crossExamEvidenceConcepts: number;
   /** Requirements whose only evidence is another exam's result (context only: excluded from readiness). */

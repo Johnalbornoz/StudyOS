@@ -38,7 +38,7 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
             AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}
           ORDER BY sa.student_id, d.id, sa.created_at DESC
        ), gaps AS (
-         SELECT l.student_id, l.family, l.exam, (o->>'learningObjectiveId')::uuid AS objective_id
+         SELECT l.student_id, l.family, l.exam, l.exam_version_id, (o->>'learningObjectiveId')::uuid AS objective_id
            FROM latest l, jsonb_array_elements(l.objective_results) o
           WHERE o->>'classification' IN ('GAP', 'DEVELOPING')
        )
@@ -49,9 +49,13 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
                 WHERE s.student_id = g.student_id AND ccm.canonical_concept_id = cc.id AND ccm.status = 'MATCHED' LIMIT 1) AS student_concept_id
          FROM gaps g
          JOIN learning_objectives lo ON lo.id = g.objective_id
+         -- G6: the domain is the component of THIS attempt's exam version, never another exam's blueprint
+         -- that happens to share the objective.
          LEFT JOIN LATERAL (
            SELECT ac.name FROM blueprint_objective_targets t JOIN assessment_components ac ON ac.id = t.assessment_component_id
-            WHERE t.learning_objective_id = lo.id LIMIT 1
+             JOIN assessment_blueprints b ON b.id = t.blueprint_id
+            WHERE t.learning_objective_id = lo.id AND b.exam_version_id = g.exam_version_id
+            ORDER BY ac.sequence_order NULLS LAST, ac.name LIMIT 1
          ) ac ON true
          LEFT JOIN objective_concept_mappings m ON m.learning_objective_id = lo.id AND m.status = 'PUBLISHED'
          LEFT JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id`,
@@ -66,7 +70,8 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
     return m;
   };
   const byDomain = [...group((r) => `${r.family}|${r.exam}|${r.domain}`).values()].map((rs) => ({ family: rs[0].family, exam: rs[0].exam, domain: rs[0].domain, students: distinct(rs.map((r) => r.student_id)) }));
-  const byObjective = [...group((r) => r.objective_id).values()].map((rs) => ({ family: rs[0].family, exam: rs[0].exam, code: rs[0].code, description: rs[0].description, students: distinct(rs.map((r) => r.student_id)) }));
+  // G6: an objective's gap count is per exam (the same objective in two exams is two requirements).
+  const byObjective = [...group((r) => `${r.family}|${r.exam}|${r.objective_id}`).values()].map((rs) => ({ family: rs[0].family, exam: rs[0].exam, code: rs[0].code, description: rs[0].description, students: distinct(rs.map((r) => r.student_id)) }));
   const withConcept = rows.filter((r) => r.canonical_concept_id);
   const byConcept = [...new Map(withConcept.map((r) => [r.canonical_concept_id!, r])).keys()].map((id) => {
     const rs = withConcept.filter((r) => r.canonical_concept_id === id);

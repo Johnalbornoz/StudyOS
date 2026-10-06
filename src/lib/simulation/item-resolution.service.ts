@@ -190,6 +190,7 @@ async function commitAnswer(loaded: LoadedAttempt, index: number, answer: string
     examAttemptId: loaded.attempt.examAttemptId,
     studentId: loaded.attempt.studentId,
     examVersionId: loaded.attempt.examVersionId,
+    examTargetId: loaded.attempt.examProfileId,
     assessmentComponentId: state.ctx.assessmentComponentId,
     learningObjectiveId: state.ctx.learningObjectiveId ?? undefined,
     commandTermId: state.ctx.commandTermId,

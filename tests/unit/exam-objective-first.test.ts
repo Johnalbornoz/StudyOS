@@ -141,13 +141,15 @@ describe('personalized preparation plan: from the existing learner model, never 
     expect(own).toMatchObject({ status: 'NEEDS_REINFORCEMENT', gapExam: 'PISA 2022' });
     expect(classifyRequirement(req('z', [concept('c', learner({ masteryState: 'AT_RISK' }))])).status).toBe('NEEDS_REINFORCEMENT');
   });
-  it('same content, different exams: another exam\'s result is context, never "covered" or "gap" here', () => {
+  it('same content, different exams: another exam\'s result is context, never "covered", "gap" or "to confirm" here (G6)', () => {
     const otherGap = { classification: 'GAP' as const, at: '2026-10-01', examName: 'PAA', sameExam: false };
     const otherStrength = { classification: 'STRENGTH' as const, at: '2026-10-01', examName: 'PAA', sameExam: false };
-    expect(classifyRequirement(req('y', [concept('c', null, { examEvidence: otherGap })]))).toMatchObject({ status: 'NEEDS_CONFIRMATION', gapExam: null, otherExam: otherGap });
-    expect(classifyRequirement(req('w', [concept('c', null, { examEvidence: otherStrength })])).status).toBe('NEEDS_CONFIRMATION');
+    // G6: another exam's result alone leaves the requirement without evidence for THIS target.
+    expect(classifyRequirement(req('y', [concept('c', null, { examEvidence: otherGap })]))).toMatchObject({ status: 'NO_EVIDENCE', gapExam: null, otherExam: otherGap });
+    expect(classifyRequirement(req('w', [concept('c', null, { examEvidence: otherStrength })])).status).toBe('NO_EVIDENCE');
     const plan = buildPreparationPlan([req('y', [concept('c', null, { examEvidence: otherGap })]), req('w', [concept('d', null, { examEvidence: otherStrength })])], { examDaysLeft: null, canPractice: true, canRunDiagnostic: true });
-    expect(plan.requirements[0].recommendation).toMatchObject({ action: 'PRACTICE_AREA', otherExam: 'PAA', reasons: expect.arrayContaining(['OTHER_EXAM_GAP']) });
+    // ... so this target finds out for itself (diagnostic); the other exam is shown as context.
+    expect(plan.requirements[0].recommendation).toMatchObject({ action: 'DIAGNOSTIC', otherExam: 'PAA', reasons: expect.arrayContaining(['OTHER_EXAM_GAP', 'NO_EVIDENCE']) });
     expect(plan.requirements[1].recommendation.reasons).toContain('OTHER_EXAM_STRENGTH');
     // The concept's learner state is shared; this exam's result is what confirms the format.
     const known = buildPreparationPlan([req('k', [concept('e', learner({ masteryState: 'VALIDATED_MASTERY', validationReadiness: 'READY', memoryStatus: 'STABLE' }))])], { examDaysLeft: null, canPractice: true, canRunDiagnostic: true });

@@ -32,6 +32,7 @@
  */
 import { resolveShellContext } from '@/lib/admin/shell-context';
 import { WORKSPACE_PRIORITY, workspaceForRole, type Role, type Workspace } from '@/lib/identity/types';
+import { studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
 
 export const ACADEMIC_PROFILE_PATH = '/dashboard/profile';
 export const FIRST_SUBJECT_PATH = '/dashboard/onboarding';
@@ -44,8 +45,18 @@ export const NOTIFICATIONS_PATH = '/dashboard/notifications';
  * SQL predicate (over `student_exam_profiles`) of a VALID EXAM TARGET. The ONE
  * definition shared by the gate, the first destination and the onboarding
  * bounce, so they can never disagree about whether a target exists.
+ *
+ * Not archived AND Student-valid: an objective-first target (no exam definition,
+ * created only from the governed catalogue) or one whose exam definition is
+ * offered to Students (`studentVisibleDefinitionSql`, the QB-0 audience rule:
+ * ACTIVE and not technical / internal). A technical (dev-cert.*), internal
+ * (no config key) or retired exam never lets a Student skip subject onboarding.
+ *
+ * Written unqualified on purpose: callers use it as `ep.${...}` or bare over
+ * `student_exam_profiles`; the unqualified `exam_definition_id` resolves to the
+ * profile row (exam_definitions has no such column).
  */
-export const VALID_EXAM_TARGET_PREDICATE = `status <> 'ARCHIVED'`;
+export const VALID_EXAM_TARGET_PREDICATE = `status <> 'ARCHIVED' AND (exam_definition_id IS NULL OR EXISTS (SELECT 1 FROM exam_definitions vt_d WHERE vt_d.id = exam_definition_id AND ${studentVisibleDefinitionSql('vt_d')}))`;
 
 /** /dashboard subtrees that belong to other workspaces and authorize themselves. */
 const NON_STUDENT_PREFIXES = ['/dashboard/admin', '/dashboard/parent', '/dashboard/teacher', '/dashboard/institution'];

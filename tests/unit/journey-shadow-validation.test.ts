@@ -45,28 +45,35 @@ const req = (code: string, over: Partial<RequirementInput> = {}): RequirementInp
 
 // ------------------------------------------------------------------ G6
 describe('G6 -- cross-exam evidence', () => {
-  it('PROOF (legacy, not fixed here): exam-simulation answers alone move the shared learner state', () => {
+  it('PROOF (by design, KNOWLEDGE_MASTERY): exam-simulation answers alone move the shared learner state', () => {
     const examOnly = [1, 2, 3].map((i) => ({ sourceType: 'EXAM_SIMULATION', result: 'correct' as const, scorePercent: 100, aiAssistanceType: 'NONE', timestamp: `2026-10-0${i}` }));
     expect(classifyUnderstanding(examOnly)).toBe(100);
     expect(classifyApplication(examOnly)).toBe(100);
   });
 
-  it('PROOF (legacy, not fixed here): that shared learner state alone marks THIS exam\'s requirement ALREADY_STRONG', () => {
+  it('PROOF (pure read WITHOUT exam scope): that shared learner state alone marks the requirement ALREADY_STRONG -- G6 loaders always pass the scope', () => {
     const r = req('alg', { concepts: [{ canonicalConceptId: 'cc-alg', name: 'alg', learner: { studentConceptId: 'sc', subjectId: 's', masteryState: 'VALIDATED_MASTERY', validationReadiness: 'READY_FOR_VALIDATION' as any, memoryStatus: null, retentionDue: false, criticalMisconceptions: 0, evidenceCount: 3 }, examEvidence: otherExamGap, alsoRelevantFor: [] }] });
     expect(classifyRequirement(r).status).toBe('ALREADY_STRONG');
   });
 
-  it('the shadow REPORTS the risk on the target (reason + readiness flag), it does not hide it', () => {
-    const plan = buildPreparationPlan([req('alg', { concepts: [{ canonicalConceptId: 'cc-alg', name: 'alg', learner: null, examEvidence: otherExamGap, alsoRelevantFor: [] }] }), req('geo')], { examDaysLeft: 100, canPractice: true, canRunDiagnostic: true });
-    const r = resolveStudentExamJourney(base({ learning: learningFactsFromPlan(plan, null) }));
-    expect(r.readinessStatus.crossExamEvidenceRisk).toBe(true);
-    expect(r.resolutionReasons.find((x) => x.code === 'CROSS_EXAM_EVIDENCE_RISK')?.detail).toEqual({ concepts: 1, otherExamOnlyRequirements: 1 });
+  it('G6: evidence that is ENTIRELY another exam\'s is isolated (no risk left); a residual blend is REPORTED, never hidden', () => {
+    const isolated = buildPreparationPlan([req('alg', { concepts: [{ canonicalConceptId: 'cc-alg', name: 'alg', learner: null, examEvidence: otherExamGap, alsoRelevantFor: [] }] }), req('geo')], { examDaysLeft: 100, canPractice: true, canRunDiagnostic: true });
+    const r1 = resolveStudentExamJourney(base({ learning: learningFactsFromPlan(isolated, null) }));
+    expect(r1.readinessStatus.crossExamEvidenceRisk).toBe(false);
+    expect(learningFactsFromPlan(isolated, null).otherExamOnlyRequirements).toBe(1);
+    // A concept this target knows from its own scope AND from another exam's attempts: used (capped), and reported.
+    const blended = { studentConceptId: 'sc', subjectId: 's', masteryState: 'VALIDATED_MASTERY' as any, validationReadiness: 'READY_FOR_VALIDATION' as any, memoryStatus: null, retentionDue: false, criticalMisconceptions: 0, evidenceCount: 5, examScope: { inScopeEvidence: 2, outOfScopeExamEvidence: 3 } };
+    const plan = buildPreparationPlan([req('alg', { concepts: [{ canonicalConceptId: 'cc-alg', name: 'alg', learner: blended, examEvidence: null, alsoRelevantFor: [] }] }), req('geo')], { examDaysLeft: 100, canPractice: true, canRunDiagnostic: true });
+    expect(plan.requirements[0].status).toBe('NEEDS_CONFIRMATION'); // never ALREADY_STRONG on another exam's attempts
+    const r2 = resolveStudentExamJourney(base({ learning: learningFactsFromPlan(plan, null) }));
+    expect(r2.readinessStatus.crossExamEvidenceRisk).toBe(true);
+    expect(r2.resolutionReasons.find((x) => x.code === 'CROSS_EXAM_EVIDENCE_RISK')?.detail).toEqual({ concepts: 1, otherExamOnlyRequirements: 0 });
   });
 
   it('journey-side fix: another exam\'s evidence never counts as THIS target\'s readiness or coverage', () => {
     const plan = buildPreparationPlan([req('alg', { concepts: [{ canonicalConceptId: 'cc-alg', name: 'alg', learner: null, examEvidence: otherExamGap, alsoRelevantFor: [] }] }), req('geo')], { examDaysLeft: 100, canPractice: true, canRunDiagnostic: true });
-    // The plan itself (Exam Core, unchanged) classifies the other-exam requirement as "to confirm here".
-    expect(plan.requirements.map((r) => r.status)).toEqual(['NEEDS_CONFIRMATION', 'NO_EVIDENCE']);
+    // G6: the plan itself (Exam Core) now leaves the other-exam requirement without evidence for this target.
+    expect(plan.requirements.map((r) => r.status)).toEqual(['NO_EVIDENCE', 'NO_EVIDENCE']);
     expect(isOtherExamOnly(plan.requirements[0])).toBe(true);
     const facts = learningFactsFromPlan(plan, null);
     expect(facts).toMatchObject({ mappedRequirements: 2, mappedWithEvidence: 0, weightedReadyShare: 0, otherExamOnlyRequirements: 1 });

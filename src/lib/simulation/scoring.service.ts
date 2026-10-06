@@ -17,6 +17,7 @@ import { examItemFromGenerated, type ExamItem } from '@/lib/exam-core/items';
 import { gradeExamItem, gradeFromRubricOutcome, invalidExamItemGrade, type ExamItemGrade } from '@/lib/exam-core/item-grading';
 import { assessSubmission, parsePortfolioAnswer, resolveSubmissionForAnswer, SubmissionError } from '@/lib/exam-core/submissions/submission.service';
 import { recordAssessments } from '@/lib/exam-core/assessment/assessment-store';
+import { examEvidenceScopeMetadata } from '@/lib/exam-core/evidence-scope';
 
 function isExamItem(q: GeneratedQuestion | ExamItem): q is ExamItem {
   return !!(q as ExamItem).exam;
@@ -35,11 +36,18 @@ function isExamItem(q: GeneratedQuestion | ExamItem): q is ExamItem {
  *
  * Track B: an INVALID response (an answer the rendered controls could never
  * have produced) is recorded with score 0 but NEVER becomes evidence.
+ *
+ * G6: the evidence carries its exam identity (`metadata.examScope`: target,
+ * version, attempt) captured HERE, from the attempt itself -- it keeps
+ * feeding the one Knowledge State per concept, but only its own exam target
+ * may read it as exam-requirement evidence (see exam-core/evidence-scope.ts).
  */
 export async function recordSimulationItemResponse(params: {
   examAttemptId: string;
   studentId: string;
   examVersionId: string;
+  /** G6: the Student's exam target (student_exam_profiles.id) of this attempt. Read from the attempt when omitted; a mismatch is refused. */
+  examTargetId?: string;
   assessmentComponentId: string;
   learningObjectiveId?: string;
   commandTermId?: string | null;
@@ -127,6 +135,8 @@ export async function recordSimulationItemResponse(params: {
           const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true, itemSource: item.exam.source } };
           if (bridge.skillIds.length > 0) metadata.skillIds = bridge.skillIds;
           metadata.framework = { examVersionId: params.examVersionId };
+          const examTargetId = await attemptTargetId(params.examAttemptId, params.examTargetId);
+          if (examTargetId) metadata.examScope = examEvidenceScopeMetadata({ examTargetId, examVersionId: params.examVersionId, examAttemptId: params.examAttemptId });
           if (params.commandTermId) metadata.commandTermId = params.commandTermId;
           if (item.type) metadata.questionType = item.type;
 
@@ -146,6 +156,18 @@ export async function recordSimulationItemResponse(params: {
   }
 
   return { responseId: id, evaluation, evidenceWritten, duplicate: false, grade };
+}
+
+/**
+ * G6: the exam target of an attempt, from its own NOT NULL foreign key (never inferred). A caller-supplied
+ * target must agree with it. Unreadable attempt -> null: the evidence still carries context.examAttemptId,
+ * which identifies the same target deterministically.
+ */
+async function attemptTargetId(examAttemptId: string, claimed: string | undefined): Promise<string | null> {
+  const row = (await db.query(`SELECT student_exam_profile_id FROM exam_attempts WHERE id = $1`, [examAttemptId])).rows?.[0];
+  const target = (row?.student_exam_profile_id as string | undefined) ?? null;
+  if (target && claimed && claimed !== target) throw new Error(`G6: exam target mismatch for attempt ${examAttemptId}`);
+  return target;
 }
 
 export async function getSimulationScoreSummary(examAttemptId: string): Promise<{ rawScore: number; maxScore: number; byComponent: Record<string, { score: number; maxScore: number }> }> {

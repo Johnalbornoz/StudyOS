@@ -13,11 +13,24 @@
  * (PAA closed items vs PISA open reasoning in context vs a Cambridge paper):
  *   - shared across exams: only the knowledge of the canonical concept (ONE
  *     learner state per Student and concept);
- *   - exam-specific: results decide a requirement's status only in the SAME
- *     exam. Another exam's result is context ("en PAA se detectó una brecha"):
- *     it can make a requirement worth confirming, never "covered" or a "gap";
+ *   - exam-specific: results decide a requirement's status only for the SAME
+ *     exam TARGET. Another exam's result is context ("en PAA se detectó una
+ *     brecha"): it is shown as a reason, never "covered", "a gap" or
+ *     "worth confirming" (G6: it never moves a requirement out of NO_EVIDENCE,
+ *     so it never skips this target's diagnostic);
  *   - knowledge demonstrated in learning without evidence in this exam's
  *     format is flagged "confírmalo en el formato de este examen".
+ *
+ * G6 -- KNOWLEDGE_MASTERY vs EXAM_REQUIREMENT_SATISFACTION: the learner state
+ * (one per concept) is longitudinal and may include another exam's attempt
+ * evidence. For THIS target's requirement status only the evidence in its exam
+ * scope counts (`LearnerConceptState.examScope`, see exam-core/evidence-scope.ts):
+ *   - a concept known ONLY through another target's (or unscoped legacy) exam
+ *     evidence is NO_EVIDENCE for this exam;
+ *   - knowledge partly built from another exam's attempts can ask to be
+ *     confirmed here, never be ALREADY_STRONG here.
+ * `knowledgeLabel` keeps the longitudinal label for display; `label` is the
+ * exam-requirement label that drives status, coverage and the next step.
  *
  *
  *   ALREADY_STRONG       demonstrated (validated mastery, or a strength in an exam result)
@@ -48,8 +61,14 @@ export interface LearnerConceptState {
   retentionDue: boolean;
   criticalMisconceptions: number;
   evidenceCount: number;
+  /**
+   * G6: the concept's evidence split by THIS target's exam scope. Absent = not computed (pure callers):
+   * the knowledge state is then read as before.
+   */
+  examScope?: { inScopeEvidence: number; outOfScopeExamEvidence: number };
 }
 
+/** `sameExam` = the result belongs to THIS exam target (G6: target-scoped, not "same exam definition"). */
 export interface ExamEvidence { classification: ExamClassification; at: string; examName: string; sameExam: boolean }
 
 export interface RequirementInput {
@@ -88,7 +107,8 @@ export type PriorityFactor = 'GAP_SEVERITY' | 'HIGH_BLUEPRINT_WEIGHT' | 'EXAM_SO
 
 export interface PlannedRequirement extends RequirementInput {
   status: RequirementStatus;
-  concepts: Array<RequirementInput['concepts'][number] & { label: ConceptKnowledgeLabel }>;
+  /** `label`: the exam-requirement label (drives status); `knowledgeLabel`: the longitudinal Knowledge State label. */
+  concepts: Array<RequirementInput['concepts'][number] & { label: ConceptKnowledgeLabel; knowledgeLabel: ConceptKnowledgeLabel }>;
   recommendation: {
     action: RecommendationAction;
     /** The concept the action is about (CONTINUE_CONCEPT / ADD_TO_PLAN). */
@@ -127,11 +147,24 @@ export function conceptKnowledgeLabel(l: LearnerConceptState | null): ConceptKno
   return 'IN_PROGRESS';
 }
 
+/**
+ * G6: the label a concept contributes to THIS target's requirement status. Longitudinal knowledge counts;
+ * knowledge resting only on another exam's (or unscoped legacy) attempt evidence does not; knowledge
+ * partly built from another exam's attempts can never be "already strong" for this exam.
+ */
+export function examRequirementLabel(l: LearnerConceptState | null): ConceptKnowledgeLabel {
+  const knowledge = conceptKnowledgeLabel(l);
+  if (!l?.examScope) return knowledge;
+  if (l.examScope.inScopeEvidence === 0) return 'NO_EVIDENCE';
+  if (l.examScope.outOfScopeExamEvidence > 0 && (knowledge === 'DEMONSTRATED' || knowledge === 'MAINTENANCE')) return 'IN_PROGRESS';
+  return knowledge;
+}
+
 /** Most recent of two evidences. */
 const latest = (a: ExamEvidence | null, b: ExamEvidence | null) => (!a ? b : !b ? a : a.at >= b.at ? a : b);
 
 export function classifyRequirement(r: RequirementInput): { status: RequirementStatus; labels: ConceptKnowledgeLabel[]; gapExam: string | null; otherExam: ExamEvidence | null } {
-  const labels = r.concepts.map((c) => conceptKnowledgeLabel(c.learner));
+  const labels = r.concepts.map((c) => examRequirementLabel(c.learner));
   // Only THIS exam's own results decide an exam-format status; another exam's are context.
   const own = r.ownEvidence;
   const other = r.concepts.reduce<ExamEvidence | null>((acc, c) => (c.examEvidence && !c.examEvidence.sameExam ? latest(acc, c.examEvidence) : acc), null);
@@ -142,8 +175,9 @@ export function classifyRequirement(r: RequirementInput): { status: RequirementS
   if (labels.includes('NEEDS_REINFORCEMENT')) return out('NEEDS_REINFORCEMENT');
   if (own?.classification === 'STRENGTH' && !labels.includes('IN_PROGRESS') && !labels.includes('MAINTENANCE')) return out('ALREADY_STRONG');
   if (labels.length > 0 && labels.every((l) => l === 'DEMONSTRATED')) return out('ALREADY_STRONG');
-  // Partial knowledge, this exam's own partial result, or ANOTHER exam's evidence: worth confirming here.
-  if (labels.some((l) => l !== 'NO_EVIDENCE') || own || other) return out('NEEDS_CONFIRMATION');
+  // Partial knowledge or this exam's own partial result: worth confirming here.
+  // G6: ANOTHER exam's result alone is context (a reason), never evidence for this target.
+  if (labels.some((l) => l !== 'NO_EVIDENCE') || own) return out('NEEDS_CONFIRMATION');
   return out('NO_EVIDENCE');
 }
 
@@ -154,7 +188,7 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
   const requirements: PlannedRequirement[] = inputs.map((r) => {
     const { status, labels, gapExam, otherExam } = classifyRequirement(r);
     const formatConfirmed = !!r.ownEvidence;
-    const concepts = r.concepts.map((c, i) => ({ ...c, label: labels[i] }));
+    const concepts = r.concepts.map((c, i) => ({ ...c, label: labels[i], knowledgeLabel: conceptKnowledgeLabel(c.learner) }));
     const retentionDue = concepts.some((c) => c.learner?.retentionDue);
     // Recommendation: the smallest useful step, on the SAME learner state.
     const reasons: RecommendationReason[] = [];
@@ -185,6 +219,8 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
       }
       reasons.push('EXAM_REQUIREMENT');
     } else if (status === 'NO_EVIDENCE') {
+      // G6: another exam's result on the same concept is shown as context only.
+      if (otherExam) reasons.push(otherExam.classification === 'STRENGTH' ? 'OTHER_EXAM_STRENGTH' : 'OTHER_EXAM_GAP');
       reasons.push('NO_EVIDENCE', 'EXAM_REQUIREMENT');
       // Without evidence, first find out (diagnostic / practice) -- never assume a weakness.
       if (opts.canRunDiagnostic) action = 'DIAGNOSTIC';

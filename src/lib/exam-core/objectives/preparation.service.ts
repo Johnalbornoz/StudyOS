@@ -19,6 +19,7 @@
  *       EXAM_PREPARATION recorded once.
  */
 import { technicalExamAttemptSql } from '../audience';
+import { examAttemptEvidenceSql, inExamScopeSql } from '../evidence-scope';
 import { readinessFor, selectableSql } from '../catalog/readiness-view';
 import { db } from '@/lib/db';
 import { track } from '@/lib/analytics';
@@ -271,21 +272,31 @@ async function requirementConcepts(objectiveIds: string[]): Promise<Map<string, 
   return out;
 }
 
-/** The Student's OWN learner state for canonical concepts (read-only; one learner state per canonical concept). */
-async function learnerStates(studentId: string, canonicalIds: string[]): Promise<Map<string, LearnerConceptState>> {
+/**
+ * The Student's OWN learner state for canonical concepts (read-only; one learner state per canonical concept).
+ * G6: plus the concept's evidence split by the exam scope of `examTargetId` (longitudinal + this target's
+ * attempts vs another target's / unscoped legacy attempts) -- the Knowledge State itself is not touched.
+ */
+async function learnerStates(studentId: string, canonicalIds: string[], examTargetId: string): Promise<Map<string, LearnerConceptState>> {
   const out = new Map<string, LearnerConceptState>();
   if (!canonicalIds.length) return out;
   const r = await db.query(
     `SELECT DISTINCT ON (ccm.canonical_concept_id) ccm.canonical_concept_id, c.id AS concept_id, c.subject_id,
             ks.mastery_state, ks.validation_readiness, COALESCE(ks.critical_misconception_count, 0) AS critical, COALESCE(ks.evidence_count, 0) AS evidence,
-            ms.memory_status, (ms.next_review_at IS NOT NULL AND ms.next_review_at <= now()) AS due
+            ms.memory_status, (ms.next_review_at IS NOT NULL AND ms.next_review_at <= now()) AS due,
+            ev.in_scope, ev.out_of_scope_exam
        FROM concepts c JOIN subjects s ON s.id = c.subject_id AND s.student_id = $1
        JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = c.id AND ccm.status = 'MATCHED'
        LEFT JOIN concept_knowledge_state ks ON ks.student_id = $1 AND ks.concept_id = c.id
        LEFT JOIN concept_memory_state ms ON ms.student_id = $1 AND ms.concept_id = c.id
+       LEFT JOIN LATERAL (
+         SELECT count(*) FILTER (WHERE ${inExamScopeSql('le', '$3')})::int AS in_scope,
+                count(*) FILTER (WHERE ${examAttemptEvidenceSql('le')} AND NOT ${inExamScopeSql('le', '$3')})::int AS out_of_scope_exam
+           FROM learning_evidence le WHERE le.student_id = $1 AND le.concept_id = c.id
+       ) ev ON true
       WHERE ccm.canonical_concept_id = ANY($2::uuid[])
       ORDER BY ccm.canonical_concept_id, ks.updated_at DESC NULLS LAST, c.created_at`,
-    [studentId, canonicalIds]
+    [studentId, canonicalIds, examTargetId]
   );
   for (const x of r.rows as any[]) {
     out.set(x.canonical_concept_id, {
@@ -297,6 +308,7 @@ async function learnerStates(studentId: string, canonicalIds: string[]): Promise
       retentionDue: !!x.due,
       criticalMisconceptions: Number(x.critical),
       evidenceCount: Number(x.evidence),
+      examScope: { inScopeEvidence: Number(x.in_scope ?? 0), outOfScopeExamEvidence: Number(x.out_of_scope_exam ?? 0) },
     });
   }
   return out;
@@ -304,13 +316,17 @@ async function learnerStates(studentId: string, canonicalIds: string[]): Promise
 
 const asClass = (c: string): ExamEvidence['classification'] | null => (c === 'STRENGTH' || c === 'DEVELOPING' || c === 'GAP' ? c : null);
 
-/** Latest StudyUs evidence per requirement code in THIS exam, and per canonical concept from OTHER exams (context only). */
-async function examEvidence(studentId: string, codes: string[], canonicalIds: string[], configKeys: string[]) {
+/**
+ * Latest StudyUs evidence per requirement code for THIS exam target, and per canonical concept from OTHER
+ * targets (context only). G6: "own" is decided by the attempt's own target (simulation_attempts.exam_profile_id),
+ * never by a shared code, concept or exam family.
+ */
+async function examEvidence(studentId: string, codes: string[], canonicalIds: string[], examTargetId: string) {
   const byCode = new Map<string, ExamEvidence>();
   const byConcept = new Map<string, ExamEvidence>();
   if (!codes.length && !canonicalIds.length) return { byCode, byConcept };
   const r = await db.query(
-    `SELECT lo.code, o->>'classification' AS cls, r.created_at, d.name AS exam_name, d.config_key,
+    `SELECT lo.code, o->>'classification' AS cls, r.created_at, d.name AS exam_name, (sa.exam_profile_id = $4::uuid) AS own_target,
             COALESCE((SELECT array_agg(m.canonical_concept_id) FROM objective_concept_mappings m WHERE m.learning_objective_id = lo.id AND m.status = 'PUBLISHED'), '{}') AS concepts
        FROM simulation_attempts sa
        JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'SCORED'
@@ -320,12 +336,12 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
       WHERE sa.student_id = $1 AND o->>'classification' IN ('STRENGTH', 'DEVELOPING', 'GAP') AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}
         AND (lo.code = ANY($2::text[]) OR EXISTS (SELECT 1 FROM objective_concept_mappings m WHERE m.learning_objective_id = lo.id AND m.status = 'PUBLISHED' AND m.canonical_concept_id = ANY($3::uuid[])))
       ORDER BY r.created_at DESC`,
-    [studentId, codes, canonicalIds]
+    [studentId, codes, canonicalIds, examTargetId]
   );
   for (const x of r.rows as any[]) {
     const cls = asClass(x.cls);
     if (!cls) continue;
-    const ev: ExamEvidence = { classification: cls, at: new Date(x.created_at).toISOString(), examName: x.exam_name, sameExam: configKeys.includes(x.config_key) };
+    const ev: ExamEvidence = { classification: cls, at: new Date(x.created_at).toISOString(), examName: x.exam_name, sameExam: x.own_target === true };
     if (ev.sameExam && codes.includes(x.code) && !byCode.has(x.code)) byCode.set(x.code, ev);
     // Another exam's result on the same concept: context only (different form of assessment and purpose).
     if (!ev.sameExam) for (const c of x.concepts as string[]) if (!byConcept.has(c)) byConcept.set(c, ev);
@@ -363,8 +379,8 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
   const conceptsByReq = await requirementConcepts(reqs.map((r) => r.id));
   const canonicalIds = [...new Set([...conceptsByReq.values()].flat().map((c) => c.id))];
   const [learner, evidence, also] = await Promise.all([
-    learnerStates(studentId, canonicalIds),
-    examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, objective.configKeys),
+    learnerStates(studentId, canonicalIds, profile.id),
+    examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, profile.id),
     otherPreparationsByConcept(studentId, profile.id, canonicalIds),
   ]);
   const totalItems = reqs.reduce((a, r) => a + r.items, 0);

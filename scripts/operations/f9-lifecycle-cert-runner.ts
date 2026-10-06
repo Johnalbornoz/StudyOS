@@ -106,7 +106,7 @@ async function main() {
   {
     const assistedConcept = await createTestConcept(SUBJECT_ID);
     for (let i = 0; i < 5; i++) await insertEvidence(STUDENT_1, assistedConcept, SUBJECT_ID, { result: 'correct', aiAssistanceType: 'TUTOR_GUIDANCE' });
-    const coverage = await classifyBlueprintTargetCoverage(await getObjectiveTarget(TARGET_MATH_ID) as any, STUDENT_1, PAA_EXAM_VERSION_ID);
+    const coverage = await classifyBlueprintTargetCoverage(await getObjectiveTarget(TARGET_MATH_ID) as any, STUDENT_1, PAA_EXAM_VERSION_ID, EXAM_PROFILE_ID);
     // Independently confirm via F8's own diagnosis for this concept: assisted-only evidence can never produce a STRONG/independent verdict.
     void coverage;
     const { runDiagnosis } = await import('@/lib/diagnostics/diagnosis.service');
@@ -159,13 +159,13 @@ async function main() {
   {
     const readingTargetId = (await db.query(`SELECT id FROM blueprint_objective_targets WHERE learning_objective_id = $1`, [OBJ_READING])).rows[0].id;
     const readingTarget = await getObjectiveTarget(readingTargetId);
-    const readingCoverage = await classifyBlueprintTargetCoverage(readingTarget as any, STUDENT_1, PAA_EXAM_VERSION_ID);
+    const readingCoverage = await classifyBlueprintTargetCoverage(readingTarget as any, STUDENT_1, PAA_EXAM_VERSION_ID, EXAM_PROFILE_ID);
     assert(readingCoverage.status === 'UNSUPPORTED_BY_PLATFORM', `F: expected UNSUPPORTED_BY_PLATFORM, got ${readingCoverage.status}`);
     console.log('OK -- F: an unsupported blueprint component is classified UNSUPPORTED_BY_PLATFORM, never learner weakness (INV-F9-05)');
 
     const mathTarget = await getObjectiveTarget(TARGET_MATH_ID);
     // A fresh student concept with zero evidence proves SUPPORTED_BUT_UNEVIDENCED distinctly from failure -- use STUDENT_2 who has never engaged with PAA Math.
-    const freshCoverage = await classifyBlueprintTargetCoverage(mathTarget as any, STUDENT_2, PAA_EXAM_VERSION_ID);
+    const freshCoverage = await classifyBlueprintTargetCoverage(mathTarget as any, STUDENT_2, PAA_EXAM_VERSION_ID, EXAM_PROFILE_ID);
     assert(freshCoverage.status === 'SUPPORTED_BUT_UNEVIDENCED', `G: expected SUPPORTED_BUT_UNEVIDENCED, got ${freshCoverage.status}`);
     console.log('OK -- G: a platform-supported, mapped target with zero learner evidence is an evidence gap, never a failure');
 
@@ -173,7 +173,7 @@ async function main() {
     // (isolated from F's unsupported-component case, which never reaches the mapping check).
     const unmappedTargetId = (await db.query(`SELECT id FROM blueprint_objective_targets WHERE learning_objective_id = $1`, [(await db.query(`SELECT id FROM learning_objectives WHERE code = 'PAA-M-F9-2'`)).rows[0].id])).rows[0].id;
     const unmappedTarget = await getObjectiveTarget(unmappedTargetId);
-    const unmappedCoverage = await classifyBlueprintTargetCoverage(unmappedTarget as any, STUDENT_1, PAA_EXAM_VERSION_ID);
+    const unmappedCoverage = await classifyBlueprintTargetCoverage(unmappedTarget as any, STUDENT_1, PAA_EXAM_VERSION_ID, EXAM_PROFILE_ID);
     assert(unmappedCoverage.status === 'UNMAPPED', `H: expected UNMAPPED, got ${unmappedCoverage.status}`);
     const { summarizeBlueprintCoverage } = await import('@/lib/readiness/blueprint-coverage.service');
     const summary = summarizeBlueprintCoverage([readingCoverage, freshCoverage, unmappedCoverage]);

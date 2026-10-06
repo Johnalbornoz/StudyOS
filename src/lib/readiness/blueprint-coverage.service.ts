@@ -12,13 +12,16 @@ import { getComponent } from '@/lib/assessment/component.service';
 import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-metadata-bridge.service';
 import { runDiagnosis } from '@/lib/diagnostics/diagnosis.service';
 import { resolveStudentConceptForCanonicalConcept } from './student-concept-resolution.service';
+import { inExamScopeSql } from '@/lib/exam-core/evidence-scope';
 import type { BlueprintTargetCoverage, BlueprintCoverageSummary } from './types';
 import type { BlueprintObjectiveTarget } from '@/lib/assessment/types';
 
 export async function classifyBlueprintTargetCoverage(
   target: BlueprintObjectiveTarget,
   studentId: string,
-  examVersionId: string
+  examVersionId: string,
+  /** G6: the exam target whose coverage this is -- only evidence in its exam scope counts. */
+  examProfileId: string
 ): Promise<BlueprintTargetCoverage> {
   const component = await getComponent(target.assessmentComponentId);
   if (!component || component.supportStatus !== 'SUPPORTED') {
@@ -39,7 +42,7 @@ export async function classifyBlueprintTargetCoverage(
     return { targetId: target.id, status: 'SUPPORTED_BUT_UNEVIDENCED', reasonCodes: ['NO_MATCHED_STUDENT_CONCEPT'], studentConceptId: null, diagnosisId: null };
   }
 
-  const evidenceCheck = await db.query(`SELECT 1 FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 LIMIT 1`, [studentId, studentConceptId]);
+  const evidenceCheck = await db.query(`SELECT 1 FROM learning_evidence le WHERE le.student_id = $1 AND le.concept_id = $2 AND ${inExamScopeSql('le', '$3')} LIMIT 1`, [studentId, studentConceptId, examProfileId]);
   if (evidenceCheck.rows.length === 0) {
     return { targetId: target.id, status: 'SUPPORTED_BUT_UNEVIDENCED', reasonCodes: ['NO_EVIDENCE_YET'], studentConceptId, diagnosisId: null };
   }
@@ -47,6 +50,7 @@ export async function classifyBlueprintTargetCoverage(
   const diagnosis = await runDiagnosis({
     studentId,
     conceptId: studentConceptId,
+    examTargetId: examProfileId,
     scope: {
       skillId: target.skillId ?? undefined,
       learningObjectiveId: target.learningObjectiveId,
