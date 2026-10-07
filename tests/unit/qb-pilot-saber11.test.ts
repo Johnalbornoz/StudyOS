@@ -121,3 +121,38 @@ describe('calibration finding: math delimiters the item renderer cannot show', (
     expect(readFileSync(join(ROOT, 'src/lib/exam-core/question-bank/prompts.ts'), 'utf8')).toMatch(/never \\\\\( \\\\\) or/);
   });
 });
+
+describe('pilot review survives exam-version supersession', () => {
+  const source = readFileSync(join(ROOT, 'scripts/operations/qb-pilot-saber11.ts'), 'utf8');
+
+  it('pilotItems resolves the pilot by stable exam identity, never the current published version id', () => {
+    const start = source.indexOf('async function pilotItems()');
+    const end = source.indexOf('async function status()');
+    const body = source.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(body).toContain('JOIN exam_definitions d ON d.id = ev.exam_definition_id');
+    expect(body).toContain('WHERE d.config_key = $1');
+    expect(body).toContain("gr.generation_params->'pilot'->>'pilotKey' = $2");
+    expect(body).toContain('[SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY]');
+    expect(body).not.toContain('qi.exam_version_id = $1');
+    expect(body).not.toContain('const version = await saberVersion()');
+  });
+
+  it('batchRows resolves config key + pilot key + batch across superseded versions', () => {
+    const start = source.indexOf('async function batchRows(batch: string)');
+    const end = source.indexOf('function toReportRow');
+    const body = source.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(body).toContain('JOIN exam_definitions d ON d.id = ev.exam_definition_id');
+    expect(body).toContain('WHERE d.config_key = $1');
+    expect(body).toContain("gr.generation_params->'pilot'->>'pilotKey' = $2");
+    expect(body).toContain("gr.generation_params->'pilot'->>'batch' = $3");
+    expect(body).toContain('[SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY, batch]');
+    expect(body).not.toContain('qi.exam_version_id = $1');
+    expect(body).not.toContain('const version = await saberVersion()');
+  });
+});

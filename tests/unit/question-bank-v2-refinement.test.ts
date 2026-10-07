@@ -250,3 +250,23 @@ describe('Demo Mode stays Preview-only; hard protections stay', () => {
     expect(read('src/lib/exam-core/question-bank/bank.service.ts')).toMatch(/SET usage_eligibility = o\.usage_eligibility, exam_alignment = o\.exam_alignment, validated_difficulty = o\.validated_difficulty/);
   });
 });
+
+describe('academic review queue keeps stable exam identity across version supersession', () => {
+  it('supports config-key filtering while preserving the legacy exact-version filter', () => {
+    const service = read('src/lib/exam-core/question-bank/review-admin.service.ts');
+
+    expect(service).toContain('examVersionId?: string;');
+    expect(service).toContain('examConfigKey?: string;');
+    expect(service).toContain('if (f.examVersionId) where.push(`qi.exam_version_id = ${p(f.examVersionId)}::uuid`);');
+    expect(service).toContain('if (f.examConfigKey) where.push(`d.config_key = ${p(f.examConfigKey)}`);');
+  });
+
+  it('the visible Exam selector filters by stable config key, not the published version id', () => {
+    const page = read('src/app/dashboard/admin/question-bank/review/page.tsx');
+
+    expect(page).toContain('examConfigKey: safe(sp.examConfigKey');
+    expect(page).toContain('name="examConfigKey"');
+    expect(page).toContain('value={v.configKey}');
+    expect(page).not.toContain('<select name="examVersionId"');
+  });
+});

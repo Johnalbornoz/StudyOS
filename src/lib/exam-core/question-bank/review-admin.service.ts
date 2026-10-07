@@ -14,6 +14,7 @@ import { STUDENT_DELIVERABLE_STATES, type CalibrationConfidence } from './lifecy
 
 export interface ReviewQueueFilters {
   examVersionId?: string;
+  examConfigKey?: string;
   sectionKey?: string;
   objectiveCode?: string;
   band?: DifficultyBand;
@@ -43,6 +44,7 @@ export async function reviewQueue(f: ReviewQueueFilters, limit = 200) {
                 AND NOT EXISTS (SELECT 1 FROM question_bank_reviews r WHERE r.approved_item_id = ai.id AND r.decision = 'APPROVED')`);
   }
   if (f.examVersionId) where.push(`qi.exam_version_id = ${p(f.examVersionId)}::uuid`);
+  if (f.examConfigKey) where.push(`d.config_key = ${p(f.examConfigKey)}`);
   if (f.sectionKey) where.push(`split_part(qi.cell_key, '|', 1) = ${p(f.sectionKey)}`);
   if (f.objectiveCode) where.push(`lo.code = ${p(f.objectiveCode)}`);
   if (f.band) where.push(BAND_SQL[f.band]);

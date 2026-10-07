@@ -124,15 +124,19 @@ async function calibration() {
 }
 
 async function pilotItems() {
-  const version = await saberVersion();
   return (await db.query(
     `SELECT qi.item_key, ai.id AS version_id, ai.version_number, ai.bank_lifecycle_status AS lifecycle, ai.content, ai.validation_report, lo.code AS objective, gr.generation_params->'pilot' AS pilot, gr.status AS request_status,
             (SELECT r.decision FROM question_bank_reviews r WHERE r.approved_item_id = ai.id ORDER BY r.reviewed_at DESC LIMIT 1) AS review
-       FROM question_bank_items qi JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
-       JOIN approved_items ai ON ai.bank_item_id = qi.id JOIN learning_objectives lo ON lo.id = ai.learning_objective_id
-      WHERE qi.exam_version_id = $1 AND gr.generation_params->'pilot'->>'pilotKey' = $2
+       FROM question_bank_items qi
+       JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
+       JOIN approved_items ai ON ai.bank_item_id = qi.id
+       JOIN learning_objectives lo ON lo.id = ai.learning_objective_id
+       JOIN exam_versions ev ON ev.id = qi.exam_version_id
+       JOIN exam_definitions d ON d.id = ev.exam_definition_id
+      WHERE d.config_key = $1
+        AND gr.generation_params->'pilot'->>'pilotKey' = $2
       ORDER BY gr.created_at, qi.created_at, ai.version_number`,
-    [version.id, SABER11_MATH_PILOT_KEY]
+    [SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY]
   )).rows;
 }
 
@@ -183,7 +187,6 @@ async function hasAssessmentColumn(): Promise<boolean> {
 
 /** One row per generated candidate of the batch: current version, automated outcome and latest HUMAN review. */
 async function batchRows(batch: string) {
-  const version = await saberVersion();
   const withAssessment = await hasAssessmentColumn();
   return (await db.query(
     `SELECT qi.item_key, qi.provenance, qi.retired_at, gr.id AS request_id, gr.idempotency_key, gr.generation_params->'pilot' AS pilot, qi.generation_metadata,
@@ -191,14 +194,19 @@ async function batchRows(batch: string) {
             lo.code AS objective_code,
             r.decision, r.review_checklist, r.review_notes, r.reviewed_at, ${withAssessment ? 'r.review_assessment' : 'NULL::jsonb AS review_assessment'},
             (r.reviewed_by = cur.created_by OR ru.is_system IS TRUE) AS invalid_reviewer
-       FROM question_bank_items qi JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
+       FROM question_bank_items qi
+       JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
        JOIN approved_items cur ON cur.id = qi.current_version_id
        JOIN learning_objectives lo ON lo.id = cur.learning_objective_id
+       JOIN exam_versions ev ON ev.id = qi.exam_version_id
+       JOIN exam_definitions d ON d.id = ev.exam_definition_id
        LEFT JOIN LATERAL (SELECT * FROM question_bank_reviews rv WHERE rv.bank_item_id = qi.id ORDER BY rv.reviewed_at DESC LIMIT 1) r ON true
        LEFT JOIN users ru ON ru.id = r.reviewed_by
-      WHERE qi.exam_version_id = $1 AND gr.generation_params->'pilot'->>'pilotKey' = $2 AND gr.generation_params->'pilot'->>'batch' = $3
+      WHERE d.config_key = $1
+        AND gr.generation_params->'pilot'->>'pilotKey' = $2
+        AND gr.generation_params->'pilot'->>'batch' = $3
       ORDER BY gr.created_at, qi.created_at`,
-    [version.id, SABER11_MATH_PILOT_KEY, batch]
+    [SABER11_MATH_CONFIG_KEY, SABER11_MATH_PILOT_KEY, batch]
   )).rows;
 }
 

@@ -28,6 +28,7 @@ export default async function ReviewQueuePage({ searchParams }: { searchParams: 
   const pick = <K extends keyof typeof ENUMS>(k: K) => ((ENUMS[k] as readonly string[]).includes(sp[k] ?? '') ? (sp[k] as any) : undefined);
   const filters: ReviewQueueFilters = {
     examVersionId: safe(sp.examVersionId, /^[0-9a-f-]{36}$/i),
+    examConfigKey: safe(sp.examConfigKey, /^[a-z0-9._-]{1,120}$/i),
     sectionKey: safe(sp.sectionKey, /^[a-z0-9._-]{1,80}$/),
     objectiveCode: safe(sp.objectiveCode, /^[a-z0-9._-]{1,80}$/),
     band: pick('band'),
@@ -39,14 +40,18 @@ export default async function ReviewQueuePage({ searchParams }: { searchParams: 
     status: pick('status') ?? 'PENDING',
   };
   const [items, versions] = await Promise.all([reviewQueue(filters), listBankVersions()]);
-  const generatable = versions.filter((v) => !v.structureOnly);
+  const generatable = [...new Map(
+    versions
+      .filter((v): v is typeof v & { configKey: string } => !v.structureOnly && typeof v.configKey === 'string' && v.configKey.length > 0)
+      .map((v) => [v.configKey, v])
+  ).values()];
   return (
     <div>
       <PageHeader title="Revisión académica" subtitle="Preguntas generadas que superaron la validación automática y esperan una decisión humana: aprobar, solicitar corrección o rechazar." />
       <AdminSubNav active="question-bank" />
       <p style={{ marginBottom: 'var(--space-4)' }}><Link href="/dashboard/admin/question-bank" className="btn btn-ghost">← Salud del banco</Link></p>
       <form method="get" className="card" style={{ padding: 'var(--space-3)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'end', fontSize: 13, marginBottom: 'var(--space-4)' }}>
-        <label>Examen<br /><select name="examVersionId" defaultValue={filters.examVersionId ?? ''}><option value="">Todos</option>{generatable.map((v) => <option key={v.examVersionId} value={v.examVersionId}>{v.definitionName}</option>)}</select></label>
+        <label>Examen<br /><select name="examConfigKey" defaultValue={filters.examConfigKey ?? ''}><option value="">Todos</option>{generatable.map((v) => <option key={v.configKey} value={v.configKey}>{v.definitionName}</option>)}</select></label>
         <label>Sección<br /><input name="sectionKey" defaultValue={filters.sectionKey ?? ''} placeholder="p. ej. matematicas" size={12} /></label>
         <label>Objetivo / concepto<br /><input name="objectiveCode" defaultValue={filters.objectiveCode ?? ''} placeholder="p. ej. paa.mat.algebra" size={16} /></label>
         <label>Dificultad<br /><select name="band" defaultValue={filters.band ?? ''}><option value="">Todas</option>{ENUMS.band.map((b) => <option key={b} value={b}>{DIFFICULTY_LABEL[b]}</option>)}</select></label>
