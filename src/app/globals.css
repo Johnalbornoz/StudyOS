@@ -2499,3 +2499,41 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 @media (max-width: 480px) {
   .jx-card .prep-cta, .jx-suggestion .prep-cta, .jx-form .prep-cta { width: 100%; }
 }
+
+/* Admin · Question Bank · academic review workspace (qbr-). Full-width blocks: understand -> review -> decide. */
+.qbr-page { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
+.qbr-card { padding: var(--space-5); font-size: 15px; }
+.qbr-card h2 { font-size: 16px; margin: 0 0 var(--space-3); }
+.qbr-kicker { font-size: 12px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 var(--space-2); }
+.qbr-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 var(--space-3); }
+.qbr-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.qbr-grid-3, .qbr-grid-4, .qbr-defs { display: grid; gap: var(--space-3); }
+.qbr-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.qbr-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qbr-defs { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.qbr-def { background: var(--bg-subtle); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); }
+.qbr-def dt { font-size: 12px; color: var(--text-muted); margin: 0 0 var(--space-1); }
+.qbr-def dd { margin: 0; font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
+.qbr-tile { border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-3); margin: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: 14px; }
+.qbr-tile legend { padding: 0; font-weight: 600; line-height: 1.35; }
+.qbr-tile--done { border-color: var(--text-muted); }
+.qbr-yesno { display: inline-flex; gap: var(--space-3); }
+.qbr-yesno label { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 32px; cursor: pointer; }
+.qbr-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 14px; font-weight: 600; min-width: 0; }
+.qbr-field select, .qbr-field textarea { width: 100%; font-weight: 400; font-size: 14.5px; }
+.qbr-field small { font-weight: 400; color: var(--text-muted); }
+.qbr-option { display: flex; gap: var(--space-2); align-items: baseline; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); }
+.qbr-option--proposed { background: var(--bg-subtle); }
+.qbr-decision { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--bg-base); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06); }
+.qbr-decision-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.qbr-btn-reject { color: var(--error); }
+.qbr-details > summary { cursor: pointer; font-weight: 600; font-size: 14.5px; min-height: 32px; display: flex; align-items: center; }
+@media (max-width: 1024px) {
+  .qbr-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qbr-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .qbr-grid-3, .qbr-grid-4 { grid-template-columns: minmax(0, 1fr); }
+  .qbr-decision { position: static; }
+  .qbr-decision-actions, .qbr-decision-actions .btn { width: 100%; }
+}
