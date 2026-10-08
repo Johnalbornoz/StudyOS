@@ -8,6 +8,7 @@ import { AdminSubNav } from '../../../AdminSubNav';
 import { Table, TD, ROW, DIFFICULTY_LABEL, USAGE_LABEL, ALIGNMENT_LABEL, REVIEW_LABEL, LIFECYCLE_LABEL, pct } from '../../ui';
 import { ReviewActions } from '../../ReviewActions';
 import { PILOT_REVIEW_CONTRACT } from '@/lib/exam-core/question-bank/pilots/human-review';
+import { safeReviewReturnTo } from '../../review-links';
 
 const PROVENANCE_LABEL: Record<string, string> = { OFFICIAL: 'Oficial', LICENSED: 'Licenciada', STUDYUS_GENERATED: 'Generada por StudyUs (IA)', FIXTURE: 'Contenido de certificación StudyUs' };
 const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
@@ -15,7 +16,7 @@ const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
 );
 
 /** Question detail: everything a reviewer needs to certify one version, plus exposure and history. */
-export default async function QuestionDetailPage({ params }: { params: Promise<{ versionId: string }> }) {
+export default async function QuestionDetailPage({ params, searchParams }: { params: Promise<{ versionId: string }>; searchParams?: Promise<Record<string, string | undefined>> }) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
   const admin = await requireStudyUSAdmin(clerkUserId);
@@ -26,14 +27,24 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
   if (!d) notFound();
   const official = d.provenance === 'OFFICIAL' || d.provenance === 'LICENSED';
   const reviewable = d.isCurrent || ['PILOT', 'VALIDATED', 'REVIEW_REQUIRED'].includes(d.lifecycle ?? '');
+  const readOnly = !reviewable || d.lifecycle === 'REJECTED' || d.lifecycle === 'SUPERSEDED' || d.lifecycle === 'RETIRED';
+  // Back to the queue WITH its filters (internal review-queue path only; anything else falls back to the plain queue).
+  const backHref = safeReviewReturnTo((await searchParams)?.returnTo);
   const scale = (b: string | null) => (b ? DIFFICULTY_LABEL[b] : '—');
   return (
     <div>
       <PageHeader title={`Pregunta v${d.version}`} subtitle={`${d.exam.name ?? '—'} · ${d.section ?? '—'} · ${d.objective.code}`} />
       <AdminSubNav active="question-bank" />
       <p style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-        <Link href="/dashboard/admin/question-bank/review" className="btn btn-ghost">← Revisión académica</Link>
+        <Link href={backHref} className="btn btn-ghost">← Revisión académica</Link>
       </p>
+      {readOnly && (
+        <p className="card" role="status" style={{ padding: 'var(--space-3)', fontSize: 13.5, marginBottom: 'var(--space-4)' }}>
+          {d.lifecycle === 'REJECTED'
+            ? 'Rechazada · solo lectura: esta versión no es revisable. Se muestra para consultar el motivo del rechazo y sus hallazgos.'
+            : 'Solo lectura: esta versión no es la versión revisable.'}
+        </p>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 'var(--space-4)', alignItems: 'start' }}>
         <section className="card" style={{ padding: 'var(--space-4)', fontSize: 14 }}>
           {d.content.stimulus && (
@@ -88,7 +99,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
             <Row k="Origen" v={`${PROVENANCE_LABEL[d.provenance] ?? d.provenance} · autor: ${d.author ?? '—'}`} />
             <Row k="Exposición" v={`${d.exposure.totalUses} usos · ${d.exposure.uniqueStudents} estudiantes · repetición ${pct(d.exposure.repeatRate)} · último uso ${d.exposure.lastUsed ? new Date(d.exposure.lastUsed).toLocaleDateString('es') : '—'}`} />
           </section>
-          {reviewable && d.lifecycle !== 'REJECTED' && d.lifecycle !== 'SUPERSEDED' && d.lifecycle !== 'RETIRED' && (
+          {!readOnly && (
             <ReviewActions versionId={d.versionId} official={official} initial={{ difficulty: d.difficulty.validatedScale ?? d.difficulty.declaredScale, usage: [...d.usage].filter((u) => u !== 'FORMAL_ASSESSMENT'), alignment: d.alignment }} checklist={d.pilot?.checklist ?? []}
               pilot={d.pilot ? { contract: PILOT_REVIEW_CONTRACT, proposal: d.pilot.proposal, attentionPoints: d.pilot.attentionPoints, competencyOptions: d.pilot.competencyOptions, contentOptions: d.pilot.contentOptions, options: d.content.options } : null}
             />

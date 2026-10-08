@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AdminSubNav } from '../../AdminSubNav';
 import { Table, TD, ROW, DIFFICULTY_LABEL, USAGE_LABEL, ALIGNMENT_LABEL, REVIEW_LABEL } from '../ui';
+import { reviewQueueHref, reviewRowAction } from '../review-links';
 
 const ENUMS = {
   band: ['LOW', 'MEDIUM', 'HIGH'],
@@ -40,6 +41,8 @@ export default async function ReviewQueuePage({ searchParams }: { searchParams: 
     status: pick('status') ?? 'PENDING',
   };
   const [items, versions] = await Promise.all([reviewQueue(filters), listBankVersions()]);
+  // The detail page's "volver" returns here with the same filters (stable exam identity: examConfigKey).
+  const queueHref = reviewQueueHref(filters);
   const generatable = [...new Map(
     versions
       .filter((v): v is typeof v & { configKey: string } => !v.structureOnly && typeof v.configKey === 'string' && v.configKey.length > 0)
@@ -66,10 +69,14 @@ export default async function ReviewQueuePage({ searchParams }: { searchParams: 
       {items.length === 0 ? (
         <EmptyState title="No hay preguntas pendientes con estos filtros." />
       ) : (
-        <Table head={['Pregunta', 'Examen · sección', 'Objetivo', 'Dificultad', 'Uso', 'Alineación', 'Validación', 'Revisión', 'Generada', '']}>
-          {items.map((i) => (
+        <Table head={['Pregunta', 'Examen · sección', 'Objetivo', 'Dificultad', 'Uso', 'Alineación', 'Validación', 'Revisión', 'Generada', 'Acción']} stickyLastColumn>
+          {items.map((i) => {
+            const action = reviewRowAction(i, queueHref);
+            return (
             <tr key={i.versionId} style={ROW}>
-              <TD>{i.question}</TD>
+              <TD style={{ minWidth: 260, maxWidth: 420 }}>
+                <Link href={action.href} style={{ color: 'inherit', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={i.question}>{i.question}</Link>
+              </TD>
               <TD muted>{i.exam ?? '—'}{i.section ? ` · ${i.section}` : ''}</TD>
               <TD muted>{i.objectiveCode}</TD>
               <TD>{i.difficulty ? DIFFICULTY_LABEL[i.difficulty] : '—'}</TD>
@@ -78,9 +85,12 @@ export default async function ReviewQueuePage({ searchParams }: { searchParams: 
               <TD><span className={`chip ${i.automatedValidation === 'PASS' ? 'chip-good' : 'chip-warn'}`}>{i.automatedValidation === 'PASS' ? 'Superada' : 'No superada'}</span>{i.findings ? ` · ${i.findings} hallazgo(s)` : ''}</TD>
               <TD>{REVIEW_LABEL[i.review] ?? i.review}</TD>
               <TD muted>{new Date(i.createdAt).toLocaleDateString('es')}</TD>
-              <TD><Link className="btn btn-ghost" href={`/dashboard/admin/question-bank/questions/${i.versionId}`}>Revisar</Link></TD>
+              <TD sticky>
+                <Link className={`btn ${action.mode === 'REVIEW' ? 'btn-primary' : 'btn-ghost'}`} href={action.href} aria-label={`${action.label}: ${i.question.slice(0, 80)}`} data-review-action={action.mode}>{action.label}</Link>
+              </TD>
             </tr>
-          ))}
+            );
+          })}
         </Table>
       )}
     </div>

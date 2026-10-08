@@ -2,22 +2,37 @@
  * Question Bank Health -- shared presentational pieces for the Platform Admin
  * pages (server components). Operational language only; raw ids are never shown.
  */
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
-export const TH = ({ children }: { children: ReactNode }) => (
-  <th scope="col" style={{ textAlign: 'left', padding: 'var(--space-2) var(--space-3)', color: 'var(--text-muted)', fontSize: 11.5, fontWeight: 650, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{children}</th>
+/**
+ * A row ACTION column pinned to the right edge of a horizontally scrolling table: the action stays visible
+ * whatever the table width (the scrollbar of a tall table is far below the fold, and hidden on overlay-scrollbar
+ * systems). Opaque background + a left rule so scrolled content passes under it legibly.
+ */
+export const STICKY_ACTION_CELL: CSSProperties = {
+  position: 'sticky',
+  right: 0,
+  zIndex: 1,
+  background: 'var(--bg-base)',
+  boxShadow: 'inset 1px 0 0 var(--border-default)',
+  whiteSpace: 'nowrap',
+};
+
+export const TH = ({ children, sticky }: { children: ReactNode; sticky?: boolean }) => (
+  <th scope="col" style={{ textAlign: 'left', padding: 'var(--space-2) var(--space-3)', color: 'var(--text-muted)', fontSize: 11.5, fontWeight: 650, textTransform: 'uppercase', whiteSpace: 'nowrap', ...(sticky ? STICKY_ACTION_CELL : {}) }}>{children}</th>
 );
-export const TD = ({ children, muted, num }: { children: ReactNode; muted?: boolean; num?: boolean }) => (
-  <td style={{ padding: 'var(--space-2) var(--space-3)', color: muted ? 'var(--text-muted)' : undefined, textAlign: num ? 'right' : undefined, whiteSpace: num ? 'nowrap' : undefined }} className={num ? 'tabular' : undefined}>{children}</td>
+export const TD = ({ children, muted, num, sticky, style }: { children: ReactNode; muted?: boolean; num?: boolean; sticky?: boolean; style?: CSSProperties }) => (
+  <td style={{ padding: 'var(--space-2) var(--space-3)', color: muted ? 'var(--text-muted)' : undefined, textAlign: num ? 'right' : undefined, whiteSpace: num ? 'nowrap' : undefined, ...(sticky ? STICKY_ACTION_CELL : {}), ...style }} className={num ? 'tabular' : undefined}>{children}</td>
 );
 
-export function Table({ head, children }: { head: string[]; children: ReactNode }) {
+/** `stickyLastColumn`: the last column is a row-action column pinned to the right edge (see STICKY_ACTION_CELL). */
+export function Table({ head, children, stickyLastColumn }: { head: string[]; children: ReactNode; stickyLastColumn?: boolean }) {
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--space-6)' }}>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-default)' }}>{head.map((h) => <TH key={h}>{h}</TH>)}</tr>
+            <tr style={{ borderBottom: '1px solid var(--border-default)' }}>{head.map((h, i) => <TH key={h} sticky={stickyLastColumn && i === head.length - 1}>{h}</TH>)}</tr>
           </thead>
           <tbody>{children}</tbody>
         </table>
