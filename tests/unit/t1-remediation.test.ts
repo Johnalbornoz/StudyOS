@@ -95,14 +95,17 @@ beforeEach(() => {
 
 // =================================================================== REM-T1-01 AUTH / ROUTING
 describe('REM-T1-01 auth, session and onboarding shell', () => {
-  it('1. unauthenticated protected route redirects to sign-in BEFORE rendering (with return URL)', async () => {
-    h.redirectToSignIn.mockReturnValue(new Response(null, { status: 307, headers: { location: 'https://dev.example.test/sign-in' } }));
-    h.authMock.mockResolvedValue({ userId: null, redirectToSignIn: h.redirectToSignIn });
+  it('1. unauthenticated protected route redirects to the app sign-in BEFORE rendering (with return URL)', async () => {
+    h.authMock.mockResolvedValue({ userId: null });
     for (const path of ['/dashboard/today', '/dashboard/learn', '/dashboard', '/dashboard/notifications', '/role-select', '/account/change-password']) {
       const res: any = await (proxy as any)(req(path));
       expect(res.status, path).toBe(307);
+      const loc = new URL(res.headers.get('location'));
+      expect(loc.pathname, path).toBe('/sign-in');
+      expect(loc.searchParams.get('redirect_url'), path).toBe(path);
     }
-    expect(h.redirectToSignIn).toHaveBeenCalledWith({ returnBackUrl: 'https://dev.example.test/dashboard/today' });
+    const q: any = await (proxy as any)(req('/dashboard/exam-prep?from=start'));
+    expect(new URL(q.headers.get('location')).searchParams.get('redirect_url')).toBe('/dashboard/exam-prep?from=start');
     expect(h.dbQueryMock).not.toHaveBeenCalled();
   });
 

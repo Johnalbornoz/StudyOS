@@ -16,3 +16,6 @@ export const PROTECTED_PAGE_PREFIXES = ['/dashboard', '/role-select', '/account'
 export function isProtectedPagePath(pathname: string): boolean {
   return PROTECTED_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
+
+/** The app's own sign-in page (src/app/sign-in), used for every unauthenticated redirect. */
+export const SIGN_IN_PATH = '/sign-in';

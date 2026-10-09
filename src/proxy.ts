@@ -2,7 +2,7 @@ import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { PATHNAME_HEADER } from '@/lib/admin/shell-context';
 import { isStudentGatedPath } from '@/lib/student/onboarding-gate';
-import { isProtectedPagePath } from '@/lib/auth/protected-routes';
+import { isProtectedPagePath, SIGN_IN_PATH } from '@/lib/auth/protected-routes';
 import { evaluateStudentOnboardingGate } from '@/lib/student/onboarding-gate.server';
 
 // Next.js 16 Proxy (formerly middleware; runs on the Node.js runtime).
@@ -27,7 +27,10 @@ export default clerkMiddleware(async (auth, request) => {
   if (isProtectedPagePath(pathname)) {
     const session = await auth();
     if (!session.userId) {
-      return session.redirectToSignIn({ returnBackUrl: request.url });
+      // The app's own sign-in page (the normal authentication flow); Clerk's <SignIn/> returns to redirect_url.
+      const signIn = new URL(SIGN_IN_PATH, request.url);
+      signIn.searchParams.set('redirect_url', request.nextUrl.pathname + request.nextUrl.search);
+      return NextResponse.redirect(signIn);
     }
     if (isStudentGatedPath(pathname)) {
       const target = await evaluateStudentOnboardingGate(session.userId, pathname).catch((error) => {
