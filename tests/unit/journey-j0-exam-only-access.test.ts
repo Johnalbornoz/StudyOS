@@ -161,7 +161,8 @@ describe('J0 -- gate state loader and proxy', () => {
 
   it('proxy: without targets and subjects the pre-J0 redirect stays (profile first)', async () => {
     h.authMock.mockResolvedValue({ userId: 'clerk_1' });
-    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', roles: ['STUDENT'], profile_completed: null, subject_count: 0, exam_target_count: 0 }] });
+    // An Academic Student (REM-T1-02 context chosen) without targets or subjects: profile first, as before J0.
+    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', student_context_type: 'ACADEMIC', roles: ['STUDENT'], profile_completed: null, subject_count: 0, exam_target_count: 0 }] });
     const res: any = await (proxy as any)(req('/dashboard/exam-prep'));
     expect(res.headers.get('location')).toBe('https://dev.example.test/dashboard/profile');
   });

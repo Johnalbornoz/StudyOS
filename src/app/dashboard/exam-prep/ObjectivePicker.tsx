@@ -27,6 +27,8 @@ export interface PickerObjective {
   /** Exam eligibility: recommended for this Student, and why (already in the Student's language). */
   recommended?: boolean;
   reason?: string | null;
+  /** REM-T1-04: a subject of the Student's personal Academic Profile -- shown first in its framework. */
+  yourSubject?: boolean;
 }
 
 export interface PickerFramework { key: string; region: string }
@@ -58,7 +60,11 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
   const results = objectives.filter(
     (o) => (framework === 'ALL' || o.framework === framework) && (region === 'ALL' || regionOf.get(o.framework) === region) && words.every((w) => o.searchText.includes(w))
   );
-  const visibleFrameworks = frameworks.filter((f) => (region === 'ALL' || f.region === region) && byFramework.has(f.key));
+  // REM-T1-04: frameworks holding the Student's own profile subjects come first.
+  const hasMine = (key: string) => (byFramework.get(key) ?? []).some((o) => o.yourSubject);
+  const visibleFrameworks = frameworks
+    .filter((f) => (region === 'ALL' || f.region === region) && byFramework.has(f.key))
+    .sort((a, b) => Number(hasMine(b.key)) - Number(hasMine(a.key)));
   const regions = [...new Set(frameworks.filter((f) => byFramework.has(f.key)).map((f) => f.region))];
 
   async function choose(o: PickerObjective) {
@@ -136,6 +142,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
           {visibleFrameworks.map((f) => {
             const list = byFramework.get(f.key) ?? [];
             const single = list.length === 1 ? list[0] : null;
+            const mine = single ? [] : list.filter((o) => o.yourSubject);
             return (
               <li key={f.key} className="card prep-fw">
                 <div className="prep-fw-head">
@@ -148,9 +155,19 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
                   {single ? (single.context.version ? `${l['prep.goal.version']}: ${single.context.version}` : '') : (l['prep.fw.options'] ?? '{n}').replace('{n}', String(list.length))}
                   {single ? <span className={`xr-pill prep-status prep-status--${single.status}`}>{l[`prep.status.${single.status}`]}</span> : null}
                 </p>
+                {mine.length > 0 ? (
+                  <div className="prep-mine-subjects" data-your-subjects>
+                    <p className="ui-label">{l['acp.prep.yourSubjects']}</p>
+                    <ul className="prep-rows">{mine.map(row)}</ul>
+                  </div>
+                ) : null}
                 {single ? (
                   <button type="button" className={single.preparationId ? 'btn btn-secondary prep-cta' : 'btn btn-primary prep-cta'} onClick={() => choose(single)} disabled={!!busy && busy !== single.key} aria-busy={busy === single.key}>
                     {ctaLabel(single)}
+                  </button>
+                ) : mine.length > 0 ? (
+                  <button type="button" className="btn btn-secondary prep-cta" data-explore-all onClick={() => { setFramework(f.key); setLimit(PAGE); }}>
+                    {(l['acp.prep.exploreAll'] ?? '{framework} ({n})').replace('{framework}', l[`prep.fw.${f.key}`] ?? f.key).replace('{n}', String(list.length))}
                   </button>
                 ) : (
                   <button type="button" className="btn btn-primary prep-cta" onClick={() => { setFramework(f.key); setLimit(PAGE); }} aria-label={`${l['prep.cta.chooseSubject']}: ${l[`prep.fw.${f.key}`]}`}>
@@ -171,8 +188,14 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
             <p className="ui-hint">{l['prep.noResults']}</p>
           ) : (
             <>
-              <ul className="prep-rows">{results.slice(0, limit).map(row)}</ul>
-              {results.length > limit ? (
+              {results.some((o) => o.yourSubject) ? (
+                <div className="prep-mine-subjects" data-your-subjects>
+                  <p className="ui-label">{l['acp.prep.yourSubjects']}</p>
+                  <ul className="prep-rows">{results.filter((o) => o.yourSubject).map(row)}</ul>
+                </div>
+              ) : null}
+              <ul className="prep-rows">{results.filter((o) => !o.yourSubject).slice(0, limit).map(row)}</ul>
+              {results.filter((o) => !o.yourSubject).length > limit ? (
                 <button type="button" className="btn btn-secondary prep-cta" onClick={() => setLimit(limit + PAGE)}>{l['prep.showMore']}</button>
               ) : null}
             </>

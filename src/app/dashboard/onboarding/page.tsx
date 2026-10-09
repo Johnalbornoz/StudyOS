@@ -10,11 +10,15 @@ import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
 import { INSTITUTIONAL_PATH_COUNT_SQL } from '@/lib/student/onboarding-gate.server';
 import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 import { resolveWorkspaceEntry } from '@/lib/identity/workspace-entry';
-import { loadSubjectPickerData } from '@/lib/experience/subject-picker.server';
-import { PageIntro } from '@/components/ui/PageIntro';
-import SubjectPicker from '../subjects/SubjectPicker';
+import { ONBOARDING_EXAM_PATH, ONBOARDING_LEARN_PATH } from '@/lib/lx/onboarding-paths';
 
 /**
+ * REM-T1-05 -- ONE decision: "How do you want to start?". Both choices use the
+ * SAME interaction: the card navigates to that journey's own next step
+ * (Learn a subject -> /dashboard/onboarding/learn; Prepare for an exam ->
+ * /dashboard/exam-prep), and Back from either returns here. Nothing is
+ * created by this page; refreshing it is deterministic.
+ *
  * LX-2D / UX-5 closure -- first-time onboarding: no product tour, no
  * StudyUs vocabulary. The page asks "¿Qué quieres aprender?" and offers
  * the subjects the Student's profile implies (SubjectPicker); choosing one
@@ -54,35 +58,22 @@ export default async function OnboardingPage() {
   const bounce = onboardingRouteRedirect({ hasSubject: subjectRes.rows.length > 0, hasExamGoal: goalRes.rows.length > 0, hasInstitutionalPath: ((institutionalRes.rows[0] as any)?.n ?? 0) > 0 });
   if (bounce) redirect(bounce);
 
-  // UX-5 closure: first-run IS the question "¿Qué quieres aprender?" --
-  // profile-based subject suggestions, one tap to choose, then the concept.
-  const picker = await loadSubjectPickerData(studentId, locale);
-
   return (
     <div className="xp-page">
-      {/* Objective first: two equal entry points -- learning a subject, or preparing an exam (no subject needed first). */}
+      {/* REM-T1-05: two equal journeys, the same interaction (navigate to a dedicated next step). */}
       <section className="prep-start" aria-labelledby="prep-start-title">
-        <h2 id="prep-start-title" className="exv2-title">{tr['prep.onboarding.title']}</h2>
+        <h1 id="prep-start-title" className="exv2-title">{tr['prep.onboarding.title']}</h1>
         <div className="prep-start-options">
-          <a className="card prep-start-option" href="#sp-learn">
+          <Link className="card prep-start-option" href={ONBOARDING_LEARN_PATH} data-journey="learn">
             <strong>{tr['prep.onboarding.learn']}</strong>
             <span className="ui-hint">{tr['prep.onboarding.learnBody']}</span>
-          </a>
-          <Link className="card prep-start-option" href="/dashboard/exam-prep">
+          </Link>
+          <Link className="card prep-start-option" href={ONBOARDING_EXAM_PATH} data-journey="exam">
             <strong>{tr['prep.onboarding.exam']}</strong>
             <span className="ui-hint">{tr['prep.onboarding.examBody']}</span>
           </Link>
         </div>
       </section>
-      <span id="sp-learn" />
-      <PageIntro title={t['sp.title']} lead={t['sp.lead']} />
-      <SubjectPicker
-        locale={locale}
-        suggestions={picker.suggestions}
-        owned={picker.owned}
-        requiresLevel={picker.context.requiresLevel}
-        profileLabel={picker.profileLabel}
-      />
     </div>
   );
 }

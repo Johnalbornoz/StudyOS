@@ -24,6 +24,8 @@ import { PATHNAME_HEADER, resolveShellContext } from '@/lib/admin/shell-context'
 import LanguageSwitcher from './LanguageSwitcher';
 import LearnerShell, { type ResolvedNavGroup } from './LearnerShell';
 import WorkspaceSwitcher, { type WorkspaceOption } from './WorkspaceSwitcher';
+import { loadGateState } from '@/lib/student/onboarding-gate.server';
+import { studentOnboardingStage } from '@/lib/student/onboarding-gate';
 
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
@@ -51,6 +53,9 @@ export const metadata: Metadata = {
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId: clerkUserId } = await auth();
+  // REM-T1-01: never render the Student shell (sidebar, Home/Learn/Progress, account navigation) for an
+  // unauthenticated request. The proxy redirects first; this is defence in depth.
+  if (!clerkUserId) redirect('/sign-in');
   const user = await currentUser();
 
   let notifCount = 0;
@@ -65,6 +70,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let activeWorkspace: Workspace = 'STUDENT';
   let availableWorkspaces: Workspace[] = ['STUDENT'];
   let hasActiveLicense = true;
+  // REM-T1-01: while mandatory Student onboarding is incomplete the shell shows only brand, language and Sign out.
+  let onboardingChrome = false;
 
   if (clerkUserId) {
     const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
@@ -132,6 +139,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     activeWorkspace = context.workspace;
 
     if (activeWorkspace === 'STUDENT') {
+      const gate = await loadGateState(clerkUserId).catch(() => null);
+      if (gate) {
+        const ux = gate.journeyUx === true;
+        onboardingChrome =
+          studentOnboardingStage(gate.profile, gate.subjectCount, gate.examTargetCount ?? 0, ux ? gate.institutionalPathCount ?? 0 : 0, ux ? undefined : gate.studentContextType) !== 'READY';
+      }
       const studentId = await getOrCreateStudentId(clerkUserId);
       // Track A: the badge counts UNREAD notifications of the account inbox
       // (persona + capabilities), the same rows /dashboard/notifications
@@ -251,6 +264,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       locale={locale}
       tabBarLabel={t['xp.tabBarLabel']}
       notificationsLabel={t['nav.notifications']}
+      chrome={onboardingChrome ? 'onboarding' : 'full'}
+      signOutLabel={t['common.signOut']}
+      onboardingLabel={t['onboarding.shellLabel']}
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
       workspaceSwitcher={
         <WorkspaceSwitcher

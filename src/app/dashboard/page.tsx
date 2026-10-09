@@ -15,6 +15,7 @@ import { getMessages } from '@/lib/i18n/messages';
 import { getStudentProgressOverview, type SubjectProgress, type ConceptProgress } from '@/services/progress-overview.service';
 import { knowledgeKpis } from '@/lib/knowledge-state-labels';
 import SubjectSwitcher from './SubjectSwitcher';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 
 /**
@@ -164,7 +165,7 @@ export default async function DashboardPage() {
                 <li key={s.subjectId} className="card pg-subject subject-accent" style={{ '--accent': getSubjectAccentColor(s.subjectId) } as React.CSSProperties}>
                   <div className="pg-subject-head">
                     <div>
-                      <Link href={`/dashboard/learn?subjectId=${s.subjectId}`} className="pg-subject-title">{s.subjectName}</Link>
+                      <Link href={`/dashboard/learn?subjectId=${s.subjectId}`} className="pg-subject-title">{localizeSubjectName(s.subjectName, locale)}</Link>
                       <div className="pg-subject-meta">
                         {t['pg.consolidated'].replace('{n}', String(s.consolidatedCount)).replace('{total}', String(s.hierarchyConceptCount))}
                       </div>

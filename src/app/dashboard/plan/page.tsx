@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import StartSessionButton from '../StartSessionButton';
 import { AddToPlanButton, ArchiveToggle, ExamRecommendationActions } from './PlanActions';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 type Tab = 'plan' | 'explore' | 'recommended' | 'exam';
 const TABS: Tab[] = ['plan', 'explore', 'recommended', 'exam'];
@@ -110,7 +111,7 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
               {archived.map((e) => (
                 <li key={e.canonicalConceptId} className="ta-coordinator">
                   <span>
-                    {e.label} · <span className="ta-msg">{e.subjectName}</span>
+                    {e.label} · <span className="ta-msg">{localizeSubjectName(e.subjectName, locale)}</span>
                   </span>
                   <ArchiveToggle canonicalConceptId={e.canonicalConceptId} archived labels={{ archive: t['lp.plan.archive'], restore: t['lp.plan.restore'], error: t['lp.error'] }} />
                 </li>
@@ -127,7 +128,7 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
             <ul className="role-list ta-compact">
               {plan.ownConcepts.map((c) => (
                 <li key={c.learnerConceptId}>
-                  {c.label} · <span className="ta-msg">{c.subjectName}</span>
+                  {c.label} · <span className="ta-msg">{localizeSubjectName(c.subjectName, locale)}</span>
                 </li>
               ))}
             </ul>
@@ -159,7 +160,7 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
             <strong>{t['lp.explore.mine']}:</strong>
             {view.subjects.filter((s) => s.own).map((s) => (
               <Link key={s.catalogKey} href={subjectHref(s.catalogKey)} className={s.catalogKey === view.selected ? 'chip chip-good' : 'chip'} aria-current={s.catalogKey === view.selected ? 'page' : undefined}>
-                {s.name}
+                {localizeSubjectName(s.name, locale)}
               </Link>
             ))}
           </div>
@@ -168,7 +169,7 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
               <span className="ta-msg">{t['lp.explore.otherSubjects']}:</span>
               {view.subjects.filter((s) => !s.own).map((s) => (
                 <Link key={s.catalogKey} href={subjectHref(s.catalogKey)} className={s.catalogKey === view.selected ? 'chip chip-good' : 'chip'}>
-                  {s.name}
+                  {localizeSubjectName(s.name, locale)}
                 </Link>
               ))}
             </div>

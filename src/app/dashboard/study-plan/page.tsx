@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { activityLabel } from '../activityLabel';
 import type { ActivityType } from '@/lib/activity-taxonomy';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 interface PlanItemView {
   id: string;
@@ -256,7 +257,7 @@ export default function StudyPlanPage() {
                         </span>
                       </div>
                       <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                        {item.subjectName ? `${item.subjectName} · ` : ''}
+                        {item.subjectName ? `${localizeSubjectName(item.subjectName, locale)} · ` : ''}
                         {t[item.whyKey as keyof typeof t]}
                       </div>
                       <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -310,7 +311,7 @@ export default function StudyPlanPage() {
                   {view.extraPracticeOptions.map((o) => (
                     <option key={o.conceptId} value={o.conceptId}>
                       {o.conceptLabel}
-                      {o.subjectName ? ` — ${o.subjectName}` : ''}
+                      {o.subjectName ? ` — ${localizeSubjectName(o.subjectName, locale)}` : ''}
                     </option>
                   ))}
                 </select>

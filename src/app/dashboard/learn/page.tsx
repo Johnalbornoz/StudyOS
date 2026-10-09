@@ -18,6 +18,7 @@ import NextChallengeCard from '../NextChallengeCard';
 import SubjectSwitcher from '../SubjectSwitcher';
 import ConceptFinder from './ConceptFinder';
 import DocumentImport from './DocumentImport';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 /**
  * UX-5 closure -- APRENDER.
@@ -173,9 +174,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
         <section className="card ln-start" aria-labelledby="ln-start-title">
           <h2 id="ln-start-title" className="ln-start-title">{t['ln.startTitle'].replace('{subject}', selected.name)}</h2>
           <p className="ln-start-body">{t['ln.startBody']}</p>
-          <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} autoFocus />
+          <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={localizeSubjectName(selected.name, locale)} locale={locale} concepts={finderConcepts} autoFocus />
           <div className="ln-or">
-            <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+            <DocumentImport subjectId={selected.id} subjectName={localizeSubjectName(selected.name, locale)} locale={locale} />
           </div>
         </section>
       ) : (
@@ -184,7 +185,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
             <NextChallengeCard
               view={hero}
               conceptLabel={heroConcept.title}
-              subjectName={selected.name}
+              subjectName={localizeSubjectName(selected.name, locale)}
               studentId={studentId}
               t={t}
               locale={locale}
@@ -203,9 +204,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
           )}
 
           <Section id="ln-find" title={t['ln.findTitle']}>
-            <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} />
+            <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={localizeSubjectName(selected.name, locale)} locale={locale} concepts={finderConcepts} />
             <div className="ln-or">
-              <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+              <DocumentImport subjectId={selected.id} subjectName={localizeSubjectName(selected.name, locale)} locale={locale} />
             </div>
           </Section>
 

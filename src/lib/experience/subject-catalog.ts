@@ -87,11 +87,22 @@ export interface SuggestionProfile {
   schoolYear: string | null;
 }
 
-export type SuggestionReason = 'PROFILE' | 'EXAM';
+export type SuggestionReason = 'PROFILE_SUBJECT' | 'PROFILE' | 'EXAM';
 
 export interface SubjectSuggestion {
   key: string;
   reason: SuggestionReason;
+  /** REM-T1-04: PROFILE_SUBJECT only -- the exact variant from the Academic Profile ("Mathematics: analysis and approaches · HL"). */
+  label?: string;
+  /** REM-T1-04: PROFILE_SUBJECT only -- the level the profile already states (never asked again). */
+  level?: string | null;
+}
+
+/** REM-T1-04: a subject the Student selected in their Academic Profile, resolved to the learner catalog. */
+export interface ProfileSubjectSuggestion {
+  catalogKey: string | null;
+  label: string;
+  level: string | null;
 }
 
 /** The first foreign language worth suggesting: English, unless the Student already studies in English. */
@@ -113,8 +124,11 @@ function profileKeys(profile: SuggestionProfile | null, band: AgeBand, locale: L
 
 /**
  * Ordered, de-duplicated suggestions:
+ *   0. REM-T1-04: the subjects the Student SELECTED in their Academic Profile, with their exact
+ *      variant / level -- when there are any, "For you" means exactly those (plus the exam focus),
+ *      never a generic programme list, and they are never cut by the limit;
  *   1. the exam objective's subject, when it names a catalog subject;
- *   2. the subjects the Student's programme / grade always includes.
+ *   2. otherwise, the subjects the Student's programme / grade always includes.
  * Subjects the Student already has are excluded (they are shown as
  * "Tus materias" instead). The full catalog stays under "Ver más".
  */
@@ -124,6 +138,7 @@ export function suggestSubjects(input: {
   examSubjectFocus: readonly (string | null)[];
   ownedSubjectNames: readonly string[];
   limit?: number;
+  profileSubjects?: readonly ProfileSubjectSuggestion[];
 }): SubjectSuggestion[] {
   const owned = new Set(
     input.ownedSubjectNames.map((n) => catalogSubjectByName(n)?.key ?? `name:${normalizeName(n)}`),
@@ -133,11 +148,20 @@ export function suggestSubjects(input: {
     if (!BY_KEY.has(key) || owned.has(key) || out.some((o) => o.key === key)) return;
     out.push({ key, reason });
   };
+  const selected = (input.profileSubjects ?? []).filter((p) => p.catalogKey && BY_KEY.has(p.catalogKey) && !owned.has(p.catalogKey));
+  const pinned: SubjectSuggestion[] = [];
+  for (const p of selected) {
+    if (pinned.some((x) => x.key === p.catalogKey)) continue;
+    pinned.push({ key: p.catalogKey!, reason: 'PROFILE_SUBJECT', label: p.label, level: p.level });
+  }
+  const isPinned = (key: string) => pinned.some((x) => x.key === key);
   for (const focus of input.examSubjectFocus) {
     const hit = focus ? catalogSubjectByName(focus) : null;
-    if (hit) add(hit.key, 'EXAM');
+    if (hit && !isPinned(hit.key)) add(hit.key, 'EXAM');
   }
-  const band = ageBandFor({ ibYear: input.profile?.ibYear ?? null, schoolYear: input.profile?.schoolYear ?? null });
-  for (const key of profileKeys(input.profile, band, input.locale)) add(key, 'PROFILE');
-  return out.slice(0, input.limit ?? 6);
+  if ((input.profileSubjects ?? []).length === 0) {
+    const band = ageBandFor({ ibYear: input.profile?.ibYear ?? null, schoolYear: input.profile?.schoolYear ?? null });
+    for (const key of profileKeys(input.profile, band, input.locale)) if (!isPinned(key)) add(key, 'PROFILE');
+  }
+  return [...pinned, ...out.slice(0, input.limit ?? 6)];
 }

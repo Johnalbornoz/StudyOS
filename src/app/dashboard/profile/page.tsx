@@ -12,7 +12,9 @@ import { query } from '@/lib/db';
 import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 import { getStudentInstitutionalContext } from '@/lib/exam-journey/ux.server';
 import { EntryChoice, InstitutionalContextCard } from './InstitutionalContextCard';
-import { VALID_EXAM_TARGET_PREDICATE } from '@/lib/student/onboarding-gate';
+import { VALID_EXAM_TARGET_PREDICATE, STUDENT_CONTEXT_PATH } from '@/lib/student/onboarding-gate';
+import { gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
+import { formatTimeContext, storedTimeContext } from '@/lib/student/time-context';
 
 /**
  * Student Academic Profile. Once saved it is shown as a summary (never asked again
@@ -69,8 +71,13 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
                     academicQualificationId: curriculum?.qualificationId ?? null,
                     academicSubjectIds: curriculum?.subjects.map((x) => x.id) ?? [],
                     academicYear: profile?.academicYear ?? null,
+                    academicYearStart: profile?.academicYearStart ?? null,
+                    academicYearEnd: profile?.academicYearEnd ?? null,
+                    examSeries: profile?.examSeries ?? null,
+                    examYear: profile?.examYear ?? null,
                     profileCompleted: completed,
                   }}
+                  locale={locale}
                 />
               </div>
             </details>
@@ -105,7 +112,15 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
             {curriculum?.authority ? <span className="acp-hint"> · {curriculum.authority}</span> : null}
             {curriculum?.qualification ? <span className="acp-hint"> · {curriculum.qualification}</span> : null}
           </p>
-          <p className="acp-hint">{[profile?.schoolYear, profile?.academicYear].filter(Boolean).join(' · ')}</p>
+          {/* REM-T1-07 / REM-T1-03: grade and time context in the interface locale (stored values unchanged). */}
+          <p className="acp-hint">
+            {[
+              profile?.schoolYear ? gradeDisplayLabel(profile.schoolYear, locale) : null,
+              profile ? (storedTimeContext(profile) ? formatTimeContext(storedTimeContext(profile)!, locale) : profile.academicYear) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
           {curriculum && curriculum.subjects.length > 0 ? (
             <p className="acp-hint">{fillMessage(tr['acp.summary.subjects'], { subjects: curriculum.subjects.map((s) => (s.level ? `${s.name} ${s.level}` : s.name)).join(', ') })}</p>
           ) : null}
@@ -140,8 +155,15 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
           academicQualificationId: curriculum?.qualificationId ?? null,
           academicSubjectIds: curriculum?.subjects.map((s) => s.id) ?? [],
           academicYear: profile?.academicYear ?? null,
+          academicYearStart: profile?.academicYearStart ?? null,
+          academicYearEnd: profile?.academicYearEnd ?? null,
+          examSeries: profile?.examSeries ?? null,
+          examYear: profile?.examYear ?? null,
           profileCompleted: completed,
         }}
+        locale={locale}
+        // REM-T1-06: first-time onboarding can be left through Cancel, back to the context choice.
+        exitHref={completed ? null : STUDENT_CONTEXT_PATH}
       />
     </div>
   );

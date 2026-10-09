@@ -118,10 +118,12 @@ describe('DashboardLayout -- zero active roles redirects to /role-select, never 
     expect(getOrCreateStudentIdMock).not.toHaveBeenCalled();
   });
 
-  it('an unauthenticated request is not redirected by this layout (Clerk middleware is the actual gate for that)', async () => {
+  // REM-T1-01: the proxy is the gate (redirect to sign-in before rendering); the layout is defence in depth and
+  // never renders the Student shell for an unauthenticated request.
+  it('an unauthenticated request is redirected to sign-in and never renders the Student shell', async () => {
     authMock.mockResolvedValue({ userId: null });
-    await DashboardLayout({ children: null as any });
-    expect(redirectMock).not.toHaveBeenCalled();
+    await expect(DashboardLayout({ children: null as any })).rejects.toThrow(RedirectSignal);
+    expect(redirectMock).toHaveBeenCalledWith('/sign-in');
     expect(resolveAvailableWorkspacesMock).not.toHaveBeenCalled();
   });
 });

@@ -6,6 +6,21 @@ import { requireStudentId } from '@/lib/auth';
 import { getAcademicProfile, upsertAcademicProfile } from '@/services/academic-profile.service';
 import { AcademicProfileSelectionError, getProfileCurriculum, saveAcademicProfileSelection } from '@/services/academic-profile-catalogue.service';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { db } from '@/lib/db';
+import {
+  canonicalTimeContextText,
+  isAcceptedTimeContext,
+  resolveTimeContextModel,
+  storedTimeContext,
+  timeContextColumns,
+  type TimeContext,
+} from '@/lib/student/time-context';
+
+// REM-T1-03: the final step is a CONTROLLED, structured value (never free text).
+const TimeContextSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('SCHOOL_YEAR'), startYear: z.number().int().min(2000).max(2100), endYear: z.number().int().min(2000).max(2100) }),
+  z.object({ kind: z.literal('EXAM_SESSION'), series: z.enum(['MAY', 'NOVEMBER', 'FEB_MARCH', 'MAY_JUNE', 'OCT_NOV']), year: z.number().int().min(2000).max(2100) }),
+]);
 
 const ProfileSchema = z.object({
   countryOfStudy: z.enum(['CO', 'MX', 'US', 'DE', 'OTHER']),
@@ -22,6 +37,7 @@ const ProfileSchema = z.object({
   academicProgrammeId: z.string().uuid().nullish(),
   academicQualificationId: z.string().uuid().nullish(),
   academicSubjectIds: z.array(z.string().uuid()).max(40).optional(),
+  timeContext: TimeContextSchema.nullish(),
 });
 
 async function handleGET() {
@@ -47,6 +63,22 @@ async function handlePOST(request: NextRequest) {
   const studentId = await requireStudentId(clerkUserId);
   if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const d = parsed.data;
+
+  // REM-T1-03: the time context is driven by the programme (exam session for IB / Cambridge, a controlled
+  // school year otherwise), validated server-side. A legacy `academicYear` string is accepted only when it
+  // reads unambiguously as a valid value. The text column keeps the canonical display string for older readers.
+  const programmeName = d.academicProgrammeId
+    ? ((await db.query(`SELECT name FROM academic_programmes WHERE id = $1`, [d.academicProgrammeId])).rows[0]?.name as string | undefined) ?? null
+    : null;
+  const model = resolveTimeContextModel({ country: d.countryOfStudy, programmeName });
+  const existing = await getAcademicProfile(studentId);
+  const submitted: TimeContext | null = d.timeContext ?? (d.academicYear ? storedTimeContext({ academicYear: d.academicYear }) : null);
+  if (d.profileCompleted !== false && (!submitted || !isAcceptedTimeContext(submitted, model, new Date(), existing ? storedTimeContext(existing) : null))) {
+    return NextResponse.json({ error: 'TIME_CONTEXT_INVALID' }, { status: 400 });
+  }
+  const timeColumns = timeContextColumns(submitted);
+  const academicYear = submitted ? canonicalTimeContextText(submitted) : d.academicYear ?? null;
+
   if (d.curriculumScope !== undefined) {
     try {
       const actor = await getOrCreateCanonicalUser(clerkUserId, null);
@@ -60,8 +92,9 @@ async function handlePOST(request: NextRequest) {
           academicQualificationId: d.academicQualificationId ?? null,
           academicSubjectIds: d.academicSubjectIds ?? [],
           curriculumType: d.curriculumType === 'not_sure' ? 'not_sure' : 'other',
-          academicYear: d.academicYear ?? null,
+          academicYear,
           profileCompleted: d.profileCompleted ?? true,
+          timeColumns,
         },
         actor.id
       );
@@ -72,7 +105,7 @@ async function handlePOST(request: NextRequest) {
     const [profile, curriculum] = await Promise.all([getAcademicProfile(studentId), getProfileCurriculum(studentId)]);
     return NextResponse.json({ data: profile ? { ...profile, curriculum } : null });
   }
-  const profile = await upsertAcademicProfile(studentId, d);
+  const profile = await upsertAcademicProfile(studentId, { ...d, academicYear, timeColumns });
   return NextResponse.json({ data: profile });
 }
 

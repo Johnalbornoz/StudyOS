@@ -50,7 +50,7 @@ export type MessageKey =
   | 'profile.back' | 'profile.continue' | 'profile.finish' | 'profile.stepOf'
   | 'profile.completedTitle' | 'profile.completedBody'
   | 'profile.ctaTitle' | 'profile.ctaBody' | 'profile.ctaButton' | 'profile.ctaDismiss'
-  | 'common.notAuthenticated' | 'common.signIn' | 'common.back' | 'common.create'
+  | 'common.notAuthenticated' | 'common.signOut' | 'onboarding.shellLabel' | 'common.signIn' | 'common.back' | 'common.create'
   | 'common.creating' | 'common.loading' | 'common.error'
   | 'common.save' | 'common.cancel' | 'common.delete' | 'common.saved'
   // F13 -- workspace switcher
@@ -1806,6 +1806,8 @@ const es: Messages = {
   'profile.ctaButton': 'Completar perfil',
   'profile.ctaDismiss': 'Ahora no',
   'common.notAuthenticated': 'No autenticado',
+  'common.signOut': 'Cerrar sesión',
+  'onboarding.shellLabel': 'Configuración inicial',
   'common.signIn': 'Iniciar sesión',
   'common.back': 'Volver',
   'common.create': 'Crear',
@@ -4071,6 +4073,8 @@ const en: Messages = {
   'profile.ctaButton': 'Complete profile',
   'profile.ctaDismiss': 'Not now',
   'common.notAuthenticated': 'Not authenticated',
+  'common.signOut': 'Sign out',
+  'onboarding.shellLabel': 'Getting started',
   'common.signIn': 'Sign in',
   'common.back': 'Back',
   'common.create': 'Create',
@@ -6336,6 +6340,8 @@ const de: Messages = {
   'profile.ctaButton': 'Profil vervollständigen',
   'profile.ctaDismiss': 'Jetzt nicht',
   'common.notAuthenticated': 'Nicht angemeldet',
+  'common.signOut': 'Abmelden',
+  'onboarding.shellLabel': 'Einrichtung',
   'common.signIn': 'Anmelden',
   'common.back': 'Zurück',
   'common.create': 'Erstellen',
@@ -8601,6 +8607,8 @@ const fr: Messages = {
   'profile.ctaButton': 'Compléter le profil',
   'profile.ctaDismiss': 'Pas maintenant',
   'common.notAuthenticated': 'Non authentifié',
+  'common.signOut': 'Se déconnecter',
+  'onboarding.shellLabel': 'Configuration initiale',
   'common.signIn': 'Se connecter',
   'common.back': 'Retour',
   'common.create': 'Créer',
@@ -10866,6 +10874,8 @@ const pt: Messages = {
   'profile.ctaButton': 'Completar perfil',
   'profile.ctaDismiss': 'Agora não',
   'common.notAuthenticated': 'Não autenticado',
+  'common.signOut': 'Sair',
+  'onboarding.shellLabel': 'Configuração inicial',
   'common.signIn': 'Entrar',
   'common.back': 'Voltar',
   'common.create': 'Criar',

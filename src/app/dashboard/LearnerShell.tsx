@@ -15,8 +15,13 @@
  *     navigation system, two presentations.
  *
  * `chrome` is the structural seam for the LX-4 focus state:
- *   - 'full'    -> nav + drawer
- *   - 'minimal' -> slim bar with an Exit affordance, no nav
+ *   - 'full'       -> nav + drawer
+ *   - 'minimal'    -> slim bar with an Exit affordance, no nav
+ *   - 'onboarding' -> REM-T1-01: mandatory Student onboarding is incomplete;
+ *                     brand + language + Sign out only, NO product navigation
+ *                     (Home/Learn/Progress/My Plan/Exam Prep/Study Plan/
+ *                     Improve/Account). The proxy gate enforces the routes;
+ *                     this only removes links that would bounce anyway.
  *
  * LX-4K FOCUS MODE: during active learning the full learner navigation
  * disappears. Rather than a nested layout per activity, the shell
@@ -58,6 +63,7 @@ import {
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
 import type { Locale } from '@/lib/i18n/messages';
 import { ShellLocaleProvider } from './ShellLocale';
+import SignOutAction from '@/components/auth/SignOutAction';
 
 /**
  * LX-4K -- routes that ARE an active learning activity. On these the
@@ -300,6 +306,8 @@ export default function LearnerShell({
   locale = 'es',
   tabBarLabel,
   notificationsLabel,
+  signOutLabel = 'Sign out',
+  onboardingLabel,
   children,
 }: {
   groups: ResolvedNavGroup[];
@@ -315,7 +323,11 @@ export default function LearnerShell({
   /** LX-4K: safe destination for the Focus Mode exit. Defaults to Today. */
   exitHref?: string;
   localeSwitcher: ReactNode;
-  chrome?: 'full' | 'minimal';
+  chrome?: 'full' | 'minimal' | 'onboarding';
+  /** REM-T1-01: label of the Sign out action shown in the onboarding chrome. */
+  signOutLabel?: string;
+  /** REM-T1-01: accessible label of the onboarding header. */
+  onboardingLabel?: string;
   /** F13 -- shows the actor's active workspace and lets a multi-workspace user switch (task section 7). Optional so Focus Mode / any future minimal-chrome caller is unaffected. Rendered in both the desktop sidebar and the mobile drawer, above the Footer, so it is never hidden on a small viewport (INV-F13-22). */
   workspaceSwitcher?: ReactNode;
   /** Onboarding/authorization rework (2026-09-21) -- an optional persistent, non-dismissable license-state notice (demo mode / no active license), rendered above page content. Never shown during Focus Mode so it cannot interrupt an in-progress activity; the server-side capability gate on the activity's own route is what actually blocks premium use, this is purely the visible cue. */
@@ -464,6 +476,26 @@ export default function LearnerShell({
       <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
     </Link>
   );
+
+  // REM-T1-01: mandatory onboarding -- brand, language, Sign out. No product navigation.
+  if (chrome === 'onboarding') {
+    return (
+      <div className="lx-shell lx-shell--focus lx-shell--onboarding" lang={locale}>
+        <header className="lx-focusbar" aria-label={onboardingLabel} style={{ justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+          <span style={{ display: 'inline-flex', padding: '0 var(--space-2)' }}>
+            <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            {localeSwitcher}
+            <SignOutAction label={signOutLabel} />
+          </div>
+        </header>
+        <main className="lx-main lx-main--focus">
+          <ShellLocaleProvider value={locale}>{children}</ShellLocaleProvider>
+        </main>
+      </div>
+    );
+  }
 
   // LX-4K: collapse to the minimal chrome for any active-learning route.
   const inFocusMode = chrome === 'minimal' || FOCUS_MODE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));

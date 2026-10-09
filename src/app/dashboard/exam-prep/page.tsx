@@ -25,6 +25,8 @@ import { scheduleFactsFromRow } from '@/lib/exam-journey/exam-target';
 import { ScheduleSummary } from './journey/ExamTargetOverview';
 import { fillMessage } from '@/lib/i18n/roles-messages';
 import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
+import { examPrepBackHref } from '@/lib/lx/onboarding-paths';
+import { ArrowLeft } from 'lucide-react';
 
 /**
  * Track B -- objective first: "¿Para qué examen quieres prepararte?" Every
@@ -38,7 +40,7 @@ import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
  * Presents whatever F9 already decided (`overallStatus`); never
  * recomputes it (INV: no Mastery/Readiness/Coverage/Gap in the client).
  */
-export default async function ExamPrepPage() {
+export default async function ExamPrepPage({ searchParams }: { searchParams?: Promise<{ from?: string }> } = {}) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) redirect('/sign-in');
 
@@ -62,12 +64,20 @@ export default async function ExamPrepPage() {
       return { profile, objective, capabilities, definitionName: objective?.label ?? definition?.name ?? '', family: definition?.examFamily ?? null, snapshot, openAttempt };
     })
   );
+  // REM-T1-05 / REM-T1-02: opened from a first-use journey choice -> Back returns to that choice.
+  const backHref = examPrepBackHref((await searchParams)?.from);
+  const backLink = backHref ? (
+    <Link href={backHref} className="btn btn-ghost" data-back style={{ display: 'inline-flex', gap: 6, alignItems: 'center', alignSelf: 'flex-start' }}>
+      <ArrowLeft size={16} strokeWidth={2} aria-hidden />
+      <span>{tr['acp.onboarding.back']}</span>
+    </Link>
+  ) : null;
   const familyNames: Record<string, string> = Object.fromEntries([...EXAM_FAMILIES, 'OTHER'].map((f) => [f, tr[`exam.family.${f}`] ?? f]));
 
   const profileMenuLabels: Record<string, string> = Object.fromEntries(
     Object.entries(tr).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
   );
-  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.')));
+  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.') || k.startsWith('acp.prep.')));
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateLine = (examDate: string | null) => {
     if (!examDate) return t['examPrep.noExamDateSet'];
@@ -100,6 +110,7 @@ export default async function ExamPrepPage() {
       .sort((a, b) => Number(!!b.resolution && isActivePreparation(b.resolution)) - Number(!!a.resolution && isActivePreparation(a.resolution)));
     return (
       <div className="xp-page xp-page--wide">
+        {backLink}
         <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={tr['prep.lead']} />
         {institutionDefinesPath ? <p className="ui-hint jx-exams-note" data-programme-note>{tr['jx.inst.exams.note']}</p> : null}
 
@@ -156,6 +167,7 @@ export default async function ExamPrepPage() {
   return (
     <div className="xp-page xp-page--wide">
       {/* Objective first: the page IS the question; readiness never blocks the choice. */}
+      {backLink}
       <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={tr['prep.lead']} />
 
       {rows.length > 0 && (

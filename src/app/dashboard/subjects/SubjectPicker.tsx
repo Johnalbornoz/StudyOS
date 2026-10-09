@@ -6,12 +6,19 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Search } from 'lucide-react';
 import { getMessages, type Locale } from '@/lib/i18n/messages';
 import { SUBJECT_CATALOG, catalogSubject, catalogSubjectByName, normalizeName, type SubjectSuggestion } from '@/lib/experience/subject-catalog';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
+import { ACADEMIC_PROFILE_MESSAGES } from '@/lib/i18n/academic-profile-messages';
 
 /**
  * UX-5 closure -- "¿Qué quieres aprender?". The Student SELECTS a subject
  * from the controlled list (profile-based suggestions first, the full list
  * under "Ver todas"); there is no free-text subject. The server resolves
  * the stored name / IB group / target language from the catalog key.
+ *
+ * REM-T1-04: "Para ti" lists the subjects of the Student's Academic Profile with
+ * their exact variant/level first, and a level the profile already states
+ * (e.g. Mathematics AA HL) is never asked again -- "Cambiar nivel" stays an
+ * explicit action. The full catalog stays under "Ver todas".
  */
 export default function SubjectPicker({
   locale,
@@ -19,6 +26,7 @@ export default function SubjectPicker({
   owned,
   requiresLevel,
   profileLabel,
+  knownLevels = {},
 }: {
   locale: Locale;
   suggestions: SubjectSuggestion[];
@@ -26,8 +34,11 @@ export default function SubjectPicker({
   /** DP: every subject needs HL/SL (subject-academic-context.ts). */
   requiresLevel: boolean;
   profileLabel: string | null;
+  /** REM-T1-04: catalog key -> HL/SL already stated by the Academic Profile. */
+  knownLevels?: Record<string, 'HL' | 'SL'>;
 }) {
   const t = getMessages(locale);
+  const acp = ACADEMIC_PROFILE_MESSAGES[locale] as Record<string, string>;
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [levelFor, setLevelFor] = useState<string | null>(null);
@@ -45,7 +56,9 @@ export default function SubjectPicker({
     );
   }, [search, ownedKeys]);
 
-  async function choose(key: string, ibLevel?: 'HL' | 'SL') {
+  async function choose(key: string, explicitLevel?: 'HL' | 'SL', askLevel = false) {
+    // A level the Academic Profile already states is reused; asking is only on explicit request.
+    const ibLevel = explicitLevel ?? (askLevel ? undefined : knownLevels[key]);
     if (requiresLevel && !ibLevel) {
       setLevelFor(key);
       return;
@@ -73,13 +86,18 @@ export default function SubjectPicker({
     }
   }
 
-  const option = (key: string, badge?: string) => (
+  const option = (key: string, badge?: string, label?: string) => (
     <li key={key}>
-      <button type="button" className="sp-option" onClick={() => choose(key)} disabled={!!busy} aria-describedby={badge ? `sp-b-${key}` : undefined}>
-        <span className="sp-option-name">{name(key)}</span>
+      <button type="button" className="sp-option" onClick={() => choose(key)} disabled={!!busy} aria-describedby={badge ? `sp-b-${key}` : undefined} data-subject-key={key}>
+        <span className="sp-option-name">{label ?? name(key)}</span>
         {badge && <span id={`sp-b-${key}`} className="sp-badge">{badge}</span>}
         <ArrowRight size={16} strokeWidth={2} aria-hidden className="sp-option-go" />
       </button>
+      {requiresLevel && knownLevels[key] ? (
+        <button type="button" className="btn btn-ghost sp-change-level" disabled={!!busy} onClick={() => choose(key, undefined, true)}>
+          {acp['acp.forYou.changeLevel']}
+        </button>
+      ) : null}
     </li>
   );
 
@@ -107,7 +125,7 @@ export default function SubjectPicker({
             {owned.map((o) => (
               <li key={o.id}>
                 <Link href={`/dashboard/learn?subjectId=${o.id}`} className="sp-option">
-                  <span className="sp-option-name">{o.name}</span>
+                  <span className="sp-option-name">{localizeSubjectName(o.name, locale)}</span>
                   <ArrowRight size={16} strokeWidth={2} aria-hidden className="sp-option-go" />
                 </Link>
               </li>
@@ -120,7 +138,11 @@ export default function SubjectPicker({
         <section aria-labelledby="sp-for-you">
           <h2 id="sp-for-you" className="sp-heading">{t['sp.forYou']}</h2>
           {profileLabel && <p className="sp-note">{t['sp.forYouProfile'].replace('{profile}', profileLabel)}</p>}
-          <ul className="sp-grid">{suggestions.map((s) => option(s.key, s.reason === 'EXAM' ? t['sp.examBadge'] : undefined))}</ul>
+          <ul className="sp-grid" data-for-you>
+            {suggestions.map((s) =>
+              s.reason === 'PROFILE_SUBJECT' ? option(s.key, undefined, s.label) : option(s.key, s.reason === 'EXAM' ? t['sp.examBadge'] : undefined)
+            )}
+          </ul>
         </section>
       )}
 

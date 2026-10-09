@@ -36,6 +36,11 @@ export function reasonText(r: EligibilityReason, t: Record<string, string>, opts
   }
 }
 
+/** REM-T1-04 (pure): the objective matches a subject of the Student's personal Academic Profile. */
+export function isPersonalProfileSubject(reasons: readonly EligibilityReason[]): boolean {
+  return reasons.some((r) => r.code === 'CURRICULUM_SUBJECT' && !!r.subject && !r.className);
+}
+
 /** Frameworks with a recommended objective, most specific to the Student first (pure). */
 export function orderFrameworks(eligibility: ObjectiveEligibility[]): ObjectiveFramework[] {
   const best = new Map<ObjectiveFramework, number>();
@@ -76,6 +81,9 @@ export async function loadPickerData(studentId: string, language: string) {
         searchText: o.searchText,
         recommended: e.eligible,
         reason: e.reasons[0] ? reasonText(e.reasons[0], t, { subjectLevel: true }) : null,
+        // REM-T1-04: one of the subjects the Student selected in their PERSONAL Academic Profile (not a class's):
+        // shown first in its framework, before "Explore all ... options".
+        yourSubject: isPersonalProfileSubject(e.reasons),
       },
       rank: e.eligible ? e.rank : 99,
       index,

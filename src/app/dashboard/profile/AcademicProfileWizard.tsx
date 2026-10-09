@@ -11,10 +11,31 @@
  * hardcoded list). "Mi programa no aparece" keeps the scope without a programme.
  * Everything is saved in ONE request at the end (validated and audited on the
  * server); changing the curriculum never erases learning history.
+ *
+ * REM-T1-03: the final step is driven by the programme -- an examination session
+ * for IB Diploma / Cambridge (governed series, programme-sessions.ts), a controlled
+ * school year otherwise. No free text.
+ * REM-T1-06: explicit Cancel on every step; real changes ask "Discard unsaved
+ * changes?". Nothing is official until Finish succeeds (draft until then).
+ * REM-T1-07: countries and grade labels render in the interface locale; the
+ * stored values and catalogue IDs never change.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { COUNTRIES, SCHOOL_YEARS_BY_COUNTRY, type CountryOfStudy, type CurriculumType } from '@/lib/academic-options';
+import type { Locale } from '@/lib/i18n/messages';
+import { countryDisplayName, gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
+import {
+  canonicalTimeContextText,
+  formatTimeContext,
+  parseTimeContextKey,
+  resolveTimeContextModel,
+  storedTimeContext,
+  timeContextFitsModel,
+  timeContextKey,
+  timeContextOptions,
+} from '@/lib/student/time-context';
+import { cancelOutcome, isProfileDraftDirty, wizardActions, type ProfileDraft } from '@/lib/student/academic-profile-draft';
 
 interface Messages {
   [key: string]: string;
@@ -65,6 +86,11 @@ export interface WizardInitial {
   academicQualificationId: string | null;
   academicSubjectIds: string[];
   academicYear: string | null;
+  /** REM-T1-03: structured time context, when stored (legacy rows only have `academicYear`). */
+  academicYearStart?: number | null;
+  academicYearEnd?: number | null;
+  examSeries?: string | null;
+  examYear?: number | null;
   profileCompleted: boolean;
 }
 
@@ -76,16 +102,43 @@ function initialScope(i: WizardInitial): Scope | null {
   return null;
 }
 
-export default function AcademicProfileWizard({ t, initial }: { t: Messages; initial: WizardInitial }) {
+function persistedDraft(i: WizardInitial): ProfileDraft {
+  const stored = storedTimeContext(i);
+  return {
+    country: i.countryOfStudy,
+    grade: i.schoolYear,
+    scope: initialScope(i),
+    programme: i.academicProgrammeId ?? (i.curriculumScope ? NOT_LISTED : null),
+    qualification: i.academicQualificationId,
+    subjects: i.academicSubjectIds,
+    timeKey: stored ? timeContextKey(stored) : null,
+  };
+}
+
+export default function AcademicProfileWizard({
+  t,
+  initial,
+  locale = 'es',
+  exitHref = null,
+}: {
+  t: Messages;
+  initial: WizardInitial;
+  locale?: Locale;
+  /** Where Cancel goes when there is no saved profile to return to (first-time onboarding). */
+  exitHref?: string | null;
+}) {
   const router = useRouter();
+  const persisted = useMemo(() => persistedDraft(initial), [initial]);
   const [open, setOpen] = useState(!initial.profileCompleted);
   const [country, setCountry] = useState<CountryOfStudy | null>(initial.countryOfStudy);
   const [grade, setGrade] = useState<string | null>(initial.schoolYear);
   const [scope, setScope] = useState<Scope | null>(initialScope(initial));
-  const [programme, setProgramme] = useState<string | null>(initial.academicProgrammeId ?? (initial.curriculumScope ? NOT_LISTED : null));
+  const [programme, setProgramme] = useState<string | null>(persisted.programme);
   const [qualification, setQualification] = useState<string | null>(initial.academicQualificationId);
   const [subjects, setSubjects] = useState<string[]>(initial.academicSubjectIds);
-  const [academicYear, setAcademicYear] = useState(initial.academicYear || '');
+  const [timeKey, setTimeKey] = useState<string | null>(persisted.timeKey);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [now] = useState(() => new Date());
   const [options, setOptions] = useState<Options | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [filter, setFilter] = useState('');
@@ -109,6 +162,42 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
   const allProgrammes = useMemo(() => (options ? [...options.national.programmes, ...options.international.flatMap((a) => a.programmes)] : []), [options]);
   const chosen = programme && programme !== NOT_LISTED ? allProgrammes.find((p) => p.id === programme) ?? null : null;
   const subjectOptions = chosen ? chosen.subjects.filter((s) => !qualification || !s.qualificationId || s.qualificationId === qualification) : [];
+
+  // REM-T1-03: the time context the chosen programme actually uses, as controlled options.
+  const timeModel = useMemo(() => resolveTimeContextModel({ country, programmeName: chosen?.name ?? null }), [country, chosen?.name]);
+  const timeOptions = useMemo(() => {
+    const list = timeContextOptions(timeModel, now);
+    const saved = parseTimeContextKey(persisted.timeKey);
+    if (saved && timeContextFitsModel(saved, timeModel) && !list.some((o) => timeContextKey(o) === persisted.timeKey)) list.unshift(saved);
+    return list;
+  }, [timeModel, now, persisted.timeKey]);
+  const selectedTime = timeOptions.find((o) => timeContextKey(o) === timeKey) ?? null;
+  const legacyTimeText = !persisted.timeKey && initial.academicYear ? initial.academicYear : null;
+
+  const dirty = isProfileDraftDirty(persisted, { country, grade, scope, programme, qualification, subjects, timeKey });
+  function resetToPersisted() {
+    setCountry(initial.countryOfStudy);
+    setGrade(initial.schoolYear);
+    setScope(initialScope(initial));
+    setProgramme(persisted.programme);
+    setQualification(initial.academicQualificationId);
+    setSubjects(initial.academicSubjectIds);
+    setTimeKey(persisted.timeKey);
+    setShowAll(false);
+    setFilter('');
+    setError(null);
+    setStepIndex(0);
+  }
+  function exitWizard() {
+    resetToPersisted();
+    setConfirmDiscard(false);
+    if (initial.profileCompleted) setOpen(false);
+    else if (exitHref) router.push(exitHref);
+  }
+  function cancel() {
+    if (cancelOutcome(dirty) === 'CONFIRM_DISCARD') setConfirmDiscard(true);
+    else exitWizard();
+  }
 
   const steps: Step[] = ['country', 'grade', 'scope'];
   if (catalogueScope) steps.push('programme');
@@ -153,7 +242,8 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
           academicProgrammeId: chosen?.id ?? null,
           academicQualificationId: qualificationId,
           academicSubjectIds: chosen ? subjects.filter((s) => subjectOptions.some((o) => o.id === s)) : [],
-          academicYear: academicYear || null,
+          academicYear: selectedTime ? canonicalTimeContextText(selectedTime) : null,
+          timeContext: selectedTime,
           profileCompleted: true,
         }),
       });
@@ -174,8 +264,8 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
     (step === 'programme' && (programme === NOT_LISTED || !!chosen)) ||
     (step === 'qualification' && !!qualification) ||
     step === 'subjects' ||
-    // Required: the Student onboarding gate treats a profile without an academic year as incomplete.
-    (step === 'academicYear' && academicYear.trim().length > 0);
+    // Required (controlled): the Student onboarding gate treats a profile without a time context as incomplete.
+    (step === 'academicYear' && !!selectedTime);
 
   if (!open) {
     return (
@@ -211,7 +301,7 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
           <h2 className="acp-question">{t['profile.stepCountryQuestion']}</h2>
           <div className="acp-options">
             {COUNTRIES.map((c) => (
-              <OptionButton key={c.value} selected={country === c.value} label={c.label} onClick={() => { if (c.value !== country) { setGrade(null); resetProgramme(); } setCountry(c.value); }} />
+              <OptionButton key={c.value} selected={country === c.value} label={countryDisplayName(c.value, locale) || c.label} onClick={() => { if (c.value !== country) { setGrade(null); resetProgramme(); } setCountry(c.value); }} />
             ))}
           </div>
         </>
@@ -222,7 +312,7 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
           <h2 className="acp-question">{t['profile.stepGradeQuestion']}</h2>
           <div className="acp-options">
             {SCHOOL_YEARS_BY_COUNTRY[country].map((g) => (
-              <OptionButton key={g} selected={grade === g} label={g} onClick={() => setGrade(g)} />
+              <OptionButton key={g} selected={grade === g} label={gradeDisplayLabel(g, locale)} onClick={() => setGrade(g)} />
             ))}
           </div>
         </>
@@ -317,8 +407,14 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
 
       {step === 'academicYear' && (
         <>
-          <h2 className="acp-question">{t['profile.stepAcademicYearQuestion']}</h2>
-          <input className="ui-input" type="text" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} placeholder={t['profile.academicYearPlaceholder']} />
+          <h2 className="acp-question">{t[`acp.time.question.${timeModel.kind}`] ?? t['profile.stepAcademicYearQuestion']}</h2>
+          {timeModel.kind === 'EXAM_SESSION' ? <p className="acp-hint">{t['acp.time.help.EXAM_SESSION']}</p> : null}
+          {legacyTimeText ? <p className="acp-hint" data-legacy-time>{(t['acp.time.saved'] ?? '{value}').replace('{value}', legacyTimeText)}</p> : null}
+          <div className="acp-options" role="group" aria-label={t[`acp.time.question.${timeModel.kind}`]}>
+            {timeOptions.map((o) => (
+              <OptionButton key={timeContextKey(o)} selected={timeKey === timeContextKey(o)} label={formatTimeContext(o, locale)} onClick={() => setTimeKey(timeContextKey(o))} />
+            ))}
+          </div>
         </>
       )}
 
@@ -333,15 +429,31 @@ export default function AcademicProfileWizard({ t, initial }: { t: Messages; ini
 
       {error ? <p className="acp-hint ta-msg-error" role="alert">{error}</p> : null}
 
-      {step !== 'done' && (
-        <div className="acp-nav">
-          <button className="btn btn-secondary" onClick={() => setStepIndex((i) => Math.max(i - 1, 0))} disabled={stepIndex === 0 || saving} style={{ visibility: stepIndex === 0 ? 'hidden' : 'visible' }}>
-            {t['profile.back']}
-          </button>
-          {step === 'academicYear' ? (
-            <button className="btn btn-primary" onClick={finish} disabled={!canContinue || saving}>{t['profile.finish']}</button>
-          ) : (
-            <button className="btn btn-primary" onClick={() => setStepIndex((i) => Math.min(i + 1, steps.length - 1))} disabled={!canContinue || saving}>{t['profile.continue']}</button>
+      {confirmDiscard && (
+        <div className="card acp-discard" role="alertdialog" aria-modal="false" aria-labelledby="acp-discard-title" aria-describedby="acp-discard-body" data-discard-confirm>
+          <h3 id="acp-discard-title">{t['acp.discard.title']}</h3>
+          <p id="acp-discard-body" className="acp-hint">{t['acp.discard.body']}</p>
+          <div className="acp-nav">
+            <button type="button" className="btn btn-secondary" onClick={() => setConfirmDiscard(false)} autoFocus>{t['acp.discard.keep']}</button>
+            <button type="button" className="btn btn-primary" onClick={exitWizard} data-discard>{t['acp.discard.confirm']}</button>
+          </div>
+        </div>
+      )}
+
+      {step !== 'done' && !confirmDiscard && (
+        <div className="acp-nav" data-actions={wizardActions(stepIndex, step === 'academicYear').join(',')}>
+          {wizardActions(stepIndex, step === 'academicYear').map((a) =>
+            a === 'cancel' ? (
+              initial.profileCompleted || exitHref || dirty ? (
+                <button key={a} type="button" className="btn btn-ghost" onClick={cancel} disabled={saving} data-cancel>{t['acp.cancel']}</button>
+              ) : null
+            ) : a === 'back' ? (
+              <button key={a} type="button" className="btn btn-secondary" onClick={() => setStepIndex((i) => Math.max(i - 1, 0))} disabled={saving}>{t['profile.back']}</button>
+            ) : a === 'finish' ? (
+              <button key={a} type="button" className="btn btn-primary" onClick={finish} disabled={!canContinue || saving}>{t['profile.finish']}</button>
+            ) : (
+              <button key={a} type="button" className="btn btn-primary" onClick={() => setStepIndex((i) => Math.min(i + 1, steps.length - 1))} disabled={!canContinue || saving}>{t['profile.continue']}</button>
+            )
           )}
         </div>
       )}

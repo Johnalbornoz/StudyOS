@@ -99,9 +99,14 @@ describe('B. concept discovery resolves to existing concepts first', () => {
 });
 
 describe('C. first-run and "Agregar materia" select from the list', () => {
+  // REM-T1-05: the "Learn a subject" journey has its OWN step ("Choose what you want to learn"), reached from the
+  // journey choice -- still profile suggestions, no tour, no free text.
   it('onboarding asks "¿Qué quieres aprender?" with profile suggestions -- no tour, no free text', () => {
-    const src = read('src/app/dashboard/onboarding/page.tsx');
-    expect(src).toMatch(/<PageIntro title=\{t\['sp\.title'\]\}/);
+    const choice = read('src/app/dashboard/onboarding/page.tsx');
+    expect(choice).toMatch(/href=\{ONBOARDING_LEARN_PATH\}/);
+    expect(choice).not.toMatch(/<SubjectPicker/);
+    const src = read('src/app/dashboard/onboarding/learn/page.tsx');
+    expect(src).toMatch(/<PageIntro title=\{tr\['acp\.onboarding\.learnTitle'\]\}/);
     expect(src).toMatch(/<SubjectPicker/);
     expect(src).toMatch(/loadSubjectPickerData\(studentId, locale\)/);
     expect(src).not.toMatch(/onboarding2\.whatTitle/);

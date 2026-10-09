@@ -17,6 +17,7 @@ export const INSTITUTIONAL_PATH_COUNT_SQL = `COALESCE((SELECT count(*) FROM clas
 const GATE_STATE_SQL = `
   SELECT u.status,
          u.active_workspace,
+         s.student_context_type,
          ARRAY(SELECT ur.role FROM user_roles ur WHERE ur.user_id = u.id AND ur.status = 'ACTIVE') AS roles,
          p.profile_completed, p.country_of_study, p.school_year, p.curriculum_type,
          p.ib_programme, p.ib_year, p.academic_year,
@@ -53,6 +54,7 @@ export async function loadGateState(clerkUserId: string): Promise<GateState | nu
     examTargetCount: row.exam_target_count ?? 0,
     institutionalPathCount: row.institutional_path_count ?? 0,
     journeyUx: isStudentJourneyUxEnabled(),
+    studentContextType: row.student_context_type ?? null,
   };
 }
 

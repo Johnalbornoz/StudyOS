@@ -145,7 +145,7 @@ describe('proxy -- enforced before any page renders', () => {
 
   it('redirects an unfinished Student before the page runs, and forwards the path header otherwise', async () => {
     h.authMock.mockResolvedValue({ userId: 'clerk_1' });
-    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', roles: ['STUDENT'], profile_completed: null, subject_count: 0 }] });
+    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', student_context_type: 'ACADEMIC', roles: ['STUDENT'], profile_completed: null, subject_count: 0 }] });
     const res: any = await (proxy as any)(req('/dashboard'));
     expect(res.status).toBe(307);
     expect(res.headers.get('location')).toBe('https://dev.example.test/dashboard/profile');

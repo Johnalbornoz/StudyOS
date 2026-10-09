@@ -195,7 +195,9 @@ describe('exam-first onboarding: no subject needed before choosing an exam goal'
   it('onboarding offers both entries: learn a subject / prepare an exam', () => {
     const src = readFileSync(join(ROOT, 'src/app/dashboard/onboarding/page.tsx'), 'utf-8');
     expect(src).toMatch(/prep\.onboarding\.learn/);
-    expect(src).toMatch(/href="\/dashboard\/exam-prep"/);
+    // REM-T1-05: both journeys navigate to a dedicated step; the exam one is Exam Prep (Back returns here).
+    expect(src).toMatch(/href=\{ONBOARDING_EXAM_PATH\}/);
+    expect(readFileSync(join(ROOT, 'src/lib/lx/onboarding-paths.ts'), 'utf-8')).toMatch(/ONBOARDING_EXAM_PATH = '\/dashboard\/exam-prep\?from=onboarding'/);
   });
 });
 

@@ -33,6 +33,7 @@
 import { resolveShellContext } from '@/lib/admin/shell-context';
 import { WORKSPACE_PRIORITY, workspaceForRole, type Role, type Workspace } from '@/lib/identity/types';
 import { studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
+import { effectiveContextType } from './student-context';
 
 export const ACADEMIC_PROFILE_PATH = '/dashboard/profile';
 export const FIRST_SUBJECT_PATH = '/dashboard/onboarding';
@@ -40,6 +41,8 @@ export const NEW_SUBJECT_PATH = '/dashboard/subjects/new';
 /** The exam-preparation intent of the onboarding ("Quiero prepararme para un examen"). */
 export const EXAM_PREPARATION_PATH = '/dashboard/exam-prep';
 export const NOTIFICATIONS_PATH = '/dashboard/notifications';
+/** REM-T1-02: "What best describes your current situation?" (Academic Student vs Exam-prep Candidate). */
+export const STUDENT_CONTEXT_PATH = '/dashboard/start';
 
 /**
  * SQL predicate (over `student_exam_profiles`) of a VALID EXAM TARGET. The ONE
@@ -90,13 +93,23 @@ export function isAcademicProfileComplete(p: AcademicProfileFields | null): bool
   return true;
 }
 
-export type StudentOnboardingStage = 'ACADEMIC_PROFILE' | 'FIRST_SUBJECT' | 'READY';
+/**
+ * REM-T1-02 stages (only when the Student context is loaded -- `contextType` !== undefined):
+ *   CONTEXT     -- the Student has not said whether they study in a school or prepare for an exam;
+ *   EXAM_TARGET -- Exam-prep Candidate without an exam target yet (no school / grade / curriculum asked).
+ */
+export type StudentOnboardingStage = 'CONTEXT' | 'EXAM_TARGET' | 'ACADEMIC_PROFILE' | 'FIRST_SUBJECT' | 'READY';
 
-export function studentOnboardingStage(profile: AcademicProfileFields | null, subjectCount: number, examTargetCount = 0, institutionalPathCount = 0): StudentOnboardingStage {
+export function studentOnboardingStage(profile: AcademicProfileFields | null, subjectCount: number, examTargetCount = 0, institutionalPathCount = 0, contextType?: string | null): StudentOnboardingStage {
   // J0: a valid exam target is enough on its own -- no subject, no school profile required.
   if (examTargetCount > 0) return 'READY';
   // J1 (entry UX): the institution defines the academic path -- nothing to ask the Student.
   if (institutionalPathCount > 0) return 'READY';
+  if (contextType !== undefined) {
+    const effective = effectiveContextType({ stored: contextType, profileCompleted: isAcademicProfileComplete(profile), examTargetCount });
+    if (effective === null) return 'CONTEXT';
+    if (effective === 'EXAM_PREP') return 'EXAM_TARGET';
+  }
   if (!isAcademicProfileComplete(profile)) return 'ACADEMIC_PROFILE';
   if (subjectCount < 1) return 'FIRST_SUBJECT';
   return 'READY';
@@ -114,6 +127,12 @@ export interface GateState {
   institutionalPathCount?: number;
   /** STUDENT_JOURNEY_V2=UX: the approved entry UX rules apply. Absent = false (unchanged behaviour). */
   journeyUx?: boolean;
+  /**
+   * REM-T1-02: stored `students.student_context_type` (null = not chosen). Absent (undefined) = the
+   * context model is not loaded (callers predating it): unchanged behaviour. Ignored with `journeyUx`,
+   * whose profile page already carries the equivalent entry choice (EntryChoice).
+   */
+  studentContextType?: string | null;
 }
 
 /** Redirect target for this request, or null to let it through. */
@@ -134,12 +153,21 @@ export function decideStudentOnboardingGate(pathname: string, state: GateState |
   if (workspace !== 'STUDENT') return null;
 
   const ux = state.journeyUx === true;
-  const stage = studentOnboardingStage(state.profile, state.subjectCount, state.examTargetCount ?? 0, ux ? state.institutionalPathCount ?? 0 : 0);
+  const stage = studentOnboardingStage(state.profile, state.subjectCount, state.examTargetCount ?? 0, ux ? state.institutionalPathCount ?? 0 : 0, ux ? undefined : state.studentContextType);
   if (stage === 'READY') return null;
+
+  // REM-T1-02: first the Student's situation, then that context's own profiling.
+  if (stage === 'CONTEXT') return underPrefix(pathname, STUDENT_CONTEXT_PATH) ? null : STUDENT_CONTEXT_PATH;
+  if (stage === 'EXAM_TARGET') {
+    // Exam-prep Candidate: the exam is the context. Choosing the exam target is the step; the choice can be
+    // revisited, and an academic profile stays optional (never required).
+    const allowed = [EXAM_PREPARATION_PATH, STUDENT_CONTEXT_PATH, ACADEMIC_PROFILE_PATH];
+    return allowed.some((p) => underPrefix(pathname, p)) ? null : EXAM_PREPARATION_PATH;
+  }
 
   if (stage === 'ACADEMIC_PROFILE') {
     // Entry UX: the first choice lives on the profile page; Exam Prep (Path B) and invitations stay reachable.
-    const allowedBeforeProfile = ux ? [ACADEMIC_PROFILE_PATH, EXAM_PREPARATION_PATH, NOTIFICATIONS_PATH] : [ACADEMIC_PROFILE_PATH];
+    const allowedBeforeProfile = ux ? [ACADEMIC_PROFILE_PATH, EXAM_PREPARATION_PATH, NOTIFICATIONS_PATH] : [ACADEMIC_PROFILE_PATH, STUDENT_CONTEXT_PATH];
     return allowedBeforeProfile.some((p) => underPrefix(pathname, p)) ? null : ACADEMIC_PROFILE_PATH;
   }
   // FIRST_SUBJECT: the profile may still be reviewed; the subject-creation flow stays reachable,

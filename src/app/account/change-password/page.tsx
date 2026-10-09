@@ -2,6 +2,9 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import ChangePasswordForm from './ChangePasswordForm';
+import SignOutAction from '@/components/auth/SignOutAction';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages } from '@/lib/i18n/messages';
 
 /**
  * Destino obligatorio para una cuenta creada por un STUDYUS_ADMIN con
@@ -27,6 +30,8 @@ export default async function ChangePasswordPage() {
   if (canonicalUser.status !== 'ACTIVE') redirect('/account-suspended');
 
   if (!canonicalUser.passwordChangeRequired) redirect('/dashboard');
+  // REM-T1-01: a visible way out of this mandatory step.
+  const t = getMessages(await getUserInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const));
 
   return (
     <div style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem' }}>
@@ -35,6 +40,9 @@ export default async function ChangePasswordPage() {
         Un administrador creó tu cuenta con una contraseña temporal. Por seguridad, debes reemplazarla antes de continuar. No podrás usar StudyUs hasta completar este paso.
       </p>
       <ChangePasswordForm />
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <SignOutAction label={t['common.signOut']} />
+      </div>
     </div>
   );
 }

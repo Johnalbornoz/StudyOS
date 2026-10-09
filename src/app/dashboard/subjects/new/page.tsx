@@ -36,6 +36,7 @@ export default async function NewSubjectPage() {
         owned={picker.owned}
         requiresLevel={picker.context.requiresLevel}
         profileLabel={picker.profileLabel}
+        knownLevels={picker.knownLevels}
       />
     </div>
   );

@@ -27,6 +27,7 @@ import { activityCta } from '../activityCta';
 import StartSessionButton from '../StartSessionButton';
 import NextChallengeCard from '../NextChallengeCard';
 import SubjectSwitcher from '../SubjectSwitcher';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 /**
  * UX-2 Home ("Hoy") -- an action-first entry point over the SAME
@@ -82,7 +83,7 @@ function PlanRow({
             <span className="xp-row-verb">{view.activityType === 'RETENTION_CHECK' ? t['today.retentionEyebrow'] : challengeVerb(view.challenge, t)}</span>
           )}
           {view.status === 'READY' && <span>{activityLabel(view.activityType, t)}</span>}
-          {info?.subjectName && <span>{info.subjectName}</span>}
+          {info?.subjectName && <span>{localizeSubjectName(info.subjectName, locale)}</span>}
         </div>
       </div>
       <div className="xp-row-action">
@@ -398,7 +399,7 @@ export default async function TodayPage() {
                         <Link href={`/dashboard/subjects/${d.decision.subjectId}/concepts/${d.decision.actionConceptId}`} className="xp-row-title">
                           {info?.label ?? d.decision.actionConceptId}
                         </Link>
-                        {info?.subjectName && <div className="xp-row-meta"><span>{info.subjectName}</span></div>}
+                        {info?.subjectName && <div className="xp-row-meta"><span>{localizeSubjectName(info.subjectName, locale)}</span></div>}
                       </div>
                     </li>
                   );
@@ -430,7 +431,7 @@ export default async function TodayPage() {
                     <span className="xp-row-title">{info?.label ?? it.conceptId ?? ''}</span>
                     <div className="xp-row-meta">
                       <span style={bucket === 'OVERDUE' ? { color: 'var(--warning)', fontWeight: 600 } : undefined}>{dayLabel}</span>
-                      {info?.subjectName && <span>{info.subjectName}</span>}
+                      {info?.subjectName && <span>{localizeSubjectName(info.subjectName, locale)}</span>}
                       <span>{t[planItemWhyKey(it.reasonCode) as keyof typeof t]}</span>
                     </div>
                   </div>

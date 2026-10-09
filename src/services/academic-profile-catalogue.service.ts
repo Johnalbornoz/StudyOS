@@ -132,6 +132,8 @@ export interface AcademicProfileSelectionInput {
   curriculumType?: Extract<CurriculumType, 'other' | 'not_sure'>;
   academicYear: string | null;
   profileCompleted: boolean;
+  /** REM-T1-03: structured time context columns (time-context.ts `timeContextColumns`). */
+  timeColumns?: { academicYearStart: number | null; academicYearEnd: number | null; examSeries: string | null; examYear: number | null };
 }
 
 /** Pure: the legacy columns that keep older readers coherent (exported for tests). */
@@ -174,17 +176,21 @@ export async function saveAcademicProfileSelection(studentId: string, input: Aca
       !before || before.curriculum_scope !== scope || before.academic_programme_id !== input.academicProgrammeId || before.academic_qualification_id !== qualificationId || beforeSubjects.join() !== subjects.join();
     await client.query(
       `INSERT INTO student_academic_profile (student_id, country_of_study, school_year, curriculum_type, ib_programme, ib_year, academic_year, profile_completed,
-                                             curriculum_scope, academic_programme_id, academic_qualification_id, grade_level, curriculum_selected_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now())
+                                             curriculum_scope, academic_programme_id, academic_qualification_id, grade_level, curriculum_selected_at,
+                                             academic_year_start, academic_year_end, exam_series, exam_year)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), $14, $15, $16, $17)
        ON CONFLICT (student_id) DO UPDATE SET
          country_of_study = EXCLUDED.country_of_study, school_year = EXCLUDED.school_year, curriculum_type = EXCLUDED.curriculum_type,
          ib_programme = EXCLUDED.ib_programme, ib_year = EXCLUDED.ib_year, academic_year = EXCLUDED.academic_year, profile_completed = EXCLUDED.profile_completed,
          curriculum_scope = EXCLUDED.curriculum_scope, academic_programme_id = EXCLUDED.academic_programme_id, academic_qualification_id = EXCLUDED.academic_qualification_id,
          grade_level = EXCLUDED.grade_level,
          curriculum_selected_at = CASE WHEN $13 THEN now() ELSE student_academic_profile.curriculum_selected_at END,
+         academic_year_start = EXCLUDED.academic_year_start, academic_year_end = EXCLUDED.academic_year_end,
+         exam_series = EXCLUDED.exam_series, exam_year = EXCLUDED.exam_year,
          updated_at = now()`,
       [studentId, input.countryOfStudy, input.schoolYear, legacy.curriculumType, legacy.ibProgramme, legacy.ibYear, input.academicYear, input.profileCompleted,
-       scope, input.academicProgrammeId, qualificationId, gradeLevel, curriculumChanged]
+       scope, input.academicProgrammeId, qualificationId, gradeLevel, curriculumChanged,
+       input.timeColumns?.academicYearStart ?? null, input.timeColumns?.academicYearEnd ?? null, input.timeColumns?.examSeries ?? null, input.timeColumns?.examYear ?? null]
     );
     // Subjects: end what is no longer followed, add what is new. Nothing is deleted.
     await client.query(`UPDATE student_academic_subjects SET ended_at = now() WHERE student_id = $1 AND ended_at IS NULL AND NOT (academic_subject_id = ANY($2::uuid[]))`, [studentId, subjects]);

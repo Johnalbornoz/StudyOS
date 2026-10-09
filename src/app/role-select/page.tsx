@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getMessages, type Locale, type MessageKey } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
+import SignOutAction from '@/components/auth/SignOutAction';
 
 type Workspace = 'STUDENT' | 'PARENT' | 'TEACHER' | 'INSTITUTION' | 'ADMIN';
 type Role = 'STUDENT' | 'PARENT' | 'TEACHER' | 'INSTITUTION_ADMIN' | 'STUDYUS_ADMIN';
@@ -199,6 +200,10 @@ export default function RoleSelectPage() {
   return (
     <main className="role-page">
       <header className="role-header">
+        {/* REM-T1-01: Sign out is available before (and during) role selection. */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <SignOutAction label={t['common.signOut']} />
+        </div>
         <h1>{canChoose ? t['account.firstTitle'] : t['account.title']}</h1>
         <p className="role-muted">{persona ? fillMessage(t['account.subtitle'], { persona: personaName }) : canChoose ? t['account.firstBody'] : ''}</p>
       </header>
