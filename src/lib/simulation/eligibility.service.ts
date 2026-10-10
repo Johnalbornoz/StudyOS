@@ -22,6 +22,11 @@ export async function getSimulationEligibility(params: {
   learningObjectiveId?: string;
   academicSubjectId?: string;
 }): Promise<SimulationEligibility> {
+  // B1-D / B1-E: the instance-derived types are not requested through this (direct-path) eligibility: only an
+  // exam instance starts them, and it derives which one.
+  if (params.simulationType === 'EXAM_PRACTICE' || params.simulationType === 'EXAM_CHALLENGE' || params.simulationType === 'REDUCED_MOCK') {
+    return { simulationType: params.simulationType, eligible: false, reasons: [`${params.simulationType}_REQUIRES_EXAM_INSTANCE`] };
+  }
   if (params.simulationType === 'FULL_MOCK') {
     return getFullMockEligibility(params.examVersionId);
   }

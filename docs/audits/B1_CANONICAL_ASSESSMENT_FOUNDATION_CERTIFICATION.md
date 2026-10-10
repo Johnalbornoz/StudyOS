@@ -7,8 +7,13 @@ Paths are relative to the repo root. `AF/` = `src/lib/assessment-foundation/`.
 # 0. Executive Result
 
 ```text
-FOUNDATION_PASS_WITH_CONDITIONS      (after B1-C closure; see section T)
+FOUNDATION_PASS      (final, after B1-E; see section V)
+B2_GO
 ```
+
+**Section V (B1-E) is the final state and supersedes U, T and 0–S wherever they differ.**
+
+**Section U (B1-D) is the latest state and supersedes T wherever they differ:** practice exam instances now store `EXAM_PRACTICE`; one migration exists (`20261108_1000`); T1 is reconciled through `091e91d`; the CHALLENGE check failed (`CHALLENGE_FULL_MOCK_INVARIANT_FAILED`) and is awaiting a decision.
 
 **Section T (B1-C) supersedes sections 0–S wherever they differ.** In particular: B1 is now committed, the production build passes, the TRANSITIONAL rule is frozen as "unresolved for assessment planning", and `FULL_MOCK` cannot be started without a frozen exam instance by any path, including a Teacher assignment. The text below is the original B1 result, kept for the record.
 
@@ -599,3 +604,331 @@ B2_GO_WITH_CONDITIONS
 2. One look at the legacy start panel on a live page, by someone who can sign in to a profile that shows it.
 3. A decision on reconciling `5fe6d70`.
 4. `CANONICAL_ENGINE_V1_ENABLED` hosted value still unconfirmed (carried from B0).
+
+---
+
+# U. B1-D — Final Semantic Closure
+
+Date: 2026-10-10. Scope: practice attempt type, CHALLENGE verification, T1 through `091e91d`. B2 was not started.
+
+## U.1 Result
+
+```text
+CHALLENGE_FULL_MOCK_INVARIANT_FAILED
+```
+
+B1 is **not** upgraded to `FOUNDATION_PASS`. Everything else in the B1-D gate passes:
+
+| Gate | Result |
+|---|---|
+| PRACTICE writes `EXAM_PRACTICE` | PASS |
+| MOCK writes `FULL_MOCK` | PASS |
+| CHALLENGE proven official-fidelity before retaining `FULL_MOCK` | **FAIL** — see U.4 |
+| No adaptive / generated path can create or fill a `FULL_MOCK` | PASS |
+| Historical rows remain readable | PASS |
+| Migration is additive | PASS |
+| T1 reconciled through `091e91d` | PASS |
+| Tests / typecheck / build | PASS |
+
+CHALLENGE was left exactly as it was (stored as `FULL_MOCK`). It was not reclassified.
+
+## U.2 Practice vs Official Attempt Semantics
+
+| Exam instance mode | Stored attempt type | Official fidelity | Frozen form | Generated content |
+|---|---|---|---|---|
+| PRACTICE | **`EXAM_PRACTICE`** (new) | No — preparation | Positions frozen where the bank has items; unfilled positions stay open | Allowed under the preparation rule |
+| MOCK | `FULL_MOCK` | Structure, timing and difficulty target are official; length may be reduced (U.4) | Required, complete or no form | Never |
+| CHALLENGE | `FULL_MOCK` (unchanged, pending) | **No** (U.4) | Required, complete or no form | Never |
+| none (direct path) | `TOPIC_EXAM` / `DOMAIN_EXAM` / `MINI_MOCK` | No — preparation simulation | No | Allowed under the preparation rule |
+
+`EXAM_PRACTICE` — exam-instance-based preparation over the instance's selected components and positions. It may be full-length. It is not an official mock.
+
+Write authority: only `startExamInstance`, through `attemptTypeForInstanceMode(instance.mode)`. `startSimulationAttempt` refuses `EXAM_PRACTICE` unless a PRACTICE instance starts it, and refuses `FULL_MOCK` unless a MOCK / CHALLENGE instance with a frozen form starts it. Both checks run before any read or write.
+
+Behaviour preserved for practice instances:
+
+- **Positions:** `EXAM_PRACTICE` selects every position of the selected components, narrowed by focus objectives, exactly as `FULL_MOCK` did for a practice instance. It does not consult the mini-mock readiness subset (tested against `MINI_MOCK` on the same blueprint: 5 positions vs 2).
+- **Delivery policy:** resolved policy is identical to before. The per-version allow-list governs client-requestable modes and does not list `EXAM_PRACTICE`; timing-mode rules still apply.
+- **Feedback, timing, focus objectives, selected components:** unchanged.
+
+Client authority is not widened: the direct start route, the eligibility route and the Teacher assignment schema still enumerate only their previous values, so a submitted `EXAM_PRACTICE` is `INVALID_INPUT`. The start panel list and the version delivery-policy schema do not contain it.
+
+Generated fallback rule, final: **never for a stored `FULL_MOCK`, with no exception**; never for a MOCK / CHALLENGE instance; allowed for `EXAM_PRACTICE` and the three direct preparation types.
+
+Naming note: the Teacher-intervention domain already has an unrelated `intervention_type` / `execution_type` value also spelled `EXAM_PRACTICE` (a different column and meaning). It was not touched.
+
+## U.3 Migration
+
+`database/migrations/20261108_1000_simulation_type_exam_practice.sql`
+
+| | |
+|---|---|
+| WHY | `FULL_MOCK` must mean an official mock only; a practice instance needs its own persisted type |
+| DATA IMPACT | Widens two CHECK constraints (`simulation_plans_type_check`, `simulation_attempts_type_check`) to also accept `EXAM_PRACTICE`. No column, no row touched |
+| BACKFILL | None. Historical practice attempts stored as `FULL_MOCK` are not rewritten |
+| ROLLBACK / RISK | Restore the two previous CHECKs; possible only while no row stores `EXAM_PRACTICE` |
+| OLD-READER COMPATIBILITY | Old code never writes or expects the new value; it keeps working on a migrated database |
+| NEW-READER COMPATIBILITY | New code reads historical `FULL_MOCK` practice rows through the instance mode (label and path) |
+
+**Deployment order (required):** apply the migration to an environment **before** deploying code that writes `EXAM_PRACTICE` there. With code first, starting a practice exam instance fails the CHECK and is rejected.
+
+**Not applied anywhere by this work.** The DEV ledger still ends at `20261107_1000`. `teacher_interventions` is deliberately not widened.
+
+## U.4 CHALLENGE — why the invariant fails
+
+Current behaviour, from the repository:
+
+| Property | CHALLENGE today | Evidence |
+|---|---|---|
+| Frozen exam instance | Yes | `createExamInstance` freezes every non-practice instance at creation and deletes it if assembly fails |
+| Complete form or none | Yes, relative to the stored blueprint | `freezeForm` throws `FORM_INCOMPLETE` when any position is unfilled |
+| Official timing | Yes | `timingFor` returns `OFFICIAL_SIMULATION_TIMED` for every non-practice mode |
+| No generated fallback | Yes | non-practice positions are preset `EXCLUDED`; fallback rule refuses `FULL_MOCK` |
+| Not adapted to learner weakness | Yes | selection uses blueprint fit, difficulty target and exposure only |
+| **Official difficulty** | **No** | `CHALLENGE_TARGET = 1.1`, band 1.05–1.15: deliberately harder than the real exam. MOCK targets 1.0 (`src/lib/exam-core/form-assembly.ts`) |
+| **Full official length** | **Not guaranteed** | when the blueprint is shorter than the component's official item count, a non-practice instance draws `REDUCED_MOCK` items and the form's fidelity is `REDUCED` (`formInputs`, `assembleForm`) |
+
+So CHALLENGE is frozen, complete against its blueprint, officially timed and never generated — but it is by design not the official difficulty, and it can be a reduced form. It is not a complete official-form assessment in the sense of the frozen invariant.
+
+**The reduced-length finding also applies to MOCK.** A MOCK instance on a reduced blueprint is stored as `FULL_MOCK` while the product itself calls it a reduced mock (`exv2.mode.MOCK.reduced`, delivery use `REDUCED_MOCK`). On DEV only the Saber 11 Mathematics blueprint is at official length; the others are reduced forms. This was outside the CHALLENGE question as asked, and it is reported because it is the same ambiguity.
+
+Recommended minimal additive option (not implemented):
+
+- `EXAM_CHALLENGE` for CHALLENGE instances: frozen, officially timed, official structure, above-official difficulty; not official-fidelity.
+- `REDUCED_MOCK` for a MOCK instance whose frozen form is not full-length; `FULL_MOCK` only when the form is full-length (`fidelity = FULL`, delivery use `FULL_MOCK`).
+- One further additive migration widening the same two CHECKs; the same single writer (`attemptTypeForInstanceMode`, taking the frozen form's fidelity); no backfill.
+- Both new types keep "frozen instance required" and "no generated content", so the start and fallback rules extend from `FULL_MOCK` to the three frozen types.
+
+`tests/unit/b1d-exam-practice.test.ts` contains a characterization suite for CHALLENGE recording what holds and what does not.
+
+## U.5 FULL_MOCK producer matrix (final for this pass)
+
+| Producer | Instance mode | Stored type | Frozen form required | Generated fallback allowed | Correct? |
+|---|---|---|---|---|---|
+| `startExamInstance` (Student, `POST /api/exams/instances/[id]/start`) | MOCK | `FULL_MOCK` | Yes | No | Yes for structure, timing, difficulty; **length may be reduced** (U.4) |
+| `startExamInstance` | CHALLENGE | `FULL_MOCK` | Yes | No | **No** — above-official difficulty, may be reduced (U.4) |
+| `startExamInstance` | PRACTICE | `EXAM_PRACTICE` | n/a | Yes (preparation) | Yes — no longer a `FULL_MOCK` producer |
+| Teacher intervention, assigned `FULL_MOCK` → `startOfficialMockForIntervention` | MOCK | `FULL_MOCK` | Yes | No | Same as the MOCK row |
+| Teacher intervention, `TOPIC_EXAM` / `DOMAIN_EXAM` / `MINI_MOCK` | none | as assigned | No | Yes (preparation) | Yes — not `FULL_MOCK` |
+| `POST /api/simulation/attempts` (direct) | none | `TOPIC_EXAM` / `DOMAIN_EXAM` / `MINI_MOCK` | No | Yes (preparation) | Yes — `FULL_MOCK` → 409, `EXAM_PRACTICE` → 400 |
+| Any other call to `startSimulationAttempt` with `FULL_MOCK` | — | — | — | — | Impossible: throws before any read |
+
+Invariant as enforced in code: stored `FULL_MOCK` → instance mode MOCK or CHALLENGE → frozen form required → generated fallback never. The active exception to the *intended* invariant (`instance.mode = MOCK` only, official fidelity) is CHALLENGE, plus reduced-length MOCK forms.
+
+## U.6 Runtime Validation (reclassified)
+
+Legacy start panel: **`PASS_WITH_TESTED_UI_PATH`**. No real user account was signed into. The evidence is the live authenticated API smoke (409 for `FULL_MOCK`), server-rendering of the real panel component in a test (it offers only mini mock, topic and domain with the value the page passes), the unit tests of the filter, and the production build. The rest of T.4 stands.
+
+No new runtime smoke was run in B1-D: the practice-instance start cannot be exercised on DEV without eligible content, and `EXAM_PRACTICE` cannot be written there until the migration is applied.
+
+## U.7 Latest T1 Reconciliation
+
+| Item | Value |
+|---|---|
+| Previously included | `c2f8924` |
+| Now included | `5fe6d70` and `091e91d` (tip of `remediation/t1-micro-delta` at the time) |
+| Method | `git merge --no-ff 091e91d`, merge commit `676afe1`, after the B1-D commit |
+| Conflicts | None; nothing resolved by hand |
+| Content | Cambridge display localization; governed concept labels for the recommendation card. No migration, no attempt semantics, no concept linkage, no curriculum-domain change |
+| Contradiction with a frozen authority | None found in the merged result |
+
+## U.8 Commits
+
+| SHA | Content |
+|---|---|
+| `7382bb6` | `feat(assessment): EXAM_PRACTICE attempt type for practice exam instances (B1-D)` |
+| `676afe1` | merge of `091e91d` |
+| (this commit) | this section |
+
+Nothing was pushed.
+
+## U.9 Final Test Results
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| End of B1-C | 492 | 8,693 | 0 |
+| After the B1-D change | 493 | 8,716 | 0 |
+| **After merging `091e91d`** | **493** | **8,720** | **0** |
+| B1 tests only (`tests/unit/b1*.test.ts`) | 10 | 180 | 0 |
+
+`npx tsc --noEmit`: clean. `npx next build`: exit 0, 228 static pages.
+
+During the work the first full run after adding the type failed 8 tests, all in B1's own test files plus the migration-chain assertion; each asserted the previous stored type or migration list and was updated to the new behaviour.
+
+## U.10 B2 Entry
+
+```text
+B2_NO_GO
+```
+
+One decision stands between this and `B2_GO`: how CHALLENGE (and reduced-length MOCK forms) should be stored, given that neither is an official-fidelity full mock. Two operational items follow it: apply `20261108_1000` on DEV before deploying this branch there, and the carried-over confirmation of `CANONICAL_ENGINE_V1_ENABLED` on hosted environments.
+
+---
+
+# V. B1-E — Final Assessment Semantics
+
+Date: 2026-10-10. Scope: the meaning of `FULL_MOCK`. B2 was not started.
+
+## V.1 Result
+
+```text
+FOUNDATION_PASS
+B2_GO
+```
+
+| Gate | Result |
+|---|---|
+| PRACTICE → `EXAM_PRACTICE` | PASS |
+| CHALLENGE → `EXAM_CHALLENGE` | PASS |
+| MOCK + FULL → `FULL_MOCK` | PASS |
+| MOCK + REDUCED → `REDUCED_MOCK` | PASS |
+| MOCK + UNKNOWN → no official attempt | PASS |
+| Generated fallback forbidden for the three frozen types | PASS |
+| Derived types not client-requestable | PASS |
+| Historical attempts readable, nothing rewritten | PASS |
+| Second migration additive | PASS |
+| Tests / typecheck / build | PASS |
+
+## V.2 Final Assessment Semantics
+
+| Instance mode | Fidelity | Stored type | Fallback |
+|---|---|---|---|
+| PRACTICE | n/a | `EXAM_PRACTICE` | preparation-policy controlled |
+| CHALLENGE | modified (above official difficulty) | `EXAM_CHALLENGE` | No |
+| MOCK | FULL | `FULL_MOCK` | No |
+| MOCK | REDUCED | `REDUCED_MOCK` | No |
+| MOCK | UNKNOWN | no start (`FIDELITY_NOT_VERIFIABLE`) | No |
+| none (direct path) | n/a | `TOPIC_EXAM` / `DOMAIN_EXAM` / `MINI_MOCK` | preparation-policy controlled |
+
+`FULL_MOCK` invariant, as enforced: MOCK instance → frozen form → fidelity classified FULL → form inside the official difficulty band → official timing → no generated content.
+
+**Single write authority.** `deriveInstanceAttemptType` (`src/lib/exam-core/form-fidelity.ts`) is the one derivation. Its only writing caller is `startExamInstance`. `createExamInstance` applies the same decision right after freezing, so an unverifiable MOCK is deleted, not left READY. No route or UI repeats the switch.
+
+**Start invariant** (`instanceStartViolation`, checked in `startSimulationAttempt` before any read or write):
+
+| Stored type | Requires |
+|---|---|
+| `FULL_MOCK` | MOCK instance + frozen form + verified full fidelity |
+| `REDUCED_MOCK` | MOCK instance + frozen form |
+| `EXAM_CHALLENGE` | CHALLENGE instance + frozen form |
+| `EXAM_PRACTICE` | PRACTICE instance |
+
+**Client authority.** The direct start route, the eligibility route and the Teacher assignment schema still enumerate only their previous values; a submitted `EXAM_PRACTICE`, `EXAM_CHALLENGE` or `REDUCED_MOCK` is `INVALID_INPUT`. The start panel list and the version delivery-policy schema do not contain them.
+
+**Delivery policy.** `REDUCED_MOCK` and `EXAM_CHALLENGE` are allowed exactly where the version allows a mock (the allow-list entry both were checked against while stored as `FULL_MOCK`), and resolve to the same policy. `EXAM_PRACTICE` is unchanged from B1-D.
+
+**Plan building.** Both new types select every position of the instance's selected components, as before.
+
+**Labels** (five languages; Spanish shown): `EXAM_PRACTICE` Práctica de examen · `EXAM_CHALLENGE` Reto de examen · `REDUCED_MOCK` Simulacro reducido · `FULL_MOCK` Simulacro completo. Attempts that belong to an exam instance keep being labelled by the instance mode, as since B1-C.
+
+## V.3 The fidelity classifier
+
+`classifyExamFormFidelity` in `src/lib/exam-core/form-fidelity.ts` (pure). Facts are loaded by `loadFormFidelityFacts` in `exam-instance.service.ts` (read-only).
+
+Facts and their sources:
+
+| Fact | Source |
+|---|---|
+| Form frozen; positions, filled positions, planned marks per component | the instance's frozen `AssembledForm` |
+| Component definition present; official marks; official item count; official duration | `assessment_components.definition` (`ComponentDefinition`), `max_marks` |
+| Configured duration | `assessment_components.duration_minutes`, `timing_status` |
+| Positions the blueprint holds for the component | `blueprint_objective_targets` |
+| Full-form distribution documented | `blueprintSpecificationOf(definition)`: DOCUMENTED / PARTIAL / UNKNOWN (absent = UNKNOWN) |
+| Mockable components of the version; official component combinations and stages | component capabilities; `exam_versions.navigation_rules.assessmentRoutes` |
+
+Decision, in this order:
+
+1. **UNKNOWN** if size cannot be judged at all: form not frozen, no components, a component with no definition, or neither official marks nor official item count recorded.
+2. **REDUCED** if the form is known to be smaller: unfilled positions, fewer positions than the blueprint, planned marks below official marks, filled positions below the official item count, or a component set that is neither every mockable component of the version nor one recorded official combination.
+3. Otherwise size is complete. **UNKNOWN** unless every component's official duration is recorded and equals the configured duration, and its full-form distribution is DOCUMENTED with a source.
+4. **FULL**.
+
+It names no vertical and reads no attempt type, label or instance mode (asserted by test). Size alone never yields FULL.
+
+Difficulty is separate: a MOCK of FULL fidelity whose form is outside the official band (`difficultyBandMet` false) does not start. A reduced mock is not gated on the band.
+
+Not-ready vocabulary: one new `ExamInstanceError` code, `FIDELITY_NOT_VERIFIABLE`, carrying the reasons in its detail. Both instance routes already map any `ExamInstanceError` to 409, and the Teacher path already converts it to "not startable".
+
+Judgement calls made inside the frozen rules, for review:
+
+- **Technical demo.** A `TECHNICAL_DEMO` instance (in-process engine certification on DEV fixtures; no Student route creates one) is stored as `REDUCED_MOCK` whatever its fidelity and is not refused for UNKNOWN fidelity. It is never `FULL_MOCK`. Refusing it would have stopped the certification tooling, which runs on configurations with no component definition.
+- **One paper of a multi-paper exam** is REDUCED, not FULL, unless it is a recorded official combination.
+- **A known-reduced form stays startable** when its timing or distribution is undocumented; those two facts only gate FULL.
+- **A full-structure form off the difficulty band** does not start; it is not relabelled.
+
+What this means on DEV today (read-only check): of the published, active components, exactly one has a DOCUMENTED full-form distribution (Saber 11 Mathematics); the rest have none recorded, and 19 have no definition at all. So only that one exam can currently produce a `FULL_MOCK`, and only with a complete, in-band form; most others would produce `REDUCED_MOCK`; components with no definition or no recorded size would not start as a mock. DEV has no student-eligible content, so none of this can be exercised there yet.
+
+## V.4 Migrations
+
+| File | Adds | Applied? |
+|---|---|---|
+| `database/migrations/20261108_1000_simulation_type_exam_practice.sql` | `EXAM_PRACTICE` | **No** — not applied in any environment |
+| `database/migrations/20261109_1000_simulation_type_challenge_reduced_mock.sql` | `EXAM_CHALLENGE`, `REDUCED_MOCK` | **No** — not applied in any environment |
+
+DEV ledger verified read-only: it still ends at `20261107_1000`.
+
+Second migration:
+
+| | |
+|---|---|
+| WHY | `FULL_MOCK` must mean a verified complete official-format mock only |
+| DATA IMPACT | Widens the same two CHECK constraints (`simulation_plans`, `simulation_attempts`). No column, no row touched; `teacher_interventions` not widened |
+| BACKFILL | None |
+| ROLLBACK / RISK | Restore the 5-value CHECKs; possible only while no row stores the new values |
+| OLD-READER COMPATIBILITY | Old code never writes or expects the new values |
+| NEW-READER COMPATIBILITY | New code classifies historical `FULL_MOCK` rows through their exam instance |
+
+Deployment order per environment: `20261108_1000` → `20261109_1000` → application code. With code first, starting a PRACTICE, CHALLENGE or reduced-MOCK instance fails the CHECK and is rejected.
+
+## V.5 FULL_MOCK producer matrix (final)
+
+| Producer | Instance mode | Fidelity | Stored type | Generated fallback | Correct? |
+|---|---|---|---|---|---|
+| `startExamInstance` | MOCK | FULL (and in band) | `FULL_MOCK` | No | Yes |
+| `startExamInstance` | MOCK | REDUCED | `REDUCED_MOCK` | No | Yes |
+| `startExamInstance` | MOCK | UNKNOWN | none — refused | — | Yes |
+| `startExamInstance` | MOCK, technical demo | any | `REDUCED_MOCK` | No | Yes (never `FULL_MOCK`) |
+| `startExamInstance` | CHALLENGE | n/a | `EXAM_CHALLENGE` | No | Yes |
+| `startExamInstance` | PRACTICE | n/a | `EXAM_PRACTICE` | Preparation only | Yes |
+| Teacher-assigned mock → MOCK instance → `startExamInstance` | MOCK | as classified | `FULL_MOCK` / `REDUCED_MOCK` / refused | No | Yes — the Teacher never selects the type |
+| Teacher-assigned topic / domain / mini mock | none | n/a | as assigned | Preparation only | Yes |
+| Direct `POST /api/simulation/attempts` | none | n/a | topic / domain / mini mock | Preparation only | Yes — `FULL_MOCK` → 409; derived types → 400 |
+| Any other call to `startSimulationAttempt` with `FULL_MOCK` | — | — | — | — | Impossible: throws before any read |
+
+There is no active producer of stored `FULL_MOCK` other than a MOCK instance classified FULL.
+
+## V.6 Historical Compatibility
+
+- No row was rewritten and neither migration contains an UPDATE.
+- Historical attempts stored as `FULL_MOCK` are classified through their linked exam instance by `assessmentPathOf`: PRACTICE → exam practice, CHALLENGE → exam challenge, MOCK → reduced or official mock by the length fidelity recorded on its frozen form.
+- Their labels come from the instance mode, as since B1-C.
+- A historical `FULL_MOCK` with no instance keeps its own label and is classified as a preparation simulation.
+- One prospective strictness: an open historical attempt stored as `FULL_MOCK` gets no generated fallback.
+
+## V.7 Final Test Results
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| End of B1-D | 493 | 8,720 | 0 |
+| **End of B1-E (final)** | **494** | **8,751** | **0** |
+| B1 tests only (`tests/unit/b1*.test.ts`) | 11 | 211 | 0 |
+
+`npx tsc --noEmit`: clean. `npx next build`: exit 0, 228 static pages.
+
+The first full run after the change failed 11 tests, all in B1's own test files plus the migration-chain assertion; each asserted the B1-D mapping or migration list and was updated. No pre-existing test outside B1's files failed.
+
+## V.8 Commits
+
+| SHA | Content |
+|---|---|
+| `908a9c8` | `feat(assessment): final mock fidelity semantics -- EXAM_CHALLENGE, REDUCED_MOCK, verified FULL_MOCK (B1-E)` |
+| (this commit) | this section |
+
+Nothing was pushed.
+
+## V.9 B2 Operational Conditions
+
+1. Before deploying B1 code to DEV (or any environment), apply in order `20261108_1000_simulation_type_exam_practice.sql`, then `20261109_1000_simulation_type_challenge_reduced_mock.sql`.
+2. Confirm the hosted value of `CANONICAL_ENGINE_V1_ENABLED` before any runtime cutover decision in B2.
+
+Neither prevents B2 development. For awareness, not a condition: `remediation/t1-micro-delta` has moved past `091e91d` again since B1-D; that later work is not in this branch.

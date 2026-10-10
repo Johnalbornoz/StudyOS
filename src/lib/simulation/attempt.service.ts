@@ -6,7 +6,7 @@
  * F9_SIMULATION_PLAN_MODEL.md for why this isn't an ALTER TABLE on
  * F7's own exam_attempts).
  */
-import { fullMockHasFrozenInstance, OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE } from './preparation-simulation';
+import { EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE, INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE, instanceStartViolation, OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE } from './preparation-simulation';
 import { db } from '@/lib/db';
 import { startExamAttempt, completeExamAttempt, getExamAttempt } from '@/lib/assessment/exam-attempt.service';
 import { buildSimulationPlan } from './plan.service';
@@ -41,6 +41,24 @@ export class FullMockRequiresExamInstanceError extends Error {
   constructor() {
     super(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
     this.name = 'FullMockRequiresExamInstanceError';
+  }
+}
+
+/** B1-E: REDUCED_MOCK / EXAM_CHALLENGE are written only by a frozen MOCK / CHALLENGE exam instance. */
+export class InstanceTypeRequiresExamInstanceError extends Error {
+  readonly code = INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE;
+  constructor(public readonly simulationType: string) {
+    super(`${INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE}: ${simulationType}`);
+    this.name = 'InstanceTypeRequiresExamInstanceError';
+  }
+}
+
+/** B1-D: EXAM_PRACTICE is written only by a PRACTICE exam instance; no other caller may start one. */
+export class ExamPracticeRequiresExamInstanceError extends Error {
+  readonly code = EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE;
+  constructor() {
+    super(EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE);
+    this.name = 'ExamPracticeRequiresExamInstanceError';
   }
 }
 
@@ -101,9 +119,17 @@ export async function startSimulationAttempt(params: {
   presetItems?: (plan: SimulationPlan) => Promise<Record<number, ExamItemState>>;
   /** B1-C: the exam instance starting this attempt. Required (with its frozen form, `presetItems`) for a FULL_MOCK. */
   examInstanceId?: string;
+  /** B1-D / B1-E: that instance's mode. FULL_MOCK / REDUCED_MOCK need MOCK; EXAM_CHALLENGE needs CHALLENGE; EXAM_PRACTICE needs PRACTICE. */
+  examInstanceMode?: 'PRACTICE' | 'MOCK' | 'CHALLENGE';
+  /** B1-E: the instance's frozen form was classified FULL (and at official difficulty). Required for a FULL_MOCK. */
+  verifiedFullFidelity?: boolean;
 }): Promise<{ examAttempt: Awaited<ReturnType<typeof getExamAttempt>>; simulationAttempt: SimulationAttempt; planId: string }> {
-  // B1-C: FULL_MOCK => frozen exam instance, checked before anything is read or written.
-  if (!fullMockHasFrozenInstance({ simulationType: params.simulationType, examInstanceId: params.examInstanceId, hasFrozenForm: !!params.presetItems })) throw new FullMockRequiresExamInstanceError();
+  // B1-C / B1-D: FULL_MOCK => frozen MOCK / CHALLENGE instance; EXAM_PRACTICE => PRACTICE instance. Checked before
+  // anything is read or written.
+  const violation = instanceStartViolation({ simulationType: params.simulationType, examInstanceId: params.examInstanceId, examInstanceMode: params.examInstanceMode, hasFrozenForm: !!params.presetItems, verifiedFullFidelity: params.verifiedFullFidelity });
+  if (violation === OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE) throw new FullMockRequiresExamInstanceError();
+  if (violation === EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE) throw new ExamPracticeRequiresExamInstanceError();
+  if (violation === INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE) throw new InstanceTypeRequiresExamInstanceError(params.simulationType);
   // Track B: validate the profile and the version's delivery policy BEFORE writing anything.
   const profileRow = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1`, [params.examProfileId]);
   if (profileRow.rows[0]?.status === 'ARCHIVED') throw new ExamProfileArchivedError();

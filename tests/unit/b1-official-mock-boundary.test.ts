@@ -67,9 +67,11 @@ describe('B1 official mock boundary -- pure rules', () => {
     expect(preparationSimulationTypes(['FULL_MOCK'])).toEqual([]);
   });
 
-  it('an attempt is an official mock only through a frozen MOCK / CHALLENGE instance', () => {
-    expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'MOCK', formFrozen: true })).toBe('OFFICIAL_MOCK');
-    expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'CHALLENGE' })).toBe('OFFICIAL_MOCK');
+  it('an attempt is an official mock only through a frozen MOCK instance of full fidelity (B1-E)', () => {
+    expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'MOCK', formFrozen: true, formFidelity: 'FULL' })).toBe('OFFICIAL_MOCK');
+    // a historical CHALLENGE or reduced MOCK stored as FULL_MOCK is read by its instance, not by its stored type
+    expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'CHALLENGE' })).toBe('EXAM_CHALLENGE');
+    expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'MOCK', formFrozen: true, formFidelity: 'REDUCED' })).toBe('REDUCED_MOCK');
     expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'MOCK', formFrozen: false })).toBe('EXAM_PRACTICE');
     // an instance starts every mode with the stored type FULL_MOCK: the type alone says nothing
     expect(assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: 'PRACTICE' })).toBe('EXAM_PRACTICE');
@@ -82,8 +84,10 @@ describe('B1 official mock boundary -- pure rules', () => {
     expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: 'MOCK' })).toBe(false);
     expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: 'CHALLENGE' })).toBe(false);
     expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: null })).toBe(false);
+    // B1-D: no exception -- a stored FULL_MOCK never gets generated content, even a historical practice-instance row
+    expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: 'PRACTICE' })).toBe(false);
     // preparation: adaptive content is legitimate
-    expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: 'PRACTICE' })).toBe(true);
+    expect(mayUseGeneratedFallback({ simulationType: 'EXAM_PRACTICE', instanceMode: 'PRACTICE' })).toBe(true);
     expect(mayUseGeneratedFallback({ simulationType: 'MINI_MOCK', instanceMode: null })).toBe(true);
     expect(mayUseGeneratedFallback({ simulationType: 'TOPIC_EXAM', instanceMode: null })).toBe(true);
   });
@@ -121,7 +125,7 @@ describe('B1 official mock boundary -- POST /api/simulation/attempts (legacy dir
   it('the canonical official path is untouched: exam instances still freeze the form before starting', () => {
     const instance = read('src/lib/exam-core/exam-instance.service.ts');
     expect(instance).toMatch(/const form = instance\.form \?\? \(await freezeForm\(instance\)\);/);
-    expect(instance).toMatch(/simulationType: 'FULL_MOCK'/);
+    expect(instance).toMatch(/simulationType: decision\.type,/);
     // a non-practice instance never leaves a position to be generated
     expect(instance).toMatch(/instance\.mode !== 'PRACTICE'\) preset\[index\] = \{ status: 'EXCLUDED'/);
   });
@@ -161,7 +165,7 @@ describe('B1 official mock boundary -- item sourcing', () => {
   });
 
   it('a preparation simulation still reaches the existing generator path (behaviour preserved)', async () => {
-    for (const row of [{ simulation_type: 'MINI_MOCK', instance_mode: null }, { simulation_type: 'TOPIC_EXAM', instance_mode: null }, { simulation_type: 'FULL_MOCK', instance_mode: 'PRACTICE' }]) {
+    for (const row of [{ simulation_type: 'MINI_MOCK', instance_mode: null }, { simulation_type: 'TOPIC_EXAM', instance_mode: null }, { simulation_type: 'EXAM_PRACTICE', instance_mode: 'PRACTICE' }]) {
       attemptIs(row);
       bridgeMock.mockResolvedValue(null);
       // the generator path is entered: it reports its own, pre-existing reason
@@ -199,15 +203,17 @@ describe('B1-C official mock invariant -- FULL_MOCK => frozen exam instance', ()
     const guard = start.indexOf('throw new FullMockRequiresExamInstanceError()');
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(start.indexOf('db.query('));
-    expect(start).toMatch(/fullMockHasFrozenInstance\(\{ simulationType: params\.simulationType, examInstanceId: params\.examInstanceId, hasFrozenForm: !!params\.presetItems \}\)/);
+    expect(start).toMatch(/instanceStartViolation\(\{ simulationType: params\.simulationType, examInstanceId: params\.examInstanceId, examInstanceMode: params\.examInstanceMode, hasFrozenForm: !!params\.presetItems, verifiedFullFidelity: params\.verifiedFullFidelity \}\)/);
   });
 
   it('only the exam instance starts a FULL_MOCK, and it passes its id and its frozen form', () => {
     const instance = read('src/lib/exam-core/exam-instance.service.ts');
     const start = instance.slice(instance.indexOf('export async function startExamInstance('), instance.indexOf('export async function deleteExamInstance('));
-    expect(start).toMatch(/simulationType: 'FULL_MOCK'/);
+    expect(start).toMatch(/simulationType: decision\.type,/);
+    expect(start).toMatch(/verifiedFullFidelity: decision\.type === 'FULL_MOCK'/);
     expect(start).toMatch(/presetItems: \(plan\) => presetFromForm\(instance, form, plan\)/);
     expect(start).toMatch(/examInstanceId: instance\.id/);
+    expect(start).toMatch(/examInstanceMode: instance\.mode/);
     // no other module starts an attempt with a literal FULL_MOCK
     const literal = /startSimulationAttempt\(\{[^}]*simulationType: 'FULL_MOCK'/;
     for (const f of ['src/app/api/simulation/attempts/route.ts', 'src/lib/student/teacher-intervention-execution.service.ts']) expect(literal.test(read(f)), f).toBe(false);
@@ -242,5 +248,25 @@ describe('B1-C official mock invariant -- FULL_MOCK => frozen exam instance', ()
     for (const f of ['src/lib/simulation/attempt.service.ts', 'src/lib/student/teacher-intervention-execution.service.ts', 'src/lib/simulation/preparation-simulation.ts']) {
       expect(read(f), f).not.toMatch(/UPDATE simulation_attempts SET simulation_type|UPDATE teacher_interventions SET simulation_type/);
     }
+  });
+});
+
+describe('B1-D -- the direct route cannot request EXAM_PRACTICE', () => {
+  it('a client-submitted EXAM_PRACTICE is INVALID_INPUT and starts nothing', async () => {
+    const res = await post(body('EXAM_PRACTICE'));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('INVALID_INPUT');
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('B1-E -- the direct route cannot request any instance-derived type', () => {
+  it('EXAM_CHALLENGE and REDUCED_MOCK are INVALID_INPUT and start nothing', async () => {
+    for (const type of ['EXAM_CHALLENGE', 'REDUCED_MOCK']) {
+      const res = await post(body(type));
+      expect(res.status, type).toBe(400);
+      expect((await res.json()).error, type).toBe('INVALID_INPUT');
+    }
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
   });
 });

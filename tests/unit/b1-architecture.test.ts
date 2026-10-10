@@ -162,10 +162,20 @@ describe('B1 architecture -- flags, Blueprint V2 and migrations', () => {
     for (const f of [...FOUNDATION, ...IDENTITY, ...SCOPE, 'src/lib/curriculum/bootstrap.service.ts', 'src/lib/simulation/preparation-simulation.ts']) expect(code(read(f)), f).not.toMatch(/process\.env/);
   });
 
-  it('B1 adds no migration: the chain still ends at the T1 final delta', () => {
+  it('B1 adds exactly two migrations (B1-D, B1-E): additive simulation-type widenings, right after the T1 final delta', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations[migrations.length - 1]).toBe('20261107_1000_exam_target_session_and_aspiration.sql');
-    expect(migrations).toHaveLength(69);
+    expect(migrations.slice(-3)).toEqual(['20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql']);
+    expect(migrations).toHaveLength(71);
+    const second = read('database/migrations/20261109_1000_simulation_type_challenge_reduced_mock.sql').replace(/^\s*--.*$/gm, '');
+    expect(second.match(/ALTER TABLE public\.(\w+) ADD CONSTRAINT/g)).toEqual(['ALTER TABLE public.simulation_plans ADD CONSTRAINT', 'ALTER TABLE public.simulation_attempts ADD CONSTRAINT']);
+    expect(second.match(/'TOPIC_EXAM', 'DOMAIN_EXAM', 'MINI_MOCK', 'FULL_MOCK', 'EXAM_PRACTICE', 'EXAM_CHALLENGE', 'REDUCED_MOCK'/g)).toHaveLength(2);
+    expect(second).not.toMatch(/ADD COLUMN|DROP COLUMN|\bUPDATE\b|\bINSERT\b|\bDELETE\b|TRUNCATE|DROP TABLE|teacher_interventions/i);
+    const sql = read('database/migrations/20261108_1000_simulation_type_exam_practice.sql').replace(/^\s*--.*$/gm, '');
+    // widening only: two CHECK constraints, on the two tables that enumerate the type
+    expect(sql.match(/ALTER TABLE public\.(\w+) ADD CONSTRAINT/g)).toEqual(['ALTER TABLE public.simulation_plans ADD CONSTRAINT', 'ALTER TABLE public.simulation_attempts ADD CONSTRAINT']);
+    expect(sql.match(/'TOPIC_EXAM', 'DOMAIN_EXAM', 'MINI_MOCK', 'FULL_MOCK', 'EXAM_PRACTICE'/g)).toHaveLength(2);
+    // no column, no backfill, no rewrite, and the Teacher intervention domain is not widened
+    expect(sql).not.toMatch(/ADD COLUMN|DROP COLUMN|\bUPDATE\b|\bINSERT\b|\bDELETE\b|TRUNCATE|DROP TABLE|teacher_interventions/i);
   });
 
   it('no PreparationProfile entity and no LearningActivity contract were introduced', () => {

@@ -1,4 +1,18 @@
-export type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK';
+/**
+ * FULL_MOCK       a VERIFIED COMPLETE official-format mock: a MOCK exam instance whose frozen form has FULL fidelity
+ *                 and official difficulty. Nothing else writes it.
+ * REDUCED_MOCK    (B1-E) a frozen MOCK following the official model, smaller than the complete official form.
+ * EXAM_CHALLENGE  (B1-E) a frozen exam-instance assessment deliberately more demanding than the official exam.
+ * EXAM_PRACTICE   (B1-D) an exam-instance-based preparation assessment over the instance's selected components /
+ *                 positions. May be full-length; never official.
+ * TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK   preparation simulations a client may request directly.
+ *
+ * The four instance types are DERIVED by the exam-instance start service; no client requests them.
+ */
+export type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK' | 'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'REDUCED_MOCK';
+
+/** Types only the exam-instance start service derives and writes. */
+export const INSTANCE_DERIVED_SIMULATION_TYPES = ['FULL_MOCK', 'REDUCED_MOCK', 'EXAM_CHALLENGE', 'EXAM_PRACTICE'] as const;
 export type TimingMode = 'UNTIMED' | 'TRAINING_TIMED' | 'OFFICIAL_SIMULATION_TIMED';
 export type SimulationAttemptStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED';
 

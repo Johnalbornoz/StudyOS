@@ -142,8 +142,10 @@ describe('E12: one deterministic migration chain', () => {
     const tail = files.filter((f) => f.startsWith('202611'));
     // + Human Agency P0-3 (20261105_1000) and P0-4 (20261105_1100), additive, after the certified 20261104 chain end.
     // + T1 final delta: exam target session + aspiration area (20261107_1000), additive.
+    // + B1-D: simulation type EXAM_PRACTICE (20261108_1000), additive CHECK widening only.
+    // + B1-E: simulation types EXAM_CHALLENGE / REDUCED_MOCK (20261109_1000), additive CHECK widening only.
     // + REM-T1-02/03 student context + structured time context (20261106_1000), additive.
-    expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql', '20261104_1000_question_bank_review_assessment.sql', '20261105_1000_explain_defend_task_instances.sql', '20261105_1100_safety_signal_routing.sql', '20261106_1000_student_context_and_time_context.sql', '20261106_1100_exam_series_canonical.sql', '20261107_1000_exam_target_session_and_aspiration.sql']);
+    expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql', '20261104_1000_question_bank_review_assessment.sql', '20261105_1000_explain_defend_task_instances.sql', '20261105_1100_safety_signal_routing.sql', '20261106_1000_student_context_and_time_context.sql', '20261106_1100_exam_series_canonical.sql', '20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

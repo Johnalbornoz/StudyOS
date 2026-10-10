@@ -61,7 +61,9 @@ const isoOf = (v: string | Date | null | undefined): string | null => (v instanc
 /** REUSE: the frozen exam instance, projected. An instance with no frozen form is described as not frozen. */
 export function snapshotFromExamInstance(row: ExamInstanceSnapshotRow): GeneratedAssessmentSnapshot {
   const frozenAt = isoOf(row.formFrozenAt);
-  const path = assessmentPathOf({ simulationType: 'FULL_MOCK', instanceMode: row.mode, formFrozen: !!(row.form && frozenAt) });
+  // The instance is read by its own facts (mode, frozen form, the form's recorded length fidelity): this is
+  // also how a historical instance, whose attempt was stored as FULL_MOCK whatever its mode, is described.
+  const path = assessmentPathOf({ simulationType: null, instanceMode: row.mode, formFrozen: !!(row.form && frozenAt), formFidelity: row.form?.fidelity ?? null });
   const slots = row.form?.slots ?? null;
   return {
     v: GENERATED_ASSESSMENT_SNAPSHOT_VERSION,
