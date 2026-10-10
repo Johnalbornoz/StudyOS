@@ -15,6 +15,34 @@ export function resolveConceptLabel(row: { localized?: string | null; name: stri
   return row.localized || governedConceptLabel(row.name, locale) || row.name;
 }
 
+/**
+ * The display label of one of the STUDENT'S OWN concepts (pure) -- the same priority on Home, Learn and
+ * Exam Prep:
+ *
+ *   linked to the catalogue (concept_catalog_mapping MATCHED):
+ *     1. the catalogue's stored localized label        (canonical_concept_localizations)
+ *     2. the governed StudyUs concept-label list        (canonical-concept-labels.ts)
+ *     3. the concept's own stored name                  (the reader's language first, else any)
+ *
+ *   NOT linked (a concept the Student typed): its own stored label, exactly as written -- the catalogue
+ *   and the governed list are never consulted, whatever the text is.
+ *
+ * Display only: nothing is renamed, written or translated at runtime.
+ */
+export function resolveLearnerConceptLabel(
+  row: { canonicalName?: string | null; catalogLocalized?: string | null; ownLocalized?: string | null; storedLabel?: string | null },
+  locale: string
+): string | null {
+  const own = row.ownLocalized || row.storedLabel || null;
+  if (!row.canonicalName) return own;
+  return row.catalogLocalized || governedConceptLabel(row.canonicalName, locale) || own;
+}
+
+/** True when the catalogue (stored localization or governed list) supplies the label of a linked concept. */
+export function catalogSuppliesLabel(row: { canonicalName?: string | null; catalogLocalized?: string | null }, locale: string): boolean {
+  return !!row.canonicalName && !!(row.catalogLocalized || governedConceptLabel(row.canonicalName, locale));
+}
+
 export async function canonicalConceptLabels(ids: string[], locale: string): Promise<Map<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   const out = new Map<string, string>();

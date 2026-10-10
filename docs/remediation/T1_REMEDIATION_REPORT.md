@@ -543,3 +543,26 @@ Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no data wr
 **Not changed (out of this path).** A concept the Student has already added to their own learning is labelled through the stored localization only (Home / Learn lists); for the 56 concepts above that still needs the seed to be run.
 
 Tests: **483 files / 8540 passing** (+1 focused test with the exact Cambridge recommendation shape); `tsc` clean; `next build` OK.
+
+---
+
+# T1 — Home and Learn concept labels through the shared resolver
+
+Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no seed, no data writes, T2 not started.
+
+**Change.** Home and Learn now resolve the label of a Student's concept with the same shared function family as Exam Prep (`learning-plan/labels.ts`):
+
+1. the catalogue's stored localized label (`canonical_concept_localizations`);
+2. the governed StudyUs concept-label list;
+3. the concept's own stored name.
+
+This applies only to concepts **linked to the catalogue**. A concept the Student typed is not linked, so it is always shown with its own stored label, exactly as written; the catalogue and the governed list are never consulted for it, even when its text happens to equal a catalogue name.
+
+- Home: the central concept-label loader (`loadConceptLabels`) gathers the facts and calls `resolveLearnerConceptLabel`. Previously the concept's own label came before the catalogue's, and the governed list was not used.
+- Learn: the catalogue overlay (`catalogLabelsForLearnerConcepts`) uses the same resolver and now also covers concepts that have only a governed label.
+
+**Checked read-only on real DEV data.** Linked concepts with no stored localization resolve through the governed list on both pages ("Differential equations" → "Ecuaciones diferenciales"; "Dinámica de la Tierra" → "Earth dynamics" in English). Unlinked concepts keep their own labels and receive no overlay.
+
+**Limit.** The governed list has Spanish and English. In other interface languages a linked concept without a stored localization shows its own stored name.
+
+Tests: **483 files / 8543 passing** (+3: Cambridge catalogue concept in Spanish, the same concept in English, Student free-text concept); `tsc` clean; `next build` OK. One earlier source guard updated for the new loader.

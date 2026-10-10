@@ -30,7 +30,9 @@ import { updatePreparationDetails } from '@/lib/exam-core/objectives/preparation
 import { levelDisplayLabel, localizeCatalogSubjectName, localizeComponentLabel, localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { hasCambridgeComponentLabel, localizeCambridgeComponentLabel } from '@/lib/exam-core/catalog/cambridge-localization';
 import { learningObjectiveLabel, localizedObjectiveCodes } from '@/lib/exam-core/catalog/objective-localization';
-import { canonicalConceptLabels, resolveConceptLabel } from '@/lib/learning-plan/labels';
+import { canonicalConceptLabels, catalogSuppliesLabel, resolveConceptLabel, resolveLearnerConceptLabel } from '@/lib/learning-plan/labels';
+import { loadConceptLabels } from '@/services/learning-os-snapshot.service';
+import { catalogLabelsForLearnerConcepts } from '@/lib/learning-plan/subject-curriculum-topics';
 import { CANONICAL_CONCEPT_LABELS, governedConceptLabel } from '@/lib/learning-plan/canonical-concept-labels';
 import { PreparationHome } from '@/app/dashboard/exam-prep/[examProfileId]/PreparationHome';
 import { computeCapabilities } from '@/lib/exam-core/objectives/capabilities';
@@ -770,5 +772,91 @@ describe('Recommendation card: the concept row under a Cambridge requirement', (
     expect(service).toMatch(/name: conceptLabels\.get\(c\.id\) \?\? c\.name/);
     expect(code('src/lib/learning-plan/labels.ts')).toMatch(/out\.set\(row\.id, resolveConceptLabel\(row, locale\)\)/);
     expect(code('src/lib/learning-plan/labels.ts')).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/); // display only: nothing is written
+  });
+});
+
+// ================================================================== Home + Learn: the shared concept-label resolver
+
+describe('Home and Learn resolve concept labels like Exam Prep', () => {
+  const NAME = 'Mechanics: energy, work and power';
+  /** What the two loaders read: the Student's own labels + (only when linked) the canonical name and its stored localization. */
+  const world = {
+    // A Cambridge catalogue concept the Student added: linked; no stored localization in DEV; its own label is a copy of the catalogue name.
+    cambridge: { id: 'lc-cambridge', canonical_id: 'catalog:c1', subject_name: 'Mathematics', label: NAME, canonical_name: NAME, catalog_localized: null as string | null },
+    // A linked concept that HAS a stored localization.
+    stored: { id: 'lc-stored', canonical_id: 'catalog:c2', subject_name: 'Physics', label: 'Conservation of momentum', canonical_name: 'Conservation of momentum', catalog_localized: 'STORED' },
+    // Concepts the Student typed: not linked to the catalogue. One of them happens to read exactly like a catalogue name.
+    freeText: { id: 'lc-free', canonical_id: 'student:x', subject_name: 'Mathematics', label: 'mis apuntes de Energy & work (cap. 4)', canonical_name: null, catalog_localized: null },
+    lookalike: { id: 'lc-look', canonical_id: 'student:y', subject_name: 'Mathematics', label: 'Vectors', canonical_name: null, catalog_localized: null },
+  };
+  const install = () =>
+    h.dbQueryMock.mockImplementation(async (sql: string, params: any[]) => {
+      const locale = params[1];
+      const rows = Object.values(world).filter((r) => (params[0] as string[]).includes(r.id)).map((r) => ({ ...r, catalog_localized: r.catalog_localized ? (locale === 'es' ? 'Conservación del momento lineal' : 'Conservation of momentum') : null }));
+      if (/FROM concept_catalog_mapping m\s+JOIN canonical_concepts cc/.test(sql) && /learner_concept_id = ANY/.test(sql)) return { rows: rows.filter((r) => r.canonical_name).map((r) => ({ learner_concept_id: r.id, canonical_name: r.canonical_name, catalog_localized: r.catalog_localized })) };
+      if (/FROM concepts c/.test(sql)) return { rows };
+      return { rows: [] };
+    });
+  const ids = Object.values(world).map((r) => r.id);
+
+  it('a Cambridge catalogue concept is shown in Spanish on Home and in Learn', async () => {
+    install();
+    const home = await loadConceptLabels(ids, 'es');
+    expect(home.get('lc-cambridge')!.label).toBe('Mecánica: energía, trabajo y potencia'); // 2. governed list (no stored localization)
+    expect(home.get('lc-stored')!.label).toBe('Conservación del momento lineal'); // 1. stored localization wins
+    const learn = await catalogLabelsForLearnerConcepts(ids, 'es');
+    expect(learn.get('lc-cambridge')).toBe('Mecánica: energía, trabajo y potencia');
+    expect(learn.get('lc-stored')).toBe('Conservación del momento lineal');
+    // The same resolver as Exam Prep's concept labels: same answer for the same concept.
+    expect(resolveConceptLabel({ localized: null, name: NAME }, 'es')).toBe(home.get('lc-cambridge')!.label);
+    // Priority, step by step.
+    expect(resolveLearnerConceptLabel({ canonicalName: NAME, catalogLocalized: 'STORED', ownLocalized: 'own', storedLabel: 'any' }, 'es')).toBe('STORED');
+    expect(resolveLearnerConceptLabel({ canonicalName: NAME, catalogLocalized: null, ownLocalized: 'own', storedLabel: 'any' }, 'es')).toBe('Mecánica: energía, trabajo y potencia');
+    expect(resolveLearnerConceptLabel({ canonicalName: 'Not reviewed yet', catalogLocalized: null, ownLocalized: 'own', storedLabel: 'any' }, 'es')).toBe('own'); // 3. stored concept name
+    expect(resolveLearnerConceptLabel({ canonicalName: 'Not reviewed yet', catalogLocalized: null, ownLocalized: null, storedLabel: 'any' }, 'es')).toBe('any');
+    // Both pages use the shared resolver; neither carries its own priority.
+    const snapshot = code('src/services/learning-os-snapshot.service.ts');
+    expect(snapshot).toMatch(/resolveLearnerConceptLabel\(\{ canonicalName: row\.canonical_name, catalogLocalized: row\.catalog_localized, storedLabel: row\.label \}, preferredLanguage\) \?\? row\.label/);
+    expect(snapshot).not.toMatch(/COALESCE\(own\.label, cat\.label/); // the catalogue label is no longer second to the own label
+    expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).toMatch(/if \(catalogSuppliesLabel\(facts, locale\)\) out\.set\(row\.learner_concept_id, resolveLearnerConceptLabel\(facts, locale\)!\);/);
+    expect(code('src/app/dashboard/learn/page.tsx')).toMatch(/const titleOf = \(c: ConceptPathView\) => catalogLabels\.get\(c\.conceptId\) \?\? c\.title/);
+    expect(code('src/app/dashboard/today/page.tsx')).toMatch(/snapshot!\.conceptLabels\.get\(/);
+  });
+
+  it('the same concept is shown in English in the English interface', async () => {
+    install();
+    const home = await loadConceptLabels(ids, 'en');
+    expect(home.get('lc-cambridge')!.label).toBe(NAME);
+    expect(home.get('lc-stored')!.label).toBe('Conservation of momentum');
+    const learn = await catalogLabelsForLearnerConcepts(ids, 'en');
+    expect(learn.get('lc-cambridge')).toBe(NAME);
+    // A language the governed list does not cover: the concept's own stored name, never an invented label.
+    const german = await loadConceptLabels(['lc-cambridge'], 'de');
+    expect(german.get('lc-cambridge')!.label).toBe(NAME);
+    expect((await catalogLabelsForLearnerConcepts(['lc-cambridge'], 'de')).has('lc-cambridge')).toBe(false);
+    // Identity never changes with the language.
+    expect(home.get('lc-cambridge')!.canonicalId).toBe('catalog:c1');
+    expect((await loadConceptLabels(ids, 'es')).get('lc-cambridge')!.canonicalId).toBe('catalog:c1');
+  });
+
+  it('a concept the Student typed stays exactly as written, in every language', async () => {
+    install();
+    for (const locale of ['es', 'en', 'de']) {
+      const home = await loadConceptLabels(ids, locale);
+      expect(home.get('lc-free')!.label).toBe('mis apuntes de Energy & work (cap. 4)');
+      // Reads exactly like a catalogue name ("Vectors") but is NOT linked: it is the Student's text, so it is not relabelled.
+      expect(home.get('lc-look')!.label).toBe('Vectors');
+      const learn = await catalogLabelsForLearnerConcepts(ids, locale);
+      expect(learn.has('lc-free')).toBe(false); // Learn keeps the concept's own title
+      expect(learn.has('lc-look')).toBe(false);
+    }
+    expect(resolveLearnerConceptLabel({ canonicalName: null, catalogLocalized: null, ownLocalized: null, storedLabel: 'Vectors' }, 'es')).toBe('Vectors');
+    expect(resolveLearnerConceptLabel({ canonicalName: null, catalogLocalized: 'ignored', ownLocalized: 'Mi tema', storedLabel: 'x' }, 'es')).toBe('Mi tema');
+    expect(catalogSuppliesLabel({ canonicalName: null, catalogLocalized: null }, 'es')).toBe(false);
+    // Read-only: no loader writes, seeds or migrates anything.
+    for (const f of ['src/lib/learning-plan/labels.ts', 'src/lib/learning-plan/canonical-concept-labels.ts']) expect(code(f)).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/);
+    const loader = code('src/services/learning-os-snapshot.service.ts');
+    expect(loader.slice(loader.indexOf('export async function loadConceptLabels'), loader.indexOf('export async function getLearningOSSnapshot'))).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/);
+    expect(h.dbQueryMock.mock.calls.every(([sql]) => /^\s*SELECT/i.test(String(sql)))).toBe(true);
   });
 });

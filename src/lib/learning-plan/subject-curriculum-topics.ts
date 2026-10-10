@@ -23,7 +23,7 @@
  * untouched). Topic-level assessment / practice generation is out of scope (Blueprint Engine).
  */
 import { db } from '@/lib/db';
-import { canonicalConceptLabels } from './labels';
+import { canonicalConceptLabels, catalogSuppliesLabel, resolveLearnerConceptLabel } from './labels';
 import { learningObjectiveLabel } from '@/lib/exam-core/catalog/objective-localization';
 import { localizeComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogKeyOf, resolveCurriculumContext, type ContextReason, type CurriculumOption } from './curriculum.service';
@@ -161,9 +161,10 @@ export async function loadSubjectCurriculumTopics(studentId: string, subject: { 
 
 /**
  * G -- catalogue display labels for the Student's own concepts: a learner concept linked to a canonical
- * concept (concept_catalog_mapping MATCHED) is shown with that concept's label in the interface locale
- * (canonical_concept_localizations). Unlinked concepts, and locales without a label, keep the stored
- * label. Display only -- no row is renamed.
+ * concept (concept_catalog_mapping MATCHED) is shown with the catalogue's label in the interface locale,
+ * through the shared resolver (labels.ts): stored localization, else the governed concept-label list.
+ * Unlinked concepts (what the Student typed), and concepts the catalogue has no label for, keep their
+ * stored label. Display only -- no row is renamed.
  */
 export async function catalogLabelsForLearnerConcepts(conceptIds: string[], locale: string): Promise<Map<string, string>> {
   const ids = [...new Set(conceptIds.filter(Boolean))];
@@ -171,13 +172,19 @@ export async function catalogLabelsForLearnerConcepts(conceptIds: string[], loca
   if (ids.length === 0) return out;
   const r = await db
     .query(
-      `SELECT m.learner_concept_id, l.label
+      `SELECT m.learner_concept_id, cc.name AS canonical_name, l.label AS catalog_localized
          FROM concept_catalog_mapping m
-         JOIN canonical_concept_localizations l ON l.canonical_concept_id = m.canonical_concept_id AND l.language = $2
+         JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id
+         LEFT JOIN canonical_concept_localizations l ON l.canonical_concept_id = m.canonical_concept_id AND l.language = $2
         WHERE m.learner_concept_id = ANY($1::uuid[]) AND m.status = 'MATCHED'`,
       [ids, locale]
     )
     .catch(() => ({ rows: [] as any[] }));
-  for (const row of r.rows) if (row.label) out.set(row.learner_concept_id, row.label);
+  // Only concepts LINKED to the catalogue appear here, and only when the catalogue supplies a label (stored
+  // localization, else the governed list). Everything else -- every concept the Student typed -- keeps its own title.
+  for (const row of r.rows) {
+    const facts = { canonicalName: row.canonical_name as string, catalogLocalized: row.catalog_localized as string | null };
+    if (catalogSuppliesLabel(facts, locale)) out.set(row.learner_concept_id, resolveLearnerConceptLabel(facts, locale)!);
+  }
   return out;
 }
