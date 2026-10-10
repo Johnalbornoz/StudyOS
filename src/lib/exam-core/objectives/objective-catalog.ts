@@ -70,12 +70,19 @@ export interface ExamObjective {
   /** Every configured vertical bound inside the objective (its activities and requirements come from these). */
   configKeys: string[];
   /** Real catalogue children with sourced facts (papers, components, areas, domains) -- never invented. */
-  catalogParts: Array<{ key: string; type: CatalogNode['type']; label: string; facts: Record<string, string | number> | null }>;
+  /** `labelEn` (M03c): the catalogue's English name of the part, when `label` is its Spanish one. Display only. */
+  catalogParts: Array<{ key: string; type: CatalogNode['type']; label: string; labelEn?: string; facts: Record<string, string | number> | null }>;
   sourceKeys: string[];
   /** Lower-cased text the search matches against. */
   searchText: string;
   /** Catalogue SUBJECT node the objective belongs to (null for whole-test / planner objectives). */
   subjectNodeKey: string | null;
+  /**
+   * T1 UI polish (M03c): the catalogue's own names of `context.groups`, per language, in the same order
+   * ("Group 1: Mathematics and Sciences" / "Group 1: Matemáticas y Ciencias"). Display only -- `context.groups`
+   * (what is stored with a preparation) is unchanged.
+   */
+  groupNames: Array<{ es: string; en: string }>;
 }
 
 const PART_TYPES = new Set<CatalogNode['type']>(['PAPER', 'COMPONENT', 'PORTFOLIO', 'PERFORMANCE', 'PROJECT', 'SECTION', 'AREA', 'DOMAIN', 'VARIANT']);
@@ -115,7 +122,7 @@ function bindKeys(n: CatalogNode): string[] {
 }
 function parts(n: CatalogNode): ExamObjective['catalogParts'] {
   const kids = (n.children ?? []).filter((c) => PART_TYPES.has(c.type) && !c.notExaminable);
-  return kids.map((c) => ({ key: c.key, type: c.type, label: c.labels?.es ?? c.label, facts: c.facts ?? null }));
+  return kids.map((c) => ({ key: c.key, type: c.type, label: c.labels?.es ?? c.label, labelEn: c.label, facts: c.facts ?? null }));
 }
 function versionText(n: CatalogNode, parent?: CatalogNode): string | null {
   const v = n.frameworkVersion ?? parent?.frameworkVersion ?? null;
@@ -129,17 +136,21 @@ const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerC
 /** Every preparation objective of the catalogue, in framework order. */
 export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALOG): ExamObjective[] {
   const out = new Map<string, ExamObjective>();
-  const add = (o: Omit<ExamObjective, 'searchText' | 'nodeKeys' | 'subjectNodeKey'> & { nodeKeys?: string[]; subjectNodeKey?: string | null }) => {
+  const add = (o: Omit<ExamObjective, 'searchText' | 'nodeKeys' | 'subjectNodeKey' | 'groupNames'> & { nodeKeys?: string[]; subjectNodeKey?: string | null; groupNames?: Array<{ es: string; en: string }> }) => {
     const prev = out.get(o.key);
     if (prev) {
       // Same qualification reached from another group: one objective, every group named.
       prev.nodeKeys.push(o.nodeKey);
-      for (const g of o.context.groups) if (!prev.context.groups.includes(g)) prev.context.groups.push(g);
+      o.context.groups.forEach((g, i) => {
+        if (prev.context.groups.includes(g)) return;
+        prev.context.groups.push(g);
+        prev.groupNames.push(o.groupNames?.[i] ?? { es: g, en: g });
+      });
       for (const k of o.configKeys) if (!prev.configKeys.includes(k)) prev.configKeys.push(k);
       prev.searchText = strip([prev.searchText, ...o.context.groups].join(' '));
       return;
     }
-    const full: ExamObjective = { ...o, nodeKeys: o.nodeKeys ?? [o.nodeKey], searchText: '', subjectNodeKey: o.subjectNodeKey ?? null };
+    const full: ExamObjective = { ...o, nodeKeys: o.nodeKeys ?? [o.nodeKey], searchText: '', subjectNodeKey: o.subjectNodeKey ?? null, groupNames: o.groupNames ?? o.context.groups.map((g) => ({ es: g, en: g })) };
     full.searchText = strip([o.label, o.labels.es, o.labels.en, o.context.programme, o.context.subject, o.context.syllabusCode, o.context.level, ...o.context.groups, o.framework].filter(Boolean).join(' '));
     out.set(o.key, full);
   };
@@ -165,7 +176,7 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
         add({
           key: rule.planner.key, framework, family: fam.family, kind: 'PROGRAMME_PLAN', nodeKey: root.key, label: root.label, labels: root.labels ?? {},
           context: { programme: root.label, groups: [], subject: null, syllabusCode: null, level: null, version: null },
-          description: root.description ?? null, configKeys: [], catalogParts: (root.children ?? []).map((g) => ({ key: g.key, type: g.type, label: g.labels?.es ?? g.label, facts: null })),
+          description: root.description ?? null, configKeys: [], catalogParts: (root.children ?? []).map((g) => ({ key: g.key, type: g.type, label: g.labels?.es ?? g.label, labelEn: g.label, facts: null })),
           sourceKeys: root.sourceKeys ?? [],
         });
       }
@@ -178,12 +189,13 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
           const levels = (n.children ?? []).filter((c) => c.type === 'LEVEL' || c.type === 'VARIANT');
           const group = groups[groups.length - 1];
           const groupLabel = group ? group.labels?.es ?? group.label : null;
+          const groupNames = group ? [{ es: group.labels?.es ?? group.label, en: group.label }] : [];
           const subjectLabel = n.labels?.es ?? n.label;
           if (levels.length === 0) {
             add({
               key: n.key, framework: fw, family: fam.family, kind: 'SUBJECT_LEVEL', nodeKey: n.key, label: subjectLabel, labels: n.labels ?? {},
               context: { programme: programmeOf, groups: groupLabel ? [groupLabel] : [], subject: subjectLabel, syllabusCode: n.syllabusCode ?? null, level: null, version: versionText(n) },
-              description: n.description ?? null, configKeys: bindKeys(n), catalogParts: parts(n), sourceKeys: n.sourceKeys ?? [], subjectNodeKey: n.key,
+              description: n.description ?? null, configKeys: bindKeys(n), catalogParts: parts(n), sourceKeys: n.sourceKeys ?? [], subjectNodeKey: n.key, groupNames,
             });
             return;
           }
@@ -193,7 +205,7 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
             add({
               key, framework: fw, family: fam.family, kind: 'SUBJECT_LEVEL', nodeKey: lv.key, label: `${subjectLabel} · ${levelLabel}`, labels: {},
               context: { programme: programmeOf, groups: groupLabel ? [groupLabel] : [], subject: subjectLabel, syllabusCode: n.syllabusCode ?? lv.syllabusCode ?? null, level: levelLabel, version: versionText(lv, n) },
-              description: n.description ?? null, configKeys: bindKeys(lv), catalogParts: parts(lv), sourceKeys: lv.sourceKeys ?? n.sourceKeys ?? [], subjectNodeKey: n.key,
+              description: n.description ?? null, configKeys: bindKeys(lv), catalogParts: parts(lv), sourceKeys: lv.sourceKeys ?? n.sourceKeys ?? [], subjectNodeKey: n.key, groupNames,
             });
           }
           return;

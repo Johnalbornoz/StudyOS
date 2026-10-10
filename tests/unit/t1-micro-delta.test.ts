@@ -35,6 +35,8 @@ import { upsertAcademicProfile } from '@/services/academic-profile.service';
 import { setStudentContextType } from '@/services/student-context.service';
 import { getStudentPendingTeacherInterventions, countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
 import { INTEREST_AREAS, interestAreaOptions } from '@/lib/student/interest-areas';
+import { openTopicsStorageKey, parseOpenTopics, toggleOpenTopic } from '@/lib/learning-plan/open-topics';
+import { objectiveStatusKey, preparationBadgeKey, preparationBadgeLabelKey } from '@/lib/exam-core/objectives/capabilities';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 const code = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
@@ -461,5 +463,154 @@ describe('M03. ES / EN change display labels, never stored IDs', () => {
       expect(presentObjective(objectiveByKey('cie.asal.9709.as')!, locale).label).toBe('Mathematics (9709) · AS Level');
     }
     expect(localizeCatalogSubjectName('Mathematics (9709)', 'es')).toBe('Mathematics (9709)');
+  });
+});
+
+// ================================================================== T1 FINAL UI POLISH (post-final-smoke)
+
+describe('UI polish M02b. the topic stays expanded after "Add to my plan"', () => {
+  const row = (id: string, lo = 'lo-a', code = 'aasl.p1.algebra'): CurriculumTopicRow => ({ nodeId: 'n1', nodeType: 'EXAM_SECTION', nodeLabel: 'Paper 1 (no calculator)', nodeOrder: 0, objectiveId: lo, objectiveCode: code, objectiveDescription: 'x', canonicalConceptId: id });
+  const labels = new Map([['c-log', 'Logaritmos'], ['c-seq', 'Sucesiones y series'], ['c-der', 'Derivación']]);
+  const rows = [row('c-log'), row('c-seq'), row('c-der', 'lo-b', 'aasl.p1.calculus')];
+  const l = Object.fromEntries(Object.entries(msgs('es')).filter(([k]) => k.startsWith('acp.learn.') || k.startsWith('lp.')));
+  const render = (topics: ReturnType<typeof buildCurriculumTopics>, initialOpen: string[]) => renderToStaticMarkup(createElement(CurriculumTopics, { subjectId: 'sub1', title: 'T', reason: null, topics, labels: l, initialOpen }));
+
+  it('open topics are controlled state that survives the data refresh; siblings stay actionable', () => {
+    const before = buildCurriculumTopics(rows, labels, new Map(), 'es');
+    expect(before.map((t) => t.key)).toEqual(['lo:lo-a', 'lo:lo-b']);
+    // Closed by default; the topic the Student opened is the only one open.
+    expect(render(before, [])).not.toMatch(/<details[^>]* open/);
+    const opened = render(before, ['lo:lo-a']);
+    expect(opened.match(/<details[^>]* open=""/g)).toHaveLength(1);
+    // After the add, the SAME open set renders the refreshed data: the clicked concept is "Añadido" + "Abrir"
+    // in place, its sibling is still there with its own CTA, and the topic is still expanded.
+    const after = buildCurriculumTopics(rows, labels, new Map<string, LearnerConceptRef>([['c-seq', { conceptId: 'lc-seq', subjectId: 'sub1' }]]), 'es');
+    expect(after.map((t) => t.key)).toEqual(before.map((t) => t.key)); // stable keys: the open set still points at the same topic
+    const html = render(after, ['lo:lo-a']);
+    const topic = /<details[^>]* open=""[^>]*>(.*?)<\/details>/.exec(html)![1];
+    const [first, second] = topic.split('data-concept-row="true"').slice(1);
+    expect(first).toContain('>Logaritmos</span>');
+    expect(first).toContain('>Añadir a mi plan</button>'); // sibling still visible and actionable
+    expect(second).toContain('>Sucesiones y series</span>');
+    expect(second).toContain('>Añadido</span>');
+    expect(second).toContain('>Abrir</a>');
+    expect(second).not.toContain('Añadir a mi plan');
+
+    // Pure helpers.
+    expect(toggleOpenTopic([], 'a', true)).toEqual(['a']);
+    expect(toggleOpenTopic(['a'], 'b', true)).toEqual(['a', 'b']);
+    expect(toggleOpenTopic(['a', 'b'], 'a', true)).toEqual(['b', 'a']);
+    expect(toggleOpenTopic(['a', 'b'], 'a', false)).toEqual(['b']);
+    expect(openTopicsStorageKey('sub1')).toBe('studyus.learn.openTopics:sub1'); // per subject
+    expect(parseOpenTopics('["lo:lo-a","gone"]', ['lo:lo-a', 'lo:lo-b'])).toEqual(['lo:lo-a']);
+    for (const bad of [null, '', 'not json', '{"a":1}', '[1,2]']) expect(parseOpenTopics(bad, ['lo:lo-a'])).toEqual([]);
+
+    // Wiring: controlled <details>, opened explicitly on a successful add, refresh in place (no navigation).
+    const ui = code('src/app/dashboard/learn/CurriculumTopics.tsx');
+    expect(ui).toMatch(/open=\{open\.includes\(topic\.key\)\}/);
+    expect(ui).toMatch(/onToggle=\{\(e\) => setTopicOpen\(topic\.key, \(e\.currentTarget as HTMLDetailsElement\)\.open\)\}/);
+    expect(ui).toMatch(/onAdded=\{\(\) => setTopicOpen\(topic\.key, true\)\}/);
+    expect(ui).toMatch(/window\.sessionStorage\.setItem\(storageKey, JSON\.stringify\(next\)\)/);
+    expect(ui.match(/try \{/g)!.length).toBeGreaterThanOrEqual(2); // storage is optional: every access is guarded
+    const button = code('src/app/dashboard/plan/PlanActions.tsx');
+    expect(button).toMatch(/setDone\(true\);\s+onAdded\?\.\(\);\s+router\.refresh\(\);/);
+    const add = button.slice(button.indexOf('export function AddToPlanButton'), button.indexOf('export function ArchiveToggle'));
+    expect(add).not.toMatch(/router\.push|location\.|scrollTo/); // context and scroll are not reset
+  });
+});
+
+describe('UI polish M05b. recommended subject row layout', () => {
+  it('the subject name is the flexible column and wraps by words; badge and arrow keep their width', () => {
+    const css = read('src/app/globals.css');
+    const rules = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n)${sel.replace(/[.\[\]>-]/g, '\\$&')} \\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(' ');
+    expect(rules('.sp-option')).toMatch(/grid-template-columns: minmax\(0, 1fr\) auto/);
+    const name = rules('.sp-option-name');
+    expect(name).toMatch(/grid-column: 1/);
+    expect(name).toMatch(/min-width: 0/);
+    expect(name).toMatch(/overflow-wrap: break-word/);
+    expect(name).toMatch(/word-break: normal/);
+    expect(name).not.toMatch(/anywhere|break-all/); // never character-by-character ("Informática")
+    expect(rules('.sp-option-go')).toMatch(/grid-column: 2/); // the arrow stays aligned right
+    const badge = rules('.sp-option > .sp-badge');
+    expect(badge).toMatch(/grid-row: 2/); // provenance sits under the subject, natural width
+    expect(badge).toMatch(/justify-self: start/);
+    // One shared row for every recommendation and every locale; the whole row is the control.
+    const ui = code('src/app/dashboard/subjects/SubjectPicker.tsx');
+    expect(ui.match(/className="sp-option"/g)!.length).toBeGreaterThanOrEqual(2);
+    expect(ui).toMatch(/<button type="button" className="sp-option" onClick=\{\(\) => choose\(key\)\}/);
+    expect(ui).toMatch(/<span className="sp-option-name">\{label \?\? name\(key\)\}<\/span>\s+\{badge && <span id=\{`sp-b-\$\{key\}`\} className="sp-badge">\{badge\}<\/span>\}/);
+    expect(ui).toMatch(/<ul className="sp-grid" data-for-you>/);
+  });
+});
+
+describe('UI polish M03b / M03c. remaining catalogue labels', () => {
+  it('Spanish paper qualifiers and English group names use the catalogue labels; IDs and codes untouched', () => {
+    expect(localizeIbComponentLabel('Paper 3 (GDC, problem solving)', 'es')).toBe('Prueba 3 (con calculadora gráfica, resolución de problemas)');
+    expect(localizeIbComponentLabel('Paper 3 (GDC, investigation)', 'es')).toBe('Prueba 3 (con calculadora gráfica, investigación)');
+    expect(localizeIbComponentLabel('Paper 2 (calculator)', 'es')).toBe('Prueba 2 (con calculadora)');
+    expect(localizeIbComponentLabel('Paper 1 (no calculator)', 'es')).toBe('Prueba 1 (sin calculadora)');
+    expect(localizeIbComponentLabel('Paper 9 (GDC, unknown thing)', 'es')).toBe('Prueba 9 (con calculadora gráfica, unknown thing)'); // unknown term kept as stored
+    expect(localizeIbComponentLabel('Paper 3 (GDC, problem solving)', 'en')).toBe('Paper 3 (GDC, problem solving)');
+
+    const cs = objectiveByKey('cie.asal.9618.as')!;
+    const stored = JSON.stringify(cs.context);
+    expect(presentObjective(cs, 'en').groups).toEqual(['Group 1: Mathematics and Sciences']);
+    expect(presentObjective(cs, 'es').groups).toEqual(['Group 1: Matemáticas y Ciencias']);
+    expect(JSON.stringify(cs.context)).toBe(stored); // what a preparation stores is not changed
+    expect(cs.context.syllabusCode).toBe('9618');
+    expect(cs.key).toBe('cie.asal.9618.as');
+    // A syllabus listed in several groups keeps every group, in both languages, in the same order.
+    const multi = examObjectives().find((o) => o.context.groups.length > 1)!;
+    expect(multi.groupNames).toHaveLength(multi.context.groups.length);
+    expect(presentObjective(multi, 'es').groups).toEqual(multi.context.groups);
+    expect(presentObjective(multi, 'en').groups.every((g) => !/Matemáticas|Idiomas|Artes y|Interdisciplinario|obligatorio/.test(g))).toBe(true);
+    // No English group name is left in Spanish anywhere in the catalogue, and IB groups are bilingual too.
+    for (const o of examObjectives()) for (const g of presentObjective(o, 'en').groups) expect(g, o.key).not.toMatch(/^Grupo |Matemáticas y Ciencias|Idiomas$/);
+    expect(presentObjective(objectiveByKey('ib.dp.physics.hl')!, 'es').groups[0]).toMatch(/^Grupo 4/);
+    expect(presentObjective(objectiveByKey('ib.dp.physics.hl')!, 'en').groups[0]).toMatch(/^Group 4/);
+    // AICE Diploma parts carry both names.
+    const aice = objectiveByKey('cie.aice.diploma')!;
+    expect(aice.catalogParts.find((p) => p.key.endsWith('.g1'))).toMatchObject({ label: 'Group 1: Matemáticas y Ciencias', labelEn: 'Group 1: Mathematics and Sciences' });
+    // Used on the picker rows and the preparation page.
+    expect(code('src/lib/exam-core/objectives/picker.ts')).toMatch(/groupNames: shown\.groups/);
+    expect(code('src/app/dashboard/exam-prep/ObjectivePicker.tsx')).toMatch(/\(o\.groupNames \?\? o\.context\.groups\)\.join\(' \/ '\)/);
+    const home = code('src/app/dashboard/exam-prep/[examProfileId]/PreparationHome.tsx');
+    expect(home).toMatch(/\(display\.groups \?\? objective\.context\.groups\)\.join\(' \/ '\)/);
+    expect(home).toMatch(/comp\(language === 'es' \? p\.label : p\.labelEn \?\? p\.label\)/);
+  });
+});
+
+describe('UI polish M06. an active preparation never shows an add-eligible badge', () => {
+  it('the badge comes from the actual preparation state', () => {
+    expect(preparationBadgeKey('canAdd', true)).toBe('inPreparation');
+    expect(preparationBadgeKey('canAdd', false)).toBe('canAdd');
+    for (const s of ['structure', 'bankInProgress', 'practice', 'reducedMock', 'fullMock', 'plan']) expect(preparationBadgeKey(s, true)).toBe(s); // real capabilities are kept
+    expect(preparationBadgeLabelKey('inPreparation')).toBe('acp.prep.status.inPreparation');
+    expect(preparationBadgeLabelKey('practice')).toBe('prep.status.practice');
+    expect([msgs('es')['acp.prep.status.inPreparation'], msgs('en')['acp.prep.status.inPreparation']]).toEqual(['En tu preparación', 'In your preparation']);
+    // The catalogue-only case of the smoke: Cambridge Computer Science 9618.
+    const noCapabilities = { canPlanDiploma: false, canRunFullMock: false, canRunReducedMock: false, canPractice: false, canViewStructure: false, unavailableReasons: [] };
+    expect(objectiveStatusKey(noCapabilities as any)).toBe('canAdd');
+
+    const labels = Object.fromEntries(Object.entries(msgs('en')).filter(([k]) => k.startsWith('prep.') || k.startsWith('acp.prep.')));
+    const cs = objectiveByKey('cie.asal.9618.as')!;
+    const shown = presentObjective(cs, 'en');
+    const rowFor = (preparationId: string | null): PickerObjective => ({ key: cs.key, framework: cs.framework, kind: cs.kind, label: shown.label, context: cs.context, status: 'canAdd', preparationId, searchText: '9618 computer science', groupKey: shown.groupKey, groupLabel: shown.groupLabel });
+    const frameworks = OBJECTIVE_FRAMEWORKS.map((f) => ({ ...f, family: familyOfFramework(f.key) }));
+    const render = (preparationId: string | null) => renderToStaticMarkup(createElement(ObjectivePicker, { objectives: [rowFor(preparationId)], frameworks, suggested: [], labels, initial: { framework: 'CIE_AS_A' } }));
+    const active = render('prep-1');
+    expect(active).toContain(labels['prep.cta.view']); // "View my preparation"
+    expect(active).toContain('data-prep-badge="inPreparation"');
+    expect(active).toContain('>In your preparation</span>');
+    expect(active).not.toContain(labels['prep.status.canAdd']); // never "You can add it to your preparation"
+    const notYet = render(null);
+    expect(notYet).toContain(labels['prep.status.canAdd']);
+    expect(notYet).not.toContain('In your preparation');
+    // "My preparations" lists only existing preparations: its badge always takes the in-preparation branch.
+    const page = code('src/app/dashboard/exam-prep/page.tsx');
+    expect(page).toMatch(/preparationBadgeKey\(objectiveStatusKey\(capabilities\), true\)/);
+    expect(page).not.toMatch(/tr\[`prep\.status\.\$\{objectiveStatusKey\(capabilities\)\}`\]/);
+    // Display only: no write is involved.
+    expect(code('src/lib/exam-core/objectives/capabilities.ts')).not.toMatch(/db\.query|\bUPDATE\b|\bINSERT\b/);
   });
 });

@@ -224,19 +224,25 @@ export function levelDisplayLabel(level: string | null | undefined, locale: Loca
  * catalogue's fixed component vocabulary -- deterministic, reviewed data, never runtime translation.
  * Only for IB components; a term outside the glossary is left exactly as stored.
  */
-const IB_COMPONENT_GLOSSARY_ES: Array<[RegExp, string]> = [
+const IB_COMPONENT_TERMS_ES: Array<[RegExp, string]> = [
   [/\bPaper (\d+[A-B]?)\b/g, 'Prueba $1'],
   [/\bInternal assessment\b/gi, 'Evaluación interna'],
   [/\bSection ([A-C])\b/g, 'Sección $1'],
-  [/\(no calculator\)/gi, '(sin calculadora)'],
-  [/\(GDC\)/g, '(con calculadora gráfica)'],
-  [/\(calculator\)/gi, '(con calculadora)'],
-  [/\(multiple choice\)/gi, '(opción múltiple)'],
-  [/\(data-based questions\)/gi, '(preguntas basadas en datos)'],
-  [/\(problem solving\)/gi, '(resolución de problemas)'],
 ];
+/** Qualifiers inside parentheses, matched as whole terms ("GDC", "problem solving"); a list is handled term by term. */
+const IB_COMPONENT_QUALIFIERS_ES: Record<string, string> = {
+  'no calculator': 'sin calculadora',
+  gdc: 'con calculadora gráfica',
+  calculator: 'con calculadora',
+  'multiple choice': 'opción múltiple',
+  'data-based questions': 'preguntas basadas en datos',
+  'problem solving': 'resolución de problemas',
+  investigation: 'investigación',
+};
 export function localizeIbComponentLabel(label: string | null | undefined, locale: Locale | string): string {
   if (!label) return '';
   if (locale !== 'es') return label;
-  return IB_COMPONENT_GLOSSARY_ES.reduce((acc, [pattern, to]) => acc.replace(pattern, to), label);
+  const terms = IB_COMPONENT_TERMS_ES.reduce((acc, [pattern, to]) => acc.replace(pattern, to), label);
+  // "(GDC, problem solving)" -> "(con calculadora gráfica, resolución de problemas)". An unknown qualifier is kept as stored.
+  return terms.replace(/\(([^()]*)\)/g, (_m, inner: string) => `(${inner.split(/,\s*/).map((q) => IB_COMPONENT_QUALIFIERS_ES[q.trim().toLowerCase()] ?? q.trim()).join(', ')})`);
 }

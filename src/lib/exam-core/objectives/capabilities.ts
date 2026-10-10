@@ -121,6 +121,21 @@ export function computeCapabilities(objective: Pick<ExamObjective, 'key' | 'kind
 
 /** Short, Student-facing status of an objective (Explorer card): what StudyUs can do for it today. */
 export type ObjectiveStatusKey = 'canAdd' | 'structure' | 'practice' | 'reducedMock' | 'fullMock' | 'bankInProgress' | 'plan';
+/**
+ * T1 UI polish (M06) -- the badge of an objective the Student ALREADY prepares. "You can add it to your
+ * preparation" describes a catalogue entry that is not in the preparation yet; once it is, that message is
+ * false, so the badge says "In your preparation". Every other status (structure, practice, mocks, plan)
+ * describes what StudyUs can do and is kept. Display only: the stored preparation is never touched.
+ */
+export type PreparationBadgeKey = ObjectiveStatusKey | 'inPreparation';
+export function preparationBadgeKey(status: ObjectiveStatusKey | string, inPreparation: boolean): PreparationBadgeKey {
+  return inPreparation && status === 'canAdd' ? 'inPreparation' : (status as ObjectiveStatusKey);
+}
+/** The message key of a badge ("prep.status.*", or the in-preparation key). */
+export function preparationBadgeLabelKey(badge: PreparationBadgeKey | string): string {
+  return badge === 'inPreparation' ? 'acp.prep.status.inPreparation' : `prep.status.${badge}`;
+}
+
 export function objectiveStatusKey(c: Pick<ExamPreparationCapabilities, 'canPlanDiploma' | 'canRunFullMock' | 'canRunReducedMock' | 'canPractice' | 'canViewStructure' | 'unavailableReasons'>): ObjectiveStatusKey {
   if (c.canPlanDiploma) return 'plan';
   if (c.canRunFullMock) return 'fullMock';

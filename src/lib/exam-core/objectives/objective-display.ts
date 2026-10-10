@@ -25,9 +25,12 @@ export interface ObjectivePresentation {
   level: string | null;
   groupKey: string | null;
   groupLabel: string | null;
+  /** The catalogue groups the objective sits in ("Group 1: Mathematics and Sciences"), in the interface locale. */
+  groups: string[];
 }
 
-export function presentObjective(o: Pick<ExamObjective, 'label' | 'subjectNodeKey' | 'nodeKey' | 'context'>, locale: string): ObjectivePresentation {
+export function presentObjective(o: Pick<ExamObjective, 'label' | 'subjectNodeKey' | 'nodeKey' | 'context'> & { groupNames?: ExamObjective['groupNames'] }, locale: string): ObjectivePresentation {
+  const groups = o.groupNames?.length ? o.groupNames.map((g) => (locale === 'es' ? g.es : g.en)) : o.context.groups;
   const ibKey = ibSubjectKeyOfNode(o.subjectNodeKey);
   let label = o.label;
   let subject = o.context.subject;
@@ -39,8 +42,8 @@ export function presentObjective(o: Pick<ExamObjective, 'label' | 'subjectNodeKe
     label = [subject, level].filter(Boolean).join(' · ');
   }
   const ref = canonicalSubjectOf({ subjectNodeKey: o.subjectNodeKey, syllabusCode: o.context.syllabusCode });
-  if (!ref) return { label, subject, level, groupKey: null, groupLabel: null };
-  return { label, subject, level, groupKey: ref.key, groupLabel: ref.canonical ? canonicalSubjectLabel(ref.key, locale) : subject };
+  if (!ref) return { label, subject, level, groupKey: null, groupLabel: null, groups };
+  return { label, subject, level, groupKey: ref.key, groupLabel: ref.canonical ? canonicalSubjectLabel(ref.key, locale) : subject, groups };
 }
 
 /** The display label of a stored objective key in the interface locale (null when the key is not in the catalogue). */

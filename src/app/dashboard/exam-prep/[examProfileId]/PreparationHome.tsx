@@ -39,7 +39,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
   language: string;
   timing: PreparationTiming;
   /** Catalogue labels in the interface locale (display only). */
-  display: { subject: string | null; level: string | null };
+  display: { subject: string | null; level: string | null; groups?: string[] };
   aspiration: { areas: Array<{ id: string; label: string }>; areaLabel: string | null };
 }) {
   const { profile, objective, capabilities: c, plan, next } = view;
@@ -135,7 +135,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
           <dl className="prep-facts">
             <div><dt>{l['prep.goal.framework']}</dt><dd>{l[`prep.fw.${objective.framework}`]}</dd></div>
             {objective.context.programme ? <div><dt>{l['prep.goal.programme']}</dt><dd>{objective.context.programme}</dd></div> : null}
-            {objective.context.groups.length ? <div><dt>{l['prep.goal.group']}</dt><dd>{objective.context.groups.join(' / ')}</dd></div> : null}
+            {objective.context.groups.length ? <div><dt>{l['prep.goal.group']}</dt><dd>{(display.groups ?? objective.context.groups).join(' / ')}</dd></div> : null}
             {objective.context.subject ? <div><dt>{l['prep.goal.subject']}</dt><dd>{display.subject ?? objective.context.subject}{objective.context.syllabusCode && !objective.context.subject.includes(objective.context.syllabusCode) ? ` (${objective.context.syllabusCode})` : ''}</dd></div> : null}
             {objective.context.level ? <div><dt>{l['prep.goal.level']}</dt><dd>{display.level ?? objective.context.level}</dd></div> : null}
             {objective.context.version ? <div><dt>{l['prep.goal.version']}</dt><dd>{objective.context.version}</dd></div> : null}
@@ -331,7 +331,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
             <ul className="prep-reqs">
               {objective.catalogParts.map((p) => (
                 <li key={p.key}>
-                  {comp(p.label)}
+                  {comp(language === 'es' ? p.label : p.labelEn ?? p.label)}
                   {p.facts ? <span className="ui-hint"> · {Object.entries(p.facts).filter(([k]) => ['minutes', 'marks', 'items', 'weightPercent', 'credits'].includes(k)).map(([k, v]) => fill(l[`prep.fact.${k}`], { n: v })).join(' · ')}</span> : null}
                 </li>
               ))}

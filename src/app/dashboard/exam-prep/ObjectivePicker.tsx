@@ -11,6 +11,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { preparationBadgeKey, preparationBadgeLabelKey } from '@/lib/exam-core/objectives/capabilities';
 import { objectiveSuggestions, searchTokens, suggestionKey, type ObjectiveSuggestion } from '@/lib/exam-core/objectives/objective-suggest';
 
 type L = Record<string, string>;
@@ -36,6 +37,8 @@ export interface PickerObjective {
   /** Micro-delta M04: the course ("Matemáticas: Análisis y Enfoques") and level ("Nivel Medio (NM)") as displayed. */
   subjectLabel?: string | null;
   levelLabel?: string | null;
+  /** M03c: the catalogue groups as displayed in the interface locale. */
+  groupNames?: string[];
 }
 
 /** `family` (B1): frameworks of one awarding body are ONE entry on the landing (Cambridge International). */
@@ -176,10 +179,12 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
   }
 
   const contextLine = (o: PickerObjective) =>
-    [o.kind === 'SUBJECT_LEVEL' ? o.context.programme : null, o.context.groups.join(' / ') || null, o.context.syllabusCode && !o.label.includes(o.context.syllabusCode) ? o.context.syllabusCode : null, o.context.version ? `${l['prep.goal.version']}: ${o.context.version}` : null]
+    [o.kind === 'SUBJECT_LEVEL' ? o.context.programme : null, (o.groupNames ?? o.context.groups).join(' / ') || null, o.context.syllabusCode && !o.label.includes(o.context.syllabusCode) ? o.context.syllabusCode : null, o.context.version ? `${l['prep.goal.version']}: ${o.context.version}` : null]
       .filter(Boolean)
       .join(' · ');
 
+  // M06: an objective already in the Student's preparation never shows an "add" eligibility message.
+  const badgeOf = (o: PickerObjective) => preparationBadgeKey(o.status, !!o.preparationId);
   const ctaLabel = (o: PickerObjective) => (o.preparationId ? l['prep.cta.view'] : busy === o.key ? l['prep.cta.adding'] : o.kind === 'SUBJECT_LEVEL' ? l['prep.cta.add'] : l['prep.cta.prepare']);
 
   const row = (o: PickerObjective) => (
@@ -188,7 +193,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
         <span className="prep-row-name">{o.label}</span>
         {contextLine(o) ? <span className="ui-hint">{contextLine(o)}</span> : null}
         {o.reason ? <span className="ui-hint elig-reason">{o.reason}</span> : null}
-        <span className={`xr-pill prep-status prep-status--${o.status}`}>{l[`prep.status.${o.status}`]}</span>
+        <span className={`xr-pill prep-status prep-status--${badgeOf(o)}`} data-prep-badge={badgeOf(o)}>{l[preparationBadgeLabelKey(badgeOf(o))]}</span>
       </div>
       <button type="button" className={o.preparationId ? 'btn btn-secondary prep-cta' : 'btn btn-primary prep-cta'} onClick={() => choose(o)} disabled={!!busy && busy !== o.key} aria-busy={busy === o.key} aria-label={`${ctaLabel(o)}: ${o.label}`}>
         {ctaLabel(o)}
@@ -210,7 +215,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
                 <p className="ui-hint prep-fw-desc">{l[`prep.fwDesc.${f.key}`]}</p>
                 <p className="prep-fw-meta">
                   {single ? (single.context.version ? `${l['prep.goal.version']}: ${single.context.version}` : '') : (l['prep.fw.options'] ?? '{n}').replace('{n}', String(list.length))}
-                  {single ? <span className={`xr-pill prep-status prep-status--${single.status}`}>{l[`prep.status.${single.status}`]}</span> : null}
+                  {single ? <span className={`xr-pill prep-status prep-status--${badgeOf(single)}`} data-prep-badge={badgeOf(single)}>{l[preparationBadgeLabelKey(badgeOf(single))]}</span> : null}
                 </p>
                 {mine.length > 0 ? (
                   <div className="prep-mine-subjects" data-your-subjects>

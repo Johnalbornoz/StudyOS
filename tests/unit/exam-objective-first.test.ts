@@ -211,7 +211,8 @@ describe('Explorer / preparation UI contract', () => {
     expect(picker).not.toMatch(/Próximamente/);
   });
   it('status is text (not colour only) and CTAs are touch-sized, with screen-reader labels', () => {
-    expect(picker).toMatch(/\{l\[`prep\.status\.\$\{o\.status\}`\]\}/);
+    // T1 UI polish (M06): still text, now resolved from the actual preparation state (never "can add" once added).
+    expect(picker).toMatch(/\{l\[preparationBadgeLabelKey\(badgeOf\(o\)\)\]\}/);
     expect(picker).toMatch(/aria-label=\{`\$\{ctaLabel\(o\)\}: \$\{o\.label\}`\}/);
     expect(readFileSync(join(ROOT, 'src/app/globals.css'), 'utf-8')).toMatch(/\.prep-cta \{ min-height: var\(--touch-target\); \}/);
   });
