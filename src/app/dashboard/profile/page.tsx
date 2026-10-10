@@ -14,7 +14,7 @@ import { getStudentInstitutionalContext } from '@/lib/exam-journey/ux.server';
 import { EntryChoice, InstitutionalContextCard } from './InstitutionalContextCard';
 import { VALID_EXAM_TARGET_PREDICATE, STUDENT_CONTEXT_PATH } from '@/lib/student/onboarding-gate';
 import { gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
-import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import { formatTimeContext, storedTimeContext } from '@/lib/student/time-context';
 
 /**
@@ -123,7 +123,7 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
               .join(' · ')}
           </p>
           {curriculum && curriculum.subjects.length > 0 ? (
-            <p className="acp-hint">{fillMessage(tr['acp.summary.subjects'], { subjects: curriculum.subjects.map((s) => (s.level ? `${localizeCatalogSubjectName(s.name, locale)} ${s.level}` : localizeCatalogSubjectName(s.name, locale))).join(', ') })}</p>
+            <p className="acp-hint">{fillMessage(tr['acp.summary.subjects'], { subjects: curriculum.subjects.map((s) => (s.level ? `${localizeCatalogSubjectName(s.name, locale)} · ${levelDisplayLabel(s.level, locale)}` : localizeCatalogSubjectName(s.name, locale))).join(', ') })}</p>
           ) : null}
           <p className="acp-hint">{tr['acp.summary.historyNote']}</p>
         </section>

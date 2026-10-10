@@ -200,3 +200,43 @@ export function canonicalSubjectLabel(key: string, locale: Locale | string): str
   const l = CANONICAL_SUBJECTS[key];
   return l ? (locale === 'es' ? l.es : l.en) : null;
 }
+
+// ------------------------------------------------------------------ micro-delta M03
+
+/**
+ * IB level codes as displayed. The stored value stays the code ("HL" / "SL"); the display follows the
+ * interface locale with the code kept: "Nivel Superior (NS)" / "Higher Level (HL)". Any other level
+ * (AS Level, A Level, Core, Extended, ...) is an official name and is returned unchanged.
+ */
+const IB_LEVEL_DISPLAY: Record<string, { es: string; en: string }> = {
+  HL: { es: 'Nivel Superior (NS)', en: 'Higher Level (HL)' },
+  SL: { es: 'Nivel Medio (NM)', en: 'Standard Level (SL)' },
+};
+export function levelDisplayLabel(level: string | null | undefined, locale: Locale | string): string {
+  const hit = level ? IB_LEVEL_DISPLAY[level.trim().toUpperCase()] : undefined;
+  if (!hit) return level ?? '';
+  return locale === 'es' ? hit.es : hit.en;
+}
+
+/**
+ * IB assessment-component labels ("Paper 1 (no calculator)", "Paper 2 (GDC)") in the interface locale.
+ * A governed glossary of the IB's own Spanish terms (Prueba, Evaluación interna, Sección) applied to the
+ * catalogue's fixed component vocabulary -- deterministic, reviewed data, never runtime translation.
+ * Only for IB components; a term outside the glossary is left exactly as stored.
+ */
+const IB_COMPONENT_GLOSSARY_ES: Array<[RegExp, string]> = [
+  [/\bPaper (\d+[A-B]?)\b/g, 'Prueba $1'],
+  [/\bInternal assessment\b/gi, 'Evaluación interna'],
+  [/\bSection ([A-C])\b/g, 'Sección $1'],
+  [/\(no calculator\)/gi, '(sin calculadora)'],
+  [/\(GDC\)/g, '(con calculadora gráfica)'],
+  [/\(calculator\)/gi, '(con calculadora)'],
+  [/\(multiple choice\)/gi, '(opción múltiple)'],
+  [/\(data-based questions\)/gi, '(preguntas basadas en datos)'],
+  [/\(problem solving\)/gi, '(resolución de problemas)'],
+];
+export function localizeIbComponentLabel(label: string | null | undefined, locale: Locale | string): string {
+  if (!label) return '';
+  if (locale !== 'es') return label;
+  return IB_COMPONENT_GLOSSARY_ES.reduce((acc, [pattern, to]) => acc.replace(pattern, to), label);
+}

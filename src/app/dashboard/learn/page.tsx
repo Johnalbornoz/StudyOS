@@ -19,7 +19,7 @@ import SubjectSwitcher from '../SubjectSwitcher';
 import ConceptFinder from './ConceptFinder';
 import DocumentImport from './DocumentImport';
 import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
-import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogLabelsForLearnerConcepts, loadSubjectCurriculumTopics } from '@/lib/learning-plan/subject-curriculum-topics';
 import CurriculumTopics from './CurriculumTopics';
 
@@ -123,7 +123,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
   const curriculumSection = curriculum ? (
     <CurriculumTopics
       subjectId={selected.id}
-      title={tr['acp.learn.curriculum.title'].replace('{curriculum}', [curriculum.context.programme, localizeCatalogSubjectName(curriculum.context.name, locale), curriculum.context.level].filter(Boolean).join(' · '))}
+      title={tr['acp.learn.curriculum.title'].replace('{curriculum}', [curriculum.context.programme, localizeCatalogSubjectName(curriculum.context.name, locale), levelDisplayLabel(curriculum.context.level, locale)].filter(Boolean).join(' · '))}
       reason={tr[`acp.learn.curriculum.reason.${curriculum.reason}`] ?? null}
       topics={curriculum.topics}
       labels={Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('acp.learn.') || k === 'lp.explore.add' || k === 'lp.explore.adding' || k === 'lp.error'))}

@@ -25,6 +25,7 @@
 import { db } from '@/lib/db';
 import { canonicalConceptLabels } from './labels';
 import { learningObjectiveLabel } from '@/lib/exam-core/catalog/objective-localization';
+import { localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogKeyOf, resolveCurriculumContext, type ContextReason, type CurriculumOption } from './curriculum.service';
 
 /** Node types that are assessment components, never syllabus topics. */
@@ -44,9 +45,16 @@ export interface CurriculumTopicRow {
 export interface CurriculumTopicConcept {
   canonicalConceptId: string;
   label: string;
-  /** The Student's own concept for it in THIS subject, when they already study it. */
+  /** The Student's own concept for it (this subject first, else any of their subjects), when they already study it. */
   learnerConceptId: string | null;
+  /** The subject that holds that concept (for the link). */
+  learnerSubjectId: string | null;
+  /** Micro-delta M02: already in the Student's learning / plan -> the row shows "Added", never the same CTA again. */
+  added: boolean;
 }
+
+/** Where the Student already has a catalogue concept. */
+export interface LearnerConceptRef { conceptId: string; subjectId: string }
 
 export interface CurriculumTopic {
   key: string;
@@ -65,8 +73,17 @@ export interface SubjectCurriculumTopics {
 const clean = (s: string) => s.trim().replace(/\.$/, '');
 
 /** Pure: catalogue rows -> topics (see the module comment for the two shapes). */
-export function buildCurriculumTopics(rows: CurriculumTopicRow[], labels: Map<string, string>, learnerByCanonical: Map<string, string>, locale = 'en'): CurriculumTopic[] {
-  const concept = (id: string): CurriculumTopicConcept => ({ canonicalConceptId: id, label: labels.get(id) ?? '', learnerConceptId: learnerByCanonical.get(id) ?? null });
+export function buildCurriculumTopics(
+  rows: CurriculumTopicRow[],
+  labels: Map<string, string>,
+  learnerByCanonical: Map<string, LearnerConceptRef>,
+  locale = 'en',
+  inPlan: ReadonlySet<string> = new Set()
+): CurriculumTopic[] {
+  const concept = (id: string): CurriculumTopicConcept => {
+    const ref = learnerByCanonical.get(id) ?? null;
+    return { canonicalConceptId: id, label: labels.get(id) ?? '', learnerConceptId: ref?.conceptId ?? null, learnerSubjectId: ref?.subjectId ?? null, added: !!ref || inPlan.has(id) };
+  };
   const mapped = rows.filter((r) => r.canonicalConceptId && labels.has(r.canonicalConceptId));
   const byNodeTopics = mapped.some((r) => !ASSESSMENT_NODE_TYPES.has(r.nodeType));
   const topics = new Map<string, CurriculumTopic>();
@@ -105,7 +122,7 @@ export async function loadSubjectCurriculumTopics(studentId: string, subject: { 
   if (!catalogKey) return null;
   const { context, reason } = await resolveCurriculumContext(studentId, catalogKey);
   if (!context) return null;
-  const [rows, learner] = await Promise.all([
+  const [rows, learner, plan] = await Promise.all([
     db.query(
       `SELECT sn.id AS node_id, sn.node_type, COALESCE(snl.label, sn.source_label, sn.code, '') AS node_label, sn.order_index,
               lo.id AS objective_id, lo.code AS objective_code, lo.description AS objective_description, cc.id AS canonical_concept_id
@@ -118,20 +135,29 @@ export async function loadSubjectCurriculumTopics(studentId: string, subject: { 
         ORDER BY sn.order_index, lo.code NULLS LAST, cc.name`,
       [context.structureVersionId, locale]
     ),
+    // The Student's own concepts linked to the catalogue, in ANY of their subjects (this subject first): adding a
+    // concept may place it in the subject the catalogue assigns, and the row must still read as added.
     db.query(
-      `SELECT m.canonical_concept_id, c.id AS concept_id
-         FROM concept_catalog_mapping m JOIN concepts c ON c.id = m.learner_concept_id
-        WHERE c.subject_id = $1 AND m.status = 'MATCHED'`,
-      [subject.id]
+      `SELECT m.canonical_concept_id, c.id AS concept_id, c.subject_id
+         FROM concept_catalog_mapping m JOIN concepts c ON c.id = m.learner_concept_id JOIN subjects s ON s.id = c.subject_id
+        WHERE s.student_id = $1 AND s.status <> 'archived' AND m.status = 'MATCHED'
+        ORDER BY (c.subject_id = $2) DESC, c.created_at`,
+      [studentId, subject.id]
     ),
+    db.query(`SELECT canonical_concept_id FROM student_plan_entries WHERE student_id = $1 AND plan_status <> 'ARCHIVED'`, [studentId]).catch(() => ({ rows: [] as any[] })),
   ]);
   const topicRows: CurriculumTopicRow[] = rows.rows.map((r: any) => ({
     nodeId: r.node_id, nodeType: r.node_type, nodeLabel: r.node_label ?? '', nodeOrder: r.order_index ?? 0,
     objectiveId: r.objective_id, objectiveCode: r.objective_code, objectiveDescription: r.objective_description ?? '', canonicalConceptId: r.canonical_concept_id,
   }));
   const labels = await canonicalConceptLabels(topicRows.map((r) => r.canonicalConceptId).filter((v): v is string => !!v), locale);
-  const learnerByCanonical = new Map<string, string>(learner.rows.map((r: any) => [r.canonical_concept_id, r.concept_id]));
-  return { context, reason, topics: buildCurriculumTopics(topicRows, labels, learnerByCanonical, locale) };
+  const learnerByCanonical = new Map<string, LearnerConceptRef>();
+  for (const r of learner.rows as any[]) if (!learnerByCanonical.has(r.canonical_concept_id)) learnerByCanonical.set(r.canonical_concept_id, { conceptId: r.concept_id, subjectId: r.subject_id });
+  const inPlan = new Set<string>(plan.rows.map((r: any) => r.canonical_concept_id as string));
+  const topics = buildCurriculumTopics(topicRows, labels, learnerByCanonical, locale, inPlan);
+  // Micro-delta M03: IB assessment components ("Paper 1 (no calculator)") use the IB's own terms in the interface locale.
+  const ib = /^IB\b/.test(context.programme);
+  return { context, reason, topics: ib ? topics.map((t) => ({ ...t, component: t.component ? localizeIbComponentLabel(t.component, locale) : null })) : topics };
 }
 
 /**

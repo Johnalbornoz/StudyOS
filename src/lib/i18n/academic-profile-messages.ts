@@ -99,6 +99,16 @@ const es = {
   'acp.home.activePrep': "Preparación activa",
   'acp.home.activePreps': "Preparaciones activas",
   'acp.home.morePreps': "y {n} más",
+  'acp.learn.curriculum.added': "Añadido",
+  'acp.learn.curriculum.open': "Abrir",
+  'acp.learn.curriculum.addFor': "Añadir a mi plan: {concept}",
+  'acp.prep.suggest.label': "Sugerencias",
+  'acp.prep.suggest.kind.FAMILY': "Familia de exámenes",
+  'acp.prep.suggest.kind.FRAMEWORK': "Examen o programa",
+  'acp.prep.suggest.kind.SUBJECT': "Materia",
+  'acp.prep.suggest.kind.VARIANT': "Asignatura",
+  'acp.prep.suggest.kind.OPTION': "Nivel",
+  'acp.prep.suggest.hint': "Usa las flechas para recorrer las sugerencias, Enter para elegir y Escape para cerrar.",
 } as const;
 
 export type AcademicProfileMessageKey = keyof typeof es;
@@ -198,6 +208,16 @@ const en: Catalog = {
   'acp.home.activePrep': "Active preparation",
   'acp.home.activePreps': "Active preparations",
   'acp.home.morePreps': "and {n} more",
+  'acp.learn.curriculum.added': "Added",
+  'acp.learn.curriculum.open': "Open",
+  'acp.learn.curriculum.addFor': "Add to my plan: {concept}",
+  'acp.prep.suggest.label': "Suggestions",
+  'acp.prep.suggest.kind.FAMILY': "Exam family",
+  'acp.prep.suggest.kind.FRAMEWORK': "Exam or programme",
+  'acp.prep.suggest.kind.SUBJECT': "Subject",
+  'acp.prep.suggest.kind.VARIANT': "Course",
+  'acp.prep.suggest.kind.OPTION': "Level",
+  'acp.prep.suggest.hint': "Use the arrow keys to move through suggestions, Enter to choose and Escape to close.",
 };
 
 const de: Catalog = {
@@ -294,6 +314,16 @@ const de: Catalog = {
   'acp.home.activePrep': "Aktive Vorbereitung",
   'acp.home.activePreps': "Aktive Vorbereitungen",
   'acp.home.morePreps': "und {n} weitere",
+  'acp.learn.curriculum.added': "Hinzugefügt",
+  'acp.learn.curriculum.open': "Öffnen",
+  'acp.learn.curriculum.addFor': "Zu meinem Plan hinzufügen: {concept}",
+  'acp.prep.suggest.label': "Vorschläge",
+  'acp.prep.suggest.kind.FAMILY': "Prüfungsfamilie",
+  'acp.prep.suggest.kind.FRAMEWORK': "Prüfung oder Programm",
+  'acp.prep.suggest.kind.SUBJECT': "Fach",
+  'acp.prep.suggest.kind.VARIANT': "Kurs",
+  'acp.prep.suggest.kind.OPTION': "Niveau",
+  'acp.prep.suggest.hint': "Mit den Pfeiltasten durch die Vorschläge gehen, Enter wählt aus, Escape schließt.",
 };
 
 const fr: Catalog = {
@@ -390,6 +420,16 @@ const fr: Catalog = {
   'acp.home.activePrep': "Préparation active",
   'acp.home.activePreps': "Préparations actives",
   'acp.home.morePreps': "et {n} de plus",
+  'acp.learn.curriculum.added': "Ajouté",
+  'acp.learn.curriculum.open': "Ouvrir",
+  'acp.learn.curriculum.addFor': "Ajouter à mon plan : {concept}",
+  'acp.prep.suggest.label': "Suggestions",
+  'acp.prep.suggest.kind.FAMILY': "Famille d’examens",
+  'acp.prep.suggest.kind.FRAMEWORK': "Examen ou programme",
+  'acp.prep.suggest.kind.SUBJECT': "Matière",
+  'acp.prep.suggest.kind.VARIANT': "Cours",
+  'acp.prep.suggest.kind.OPTION': "Niveau",
+  'acp.prep.suggest.hint': "Utilise les flèches pour parcourir les suggestions, Entrée pour choisir et Échap pour fermer.",
 };
 
 const pt: Catalog = {
@@ -486,6 +526,16 @@ const pt: Catalog = {
   'acp.home.activePrep': "Preparação ativa",
   'acp.home.activePreps': "Preparações ativas",
   'acp.home.morePreps': "e mais {n}",
+  'acp.learn.curriculum.added': "Adicionado",
+  'acp.learn.curriculum.open': "Abrir",
+  'acp.learn.curriculum.addFor': "Adicionar ao meu plano: {concept}",
+  'acp.prep.suggest.label': "Sugestões",
+  'acp.prep.suggest.kind.FAMILY': "Família de exames",
+  'acp.prep.suggest.kind.FRAMEWORK': "Exame ou programa",
+  'acp.prep.suggest.kind.SUBJECT': "Disciplina",
+  'acp.prep.suggest.kind.VARIANT': "Curso",
+  'acp.prep.suggest.kind.OPTION': "Nível",
+  'acp.prep.suggest.hint': "Use as setas para percorrer as sugestões, Enter para escolher e Escape para fechar.",
 };
 
 export const ACADEMIC_PROFILE_MESSAGES = { es: es as Catalog, en, de, fr, pt } as const;

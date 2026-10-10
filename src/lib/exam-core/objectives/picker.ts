@@ -86,6 +86,9 @@ export async function loadPickerData(studentId: string, language: string) {
         searchText: `${o.searchText} ${strip(shown.label)} ${strip(shown.groupLabel ?? '')} ${strip(official.label)}`,
         groupKey: shown.groupKey,
         groupLabel: shown.groupLabel,
+        // Micro-delta M04: the course and level as displayed, for typeahead suggestions.
+        subjectLabel: shown.subject,
+        levelLabel: shown.level,
         recommended: e.eligible,
         reason: e.reasons[0] ? reasonText(e.reasons[0], t, { subjectLevel: true }) : null,
         // REM-T1-04: one of the subjects the Student selected in their PERSONAL Academic Profile (not a class's):

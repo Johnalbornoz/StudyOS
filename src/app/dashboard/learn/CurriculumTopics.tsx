@@ -2,19 +2,20 @@
  * T1 final delta (E) -- "Temas de tu currículo — <programme · subject · level>".
  *
  * The curriculum's own topic structure with the concepts inside each topic (subject-curriculum-topics.ts).
- * A concept the Student already studies links to it; any other concept can be added to their plan by an
- * explicit action. Nothing is activated automatically, and a curriculum without a loaded structure says so.
+ * Every concept is one ConceptActionRow: its name and, beside it, either "Añadir a mi plan" (an explicit
+ * action -- nothing is activated automatically) or the "Añadido" state with a link to open it.
+ * A curriculum without a loaded structure says so.
  */
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
 import type { CurriculumTopic } from '@/lib/learning-plan/subject-curriculum-topics';
+import { ConceptActionRow } from '@/components/ui/ConceptActionRow';
 import { AddToPlanButton } from '../plan/PlanActions';
 
 type L = Record<string, string>;
 
 export default function CurriculumTopics({ subjectId, title, reason, topics, labels: l }: {
   subjectId: string;
-  /** "Temas de tu currículo — IB Diploma Programme · Física · HL" */
+  /** "Temas de tu currículo — IB Diploma Programme · Física · Nivel Superior (NS)" */
   title: string;
   /** Why this curriculum (exam preparation / academic profile), already in the interface locale; null when unknown. */
   reason: string | null;
@@ -32,29 +33,50 @@ export default function CurriculumTopics({ subjectId, title, reason, topics, lab
         <p className="card ln-curriculum-empty" data-curriculum-empty>{l['acp.learn.curriculum.empty']}</p>
       ) : (
         <div className="ln-curriculum-list">
-          {topics.map((topic) => (
+          {topics.map((topic, ti) => (
             <details key={topic.key} className="prep-group ln-curriculum-topic" data-curriculum-topic>
               <summary className="prep-group-head">
                 <span className="prep-group-name">{topic.title}</span>
                 <span className="ui-hint prep-group-count">{[topic.component, count(topic.concepts.length)].filter(Boolean).join(' · ')}</span>
               </summary>
-              <ul className="ln-concepts">
-                {topic.concepts.map((c) => (
-                  <li key={c.canonicalConceptId}>
-                    {c.learnerConceptId ? (
-                      <Link href={`/dashboard/subjects/${subjectId}/concepts/${c.learnerConceptId}`} className="ln-concept">
-                        <span className="ln-concept-name">{c.label}</span>
-                        <span className="ln-concept-state"><span className="kn-state-label">{l['acp.learn.curriculum.inLearning']}</span></span>
-                        <ChevronRight size={16} strokeWidth={2} aria-hidden className="ln-concept-go" />
-                      </Link>
-                    ) : (
-                      <div className="ln-concept ln-concept--catalog">
-                        <span className="ln-concept-name">{c.label}</span>
-                        <AddToPlanButton canonicalConceptId={c.canonicalConceptId} source="CURRICULUM_RECOMMENDATION" labels={{ add: l['lp.explore.add'], adding: l['lp.explore.adding'], error: l['lp.error'] }} />
-                      </div>
-                    )}
-                  </li>
-                ))}
+              <ul className="concept-action-list">
+                {topic.concepts.map((c, ci) => {
+                  const nameId = `ln-cur-${ti}-${ci}`;
+                  return (
+                    <li key={c.canonicalConceptId}>
+                      {c.added ? (
+                        <ConceptActionRow
+                          nameId={nameId}
+                          name={c.label}
+                          state="added"
+                          action={
+                            <>
+                              <span className="xr-pill is-good concept-action-added" data-concept-added>{l['acp.learn.curriculum.added']}</span>
+                              {c.learnerConceptId ? (
+                                <Link href={`/dashboard/subjects/${c.learnerSubjectId ?? subjectId}/concepts/${c.learnerConceptId}`} className="btn btn-secondary" aria-describedby={nameId}>
+                                  {l['acp.learn.curriculum.open']}
+                                </Link>
+                              ) : null}
+                            </>
+                          }
+                        />
+                      ) : (
+                        <ConceptActionRow
+                          nameId={nameId}
+                          name={c.label}
+                          action={
+                            <AddToPlanButton
+                              canonicalConceptId={c.canonicalConceptId}
+                              source="CURRICULUM_RECOMMENDATION"
+                              describedBy={nameId}
+                              labels={{ add: l['lp.explore.add'], adding: l['lp.explore.adding'], error: l['lp.error'], added: l['acp.learn.curriculum.added'], addFor: (l['acp.learn.curriculum.addFor'] ?? '{concept}').replace('{concept}', c.label) }}
+                            />
+                          }
+                        />
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </details>
           ))}

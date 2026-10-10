@@ -34,7 +34,8 @@ export async function loadSubjectPickerData(studentId: string, locale: Locale): 
     loadResolvedStudentContext(studentId).catch(() => null),
   ]);
   const suggestions = suggestSubjects({
-    profile: profile
+    // Micro-delta M05: only a COMPLETED Academic Profile (or a chosen programme) justifies profile-based subjects.
+    profile: profile && (profile.profileCompleted || resolved?.programme)
       ? { curriculumType: profile.curriculumType, ibProgramme: profile.ibProgramme, ibYear: profile.ibYear, schoolYear: profile.schoolYear }
       : null,
     locale,

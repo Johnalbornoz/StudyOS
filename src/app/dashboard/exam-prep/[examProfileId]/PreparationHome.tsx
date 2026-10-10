@@ -15,6 +15,7 @@
 import Link from 'next/link';
 import type { PreparationView } from '@/lib/exam-core/objectives/preparation.service';
 import type { PlannedRequirement } from '@/lib/exam-core/objectives/preparation-plan';
+import { localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { AddConceptButton, DiagnosticButton, ExamSessionPrompt, GoalDetailsForm, type ExamSessionChoice } from './PrepActions';
 
 type L = Record<string, string>;
@@ -48,6 +49,8 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
     return cc?.learner ? `/dashboard/subjects/${cc.learner.subjectId}/concepts/${cc.learner.studentConceptId}` : null;
   };
   const conceptName = (r: PlannedRequirement | null) => r?.concepts.find((x) => x.canonicalConceptId === r.recommendation.canonicalConceptId)?.name ?? r?.description ?? '';
+  // Micro-delta M03: IB component names ("Paper 1 (no calculator)") in the interface locale; other bodies keep theirs.
+  const comp = (label: string | null | undefined) => (objective.framework === 'IB_DP' ? localizeIbComponentLabel(label, language) : label ?? '');
   const hasActivities = c.canPractice || c.canRunReducedMock || c.canRunFullMock || c.canPlanDiploma;
   const aiceSubjects = objective.key === 'cie.aice.diploma';
 
@@ -205,7 +208,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
                     <span className={`xr-pill ${STATUS_TONE[r.status]}`}>{l[`prep.req.${r.status}`]}</span>
                     <span className="xr-pill">{l[`prep.priority.${r.priority.band}`]}</span>
                   </div>
-                  <p className="ui-hint">{r.area}</p>
+                  <p className="ui-hint">{comp(r.area)}</p>
                   {r.concepts.length > 0 && (
                     <ul className="prep-concepts">
                       {r.concepts.map((cc) => (
@@ -273,20 +276,20 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
             <li>
               <strong>{l['prep.cap.practice']}</strong>
               <span className="prep-links">
-                {c.practiceModes.map((p) => <Link key={p.nodeKey} className="btn btn-secondary prep-cta" href={practiceHref(p.nodeKey)}>{p.label}</Link>)}
+                {c.practiceModes.map((p) => <Link key={p.nodeKey} className="btn btn-secondary prep-cta" href={practiceHref(p.nodeKey)}>{comp(p.label)}</Link>)}
               </span>
             </li>
           )}
           {c.reducedMocks.map((m) => (
             <li key={m.nodeKey}>
-              <strong>{l['prep.cap.reducedMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${m.label}`}</strong>
+              <strong>{l['prep.cap.reducedMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${comp(m.label)}`}</strong>
               <span className="ui-hint">{m.lengthCoveragePercent !== null ? fill(l['prep.cap.reducedMockCoverage'], { n: m.lengthCoveragePercent }) : l['prep.cap.reducedMockNote']}</span>
               <Link className="btn btn-secondary prep-cta" href={practiceHref(m.nodeKey)}>{l['prep.cap.start']}</Link>
             </li>
           ))}
           {c.fullMocks.map((m) => (
             <li key={m.nodeKey}>
-              <strong>{l['prep.cap.fullMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${m.label}`}</strong>
+              <strong>{l['prep.cap.fullMock']}{m.purpose === 'FULL_TEST' ? '' : ` · ${comp(m.label)}`}</strong>
               <span className="ui-hint">{l['prep.cap.fullMockNote']}</span>
               <Link className="btn btn-secondary prep-cta" href={practiceHref(m.nodeKey)}>{l['prep.cap.start']}</Link>
             </li>
@@ -318,7 +321,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
         {plan && byArea.size > 0 ? (
           [...byArea.entries()].map(([area, reqs]) => (
             <div key={area} className="prep-area">
-              <h3 className="prep-subtitle">{area}</h3>
+              <h3 className="prep-subtitle">{comp(area)}</h3>
               <ul className="prep-reqs">{reqs.map((r) => <li key={r.learningObjectiveId}>{r.description} <span className={`xr-pill ${STATUS_TONE[r.status]}`}>{l[`prep.req.${r.status}`]}</span></li>)}</ul>
             </div>
           ))
@@ -328,7 +331,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
             <ul className="prep-reqs">
               {objective.catalogParts.map((p) => (
                 <li key={p.key}>
-                  {p.label}
+                  {comp(p.label)}
                   {p.facts ? <span className="ui-hint"> · {Object.entries(p.facts).filter(([k]) => ['minutes', 'marks', 'items', 'weightPercent', 'credits'].includes(k)).map(([k, v]) => fill(l[`prep.fact.${k}`], { n: v })).join(' · ')}</span> : null}
                 </li>
               ))}

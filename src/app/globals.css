@@ -2393,8 +2393,27 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 /* T1 final delta (E): curriculum topics inside Learn. */
 .ln-curriculum { display: flex; flex-direction: column; gap: var(--space-3); }
 .ln-curriculum-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.ln-curriculum-topic > .ln-concepts { padding: 0 var(--space-3) var(--space-3); }
-.ln-concept--catalog { cursor: default; justify-content: space-between; }
+/* Micro-delta M04: typeahead suggestions under the exam catalogue search. */
+.prep-suggest-wrap { position: relative; display: block; }
+.prep-suggest { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; margin: 0; padding: var(--space-1); list-style: none; max-height: 320px; overflow-y: auto; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+.prep-suggest-item { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); min-height: var(--touch-target); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
+.prep-suggest-item--child { padding-left: var(--space-6); }
+.prep-suggest-item:hover, .prep-suggest-item[aria-selected="true"] { background: var(--bg-subtle); }
+.prep-suggest-item[aria-selected="true"] { outline: 2px solid var(--brand); outline-offset: -2px; }
+.prep-suggest-label { font-weight: 550; min-width: 0; overflow-wrap: break-word; }
+/* Micro-delta M02: concept + action pairing. The name is the flexible column and wraps by WORDS; the action keeps
+   its natural width and drops below the name when there is no room. Never inherits the 4-column .ln-concept grid. */
+.concept-action-list { list-style: none; margin: 0; padding: 0 var(--space-3) var(--space-3); display: flex; flex-direction: column; }
+.concept-action-list > li + li { border-top: 1px solid var(--border-default); }
+.concept-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-1); min-height: var(--touch-target); }
+.concept-action-name { flex: 1 1 14rem; min-width: 0; font-size: var(--fs-sm); font-weight: 550; line-height: 1.4; color: var(--text-primary); overflow-wrap: break-word; word-break: normal; hyphens: auto; }
+.concept-action-side { flex: 0 0 auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); max-width: 100%; }
+.concept-action-side .ta-actions { flex-wrap: nowrap; }
+.concept-action-side .btn { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 520px) {
+  .concept-action-name { flex-basis: 100%; }
+  .concept-action-side { width: 100%; }
+}
 .ln-curriculum-empty { margin: 0; color: var(--text-secondary); }
 .ln-hero-why { margin: calc(var(--space-2) * -1) 0 0; }
 /* T1 final delta (C/D): "Tu examen" apart from "Tu objetivo académico". */

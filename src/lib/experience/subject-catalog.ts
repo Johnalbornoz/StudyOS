@@ -123,12 +123,31 @@ function profileKeys(profile: SuggestionProfile | null, band: AgeBand, locale: L
 }
 
 /**
+ * The learner-catalog subject of an official programme subject name: the exact name, the name before ":"
+ * ("Mathematics: analysis and approaches" -> Mathematics), or the name without its syllabus code
+ * ("Mathematics (9709)" -> Mathematics). Exact matches only after that -- never fuzzy.
+ */
+export function catalogSubjectForProgrammeName(name: string): CatalogSubject | null {
+  for (const candidate of [name, name.split(':')[0], name.replace(/\s*\([^)]*\)\s*$/, '')]) {
+    const hit = catalogSubjectByName(candidate.trim());
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** True when the profile states something about the Student's schooling (curriculum, programme, year or grade). */
+export function hasAcademicProfileData(profile: SuggestionProfile | null): boolean {
+  return !!profile && [profile.curriculumType, profile.ibProgramme, profile.ibYear, profile.schoolYear].some((v) => typeof v === 'string' && v.trim() !== '');
+}
+
+/**
  * Ordered, de-duplicated suggestions:
  *   0. REM-T1-04: the subjects the Student SELECTED in their Academic Profile, with their exact
  *      variant / level -- when there are any, "For you" means exactly those (plus the exam focus),
  *      never a generic programme list, and they are never cut by the limit;
  *   1. the exam objective's subject, when it names a catalog subject;
- *   2. otherwise, the subjects the Student's programme / grade always includes.
+ *   2. otherwise, the subjects the Student's programme / grade always includes -- only when an Academic
+ *      Profile actually exists (M05: no profile, no generic list).
  * Subjects the Student already has are excluded (they are shown as
  * "Tus materias" instead). The full catalog stays under "Ver más".
  */
@@ -156,10 +175,13 @@ export function suggestSubjects(input: {
   }
   const isPinned = (key: string) => pinned.some((x) => x.key === key);
   for (const focus of input.examSubjectFocus) {
-    const hit = focus ? catalogSubjectByName(focus) : null;
+    const hit = focus ? catalogSubjectForProgrammeName(focus) : null;
     if (hit && !isPinned(hit.key)) add(hit.key, 'EXAM');
   }
-  if ((input.profileSubjects ?? []).length === 0) {
+  // Micro-delta M05: "For you" needs a REAL source. The programme / grade list is justified only by an actual
+  // Academic Profile; a Student without one (e.g. an exam-prep candidate) gets no generic subjects here --
+  // those stay under "Explore subjects".
+  if ((input.profileSubjects ?? []).length === 0 && hasAcademicProfileData(input.profile)) {
     const band = ageBandFor({ ibYear: input.profile?.ibYear ?? null, schoolYear: input.profile?.schoolYear ?? null });
     for (const key of profileKeys(input.profile, band, input.locale)) if (!isPinned(key)) add(key, 'PROFILE');
   }

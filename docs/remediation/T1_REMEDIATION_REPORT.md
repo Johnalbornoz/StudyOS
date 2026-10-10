@@ -375,3 +375,99 @@ Filled in the delivery message (deployment URL, READY state and `/api/version` =
 10. **Home.** "Aprendiendo ahora — <materia>" and "Preparación activa — <examen>"; with two preparations, "Preparaciones activas — … y 1 más".
 11. **Language.** Spanish: Física, Matemáticas: Análisis y Enfoques, Gestión Empresarial, Artes Visuales, "Temas de Física", Spanish concept names for catalogue concepts. English: "Grade 12" for 3° Preparatoria, English subject names. Switch back and forth: saved values unchanged.
 12. **Regression.** Profile edit Cancel / discard; logout / login keeps the EXAM_PREP context; a class with another curriculum does not change the personal profile; old preparations and progress are intact.
+
+---
+
+# T1 — FINAL MICRO-REMEDIATION (post-manual-retest delta)
+
+Status: **T1_MICRO_DELTA = TECH_PASS / READY_FOR_FINAL_SMOKE**. T1 is **not** DONE. T2, Q1 and the Blueprint Engine were not touched. Stage and Production were not touched.
+
+## μ-A. Baseline
+
+| | |
+|---|---|
+| DEV before | `/api/version` = `b8f21f48a3ff7bd16da05b012425872eefcd6653` |
+| Branch / worktree | `remediation/t1-micro-delta`, created from `b8f21f4` |
+| Baseline before any change | 482 files / 8521 tests passing · `tsc` clean · `next build` OK |
+
+## μ-B. M01 — class / assignment persistence: investigated, **no defect, no data loss**
+
+Traced read-only in the DEV database (fingerprint `2a29b99ee14a22b4`): institution → class → enrolment → assignment → visibility query → `/dashboard/assignments`.
+
+**Finding: the two observations come from two different accounts.**
+
+| | Account A | Account B |
+|---|---|---|
+| Sign-in identity | separate Clerk user, created 2026-09-30 | separate Clerk user, created 2026-10-08 |
+| Personal profile | Grade 12 · 2026–2027 · no catalogue programme | **IB Diploma Programme · 3° Preparatoria · May 2027** |
+| Class "Math" | ACTIVE since 2026-10-03 | ACTIVE since 2026-10-09 |
+| Assignments ever | **"Diferenciales"** (assigned 2026-10-04, `IN_PROGRESS`, last changed 2026-10-04) | none |
+| Exam preparations | 0 | 2 |
+
+- "Diferenciales" exists, is untouched since 4 October and is still "En curso". The page's own query returns it for Account A today.
+- It was assigned to Account A individually. Account B joined the same class five days later and was never assigned anything, so "No tienes tareas pendientes" is correct for B.
+- There is no duplicated identity: the two accounts have different Clerk IDs and different e-mail addresses. No user has two student records.
+- Checked and ruled out: enrolment lost (both ACTIVE); assignment deleted (present; DEV totals 1 IN_PROGRESS, 29 ASSIGNED, 2 COMPLETED); relation detached; workspace / context filtering (the query filters only by student + status); migrations (the three T1 migrations touch no class-side table).
+- Nothing was fixed in code for M01 and **no assignment was created or altered**.
+- Product note, out of scope: an assignment given to named students is not extended to students who join the class later.
+
+Regression tests added anyway (micro-delta tests 1–3): an ACADEMIC student with a personal IB profile, an active enrolment and an active assignment; all three survive profile save / edit / cancel, state reconstruction, and exam-preparation changes; no profile or preparation write path names a class-side table, and vice versa.
+
+## μ-C. M02 — Learn concept / action row layout (blocker, fixed)
+
+- Cause: the catalogue rows reused `.ln-concept`, a 4-column grid whose first column is the 20px status-icon slot. With no icon, the concept name landed in that 20px column.
+- Fix: one shared component, `components/ui/ConceptActionRow.tsx`, with its own layout: the name is the flexible column (`flex: 1 1 14rem; min-width: 0`) and wraps by words; the action keeps its natural width and moves below the name on narrow viewports.
+- Pairing is explicit: the button's accessible name is "Añadir a mi plan: <concepto>" and it references the name element.
+- Already added → "Añadido" (plus "Abrir" when the Student has the concept), instead of the same CTA. "Added" now also covers a concept placed in another of the Student's subjects, and plan entries. After a successful add the button itself becomes "Añadido".
+- Topic → concept resolution is unchanged.
+- Verified visually with the real stylesheet and component at desktop and 375px widths.
+
+## μ-D. M03 — localization consistency
+
+- Preparation plan: requirement names use the reviewed objective labels; concept names use `canonical_concept_localizations` (this is where "Conservation of momentum" still appeared); "also relevant for" uses the localized exam label.
+- Levels: `SL` / `HL` are displayed as "Nivel Medio (NM)" / "Nivel Superior (NS)" (English: "Standard Level (SL)" / "Higher Level (HL)") in the Learn curriculum title, the profile wizard and summary, "Para ti" and the level buttons. The stored value stays the code.
+- IB papers: "Paper 1 (no calculator)" → "Prueba 1 (sin calculadora)", "Paper 2 (GDC)" → "Prueba 2 (con calculadora gráfica)", through a governed glossary of the IB's own Spanish terms. Applied to IB only, in Learn topics and in the preparation page (areas, practice modes, mocks, structure).
+- Kept official: programme / qualification names, Cambridge syllabus titles, codes and paper names.
+- No runtime translation. Stored IDs and catalogue values are identical in every language.
+- Still shown as stored (no catalogue label exists): Cambridge syllabus statements, PAA / PISA statements in the English UI, students' own free-text concepts, and the section descriptions inside "Qué evalúa" for structure-only IB subjects.
+
+## μ-E. M04 — exam catalogue typeahead
+
+- From 2 characters the search offers suggestions from the catalogue: exam family, exam / programme, canonical subject, course (variant) with its levels beneath, and syllabus codes. Example: `ana` → "Matemáticas: Análisis y Enfoques" → "Nivel Medio (NM)", "Nivel Superior (NS)".
+- Suggestions match by word prefix. The existing search is unchanged and still filters by substring ("anális" → the two Math AA options).
+- Choosing a suggestion only sets the picker's filter: it shows the canonical result and opens the group when grouping applies. Nothing is added or selected.
+- Keyboard: Arrow Up / Down (wrapping), Enter (chooses the highlighted one; with none highlighted the typed search stays), Escape. Implemented as a combobox with a listbox popup.
+
+## μ-F. M05 — "Para ti" provenance
+
+- The programme / grade list is now offered only when a real Academic Profile exists (completed, or with a chosen programme). An EXAM_PREP student without a profile gets only subjects with a real source.
+- Found while fixing: an exam preparation such as "Mathematics: analysis and approaches" was not being recognised as a source at all (the exam badge never matched; Mathematics appeared only through the generic list). It now resolves to its catalogue subject, so the manual case shows **Matemáticas — "Por tu preparación de examen"** and nothing else.
+- Generic subjects are under "Explorar materias" (renamed from "Ver todas las materias"), which opens by default when there is no recommendation.
+- Not added as sources: class / institution context (classes carry no catalogue subject link to read) and past learning (existing subjects are already "Tus materias").
+- No subject is auto-activated.
+
+## μ-G. Schema
+
+No migration. No data was written to DEV by this delta.
+
+## μ-H. Tests
+
+| | |
+|---|---|
+| Full suite | **483 files / 8532 tests passing** (baseline 482 / 8521; +11) |
+| TypeScript | clean |
+| Build | `next build` successful |
+| New | `tests/unit/t1-micro-delta.test.ts` — post-fix tests 1–11 |
+| Updated to the new contract | `t1-final-delta` (concept row shape), `ux5-subject-create-regression` (no generic list without a profile) |
+| Accessibility tooling | none in the repository; **not run, no result claimed** |
+
+## μ-I. Final smoke checklist (DEV)
+
+1. Sign in as **Account A** (the one that received "Diferenciales") → Mis tareas shows it, "En curso". Account B correctly shows none.
+2. Account B's profile is still IB Diploma Programme / 3° Preparatoria / Mayo 2027.
+3. Learn → a curriculum topic → concepts are readable; "Añadir a mi plan" works and turns into "Añadido".
+4. Exam search: type `ana` → suggestions; arrows, Enter and Escape work; ignoring them still filters.
+5. EXAM_PREP "Para ti": only explainable recommendations; the rest under "Explorar materias".
+6. Spanish / English: levels, IB papers, concepts and requirements are consistent.
+7. Cambridge June 2027 saves and survives reload.
+8. Logout / login keeps profile, preparations, class enrolment and assignments.

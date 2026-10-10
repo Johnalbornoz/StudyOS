@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 import { COUNTRIES, SCHOOL_YEARS_BY_COUNTRY, type CountryOfStudy, type CurriculumType } from '@/lib/academic-options';
 import type { Locale } from '@/lib/i18n/messages';
 import { countryDisplayName, gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
-import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import {
   canonicalTimeContextText,
   formatTimeContext,
@@ -399,7 +399,7 @@ export default function AcademicProfileWizard({
                 <li key={s.id}>
                   <label className="acp-subject">
                     <input type="checkbox" checked={subjects.includes(s.id)} onChange={(e) => setSubjects(e.target.checked ? [...subjects, s.id] : subjects.filter((x) => x !== s.id))} />
-                    <span>{s.level ? `${localizeCatalogSubjectName(s.name, locale)} · ${s.level}` : localizeCatalogSubjectName(s.name, locale)}</span>
+                    <span>{s.level ? `${localizeCatalogSubjectName(s.name, locale)} · ${levelDisplayLabel(s.level, locale)}` : localizeCatalogSubjectName(s.name, locale)}</span>
                   </label>
                 </li>
               ))}

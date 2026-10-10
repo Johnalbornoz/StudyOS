@@ -11,6 +11,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { objectiveSuggestions, searchTokens, suggestionKey, type ObjectiveSuggestion } from '@/lib/exam-core/objectives/objective-suggest';
 
 type L = Record<string, string>;
 
@@ -32,6 +33,9 @@ export interface PickerObjective {
   /** T1 final delta (B2): canonical subject this option belongs to (catalogue identifiers, never label text). */
   groupKey?: string | null;
   groupLabel?: string | null;
+  /** Micro-delta M04: the course ("Matemáticas: Análisis y Enfoques") and level ("Nivel Medio (NM)") as displayed. */
+  subjectLabel?: string | null;
+  levelLabel?: string | null;
 }
 
 /** `family` (B1): frameworks of one awarding body are ONE entry on the landing (Cambridge International). */
@@ -79,13 +83,15 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
   frameworkReasons?: Record<string, string>;
   labels: L;
   /** Optional starting view (a family level, one framework's listing, or a search). */
-  initial?: { family?: string | null; framework?: string; query?: string };
+  initial?: { family?: string | null; framework?: string; query?: string; suggest?: boolean };
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(initial?.query ?? '');
   const [framework, setFramework] = useState<string>(initial?.framework ?? 'ALL');
   const [family, setFamily] = useState<string | null>(initial?.family ?? null);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  // M04: typeahead. `suggest.open` only controls the popup; the typed search always keeps filtering.
+  const [suggest, setSuggest] = useState<{ open: boolean; active: number }>({ open: !!initial?.suggest, active: -1 });
   const [region, setRegion] = useState<string>('ALL');
   const [limit, setLimit] = useState(PAGE);
   const [busy, setBusy] = useState<string | null>(null);
@@ -101,7 +107,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
     return m;
   }, [objectives]);
 
-  const words = strip(query).split(/\s+/).filter(Boolean);
+  const words = searchTokens(query);
   const listing = words.length > 0 || framework !== 'ALL';
   const results = objectives.filter(
     (o) => (framework === 'ALL' || o.framework === framework) && (region === 'ALL' || regionOf.get(o.framework) === region) && words.every((w) => o.searchText.includes(w))
@@ -121,6 +127,29 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
   const optionsText = (n: number) => (n === 1 ? l['acp.prep.groupOptions.one'] ?? '1' : (l['acp.prep.groupOptions.other'] ?? '{n}').replace('{n}', String(n)));
   const pickFramework = (key: string) => { setFramework(key); setLimit(PAGE); setOpenGroups(new Set()); };
   const regions = [...new Set(frameworks.filter((f) => byFramework.has(f.key)).map((f) => f.region))];
+
+  const suggestions = useMemo(
+    () => objectiveSuggestions({ query, objectives: objectives.map((o) => ({ ...o, syllabusCode: o.context.syllabusCode })), frameworks, frameworkName: fwName, familyName, optionsText }),
+    [query, objectives, frameworks, l]
+  );
+  const suggestOpen = suggest.open && suggestions.length > 0;
+  function applySuggestion(s: ObjectiveSuggestion) {
+    // Only the picker's own filter changes: nothing is added or selected for the Student.
+    setRegion('ALL');
+    setFamily(s.apply.family ?? null);
+    setFramework(s.apply.framework ?? 'ALL');
+    setQuery(s.apply.query ?? '');
+    setLimit(PAGE);
+    setOpenGroups(new Set());
+    setSuggest({ open: false, active: -1 });
+  }
+  function onSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    const next = suggestionKey({ open: suggestOpen, active: suggest.active }, e.key, suggestions.length);
+    if (!next.handled) return;
+    e.preventDefault();
+    if (next.select !== null) applySuggestion(suggestions[next.select]);
+    else setSuggest({ open: next.open, active: next.active });
+  }
 
   async function choose(o: PickerObjective) {
     if (o.preparationId) {
@@ -211,7 +240,46 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
       <div className="prep-controls">
         <label className="ui-field prep-search">
           <span className="ui-label">{l['prep.search.label']}</span>
-          <input className="ui-input" type="search" value={query} placeholder={l['prep.search.placeholder']} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} />
+          <span className="prep-suggest-wrap">
+            <input
+              className="ui-input"
+              type="search"
+              value={query}
+              placeholder={l['prep.search.placeholder']}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={suggestOpen}
+              aria-controls="prep-suggest"
+              aria-activedescendant={suggestOpen && suggest.active >= 0 ? `prep-suggest-${suggest.active}` : undefined}
+              aria-describedby="prep-suggest-hint"
+              autoComplete="off"
+              onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); setSuggest({ open: true, active: -1 }); }}
+              onKeyDown={onSearchKey}
+              onFocus={() => setSuggest((s) => ({ ...s, open: true }))}
+              onBlur={() => setSuggest({ open: false, active: -1 })}
+            />
+            <span id="prep-suggest-hint" className="sr-only">{l['acp.prep.suggest.hint']}</span>
+            {suggestOpen ? (
+              <ul className="prep-suggest" id="prep-suggest" role="listbox" aria-label={l['acp.prep.suggest.label']} data-suggestions>
+                {suggestions.map((s, i) => (
+                  <li
+                    key={s.id}
+                    id={`prep-suggest-${i}`}
+                    role="option"
+                    aria-selected={i === suggest.active}
+                    className={`prep-suggest-item${s.depth ? ' prep-suggest-item--child' : ''}`}
+                    data-suggestion-kind={s.kind}
+                    // mousedown would blur the input (closing the list) before the click lands
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applySuggestion(s)}
+                  >
+                    <span className="prep-suggest-label">{s.label}</span>
+                    <span className="ui-hint prep-suggest-detail">{s.detail ?? l[`acp.prep.suggest.kind.${s.kind}`]}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </span>
         </label>
         <div className="prep-chips" role="group" aria-label={l['prep.filter.framework']}>
           <button type="button" className="prep-chip" aria-pressed={framework === 'ALL' && !family} onClick={() => { pickFramework('ALL'); setFamily(null); }}>{l['prep.filter.all']}</button>

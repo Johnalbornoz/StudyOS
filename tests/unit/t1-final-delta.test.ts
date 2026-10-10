@@ -443,7 +443,7 @@ describe('E. the curriculum reaches the content of a Learn subject', () => {
     expect(page).not.toMatch(/\b(INSERT|UPDATE)\b|subjects\/create|enrollCanonicalConcept/);
     // A catalogue concept enters the plan only through the Student's explicit button.
     const component = code('src/app/dashboard/learn/CurriculumTopics.tsx');
-    expect(component).toMatch(/<AddToPlanButton canonicalConceptId=\{c\.canonicalConceptId\} source="CURRICULUM_RECOMMENDATION"/);
+    expect(component).toMatch(/<AddToPlanButton\s+canonicalConceptId=\{c\.canonicalConceptId\}\s+source="CURRICULUM_RECOMMENDATION"/);
     // "Tus materias" stays what the Student chose: the picker never creates the profile's subjects for them.
     const pickerServer = code('src/lib/experience/subject-picker.server.ts');
     expect(pickerServer).not.toMatch(/\bINSERT\b/);
@@ -461,15 +461,15 @@ describe('E. the curriculum reaches the content of a Learn subject', () => {
   });
 
   it('CASE 16. a subject with a known curriculum shows that curriculum\'s topics with their concepts', () => {
-    const learner = new Map([['c-kin', 'learner-kin']]);
+    const learner = new Map([['c-kin', { conceptId: 'learner-kin', subjectId: 'sub1' }]]);
     const topics = buildCurriculumTopics(ibPhysics, labels, learner);
     // The nodes are exam papers, so the curriculum's learning objectives are the topics; a paper that only
     // re-assesses listed concepts is not repeated; an unmapped objective is not shown as a topic.
     expect(topics.map((t) => t.title)).toEqual(['A Space, time and motion: kinematics, forces, momentum', 'B The particulate nature of matter: thermal energy, gases', 'Data-based: graphs, gradients, uncertainties, systematic error']);
     expect(topics[0].component).toBe('Paper 1A (multiple choice)');
     expect(topics[0].concepts).toEqual([
-      { canonicalConceptId: 'c-kin', label: 'Cinemática', learnerConceptId: 'learner-kin' },
-      { canonicalConceptId: 'c-mom', label: 'Conservación del momento lineal', learnerConceptId: null },
+      { canonicalConceptId: 'c-kin', label: 'Cinemática', learnerConceptId: 'learner-kin', learnerSubjectId: 'sub1', added: true },
+      { canonicalConceptId: 'c-mom', label: 'Conservación del momento lineal', learnerConceptId: null, learnerSubjectId: null, added: false },
     ]);
     // Topic titles follow the interface locale through the catalogue's reviewed labels (keyed by objective code);
     // an objective without one is shown as stored.

@@ -7,7 +7,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import { getMessages, type Locale } from '@/lib/i18n/messages';
 import { SUBJECT_CATALOG, catalogSubject, catalogSubjectByName, normalizeName, type SubjectSuggestion } from '@/lib/experience/subject-catalog';
 import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
-import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import { ACADEMIC_PROFILE_MESSAGES } from '@/lib/i18n/academic-profile-messages';
 
 /**
@@ -88,7 +88,7 @@ export default function SubjectPicker({
   }
 
   // T1 final delta (G): "Mathematics: analysis and approaches · HL" -> the official name in the interface locale; the level code stays.
-  const profileSubjectLabel = (label: string) => label.split(' · ').map((part, i) => (i === 0 ? localizeCatalogSubjectName(part, locale) : part)).join(' · ');
+  const profileSubjectLabel = (label: string) => label.split(' · ').map((part, i) => (i === 0 ? localizeCatalogSubjectName(part, locale) : levelDisplayLabel(part, locale))).join(' · ');
   const option = (key: string, badge?: string, label?: string) => (
     <li key={key}>
       <button type="button" className="sp-option" onClick={() => choose(key)} disabled={!!busy} aria-describedby={badge ? `sp-b-${key}` : undefined} data-subject-key={key}>

@@ -29,6 +29,9 @@ import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.se
 import { calendarDaysUntil } from '@/lib/experience/goal';
 import { acceptExamSession, objectiveSessionModel, storedExamSession } from './objective-session';
 import { normalizeInterestArea } from '@/lib/student/interest-areas';
+import { canonicalConceptLabels } from '@/lib/learning-plan/labels';
+import { learningObjectiveLabel } from '../catalog/objective-localization';
+import { presentObjective } from './objective-display';
 import { READINESS_ORDER, type ReadinessState, type ComponentReadiness } from '../catalog/readiness';
 import { addConceptToStudentLearning } from '../catalog/learning-links.service';
 import { createExamInstance, toInstanceView } from '../exam-instance.service';
@@ -393,7 +396,7 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
 }
 
 /** Other active preparations whose requirements map to the same canonical concepts (real mappings only, never by name). */
-async function otherPreparationsByConcept(studentId: string, excludeProfileId: string, canonicalIds: string[]): Promise<Map<string, string[]>> {
+async function otherPreparationsByConcept(studentId: string, excludeProfileId: string, canonicalIds: string[], language = 'en'): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
   if (!canonicalIds.length) return out;
   const others = (await db.query(`SELECT id, objective_key, exam_definition_id FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' AND id <> $2`, [studentId, excludeProfileId])).rows;
@@ -409,34 +412,38 @@ async function otherPreparationsByConcept(studentId: string, excludeProfileId: s
     );
     for (const x of r.rows as any[]) {
       if (!out.has(x.canonical_concept_id)) out.set(x.canonical_concept_id, []);
-      if (!out.get(x.canonical_concept_id)!.includes(o.label)) out.get(x.canonical_concept_id)!.push(o.label);
+      const shown = presentObjective(o, language).label;
+      if (!out.get(x.canonical_concept_id)!.includes(shown)) out.get(x.canonical_concept_id)!.push(shown);
     }
   }
   return out;
 }
 
-export async function buildProfilePlan(studentId: string, profile: StudentExamProfile, objective: ExamObjective, caps: ExamPreparationCapabilities): Promise<PreparationPlan | null> {
+export async function buildProfilePlan(studentId: string, profile: StudentExamProfile, objective: ExamObjective, caps: ExamPreparationCapabilities, language = 'en'): Promise<PreparationPlan | null> {
   const reqs = await objectiveRequirements(objective.configKeys);
   // Catalogue only: no governed requirements -- nothing is invented to fill the plan.
   if (!reqs.length) return null;
   const conceptsByReq = await requirementConcepts(reqs.map((r) => r.id));
   const canonicalIds = [...new Set([...conceptsByReq.values()].flat().map((c) => c.id))];
-  const [learner, evidence, also] = await Promise.all([
+  // Micro-delta M03: requirement and concept NAMES are catalogue display labels in the reader's language
+  // (learning-objective labels by stable code; canonical_concept_localizations). IDs, codes and areas are unchanged.
+  const [learner, evidence, also, conceptLabels] = await Promise.all([
     learnerStates(studentId, canonicalIds, profile.id),
     examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, profile.id),
-    otherPreparationsByConcept(studentId, profile.id, canonicalIds),
+    otherPreparationsByConcept(studentId, profile.id, canonicalIds, language),
+    canonicalConceptLabels(canonicalIds, language).catch(() => new Map<string, string>()),
   ]);
   const totalItems = reqs.reduce((a, r) => a + r.items, 0);
   const inputs: RequirementInput[] = reqs.map((r) => ({
     learningObjectiveId: r.id,
     code: r.code,
-    description: r.description,
+    description: learningObjectiveLabel(r.code, language) ?? r.description,
     area: r.area,
     weight: totalItems ? r.items / totalItems : 1 / reqs.length,
     ownEvidence: evidence.byCode.get(r.code) ?? null,
     concepts: (conceptsByReq.get(r.id) ?? []).map((c) => ({
       canonicalConceptId: c.id,
-      name: c.name,
+      name: conceptLabels.get(c.id) ?? c.name,
       learner: learner.get(c.id) ?? null,
       examEvidence: evidence.byConcept.get(c.id) ?? null,
       alsoRelevantFor: also.get(c.id) ?? [],
@@ -463,7 +470,7 @@ export async function getPreparationView(studentId: string, profileId: string, l
   if (!objective) return null;
   const capabilities = await objectiveCapabilities(objective, language);
   const [plan, open, diag] = await Promise.all([
-    buildProfilePlan(studentId, profile, objective, capabilities),
+    buildProfilePlan(studentId, profile, objective, capabilities, language),
     findOpenSimulationAttemptForProfile(profile.id),
     db.query(`SELECT id, status FROM exam_instances WHERE exam_profile_id = $1 AND purpose = 'DIAGNOSTIC' AND status <> 'DELETED' ORDER BY created_at DESC LIMIT 1`, [profile.id]),
   ]);
