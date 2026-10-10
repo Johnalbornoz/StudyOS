@@ -566,3 +566,20 @@ This applies only to concepts **linked to the catalogue**. A concept the Student
 **Limit.** The governed list has Spanish and English. In other interface languages a linked concept without a stored localization shows its own stored name.
 
 Tests: **483 files / 8543 passing** (+3: Cambridge catalogue concept in Spanish, the same concept in English, Student free-text concept); `tsc` clean; `next build` OK. One earlier source guard updated for the new loader.
+
+---
+
+# T1 — Concept detail page localization
+
+Status: **T1_CONCEPT_DETAIL_LOCALIZATION = TECH_PASS / READY_FOR_VISUAL_CONFIRMATION**. T1 is **not** DONE. No migration, no seed, no DEV data writes, no new translation map, T2 not started.
+
+**Cause.** The concept detail page read the concept's own stored label directly (a copy of the catalogue's English name when the concept was added from the catalogue) and the subject's stored name, in two places: the page (mastery sentence) and the mission view (breadcrumb, title).
+
+**Fix.** The page resolves both names once and passes them on:
+- concept: `learnerConceptDisplayLabel` (new thin read in `learning-plan/labels.ts`) → the shared `resolveLearnerConceptLabel` (stored localization → governed list → stored name) for a concept linked to the catalogue; a concept the Student typed is not linked and is returned exactly as stored;
+- subject: the existing localized subject display label (`localizeSubjectName`);
+- the mastery sentence interpolates the resolved concept label; the mission view shows the two names it is given (`display`), and still falls back to the stored names when none is passed.
+
+Expected: Spanish "Matemáticas / Mecánica: energía, trabajo y potencia", title "Mecánica: energía, trabajo y potencia", "Entiende Mecánica: energía, trabajo y potencia y aplícalo…". English unchanged: "Mathematics / Mechanics: energy, work and power".
+
+Tests: **483 files / 8546 passing** (+3: catalogue concept ES, same concept EN, free-text concept unchanged); `tsc` clean; `next build` OK.

@@ -32,6 +32,9 @@ import { hasCambridgeComponentLabel, localizeCambridgeComponentLabel } from '@/l
 import { learningObjectiveLabel, localizedObjectiveCodes } from '@/lib/exam-core/catalog/objective-localization';
 import { canonicalConceptLabels, catalogSuppliesLabel, resolveConceptLabel, resolveLearnerConceptLabel } from '@/lib/learning-plan/labels';
 import { loadConceptLabels } from '@/services/learning-os-snapshot.service';
+import { learnerConceptDisplayLabel } from '@/lib/learning-plan/labels';
+import { buildConceptMissionView } from '@/lib/lx/concept-mission';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 import { catalogLabelsForLearnerConcepts } from '@/lib/learning-plan/subject-curriculum-topics';
 import { CANONICAL_CONCEPT_LABELS, governedConceptLabel } from '@/lib/learning-plan/canonical-concept-labels';
 import { PreparationHome } from '@/app/dashboard/exam-prep/[examProfileId]/PreparationHome';
@@ -858,5 +861,85 @@ describe('Home and Learn resolve concept labels like Exam Prep', () => {
     const loader = code('src/services/learning-os-snapshot.service.ts');
     expect(loader.slice(loader.indexOf('export async function loadConceptLabels'), loader.indexOf('export async function getLearningOSSnapshot'))).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/);
     expect(h.dbQueryMock.mock.calls.every(([sql]) => /^\s*SELECT/i.test(String(sql)))).toBe(true);
+  });
+});
+
+// ================================================================== Concept detail page localization
+
+describe('Concept detail page: breadcrumb, title and mastery sentence', () => {
+  const NAME = 'Mechanics: energy, work and power';
+  /** The catalogue link of a concept, as the shared lookup reads it (null = a concept the Student typed). */
+  const link = (canonicalName: string | null, localized: Record<string, string> = {}) =>
+    h.dbQueryMock.mockImplementation(async (sql: string, params: any[]) => {
+      if (/FROM concept_catalog_mapping m/.test(sql) && /m\.learner_concept_id = \$1/.test(sql)) return { rows: canonicalName ? [{ canonical_name: canonicalName, catalog_localized: localized[params[1]] ?? null }] : [] };
+      return { rows: [] };
+    });
+  /** What the page does with the stored concept label and subject name, then what the screen shows. */
+  const detail = async (storedConcept: string, storedSubject: string, locale: string) => {
+    const conceptLabel = await learnerConceptDisplayLabel('concept-1', storedConcept, locale);
+    const subjectLabel = localizeSubjectName(storedSubject, locale);
+    const goalFallbackText = msgs(locale)['conceptMission.goalFallbackTemplate'].replace('{concept}', conceptLabel);
+    const view = buildConceptMissionView({
+      conceptName: conceptLabel, subjectId: 'subj-1', subjectName: subjectLabel, conceptDescription: null, goalFallbackText,
+      knowledgeState: null, journeyInput: { kind: 'UNAVAILABLE' }, learningDecision: null, memory: null, transferDepth: null, hasCachedExplanation: false, masteryPolicy: null,
+    } as any);
+    return { breadcrumb: `${view.identity.subjectName} / ${view.identity.conceptName}`, title: view.identity.conceptName, goal: view.goal.text };
+  };
+
+  it('1. a catalogue concept in Spanish', async () => {
+    link(NAME); // linked; no stored localization (the DEV case) -> governed list
+    expect(await detail(NAME, 'Mathematics', 'es')).toEqual({
+      breadcrumb: 'Matemáticas / Mecánica: energía, trabajo y potencia',
+      title: 'Mecánica: energía, trabajo y potencia',
+      goal: 'Entiende Mecánica: energía, trabajo y potencia y aplícalo de forma correcta y autónoma.',
+    });
+    // A stored localization wins over the governed list.
+    link('Conservation of momentum', { es: 'Conservación del momento lineal' });
+    expect((await detail('Conservation of momentum', 'Physics', 'es')).breadcrumb).toBe('Física / Conservación del momento lineal');
+    // Wiring: the page resolves both names once and hands them to the mission view; the screen renders them as given.
+    const page = code('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx');
+    expect(page).toMatch(/const conceptLabel = await learnerConceptDisplayLabel\(conceptId, concept\.label, locale\);/);
+    expect(page).toMatch(/const subjectLabel = localizeSubjectName\(subject\.name, locale\);/);
+    expect(page).toMatch(/\.replace\('\{concept\}', conceptLabel\)/);
+    expect(page).not.toMatch(/\.replace\('\{concept\}', concept\.label\)/);
+    expect(page).toMatch(/getConceptMissionView\(studentId, subjectId, conceptId, locale, goalFallbackText, \{ conceptName: conceptLabel, subjectName: subjectLabel \}\)/);
+    const service = code('src/services/concept-mission-view.service.ts');
+    expect(service).toMatch(/conceptName: display\?\.conceptName \?\? row\.label,/);
+    expect(service).toMatch(/subjectName: display\?\.subjectName \?\? row\.subject_name,/);
+    const screen = code('src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptMission.tsx');
+    expect(screen).toMatch(/\{view\.identity\.subjectName\}/);
+    expect(screen).toMatch(/<h1[^>]*>\{view\.identity\.conceptName\}<\/h1>/);
+    // The shared resolver, not a new map.
+    expect(code('src/lib/learning-plan/labels.ts')).toMatch(/return resolveLearnerConceptLabel\(\{ canonicalName: row\.canonical_name, catalogLocalized: row\.catalog_localized \?\? null, storedLabel \}, locale\) \?\? storedLabel;/);
+  });
+
+  it('2. the same concept in English', async () => {
+    link(NAME);
+    expect(await detail(NAME, 'Mathematics', 'en')).toEqual({
+      breadcrumb: 'Mathematics / Mechanics: energy, work and power',
+      title: 'Mechanics: energy, work and power',
+      goal: msgs('en')['conceptMission.goalFallbackTemplate'].replace('{concept}', NAME),
+    });
+    // The subject also follows the language when it was stored in Spanish.
+    expect((await detail(NAME, 'Matemáticas', 'en')).breadcrumb).toBe('Mathematics / Mechanics: energy, work and power');
+    // Identity is untouched by any of this: the lookup is one SELECT, keyed by the concept id.
+    expect(h.dbQueryMock.mock.calls.every(([sql]) => /^\s*SELECT/i.test(String(sql)))).toBe(true);
+  });
+
+  it('3. a concept the Student typed is unchanged', async () => {
+    link(null); // not linked to the catalogue
+    for (const locale of ['es', 'en']) {
+      const typed = await detail('mis apuntes de Energy & work (cap. 4)', 'Mathematics', locale);
+      expect(typed.title).toBe('mis apuntes de Energy & work (cap. 4)');
+      expect(typed.goal).toContain('mis apuntes de Energy & work (cap. 4)');
+      // Text identical to a catalogue name, but not linked: still the Student's own text.
+      expect((await detail('Vectors', 'Mathematics', locale)).title).toBe('Vectors');
+      expect((await detail(NAME, 'Mathematics', locale)).title).toBe(NAME);
+    }
+    // A subject the Student named themselves is not a catalogue subject: shown as written.
+    expect((await detail('Vectors', 'Robótica del colegio', 'en')).breadcrumb).toBe('Robótica del colegio / Vectors');
+    // A failed lookup never breaks the page or changes the label.
+    h.dbQueryMock.mockImplementation(async () => { throw new Error('db down'); });
+    expect(await learnerConceptDisplayLabel('concept-1', 'Mi tema', 'es')).toBe('Mi tema');
   });
 });
