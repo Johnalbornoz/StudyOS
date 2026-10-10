@@ -583,3 +583,29 @@ Status: **T1_CONCEPT_DETAIL_LOCALIZATION = TECH_PASS / READY_FOR_VISUAL_CONFIRMA
 Expected: Spanish "Matemáticas / Mecánica: energía, trabajo y potencia", title "Mecánica: energía, trabajo y potencia", "Entiende Mecánica: energía, trabajo y potencia y aplícalo…". English unchanged: "Mathematics / Mechanics: energy, work and power".
 
 Tests: **483 files / 8546 passing** (+3: catalogue concept ES, same concept EN, free-text concept unchanged); `tsc` clean; `next build` OK.
+
+---
+
+# T1 FINAL STATUS: PASS / DONE
+
+| | |
+|---|---|
+| Final status | **PASS / DONE** |
+| Freeze SHA | `a348a4a7b032b05f619865be6ab8df604873932c` (branch `remediation/t1-micro-delta`) |
+| DEV | `https://study-os-env-dev-study-so.vercel.app` serves the freeze SHA (`/api/version`) |
+| Closed by | Manual signed-in validation on DEV by the product owner, including the final IB Spanish and Cambridge English regression checks |
+| Automated state at the freeze SHA | 483 test files / 8546 tests passing · `tsc` clean · `next build` OK |
+| Accessibility tooling | none in the repository; never run, no result claimed |
+| Stage / Production | untouched throughout T1 |
+
+Every earlier section of this report that reads "T1 is not DONE", "TECH_PASS" or "READY_FOR_…" records the state at the time it was written and is superseded by this entry.
+
+T1 is frozen: no further T1 change unless a new regression is found. T2 has not been started.
+
+Carried forward, not part of the T1 closure:
+- The schema migrations applied to DEV during T1 (`20261106_1000`, `20261106_1100`, `20261107_1000`) have not been applied to Stage or Production; they go through the governed runner in those environments' own release.
+- The Spanish display labels written during T1 for Cambridge components, Cambridge requirement statements and catalogue concepts are StudyUs labels, not official translations, and have not had a subject-matter review.
+- Cambridge syllabuses that have only catalogue structure (for example Computer Science 9618) still show their paper names in English.
+- The governed concept labels cover Spanish and English only.
+- An assignment given to named students is not extended to students who join the class later (observed during M01; product behaviour, not changed).
+- Cambridge March remains fail-closed until per-syllabus availability is governed.
