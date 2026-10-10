@@ -496,3 +496,50 @@ Visual confirmation (DEV):
 3. Spanish, IB Math AA HL preparation → "Prueba 3 (con calculadora gráfica, resolución de problemas)".
 4. English, a Cambridge AS & A Level row or preparation → "Group 1: Mathematics and Sciences".
 5. My preparations → Cambridge Computer Science 9618 shows "In your preparation" with "View my preparation".
+
+---
+
+# T1 — FINAL LOCALIZATION RESIDUAL (M03d)
+
+Status: **T1_LOCALIZATION_FINAL = TECH_PASS / READY_FOR_VISUAL_CONFIRMATION**. T1 is **not** DONE. No migration, no data writes, Stage / Production untouched.
+
+Baseline: DEV `/api/version` = `c2f8924`; work continued on `remediation/t1-micro-delta`.
+
+**Cause.** Cambridge publishes its syllabuses in English only, so the catalogue had no Spanish label for Cambridge components or requirement statements, and the component display path only handled IB.
+
+**Fix.**
+- New governed data, `catalog/cambridge-localization.ts`: reviewed Spanish display names for Cambridge components, keyed by the exact stored component name ("Paper 1 — Pure Mathematics 1" → "Prueba 1 — Matemáticas Puras 1"; "Component 3 — Team Project" → "Componente 3 — Proyecto en equipo"; "Paper 2 (Extended, non-calculator)" → "Prueba 2 (Extended, sin calculadora)").
+- `catalog/objective-localization.ts`: reviewed Spanish labels for 86 Cambridge requirement statements, keyed by objective code ("Pure 1 · Differentiation (stationary points and their nature)." → "Puras 1 · Derivación (puntos estacionarios y su naturaleza).").
+- One display path, `localizeComponentLabel(body, label, locale)`, now serves IB and Cambridge on the preparation page (areas, practice modes, mocks, "Qué evalúa") and in Learn topics. The page has no body-specific branch.
+- These are StudyUs display labels, not official Cambridge translations.
+
+**Coverage.** Every component and statement of the Cambridge syllabuses with loaded requirements: 9709 Mathematics, 9702 Physics, 9701 Chemistry, 9700 Biology, 9708 Economics, 9093 English Language, 9239 Global Perspectives & Research, and IGCSE 0580 Mathematics. Checked read-only against the DEV catalogue: 131 requirement rows, 0 statements and 0 components without a label.
+
+**Fallback (by design).** A component or statement without a reviewed label is shown exactly as stored, whole and unchanged. This applies today to the catalogue-only Cambridge syllabuses (for example Computer Science 9618: "Paper 1 — Theory Fundamentals"), whose paper names remain in English until they are reviewed.
+
+**Unchanged.** Syllabus codes, qualification and tier names (AS Level, A Level, Core, Extended), syllabus titles ("Mathematics (9709) · AS Level"), canonical IDs, catalogue data and everything stored. English UI shows the stored English labels. No runtime translation.
+
+**Re-checked.** IB Spanish "Prueba 3 (con calculadora gráfica, resolución de problemas)"; Cambridge English "Group 1: Mathematics and Sciences".
+
+Tests: **483 files / 8539 passing** (+3 focused tests in `tests/unit/t1-micro-delta.test.ts`; one earlier assertion that expected no Cambridge label was updated); `tsc` clean; `next build` OK. Accessibility tooling: none; not run.
+
+Visual confirmation (DEV, Spanish UI): open a Cambridge Mathematics 9709 preparation → "Qué evalúa" and the recommendations show "Prueba 1 — Matemáticas Puras 1", "Puras 1 · Derivación…", "Prueba 4 — Mecánica", "Probabilidad y Estadística 1 · La distribución normal." Switch to English → the original English labels.
+
+---
+
+# T1 — LAST LOCALIZATION PATH (recommendation card)
+
+Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no data writes, no architecture change. M03d was not reopened.
+
+**What the English row was.** Not the requirement statement: it is the catalogue **concept** mapped under the requirement ("Mechanics: energy, work and power", with a colon), a different catalogue entity from the statement ("Mechanics · Energy, work and power."). The card title and "Qué evalúa" show the statement, which was already localized. In DEV, 56 of 168 concepts (the Cambridge AICE and PISA additions) have no stored Spanish label, so the concept fell back to its stored English name.
+
+**Fix.** The requirement-statement function cannot label a concept (it is keyed by requirement code), so the shared *concept*-label function was completed instead:
+- The repository already had one governed concept-label list (used by the operator seed). It now lives with the app (`learning-plan/canonical-concept-labels.ts`), the seed imports it, and the 56 missing concepts were added to it. No second map was created.
+- `canonicalConceptLabels` (the one function the plan, "Qué evalúa" and Learn topics already use) resolves: stored localization → governed list → stored name.
+- Nothing is written to the database. Running the seed later would store the same labels; it is not required for the display.
+
+**Result (checked against the real DEV preparation, read-only).** Spanish: "Mecánica · Energía, trabajo y potencia." / "Prueba 4 — Mecánica" / "Mecánica: energía, trabajo y potencia". English: unchanged stored labels. All 168 catalogue concepts now have a Spanish label through one of the two sources.
+
+**Not changed (out of this path).** A concept the Student has already added to their own learning is labelled through the stored localization only (Home / Learn lists); for the 56 concepts above that still needs the seed to be run.
+
+Tests: **483 files / 8540 passing** (+1 focused test with the exact Cambridge recommendation shape); `tsc` clean; `next build` OK.

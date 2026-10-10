@@ -10,100 +10,12 @@
  */
 import { createHash } from 'crypto';
 import { Client } from 'pg';
+import { CANONICAL_CONCEPT_LABELS } from '../../src/lib/learning-plan/canonical-concept-labels';
 
 const DEV_DB_FINGERPRINT = '2a29b99ee14a22b4';
 
-/** canonical name -> [es, en] */
-export const LABELS: Record<string, [string, string]> = {
-  // Biology
-  'Cell respiration': ['Respiración celular', 'Cell respiration'],
-  'Cell structure': ['Estructura celular', 'Cell structure'],
-  'DNA replication and protein synthesis': ['Replicación del ADN y síntesis de proteínas', 'DNA replication and protein synthesis'],
-  'Ecosystems and energy flow': ['Ecosistemas y flujo de energía', 'Ecosystems and energy flow'],
-  'Enzymes and metabolism': ['Enzimas y metabolismo', 'Enzymes and metabolism'],
-  'Gas exchange': ['Intercambio de gases', 'Gas exchange'],
-  Inheritance: ['Herencia', 'Inheritance'],
-  'Membranes and transport': ['Membranas y transporte', 'Membranes and transport'],
-  'Natural selection': ['Selección natural', 'Natural selection'],
-  Photosynthesis: ['Fotosíntesis', 'Photosynthesis'],
-  'Statistical analysis in biology': ['Análisis estadístico en biología', 'Statistical analysis in biology'],
-  // Chemistry
-  'Acids and bases': ['Ácidos y bases', 'Acids and bases'],
-  'Atomic structure': ['Estructura atómica', 'Atomic structure'],
-  'Chemical bonding and structure': ['Enlace químico y estructura', 'Chemical bonding and structure'],
-  'Chemical equilibrium': ['Equilibrio químico', 'Chemical equilibrium'],
-  'Enthalpy changes': ['Cambios de entalpía', 'Enthalpy changes'],
-  'Experimental uncertainties in chemistry': ['Incertidumbres experimentales en química', 'Experimental uncertainties in chemistry'],
-  'Organic functional groups': ['Grupos funcionales orgánicos', 'Organic functional groups'],
-  'Rates of reaction': ['Velocidad de reacción', 'Rates of reaction'],
-  'Redox reactions': ['Reacciones redox', 'Redox reactions'],
-  'Stoichiometric relationships': ['Relaciones estequiométricas', 'Stoichiometric relationships'],
-  'The mole concept': ['El concepto de mol', 'The mole concept'],
-  // English
-  'English sentence structure': ['Estructura de la oración en inglés', 'English sentence structure'],
-  'English verb tenses': ['Tiempos verbales en inglés', 'English verb tenses'],
-  'English vocabulary in context': ['Vocabulario en inglés en contexto', 'English vocabulary in context'],
-  'Reading comprehension in English': ['Comprensión lectora en inglés', 'Reading comprehension in English'],
-  // Lectura crítica
-  'Análisis literario': ['Análisis literario', 'Literary analysis'],
-  'Evidencias y relación entre textos': ['Evidencias y relación entre textos', 'Evidence and relationships between texts'],
-  'Ideas explícitas y tesis': ['Ideas explícitas y tesis', 'Explicit ideas and thesis'],
-  'Inferencia textual': ['Inferencia textual', 'Textual inference'],
-  'Lectura de tablas y gráficos': ['Lectura de tablas y gráficos', 'Reading tables and charts'],
-  'Vocabulario en contexto': ['Vocabulario en contexto', 'Vocabulary in context'],
-  // Matemáticas
-  'Divisibilidad, MCD y MCM': ['Divisibilidad, MCD y MCM', 'Divisibility, GCD and LCM'],
-  'Ecuaciones lineales': ['Ecuaciones lineales', 'Linear equations'],
-  Fracciones: ['Fracciones', 'Fractions'],
-  Funciones: ['Funciones', 'Functions'],
-  'Medidas de dispersión': ['Medidas de dispersión', 'Measures of dispersion'],
-  'Medidas de tendencia central': ['Medidas de tendencia central', 'Measures of central tendency'],
-  Porcentajes: ['Porcentajes', 'Percentages'],
-  Probabilidad: ['Probabilidad', 'Probability'],
-  Proporcionalidad: ['Proporcionalidad', 'Proportionality'],
-  'Semejanza de triángulos': ['Semejanza de triángulos', 'Similar triangles'],
-  'Sistemas de ecuaciones': ['Sistemas de ecuaciones', 'Systems of equations'],
-  'Teorema de Pitágoras': ['Teorema de Pitágoras', 'Pythagorean theorem'],
-  'Técnicas de conteo': ['Técnicas de conteo', 'Counting techniques'],
-  'Área y perímetro': ['Área y perímetro', 'Area and perimeter'],
-  // Mathematics
-  'Binomial distribution': ['Distribución binomial', 'Binomial distribution'],
-  Differentiation: ['Derivación', 'Differentiation'],
-  'Exponential models': ['Modelos exponenciales', 'Exponential models'],
-  'Financial mathematics': ['Matemática financiera', 'Financial mathematics'],
-  Integration: ['Integración', 'Integration'],
-  'Linear Equations': ['Ecuaciones lineales', 'Linear Equations'],
-  'Linear regression and correlation': ['Regresión lineal y correlación', 'Linear regression and correlation'],
-  Logarithms: ['Logaritmos', 'Logarithms'],
-  'Mathematical investigation': ['Investigación matemática', 'Mathematical investigation'],
-  'Normal distribution': ['Distribución normal', 'Normal distribution'],
-  'Probability (IB)': ['Probabilidad (IB)', 'Probability (IB)'],
-  'Quadratic functions and inequalities': ['Funciones cuadráticas e inecuaciones', 'Quadratic functions and inequalities'],
-  'Rational functions and inverses': ['Funciones racionales e inversas', 'Rational functions and inverses'],
-  'Sequences and series': ['Sucesiones y series', 'Sequences and series'],
-  'Trigonometry and triangles': ['Trigonometría y triángulos', 'Trigonometry and triangles'],
-  // Physics
-  'Conservation of momentum': ['Conservación del momento lineal', 'Conservation of momentum'],
-  'Electric circuits': ['Circuitos eléctricos', 'Electric circuits'],
-  'Electromagnetic induction': ['Inducción electromagnética', 'Electromagnetic induction'],
-  'Forces and momentum': ['Fuerzas y momento lineal', 'Forces and momentum'],
-  'Gravitational fields': ['Campos gravitatorios', 'Gravitational fields'],
-  'Ideal gases': ['Gases ideales', 'Ideal gases'],
-  Kinematics: ['Cinemática', 'Kinematics'],
-  'Nuclear physics': ['Física nuclear', 'Nuclear physics'],
-  'Thermal energy transfers': ['Transferencias de energía térmica', 'Thermal energy transfers'],
-  'Uncertainties and data analysis': ['Incertidumbres y análisis de datos', 'Uncertainties and data analysis'],
-  'Wave behaviour': ['Comportamiento de las ondas', 'Wave behaviour'],
-  'Work, energy and power': ['Trabajo, energía y potencia', 'Work, energy and power'],
-  // Redacción
-  'Cohesión y conectores': ['Cohesión y conectores', 'Cohesion and connectors'],
-  'Economía del lenguaje': ['Economía del lenguaje', 'Economy of language'],
-  'Síntesis y generalización': ['Síntesis y generalización', 'Synthesis and generalization'],
-  // Visual arts
-  'Art-making inquiry': ['Indagación en la creación artística', 'Art-making inquiry'],
-  'Comparative analysis of artworks': ['Análisis comparativo de obras de arte', 'Comparative analysis of artworks'],
-  'Curatorial rationale': ['Fundamentación curatorial', 'Curatorial rationale'],
-};
+// The governed labels live with the app (they are also its display fallback): one source for the seed and the UI.
+const LABELS = CANONICAL_CONCEPT_LABELS;
 
 async function main() {
   const apply = process.argv.includes('--apply');
