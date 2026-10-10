@@ -88,6 +88,10 @@ async function selectTargets(params: {
     }
     case 'FULL_MOCK':
       return allTargets;
+    // B1-D: an exam-instance practice covers every position of the instance's selected components (the caller
+    // narrows by component / focus objective). It is NOT reduced the way MINI_MOCK is: no readiness subset applies.
+    case 'EXAM_PRACTICE':
+      return allTargets;
   }
 }
 
@@ -114,7 +118,8 @@ export async function buildSimulationPlan(params: {
   const blueprint = await getBlueprintForVersion(params.examVersionId);
   // Blueprint V2 SHADOW (BP-4A): only the legacy F9 path (no instance components). An exam-instance plan was
   // already observed once in formInputs -- one shadow observation per flow. Observe only; nothing is returned.
-  if (!only && blueprint && blueprintV2Mode() === 'SHADOW') {
+  // (B1-D: EXAM_PRACTICE is always an exam-instance plan, observed in formInputs, never here.)
+  if (!only && blueprint && params.simulationType !== 'EXAM_PRACTICE' && blueprintV2Mode() === 'SHADOW') {
     const { shadowObserveSimulationPlan } = await import('@/lib/exam-core/blueprint-v2/runtime-hook');
     const all = await listObjectiveTargets(blueprint.id);
     await shadowObserveSimulationPlan({

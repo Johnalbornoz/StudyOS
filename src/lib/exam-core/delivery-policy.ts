@@ -93,7 +93,9 @@ export function resolveDeliveryPolicy(config: DeliveryPolicyConfig, simulationTy
 }
 
 export function isModeAllowed(config: DeliveryPolicyConfig, simulationType: SimulationType, timingMode: TimingMode): { allowed: boolean; reason?: 'SIMULATION_TYPE_NOT_ALLOWED' | 'TIMING_MODE_NOT_ALLOWED' } {
-  if (!config.allowedSimulationTypes.includes(simulationType)) return { allowed: false, reason: 'SIMULATION_TYPE_NOT_ALLOWED' };
+  // B1-D: EXAM_PRACTICE is never a client-requestable mode, so a version's allow-list (which governs the direct
+  // start path) does not list it; it is started only by an exam instance, which has its own readiness gates.
+  if (simulationType !== 'EXAM_PRACTICE' && !(config.allowedSimulationTypes as readonly string[]).includes(simulationType)) return { allowed: false, reason: 'SIMULATION_TYPE_NOT_ALLOWED' };
   if (!config.allowedTimingModes.includes(timingMode)) return { allowed: false, reason: 'TIMING_MODE_NOT_ALLOWED' };
   return { allowed: true };
 }

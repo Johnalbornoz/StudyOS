@@ -10,12 +10,11 @@
  * legitimate preparation practice (Exam Preparation may adapt to the learner), and it is never an official
  * mock. So:
  *   - the direct path does not start a FULL_MOCK;
- *   - whatever started an attempt, a FULL_MOCK with no frozen instance, and any MOCK / CHALLENGE instance,
- *     never receives learner-generated fallback content.
+ *   - a FULL_MOCK never receives learner-generated fallback content, whatever started it.
  *
- * Note: an exam instance starts its attempt with the stored type FULL_MOCK for every instance mode (the
- * instance, not the type, carries the semantics). `simulation_type` alone therefore says nothing about
- * official fidelity; `assessmentPathOf` does.
+ * Stored types (B1-D): a MOCK / CHALLENGE instance stores FULL_MOCK; a PRACTICE instance stores EXAM_PRACTICE.
+ * Before B1-D every instance mode stored FULL_MOCK, so a historical PRACTICE-instance attempt may still carry
+ * it: `assessmentPathOf` reads the instance mode first and therefore classifies those rows correctly too.
  */
 import type { AssessmentPath } from '@/lib/assessment-foundation/families';
 
@@ -54,18 +53,42 @@ export function assessmentPathOf(f: AttemptPathFacts): AssessmentPath {
 }
 
 /**
- * May an unfilled position of this attempt receive content generated for the learner? Never for an
- * official-format attempt: a MOCK / CHALLENGE instance, or a FULL_MOCK that has no instance behind it.
+ * May an unfilled position of this attempt receive content generated for the learner?
+ *
+ * B1-D (final): NEVER for a FULL_MOCK -- no exception, whatever instance (or none) is behind it -- and never
+ * for a MOCK / CHALLENGE instance. Preparation attempts (EXAM_PRACTICE, TOPIC_EXAM, DOMAIN_EXAM, MINI_MOCK)
+ * may, under the preparation rule. A historical PRACTICE-instance attempt that is still stored as FULL_MOCK
+ * is read as before; while open it simply gets no generated fallback.
  */
 export function mayUseGeneratedFallback(f: AttemptPathFacts): boolean {
+  if (f.simulationType === 'FULL_MOCK') return false;
   if (f.instanceMode === 'MOCK' || f.instanceMode === 'CHALLENGE') return false;
-  if (!f.instanceMode && f.simulationType === 'FULL_MOCK') return false;
   return true;
 }
 
+/** B1-D -- what the exam-instance start flow stores, by instance mode. The only writer of EXAM_PRACTICE. */
+export function attemptTypeForInstanceMode(mode: string): 'FULL_MOCK' | 'EXAM_PRACTICE' {
+  return mode === 'PRACTICE' ? 'EXAM_PRACTICE' : 'FULL_MOCK';
+}
+
+export const EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE = 'EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE' as const;
+
 /**
- * B1-C -- the invariant at the single place an attempt is started: a FULL_MOCK needs the exam instance that
- * starts it AND that instance's frozen form. Every other type is unaffected.
+ * B1-D -- the start invariant, by stored type:
+ *   FULL_MOCK      -> a MOCK / CHALLENGE exam instance AND its frozen form
+ *   EXAM_PRACTICE  -> a PRACTICE exam instance (the only flow that may write it)
+ *   any other type -> no instance involved
+ * Returns the violation code, or null.
+ */
+export function instanceStartViolation(f: { simulationType: string; examInstanceId?: string | null; examInstanceMode?: string | null; hasFrozenForm: boolean }): typeof OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE | typeof EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE | null {
+  if (f.simulationType === 'FULL_MOCK') return f.examInstanceId && f.hasFrozenForm && (f.examInstanceMode === 'MOCK' || f.examInstanceMode === 'CHALLENGE') ? null : OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE;
+  if (f.simulationType === 'EXAM_PRACTICE') return f.examInstanceId && f.examInstanceMode === 'PRACTICE' ? null : EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE;
+  return null;
+}
+
+/**
+ * B1-C -- kept for callers / tests of the original rule: a FULL_MOCK needs the exam instance that starts it and
+ * that instance's frozen form. `instanceStartViolation` is the complete (B1-D) rule.
  */
 export function fullMockHasFrozenInstance(f: { simulationType: string; examInstanceId?: string | null; hasFrozenForm: boolean }): boolean {
   if (f.simulationType !== 'FULL_MOCK') return true;

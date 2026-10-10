@@ -812,6 +812,7 @@ export type MessageKey =
   | 'ex.type.MINI_MOCK'
   | 'ex.typeBody.MINI_MOCK'
   | 'ex.type.FULL_MOCK'
+  | 'ex.type.EXAM_PRACTICE'
   | 'ex.typeBody.FULL_MOCK'
   | 'ex.type.TOPIC_EXAM'
   | 'ex.typeBody.TOPIC_EXAM'
@@ -3079,6 +3080,7 @@ const es: Messages = {
   'ex.type.MINI_MOCK': 'Mini simulacro',
   'ex.typeBody.MINI_MOCK': 'Una muestra corta del examen.',
   'ex.type.FULL_MOCK': 'Simulacro completo',
+  'ex.type.EXAM_PRACTICE': 'Práctica de examen',
   'ex.typeBody.FULL_MOCK': 'El examen entero, como el día real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Un objetivo concreto del temario.',
@@ -5346,6 +5348,7 @@ const en: Messages = {
   'ex.type.MINI_MOCK': 'Mini mock exam',
   'ex.typeBody.MINI_MOCK': 'A short sample of the exam.',
   'ex.type.FULL_MOCK': 'Full mock exam',
+  'ex.type.EXAM_PRACTICE': 'Exam practice',
   'ex.typeBody.FULL_MOCK': 'The whole exam, like the real day.',
   'ex.type.TOPIC_EXAM': 'By objective',
   'ex.typeBody.TOPIC_EXAM': 'One specific objective of the syllabus.',
@@ -7613,6 +7616,7 @@ const de: Messages = {
   'ex.type.MINI_MOCK': 'Mini-Probeprüfung',
   'ex.typeBody.MINI_MOCK': 'Ein kurzer Ausschnitt der Prüfung.',
   'ex.type.FULL_MOCK': 'Komplette Probeprüfung',
+  'ex.type.EXAM_PRACTICE': 'Prüfungsübung',
   'ex.typeBody.FULL_MOCK': 'Die ganze Prüfung, wie am echten Tag.',
   'ex.type.TOPIC_EXAM': 'Nach Lernziel',
   'ex.typeBody.TOPIC_EXAM': 'Ein bestimmtes Lernziel des Lehrplans.',
@@ -9880,6 +9884,7 @@ const fr: Messages = {
   'ex.type.MINI_MOCK': 'Mini examen blanc',
   'ex.typeBody.MINI_MOCK': 'Un court échantillon de l\'examen.',
   'ex.type.FULL_MOCK': 'Examen blanc complet',
+  'ex.type.EXAM_PRACTICE': 'Entraînement à l\'examen',
   'ex.typeBody.FULL_MOCK': 'L\'examen entier, comme le jour J.',
   'ex.type.TOPIC_EXAM': 'Par objectif',
   'ex.typeBody.TOPIC_EXAM': 'Un objectif précis du programme.',
@@ -12147,6 +12152,7 @@ const pt: Messages = {
   'ex.type.MINI_MOCK': 'Mini simulado',
   'ex.typeBody.MINI_MOCK': 'Uma amostra curta da prova.',
   'ex.type.FULL_MOCK': 'Simulado completo',
+  'ex.type.EXAM_PRACTICE': 'Prática de prova',
   'ex.typeBody.FULL_MOCK': 'A prova inteira, como no dia real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Um objetivo específico do programa.',

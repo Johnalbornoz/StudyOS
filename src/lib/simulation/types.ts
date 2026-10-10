@@ -1,4 +1,10 @@
-export type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK';
+/**
+ * FULL_MOCK      an official-fidelity full mock: started only by a MOCK / CHALLENGE exam instance.
+ * EXAM_PRACTICE  (B1-D) an exam-instance-based preparation assessment over the instance's selected components /
+ *                positions. May be full-length; never official. Written only by the exam-instance start flow.
+ * TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK   preparation simulations a client may request directly.
+ */
+export type SimulationType = 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK' | 'EXAM_PRACTICE';
 export type TimingMode = 'UNTIMED' | 'TRAINING_TIMED' | 'OFFICIAL_SIMULATION_TIMED';
 export type SimulationAttemptStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED';
 

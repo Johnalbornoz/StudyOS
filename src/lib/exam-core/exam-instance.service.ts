@@ -21,6 +21,7 @@
  * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
  * is always a NEW instance from zero; an instance is never reset.
  */
+import { attemptTypeForInstanceMode } from '@/lib/simulation/preparation-simulation';
 import { itemDimensionValues } from './slot-constraints';
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
@@ -423,7 +424,8 @@ export async function startExamInstance(instanceId: string, params: { language: 
     studentId: instance.studentId,
     examProfileId: instance.examProfileId,
     examVersionId: instance.examVersionId,
-    simulationType: 'FULL_MOCK',
+    // B1-D: a PRACTICE instance is exam practice (EXAM_PRACTICE); only MOCK / CHALLENGE store FULL_MOCK.
+    simulationType: attemptTypeForInstanceMode(instance.mode),
     timingMode: instance.timingMode,
     language: params.language,
     timezone: params.timezone,
@@ -433,6 +435,7 @@ export async function startExamInstance(instanceId: string, params: { language: 
     presetItems: (plan) => presetFromForm(instance, form, plan),
     // B1-C: the frozen instance behind this attempt (FULL_MOCK => exam instance).
     examInstanceId: instance.id,
+    examInstanceMode: instance.mode,
   });
   const r = await db.query(
     `UPDATE exam_instances SET status = 'IN_PROGRESS', simulation_attempt_id = $2, started_at = now() WHERE id = $1 AND status = 'READY' RETURNING *`,

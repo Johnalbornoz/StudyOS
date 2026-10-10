@@ -60,7 +60,7 @@ describe('B1-C -- FULL_MOCK without an exam instance is impossible', () => {
   it('with its instance and frozen form, a FULL_MOCK passes the invariant and proceeds to the normal checks', async () => {
     // the next step reads the profile / version: reaching it proves the invariant did not block
     queryMock.mockResolvedValueOnce({ rows: [{ status: 'ARCHIVED' }] });
-    await expect(startSimulationAttempt({ ...base, simulationType: 'FULL_MOCK', examInstanceId: 'inst-1', presetItems: async () => ({}) })).rejects.not.toBeInstanceOf(FullMockRequiresExamInstanceError);
+    await expect(startSimulationAttempt({ ...base, simulationType: 'FULL_MOCK', examInstanceId: 'inst-1', examInstanceMode: 'MOCK', presetItems: async () => ({}) })).rejects.not.toBeInstanceOf(FullMockRequiresExamInstanceError);
     expect(queryMock).toHaveBeenCalled();
   });
 
