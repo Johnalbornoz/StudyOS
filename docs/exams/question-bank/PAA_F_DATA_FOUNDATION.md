@@ -111,6 +111,8 @@ A mapping baseline taken before any change (324 rows; PISA 30) is kept with the 
 | `efl.writing.complex-sentences` | Redacción indirecta | English / English complex sentences: coordination and subordination | NEW (in catalogue file; not yet in DEV) |
 | `efl.writing.paragraph-organization` | Redacción indirecta | English / English paragraph organization and coherence | NEW (in catalogue file; not yet in DEV) |
 
+> The "F-ARCH" phase named in the table below was superseded: B0/B1 is the canonical assessment architecture. See `Q1_I1_F_DATA_B1_INTEGRATION.md` for the owner of each item.
+
 ## Deliberately not done here
 
 | Item | Why | Phase |
