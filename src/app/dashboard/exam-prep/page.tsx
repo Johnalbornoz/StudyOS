@@ -18,7 +18,7 @@ import { presentObjective } from '@/lib/exam-core/objectives/objective-display';
 import { examSessionLabel, objectiveSessionModel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 import { allObjectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
-import { objectiveStatusKey } from '@/lib/exam-core/objectives/capabilities';
+import { objectiveStatusKey, preparationBadgeKey, preparationBadgeLabelKey } from '@/lib/exam-core/objectives/capabilities';
 import { ProfileCard } from './ProfileCard';
 import { after } from 'next/server';
 import { isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
@@ -201,7 +201,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
                     <p className="ex-card-meta">{timeLine(profile, objective)}</p>
                     <div className="ex-card-state">
                       {capabilities ? (
-                        <span className={`xr-pill prep-status prep-status--${objectiveStatusKey(capabilities)}`}>{tr[`prep.status.${objectiveStatusKey(capabilities)}`]}</span>
+                        <span className={`xr-pill prep-status prep-status--${preparationBadgeKey(objectiveStatusKey(capabilities), true)}`} data-prep-badge={preparationBadgeKey(objectiveStatusKey(capabilities), true)}>{tr[preparationBadgeLabelKey(preparationBadgeKey(objectiveStatusKey(capabilities), true))]}</span>
                       ) : snapshot && snapshot.overallStatus !== 'INSUFFICIENT_EVIDENCE' ? (
                         <StatusBadge label={t[`examPrep.status.${snapshot.overallStatus}`]} tone={toneForReadinessStatus(snapshot.overallStatus)} />
                       ) : (

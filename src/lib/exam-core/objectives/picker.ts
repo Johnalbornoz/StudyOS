@@ -87,6 +87,8 @@ export async function loadPickerData(studentId: string, language: string) {
         groupKey: shown.groupKey,
         groupLabel: shown.groupLabel,
         // Micro-delta M04: the course and level as displayed, for typeahead suggestions.
+        // M03c: catalogue group names in the interface locale (the stored context keeps its own values).
+        groupNames: shown.groups,
         subjectLabel: shown.subject,
         levelLabel: shown.level,
         recommended: e.eligible,

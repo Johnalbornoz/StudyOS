@@ -109,6 +109,7 @@ const es = {
   'acp.prep.suggest.kind.VARIANT': "Asignatura",
   'acp.prep.suggest.kind.OPTION': "Nivel",
   'acp.prep.suggest.hint': "Usa las flechas para recorrer las sugerencias, Enter para elegir y Escape para cerrar.",
+  'acp.prep.status.inPreparation': "En tu preparación",
 } as const;
 
 export type AcademicProfileMessageKey = keyof typeof es;
@@ -218,6 +219,7 @@ const en: Catalog = {
   'acp.prep.suggest.kind.VARIANT': "Course",
   'acp.prep.suggest.kind.OPTION': "Level",
   'acp.prep.suggest.hint': "Use the arrow keys to move through suggestions, Enter to choose and Escape to close.",
+  'acp.prep.status.inPreparation': "In your preparation",
 };
 
 const de: Catalog = {
@@ -324,6 +326,7 @@ const de: Catalog = {
   'acp.prep.suggest.kind.VARIANT': "Kurs",
   'acp.prep.suggest.kind.OPTION': "Niveau",
   'acp.prep.suggest.hint': "Mit den Pfeiltasten durch die Vorschläge gehen, Enter wählt aus, Escape schließt.",
+  'acp.prep.status.inPreparation': "In deiner Vorbereitung",
 };
 
 const fr: Catalog = {
@@ -430,6 +433,7 @@ const fr: Catalog = {
   'acp.prep.suggest.kind.VARIANT': "Cours",
   'acp.prep.suggest.kind.OPTION': "Niveau",
   'acp.prep.suggest.hint': "Utilise les flèches pour parcourir les suggestions, Entrée pour choisir et Échap pour fermer.",
+  'acp.prep.status.inPreparation': "Dans ta préparation",
 };
 
 const pt: Catalog = {
@@ -536,6 +540,7 @@ const pt: Catalog = {
   'acp.prep.suggest.kind.VARIANT': "Curso",
   'acp.prep.suggest.kind.OPTION': "Nível",
   'acp.prep.suggest.hint': "Use as setas para percorrer as sugestões, Enter para escolher e Escape para fechar.",
+  'acp.prep.status.inPreparation': "Na sua preparação",
 };
 
 export const ACADEMIC_PROFILE_MESSAGES = { es: es as Catalog, en, de, fr, pt } as const;

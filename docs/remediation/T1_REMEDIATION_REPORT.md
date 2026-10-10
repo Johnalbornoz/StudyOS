@@ -471,3 +471,28 @@ No migration. No data was written to DEV by this delta.
 6. Spanish / English: levels, IB papers, concepts and requirements are consistent.
 7. Cambridge June 2027 saves and survives reload.
 8. Logout / login keeps profile, preparations, class enrolment and assignments.
+
+---
+
+# T1 — FINAL UI POLISH (post-final-smoke)
+
+Status: **T1_FINAL_UI_POLISH = TECH_PASS / READY_FOR_VISUAL_CONFIRMATION**. T1 is **not** DONE. T2 not started. Stage and Production untouched. No migration; no DEV data written.
+
+Baseline: DEV `/api/version` = `1b38bd7`; work continued on `remediation/t1-micro-delta`.
+
+| Item | Cause | Fix |
+|---|---|---|
+| **M02b** — topic collapsed after "Añadir a mi plan" | The topic's open state lived only in the browser's `<details>`; the data refresh after an add could remount the section and lose it. | The expanded topics are now controlled state, mirrored per subject in session storage (optional; guarded). A successful add marks its topic open before refreshing in place. The clicked concept becomes "Añadido" + "Abrir"; siblings stay visible with their own button. No navigation, so scroll is kept. |
+| **M05b** — "Informática" collapsing letter by letter in "Para ti" | The row was a single flex line and the provenance badge (now a longer text) took the width; the name was allowed to break anywhere. | The shared recommendation row is a two-column grid: subject (flexible, wraps by words) and arrow (right); the provenance badge sits under the subject at its natural width. The whole row stays one button. Checked in a browser at desktop and 375px. |
+| **M03b** — "Prueba 3 (GDC, problem solving)" | The glossary matched whole parentheses, so a comma list was missed. | Qualifiers are resolved term by term: "Prueba 3 (con calculadora gráfica, resolución de problemas)". Unknown terms stay as stored. |
+| **M03c** — "Group 1: Matemáticas y Ciencias" in English | The catalogue's Spanish group name was the only one carried on an objective. | Objectives now carry the catalogue's group names in both languages for display; AICE Diploma parts too. The stored preparation context is unchanged. |
+| **M06** — active Cambridge 9618 preparation showing "You can add it to your preparation" | The badge came from catalogue capability alone. | The badge is resolved from the actual preparation state: an objective already in the preparation shows "En tu preparación / In your preparation". Capability badges (structure, practice, mocks, plan) are unchanged. Display only. |
+
+Tests: **483 files / 8536 passing** (+4 focused tests in `tests/unit/t1-micro-delta.test.ts`); one older source guard updated for the badge; `tsc` clean; `next build` OK. Accessibility tooling: none in the repository; not run.
+
+Visual confirmation (DEV):
+1. Learn → expand a topic → "Añadir a mi plan" on one concept → the topic stays open, that row shows "Añadido" + "Abrir", the others keep their button.
+2. Add Subject → "Para ti": "Informática" reads on one line with "Por tu preparación de examen" beneath and the arrow at the right.
+3. Spanish, IB Math AA HL preparation → "Prueba 3 (con calculadora gráfica, resolución de problemas)".
+4. English, a Cambridge AS & A Level row or preparation → "Group 1: Mathematics and Sciences".
+5. My preparations → Cambridge Computer Science 9618 shows "In your preparation" with "View my preparation".

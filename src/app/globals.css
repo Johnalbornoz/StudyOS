@@ -1965,8 +1965,13 @@ img, video { max-width: 100%; height: auto; }
 .sp-option:hover { border-color: var(--brand); background: var(--brand-subtle); }
 .sp-option:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .sp-option:disabled { opacity: 0.6; cursor: progress; }
-.sp-option-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.sp-option-go { flex-shrink: 0; color: var(--text-muted); }
+/* T1 UI polish (M05b): subject | arrow, with the provenance badge on its own line under the subject. The name is the
+   flexible column and wraps by WORDS; the badge and the arrow keep their natural width. */
+.sp-option { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: var(--space-2); }
+.sp-option-name { grid-column: 1; min-width: 0; overflow-wrap: break-word; word-break: normal; hyphens: auto; }
+.sp-option-go { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--text-muted); }
+.sp-option > .sp-badge { grid-column: 1; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
+[data-for-you].sp-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .sp-badge { flex-shrink: 0; padding: var(--space-1) var(--space-2); border-radius: var(--radius-full); background: var(--brand-subtle); color: var(--brand-ink); font-size: var(--fs-xs); font-weight: 650; }
 .sp-all { display: flex; flex-direction: column; gap: var(--space-3); }
 .sp-all[open] > .sp-all-summary { margin-bottom: var(--space-3); }

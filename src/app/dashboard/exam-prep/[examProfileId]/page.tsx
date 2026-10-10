@@ -213,7 +213,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
           labels={prepLabels}
           language={locale}
           timing={timing}
-          display={{ subject: shown.subject, level: shown.level }}
+          display={{ subject: shown.subject, level: shown.level, groups: shown.groups }}
           aspiration={{ areas: interestAreaOptions(locale), areaLabel: profile.interestArea ? [interestAreaLabel(profile.interestArea, locale), profile.interestArea === 'OTHER' ? profile.interestAreaDetail : null].filter(Boolean).join(' · ') : null }}
         />
         {attempts.length > 0 && (

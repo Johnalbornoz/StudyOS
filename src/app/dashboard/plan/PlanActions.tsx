@@ -15,7 +15,7 @@ async function post(url: string, body?: unknown) {
   return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 }
 
-export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', classId, labels, describedBy }: {
+export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', classId, labels, describedBy, onAdded }: {
   canonicalConceptId: string;
   source?: Source;
   classId?: string | null;
@@ -23,6 +23,8 @@ export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', 
   labels: { add: string; adding: string; error: string; added?: string; addFor?: string };
   /** id of the element that names the concept this button affects. */
   describedBy?: string;
+  /** Called after a successful add, before the page data refreshes (e.g. to keep the surrounding section open). */
+  onAdded?: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -44,6 +46,8 @@ export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', 
           setBusy(false);
           if (res.ok) {
             setDone(true);
+            onAdded?.();
+            // Refresh the server data in place: no navigation, so scroll position and open sections are kept.
             router.refresh();
           } else setError(true);
         }}
