@@ -30,6 +30,11 @@ import { updatePreparationDetails } from '@/lib/exam-core/objectives/preparation
 import { levelDisplayLabel, localizeCatalogSubjectName, localizeComponentLabel, localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { hasCambridgeComponentLabel, localizeCambridgeComponentLabel } from '@/lib/exam-core/catalog/cambridge-localization';
 import { learningObjectiveLabel, localizedObjectiveCodes } from '@/lib/exam-core/catalog/objective-localization';
+import { canonicalConceptLabels, resolveConceptLabel } from '@/lib/learning-plan/labels';
+import { CANONICAL_CONCEPT_LABELS, governedConceptLabel } from '@/lib/learning-plan/canonical-concept-labels';
+import { PreparationHome } from '@/app/dashboard/exam-prep/[examProfileId]/PreparationHome';
+import { computeCapabilities } from '@/lib/exam-core/objectives/capabilities';
+import { buildPreparationPlan, nextStep } from '@/lib/exam-core/objectives/preparation-plan';
 import { buildCurriculumTopics, type CurriculumTopicRow, type LearnerConceptRef } from '@/lib/learning-plan/subject-curriculum-topics';
 import { hasAcademicProfileData, suggestSubjects, SUBJECT_CATALOG } from '@/lib/experience/subject-catalog';
 import { saveAcademicProfileSelection } from '@/services/academic-profile-catalogue.service';
@@ -703,5 +708,67 @@ describe('M03d. Cambridge assessment structure and requirement statements', () =
     expect(localizeIbComponentLabel('Paper 3 (GDC, problem solving)', 'es')).toBe('Prueba 3 (con calculadora gráfica, resolución de problemas)');
     expect(presentObjective(objectiveByKey('cie.asal.9618.as')!, 'en').groups).toEqual(['Group 1: Mathematics and Sciences']);
     expect(presentObjective(objectiveByKey('cie.asal.9709.as')!, 'en').groups).toEqual(['Group 1: Mathematics and Sciences']);
+  });
+});
+
+// ================================================================== T1 LAST LOCALIZATION PATH (recommendation card)
+
+describe('Recommendation card: the concept row under a Cambridge requirement', () => {
+  it('"Mechanics: energy, work and power" is shown through the catalogue concept label, like the rest of the card', async () => {
+    // The row under the requirement is the catalogue CONCEPT mapped to it (note the colon), not the requirement
+    // statement. In DEV that concept has no canonical_concept_localizations row; its label comes from the governed
+    // concept list -- the same reviewed list the seed writes -- through the one shared concept-label function.
+    h.dbQueryMock.mockImplementation(async (sql: string, params: any[]) => {
+      if (/FROM canonical_concepts cc/.test(sql)) return { rows: [{ id: 'c-energy', localized: null, name: 'Mechanics: energy, work and power' }, { id: 'c-stored', localized: params[1] === 'es' ? 'Derivación' : 'Differentiation', name: 'Differentiation' }, { id: 'c-unknown', localized: null, name: 'A concept nobody reviewed yet' }] };
+      return { rows: [] };
+    });
+    const es = await canonicalConceptLabels(['c-energy', 'c-stored', 'c-unknown'], 'es');
+    expect(es.get('c-energy')).toBe('Mecánica: energía, trabajo y potencia');
+    expect(es.get('c-stored')).toBe('Derivación'); // a stored localization always wins
+    expect(es.get('c-unknown')).toBe('A concept nobody reviewed yet'); // no label -> the stored name, never invented
+    const en = await canonicalConceptLabels(['c-energy'], 'en');
+    expect(en.get('c-energy')).toBe('Mechanics: energy, work and power');
+    expect(resolveConceptLabel({ localized: 'X', name: 'Mechanics: kinematics' }, 'es')).toBe('X');
+    expect(resolveConceptLabel({ localized: null, name: 'Mechanics: kinematics' }, 'es')).toBe('Mecánica: cinemática');
+    expect(resolveConceptLabel({ localized: null, name: 'Mechanics: kinematics' }, 'de')).toBe('Mechanics: kinematics');
+    expect(governedConceptLabel('Energía y materia', 'en')).toBe('Energy and matter');
+    // One governed list for the seed and the app -- no second map.
+    expect(read('scripts/operations/seed-canonical-localizations.ts')).toMatch(/const LABELS = CANONICAL_CONCEPT_LABELS;/);
+    expect(read('scripts/operations/seed-canonical-localizations.ts')).not.toMatch(/'Conservation of momentum':/);
+    expect(CANONICAL_CONCEPT_LABELS['Conservation of momentum']).toEqual(['Conservación del momento lineal', 'Conservation of momentum']);
+    for (const [name, [esLabel, enLabel]] of Object.entries(CANONICAL_CONCEPT_LABELS)) expect(Boolean(esLabel && enLabel), name).toBe(true);
+
+    // The exact card of the manual check: Cambridge Mathematics 9709 A Level, Paper 4, requirement aice.9709.p4.energy.
+    const objective = objectiveByKey('cie.asal.9709.a')!;
+    const render = (locale: string, conceptName: string) => {
+      const plan = buildPreparationPlan(
+        [{
+          learningObjectiveId: 'lo-energy', code: 'aice.9709.p4.energy',
+          description: learningObjectiveLabel('aice.9709.p4.energy', locale) ?? 'Mechanics · Energy, work and power.', // as preparation.service builds it
+          area: 'Paper 4 — Mechanics', weight: 1, ownEvidence: null,
+          concepts: [{ canonicalConceptId: 'c-energy', name: conceptName, learner: null, examEvidence: null, alsoRelevantFor: [] }],
+        }],
+        { examDaysLeft: null, canPractice: false, canRunDiagnostic: false }
+      );
+      const capabilities = computeCapabilities(objective, [], 1);
+      const view = { profile: { id: 'p1', studentId: 's1', examDefinitionId: null, examVersionId: null, purpose: null, programmeContext: null, subjectFocus: null, examDate: null, timezone: null, institutionTargetId: null, status: 'ACTIVE', objectiveKey: objective.key }, objective, capabilities, plan, next: nextStep({ openAttemptId: null, plan, canPractice: false, canRunDiagnostic: false, diagnosticDone: false, canViewStructure: false, canPlanDiploma: false, hasExamDate: true }), openAttemptId: null, diagnostic: null };
+      const l = Object.fromEntries(Object.entries(msgs(locale)).filter(([k]) => k.startsWith('prep.') || k.startsWith('acp.goal.')));
+      return renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: locale, timing: { session: null, sessionLabel: 'Junio 2027', dateLine: null }, display: { subject: null, level: null }, aspiration: { areas: [], areaLabel: null } }));
+    };
+    const html = render('es', es.get('c-energy')!);
+    const card = /<li class="prep-rec">(.*?)<\/li><\/ol>/.exec(html)![1];
+    expect(card).toContain('<span class="prep-rec-name">Mecánica · Energía, trabajo y potencia.</span>'); // card title
+    expect(card).toContain('<p class="ui-hint">Prueba 4 — Mecánica</p>'); // paper label
+    expect(card).toContain('<span>Mecánica: energía, trabajo y potencia</span>'); // the row underneath
+    expect(card).not.toMatch(/Mechanics|energy, work and power|Paper 4/);
+    const english = render('en', en.get('c-energy')!);
+    expect(english).toContain('<span>Mechanics: energy, work and power</span>');
+    expect(english).toContain('Paper 4 — Mechanics');
+    // Wiring: every concept name of the plan comes from the shared function; the card renders it as given.
+    const service = code('src/lib/exam-core/objectives/preparation.service.ts');
+    expect(service).toMatch(/canonicalConceptLabels\(canonicalIds, language\)/);
+    expect(service).toMatch(/name: conceptLabels\.get\(c\.id\) \?\? c\.name/);
+    expect(code('src/lib/learning-plan/labels.ts')).toMatch(/out\.set\(row\.id, resolveConceptLabel\(row, locale\)\)/);
+    expect(code('src/lib/learning-plan/labels.ts')).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/); // display only: nothing is written
   });
 });

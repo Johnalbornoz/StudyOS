@@ -524,3 +524,22 @@ Baseline: DEV `/api/version` = `c2f8924`; work continued on `remediation/t1-micr
 Tests: **483 files / 8539 passing** (+3 focused tests in `tests/unit/t1-micro-delta.test.ts`; one earlier assertion that expected no Cambridge label was updated); `tsc` clean; `next build` OK. Accessibility tooling: none; not run.
 
 Visual confirmation (DEV, Spanish UI): open a Cambridge Mathematics 9709 preparation → "Qué evalúa" and the recommendations show "Prueba 1 — Matemáticas Puras 1", "Puras 1 · Derivación…", "Prueba 4 — Mecánica", "Probabilidad y Estadística 1 · La distribución normal." Switch to English → the original English labels.
+
+---
+
+# T1 — LAST LOCALIZATION PATH (recommendation card)
+
+Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no data writes, no architecture change. M03d was not reopened.
+
+**What the English row was.** Not the requirement statement: it is the catalogue **concept** mapped under the requirement ("Mechanics: energy, work and power", with a colon), a different catalogue entity from the statement ("Mechanics · Energy, work and power."). The card title and "Qué evalúa" show the statement, which was already localized. In DEV, 56 of 168 concepts (the Cambridge AICE and PISA additions) have no stored Spanish label, so the concept fell back to its stored English name.
+
+**Fix.** The requirement-statement function cannot label a concept (it is keyed by requirement code), so the shared *concept*-label function was completed instead:
+- The repository already had one governed concept-label list (used by the operator seed). It now lives with the app (`learning-plan/canonical-concept-labels.ts`), the seed imports it, and the 56 missing concepts were added to it. No second map was created.
+- `canonicalConceptLabels` (the one function the plan, "Qué evalúa" and Learn topics already use) resolves: stored localization → governed list → stored name.
+- Nothing is written to the database. Running the seed later would store the same labels; it is not required for the display.
+
+**Result (checked against the real DEV preparation, read-only).** Spanish: "Mecánica · Energía, trabajo y potencia." / "Prueba 4 — Mecánica" / "Mecánica: energía, trabajo y potencia". English: unchanged stored labels. All 168 catalogue concepts now have a Spanish label through one of the two sources.
+
+**Not changed (out of this path).** A concept the Student has already added to their own learning is labelled through the stored localization only (Home / Learn lists); for the 56 concepts above that still needs the seed to be run.
+
+Tests: **483 files / 8540 passing** (+1 focused test with the exact Cambridge recommendation shape); `tsc` clean; `next build` OK.
