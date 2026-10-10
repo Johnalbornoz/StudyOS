@@ -1,0 +1,491 @@
+{
+ "phase": "Q1-C",
+ "product": "PAA revisada / LATIN_AMERICA / PAPER",
+ "catalog_status": "DRAFT_AUDIT_DERIVED",
+ "topics": 78,
+ "concepts_total": 66,
+ "concepts_existing": 26,
+ "concepts_missing": 40,
+ "practice_test": {
+  "items": 175,
+  "ambiguous": 9,
+  "reference_distribution": {
+   "Lectura / Vocabulario en contexto": {
+    "MULTIPLE_CHOICE": 15,
+    "STUDENT_PRODUCED": 0
+   },
+   "Lectura / Ideas explícitas e implícitas": {
+    "MULTIPLE_CHOICE": 10,
+    "STUDENT_PRODUCED": 0
+   },
+   "Lectura / Análisis, interpretación e inferencias": {
+    "MULTIPLE_CHOICE": 13,
+    "STUDENT_PRODUCED": 0
+   },
+   "Lectura / Información cuantitativa o gráficos": {
+    "MULTIPLE_CHOICE": 2,
+    "STUDENT_PRODUCED": 0
+   },
+   "Lectura / Análisis literario": {
+    "MULTIPLE_CHOICE": 5,
+    "STUDENT_PRODUCED": 0
+   },
+   "Redacción / Elisión": {
+    "MULTIPLE_CHOICE": 7,
+    "STUDENT_PRODUCED": 0
+   },
+   "Redacción / Adición": {
+    "MULTIPLE_CHOICE": 4,
+    "STUDENT_PRODUCED": 0
+   },
+   "Redacción / Generalización": {
+    "MULTIPLE_CHOICE": 5,
+    "STUDENT_PRODUCED": 0
+   },
+   "Redacción / Integración": {
+    "MULTIPLE_CHOICE": 5,
+    "STUDENT_PRODUCED": 0
+   },
+   "Redacción / Particularización": {
+    "MULTIPLE_CHOICE": 4,
+    "STUDENT_PRODUCED": 0
+   },
+   "Matemáticas / Aritmética": {
+    "MULTIPLE_CHOICE": 11,
+    "STUDENT_PRODUCED": 2
+   },
+   "Matemáticas / Álgebra": {
+    "MULTIPLE_CHOICE": 13,
+    "STUDENT_PRODUCED": 3
+   },
+   "Matemáticas / Geometría": {
+    "MULTIPLE_CHOICE": 12,
+    "STUDENT_PRODUCED": 3
+   },
+   "Matemáticas / Análisis de datos y Probabilidad": {
+    "MULTIPLE_CHOICE": 9,
+    "STUDENT_PRODUCED": 2
+   },
+   "Inglés / Uso del lenguaje y vocabulario": {
+    "MULTIPLE_CHOICE": 20,
+    "STUDENT_PRODUCED": 0
+   },
+   "Inglés / Comprensión de lectura": {
+    "MULTIPLE_CHOICE": 15,
+    "STUDENT_PRODUCED": 0
+   },
+   "Inglés / Redacción indirecta": {
+    "MULTIPLE_CHOICE": 15,
+    "STUDENT_PRODUCED": 0
+   }
+  }
+ },
+ "reduced_sections": {
+  "Matemáticas": 28,
+  "Inglés": 25,
+  "Lectura": 23,
+  "Redacción": 12
+ },
+ "reduced_domains": {
+  "Lectura / Vocabulario en contexto": 8,
+  "Lectura / Ideas explícitas e implícitas": 5,
+  "Lectura / Análisis, interpretación e inferencias": 7,
+  "Lectura / Información cuantitativa o gráficos": 1,
+  "Lectura / Análisis literario": 2,
+  "Redacción / Elisión": 3,
+  "Redacción / Adición": 2,
+  "Redacción / Generalización": 3,
+  "Redacción / Integración": 2,
+  "Redacción / Particularización": 2,
+  "Matemáticas / Aritmética": 7,
+  "Matemáticas / Álgebra": 8,
+  "Matemáticas / Geometría": 8,
+  "Matemáticas / Análisis de datos y Probabilidad": 5,
+  "Inglés / Uso del lenguaje y vocabulario": 10,
+  "Inglés / Comprensión de lectura": 8,
+  "Inglés / Redacción indirecta": 7
+ },
+ "pool_totals": {
+  "PRACTICE": 198,
+  "DIAGNOSTIC": 132,
+  "VERIFICATION": 132,
+  "REDUCED_1": 88,
+  "FULL_1": 175,
+  "FULL_2": 175
+ },
+ "section_totals": {
+  "Lectura": 197,
+  "Redacción": 97,
+  "Matemáticas": 411,
+  "Inglés": 195
+ },
+ "total_required": 900,
+ "firm_mock_requirement": 438,
+ "catalog_dependent_requirement": 462,
+ "student_produced_by_pool": {
+  "PRACTICE": 21,
+  "DIAGNOSTIC": 14,
+  "VERIFICATION": 14,
+  "REDUCED_1": 5,
+  "FULL_1": 10,
+  "FULL_2": 10
+ },
+ "difficulty_totals": {
+  "STANDARD": 451,
+  "FOUNDATIONAL": 271,
+  "CHALLENGE": 178
+ },
+ "available_items": 84,
+ "available_logical_items": 76,
+ "available_versions": 91,
+ "fixtures": 75,
+ "generated": 9,
+ "candidate": 3,
+ "eligible": 0,
+ "gap": 900,
+ "stem_duplicate_groups": 8,
+ "fingerprint_duplicate_groups": 5,
+ "outside_target_model": 6,
+ "domains": [
+  {
+   "section": "Lectura",
+   "domain": "Vocabulario en contexto",
+   "concepts": 1,
+   "concepts_missing": 0,
+   "reference_items_per_full_form": 15,
+   "required": 45,
+   "available_any": 3,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 45,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 8,
+    "FULL_1": 15,
+    "FULL_2": 15
+   }
+  },
+  {
+   "section": "Lectura",
+   "domain": "Ideas explícitas e implícitas",
+   "concepts": 2,
+   "concepts_missing": 1,
+   "reference_items_per_full_form": 10,
+   "required": 39,
+   "available_any": 5,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 39,
+   "by_pool": {
+    "PRACTICE": 6,
+    "DIAGNOSTIC": 4,
+    "VERIFICATION": 4,
+    "REDUCED_1": 5,
+    "FULL_1": 10,
+    "FULL_2": 10
+   }
+  },
+  {
+   "section": "Lectura",
+   "domain": "Análisis, interpretación e inferencias",
+   "concepts": 4,
+   "concepts_missing": 2,
+   "reference_items_per_full_form": 13,
+   "required": 61,
+   "available_any": 11,
+   "candidate": 1,
+   "eligible": 0,
+   "gap": 61,
+   "by_pool": {
+    "PRACTICE": 12,
+    "DIAGNOSTIC": 8,
+    "VERIFICATION": 8,
+    "REDUCED_1": 7,
+    "FULL_1": 13,
+    "FULL_2": 13
+   }
+  },
+  {
+   "section": "Lectura",
+   "domain": "Información cuantitativa o gráficos",
+   "concepts": 1,
+   "concepts_missing": 0,
+   "reference_items_per_full_form": 2,
+   "required": 12,
+   "available_any": 2,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 12,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 1,
+    "FULL_1": 2,
+    "FULL_2": 2
+   }
+  },
+  {
+   "section": "Lectura",
+   "domain": "Análisis literario",
+   "concepts": 4,
+   "concepts_missing": 3,
+   "reference_items_per_full_form": 5,
+   "required": 40,
+   "available_any": 2,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 40,
+   "by_pool": {
+    "PRACTICE": 12,
+    "DIAGNOSTIC": 8,
+    "VERIFICATION": 8,
+    "REDUCED_1": 2,
+    "FULL_1": 5,
+    "FULL_2": 5
+   }
+  },
+  {
+   "section": "Redacción",
+   "domain": "Elisión",
+   "concepts": 1,
+   "concepts_missing": 0,
+   "reference_items_per_full_form": 7,
+   "required": 24,
+   "available_any": 2,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 24,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 3,
+    "FULL_1": 7,
+    "FULL_2": 7
+   }
+  },
+  {
+   "section": "Redacción",
+   "domain": "Adición",
+   "concepts": 1,
+   "concepts_missing": 1,
+   "reference_items_per_full_form": 4,
+   "required": 17,
+   "available_any": 1,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 17,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 2,
+    "FULL_1": 4,
+    "FULL_2": 4
+   }
+  },
+  {
+   "section": "Redacción",
+   "domain": "Generalización",
+   "concepts": 1,
+   "concepts_missing": 0,
+   "reference_items_per_full_form": 5,
+   "required": 20,
+   "available_any": 1,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 20,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 3,
+    "FULL_1": 5,
+    "FULL_2": 5
+   }
+  },
+  {
+   "section": "Redacción",
+   "domain": "Integración",
+   "concepts": 1,
+   "concepts_missing": 1,
+   "reference_items_per_full_form": 5,
+   "required": 19,
+   "available_any": 1,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 19,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 2,
+    "FULL_1": 5,
+    "FULL_2": 5
+   }
+  },
+  {
+   "section": "Redacción",
+   "domain": "Particularización",
+   "concepts": 1,
+   "concepts_missing": 1,
+   "reference_items_per_full_form": 4,
+   "required": 17,
+   "available_any": 1,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 17,
+   "by_pool": {
+    "PRACTICE": 3,
+    "DIAGNOSTIC": 2,
+    "VERIFICATION": 2,
+    "REDUCED_1": 2,
+    "FULL_1": 4,
+    "FULL_2": 4
+   }
+  },
+  {
+   "section": "Matemáticas",
+   "domain": "Aritmética",
+   "concepts": 8,
+   "concepts_missing": 4,
+   "reference_items_per_full_form": 13,
+   "required": 89,
+   "available_any": 9,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 89,
+   "by_pool": {
+    "PRACTICE": 24,
+    "DIAGNOSTIC": 16,
+    "VERIFICATION": 16,
+    "REDUCED_1": 7,
+    "FULL_1": 13,
+    "FULL_2": 13
+   }
+  },
+  {
+   "section": "Matemáticas",
+   "domain": "Álgebra",
+   "concepts": 15,
+   "concepts_missing": 12,
+   "reference_items_per_full_form": 16,
+   "required": 145,
+   "available_any": 11,
+   "candidate": 2,
+   "eligible": 0,
+   "gap": 145,
+   "by_pool": {
+    "PRACTICE": 45,
+    "DIAGNOSTIC": 30,
+    "VERIFICATION": 30,
+    "REDUCED_1": 8,
+    "FULL_1": 16,
+    "FULL_2": 16
+   }
+  },
+  {
+   "section": "Matemáticas",
+   "domain": "Geometría",
+   "concepts": 9,
+   "concepts_missing": 6,
+   "reference_items_per_full_form": 15,
+   "required": 101,
+   "available_any": 9,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 101,
+   "by_pool": {
+    "PRACTICE": 27,
+    "DIAGNOSTIC": 18,
+    "VERIFICATION": 18,
+    "REDUCED_1": 8,
+    "FULL_1": 15,
+    "FULL_2": 15
+   }
+  },
+  {
+   "section": "Matemáticas",
+   "domain": "Análisis de datos y Probabilidad",
+   "concepts": 7,
+   "concepts_missing": 3,
+   "reference_items_per_full_form": 11,
+   "required": 76,
+   "available_any": 10,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 76,
+   "by_pool": {
+    "PRACTICE": 21,
+    "DIAGNOSTIC": 14,
+    "VERIFICATION": 14,
+    "REDUCED_1": 5,
+    "FULL_1": 11,
+    "FULL_2": 11
+   }
+  },
+  {
+   "section": "Inglés",
+   "domain": "Uso del lenguaje y vocabulario",
+   "concepts": 4,
+   "concepts_missing": 1,
+   "reference_items_per_full_form": 20,
+   "required": 78,
+   "available_any": 4,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 78,
+   "by_pool": {
+    "PRACTICE": 12,
+    "DIAGNOSTIC": 8,
+    "VERIFICATION": 8,
+    "REDUCED_1": 10,
+    "FULL_1": 20,
+    "FULL_2": 20
+   }
+  },
+  {
+   "section": "Inglés",
+   "domain": "Comprensión de lectura",
+   "concepts": 3,
+   "concepts_missing": 2,
+   "reference_items_per_full_form": 15,
+   "required": 59,
+   "available_any": 4,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 59,
+   "by_pool": {
+    "PRACTICE": 9,
+    "DIAGNOSTIC": 6,
+    "VERIFICATION": 6,
+    "REDUCED_1": 8,
+    "FULL_1": 15,
+    "FULL_2": 15
+   }
+  },
+  {
+   "section": "Inglés",
+   "domain": "Redacción indirecta",
+   "concepts": 3,
+   "concepts_missing": 3,
+   "reference_items_per_full_form": 15,
+   "required": 58,
+   "available_any": 2,
+   "candidate": 0,
+   "eligible": 0,
+   "gap": 58,
+   "by_pool": {
+    "PRACTICE": 9,
+    "DIAGNOSTIC": 6,
+    "VERIFICATION": 6,
+    "REDUCED_1": 7,
+    "FULL_1": 15,
+    "FULL_2": 15
+   }
+  }
+ ]
+}

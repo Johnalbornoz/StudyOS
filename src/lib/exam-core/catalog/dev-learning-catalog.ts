@@ -21,6 +21,13 @@ export const DEV_CANONICAL_CONCEPTS: DevConcept[] = [
   ...['Economía del lenguaje', 'Síntesis y generalización', 'Cohesión y conectores'].map((name) => ({ subject: 'Redacción', name })),
   // PAA -- Inglés
   ...['English verb tenses', 'English vocabulary in context', 'Reading comprehension in English', 'English sentence structure'].map((name) => ({ subject: 'English', name })),
+  // PAA -- Q1-C.1 certified catalogue (F-DATA): the 33 concepts certified as new. Language-neutral stable ids
+  // (math.alg.variation, read.textual-evidence, ...) are recorded in docs/exams/question-bank/PAA_F_DATA_FOUNDATION.md
+  // until F-ARCH adds a column for them; names follow the subject they live in.
+  ...['Números reales: propiedades y operaciones', 'Potencias, exponentes enteros y notación científica', 'Expresiones algebraicas', 'Polinomios y factorización', 'Inecuaciones lineales', 'Ecuaciones racionales, con radicales y con valor absoluto', 'Radicales y exponentes racionales', 'Variación directa e inversa', 'Patrones y sucesiones', 'Rectas y funciones lineales', 'Plano cartesiano: coordenadas, distancia y punto medio', 'Transformaciones geométricas', 'Ángulos y rectas', 'Círculo: circunferencia, área y arcos', 'Sólidos: volumen y área de superficie', 'Representación e interpretación de datos', 'Población, muestra y tipos de variables', 'Probabilidad condicional'].map((name) => ({ subject: 'Matemáticas', name })),
+  ...['Idea central, tema y resumen', 'Evidencia textual', 'Estructura y organización del texto', 'Géneros literarios', 'Elementos del texto narrativo', 'Elementos del texto poético', 'Figuras retóricas y lenguaje figurado'].map((name) => ({ subject: 'Lectura crítica', name })),
+  ...['Adición: ampliación estilística', 'Integración: síntesis global', 'Particularización: expresión indirecta'].map((name) => ({ subject: 'Redacción', name })),
+  ...['English function words', 'English noun, adjective and adverb forms', 'Reading in English: inference, purpose and tone', 'English complex sentences: coordination and subordination', 'English paragraph organization and coherence'].map((name) => ({ subject: 'English', name })),
   // IB Mathematics
   ...['Logarithms', 'Sequences and series', 'Rational functions and inverses', 'Quadratic functions and inequalities', 'Differentiation', 'Integration', 'Normal distribution', 'Binomial distribution', 'Trigonometry and triangles', 'Probability (IB)', 'Financial mathematics', 'Linear regression and correlation', 'Exponential models', 'Mathematical investigation'].map((name) => ({ subject: 'Mathematics', name })),
   // IB Visual arts

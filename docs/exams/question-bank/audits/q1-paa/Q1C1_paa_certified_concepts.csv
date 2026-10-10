@@ -1,0 +1,62 @@
+stable_id,concept_label,section,official_domain,status,existing_dev_concept,existing_or_new,required_stimulus,confidence,notes,practice,diagnostic,verification
+read.vocabulary-in-context,Vocabulario en contexto,Lectura,Vocabulario en contexto,APPROVE_EXISTING,Vocabulario en contexto,EXISTING,passage,HIGH,,3,2,2
+read.explicit-information,Información explícita y sentido literal,Lectura,Ideas explícitas e implícitas,RENAME_EXISTING,Ideas explícitas y tesis,EXISTING,passage,HIGH,,3,2,2
+read.central-idea,"Idea central: tema, tesis, propósito y resumen",Lectura,Ideas explícitas e implícitas,APPROVE_NEW,,NEW,passage,HIGH,,3,2,2
+read.inference,Inferencia textual,Lectura,"Análisis, interpretación e inferencias",APPROVE_EXISTING,Inferencia textual,EXISTING,passage,HIGH,,3,2,2
+read.textual-evidence,Evidencia textual,Lectura,"Análisis, interpretación e inferencias",APPROVE_NEW,,NEW,passage,HIGH,split from 'Evidencias y relación entre textos',3,2,2
+read.cross-text-relations,Relación y contraste entre textos,Lectura,"Análisis, interpretación e inferencias",RENAME_EXISTING,Evidencias y relación entre textos,EXISTING,paired passages,MEDIUM,existing concept is also mapped to a PISA objective,3,2,2
+read.text-structure,Estructura y organización del texto,Lectura,"Análisis, interpretación e inferencias",APPROVE_NEW,,NEW,passage,MEDIUM,merge of 2 draft concepts; also serves Análisis literario,3,2,2
+read.tables-and-graphics,Lectura de tablas y gráficos,Lectura,Información cuantitativa o gráficos,APPROVE_EXISTING,Lectura de tablas y gráficos,EXISTING,passage with table/graph,HIGH,,3,2,2
+lit.genres,Géneros literarios,Lectura,Análisis literario,APPROVE_NEW,,NEW,literary passage,MEDIUM,replaces domain-level 'Análisis literario',3,2,2
+lit.narrative-elements,Elementos del texto narrativo,Lectura,Análisis literario,APPROVE_NEW,,NEW,narrative passage,HIGH,,3,2,2
+lit.poetic-elements,Elementos del texto poético,Lectura,Análisis literario,APPROVE_NEW,,NEW,poem,HIGH,,3,2,2
+lit.figurative-language,Figuras retóricas y lenguaje figurado,Lectura,Análisis literario,APPROVE_NEW,,NEW,literary passage or poem,HIGH,,3,2,2
+write.concision-elision,Elisión: redundancia y concisión,Redacción,Elisión,REMAP_EXISTING,Economía del lenguaje,EXISTING,numbered text segment,HIGH,remove Adición link,3,2,2
+write.stylistic-addition,Adición: ampliación estilística,Redacción,Adición,APPROVE_NEW,,NEW,numbered text segment,MEDIUM,related: lit.figurative-language,3,2,2
+write.generalization,Generalización de ideas,Redacción,Generalización,RENAME_EXISTING,Síntesis y generalización,EXISTING,numbered text segment,HIGH,remove Integración link,3,2,2
+write.global-synthesis,Integración: síntesis global,Redacción,Integración,APPROVE_NEW,,NEW,numbered text segment,HIGH,related: read.central-idea,3,2,2
+write.indirect-expression,Particularización: expresión indirecta,Redacción,Particularización,APPROVE_NEW,,NEW,numbered text segment,MEDIUM,related: lit.figurative-language,3,2,2
+math.num.real-numbers,"Números reales: propiedades, operaciones y estimación",Matemáticas,Aritmética,APPROVE_NEW,,NEW,none (number line figure at times),HIGH,absorbs valor posicional y estimación,3,2,2
+math.num.fractions-decimals,Fracciones y decimales,Matemáticas,Aritmética,APPROVE_EXISTING,Fracciones,EXISTING,none,HIGH,topic authority STUDYUS_POLICY,3,2,2
+math.num.ratio-proportion,Razón y proporción,Matemáticas,Aritmética,APPROVE_EXISTING,Proporcionalidad,EXISTING,none,HIGH,,3,2,2
+math.num.percent,Porcentajes,Matemáticas,Aritmética,APPROVE_EXISTING,Porcentajes,EXISTING,none,HIGH,,3,2,2
+math.num.divisibility,"Divisibilidad, factores, MCD y MCM",Matemáticas,Aritmética,APPROVE_EXISTING,"Divisibilidad, MCD y MCM",EXISTING,none,HIGH,,3,2,2
+math.num.powers-scientific-notation,"Potencias, exponentes enteros y notación científica",Matemáticas,Aritmética,APPROVE_NEW,,NEW,none,MEDIUM,merge of 2 draft concepts,3,2,2
+math.alg.expressions,Expresiones algebraicas,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,HIGH,,3,2,2
+math.alg.polynomials,Polinomios y factorización,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,MEDIUM,LOW_EXAM_FREQUENCY,3,2,2
+math.alg.linear-equations,Ecuaciones lineales,Matemáticas,Álgebra,APPROVE_EXISTING,Ecuaciones lineales,EXISTING,none,HIGH,canonical duplicate: Mathematics/'Linear Equations',3,2,2
+math.alg.linear-inequalities,Inecuaciones lineales,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none (number line graph at times),HIGH,,3,2,2
+math.alg.linear-systems,Sistemas de ecuaciones,Matemáticas,Álgebra,APPROVE_EXISTING,Sistemas de ecuaciones,EXISTING,none,HIGH,,3,2,2
+math.alg.quadratics,Ecuaciones y funciones cuadráticas,Matemáticas,Álgebra,REMAP_EXISTING,Mathematics/'Quadratic functions and inequalities',EXISTING,none (graph at times),MEDIUM,reuse across canonical subjects; partial level match,3,2,2
+math.alg.rational-radical-absolute-equations,"Ecuaciones racionales, con radicales y con valor absoluto",Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,MEDIUM,split from draft,3,2,2
+math.alg.radicals-rational-exponents,Radicales y exponentes racionales,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,HIGH,,3,2,2
+math.alg.variation,Variación directa e inversa,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,HIGH,,3,2,2
+math.alg.patterns-sequences,Patrones y sucesiones,Matemáticas,Álgebra,APPROVE_NEW,,NEW,none,MEDIUM,merge of numeric + algebraic patterns; related: Mathematics/'Sequences and series',3,2,2
+math.fun.functions,"Funciones: concepto, dominio, evaluación, gráficas y operaciones",Matemáticas,Álgebra,APPROVE_EXISTING,Funciones,EXISTING,none (graph at times),HIGH,absorbs Operaciones con funciones,3,2,2
+math.fun.linear-functions-lines,Rectas y funciones lineales,Matemáticas,Álgebra,APPROVE_NEW,,NEW,coordinate graph at times,HIGH,merge of rectas + función lineal + relaciones de cambio,3,2,2
+math.fun.exponential,Funciones exponenciales,Matemáticas,Álgebra,REMAP_EXISTING,Mathematics/'Exponential models',EXISTING,none,LOW,LOW_EXAM_FREQUENCY; reuse across canonical subjects,3,2,2
+math.trig.ratios,Razones trigonométricas,Matemáticas,Álgebra,REMAP_EXISTING,Mathematics/'Trigonometry and triangles',EXISTING,triangle figure,LOW,LOW_EXAM_FREQUENCY; reuse across canonical subjects,3,2,2
+math.geo.coordinate-plane,"Plano cartesiano: coordenadas, distancia y punto medio",Matemáticas,Geometría,APPROVE_NEW,,NEW,coordinate grid,HIGH,merge of 2 draft concepts,3,2,2
+math.geo.transformations,Transformaciones geométricas,Matemáticas,Geometría,APPROVE_NEW,,NEW,figure,MEDIUM,LOW_EXAM_FREQUENCY,3,2,2
+math.geo.angles-lines,Ángulos y rectas,Matemáticas,Geometría,APPROVE_NEW,,NEW,figure,HIGH,,3,2,2
+math.geo.similarity-congruence,Semejanza y congruencia,Matemáticas,Geometría,RENAME_EXISTING,Semejanza de triángulos,EXISTING,figure,HIGH,,3,2,2
+math.geo.pythagorean-theorem,Teorema de Pitágoras,Matemáticas,Geometría,APPROVE_EXISTING,Teorema de Pitágoras,EXISTING,figure,HIGH,,3,2,2
+math.geo.plane-figures-area-perimeter,"Figuras planas: propiedades, perímetro y área",Matemáticas,Geometría,RENAME_EXISTING,Área y perímetro,EXISTING,figure,HIGH,absorbs polygon properties,3,2,2
+math.geo.circles,"Círculo: circunferencia, área y arcos",Matemáticas,Geometría,APPROVE_NEW,,NEW,figure,HIGH,split from 'Círculos y polígonos',3,2,2
+math.geo.solids-volume-surface,Sólidos: volumen y área de superficie,Matemáticas,Geometría,APPROVE_NEW,,NEW,figure,HIGH,,3,2,2
+math.stat.central-tendency,Medidas de tendencia central,Matemáticas,Análisis de datos y Probabilidad,APPROVE_EXISTING,Medidas de tendencia central,EXISTING,data set or graph at times,HIGH,,3,2,2
+math.stat.dispersion,Medidas de dispersión,Matemáticas,Análisis de datos y Probabilidad,APPROVE_EXISTING,Medidas de dispersión,EXISTING,data set,HIGH,,3,2,2
+math.stat.data-representation,Representación e interpretación de datos,Matemáticas,Análisis de datos y Probabilidad,APPROVE_NEW,,NEW,table/graph,HIGH,related: read.tables-and-graphics,3,2,2
+math.stat.population-sample,"Población, muestra y tipos de variables",Matemáticas,Análisis de datos y Probabilidad,APPROVE_NEW,,NEW,none,MEDIUM,,3,2,2
+math.prob.counting,Técnicas de conteo,Matemáticas,Análisis de datos y Probabilidad,APPROVE_EXISTING,Técnicas de conteo,EXISTING,none,HIGH,canonical duplicate: Mathematics/'Permutations and combinations',3,2,2
+math.prob.probability,Probabilidad de un evento,Matemáticas,Análisis de datos y Probabilidad,APPROVE_EXISTING,Probabilidad,EXISTING,none (graph at times),HIGH,"canonical duplicates: Mathematics/'Probability and events', 'Probability (IB)'",3,2,2
+math.prob.conditional,Probabilidad condicional,Matemáticas,Análisis de datos y Probabilidad,APPROVE_NEW,,NEW,none,MEDIUM,LOW_EXAM_FREQUENCY,3,2,2
+efl.vocabulary,English vocabulary in context,Inglés,Uso del lenguaje y vocabulario,APPROVE_EXISTING,English vocabulary in context,EXISTING,none,HIGH,also PRIMARY for vocabulary-in-reading items,3,2,2
+efl.grammar.sentence-structure,English word order and sentence structure,Inglés,Uso del lenguaje y vocabulario,REMAP_EXISTING,English sentence structure,EXISTING,none,HIGH,currently linked to Redacción indirecta,3,2,2
+efl.grammar.function-words,English function words,Inglés,Uso del lenguaje y vocabulario,APPROVE_NEW,,NEW,none,HIGH,,3,2,2
+efl.grammar.verb-forms,"English verb forms: tense, agreement, voice",Inglés,Uso del lenguaje y vocabulario,RENAME_EXISTING,English verb tenses,EXISTING,none,HIGH,,3,2,2
+efl.grammar.noun-adjective-forms,"English noun, adjective and adverb forms",Inglés,Uso del lenguaje y vocabulario,APPROVE_NEW,,NEW,none,MEDIUM,added: under-modelled in draft,3,2,2
+efl.reading.literal,Reading in English: explicit information and main idea,Inglés,Comprensión de lectura,RENAME_EXISTING,Reading comprehension in English,EXISTING,text,HIGH,,3,2,2
+efl.reading.interpretive,"Reading in English: inference, purpose and tone",Inglés,Comprensión de lectura,APPROVE_NEW,,NEW,text,MEDIUM,merge of 2 draft concepts,3,2,2
+efl.writing.complex-sentences,English complex sentences: coordination and subordination,Inglés,Redacción indirecta,APPROVE_NEW,,NEW,none,MEDIUM,sentence combining,3,2,2
+efl.writing.paragraph-organization,English paragraph organization and coherence,Inglés,Redacción indirecta,APPROVE_NEW,,NEW,draft paragraph,MEDIUM,,3,2,2
