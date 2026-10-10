@@ -68,7 +68,8 @@ import {
   timeContextKey,
   timeContextOptions,
 } from '@/lib/student/time-context';
-import { programmeExamSeries } from '@/lib/exam-core/catalog/programme-sessions';
+import { availableSeries, canonicalSeries, SESSION_CATALOG, type SessionCatalog } from '@/lib/exam-core/catalog/programme-sessions';
+import { parseTimeContextKey, timeContextFitsModel } from '@/lib/student/time-context';
 import { getInterfaceLanguage, setInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages, LOCALES } from '@/lib/i18n/messages';
 import { ACADEMIC_PROFILE_MESSAGES } from '@/lib/i18n/academic-profile-messages';
@@ -335,20 +336,79 @@ describe('REM-T1-03 context-aware final step (controlled values only)', () => {
     expect(formatTimeContext({ kind: 'EXAM_SESSION', series: 'MAY', year: 2027 }, 'es')).toBe('Mayo 2027');
   });
 
-  it('Cambridge derives its own series from governed configuration (not IB\'s); March only where offered', () => {
+  it('Cambridge uses its canonical series: June / November by default (never IB\'s May)', () => {
     const mx = resolveTimeContextModel({ country: 'MX', programmeName: 'Cambridge IGCSE' });
-    expect(mx).toMatchObject({ kind: 'EXAM_SESSION', body: 'CAMBRIDGE', series: ['MAY_JUNE', 'OCT_NOV'] });
-    expect(timeContextOptions(mx, oct2026).map((o) => formatTimeContext(o, 'en'))).toEqual(['October/November 2026', 'May/June 2027', 'October/November 2027', 'May/June 2028']);
-    expect(programmeExamSeries('Cambridge AICE Diploma', 'IN')!.series.map((s) => s.series)).toEqual(['FEB_MARCH', 'MAY_JUNE', 'OCT_NOV']);
-    expect(programmeExamSeries('Cambridge Advanced', 'US')!.series.map((s) => s.series)).not.toContain('MAY');
-    expect(programmeExamSeries('IB Middle Years Programme', 'MX')).toBeNull();
+    expect(mx).toMatchObject({ kind: 'EXAM_SESSION', body: 'CAMBRIDGE' });
+    expect(timeContextOptions(mx, oct2026).map((o) => formatTimeContext(o, 'en'))).toEqual(['November 2026', 'June 2027', 'November 2027', 'June 2028']);
+    expect(timeContextOptions(mx, oct2026).map((o) => timeContextKey(o))).toEqual(['ES:NOVEMBER:2026', 'ES:JUNE:2027', 'ES:NOVEMBER:2027', 'ES:JUNE:2028']);
+    expect(formatTimeContext({ kind: 'EXAM_SESSION', series: 'JUNE', year: 2027 }, 'es')).toBe('Junio 2027');
+    for (const p of ['Cambridge IGCSE', 'Cambridge Upper Secondary', 'Cambridge Advanced', 'Cambridge AICE Diploma']) {
+      expect(availableSeries({ programmeName: p, country: 'US', year: 2027 }), p).toEqual(['JUNE', 'NOVEMBER']);
+    }
+    expect(availableSeries({ programmeName: 'IB Middle Years Programme', country: 'MX', year: 2027 })).toEqual([]);
+  });
+
+  it('Cambridge March is RESTRICTED: offered only where governed (India, Romania), never hard-coded to one country', () => {
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 })).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', country: 'RO', year: 2027 })).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    for (const c of ['MX', 'CO', 'US', 'DE', 'OTHER', '', null]) expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: c, year: 2027 }), String(c)).not.toContain('MARCH');
+    const ro = resolveTimeContextModel({ country: 'RO', programmeName: 'Cambridge IGCSE' });
+    expect(timeContextOptions(ro, oct2026).map((o) => timeContextKey(o))).toEqual(['ES:NOVEMBER:2026', 'ES:MARCH:2027', 'ES:JUNE:2027', 'ES:NOVEMBER:2027']);
+    const mx = resolveTimeContextModel({ country: 'MX', programmeName: 'Cambridge IGCSE' });
+    expect(timeContextFitsModel({ kind: 'EXAM_SESSION', series: 'MARCH', year: 2027 }, mx)).toBe(false);
+    expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'MARCH', year: 2027 }, mx, oct2026, null)).toBe(false);
+    expect(SESSION_CATALOG.regionRules.find((r) => r.series === 'MARCH')!.countries).toEqual(['IN', 'RO']);
+  });
+
+  it('availability is region- AND year-dependent (rule windows); unknown = not offered', () => {
+    const catalog: SessionCatalog = { ...SESSION_CATALOG, regionRules: [{ series: 'MARCH', countries: ['IN'], fromYear: 2028, toYear: 2029, source: 'test' }] };
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2028 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2030 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'RO', year: 2028 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    // No region rule at all -> the restricted series is never offered.
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 }, { ...SESSION_CATALOG, regionRules: [] })).toEqual(['JUNE', 'NOVEMBER']);
+  });
+
+  it('qualification and syllabus exclusions remove a series (conservative across selected syllabi)', () => {
+    const catalog: SessionCatalog = {
+      ...SESSION_CATALOG,
+      programmes: { ...SESSION_CATALOG.programmes, 'Cambridge Advanced': { body: 'CAMBRIDGE', series: ['JUNE', 'NOVEMBER'], restrictedSeries: ['MARCH'], qualificationExclusions: { 'Cambridge International AS Level': ['MARCH'] } } },
+      syllabusSeries: { '9709': ['JUNE', 'NOVEMBER'], '9231': ['JUNE'] },
+    };
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International A Level', country: 'IN', year: 2027 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International AS Level', country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['9709'], country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['9709', '9231'], country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE']);
+    // A syllabus without a governed entry follows its programme.
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['0000'], country: 'RO', year: 2027 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+  });
+
+  it('existing saved values stay readable: legacy FEB_MARCH / MAY_JUNE / OCT_NOV read as MARCH / JUNE / NOVEMBER, never rewritten', () => {
+    expect(canonicalSeries('MAY_JUNE')).toBe('JUNE');
+    expect(canonicalSeries('OCT_NOV')).toBe('NOVEMBER');
+    expect(canonicalSeries('FEB_MARCH')).toBe('MARCH');
+    expect(storedTimeContext({ academicYear: 'May/June 2027', examSeries: 'MAY_JUNE', examYear: 2027 })).toEqual({ kind: 'EXAM_SESSION', series: 'JUNE', year: 2027 });
+    expect(parseTimeContextKey('ES:OCT_NOV:2027')).toEqual({ kind: 'EXAM_SESSION', series: 'NOVEMBER', year: 2027 });
+    expect(formatTimeContext(storedTimeContext({ academicYear: null, examSeries: 'OCT_NOV', examYear: 2027 })!, 'en')).toBe('November 2027');
+    const mx = resolveTimeContextModel({ country: 'MX', programmeName: 'Cambridge IGCSE' });
+    const saved = storedTimeContext({ academicYear: 'May/June 2027', examSeries: 'MAY_JUNE', examYear: 2027 });
+    expect(isAcceptedTimeContext(saved!, mx, oct2026, saved)).toBe(true);
+    // IB rows are unaffected.
+    expect(storedTimeContext({ academicYear: 'May 2027', examSeries: 'MAY', examYear: 2027 })).toEqual({ kind: 'EXAM_SESSION', series: 'MAY', year: 2027 });
+    // New writes are canonical only.
+    const route = read('src/app/api/academic-profile/route.ts');
+    expect(route).toMatch(/series: z\.enum\(\['MAY', 'NOVEMBER', 'MARCH', 'JUNE'\]\)/);
+    const sql = read('database/migrations/20261106_1100_exam_series_canonical.sql').split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(sql).not.toMatch(/UPDATE |DELETE FROM|DROP COLUMN|TRUNCATE/);
+    for (const v of ['MAY', 'NOVEMBER', 'MARCH', 'JUNE', 'FEB_MARCH', 'MAY_JUNE', 'OCT_NOV']) expect(sql).toContain(`'${v}'`);
   });
 
   it('the server accepts only controlled values (or the stored one) and stores them structurally', () => {
     const ib = resolveTimeContextModel({ country: 'MX', programmeName: 'IB Diploma Programme' });
     const may27 = { kind: 'EXAM_SESSION' as const, series: 'MAY' as const, year: 2027 };
     expect(isAcceptedTimeContext(may27, ib, oct2026, null)).toBe(true);
-    expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'MAY_JUNE', year: 2027 }, ib, oct2026, null)).toBe(false);
+    expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'JUNE', year: 2027 }, ib, oct2026, null)).toBe(false);
     expect(isAcceptedTimeContext({ kind: 'SCHOOL_YEAR', startYear: 2026, endYear: 2027 }, ib, oct2026, null)).toBe(false);
     expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'MAY', year: 2031 }, ib, oct2026, null)).toBe(false);
     const old = { kind: 'EXAM_SESSION' as const, series: 'MAY' as const, year: 2026 };

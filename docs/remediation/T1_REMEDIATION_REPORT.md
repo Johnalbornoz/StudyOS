@@ -52,6 +52,16 @@
 - Wizard final step: option buttons only (no free text). API `POST /api/academic-profile` accepts `timeContext`, validates it (`TIME_CONTEXT_INVALID`, 400) and writes the structured columns and the canonical `academic_year` text in the same transaction (both save paths).
 - Edit preload: structured values first, then legacy text when it parses. Text that does not parse is shown ("Saved value: …") and never rewritten.
 
+#### REM-T1-03 targeted correction — Cambridge exam-series governance (`programme-sessions.ts` v2026-10-09.2)
+- Canonical series are the awarding body's own names: IB `MAY` / `NOVEMBER` (unchanged); Cambridge `MARCH` / `JUNE` / `NOVEMBER`. Feb/Mar, May/Jun and Oct/Nov are calendar windows, not identifiers.
+- Availability is resolved by programme, qualification, syllabus (where known), region and year (`availableSeries`):
+  - June and November are offered everywhere.
+  - March is restricted. A governed region rule (India, Romania, from 2026) must positively allow it for that country and year; with no rule it is not offered.
+  - Governed qualification exclusions and per-syllabus availability remove series. The rule is conservative: a series must be available for every known selected syllabus.
+  - No syllabus overrides are governed yet, and catalogue subjects carry no syllabus code. The programme-level availability therefore applies, which never offers an unsupported series.
+- Backward compatibility: the legacy identifiers `FEB_MARCH`, `MAY_JUNE` and `OCT_NOV` are read as `MARCH`, `JUNE` and `NOVEMBER` and are never rewritten. New writes are canonical only (API enum `MAY` / `NOVEMBER` / `MARCH` / `JUNE`).
+- Migration `20261106_1100_exam_series_canonical.sql` only widens the CHECK (canonical values plus legacy values). It was applied to DEV, where no row stored a series yet.
+
 ### REM-T1-04 — Academic Profile propagation (STU-E2E-013)
 - One resolver: `src/lib/student/student-context.server.ts` → `loadResolvedStudentContext`.
   - Returns context type, programme, qualification, and profile subjects with their exact variant ("Mathematics: analysis and approaches · HL").

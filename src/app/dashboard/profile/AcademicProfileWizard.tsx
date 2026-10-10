@@ -164,7 +164,8 @@ export default function AcademicProfileWizard({
   const subjectOptions = chosen ? chosen.subjects.filter((s) => !qualification || !s.qualificationId || s.qualificationId === qualification) : [];
 
   // REM-T1-03: the time context the chosen programme actually uses, as controlled options.
-  const timeModel = useMemo(() => resolveTimeContextModel({ country, programmeName: chosen?.name ?? null }), [country, chosen?.name]);
+  const qualificationName = chosen ? chosen.qualifications.find((q) => q.id === (qualification ?? (chosen.qualifications.length === 1 ? chosen.qualifications[0].id : null)))?.name ?? null : null;
+  const timeModel = useMemo(() => resolveTimeContextModel({ country, programmeName: chosen?.name ?? null, qualificationName }), [country, chosen?.name, qualificationName]);
   const timeOptions = useMemo(() => {
     const list = timeContextOptions(timeModel, now);
     const saved = parseTimeContextKey(persisted.timeKey);

@@ -14,22 +14,37 @@
  * are preloaded when they parse unambiguously.
  */
 import type { Locale } from '@/lib/i18n/messages';
-import { programmeExamSeries, seriesDefinition, type ExamSeries } from '@/lib/exam-core/catalog/programme-sessions';
+import { availableSeries, canonicalSeries, programmeSeries, programmeSessionEntry, seriesDefinition, type AwardingBody, type ExamSeries } from '@/lib/exam-core/catalog/programme-sessions';
 
 export type TimeContext =
   | { kind: 'SCHOOL_YEAR'; startYear: number; endYear: number }
   | { kind: 'EXAM_SESSION'; series: ExamSeries; year: number };
 
+/** What decides which exam series are available (programme-sessions.ts `availableSeries`). */
+export interface SessionScope {
+  programmeName: string;
+  qualificationName: string | null;
+  syllabusCodes: string[];
+  country: string | null;
+}
+
 export type TimeContextModel =
   | { kind: 'SCHOOL_YEAR'; format: 'SPLIT' | 'CALENDAR' }
-  | { kind: 'EXAM_SESSION'; body: 'IB' | 'CAMBRIDGE'; series: ExamSeries[] };
+  | { kind: 'EXAM_SESSION'; body: AwardingBody; series: ExamSeries[]; scope: SessionScope };
 
 /** Calendar-year school systems (the school year is one calendar year). */
 const CALENDAR_YEAR_COUNTRIES = new Set(['CO']);
 
-export function resolveTimeContextModel(input: { country: string | null; programmeName: string | null }): TimeContextModel {
-  const sessions = programmeExamSeries(input.programmeName, input.country);
-  if (sessions) return { kind: 'EXAM_SESSION', body: sessions.body, series: sessions.series.map((s) => s.series) };
+export function resolveTimeContextModel(input: { country: string | null; programmeName: string | null; qualificationName?: string | null; syllabusCodes?: readonly string[] }): TimeContextModel {
+  const entry = programmeSessionEntry(input.programmeName);
+  if (entry && input.programmeName) {
+    return {
+      kind: 'EXAM_SESSION',
+      body: entry.body,
+      series: programmeSeries(input.programmeName),
+      scope: { programmeName: input.programmeName, qualificationName: input.qualificationName ?? null, syllabusCodes: [...(input.syllabusCodes ?? [])], country: input.country },
+    };
+  }
   return { kind: 'SCHOOL_YEAR', format: CALENDAR_YEAR_COUNTRIES.has((input.country ?? '').toUpperCase()) ? 'CALENDAR' : 'SPLIT' };
 }
 
@@ -43,7 +58,8 @@ export function parseTimeContextKey(key: string | null | undefined): TimeContext
   const sy = /^SY:(\d{4})-(\d{4})$/.exec(key);
   if (sy) return { kind: 'SCHOOL_YEAR', startYear: Number(sy[1]), endYear: Number(sy[2]) };
   const es = /^ES:([A-Z_]+):(\d{4})$/.exec(key);
-  if (es && seriesDefinition(es[1])) return { kind: 'EXAM_SESSION', series: es[1] as ExamSeries, year: Number(es[2]) };
+  const series = es ? canonicalSeries(es[1]) : null;
+  if (es && series) return { kind: 'EXAM_SESSION', series, year: Number(es[2]) };
   return null;
 }
 
@@ -73,13 +89,19 @@ export function timeContextOptions(model: TimeContextModel, now: Date): TimeCont
   }
   const out: TimeContext[] = [];
   for (let y = year; y <= year + 3 && out.length < 4; y++) {
-    const sittings = model.series
+    // Availability is resolved per year (region rules carry validity windows); never assumed.
+    const sittings = sessionSeriesFor(model, y)
       .map((s) => seriesDefinition(s)!)
-      .sort((a, b) => a.month - b.month)
       .filter((d) => y > year || d.month >= month);
     for (const d of sittings) if (out.length < 4) out.push({ kind: 'EXAM_SESSION', series: d.series, year: y });
   }
   return out;
+}
+
+/** The series available in `year` for an exam-session model (programme / qualification / syllabi / region / year). */
+export function sessionSeriesFor(model: TimeContextModel, year: number): ExamSeries[] {
+  if (model.kind !== 'EXAM_SESSION') return [];
+  return availableSeries({ ...model.scope, year });
 }
 
 export function timeContextFitsModel(v: TimeContext, model: TimeContextModel): boolean {
@@ -87,7 +109,8 @@ export function timeContextFitsModel(v: TimeContext, model: TimeContextModel): b
     if (model.kind !== 'SCHOOL_YEAR') return false;
     return model.format === 'CALENDAR' ? v.startYear === v.endYear : v.endYear === v.startYear + 1;
   }
-  return model.kind === 'EXAM_SESSION' && model.series.includes(v.series);
+  const series = canonicalSeries(v.series);
+  return model.kind === 'EXAM_SESSION' && !!series && sessionSeriesFor(model, v.year).includes(series);
 }
 
 /** Structured columns stored for a value (the CHECK in migration 20261106_1000 enforces one shape). */
@@ -104,7 +127,9 @@ export function timeContextColumns(v: TimeContext | null): { academicYearStart: 
  * the legacy text cannot be read safely (it is still shown as-is, never rewritten).
  */
 export function storedTimeContext(row: { academicYear: string | null; academicYearStart?: number | null; academicYearEnd?: number | null; examSeries?: string | null; examYear?: number | null }): TimeContext | null {
-  if (row.examSeries && row.examYear && seriesDefinition(row.examSeries)) return { kind: 'EXAM_SESSION', series: row.examSeries as ExamSeries, year: row.examYear };
+  // Legacy identifiers (FEB_MARCH / MAY_JUNE / OCT_NOV) are READ as their canonical series; the row is not rewritten.
+  const series = canonicalSeries(row.examSeries);
+  if (series && row.examYear) return { kind: 'EXAM_SESSION', series, year: row.examYear };
   if (row.academicYearStart && row.academicYearEnd) return { kind: 'SCHOOL_YEAR', startYear: row.academicYearStart, endYear: row.academicYearEnd };
   const text = (row.academicYear ?? '').trim();
   const split = /^(\d{4})\s*[–\-/]\s*(\d{2}|\d{4})$/.exec(text);

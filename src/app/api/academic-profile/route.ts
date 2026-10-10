@@ -19,7 +19,8 @@ import {
 // REM-T1-03: the final step is a CONTROLLED, structured value (never free text).
 const TimeContextSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('SCHOOL_YEAR'), startYear: z.number().int().min(2000).max(2100), endYear: z.number().int().min(2000).max(2100) }),
-  z.object({ kind: z.literal('EXAM_SESSION'), series: z.enum(['MAY', 'NOVEMBER', 'FEB_MARCH', 'MAY_JUNE', 'OCT_NOV']), year: z.number().int().min(2000).max(2100) }),
+  // Canonical awarding-body series only (IB May/November, Cambridge March/June/November).
+  z.object({ kind: z.literal('EXAM_SESSION'), series: z.enum(['MAY', 'NOVEMBER', 'MARCH', 'JUNE']), year: z.number().int().min(2000).max(2100) }),
 ]);
 
 const ProfileSchema = z.object({
@@ -70,7 +71,12 @@ async function handlePOST(request: NextRequest) {
   const programmeName = d.academicProgrammeId
     ? ((await db.query(`SELECT name FROM academic_programmes WHERE id = $1`, [d.academicProgrammeId])).rows[0]?.name as string | undefined) ?? null
     : null;
-  const model = resolveTimeContextModel({ country: d.countryOfStudy, programmeName });
+  const qualificationName = d.academicQualificationId
+    ? ((await db.query(`SELECT name FROM academic_qualifications WHERE id = $1`, [d.academicQualificationId])).rows[0]?.name as string | undefined) ?? null
+    : null;
+  // Series availability: programme / qualification / region / year (syllabus codes are not on catalogue
+  // subjects yet, so the governed programme-level availability applies -- never an unsupported series).
+  const model = resolveTimeContextModel({ country: d.countryOfStudy, programmeName, qualificationName });
   const existing = await getAcademicProfile(studentId);
   const submitted: TimeContext | null = d.timeContext ?? (d.academicYear ? storedTimeContext({ academicYear: d.academicYear }) : null);
   if (d.profileCompleted !== false && (!submitted || !isAcceptedTimeContext(submitted, model, new Date(), existing ? storedTimeContext(existing) : null))) {
