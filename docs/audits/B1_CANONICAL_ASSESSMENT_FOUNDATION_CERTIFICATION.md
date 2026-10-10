@@ -7,8 +7,10 @@ Paths are relative to the repo root. `AF/` = `src/lib/assessment-foundation/`.
 # 0. Executive Result
 
 ```text
-FOUNDATION_PASS_WITH_CONDITIONS
+FOUNDATION_PASS_WITH_CONDITIONS      (after B1-C closure; see section T)
 ```
+
+**Section T (B1-C) supersedes sections 0–S wherever they differ.** In particular: B1 is now committed, the production build passes, the TRANSITIONAL rule is frozen as "unresolved for assessment planning", and `FULL_MOCK` cannot be started without a frozen exam instance by any path, including a Teacher assignment. The text below is the original B1 result, kept for the record.
 
 All twelve certification gates are met in code and covered by tests (section P). The conditions are operational, not architectural:
 
@@ -411,3 +413,189 @@ Conditions:
 2. The exam-prep start panel and the 409 on the legacy route are checked once in a running DEV build.
 3. A decision on the teacher-assigned `FULL_MOCK` intervention: route it through an exam instance, or relabel it as preparation.
 4. A decision on whether `ensureCatalogMapping` should write `PROPOSED` instead of `MATCHED`, which needs a confirmation path for the Student or an admin.
+
+---
+
+# T. B1-C — Final Closure
+
+Date: 2026-10-10. Scope: close the B1 operational conditions, freeze two semantic decisions, reconcile T1, validate at build and runtime. B2 was not started.
+
+The B1-C brief as received ended mid-sentence at gate item 10 ("TRANS…"). Items 1–9 are assessed as written; item 10 is taken to be the TRANSITIONAL consumption rule of brief section 4.
+
+## T.1 Result
+
+```text
+FOUNDATION_PASS_WITH_CONDITIONS
+```
+
+| # | Gate | Result |
+|---|---|---|
+| 1 | B0 report in version control | PASS — `73c303a` |
+| 2 | B1 committed and traceable | PASS — `5ea60e5` |
+| 3 | Latest required T1 delta reconciled | PASS — `c2f8924` merged in `d503920`, no conflicts |
+| 4 | Test suite green | PASS — 492 files, 8,693 tests, 0 failures |
+| 5 | Typecheck green | PASS |
+| 6 | Production build has no B1-caused failure | PASS — `next build` exit 0 |
+| 7 | DEV smoke confirms the simulation-start behaviour | **PARTIAL** — API confirmed live; the start panel could not be observed on a live page (T.4) |
+| 8 | `FULL_MOCK` without `exam_instance` cannot be created by any active path | PASS — enforced in the single start function |
+| 9 | Teacher-assigned official mocks obey the invariant | PASS |
+| 10 | TRANSITIONAL is not usable for assessment planning (inferred) | PASS |
+
+Why not an unqualified `FOUNDATION_PASS`:
+
+1. **Gate 7 is partial.** The only DEV profile that renders the legacy start panel belongs to a real account, which I did not sign in as. The panel was verified by rendering the real component and by the prop in the built page, not on a live page.
+2. **One semantic question is open (T.3, row "practice instance").** An exam instance in PRACTICE mode still stores its attempt as `FULL_MOCK` and may fill an unfilled position with generated content. It is classified and labelled as exam practice, not as a mock, but the stored value is unchanged.
+
+## T.2 Changes made in B1-C
+
+| B0 authority / contract | Before | Change | Test | Backward compatibility |
+|---|---|---|---|---|
+| Official mock invariant | `startSimulationAttempt` accepted `FULL_MOCK` from any caller | Throws `FullMockRequiresExamInstanceError` unless the caller passes `examInstanceId` and the frozen form (`presetItems`); checked before any read or write | `b1c-full-mock-invariant.test.ts` (real function) | Other types unaffected; `startExamInstance` passes its id |
+| Teacher-assigned exam practice | A Teacher `FULL_MOCK` intervention started a direct attempt with no instance | `startInterventionExamAttempt`: a preparation type starts directly; a full mock is created as a MOCK exam instance over all simulation-capable components, frozen, then started. If no official form can be frozen the assignment is not startable | same file + source guards in `b1-official-mock-boundary.test.ts` | Stored interventions and historical attempts untouched; eligibility gate still unconditional and inside the same transaction |
+| Attempt naming | Attempt and result pages labelled every instance attempt by its stored type ("Simulacro completo"), including practice instances | `attemptKindLabelKey`: an instance attempt is labelled by the instance mode; a non-instance attempt keeps its type label | `b1c-full-mock-invariant.test.ts` | Presentation only |
+| Concept identity consumption | `TRANSITIONAL` links appeared in coverage with a `linkAuthority` marker and could be accepted by a policy flag | `canonicalConceptIdForAssessment` is the one rule. A TRANSITIONAL link is not coverage: `concepts` is empty, resolution is `UNRESOLVED / LEARNER_CONCEPT_LINK_TRANSITIONAL`, the id is kept only in `unconfirmedConceptId`. The `allowTransitionalConceptLinks` policy flag was removed. `learnerConceptFor` returns CANONICAL links only | identity, coverage, eligibility, attribution and integration tests | `ensureCatalogMapping` (the writer) is unchanged; legacy readers of `status = 'MATCHED'` unchanged |
+
+Two pre-existing guard tests were updated to the new call shape without weakening what they guard: `f11c4-exam-execution-source-guard.test.ts` (the attempt is still created inside the transaction; call name changed) and `e2e-object-authorization.test.ts` (the attempt subtitle is still a localized label, never a raw enum).
+
+## T.3 Official Mock Invariant
+
+```text
+FULL_MOCK ⇒ frozen exam_instance
+```
+
+Enforced at `startSimulationAttempt` (`src/lib/simulation/attempt.service.ts`), the only function that creates a simulation attempt.
+
+| Producer | exam_instance required? | Official? | Status |
+|---|---|---|---|
+| `POST /api/simulation/attempts` (Student, direct) | n/a — cannot produce `FULL_MOCK` | No (Preparation Simulation) | Rejects `FULL_MOCK` with 409 before any access check; confirmed at runtime |
+| `POST /api/exams/instances/[id]/start` → `startExamInstance`, instance mode MOCK / CHALLENGE | Yes | **Yes** | Complies: form frozen at creation, eligible reviewed content only, incomplete form refused, no generated content |
+| Teacher intervention, assigned `FULL_MOCK` | Yes (created by `startOfficialMockForIntervention`) | **Yes** | Complies since B1-C; not startable when no official form exists |
+| Teacher intervention, `TOPIC_EXAM` / `DOMAIN_EXAM` / `MINI_MOCK` | No | No (Preparation Simulation) | Not a `FULL_MOCK` |
+| `startExamInstance`, instance mode **PRACTICE** | Yes | **No** (exam practice) | Stored type is `FULL_MOCK` for every instance mode (a plan-shape selector). Has an instance and a frozen form, so `FULL_MOCK ⇒ exam_instance` holds. It may still fill an unfilled position with generated content. **Open for a ruling** |
+| Any other caller of `startSimulationAttempt` with `FULL_MOCK` | — | — | Impossible: throws |
+| Historical attempts | — | — | Read as before; no row rewritten |
+
+Open ruling on the practice-instance row. Two ways to close it, neither done here because both change Exam Preparation behaviour:
+
+- Store a non-`FULL_MOCK` type for practice instances (touches plan building and delivery-policy checks keyed on the type).
+- Forbid generated fallback for every stored `FULL_MOCK` (practice instances would show an unfilled position as unavailable).
+
+## T.4 Runtime Validation
+
+**Build.** `npx next build` → exit 0, compiled, 228 static pages generated. The first attempt failed with "Symlink [project]/node_modules is invalid": classified **environment** (the worktree's dependencies were a symlink). Replaced with a real copy; no code changed.
+
+**DEV smoke.** The built app was served locally (`next start`, port 3107) with the DEV environment file, so the DEV database and the DEV Clerk instance. Authentication used the project's own DEV fixture identity `student-a` through `scripts/operations/track-a-fixtures.ts tokens` (passwordless session tokens; the script refuses any non-DEV database or Clerk instance). No browser sign-in was performed. Tokens were deleted afterwards.
+
+| Check | Expected | Actual |
+|---|---|---|
+| `POST /api/simulation/attempts`, `FULL_MOCK`, unauthenticated | 401 | 401 |
+| Same, authenticated, `UNTIMED` | 409 `OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE` | 409, body `{"error":"OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE","data":{"canonicalPath":"/api/exams/instances","allowedSimulationTypes":["TOPIC_EXAM","DOMAIN_EXAM","MINI_MOCK"]}}` |
+| Same, authenticated, `OFFICIAL_SIMULATION_TIMED` | 409 | 409, same body |
+| `GET /api/simulation/eligibility` (read) | 200 | 200; full mock not eligible: `NO_REAL_MOCK_CONTENT` |
+| `GET /api/exams/instances` (official path) | 200, not blocked | 200, `{"instances":[]}` |
+| `GET /api/exams/catalog/level` and `POST /api/exams/instances` MOCK | available only with content | 404 `NOT_AVAILABLE` for the nodes tried: the official path's own availability gate, with zero student-eligible content on DEV. The B1 boundary is not on this path |
+| `GET /dashboard/exam-prep/<profile>` as `student-a` | 200 | 200. This profile resolves to a governed objective, so the page shows the objective-first preparation home. **It renders no simulation start panel and no full-mock option** |
+| `GET /dashboard/exam-prep`, `GET /dashboard/today` | 200 | 200, 200 |
+
+**Start panel.** Route: `/dashboard/exam-prep/[examProfileId]`, legacy branch (profiles with no resolvable objective). Expected options after B1: `MINI_MOCK`, `TOPIC_EXAM`, `DOMAIN_EXAM`. Not observed live (see T.1). Verified instead by `tests/unit/b1c-start-panel-render.test.ts`, which server-renders the real `StartSimulationPanel`: without the filter it offers `FULL_MOCK`; with the value the page now passes it offers `MINI_MOCK`, `TOPIC_EXAM`, `DOMAIN_EXAM`.
+
+**Reforzar.** Not exercised at runtime: it needs an exam result with a gap, which no fixture identity has, and creating one would be fabricated data. Covered by `b1-integration-flows.test.ts` (explicit link, no label read).
+
+**Writes during the smoke.** No Production access. On DEV: no exam, attempt or content row was created (every state-changing call was rejected). Authenticated requests may update the fixture user's own session bookkeeping; fixture tokens create Clerk DEV sessions.
+
+No review rows, eligible items, mappings or scoring data were created. The DEV gaps of section R are unchanged.
+
+## T.5 Concept Identity Consumption Rule
+
+```text
+CANONICAL     → usable
+TRANSITIONAL  → unresolved for assessment planning
+UNRESOLVED    → unresolved
+```
+
+One function decides it: `canonicalConceptIdForAssessment` (`src/lib/catalog/concept-identity.ts`).
+
+B1 consumers, all compliant:
+
+| Consumer | How it complies |
+|---|---|
+| QuestionCoverage (learning cache) | Only a CANONICAL identity produces a covered concept |
+| QuestionEligibility | Reads coverage only; no policy can accept a TRANSITIONAL link; a non-learning request with unresolved coverage is `CONCEPT_UNRESOLVED` |
+| BlueprintRequirement | Targets are canonical ids supplied by a caller; no learner link is read |
+| EvidenceAttribution | Built from coverage; a TRANSITIONAL-only question is `unattributed` |
+| StudentAssessmentContext | `learnerConceptFor` returns CANONICAL links only; the identity summary counts transitional separately |
+| ExamGapCandidate | Uses the objective ↔ concept mapping; no learner link |
+
+When this leaves no candidate, the contracts report `UNRESOLVED`, `CONCEPT_UNRESOLVED` or `INSUFFICIENT_COVERAGE`. Nothing guesses.
+
+Remaining legacy consumers of `concept_catalog_mapping` that still treat every `MATCHED` row alike (outside B1, unchanged; for later blocks):
+
+| Consumer | Use | Consequential for assessment? |
+|---|---|---|
+| `readiness/student-concept-resolution.service.ts` (`resolveStudentConceptForCanonicalConcept`) | canonical → learner concept | Yes — used by the next four |
+| `simulation/scoring.service.ts` | which learner concept an exam response credits | Yes (B3) |
+| `exam-core/item-sourcing.service.ts` | concept for generated fallback | Yes (B2) |
+| `exam-core/objectives/preparation.service.ts`, `learning-plan/exam-bridge.service.ts` | preparation plan and gaps | Yes (B2) |
+| `readiness/blueprint-coverage.service.ts`, `simulation/post-exam-diagnosis.service.ts`, `exam-core/exam-gaps.service.ts`, `exam-core/result-view.service.ts` | readiness, diagnosis, gap and result views | Yes (B2/B5) |
+| `exam-core/question-bank/demand.service.ts` | demand counts | Aggregate (Q1) |
+| `learning-plan/personal-plan.service.ts`, `class-plan.service.ts`, `subject-curriculum-topics.ts`, `teacher/*`, `student/teacher-intervention-execution.service.ts`, `services/learning-os-snapshot.service.ts` | plan enrolment, class views, display labels | Plan and display |
+| `curriculum/private-content-alignment.service.ts`, `catalog/mapping.service.ts` | content alignment; the writer | Writer unchanged by decision |
+
+DEV today has 0 TRANSITIONAL links (67 CANONICAL, 34 UNRESOLVED), so these readers currently see no label-only match.
+
+Deferred data-governance capability, recorded and not implemented (`MAPPING_LIFECYCLE_DEFERRED`):
+
+```text
+AUTO DISCOVERY → PROPOSED → REVIEW / CONFIRMATION → CANONICAL
+```
+
+Not required for B2 as long as B2 refuses TRANSITIONAL mappings.
+
+## T.6 Latest T1 Reconciliation
+
+| Item | Value |
+|---|---|
+| Previous B1 base | `1b38bd7` |
+| Reconciled SHA | `c2f8924` (`remediation/t1-micro-delta`) |
+| Method | `git merge --no-ff c2f8924` on `foundation/assessment-b1`, merge commit `d503920` |
+| Conflicts | None. `src/app/dashboard/exam-prep/[examProfileId]/page.tsx` auto-merged |
+| Files resolved by hand | None |
+| Both preserved | T1 polish (17 files) and the B1 `preparationSimulationTypes` prop on the same page |
+| Result | typecheck clean; full suite green (the merge added 4 T1 tests) |
+
+Not reconciled: `remediation/t1-micro-delta` has since moved to `5fe6d70` (one more commit, Cambridge display localization, 8 files including `PreparationHome.tsx` and `subject-curriculum-topics.ts`). It was not in the B1-C instruction and was left for a decision. None of the T1 branches was modified.
+
+## T.7 Commits
+
+| SHA | Content |
+|---|---|
+| `73c303a` | `docs(architecture): certify integrated assessment B0` — the B0 report only |
+| `5ea60e5` | `feat(assessment): establish canonical assessment foundation` — B1 implementation, tests and this report as it stood |
+| `d503920` | merge of `c2f8924` |
+| (this commit) | B1-C closure: this section and `b1c-start-panel-render.test.ts` |
+
+Nothing was pushed.
+
+## T.8 Final Test Results
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| Baseline before B1 (`1b38bd7`) | 483 | 8,532 | 0 |
+| After B1 as first reported | 490 | 8,666 | 0 |
+| After B1-C changes, before the merge | 491 | 8,686 | 0 |
+| After merging `c2f8924` | 491 | 8,690 | 0 |
+| **Final** | **492** | **8,693** | **0** |
+| B1 / B1-C tests only (`tests/unit/b1*.test.ts`) | 9 | 157 | 0 |
+
+`npx tsc --noEmit`: clean. `npx next build`: exit 0.
+
+## T.9 B2 Entry
+
+```text
+B2_GO_WITH_CONDITIONS
+```
+
+1. A ruling on practice exam instances stored as `FULL_MOCK` (T.3).
+2. One look at the legacy start panel on a live page, by someone who can sign in to a profile that shows it.
+3. A decision on reconciling `5fe6d70`.
+4. `CANONICAL_ENGINE_V1_ENABLED` hosted value still unconfirmed (carried from B0).
