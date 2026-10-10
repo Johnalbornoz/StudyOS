@@ -15,7 +15,7 @@
 import Link from 'next/link';
 import type { PreparationView } from '@/lib/exam-core/objectives/preparation.service';
 import type { PlannedRequirement } from '@/lib/exam-core/objectives/preparation-plan';
-import { localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
+import { localizeComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { AddConceptButton, DiagnosticButton, ExamSessionPrompt, GoalDetailsForm, type ExamSessionChoice } from './PrepActions';
 
 type L = Record<string, string>;
@@ -49,8 +49,9 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
     return cc?.learner ? `/dashboard/subjects/${cc.learner.subjectId}/concepts/${cc.learner.studentConceptId}` : null;
   };
   const conceptName = (r: PlannedRequirement | null) => r?.concepts.find((x) => x.canonicalConceptId === r.recommendation.canonicalConceptId)?.name ?? r?.description ?? '';
-  // Micro-delta M03: IB component names ("Paper 1 (no calculator)") in the interface locale; other bodies keep theirs.
-  const comp = (label: string | null | undefined) => (objective.framework === 'IB_DP' ? localizeIbComponentLabel(label, language) : label ?? '');
+  // M03 / M03d: component names (IB "Paper 1 (no calculator)", Cambridge "Paper 1 — Pure Mathematics 1") in the
+  // interface locale through ONE path; a name without a reviewed label is shown as stored.
+  const comp = (label: string | null | undefined) => localizeComponentLabel(objective.framework, label, language);
   const hasActivities = c.canPractice || c.canRunReducedMock || c.canRunFullMock || c.canPlanDiploma;
   const aiceSubjects = objective.key === 'cie.aice.diploma';
 

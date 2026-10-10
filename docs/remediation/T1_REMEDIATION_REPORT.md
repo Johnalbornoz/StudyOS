@@ -496,3 +496,31 @@ Visual confirmation (DEV):
 3. Spanish, IB Math AA HL preparation → "Prueba 3 (con calculadora gráfica, resolución de problemas)".
 4. English, a Cambridge AS & A Level row or preparation → "Group 1: Mathematics and Sciences".
 5. My preparations → Cambridge Computer Science 9618 shows "In your preparation" with "View my preparation".
+
+---
+
+# T1 — FINAL LOCALIZATION RESIDUAL (M03d)
+
+Status: **T1_LOCALIZATION_FINAL = TECH_PASS / READY_FOR_VISUAL_CONFIRMATION**. T1 is **not** DONE. No migration, no data writes, Stage / Production untouched.
+
+Baseline: DEV `/api/version` = `c2f8924`; work continued on `remediation/t1-micro-delta`.
+
+**Cause.** Cambridge publishes its syllabuses in English only, so the catalogue had no Spanish label for Cambridge components or requirement statements, and the component display path only handled IB.
+
+**Fix.**
+- New governed data, `catalog/cambridge-localization.ts`: reviewed Spanish display names for Cambridge components, keyed by the exact stored component name ("Paper 1 — Pure Mathematics 1" → "Prueba 1 — Matemáticas Puras 1"; "Component 3 — Team Project" → "Componente 3 — Proyecto en equipo"; "Paper 2 (Extended, non-calculator)" → "Prueba 2 (Extended, sin calculadora)").
+- `catalog/objective-localization.ts`: reviewed Spanish labels for 86 Cambridge requirement statements, keyed by objective code ("Pure 1 · Differentiation (stationary points and their nature)." → "Puras 1 · Derivación (puntos estacionarios y su naturaleza).").
+- One display path, `localizeComponentLabel(body, label, locale)`, now serves IB and Cambridge on the preparation page (areas, practice modes, mocks, "Qué evalúa") and in Learn topics. The page has no body-specific branch.
+- These are StudyUs display labels, not official Cambridge translations.
+
+**Coverage.** Every component and statement of the Cambridge syllabuses with loaded requirements: 9709 Mathematics, 9702 Physics, 9701 Chemistry, 9700 Biology, 9708 Economics, 9093 English Language, 9239 Global Perspectives & Research, and IGCSE 0580 Mathematics. Checked read-only against the DEV catalogue: 131 requirement rows, 0 statements and 0 components without a label.
+
+**Fallback (by design).** A component or statement without a reviewed label is shown exactly as stored, whole and unchanged. This applies today to the catalogue-only Cambridge syllabuses (for example Computer Science 9618: "Paper 1 — Theory Fundamentals"), whose paper names remain in English until they are reviewed.
+
+**Unchanged.** Syllabus codes, qualification and tier names (AS Level, A Level, Core, Extended), syllabus titles ("Mathematics (9709) · AS Level"), canonical IDs, catalogue data and everything stored. English UI shows the stored English labels. No runtime translation.
+
+**Re-checked.** IB Spanish "Prueba 3 (con calculadora gráfica, resolución de problemas)"; Cambridge English "Group 1: Mathematics and Sciences".
+
+Tests: **483 files / 8539 passing** (+3 focused tests in `tests/unit/t1-micro-delta.test.ts`; one earlier assertion that expected no Cambridge label was updated); `tsc` clean; `next build` OK. Accessibility tooling: none; not run.
+
+Visual confirmation (DEV, Spanish UI): open a Cambridge Mathematics 9709 preparation → "Qué evalúa" and the recommendations show "Prueba 1 — Matemáticas Puras 1", "Puras 1 · Derivación…", "Prueba 4 — Mecánica", "Probabilidad y Estadística 1 · La distribución normal." Switch to English → the original English labels.

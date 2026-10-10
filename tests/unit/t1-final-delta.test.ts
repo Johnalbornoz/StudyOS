@@ -475,7 +475,9 @@ describe('E. the curriculum reaches the content of a Learn subject', () => {
     // an objective without one is shown as stored.
     expect(buildCurriculumTopics(ibPhysics, labels, learner, 'es').map((t) => t.title)).toEqual(['A. Espacio, tiempo y movimiento: cinemática, fuerzas, momento lineal', 'B. La naturaleza corpuscular de la materia: energía térmica, gases', 'Preguntas basadas en datos: gráficas, pendientes, incertidumbres, error sistemático']);
     expect(learningObjectiveLabel('phy.p1a.motion', 'en')).toBeNull();
-    expect(learningObjectiveLabel('aice.9709.p3.vectors', 'es')).toBeNull();
+    // M03d: the loaded Cambridge syllabuses now have reviewed labels; an unreviewed code still shows the stored text.
+    expect(learningObjectiveLabel('aice.9709.p3.vectors', 'es')).toBe('Puras 3 · Vectores (producto escalar, ángulos).');
+    expect(learningObjectiveLabel('aice.9999.p1.unknown', 'es')).toBeNull();
     // Syllabus units, where the catalogue has them, are the topics.
     const units = buildCurriculumTopics(
       [row({ nodeId: 'u1', nodeType: 'TOPIC', nodeLabel: 'Mecánica', objectiveId: 'l1', canonicalConceptId: 'c-kin' }), row({ nodeId: 'u1', nodeType: 'TOPIC', nodeLabel: 'Mecánica', objectiveId: 'l2', canonicalConceptId: 'c-mom' }), row({ nodeId: 'u2', nodeType: 'UNIT', nodeLabel: 'Termodinámica', objectiveId: 'l3', canonicalConceptId: 'c-gas' })],

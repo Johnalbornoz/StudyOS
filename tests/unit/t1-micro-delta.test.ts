@@ -27,7 +27,9 @@ import { examObjectives, familyOfFramework, objectiveByKey, OBJECTIVE_FRAMEWORKS
 import { presentObjective } from '@/lib/exam-core/objectives/objective-display';
 import { objectiveSuggestions, searchTokens, suggestionKey, SUGGEST_MIN_CHARS } from '@/lib/exam-core/objectives/objective-suggest';
 import { updatePreparationDetails } from '@/lib/exam-core/objectives/preparation.service';
-import { levelDisplayLabel, localizeCatalogSubjectName, localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
+import { levelDisplayLabel, localizeCatalogSubjectName, localizeComponentLabel, localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
+import { hasCambridgeComponentLabel, localizeCambridgeComponentLabel } from '@/lib/exam-core/catalog/cambridge-localization';
+import { learningObjectiveLabel, localizedObjectiveCodes } from '@/lib/exam-core/catalog/objective-localization';
 import { buildCurriculumTopics, type CurriculumTopicRow, type LearnerConceptRef } from '@/lib/learning-plan/subject-curriculum-topics';
 import { hasAcademicProfileData, suggestSubjects, SUBJECT_CATALOG } from '@/lib/experience/subject-catalog';
 import { saveAcademicProfileSelection } from '@/services/academic-profile-catalogue.service';
@@ -433,9 +435,9 @@ describe('M03. ES / EN change display labels, never stored IDs', () => {
     // concepts), Profile (wizard + summary), "Para ti".
     const learn = code('src/app/dashboard/learn/page.tsx');
     expect(learn).toMatch(/levelDisplayLabel\(curriculum\.context\.level, locale\)/);
-    expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).toMatch(/localizeIbComponentLabel\(t\.component, locale\)/);
+    expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).toMatch(/localizeComponentLabel\(context\.programme, t\.component, locale\)/);
     const home = code('src/app/dashboard/exam-prep/[examProfileId]/PreparationHome.tsx');
-    expect(home).toMatch(/objective\.framework === 'IB_DP' \? localizeIbComponentLabel\(label, language\)/);
+    expect(home).toMatch(/localizeComponentLabel\(objective\.framework, label, language\)/);
     expect(home.match(/comp\(/g)!.length).toBeGreaterThanOrEqual(6);
     const service = code('src/lib/exam-core/objectives/preparation.service.ts');
     expect(service).toMatch(/description: learningObjectiveLabel\(r\.code, language\) \?\? r\.description/);
@@ -612,5 +614,94 @@ describe('UI polish M06. an active preparation never shows an add-eligible badge
     expect(page).not.toMatch(/tr\[`prep\.status\.\$\{objectiveStatusKey\(capabilities\)\}`\]/);
     // Display only: no write is involved.
     expect(code('src/lib/exam-core/objectives/capabilities.ts')).not.toMatch(/db\.query|\bUPDATE\b|\bINSERT\b/);
+  });
+});
+
+// ================================================================== T1 FINAL LOCALIZATION RESIDUAL (M03d)
+
+describe('M03d. Cambridge assessment structure and requirement statements', () => {
+  /** Every component name the loaded Cambridge preparations use as a plan area (DEV catalogue, 2026-10). */
+  const COMPONENTS = [
+    'Paper 1 — Pure Mathematics 1', 'Paper 2 — Pure Mathematics 2', 'Paper 3 — Pure Mathematics 3', 'Paper 4 — Mechanics', 'Paper 5 — Probability & Statistics 1', 'Paper 6 — Probability & Statistics 2',
+    'Paper 1 — Multiple Choice', 'Paper 2 — AS Level Structured Questions', 'Paper 3 — Advanced Practical Skills', 'Paper 4 — A Level Structured Questions', 'Paper 5 — Planning, Analysis and Evaluation',
+    'Paper 1 — AS Level Multiple Choice', 'Paper 2 — AS Level Data Response and Essays', 'Paper 3 — A Level Multiple Choice', 'Paper 4 — A Level Data Response and Essays',
+    'Paper 1 — Reading', 'Paper 2 — Writing', 'Paper 3 — Language Analysis', 'Paper 4 — Language Topics',
+    'Paper 1 — Written Exam', 'Component 2 — Essay', 'Component 3 — Team Project', 'Component 4 — Cambridge Research Report',
+    'Paper 2 (Extended, non-calculator)', 'Paper 4 (Extended, calculator)', 'Paper 1 (Core, non-calculator)', 'Paper 3 (Core, calculator)',
+  ];
+
+  it('Spanish shows the reviewed display label; English keeps the stored one; the manual examples', () => {
+    const es = (label: string) => localizeComponentLabel('CIE_AS_A', label, 'es');
+    expect(es('Paper 1 — Pure Mathematics 1')).toBe('Prueba 1 — Matemáticas Puras 1');
+    expect(es('Paper 4 — Mechanics')).toBe('Prueba 4 — Mecánica');
+    expect(es('Paper 5 — Probability & Statistics 1')).toBe('Prueba 5 — Probabilidad y Estadística 1');
+    expect(es('Component 3 — Team Project')).toBe('Componente 3 — Proyecto en equipo');
+    expect(localizeComponentLabel('CIE_IGCSE', 'Paper 2 (Extended, non-calculator)', 'es')).toBe('Prueba 2 (Extended, sin calculadora)'); // tier name kept
+    expect(learningObjectiveLabel('aice.9709.p1.differentiation', 'es')).toBe('Puras 1 · Derivación (puntos estacionarios y su naturaleza).');
+    expect(learningObjectiveLabel('aice.9709.p1.integration', 'es')).toBe('Puras 1 · Integración (integrales definidas, áreas).');
+    expect(learningObjectiveLabel('aice.9709.p4.energy', 'es')).toBe('Mecánica · Energía, trabajo y potencia.');
+    expect(learningObjectiveLabel('aice.9709.p5.normal', 'es')).toBe('Probabilidad y Estadística 1 · La distribución normal.');
+    // Every component the loaded Cambridge preparations use is covered -- and English is always the stored value.
+    for (const c of COMPONENTS) {
+      expect(hasCambridgeComponentLabel(c), c).toBe(true);
+      expect(localizeCambridgeComponentLabel(c, 'es'), c).toMatch(/^(Prueba|Componente) \d/);
+      expect(localizeCambridgeComponentLabel(c, 'en')).toBe(c);
+      for (const other of ['de', 'fr', 'pt']) expect(localizeCambridgeComponentLabel(c, other)).toBe(c);
+    }
+    // Statements: no code resolves outside Spanish (the stored English statement is shown).
+    for (const code of localizedObjectiveCodes()) {
+      expect(learningObjectiveLabel(code, 'en'), code).toBeNull();
+      expect(learningObjectiveLabel(code, 'es'), code).toBeTruthy();
+    }
+    // Coverage of the loaded Cambridge syllabuses (statement codes are stable identifiers).
+    const cambridge = localizedObjectiveCodes().filter((c) => c.startsWith('aice.') || c.startsWith('cie.'));
+    expect(cambridge.length).toBeGreaterThanOrEqual(86);
+    for (const syllabus of ['9709', '9702', '9701', '9700', '9708', '9093', '9239']) expect(cambridge.some((c) => c.startsWith(`aice.${syllabus}.`)), syllabus).toBe(true);
+    // Reviewed labels never leave an English statement behind.
+    for (const code of cambridge) expect(learningObjectiveLabel(code, 'es')!, code).not.toMatch(/\b(and|the|of|with|Section|Paper|Pure)\b/);
+  });
+
+  it('no label -> the stored value, whole and unchanged; codes, qualification names and IDs are untouched', () => {
+    // A component that has no reviewed label (a catalogue-only syllabus) is not half-translated.
+    expect(localizeComponentLabel('CIE_AS_A', 'Paper 1 — Theory Fundamentals', 'es')).toBe('Paper 1 — Theory Fundamentals');
+    expect(localizeComponentLabel('CIE_AS_A', 'Paper 9 (Extended, something new)', 'es')).toBe('Paper 9 (Extended, something new)');
+    expect(localizeComponentLabel('CIE_AS_A', 'Coursework portfolio', 'es')).toBe('Coursework portfolio');
+    expect(learningObjectiveLabel('aice.9999.p1.unknown', 'es')).toBeNull();
+    expect(localizeComponentLabel('PAA', 'Paper 1 — Mechanics', 'es')).toBe('Paper 1 — Mechanics'); // only the awarding body's own vocabulary
+    expect(localizeComponentLabel(null, 'Paper 1 — Mechanics', 'es')).toBe('Paper 1 — Mechanics');
+    // Official names stay official in the Spanish labels themselves.
+    expect(localizeCambridgeComponentLabel('Paper 2 — AS Level Structured Questions', 'es')).toBe('Prueba 2 — Preguntas estructuradas de AS Level');
+    expect(localizeCambridgeComponentLabel('Paper 4 — A Level Structured Questions', 'es')).toContain('A Level');
+    const maths = objectiveByKey('cie.asal.9709.as')!;
+    const before = JSON.stringify(maths);
+    for (const locale of ['es', 'en']) {
+      expect(presentObjective(maths, locale).label).toBe('Mathematics (9709) · AS Level'); // syllabus title, code and level
+      expect(msgs(locale)['prep.fw.CIE_AS_A']).toBe('Cambridge International AS & A Level');
+    }
+    expect(JSON.stringify(maths)).toBe(before);
+    expect(maths.catalogParts.find((p) => p.label.includes('Pure Mathematics 1'))!.label).toBe('Paper 1 — Pure Mathematics 1'); // catalogue data itself unchanged
+    // Catalogue data only: no runtime translation, no I/O.
+    for (const f of ['src/lib/exam-core/catalog/cambridge-localization.ts', 'src/lib/exam-core/catalog/objective-localization.ts']) expect(code(f)).not.toMatch(/translate\(|openai|anthropic|generateText|fetch\(|db\.query/i);
+  });
+
+  it('one display path for IB and Cambridge, on the preparation page and in Learn', () => {
+    // The same function serves both bodies (by framework or by programme name).
+    expect(localizeComponentLabel('IB_DP', 'Paper 3 (GDC, problem solving)', 'es')).toBe('Prueba 3 (con calculadora gráfica, resolución de problemas)');
+    expect(localizeComponentLabel('IB Diploma Programme', 'Paper 1 (no calculator)', 'es')).toBe('Prueba 1 (sin calculadora)');
+    expect(localizeComponentLabel('Cambridge Advanced', 'Paper 4 — Mechanics', 'es')).toBe('Prueba 4 — Mecánica');
+    expect(localizeComponentLabel('Cambridge IGCSE', 'Paper 4 (Extended, calculator)', 'es')).toBe('Prueba 4 (Extended, con calculadora)');
+    expect(localizeComponentLabel('CIE_AICE', 'Paper 1 — Written Exam', 'es')).toBe('Prueba 1 — Examen escrito');
+    const home = code('src/app/dashboard/exam-prep/[examProfileId]/PreparationHome.tsx');
+    expect(home).toMatch(/const comp = \(label: string \| null \| undefined\) => localizeComponentLabel\(objective\.framework, label, language\);/);
+    expect(home).not.toMatch(/localizeIbComponentLabel/); // no body-specific branch left on the page
+    expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).not.toMatch(/localizeIbComponentLabel/);
+    // Requirement statements go through the one statement path for every body (plan + Learn topics).
+    expect(code('src/lib/exam-core/objectives/preparation.service.ts')).toMatch(/description: learningObjectiveLabel\(r\.code, language\) \?\? r\.description/);
+    expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).toMatch(/learningObjectiveLabel\(r\.objectiveCode, locale\) \?\? clean\(r\.objectiveDescription\)/);
+
+    // Re-checks from the previous round.
+    expect(localizeIbComponentLabel('Paper 3 (GDC, problem solving)', 'es')).toBe('Prueba 3 (con calculadora gráfica, resolución de problemas)');
+    expect(presentObjective(objectiveByKey('cie.asal.9618.as')!, 'en').groups).toEqual(['Group 1: Mathematics and Sciences']);
+    expect(presentObjective(objectiveByKey('cie.asal.9709.as')!, 'en').groups).toEqual(['Group 1: Mathematics and Sciences']);
   });
 });

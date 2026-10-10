@@ -18,6 +18,7 @@
  * display labels only. Fallback: the official published name.
  */
 import type { Locale } from '@/lib/i18n/messages';
+import { localizeCambridgeComponentLabel } from './cambridge-localization';
 
 type L2 = { es: string; en: string };
 
@@ -245,4 +246,19 @@ export function localizeIbComponentLabel(label: string | null | undefined, local
   const terms = IB_COMPONENT_TERMS_ES.reduce((acc, [pattern, to]) => acc.replace(pattern, to), label);
   // "(GDC, problem solving)" -> "(con calculadora gráfica, resolución de problemas)". An unknown qualifier is kept as stored.
   return terms.replace(/\(([^()]*)\)/g, (_m, inner: string) => `(${inner.split(/,\s*/).map((q) => IB_COMPONENT_QUALIFIERS_ES[q.trim().toLowerCase()] ?? q.trim()).join(', ')})`);
+}
+
+/**
+ * M03d -- ONE display path for assessment-component names ("Paper 1 — Pure Mathematics 1", "Paper 3 (GDC,
+ * problem solving)") on every surface: the awarding body decides which reviewed vocabulary applies.
+ * `body` is an objective framework (IB_DP, CIE_IGCSE, CIE_AS_A, CIE_AICE) or a programme name
+ * ("IB Diploma Programme", "Cambridge Advanced"). Any other body, and any label without a reviewed
+ * entry, is shown exactly as stored.
+ */
+export function localizeComponentLabel(body: string | null | undefined, label: string | null | undefined, locale: Locale | string): string {
+  if (!label) return '';
+  const b = body ?? '';
+  if (b === 'IB_DP' || /^IB\b/.test(b)) return localizeIbComponentLabel(label, locale);
+  if (b.startsWith('CIE_') || /^Cambridge\b/.test(b)) return localizeCambridgeComponentLabel(label, locale);
+  return label;
 }

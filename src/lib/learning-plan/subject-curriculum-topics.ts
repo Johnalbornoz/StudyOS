@@ -25,7 +25,7 @@
 import { db } from '@/lib/db';
 import { canonicalConceptLabels } from './labels';
 import { learningObjectiveLabel } from '@/lib/exam-core/catalog/objective-localization';
-import { localizeIbComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
+import { localizeComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogKeyOf, resolveCurriculumContext, type ContextReason, type CurriculumOption } from './curriculum.service';
 
 /** Node types that are assessment components, never syllabus topics. */
@@ -155,9 +155,8 @@ export async function loadSubjectCurriculumTopics(studentId: string, subject: { 
   for (const r of learner.rows as any[]) if (!learnerByCanonical.has(r.canonical_concept_id)) learnerByCanonical.set(r.canonical_concept_id, { conceptId: r.concept_id, subjectId: r.subject_id });
   const inPlan = new Set<string>(plan.rows.map((r: any) => r.canonical_concept_id as string));
   const topics = buildCurriculumTopics(topicRows, labels, learnerByCanonical, locale, inPlan);
-  // Micro-delta M03: IB assessment components ("Paper 1 (no calculator)") use the IB's own terms in the interface locale.
-  const ib = /^IB\b/.test(context.programme);
-  return { context, reason, topics: ib ? topics.map((t) => ({ ...t, component: t.component ? localizeIbComponentLabel(t.component, locale) : null })) : topics };
+  // M03 / M03d: assessment components (IB and Cambridge) through the one component display path.
+  return { context, reason, topics: topics.map((t) => ({ ...t, component: t.component ? localizeComponentLabel(context.programme, t.component, locale) : null })) };
 }
 
 /**
