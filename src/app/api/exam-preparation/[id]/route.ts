@@ -1,6 +1,7 @@
 /**
  * Exam preparation -- GET / PATCH /api/exam-preparation/[id]
  *
+ * T1 final delta: PATCH also takes the governed exam session (C) and the academic aspiration area (D).
  * GET: the preparation home data (objective, capabilities, personalized plan,
  * next step). PATCH: the Student's own goal details (exam date, target
  * institution / qualification, purpose). Owner-only; another Student's
@@ -18,6 +19,11 @@ const PatchSchema = z.strictObject({
   purpose: z.string().trim().max(200).nullable().optional(),
   targetInstitutionName: z.string().trim().max(200).nullable().optional(),
   targetQualification: z.string().trim().max(200).nullable().optional(),
+  // T1 final delta (C): a governed exam session ("ES:MAY:2027"); availability is validated against the session catalogue.
+  examSession: z.string().regex(/^ES:[A-Z_]{2,20}:\d{4}$/).nullable().optional(),
+  // T1 final delta (D): canonical interest-area ID (+ optional free-text detail, kept only with OTHER).
+  interestArea: z.string().regex(/^[A-Z][A-Z_]{1,59}$/).nullable().optional(),
+  interestAreaDetail: z.string().trim().max(200).nullable().optional(),
 });
 
 async function handleGET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -39,7 +45,7 @@ async function handlePATCH(request: NextRequest, ctx: { params: Promise<{ id: st
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT', message: parsed.error.issues[0]?.message }, { status: 400 });
   try {
     const profile = await updatePreparationDetails(gate.studentId, id.data, parsed.data);
-    return NextResponse.json({ success: true, data: { profile: { id: profile.id, examDate: profile.examDate, targetInstitutionName: profile.targetInstitutionName, targetQualification: profile.targetQualification, purpose: profile.purpose } } });
+    return NextResponse.json({ success: true, data: { profile: { id: profile.id, examDate: profile.examDate, targetInstitutionName: profile.targetInstitutionName, targetQualification: profile.targetQualification, purpose: profile.purpose, targetExamSeries: profile.targetExamSeries ?? null, targetExamYear: profile.targetExamYear ?? null, interestArea: profile.interestArea ?? null, interestAreaDetail: profile.interestAreaDetail ?? null } } });
   } catch (err) {
     return preparationErrorResponse(err);
   }

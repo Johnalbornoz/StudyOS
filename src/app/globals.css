@@ -1996,7 +1996,8 @@ img, video { max-width: 100%; height: auto; }
 .ss-item:hover, .ss-item:focus-visible { background: var(--bg-subtle); }
 .ss-item[aria-current] { color: var(--brand-ink); font-weight: 650; }
 .ss-add { justify-content: flex-start; margin-top: var(--space-1); border-top: 1px solid var(--border-default); border-radius: 0 0 var(--radius-sm) var(--radius-sm); color: var(--brand-ink); font-weight: 600; }
-.xp-subjects { margin-top: var(--space-3); }
+.xp-subjects { margin-top: var(--space-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.xp-context-label { font-size: var(--fs-sm); color: var(--text-secondary); font-weight: 600; }
 .ss[data-align='end'] .ss-menu { inset-inline-start: auto; inset-inline-end: 0; }
 
 .ln-start { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -2246,7 +2247,7 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 /* Curriculum V2 -- national / international source type cards and configured curricula (mobile first, no overflow). */
 .cur2-scope { display: grid; grid-template-columns: 1fr; gap: var(--space-2); }
 @media (min-width: 640px) { .cur2-scope { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.cur2-scope-card { align-items: flex-start; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); min-width: 0; min-height: var(--touch-target); }
+.cur2-scope-card { align-items: flex-start; padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); min-width: 0; min-height: var(--touch-target); }
 .cur2-scope-card.is-selected { border-color: var(--brand); }
 .cur2-scope-card > span { min-width: 0; overflow-wrap: anywhere; }
 .cur2-configured-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
@@ -2389,6 +2390,25 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .prep-cta { min-height: var(--touch-target); }
 .prep-results { display: flex; flex-direction: column; gap: var(--space-3); }
 .prep-results-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+/* T1 final delta (E): curriculum topics inside Learn. */
+.ln-curriculum { display: flex; flex-direction: column; gap: var(--space-3); }
+.ln-curriculum-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.ln-curriculum-topic > .ln-concepts { padding: 0 var(--space-3) var(--space-3); }
+.ln-concept--catalog { cursor: default; justify-content: space-between; }
+.ln-curriculum-empty { margin: 0; color: var(--text-secondary); }
+.ln-hero-why { margin: calc(var(--space-2) * -1) 0 0; }
+/* T1 final delta (C/D): "Tu examen" apart from "Tu objetivo académico". */
+.prep-goal-group { border: 0; margin: 0 0 var(--space-4); padding: 0; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.prep-goal-group > legend { padding: 0; margin-bottom: var(--space-2); font-weight: 600; }
+.prep-session-prompt { max-width: 420px; }
+/* T1 final delta (B1/B2): Cambridge family level + long catalogues organised by canonical subject. */
+.prep-family-head { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; margin-bottom: var(--space-3); }
+.prep-groups { display: flex; flex-direction: column; gap: var(--space-2); }
+.prep-group { border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); }
+.prep-group-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); cursor: pointer; min-height: 44px; }
+.prep-group-head:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.prep-group-name { font-weight: 600; }
+.prep-group > .prep-rows { padding: 0 var(--space-3) var(--space-3); }
 .prep-rows { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
 .prep-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); }
 .prep-row-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1 1 16rem; }

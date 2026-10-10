@@ -12,7 +12,8 @@
 import { db } from '@/lib/db';
 import { getMessages } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
-import { examObjectives, OBJECTIVE_FRAMEWORKS, type ObjectiveFramework } from './objective-catalog';
+import { examObjectives, familyOfFramework, OBJECTIVE_FRAMEWORKS, type ObjectiveFramework } from './objective-catalog';
+import { presentObjective } from './objective-display';
 import { allObjectiveCapabilities } from './preparation.service';
 import { objectiveStatusKey } from './capabilities';
 import { resolveStudentExamEligibility } from '../eligibility/eligibility.service';
@@ -68,17 +69,23 @@ export async function loadPickerData(studentId: string, language: string) {
     if (r) frameworkReasons[f] = reasonText(r, t, { subjectLevel: false });
   }
 
+  const strip = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const rows = list
-    .map(({ o, e }, index) => ({
+    .map(({ o, e }, index) => ({ o, e, index, shown: presentObjective(o, language), official: presentObjective(o, 'en') }))
+    .map(({ o, e, index, shown, official }) => ({
       row: {
         key: o.key,
         framework: o.framework,
         kind: o.kind,
-        label: o.label,
+        label: shown.label,
         context: o.context,
         status: objectiveStatusKey(caps.get(o.key)!),
         preparationId: myByKey.get(o.key) ?? null,
-        searchText: o.searchText,
+        // Search covers subject, variant, level (name and code: "superior", "ns", "hl"), syllabus code (catalogue text),
+        // the label and canonical subject in the interface locale, and the official English label.
+        searchText: `${o.searchText} ${strip(shown.label)} ${strip(shown.groupLabel ?? '')} ${strip(official.label)}`,
+        groupKey: shown.groupKey,
+        groupLabel: shown.groupLabel,
         recommended: e.eligible,
         reason: e.reasons[0] ? reasonText(e.reasons[0], t, { subjectLevel: true }) : null,
         // REM-T1-04: one of the subjects the Student selected in their PERSONAL Academic Profile (not a class's):
@@ -92,7 +99,7 @@ export async function loadPickerData(studentId: string, language: string) {
     .map((x) => x.row);
 
   return {
-    frameworks: [...OBJECTIVE_FRAMEWORKS],
+    frameworks: OBJECTIVE_FRAMEWORKS.map((f) => ({ ...f, family: familyOfFramework(f.key) })),
     /** Frameworks with at least one recommended objective, most specific first. */
     suggested: recommendedFrameworks,
     frameworkReasons,

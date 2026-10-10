@@ -522,7 +522,8 @@ describe('UX-2 §10/§21 -- Home structure and states', () => {
   });
 
   it('the goal names an EXISTING exam profile only -- never invented', () => {
-    expect(TODAY).toMatch(/selectGoalProfile\(examProfiles, todayIso\)/);
+    // T1 final delta (F): Home reads the preparation context through activePreparationSummary (same selection rule).
+    expect(TODAY).toMatch(/activePreparationSummary\(examProfiles, todayIso\)/);
     expect(TODAY).toMatch(/\{goalProfile && goalName && \(/);
     const profile = (over: Partial<StudentExamProfile>): StudentExamProfile => ({
       id: 'p', studentId: 's', examDefinitionId: 'd', examVersionId: null, purpose: null, programmeContext: null,

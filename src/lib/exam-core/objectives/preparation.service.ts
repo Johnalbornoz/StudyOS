@@ -27,6 +27,8 @@ import { createStudentExamProfile, getStudentExamProfile } from '@/lib/assessmen
 import type { StudentExamProfile } from '@/lib/assessment/types';
 import { findOpenSimulationAttemptForProfile } from '@/lib/simulation/attempt.service';
 import { calendarDaysUntil } from '@/lib/experience/goal';
+import { acceptExamSession, objectiveSessionModel, storedExamSession } from './objective-session';
+import { normalizeInterestArea } from '@/lib/student/interest-areas';
 import { READINESS_ORDER, type ReadinessState, type ComponentReadiness } from '../catalog/readiness';
 import { addConceptToStudentLearning } from '../catalog/learning-links.service';
 import { createExamInstance, toInstanceView } from '../exam-instance.service';
@@ -38,7 +40,7 @@ import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
 import { objectiveEligibilityForStudent } from '../eligibility/eligibility.service';
 
 export class PreparationError extends Error {
-  constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS', detail?: string) {
+  constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS' | 'INVALID_EXAM_SESSION' | 'INVALID_INTEREST_AREA', detail?: string) {
     super(detail ? `${code}: ${detail}` : code);
     this.name = 'PreparationError';
   }
@@ -219,13 +221,54 @@ export async function createObjectivePreparation(studentId: string, input: Creat
   return { profile: (await getStudentExamProfile(profile.id))!, created, capabilities };
 }
 
-export async function updatePreparationDetails(studentId: string, profileId: string, patch: { examDate?: string | null; targetInstitutionName?: string | null; targetQualification?: string | null; purpose?: string | null }): Promise<StudentExamProfile> {
+/** The Student's country of study when their personal profile states one (read-only; null otherwise). */
+export async function studentCountryOfStudy(studentId: string): Promise<string | null> {
+  const r = await db.query(`SELECT country_of_study FROM student_academic_profile WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as any[] }));
+  return r.rows[0]?.country_of_study ?? null;
+}
+
+export async function updatePreparationDetails(
+  studentId: string,
+  profileId: string,
+  patch: {
+    examDate?: string | null;
+    targetInstitutionName?: string | null;
+    targetQualification?: string | null;
+    purpose?: string | null;
+    /** T1 final delta (C): "ES:<SERIES>:<YEAR>" from the governed session catalogue, or null to clear. */
+    examSession?: string | null;
+    /** T1 final delta (D): canonical interest-area ID (+ optional detail for OTHER), or null to clear. */
+    interestArea?: string | null;
+    interestAreaDetail?: string | null;
+  },
+  now: Date = new Date()
+): Promise<StudentExamProfile> {
   const p = await getStudentExamProfile(profileId);
   if (!p || p.studentId !== studentId) throw new PreparationError('NOT_FOUND');
   if (p.status === 'ARCHIVED') throw new PreparationError('NOT_ACTIVE');
   const sets: string[] = [];
   const vals: unknown[] = [profileId];
   const set = (col: string, v: unknown) => { vals.push(v); sets.push(`${col} = $${vals.length}`); };
+  if (patch.examSession !== undefined) {
+    if (patch.examSession === null) {
+      set('target_exam_series', null);
+      set('target_exam_year', null);
+    } else {
+      // Only a series the governed catalogue offers for THIS objective (programme / syllabus / region / year).
+      const objective = await profileObjective(p);
+      const model = objective ? objectiveSessionModel(objective, await studentCountryOfStudy(studentId)) : null;
+      const accepted = model ? acceptExamSession(patch.examSession, model, now, storedExamSession(p)) : null;
+      if (!accepted) throw new PreparationError('INVALID_EXAM_SESSION');
+      set('target_exam_series', accepted.series);
+      set('target_exam_year', accepted.year);
+    }
+  }
+  if (patch.interestArea !== undefined) {
+    const area = normalizeInterestArea(patch.interestArea, patch.interestAreaDetail);
+    if (!area) throw new PreparationError('INVALID_INTEREST_AREA');
+    set('interest_area', area.interestArea);
+    set('interest_area_detail', area.interestAreaDetail);
+  }
   if (patch.examDate !== undefined) set('exam_date', patch.examDate);
   if (patch.targetInstitutionName !== undefined) set('target_institution_name', patch.targetInstitutionName);
   if (patch.targetQualification !== undefined) set('target_qualification', patch.targetQualification);
@@ -433,7 +476,8 @@ export async function getPreparationView(studentId: string, profileId: string, l
     diagnosticDone: !!diagnostic,
     canViewStructure: capabilities.canViewStructure,
     canPlanDiploma: capabilities.canPlanDiploma,
-    hasExamDate: !!profile.examDate,
+    // T1 final delta (C): a governed series + year configures the timing as much as a date does.
+    hasExamDate: !!profile.examDate || !!storedExamSession(profile),
   });
   return { profile, objective, capabilities, plan, next, openAttemptId: open?.id ?? null, diagnostic };
 }

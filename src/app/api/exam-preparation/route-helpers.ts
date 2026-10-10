@@ -21,7 +21,7 @@ export async function studentGate(rateKey?: string, limit?: number): Promise<{ o
 
 export function preparationErrorResponse(err: unknown): NextResponse {
   if (err instanceof PreparationError) {
-    const status = err.code === 'NOT_FOUND' || err.code === 'OBJECTIVE_NOT_FOUND' ? 404 : err.code === 'REQUIREMENT_NOT_IN_PREPARATION' ? 400 : 409;
+    const status = err.code === 'NOT_FOUND' || err.code === 'OBJECTIVE_NOT_FOUND' ? 404 : err.code === 'REQUIREMENT_NOT_IN_PREPARATION' || err.code === 'INVALID_EXAM_SESSION' || err.code === 'INVALID_INTEREST_AREA' ? 400 : 409;
     return NextResponse.json({ error: err.code }, { status });
   }
   if (err instanceof ExamInstanceError) return NextResponse.json({ error: err.code }, { status: 409 });

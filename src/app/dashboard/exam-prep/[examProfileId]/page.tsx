@@ -31,6 +31,11 @@ import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
 import { parseDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
 import { after } from 'next/server';
 import { isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { examSessionLabel, examSessionOptions, objectiveSessionModel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
+import { presentObjective } from '@/lib/exam-core/objectives/objective-display';
+import { studentCountryOfStudy } from '@/lib/exam-core/objectives/preparation.service';
+import { timeContextKey } from '@/lib/student/time-context';
+import { interestAreaLabel, interestAreaOptions } from '@/lib/student/interest-areas';
 import { getStudentExamJourneys, loadExamTargetRow, scheduleColumnsAvailable } from '@/lib/exam-journey/ux.server';
 import { scheduleFactsFromRow } from '@/lib/exam-journey/exam-target';
 import { targetScheduleLines } from '@/lib/exam-journey/ux';
@@ -181,20 +186,36 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   }
   if (view) {
     const attempts = await listProfileAttempts(profile.id);
-    const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.')));
+    const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('acp.goal.')));
+    // T1 final delta (C): governed sessions (IB, Cambridge) come from the canonical session catalogue; other exams keep a date.
+    const sessionModel = objectiveSessionModel(view.objective, await studentCountryOfStudy(studentId));
+    const storedSession = storedExamSession(profile);
+    const timing = {
+      session: sessionModel ? { options: examSessionOptions(sessionModel, new Date(), storedSession, locale), value: storedSession ? timeContextKey(storedSession) : null } : null,
+      sessionLabel: sessionModel && storedSession ? examSessionLabel(storedSession, locale) : null,
+      dateLine: sessionModel && !profile.examDate ? null : dateLine,
+    };
+    const shown = presentObjective(view.objective, locale);
     return (
       <div className="xp-page xp-page--wide">
         <PageIntro
           crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
-          title={view.objective.label}
-          lead={[tr[`prep.fw.${view.objective.framework}`], view.objective.context.level, view.objective.context.version].filter(Boolean).join(' · ')}
+          title={shown.label}
+          lead={[tr[`prep.fw.${view.objective.framework}`], shown.level, view.objective.context.version].filter(Boolean).join(' · ')}
           actions={
             <div className="ex-detail-actions">
-              <ProfileMenu profileId={profile.id} examName={view.objective.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />
+              <ProfileMenu profileId={profile.id} examName={shown.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />
             </div>
           }
         />
-        <PreparationHome view={view} labels={prepLabels} language={locale} dateLine={dateLine} />
+        <PreparationHome
+          view={view}
+          labels={prepLabels}
+          language={locale}
+          timing={timing}
+          display={{ subject: shown.subject, level: shown.level }}
+          aspiration={{ areas: interestAreaOptions(locale), areaLabel: profile.interestArea ? [interestAreaLabel(profile.interestArea, locale), profile.interestArea === 'OTHER' ? profile.interestAreaDetail : null].filter(Boolean).join(' · ') : null }}
+        />
         {attempts.length > 0 && (
           <section className="card ex-status" aria-labelledby="ex-history-title">
             <h2 id="ex-history-title" className="ex-status-title">{t['examPrep.history.title']}</h2>

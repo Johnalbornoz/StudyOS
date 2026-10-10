@@ -10,6 +10,7 @@
  */
 import type { Locale } from '@/lib/i18n/messages';
 import { catalogSubjectByName } from '@/lib/experience/subject-catalog';
+import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 
 const OTHER_COUNTRY: Record<Locale, string> = { es: 'Otro', en: 'Other', de: 'Anderes Land', fr: 'Autre', pt: 'Outro' };
 
@@ -42,20 +43,26 @@ export function parseStoredGrade(stored: string | null | undefined): { system: G
   return null;
 }
 
+/**
+ * Display templates per grade system. {n} = the number in the stored label; {g} = the equivalent
+ * school grade on the 1-12 scale (the governed mapping of eligibility/grade-level.ts: MX Secundaria
+ * n -> 6+n, Preparatoria n -> 9+n). Spanish keeps the national name; other locales show the grade
+ * equivalent, which is what an English / German / French / Portuguese reader recognises.
+ */
 const GRADE_TEMPLATES: Record<GradeSystem, Record<Locale, string>> = {
-  // Secundaria / Preparatoria are the official Mexican level names: kept, with the year localized.
-  MX_SECUNDARIA: { es: '{n}° Secundaria', en: 'Secundaria, year {n}', de: 'Secundaria, {n}. Jahr', fr: 'Secundaria, {n}e année', pt: 'Secundaria, {n}º ano' },
-  MX_PREPARATORIA: { es: '{n}° Preparatoria', en: 'Preparatoria, year {n}', de: 'Preparatoria, {n}. Jahr', fr: 'Preparatoria, {n}e année', pt: 'Preparatoria, {n}º ano' },
+  MX_SECUNDARIA: { es: '{n}° Secundaria', en: 'Grade {g}', de: 'Klasse {g}', fr: '{g}e année', pt: '{g}º ano' },
+  MX_PREPARATORIA: { es: '{n}° Preparatoria', en: 'Grade {g}', de: 'Klasse {g}', fr: '{g}e année', pt: '{g}º ano' },
   CO: { es: '{n}°', en: 'Grade {n}', de: 'Klasse {n}', fr: '{n}e année', pt: '{n}º ano' },
-  US: { es: '{n}.º grado', en: 'Grade {n}', de: 'Klasse {n}', fr: '{n}e année (Grade {n})', pt: '{n}º ano' },
-  DE: { es: '{n}.º curso (Klasse {n})', en: 'Year {n} (Klasse {n})', de: 'Klasse {n}', fr: '{n}e année (Klasse {n})', pt: '{n}º ano (Klasse {n})' },
+  US: { es: '{n}.º grado', en: 'Grade {n}', de: 'Klasse {n}', fr: '{n}e année', pt: '{n}º ano' },
+  DE: { es: '{n}.º grado', en: 'Grade {n}', de: 'Klasse {n}', fr: '{n}e année', pt: '{n}º ano' },
 };
+const GRADE_OFFSET: Record<GradeSystem, number> = { MX_SECUNDARIA: 6, MX_PREPARATORIA: 9, CO: 0, US: 0, DE: 0 };
 
 /** A stored grade label in the interface locale; the stored (canonical) label when it is not recognised. */
 export function gradeDisplayLabel(stored: string | null | undefined, locale: Locale): string {
   const g = parseStoredGrade(stored);
   if (!g) return stored ?? '';
-  return (GRADE_TEMPLATES[g.system][locale] ?? GRADE_TEMPLATES[g.system].en).replace(/\{n\}/g, String(g.n));
+  return (GRADE_TEMPLATES[g.system][locale] ?? GRADE_TEMPLATES[g.system].en).replace(/\{n\}/g, String(g.n)).replace(/\{g\}/g, String(g.n + GRADE_OFFSET[g.system]));
 }
 
 /**
@@ -65,5 +72,8 @@ export function gradeDisplayLabel(stored: string | null | undefined, locale: Loc
  */
 export function localizeSubjectName(name: string, locale: Locale | string): string {
   const hit = catalogSubjectByName(name);
-  return hit && Object.prototype.hasOwnProperty.call(hit.names, locale) ? hit.names[locale as Locale] : name;
+  if (hit && Object.prototype.hasOwnProperty.call(hit.names, locale)) return hit.names[locale as Locale];
+  // T1 final delta (G): an official programme subject name ("Mathematics: analysis and approaches") -> its
+  // official name in the interface locale where the awarding body publishes one; otherwise unchanged.
+  return localizeCatalogSubjectName(name, locale);
 }

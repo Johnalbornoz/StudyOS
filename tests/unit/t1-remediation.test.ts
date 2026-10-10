@@ -535,13 +535,17 @@ describe('REM-T1-07 localization of catalog values', () => {
   it('28. subject names render in the locale where a translation exists; otherwise the official name', () => {
     expect(localizeSubjectName('Matemáticas', 'en')).toBe('Mathematics');
     expect(localizeSubjectName('Mathematics', 'es')).toBe('Matemáticas');
-    expect(localizeSubjectName('Mathematics: analysis and approaches', 'es')).toBe('Mathematics: analysis and approaches');
+    // T1 final delta (G): an official IB subject name uses the IB's official Spanish name; unknown names stay as stored.
+    expect(localizeSubjectName('Mathematics: analysis and approaches', 'es')).toBe('Matemáticas: Análisis y Enfoques');
+    expect(localizeSubjectName('Mathematics: analysis and approaches', 'en')).toBe('Mathematics: analysis and approaches');
+    expect(localizeSubjectName('Robótica del colegio', 'en')).toBe('Robótica del colegio');
     expect(localizeSubjectName('Física', 'de')).toBe('Physik');
     expect(read('src/app/dashboard/subjects/SubjectPicker.tsx')).toMatch(/localizeSubjectName\(o\.name, locale\)/);
   });
 
   it('29. grade and country labels render in the locale (canonical stored values unchanged)', () => {
-    expect(gradeDisplayLabel('3° Preparatoria', 'en')).toBe('Preparatoria, year 3');
+    // T1 final delta (G): no Spanish level name in the English interface -- the governed grade equivalence.
+    expect(gradeDisplayLabel('3° Preparatoria', 'en')).toBe('Grade 12');
     expect(gradeDisplayLabel('3° Preparatoria', 'es')).toBe('3° Preparatoria');
     expect(gradeDisplayLabel('Grade 10', 'es')).toBe('10.º grado');
     expect(gradeDisplayLabel('Something custom', 'en')).toBe('Something custom');

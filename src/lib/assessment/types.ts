@@ -130,6 +130,12 @@ export interface StudentExamProfile {
   objectiveContext?: Record<string, unknown> | null;
   targetInstitutionName?: string | null;
   targetQualification?: string | null;
+  /** T1 final delta (C): the awarding body's series the Student aims for (canonical: MAY | NOVEMBER | MARCH | JUNE) + its year. */
+  targetExamSeries?: string | null;
+  targetExamYear?: number | null;
+  /** T1 final delta (D): canonical interest-area ID (interest-areas.ts) and the optional OTHER detail. */
+  interestArea?: string | null;
+  interestAreaDetail?: string | null;
   source?: 'STUDENT' | 'EXAM_INSTANCE' | 'INSTITUTION' | null;
   purpose: string | null;
   programmeContext: string | null;

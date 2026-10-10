@@ -8,6 +8,9 @@
  * each with a short reason. The rest of the catalogue stays reachable only on
  * explicit request ("Buscar otra preparación"), labelled as unrelated to the
  * Student's curriculum -- a personal goal, never a default.
+ *
+ * T1 final delta (A): that is the ACADEMIC experience. A Student whose context is EXAM_PREP has no
+ * school to describe: they get the exam selector directly (see `examPrepContext`).
  */
 import { useState } from 'react';
 import Link from 'next/link';
@@ -15,15 +18,30 @@ import { ObjectivePicker, type PickerFramework, type PickerObjective } from './O
 
 type L = Record<string, string>;
 
-export function PreparationChooser({ objectives, frameworks, suggested, frameworkReasons, hasAcademicContext, labels: l }: {
+export function PreparationChooser({ objectives, frameworks, suggested, frameworkReasons, hasAcademicContext, examPrepContext = false, labels: l }: {
   objectives: PickerObjective[];
   frameworks: PickerFramework[];
   suggested: string[];
   frameworkReasons: Record<string, string>;
   hasAcademicContext: boolean;
+  /**
+   * T1 final delta (A): the Student's context is EXAM_PREP (independent candidate). The landing IS the exam
+   * selector: the whole catalogue, organised, with no Academic Profile requirement, recommendation or CTA.
+   */
+  examPrepContext?: boolean;
   labels: L;
 }) {
   const [exploring, setExploring] = useState(false);
+  if (examPrepContext) {
+    return (
+      <div className="elig-chooser" data-exam-selector>
+        <section aria-labelledby="elig-catalog-title" className="elig-recommended">
+          <h2 id="elig-catalog-title" className="exv2-title">{l['acp.prep.catalogTitle']}</h2>
+          <ObjectivePicker objectives={objectives.map((o) => ({ ...o, recommended: false, reason: null, yourSubject: false }))} frameworks={frameworks} suggested={[]} labels={l} />
+        </section>
+      </div>
+    );
+  }
   const recommended = objectives.filter((o) => o.recommended);
   const others = objectives.filter((o) => !o.recommended);
   const recommendedFrameworks = suggested.map((k) => frameworks.find((f) => f.key === k)).filter((f): f is PickerFramework => !!f);

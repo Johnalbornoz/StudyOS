@@ -29,17 +29,63 @@ export interface PickerObjective {
   reason?: string | null;
   /** REM-T1-04: a subject of the Student's personal Academic Profile -- shown first in its framework. */
   yourSubject?: boolean;
+  /** T1 final delta (B2): canonical subject this option belongs to (catalogue identifiers, never label text). */
+  groupKey?: string | null;
+  groupLabel?: string | null;
 }
 
-export interface PickerFramework { key: string; region: string }
+/** `family` (B1): frameworks of one awarding body are ONE entry on the landing (Cambridge International). */
+export interface PickerFramework { key: string; region: string; family?: string | null }
+
+/** A listing longer than this is organised by canonical subject (closed accordions). */
+export const GROUPING_THRESHOLD = 8;
+
+export interface ObjectiveGroup { key: string; label: string; options: PickerObjective[] }
+
+/**
+ * T1 final delta (B2) -- pure: organises a listing by canonical subject, in catalogue order. Options
+ * without a subject (tests, programme plans) stay ungrouped. Nothing is dropped: every option keeps
+ * its own row, level, variant and syllabus code.
+ */
+export function groupBySubject(list: PickerObjective[]): { groups: ObjectiveGroup[]; ungrouped: PickerObjective[] } {
+  const groups = new Map<string, ObjectiveGroup>();
+  const ungrouped: PickerObjective[] = [];
+  for (const o of list) {
+    if (!o.groupKey) { ungrouped.push(o); continue; }
+    if (!groups.has(o.groupKey)) groups.set(o.groupKey, { key: o.groupKey, label: o.groupLabel ?? o.label, options: [] });
+    groups.get(o.groupKey)!.options.push(o);
+  }
+  return { groups: [...groups.values()], ungrouped };
+}
+
+/** Landing entries (pure): a family replaces its frameworks, at the position of the first one. */
+export function landingEntries(frameworks: PickerFramework[]): Array<{ kind: 'FRAMEWORK'; framework: PickerFramework } | { kind: 'FAMILY'; family: string; frameworks: PickerFramework[] }> {
+  const out: Array<{ kind: 'FRAMEWORK'; framework: PickerFramework } | { kind: 'FAMILY'; family: string; frameworks: PickerFramework[] }> = [];
+  for (const f of frameworks) {
+    const members = f.family ? frameworks.filter((x) => x.family === f.family) : [];
+    if (members.length < 2) { out.push({ kind: 'FRAMEWORK', framework: f }); continue; }
+    if (members[0].key === f.key) out.push({ kind: 'FAMILY', family: f.family!, frameworks: members });
+  }
+  return out;
+}
 
 const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const PAGE = 40;
 
-export function ObjectivePicker({ objectives, frameworks, suggested, frameworkReasons = {}, labels: l }: { objectives: PickerObjective[]; frameworks: PickerFramework[]; suggested: string[]; frameworkReasons?: Record<string, string>; labels: L }) {
+export function ObjectivePicker({ objectives, frameworks, suggested, frameworkReasons = {}, labels: l, initial }: {
+  objectives: PickerObjective[];
+  frameworks: PickerFramework[];
+  suggested: string[];
+  frameworkReasons?: Record<string, string>;
+  labels: L;
+  /** Optional starting view (a family level, one framework's listing, or a search). */
+  initial?: { family?: string | null; framework?: string; query?: string };
+}) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [framework, setFramework] = useState<string>('ALL');
+  const [query, setQuery] = useState(initial?.query ?? '');
+  const [framework, setFramework] = useState<string>(initial?.framework ?? 'ALL');
+  const [family, setFamily] = useState<string | null>(initial?.family ?? null);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [region, setRegion] = useState<string>('ALL');
   const [limit, setLimit] = useState(PAGE);
   const [busy, setBusy] = useState<string | null>(null);
@@ -60,11 +106,20 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
   const results = objectives.filter(
     (o) => (framework === 'ALL' || o.framework === framework) && (region === 'ALL' || regionOf.get(o.framework) === region) && words.every((w) => o.searchText.includes(w))
   );
+  // B2: the Student's own subjects stay first; the rest of a long listing is organised by canonical subject.
+  const rest = results.filter((o) => !o.yourSubject);
+  const grouped = rest.length > GROUPING_THRESHOLD && rest.some((o) => o.groupKey) ? groupBySubject(rest) : null;
   // REM-T1-04: frameworks holding the Student's own profile subjects come first.
   const hasMine = (key: string) => (byFramework.get(key) ?? []).some((o) => o.yourSubject);
   const visibleFrameworks = frameworks
     .filter((f) => (region === 'ALL' || f.region === region) && byFramework.has(f.key))
     .sort((a, b) => Number(hasMine(b.key)) - Number(hasMine(a.key)));
+  const entries = landingEntries(visibleFrameworks);
+  const familyFrameworks = family ? visibleFrameworks.filter((f) => f.family === family) : [];
+  const fwName = (key: string) => l[`prep.fw.${key}`] ?? key;
+  const familyName = (key: string) => l[`acp.prep.family.${key}`] ?? key;
+  const optionsText = (n: number) => (n === 1 ? l['acp.prep.groupOptions.one'] ?? '1' : (l['acp.prep.groupOptions.other'] ?? '{n}').replace('{n}', String(n)));
+  const pickFramework = (key: string) => { setFramework(key); setLimit(PAGE); setOpenGroups(new Set()); };
   const regions = [...new Set(frameworks.filter((f) => byFramework.has(f.key)).map((f) => f.region))];
 
   async function choose(o: PickerObjective) {
@@ -112,34 +167,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
     </li>
   );
 
-  return (
-    <div className="prep-picker">
-      <div className="prep-controls">
-        <label className="ui-field prep-search">
-          <span className="ui-label">{l['prep.search.label']}</span>
-          <input className="ui-input" type="search" value={query} placeholder={l['prep.search.placeholder']} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} />
-        </label>
-        <div className="prep-chips" role="group" aria-label={l['prep.filter.framework']}>
-          {['ALL', ...visibleFrameworks.map((f) => f.key)].map((k) => (
-            <button key={k} type="button" className="prep-chip" aria-pressed={framework === k} onClick={() => { setFramework(k); setLimit(PAGE); }}>
-              {k === 'ALL' ? l['prep.filter.all'] : l[`prep.fw.${k}`]}
-            </button>
-          ))}
-        </div>
-        <div className="prep-chips" role="group" aria-label={l['prep.filter.region']}>
-          {['ALL', ...regions].map((k) => (
-            <button key={k} type="button" className="prep-chip" aria-pressed={region === k} onClick={() => { setRegion(k); setFramework('ALL'); }}>
-              {k === 'ALL' ? l['prep.filter.allRegions'] : l[`prep.region.${k}`]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error ? <p className="ui-hint prep-error" role="alert">{error}</p> : null}
-
-      {!listing ? (
-        <ul className="prep-frameworks">
-          {visibleFrameworks.map((f) => {
+  const frameworkCard = (f: PickerFramework) => {
             const list = byFramework.get(f.key) ?? [];
             const single = list.length === 1 ? list[0] : null;
             const mine = single ? [] : list.filter((o) => o.yourSubject);
@@ -166,23 +194,88 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
                     {ctaLabel(single)}
                   </button>
                 ) : mine.length > 0 ? (
-                  <button type="button" className="btn btn-secondary prep-cta" data-explore-all onClick={() => { setFramework(f.key); setLimit(PAGE); }}>
+                  <button type="button" className="btn btn-secondary prep-cta" data-explore-all onClick={() => { pickFramework(f.key); }}>
                     {(l['acp.prep.exploreAll'] ?? '{framework} ({n})').replace('{framework}', l[`prep.fw.${f.key}`] ?? f.key).replace('{n}', String(list.length))}
                   </button>
                 ) : (
-                  <button type="button" className="btn btn-primary prep-cta" onClick={() => { setFramework(f.key); setLimit(PAGE); }} aria-label={`${l['prep.cta.chooseSubject']}: ${l[`prep.fw.${f.key}`]}`}>
+                  <button type="button" className="btn btn-primary prep-cta" onClick={() => { pickFramework(f.key); }} aria-label={`${l['prep.cta.chooseSubject']}: ${l[`prep.fw.${f.key}`]}`}>
                     {l['prep.cta.chooseSubject']}
                   </button>
                 )}
               </li>
             );
-          })}
-        </ul>
+  };
+
+  return (
+    <div className="prep-picker">
+      <div className="prep-controls">
+        <label className="ui-field prep-search">
+          <span className="ui-label">{l['prep.search.label']}</span>
+          <input className="ui-input" type="search" value={query} placeholder={l['prep.search.placeholder']} onChange={(e) => { setQuery(e.target.value); setLimit(PAGE); }} />
+        </label>
+        <div className="prep-chips" role="group" aria-label={l['prep.filter.framework']}>
+          <button type="button" className="prep-chip" aria-pressed={framework === 'ALL' && !family} onClick={() => { pickFramework('ALL'); setFamily(null); }}>{l['prep.filter.all']}</button>
+          {entries.map((e) =>
+            e.kind === 'FAMILY' ? (
+              <button key={e.family} type="button" className="prep-chip" data-family-chip={e.family} aria-pressed={family === e.family || e.frameworks.some((f) => f.key === framework)} onClick={() => { pickFramework('ALL'); setQuery(''); setFamily(e.family); }}>
+                {familyName(e.family)}
+              </button>
+            ) : (
+              <button key={e.framework.key} type="button" className="prep-chip" aria-pressed={framework === e.framework.key} onClick={() => { setFamily(null); pickFramework(e.framework.key); }}>
+                {fwName(e.framework.key)}
+              </button>
+            )
+          )}
+        </div>
+        <div className="prep-chips" role="group" aria-label={l['prep.filter.region']}>
+          {['ALL', ...regions].map((k) => (
+            <button key={k} type="button" className="prep-chip" aria-pressed={region === k} onClick={() => { setRegion(k); setFramework('ALL'); setFamily(null); }}>
+              {k === 'ALL' ? l['prep.filter.allRegions'] : l[`prep.region.${k}`]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error ? <p className="ui-hint prep-error" role="alert">{error}</p> : null}
+
+      {!listing ? (
+        <>
+          {family ? (
+            <div className="prep-family-head" data-family-level={family}>
+              <h3 className="exv2-title">{l[`acp.prep.familyQuestion.${family}`] ?? familyName(family)}</h3>
+              <p className="ui-hint">{l['acp.prep.familyLead']}</p>
+              <button type="button" className="btn btn-ghost prep-back" onClick={() => setFamily(null)}>{l['prep.back']}</button>
+            </div>
+          ) : null}
+          <ul className="prep-frameworks">
+            {family
+              ? familyFrameworks.map(frameworkCard)
+              : entries.map((e) => {
+                  if (e.kind === 'FRAMEWORK') return frameworkCard(e.framework);
+                  const total = e.frameworks.reduce((n, f) => n + (byFramework.get(f.key)?.length ?? 0), 0);
+                  const reason = e.frameworks.map((f) => frameworkReasons[f.key]).find(Boolean);
+                  return (
+                    <li key={e.family} className="card prep-fw" data-family={e.family}>
+                      <div className="prep-fw-head">
+                        <h3 className="prep-fw-name">{familyName(e.family)}</h3>
+                        {e.frameworks.some((f) => suggested.includes(f.key)) && !reason ? <span className="xr-pill is-good">{l['prep.suggested']}</span> : null}
+                      </div>
+                      {reason ? <p className="ui-hint elig-reason">{reason}</p> : null}
+                      <p className="ui-hint prep-fw-desc">{l[`acp.prep.familyDesc.${e.family}`]}</p>
+                      <p className="prep-fw-meta">{(l['acp.prep.programmes'] ?? '{n}').replace('{n}', String(e.frameworks.length))} · {optionsText(total)}</p>
+                      <button type="button" className="btn btn-primary prep-cta" onClick={() => setFamily(e.family)} aria-label={`${l['acp.prep.chooseProgramme']}: ${familyName(e.family)}`}>
+                        {l['acp.prep.chooseProgramme']}
+                      </button>
+                    </li>
+                  );
+                })}
+          </ul>
+        </>
       ) : (
         <section aria-live="polite" className="prep-results">
           <div className="prep-results-head">
             <p className="ui-hint">{(l['prep.results'] ?? '{n}').replace('{n}', String(results.length))}</p>
-            <button type="button" className="btn btn-ghost prep-back" onClick={() => { setFramework('ALL'); setQuery(''); }}>{l['prep.back']}</button>
+            <button type="button" className="btn btn-ghost prep-back" onClick={() => { const fam = frameworks.find((f) => f.key === framework)?.family ?? null; setFramework('ALL'); setQuery(''); setOpenGroups(new Set()); setFamily(words.length === 0 ? fam : null); }}>{l['prep.back']}</button>
           </div>
           {results.length === 0 ? (
             <p className="ui-hint">{l['prep.noResults']}</p>
@@ -194,10 +287,39 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
                   <ul className="prep-rows">{results.filter((o) => o.yourSubject).map(row)}</ul>
                 </div>
               ) : null}
-              <ul className="prep-rows">{results.filter((o) => !o.yourSubject).slice(0, limit).map(row)}</ul>
-              {results.filter((o) => !o.yourSubject).length > limit ? (
-                <button type="button" className="btn btn-secondary prep-cta" onClick={() => setLimit(limit + PAGE)}>{l['prep.showMore']}</button>
-              ) : null}
+              {grouped ? (
+                <>
+                  {grouped.ungrouped.length > 0 ? <ul className="prep-rows">{grouped.ungrouped.map(row)}</ul> : null}
+                  <div className="prep-groups" data-subject-groups aria-label={l['acp.prep.bySubject']} role="group">
+                    {grouped.groups.map((g) => {
+                      // Closed by default; a search opens every subject that holds a match.
+                      const open = words.length > 0 || openGroups.has(g.key);
+                      return (
+                        <details key={g.key} className="prep-group" data-subject-group={g.key} open={open} onToggle={(e) => {
+                          const isOpen = (e.currentTarget as HTMLDetailsElement).open;
+                          if (words.length > 0 || isOpen === openGroups.has(g.key)) return;
+                          const next = new Set(openGroups);
+                          if (isOpen) next.add(g.key); else next.delete(g.key);
+                          setOpenGroups(next);
+                        }}>
+                          <summary className="prep-group-head">
+                            <span className="prep-group-name">{g.label}</span>
+                            <span className="ui-hint prep-group-count">{optionsText(g.options.length)}</span>
+                          </summary>
+                          <ul className="prep-rows">{g.options.map(row)}</ul>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ul className="prep-rows">{rest.slice(0, limit).map(row)}</ul>
+                  {rest.length > limit ? (
+                    <button type="button" className="btn btn-secondary prep-cta" onClick={() => setLimit(limit + PAGE)}>{l['prep.showMore']}</button>
+                  ) : null}
+                </>
+              )}
             </>
           )}
         </section>

@@ -40,7 +40,7 @@ describe('PreparationHome render', () => {
     const capabilities = computeCapabilities(objective, [], 0);
     const view = { profile: { ...base, objectiveKey: objective.key }, objective, capabilities, plan: null, next: nextStep({ openAttemptId: null, plan: null, canPractice: false, canRunDiagnostic: false, diagnosticDone: false, canViewStructure: false, canPlanDiploma: false, hasExamDate: false }), openAttemptId: null, diagnostic: null };
     const l = labels('es');
-    const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: 'es', dateLine: 'Sin fecha' }));
+    const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: 'es', timing: { session: null, sessionLabel: null, dateLine: 'Sin fecha' }, display: { subject: null, level: null }, aspiration: { areas: [], areaLabel: null } }));
     clean(html);
     expect(html).toContain(l['prep.home.empty.title']);
     expect(html).toContain(l['prep.unavailable.NOT_CONFIGURED']);
@@ -61,7 +61,7 @@ describe('PreparationHome render', () => {
     const view = { profile: { ...base, objectiveKey: objective.key }, objective, capabilities, plan, next: nextStep({ openAttemptId: null, plan, canPractice: true, canRunDiagnostic: true, diagnosticDone: false, canViewStructure: true, canPlanDiploma: false, hasExamDate: true }), openAttemptId: null, diagnostic: null };
     for (const locale of ['es', 'en']) {
       const l = labels(locale);
-      const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: locale, dateLine: '1 junio 2027' }));
+      const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: locale, timing: { session: null, sessionLabel: null, dateLine: '1 junio 2027' }, display: { subject: null, level: null }, aspiration: { areas: [], areaLabel: null } }));
       clean(html);
       expect(html).toContain(l['prep.home.estimate']);
       expect(html).toContain(l['prep.concept.DEMONSTRATED']);
@@ -76,7 +76,7 @@ describe('PreparationHome render', () => {
     const capabilities = computeCapabilities(objective, [], 0);
     const view = { profile: { ...base, objectiveKey: objective.key }, objective, capabilities, plan: null, next: nextStep({ openAttemptId: null, plan: null, canPractice: false, canRunDiagnostic: false, diagnosticDone: false, canViewStructure: true, canPlanDiploma: true, hasExamDate: false }), openAttemptId: null, diagnostic: null };
     const l = labels('es');
-    const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: 'es', dateLine: '' }));
+    const html = renderToStaticMarkup(createElement(PreparationHome, { view: view as any, labels: l, language: 'es', timing: { session: null, sessionLabel: null, dateLine: null }, display: { subject: null, level: null }, aspiration: { areas: [], areaLabel: null } }));
     clean(html);
     expect(html).toContain('href="/dashboard/exams/aice"');
     expect(html).toContain(l['prep.home.aiceSubjects'].replace(/&/g, '&amp;'));

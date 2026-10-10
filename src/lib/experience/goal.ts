@@ -18,6 +18,16 @@ export function selectGoalProfile(profiles: StudentExamProfile[], todayIso: stri
   return upcoming[0] ?? active.find((p) => !p.examDate) ?? null;
 }
 
+/**
+ * T1 final delta (F) -- Home names the exam-preparation CONTEXT honestly: the preparation it links to
+ * (same choice as selectGoalProfile) and how many active preparations exist, so several preparations are
+ * never presented as one single objective. Presentation only.
+ */
+export function activePreparationSummary(profiles: StudentExamProfile[], todayIso: string): { primary: StudentExamProfile | null; activeCount: number } {
+  const primary = selectGoalProfile(profiles, todayIso) ?? profiles.find((p) => p.status === 'ACTIVE') ?? null;
+  return { primary, activeCount: profiles.filter((p) => p.status === 'ACTIVE').length };
+}
+
 /** Whole calendar days from `todayIso` to `dateIso` (both YYYY-MM-DD). */
 export function calendarDaysUntil(dateIso: string, todayIso: string): number {
   const a = Date.UTC(Number(todayIso.slice(0, 4)), Number(todayIso.slice(5, 7)) - 1, Number(todayIso.slice(8, 10)));

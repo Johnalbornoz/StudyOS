@@ -7,6 +7,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import { getMessages, type Locale } from '@/lib/i18n/messages';
 import { SUBJECT_CATALOG, catalogSubject, catalogSubjectByName, normalizeName, type SubjectSuggestion } from '@/lib/experience/subject-catalog';
 import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
+import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import { ACADEMIC_PROFILE_MESSAGES } from '@/lib/i18n/academic-profile-messages';
 
 /**
@@ -86,6 +87,8 @@ export default function SubjectPicker({
     }
   }
 
+  // T1 final delta (G): "Mathematics: analysis and approaches · HL" -> the official name in the interface locale; the level code stays.
+  const profileSubjectLabel = (label: string) => label.split(' · ').map((part, i) => (i === 0 ? localizeCatalogSubjectName(part, locale) : part)).join(' · ');
   const option = (key: string, badge?: string, label?: string) => (
     <li key={key}>
       <button type="button" className="sp-option" onClick={() => choose(key)} disabled={!!busy} aria-describedby={badge ? `sp-b-${key}` : undefined} data-subject-key={key}>
@@ -140,7 +143,7 @@ export default function SubjectPicker({
           {profileLabel && <p className="sp-note">{t['sp.forYouProfile'].replace('{profile}', profileLabel)}</p>}
           <ul className="sp-grid" data-for-you>
             {suggestions.map((s) =>
-              s.reason === 'PROFILE_SUBJECT' ? option(s.key, undefined, s.label) : option(s.key, s.reason === 'EXAM' ? t['sp.examBadge'] : undefined)
+              s.reason === 'PROFILE_SUBJECT' ? option(s.key, undefined, s.label ? profileSubjectLabel(s.label) : undefined) : option(s.key, s.reason === 'EXAM' ? t['sp.examBadge'] : undefined)
             )}
           </ul>
         </section>

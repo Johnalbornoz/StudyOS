@@ -15,7 +15,7 @@
 import Link from 'next/link';
 import type { PreparationView } from '@/lib/exam-core/objectives/preparation.service';
 import type { PlannedRequirement } from '@/lib/exam-core/objectives/preparation-plan';
-import { AddConceptButton, DiagnosticButton, GoalDetailsForm } from './PrepActions';
+import { AddConceptButton, DiagnosticButton, ExamSessionPrompt, GoalDetailsForm, type ExamSessionChoice } from './PrepActions';
 
 type L = Record<string, string>;
 const fill = (s: string | undefined, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s ?? '');
@@ -23,7 +23,24 @@ const fill = (s: string | undefined, vars: Record<string, string | number>) => O
 const STATUS_TONE: Record<string, string> = { ALREADY_STRONG: 'is-good', NEEDS_CONFIRMATION: 'is-partial', NEEDS_REINFORCEMENT: 'is-warn', NO_EVIDENCE: '', NOT_YET_MAPPED: '' };
 const CONCEPT_TONE: Record<string, string> = { DEMONSTRATED: 'is-good', MAINTENANCE: 'is-good', IN_PROGRESS: 'is-partial', NEEDS_REINFORCEMENT: 'is-warn', NO_EVIDENCE: '' };
 
-export function PreparationHome({ view, labels: l, language, dateLine }: { view: PreparationView; labels: L; language: string; dateLine: string }) {
+export interface PreparationTiming {
+  /** Governed sessions of this exam (null = the exam has none: date mode). */
+  session: ExamSessionChoice | null;
+  /** The chosen session in the interface locale ("Mayo 2027"), when one is stored. */
+  sessionLabel: string | null;
+  /** Date mode: the Student's exam date line (or the 'no date' text). Session mode: only a stored legacy date, else null. */
+  dateLine: string | null;
+}
+
+export function PreparationHome({ view, labels: l, language, timing, display, aspiration }: {
+  view: PreparationView;
+  labels: L;
+  language: string;
+  timing: PreparationTiming;
+  /** Catalogue labels in the interface locale (display only). */
+  display: { subject: string | null; level: string | null };
+  aspiration: { areas: Array<{ id: string; label: string }>; areaLabel: string | null };
+}) {
   const { profile, objective, capabilities: c, plan, next } = view;
   const practiceHref = (nodeKey: string) => `/dashboard/exams?node=${encodeURIComponent(nodeKey)}`;
   const conceptHref = (r: PlannedRequirement) => {
@@ -68,7 +85,7 @@ export function PreparationHome({ view, labels: l, language, dateLine }: { view:
       case 'REVIEW_STRUCTURE':
         return <a className="btn btn-primary prep-cta" href="#prep-assesses">{l['prep.next.REVIEW_STRUCTURE']}</a>;
       case 'SET_GOAL_DETAILS':
-        return <a className="btn btn-primary prep-cta" href="#prep-goal">{l['prep.next.SET_GOAL_DETAILS']}</a>;
+        return <a className="btn btn-primary prep-cta" href={timing.session ? '#prep-session-title' : '#prep-goal'}>{timing.session ? l['acp.goal.session.choose'] : l['prep.next.SET_GOAL_DETAILS']}</a>;
       default:
         return <Link className="btn btn-primary prep-cta" href="/dashboard/subjects">{l['prep.next.EXPLORE_LEARNING']}</Link>;
     }
@@ -88,7 +105,7 @@ export function PreparationHome({ view, labels: l, language, dateLine }: { view:
       {/* Próximo paso recomendado */}
       <section className="card prep-next" aria-labelledby="prep-next-title">
         <h2 id="prep-next-title" className="ex-status-title">{l['prep.home.next']}</h2>
-        <p className="ex-status-body">{fill(l[`prep.next.body.${next.kind}`], { concept: conceptName(next.requirement) })}</p>
+        <p className="ex-status-body">{next.kind === 'SET_GOAL_DETAILS' && timing.session ? l['acp.goal.session.required.body'] : fill(l[`prep.next.body.${next.kind}`], { concept: conceptName(next.requirement) })}</p>
         <div className="xr-next-actions">{nextAction}</div>
       </section>
 
@@ -99,23 +116,49 @@ export function PreparationHome({ view, labels: l, language, dateLine }: { view:
         </section>
       )}
 
+      {/* C: an exam with governed sessions asks for its series + year right after it is chosen. */}
+      {timing.session && !timing.sessionLabel ? (
+        <section className="card prep-next" aria-labelledby="prep-session-title" data-session-pending>
+          <h2 id="prep-session-title" className="ex-status-title">{l['acp.goal.session.required.title']}</h2>
+          <p className="ex-status-body">{l['acp.goal.session.required.body']}</p>
+          <ExamSessionPrompt profileId={profile.id} session={timing.session} labels={l} />
+        </section>
+      ) : null}
+
       <div className="prep-grid">
-        {/* Tu objetivo */}
+        {/* Tu examen (+ Tu objetivo académico, opcional) */}
         <section className="card prep-section" id="prep-goal" aria-labelledby="prep-goal-title">
-          <h2 id="prep-goal-title" className="ex-status-title">{l['prep.home.goal']}</h2>
+          <h2 id="prep-goal-title" className="ex-status-title">{l['acp.goal.exam.title']}</h2>
           <dl className="prep-facts">
             <div><dt>{l['prep.goal.framework']}</dt><dd>{l[`prep.fw.${objective.framework}`]}</dd></div>
             {objective.context.programme ? <div><dt>{l['prep.goal.programme']}</dt><dd>{objective.context.programme}</dd></div> : null}
             {objective.context.groups.length ? <div><dt>{l['prep.goal.group']}</dt><dd>{objective.context.groups.join(' / ')}</dd></div> : null}
-            {objective.context.subject ? <div><dt>{l['prep.goal.subject']}</dt><dd>{objective.context.subject}{objective.context.syllabusCode && !objective.context.subject.includes(objective.context.syllabusCode) ? ` (${objective.context.syllabusCode})` : ''}</dd></div> : null}
-            {objective.context.level ? <div><dt>{l['prep.goal.level']}</dt><dd>{objective.context.level}</dd></div> : null}
+            {objective.context.subject ? <div><dt>{l['prep.goal.subject']}</dt><dd>{display.subject ?? objective.context.subject}{objective.context.syllabusCode && !objective.context.subject.includes(objective.context.syllabusCode) ? ` (${objective.context.syllabusCode})` : ''}</dd></div> : null}
+            {objective.context.level ? <div><dt>{l['prep.goal.level']}</dt><dd>{display.level ?? objective.context.level}</dd></div> : null}
             {objective.context.version ? <div><dt>{l['prep.goal.version']}</dt><dd>{objective.context.version}</dd></div> : null}
-            <div><dt>{l['prep.goal.date']}</dt><dd>{dateLine}</dd></div>
+            {timing.session ? <div data-exam-session-fact><dt>{l['acp.goal.session']}</dt><dd>{timing.sessionLabel ?? l['acp.goal.session.pending']}</dd></div> : null}
+            {timing.dateLine ? <div><dt>{l['acp.goal.examDate']}</dt><dd>{timing.dateLine}</dd></div> : null}
           </dl>
+          {profile.targetInstitutionName || aspiration.areaLabel || profile.targetQualification ? (
+            <div data-aspiration-facts>
+              <h3 className="ui-label">{l['acp.goal.aspiration.title']}</h3>
+              <dl className="prep-facts">
+                {profile.targetInstitutionName ? <div><dt>{l['acp.goal.institution']}</dt><dd>{profile.targetInstitutionName}</dd></div> : null}
+                {aspiration.areaLabel ? <div><dt>{l['acp.goal.area']}</dt><dd>{aspiration.areaLabel}</dd></div> : null}
+                {profile.targetQualification ? <div><dt>{l['prep.goal.qualification']}</dt><dd>{profile.targetQualification}</dd></div> : null}
+              </dl>
+            </div>
+          ) : null}
           <details className="ui-disclosure">
             <summary>{l['prep.goal.edit']}</summary>
             <div className="ui-disclosure-body">
-              <GoalDetailsForm profileId={profile.id} initial={{ examDate: profile.examDate ? String(profile.examDate).slice(0, 10) : null, targetInstitutionName: profile.targetInstitutionName ?? null, targetQualification: profile.targetQualification ?? null }} labels={l} />
+              <GoalDetailsForm
+                profileId={profile.id}
+                initial={{ examDate: profile.examDate ? String(profile.examDate).slice(0, 10) : null, targetInstitutionName: profile.targetInstitutionName ?? null, interestArea: profile.interestArea ?? null, interestAreaDetail: profile.interestAreaDetail ?? null }}
+                session={timing.session}
+                areas={aspiration.areas}
+                labels={l}
+              />
             </div>
           </details>
           <div className="xr-next-actions">

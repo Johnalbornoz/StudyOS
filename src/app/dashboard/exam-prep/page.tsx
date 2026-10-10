@@ -13,6 +13,9 @@ import { PageIntro } from '@/components/ui/PageIntro';
 import { StatusBadge, toneForReadinessStatus } from '@/components/ui/StatusBadge';
 import { calendarDaysUntil } from '@/lib/experience/goal';
 import { PreparationChooser } from './PreparationChooser';
+import { loadResolvedStudentContext } from '@/lib/student/student-context.server';
+import { presentObjective } from '@/lib/exam-core/objectives/objective-display';
+import { examSessionLabel, objectiveSessionModel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 import { allObjectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { objectiveStatusKey } from '@/lib/exam-core/objectives/capabilities';
@@ -51,7 +54,10 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
   const t = getMessages(locale);
   const tr = t as Record<string, string>;
 
-  const [profiles, picker, caps] = await Promise.all([listStudentExamProfiles(studentId), loadPickerData(studentId, locale), allObjectiveCapabilities(locale)]);
+  const [profiles, picker, caps, studentContext] = await Promise.all([listStudentExamProfiles(studentId), loadPickerData(studentId, locale), allObjectiveCapabilities(locale), loadResolvedStudentContext(studentId)]);
+  // T1 final delta (A): an EXAM_PREP Student has no school to describe -- the landing is the exam selector.
+  const examPrepContext = studentContext.contextType === 'EXAM_PREP';
+  const lead = examPrepContext ? tr['acp.prep.examLead'] : tr['prep.lead'];
   const rows = await Promise.all(
     profiles.map(async (profile) => {
       const [definition, snapshot, openAttempt, objective] = await Promise.all([
@@ -61,7 +67,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
         profileObjective(profile),
       ]);
       const capabilities = objective ? caps.get(objective.key) ?? null : null;
-      return { profile, objective, capabilities, definitionName: objective?.label ?? definition?.name ?? '', family: definition?.examFamily ?? null, snapshot, openAttempt };
+      return { profile, objective, capabilities, definitionName: (objective ? presentObjective(objective, locale).label : null) ?? definition?.name ?? '', family: definition?.examFamily ?? null, snapshot, openAttempt };
     })
   );
   // REM-T1-05 / REM-T1-02: opened from a first-use journey choice -> Back returns to that choice.
@@ -87,10 +93,17 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
     return `${date} · ${days === 0 ? t['xp.goalToday'] : days === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(days))}`;
   };
 
+  // T1 final delta (C): an exam with governed sessions shows its series + year ("Mayo 2027"), never "no exam date".
+  const timeLine = (profile: (typeof rows)[number]['profile'], objective: (typeof rows)[number]['objective']) => {
+    if (!objective || !objectiveSessionModel(objective, studentContext.legacy.countryOfStudy)) return dateLine(profile.examDate);
+    const session = storedExamSession(profile);
+    return session ? examSessionLabel(session, locale) : profile.examDate ? dateLine(profile.examDate) : tr['acp.goal.session.pending'];
+  };
+
   const chooser = (
     <section className="prep-choose" id="prep-choose" aria-labelledby="prep-choose-title">
       <h2 id="prep-choose-title" className="sr-only">{tr['prep.question']}</h2>
-      <PreparationChooser objectives={picker.objectives} frameworks={picker.frameworks} suggested={picker.suggested} frameworkReasons={picker.frameworkReasons} hasAcademicContext={picker.hasAcademicContext} labels={prepLabels} />
+      <PreparationChooser objectives={picker.objectives} frameworks={picker.frameworks} suggested={picker.suggested} frameworkReasons={picker.frameworkReasons} hasAcademicContext={picker.hasAcademicContext} examPrepContext={examPrepContext} labels={prepLabels} />
     </section>
   );
 
@@ -111,7 +124,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
     return (
       <div className="xp-page xp-page--wide">
         {backLink}
-        <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={tr['prep.lead']} />
+        <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={lead} />
         {institutionDefinesPath ? <p className="ui-hint jx-exams-note" data-programme-note>{tr['jx.inst.exams.note']}</p> : null}
 
         {ordered.length > 0 && (
@@ -168,7 +181,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
     <div className="xp-page xp-page--wide">
       {/* Objective first: the page IS the question; readiness never blocks the choice. */}
       {backLink}
-      <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={tr['prep.lead']} />
+      <PageIntro title={rows.length === 0 ? tr['prep.question'] : t['examPrep.title']} lead={lead} />
 
       {rows.length > 0 && (
         <section aria-labelledby="prep-mine-title" className="prep-mine">
@@ -185,7 +198,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
                   <>
                     <p className="ex-goal-kicker">{objective ? tr[`prep.fw.${objective.framework}`] : family ? familyNames[family] ?? family : t['ex.goalKicker']}</p>
                     <Link href={`/dashboard/exam-prep/${profile.id}`} className="ex-card-name">{definitionName}</Link>
-                    <p className="ex-card-meta">{dateLine(profile.examDate)}</p>
+                    <p className="ex-card-meta">{timeLine(profile, objective)}</p>
                     <div className="ex-card-state">
                       {capabilities ? (
                         <span className={`xr-pill prep-status prep-status--${objectiveStatusKey(capabilities)}`}>{tr[`prep.status.${objectiveStatusKey(capabilities)}`]}</span>

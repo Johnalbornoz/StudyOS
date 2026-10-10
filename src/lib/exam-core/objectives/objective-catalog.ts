@@ -40,6 +40,18 @@ export const OBJECTIVE_FRAMEWORKS: Array<{ key: ObjectiveFramework; region: 'INT
   { key: 'CIE_AICE', region: 'INTERNATIONAL' },
 ];
 
+/**
+ * T1 final delta (B1) -- catalogue FAMILIES shown as ONE entry on the landing: the awarding body first,
+ * then its programmes. Cambridge International -> IGCSE / International AS & A Level / AICE Diploma.
+ * Frameworks, qualifications, syllabus codes, levels and series availability are unchanged underneath.
+ */
+export const OBJECTIVE_FAMILIES: Array<{ key: 'CAMBRIDGE'; frameworks: ObjectiveFramework[] }> = [
+  { key: 'CAMBRIDGE', frameworks: ['CIE_IGCSE', 'CIE_AS_A', 'CIE_AICE'] },
+];
+export function familyOfFramework(framework: string): string | null {
+  return OBJECTIVE_FAMILIES.find((f) => (f.frameworks as string[]).includes(framework))?.key ?? null;
+}
+
 export interface ExamObjective {
   /** Canonical identity of the objective (stored on the preparation profile). */
   key: string;
@@ -62,6 +74,8 @@ export interface ExamObjective {
   sourceKeys: string[];
   /** Lower-cased text the search matches against. */
   searchText: string;
+  /** Catalogue SUBJECT node the objective belongs to (null for whole-test / planner objectives). */
+  subjectNodeKey: string | null;
 }
 
 const PART_TYPES = new Set<CatalogNode['type']>(['PAPER', 'COMPONENT', 'PORTFOLIO', 'PERFORMANCE', 'PROJECT', 'SECTION', 'AREA', 'DOMAIN', 'VARIANT']);
@@ -115,7 +129,7 @@ const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerC
 /** Every preparation objective of the catalogue, in framework order. */
 export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALOG): ExamObjective[] {
   const out = new Map<string, ExamObjective>();
-  const add = (o: Omit<ExamObjective, 'searchText' | 'nodeKeys'> & { nodeKeys?: string[] }) => {
+  const add = (o: Omit<ExamObjective, 'searchText' | 'nodeKeys' | 'subjectNodeKey'> & { nodeKeys?: string[]; subjectNodeKey?: string | null }) => {
     const prev = out.get(o.key);
     if (prev) {
       // Same qualification reached from another group: one objective, every group named.
@@ -125,7 +139,7 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
       prev.searchText = strip([prev.searchText, ...o.context.groups].join(' '));
       return;
     }
-    const full: ExamObjective = { ...o, nodeKeys: o.nodeKeys ?? [o.nodeKey], searchText: '' };
+    const full: ExamObjective = { ...o, nodeKeys: o.nodeKeys ?? [o.nodeKey], searchText: '', subjectNodeKey: o.subjectNodeKey ?? null };
     full.searchText = strip([o.label, o.labels.es, o.labels.en, o.context.programme, o.context.subject, o.context.syllabusCode, o.context.level, ...o.context.groups, o.framework].filter(Boolean).join(' '));
     out.set(o.key, full);
   };
@@ -169,7 +183,7 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
             add({
               key: n.key, framework: fw, family: fam.family, kind: 'SUBJECT_LEVEL', nodeKey: n.key, label: subjectLabel, labels: n.labels ?? {},
               context: { programme: programmeOf, groups: groupLabel ? [groupLabel] : [], subject: subjectLabel, syllabusCode: n.syllabusCode ?? null, level: null, version: versionText(n) },
-              description: n.description ?? null, configKeys: bindKeys(n), catalogParts: parts(n), sourceKeys: n.sourceKeys ?? [],
+              description: n.description ?? null, configKeys: bindKeys(n), catalogParts: parts(n), sourceKeys: n.sourceKeys ?? [], subjectNodeKey: n.key,
             });
             return;
           }
@@ -179,7 +193,7 @@ export function listExamObjectives(families: CatalogFamily[] = ASSESSMENT_CATALO
             add({
               key, framework: fw, family: fam.family, kind: 'SUBJECT_LEVEL', nodeKey: lv.key, label: `${subjectLabel} · ${levelLabel}`, labels: {},
               context: { programme: programmeOf, groups: groupLabel ? [groupLabel] : [], subject: subjectLabel, syllabusCode: n.syllabusCode ?? lv.syllabusCode ?? null, level: levelLabel, version: versionText(lv, n) },
-              description: n.description ?? null, configKeys: bindKeys(lv), catalogParts: parts(lv), sourceKeys: lv.sourceKeys ?? n.sourceKeys ?? [],
+              description: n.description ?? null, configKeys: bindKeys(lv), catalogParts: parts(lv), sourceKeys: lv.sourceKeys ?? n.sourceKeys ?? [], subjectNodeKey: n.key,
             });
           }
           return;

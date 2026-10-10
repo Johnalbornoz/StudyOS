@@ -1,4 +1,5 @@
-import { objectiveByKey } from '@/lib/exam-core/objectives/objective-catalog';
+import { objectiveDisplayLabel } from '@/lib/exam-core/objectives/objective-display';
+import { examSessionLabel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { after } from 'next/server';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
@@ -18,7 +19,7 @@ import { deriveTodayState } from '@/lib/lx/today-view';
 import type { NextChallengeView } from '@/lib/experience/next-challenge';
 import { presentSnapshotNextChallenge, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
 import { challengeVerb } from '@/lib/experience/vocabulary';
-import { selectGoalProfile, calendarDaysUntil } from '@/lib/experience/goal';
+import { activePreparationSummary, calendarDaysUntil } from '@/lib/experience/goal';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Section } from '@/components/ui/Section';
 import { StatTile } from '@/components/ui/StatTile';
@@ -163,7 +164,9 @@ export default async function TodayPage() {
       .catch(() => null),
   ]);
   const noConceptYet = !!mySubjects && mySubjects.length > 0 && mySubjects.every((sub) => !sub.has_concepts);
-  const goalProfile = selectGoalProfile(examProfiles, todayIso);
+  // T1 final delta (F): the exam-preparation context (never "the" objective when there are several preparations).
+  const preparations = activePreparationSummary(examProfiles, todayIso);
+  const goalProfile = preparations.primary;
   const goalDefinition = goalProfile?.examDefinitionId ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
 
   const caminoItems = (horizon?.items ?? []).slice(0, 4);
@@ -242,10 +245,16 @@ export default async function TodayPage() {
 
   const firstName = user?.firstName?.trim();
   // Objective first: a catalogue-only objective has no exam definition, only its governed objective label.
-  const goalName = (goalProfile?.objectiveKey ? objectiveByKey(goalProfile.objectiveKey)?.label : null) ?? goalDefinition?.name ?? null;
+  // (G) catalogue label in the interface locale; official programme / test names stay as published.
+  const goalName = objectiveDisplayLabel(goalProfile?.objectiveKey, locale) ?? goalDefinition?.name ?? null;
   const goalDays = goalProfile?.examDate ? calendarDaysUntil(goalProfile.examDate, todayIso) : null;
+  const goalSession = goalProfile ? storedExamSession(goalProfile) : null;
   const goalWhen =
-    goalDays === null ? null : goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays));
+    goalDays !== null && goalDays >= 0
+      ? goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays))
+      : goalSession ? examSessionLabel(goalSession, locale) : null;
+  const tx = t as Record<string, string>;
+  const learningSubjectId = best?.decision.subjectId ?? (mySubjects?.length === 1 ? mySubjects[0].id : null);
 
   // A hero concept with nothing executable right now (canonical
   // CONSOLIDATED / BLOCKED / zero-gap) shows the calm card only when
@@ -260,10 +269,12 @@ export default async function TodayPage() {
         <h1>{firstName ? t['xp.greeting'].replace('{name}', firstName) : t['xp.greetingNoName']}</h1>
         <p className="xp-tagline">{t['xp.tagline']}</p>
         {mySubjects && mySubjects.length > 0 && (
-          <div className="xp-subjects">
+          <div className="xp-subjects" data-home-learning>
+            {/* F: the LEARNING context, named apart from any exam preparation. */}
+            {learningSubjectId ? <span className="xp-context-label">{tx['acp.home.learningNow']}</span> : null}
             <SubjectSwitcher
-              subjects={mySubjects.map(({ id, name }) => ({ id, name }))}
-              currentId={best?.decision.subjectId ?? (mySubjects.length === 1 ? mySubjects[0].id : null)}
+              subjects={mySubjects.map(({ id, name }) => ({ id, name: localizeSubjectName(name, locale) }))}
+              currentId={learningSubjectId}
               label={t['ss.label']}
               placeholder={t['ss.placeholder']}
               addLabel={t['ss.add']}
@@ -271,9 +282,11 @@ export default async function TodayPage() {
           </div>
         )}
         {goalProfile && goalName && (
-          <Link href={`/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal">
-            <span>{t['xp.goalLabel']}</span>
+          <Link href={preparations.activeCount > 1 ? '/dashboard/exam-prep' : `/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal" data-home-preparation>
+            {/* F: the EXAM-PREPARATION context. Several preparations are never shown as one single objective. */}
+            <span>{preparations.activeCount > 1 ? tx['acp.home.activePreps'] : tx['acp.home.activePrep']}</span>
             <strong>{goalName}</strong>
+            {preparations.activeCount > 1 ? <span>{tx['acp.home.morePreps'].replace('{n}', String(preparations.activeCount - 1))}</span> : null}
             {goalWhen && <span className="xp-goal-when">{goalWhen}</span>}
           </Link>
         )}
@@ -300,7 +313,7 @@ export default async function TodayPage() {
             <NextChallengeCard
               view={hero}
               conceptLabel={bestLabel?.label ?? best.decision.actionConceptId}
-              subjectName={bestLabel?.subjectName ?? ''}
+              subjectName={bestLabel?.subjectName ? localizeSubjectName(bestLabel.subjectName, locale) : ''}
               studentId={studentId}
               t={t}
               locale={locale}

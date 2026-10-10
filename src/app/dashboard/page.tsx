@@ -90,7 +90,7 @@ export default async function DashboardPage() {
         actions={
           overview.subjects.length > 0 ? (
             <SubjectSwitcher
-              subjects={overview.subjects.map((s) => ({ id: s.subjectId, name: s.subjectName }))}
+              subjects={overview.subjects.map((s) => ({ id: s.subjectId, name: localizeSubjectName(s.subjectName, locale) }))}
               currentId={null}
               label={t['ss.label']}
               placeholder={t['ss.label']}

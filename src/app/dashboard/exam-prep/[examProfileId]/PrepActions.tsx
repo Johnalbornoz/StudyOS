@@ -83,39 +83,124 @@ export function DiagnosticButton({ profileId, language, labels: l, primary = tru
   );
 }
 
-export function GoalDetailsForm({ profileId, initial, labels: l }: { profileId: string; initial: { examDate: string | null; targetInstitutionName: string | null; targetQualification: string | null }; labels: L }) {
+export interface ExamSessionChoice {
+  /** Controlled options from the governed session catalogue ("ES:MAY:2027" -> "May 2027"). */
+  options: Array<{ key: string; label: string }>;
+  /** The stored session key, or null when none is chosen yet. */
+  value: string | null;
+}
+
+/**
+ * T1 final delta (C): an exam with governed sessions is configured with its SERIES + YEAR, asked right
+ * after the exam is chosen. Shown until a session is saved; nothing else on the page is blocked by it.
+ */
+export function ExamSessionPrompt({ profileId, session, labels: l }: { profileId: string; session: ExamSessionChoice; labels: L }) {
+  const router = useRouter();
+  const [value, setValue] = useState('');
+  const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!value) return;
+    setState('busy');
+    const r = await fetch(`/api/exam-preparation/${profileId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examSession: value }) }).catch(() => null);
+    if (r?.ok) router.refresh();
+    setState(r?.ok ? 'idle' : 'error');
+  }
+  return (
+    <form className="ui-form prep-session-prompt" onSubmit={save} data-session-required>
+      <label className="ui-field">
+        <span className="ui-label">{l['acp.goal.session']}</span>
+        <select className="ui-select" value={value} onChange={(e) => setValue(e.target.value)} required>
+          <option value="">{l['acp.goal.session.choose']}</option>
+          {session.options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+        <span className="ui-hint">{l['acp.goal.session.help']}</span>
+      </label>
+      <div className="ui-form-actions">
+        <button className="btn btn-primary prep-cta" type="submit" disabled={state === 'busy' || !value} aria-busy={state === 'busy'}>{l['acp.goal.session.save']}</button>
+        {state === 'error' ? <span className="ui-hint" role="alert">{l['prep.error']}</span> : null}
+      </div>
+    </form>
+  );
+}
+
+/**
+ * "Tu examen" (timing) apart from "Tu objetivo académico (opcional)" (aspiration).
+ *   - governed sessions (IB, Cambridge): a controlled session, never a free date as the configuration;
+ *   - every other exam: the Student's own exam date.
+ * The aspiration is optional and never gates the preparation.
+ */
+export function GoalDetailsForm({ profileId, initial, session, areas, labels: l }: {
+  profileId: string;
+  initial: { examDate: string | null; targetInstitutionName: string | null; interestArea: string | null; interestAreaDetail: string | null };
+  /** Non-null when the exam has governed sessions. */
+  session: ExamSessionChoice | null;
+  areas: Array<{ id: string; label: string }>;
+  labels: L;
+}) {
   const router = useRouter();
   const [examDate, setExamDate] = useState(initial.examDate ?? '');
+  const [examSession, setExamSession] = useState(session?.value ?? '');
   const [institution, setInstitution] = useState(initial.targetInstitutionName ?? '');
-  const [qualification, setQualification] = useState(initial.targetQualification ?? '');
+  const [area, setArea] = useState(initial.interestArea ?? '');
+  const [areaDetail, setAreaDetail] = useState(initial.interestAreaDetail ?? '');
   const [state, setState] = useState<'idle' | 'busy' | 'saved' | 'error'>('idle');
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setState('busy');
+    const timing = session ? { examSession: examSession || null } : { examDate: examDate || null };
     const r = await fetch(`/api/exam-preparation/${profileId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examDate: examDate || null, targetInstitutionName: institution.trim() || null, targetQualification: qualification.trim() || null }),
+      body: JSON.stringify({ ...timing, targetInstitutionName: institution.trim() || null, interestArea: area || null, interestAreaDetail: area === 'OTHER' ? areaDetail.trim() || null : null }),
     }).catch(() => null);
     setState(r?.ok ? 'saved' : 'error');
     if (r?.ok) router.refresh();
   }
+  const optional = <span className="ui-optional">({l['acp.goal.optional']})</span>;
   return (
     <form className="ui-form prep-goal-form" onSubmit={save}>
-      <div className="ui-form-grid">
-        <label className="ui-field">
-          <span className="ui-label">{l['prep.goal.date']} <span className="ui-optional">({l['prep.goal.optional']})</span></span>
-          <input className="ui-input" type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
-        </label>
-        <label className="ui-field">
-          <span className="ui-label">{l['prep.goal.institution']} <span className="ui-optional">({l['prep.goal.optional']})</span></span>
-          <input className="ui-input" maxLength={200} value={institution} onChange={(e) => setInstitution(e.target.value)} />
-        </label>
-        <label className="ui-field">
-          <span className="ui-label">{l['prep.goal.qualification']} <span className="ui-optional">({l['prep.goal.optional']})</span></span>
-          <input className="ui-input" maxLength={200} value={qualification} onChange={(e) => setQualification(e.target.value)} />
-        </label>
-      </div>
+      <fieldset className="prep-goal-group" data-goal-exam>
+        <legend className="ui-label">{l['acp.goal.exam.title']}</legend>
+        {session ? (
+          <label className="ui-field">
+            <span className="ui-label">{l['acp.goal.session']}</span>
+            <select className="ui-select" value={examSession} onChange={(e) => setExamSession(e.target.value)} data-exam-session>
+              <option value="">{l['acp.goal.session.choose']}</option>
+              {session.options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
+            <span className="ui-hint">{l['acp.goal.session.help']}</span>
+          </label>
+        ) : (
+          <label className="ui-field">
+            <span className="ui-label">{l['acp.goal.examDate']} {optional}</span>
+            <input className="ui-input" type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
+          </label>
+        )}
+      </fieldset>
+      <fieldset className="prep-goal-group" data-goal-aspiration>
+        <legend className="ui-label">{l['acp.goal.aspiration.title']} {optional}</legend>
+        <p className="ui-hint">{l['acp.goal.aspiration.lead']}</p>
+        <div className="ui-form-grid">
+          <label className="ui-field">
+            <span className="ui-label">{l['acp.goal.institution']} {optional}</span>
+            <input className="ui-input" maxLength={200} value={institution} onChange={(e) => setInstitution(e.target.value)} />
+          </label>
+          <label className="ui-field">
+            <span className="ui-label">{l['acp.goal.area']} {optional}</span>
+            <select className="ui-select" value={area} onChange={(e) => setArea(e.target.value)} data-interest-area>
+              <option value="">{l['acp.goal.area.none']}</option>
+              {areas.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+            </select>
+          </label>
+          {area === 'OTHER' ? (
+            <label className="ui-field">
+              <span className="ui-label">{l['acp.goal.area.otherDetail']} {optional}</span>
+              <input className="ui-input" maxLength={200} value={areaDetail} onChange={(e) => setAreaDetail(e.target.value)} data-interest-area-detail />
+            </label>
+          ) : null}
+        </div>
+      </fieldset>
       <div className="ui-form-actions">
         <button className="btn btn-secondary prep-cta" type="submit" disabled={state === 'busy'} aria-busy={state === 'busy'}>{l['prep.goal.save']}</button>
         {state === 'saved' ? <span className="ui-hint" role="status">{l['prep.goal.saved']}</span> : state === 'error' ? <span className="ui-hint" role="alert">{l['prep.error']}</span> : null}

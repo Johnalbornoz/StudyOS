@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { COUNTRIES, SCHOOL_YEARS_BY_COUNTRY, type CountryOfStudy, type CurriculumType } from '@/lib/academic-options';
 import type { Locale } from '@/lib/i18n/messages';
 import { countryDisplayName, gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
+import { localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import {
   canonicalTimeContextText,
   formatTimeContext,
@@ -393,12 +394,12 @@ export default function AcademicProfileWizard({
           <p className="acp-hint" aria-live="polite">{t['acp.subjects.selected'].replace('{n}', String(subjects.length))}</p>
           <ul className="acp-subjects">
             {subjectOptions
-              .filter((s) => !words || `${s.name} ${s.level ?? ''}`.toLowerCase().includes(words))
+              .filter((s) => !words || `${s.name} ${localizeCatalogSubjectName(s.name, locale)} ${s.level ?? ''}`.toLowerCase().includes(words))
               .map((s) => (
                 <li key={s.id}>
                   <label className="acp-subject">
                     <input type="checkbox" checked={subjects.includes(s.id)} onChange={(e) => setSubjects(e.target.checked ? [...subjects, s.id] : subjects.filter((x) => x !== s.id))} />
-                    <span>{s.level ? `${s.name} · ${s.level}` : s.name}</span>
+                    <span>{s.level ? `${localizeCatalogSubjectName(s.name, locale)} · ${s.level}` : localizeCatalogSubjectName(s.name, locale)}</span>
                   </label>
                 </li>
               ))}
