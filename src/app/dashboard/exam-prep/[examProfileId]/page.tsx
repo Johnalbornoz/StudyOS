@@ -1,3 +1,4 @@
+import { preparationSimulationTypes } from '@/lib/simulation/preparation-simulation';
 import { auth } from '@clerk/nextjs/server';
 import { examAudienceOf } from '@/lib/exam-core/audience';
 import { redirect, notFound } from 'next/navigation';
@@ -481,7 +482,8 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             fullMockEligible={fullMockEligibility?.eligible ?? false}
             fullMockReasons={fullMockEligibility?.reasons ?? []}
             areas={areas.map((a) => ({ componentId: a.componentId, name: a.name, academicSubjectId: a.academicSubjectId, objectives: a.objectives.map((o) => ({ id: o.id, description: o.description })) }))}
-            allowedTypes={policy.ok ? policy.policy.allowedSimulationTypes : undefined}
+            // B1: this panel starts PREPARATION SIMULATIONS only -- an official full mock is an exam instance.
+            allowedTypes={preparationSimulationTypes(policy.ok ? policy.policy.allowedSimulationTypes : undefined)}
             allowedTimings={policy.ok ? policy.policy.allowedTimingModes : undefined}
             language={locale}
             initialArea={areas.some((a) => a.academicSubjectId === area) ? area : undefined}

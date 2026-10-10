@@ -1,3 +1,4 @@
+import { attemptKindLabelKey } from '@/lib/experience/exam-prep';
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -50,7 +51,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader
         title={t['examPrep.attempt.title']}
-        subtitle={label(`ex.type.${attempt.simulationType}`, attempt.simulationType)}
+        subtitle={label(attemptKindLabelKey({ simulationType: attempt.simulationType, instanceMode: instance?.mode, instanceFidelity: instance?.form?.fidelity }), attempt.simulationType)}
         breadcrumb={<Link href={`/dashboard/exam-prep/${attempt.examProfileId}`}>{t['examPrep.title']}</Link>}
       />
 

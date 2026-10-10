@@ -27,6 +27,9 @@ import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.ser
 import { getExamVersion, getPublishedExamVersion } from '@/lib/assessment/exam-definition.service';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
 import { startSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { createExamInstance, startExamInstance, ExamInstanceError } from '@/lib/exam-core/exam-instance.service';
+import { listComponentsForVersion } from '@/lib/assessment/component.service';
+import { isPreparationSimulationType } from '@/lib/simulation/preparation-simulation';
 import type { SimulationType } from '@/lib/simulation/types';
 
 export class StudentInterventionAccessDeniedError extends Error {
@@ -47,6 +50,46 @@ export class StudentInterventionNotStartableError extends Error {
   constructor(reason: string) {
     super(reason);
     this.name = 'StudentInterventionNotStartableError';
+  }
+}
+
+/**
+ * B1-C -- how a Teacher-assigned exam practice becomes an attempt, by what it is:
+ *   a preparation type (TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK)  -> a Preparation Simulation, started directly
+ *   anything else (a full mock)                                  -> an OFFICIAL mock, through a frozen exam instance
+ * Eligibility has already been checked by the caller for every type alike; this only chooses the start path.
+ */
+export async function startInterventionExamAttempt(p: { studentId: string; examProfileId: string; examVersionId: string; simulationType: SimulationType; learningObjectiveId?: string; academicSubjectId?: string }): Promise<string> {
+  if (!isPreparationSimulationType(p.simulationType)) return startOfficialMockForIntervention({ studentId: p.studentId, examProfileId: p.examProfileId, examVersionId: p.examVersionId });
+  const { simulationAttempt } = await startSimulationAttempt({
+    studentId: p.studentId,
+    examProfileId: p.examProfileId,
+    examVersionId: p.examVersionId,
+    simulationType: p.simulationType,
+    timingMode: 'UNTIMED',
+    learningObjectiveId: p.learningObjectiveId,
+    academicSubjectId: p.academicSubjectId,
+    language: 'en',
+  });
+  return simulationAttempt.id;
+}
+
+/**
+ * B1-C -- starts a Teacher-assigned FULL_MOCK as an official mock: a MOCK exam instance over every
+ * simulation-capable component of the version, frozen at creation, then started. Returns the attempt id.
+ * Any reason the official form cannot exist (no eligible content, a component with no mock, an attempt
+ * already open) makes the assignment not startable; nothing is generated in its place.
+ */
+export async function startOfficialMockForIntervention(p: { studentId: string; examProfileId: string; examVersionId: string }): Promise<string> {
+  try {
+    const componentIds = (await listComponentsForVersion(p.examVersionId)).filter((c) => c.simulationCapable).map((c) => c.id);
+    const instance = await createExamInstance({ studentId: p.studentId, examProfileId: p.examProfileId, examVersionId: p.examVersionId, componentIds, mode: 'MOCK' });
+    const started = await startExamInstance(instance.id, { language: 'en' });
+    if (!started.simulationAttemptId) throw new ExamInstanceError('INVALID_STATE', 'instance started without an attempt');
+    return started.simulationAttemptId;
+  } catch (err) {
+    if (err instanceof ExamInstanceError) throw new StudentInterventionNotStartableError(`official mock not available: ${err.code}`);
+    throw err;
   }
 }
 
@@ -761,16 +804,12 @@ async function startExamReinforcementExecution(
     // this is what makes the concurrency guarantee below stronger than
     // Concept/Skill/Competency's own "insert-after-generation, UNIQUE
     // constraint as the final guard" pattern.
-    const { simulationAttempt } = await startSimulationAttempt({
-      studentId: intervention.student_id,
-      examProfileId: intervention.exam_profile_id,
-      examVersionId,
-      simulationType,
-      timingMode: 'UNTIMED',
-      learningObjectiveId,
-      academicSubjectId,
-      language: 'en',
-    });
+    // B1-C (official mock invariant): FULL_MOCK => frozen exam instance, whoever launches it. A Teacher-assigned
+    // full mock is therefore an OFFICIAL mock: it is created as a MOCK exam instance (official blueprint, form
+    // frozen from eligible reviewed content, official timing) and started through it. When no official form can
+    // be frozen, the assignment is not startable -- it is never downgraded to a learner-adaptive simulation.
+    // Every other assigned type (TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK) is a Preparation Simulation, as before.
+    const simulationAttempt = { id: await startInterventionExamAttempt({ studentId: intervention.student_id, examProfileId: intervention.exam_profile_id, examVersionId, simulationType, learningObjectiveId, academicSubjectId }) };
 
     const insertResult = await client.query(
       `

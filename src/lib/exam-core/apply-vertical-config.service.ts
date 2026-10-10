@@ -25,6 +25,9 @@ import { upsertSources } from './catalog/source-registry.service';
 import { itemFingerprints } from './fingerprints';
 import { contentOriginOf } from './items';
 import { ensureBankIdentities } from './question-bank/bank.service';
+// B1: curriculum rows (organization ... learning objectives) are requested through the Curriculum Authority's
+// bootstrap boundary. This module declares the exam; it never writes curriculum tables itself.
+import { ensureAcademicSubject, ensureAssessmentSectionNode, ensureLearningObjective, ensureOrganization, ensureProgramme, ensureQualification, ensureStructureVersion } from '@/lib/curriculum/bootstrap.service';
 
 export class VerticalConfigError extends Error {
   constructor(public readonly code: 'INVALID_CONFIG' | 'CONFIG_CHANGED_FOR_EXISTING_VERSION' | 'NO_SYSTEM_IDENTITIES' | 'FAMILY_MISMATCH', detail: string) {
@@ -55,12 +58,6 @@ export function verticalFingerprint(config: ExamVerticalConfig): string {
 async function one(client: PoolClient, sql: string, params: unknown[]): Promise<any | null> {
   const r = await client.query(sql, params);
   return r.rows[0] ?? null;
-}
-
-async function upsertByLookup(client: PoolClient, lookupSql: string, lookupParams: unknown[], insertSql: string, insertParams: unknown[]): Promise<string> {
-  const existing = await one(client, lookupSql, lookupParams);
-  if (existing) return existing.id;
-  return (await one(client, insertSql, insertParams)).id;
 }
 
 export async function applyExamVerticalConfig(input: unknown, options: { write: boolean }): Promise<ApplyVerticalResult> {
@@ -94,25 +91,10 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
     }
 
     // --- F6: organization -> programme -> qualification -> subject ---
-    const orgId = await upsertByLookup(client, `SELECT id FROM academic_organizations WHERE name = $1 ORDER BY created_at LIMIT 1`, [cfg.organization.name], `INSERT INTO academic_organizations (name) VALUES ($1) RETURNING id`, [cfg.organization.name]);
-    const programmeId = await upsertByLookup(
-      client,
-      `SELECT id FROM academic_programmes WHERE organization_id = $1 AND name = $2 ORDER BY created_at LIMIT 1`,
-      [orgId, cfg.programme.name],
-      `INSERT INTO academic_programmes (organization_id, name, programme_type, stage) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [orgId, cfg.programme.name, cfg.programme.type, cfg.programme.stage ?? null]
-    );
-    const qualificationId = cfg.qualification
-      ? await upsertByLookup(client, `SELECT id FROM academic_qualifications WHERE programme_id = $1 AND name = $2 ORDER BY created_at LIMIT 1`, [programmeId, cfg.qualification.name], `INSERT INTO academic_qualifications (programme_id, name) VALUES ($1, $2) RETURNING id`, [programmeId, cfg.qualification.name])
-      : null;
-    const subjectFor = async (name: string, level: string | undefined) =>
-      upsertByLookup(
-        client,
-        `SELECT id FROM academic_subjects WHERE programme_id = $1 AND qualification_id IS NOT DISTINCT FROM $2 AND name = $3 AND level IS NOT DISTINCT FROM $4 ORDER BY created_at LIMIT 1`,
-        [programmeId, qualificationId, name, level ?? null],
-        `INSERT INTO academic_subjects (programme_id, qualification_id, name, level) VALUES ($1, $2, $3, $4) RETURNING id`,
-        [programmeId, qualificationId, name, level ?? null]
-      );
+    const orgId = await ensureOrganization(client, cfg.organization.name);
+    const programmeId = await ensureProgramme(client, { organizationId: orgId, name: cfg.programme.name, type: cfg.programme.type, stage: cfg.programme.stage ?? null });
+    const qualificationId = cfg.qualification ? await ensureQualification(client, { programmeId, name: cfg.qualification.name }) : null;
+    const subjectFor = async (name: string, level: string | undefined) => ensureAcademicSubject(client, { programmeId, qualificationId, name, level: level ?? null });
     const definitionSubjectId = cfg.subject ? await subjectFor(cfg.subject.name, cfg.subject.level) : null;
 
     // --- Command terms (shared vocabulary, UNIQUE term) ---
@@ -175,21 +157,9 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
       const subjectId = await subjectFor(section.subject?.name ?? section.name, section.subject?.level);
 
       // Structure version / node for this subject (objectives hang off it).
-      let structureVersionId = (await one(client, `SELECT id FROM structure_versions WHERE academic_subject_id = $1 AND version_label = $2 LIMIT 1`, [subjectId, cfg.structureLabel]))?.id as string | undefined;
-      if (!structureVersionId) {
-        const hasPublished = await one(client, `SELECT 1 FROM structure_versions WHERE academic_subject_id = $1 AND status = 'PUBLISHED'`, [subjectId]);
-        structureVersionId = (
-          await one(client, `INSERT INTO structure_versions (academic_subject_id, version_label, status, source_locator) VALUES ($1, $2, $3, $4) RETURNING id`, [subjectId, cfg.structureLabel, hasPublished ? 'DRAFT' : 'PUBLISHED', `exam-vertical-config:${cfg.key}`])
-        ).id as string;
-      }
+      const structureVersionId = await ensureStructureVersion(client, { academicSubjectId: subjectId, versionLabel: cfg.structureLabel, sourceLocator: `exam-vertical-config:${cfg.key}` });
       const nodeCode = `sec.${section.key}`;
-      const nodeId = await upsertByLookup(
-        client,
-        `SELECT id FROM structure_nodes WHERE structure_version_id = $1 AND code = $2`,
-        [structureVersionId, nodeCode],
-        `INSERT INTO structure_nodes (structure_version_id, node_type, source_label, code, order_index, source) VALUES ($1, 'EXAM_SECTION', $2, $3, $4, $5) RETURNING id`,
-        [structureVersionId, section.name, nodeCode, order, cfg.contentStatus]
-      );
+      const nodeId = await ensureAssessmentSectionNode(client, { structureVersionId, code: nodeCode, label: section.name, orderIndex: order, source: cfg.contentStatus });
 
       const componentId = (
         await one(
@@ -225,13 +195,7 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
       ]);
 
       for (const objective of section.objectives) {
-        const objectiveId = await upsertByLookup(
-          client,
-          `SELECT id FROM learning_objectives WHERE structure_node_id = $1 AND code = $2`,
-          [nodeId, objective.code],
-          `INSERT INTO learning_objectives (structure_node_id, code, description) VALUES ($1, $2, $3) RETURNING id`,
-          [nodeId, objective.code, objective.description]
-        );
+        const objectiveId = await ensureLearningObjective(client, { structureNodeId: nodeId, code: objective.code, description: objective.description });
         objectiveIdsByCode[objective.code] = objectiveId;
         for (const target of objective.targets) {
           const constraints = normalizeConstraints(target.constraints);

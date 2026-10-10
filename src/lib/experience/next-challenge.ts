@@ -21,9 +21,17 @@
  */
 import type { ActivityType } from '@/lib/activity-taxonomy';
 import type { LearningFact } from '@/lib/adaptive-learning-policy';
+import type { AssessmentOriginContext } from '@/lib/lx/continuation';
 import type { PedagogicalStage } from '@/lib/pedagogical-engine/types';
 import type { CanonicalLearningSession } from '@/lib/pedagogical-decision/canonical-session-launch';
 import { presentedActivityTypeForCanonical } from '@/lib/pedagogical-decision/concept-mission-override';
+
+/** B1: what the deciding authority states about the size of the activity. Never computed by presentation. */
+export interface ChallengeEstimate {
+  items: number | null;
+  marks: number | null;
+  minutes: number | null;
+}
 
 /** The activity as the learner sees it, plus the REINFORCE overlay the canonical engine can launch. */
 export type ChallengeKind = ActivityType | 'REINFORCE';
@@ -54,6 +62,13 @@ export type NextChallengeView =
       itemCount: number | null;
       /** Explanatory facts compatible with the authority that chose the activity. */
       facts: LearningFact[];
+      /**
+       * B1: the assessment context of the challenge (family, exam target), when its authority states one.
+       * Presentation only -- absent for every challenge produced today.
+       */
+      assessment?: AssessmentOriginContext | null;
+      /** B1: the authority's own estimate (items / marks / minutes). A field it does not state stays null. */
+      estimate?: ChallengeEstimate | null;
     }
   | { status: 'WAITING'; authority: ChallengeAuthority; conceptId: string; subjectId: string; stage: PedagogicalStage | null; nextEligibleAt: string | null }
   | { status: 'CONSOLIDATED'; authority: ChallengeAuthority; conceptId: string; subjectId: string; stage: PedagogicalStage | null }

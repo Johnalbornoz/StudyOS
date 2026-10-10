@@ -15,11 +15,13 @@
  */
 import type { PoolClient } from 'pg';
 import { db } from '@/lib/db';
-import { ensureCatalogMapping } from '@/lib/catalog/mapping.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { assertResetAllowed } from '../dev-fixture-reset';
 import { DEV_CANONICAL_CONCEPTS, DEV_COMPETENCIES, DEV_SKILLS, DEV_CATALOG_LABEL } from './dev-learning-catalog';
 import { allLearningLinks } from './objective-learning-links';
+// B1: catalogue and mapping rows are created through the Curriculum Authority's bootstrap boundary.
+import { ensureCanonicalConcept, ensureCanonicalSubject, ensureCompetency, ensurePublishedObjectiveCompetencyMapping, ensurePublishedObjectiveConceptMapping, ensurePublishedObjectiveSkillMapping, ensureSkill } from '@/lib/curriculum/bootstrap.service';
+import { linkLearnerConceptCreatedFromCanonical } from '@/lib/catalog/concept-identity.service';
 
 export async function applyDevLearningCatalog(options: { write: boolean; confirm: string }): Promise<{ subjects: number; concepts: number; skills: number; competencies: number }> {
   // Same guard as the DEV fixture reset: DEV database only, never production.
@@ -30,29 +32,18 @@ export async function applyDevLearningCatalog(options: { write: boolean; confirm
     await client.query('BEGIN');
     const subjectIds = new Map<string, string>();
     for (const name of [...new Set(DEV_CANONICAL_CONCEPTS.map((x) => x.subject))]) {
-      let id = (await client.query(`SELECT id FROM canonical_subjects WHERE lower(name) = lower($1) ORDER BY created_at LIMIT 1`, [name])).rows[0]?.id;
-      if (!id) {
-        id = (await client.query(`INSERT INTO canonical_subjects (name) VALUES ($1) RETURNING id`, [name])).rows[0].id;
-        created.subjects++;
-      }
-      subjectIds.set(name, id);
+      const subject = await ensureCanonicalSubject(client, name);
+      if (subject.created) created.subjects++;
+      subjectIds.set(name, subject.id);
     }
     for (const cpt of DEV_CANONICAL_CONCEPTS) {
-      const sid = subjectIds.get(cpt.subject)!;
-      const exists = await client.query(`SELECT 1 FROM canonical_concepts WHERE canonical_subject_id = $1 AND lower(name) = lower($2)`, [sid, cpt.name]);
-      if (exists.rows.length) continue;
-      await client.query(`INSERT INTO canonical_concepts (canonical_subject_id, name, description, status) VALUES ($1, $2, $3, 'ACTIVE')`, [sid, cpt.name, DEV_CATALOG_LABEL]);
-      created.concepts++;
+      if (await ensureCanonicalConcept(client, { canonicalSubjectId: subjectIds.get(cpt.subject)!, name: cpt.name, description: DEV_CATALOG_LABEL })) created.concepts++;
     }
     for (const sk of DEV_SKILLS) {
-      const exists = await client.query(`SELECT 1 FROM skills WHERE lower(name) = lower($1)`, [sk.name]);
-      if (exists.rows.length) continue;
-      await client.query(`INSERT INTO skills (name, skill_type, description) VALUES ($1, $2, $3)`, [sk.name, sk.type, DEV_CATALOG_LABEL]);
-      created.skills++;
+      if (await ensureSkill(client, { name: sk.name, type: sk.type, description: DEV_CATALOG_LABEL })) created.skills++;
     }
     for (const cp of DEV_COMPETENCIES) {
-      const r = await client.query(`INSERT INTO competencies (code, name, description) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING RETURNING id`, [cp.code, cp.name, DEV_CATALOG_LABEL]);
-      created.competencies += r.rows.length;
+      if (await ensureCompetency(client, { code: cp.code, name: cp.name, description: DEV_CATALOG_LABEL })) created.competencies++;
     }
     await client.query(options.write ? 'COMMIT' : 'ROLLBACK');
     return created;
@@ -102,14 +93,7 @@ export async function applyObjectiveLearningLinks(options: { write: boolean }): 
           continue;
         }
         for (const lo of objectives) {
-          const r = await client.query(
-            `INSERT INTO objective_concept_mappings (learning_objective_id, canonical_concept_id, relation_type, provenance, status, created_by, reviewed_by, reviewed_at, published_at, rationale)
-             SELECT $1, $2, 'PARTIAL', 'MANUAL', 'PUBLISHED', $3, $4, now(), now(), 'Exam V2 reviewed objective link'
-              WHERE NOT EXISTS (SELECT 1 FROM objective_concept_mappings WHERE learning_objective_id = $1 AND canonical_concept_id = $2 AND status = 'PUBLISHED')
-             RETURNING id`,
-            [lo, cc.id, creator, reviewer]
-          );
-          out.concepts += r.rows.length;
+          if (await ensurePublishedObjectiveConceptMapping(client, { learningObjectiveId: lo, canonicalConceptId: cc.id, createdBy: creator, reviewedBy: reviewer, rationale: 'Exam V2 reviewed objective link' })) out.concepts += 1;
         }
       }
       for (const name of link.skills ?? []) {
@@ -119,13 +103,7 @@ export async function applyObjectiveLearningLinks(options: { write: boolean }): 
           continue;
         }
         for (const lo of objectives) {
-          const r = await client.query(
-            `INSERT INTO objective_skill_mappings (learning_objective_id, skill_id, relation_type, provenance, status, created_by, reviewed_by, reviewed_at, published_at)
-             SELECT $1, $2, 'PARTIAL', 'MANUAL', 'PUBLISHED', $3, $4, now(), now()
-              WHERE NOT EXISTS (SELECT 1 FROM objective_skill_mappings WHERE learning_objective_id = $1 AND skill_id = $2 AND status = 'PUBLISHED') RETURNING id`,
-            [lo, sk.id, creator, reviewer]
-          );
-          out.skills += r.rows.length;
+          if (await ensurePublishedObjectiveSkillMapping(client, { learningObjectiveId: lo, skillId: sk.id, createdBy: creator, reviewedBy: reviewer })) out.skills += 1;
         }
       }
       for (const codeC of link.competencies ?? []) {
@@ -135,13 +113,7 @@ export async function applyObjectiveLearningLinks(options: { write: boolean }): 
           continue;
         }
         for (const lo of objectives) {
-          const r = await client.query(
-            `INSERT INTO objective_competency_mappings (learning_objective_id, competency_id, relation_type, provenance, status, created_by, reviewed_by, reviewed_at, published_at)
-             SELECT $1, $2, 'PARTIAL', 'MANUAL', 'PUBLISHED', $3, $4, now(), now()
-              WHERE NOT EXISTS (SELECT 1 FROM objective_competency_mappings WHERE learning_objective_id = $1 AND competency_id = $2 AND status = 'PUBLISHED') RETURNING id`,
-            [lo, cp.id, creator, reviewer]
-          );
-          out.competencies += r.rows.length;
+          if (await ensurePublishedObjectiveCompetencyMapping(client, { learningObjectiveId: lo, competencyId: cp.id, createdBy: creator, reviewedBy: reviewer })) out.competencies += 1;
         }
       }
     }
@@ -173,10 +145,8 @@ export async function addConceptToStudentLearning(studentId: string, canonicalCo
   if (!subjectId) subjectId = (await db.query(`INSERT INTO subjects (student_id, name) VALUES ($1, $2) RETURNING id`, [studentId, String(cc.subject_name).slice(0, 100)])).rows[0].id as string;
   const conceptId = (await db.query(`INSERT INTO concepts (subject_id, canonical_id) VALUES ($1, $2) RETURNING id`, [subjectId, `catalog:${canonicalConceptId}`])).rows[0].id as string;
   await db.query(`INSERT INTO concept_localizations (concept_id, language, label) VALUES ($1, $2, $3)`, [conceptId, language.slice(0, 10), cc.name]);
-  const mapping = await ensureCatalogMapping(conceptId);
-  if (mapping.canonicalConceptId !== canonicalConceptId) {
-    // The label match must land on the same canonical concept; otherwise nothing is linked silently.
-    throw new Error('CATALOG_MAPPING_MISMATCH');
-  }
+  // B1: the concept was created FROM this canonical concept, so the link is that fact, written explicitly --
+  // never re-derived by matching the label we just copied (label matching is not a canonical relationship).
+  await linkLearnerConceptCreatedFromCanonical(conceptId, canonicalConceptId);
   return { studentConceptId: conceptId, subjectId, existed: false };
 }

@@ -187,7 +187,8 @@ describe('E2E regression: simulation attempt page shows labels and an honest "no
   it('never renders the raw simulationType / timingMode enums', () => {
     expect(src).not.toMatch(/subtitle=\{attempt\.simulationType\}/);
     expect(src).not.toMatch(/: \{attempt\.timingMode\}/);
-    expect(src).toMatch(/label\(`ex\.type\.\$\{attempt\.simulationType\}`/);
+    // B1-C: the label key is the attempt's kind (instance mode when it belongs to an exam instance, else its type) -- still never a raw enum.
+    expect(src).toMatch(/label\(attemptKindLabelKey\(\{ simulationType: attempt\.simulationType,/);
     expect(src).toMatch(/label\(`ex\.timing\.\$\{attempt\.timingMode\}`/);
   });
   it('0 gradable items is "no score", never 0% (Track B: shown on the attempt RESULT page)', () => {

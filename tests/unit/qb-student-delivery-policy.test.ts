@@ -80,7 +80,10 @@ describe('every Student-facing selector uses the one rule', () => {
   };
   const SRC = walk('src');
   /** Files that read approved_items content for DELIVERY / readiness (admin, review, factory, demand planning and calibration tools are not Student-facing). */
-  const NON_STUDENT = /question-bank\/(review|review-admin|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$/;
+  // B1: assessment-foundation/question-coverage.service DESCRIBES items (every lifecycle state, for coverage / readiness
+  // read models); it delivers nothing. Whether a described item may reach a Student is still decided by the one rule,
+  // through `isEligible` (question-eligibility.ts) -- asserted in b1-architecture / b1-question-coverage-eligibility.
+  const NON_STUDENT = /question-bank\/(review|review-admin|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$/;
   const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f));
 
   it('8 / 9 / 10 / 12. the Student readers are exactly: practice & dynamic sourcing, exam instances (practice, diagnostic, mocks), the full-mock guard', () => {

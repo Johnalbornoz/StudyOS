@@ -1,3 +1,4 @@
+import { attemptKindLabelKey } from '@/lib/experience/exam-prep';
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -68,7 +69,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
       <PageIntro
         crumb={<Link href={`/dashboard/exam-prep/${view.examProfileId}`}>{view.exam.definitionName || t['examPrep.title']}</Link>}
         title={t['examPrep.result.title']}
-        lead={[tr[`ex.type.${view.simulationType}`] ?? view.simulationType, tr[`ex.timing.${view.timingMode}`] ?? view.timingMode, sitting].filter(Boolean).join(' · ')}
+        lead={[tr[attemptKindLabelKey({ simulationType: view.simulationType, instanceMode: instance?.mode, instanceFidelity: instance?.form?.fidelity })] ?? view.simulationType, tr[`ex.timing.${view.timingMode}`] ?? view.timingMode, sitting].filter(Boolean).join(' · ')}
       />
 
       {view.exam.contentStatus && <p className="ui-hint" style={{ margin: 0 }}>{tr[`exam.contentStatus.${view.exam.contentStatus}`] ?? ''}</p>}

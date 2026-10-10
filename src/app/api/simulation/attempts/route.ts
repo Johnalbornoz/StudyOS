@@ -18,6 +18,7 @@ import { startSimulationAttempt, findOpenSimulationAttemptForProfile, DeliveryPo
 import { TimingConfigurationError } from '@/lib/simulation/plan.service';
 import { isExamProfileOwnedByStudent, isExamVersionStartableForProfile } from '@/lib/assessment/student-exam-profile.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { isPreparationSimulationType, OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE, PREPARATION_SIMULATION_TYPES } from '@/lib/simulation/preparation-simulation';
 
 const StartSchema = z.strictObject({
   studentId: z.string().uuid(),
@@ -52,6 +53,13 @@ async function handlePOST(request: NextRequest) {
     validated = StartSchema.parse(await request.json());
   } catch (error: any) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.issues?.[0]?.message ?? error.errors?.[0]?.message }, { status: 400 });
+  }
+
+  // B1 (official mock boundary): this direct path is a PREPARATION SIMULATION -- it sources items lazily and may
+  // use content generated for the learner. An official-format full mock is served only through a frozen exam
+  // instance (POST /api/exams/instances), so a FULL_MOCK is never started here.
+  if (!isPreparationSimulationType(validated.simulationType)) {
+    return NextResponse.json({ error: OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE, data: { canonicalPath: '/api/exams/instances', allowedSimulationTypes: PREPARATION_SIMULATION_TYPES } }, { status: 409 });
   }
 
   const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_INTERVENTION_CREATE');

@@ -17,6 +17,7 @@
  * PROGRESS, never mastery evidence -- nothing here writes anything.
  */
 
+import type { AssessmentFamily } from '@/lib/assessment-foundation/families';
 import type { TeachingExperienceView } from '@/lib/lx/teaching-experience';
 
 export const CONTINUATION_CONTRACT_VERSION = 1 as const;
@@ -43,6 +44,32 @@ export interface LearningOrigin {
   conceptId: string;
   /** Where the learner entered the activity from. Focus Mode Exit reads this. */
   entry: 'CONCEPT_MISSION' | 'TODAY' | 'UNKNOWN';
+  /**
+   * B1: the assessment the activity belonged to, when it was not a plain learning activity. Carried through
+   * completion so the result and the continuation keep the exam / preparation context. Optional and
+   * presentational: it never changes which continuation is resolved.
+   */
+  assessment?: AssessmentOriginContext | null;
+}
+
+/**
+ * B1 -- the assessment context an origin can carry. Identities only: the family, and the exam target /
+ * attempt the activity came from. It is context for the ONE continuation authority
+ * (`learning-continuation.service.resolveContinuation`); it is not a second source of next actions and
+ * holds no instruction about what to do next.
+ */
+export interface AssessmentOriginContext {
+  family: AssessmentFamily;
+  /** `student_exam_profiles.id`, for EXAM_PREPARATION / OFFICIAL_EXAM. */
+  examTargetId?: string | null;
+  /** `exam_attempts.id` the result belongs to, when the origin is an exam result. */
+  examAttemptId?: string | null;
+}
+
+/** The concept a continuation acts on. Present only when the authority names a concept other than the origin's. */
+export interface ContinuationTarget {
+  subjectId: string;
+  conceptId: string;
 }
 
 /**
@@ -88,6 +115,12 @@ export type ContinuationResolution =
        * canonically, exactly as before this optimisation.
        */
       teachingExperience?: TeachingExperienceView | null;
+      /**
+       * B1 (cross-concept continuation): the concept this launch acts on, when the Learning Decision
+       * Authority names one other than the origin's. Absent = the origin's own concept (every resolution
+       * produced today). Only the continuation authority sets it; the UI never computes it.
+       */
+      target?: ContinuationTarget;
     }
   | {
       /**
@@ -282,4 +315,23 @@ export function buildRelaunchTarget(currentUrl: string, launchTarget: string, no
   } catch {
     return launchTarget;
   }
+}
+
+/**
+ * B1 -- the concept a resolved continuation acts on: its own `target` when the authority named one, else the
+ * origin's concept. Pure; decides nothing.
+ */
+export function continuationConcept(origin: Pick<LearningOrigin, 'subjectId' | 'conceptId'>, resolution: ContinuationResolution): ContinuationTarget {
+  if (resolution.status === 'LAUNCH' && resolution.target) return resolution.target;
+  return { subjectId: origin.subjectId, conceptId: origin.conceptId };
+}
+
+/** Does the continuation leave the origin's concept? */
+export function isCrossConceptContinuation(origin: Pick<LearningOrigin, 'subjectId' | 'conceptId'>, resolution: ContinuationResolution): boolean {
+  return continuationConcept(origin, resolution).conceptId !== origin.conceptId;
+}
+
+/** An origin carrying its assessment context forward unchanged (result -> state -> next action keep the same context). */
+export function withAssessmentContext<T extends LearningOrigin>(origin: T, assessment: AssessmentOriginContext | null): T {
+  return { ...origin, assessment };
 }

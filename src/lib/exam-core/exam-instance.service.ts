@@ -431,6 +431,8 @@ export async function startExamInstance(instanceId: string, params: { language: 
     learningObjectiveIds: instance.focusObjectiveIds.length ? instance.focusObjectiveIds : undefined,
     itemFeedback: instance.mode === 'PRACTICE' ? 'AFTER_EACH_ITEM' : 'NEVER',
     presetItems: (plan) => presetFromForm(instance, form, plan),
+    // B1-C: the frozen instance behind this attempt (FULL_MOCK => exam instance).
+    examInstanceId: instance.id,
   });
   const r = await db.query(
     `UPDATE exam_instances SET status = 'IN_PROGRESS', simulation_attempt_id = $2, started_at = now() WHERE id = $1 AND status = 'READY' RETURNING *`,

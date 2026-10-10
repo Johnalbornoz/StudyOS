@@ -15,6 +15,7 @@
  *      then reported as unavailable -- never delivered, never graded, never
  *      evidence.
  */
+import { mayUseGeneratedFallback } from '@/lib/simulation/preparation-simulation';
 import { constraintMismatches, itemDimensionValues, type SlotConstraint } from './slot-constraints';
 import { createHash } from 'crypto';
 import { db } from '@/lib/db';
@@ -188,5 +189,24 @@ export async function sourceExamItem(params: {
       .catch(() => undefined);
     return { outcome: 'READY', item: banked };
   }
+  // B1 (official mock boundary): an official-format attempt never receives content generated for the learner.
+  if (!(await generatedFallbackAllowed(params.attemptId))) {
+    console.log('[exam-core]', JSON.stringify({ at: 'generated_fallback_blocked_official_format', attemptId: params.attemptId }));
+    return { outcome: 'UNAVAILABLE', reason: 'NO_ITEM_GENERATED' };
+  }
   return generateValidatedItem({ studentId: params.studentId, target: params.target, language: params.language });
+}
+
+/**
+ * Whether this attempt may fall back to learner-generated content (`mayUseGeneratedFallback`). An attempt that
+ * cannot be read is treated as a preparation attempt, exactly as before B1; only a positively identified
+ * official-format attempt is refused.
+ */
+export async function generatedFallbackAllowed(attemptId: string): Promise<boolean> {
+  const r = await db
+    .query(`SELECT sa.simulation_type, i.mode AS instance_mode FROM simulation_attempts sa LEFT JOIN exam_instances i ON i.simulation_attempt_id = sa.id WHERE sa.id = $1 LIMIT 1`, [attemptId])
+    .catch(() => ({ rows: [] as any[] }));
+  const row = r.rows[0];
+  if (!row) return true;
+  return mayUseGeneratedFallback({ simulationType: row.simulation_type ?? null, instanceMode: row.instance_mode ?? null });
 }

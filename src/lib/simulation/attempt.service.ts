@@ -6,6 +6,7 @@
  * F9_SIMULATION_PLAN_MODEL.md for why this isn't an ALTER TABLE on
  * F7's own exam_attempts).
  */
+import { fullMockHasFrozenInstance, OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE } from './preparation-simulation';
 import { db } from '@/lib/db';
 import { startExamAttempt, completeExamAttempt, getExamAttempt } from '@/lib/assessment/exam-attempt.service';
 import { buildSimulationPlan } from './plan.service';
@@ -27,6 +28,19 @@ export class ExamProfileArchivedError extends Error {
   constructor() {
     super('PROFILE_ARCHIVED');
     this.name = 'ExamProfileArchivedError';
+  }
+}
+
+/**
+ * B1-C (official mock invariant): FULL_MOCK => frozen exam instance. A FULL_MOCK attempt is started only by
+ * an exam instance, which supplies its frozen form; nothing else -- a Student route, a Teacher assignment,
+ * an admin tool, a preparation workflow -- may start one.
+ */
+export class FullMockRequiresExamInstanceError extends Error {
+  readonly code = OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE;
+  constructor() {
+    super(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    this.name = 'FullMockRequiresExamInstanceError';
   }
 }
 
@@ -85,7 +99,11 @@ export async function startSimulationAttempt(params: {
    * during the attempt. Positions it leaves out are sourced as usual.
    */
   presetItems?: (plan: SimulationPlan) => Promise<Record<number, ExamItemState>>;
+  /** B1-C: the exam instance starting this attempt. Required (with its frozen form, `presetItems`) for a FULL_MOCK. */
+  examInstanceId?: string;
 }): Promise<{ examAttempt: Awaited<ReturnType<typeof getExamAttempt>>; simulationAttempt: SimulationAttempt; planId: string }> {
+  // B1-C: FULL_MOCK => frozen exam instance, checked before anything is read or written.
+  if (!fullMockHasFrozenInstance({ simulationType: params.simulationType, examInstanceId: params.examInstanceId, hasFrozenForm: !!params.presetItems })) throw new FullMockRequiresExamInstanceError();
   // Track B: validate the profile and the version's delivery policy BEFORE writing anything.
   const profileRow = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1`, [params.examProfileId]);
   if (profileRow.rows[0]?.status === 'ARCHIVED') throw new ExamProfileArchivedError();
