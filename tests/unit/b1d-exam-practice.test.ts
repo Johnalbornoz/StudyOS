@@ -51,15 +51,15 @@ beforeEach(() => {
 });
 
 describe('B1-D -- stored attempt type follows the instance mode', () => {
-  it('PRACTICE instance -> EXAM_PRACTICE; MOCK instance -> FULL_MOCK; CHALLENGE instance -> FULL_MOCK (current)', () => {
+  it('PRACTICE instance -> EXAM_PRACTICE (a MOCK additionally depends on fidelity: see b1e-mock-fidelity)', () => {
     expect(attemptTypeForInstanceMode('PRACTICE')).toBe('EXAM_PRACTICE');
-    expect(attemptTypeForInstanceMode('MOCK')).toBe('FULL_MOCK');
-    expect(attemptTypeForInstanceMode('CHALLENGE')).toBe('FULL_MOCK');
+    expect(attemptTypeForInstanceMode('CHALLENGE')).toBe('EXAM_CHALLENGE');
+    expect(attemptTypeForInstanceMode('MOCK')).toBeNull();
   });
 
-  it('the exam-instance start flow is the only writer, and it derives the type from the mode', () => {
+  it('the exam-instance start flow is the only writer, and it derives the type', () => {
     const instance = read('src/lib/exam-core/exam-instance.service.ts');
-    expect(instance).toMatch(/simulationType: attemptTypeForInstanceMode\(instance\.mode\)/);
+    expect(instance).toMatch(/simulationType: decision\.type,/);
     expect(instance).not.toMatch(/simulationType: 'FULL_MOCK'/);
     // nothing else starts an attempt with that simulation type. (The Teacher-intervention domain has its own,
     // older `intervention_type` / `execution_type` value that is also spelled EXAM_PRACTICE: a different column
@@ -69,14 +69,15 @@ describe('B1-D -- stored attempt type follows the instance mode', () => {
     }
   });
 
-  it('start invariant: FULL_MOCK needs a frozen MOCK / CHALLENGE instance; EXAM_PRACTICE needs a PRACTICE instance', () => {
+  it('start invariant: FULL_MOCK needs a frozen MOCK instance of verified full fidelity; EXAM_PRACTICE needs a PRACTICE instance', () => {
     const v = instanceStartViolation;
-    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: true })).toBeNull();
-    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'CHALLENGE', hasFrozenForm: true })).toBeNull();
-    // no PRACTICE instance can create a FULL_MOCK
-    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'PRACTICE', hasFrozenForm: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
-    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: false })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
-    expect(v({ simulationType: 'FULL_MOCK', hasFrozenForm: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: true, verifiedFullFidelity: true })).toBeNull();
+    // no PRACTICE or CHALLENGE instance, and no unverified MOCK, can create a FULL_MOCK
+    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'CHALLENGE', hasFrozenForm: true, verifiedFullFidelity: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'PRACTICE', hasFrozenForm: true, verifiedFullFidelity: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    expect(v({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: false, verifiedFullFidelity: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
+    expect(v({ simulationType: 'FULL_MOCK', hasFrozenForm: true, verifiedFullFidelity: true })).toBe(OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE);
     expect(v({ simulationType: 'EXAM_PRACTICE', examInstanceId: 'i', examInstanceMode: 'PRACTICE', hasFrozenForm: true })).toBeNull();
     expect(v({ simulationType: 'EXAM_PRACTICE', examInstanceId: 'i', examInstanceMode: 'MOCK', hasFrozenForm: true })).toBe(EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE);
     expect(v({ simulationType: 'EXAM_PRACTICE', hasFrozenForm: false })).toBe(EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE);
@@ -205,38 +206,28 @@ describe('B1-D -- historical attempts stay readable', () => {
 });
 
 /**
- * CHALLENGE -- characterization of the CURRENT behaviour (B1-D section 5).
- * It is stored as FULL_MOCK. It satisfies the structural half of the official-fidelity invariant and FAILS the
- * fidelity half; this suite records both. Its persisted type was NOT changed (decision pending).
+ * CHALLENGE -- the facts that led to its own stored type (B1-E): it is frozen, complete against its blueprint,
+ * officially timed and never generated, but deliberately above official difficulty. It is EXAM_CHALLENGE.
  */
-describe('B1-D -- CHALLENGE: what holds and what does not (characterization, current behaviour)', () => {
+describe('B1-D / B1-E -- CHALLENGE: frozen and officially timed, deliberately above official difficulty', () => {
   const instance = read('src/lib/exam-core/exam-instance.service.ts');
 
-  it('HOLDS: frozen instance, complete form or none, official timing, no generated fallback', () => {
-    // frozen at creation for every non-practice mode, and deleted when it cannot be assembled
-    expect(instance).toMatch(/if \(instance\.mode !== 'PRACTICE'\) \{\s*try \{\s*await freezeForm\(instance\);/);
-    // every required position is filled, or there is no form
+  it('frozen instance, complete form or none, official timing, no generated fallback', () => {
+    expect(instance).toMatch(/if \(instance\.mode !== 'PRACTICE'\) \{\s*try \{\s*const form = await freezeForm\(instance\);/);
     expect(instance).toMatch(/if \(empty > 0\) throw new ExamInstanceError\('FORM_INCOMPLETE'/);
-    // a position is never left to be generated
     expect(instance).toMatch(/else if \(instance\.mode !== 'PRACTICE'\) preset\[index\] = \{ status: 'EXCLUDED'/);
     expect(timingFor('CHALLENGE', undefined)).toBe('OFFICIAL_SIMULATION_TIMED');
     expect(timingFor('CHALLENGE', 'UNTIMED')).toBe('OFFICIAL_SIMULATION_TIMED');
-    expect(mayUseGeneratedFallback({ simulationType: 'FULL_MOCK', instanceMode: 'CHALLENGE' })).toBe(false);
-    expect(instanceStartViolation({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'CHALLENGE', hasFrozenForm: true })).toBeNull();
+    expect(mayUseGeneratedFallback({ simulationType: 'EXAM_CHALLENGE', instanceMode: 'CHALLENGE' })).toBe(false);
+    expect(instanceStartViolation({ simulationType: 'EXAM_CHALLENGE', examInstanceId: 'i', examInstanceMode: 'CHALLENGE', hasFrozenForm: true })).toBeNull();
   });
 
-  it('DOES NOT HOLD: its difficulty is deliberately above the official exam (1.10x, band 1.05-1.15), unlike MOCK (1.00x)', () => {
+  it('its difficulty is deliberately above the official exam (1.10x, band 1.05-1.15), unlike MOCK (1.00x): not a full mock', () => {
     expect(MOCK_TARGET).toBe(1.0);
     expect(targetDifficultyFor('MOCK', null)).toBe(1.0);
     expect(CHALLENGE_TARGET).toBe(1.1);
     expect(targetDifficultyFor('CHALLENGE', null)).toBe(1.1);
     expect(CHALLENGE_BAND.min).toBeGreaterThan(MOCK_BAND.max - 1e-9);
-  });
-
-  it('DOES NOT HOLD (shared with MOCK): the form may be a REDUCED form, shorter than the official exam', () => {
-    // a non-practice instance draws REDUCED_MOCK items when the blueprint is shorter than the official item count
-    expect(instance).toMatch(/const use = mode === 'PRACTICE' \? 'PRACTICE' : fullLength \? 'FULL_MOCK' : 'REDUCED_MOCK'/);
-    // and the assembled form records its length fidelity as FULL or REDUCED for MOCK and CHALLENGE alike
-    expect(read('src/lib/exam-core/form-assembly.ts')).toMatch(/fidelity: allFilled && marksComplete \? 'FULL' : 'REDUCED'/);
+    expect(instanceStartViolation({ simulationType: 'FULL_MOCK', examInstanceId: 'i', examInstanceMode: 'CHALLENGE', hasFrozenForm: true, verifiedFullFidelity: true })).not.toBeNull();
   });
 });

@@ -21,7 +21,6 @@
  * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
  * is always a NEW instance from zero; an instance is never reset.
  */
-import { attemptTypeForInstanceMode } from '@/lib/simulation/preparation-simulation';
 import { itemDimensionValues } from './slot-constraints';
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
@@ -33,7 +32,8 @@ import { examItemFromApproved, examItemMarks } from './items';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
 import { contentAudienceFor, examAudienceOf, studentAudienceDefinitionSql, type ContentAudience } from './audience';
 import { assessmentSemanticsOf, componentCapabilities } from './fidelity';
-import { parseDefinition } from './question-bank/certification-input';
+import { blueprintSpecificationOf, parseDefinition } from './question-bank/certification-input';
+import { classifyExamFormFidelity, deriveInstanceAttemptType, type FormFidelity, type FormFidelityFacts, type InstanceAttemptDecision } from './form-fidelity';
 import { DEFAULT_REUSE_POLICY } from './question-bank/policy';
 import { DEFAULT_DEMAND_POLICY } from './question-bank/demand';
 import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel, type StudentUsage } from './form-assembly';
@@ -84,7 +84,9 @@ export class ExamInstanceError extends Error {
       | 'EXAM_NOT_AVAILABLE'
       | 'FORM_INCOMPLETE'
       | 'MODE_NOT_AVAILABLE'
-      | 'COMPONENT_NOT_MOCKABLE',
+      | 'COMPONENT_NOT_MOCKABLE'
+      // B1-E: a MOCK whose form cannot be verified as a complete (or known-reduced) official form does not start.
+      | 'FIDELITY_NOT_VERIFIABLE',
     detail?: string
   ) {
     super(detail ? `${code}: ${detail}` : code);
@@ -253,6 +255,74 @@ async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
 }
 
 /* ------------------------------------------------------------------ */
+/* Form fidelity (B1-E)                                                 */
+/* ------------------------------------------------------------------ */
+
+/** The machine-readable facts the fidelity classifier needs, for this instance's frozen form. Read-only. */
+export async function loadFormFidelityFacts(instance: ExamInstance, form: AssembledForm | null): Promise<FormFidelityFacts> {
+  const [components, version, blueprint] = await Promise.all([
+    db.query(
+      `SELECT c.id, c.section_key, c.definition, c.max_marks, c.duration_minutes, c.timing_status, c.simulation_capable, d.exam_family
+         FROM assessment_components c JOIN exam_versions v ON v.id = c.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
+        WHERE c.exam_version_id = $1`,
+      [instance.examVersionId]
+    ),
+    db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [instance.examVersionId]),
+    getBlueprintForVersion(instance.examVersionId),
+  ]);
+  const targets = blueprint ? await listObjectiveTargets(blueprint.id) : [];
+  const selected = new Set(instance.componentIds);
+  const formByComponent = new Map((form?.components ?? []).map((c) => [c.componentId, c]));
+  const rules = (version.rows[0]?.navigation_rules ?? {}) as { assessmentRoutes?: Array<{ componentSets?: string[][]; stages?: string[][][] }> };
+  const officialComponentSets: string[][] = [];
+  for (const route of rules.assessmentRoutes ?? []) {
+    for (const set of route.componentSets ?? []) officialComponentSets.push([...set]);
+    for (const stages of route.stages ?? []) for (const set of stages) officialComponentSets.push([...set]);
+  }
+  return {
+    formFrozen: !!form,
+    components: components.rows
+      .filter((c: any) => selected.has(c.id))
+      .map((c: any) => {
+        const definition = parseDefinition(c.definition);
+        const inForm = formByComponent.get(c.id);
+        return {
+          componentId: c.id,
+          sectionKey: c.section_key ?? null,
+          definitionPresent: !!definition,
+          officialMarks: c.max_marks !== null && c.max_marks !== undefined ? Number(c.max_marks) : definition?.maxMarks ?? null,
+          officialItemCount: definition?.officialItemCount ?? null,
+          officialDurationMinutes: definition?.officialDurationMinutes ?? null,
+          configuredDurationMinutes: c.timing_status === 'CONFIGURED' && c.duration_minutes !== null ? Number(c.duration_minutes) : null,
+          distribution: blueprintSpecificationOf(definition),
+          blueprintPositions: targets.filter((t) => t.assessmentComponentId === c.id).length,
+          formPositions: inForm?.positions ?? 0,
+          filledPositions: inForm?.filled ?? 0,
+          plannedMarks: inForm?.plannedMarks ?? 0,
+        };
+      }),
+    versionMockableSectionKeys: components.rows
+      .filter((c: any) => componentCapabilities({ definition: parseDefinition(c.definition), simulationCapable: c.simulation_capable === true, family: c.exam_family }).mockable)
+      .map((c: any) => c.section_key)
+      .filter((k: unknown): k is string => typeof k === 'string' && k.length > 0),
+    officialComponentSets,
+  };
+}
+
+/** Fidelity of this instance's frozen form (meaningful for a MOCK; a PRACTICE / CHALLENGE instance is not classified). */
+export async function examFormFidelityOf(instance: ExamInstance, form: AssembledForm | null): Promise<FormFidelity> {
+  return classifyExamFormFidelity(await loadFormFidelityFacts(instance, form));
+}
+
+/** The stored attempt type this instance would start with, or why a MOCK may not start. */
+async function instanceAttemptDecision(instance: ExamInstance, form: AssembledForm | null): Promise<InstanceAttemptDecision> {
+  // Only a Student MOCK needs its fidelity read; every other case is decided by the mode alone.
+  const needsFidelity = instance.mode === 'MOCK' && instance.contentAudience !== 'TECHNICAL_DEMO';
+  const fidelity = needsFidelity ? await examFormFidelityOf(instance, form) : null;
+  return deriveInstanceAttemptType({ mode: instance.mode, fidelity, difficultyBandMet: form?.difficultyBandMet ?? null, contentAudience: instance.contentAudience });
+}
+
+/* ------------------------------------------------------------------ */
 /* Lifecycle                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -381,9 +451,13 @@ export async function createExamInstance(params: {
   const instance = toInstance(r.rows[0]);
   if (instance.mode !== 'PRACTICE') {
     try {
-      await freezeForm(instance);
+      const form = await freezeForm(instance);
+      // B1-E: a MOCK exists only when its frozen form is a verified FULL or a known REDUCED official form.
+      // Unknown fidelity is not a mock and is never downgraded to preparation: there is no instance.
+      const decision = await instanceAttemptDecision(instance, form);
+      if (!decision.startable) throw new ExamInstanceError('FIDELITY_NOT_VERIFIABLE', [decision.reason, ...decision.fidelityReasons].join(','));
     } catch (err) {
-      await db.query(`UPDATE exam_instances SET status = 'DELETED', deleted_at = now(), delete_reason = 'FORM_ASSEMBLY_FAILED' WHERE id = $1`, [instance.id]);
+      await db.query(`UPDATE exam_instances SET status = 'DELETED', deleted_at = now(), delete_reason = $2 WHERE id = $1`, [instance.id, err instanceof ExamInstanceError && err.code === 'FIDELITY_NOT_VERIFIABLE' ? 'FIDELITY_NOT_VERIFIABLE' : 'FORM_ASSEMBLY_FAILED']);
       throw err;
     }
   }
@@ -420,12 +494,16 @@ export async function startExamInstance(instanceId: string, params: { language: 
   if (open.rows[0]) throw new ExamInstanceError('ATTEMPT_IN_PROGRESS', open.rows[0].id);
 
   const form = instance.form ?? (await freezeForm(instance));
+  // B1-E: the stored attempt type is derived here, and only here, from the instance mode and -- for a MOCK --
+  // the verified fidelity of its frozen form. Nothing is started for a MOCK of unknown fidelity.
+  const decision = await instanceAttemptDecision(instance, form);
+  if (!decision.startable) throw new ExamInstanceError('FIDELITY_NOT_VERIFIABLE', [decision.reason, ...decision.fidelityReasons].join(','));
   const { simulationAttempt } = await startSimulationAttempt({
     studentId: instance.studentId,
     examProfileId: instance.examProfileId,
     examVersionId: instance.examVersionId,
-    // B1-D: a PRACTICE instance is exam practice (EXAM_PRACTICE); only MOCK / CHALLENGE store FULL_MOCK.
-    simulationType: attemptTypeForInstanceMode(instance.mode),
+    // B1-D / B1-E: PRACTICE -> EXAM_PRACTICE, CHALLENGE -> EXAM_CHALLENGE, MOCK -> FULL_MOCK or REDUCED_MOCK by fidelity.
+    simulationType: decision.type,
     timingMode: instance.timingMode,
     language: params.language,
     timezone: params.timezone,
@@ -436,6 +514,7 @@ export async function startExamInstance(instanceId: string, params: { language: 
     // B1-C: the frozen instance behind this attempt (FULL_MOCK => exam instance).
     examInstanceId: instance.id,
     examInstanceMode: instance.mode,
+    verifiedFullFidelity: decision.type === 'FULL_MOCK',
   });
   const r = await db.query(
     `UPDATE exam_instances SET status = 'IN_PROGRESS', simulation_attempt_id = $2, started_at = now() WHERE id = $1 AND status = 'READY' RETURNING *`,

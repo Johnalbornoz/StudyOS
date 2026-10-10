@@ -61,6 +61,11 @@ export class TimingConfigurationError extends Error {
   }
 }
 
+/** The four types the direct (non-instance) path and the Blueprint V2 shadow hook know. */
+function isDirectPathSimulationType(type: SimulationType): type is 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK' {
+  return type === 'TOPIC_EXAM' || type === 'DOMAIN_EXAM' || type === 'MINI_MOCK' || type === 'FULL_MOCK';
+}
+
 async function selectTargets(params: {
   examVersionId: string;
   simulationType: SimulationType;
@@ -92,6 +97,11 @@ async function selectTargets(params: {
     // narrows by component / focus objective). It is NOT reduced the way MINI_MOCK is: no readiness subset applies.
     case 'EXAM_PRACTICE':
       return allTargets;
+    // B1-E: a reduced mock and a challenge are frozen instance forms over the selected components' positions,
+    // exactly as a MOCK / CHALLENGE instance was planned when both were stored as FULL_MOCK.
+    case 'REDUCED_MOCK':
+    case 'EXAM_CHALLENGE':
+      return allTargets;
   }
 }
 
@@ -118,8 +128,8 @@ export async function buildSimulationPlan(params: {
   const blueprint = await getBlueprintForVersion(params.examVersionId);
   // Blueprint V2 SHADOW (BP-4A): only the legacy F9 path (no instance components). An exam-instance plan was
   // already observed once in formInputs -- one shadow observation per flow. Observe only; nothing is returned.
-  // (B1-D: EXAM_PRACTICE is always an exam-instance plan, observed in formInputs, never here.)
-  if (!only && blueprint && params.simulationType !== 'EXAM_PRACTICE' && blueprintV2Mode() === 'SHADOW') {
+  // (B1-D / B1-E: the instance-derived types are always exam-instance plans, observed in formInputs, never here.)
+  if (!only && blueprint && isDirectPathSimulationType(params.simulationType) && blueprintV2Mode() === 'SHADOW') {
     const { shadowObserveSimulationPlan } = await import('@/lib/exam-core/blueprint-v2/runtime-hook');
     const all = await listObjectiveTargets(blueprint.id);
     await shadowObserveSimulationPlan({

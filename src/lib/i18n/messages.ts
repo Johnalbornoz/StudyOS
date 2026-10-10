@@ -813,6 +813,8 @@ export type MessageKey =
   | 'ex.typeBody.MINI_MOCK'
   | 'ex.type.FULL_MOCK'
   | 'ex.type.EXAM_PRACTICE'
+  | 'ex.type.EXAM_CHALLENGE'
+  | 'ex.type.REDUCED_MOCK'
   | 'ex.typeBody.FULL_MOCK'
   | 'ex.type.TOPIC_EXAM'
   | 'ex.typeBody.TOPIC_EXAM'
@@ -3081,6 +3083,8 @@ const es: Messages = {
   'ex.typeBody.MINI_MOCK': 'Una muestra corta del examen.',
   'ex.type.FULL_MOCK': 'Simulacro completo',
   'ex.type.EXAM_PRACTICE': 'Práctica de examen',
+  'ex.type.EXAM_CHALLENGE': 'Reto de examen',
+  'ex.type.REDUCED_MOCK': 'Simulacro reducido',
   'ex.typeBody.FULL_MOCK': 'El examen entero, como el día real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Un objetivo concreto del temario.',
@@ -5349,6 +5353,8 @@ const en: Messages = {
   'ex.typeBody.MINI_MOCK': 'A short sample of the exam.',
   'ex.type.FULL_MOCK': 'Full mock exam',
   'ex.type.EXAM_PRACTICE': 'Exam practice',
+  'ex.type.EXAM_CHALLENGE': 'Exam challenge',
+  'ex.type.REDUCED_MOCK': 'Reduced mock exam',
   'ex.typeBody.FULL_MOCK': 'The whole exam, like the real day.',
   'ex.type.TOPIC_EXAM': 'By objective',
   'ex.typeBody.TOPIC_EXAM': 'One specific objective of the syllabus.',
@@ -7617,6 +7623,8 @@ const de: Messages = {
   'ex.typeBody.MINI_MOCK': 'Ein kurzer Ausschnitt der Prüfung.',
   'ex.type.FULL_MOCK': 'Komplette Probeprüfung',
   'ex.type.EXAM_PRACTICE': 'Prüfungsübung',
+  'ex.type.EXAM_CHALLENGE': 'Prüfungs-Challenge',
+  'ex.type.REDUCED_MOCK': 'Verkürzte Probeprüfung',
   'ex.typeBody.FULL_MOCK': 'Die ganze Prüfung, wie am echten Tag.',
   'ex.type.TOPIC_EXAM': 'Nach Lernziel',
   'ex.typeBody.TOPIC_EXAM': 'Ein bestimmtes Lernziel des Lehrplans.',
@@ -9885,6 +9893,8 @@ const fr: Messages = {
   'ex.typeBody.MINI_MOCK': 'Un court échantillon de l\'examen.',
   'ex.type.FULL_MOCK': 'Examen blanc complet',
   'ex.type.EXAM_PRACTICE': 'Entraînement à l\'examen',
+  'ex.type.EXAM_CHALLENGE': 'Défi d\'examen',
+  'ex.type.REDUCED_MOCK': 'Examen blanc réduit',
   'ex.typeBody.FULL_MOCK': 'L\'examen entier, comme le jour J.',
   'ex.type.TOPIC_EXAM': 'Par objectif',
   'ex.typeBody.TOPIC_EXAM': 'Un objectif précis du programme.',
@@ -12153,6 +12163,8 @@ const pt: Messages = {
   'ex.typeBody.MINI_MOCK': 'Uma amostra curta da prova.',
   'ex.type.FULL_MOCK': 'Simulado completo',
   'ex.type.EXAM_PRACTICE': 'Prática de prova',
+  'ex.type.EXAM_CHALLENGE': 'Desafio de prova',
+  'ex.type.REDUCED_MOCK': 'Simulado reduzido',
   'ex.typeBody.FULL_MOCK': 'A prova inteira, como no dia real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Um objetivo específico do programa.',

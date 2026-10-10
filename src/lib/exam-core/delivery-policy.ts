@@ -93,9 +93,12 @@ export function resolveDeliveryPolicy(config: DeliveryPolicyConfig, simulationTy
 }
 
 export function isModeAllowed(config: DeliveryPolicyConfig, simulationType: SimulationType, timingMode: TimingMode): { allowed: boolean; reason?: 'SIMULATION_TYPE_NOT_ALLOWED' | 'TIMING_MODE_NOT_ALLOWED' } {
-  // B1-D: EXAM_PRACTICE is never a client-requestable mode, so a version's allow-list (which governs the direct
-  // start path) does not list it; it is started only by an exam instance, which has its own readiness gates.
-  if (simulationType !== 'EXAM_PRACTICE' && !(config.allowedSimulationTypes as readonly string[]).includes(simulationType)) return { allowed: false, reason: 'SIMULATION_TYPE_NOT_ALLOWED' };
+  // B1-D / B1-E: the instance-derived types are never client-requestable, so a version's allow-list does not
+  // name them. EXAM_PRACTICE is governed by the exam instance's own readiness gates. REDUCED_MOCK and
+  // EXAM_CHALLENGE are mock-format assessments: they are allowed exactly where the version allows a mock
+  // (the allow-list entry they were checked against while both were stored as FULL_MOCK).
+  const allowListKey = simulationType === 'EXAM_PRACTICE' ? null : simulationType === 'REDUCED_MOCK' || simulationType === 'EXAM_CHALLENGE' ? 'FULL_MOCK' : simulationType;
+  if (allowListKey !== null && !(config.allowedSimulationTypes as readonly string[]).includes(allowListKey)) return { allowed: false, reason: 'SIMULATION_TYPE_NOT_ALLOWED' };
   if (!config.allowedTimingModes.includes(timingMode)) return { allowed: false, reason: 'TIMING_MODE_NOT_ALLOWED' };
   return { allowed: true };
 }
