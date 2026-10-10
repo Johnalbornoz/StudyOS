@@ -348,40 +348,58 @@ describe('REM-T1-03 context-aware final step (controlled values only)', () => {
     expect(availableSeries({ programmeName: 'IB Middle Years Programme', country: 'MX', year: 2027 })).toEqual([]);
   });
 
-  it('Cambridge March is RESTRICTED: offered only where governed (India, Romania), never hard-coded to one country', () => {
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 })).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge Advanced', country: 'RO', year: 2027 })).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
-    for (const c of ['MX', 'CO', 'US', 'DE', 'OTHER', '', null]) expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: c, year: 2027 }), String(c)).not.toContain('MARCH');
-    const ro = resolveTimeContextModel({ country: 'RO', programmeName: 'Cambridge IGCSE' });
-    expect(timeContextOptions(ro, oct2026).map((o) => timeContextKey(o))).toEqual(['ES:NOVEMBER:2026', 'ES:MARCH:2027', 'ES:JUNE:2027', 'ES:NOVEMBER:2027']);
+  // Governed syllabus availability used by the scenarios below (codes are test fixtures, not catalogue data).
+  const MARCH_SYLLABUS: SessionCatalog = { ...SESSION_CATALOG, syllabusSeries: { '0580': ['MARCH', 'JUNE', 'NOVEMBER'], '0610': ['JUNE', 'NOVEMBER'] } };
+
+  it('scenario: Cambridge · India · 2027 · syllabus KNOWN and March-enabled -> MARCH / JUNE / NOVEMBER', () => {
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580'], country: 'IN', year: 2027 }, MARCH_SYLLABUS)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['0580'], country: 'RO', year: 2027 }, MARCH_SYLLABUS)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+  });
+
+  it('scenario: Cambridge · India · 2027 · syllabus availability UNKNOWN -> JUNE / NOVEMBER (safe fallback)', () => {
+    // No syllabus known at all (today's profile: catalogue subjects carry no syllabus code).
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 })).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: [], country: 'IN', year: 2027 }, MARCH_SYLLABUS)).toEqual(['JUNE', 'NOVEMBER']);
+    // A syllabus with no governed availability entry.
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['9999'], country: 'IN', year: 2027 }, MARCH_SYLLABUS)).toEqual(['JUNE', 'NOVEMBER']);
+    // Mixed: one March-enabled, one unknown -> not offered.
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580', '9999'], country: 'IN', year: 2027 }, MARCH_SYLLABUS)).toEqual(['JUNE', 'NOVEMBER']);
+    // Known but not offered in March.
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0610'], country: 'IN', year: 2027 }, MARCH_SYLLABUS)).toEqual(['JUNE', 'NOVEMBER']);
+    const india = resolveTimeContextModel({ country: 'IN', programmeName: 'Cambridge IGCSE' });
+    expect(timeContextOptions(india, oct2026).map((o) => timeContextKey(o))).toEqual(['ES:NOVEMBER:2026', 'ES:JUNE:2027', 'ES:NOVEMBER:2027', 'ES:JUNE:2028']);
+    expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'MARCH', year: 2027 }, india, oct2026, null)).toBe(false);
+  });
+
+  it('scenario: Cambridge · Mexico -> JUNE / NOVEMBER (even with a March-enabled syllabus)', () => {
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'MX', year: 2027 })).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580'], country: 'MX', year: 2027 }, MARCH_SYLLABUS)).toEqual(['JUNE', 'NOVEMBER']);
+    for (const c of ['CO', 'US', 'DE', 'OTHER', '', null]) expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580'], country: c, year: 2027 }, MARCH_SYLLABUS), String(c)).not.toContain('MARCH');
     const mx = resolveTimeContextModel({ country: 'MX', programmeName: 'Cambridge IGCSE' });
     expect(timeContextFitsModel({ kind: 'EXAM_SESSION', series: 'MARCH', year: 2027 }, mx)).toBe(false);
-    expect(isAcceptedTimeContext({ kind: 'EXAM_SESSION', series: 'MARCH', year: 2027 }, mx, oct2026, null)).toBe(false);
     expect(SESSION_CATALOG.regionRules.find((r) => r.series === 'MARCH')!.countries).toEqual(['IN', 'RO']);
   });
 
   it('availability is region- AND year-dependent (rule windows); unknown = not offered', () => {
-    const catalog: SessionCatalog = { ...SESSION_CATALOG, regionRules: [{ series: 'MARCH', countries: ['IN'], fromYear: 2028, toYear: 2029, source: 'test' }] };
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2028 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2030 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'RO', year: 2028 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
-    // No region rule at all -> the restricted series is never offered.
-    expect(availableSeries({ programmeName: 'Cambridge IGCSE', country: 'IN', year: 2027 }, { ...SESSION_CATALOG, regionRules: [] })).toEqual(['JUNE', 'NOVEMBER']);
+    const catalog: SessionCatalog = { ...MARCH_SYLLABUS, regionRules: [{ series: 'MARCH', countries: ['IN'], fromYear: 2028, toYear: 2029, source: 'test' }] };
+    const q = (country: string, year: number) => availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580'], country, year }, catalog);
+    expect(q('IN', 2027)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(q('IN', 2028)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(q('IN', 2030)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(q('RO', 2028)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge IGCSE', syllabusCodes: ['0580'], country: 'IN', year: 2027 }, { ...MARCH_SYLLABUS, regionRules: [] })).toEqual(['JUNE', 'NOVEMBER']);
   });
 
   it('qualification and syllabus exclusions remove a series (conservative across selected syllabi)', () => {
     const catalog: SessionCatalog = {
       ...SESSION_CATALOG,
       programmes: { ...SESSION_CATALOG.programmes, 'Cambridge Advanced': { body: 'CAMBRIDGE', series: ['JUNE', 'NOVEMBER'], restrictedSeries: ['MARCH'], qualificationExclusions: { 'Cambridge International AS Level': ['MARCH'] } } },
-      syllabusSeries: { '9709': ['JUNE', 'NOVEMBER'], '9231': ['JUNE'] },
+      syllabusSeries: { '9709': ['MARCH', 'JUNE', 'NOVEMBER'], '9231': ['JUNE'] },
     };
-    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International A Level', country: 'IN', year: 2027 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International AS Level', country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
-    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['9709'], country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International A Level', syllabusCodes: ['9709'], country: 'IN', year: 2027 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', qualificationName: 'Cambridge International AS Level', syllabusCodes: ['9709'], country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE', 'NOVEMBER']);
     expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['9709', '9231'], country: 'IN', year: 2027 }, catalog)).toEqual(['JUNE']);
-    // A syllabus without a governed entry follows its programme.
-    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['0000'], country: 'RO', year: 2027 }, catalog)).toEqual(['MARCH', 'JUNE', 'NOVEMBER']);
+    expect(availableSeries({ programmeName: 'Cambridge Advanced', syllabusCodes: ['9231'], country: 'MX', year: 2027 }, catalog)).toEqual(['JUNE']);
   });
 
   it('existing saved values stay readable: legacy FEB_MARCH / MAY_JUNE / OCT_NOV read as MARCH / JUNE / NOVEMBER, never rewritten', () => {

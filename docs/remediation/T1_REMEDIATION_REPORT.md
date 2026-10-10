@@ -56,7 +56,10 @@
 - Canonical series are the awarding body's own names: IB `MAY` / `NOVEMBER` (unchanged); Cambridge `MARCH` / `JUNE` / `NOVEMBER`. Feb/Mar, May/Jun and Oct/Nov are calendar windows, not identifiers.
 - Availability is resolved by programme, qualification, syllabus (where known), region and year (`availableSeries`):
   - June and November are offered everywhere.
-  - March is restricted. A governed region rule (India, Romania, from 2026) must positively allow it for that country and year; with no rule it is not offered.
+  - March is restricted and needs both positive facts:
+    - a governed region rule (India, Romania, from 2026) for that country and year;
+    - every selected syllabus is known and lists March.
+  - So India 2027 with a known March-enabled syllabus gives March / June / November; India 2027 with no syllabus known, or any unknown syllabus, gives June / November; Mexico gives June / November.
   - Governed qualification exclusions and per-syllabus availability remove series. The rule is conservative: a series must be available for every known selected syllabus.
   - No syllabus overrides are governed yet, and catalogue subjects carry no syllabus code. The programme-level availability therefore applies, which never offers an unsupported series.
 - Backward compatibility: the legacy identifiers `FEB_MARCH`, `MAY_JUNE` and `OCT_NOV` are read as `MARCH`, `JUNE` and `NOVEMBER` and are never rewritten. New writes are canonical only (API enum `MAY` / `NOVEMBER` / `MARCH` / `JUNE`).

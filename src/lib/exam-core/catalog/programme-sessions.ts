@@ -21,10 +21,13 @@
  *   year                      -> region rules carry a validity window;
  *   syllabus (where known)    -> per-syllabus availability overrides. A syllabus
  *                                with a governed entry offers only its listed series.
- * SAFE FALLBACK: a restricted series is offered only when a governed rule positively
- * says so for that region and year; anything unknown is NOT offered. Unrestricted
- * series (IB May/November, Cambridge June/November) are offered unless a governed
- * qualification or syllabus exclusion removes them.
+ * SAFE FALLBACK: a RESTRICTED series (Cambridge March) needs BOTH positive facts:
+ *   1. a governed region rule administers it in that country and year, and
+ *   2. every selected syllabus is KNOWN (has a governed availability entry) and lists it.
+ * No syllabus known, or any selected syllabus with unknown availability -> not offered
+ * (India 2027 + unknown syllabus -> June / November). Unrestricted series (IB May/November,
+ * Cambridge June/November) are offered unless a governed qualification exclusion or a
+ * known syllabus' availability removes them.
  *
  * Programmes are matched by their EXACT catalogue name (academic_programmes.name),
  * the identity the catalogue seeds use. Every change here is a reviewed data change.
@@ -141,8 +144,8 @@ export function programmeSessionEntry(programmeName: string | null | undefined, 
 /**
  * The series a Student may aim for in `year`, for their programme / qualification /
  * syllabi / country. Conservative: a series is offered only if it is available for the
- * programme and qualification, for the region and year (restricted series), and for EVERY
- * known selected syllabus that has a governed availability entry.
+ * programme and qualification and not removed by a known syllabus; a restricted series
+ * additionally needs its region/year rule AND every selected syllabus known and offering it.
  */
 export function availableSeries(q: SeriesQuery, catalog: SessionCatalog = SESSION_CATALOG): ExamSeries[] {
   const entry = programmeSessionEntry(q.programmeName, catalog);
@@ -153,12 +156,16 @@ export function availableSeries(q: SeriesQuery, catalog: SessionCatalog = SESSIO
     catalog.regionRules.some(
       (r) => r.series === s && r.countries.includes(country) && (r.fromYear === null || q.year >= r.fromYear) && (r.toYear === null || q.year <= r.toYear)
     );
+  const codes = q.syllabusCodes ?? [];
+  // Unrestricted series: removed only by a KNOWN syllabus that does not offer it.
   const syllabusAllows = (s: ExamSeries) =>
-    (q.syllabusCodes ?? []).every((code) => {
+    codes.every((code) => {
       const only = catalog.syllabusSeries[code];
       return !only || only.includes(s);
     });
-  const candidates = [...entry.series, ...entry.restrictedSeries.filter(regionAllows)];
+  // Restricted series: every selected syllabus must be known AND offer it (at least one syllabus).
+  const syllabusConfirms = (s: ExamSeries) => codes.length > 0 && codes.every((code) => catalog.syllabusSeries[code]?.includes(s) === true);
+  const candidates = [...entry.series, ...entry.restrictedSeries.filter((s) => regionAllows(s) && syllabusConfirms(s))];
   return candidates.filter((s) => !excluded.has(s) && syllabusAllows(s)).sort((a, b) => SERIES[a].month - SERIES[b].month);
 }
 
