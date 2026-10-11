@@ -12,9 +12,16 @@
  * PRIMARY concept, band, format, language, marks and stimulus plan come from the cell and the unit, never from
  * the response. A response that does not fit the unit and the template is refused by name and not repaired.
  *
+ * EA-1 -- ADAPTATION SPECIFICATIONS (optional). A slot may be given the specification an adaptation produced for
+ * it (`adaptationSpecifications`, by slot key). The harness then checks that it is intact and is for that slot,
+ * puts its generation-relevant content into the prompt -- so it is part of the prompt hash -- and records its
+ * identity on the candidate's lineage. When none is given the prompt, the hash and the batch are exactly what
+ * they were before: the member is absent, not empty. A specification is never created, completed or relaxed here.
+ *
  * What the harness does NOT do: judge the content. Answer correctness, concept fidelity, stimulus integrity and
  * originality are checked by the independent validators, which this directory must not import.
  */
+import { AdaptationSpecificationSchema, specificationIntegrityIssues, type AdaptationSpecification } from '@/lib/assessment-adaptation/adaptation-specification';
 import { generationReadyPackIssues, REFERENCE_PACK_V2_VERSION, type ConceptProfile, type ReferenceIntelligencePackV2 } from '../concept-profile';
 import { GENERATION_CONTRACT_VERSION, GenerationBatchSchema, GenerationPolicySchema, type CandidateStimulus, type GenerationBatch, type QuestionCandidate } from '../generation-contract';
 import { isBound, type RequirementCell } from '../requirement-cell';
@@ -49,6 +56,8 @@ export interface GenerationPrompt {
     conceptProfiles: ConceptProfile[];
     references: { sources: Array<{ sourceKey: string; sourceType: string; title: string; permittedUse: string }>; facts: Array<{ kind: string; statement: string }> };
     responseSchema: { id: string; version: string; shape: typeof RESPONSE_SHAPE_DESCRIPTION };
+    /** EA-1. Present ONLY when a slot was given an adaptation specification; absent otherwise, so earlier prompts hash as before. */
+    adaptation?: Array<{ slotKey: string; specificationId: string; taskFamily: { familyId: string; version: string }; assessmentProfile: { profileId: string; version: string }; disciplinePolicy: { policyId: string; version: string }; invariants: AdaptationSpecification['invariants']; invariantHash: string; variable: AdaptationSpecification['variable']; parameterization: unknown }>;
   };
 }
 
@@ -73,9 +82,44 @@ export interface GenerateCandidatesInput {
   };
   /** Human-readable labels for codes, supplied by the exam's own module (the harness knows no exam). */
   labels?: { topics?: Readonly<Record<string, string>> };
+  /** EA-1: the adaptation specification of a slot, by slot key. Optional; a slot without one is generated as before. */
+  adaptationSpecifications?: Readonly<Record<string, unknown>>;
 }
 
-interface Prepared { unit: GenerationUnit; cells: RequirementCell[]; template: GenerationTemplate; policy: ReturnType<typeof GenerationPolicySchema.parse>; rendered: RenderedPrompt<GenerationPrompt>; ownStimulusKind: string | null }
+interface Prepared { unit: GenerationUnit; cells: RequirementCell[]; template: GenerationTemplate; policy: ReturnType<typeof GenerationPolicySchema.parse>; rendered: RenderedPrompt<GenerationPrompt>; ownStimulusKind: string | null; adaptation: ReadonlyMap<string, AdaptationSpecification> }
+
+/**
+ * The specifications given for the unit's slots, checked. Each must be intact (its id and invariant hash are the
+ * ones its content gives) and must agree with everything the plan already fixed for the slot: exam family, the
+ * PRIMARY concept with its canonical subject, format, band, pool, language and cell. A disagreement is refused:
+ * the plan is never bent to a specification, nor a specification to the plan.
+ */
+function adaptationOf(input: GenerateCandidatesInput, unit: GenerationUnit, cells: readonly RequirementCell[], language: string): Map<string, AdaptationSpecification> {
+  const out = new Map<string, AdaptationSpecification>();
+  const given = input.adaptationSpecifications;
+  if (!given) return out;
+  const slots = slotsOfUnit(unit);
+  for (const key of Object.keys(given).sort()) {
+    const i = slots.findIndex((s) => s.slotKey === key);
+    if (i < 0) throw new GenerationError('ADAPTATION_SPECIFICATION_NOT_FOR_THE_SLOT', `${key}: not a slot of ${unit.unitKey}`);
+    const issues = specificationIntegrityIssues(given[key]);
+    if (issues.length > 0) throw new GenerationError('ADAPTATION_SPECIFICATION_INVALID', `${key}: ${issues.join(',')}`);
+    const spec = AdaptationSpecificationSchema.parse(given[key]);
+    const cell = cells[i];
+    const misfit =
+      spec.assessmentProfile.examFamilyCode !== cell.examFamily ? 'EXAM_FAMILY'
+      : spec.primaryConcept.stableId !== cell.primaryConcept.stableId || spec.primaryConcept.canonicalSubject !== cell.primaryConcept.canonicalSubject ? 'PRIMARY_CONCEPT'
+      : spec.variable.responseFormat.productionFormat !== cell.responseFormat ? 'RESPONSE_FORMAT'
+      : spec.variable.difficulty.band !== cell.difficultyBand ? 'DIFFICULTY_BAND'
+      : spec.purpose.pool !== cell.intendedPool ? 'POOL'
+      : spec.variable.language !== language ? 'LANGUAGE'
+      : spec.blueprintRequirement !== null && spec.blueprintRequirement.requirementCellKey !== cell.cellKey ? 'REQUIREMENT_CELL'
+      : null;
+    if (misfit) throw new GenerationError('ADAPTATION_SPECIFICATION_NOT_FOR_THE_SLOT', `${key}: ${misfit}`);
+    out.set(key, spec);
+  }
+  return out;
+}
 
 function prepare(input: GenerateCandidatesInput): Prepared {
   const unitParsed = GenerationUnitSchema.safeParse(input.unit);
@@ -104,6 +148,7 @@ function prepare(input: GenerateCandidatesInput): Prepared {
   const sources = new Map(packs.flatMap((p) => p.sources).map((s) => [s.sourceKey, { sourceKey: s.sourceKey, sourceType: s.sourceType, title: s.title, permittedUse: s.permittedUse }]));
   const facts = new Map(packs.flatMap((p) => p.facts).map((f) => [`${f.kind}|${f.statement}`, { kind: f.kind, statement: f.statement }]));
   const slots = slotsOfUnit(unit);
+  const adaptation = adaptationOf(input, unit, cells, policy.language);
   const prompt: GenerationPrompt = {
     v: GENERATION_PROMPT_VERSION,
     system: GENERATION_SYSTEM_TEXT,
@@ -117,9 +162,14 @@ function prepare(input: GenerateCandidatesInput): Prepared {
       conceptProfiles: packs.map((p) => p.conceptProfile),
       references: { sources: [...sources.values()].sort((a, b) => (a.sourceKey < b.sourceKey ? -1 : 1)), facts: [...facts.values()] },
       responseSchema: { id: GENERATION_RESPONSE_SCHEMA.id, version: GENERATION_RESPONSE_SCHEMA.version, shape: RESPONSE_SHAPE_DESCRIPTION },
+      // the member exists only when a specification was given: a prompt without one is byte-identical to what it was
+      ...(adaptation.size > 0 ? { adaptation: slots.filter((s) => adaptation.has(s.slotKey)).map((s) => {
+        const a = adaptation.get(s.slotKey)!;
+        return { slotKey: s.slotKey, specificationId: a.specificationId, taskFamily: { familyId: a.taskFamily.familyId, version: a.taskFamily.version }, assessmentProfile: { profileId: a.assessmentProfile.profileId, version: a.assessmentProfile.version }, disciplinePolicy: { policyId: a.disciplinePolicy.policyId, version: a.disciplinePolicy.version }, invariants: a.invariants, invariantHash: a.invariantHash, variable: a.variable, parameterization: a.parameterization };
+      }) } : {}),
     },
   };
-  return { unit, cells, template, policy, rendered: { prompt, promptHash: sha256OfCanonicalJson(prompt) }, ownStimulusKind: key.ownStimulus ? key.stimulusKind : null };
+  return { unit, cells, template, policy, rendered: { prompt, promptHash: sha256OfCanonicalJson(prompt) }, ownStimulusKind: key.ownStimulus ? key.stimulusKind : null, adaptation };
 }
 
 /** The prompt a unit renders to, and its hash, without calling any provider. Deterministic. */
@@ -189,6 +239,7 @@ export async function generateCandidates(input: GenerateCandidatesInput): Promis
     const item = response.items.find((x) => x.slotKey === slot.slotKey)!;
     const cell = p.cells[i];
     const pack = input.packs[cell.primaryConcept.stableId];
+    const adapted = p.adaptation.get(slot.slotKey);
     return {
       v: GENERATION_CONTRACT_VERSION, candidateKey: `cand|${slot.slotKey}`, cellKey: cell.cellKey, batchKey: input.batchKey, stem: item.stem, responseFormat: cell.responseFormat, options: item.options, answerKey: item.answerKey, rationale: item.rationale,
       distractorRationales: item.distractorRationales, primaryConceptStableId: cell.primaryConcept.stableId, proposedSupportingConceptStableIds: item.proposedSupportingConceptStableIds, difficultyBand: cell.difficultyBand, marks: 1, language,
@@ -197,6 +248,7 @@ export async function generateCandidates(input: GenerateCandidatesInput): Promis
         kind: 'MODEL', model: input.provider.model, promptVersion: `${p.template.id}@${p.template.version}`, runId: input.runId, requestedBy: author.requestedBy, generatedAt: input.now, humanEdits: [],
         provider: input.provider.id, generationPolicy: { id: p.policy.policyId, version: p.policy.policyVersion }, template: { id: p.template.id, version: p.template.version }, promptHash: p.rendered.promptHash, generationUnitKey: p.unit.unitKey, requirementCellKey: cell.cellKey,
         referencePack: { version: REFERENCE_PACK_V2_VERSION, conceptProfileVersion: pack.conceptProfile.v, conceptProfilePackVersion: pack.conceptProfile.packVersion },
+        ...(adapted ? { adaptation: { taskFamily: { id: adapted.taskFamily.familyId, version: adapted.taskFamily.version }, assessmentProfile: { id: adapted.assessmentProfile.profileId, version: adapted.assessmentProfile.version }, disciplinePolicy: { id: adapted.disciplinePolicy.policyId, version: adapted.disciplinePolicy.version }, adaptationSpecificationId: adapted.specificationId, invariantHash: adapted.invariantHash, generationRunId: input.runId } } : {}),
       },
       instruction: p.template.fixedInstruction[language]?.[cell.responseFormat] ?? null, slotKey: slot.slotKey, stimulusPlanId,
       ...(item.answerCheck ? { answerCheck: item.answerCheck } : {}), ...(item.numericKey ? { numericKey: item.numericKey } : {}), ...(item.usesStimulusValues ? { usesStimulusValues: item.usesStimulusValues } : {}),

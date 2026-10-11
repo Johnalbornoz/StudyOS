@@ -1,0 +1,3743 @@
+{
+  "kind": "EA1_MATH_ADAPTATION_MATRIX",
+  "v": 1,
+  "about": "EA-1 mathematics proof of concept. Ten DRAFT, UNREVIEWED task families adapted into five PROVISIONAL, ILLUSTRATIVE assessment-system profiles under a PROVISIONAL discipline policy. Specifications only: no question was generated. Nothing here is reviewed, certified or approved.",
+  "engine": {
+    "id": "studyus-adaptation-engine",
+    "version": "1"
+  },
+  "disciplinePolicy": {
+    "policyId": "studyus.adaptation.mathematics",
+    "version": "0.1.0-provisional",
+    "status": "PROVISIONAL"
+  },
+  "request": {
+    "purpose": "PRACTICE",
+    "difficultyBand": "STANDARD",
+    "languageByProfile": {
+      "PAA": "es",
+      "IB": "en",
+      "CAMBRIDGE": "en",
+      "PISA": "es",
+      "ICFES": "es"
+    }
+  },
+  "profiles": [
+    {
+      "profileId": "PAA",
+      "version": "0.1.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "examFamilyCode": "PAA",
+      "officialRules": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "studyusPolicyRules": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "profileId": "IB",
+      "version": "0.1.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "examFamilyCode": "IB",
+      "officialRules": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "studyusPolicyRules": [
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "profileId": "CAMBRIDGE",
+      "version": "0.1.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "examFamilyCode": "CAMBRIDGE",
+      "officialRules": [
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRules": [
+        "responseFormats",
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "profileId": "PISA",
+      "version": "0.1.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "examFamilyCode": "PISA",
+      "officialRules": [
+        "responseFormats",
+        "timePressure",
+        "contextExpectations",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRules": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "profileId": "ICFES",
+      "version": "0.1.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "examFamilyCode": "ICFES",
+      "officialRules": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRules": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    }
+  ],
+  "families": [
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad",
+      "evidenceActions": [
+        "SOLVE"
+      ],
+      "construct": "DIRECT_PROPORTION_MISSING_VALUE",
+      "calculatorDependency": "NONE",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11"
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad",
+      "evidenceActions": [
+        "FORMULATE",
+        "SOLVE",
+        "INTERPRET"
+      ],
+      "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Rectas y funciones lineales",
+      "evidenceActions": [
+        "COMPUTE",
+        "REPRESENT"
+      ],
+      "construct": "LINE_THROUGH_TWO_POINTS",
+      "calculatorDependency": "NONE",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62"
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Rectas y funciones lineales",
+      "evidenceActions": [
+        "FORMULATE",
+        "INTERPRET"
+      ],
+      "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+      "calculatorDependency": "NONE",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5"
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities",
+      "evidenceActions": [
+        "SOLVE"
+      ],
+      "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+      "calculatorDependency": "NONE",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities",
+      "evidenceActions": [
+        "FORMULATE",
+        "SOLVE",
+        "INTERPRET"
+      ],
+      "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505"
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad",
+      "evidenceActions": [
+        "COMPUTE"
+      ],
+      "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+      "calculatorDependency": "NONE",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d"
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad",
+      "evidenceActions": [
+        "FORMULATE",
+        "COMPUTE",
+        "EVALUATE"
+      ],
+      "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2"
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Representación e interpretación de datos",
+      "evidenceActions": [
+        "INTERPRET",
+        "COMPUTE"
+      ],
+      "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+      "calculatorDependency": "REQUIRED",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9"
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Representación e interpretación de datos",
+      "evidenceActions": [
+        "INTERPRET",
+        "EVALUATE"
+      ],
+      "construct": "CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY",
+      "calculatorDependency": "NONE",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f"
+    }
+  ],
+  "cells": [
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "f5dce0e33b6ac674666aeac97af268d8a413586e6790af35b2dff099f077a288",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "198af1dec673374dc2beb764354948cd3dd81437e54e880d22ba2213dc5e4f5d",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "e31bdd23380869d4fca666380ae134042b7e95d3b28b5578297c6e57a6c4ebbf",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "profileId": "PISA",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "35dff378b57cb74dc05c10a05dcb335ac47682604282e99fbb345ddadc95335f",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "f421e43bc21f460e0e5086d39c471335e8cc8a77ba5c55053eebce3caae606af",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "bb8811f8c1201810ed197814b8e20220b19b8881028e3920775bc79770d13e17",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "9a12cfe733e6e1487d8b390396638501225c66c9d83d082d3aa8462a941f3d97",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "97fca738ad5511bd24738186fd2810d1cb0664080b6d5cdbbea808cd4ada78b9",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "2f41d46c9aa73702072f52d663c24b60b050e70c5c0db89a3d9dbca8d4d31c27",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "8b8a763a24ea7d839bd029ee7a7d19018fad82a374b3332767227e2f0af30695",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "b2e1cdab9073ff10eea7d8129856d06d6e16d3634316227e678418831896c379",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "8af2694bd6f1db15ac8a78b2b7004fd6537af6ced73517ecd2f39736e0293a90",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "profileId": "PISA",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "eff092f91c582712bcb3871330dfc5ae3b1a61fc0e50f05f844acfc197cac698",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "6b4162b8eaa10411fde69c89f581dbb200999d1a577b18da33e65b78f3ecb523",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "1ddcd8e0acb8b3883e6b0cf54eade1718883878c11f2d628dec923f7517ba263",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "a8e0a71b630e84a78d118685801c51f58a41b20460849fa0dbd94e57de61b7a1",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "933d17366cd661be09d15377a45a9e80394026f1e34f40adaf13b8a79b0a60dc",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "18d6d8a913ac1952ccd5ea2a0353af95cc683aea941edc7b96725e6e4ce1869d",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "69f2e8125dc39536372d182881b115793e4d6679a0f7fc0ac728d34f74b4a2e2",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "92af1386f18c63b420c37a5dfe765bbb54f7c8980faba48dc175eabe3ab01479",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "6ee0851b69d82a9dac5795577d232a4e11918276e88d4e00e83c5e238e978c22",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "profileId": "PISA",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "profileId": "ICFES",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "1212a84663eb24dfc477aaedbc787c221068c08cb68ece396a661b93607a6581",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "0da35d1e87922d2e2f4ee6c5304510144f956b969038f51eebadf702a121cbe1",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "88d19ba31884022d2f014b8151e73efcc4c1a6a7a789f8d51208f6be0fc9c51d",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "2468ddd0570b2d7efb38dbf3d069464f233986c3cf3f0bb7157320e4b5f41ec1",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "profileId": "ICFES",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "406ba74ecb8f06f185ab2ce347cf0c2ce00e2f27e3ce92566077d8fa92e19cfb",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "cc8e3c2565242168967103c8e5f350a17e85b3265023d2c7e336e298a506f7ba",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "d91851da358467f9a07985e4685f49f158722864e30fcb0055a0c64f14dda500",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "profileId": "PISA",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "1cb9a37a8c570f3284a1fc1e8adff120c995fec928290468ac4e9a22d734413f",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "2e05d188e3cda234902d89e83cbb85c20d75c619bfe92da046d4afa204033bc8",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "e3d76259ff9ab01c6ef2e50aca4f9177b7825aeac4b55dff5a1572f1064aaa40",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "35b6e0b79d25a8a4f274adc50e8369cd1a50561d2fccab927a4a4a93c0fef1dd",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CATALOGUE_LINK_RECORDED",
+      "outcome": "SPECIFICATION",
+      "specificationId": "e7ad3982aa8410869c5d7919ff9d8580c064cd97c603273fcf8285dbaae5cb8a",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "ae75a76e56f34550167fee9cbcfa77fbd84ed6af9448847623dc445144640847",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "profileId": "PAA",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "ca33bfec1ec2ab0e0d6a899c0d4dd4c824629a2f4845b2d936332a68f9cc4035",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "b6a6e146ad4e3902cb152716f3eb19317eb435d0478a6614d6bd36d59d0bfba0",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "474ec37e0fa5f31bcd383149497ac979763a7587e5370bde208aa03b7e88a11f",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "profileId": "ICFES",
+      "declaredSupport": "UNSUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "profileId": "PAA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "d7799969016dc7a92618f15a8a84b6a59bdfaf2fa9fb62a9cc168ca69b1104de",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "profileId": "IB",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "a240ffc1c32292a22e8fa64a3cee7f92c9118dffdd65091590b2f5147564597a",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "profileId": "CAMBRIDGE",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "c5e9019d28cfa30fa07ff8efb535a93f85237dbd7f1c60c6ef1b16c49fe8b4c4",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "profileId": "PISA",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "47fc1635db8da2298c1a80354bc4c4f7ce34a971b2e15bacdd44a9ecce56f7a8",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "profileId": "ICFES",
+      "declaredSupport": "SUPPORTED",
+      "canonicalKnowledgeAvailability": "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY",
+      "outcome": "SPECIFICATION",
+      "specificationId": "5daf4249b696fb61796bebaf9dddac1315768b825ff9fb20e3e89a86f51b1b4a",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    }
+  ],
+  "summary": {
+    "attempts": 50,
+    "specifications": 42,
+    "refusals": 8,
+    "declaredSupport": {
+      "SUPPORTED": 35,
+      "SUPPORTED_WITH_CONSTRAINTS": 7,
+      "UNSUPPORTED": 8
+    },
+    "refusalCodes": {
+      "PROFILE_UNSUPPORTED_BY_FAMILY": 8
+    },
+    "specificationsByProfile": {
+      "PAA": 9,
+      "IB": 10,
+      "CAMBRIDGE": 10,
+      "PISA": 6,
+      "ICFES": 7
+    },
+    "knowledgeAvailabilityOfSpecifications": {
+      "CATALOGUE_LINK_RECORDED": 6,
+      "CERTIFIED_FOR_THIS_EXAM_FAMILY": 9,
+      "NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY": 27
+    },
+    "specificationsIfKnowledgeRequired": {
+      "CATALOGUE_LINK_OR_CERTIFIED": 15,
+      "CERTIFIED": 9
+    },
+    "familiesReachingSeveralProfiles": 10,
+    "minimumPairwiseDifference": 3,
+    "pairwiseDifferenceDistribution": {
+      "differ-in-03": 8,
+      "differ-in-04": 3,
+      "differ-in-05": 6,
+      "differ-in-06": 4,
+      "differ-in-07": 9,
+      "differ-in-08": 5,
+      "differ-in-09": 9,
+      "differ-in-10": 10,
+      "differ-in-11": 15,
+      "differ-in-12": 1
+    },
+    "invariantHashIdenticalWithinEveryFamily": true
+  },
+  "fidelity": [
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.num.ratio-proportion"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "DIRECT_PROPORTION_MISSING_VALUE",
+        "evidenceActions": [
+          "SOLVE"
+        ],
+        "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "additive",
+              "inverted",
+              "wrong-pair"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "additive",
+              "inverted",
+              "wrong-pair"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.num.ratio-proportion"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+        "evidenceActions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "PISA",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.fun.linear-functions-lines"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "LINE_THROUGH_TWO_POINTS",
+        "evidenceActions": [
+          "COMPUTE",
+          "REPRESENT"
+        ],
+        "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "run-over-rise",
+              "mixed-order",
+              "point-as-intercept"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "run-over-rise",
+              "mixed-order",
+              "point-as-intercept"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.fun.linear-functions-lines"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+        "evidenceActions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "PISA",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "FORMULATE",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "stimulus",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.alg.quadratics"
+        ],
+        "canonicalSubject": "Mathematics",
+        "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+        "evidenceActions": [
+          "SOLVE"
+        ],
+        "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 5
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.alg.quadratics"
+        ],
+        "canonicalSubject": "Mathematics",
+        "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+        "evidenceActions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "PISA"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 5
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.prob.probability"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+        "evidenceActions": [
+          "COMPUTE"
+        ],
+        "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "odds",
+              "categories",
+              "complement"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "odds",
+              "categories",
+              "complement"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.prob.probability"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+        "evidenceActions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "PISA",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE",
+            "REASON"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION",
+            "ARGUMENTACION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.stat.data-representation"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+        "evidenceActions": [
+          "INTERPRET",
+          "COMPUTE"
+        ],
+        "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "IB",
+        "CAMBRIDGE",
+        "PISA"
+      ],
+      "variableByProfile": {
+        "IB": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "absolute-difference",
+              "wrong-base",
+              "neighbour-value"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.stat.data-representation"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY",
+        "evidenceActions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+        "identicalAcrossProfiles": true
+      },
+      "profiles": [
+        "PAA",
+        "IB",
+        "CAMBRIDGE",
+        "PISA",
+        "ICFES"
+      ],
+      "variableByProfile": {
+        "PAA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        },
+        "IB": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "CAMBRIDGE": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "INTERPRET_EVALUATE",
+            "REASON"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        },
+        "ICFES": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "ARGUMENTACION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA",
+          "b": "IB",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "CAMBRIDGE",
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "PISA",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA",
+          "b": "ICFES",
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumPairwiseDifference": 3
+    }
+  ]
+}

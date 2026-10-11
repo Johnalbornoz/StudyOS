@@ -16,8 +16,13 @@
  *   stimulus   its stimulus plan, the structured specification (data first) and the assets rendered from it
  *   batch      the run's lineage
  * The repeatable generator sets all of them; `lineageGaps` says which are missing.
+ *
+ * EA-1 adds ONE more optional member, on the same terms: `lineage.adaptation` (task family, assessment-system
+ * profile, discipline policy, adaptation specification, run), present only on a draft generated from an
+ * adaptation specification. A draft without it is as valid as before and is never reported as a gap.
  */
 import { z } from 'zod';
+import { AdaptationLineageSchema } from '@/lib/assessment-adaptation/instance-lineage';
 import { NumericAnswerKeySchema } from './answer-normalization';
 import { ReferenceIntelligencePackSchema } from './reference-pack';
 import { AssetRequirementSchema, DIFFICULTY_BANDS, RequirementCellSchema, RESPONSE_FORMATS, STIMULUS_KINDS } from './requirement-cell';
@@ -69,6 +74,10 @@ export const GenerationLineageSchema = z.discriminatedUnion('kind', [
     generationUnitKey: ID.optional(),
     requirementCellKey: ID.optional(),
     referencePack: z.strictObject({ version: z.number().int(), conceptProfileVersion: z.number().int(), conceptProfilePackVersion: ID }).optional(),
+    // EA-1, set by the generator only when the slot was given an adaptation specification. Optional and NOT one of
+    // the repeatable lineage fields: fixed and legacy content has no task family, and stays valid without one.
+    /** The task family, assessment-system profile, discipline policy and specification the draft was generated from. */
+    adaptation: AdaptationLineageSchema.optional(),
   }),
 ]);
 export type GenerationLineage = z.infer<typeof GenerationLineageSchema>;

@@ -1,0 +1,5031 @@
+{
+ "kind": "EA1_PAA_EVIDENCE_DEMAND",
+ "note": "PLANNING ESTIMATE. The 865 planned PAA items as required evidence instances per PRIMARY concept, and the fewest task families that could supply them under each stated assumption. The assumptions are provisional StudyUs policy: no independence rule exists yet. The demand and the cells are unchanged.",
+ "cells": 789,
+ "scenarios": [
+  {
+   "kind": "PLANNING_ESTIMATE",
+   "assumption": {
+    "maxInstancesPerFamilyPerPool": 2,
+    "familyMayServeSeveralPools": true,
+    "authority": "STUDYUS_POLICY",
+    "status": "PROVISIONAL",
+    "note": "No independence rule is defined yet (B3). These parameters are placeholders for one."
+   },
+   "totals": {
+    "concepts": 61,
+    "requiredInstances": 865,
+    "frozenInstances": 438,
+    "minimumFamilies": 145,
+    "instancesByPool": {
+     "DIAGNOSTIC": 122,
+     "FULL_MOCK_1": 175,
+     "FULL_MOCK_2": 175,
+     "PRACTICE": 183,
+     "REDUCED_MOCK": 88,
+     "VERIFICATION": 122
+    }
+   },
+   "bySection": {
+    "paa.sec.ingles": {
+     "concepts": 9,
+     "requiredInstances": 188,
+     "frozenInstances": 125,
+     "minimumFamilies": 27
+    },
+    "paa.sec.lectura": {
+     "concepts": 12,
+     "requiredInstances": 197,
+     "frozenInstances": 113,
+     "minimumFamilies": 34
+    },
+    "paa.sec.matematicas": {
+     "concepts": 35,
+     "requiredInstances": 383,
+     "frozenInstances": 138,
+     "minimumFamilies": 70
+    },
+    "paa.sec.redaccion": {
+     "concepts": 5,
+     "requiredInstances": 97,
+     "frozenInstances": 62,
+     "minimumFamilies": 14
+    }
+   },
+   "byConcept": [
+    {
+     "conceptStableId": "efl.grammar.function-words",
+     "canonicalSubject": "English",
+     "canonicalName": "English function words",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "efl.grammar.noun-adjective-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English noun, adjective and adverb forms",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "efl.grammar.sentence-structure",
+     "canonicalSubject": "English",
+     "canonicalName": "English sentence structure",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "efl.grammar.verb-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English verb tenses",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "efl.reading.interpretive",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading in English: inference, purpose and tone",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.reading.literal",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading comprehension in English",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "efl.vocabulary",
+     "canonicalSubject": "English",
+     "canonicalName": "English vocabulary in context",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.writing.complex-sentences",
+     "canonicalSubject": "English",
+     "canonicalName": "English complex sentences: coordination and subordination",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 26,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 19,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.writing.paragraph-organization",
+     "canonicalSubject": "English",
+     "canonicalName": "English paragraph organization and coherence",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 8,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "lit.figurative-language",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Figuras retóricas y lenguaje figurado",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "lit.genres",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Géneros literarios",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "lit.narrative-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto narrativo",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "lit.poetic-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto poético",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.expressions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Expresiones algebraicas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.linear-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.linear-inequalities",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Inecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.linear-systems",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sistemas de ecuaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.patterns-sequences",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Patrones y sucesiones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.polynomials",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Polinomios y factorización",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.quadratics",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Quadratic functions and inequalities",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.radicals-rational-exponents",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Radicales y exponentes racionales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.rational-radical-absolute-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones racionales, con radicales y con valor absoluto",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.alg.variation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Variación directa e inversa",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.fun.exponential",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Exponential models",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.fun.functions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Funciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.fun.linear-functions-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Rectas y funciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.angles-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ángulos y rectas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.circles",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Círculo: circunferencia, área y arcos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.coordinate-plane",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Plano cartesiano: coordenadas, distancia y punto medio",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 15,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 8,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.plane-figures-area-perimeter",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Área y perímetro",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.pythagorean-theorem",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Teorema de Pitágoras",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.similarity-congruence",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Semejanza de triángulos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.solids-volume-surface",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sólidos: volumen y área de superficie",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.geo.transformations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Transformaciones geométricas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.divisibility",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Divisibilidad, MCD y MCM",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.fractions-decimals",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Fracciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.percent",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Porcentajes",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.powers-scientific-notation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Potencias, exponentes enteros y notación científica",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.ratio-proportion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Proporcionalidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.num.real-numbers",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Números reales: propiedades y operaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.prob.conditional",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad condicional",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.prob.counting",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Técnicas de conteo",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.prob.probability",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.stat.central-tendency",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de tendencia central",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.stat.data-representation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Representación e interpretación de datos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.stat.dispersion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de dispersión",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.stat.population-sample",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Población, muestra y tipos de variables",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "math.trig.ratios",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Trigonometry and triangles",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 7,
+     "pools": 3,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 0,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.central-idea",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Idea central, tema y resumen",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 22,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 6,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 15,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.cross-text-relations",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencias y relación entre textos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.explicit-information",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Ideas explícitas y tesis",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.inference",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Inferencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.tables-and-graphics",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Lectura de tablas y gráficos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.text-structure",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Estructura y organización del texto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 28,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 9,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 21,
+     "minimumFamilies": 5
+    },
+    {
+     "conceptStableId": "read.textual-evidence",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "read.vocabulary-in-context",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Vocabulario en contexto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 45,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 15,
+      "FULL_MOCK_2": 15,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 8,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 38,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "write.concision-elision",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Economía del lenguaje",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "write.generalization",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Síntesis y generalización",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "write.global-synthesis",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Integración: síntesis global",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 19,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 12,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "write.indirect-expression",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Particularización: expresión indirecta",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    },
+    {
+     "conceptStableId": "write.stylistic-addition",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Adición: ampliación estilística",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 2
+    }
+   ]
+  },
+  {
+   "kind": "PLANNING_ESTIMATE",
+   "assumption": {
+    "maxInstancesPerFamilyPerPool": 1,
+    "familyMayServeSeveralPools": true,
+    "authority": "STUDYUS_POLICY",
+    "status": "PROVISIONAL",
+    "note": "No independence rule is defined yet (B3). These parameters are placeholders for one."
+   },
+   "totals": {
+    "concepts": 61,
+    "requiredInstances": 865,
+    "frozenInstances": 438,
+    "minimumFamilies": 241,
+    "instancesByPool": {
+     "DIAGNOSTIC": 122,
+     "FULL_MOCK_1": 175,
+     "FULL_MOCK_2": 175,
+     "PRACTICE": 183,
+     "REDUCED_MOCK": 88,
+     "VERIFICATION": 122
+    }
+   },
+   "bySection": {
+    "paa.sec.ingles": {
+     "concepts": 9,
+     "requiredInstances": 188,
+     "frozenInstances": 125,
+     "minimumFamilies": 52
+    },
+    "paa.sec.lectura": {
+     "concepts": 12,
+     "requiredInstances": 197,
+     "frozenInstances": 113,
+     "minimumFamilies": 58
+    },
+    "paa.sec.matematicas": {
+     "concepts": 35,
+     "requiredInstances": 383,
+     "frozenInstances": 138,
+     "minimumFamilies": 106
+    },
+    "paa.sec.redaccion": {
+     "concepts": 5,
+     "requiredInstances": 97,
+     "frozenInstances": 62,
+     "minimumFamilies": 25
+    }
+   },
+   "byConcept": [
+    {
+     "conceptStableId": "efl.grammar.function-words",
+     "canonicalSubject": "English",
+     "canonicalName": "English function words",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.grammar.noun-adjective-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English noun, adjective and adverb forms",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.grammar.sentence-structure",
+     "canonicalSubject": "English",
+     "canonicalName": "English sentence structure",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.grammar.verb-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English verb tenses",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "efl.reading.interpretive",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading in English: inference, purpose and tone",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "efl.reading.literal",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading comprehension in English",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "efl.vocabulary",
+     "canonicalSubject": "English",
+     "canonicalName": "English vocabulary in context",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "efl.writing.complex-sentences",
+     "canonicalSubject": "English",
+     "canonicalName": "English complex sentences: coordination and subordination",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 26,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 19,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "efl.writing.paragraph-organization",
+     "canonicalSubject": "English",
+     "canonicalName": "English paragraph organization and coherence",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 8,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "lit.figurative-language",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Figuras retóricas y lenguaje figurado",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "lit.genres",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Géneros literarios",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "lit.narrative-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto narrativo",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "lit.poetic-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto poético",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.expressions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Expresiones algebraicas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.linear-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.linear-inequalities",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Inecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.linear-systems",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sistemas de ecuaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.patterns-sequences",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Patrones y sucesiones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.polynomials",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Polinomios y factorización",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.quadratics",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Quadratic functions and inequalities",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.radicals-rational-exponents",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Radicales y exponentes racionales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.rational-radical-absolute-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones racionales, con radicales y con valor absoluto",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.alg.variation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Variación directa e inversa",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.fun.exponential",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Exponential models",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.fun.functions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Funciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.fun.linear-functions-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Rectas y funciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.angles-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ángulos y rectas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.circles",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Círculo: circunferencia, área y arcos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.coordinate-plane",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Plano cartesiano: coordenadas, distancia y punto medio",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 15,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 8,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "math.geo.plane-figures-area-perimeter",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Área y perímetro",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.pythagorean-theorem",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Teorema de Pitágoras",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.similarity-congruence",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Semejanza de triángulos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.solids-volume-surface",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sólidos: volumen y área de superficie",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.geo.transformations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Transformaciones geométricas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.divisibility",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Divisibilidad, MCD y MCM",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.fractions-decimals",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Fracciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.percent",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Porcentajes",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.powers-scientific-notation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Potencias, exponentes enteros y notación científica",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.ratio-proportion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Proporcionalidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.num.real-numbers",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Números reales: propiedades y operaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.prob.conditional",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad condicional",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.prob.counting",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Técnicas de conteo",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.prob.probability",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.stat.central-tendency",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de tendencia central",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.stat.data-representation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Representación e interpretación de datos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.stat.dispersion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de dispersión",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.stat.population-sample",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Población, muestra y tipos de variables",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "math.trig.ratios",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Trigonometry and triangles",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 7,
+     "pools": 3,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 0,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.central-idea",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Idea central, tema y resumen",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 22,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 6,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 15,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "read.cross-text-relations",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencias y relación entre textos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.explicit-information",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Ideas explícitas y tesis",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "read.inference",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Inferencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.tables-and-graphics",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Lectura de tablas y gráficos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.text-structure",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Estructura y organización del texto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 28,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 9,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 21,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "read.textual-evidence",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 3
+    },
+    {
+     "conceptStableId": "read.vocabulary-in-context",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Vocabulario en contexto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 45,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 15,
+      "FULL_MOCK_2": 15,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 8,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 38,
+     "minimumFamilies": 15
+    },
+    {
+     "conceptStableId": "write.concision-elision",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Economía del lenguaje",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "write.generalization",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Síntesis y generalización",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 5
+    },
+    {
+     "conceptStableId": "write.global-synthesis",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Integración: síntesis global",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 19,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 12,
+     "minimumFamilies": 5
+    },
+    {
+     "conceptStableId": "write.indirect-expression",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Particularización: expresión indirecta",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "write.stylistic-addition",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Adición: ampliación estilística",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 4
+    }
+   ]
+  },
+  {
+   "kind": "PLANNING_ESTIMATE",
+   "assumption": {
+    "maxInstancesPerFamilyPerPool": 2,
+    "familyMayServeSeveralPools": false,
+    "authority": "STUDYUS_POLICY",
+    "status": "PROVISIONAL",
+    "note": "No independence rule is defined yet (B3). These parameters are placeholders for one."
+   },
+   "totals": {
+    "concepts": 61,
+    "requiredInstances": 865,
+    "frozenInstances": 438,
+    "minimumFamilies": 508,
+    "instancesByPool": {
+     "DIAGNOSTIC": 122,
+     "FULL_MOCK_1": 175,
+     "FULL_MOCK_2": 175,
+     "PRACTICE": 183,
+     "REDUCED_MOCK": 88,
+     "VERIFICATION": 122
+    }
+   },
+   "bySection": {
+    "paa.sec.ingles": {
+     "concepts": 9,
+     "requiredInstances": 188,
+     "frozenInstances": 125,
+     "minimumFamilies": 102
+    },
+    "paa.sec.lectura": {
+     "concepts": 12,
+     "requiredInstances": 197,
+     "frozenInstances": 113,
+     "minimumFamilies": 114
+    },
+    "paa.sec.matematicas": {
+     "concepts": 35,
+     "requiredInstances": 383,
+     "frozenInstances": 138,
+     "minimumFamilies": 237
+    },
+    "paa.sec.redaccion": {
+     "concepts": 5,
+     "requiredInstances": 97,
+     "frozenInstances": 62,
+     "minimumFamilies": 55
+    }
+   },
+   "byConcept": [
+    {
+     "conceptStableId": "efl.grammar.function-words",
+     "canonicalSubject": "English",
+     "canonicalName": "English function words",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "efl.grammar.noun-adjective-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English noun, adjective and adverb forms",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "efl.grammar.sentence-structure",
+     "canonicalSubject": "English",
+     "canonicalName": "English sentence structure",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "efl.grammar.verb-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English verb tenses",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "efl.reading.interpretive",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading in English: inference, purpose and tone",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 13
+    },
+    {
+     "conceptStableId": "efl.reading.literal",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading comprehension in English",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "efl.vocabulary",
+     "canonicalSubject": "English",
+     "canonicalName": "English vocabulary in context",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "efl.writing.complex-sentences",
+     "canonicalSubject": "English",
+     "canonicalName": "English complex sentences: coordination and subordination",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 26,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 19,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "efl.writing.paragraph-organization",
+     "canonicalSubject": "English",
+     "canonicalName": "English paragraph organization and coherence",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 8,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "lit.figurative-language",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Figuras retóricas y lenguaje figurado",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "lit.genres",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Géneros literarios",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "lit.narrative-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto narrativo",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "lit.poetic-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto poético",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.expressions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Expresiones algebraicas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 5
+    },
+    {
+     "conceptStableId": "math.alg.linear-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.alg.linear-inequalities",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Inecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.linear-systems",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sistemas de ecuaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 5
+    },
+    {
+     "conceptStableId": "math.alg.patterns-sequences",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Patrones y sucesiones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "math.alg.polynomials",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Polinomios y factorización",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.quadratics",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Quadratic functions and inequalities",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.radicals-rational-exponents",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Radicales y exponentes racionales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.rational-radical-absolute-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones racionales, con radicales y con valor absoluto",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.alg.variation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Variación directa e inversa",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.fun.exponential",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Exponential models",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.fun.functions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Funciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.fun.linear-functions-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Rectas y funciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "math.geo.angles-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ángulos y rectas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.circles",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Círculo: circunferencia, área y arcos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.coordinate-plane",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Plano cartesiano: coordenadas, distancia y punto medio",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 15,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 8,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "math.geo.plane-figures-area-perimeter",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Área y perímetro",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.pythagorean-theorem",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Teorema de Pitágoras",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.similarity-congruence",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Semejanza de triángulos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.solids-volume-surface",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sólidos: volumen y área de superficie",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.geo.transformations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Transformaciones geométricas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.num.divisibility",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Divisibilidad, MCD y MCM",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.num.fractions-decimals",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Fracciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.num.percent",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Porcentajes",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.num.powers-scientific-notation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Potencias, exponentes enteros y notación científica",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.num.ratio-proportion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Proporcionalidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.num.real-numbers",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Números reales: propiedades y operaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "math.prob.conditional",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad condicional",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.prob.counting",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Técnicas de conteo",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.prob.probability",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.stat.central-tendency",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de tendencia central",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.stat.data-representation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Representación e interpretación de datos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.stat.dispersion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de dispersión",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 6
+    },
+    {
+     "conceptStableId": "math.stat.population-sample",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Población, muestra y tipos de variables",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "math.trig.ratios",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Trigonometry and triangles",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 7,
+     "pools": 3,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 0,
+     "minimumFamilies": 4
+    },
+    {
+     "conceptStableId": "read.central-idea",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Idea central, tema y resumen",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 22,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 6,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 15,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "read.cross-text-relations",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencias y relación entre textos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "read.explicit-information",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Ideas explícitas y tesis",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "read.inference",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Inferencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "read.tables-and-graphics",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Lectura de tablas y gráficos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "read.text-structure",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Estructura y organización del texto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 28,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 9,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 21,
+     "minimumFamilies": 15
+    },
+    {
+     "conceptStableId": "read.textual-evidence",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "read.vocabulary-in-context",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Vocabulario en contexto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 45,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 15,
+      "FULL_MOCK_2": 15,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 8,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 38,
+     "minimumFamilies": 24
+    },
+    {
+     "conceptStableId": "write.concision-elision",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Economía del lenguaje",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "write.generalization",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Síntesis y generalización",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "write.global-synthesis",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Integración: síntesis global",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 19,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 12,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "write.indirect-expression",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Particularización: expresión indirecta",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "write.stylistic-addition",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Adición: ampliación estilística",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 9
+    }
+   ]
+  },
+  {
+   "kind": "PLANNING_ESTIMATE",
+   "assumption": {
+    "maxInstancesPerFamilyPerPool": 1,
+    "familyMayServeSeveralPools": false,
+    "authority": "STUDYUS_POLICY",
+    "status": "PROVISIONAL",
+    "note": "No independence rule is defined yet (B3). These parameters are placeholders for one."
+   },
+   "totals": {
+    "concepts": 61,
+    "requiredInstances": 865,
+    "frozenInstances": 438,
+    "minimumFamilies": 865,
+    "instancesByPool": {
+     "DIAGNOSTIC": 122,
+     "FULL_MOCK_1": 175,
+     "FULL_MOCK_2": 175,
+     "PRACTICE": 183,
+     "REDUCED_MOCK": 88,
+     "VERIFICATION": 122
+    }
+   },
+   "bySection": {
+    "paa.sec.ingles": {
+     "concepts": 9,
+     "requiredInstances": 188,
+     "frozenInstances": 125,
+     "minimumFamilies": 188
+    },
+    "paa.sec.lectura": {
+     "concepts": 12,
+     "requiredInstances": 197,
+     "frozenInstances": 113,
+     "minimumFamilies": 197
+    },
+    "paa.sec.matematicas": {
+     "concepts": 35,
+     "requiredInstances": 383,
+     "frozenInstances": 138,
+     "minimumFamilies": 383
+    },
+    "paa.sec.redaccion": {
+     "concepts": 5,
+     "requiredInstances": 97,
+     "frozenInstances": 62,
+     "minimumFamilies": 97
+    }
+   },
+   "byConcept": [
+    {
+     "conceptStableId": "efl.grammar.function-words",
+     "canonicalSubject": "English",
+     "canonicalName": "English function words",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "efl.grammar.noun-adjective-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English noun, adjective and adverb forms",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "efl.grammar.sentence-structure",
+     "canonicalSubject": "English",
+     "canonicalName": "English sentence structure",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "efl.grammar.verb-forms",
+     "canonicalSubject": "English",
+     "canonicalName": "English verb tenses",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "efl.reading.interpretive",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading in English: inference, purpose and tone",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 24
+    },
+    {
+     "conceptStableId": "efl.reading.literal",
+     "canonicalSubject": "English",
+     "canonicalName": "Reading comprehension in English",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 20
+    },
+    {
+     "conceptStableId": "efl.vocabulary",
+     "canonicalSubject": "English",
+     "canonicalName": "English vocabulary in context",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 25
+    },
+    {
+     "conceptStableId": "efl.writing.complex-sentences",
+     "canonicalSubject": "English",
+     "canonicalName": "English complex sentences: coordination and subordination",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 26,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 19,
+     "minimumFamilies": 26
+    },
+    {
+     "conceptStableId": "efl.writing.paragraph-organization",
+     "canonicalSubject": "English",
+     "canonicalName": "English paragraph organization and coherence",
+     "sectionCodes": [
+      "paa.sec.ingles"
+     ],
+     "requiredInstances": 25,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 8,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 18,
+     "minimumFamilies": 25
+    },
+    {
+     "conceptStableId": "lit.figurative-language",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Figuras retóricas y lenguaje figurado",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "lit.genres",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Géneros literarios",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "lit.narrative-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto narrativo",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "lit.poetic-elements",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Elementos del texto poético",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.alg.expressions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Expresiones algebraicas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "math.alg.linear-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "math.alg.linear-inequalities",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Inecuaciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.alg.linear-systems",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sistemas de ecuaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 8,
+     "pools": 4,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 1,
+     "minimumFamilies": 8
+    },
+    {
+     "conceptStableId": "math.alg.patterns-sequences",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Patrones y sucesiones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "math.alg.polynomials",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Polinomios y factorización",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.alg.quadratics",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Quadratic functions and inequalities",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.alg.radicals-rational-exponents",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Radicales y exponentes racionales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.alg.rational-radical-absolute-equations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ecuaciones racionales, con radicales y con valor absoluto",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.alg.variation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Variación directa e inversa",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.fun.exponential",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Exponential models",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 9,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 2,
+     "minimumFamilies": 9
+    },
+    {
+     "conceptStableId": "math.fun.functions",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Funciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.fun.linear-functions-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Rectas y funciones lineales",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 14,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 7,
+     "minimumFamilies": 14
+    },
+    {
+     "conceptStableId": "math.geo.angles-lines",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Ángulos y rectas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.geo.circles",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Círculo: circunferencia, área y arcos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.geo.coordinate-plane",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Plano cartesiano: coordenadas, distancia y punto medio",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 15,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 3,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 8,
+     "minimumFamilies": 15
+    },
+    {
+     "conceptStableId": "math.geo.plane-figures-area-perimeter",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Área y perímetro",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 13
+    },
+    {
+     "conceptStableId": "math.geo.pythagorean-theorem",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Teorema de Pitágoras",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.geo.similarity-congruence",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Semejanza de triángulos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.geo.solids-volume-surface",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Sólidos: volumen y área de superficie",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.geo.transformations",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Transformaciones geométricas",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.num.divisibility",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Divisibilidad, MCD y MCM",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.num.fractions-decimals",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Fracciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.num.percent",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Porcentajes",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.num.powers-scientific-notation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Potencias, exponentes enteros y notación científica",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 13
+    },
+    {
+     "conceptStableId": "math.num.ratio-proportion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Proporcionalidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.num.real-numbers",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Números reales: propiedades y operaciones",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 13,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 3,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 6,
+     "minimumFamilies": 13
+    },
+    {
+     "conceptStableId": "math.prob.conditional",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad condicional",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.prob.counting",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Técnicas de conteo",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.prob.probability",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Probabilidad",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.stat.central-tendency",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de tendencia central",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.stat.data-representation",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Representación e interpretación de datos",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "math.stat.dispersion",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Medidas de dispersión",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 11,
+     "pools": 5,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "math.stat.population-sample",
+     "canonicalSubject": "Matemáticas",
+     "canonicalName": "Población, muestra y tipos de variables",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 10,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 1,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 3,
+     "minimumFamilies": 10
+    },
+    {
+     "conceptStableId": "math.trig.ratios",
+     "canonicalSubject": "Mathematics",
+     "canonicalName": "Trigonometry and triangles",
+     "sectionCodes": [
+      "paa.sec.matematicas"
+     ],
+     "requiredInstances": 7,
+     "pools": 3,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "PRACTICE": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 0,
+     "minimumFamilies": 7
+    },
+    {
+     "conceptStableId": "read.central-idea",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Idea central, tema y resumen",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 22,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 6,
+      "FULL_MOCK_2": 6,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 15,
+     "minimumFamilies": 22
+    },
+    {
+     "conceptStableId": "read.cross-text-relations",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencias y relación entre textos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "read.explicit-information",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Ideas explícitas y tesis",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "read.inference",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Inferencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 11,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 1,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 4,
+     "minimumFamilies": 11
+    },
+    {
+     "conceptStableId": "read.tables-and-graphics",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Lectura de tablas y gráficos",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "read.text-structure",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Estructura y organización del texto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 28,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 8,
+      "FULL_MOCK_2": 9,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 4,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 21,
+     "minimumFamilies": 28
+    },
+    {
+     "conceptStableId": "read.textual-evidence",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Evidencia textual",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 12,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 2,
+      "FULL_MOCK_2": 2,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 1,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 5,
+     "minimumFamilies": 12
+    },
+    {
+     "conceptStableId": "read.vocabulary-in-context",
+     "canonicalSubject": "Lectura crítica",
+     "canonicalName": "Vocabulario en contexto",
+     "sectionCodes": [
+      "paa.sec.lectura"
+     ],
+     "requiredInstances": 45,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 15,
+      "FULL_MOCK_2": 15,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 8,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 38,
+     "minimumFamilies": 45
+    },
+    {
+     "conceptStableId": "write.concision-elision",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Economía del lenguaje",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 24,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 7,
+      "FULL_MOCK_2": 7,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 17,
+     "minimumFamilies": 24
+    },
+    {
+     "conceptStableId": "write.generalization",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Síntesis y generalización",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 20,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 3,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 13,
+     "minimumFamilies": 20
+    },
+    {
+     "conceptStableId": "write.global-synthesis",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Integración: síntesis global",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 19,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 5,
+      "FULL_MOCK_2": 5,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 12,
+     "minimumFamilies": 19
+    },
+    {
+     "conceptStableId": "write.indirect-expression",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Particularización: expresión indirecta",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    },
+    {
+     "conceptStableId": "write.stylistic-addition",
+     "canonicalSubject": "Redacción",
+     "canonicalName": "Adición: ampliación estilística",
+     "sectionCodes": [
+      "paa.sec.redaccion"
+     ],
+     "requiredInstances": 17,
+     "pools": 6,
+     "instancesByPool": {
+      "DIAGNOSTIC": 2,
+      "FULL_MOCK_1": 4,
+      "FULL_MOCK_2": 4,
+      "PRACTICE": 3,
+      "REDUCED_MOCK": 2,
+      "VERIFICATION": 2
+     },
+     "frozenInstances": 10,
+     "minimumFamilies": 17
+    }
+   ]
+  }
+ ]
+}
