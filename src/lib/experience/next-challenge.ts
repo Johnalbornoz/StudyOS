@@ -145,7 +145,9 @@ export function presentNextChallenge(input: NextChallengeInput): NextChallengeVi
           challenge: reinforce ? 'REINFORCE' : presentedActivityTypeForCanonical(c.activityType),
           stage,
           reinforce,
-          itemCount: parseItemCount(c.launchParams?.maxQuestions),
+          // B5-E: when the launch enters the canonical assessment setup, the question count is the Blueprint
+          // Core's (shown on the setup); the engine contract's count is not what the Student will get, so it is not shown.
+          itemCount: c.launchTarget?.startsWith('/dashboard/assessment') ? null : parseItemCount(c.launchParams?.maxQuestions),
           facts: factsCompatibleWithAuthority(legacyDecision.facts, 'CANONICAL'),
         };
       }

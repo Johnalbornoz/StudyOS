@@ -148,6 +148,14 @@ describe('B5-D entry points', () => {
     expect(on.launchStatus).toBe('READY');
   });
 
+  it('B5-E: Today shows no question count for a launch that enters the canonical setup (the count is the Blueprint Core\'s)', async () => {
+    const { presentNextChallenge } = await import('@/lib/experience/next-challenge');
+    const canonical = (launchTarget: string) => ({ policyVersion: 'v1', canonicalRevision: 'r', stage: 'PROVE', actionState: 'EXECUTABLE', activityType: 'PROVE', launchStatus: 'READY', launchTarget, launchParams: { maxQuestions: '10', mode: 'canonical_prove' }, waitingReason: null, nextEligibleAt: null, notReadyReason: null }) as never;
+    const view = (launchTarget: string) => presentNextChallenge({ conceptId: LC, subjectId: 'sub', legacyDecision: { facts: [] } as never, canonicalAuthority: true, canonical: canonical(launchTarget) });
+    expect(view(`/dashboard/quiz?mode=canonical_prove&conceptId=${LC}&maxQuestions=10`)).toMatchObject({ status: 'READY', itemCount: 10 });
+    expect(view(`/dashboard/assessment?intent=MASTERY_CHECK&origin=TODAY&lc=${LC}`)).toMatchObject({ status: 'READY', itemCount: null });
+  });
+
   it('a scope given as the Student\'s own concept is resolved by the Blueprint Core, and the start is asked for the canonical targets', async () => {
     const C1 = '11111111-1111-4111-8111-111111111111';
     const coverages = [coverageOfLearningCacheItem({ candidateId: 'q1', studentId: STUDENT, learnerConceptId: LC, activityType: 'PRACTICE', questionType: 'multiple_choice', difficulty: 3, language: 'es', validationStatus: 'VALIDATED', identity: { status: 'CANONICAL', learnerConceptId: LC, canonicalConceptId: C1, basis: 'CREATED_FROM_CANONICAL' } })];

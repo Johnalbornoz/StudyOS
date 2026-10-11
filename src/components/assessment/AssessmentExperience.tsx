@@ -194,7 +194,7 @@ export function AssessmentResult({ view, t, conceptLabels, children }: { view: A
   return (
     <div className="ax-result" data-family={view.family} data-attribution={view.learningAttribution}>
       <section className="card xr-result" aria-labelledby="ax-result-title">
-        <h1 id="ax-result-title" className="xr-section-name">{t['ax.result.title']}</h1>
+        <h1 id="ax-result-title" className="xr-section-name" tabIndex={-1}>{t['ax.result.title']}</h1>
         <p>{fillMessage(t['ax.result.answered'], { answered: h.answered, questions: h.questions })}</p>
         {h.marks ? <p className="ax-score tabular">{fillMessage(t['ax.result.marks'], h.marks)}</p> : h.scorePercent !== null ? <p className="ax-score tabular">{fillMessage(t['ax.result.score'], { percent: h.scorePercent })}</p> : null}
         {h.pendingReview > 0 && <p className="ui-hint">{fillMessage(t['ax.result.pending'], { count: h.pendingReview })}</p>}

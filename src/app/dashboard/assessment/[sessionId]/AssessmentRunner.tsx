@@ -96,6 +96,11 @@ export function AssessmentRunner({ sessionId, locale, title, run, questions, con
     };
   }, [saveDrafts]);
 
+  // when the result replaces the form, move focus to its heading so it is announced and keyboard order restarts there
+  useEffect(() => {
+    if (state) document.getElementById('ax-result-title')?.focus();
+  }, [state]);
+
   const answered = questions.filter((q) => isAnswered(encodedOf(q, staged))).length;
 
   const submit = async () => {
