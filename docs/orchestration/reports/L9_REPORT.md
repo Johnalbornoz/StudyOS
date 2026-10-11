@@ -170,3 +170,97 @@ Before Stage: one operator pass in a browser (bulk form with a mixed list; a stu
 ## NEXT SAFE ACTION
 
 Orchestrator reviews `7e2bc29`, and rules on Finding 2 (how strict bulk should be), Finding 6 (teachers in or out) and CR-L9-01.
+
+---
+
+# L9_INSTITUTION — Final micro-remediation (2026-10-11, enrolment lookup)
+
+## LANE
+
+`L9_INSTITUTION`, same worktree and branch (`/Users/jalbornoz/PROYECTOS/studyos-l9-institution`, `feat/l9-institution-in1-in3`). Scope: `enrollmentOf(classId, studentId)` only, as instructed by the Orchestrator.
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+```
+CR_L9_ENROLMENT_LOOKUP = CLOSED
+L9_READY_FOR_FINAL_CONVERGENCE = YES
+```
+
+## BASE SHA
+
+`ebe5d2f` — the accepted L9 head, verified with `git log` and a clean `git status` before the change.
+
+## FINAL SHA
+
+`620a76c` is the fix commit (parent `ebe5d2f`). This section and the status update are one further commit on top.
+
+## FILES CHANGED
+
+- `src/lib/institution/institution-operations.service.ts` — `enrollmentOf` only (one statement and its comment)
+- `tests/unit/l9-in1-bulk-add.test.ts` — 7 new regression tests
+- `tests/unit/l9-roster-fake-db.ts` — the in-memory lookup applies the ordering when the statement asks for it
+- `docs/orchestration/reports/L9_REPORT.md`, `docs/orchestration/status/L9_STATUS.md`
+
+No lifecycle function, schema, migration, route or UI file changed. Nothing pushed, merged or deployed.
+
+## LOCKS USED
+
+None. `src/services/institution.service.ts` (L10) was not edited.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `env -u DATABASE_URL ... npx vitest run tests/unit/l9-*.test.ts` | 2 files, 37 tests passed (30 before, 7 new) |
+| Same, with `enrollmentOf` put back to the old unordered lookup | 6 of the 7 new tests failed (the seventh is "no rows", which the old lookup also answers correctly). Fix restored; 37 passed |
+| `npx tsc --noEmit -p .` | no output |
+| `env -u DATABASE_URL ... npx vitest run` (full suite) | 521 files, 9,327 tests, all passed (no timeouts this run) |
+| `env -u DATABASE_URL ... npx next build` | exit 0; 229/229 static pages |
+| Real database, browser, DEV / Stage / Production | NOT_RUN |
+
+Required regressions, all in `l9-in1-bulk-add` › "enrollment lookup: an OPEN row always wins…":
+
+| Case | Test |
+|---|---|
+| ACTIVE + historical ENDED => ACTIVE | "ACTIVE + historical ENDED => ACTIVE…" (bulk reports already enrolled, the single add throws `ALREADY_ENROLLED`, nothing written) |
+| PENDING + historical DECLINED => PENDING | "PENDING + historical DECLINED => PENDING…" |
+| multiple CLOSED => newest by created_at, then id | "multiple CLOSED => the newest by created_at", "multiple CLOSED with the same created_at => the highest id" |
+| no rows => none | "no rows => none: the address goes on to the single add" |
+
+Two extra: an OPEN row wins even when a CLOSED row has a later `created_at`; and a source check pinning the statement and that it issues no write. In every multi-row case the wrong row is inserted first, so "first row found" gives the wrong answer.
+
+## FINDINGS
+
+### 1. The lookup now follows the canonical selection
+
+`enrollmentOf` issues one read: `WHERE class_id = $1 AND student_id = $2 ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1`. An OPEN row is returned if one exists; otherwise the newest CLOSED row; otherwise nothing. Both callers (`addStudentToClass` and `bulkAddStudentsToClass`) get the fix; neither was edited.
+
+### 2. The canonical helper was not reused, because it is not on this branch
+
+`getClassEnrollmentState` exists only on L10's branch (`studyos-l10-shared-foundation`, `src/services/institution.service.ts:391`). This branch is still based on `4fb45b0`, where the function does not exist, and adding it here would mean editing an L10-owned file. So the same ordering is written locally in the private `enrollmentOf`. It was compared by reading L10's source: the `ORDER BY` is identical, and `LIMIT 1` over it returns the open row when there is one and the newest closed row when there is not.
+
+### 3. Convergence note: both branches edit the same function body
+
+L10's branch already changes `addStudentToClass` in the same file to call `getClassEnrollmentState` and `enrollStudentDirectly` (its diff against `4fb45b0` shows 33 changed lines there). Merging the two will conflict in that region. The straightforward resolution is to take L10's `addStudentToClass`, and have `bulkAddStudentsToClass` read `getClassEnrollmentState` directly (`open` => already enrolled; else `lastClosed.status` => previously declined / ended), which makes `enrollmentOf` removable. The regressions added here assert outcomes, not the helper name, so they keep their value after that swap; only the source-pin test and the in-memory statement match would need the new statement text.
+
+### 4. On this branch alone, the multi-row cases cannot occur yet
+
+At `4fb45b0` the table still has `UNIQUE (class_id, student_id)`, so there is at most one row per pair and the old and new lookups agree. The fix matters once L10's migrations are in. It was verified only against the in-memory database.
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+NONE new. CR-L9-01 to CR-L9-04 above are unchanged; L10's lifecycle work appears to address CR-L9-02 (`enrollStudentDirectly` returns `REQUIRES_INVITATION` for a closed row), which the Orchestrator can confirm at convergence.
+
+## MERGE RECOMMENDATION
+
+Ready for final convergence. Merge L10 first, then this branch, resolving `institution-operations.service.ts` as in Finding 3, and re-run `tests/unit/l9-*.test.ts` on the merged tree.
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews `620a76c`.

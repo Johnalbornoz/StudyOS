@@ -1,12 +1,12 @@
 LANE: L9_INSTITUTION
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T17:50Z
+LAST_UPDATE: 2026-10-11T19:27Z
 BASE_SHA: 4fb45b0
-CURRENT_SHA: 7e2bc29 (implementation); this status and the report are one commit on top
+CURRENT_SHA: 620a76c (enrolment-lookup fix); this status and the report section are one commit on top
 
 CURRENT_PHASE: STOP
 
-NOW_DOING: NONE. Lane stopped.
+NOW_DOING: NONE. Lane stopped. CR_L9_ENROLMENT_LOOKUP = CLOSED. L9_READY_FOR_FINAL_CONVERGENCE = YES.
 
 COMPLETED:
 - Read CONTROL_PLANE.md, LOCKS.md, OBSERVABILITY.md, L3R1_REPORT.md, L4R1_REPORT.md.
@@ -14,6 +14,7 @@ COMPLETED:
 - IN-1: bulk add from an email list (students to a class, teachers to the institution), through the existing single adds.
 - IN-3: a Student leaves a class (own ACTIVE enrolment -> ENDED through the existing endClassEnrollment).
 - Tests, typecheck, build. Commit 7e2bc29. Report written.
+- Final micro-remediation: enrollmentOf now returns the OPEN row if any, else the newest CLOSED row (created_at DESC, id DESC), else none. Commit 620a76c.
 
 CURRENT_FINDINGS:
 - No tasks/L9_INSTITUTION.md in the control plane; contract = launch message + L3R1 sections 3 and 7.
@@ -21,6 +22,8 @@ CURRENT_FINDINGS:
 - The leave control is visible only where InstitutionalContextCard renders: STUDENT_JOURNEY_V2=UX and a class with a subject (src/app/dashboard/profile/page.tsx:48-58). CR-L9-01.
 - The single add can still re-activate an ENDED or DECLINED enrolment directly (enrollActive). Not changed. CR-L9-02.
 - No notification when a student leaves (type list is outside the lane). CR-L9-03.
+- getClassEnrollmentState is not on this branch (L10 only), so the same ordering is written locally in enrollmentOf; L10 edits the same function body, so convergence will conflict there (report, remediation Finding 3).
+- At 4fb45b0 the table still has UNIQUE (class_id, student_id); the multi-row cases were verified in the in-memory database only.
 
 FILES_READ:
 - src/lib/institution/**, src/services/institution.service.ts, src/lib/authorization/index.ts, src/lib/auth.ts (requireStudentId), src/lib/notifications/role-notifications.service.ts, src/lib/exam-journey/institutional-context.ts
@@ -58,6 +61,7 @@ TESTS:
 - track-a-*, journey-*, f2-institution-membership, ai-request-metrics: 20 files, 467 passed.
 - next build: exit 0, 229/229 static pages, four new routes listed.
 - Browser, HTTP E2E, DEV / Stage / Production: NOT_RUN.
+- After the enrolment-lookup fix: l9-*.test.ts 37 passed (7 new); old lookup restored -> 6 of the 7 new fail; tsc clean; full vitest 521 files, 9327 passed, 0 failed; next build exit 0, 229/229.
 
 BLOCKERS: NONE
 
@@ -67,14 +71,15 @@ CROSS_LANE_DEPENDENCIES:
 - L7 (holder of src/app/dashboard/profile/page.tsx in Wave 0): CR-L9-01 asks for one mount line there so the leave control is not flag-gated.
 - L10: acknowledge the Student as a new actor on ACTIVE -> ENDED (CR-L9-04); rule on CR-L9-02.
 
-NEXT: Orchestrator review of 7e2bc29.
+NEXT: Orchestrator review of 620a76c.
 
 PROGRESS:
 - baseline verified
 - ownership verified
-- IN-1 implemented, 18 tests
+- IN-1 implemented, 25 tests
 - IN-3 implemented, 12 tests
 - typecheck clean
 - build exit 0
 - report written
+- enrolment lookup fixed, 7 regressions
 - browser check not run
