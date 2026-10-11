@@ -26,7 +26,7 @@ vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: vi.fn(async () => (
 const notifyUserMock = vi.fn(async (..._a: any[]) => 'n-1');
 vi.mock('@/lib/notifications/role-notifications.service', () => ({ notifyUser: (...a: any[]) => notifyUserMock(...a), notifyInstitutionAdmins: vi.fn(async () => 0) }));
 
-import { bulkAddStudentsToClass, bulkInviteTeachers } from '@/lib/institution/institution-operations.service';
+import { addStudentToClass, bulkAddStudentsToClass, bulkInviteTeachers } from '@/lib/institution/institution-operations.service';
 import { BULK_EMAIL_LIMIT, normalizeEmailList, parseEmailText } from '@/lib/institution/email-list';
 import { POST as bulkStudentsPOST } from '@/app/api/institutions/[id]/students/bulk/route';
 import { POST as bulkTeachersPOST } from '@/app/api/institutions/[id]/teachers/bulk/route';
@@ -152,6 +152,74 @@ describe('bulk students: the single add, once per address', () => {
     fake.t.classes.find((c) => c.id === CLASS_A1)!.status = 'ARCHIVED';
     await expect(bulkAddStudentsToClass(INST_A, CLASS_A1, ['x@school.test'], 'coord-A')).rejects.toMatchObject({ code: 'CLASS_ARCHIVED' });
     expect(fake.writes()).toEqual([]);
+  });
+});
+
+describe('enrollment lookup: an OPEN row always wins over closed history; else the newest CLOSED row', () => {
+  // More than one row per (class, student): closed rows are history. They are inserted BEFORE the
+  // open / newest row on purpose, so "the first row found" is the wrong answer in every case.
+  const row = (key: string, id: string, status: string, created_at: string) => fake.t.class_enrollments.push({ id, class_id: CLASS_A1, student_id: `s-${key}`, status, created_at });
+  const run = async (key: string) => {
+    fake.reset();
+    const r = await bulkAddStudentsToClass(INST_A, CLASS_A1, [`${key}@school.test`], 'coord-A');
+    return { outcome: outcomeOf(r, key), enrollmentWrites: fake.writes().filter((q) => /class_enrollments/.test(q.sql)).length };
+  };
+
+  it('ACTIVE + historical ENDED => ACTIVE (already enrolled; nothing written)', async () => {
+    student('back');
+    row('back', 'e-old', 'ENDED', '2026-01-10T00:00:00Z');
+    row('back', 'e-now', 'ACTIVE', '2026-09-01T00:00:00Z');
+    expect(await run('back')).toEqual({ outcome: 'ALREADY_ENROLLED', enrollmentWrites: 0 });
+    await expect(addStudentToClass(INST_A, CLASS_A1, 'back@school.test', 'coord-A')).rejects.toMatchObject({ code: 'ALREADY_ENROLLED' }); // the single add reads the same row
+  });
+
+  it('PENDING + historical DECLINED => PENDING (already invited; nothing written)', async () => {
+    student('again');
+    row('again', 'e-old', 'DECLINED', '2026-01-10T00:00:00Z');
+    row('again', 'e-now', 'PENDING', '2026-09-01T00:00:00Z');
+    expect(await run('again')).toEqual({ outcome: 'ALREADY_ENROLLED', enrollmentWrites: 0 });
+  });
+
+  it('an OPEN row wins even when a CLOSED row is more recent', async () => {
+    student('odd');
+    row('odd', 'e-closed-later', 'ENDED', '2026-09-01T00:00:00Z');
+    row('odd', 'e-open-earlier', 'ACTIVE', '2026-01-10T00:00:00Z');
+    expect(await run('odd')).toEqual({ outcome: 'ALREADY_ENROLLED', enrollmentWrites: 0 });
+  });
+
+  it('multiple CLOSED => the newest by created_at', async () => {
+    student('twice');
+    row('twice', 'e-1', 'ENDED', '2026-09-01T00:00:00Z'); // newest, inserted first
+    row('twice', 'e-2', 'DECLINED', '2026-01-10T00:00:00Z');
+    expect(await run('twice')).toEqual({ outcome: 'PREVIOUSLY_ENDED', enrollmentWrites: 0 });
+    student('twice2');
+    row('twice2', 'e-3', 'ENDED', '2026-01-10T00:00:00Z');
+    row('twice2', 'e-4', 'DECLINED', '2026-09-01T00:00:00Z');
+    row('twice2', 'e-5', 'ENDED', '2026-03-01T00:00:00Z');
+    expect(await run('twice2')).toEqual({ outcome: 'PREVIOUSLY_DECLINED', enrollmentWrites: 0 });
+  });
+
+  it('multiple CLOSED with the same created_at => the highest id', async () => {
+    student('tie');
+    row('tie', 'e-b', 'DECLINED', '2026-05-05T00:00:00Z'); // highest id, inserted first
+    row('tie', 'e-a', 'ENDED', '2026-05-05T00:00:00Z');
+    expect(await run('tie')).toEqual({ outcome: 'PREVIOUSLY_DECLINED', enrollmentWrites: 0 });
+    student('tie2');
+    row('tie2', 'e-c', 'DECLINED', '2026-05-05T00:00:00Z');
+    row('tie2', 'e-d', 'ENDED', '2026-05-05T00:00:00Z');
+    expect(await run('tie2')).toEqual({ outcome: 'PREVIOUSLY_ENDED', enrollmentWrites: 0 });
+  });
+
+  it('no rows => none: the address goes on to the single add', async () => {
+    student('first');
+    expect(await run('first')).toEqual({ outcome: 'INVITED', enrollmentWrites: 1 });
+  });
+
+  it('the lookup is one read with the canonical ordering, and no write', () => {
+    const svc = readFileSync(join(process.cwd(), 'src/lib/institution/institution-operations.service.ts'), 'utf-8');
+    const fn = svc.slice(svc.indexOf('async function enrollmentOf('), svc.indexOf('\n}\n', svc.indexOf('async function enrollmentOf(')));
+    expect(fn.replace(/\s+/g, ' ')).toContain("WHERE class_id = $1 AND student_id = $2 ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1");
+    expect(fn).not.toMatch(/INSERT INTO|UPDATE |DELETE FROM/);
   });
 });
 

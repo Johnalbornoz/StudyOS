@@ -592,8 +592,18 @@ async function studentByEmail(email: string): Promise<{ id: string } | undefined
     [email.trim()]
   )).rows[0];
 }
+/**
+ * Where this learner stands with this class. Never assumes one row per pair (a closed row is
+ * history, a later invitation is a new row): the OPEN row (PENDING / ACTIVE) always wins; with
+ * none, the most recent CLOSED row (DECLINED / ENDED) by created_at, then id. Same selection as
+ * the canonical `getClassEnrollmentState` of the shared foundation.
+ */
 async function enrollmentOf(classId: string, studentId: string): Promise<{ status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'ENDED' } | undefined> {
-  return (await db.query(`SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, studentId])).rows[0];
+  return (await db.query(
+    `SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2
+      ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1`,
+    [classId, studentId]
+  )).rows[0];
 }
 
 /**

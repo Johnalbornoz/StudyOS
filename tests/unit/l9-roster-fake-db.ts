@@ -56,7 +56,12 @@ export function createFakeDb() {
     if (sql.startsWith('SELECT s.id AS student_id, s.user_id FROM students s')) return studentsByEmail(p[0]).filter((s) => hasRole(s.user_id, 'STUDENT')).slice(0, 1).map((s) => ({ student_id: s.id, user_id: s.user_id }));
     // ---- class_enrollments
     if (sql.startsWith('SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2') || sql.startsWith('SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2')) {
-      return t.class_enrollments.filter((e) => e.class_id === p[0] && e.student_id === p[1]);
+      const rows = t.class_enrollments.filter((e) => e.class_id === p[0] && e.student_id === p[1]);
+      // the canonical selection: OPEN first, then newest by created_at, then id (only when the statement asks for it)
+      if (!sql.includes("ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC")) return rows;
+      const open = (e: Row) => (e.status === 'PENDING' || e.status === 'ACTIVE' ? 1 : 0);
+      const sorted = [...rows].sort((a, b) => open(b) - open(a) || String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')) || String(b.id).localeCompare(String(a.id)));
+      return sql.endsWith('LIMIT 1') ? sorted.slice(0, 1) : sorted;
     }
     if (sql.startsWith('SELECT 1 FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id WHERE ce.student_id = $1 AND c.institution_id = $2')) {
       return t.class_enrollments.filter((e) => e.student_id === p[0] && e.status === 'ACTIVE' && t.classes.some((c) => c.id === e.class_id && c.institution_id === p[1])).slice(0, 1);
