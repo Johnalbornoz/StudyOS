@@ -55,3 +55,18 @@ Other runs on this branch: TypeScript clean; 507 files / 9,010 tests; B2-B1 sche
 One correction to earlier work: the governance certification ordered two audit rows by a timestamp they share, so its attribution-audit check could fail at random. It now orders them by content.
 
 `APPLICATION_DB_GOVERNANCE_PARITY = PASS`: the application refuses with `PRIMARY_ATTRIBUTION_REQUIRED` before writing; the database refuses the same case on its own. Sole difference in order: the application checks its own self-review rule earlier; both end at the same refusals.
+
+## 4. DEV rollout (2026-10-10)
+
+DEV only (fingerprint `2a29b99ee14a22b4`). Stage and Production were not touched.
+
+| Step | Result |
+|---|---|
+| Preflight | 82 applied, 0 drift |
+| `npm run db:migrate -- --dry-run` | exactly `20261112_1000` pending |
+| `npm run db:migrate` | 1 applied |
+| `npm run db:status` | 83 applied, 0 pending, 0 drift |
+
+After the rollout, read-only: the data snapshot (objectives, nodes, concepts, mappings, competencies, items, versions, blueprints, instances, attempts, sources) is hash-identical to the one taken before. 0 qualifications, 0 reviews, 0 attribution rows, 0 rights, 0 pools, 0 stimuli, 0 variants; the 11 candidates are unchanged and in review. The deployed function has no objective fallback, requires the PRIMARY attribution and refuses system accounts; its trigger is attached. Saber objectives: 3 competency mappings, 0 concept mappings. The 90 published PAA objective → concept mappings are untouched and still serve the curriculum.
+
+Hosted DEV still serves `fe5033e`. The integration branch differs from it by this migration, certification scripts, tests and documents only; no application source changed, so nothing was redeployed. The admin review route was not called on hosted DEV (it needs a signed-in administrator); its named refusals are certified by the unit tests and by the review-service certification.
