@@ -193,7 +193,7 @@ async function batchRows(batch: string) {
             cur.id AS version_id, cur.version_number, cur.bank_lifecycle_status AS lifecycle, cur.status, cur.usage_eligibility, cur.exam_alignment, cur.content, cur.validation_report, cur.question_type,
             lo.code AS objective_code,
             r.decision, r.review_checklist, r.review_notes, r.reviewed_at, ${withAssessment ? 'r.review_assessment' : 'NULL::jsonb AS review_assessment'},
-            (r.reviewed_by = cur.created_by OR ru.is_system IS TRUE) AS invalid_reviewer
+            (r.reviewed_by = cur.created_by OR ru.is_system IS TRUE OR (r.decision = 'APPROVED' AND to_jsonb(r) ->> 'reviewer_qualification_id' IS NULL)) AS invalid_reviewer
        FROM question_bank_items qi
        JOIN question_bank_generation_requests gr ON gr.id = qi.generation_request_id
        JOIN approved_items cur ON cur.id = qi.current_version_id

@@ -198,7 +198,22 @@ if [ "${CERT_SHADOW:-1}" = "1" ] && [ "${CERT_QBV2:-1}" = "1" ]; then
   REJ "OFFICIAL alignment on fixture content" "UPDATE approved_items SET exam_alignment = 'OFFICIAL' WHERE id = (SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' LIMIT 1)"
   REJ "unknown usage type" "UPDATE approved_items SET usage_eligibility = ARRAY['EVERYTHING'] WHERE id = (SELECT id FROM approved_items LIMIT 1)"
   REJ "a rejection without notes" "INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by) SELECT ai.id, ai.bank_item_id, 'REJECTED', (SELECT id FROM users LIMIT 1) FROM approved_items ai LIMIT 1"
-  (cd "$REPO_ROOT" && TRACK_B_ALLOW_EPHEMERAL="$FP" NODE_ENV=production npx tsx scripts/operations/qb-v2-integration.ts) | tee "$WORKDIR/qbv2.log" | grep -v '^\[' || true
+  # Reviewer governance (20261110_1500): approvals need PEOPLE with an explicit qualification. This ephemeral database
+  # gets two human reviewers and a human grantor holding STUDYUS_ADMIN, the PAA concept mappings (so the cell has a
+  # canonical subject), and one grant per reviewer and subject through the operator procedure itself. No system
+  # account is qualified and nothing is granted implicitly.
+  (cd "$REPO_ROOT" && TRACK_B_ALLOW_EPHEMERAL="$FP" npx tsx scripts/operations/track-b-v2-learning-catalog.ts --write) > "$WORKDIR/learning-catalog.log"
+  QS() { $PG_BIN/psql -h "$SOCKDIR" -U postgres -v ON_ERROR_STOP=1 -tAq -c "$1" "$SHADOW_DB"; }
+  QS "INSERT INTO users (clerk_id, email, is_system) VALUES ('cert_human_reviewer_1', 'h1@cert.invalid', false), ('cert_human_reviewer_2', 'h2@cert.invalid', false), ('cert_human_grantor', 'g@cert.invalid', false)" >/dev/null
+  QS "INSERT INTO user_roles (user_id, role, status, granted_via) SELECT id, 'STUDYUS_ADMIN', 'ACTIVE', 'INVITATION' FROM users WHERE clerk_id = 'cert_human_grantor'" >/dev/null
+  R1=$(QS "SELECT id FROM users WHERE clerk_id = 'cert_human_reviewer_1'"); R2=$(QS "SELECT id FROM users WHERE clerk_id = 'cert_human_reviewer_2'"); GR=$(QS "SELECT id FROM users WHERE clerk_id = 'cert_human_grantor'")
+  for SUBJECT in $(QS "SELECT DISTINCT cc.canonical_subject_id FROM objective_concept_mappings m JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id JOIN learning_objectives lo ON lo.id = m.learning_objective_id WHERE m.status = 'PUBLISHED' AND lo.code LIKE 'paa.mat.%'"); do
+    for REVIEWER in "$R1" "$R2"; do
+      (cd "$REPO_ROOT" && npx tsx scripts/operations/qb-reviewer-qualification.ts grant --reviewer "$REVIEWER" --subject "$SUBJECT" --exam-family PAA --granted-by "$GR" --valid-from "$(date -u +%Y-%m-%dT00:00:00Z)" --write) >> "$WORKDIR/grants.log"
+    done
+  done
+  EXPECT "a system account is never qualified" "$(QS "SELECT count(*) FROM question_bank_reviewer_qualifications q JOIN users u ON u.id = q.user_id WHERE u.is_system")" "0"
+  (cd "$REPO_ROOT" && QB_CERT_REVIEWER_IDS="$R1,$R2" TRACK_B_ALLOW_EPHEMERAL="$FP" NODE_ENV=production npx tsx scripts/operations/qb-v2-integration.ts) | tee "$WORKDIR/qbv2.log" | grep -v '^\[' || true
   cp "$WORKDIR/qbv2.log" "${CERT_OUT_DIR:-$WORKDIR}/qb-v2-integration.log" 2>/dev/null || true
   if ! grep -q '"failed":0' "$WORKDIR/qbv2.log"; then echo "  FAIL -- V2 integration checks failed"; exit 1; fi
   echo "  OK -- V2 integration: $(grep -o '"checks":[0-9]*' "$WORKDIR/qbv2.log") checks, 0 failed"

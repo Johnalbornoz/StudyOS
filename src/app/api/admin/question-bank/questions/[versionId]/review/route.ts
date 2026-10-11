@@ -6,6 +6,7 @@
  * can never certify it; generated content cannot be OFFICIAL; mock usage needs MOCK_READY.
  * Server-authoritative; the DB re-checks the critical rules. Audited.
  */
+import { ReviewerQualificationError } from '@/lib/exam-core/question-bank/reviewer-qualification.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
@@ -39,6 +40,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ success: true, data: r });
   } catch (err) {
     if (err instanceof ReviewError) return NextResponse.json({ error: err.code, detail: err.message.split(': ')[1] ?? null }, { status: err.code === 'SELF_REVIEW' ? 403 : 409 });
+    // Reviewer governance: the reviewer is not a qualified person for this item, or the item has no determinable subject.
+    if (err instanceof ReviewerQualificationError) return NextResponse.json({ error: err.code, detail: err.message.split(': ')[1] ?? null }, { status: err.code === 'REVIEW_SCOPE_UNDETERMINED' ? 409 : 403 });
     if (err instanceof LifecycleTransitionError) return NextResponse.json({ error: err.code }, { status: 409 });
     if ((err as any)?.code === '23514') return NextResponse.json({ error: 'RULE_VIOLATION', message: String((err as Error).message).split(':')[0] }, { status: 409 });
     throw err;
