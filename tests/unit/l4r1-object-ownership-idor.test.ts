@@ -35,7 +35,8 @@ const log: Array<{ sql: string; params: any[] }> = [];
 const UUID = /^[0-9a-f-]{36}$/i;
 async function query(sql: string, params: any[] = []) {
   log.push({ sql, params });
-  if (/FROM students WHERE clerk_id = \$1 AND id = \$2/.test(sql)) {
+  // L10 SF-1/SF-2: the ownership guard now also requires an ACTIVE account and STUDENT role, in the same query.
+  if (/FROM students s\s+JOIN users u[\s\S]*u\.clerk_id = \$1 AND s\.id = \$2/.test(sql)) {
     return { rows: tables.students.filter((s) => s.clerk_id === params[0] && s.id === params[1]), rowCount: tables.students.filter((s) => s.clerk_id === params[0] && s.id === params[1]).length };
   }
   if (/FROM subjects\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) {

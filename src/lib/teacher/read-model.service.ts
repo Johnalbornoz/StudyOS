@@ -23,7 +23,8 @@
  */
 
 import { db } from '@/lib/db';
-import { canTeacherAccessLearner, canAccessClass } from '@/lib/authorization';
+import { canTeacherAccessLearner, resolveTeacherClassScope } from '@/lib/authorization';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
@@ -42,18 +43,17 @@ async function requireLearnerAccess(actorUserId: string, studentId: string): Pro
 }
 
 /**
- * canAccessClass's `permission` argument is currently not
- * differentiated internally (confirmed by inspection -- every
- * InstitutionPermission value resolves identically today), so any
- * valid enum member gates the exact same real relationship check
- * (institution admin OR an ACTIVE teacher assignment covering this
- * class). TEACHER_ASSIGNMENT_MANAGE is used here as the closest
- * semantic fit; changing this pre-existing behavior is out of scope
- * for F11-A.
+ * L10 SF-4 (L4-06, CR-L8-01, CR-L8-02): the Teacher read models are for the
+ * class's TEACHER only. This used to go through `canAccessClass`, which also
+ * admits the institution's admins -- so a Coordinator could read the class
+ * roster and per-student exam data through the Teacher routes. It now uses
+ * `resolveTeacherClassScope` (teacher of this exact class, never an
+ * institution admin). A Coordinator's learner-level reads are bounded by
+ * LEARNER_READ_SCOPE.COORDINATOR and served by the institution's own routes.
  */
 async function requireClassAccess(actorUserId: string, classId: string): Promise<void> {
-  const allowed = await canAccessClass(actorUserId, classId, 'TEACHER_ASSIGNMENT_MANAGE');
-  if (!allowed) throw new TeacherAccessDeniedError(classId);
+  const scope = await resolveTeacherClassScope(actorUserId, classId);
+  if (!scope) throw new TeacherAccessDeniedError(classId);
 }
 
 export interface TeacherAssignedClass {
@@ -86,6 +86,8 @@ export async function getTeacherAssignedClasses(actorUserId: string): Promise<Te
       AND ta.status = 'ACTIVE'
       AND c.institution_id = im.institution_id
       AND c.status = 'ACTIVE' -- an archived class leaves the teacher's working list (its history stays)
+      AND EXISTS (SELECT 1 FROM institutions i WHERE i.id = im.institution_id AND i.status = 'ACTIVE') -- L10 SF-3
+      AND ${activeRoleSql('$1', 'TEACHER')} -- L10 SF-1
     ORDER BY c.name
     `,
     [actorUserId]

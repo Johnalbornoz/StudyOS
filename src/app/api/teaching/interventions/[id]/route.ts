@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { resolveLearnerReadScope } from '@/lib/authorization';
 import { getInterventionSession, listAttemptsForSession } from '@/lib/teaching/session.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -21,10 +21,15 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   const session = await getInterventionSession(id);
   if (!session) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const allowed = await canAccessLearner(actor.id, session.studentId, 'LEARNER_PROGRESS_VIEW');
-  if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  const scope = await resolveLearnerReadScope(actor.id, session.studentId);
+  if (!scope.permissions.includes('LEARNER_PROGRESS_VIEW')) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
+  // L10 SF-4 (D-1): the attempts are the learner's raw item-level responses.
+  // Without LEARNER_ASSESSMENT_DETAIL_VIEW (a Parent) only their count is returned.
   const attempts = await listAttemptsForSession(id);
+  if (!scope.permissions.includes('LEARNER_ASSESSMENT_DETAIL_VIEW')) {
+    return NextResponse.json({ success: true, data: { session, attempts: [], attemptCount: attempts.length, detailWithheld: true } });
+  }
   return NextResponse.json({ success: true, data: { session, attempts } });
 }
 

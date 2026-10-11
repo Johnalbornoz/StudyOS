@@ -364,12 +364,101 @@ export async function setClassSubject(institutionId: string, classId: string, ca
   return (r.rowCount ?? 0) > 0;
 }
 
-export async function enrollStudent(classId: string, studentId: string): Promise<void> {
-  await db.query(
-    `INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'ACTIVE')
-     ON CONFLICT (class_id, student_id) DO UPDATE SET status = 'ACTIVE'`,
+// ---------------------------------------------------------------------
+// Class enrolment lifecycle (L10, CR-L9-02)
+// ---------------------------------------------------------------------
+//
+//   (no row) --invite--> PENDING --accept--> ACTIVE --leave/remove--> ENDED
+//                           |--decline--> DECLINED
+//
+// ENDED and DECLINED are CLOSED: the row is history and never changes status
+// again (migration 20261120_1500 enforces it in the database). Re-adding a
+// learner always creates a NEW row, so the departure or the refusal stays on
+// record. At most one OPEN row (PENDING or ACTIVE) exists per learner per
+// class. Every writer of `class_enrollments` goes through the functions in
+// this section.
+
+export type ClassEnrollmentStatus = 'PENDING' | 'ACTIVE' | 'DECLINED' | 'ENDED';
+
+export interface ClassEnrollmentState {
+  /** The one OPEN row, if any. */
+  open: { id: string; status: 'PENDING' | 'ACTIVE' } | null;
+  /** The most recent CLOSED row, if any -- the learner left, was removed, or declined this class before. */
+  lastClosed: { id: string; status: 'DECLINED' | 'ENDED' } | null;
+}
+
+/** The canonical read of "where does this learner stand with this class". Never assume one row per pair. */
+export async function getClassEnrollmentState(classId: string, studentId: string): Promise<ClassEnrollmentState> {
+  const r = await db.query(
+    `SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2
+     ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC`,
     [classId, studentId]
   );
+  const rows: Array<{ id: string; status: ClassEnrollmentStatus }> = r.rows ?? [];
+  const open = rows.find((row) => row.status === 'PENDING' || row.status === 'ACTIVE') ?? null;
+  const lastClosed = rows.find((row) => row.status === 'DECLINED' || row.status === 'ENDED') ?? null;
+  return {
+    open: open ? { id: open.id, status: open.status as 'PENDING' | 'ACTIVE' } : null,
+    lastClosed: lastClosed ? { id: lastClosed.id, status: lastClosed.status as 'DECLINED' | 'ENDED' } : null,
+  };
+}
+
+export type DirectEnrollmentOutcome =
+  | { outcome: 'ENROLLED'; enrollmentId: string }
+  | { outcome: 'ALREADY_ACTIVE'; enrollmentId: string }
+  | { outcome: 'REQUIRES_INVITATION'; previous: 'DECLINED' | 'ENDED' };
+
+/**
+ * Enrol a learner ACTIVE without a new acceptance. The CALLER has already
+ * established that no acceptance is needed (the learner is an active student
+ * of this same institution, having consented to one of its classes).
+ *
+ * CR-L9-02: that shortcut never applies to a class the learner has LEFT, was
+ * REMOVED from, or DECLINED -- the answer is REQUIRES_INVITATION and nothing
+ * is written; the caller starts an invitation (`inviteStudentToClass`), which
+ * the Student must accept. A closed row is never updated.
+ *
+ * An invitation still PENDING for this class is completed (it is the same
+ * open row, and the caller's condition above is what the invitation was
+ * waiting for). An ACTIVE row is returned as it is: never a duplicate.
+ */
+export async function enrollStudentDirectly(classId: string, studentId: string, actorUserId: string | null): Promise<DirectEnrollmentOutcome> {
+  const state = await getClassEnrollmentState(classId, studentId);
+  if (state.open?.status === 'ACTIVE') return { outcome: 'ALREADY_ACTIVE', enrollmentId: state.open.id };
+  if (state.lastClosed) return { outcome: 'REQUIRES_INVITATION', previous: state.lastClosed.status };
+  if (state.open?.status === 'PENDING') {
+    const r = await db.query(`UPDATE class_enrollments SET status = 'ACTIVE', responded_at = NOW() WHERE id = $1 AND status = 'PENDING' RETURNING id`, [state.open.id]);
+    if (r.rows[0]) return { outcome: 'ENROLLED', enrollmentId: r.rows[0].id };
+  }
+  try {
+    const r = await db.query(
+      `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) VALUES ($1, $2, 'ACTIVE', $3, NOW()) RETURNING id`,
+      [classId, studentId, actorUserId]
+    );
+    return { outcome: 'ENROLLED', enrollmentId: r.rows[0].id };
+  } catch (error: any) {
+    // Lost a race with another writer: the open row it created is the answer.
+    if (error?.code !== '23505') throw error;
+    const again = await getClassEnrollmentState(classId, studentId);
+    if (again.open?.status === 'ACTIVE') return { outcome: 'ALREADY_ACTIVE', enrollmentId: again.open.id };
+    throw error;
+  }
+}
+
+/**
+ * Operational/certification helper (scripts and cert runners only; no route
+ * calls it): make the learner ACTIVE in the class with no consent step.
+ * Idempotent. Like every writer here it never reopens a closed row -- a
+ * learner with only closed rows gets a NEW active row.
+ */
+export async function enrollStudent(classId: string, studentId: string): Promise<void> {
+  const state = await getClassEnrollmentState(classId, studentId);
+  if (state.open?.status === 'ACTIVE') return;
+  if (state.open?.status === 'PENDING') {
+    await db.query(`UPDATE class_enrollments SET status = 'ACTIVE', responded_at = NOW() WHERE id = $1 AND status = 'PENDING'`, [state.open.id]);
+    return;
+  }
+  await db.query(`INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'ACTIVE')`, [classId, studentId]);
 }
 
 export interface TeacherAssignment {
@@ -651,8 +740,11 @@ export type ClassInvitationOutcome =
  * row starts PENDING (grants nothing -- every check requires ACTIVE) and
  * becomes ACTIVE only when the Student accepts. Only identities holding an
  * ACTIVE STUDENT role are matched; independent Students stay independent
- * unless they accept. Re-inviting after a decline/removal re-opens the
- * invitation; an ACTIVE enrollment is left untouched.
+ * unless they accept. An ACTIVE or PENDING enrollment is left untouched.
+ *
+ * CR-L9-02: re-inviting after a decline or a removal creates a NEW PENDING
+ * row. The closed row is not reopened or overwritten -- it remains the
+ * record that the Student declined or left.
  */
 export async function inviteStudentToClass(
   institutionId: string,
@@ -674,21 +766,21 @@ export async function inviteStudentToClass(
   const student = match.rows[0];
   if (!student) return { outcome: 'NO_STUDENT_ACCOUNT' };
 
-  const existing = await db.query(`SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, student.student_id]);
-  if (existing.rows[0]?.status === 'ACTIVE') return { outcome: 'ALREADY_ACTIVE' };
-  if (existing.rows[0]?.status === 'PENDING') return { outcome: 'ALREADY_PENDING' };
+  const state = await getClassEnrollmentState(classId, student.student_id);
+  if (state.open?.status === 'ACTIVE') return { outcome: 'ALREADY_ACTIVE' };
+  if (state.open?.status === 'PENDING') return { outcome: 'ALREADY_PENDING' };
 
-  const written = await db.query(
-    `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id)
-     VALUES ($1, $2, 'PENDING', $3)
-     ON CONFLICT (class_id, student_id) DO UPDATE
-       SET status = 'PENDING', invited_by_user_id = $3, responded_at = NULL, ended_at = NULL
-       WHERE class_enrollments.status IN ('DECLINED', 'ENDED')
-     RETURNING id`,
-    [classId, student.student_id, actorUserId]
-  );
-  if (written.rows.length === 0) return { outcome: 'ALREADY_PENDING' };
-  return { outcome: 'INVITED', enrollmentId: written.rows[0].id, studentUserId: student.user_id };
+  try {
+    const written = await db.query(
+      `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id) VALUES ($1, $2, 'PENDING', $3) RETURNING id`,
+      [classId, student.student_id, actorUserId]
+    );
+    return { outcome: 'INVITED', enrollmentId: written.rows[0].id, studentUserId: student.user_id };
+  } catch (error: any) {
+    // Two invitations at once: the one-open-row index lets exactly one through.
+    if (error?.code === '23505') return { outcome: 'ALREADY_PENDING' };
+    throw error;
+  }
 }
 
 /** Remove a Student (or withdraw a pending invitation) -- soft, never a DELETE. Scoped to the class AND institution. */

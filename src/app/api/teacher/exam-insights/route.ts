@@ -1,8 +1,8 @@
 /**
  * Exam insights for a Teacher's class -- GET /api/teacher/exam-insights?classId=&family=
- * Only a Teacher with an ACTIVE assignment covering this class (or an admin
- * of its institution) -- via the teacher roster. Gaps by domain / objective /
- * concept for the class, per-Student gap concepts (for assigning
+ * Only a Teacher with an ACTIVE assignment covering this class -- never an
+ * admin of its institution (L10 SF-4). Gaps within the class's own subject
+ * only (CR-L8-01): by concept for the class, per-Student gap concepts (for assigning
  * reinforcement through /api/teacher/interventions), those Students' exam
  * goals (objective first: which exam each prepares), and their
  * AICE Diploma subjects with their readiness. Never other classes' Students.
@@ -12,7 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
 import { db } from '@/lib/db';
-import { examGapsFor, examGoalsFor } from '@/lib/exam-core/exam-gaps.service';
+import { examGoalsFor } from '@/lib/exam-core/exam-gaps.service';
+import { getTeacherClassExamGaps } from '@/lib/authorization/teacher-exam-scope';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -24,14 +25,19 @@ async function handleGET(request: NextRequest) {
   const classId = sp.get('classId') ?? '';
   const family = sp.get('family');
   if (!UUID.test(classId) || (family && !/^[A-Z]{2,12}$/.test(family))) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
+  // L10 SF-4 / CR-L8-01: the class's TEACHER only (never an institution admin), and gaps only within
+  // the class's own canonical subject -- both enforced in the one shared entry point.
   let roster: Array<{ studentId: string; name: string }>;
+  let scoped;
   try {
+    scoped = await getTeacherClassExamGaps(gate.actorUserId, classId, { family });
     roster = await getTeacherClassRoster(gate.actorUserId, classId);
   } catch {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
   const ids = roster.map((r) => r.studentId);
-  const [gaps, goals] = await Promise.all([examGapsFor(ids, { families: family ? [family] : undefined, includePerStudent: true }), examGoalsFor(ids, { includePerStudent: true })]);
+  const gaps = scoped.gaps;
+  const goals = await examGoalsFor(ids, { includePerStudent: true });
   const aice = ids.length
     ? (await db.query(
         `SELECT p.student_id, e.syllabus_code, e.level, e.expected_series_year, e.expected_series_month,

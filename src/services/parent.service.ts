@@ -17,11 +17,13 @@
  */
 
 import { db } from '@/lib/db';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
 import { getStudentMastery } from './mastery.service';
 import { getActiveDebts } from './learning-debt.service';
 import { getUpcomingForStudent } from './assessment.service';
 import { masteryToPercent, tryMasteryScore, averageMasteryScore } from '@/lib/mastery-format';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
+import { recordAdminAction } from '@/lib/admin/audit';
 
 export type LinkStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
 
@@ -113,6 +115,26 @@ export async function unlinkChild(parentId: string, studentId: string): Promise<
     `UPDATE parent_student_relationships SET status = 'revoked', responded_at = NOW() WHERE parent_id = $1 AND student_id = $2 AND status != 'revoked'`,
     [parentId, studentId]
   );
+  await cancelPendingInvitationsToParent(studentId, parentId);
+}
+
+/**
+ * L10 SF-7 (L4-07): ending a relationship also cancels every invitation the
+ * learner still has pending for that parent's email. Without this, a
+ * forgotten invitation let the parent re-grant themselves access after the
+ * learner revoked it. Matches on the parent account's stored email
+ * (normalized); `acceptParentInvitation` independently refuses to revive an
+ * ended relationship from an older invitation, so the two checks do not
+ * depend on each other.
+ */
+async function cancelPendingInvitationsToParent(studentId: string, parentId: string, client: { query: typeof db.query } = db): Promise<void> {
+  await client.query(
+    `UPDATE parent_invitations pi SET status = 'revoked', responded_at = NOW()
+     FROM profiles p JOIN users u ON u.id = p.user_id
+     WHERE p.id = $2 AND pi.student_id = $1 AND pi.status = 'pending'
+       AND u.email IS NOT NULL AND lower(btrim(pi.invited_email)) = lower(btrim(u.email))`,
+    [studentId, parentId]
+  );
 }
 
 /**
@@ -129,7 +151,45 @@ export async function revokeRelationshipByStudent(studentId: string, parentId: s
     `UPDATE parent_student_relationships SET status = 'revoked', responded_at = NOW() WHERE student_id = $1 AND parent_id = $2 AND status = 'accepted' RETURNING parent_id`,
     [studentId, parentId]
   );
-  return (result.rowCount ?? 0) > 0;
+  const revoked = (result.rowCount ?? 0) > 0;
+  if (revoked) await cancelPendingInvitationsToParent(studentId, parentId);
+  return revoked;
+}
+
+export class ParentRelationshipNotFoundError extends Error {
+  constructor() {
+    super('PARENT_RELATIONSHIP_NOT_FOUND');
+    this.name = 'ParentRelationshipNotFoundError';
+  }
+}
+
+/**
+ * L10 SF-7 (P1-9 admin half, CR-04): a platform administrator ends a
+ * parent-learner relationship. Until now no administrative path could: the
+ * only levers were the two parties themselves or suspending the whole
+ * account. Same soft-revoke contract as the other two (the row and its
+ * history stay), plus who ended it and why; pending requests and
+ * invitations between the pair are closed too. Audited as an admin action.
+ * The caller must already have passed the STUDYUS_ADMIN gate.
+ */
+export async function endParentRelationshipByAdmin(actorUserId: string, parentId: string, studentId: string, reason: string): Promise<void> {
+  const result = await db.query(
+    `UPDATE parent_student_relationships
+     SET status = 'revoked', responded_at = NOW(), ended_by_user_id = $3, ended_reason = $4
+     WHERE parent_id = $1 AND student_id = $2 AND status IN ('accepted', 'pending')
+     RETURNING status`,
+    [parentId, studentId, actorUserId, reason]
+  );
+  if ((result.rowCount ?? 0) === 0) throw new ParentRelationshipNotFoundError();
+  await cancelPendingInvitationsToParent(studentId, parentId);
+  await recordAdminAction({
+    actorUserId,
+    action: 'PARENT_RELATIONSHIP_ENDED',
+    targetType: 'PARENT_RELATIONSHIP',
+    targetId: studentId,
+    reason,
+    newState: { parentId, studentId, status: 'revoked' },
+  });
 }
 
 /**
@@ -152,9 +212,16 @@ export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]
   return result.rows.map((r) => ({ studentId: r.id, name: r.name || r.email, email: r.email, status: r.status }));
 }
 
+/**
+ * L10 SF-1 (L4-04): an accepted relationship authorizes only while the
+ * parent's account is ACTIVE and holds an ACTIVE PARENT role.
+ */
 export async function verifyParentAccess(parentId: string, studentId: string): Promise<boolean> {
   const result = await db.query(
-    `SELECT 1 FROM parent_student_relationships WHERE parent_id = $1 AND student_id = $2 AND status = 'accepted'`,
+    `SELECT 1 FROM parent_student_relationships psr
+     JOIN profiles p ON p.id = psr.parent_id
+     WHERE psr.parent_id = $1 AND psr.student_id = $2 AND psr.status = 'accepted'
+       AND ${activeRoleSql('p.user_id', 'PARENT')}`,
     [parentId, studentId]
   );
   return (result.rowCount ?? 0) > 0;
@@ -196,6 +263,8 @@ export async function respondToRequest(
     [status, studentId, parentId]
   );
   if ((result.rowCount ?? 0) === 0) return false;
+  // L10 SF-7 (L4-07): a decline also closes any invitation still pending for that parent.
+  if (!accept) await cancelPendingInvitationsToParent(studentId, parentId);
 
   const [studentRow, parentRow] = await Promise.all([
     db.query(`SELECT name, email FROM students WHERE id = $1`, [studentId]),
@@ -222,6 +291,8 @@ export async function respondToRequest(
 }
 
 export const MAX_PENDING_PARENT_REQUESTS = 10;
+/** L10 SF-7 (L4-17): how many times one parent may ask the SAME learner for access (first request included). */
+export const MAX_LINK_REQUESTS_PER_LEARNER = 3;
 
 export type ChildLinkRequestOutcome = 'SUBMITTED' | 'RATE_LIMITED';
 
@@ -241,6 +312,11 @@ export type ChildLinkRequestOutcome = 'SUBMITTED' | 'RATE_LIMITED';
  *    (bounded fan-out of unsolicited requests).
  * Re-requesting after a decline/revoke resets that row to pending (the
  * Student decides again); an accepted or pending row is left untouched.
+ * L10 SF-7 (L4-17): re-requests are bounded -- at most
+ * MAX_LINK_REQUESTS_PER_LEARNER requests per learner in total -- and a
+ * relationship an administrator ended is never reopened by the parent.
+ * Both are silent (same 'SUBMITTED' response), so the limit is not an
+ * account-existence oracle either.
  */
 export async function requestChildLink(parentId: string, childEmail: string): Promise<ChildLinkRequestOutcome> {
   const email = childEmail.trim().toLowerCase();
@@ -273,10 +349,12 @@ export async function requestChildLink(parentId: string, childEmail: string): Pr
     `INSERT INTO parent_student_relationships (parent_id, student_id, status)
      VALUES ($1, $2, 'pending')
      ON CONFLICT (parent_id, student_id) DO UPDATE
-       SET status = 'pending', responded_at = NULL
+       SET status = 'pending', responded_at = NULL, request_count = parent_student_relationships.request_count + 1
        WHERE parent_student_relationships.status IN ('declined', 'revoked')
+         AND parent_student_relationships.request_count < $3
+         AND parent_student_relationships.ended_by_user_id IS NULL
      RETURNING status`,
-    [parentId, student.student_id]
+    [parentId, student.student_id, MAX_LINK_REQUESTS_PER_LEARNER]
   );
   if ((written.rowCount ?? 0) === 0) return 'SUBMITTED';
 
@@ -304,7 +382,10 @@ export async function requestChildLink(parentId: string, childEmail: string): Pr
  * `linkChildByEmail`'s parent-initiated direction (see
  * src/app/api/parent/link-child/route.ts, POST removed).
  */
-export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'revoked';
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+
+/** L10 SF-7: an invitation is valid for this long after it is sent (the column default in 20261120_1000 is the same value). */
+export const PARENT_INVITATION_TTL_DAYS = 30;
 
 export interface ParentInvitation {
   id: string;
@@ -312,6 +393,7 @@ export interface ParentInvitation {
   invitedEmail: string;
   status: InvitationStatus;
   createdAt: string;
+  expiresAt?: string | null;
 }
 
 export interface PendingInvitationForParent {
@@ -321,29 +403,150 @@ export interface PendingInvitationForParent {
   createdAt: string;
 }
 
-/** The student's own side: invite a parent/guardian/coach by email. Idempotent -- re-inviting an already-pending email is a no-op. */
-export async function inviteParentByEmail(studentId: string, invitedEmail: string): Promise<ParentInvitation> {
-  const result = await db.query(
-    `
-    INSERT INTO parent_invitations (student_id, invited_email, status)
-    VALUES ($1, $2, 'pending')
-    ON CONFLICT (student_id, lower(invited_email)) WHERE status = 'pending'
-    DO UPDATE SET status = parent_invitations.status
-    RETURNING id, student_id, invited_email, status, created_at
-    `,
-    [studentId, invitedEmail]
+/**
+ * The canonical form an invited email is stored and compared in: trimmed and
+ * lowercased -- the same normalization `resolveVerifiedPrimaryEmail` applies
+ * to the Clerk address it is later matched against.
+ */
+export function normalizeInvitedEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export type ParentInvitationRefusal = 'OWN_EMAIL' | 'ALREADY_LINKED';
+
+/** CR-L7-01: the invitation was refused; nothing was written. */
+export class ParentInvitationRefusedError extends Error {
+  constructor(public readonly code: ParentInvitationRefusal) {
+    super(code);
+    this.name = 'ParentInvitationRefusedError';
+  }
+}
+
+export interface InviteParentResult extends ParentInvitation {
+  /** False when an unexpired pending invitation to this email already existed and was returned unchanged. */
+  created: boolean;
+}
+
+/** Marks the learner's pending invitations that are past their expiry. Idempotent. */
+async function expireStaleInvitations(where: { studentId: string } | { email: string }): Promise<void> {
+  if ('studentId' in where) {
+    await db.query(`UPDATE parent_invitations SET status = 'expired', responded_at = NOW() WHERE student_id = $1 AND status = 'pending' AND expires_at <= NOW()`, [where.studentId]);
+  } else {
+    await db.query(`UPDATE parent_invitations SET status = 'expired', responded_at = NOW() WHERE lower(invited_email) = $1 AND status = 'pending' AND expires_at <= NOW()`, [where.email]);
+  }
+}
+
+/**
+ * The student's own side: invite a parent/guardian/coach by email.
+ *
+ * CR-L7-01 (Orchestrator, 2026-10-11) -- refused, with nothing written:
+ *  - OWN_EMAIL       the email is the Student's own (the account's stored
+ *                    primary email, or the learner row's email);
+ *  - ALREADY_LINKED  an account with that email already holds accepted,
+ *                    current access to this Student.
+ * Deterministic for a repeat: an unexpired pending invitation to the same
+ * email is returned as it is (`created: false`) -- never a second row, never
+ * a second notification. The one-pending-per-(student, email) unique index
+ * holds the same rule in the database under concurrency.
+ *
+ * L10 SF-7: the invitation expires after PARENT_INVITATION_TTL_DAYS, and an
+ * invitee who already has a StudyUs Parent account is told in-app. (Email
+ * delivery is decision D-10; there is no mail provider in the repository.)
+ */
+export async function inviteParentByEmail(studentId: string, invitedEmail: string): Promise<InviteParentResult> {
+  const email = normalizeInvitedEmail(invitedEmail);
+
+  const own = await db.query(
+    `SELECT 1 FROM students s LEFT JOIN users u ON u.id = s.user_id
+     WHERE s.id = $1 AND (lower(btrim(s.email)) = $2 OR lower(btrim(u.email)) = $2)
+     LIMIT 1`,
+    [studentId, email]
   );
-  const row = result.rows[0];
-  return { id: row.id, studentId: row.student_id, invitedEmail: row.invited_email, status: row.status, createdAt: row.created_at };
+  if ((own.rows?.length ?? 0) > 0) throw new ParentInvitationRefusedError('OWN_EMAIL');
+
+  const linked = await db.query(
+    `SELECT 1 FROM parent_student_relationships psr
+     JOIN profiles p ON p.id = psr.parent_id
+     JOIN users u ON u.id = p.user_id
+     WHERE psr.student_id = $1 AND psr.status = 'accepted' AND lower(btrim(u.email)) = $2
+     LIMIT 1`,
+    [studentId, email]
+  );
+  if ((linked.rows?.length ?? 0) > 0) throw new ParentInvitationRefusedError('ALREADY_LINKED');
+
+  await expireStaleInvitations({ studentId });
+
+  const toInvitation = (row: any, created: boolean): InviteParentResult => ({
+    id: row.id,
+    studentId: row.student_id,
+    invitedEmail: row.invited_email,
+    status: row.status,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at ?? null,
+    created,
+  });
+
+  const inserted = await db.query(
+    `
+    INSERT INTO parent_invitations (student_id, invited_email, status, expires_at)
+    VALUES ($1, $2, 'pending', NOW() + ($3 || ' days')::interval)
+    ON CONFLICT (student_id, lower(invited_email)) WHERE status = 'pending'
+    DO NOTHING
+    RETURNING id, student_id, invited_email, status, created_at, expires_at
+    `,
+    [studentId, email, String(PARENT_INVITATION_TTL_DAYS)]
+  );
+  if ((inserted.rows?.length ?? 0) === 0) {
+    const existing = await db.query(
+      `SELECT id, student_id, invited_email, status, created_at, expires_at FROM parent_invitations
+       WHERE student_id = $1 AND lower(invited_email) = $2 AND status = 'pending'`,
+      [studentId, email]
+    );
+    return toInvitation(existing.rows[0], false);
+  }
+
+  await notifyInvitedParentIfKnown(studentId, email).catch((error) => {
+    console.error('[parent] invitation notification failed', error instanceof Error ? error.message : error);
+  });
+  return toInvitation(inserted.rows[0], true);
+}
+
+/**
+ * In-app notice for an invitee who already has an ACTIVE account holding an
+ * ACTIVE PARENT role (the only accounts with a Parent inbox). Nothing is
+ * returned to the inviting Student, so this is not an existence oracle.
+ */
+async function notifyInvitedParentIfKnown(studentId: string, email: string): Promise<void> {
+  const invitee = await db.query(
+    `SELECT u.id FROM users u
+     JOIN user_roles r ON r.user_id = u.id AND r.role = 'PARENT' AND r.status = 'ACTIVE'
+     WHERE lower(btrim(u.email)) = $1 AND u.status = 'ACTIVE' AND NOT u.is_system
+     ORDER BY u.created_at LIMIT 1`,
+    [email]
+  );
+  const recipientUserId: string | undefined = invitee.rows?.[0]?.id;
+  if (!recipientUserId) return;
+  const studentRow = await db.query(`SELECT name FROM students WHERE id = $1`, [studentId]);
+  const studentName: string = studentRow.rows?.[0]?.name || '';
+  await notifyUser({
+    recipientUserId,
+    workspace: 'PARENT',
+    type: 'PARENT_INVITATION_RECEIVED',
+    title: 'Invitación para ver el progreso',
+    message: `${studentName || 'Un estudiante'} te invitó a ver su progreso en StudyUs. Puedes aceptar o rechazar la invitación.`,
+    payload: { studentName },
+    actionHref: '/dashboard/parent',
+  });
 }
 
 /** The student's own view of invitations they have sent (any status except revoked, most recent first). */
 export async function listInvitationsSentByStudent(studentId: string): Promise<ParentInvitation[]> {
+  await expireStaleInvitations({ studentId });
   const result = await db.query(
-    `SELECT id, student_id, invited_email, status, created_at FROM parent_invitations WHERE student_id = $1 AND status != 'revoked' ORDER BY created_at DESC`,
+    `SELECT id, student_id, invited_email, status, created_at, expires_at FROM parent_invitations WHERE student_id = $1 AND status != 'revoked' ORDER BY created_at DESC`,
     [studentId]
   );
-  return result.rows.map((r: any) => ({ id: r.id, studentId: r.student_id, invitedEmail: r.invited_email, status: r.status, createdAt: r.created_at }));
+  return result.rows.map((r: any) => ({ id: r.id, studentId: r.student_id, invitedEmail: r.invited_email, status: r.status, createdAt: r.created_at, expiresAt: r.expires_at ?? null }));
 }
 
 /** The student cancels an invitation they sent, before it's been accepted. */
@@ -360,6 +563,7 @@ export async function revokeInvitationByStudent(studentId: string, invitationId:
  * email. `verifiedEmail` must always come from the authenticated
  * Clerk session at the route boundary -- never a request parameter --
  * so this can never become a lookup-by-arbitrary-email oracle.
+ * L10 SF-7: an invitation past its expiry is never listed.
  */
 export async function listPendingInvitationsForEmail(verifiedEmail: string): Promise<PendingInvitationForParent[]> {
   const result = await db.query(
@@ -367,7 +571,7 @@ export async function listPendingInvitationsForEmail(verifiedEmail: string): Pro
     SELECT pi.id, pi.student_id, s.name, s.email, pi.created_at
     FROM parent_invitations pi
     JOIN students s ON s.id = pi.student_id
-    WHERE lower(pi.invited_email) = lower($1) AND pi.status = 'pending'
+    WHERE lower(pi.invited_email) = lower($1) AND pi.status = 'pending' AND pi.expires_at > NOW()
     ORDER BY pi.created_at ASC
     `,
     [verifiedEmail]
@@ -384,20 +588,49 @@ export async function listPendingInvitationsForEmail(verifiedEmail: string): Pro
  * doesn't exist, isn't pending, or (checked explicitly, not merely
  * assumed from the caller's own claim) doesn't belong to the caller's
  * verified email.
+ *
+ * L10 SF-7 (L4-07) -- also fails closed when:
+ *  - the invitation is past its expiry (it is marked 'expired');
+ *  - the relationship between this parent and learner was ENDED (revoked or
+ *    declined) at or after the moment the invitation was sent. An older
+ *    invitation never revives an ended relationship; only one the learner
+ *    sends afterwards does;
+ *  - an administrator ended the relationship (never revived by invitation).
  */
 export async function acceptParentInvitation(invitationId: string, parentId: string, verifiedEmail: string): Promise<boolean> {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
     const invitation = await client.query(
-      `SELECT id, student_id, invited_email FROM parent_invitations WHERE id = $1 AND status = 'pending' FOR UPDATE`,
+      `SELECT id, student_id, invited_email, created_at, (expires_at <= NOW()) AS expired FROM parent_invitations WHERE id = $1 AND status = 'pending' FOR UPDATE`,
       [invitationId]
     );
-    if (invitation.rows.length === 0 || invitation.rows[0].invited_email.toLowerCase() !== verifiedEmail.toLowerCase()) {
+    if (invitation.rows.length === 0 || normalizeInvitedEmail(invitation.rows[0].invited_email) !== normalizeInvitedEmail(verifiedEmail)) {
       await client.query('ROLLBACK');
       return false;
     }
+    if (invitation.rows[0].expired === true) {
+      await client.query(`UPDATE parent_invitations SET status = 'expired', responded_at = NOW() WHERE id = $1`, [invitationId]);
+      await client.query('COMMIT');
+      return false;
+    }
     const studentId = invitation.rows[0].student_id;
+
+    const existing = await client.query(
+      `SELECT status, responded_at, ended_by_user_id FROM parent_student_relationships WHERE parent_id = $1 AND student_id = $2 FOR UPDATE`,
+      [parentId, studentId]
+    );
+    const current = existing.rows[0];
+    if (current && (current.status === 'revoked' || current.status === 'declined')) {
+      const endedAt = current.responded_at ? new Date(current.responded_at).getTime() : Number.POSITIVE_INFINITY;
+      const invitedAt = new Date(invitation.rows[0].created_at).getTime();
+      if (current.ended_by_user_id || !(invitedAt > endedAt)) {
+        // Stale: the invitation predates the ending. It is closed, and nothing is granted.
+        await client.query(`UPDATE parent_invitations SET status = 'revoked', responded_at = NOW() WHERE id = $1`, [invitationId]);
+        await client.query('COMMIT');
+        return false;
+      }
+    }
 
     await client.query(
       `

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { resolveLearnerReadScope } from '@/lib/authorization';
+import { isOwnerScope, isReleasedResult } from '@/lib/authorization/learner-data-scope';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { getSimulationScoreSummary } from '@/lib/simulation/scoring.service';
 import { db } from '@/lib/db';
@@ -18,8 +19,11 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   const attempt = await getSimulationAttempt(id);
   if (!attempt) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const allowed = await canAccessLearner(actor.id, attempt.studentId, 'LEARNER_PROGRESS_VIEW');
-  if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  // L10 SF-4 (D-1): the owner reads their own attempt in any state. Every
+  // other relationship reads a RELEASED result as a summary only -- never the
+  // attempt's working state, and nothing while it is unscored or invalidated.
+  const scope = await resolveLearnerReadScope(actor.id, attempt.studentId);
+  if (!scope.permissions.includes('LEARNER_ASSESSMENT_SUMMARY_VIEW')) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const [scoreSummary, result, examRow] = await Promise.all([
     getSimulationScoreSummary(attempt.examAttemptId),
@@ -30,6 +34,11 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   // The server-held navigation state carries answer keys -- never returned here.
   const { navigationState: _hidden, ...publicAttempt } = attempt;
   void _hidden;
+  if (!isOwnerScope(scope)) {
+    const released = isReleasedResult(result);
+    const summaryAttempt = { id: attempt.id, studentId: attempt.studentId, status: attempt.status };
+    return NextResponse.json({ success: true, data: { attempt: summaryAttempt, lifecycle, scoreSummary: released ? scoreSummary : null, result: released ? result : null } });
+  }
   return NextResponse.json({ success: true, data: { attempt: publicAttempt, lifecycle, scoreSummary, result } });
 }
 

@@ -378,11 +378,19 @@ export async function addRole(actorUserId: string, targetUserId: string, role: S
   );
   if ((otherActive.rows?.length ?? 0) > 0) throw new PersonaExistsError();
 
-  await db.query(
-    `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'INVITATION')
-     ON CONFLICT (user_id, role) DO UPDATE SET status = 'ACTIVE', revoked_at = NULL, revoked_by_user_id = NULL WHERE user_roles.status = 'REVOKED'`,
-    [targetUserId, role]
-  );
+  try {
+    await db.query(
+      `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'INVITATION')
+       ON CONFLICT (user_id, role) DO UPDATE SET status = 'ACTIVE', revoked_at = NULL, revoked_by_user_id = NULL WHERE user_roles.status = 'REVOKED'`,
+      [targetUserId, role]
+    );
+  } catch (error: any) {
+    // L10 SF-10: the database now holds the one-ACTIVE-persona rule itself
+    // (uq_user_roles_one_persona). The check above is read-then-write, so two
+    // concurrent grants could both pass it; the index refuses the second.
+    if (error?.code === '23505' && String(error?.constraint ?? '').includes('uq_user_roles_one_persona')) throw new PersonaExistsError();
+    throw error;
+  }
 
   // Mirrors assignSelfServiceRole's own invariant: STUDENT role always
   // provisions the canonical dual identity immediately, and ONLY then --
@@ -435,37 +443,95 @@ async function assertNotLastAdmin(targetUserId: string): Promise<void> {
   if (remaining <= 1) throw new LastAdminProtectionError();
 }
 
-export async function suspendUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
+/**
+ * L10 SF-1 (L4-12, CR-L4-08) -- suspend / archive / reactivate are ordered so
+ * that a partial failure always leaves the account on the DENYING side, and
+ * every failure is audited.
+ *
+ * The database status is now an authorization gate of its own (the proxy's
+ * account gate and the shared guards read `users.status` on every request),
+ * so it is written FIRST when access is being removed and LAST when access
+ * is being restored:
+ *
+ *   suspend / archive : DB status -> Clerk ban -> Clerk session revocation
+ *   reactivate        : Clerk unban -> DB status
+ *
+ * If a Clerk call fails after the status was written, the account is already
+ * denied by the database; the failure is recorded (`clerkSyncFailed`) and
+ * rethrown so the administrator sees it and can retry. Retrying is safe:
+ * every step is idempotent.
+ */
+/** Records a failed Clerk synchronisation. Never throws: the original Clerk error is what the caller must see. */
+async function auditSyncFailure(input: Parameters<typeof recordAdminAction>[0]): Promise<void> {
+  try {
+    await recordAdminAction(input);
+  } catch (error) {
+    console.error('[user-admin] failure audit write failed', error instanceof Error ? error.message : error);
+  }
+}
+
+async function deactivateAccount(
+  actorUserId: string,
+  targetUserId: string,
+  targetClerkId: string,
+  reason: string,
+  status: 'SUSPENDED' | 'ARCHIVED',
+  action: 'USER_SUSPENDED' | 'USER_ARCHIVED'
+): Promise<void> {
   await assertNotLastAdmin(targetUserId);
 
-  const client = await clerkClient();
-  await client.users.banUser(targetClerkId);
-  const revokedCount = await revokeAllClerkSessions(targetClerkId);
-
   await db.query(
-    `UPDATE users SET status = 'SUSPENDED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`,
+    status === 'SUSPENDED'
+      ? `UPDATE users SET status = 'SUSPENDED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`
+      : `UPDATE users SET status = 'ARCHIVED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`,
     [actorUserId, targetUserId]
   );
-  await recordAdminAction({ actorUserId, action: 'USER_SUSPENDED', targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+
+  let revokedCount = 0;
+  try {
+    const client = await clerkClient();
+    await client.users.banUser(targetClerkId);
+    revokedCount = await revokeAllClerkSessions(targetClerkId);
+  } catch (error) {
+    await auditSyncFailure({
+      actorUserId,
+      action,
+      targetType: 'USER',
+      targetId: targetUserId,
+      reason,
+      newState: { status, clerkSyncFailed: true, error: error instanceof Error ? error.message : String(error) },
+    });
+    throw error;
+  }
+  await recordAdminAction({ actorUserId, action, targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+}
+
+export async function suspendUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
+  await deactivateAccount(actorUserId, targetUserId, targetClerkId, reason, 'SUSPENDED', 'USER_SUSPENDED');
 }
 
 export async function reactivateUser(actorUserId: string, targetUserId: string, targetClerkId: string): Promise<void> {
-  const client = await clerkClient();
-  await client.users.unbanUser(targetClerkId);
+  try {
+    const client = await clerkClient();
+    await client.users.unbanUser(targetClerkId);
+  } catch (error) {
+    // The database status is untouched: the account stays denied.
+    await auditSyncFailure({
+      actorUserId,
+      action: 'USER_REACTIVATED',
+      targetType: 'USER',
+      targetId: targetUserId,
+      newState: { clerkSyncFailed: true, reactivated: false, error: error instanceof Error ? error.message : String(error) },
+    });
+    throw error;
+  }
 
   await db.query(`UPDATE users SET status = 'ACTIVE', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`, [actorUserId, targetUserId]);
   await recordAdminAction({ actorUserId, action: 'USER_REACTIVATED', targetType: 'USER', targetId: targetUserId });
 }
 
 export async function archiveUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
-  await assertNotLastAdmin(targetUserId);
-
-  const client = await clerkClient();
-  await client.users.banUser(targetClerkId);
-  const revokedCount = await revokeAllClerkSessions(targetClerkId);
-
-  await db.query(`UPDATE users SET status = 'ARCHIVED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`, [actorUserId, targetUserId]);
-  await recordAdminAction({ actorUserId, action: 'USER_ARCHIVED', targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+  await deactivateAccount(actorUserId, targetUserId, targetClerkId, reason, 'ARCHIVED', 'USER_ARCHIVED');
 }
 
 // ---------------------------------------------------------------------

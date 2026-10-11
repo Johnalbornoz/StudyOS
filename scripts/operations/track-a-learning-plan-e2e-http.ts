@@ -143,8 +143,7 @@ async function prepare(): Promise<World> {
   await createTeacherAssignment(m.id, { classId: klass });
   const enroll = (studentId: string) =>
     db.query(
-      `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) VALUES ($1, $2, 'ACTIVE', $3, NOW())
-       ON CONFLICT (class_id, student_id) DO UPDATE SET status = 'ACTIVE', ended_at = NULL`,
+      `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) SELECT $1, $2, 'ACTIVE', $3, NOW() WHERE NOT EXISTS (SELECT 1 FROM class_enrollments WHERE class_id = $1 AND student_id = $2 AND status = 'ACTIVE')`,
       [klass, studentId, users['lp-teacher']]
     );
   await enroll(students['student-a']);

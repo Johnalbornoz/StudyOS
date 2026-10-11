@@ -33,8 +33,11 @@ export async function POST(request: NextRequest) {
   const parsed = Schema.safeParse(await readJson(request));
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
   const identity = await resolveClerkIdentity(authContext.userId);
+  // L10 SF-6 (L4-21): the invitation is matched on the VERIFIED PRIMARY email
+  // only; an unverified address claims nothing and no membership is written.
+  if (!identity.verifiedEmail) return NextResponse.json({ error: 'EMAIL_NOT_VERIFIED' }, { status: 403 });
   const user = await getOrCreateCanonicalUser(authContext.userId, identity.email);
-  const result = await acceptCoordinatorInvitation(parsed.data.token, { userId: user.id, email: identity.email });
+  const result = await acceptCoordinatorInvitation(parsed.data.token, { userId: user.id, email: identity.verifiedEmail });
   const status = STATUS[result.outcome] ?? 400;
   if (status !== 200) return NextResponse.json({ error: result.outcome }, { status });
   return NextResponse.json({ success: true, data: result });
