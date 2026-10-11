@@ -787,8 +787,8 @@ describe('13 -- nothing earlier moved, nothing is ingested, nothing in src knows
       if (!['run.ts', 'reviewer-transport.ts'].includes(f)) expect(source, f).not.toMatch(/Date\.now\(|new Date\(|Math\.random\(/);
     }
     for (const f of canaryFrozenSourceFiles(ROOT)) expect(f, f).not.toMatch(/^src\/lib\/db|\/db\/|\/gateway\.ts$|\/adapters\/|\.service\.ts$/);
-    // only what the offline preparation writes is in the canary's directory: no run has been made
-    expect(readdirSync(join(ROOT, CANARY_DIR)).sort()).toEqual(['freeze.json', 'human-calibration-set.template.json', 'manifest.json', 'spend-projection.json']);
+    // the canary's directory holds the preparation files, the run log and what is derived from it (qb-canary-250-replay.test.ts proves the derivation)
+    expect(readdirSync(join(ROOT, CANARY_DIR)).every((f) => (Object.values(CANARY_FILES) as string[]).includes(f))).toBe(true);
     expect(Object.values(CANARY_FILES).every((f) => !f.includes('/'))).toBe(true);
   });
 });

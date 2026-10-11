@@ -334,3 +334,227 @@ QB-R2E and QB-R2F. The orchestrator creates the freeze commit; any later change 
 - Ten constructs. A pass here says nothing about families that do not exist yet.
 - The sample bounds and the uncertainty weights are choices, stated and versioned, not derived from data.
 - An AI classification is not evidence of correctness. That is what the human calibration is for.
+
+---
+
+# Stage B -- the run (results as produced; nothing rescored)
+
+Freeze commit `f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9`, manifest hash `51baba1b...`. One generation call per
+slot, no regeneration, no repair. The run log is the only thing the run wrote; every artifact is a replay of it
+(`tests/unit/qb-canary-250-replay.test.ts` proves the derivation byte for byte). All content DEV_TEST_CONTENT,
+RIGHTS_NOT_ESTABLISHED. The AI review is an AI review: not a human review, no approval, no lifecycle change.
+
+## B1. Numbers
+
+| Metric | Value | Source |
+|---|---|---|
+| GENERATED | 221 / 250 | run log + harness |
+| PROVIDER_FAILURES | 9 (all transport timeouts, slots 179-198) | run log |
+| HARNESS_REFUSALS | 20 (9 stimulus table cell type, 8 leaked vocabulary, 2 wire inconsistent, 1 content invalid) | harness |
+| VALIDATOR_STRICT_PASS | 66 / 221 | validator |
+| REVIEWED | 210 / 221 | |
+| APPROVED | 25 | AI reviewer + policy |
+| NEEDS_HUMAN_REVIEW | 157 | AI reviewer + policy |
+| REJECTED | 28 | AI reviewer + policy |
+| REVIEWER_FAILURES | 0 | |
+| NOT_REVIEWED (budget stop) | 11 (slots c250-240 .. c250-250 with a candidate) | run log |
+| ACADEMIC_FAILURES | validator 13, AI reviewer 6, either 14, both 5 | either |
+| ANSWER_KEY_FAILURES | validator 13, AI reviewer 6, either 14, both 5 | either |
+| CONSTRUCT_FAILURES | validator 12, AI reviewer 6, either 14, both 4 | either |
+| PROFILE_FAILURES | validator 55, AI reviewer 5, either 55, both 5 | either |
+| STRUCTURAL_FAILURES | validator 3, AI reviewer 5, either 7, both 1 | either |
+| MATERIAL_DUPLICATES | 93 (66 near-duplicate scenario, 33 shared parameter values; reviewer originality FAIL 0) | validator |
+| GUIDANCE_FOLLOWED | 218 / 221 | check |
+| HUMAN_CALIBRATION_SAMPLE_PROPOSED | 37 | sample procedure |
+
+Agreement matrix (validators x AI classification):
+
+| | APPROVED | NEEDS_HUMAN_REVIEW | REJECTED | NOT_REVIEWED |
+|---|---|---|---|---|
+| STRICT_PASS (66) | 25 | 38 | 1 | 2 |
+| DOUBT (22) | 0 | 20 | 2 | 0 |
+| FAIL (133) | 0 | 99 | 25 | 9 |
+
+The reviewer model's own proposal, before the policy: on validator-FAIL items it proposed APPROVED 38 times,
+NEEDS_HUMAN_REVIEW 69, REJECTED 17. Decision rules fired: R1 15, R2 8, R5 104 (5 of them made REJECTED by R9),
+R6 57, R7 1, R8 25; R3 and R4 never. Disagreements recorded: VALIDATOR_FAIL_REVIEWER_PASS 107,
+REVIEWER_FAIL_VALIDATOR_STRICT_PASS 1, VALIDATOR_DOUBT_REVIEWER_PASS 1.
+
+Breakdowns (slots / generated / strict pass / approved / needs human review / rejected / not reviewed):
+
+| | |
+|---|---|
+| PAA | 45 / 43 / 10 / 6 / 31 / 4 / 2 |
+| IB | 50 / 46 / 16 / 4 / 34 / 6 / 2 |
+| Cambridge | 45 / 36 / 8 / 3 / 28 / 3 / 2 |
+| PISA | 45 / 40 / 13 / 5 / 28 / 5 / 2 |
+| Icfes | 40 / 36 / 14 / 6 / 21 / 7 / 2 |
+| School | 25 / 20 / 5 / 1 / 15 / 3 / 1 |
+| Selected | 84 / 77 / 29 / 13 / 50 / 10 / 4 |
+| Numeric | 46 / 42 / 8 / 4 / 30 / 6 / 2 |
+| Constructed | 120 / 102 / 29 / 8 / 77 / 12 / 5 |
+| Standard approach | 166 / 145 / 47 / 15 / 104 / 18 / 8 |
+| STEM_PLUS | 84 / 76 / 19 / 10 / 53 / 10 / 3 |
+| FOUNDATIONAL | 83 / 73 / 19 / 12 / 49 / 8 / 4 |
+| STANDARD | 83 / 72 / 24 / 13 / 46 / 9 / 4 |
+| CHALLENGE | 84 / 76 / 23 / 0 / 62 / 11 / 3 |
+| missing-value | 24 / 22 / 12 / 7 / 14 / 1 / 0 |
+| rate-comparison | 26 / 25 / 2 / 0 / 15 / 8 / 2 |
+| line-two-points | 25 / 24 / 0 / 0 / 17 / 5 / 2 |
+| constant-rate-model | 25 / 25 / 5 / 1 / 22 / 1 / 1 |
+| solve-by-factorising | 24 / 21 / 1 / 0 / 18 / 2 / 1 |
+| optimum-of-a-model | 25 / 23 / 1 / 0 / 16 / 6 / 1 |
+| single-event | 25 / 24 / 14 / 8 / 15 / 0 / 1 |
+| compare-chances | 25 / 24 / 10 / 3 / 17 / 3 / 1 |
+| rate-of-change-dataset | 25 / 18 / 12 / 4 / 13 / 0 / 1 |
+| judge-claim | 26 / 15 / 9 / 2 / 10 / 2 / 1 |
+
+## B2. Spend (assumed basis; not an invoice)
+
+| | Calls | Input tokens | Output tokens | USD assumed |
+|---|---|---|---|---|
+| Earlier runs | | | | 3.005135 |
+| Reviewer pre-flight | 1 | 6,915 | 844 | 0.059895 |
+| Generation | 250 (241 with usage; 9 timeouts charged at worst case) | 1,015,146 | 266,858 | 13.912345 |
+| Review | 210 | 1,462,616 | 189,421 | 12.995710 |
+| **Cumulative** | | | | **29.973085** |
+
+Under the cap of 30.00. On the repository's configured price for the generator (0.2 / 1.2 per million) the 241
+reported generation calls are about USD 0.52. The repository does not price the reviewer model; on the vendor list
+price from a cached table (2 / 10 per million, not checked live) the reviewer calls are about USD 4.8.
+
+**The metric `ASSUMED_CUMULATIVE_SPEND_USD` in `metrics.json` and the header of `spend-ledger.json` say 29.913190:
+they leave out the pre-flight call (0.059895).** That is a defect in the frozen report code, found after the run
+and not corrected. The ledger's own entries, and the budget guard during the run, counted the pre-flight; the true
+cumulative is 29.973085.
+
+Stop rules hit: the budget guard closed the last 11 reviews. No request was rejected; no halt. The 9 generation
+timeouts were not consecutive enough to halt (the rule is five in a row) and were not retried.
+
+## B3. Human calibration sample (proposed, 37 items)
+
+Files: `human-calibration-sample.json` (reasons), `human-calibration-packet.json` (what a person receives; 10 items
+blind), `human-calibration-key.json` (not for reviewers), `human-calibration-set.json` (ITEM_ID and AI_DECISION
+filled, every human field empty). By reason: DISAGREEMENT 20 (the bound; 108 items qualify), UNCERTAIN 15,
+BLIND_AUDIT_APPROVED 6, OVER_REJECTION_CHECK 6. By system: IB 7, PISA 7, Icfes 7, PAA 6, Cambridge 6, school 4.
+
+| Item | System | Type | AI decision | Reasons |
+|---|---|---|---|---|
+| c250-001 | PAA | SR | NHR | UNCERTAIN(CONSTR=CONCERN) |
+| c250-003 | PISA | NE | NHR | UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-005 | IB | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-007 | SCHOOL | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-010 | PISA | SR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-011 | ICFES | SR | NHR | UNCERTAIN(CONSTR=CONCERN) |
+| c250-013 | PAA | NE | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-014 | CAMBRIDGE | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-016 | IB | CR | REJ blind | OVER_REJECTION_CHECK |
+| c250-023 | IB | CR | NHR | UNCERTAIN(ACAD=CONCERN) |
+| c250-032 | PISA | SR | REJ blind | OVER_REJECTION_CHECK |
+| c250-033 | IB | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-037 | PAA | NE | APP blind | BLIND_AUDIT_APPROVED |
+| c250-048 | PAA | NE | REJ | DISAGREEMENT(V_FAIL_R_PASS); OVER_REJECTION_CHECK |
+| c250-076 | CAMBRIDGE | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-077 | PISA | NE | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-079 | ICFES | SR | REJ | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-082 | PISA | SR | NHR | UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-087 | PAA | SR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-090 | ICFES | SR | REJ | DISAGREEMENT(V_FAIL_R_PASS); OVER_REJECTION_CHECK |
+| c250-093 | PISA | NE | APP blind | BLIND_AUDIT_APPROVED |
+| c250-099 | CAMBRIDGE | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-107 | SCHOOL | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(CONSTR=CONCERN+PROF=CONCERN) |
+| c250-111 | ICFES | SR | NHR | UNCERTAIN(CONSTR=CONCERN) |
+| c250-128 | SCHOOL | CR | REJ blind | OVER_REJECTION_CHECK |
+| c250-132 | PISA | SR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-138 | CAMBRIDGE | CR | APP blind | BLIND_AUDIT_APPROVED |
+| c250-147 | ICFES | SR | APP blind | BLIND_AUDIT_APPROVED |
+| c250-154 | ICFES | SR | NHR | UNCERTAIN(CONSTR=CONCERN) |
+| c250-186 | SCHOOL | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-187 | PAA | SR | APP blind | BLIND_AUDIT_APPROVED |
+| c250-194 | IB | CR | REJ | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-205 | IB | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS); UNCERTAIN(ACAD=CONCERN+CONSTR=CONCERN) |
+| c250-211 | ICFES | SR | REJ | DISAGREEMENT(R_FAIL_V_STRICT) |
+| c250-214 | CAMBRIDGE | CR | NHR | DISAGREEMENT(V_FAIL_R_PASS) |
+| c250-226 | CAMBRIDGE | CR | REJ blind | OVER_REJECTION_CHECK |
+| c250-233 | IB | CR | APP blind | BLIND_AUDIT_APPROVED |
+
+## B4. Findings (reported, not fixed; no score changed)
+
+**Validators**
+
+1. *False "answer key FAILED".* Of the 13 validator key failures, 5 are real wrong keys (016, 085, 135, 177,
+   226: confirmed by the reviewer and by my own working) and 8 are not (004, 048, 079, 090, 146, 153, 194 and
+   the structural case 019). Causes: the key is compared with the quantity the generator DECLARED as target
+   although the item asks something else (line items asking "y at x = 3" checked against the intercept); a
+   declared arithmetic expression that is wrong while the key is right (048: 141 x 94 = 13,254 is correct);
+   a sign (146: -0.5 against 0.5); a unit (153: 2.5 percentage points against 0.025); a rounding form (194).
+2. *False negative.* 070 has a wrong key (the stem pairs 9 with x and 24 with 45, so x = 16.875; key 120) and
+   its numeric part was MACHINE_VERIFIED, because the validator recomputes from the generator's declared
+   parameters, not from the stem. The reviewer caught it.
+3. *V1 again.* 019: options `y = x - 4` and `y = -x + 4` were failed as "the same number". The revision-4
+   correction does not cover equations. The item's key is correct.
+4. *MATERIAL_DUPLICATES is inflated.* 66 of the 93 are near-duplicate-scenario findings, concentrated in ABSTRACT
+   items ("In the coordinate plane, two points are A(..) and B(..)" scores 1.0 against its siblings). The 0.4
+   threshold was calibrated on one situational pair and does not fit items with no situation. 57 items fail on
+   originality alone.
+5. *Profile failures are mostly about declarations.* 31 PARAMETER_NOT_OF_THE_CONSTRUCT (the generator declared
+   extra parameters such as m and b) and 26 WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS (a field no learner
+   sees). Neither says the learner-facing item is wrong.
+6. *Misses the reviewer caught:* 122 (the asked value is already in the table), 211 (text says 6 guests, table
+   sums to 13; a strict validator pass).
+
+**Decision policy**
+
+7. R1 treats a validator key failure as a deterministic fact. Given finding 1 it over-rejects: 8 of 15 R1
+   rejections are of items whose key is correct. Rule R3's logic (a contradiction goes to a person) is what these
+   cases needed.
+8. R5 sends 104 items to a person mainly for findings 4 and 5. NEEDS_HUMAN_REVIEW = 157 says more about the
+   validators than about the items.
+
+**Generator**
+
+9. CHALLENGE band: 0 approved of 76 candidates. The reviewer's most frequent doubt is DIFFICULTY (69 concerns,
+   3 fails): items written for CHALLENGE are routine. The generator does not realise the band.
+10. The optimum family: 6 rejected of 23, 0 approved; four confirmed wrong maxima or expansions. Pinning the
+    parameter p pushed the vertex off a clean value (226: vertex 49/3, keyed as 16).
+11. Line-through-two-points and factorising: 0 approved. Line items drift to "find y at x", which is not in the
+    construct; factorising items give the equation already factorised (102, 141) or leak r1 / r2.
+12. Data families: 16 of the 20 harness refusals (table cell types, the words "result", "verdict",
+    "categories" in learner text). "result" as leaked vocabulary deserves a look: it is an ordinary word.
+13. Guidance side effect: "categories: 6" was read as "6 guests" in 211.
+14. 9 timeouts at 180 seconds in one stretch; provider slowness or machine load, not distinguishable here.
+
+**Reviewer**
+
+15. No reviewer failure in 210 calls; no repair attempted; output 844 to 1,173 tokens.
+16. Input was about 7,000 tokens per review, not the 3,700 assumed (0.67 tokens per character, not 0.36). The
+    projection was wrong by that factor, which is why 11 reviews were closed by the budget. The guard's
+    "worst case" understated input as well; no call exceeded its bound only because output stayed well under
+    its cap. The bound should be 0.75 tokens per character.
+
+## B5. Reading (mine; 45 items read, no score changed)
+
+Read: 24 of the 25 APPROVED (every approved IB and Cambridge item), 21 of the 28 REJECTED, including every item
+where validators and reviewer contradict each other on the key.
+
+- **Approved items: no wrong key found.** I reworked all 24. They are correct, clean, and easy: single-step
+  proportion, single-draw probability, one percentage change. That is where the generator is reliable.
+- **Over-approval, of a kind the reviewer was told not to judge.** The approved IB HL and Cambridge 9709 items
+  (026, 045, 138, 170, 173, 216, 233) are correct but nowhere near the level of those papers: "8 of 29 guests", "7 weeks,
+  105 dollars", two marks. The reviewer passed PROFILE_FIDELITY because it judges against the specification only,
+  and the specification records no paper-level demand. An approval here means "correct and consistent with the
+  specification", not "fit for that paper".
+- **Over-rejection by the reviewer: none found.** Every reviewer FAIL I read is right: wrong maxima (016, 085,
+  177, 226), wrong slope (135), wrong proportion (070), duplicated options (032), ambiguous stems (054, 103),
+  answer in the table (122), inconsistent stimulus (211), equation given factorised (102, 141).
+- **Over-rejection by the policy: 8 items** (finding 7). In each the reviewer solved the item, agreed with the
+  key, said the validator's failure looked like an artefact, and was right.
+- **Where the reviewer is cautious rather than wrong:** 38 strict-pass items went to NEEDS_HUMAN_REVIEW, mostly
+  on a single DIFFICULTY or CONSTRUCT concern (238: "is a routine ratio acceptable for CHALLENGE?"). These are
+  fair questions, but they are the same question many times; a person answering it once would settle dozens.
+- **Minor things the reviewer let pass:** near-identical distractors (210: 39.5% and 39.3%); a non-parallel
+  option (232 D); unlikely magnitudes that follow from the pinned values (148: 8 euros a bag of popcorn; 233: rowing at 29 metres per minute).
+
+Honest summary: on this evidence the AI reviewer is a better judge of the item than the validators are, and the
+validators are a better judge of the generator's declarations than of the item. 25 approved of 250 slots (10%)
+is not a production yield; and the 25 are the easy end of the range.

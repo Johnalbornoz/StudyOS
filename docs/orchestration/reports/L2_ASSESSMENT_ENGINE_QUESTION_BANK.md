@@ -402,3 +402,76 @@ CR-L8-01 (f54cc14): merge into the convergence line. QB-R2F: keep on the lane br
 
 ## NEXT SAFE ACTION
 Orchestrator rules on the cap. With authorization: set the cap, re-write and re-commit the freeze, verify, run the fresh batch.
+
+---
+
+# L2 — QUESTION FACTORY CANARY 250 (2026-10-11)
+
+## LANE
+L2 — ASSESSMENT ENGINE / QUESTION BANK — worktree `/Users/jalbornoz/PROYECTOS/studyos-qb-r1a`, branch `feat/qb-canary-250`.
+
+## STATUS
+READY_FOR_ORCHESTRATOR_REVIEW
+
+## BASE SHA
+738b0f5 (QB-R2F offline remediation). `R2F_20_ITEM_RUN = SUPERSEDED_BY_QUESTION_FACTORY_CANARY_250`.
+
+## FINAL SHA
+Freeze commit f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9 (manifest 51baba1b…7d2191); results in the following commit (`git log -1`).
+
+## FILES CHANGED
+Freeze commit: `scripts/operations/qb-canary-250/` (manifest, pipeline, reviewer, transports, budget, run log, runner, report, sample, calibration, projection, freeze, run), `docs/exams/question-bank/pilots/qb-canary-250/{manifest,freeze,spend-projection,human-calibration-set.template}.json`, `docs/exams/question-bank/QB_CANARY_250.md`, `tests/unit/qb-canary-250.test.ts`.
+Results commit: `pilots/qb-canary-250/{run-log.jsonl, generated-candidates, automated-validation-report, ai-review, metrics, spend-ledger, human-calibration-sample, human-calibration-packet, human-calibration-key, human-calibration-set, rights-record}.json`, `tests/unit/qb-canary-250-replay.test.ts`, the document (results appended), this report and the status file. No file under `src/` changed in this phase.
+
+## LOCKS USED
+`ASSESSMENT_ADAPTATION` and the Question Bank production contracts. 461 live provider calls from lane scripts outside `src/` (1 reviewer pre-flight, 250 generation to OpenAI `gpt-5.6-luna`, 210 review to Anthropic `claude-sonnet-5-5`); the application AI gateway was bypassed because it writes to a database. No schema, migration, database, ingestion, pool, approval, rights record, Stage, deployment, merge or push.
+
+## TESTS
+- `npx tsc --noEmit -p tsconfig.json` — exit 0
+- `npx vitest run` — 524 files / 9,491 tests, 0 failures (includes the byte-identical offline replay of the canary)
+- `npx next build` — exit 0
+- `--verify-freeze --freeze-sha f445e7a…` — ok; frozen files unchanged; no provider key in any artifact
+
+## FINDINGS
+| Field | Value |
+|---|---|
+| GENERATED | 221/250 |
+| PROVIDER_FAILURES | 9 (transport timeouts at 180 s) |
+| HARNESS_REFUSALS | 20 (9 stimulus table cell type, 8 leaked vocabulary, 2 wire inconsistent, 1 content invalid) |
+| VALIDATOR_STRICT_PASS | 66/221 |
+| AI REVIEW (210 reviewed) | APPROVED 25, NEEDS_HUMAN_REVIEW 157, REJECTED 28; reviewer failures 0; NOT_REVIEWED 11 (budget stop) |
+| ACADEMIC_FAILURES | validator 13, AI reviewer 6, either 14, both 5 |
+| ANSWER_KEY_FAILURES | validator 13, AI reviewer 6, either 14, both 5 |
+| CONSTRUCT_FAILURES | validator 12, AI reviewer 6, either 14, both 4 |
+| PROFILE_FAILURES | validator 55, AI reviewer 5, either 55, both 5 |
+| STRUCTURAL_FAILURES | validator 3, AI reviewer 5, either 7, both 1 |
+| MATERIAL_DUPLICATES | 93 (validator only; inflated — see findings) |
+| ASSUMED_CUMULATIVE_SPEND_USD | 29.973085 of 30.00 (earlier 3.005135; pre-flight 0.059895; generation 13.912345; review 12.995710). Assumed 5/30 per million tokens; not an invoice |
+| HUMAN_CALIBRATION_SAMPLE_PROPOSED | 37 |
+
+- By system (slots / generated / strict pass / approved / needs human review / rejected / not reviewed): PAA 45/43/10/6/31/4/2; IB 50/46/16/4/34/6/2; Cambridge 45/36/8/3/28/3/2; PISA 45/40/13/5/28/5/2; ICFES 40/36/14/6/21/7/2; school 25/20/5/1/15/3/1.
+- By response type: selected 84/77/29/13/50/10/4; numeric 46/42/8/4/30/6/2; constructed 120/102/29/8/77/12/5.
+- By band: FOUNDATIONAL 12 approved, STANDARD 13, CHALLENGE 0 of 76 candidates.
+- Families with 0 approved: rate comparison, line through two points, factorising, optimum.
+- Agreement: of 133 validator-FAIL items the AI reviewer's own proposal was APPROVED for 38; the policy never lets it override (final: 0 approved). 1 item passed the validators strictly and was failed by the reviewer (table inconsistent with the text).
+- Confirmed wrong keys (by independent working in the lane's reading): 6, all REJECTED. One of them (slot 070) was MACHINE_VERIFIED by the validators — a validator false negative: recomputation used the generator's declared parameters, not the stem.
+- Validator false positives: 8 of 13 "answer key FAILED" are wrong (key compared with a declared target the item does not ask for, sign, unit, rounding form); the option-numeral false positive recurs for equations; the duplicate metric fires on abstract items with no scenario (57 items fail on originality alone); most profile failures concern generator declarations and a working outline no learner sees.
+- Policy consequence: rule R1 rejected 8 items with correct keys on a false validator failure; rule R5 sent 104 items to a person mainly for the two inflated validator checks. NEEDS_HUMAN_REVIEW = 157 says more about the validators than about the items.
+- Generator: the CHALLENGE band is not realised; IB HL and Cambridge 9709 items approved by the reviewer are correct but far below paper level (the specification records no paper-level demand, so "APPROVED" does not mean fit for that paper); data families cause most harness refusals; the lane's own slot guidance contributed to off-clean vertices in the optimum family and one misread ("categories: 6" as "6 guests").
+- Reporting defect in frozen code: `metrics.json` and the header of `spend-ledger.json` show 29.913190 because they omit the pre-flight call; the ledger entries, the live guard and the run log give 29.973085. Not fixed (frozen).
+- Budget projection error: reviewer input was about 7,000 tokens per call, not the projected 3,700; that is why 11 reviews were closed by the cap. The last reviews were run one at a time under a stricter bound than the frozen guard's.
+- Nothing was rescored. All candidates are DEV_TEST / RIGHTS_NOT_ESTABLISHED; the AI review is labelled AI_REVIEW and is not human review.
+- Human calibration sample (37): 20 validator/reviewer disagreements (the bound; 108 qualify), 15 uncertain, 6 blind approved, 6 over-rejection checks; IB 7, PISA 7, ICFES 7, PAA 6, Cambridge 6, school 4. Files: `human-calibration-sample.json` (reasons), `human-calibration-packet.json` (blind), `human-calibration-key.json`, `human-calibration-set.json`.
+- Details: `docs/exams/question-bank/QB_CANARY_250.md`.
+
+## BLOCKERS
+NONE. The spend cap is exhausted (USD 0.03 left); any further provider call needs a new authorization.
+
+## CHANGE_REQUESTS
+NONE
+
+## MERGE RECOMMENDATION
+Keep on the lane branch. The lane does not merge.
+
+## NEXT SAFE ACTION
+Orchestrator / Human Operator decides the human calibration sample size and reviewers. Offline, without spend: fix the validator defects found (declared-target key check, stem-based recomputation, equation options, scenario-less duplicates), and the reporting defect, for the next version.
