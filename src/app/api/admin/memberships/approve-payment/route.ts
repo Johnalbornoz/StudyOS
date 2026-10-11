@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
-import { approveManualPayment, DuplicateReferenceError, InvalidMembershipTransitionError } from '@/services/membership-admin.service';
+import { approveManualPayment, AdminControlledSubscriptionError, DuplicateReferenceError, InvalidMembershipTransitionError } from '@/services/membership-admin.service';
 
 const Schema = z.object({
   studentId: z.string().uuid(),
@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
     const result = await approveManualPayment(guard.admin.actor.id, validated);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    // CR-L11-05: an administrator-set row (grant, revoked grant, administrative suspension) is never half-converted.
+    if (error instanceof AdminControlledSubscriptionError) return NextResponse.json({ error: 'ADMIN_CONTROLLED_SUBSCRIPTION' }, { status: 409 });
     if (error instanceof DuplicateReferenceError) return NextResponse.json({ error: 'DUPLICATE_REFERENCE' }, { status: 409 });
     if (error instanceof InvalidMembershipTransitionError) return NextResponse.json({ error: 'INVALID_TRANSITION', from: error.from, to: error.to }, { status: 409 });
     throw error;

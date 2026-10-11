@@ -19,6 +19,12 @@ import { loadAccountStatus, decideAccountGate } from '@/lib/identity/account-sta
 import { getRoleOnboarding, completeRoleOnboarding } from '@/lib/identity/role-onboarding.service';
 import { isOwner, isActiveParentOf, canTeacherAccessLearner, isCoordinatorOfLearner, canAccessLearner, canAccessInstitution, canAccessClass, resolveLearnerReadScope, resolveTeacherClassScope } from '@/lib/authorization';
 import { getTeacherClassExamGaps, scopeExamGapsToSubject } from '@/lib/authorization/teacher-exam-scope';
+import { teacherSubjectScopeForLearner } from '@/lib/authorization';
+import { canonicalConceptsInSubjects, canonicalSubjectOfLearnerConcept, teacherMayReadLearnerConcept } from '@/lib/authorization/learner-result-scope';
+import { isTransferTaskAlreadyGraded } from '@/services/transfer-task-instance.service';
+import { buildOperationKey } from '@/lib/algorithms/evidence-idempotency';
+import { approveManualPayment, AdminControlledSubscriptionError } from '@/services/membership-admin.service';
+import { getOrCreateStudentId, requireStudentId, StudentRoleRequiredError, authFailureOf } from '@/lib/auth';
 import { isTeacherOfClass } from '@/lib/teacher/class-assignment.service';
 import { getTeacherAssignedClasses, getTeacherClassRoster } from '@/lib/teacher/read-model.service';
 import { addStudentToClass, enrollInstitutionStudent, InstitutionOpsError } from '@/lib/institution/institution-operations.service';
@@ -225,6 +231,67 @@ async function main() {
   check('D-1 coordinator: whole-learner PROGRESS routes stay closed', await canAccessLearner(cu.id, s1, 'LEARNER_PROGRESS_VIEW'), false);
   check('D-1 coordinator: learner not enrolled in the institution NO', await canAccessLearner(cu.id, s3, 'LEARNER_GAPS_VIEW'), false);
   check('D-1 owner: everything', await canAccessLearner(s1u.id, s1, 'LEARNER_ASSESSMENT_DETAIL_VIEW'), true);
+
+  // ---------------------------------------- L10-R1: Teacher subject scope (real DB)
+  check('R1 teacher subject scope for a learner of the class = the class subject', await teacherSubjectScopeForLearner(tu.id, s1), [maths]);
+  check('R1 no subject scope for a learner who is not in the teacher\'s class', await teacherSubjectScopeForLearner(tu.id, s3), []);
+  check('R1 a coordinator has no teacher subject scope', await teacherSubjectScopeForLearner(cu.id, s1), []);
+  check('R1 concepts are attributed to the teacher subject only', [...(await canonicalConceptsInSubjects([cMath, cRead], [maths]))], [cMath]);
+  const learnerSubject = (await db.query(`INSERT INTO subjects (student_id, name) VALUES ($1, 'Mis mates') RETURNING id`, [s1])).rows[0].id;
+  const learnerConcept = async (name: string, canonicalId: string | null) => {
+    const id = (await db.query(`INSERT INTO concepts (subject_id, canonical_id) VALUES ($1, $2) RETURNING id`, [learnerSubject, `l10-${name}`])).rows[0].id;
+    await db.query(`INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status, mapping_method) VALUES ($1, $2, $3, $4)`, [id, canonicalId, canonicalId ? 'MATCHED' : 'UNRESOLVED', canonicalId ? 'SEED_FIXTURE' : null]);
+    return id;
+  };
+  const lcMath = await learnerConcept('linear', cMath);
+  const lcRead = await learnerConcept('inference', cRead);
+  const lcNone = await learnerConcept('unmapped', null);
+  check('R1 learner concept -> canonical subject through its MATCHED mapping', await canonicalSubjectOfLearnerConcept(lcMath), maths);
+  check('R1 item-level detail: matching subject => the teacher may read', await teacherMayReadLearnerConcept(tu.id, s1, lcMath), true);
+  check('R1 item-level detail: different subject => not', await teacherMayReadLearnerConcept(tu.id, s1, lcRead), false);
+  check('R1 item-level detail: unmapped concept => not', await teacherMayReadLearnerConcept(tu.id, s1, lcNone), false);
+  check('R1 item-level detail: a teacher of no class of the learner => not', await teacherMayReadLearnerConcept(strangerU.id, s1, lcMath), false);
+  await db.query(`UPDATE institutions SET status = 'SUSPENDED' WHERE id = $1`, [inst]);
+  check('R1 a suspended institution removes the teacher subject scope', await teacherSubjectScopeForLearner(tu.id, s1), []);
+  await db.query(`UPDATE institutions SET status = 'ACTIVE' WHERE id = $1`, [inst]);
+  const scopedR1 = await getTeacherClassExamGaps(tu.id, klass);
+  check('R1 Teacher exam goals and AICE entries are withheld', [scopedR1.goals.perStudent, scopedR1.aice, scopedR1.withheld.includes('EXAM_GOALS'), scopedR1.withheld.includes('AICE_ENTRIES')], [[], [], true, true]);
+
+  // ---------------------------------------- L10-R1: revoked / inactive Student
+  await setRole(s1u.id, 'STUDENT', 'REVOKED');
+  check('R1 revoked Student: requireStudentId => null (the route answers 403)', await requireStudentId(s1u.clerk), null);
+  const revokedError = await getOrCreateStudentId(s1u.clerk).then(() => null, (e) => e);
+  check('R1 revoked Student: getOrCreateStudentId refuses with the 403 contract', [revokedError instanceof StudentRoleRequiredError, authFailureOf(revokedError)], [true, { status: 403, error: 'STUDENT_ROLE_REQUIRED' }]);
+  await setRole(s1u.id, 'STUDENT', 'ACTIVE');
+  await setAccount(s1u.id, 'SUSPENDED');
+  check('R1 inactive account: requireStudentId => null', await requireStudentId(s1u.clerk), null);
+  check('R1 inactive account: getOrCreateStudentId refuses', authFailureOf(await getOrCreateStudentId(s1u.clerk).then(() => null, (e) => e)), { status: 403, error: 'STUDENT_ROLE_REQUIRED' });
+  await setAccount(s1u.id, 'ACTIVE');
+  check('R1 restored: getOrCreateStudentId resolves the same learner', await getOrCreateStudentId(s1u.clerk), s1);
+
+  // ---------------------------------------- CR-L11-06: Transfer exactly-once (existing state)
+  const taskId = randomUUID();
+  const otherTaskId = randomUUID();
+  check('CR-L11-06 an OPEN transfer task is not "already graded"', await isTransferTaskAlreadyGraded(taskId, lcMath), false);
+  const evidence = (key: string) => db.query(`INSERT INTO learning_evidence (student_id, concept_id, source_type, result, difficulty, operation_key) VALUES ($1, $2, 'TRANSFER', 'correct', 3, $3)`, [s1, lcMath, key]);
+  await evidence(buildOperationKey({ operationType: 'TRANSFER', operationId: taskId, conceptId: lcMath }));
+  check('CR-L11-06 once the graded evidence exists the task reads as answered', await isTransferTaskAlreadyGraded(taskId, lcMath), true);
+  check('CR-L11-06 another task of the same concept stays OPEN', await isTransferTaskAlreadyGraded(otherTaskId, lcMath), false);
+  check('CR-L11-06 the same task id under another concept is a different operation', await isTransferTaskAlreadyGraded(taskId, lcRead), false);
+  await rejects('CR-L11-06 the database refuses a second evidence row for the same transfer task', () => evidence(buildOperationKey({ operationType: 'TRANSFER', operationId: taskId, conceptId: lcMath })), /learning_evidence_operation_key_unique_idx/);
+  check('CR-L11-06 exactly one evidence row for the task', (await db.query(`SELECT count(*)::int AS n FROM learning_evidence WHERE operation_key = $1`, [buildOperationKey({ operationType: 'TRANSFER', operationId: taskId, conceptId: lcMath })])).rows[0].n, 1);
+
+  // ---------------------------------------- CR-L11-05: manual payment approval on an admin-set row
+  const approval = { studentId: s1, plan: 'MONTHLY', amountCents: 50000, currency: 'COP', occurredAt: new Date().toISOString(), reference: `l10-${randomUUID()}`, method: 'transfer', validUntil: new Date(Date.now() + 30 * 86_400_000).toISOString() };
+  await db.query(`INSERT INTO subscriptions (student_id, status, manually_set_by_admin, grant_expires_at, source) VALUES ($1, 'active', true, now() - interval '1 day', 'ADMIN_PROMOTION')`, [s1]);
+  const subBefore = (await db.query(`SELECT status, manually_set_by_admin, grant_expires_at, current_period_end, plan FROM subscriptions WHERE student_id = $1`, [s1])).rows[0];
+  check('CR-L11-05 expired admin grant + manual approval => refused', await approveManualPayment(adminU.id, approval).then(() => 'APPROVED', (e) => (e instanceof AdminControlledSubscriptionError ? 'REFUSED' : `UNEXPECTED ${e}`)), 'REFUSED');
+  check('CR-L11-05 no payment row was written', (await db.query(`SELECT count(*)::int AS n FROM payments p JOIN subscriptions s ON s.id = p.subscription_id WHERE s.student_id = $1`, [s1])).rows[0].n, 0);
+  check('CR-L11-05 the subscription row is unchanged (never "active but no access" by approval)', (await db.query(`SELECT status, manually_set_by_admin, grant_expires_at, current_period_end, plan FROM subscriptions WHERE student_id = $1`, [s1])).rows[0], subBefore);
+  await db.query(`UPDATE subscriptions SET status = 'suspended' WHERE student_id = $1`, [s1]);
+  check('CR-L11-05 administrative suspension + manual approval => refused (the suspension is not lifted)', [await approveManualPayment(adminU.id, { ...approval, reference: `l10-${randomUUID()}` }).then(() => 'APPROVED', (e) => (e instanceof AdminControlledSubscriptionError ? 'REFUSED' : `UNEXPECTED ${e}`)), (await db.query(`SELECT status FROM subscriptions WHERE student_id = $1`, [s1])).rows[0].status], ['REFUSED', 'suspended']);
+  const paid = await approveManualPayment(adminU.id, { ...approval, studentId: s3, reference: `l10-${randomUUID()}` }).then(() => 'APPROVED', (e) => `UNEXPECTED ${e}`);
+  check('CR-L11-05 a row no administrator set keeps the existing approval path', [paid, (await db.query(`SELECT status, manually_set_by_admin FROM subscriptions WHERE student_id = $1`, [s3])).rows[0]], ['APPROVED', { status: 'active', manually_set_by_admin: false }]);
 
   // ------------------------------------------------------- EN-1 seats schema
   const lic = (await db.query(`INSERT INTO institution_licenses (institution_id, seat_limit, granted_by_user_id) VALUES ($1, 1, $2) RETURNING id`, [inst, adminU.id])).rows[0].id;

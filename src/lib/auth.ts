@@ -218,10 +218,30 @@ async function linkStudentToCanonicalUser(studentId: string): Promise<void> {
 
 /** Thrown when a students row would be created for an identity without an ACTIVE STUDENT role. */
 export class StudentRoleRequiredError extends Error {
+  /** L10-R1 -- the shared auth error contract: an authenticated caller without an ACTIVE Student role is FORBIDDEN (403), never a server error. */
+  readonly status = 403;
+  readonly code = 'STUDENT_ROLE_REQUIRED';
   constructor() {
     super('STUDENT_ROLE_REQUIRED');
     this.name = 'StudentRoleRequiredError';
   }
+}
+
+/**
+ * L10-R1 -- maps an authorization error to its HTTP meaning, for any caller
+ * that has to turn one into a response. Returns null for anything that is
+ * not an authorization error (which stays a real failure).
+ *
+ * Where it applies today: no API route calls `getOrCreateStudentId` -- every
+ * Student API route goes through `requireStudentId` (null) or
+ * `verifyStudentAccess` (false) and answers 403 itself; a unit test keeps it
+ * that way. The callers of `getOrCreateStudentId` are Server Component pages,
+ * which the proxy's workspace guard keeps from rendering for an account
+ * without an ACTIVE Student role.
+ */
+export function authFailureOf(error: unknown): { status: 403; error: string } | null {
+  if (error instanceof StudentRoleRequiredError) return { status: error.status, error: error.code };
+  return null;
 }
 
 /**

@@ -19,7 +19,6 @@ import { ownStudentId } from '@/lib/exam-core/route-auth';
 import { activeRoleSql, STUDENT_OWNER_MATCH_SQL } from '@/lib/identity/access-predicates';
 import { isOwner, isActiveParentOf, canTeacherAccessLearner, isCoordinatorOfLearner, canAccessInstitution, canAccessClass, canAccessLearner, resolveLearnerReadScope } from '@/lib/authorization';
 import { LEARNER_READ_SCOPE, INSTITUTION_ADMIN_PERMISSIONS, TEACHER_CLASS_PERMISSIONS } from '@/lib/authorization/permissions';
-import { shapeAttemptResultViewForScope, isReleasedResult } from '@/lib/authorization/learner-data-scope';
 import { decideAccountGate, isAccountGatedApiPath, evaluateAccountGate } from '@/lib/identity/account-status-gate';
 import { decideWorkspacePageGuard, workspaceRequiredForPath } from '@/lib/identity/workspace-page-guard';
 import { resolveVerifiedPrimaryEmail } from '@/lib/identity/verified-email';
@@ -255,37 +254,7 @@ describe('SF-4: D-1 visibility ruling', () => {
     expect(await canAccessClass('teacher-1', 'class-1', 'TEACHER_ASSIGNMENT_MANAGE')).toBe(true);
   });
 
-  describe('attempt result shaping', () => {
-    const view = { result: { status: 'SCORED' }, review: [{ question: 'q', yourAnswer: 'a', correctAnswer: 'b' }], reviewPolicy: 'FULL' as const, objectives: [1] };
-    const scope = (relationships: any[], permissions: any[]) => ({ relationships, permissions });
-
-    it('owner: unchanged, in any state', () => {
-      const unreleased = { ...view, result: null };
-      expect(shapeAttemptResultViewForScope(unreleased, scope(['OWNER'], LEARNER_READ_SCOPE.OWNER as any))).toBe(unreleased);
-    });
-    it('parent and coordinator: released summary, the item-level review removed', () => {
-      for (const r of ['PARENT', 'COORDINATOR'] as const) {
-        const shaped = shapeAttemptResultViewForScope(view, scope([r], LEARNER_READ_SCOPE[r] as any))!;
-        expect(shaped.review).toBeNull();
-        expect(shaped.reviewPolicy).toBe('SCORES_ONLY');
-        expect(shaped.objectives).toEqual([1]);
-        expect(JSON.stringify(shaped)).not.toContain('yourAnswer');
-      }
-    });
-    it('teacher: released result with the item-level review', () => {
-      expect(shapeAttemptResultViewForScope(view, scope(['TEACHER'], LEARNER_READ_SCOPE.TEACHER as any))!.review).toHaveLength(1);
-    });
-    it('non-owners see nothing until the result is released, and nothing once invalidated', () => {
-      expect(isReleasedResult({ status: 'SCORED' })).toBe(true);
-      for (const result of [null, { status: 'INVALIDATED' }]) {
-        expect(shapeAttemptResultViewForScope({ ...view, result }, scope(['TEACHER'], LEARNER_READ_SCOPE.TEACHER as any))).toBeNull();
-        expect(shapeAttemptResultViewForScope({ ...view, result }, scope(['PARENT'], LEARNER_READ_SCOPE.PARENT as any))).toBeNull();
-      }
-    });
-    it('no scope: nothing', () => {
-      expect(shapeAttemptResultViewForScope(view, scope([], []))).toBeNull();
-    });
-  });
+  // Result shaping under the D-1 final rulings is covered in l10-r1-rulings.test.ts.
 
   it('the three shaped routes resolve the scope instead of the old whole-learner check', () => {
     for (const r of ['simulation/attempts/[id]/route.ts', 'simulation/attempts/[id]/result/route.ts', 'teaching/interventions/[id]/route.ts']) {
@@ -336,9 +305,11 @@ describe('SF-5: workspace page guard', () => {
     }
   });
 
-  it('never decides for an account with no row or no active role (the layout sends it to role selection)', () => {
+  it('never decides for an account with no row; an account with no ACTIVE role is sent to role selection before a workspace page renders (L10-R1)', () => {
     expect(decideWorkspacePageGuard('/dashboard/teacher', null)).toBeNull();
-    expect(decideWorkspacePageGuard('/dashboard/teacher', state([]))).toBeNull();
+    for (const p of ['/dashboard/teacher', '/dashboard/today', '/dashboard/profile', '/dashboard/parent']) expect(decideWorkspacePageGuard(p, state([]))).toBe('/role-select');
+    expect(decideWorkspacePageGuard('/dashboard', state([]))).toBeNull(); // the entry page resolves it itself
+    expect(decideWorkspacePageGuard('/dashboard/notifications', state([]))).toBeNull();
   });
 
   it('shared and admin pages are never redirected by workspace', () => {

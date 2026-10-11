@@ -3,16 +3,14 @@
  * Only a Teacher with an ACTIVE assignment covering this class -- never an
  * admin of its institution (L10 SF-4). Gaps within the class's own subject
  * only (CR-L8-01): by concept for the class, per-Student gap concepts (for assigning
- * reinforcement through /api/teacher/interventions), those Students' exam
- * goals (objective first: which exam each prepares), and their
- * AICE Diploma subjects with their readiness. Never other classes' Students.
+ * reinforcement through /api/teacher/interventions). Exam goals and AICE
+ * entries are subject-scoped as well and cannot be attributed to a subject
+ * yet, so they are returned empty (`withheld` names them). Never other
+ * classes' Students.
  */
-import { stateSql } from '@/lib/exam-core/catalog/readiness-view';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
-import { db } from '@/lib/db';
-import { examGoalsFor } from '@/lib/exam-core/exam-gaps.service';
 import { getTeacherClassExamGaps } from '@/lib/authorization/teacher-exam-scope';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -35,20 +33,10 @@ async function handleGET(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
-  const ids = roster.map((r) => r.studentId);
-  const gaps = scoped.gaps;
-  const goals = await examGoalsFor(ids, { includePerStudent: true });
-  const aice = ids.length
-    ? (await db.query(
-        `SELECT p.student_id, e.syllabus_code, e.level, e.expected_series_year, e.expected_series_month,
-                (SELECT ${stateSql('n', 'STUDENT')} FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' AND n.node_type = 'LEVEL'
-                  AND n.metadata->'bind'->>'configKey' = 'v2.aice.' || e.syllabus_code || '-' || CASE e.level WHEN 'AS' THEN 'as' ELSE 'a' END LIMIT 1) AS readiness
-           FROM aice_diploma_plans p JOIN aice_plan_entries e ON e.plan_id = p.id
-          WHERE p.student_id = ANY($1::uuid[]) AND p.status = 'ACTIVE' ORDER BY e.syllabus_code`,
-        [ids]
-      )).rows
-    : [];
-  return NextResponse.json({ success: true, data: { classId, students: roster, gaps, goals, aice } });
+  // Goals and AICE entries are subject-scoped too (L10-R1) and cannot be attributed to a subject yet:
+  // the shared entry point returns them empty and says what was withheld. Nothing is read here.
+  const { gaps, goals, aice, withheld } = scoped;
+  return NextResponse.json({ success: true, data: { classId, students: roster, gaps, goals, aice, withheld } });
 }
 
 export const GET = withAiRequestMetrics('GET /api/teacher/exam-insights', handleGET);

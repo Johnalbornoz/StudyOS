@@ -14,7 +14,7 @@
  * services. The same cases run against a real Postgres in scripts/l10-ephemeral-db-test.sh.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const { w, h } = vi.hoisted(() => ({
@@ -248,5 +248,39 @@ describe('the database holds the rule too (migration 20261120_1500)', () => {
     expect(sql).toMatch(/OLD\.status IN \('ENDED', 'DECLINED'\) AND NEW\.status IS DISTINCT FROM OLD\.status/);
     expect(sql).toMatch(/RAISE EXCEPTION 'CLASS_ENROLLMENT_CLOSED_ROW_IS_HISTORY/);
     expect(sql).toMatch(/BEFORE UPDATE OF status ON public\.class_enrollments/);
+  });
+});
+
+describe('L10-R1: every SQL caller follows the new lifecycle contract (repository-wide)', () => {
+  const root = process.cwd();
+  const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx|sql|sh)$/.test(n) ? [p] : []; });
+  const rel = (f: string) => f.slice(root.length + 1);
+  const code = (f: string) => readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*|--).*$/gm, '');
+  const sources = [...walk(join(root, 'src')), ...walk(join(root, 'scripts'))];
+
+  it('nothing in src/ or scripts/ infers the dropped constraint: no `ON CONFLICT (class_id, student_id)`', () => {
+    expect(sources.filter((f) => /ON CONFLICT\s*\(\s*class_id\s*,\s*student_id\s*\)/i.test(code(f))).map(rel)).toEqual([]);
+  });
+
+  it('no later migration re-creates the one-row-per-pair constraint', () => {
+    const later = readdirSync(join(root, 'database/migrations')).filter((f) => f > '20261120_1500_z');
+    for (const f of later) expect(code(join(root, 'database/migrations', f)), f).not.toMatch(/class_enrollments_unique|UNIQUE\s*\(\s*class_id\s*,\s*student_id\s*\)/);
+  });
+
+  it('application code never reads "the" enrolment of a learner in a class without saying which one', () => {
+    // After 20261120_1500 a pair can have one OPEN row and any number of closed ones. A read by
+    // (class_id, student_id) must filter by status or order explicitly (as getClassEnrollmentState does).
+    const offenders: string[] = [];
+    for (const f of walk(join(root, 'src'))) {
+      for (const m of code(f).matchAll(/FROM class_enrollments WHERE class_id = \$1 AND student_id = \$2([^`]*)`/g)) {
+        if (!/status|ORDER BY/.test(m[1])) offenders.push(`${rel(f)}: ${m[0].slice(0, 90)}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('every INSERT into class_enrollments in src/ lives in the lifecycle module', () => {
+    const writers = walk(join(root, 'src')).filter((f) => /INSERT INTO class_enrollments/.test(code(f))).map(rel);
+    expect(writers).toEqual(['src/services/institution.service.ts']);
   });
 });

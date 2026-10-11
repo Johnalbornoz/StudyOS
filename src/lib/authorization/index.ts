@@ -324,6 +324,42 @@ export async function resolveTeacherClassScope(actorUserId: string, classId: str
 }
 
 /**
+ * The canonical subjects in which this teacher may read THIS learner's
+ * academic data (L10-R1, D-1 final ruling): the subjects of the classes that
+ * are all of -- taught by the actor (APPROVED TEACHER membership, ACTIVE
+ * assignment covering the class), ACTIVE, in an ACTIVE institution, linked to
+ * a canonical subject, and in which the learner holds an ACTIVE enrolment.
+ * Empty when there is no such class: a teacher with no subject scope for a
+ * learner reads no subject-bound data of that learner. Fails closed.
+ */
+export async function teacherSubjectScopeForLearner(actorUserId: string, learnerId: string): Promise<string[]> {
+  try {
+    const result = await db.query(
+      `
+      SELECT DISTINCT c.canonical_subject_id
+      FROM teacher_assignments ta
+      JOIN institution_memberships im ON im.id = ta.institution_membership_id
+      JOIN institutions i ON i.id = im.institution_id AND i.status = 'ACTIVE'
+      JOIN class_enrollments ce ON ce.student_id = $2 AND ce.status = 'ACTIVE'
+      JOIN classes c ON c.id = ce.class_id AND c.status = 'ACTIVE'
+      WHERE im.user_id = $1
+        AND im.membership_role = 'TEACHER'
+        AND im.status = 'APPROVED'
+        AND ta.status = 'ACTIVE'
+        AND (ta.class_id = c.id OR (ta.class_id IS NULL AND ta.grade_id IS NOT NULL AND ta.grade_id = c.grade_id))
+        AND c.institution_id = im.institution_id
+        AND c.canonical_subject_id IS NOT NULL
+        AND ${activeRoleSql('$1', 'TEACHER')}
+      `,
+      [actorUserId, learnerId]
+    );
+    return (result.rows ?? []).map((row: { canonical_subject_id: string }) => row.canonical_subject_id);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * F11-B -- the ONLY gate for the Teacher Intervention domain. All 3
  * TeacherInterventionPermission values resolve to the SAME real check
  * (the permission argument exists for call-site clarity and future

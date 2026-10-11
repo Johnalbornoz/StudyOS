@@ -12,6 +12,7 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import type { TransferDistance, TransferModality, NoveltyDimension } from '@/lib/transfer-policy';
+import { buildOperationKey } from '@/lib/algorithms/evidence-idempotency';
 
 export interface TransferTaskInstance {
   id: string; // == transferTaskId
@@ -145,4 +146,32 @@ export async function getRecentTransferTaskFingerprints(
     [studentId, conceptId, Math.max(1, Math.floor(limit))],
   );
   return res.rows.map((r) => ({ transferTaskId: r.id, promptFingerprint: r.prompt_fingerprint }));
+}
+
+/**
+ * CR-L11-06 -- has this Transfer task already been answered and graded?
+ *
+ * The proof is state that already exists: a graded submission is applied
+ * through `updateMastery` with the identity `TRANSFER :: <transferTaskId> ::
+ * <conceptId>`, and that call claims `learning_evidence.operation_key` under
+ * a unique index before anything else is written. One row with that key is
+ * therefore exactly "this task was graded once" -- no marker column and no
+ * schema change are needed. A submission that failed before the evidence was
+ * written (a grading error) leaves no row, so the Student can still answer.
+ *
+ * The caller checks this BEFORE grading and refuses a repeat, so the AI
+ * grader is not invoked again for a task that already has its answer.
+ * It deliberately does not swallow errors: if the state cannot be read the
+ * submission must not proceed to a paid grading call.
+ *
+ * Limit: this closes the repeat. Two FIRST submissions of the same task sent
+ * at the same instant both read "not graded" and both reach the grader; the
+ * second is then discarded by the same unique key (no second evidence, no
+ * second mastery change). Closing that window too needs an atomic claim
+ * taken before grading (a `consumed_at`-style marker), i.e. schema.
+ */
+export async function isTransferTaskAlreadyGraded(transferTaskId: string, conceptId: string, client: DbExecutor = db): Promise<boolean> {
+  const operationKey = buildOperationKey({ operationType: 'TRANSFER', operationId: transferTaskId, conceptId });
+  const result = await client.query(`SELECT 1 FROM learning_evidence WHERE operation_key = $1 LIMIT 1`, [operationKey]);
+  return (result.rows?.length ?? 0) > 0;
 }

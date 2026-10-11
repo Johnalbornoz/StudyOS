@@ -11,7 +11,7 @@ import {
   resolveTransferTaskId,
 } from '@/lib/transfer-task-identity';
 import { getRecentTransferFingerprints, isDuplicateTransferFingerprint } from '@/services/transfer-novelty.service';
-import { loadTransferTaskInstance } from '@/services/transfer-task-instance.service';
+import { loadTransferTaskInstance, isTransferTaskAlreadyGraded } from '@/services/transfer-task-instance.service';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -126,6 +126,14 @@ async function handlePOST(request: NextRequest) {
     // write. An idempotent resubmission of the SAME task (same
     // canonicalTaskId) is explicitly excluded, so operation_key
     // idempotency is untouched.
+    // CR-L11-06 (L10): a Transfer task is answered ONCE. D-8(c) lets an OPEN task be continued; it does
+    // not let an already answered and graded one be submitted again. The proof is the evidence row this
+    // route itself writes on a graded submission (`isTransferTaskAlreadyGraded`). Checked before any
+    // grading, so the AI grader is never invoked for a repeat.
+    if (await isTransferTaskAlreadyGraded(canonicalTaskId, validated.conceptId)) {
+      return NextResponse.json({ error: 'TRANSFER_TASK_ALREADY_ANSWERED' }, { status: 409 });
+    }
+
     const recentFingerprints = await getRecentTransferFingerprints(validated.studentId, validated.conceptId);
     const structuralDuplicate = isDuplicateTransferFingerprint({
       candidateFingerprint: promptFingerprint,

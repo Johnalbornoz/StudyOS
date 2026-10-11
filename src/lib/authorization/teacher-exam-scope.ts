@@ -1,8 +1,8 @@
 /**
  * L10 SF-4 / CR-L8-01 -- Teacher exam-gap visibility.
  *
- * Canonical rule (Orchestrator, 2026-10-11): a Teacher's view of exam gaps is
- * scoped by BOTH
+ * Canonical rule (Orchestrator, 2026-10-11): a Teacher's view of exam data --
+ * gaps, goals, AICE entries and assessment detail -- is scoped by BOTH
  *   - the authorized class / student   (who), and
  *   - the authorized academic subject  (what): the class's own canonical subject.
  * A Mathematics teacher must not receive a student's Reading gaps because the
@@ -107,13 +107,32 @@ export async function scopeExamGapsToSubject(gaps: GapAggregate, canonicalSubjec
   };
 }
 
+/** What a Teacher surface must NOT fetch for itself, and why it is absent from the scoped result. */
+export type WithheldTeacherExamData = 'DOMAIN_AGGREGATES' | 'OBJECTIVE_AGGREGATES' | 'EXAM_GOALS' | 'AICE_ENTRIES';
+
 export interface TeacherClassExamGaps {
   classId: string;
   canonicalSubjectId: string | null;
   /** The class's ACTIVE roster: the only learners the gaps below can mention. */
   studentIds: string[];
   gaps: SubjectScopedGapAggregate;
+  /**
+   * L10-R1 (D-1 final ruling): subject scoping covers exam GOALS and AICE
+   * entries as well as gaps. A learner's exam goal (an exam or qualification
+   * they prepare, with its date) and an AICE plan entry (a syllabus) carry no
+   * governed link to a canonical subject today, and a multi-subject exam goal
+   * cannot be sliced. So both are withheld from the Teacher surface (fail
+   * closed): always empty here, and a Teacher route must not read them from
+   * the exam bridge itself. Returning them needs a subject attribution in the
+   * exam core (CR-L10-01 to L2).
+   */
+  goals: { studentsPreparing: 0; byFramework: []; byObjective: []; perStudent: [] };
+  aice: [];
+  withheld: readonly WithheldTeacherExamData[];
 }
+
+const WITHHELD: readonly WithheldTeacherExamData[] = ['DOMAIN_AGGREGATES', 'OBJECTIVE_AGGREGATES', 'EXAM_GOALS', 'AICE_ENTRIES'];
+const NO_GOALS = (): TeacherClassExamGaps['goals'] => ({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] });
 
 /**
  * Exam gaps of ONE class for ITS teacher, in the class's subject only.
@@ -127,7 +146,7 @@ export async function getTeacherClassExamGaps(actorUserId: string, classId: stri
   const roster = await db.query(`SELECT student_id FROM class_enrollments WHERE class_id = $1 AND status = 'ACTIVE'`, [classId]);
   const studentIds: string[] = (roster.rows ?? []).map((row: { student_id: string }) => row.student_id);
   if (!scope.canonicalSubjectId || studentIds.length === 0) {
-    return { classId, canonicalSubjectId: scope.canonicalSubjectId, studentIds, gaps: EMPTY(scope.canonicalSubjectId) };
+    return { classId, canonicalSubjectId: scope.canonicalSubjectId, studentIds, gaps: EMPTY(scope.canonicalSubjectId), goals: NO_GOALS(), aice: [], withheld: WITHHELD };
   }
   const raw = await examGapsFor(studentIds, { families: opts.family ? [opts.family] : undefined, includePerStudent: true });
   // Defence in depth: the bridge is asked for the roster only; anything else it might return is dropped anyway.
@@ -137,5 +156,5 @@ export async function getTeacherClassExamGaps(actorUserId: string, classId: stri
     byConcept: raw.byConcept.map((c) => ({ ...c, studentIds: c.studentIds.filter((id) => onRoster.has(id)) })),
     perStudent: raw.perStudent.filter((p) => onRoster.has(p.studentId)),
   };
-  return { classId, canonicalSubjectId: scope.canonicalSubjectId, studentIds, gaps: await scopeExamGapsToSubject(rosterOnly, scope.canonicalSubjectId) };
+  return { classId, canonicalSubjectId: scope.canonicalSubjectId, studentIds, gaps: await scopeExamGapsToSubject(rosterOnly, scope.canonicalSubjectId), goals: NO_GOALS(), aice: [], withheld: WITHHELD };
 }

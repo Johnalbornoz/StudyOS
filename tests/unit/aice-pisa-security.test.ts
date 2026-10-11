@@ -112,13 +112,13 @@ describe('Teacher exam insights: own roster only', () => {
   });
   it('the aggregation is limited to the roster Students', async () => {
     vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: STUDENT, name: 'A' }] as any);
-    vi.mocked(getTeacherClassExamGaps).mockResolvedValue({ classId: CLASS, canonicalSubjectId: null, studentIds: [STUDENT], gaps: { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [], subjectScope: { canonicalSubjectId: null, objectiveAggregates: 'WITHHELD' } } } as any);
+    vi.mocked(getTeacherClassExamGaps).mockResolvedValue({ classId: CLASS, canonicalSubjectId: null, studentIds: [STUDENT], gaps: { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [], subjectScope: { canonicalSubjectId: null, objectiveAggregates: 'WITHHELD' } }, goals: { studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] }, aice: [], withheld: ['EXAM_GOALS', 'AICE_ENTRIES'] } as any);
     expect((await (teacherGET as any)(req('GET', undefined, `http://localhost/api/teacher/exam-insights?classId=${CLASS}&family=PISA`))).status).toBe(200);
     // Gaps: through the shared entry point (class teacher + class roster + class subject), never the bridge directly.
     expect(getTeacherClassExamGaps).toHaveBeenCalledWith('actor', CLASS, { family: 'PISA' });
     expect(examGapsFor).not.toHaveBeenCalled();
-    // Objective first: the class's exam goals, for the same roster only.
-    expect(examGoalsFor).toHaveBeenCalledWith([STUDENT], { includePerStudent: true });
+    // L10-R1: goals and AICE entries are subject-scoped too; the Teacher route no longer reads them from the bridge.
+    expect(examGoalsFor).not.toHaveBeenCalled();
   });
   it('manipulated ids / families are rejected', async () => {
     expect((await (teacherGET as any)(req('GET', undefined, 'http://localhost/api/teacher/exam-insights?classId=x'))).status).toBe(400);

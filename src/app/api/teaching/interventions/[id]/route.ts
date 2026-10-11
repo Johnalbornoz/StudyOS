@@ -9,6 +9,8 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { resolveLearnerReadScope } from '@/lib/authorization';
 import { getInterventionSession, listAttemptsForSession } from '@/lib/teaching/session.service';
+import { getDiagnosisById } from '@/lib/diagnostics/diagnosis.service';
+import { teacherMayReadLearnerConcept } from '@/lib/authorization/learner-result-scope';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,10 +26,22 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   const scope = await resolveLearnerReadScope(actor.id, session.studentId);
   if (!scope.permissions.includes('LEARNER_PROGRESS_VIEW')) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  // L10 SF-4 (D-1): the attempts are the learner's raw item-level responses.
-  // Without LEARNER_ASSESSMENT_DETAIL_VIEW (a Parent) only their count is returned.
+  // L10 SF-4 (D-1 final rulings). The attempts are the learner's submitted, item-level responses.
+  //  - owner: everything;
+  //  - Parent: the session, never the attempts;
+  //  - Teacher (and nothing else): only when the session's concept belongs to a subject the teacher
+  //    is authorized for with this learner -- otherwise the session is not theirs to read at all.
+  const owner = scope.relationships.includes('OWNER');
+  const teacherOnly = !owner && scope.relationships.includes('TEACHER') && !scope.relationships.includes('PARENT');
+  let teacherInSubject = false;
+  if (!owner && scope.relationships.includes('TEACHER')) {
+    const diagnosis = await getDiagnosisById(session.diagnosisId).catch(() => null);
+    teacherInSubject = await teacherMayReadLearnerConcept(actor.id, session.studentId, diagnosis?.conceptId ?? null);
+  }
+  if (teacherOnly && !teacherInSubject) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
   const attempts = await listAttemptsForSession(id);
-  if (!scope.permissions.includes('LEARNER_ASSESSMENT_DETAIL_VIEW')) {
+  if (!owner && !teacherInSubject) {
     return NextResponse.json({ success: true, data: { session, attempts: [], attemptCount: attempts.length, detailWithheld: true } });
   }
   return NextResponse.json({ success: true, data: { session, attempts } });

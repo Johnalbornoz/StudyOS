@@ -191,6 +191,25 @@ describe('Coordinator cannot use the Teacher route as a bypass', () => {
   });
 });
 
+describe('L10-R1: goals and AICE entries are subject-scoped too', () => {
+  it('a Teacher receives no exam goals and no AICE entries (no governed subject attribution exists: fail closed), and is told what was withheld', async () => {
+    const res: any = await get(CLASS_MATHS);
+    const data = (await res.json()).data;
+    expect(data.goals).toEqual({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] });
+    expect(data.aice).toEqual([]);
+    expect(data.withheld).toEqual(expect.arrayContaining(['EXAM_GOALS', 'AICE_ENTRIES', 'DOMAIN_AGGREGATES', 'OBJECTIVE_AGGREGATES']));
+    expect(h.examGoalsFor).not.toHaveBeenCalled();
+  });
+
+  it('no Teacher route, page or read model reads exam goals or AICE plan entries for itself', () => {
+    const root = process.cwd();
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
+    const files = [...walk(join(root, 'src/app/api/teacher')), ...walk(join(root, 'src/lib/teacher')), ...walk(join(root, 'src/app/dashboard/teacher'))];
+    const offenders = files.filter((f) => /\bexamGoalsFor\s*\(|aice_plan_entries|aice_diploma_plans/.test(readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*).*$/gm, ''))).map((f) => f.slice(root.length + 1));
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('one entry point', () => {
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
 

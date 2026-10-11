@@ -23,6 +23,7 @@
 import { WORKSPACE_PRIORITY, personaWorkspaceOf, workspaceForRole, type Role, type Workspace } from './types';
 
 export const ACCOUNT_SUSPENDED_PATH = '/account-suspended';
+export const ROLE_SELECT_PATH = '/role-select';
 
 /** Mirrors WORKSPACE_HOME in ./workspace-entry (kept literal here: this module must stay free of server imports so the proxy can load it). */
 const WORKSPACE_HOME_PATH: Record<Workspace, string> = {
@@ -63,8 +64,8 @@ export interface WorkspaceGuardState {
 /**
  * Redirect target for this page request, or null to let it through.
  *
- *  - No account row yet, or no active role: null (the layout sends the
- *    account to role selection; nothing is provisioned here).
+ *  - No account row yet: null (nothing to decide; nothing is provisioned here).
+ *  - No active role, on a workspace page: role selection.
  *  - Account not ACTIVE: the suspended page, for every dashboard page.
  *  - Page of a workspace the account does not hold: the account's own home.
  */
@@ -78,7 +79,11 @@ export function decideWorkspacePageGuard(pathname: string, state: WorkspaceGuard
 
   const held = new Set(state.roles.map(workspaceForRole));
   const available = WORKSPACE_PRIORITY.filter((w) => held.has(w));
-  if (available.length === 0) return null;
+  // L10-R1: an account with NO active role (never chose one, or every role it held was revoked) is
+  // sent to role selection before a workspace page renders. The layout does the same, but a page
+  // renders in parallel with its layout: a Student page would already have tried to resolve a
+  // learner and failed. Role selection explains a revoked role.
+  if (available.length === 0) return ROLE_SELECT_PATH;
   if (available.includes(required)) return null;
 
   const own = personaWorkspaceOf(available, state.storedWorkspace) ?? (state.storedWorkspace && available.includes(state.storedWorkspace) ? state.storedWorkspace : null) ?? available[0];

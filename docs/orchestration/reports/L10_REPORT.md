@@ -348,3 +348,254 @@ Order: the six migrations are applied only by whoever holds `SCHEMA_AND_MIGRATIO
 ## NEXT SAFE ACTION
 
 Orchestrator reviews the commit and rules on the three D-1 interpretations in Finding 4.
+
+---
+
+# L10-R1 — 2026-10-11
+
+Continuation of the lane after the Orchestrator's ruling "L10 CORE ACCEPTED / R1 REQUIRED" and the L11 dependency message (CR-L11-05, CR-L11-06). Commit `c2bcae9` was not amended; R1 is a second commit on top of it.
+
+## LANE
+
+`L10_SHARED_FOUNDATION`, run R1. Worktree `/Users/jalbornoz/PROYECTOS/studyos-l10-shared-foundation`, branch `feat/l10-shared-foundation` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+Values requested by the ruling. These are the lane's own results, for the Orchestrator to verify:
+
+| Gate | Value | Basis |
+|---|---|---|
+| L10_CORE | PASS | 527 files / 9,455 tests; typecheck clean; build exit 0; ephemeral DB 170/170 |
+| CR_L7_01 | CLOSED | Unchanged since `c2bcae9`; 17 unit tests and the DB-backed checks still pass |
+| CR_L9_02 | CLOSED on this branch | Lifecycle and database guard in place; 18 unit tests and the DB-backed checks pass. Cross-branch remainder is under ENROLMENT_SQL_CALLERS |
+| CR_L8_01 | OPEN | As ruled: needs L8's call site and L2's subject-aware aggregates (R1 Finding 3) |
+| REVOKED_STUDENT_HTTP | PASS, with one point to confirm | API: 403. Pages: redirected before rendering, never a 500 — a redirect, not a 403 page (R1 Finding 4) |
+| ENROLMENT_SQL_CALLERS | BLOCKED | This branch: none left. One incompatible reader on L9's branch, and the merged line must be re-checked (R1 Finding 5) |
+| MIGRATION_PREFLIGHT_READY | YES | `docs/orchestration/L10_MIGRATION_PREFLIGHT.md`; every statement executed on the throwaway database |
+| L11_SCHEMA_DEPENDENCY | NONE | L11-R1 reports that EXPIRED_RENEWAL and GRANT_TO_PAID needed no schema; CR-L11-06 is solved from existing state (R1 Finding 7) |
+| UNRULED_DECISIONS | D-2, D-3, D-4, D-5, D-7 (D-6 accepted for the index as built) | R1 Finding 8 |
+| L10_READY_FOR_CONVERGENCE | NO | CR-L8-01 open; ENROLMENT_SQL_CALLERS blocked; licence schema not yet reviewed by L11 |
+
+## BASE SHA
+
+`c2bcae9` (the accepted L10 core commit), parent `4fb45b0`.
+
+## FINAL SHA
+
+The commit on `feat/l10-shared-foundation` whose parent is `c2bcae9`. Run `git rev-parse feat/l10-shared-foundation`.
+
+## FILES CHANGED
+
+New (5): `src/lib/authorization/learner-result-scope.ts`; `docs/orchestration/L10_MIGRATION_PREFLIGHT.md`; `tests/unit/l10-r1-learner-data-rulings.test.ts`, `l10-r1-revoked-student-http.test.ts`, `l10-r1-l11-dependencies.test.ts`.
+
+Modified application code (15): `src/lib/auth.ts`, `src/lib/authorization/{index,permissions,learner-data-scope,teacher-exam-scope}.ts`, `src/lib/identity/workspace-page-guard.ts`, `src/services/membership-admin.service.ts`, `src/services/transfer-task-instance.service.ts`, `src/app/dashboard/admin/[studentId]/page.tsx`, and six routes: `api/simulation/attempts/[id]`, `…/[id]/result`, `api/teaching/interventions/[id]`, `api/teacher/exam-insights`, `api/admin/memberships/approve-payment`, `api/cognitive/transfer/submit`.
+
+Scripts (3): `scripts/l10-ephemeral-db-test.sh`, `scripts/operations/l10-foundation-integration.ts`, `scripts/operations/track-a-teacher-e2e-http.ts` (two reads now name the open row).
+
+Tests modified (4): `l10-guards-and-scope`, `l10-cr-l8-01-…`, `l10-cr-l9-02-…`, `aice-pisa-security`.
+
+No migration was added or changed in R1. The chain is still the six files of `c2bcae9`.
+
+Files outside the L10 rule edited in R1, and why: `api/cognitive/transfer/submit/route.ts` (L11 also edited it; one hunk for CR-L11-06, see R1 Finding 7) and `src/services/membership-admin.service.ts` plus its route (CR-L11-05 names them). `src/app/api/payments/checkout/route.ts` was not touched. `src/lib/exam-core/**` was not touched.
+
+## LOCKS USED
+
+`SHARED_FOUNDATION`, as before. `SCHEMA_AND_MIGRATIONS`: held, not exercised in R1 (no new migration). `LOCKS.md` was not re-read as updated; if it still shows the locks unassigned, the earlier discrepancy stands.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| Focused: `npx vitest run tests/unit/l10-*.test.ts` | 8 files, 162 tests passed |
+| Full: `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED -u POSTGRES_URL npx vitest run` | 527 files, 9,455 tests passed |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` | exit 0; 229/229 static pages |
+| `./scripts/l10-ephemeral-db-test.sh` — migration apply / re-apply | six files apply and re-apply; SF-10 pre-check still refuses a seeded multi-persona account |
+| Same script — governed runner and ledger (`scripts/db-migrate.ts`) | before: 83 rows, last `20261112_1000`; dry run lists 6 pending; after: 89 rows, last `20261120_1500`; dry run lists 0 |
+| Same script — preflight contract SQL | 20 statements before the batch, 9 after; all run; all `SELECT` |
+| Same script — real guard / service checks | 170 passed, 0 failed (143 in the core run, 27 added in R1) |
+| Browser, HTTP E2E, DEV / Stage / Production | NOT_RUN |
+| Reverting each fix to confirm its tests fail | NOT_RUN |
+
+One note on the ephemeral script: for the ledger step it moves the six migration files out of `database/migrations/` for a few seconds and moves them back (also on exit, through a trap). The working tree was clean afterwards.
+
+## FINDINGS
+
+### R1-1. D-1 final rulings as implemented
+
+**Released result.** `isAttemptResultVisibleToStudent` (`src/lib/authorization/learner-result-scope.ts`) is now the test for a Parent or Coordinator. I read what the Student's own result page does before it renders, and the current model is:
+
+| Condition on the Student's page | Effect |
+|---|---|
+| attempt is not `COMPLETED` | no result page (redirect to the attempt) |
+| the Student removed it from history (`hidden_at`, or its instance is `DELETED`) | not found |
+| no result row yet | page shows "pending" |
+| result `INVALIDATED` | page shows the result with a warning |
+
+So "scored and not invalidated" was **not** equivalent to Student-visible, in both directions. My earlier rule hid invalidated results that the Student does see, and — the real defect — showed a Parent a scored result that the Student had removed from their own history. Both are fixed: visible means submitted and not removed; the result is passed with its own status. A unit test pins those page conditions against the page's source so drift fails. The predicate is a mirror in shared code; a single exported one in the exam core would be better (CR-L10-08).
+
+One consequence to be aware of: a Parent or Coordinator now sees an `INVALIDATED` result, flagged as such, because the Student does.
+
+**Parent and Coordinator.** Unchanged in substance: summary only, item review always removed. A draft or in-progress attempt returns nothing.
+
+**Coordinator.** Kept off the nine routes behind `LEARNER_PROGRESS_VIEW` / `LEARNER_PROFILE_VIEW`; a test asserts each still asks for one of those two. The two simulation-attempt routes serve a Coordinator a released summary, as before.
+
+**Teacher.** `teacherSubjectScopeForLearner` returns the canonical subjects of the classes the teacher is authorized for in which this learner is actively enrolled. On top of that:
+
+| Surface | What a Teacher gets now |
+|---|---|
+| `simulation/attempts/[id]/result` | Only for a submitted, Student-visible attempt. Objectives whose published concepts belong to the teacher's subject, each with only those concepts. Overall and section scores: withheld. Item review: withheld. If nothing in the attempt is in the subject: 404 |
+| `simulation/attempts/[id]` | 403 (it only carries exam-wide state and scores, which cannot be attributed to a subject) |
+| `teaching/interventions/[id]` | The session and its item-level attempts only when the session's concept maps (MATCHED) to a subject the teacher holds for that learner; otherwise 403 |
+
+**What this means in practice, stated plainly:** on exam attempts a Teacher currently receives **no item-level review at all**. A review item carries nothing that ties it to an objective or a subject, so it cannot be sliced, and the ruling says to hide what cannot be sliced. Returning in-subject items needs the exam core to expose the objective (or subject) of each review item — CR-L10-08. Intervention attempts are single-concept, so those are returned when in subject.
+
+**Not done.** Subject scoping for a Teacher on the remaining whole-learner routes (`learners/[id]/summary`, `readiness`, `readiness/[id]`, `diagnostics`, `diagnostics/[id]/explain`, `exam-profiles`, `simulation/eligibility`, `learning/session-eligibility`). A teacher of any class the learner is in can still read those across subjects, and I have still not read their payloads. This is the open part of L4-14 and needs a decision on whether it is in L10's R-scope.
+
+### R1-2. Teacher goals and AICE entries
+
+`getTeacherClassExamGaps` now also returns `goals` (empty), `aice` (empty) and `withheld`. There is no governed link from an exam goal or an AICE syllabus to a canonical subject, and a multi-subject exam goal cannot be sliced, so both are hidden from the Teacher surface. The route on this branch no longer reads them from the exam bridge, and a guard test fails on any Teacher file that calls `examGoalsFor` or reads the AICE plan tables. Restoring them per subject needs an attribution in the exam core (CR-L10-01, widened).
+
+### R1-3. CR-L8-01 — still OPEN, as ruled
+
+Nothing in R1 closes it. State of the two parts:
+
+1. **L8 uses the shared entry point.** Not done; L8's branch. The guard tests in `l10-cr-l8-01` (direct `examGapsFor`, direct `examGoalsFor`, AICE tables) fail on the merged line until L8's `exam-insights.service.ts` calls `getTeacherClassExamGaps`. CR-L10-03, now including goals and AICE.
+2. **L2 provides subject-aware filtering.** Not done; L2's code. CR-L10-01.
+
+### R1-4. Revoked or inactive Student — where the 500 actually was
+
+Correction to the core report: the 32 callers of `getOrCreateStudentId` are **not** API routes. They are 31 Server Component pages and the dashboard layout. No file under `src/app/api` calls it; every Student API route uses `requireStudentId` or `verifyStudentAccess` and already answers 403. CR-L10-02 to L6 is withdrawn.
+
+Solved centrally, with no Student call site edited:
+
+| Request | Revoked Student role | Inactive account |
+|---|---|---|
+| Student API route | 403 from the route's own gate | 403 `ACCOUNT_NOT_ACTIVE` from the proxy, before the route; and 403 from the gate if the proxy is bypassed |
+| Student page | redirected by the proxy before the page renders: to the account's other workspace, or to `/role-select` when it has no active role | redirected to `/account-suspended` |
+
+The one change needed was in the page guard: an account with **no** active role used to be left to the layout, which redirects — but a page renders in parallel with its layout and had already thrown. The guard now sends it to role selection itself. `StudentRoleRequiredError` also carries `status = 403`, and `authFailureOf` maps it, as the shared contract for any future caller.
+
+One page is outside the workspace guard and was fixed directly: `dashboard/admin/[studentId]/page.tsx` called `getOrCreateStudentId` for the **administrator**, only to read their interface language. An admin who is not a Student got a server error there. It now falls back to the default language.
+
+**Point to confirm.** The ruling says "=> 403". For API requests that is exactly what happens. For page navigations the response is a 307 to a page that explains the situation, which is what the layout already did. If a literal 403 status is wanted for pages too, say so; it is a small change in the proxy but a worse experience.
+
+Remaining exposure: if the proxy's own lookup fails, dashboard pages continue (existing fail-open behaviour for pages) and a Student page could still throw. API requests fail closed (503).
+
+### R1-5. Enrolment SQL callers
+
+Searched every lane worktree and the two integration lines for `ON CONFLICT (class_id, student_id)`:
+
+| Where | Occurrences |
+|---|---|
+| `feat/l10-shared-foundation` | 0 in `src/` and `scripts/` (enforced by a new repository-wide test) |
+| L6, L6-wave0, L7, L8, L9, L11, L12, L4-R1, `integration/q1-paa-bank-readiness`, `integration/assessment-b5-runtime-certification` | 6 each, identical, all inherited from the common base, all in five files L10 rewrote: `src/services/institution.service.ts` (2), `src/lib/institution/institution-operations.service.ts` (1), three Track A fixture scripts (1 each) |
+
+No branch added a new one. They disappear when L10's versions of those five files are taken. L9 edited `institution-operations.service.ts`, so that file needs a hand check at merge.
+
+One incompatible **reader** exists outside this branch: L9's `enrollmentOf` reads one row per (class, learner) with no status filter or order. After `20261120_1500` it can return a closed row while an open one exists, which would make L9's bulk pre-check misreport. Ownership change request: CR-L10-04. The new test "application code never reads "the" enrolment … without saying which one" will fail on the merged line until it is fixed.
+
+That is why the gate is BLOCKED rather than PASS: the migration is not convergence-ready until that reader is patched and the three guard tests pass on the merged line.
+
+In this branch I also made two reads in `track-a-teacher-e2e-http.ts` name the open row.
+
+### R1-6. CR-L11-05 — manual payment approval
+
+`approveManualPayment` now refuses any row an administrator set (`manually_set_by_admin`): `AdminControlledSubscriptionError`, route answers `409 ADMIN_CONTROLLED_SUBSCRIPTION`. The check is before the first write, so there is no payment row, no status change and no audit entry.
+
+This is wider than "an expired grant": it also refuses on a live grant, a revoked grant and an administrative suspension. That is the "preferred minimal behavior" as I read it, and it means a manual approval can no longer quietly lift a suspension. The working paths are unchanged: re-grant, or reactivate, through their own routes. No grant field is cleared anywhere in this function.
+
+### R1-7. CR-L11-06 — Transfer exactly-once
+
+**Existing state is enough; no schema.** A graded submission goes through `updateMastery` with the identity `TRANSFER :: transferTaskId :: conceptId`, which claims `learning_evidence.operation_key` under a unique index. One row with that key means the task was graded. `isTransferTaskAlreadyGraded` reads it, and the route checks it before grading: `409 TRANSFER_TASK_ALREADY_ANSWERED`, grader not invoked. A submission whose grading failed leaves no row, so the task stays open.
+
+| Case | Result |
+|---|---|
+| Open valid transfer | graded once, evidence written |
+| Same task submitted again | 409, no grading call |
+| Task graded in an earlier session | 409, no grading call |
+| Another open task of the same concept | unaffected |
+| Answered state cannot be read | 500, no grading call |
+
+**Residual, not closed.** Two first submissions of the same task sent at the same instant both read "not graded" and both reach the grader. The second evidence write is then discarded by the unique key, so there is still only one evidence row and one mastery change, but two grading calls. Closing that needs an atomic claim taken before grading, which is a marker column — schema. I did not add it because the instruction was to use existing state when it can prove "already answered", and it can. Say if the concurrent case must be closed too.
+
+**Does L11 need a final route patch?** No new patch. The hunk is on this branch, in a file L11 also changed. In L11's version the licence gate sits just above; my check comes after it, so an unlicensed Student with an open task passes L11's gate and then mine, and one with an answered task is refused by mine. The two hunks are a few lines apart and should merge without conflict; if they do conflict, keep both, L11's first.
+
+### R1-8. Unruled decisions, and what was built on them
+
+Decision texts are quoted from L3R1 section 6.
+
+| Decision | Question, as written in L3R1 | Work package | State |
+|---|---|---|---|
+| D-3 | "Are independent teachers in scope for this release" | SF-11 (and TE-4) | Not started. Nothing built |
+| D-4 | "Parent and Teacher onboarding: which fields" | SF-8 (and PA-4, TE-5) | Built under an assumption — see below |
+| D-5 | "Minors and guardian consent (product and legal)" | SF-9 | Not started. Nothing built |
+| D-6 | "One persona per account, or several" | SF-10 | Built; the R1 ruling accepts "one ACTIVE persona per account" |
+| D-7 | "Self-serve institution creation and institution-provisioned student accounts" | SF-13 | Not started. Nothing built |
+| D-2 (not in the ruling's list; it is the decision SF-12 depends on) | "Institution-sponsored access: a seat model now, or per-student admin grants as the accepted Stage procedure" | SF-12 (and EN-1, IN-4) | Built under an assumption — see below |
+
+Exactly what exists for the three that were implemented:
+
+**SF-8 (D-4 unruled).** Table `user_role_onboarding`: one row per (account, role), role limited to `PARENT` or `TEACHER`, a `completed_at` timestamp, and `profile` as a JSON object with no fixed fields. Service `role-onboarding.service.ts`: read state; save the JSON; mark complete once (only if the account holds that role ACTIVE; completing again keeps the first timestamp). Assumption made: **none about fields** — the JSON is stored as given and not validated. Nothing calls the service; no screen exists; no existing Parent or Teacher has a row. Reversing it is dropping one empty table and one unused file.
+
+**SF-10 (D-6).** Unique index `uq_user_roles_one_persona`: at most one row per account among `STUDENT`, `PARENT`, `TEACHER` **with status ACTIVE**. Revoked rows are not counted, so an administrator's "revoke, then grant another persona" still works. `STUDYUS_ADMIN` and `INSTITUTION_ADMIN` are not covered: an administrator or coordinator may hold one persona as well. The migration refuses to apply if any account already has two ACTIVE personas and changes no data. The admin console maps the index violation to its existing `PERSONA_EXISTS` error. This matches the R1 ruling.
+
+**SF-12 (D-2 unruled).** Table `institution_student_memberships`: one row per (institution, learner), `ACTIVE` while the learner has at least one ACTIVE enrolment in a class of that institution, `ENDED` otherwise. It is written only by a database trigger on `class_enrollments`; no application code writes it or reads it. A pending or declined enrolment creates no membership. It is backfilled from today's ACTIVE enrolments. Assumption made: that the Institution → Student relationship should be **derived from enrolment** rather than managed on its own (no "member of the institution without a class", no separate invitation). On top of it, the EN-1 tables (`institution_licenses`, `institution_license_seats`) assume a **seat model**: a seat count per licence, one ACTIVE licence per institution, a seat attached to a membership and released when the membership ends. Nothing reads those tables; they license nobody. If D-2 is ruled as "per-student admin grants", all three tables are unused and can be dropped by a follow-up migration with no data loss.
+
+SF-9, SF-11 and SF-13 were not started and will not be until ruled.
+
+### R1-9. Preflight contract for L5
+
+`docs/orchestration/L10_MIGRATION_PREFLIGHT.md`. Read-only SQL in five groups: ledger before / after (83 → 89 rows, `20261112_1000` → `20261120_1500`) and object-name collisions; accounts without an ACTIVE role row, split by role and by cause; accounts with more than one ACTIVE persona; pending parent invitations older than 30 days and the shape the migration assumes; enrolment data against the new constraints, including the `ON CONFLICT` code search. Each check is marked BLOCKER, BLOCKER (deploy) or RECORD, with its pass condition, and there is a summary sheet for L5 to return. Post-apply checks are included.
+
+Every statement was executed against the throwaway database by `scripts/l10-ephemeral-db-test.sh` (sections 0–4 before the batch, section 5 after), and the script asserts they are all `SELECT`. The numbers they return there are fixture numbers and mean nothing; what was verified is that they run and that check 2.1 finds the account `20261120_1400` refuses.
+
+I did not access any shared environment.
+
+### R1-10. L11 reconciliation
+
+- `SCHEMA_AND_MIGRATIONS` stays with L10. No migration was added in R1.
+- L11-R1's report states that EXPIRED_RENEWAL and GRANT_TO_PAID passed and that none of its rulings needed schema, with one optional request (CR-L11-06), resolved above without schema. So nothing from L11 changes the chain today.
+- Still open with L11: its review of `20261120_1200` (CR-L10-07). Until L11 confirms or amends that structure the chain should not be frozen.
+- No entitlement logic was added in L10. `payments/checkout/route.ts` was not touched.
+
+## BLOCKERS
+
+NONE for the lane's own work. For convergence:
+
+- **L8:** switch its exam-insights service to `getTeacherClassExamGaps` (CR-L10-03).
+- **L2:** subject-aware aggregates, and subject attribution for goals, AICE syllabi and review items (CR-L10-01, CR-L10-08).
+- **L9:** patch `enrollmentOf` (CR-L10-04).
+- **L11:** review the licence schema (CR-L10-07).
+- **L5:** run the preflight contract.
+- **Orchestrator:** rule D-2, D-3, D-4, D-5, D-7; confirm the page-redirect behaviour (R1-4); say whether the concurrent Transfer case (R1-7) and Teacher scoping on the remaining whole-learner routes (R1-1) are in scope.
+
+## CHANGE_REQUESTS
+
+| # | Owner | State after R1 |
+|---|---|---|
+| CR-L7-01 | L10 | CLOSED |
+| CR-L9-02 | L10 | CLOSED on this branch; cross-branch remainder is CR-L10-04 |
+| CR-L8-01 | L10 + L8 + L2 | OPEN |
+| CR-L11-05 | L10 | Implemented (R1-6) |
+| CR-L11-06 | L10 | Implemented from existing state, no schema; one residual stated (R1-7) |
+| CR-L10-01 | L2 | OPEN, widened: subject option on `examGapsFor` for domain / objective aggregates **and** a subject attribution for exam goals and AICE syllabi |
+| CR-L10-02 | L6 | WITHDRAWN (no API route was affected; solved centrally) |
+| CR-L10-03 | L8 | OPEN, widened: gaps, goals and AICE all through `getTeacherClassExamGaps`; the view must handle `withheld` |
+| CR-L10-04 | L9 | OPEN: `enrollmentOf` must use `getClassEnrollmentState`; a message for "must be invited again" |
+| CR-L10-05 | L7 | OPEN (cosmetic): show `OWN_EMAIL` / `ALREADY_LINKED` |
+| CR-L10-06 | L5 | Replaced by the preflight contract |
+| CR-L10-07 | L11 | OPEN: review `20261120_1200` |
+| CR-L10-08 (new) | L2 | `src/lib/exam-core/`: (a) export one canonical "is this attempt's result visible to the Student" predicate, used by the Student page and by shared authorization; (b) expose the learning objective (or subject) of each result review item, so an in-subject item review can be returned to a Teacher. Until then shared code mirrors (a) under a pinning test and withholds (b) |
+
+## MERGE RECOMMENDATION
+
+Do not converge yet. When the open items above are done, merge order matters in two places: L10 before or together with L8 and L9 (their guard tests live in L10), and code together with the six migrations.
+
+Expected hand-resolved files are the four listed in the core report, plus `src/app/api/cognitive/transfer/submit/route.ts` with L11 (keep both hunks).
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the R1 commit and routes CR-L10-01, -03, -04, -07 and -08.

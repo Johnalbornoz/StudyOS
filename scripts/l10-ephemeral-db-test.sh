@@ -7,7 +7,10 @@
 #   2. applies the five L10 migrations (20261120_*) in order, each in its own
 #      transaction, and applies them a second time to prove idempotency;
 #   3. proves the SF-10 pre-check refuses to apply over a multi-persona account;
-#   4. runs scripts/operations/l10-foundation-integration.ts: the real guards
+#   4. applies the same series through the governed runner (scripts/db-migrate.ts) and prints the
+#      migration ledger before and after;
+#   5. runs every SQL statement of the L5 preflight contract (read-only) before and after the batch;
+#   6. runs scripts/operations/l10-foundation-integration.ts: the real guards
 #      and the real parent service against that database.
 #
 # Usage: ./scripts/l10-ephemeral-db-test.sh
@@ -75,6 +78,39 @@ else
 fi
 
 echo ""
-echo "=== 4. guards + parent service against the migrated database ==="
+echo "=== 4. governed runner and ledger (scripts/db-migrate.ts, the path L5 / the operator uses) ==="
+"$PG_BIN/createdb" -h "$SOCK" -U postgres l10ledger
+$P -c 'DROP SCHEMA public CASCADE;' l10ledger
+$P -f "$W/b.sql" l10ledger >/dev/null 2>"$W/err" || { echo "LEDGER_BASELINE = FAIL"; head -5 "$W/err"; exit 1; }
+$P -f "$REPO/database/ledger/0000_baseline_ledger.sql" l10ledger >/dev/null
+BASELINE_CHECKSUM=$(shasum -a 256 "$REPO/database/baseline/STUDYUS_BASELINE_2026_08.sql" | awk '{print $1}')
+$P -c "INSERT INTO schema_migrations (version, name, checksum) VALUES ('STUDYUS_BASELINE_2026_08', 'Live schema baseline (pg_dump snapshot, Phase 0D)', '$BASELINE_CHECKSUM')" l10ledger
+LEDGER_URL="postgresql://postgres@/l10ledger?host=$SOCK"
+# Stop the governed runner just before the L10 batch, to read the "before" ledger exactly as a shared database has it.
+mkdir -p "$W/hold" && mv "$REPO"/database/migrations/20261120_*.sql "$W/hold/"
+restore_batch() { mv "$W/hold"/20261120_*.sql "$REPO/database/migrations/" 2>/dev/null || true; }
+trap 'restore_batch; cleanup' EXIT
+(cd "$REPO" && DATABASE_URL="$LEDGER_URL" npx tsx scripts/db-migrate.ts >"$W/migrate1.log" 2>&1) || { restore_batch; echo "GOVERNED_RUNNER (prior migrations) = FAIL"; tail -5 "$W/migrate1.log"; exit 1; }
+restore_batch
+echo "LEDGER_BEFORE: rows=$($P -tAc "SELECT count(*) FROM schema_migrations" l10ledger) last=$($P -tAc "SELECT max(version) FROM schema_migrations WHERE version ~ '^[0-9]'" l10ledger)"
+(cd "$REPO" && DATABASE_URL="$LEDGER_URL" npx tsx scripts/db-migrate.ts --dry-run >"$W/dry.log" 2>&1); echo "DRY_RUN pending L10 files: $(grep -c '20261120_' "$W/dry.log")"
+(cd "$REPO" && DATABASE_URL="$LEDGER_URL" npx tsx scripts/db-migrate.ts >"$W/migrate2.log" 2>&1) || { echo "GOVERNED_RUNNER (L10 batch) = FAIL"; tail -8 "$W/migrate2.log"; exit 1; }
+echo "LEDGER_AFTER:  rows=$($P -tAc "SELECT count(*) FROM schema_migrations" l10ledger) last=$($P -tAc "SELECT max(version) FROM schema_migrations WHERE version ~ '^[0-9]'" l10ledger)"
+echo "LEDGER_L10_VERSIONS: $($P -tAc "SELECT string_agg(version, ' ' ORDER BY version) FROM schema_migrations WHERE version LIKE '20261120_%'" l10ledger)"
+(cd "$REPO" && DATABASE_URL="$LEDGER_URL" npx tsx scripts/db-migrate.ts --dry-run >"$W/dry2.log" 2>&1); echo "DRY_RUN after apply, pending L10 files: $(grep -c '20261120_' "$W/dry2.log")"
+
+echo ""
+echo "=== 5. the L5 preflight contract's SQL runs (docs/orchestration/L10_MIGRATION_PREFLIGHT.md) ==="
+PREFLIGHT="$REPO/docs/orchestration/L10_MIGRATION_PREFLIGHT.md"
+# Sections 0-4 are run BEFORE the batch (database l10pre: baseline + prior migrations only); section 5 AFTER it (database l10).
+awk '/^## 5\./{exit} /^```sql/{f=1;next} /^```/{f=0} f' "$PREFLIGHT" > "$W/preflight-before.sql"
+awk '/^## 5\./{s=1} s && /^```sql/{f=1;next} /^```/{f=0} s && f' "$PREFLIGHT" > "$W/preflight-after.sql"
+$P -f "$W/preflight-before.sql" l10pre >"$W/pre.out" 2>"$W/err" && echo "PREFLIGHT_BEFORE_SQL = OK ($(grep -c ';' "$W/preflight-before.sql") statements, read-only)" || { echo "PREFLIGHT_BEFORE_SQL = FAIL"; head -5 "$W/err"; exit 1; }
+$P -f "$W/preflight-after.sql" l10 >"$W/post.out" 2>"$W/err" && echo "PREFLIGHT_AFTER_SQL  = OK ($(grep -c ';' "$W/preflight-after.sql") statements, read-only)" || { echo "PREFLIGHT_AFTER_SQL = FAIL"; head -5 "$W/err"; exit 1; }
+if grep -Eiq '^[[:space:]]*(insert|update|delete|alter|create|drop|truncate|grant)[[:space:]]' "$W/preflight-before.sql" "$W/preflight-after.sql"; then echo "PREFLIGHT_READ_ONLY = FAIL (a write statement is present)"; exit 1; else echo "PREFLIGHT_READ_ONLY = OK (SELECT only)"; fi
+echo "PREFLIGHT 2.1 on the seeded multi-persona database: $($P -tAc "SELECT count(*) FROM (SELECT user_id FROM user_roles WHERE role IN ('STUDENT','PARENT','TEACHER') AND status = 'ACTIVE' GROUP BY user_id HAVING count(*) > 1) t" l10pre) account(s) (expected 1: the check finds what 20261120_1400 refuses)"
+
+echo ""
+echo "=== 6. guards + parent service against the migrated database ==="
 cd "$REPO"
 DATABASE_URL="postgresql://postgres@/l10?host=$SOCK" L10_EPHEMERAL=1 npx tsx scripts/operations/l10-foundation-integration.ts

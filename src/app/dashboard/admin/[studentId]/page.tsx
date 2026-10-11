@@ -18,8 +18,12 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
     redirect('/dashboard');
   }
 
-  const adminStudentId = await getOrCreateStudentId(user!.id);
-  const locale = await getInterfaceLanguage(adminStudentId);
+  // L10-R1: an administrator is not necessarily a Student. This page only needs a learner id to read the
+  // administrator's own interface language; an admin-only account (no ACTIVE Student role) used to fail
+  // here with a server error. It now falls back to the default language. Authorization is unchanged
+  // (the verified-primary allowlist check above).
+  const adminStudentId = await getOrCreateStudentId(user!.id).catch(() => null);
+  const locale = adminStudentId ? await getInterfaceLanguage(adminStudentId) : ('es' as const);
   const t = getMessages(locale);
 
   const student = await getStudentById(studentId);

@@ -35,14 +35,25 @@ export type LearnerRelationship = 'OWNER' | 'PARENT' | 'TEACHER' | 'COORDINATOR'
  *                   summaries. No raw item-level answers.
  *  TEACHER          students of the classes the teacher is authorized for:
  *                   per-student gaps and the assessment detail teaching
- *                   needs.
+ *                   needs. The permission below is necessary, NOT
+ *                   sufficient (D-1 final ruling, L10-R1): item-level
+ *                   detail is returned to a Teacher only for data inside
+ *                   the academic subject of an authorized class the learner
+ *                   is enrolled in, and only for a submitted attempt -- see
+ *                   ./learner-data-scope and ./teacher-exam-scope. Data
+ *                   that cannot be attributed to that subject is withheld.
  *  COORDINATOR      learners enrolled in the coordinator's own ACTIVE
  *                   institution: gaps and released results as summaries.
- *                   No raw item-level attempt detail. Deliberately NOT
- *                   granted LEARNER_PROGRESS_VIEW / LEARNER_PROFILE_VIEW:
- *                   the older whole-learner routes behind those two stay
- *                   closed to coordinators; institution aggregates keep
- *                   going through the institution-intelligence gate.
+ *                   No raw item-level attempt detail. NOT granted
+ *                   LEARNER_PROGRESS_VIEW / LEARNER_PROFILE_VIEW (ruled,
+ *                   L10-R1): the eleven older whole-learner routes behind
+ *                   those two stay closed to coordinators until an
+ *                   institution-scoped payload has been reviewed;
+ *                   coordinators use the explicit Institution read models.
+ *
+ * "Released" (ruled, L10-R1): a Parent or Coordinator sees a result only
+ * when that same result is visible to the Student under the assessment's own
+ * publication rules -- see `isAttemptResultVisibleToStudent`.
  *
  * LEARNER_INTERVENTION_CREATE (acting inside the learner's own work) is
  * the owner's alone.

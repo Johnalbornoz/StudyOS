@@ -1,69 +1,65 @@
 LANE: L10_SHARED_FOUNDATION
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T18:25Z
+LAST_UPDATE: 2026-10-11T18:45Z
 BASE_SHA: 4fb45b0
-CURRENT_SHA: the single commit on feat/l10-shared-foundation whose parent is 4fb45b0 (git rev-parse feat/l10-shared-foundation)
+CURRENT_SHA: the R1 commit on feat/l10-shared-foundation, parent c2bcae9 (git rev-parse feat/l10-shared-foundation)
 
-CURRENT_PHASE: STOP (report written, work committed)
+CURRENT_PHASE: STOP (L10-R1 report appended, work committed)
 
 NOW_DOING: NONE
 
 COMPLETED:
-- SF-1 guard hardening (role + account status in every shared guard; account status gate in the proxy; suspension order made fail-safe)
-- SF-2 one student resolver for the learning and exam families
-- SF-3 teacher guards require an ACTIVE institution and a non-archived class
-- SF-4 learner-data scope per the D-1 ruling (LEARNER_READ_SCOPE; three routes shaped; institution permission honoured)
-- SF-5 workspace page guard in the proxy
-- SF-6 invitations matched on the verified primary email
-- SF-7 parent relationship lifecycle (expiry, stale-invitation refusal, re-request limit, admin end)
-- SF-8 role onboarding carrier and service
-- SF-10 one ACTIVE persona per account (database index)
-- SF-12 institution-student membership (derived by trigger)
-- EN-1 licence and seat tables (schema only)
-- CR-L7-01, CR-L9-02, CR-L8-01 (see report for the two CR-L8-01 follow-ups), CR-L8-02; CR-L9-04 acknowledged
-- Six migration files 20261120_1000..1500 (applied only to a throwaway local Postgres)
+- Core (c2bcae9, accepted): SF-1, 2, 3, 4, 5, 6, 7, 8, 10, 12; EN-1 schema; CR-L7-01; CR-L9-02; six migrations 20261120_1000..1500
+- R1: D-1 final rulings (released = Student-visible; Teacher detail only in the authorized subject of a submitted attempt; Coordinator kept off the legacy routes)
+- R1: Teacher exam goals and AICE entries withheld (no subject attribution exists)
+- R1: revoked / inactive Student => 403 on the API, redirect before render on pages, never 500
+- R1: repository-wide guard on enrolment SQL callers
+- R1: L5 preflight contract (docs/orchestration/L10_MIGRATION_PREFLIGHT.md), every statement executed on a throwaway database
+- R1: CR-L11-05 (manual payment approval refused on an administrator-set row), CR-L11-06 (Transfer exactly-once from existing evidence state, no schema)
 
 CURRENT_FINDINGS:
-- LOCKS.md (studyos-orchestration @ 99bec29) still shows SCHEMA_AND_MIGRATIONS UNASSIGNED and SHARED_FOUNDATION not activated; both were assigned by the launch message.
-- D-1 interpretations to confirm: Teacher gets item-level detail; Coordinator not admitted to the older whole-learner routes; "released" = SCORED. (report Finding 4)
-- getOrCreateStudentId now refuses a revoked/suspended existing student; 32 callers deny with an uncaught error, not a 403. (report Finding 1, CR-L10-02)
-- Teacher exam gaps are cut at concept level; domain and objective aggregates are withheld until exam-core has a subject option. (report Finding 5, CR-L10-01)
-- Accounts lacking an ACTIVE role row will be newly denied; counts on shared databases were not available. (CR-L10-06)
-- Migration 20261120_1500 breaks any SQL using ON CONFLICT (class_id, student_id) outside this branch; old pending parent invitations expire on apply. (report Finding 6)
+- "Scored and not invalidated" was not Student-visible: it showed a Parent a result the Student had removed from history. Fixed. (R1-1)
+- On exam attempts a Teacher now receives no item-level review at all: a review item cannot be attributed to a subject. Needs exam-core support. (R1-1, CR-L10-08)
+- The 32 getOrCreateStudentId callers are pages, not API routes; no API route was affected. CR-L10-02 withdrawn. (R1-4)
+- Page requests are redirected (307), not answered 403. To confirm. (R1-4)
+- L9's enrollmentOf reads one enrolment row with no status filter; incompatible with 20261120_1500. (R1-5, CR-L10-04)
+- Transfer: two simultaneous FIRST submissions can both reach the grader; closing that needs schema. (R1-7)
+- Teacher subject scoping on eight remaining whole-learner routes is not done. (R1-1)
 
 FILES_READ:
-- Control plane (CONTROL_PLANE, LOCKS, OBSERVABILITY, RELEASE_STATE, reports/README), L3R1_REPORT, L4R1_REPORT, L4_REPORT, L8_REPORT, L9_REPORT (read-only, other worktrees)
-- src/lib/auth.ts, src/lib/authorization/**, src/lib/identity/**, src/lib/exam-core/route-auth.ts, src/lib/exam-core/exam-gaps.service.ts, src/proxy.ts, src/app/dashboard/layout.tsx, src/services/{parent,user-admin,institution,institution-admin}.service.ts, src/lib/teacher/**, src/lib/institution/**, the canAccessLearner routes, database/migrations/**
+- As in the core run, plus: L11_REPORT.md and the L11 worktree (read-only), the Student result page, src/lib/exam-core/{result-view,results,history,exam-gaps}.service.ts, src/services/{membership-admin,transfer-task-instance,mastery}.service.ts, every lane worktree and both integration lines (git grep only)
 
 FILES_MODIFIED:
-- See docs/orchestration/reports/L10_REPORT.md, FILES CHANGED (30 application files, 6 migrations, 5 scripts, 23 test files, 2 docs)
+- See docs/orchestration/reports/L10_REPORT.md, section "L10-R1", FILES CHANGED (5 new, 15 application files, 3 scripts, 4 tests, 2 docs)
 
 TESTS:
+- npx vitest run tests/unit/l10-*.test.ts : 8 files, 162 tests passed
+- npx vitest run (no database env) : 527 files, 9,455 tests passed
 - npx tsc --noEmit -p . : no output
-- npx vitest run (no database env) : 524 files, 9,402 tests passed
-- ./scripts/l10-ephemeral-db-test.sh : 6 migrations apply and re-apply; SF-10 pre-check refuses a multi-persona account; integration 143 passed, 0 failed
 - npx next build : exit 0, 229/229 static pages
+- ./scripts/l10-ephemeral-db-test.sh : 6 migrations apply and re-apply; governed runner ledger 83 -> 89; preflight SQL 20 + 9 statements run, SELECT only; integration 170 passed, 0 failed
 - Browser, HTTP E2E, DEV/Stage/Production : NOT_RUN
 
 BLOCKERS:
-NONE
+NONE for the lane. Convergence is blocked on other lanes (see CROSS_LANE_DEPENDENCIES).
 
 LOCK_REQUESTS:
-NONE. LOCKS.md needs updating to show the two locks this lane was given.
+NONE
 
 CROSS_LANE_DEPENDENCIES:
-- L2: CR-L10-01 (subject option on examGapsFor)
-- L6: CR-L10-02 (32 callers of getOrCreateStudentId)
-- L8: CR-L10-03 (call getTeacherClassExamGaps; a guard test fails on the merged line until then)
-- L9: CR-L10-04 (enrollmentOf must read enrolment state through getClassEnrollmentState)
+- L2: CR-L10-01 (subject-aware gap aggregates; subject attribution for goals and AICE), CR-L10-08 (Student-visibility predicate; subject of review items)
+- L8: CR-L10-03 (use getTeacherClassExamGaps for gaps, goals and AICE)
+- L9: CR-L10-04 (enrollmentOf must use getClassEnrollmentState)
+- L11: CR-L10-07 (review migration 20261120_1200)
 - L7: CR-L10-05 (show OWN_EMAIL / ALREADY_LINKED)
-- L5: CR-L10-06 (read-only counts before any shared environment)
-- L11: CR-L10-07 (review the licence schema)
+- L5: run docs/orchestration/L10_MIGRATION_PREFLIGHT.md before any shared database migration
 
 NEXT:
-Orchestrator review.
+Orchestrator review of the R1 commit.
 
 PROGRESS:
-- L10 work packages: 10 of 13 implemented (SF-1, 2, 3, 4, 5, 6, 7, 8, 10, 12); 3 gated on unruled decisions (SF-9, SF-11, SF-13)
-- Schema batch: 6/6 files written, 6/6 apply and re-apply on a throwaway Postgres, 0/6 applied to a shared database
-- Orchestrator change requests: 3/3 implemented with their required regressions passing; CR-L8-01 has 2 follow-ups open
+- L10_CORE: accepted at c2bcae9
+- R1 items: D-1 rulings 3/3 implemented; revoked-Student HTTP done; enrolment SQL callers 0 on this branch, 1 incompatible reader on L9; preflight contract ready; L11 dependencies 2/2 implemented
+- CR-L8-01: OPEN (0/2 external parts integrated)
+- Unruled: D-2, D-3, D-4, D-5, D-7
+- Convergence: NOT READY
