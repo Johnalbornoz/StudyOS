@@ -2,6 +2,9 @@
 
 Date: 2026-10-10 · Worktree: `studyos-assessment-b5` · Branch: `integration/assessment-b5-runtime-certification`
 
+> **B5-G update (2026-10-11).** Sections **AZ–BI** at the end record the Stage runtime certification. It is
+> **in progress**: Stage code and schema are aligned; everything after that waits for one operator action.
+>
 > **B5-F update (2026-10-10).** Sections **AR–AY** at the end record the pre-Stage cleanup, the final DEV SHA and the
 > Stage promotion as far as it went, and supersede AQ.
 >
@@ -1176,4 +1179,102 @@ Things to know before the operator continues:
 - Promoting `2d3fc68` to the alias moves Stage forward by 145 commits — every track merged into this line, not
   only the assessment runtime.
 - With the flag off, `2d3fc68` behaves as the legacy runtime; the cutover is the flag alone.
+
+---
+
+# B5-G — Stage Runtime Certification (in progress)
+
+Certified code: `2d3fc68` (unchanged). Branch HEAD `5a30b44` differs from it by the report only. Production was
+not touched. Nothing was pushed.
+
+## AZ. Stage Code/Schema Alignment
+
+Pre-flight: clean tree; HEAD descends from `2d3fc68`; Stage database `ep-holy-thunder-ayxlpyex`, fingerprint
+`53d158d5811e7ee0` (the one verified in B5-F); ledger 82 applied, 0 pending, 0 drifted; the immutable deployment
+`dpl_5FagcFXGuom1dSrKjYQryKoa7gcd` still serves `2d3fc68`. No ambiguity in the target.
+
+The Stage alias was moved to that existing deployment. No rebuild, no flag change.
+
+| Check on `https://study-os-stage-study-so.vercel.app` | Result |
+|---|---|
+| `/api/version` | `2d3fc68`, target `preview`, `dpl_5FagcFXGuom1dSrKjYQryKoa7gcd` |
+| Database diagnostics | fingerprint `53d158d5811e7ee0`, 82 migrations applied, ledger present |
+| `/` → `/es`, `/sign-in` | 200 |
+| `/dashboard/today` signed out | redirects to sign-in with `redirect_url` |
+| Canonical start with the flag OFF | 404 `NOT_FOUND` — the legacy runtime is the only one |
+
+Previous alias target, for rollback: `dpl_9VrkbGMci5w65bpWqKJeQ99yGpfS` (`92e3509`).
+
+## BA. Stage Test Identity
+
+Not created. Creating an account in the identity provider is an operator action: I do not create accounts on
+an external identity service, and the repository's fixture tooling refuses anything but DEV. No Stage-fixture
+standard exists in the repository. The four existing Stage Students are real accounts and were not touched.
+
+## BB. Real Authentication
+
+```text
+STAGE_OPERATOR_SIGNIN_REQUIRED
+```
+
+Minimal operator action, in the browser that will then be used for the smoke:
+
+1. Open `https://study-os-stage-study-so.vercel.app/sign-up` (pass the hosting login if asked).
+2. Sign up a test-only Student, e.g. `stage-assessment-fixture+clerk_test@example.com` (the identity
+   provider's test-mode address; no real mailbox).
+3. Finish first-run as a **Student** and add one subject from the catalogue (not a free-text subject), so its
+   concepts are canonically linked and Today shows a recommended activity.
+4. Leave that browser signed in and say so.
+
+Everything else continues from there without further operator input: checking the Student in the database,
+enabling the flag in Stage only, redeploying `2d3fc68`, and the desktop / mobile smoke in that signed-in session.
+
+## BC. Stage Learning E2E
+
+Not run — waits for BB.
+
+## BD. Stage Resume / Exactly Once
+
+Not run — waits for BB.
+
+## BE. Stage Question Supply
+
+Configuration: `CRON_SECRET` present in the Stage environment; the worker endpoint refuses a call without it
+(401); the worker last succeeded on Stage on 2026-10-09. The setup-triggered request is not yet exercised on
+Stage — it needs the signed-in setup. A new Student starts with an empty cache, which is exactly the cold case
+to be shown.
+
+## BF. Stage Exam Prep
+
+Not run — waits for BB.
+
+## BG. Stage Accessibility / Responsive
+
+Not run — waits for BB.
+
+## BH. Stage Final Certification
+
+```text
+STAGE_INTEGRATED_ASSESSMENT_FAIL        (not certified yet — STAGE_OPERATOR_SIGNIN_REQUIRED)
+```
+
+| # | Gate | Result |
+|---|---|---|
+| 1 | Stage alias runs the exact DEV-certified SHA | PASS |
+| 2 | Migration chain 82 / 0 / 0 | PASS |
+| 3 | Canonical flag ON in Stage | not yet (enabled only after sign-in works, as specified) |
+| 4 | Safe Stage test identity | operator |
+| 5 | Real sign-in UI / session | operator |
+| 6–19 | Today, My Path, Subject, start, resume, completion, exactly-once, result, supply, Exam Prep, desktop, mobile, accessibility, no double-write | waiting |
+| 20 | Tests / typecheck / build | PASS — 509 files / 9,107 tests, `tsc --noEmit` clean, `next build` OK |
+
+Stage flags as known: `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED` not set (OFF, confirmed by behaviour);
+`CANONICAL_ENGINE_V1_ENABLED` present, `VALUE_NOT_READ`; `STUDENT_JOURNEY_V2` and `EXAM_BLUEPRINT_V2` not set.
+
+## BI. Split Release Readiness
+
+```text
+LEARNING   LEARNING_NOT_READY_FOR_RELEASE — Stage is not certified yet
+EXAMS      EXAMS_NOT_READY_FOR_PRODUCTION_RELEASE
+```
 
