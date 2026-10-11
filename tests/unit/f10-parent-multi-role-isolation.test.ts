@@ -27,7 +27,9 @@ vi.mock('@/lib/authorization', () => ({
 const dbQueryMock = vi.fn();
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a) } }));
 
-vi.mock('@/services/mastery.service', () => ({ getStudentMastery: vi.fn().mockResolvedValue([]) }));
+// updateMastery: the Parent read model now reaches the assessment execution service (released results), which names
+// the mastery writer at module load. It is never called here.
+vi.mock('@/services/mastery.service', () => ({ getStudentMastery: vi.fn().mockResolvedValue([]), updateMastery: vi.fn() }));
 vi.mock('@/services/learning-debt.service', () => ({ getActiveDebts: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/services/concept-extraction.service', () => ({ getSubjectConcepts: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/lib/readiness/readiness.service', () => ({ getLatestReadinessSnapshot: vi.fn().mockResolvedValue(null) }));
