@@ -18,6 +18,7 @@ import {
   TeacherInterventionInvalidTargetError,
   TeacherInterventionExamProfileMismatchError,
 } from '@/lib/teacher/intervention.service';
+import { checkConceptAssignmentScope } from '@/lib/teacher/concept-assignment-scope';
 import { findTeacherExamPracticeOption, TeacherExamPracticeAccessDeniedError } from '@/lib/teacher/exam-practice-options.service';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
@@ -72,6 +73,18 @@ async function handlePOST(request: NextRequest) {
     validated = AssignSchema.parse(await request.json());
   } catch (error: any) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
+  }
+
+  // L8 (final): a CONCEPT target must sit inside the subject the Teacher holds for THIS class -- owning the
+  // concept is not enough (a Mathematics teacher does not assign the learner's Reading concept). Ownership and
+  // the genuine-teacher chain are still decided by assignTeacherIntervention below.
+  if (validated.target.targetType === 'CONCEPT') {
+    const scope = await checkConceptAssignmentScope(actor.id, validated.classId, validated.studentId, validated.target.conceptId);
+    if (scope === 'NOT_TEACHER_OF_LEARNER_IN_CLASS') {
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    if (scope !== 'IN_SCOPE') return NextResponse.json({ error: 'CONCEPT_NOT_IN_CLASS_SUBJECT' }, { status: 400 });
   }
 
   // L8-R1: an EXAM target must be one of the exam-practice options of THIS learner in THIS class (the learner's

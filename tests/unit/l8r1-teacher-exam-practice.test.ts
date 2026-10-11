@@ -49,7 +49,10 @@ const LO_READ = 'e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2';
 const LO_MATH_UNSUPPORTED = 'e3e3e3e3-e3e3-4e3e-8e3e-e3e3e3e3e3e3';
 const AS_MATH = 'f1f1f1f1-f1f1-4f1f-8f1f-f1f1f1f1f1f1';
 const AS_READ = 'f2f2f2f2-f2f2-4f2f-8f2f-f2f2f2f2f2f2';
-const CONCEPT_ANA = 'abababab-abab-4bab-8bab-abababababab';
+const CONCEPT_ANA = 'abababab-abab-4bab-8bab-abababababab'; // Ana's own, Mathematics
+const CONCEPT_ANA_READ = 'acacacac-acac-4cac-8cac-acacacacacac'; // Ana's own, Reading
+const CONCEPT_ANA_UNMAPPED = 'adadadad-adad-4dad-8dad-adadadadadad'; // Ana's own, no confirmed canonical subject
+const CONCEPT_OUTSIDER = 'aeaeaeae-aeae-4eae-8eae-aeaeaeaeaeae'; // the outsider's own, Mathematics
 const TEACHER = 'math-teacher';
 const READ_TEACHER = 'reading-teacher';
 const COORDINATOR = 'coordinator';
@@ -59,6 +62,12 @@ const world = {
   teaches: { [TEACHER]: [CLASS_MATH], [READ_TEACHER]: [CLASS_READ] } as Record<string, string[]>,
   admins: [COORDINATOR],
   enrolled: { [CLASS_MATH]: [ANA, BEA], [CLASS_READ]: [ANA, OUTSIDER] } as Record<string, string[]>,
+  concepts: {
+    [CONCEPT_ANA]: { owner: ANA, subject: SUBJ_MATH },
+    [CONCEPT_ANA_READ]: { owner: ANA, subject: SUBJ_READ },
+    [CONCEPT_ANA_UNMAPPED]: { owner: ANA, subject: null },
+    [CONCEPT_OUTSIDER]: { owner: OUTSIDER, subject: SUBJ_MATH },
+  } as Record<string, { owner: string; subject: string | null }>,
   profiles: [
     { id: P_MULTI, student: ANA, exam: 'PISA', version: V_MULTI, examSubject: null as string | null },
     { id: P_MATH, student: ANA, exam: 'AICE Mathematics', version: V_MATH, examSubject: SUBJ_MATH },
@@ -88,6 +97,14 @@ function scriptDb() {
       inserts.push(p);
       return { rows: [{ id: 'new-intervention', assigned_by_user_id: p[0], institution_id: p[1], class_id: p[2], student_id: p[3], target_type: p[4], concept_id: p[5], learning_objective_id: p[8], exam_profile_id: p[9], simulation_type: p[10], academic_subject_id: p[11], intervention_type: p[12], title: p[17], status: 'ASSIGNED', assigned_at: '2026-10-11T00:00:00.000Z' }] };
     }
+    // L10 resolveTeacherClassScope (teacher of this class only) and canonicalSubjectOfLearnerConcept
+    if (/FROM classes c\s+JOIN institutions i ON i\.id = c\.institution_id AND i\.status = 'ACTIVE'\s+JOIN institution_memberships im/.test(sql)) {
+      return { rows: teaches(p[0], p[1]) ? [{ class_id: p[1], institution_id: INST, canonical_subject_id: world.classSubject[p[1]] }] : [] };
+    }
+    if (/FROM concept_catalog_mapping ccm JOIN canonical_concepts cc ON cc\.id = ccm\.canonical_concept_id\s+WHERE ccm\.learner_concept_id = \$1/.test(sql)) {
+      const c = world.concepts[p[0]];
+      return { rows: c?.subject ? [{ canonical_subject_id: c.subject }] : [] };
+    }
     // class-assignment.service: the teacher-only gate, then the class row
     if (/SELECT 1 FROM \(/.test(sql) && /FROM teacher_assignments ta/.test(sql)) return { rows: teaches(p[0], p[1]) ? [{}] : [] };
     if (/FROM classes c JOIN institutions i/.test(sql)) return { rows: p[0] in world.classSubject ? [{ id: p[0], name: 'Class', institution_id: INST, institution_name: 'School', grade_name: null, canonical_subject_id: world.classSubject[p[0]], subject_name: 'Subject' }] : [] };
@@ -96,7 +113,7 @@ function scriptDb() {
     // authorization: canAccessInstitution, then canAccessClass's teacher branch
     if (/membership_role = 'INSTITUTION_ADMIN'/.test(sql)) return { rows: world.admins.includes(p[0]) && p[1] === INST ? [{}] : [] };
     if (/ta\.class_id = \$2 OR/.test(sql)) return { rows: teaches(p[0], p[1]) ? [{}] : [] };
-    if (/SELECT institution_id(, grade_id)? FROM classes WHERE id = \$1/.test(sql)) return { rows: p[0] in world.classSubject ? [{ institution_id: INST, grade_id: null }] : [] };
+    if (/SELECT institution_id(, grade_id)?(, status)? FROM classes WHERE id = \$1/.test(sql)) return { rows: p[0] in world.classSubject ? [{ institution_id: INST, grade_id: null, status: 'ACTIVE' }] : [] };
     if (/FROM class_enrollments WHERE class_id = \$1 AND student_id = \$2/.test(sql)) return { rows: (world.enrolled[p[0]] ?? []).includes(p[1]) ? [{}] : [] };
     // exam-practice options
     if (/FROM student_exam_profiles p\s+JOIN exam_definitions d/.test(sql)) {
@@ -110,7 +127,7 @@ function scriptDb() {
     if (/FROM academic_subjects s WHERE s\.id = ANY/.test(sql)) return { rows: world.domains.filter((d) => p[0].includes(d.id) && d.subject === p[1]).map((d) => ({ id: d.id, name: d.name })) };
     // intervention.service: profile ownership and concept ownership
     if (/SELECT \* FROM student_exam_profiles WHERE id = \$1/.test(sql)) return { rows: world.profiles.filter((x) => x.id === p[0]).map((x) => ({ id: x.id, student_id: x.student, status: 'ACTIVE' })) };
-    if (/FROM concepts c JOIN subjects s ON s\.id = c\.subject_id WHERE c\.id = \$1 AND s\.student_id = \$2/.test(sql)) return { rows: p[0] === CONCEPT_ANA && p[1] === ANA ? [{}] : [] };
+    if (/FROM concepts c JOIN subjects s ON s\.id = c\.subject_id WHERE c\.id = \$1 AND s\.student_id = \$2/.test(sql)) return { rows: world.concepts[p[0]]?.owner === p[1] ? [{}] : [] };
     return { rows: [] };
   });
 }
@@ -275,22 +292,81 @@ describe('POST /api/teacher/interventions -- exam practice', () => {
   });
 });
 
-describe('concept reinforcement is unchanged', () => {
-  it('the class Teacher still assigns a concept; the exam scope check is not involved', async () => {
-    const res = await post({ classId: CLASS_MATH, studentId: ANA, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId: CONCEPT_ANA }, instructions: 'Review' });
+describe('POST /api/teacher/interventions -- concept reinforcement, class-subject scope', () => {
+  const concept = (classId: string, studentId: string, conceptId: string) => ({ classId, studentId, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId } });
+
+  it('same learner + matching class subject => assigned (and the exam scope check is not involved)', async () => {
+    const res = await post({ ...concept(CLASS_MATH, ANA, CONCEPT_ANA), instructions: 'Review' });
     expect(res.status).toBe(200);
     expect(inserts).toHaveLength(1);
-    expect(inserts[0].slice(3, 6)).toEqual([ANA, 'CONCEPT', CONCEPT_ANA]);
+    expect(inserts[0].slice(0, 6)).toEqual([TEACHER, INST, CLASS_MATH, ANA, 'CONCEPT', CONCEPT_ANA]);
     expect(inserts[0][12]).toBe('CONCEPT_REINFORCEMENT');
     expect(inserts[0][17]).toBeNull();
     expect(query.mock.calls.some(([sql]) => /FROM student_exam_profiles p\s+JOIN exam_definitions d/.test(String(sql)))).toBe(false);
     expect(getSimulationEligibility).not.toHaveBeenCalled();
   });
 
-  it('a concept that is not this learner\'s own is still refused', async () => {
-    const res = await post({ classId: CLASS_MATH, studentId: BEA, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId: CONCEPT_ANA } });
+  it('same learner + different subject => refused: a Mathematics teacher cannot assign the learner\'s Reading concept', async () => {
+    const res = await post(concept(CLASS_MATH, ANA, CONCEPT_ANA_READ));
     expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'CONCEPT_NOT_IN_CLASS_SUBJECT' });
     expect(inserts).toHaveLength(0);
+  });
+
+  it('the same Reading concept IS assignable by the learner\'s Reading teacher, in the Reading class', async () => {
+    as(READ_TEACHER);
+    expect((await post(concept(CLASS_READ, ANA, CONCEPT_ANA_READ))).status).toBe(200);
+    // ...and that teacher cannot assign the Mathematics one.
+    expect((await post(concept(CLASS_READ, ANA, CONCEPT_ANA))).status).toBe(400);
+    expect(inserts.map((r) => [r[2], r[5]])).toEqual([[CLASS_READ, CONCEPT_ANA_READ]]);
+  });
+
+  it('learner outside the class => refused, even with that learner\'s own in-subject concept', async () => {
+    const res = await post(concept(CLASS_MATH, OUTSIDER, CONCEPT_OUTSIDER));
+    expect(res.status).toBe(403);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('Coordinator => refused', async () => {
+    as(COORDINATOR);
+    const res = await post(concept(CLASS_MATH, ANA, CONCEPT_ANA));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('a Teacher of another class => refused in this one', async () => {
+    as(READ_TEACHER);
+    expect((await post(concept(CLASS_MATH, ANA, CONCEPT_ANA))).status).toBe(403);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('fails closed: a concept with no confirmed subject, or a class with no linked subject, is refused', async () => {
+    expect((await post(concept(CLASS_MATH, ANA, CONCEPT_ANA_UNMAPPED))).status).toBe(400);
+    world.classSubject[CLASS_MATH] = null;
+    try {
+      expect((await post(concept(CLASS_MATH, ANA, CONCEPT_ANA))).status).toBe(400);
+    } finally {
+      world.classSubject[CLASS_MATH] = SUBJ_MATH;
+    }
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('an in-subject concept that is not this learner\'s own is still refused by the unchanged ownership check', async () => {
+    const res = await post(concept(CLASS_MATH, BEA, CONCEPT_ANA));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('INVALID_TARGET');
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('the subject check runs before the assignment and uses the shared scope primitives', () => {
+    const route = strip(read('src/app/api/teacher/interventions/route.ts'));
+    expect(route.indexOf('checkConceptAssignmentScope(')).toBeGreaterThan(-1);
+    expect(route.indexOf('checkConceptAssignmentScope(')).toBeLessThan(route.indexOf('assignTeacherIntervention(actor.id'));
+    const scope = strip(read('src/lib/teacher/concept-assignment-scope.ts'));
+    expect(scope).toMatch(/resolveTeacherClassScope\(actorUserId, classId\)/);
+    expect(scope).toMatch(/canonicalSubjectOfLearnerConcept\(learnerConceptId\)/);
+    expect(scope).not.toMatch(/canAccessClass|canAccessInstitution/);
   });
 });
 
@@ -322,6 +398,7 @@ describe('wiring and ownership boundaries', () => {
 
   it('the route checks the exam scope before the assignment and keeps the existing service call', () => {
     const route = strip(read('src/app/api/teacher/interventions/route.ts'));
+    expect(route.indexOf('findTeacherExamPracticeOption(')).toBeGreaterThan(-1);
     expect(route.indexOf('findTeacherExamPracticeOption(')).toBeLessThan(route.indexOf('assignTeacherIntervention(actor.id'));
     expect(route).toMatch(/interventionType: z\.enum\(\['CONCEPT_REINFORCEMENT', 'SKILL_PRACTICE', 'COMPETENCY_PRACTICE', 'EXAM_PRACTICE'\]\)/);
   });

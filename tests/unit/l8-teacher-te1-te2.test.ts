@@ -2,10 +2,11 @@
  * L8 -- TE-1 (the individual practice form is mounted on the Teacher's
  * learner page) and TE-2 (class exam insights, for the class's Teacher only).
  *
- * The exam-insights tests run the REAL teacher gate
- * (class-assignment.service `getTeacherClass` / TEACHER_CLASS_SQL) against a
- * scripted database, so "a Coordinator is refused" is proven on the query
- * that decides it, not on a mock of the decision.
+ * The exam-insights tests run the REAL shared entry point
+ * (`getTeacherClassExamGaps`, L10) and the REAL teacher gates against a
+ * scripted database; only the exam bridge and the roster read are replaced.
+ * So "a Coordinator is refused" and "only the class subject comes back" are
+ * proven on the code that decides them.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
@@ -31,24 +32,41 @@ const CLASS = '44444444-4444-4444-8444-444444444444';
 const ANA = '11111111-1111-4111-8111-111111111111';
 const BEA = '22222222-2222-4222-8222-222222222222';
 const OUTSIDER = '99999999-9999-4999-8999-999999999999';
+const SUBJ_MATH = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const CC_MATH = 'c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1';
+const CC_READ = 'c2c2c2c2-c2c2-4c2c-8c2c-c2c2c2c2c2c2';
 const TEACHER = 'teacher-user';
 const COORDINATOR = 'coordinator-user';
 const OTHER_TEACHER = 'other-class-teacher';
 
-const GAPS = {
-  studentsWithResults: 1,
-  byDomain: [{ family: 'PISA', exam: 'PISA Math', domain: 'Quantity', students: 1 }],
-  byObjective: [{ family: 'PISA', exam: 'PISA Math', code: 'Q1', description: 'Ratios', students: 1 }],
-  byConcept: [{ canonicalConceptId: 'cc-1', name: 'Ratios', students: 1, studentIds: [ANA] }],
-  perStudent: [{ studentId: ANA, gaps: 2, concepts: [{ canonicalConceptId: 'cc-1', name: 'Ratios', studentConceptId: null }] }],
+/** What the exam bridge returns for the roster: Ana has a Mathematics gap AND a Reading gap; an off-roster Student too. */
+const BRIDGE = {
+  studentsWithResults: 2,
+  byDomain: [{ family: 'PISA', exam: 'PISA', domain: 'Reading', students: 1 }],
+  byObjective: [{ family: 'PISA', exam: 'PISA', code: 'R1', description: 'Inference', students: 1 }],
+  byConcept: [
+    { canonicalConceptId: CC_MATH, name: 'Ratios', students: 1, studentIds: [ANA] },
+    { canonicalConceptId: CC_READ, name: 'Inference', students: 2, studentIds: [ANA, OUTSIDER] },
+  ],
+  perStudent: [
+    { studentId: ANA, gaps: 2, concepts: [{ canonicalConceptId: CC_MATH, name: 'Ratios', studentConceptId: null }, { canonicalConceptId: CC_READ, name: 'Inference', studentConceptId: null }] },
+    { studentId: OUTSIDER, gaps: 1, concepts: [{ canonicalConceptId: CC_READ, name: 'Inference', studentConceptId: null }] },
+  ],
 };
-const GOALS = { studentsPreparing: 1, byFramework: [], byObjective: [], perStudent: [{ studentId: ANA, goals: [{ objectiveKey: 'pisa', label: 'PISA', examDate: null }] }] };
 
-/** Scripts the database: only TEACHER teaches CLASS (the teacher-only gate); the class row exists for everyone. */
+let classSubject: string | null = SUBJ_MATH;
+/** Scripts the database: only TEACHER teaches CLASS (a Mathematics class); Ana and Bea are its ACTIVE roster. */
 function scriptDb() {
-  query.mockImplementation(async (sql: string, params: unknown[] = []) => {
-    if (/FROM teacher_assignments ta/.test(sql) && /membership_role = 'TEACHER'/.test(sql)) return { rows: params[0] === TEACHER ? [{ id: CLASS }] : [] };
-    if (/FROM classes c JOIN institutions i/.test(sql)) return { rows: [{ id: CLASS, name: '9A', institution_id: 'inst', institution_name: 'School', grade_name: null, canonical_subject_id: null, subject_name: null }] };
+  query.mockImplementation(async (sql: string, params: any[] = []) => {
+    // L10 resolveTeacherClassScope: the teacher-only gate of the shared entry point
+    if (/FROM classes c\s+JOIN institutions i ON i\.id = c\.institution_id AND i\.status = 'ACTIVE'\s+JOIN institution_memberships im/.test(sql)) {
+      return { rows: params[0] === TEACHER && params[1] === CLASS ? [{ class_id: CLASS, institution_id: 'inst', canonical_subject_id: classSubject }] : [] };
+    }
+    // class-assignment.service getTeacherClass: TEACHER_CLASS_SQL, then the class row
+    if (/SELECT 1 FROM \(/.test(sql) && /FROM teacher_assignments ta/.test(sql)) return { rows: params[0] === TEACHER ? [{ id: CLASS }] : [] };
+    if (/FROM classes c JOIN institutions i/.test(sql)) return { rows: [{ id: CLASS, name: '9A', institution_id: 'inst', institution_name: 'School', grade_name: null, canonical_subject_id: classSubject, subject_name: 'Mathematics' }] };
+    if (/SELECT student_id FROM class_enrollments WHERE class_id = \$1 AND status = 'ACTIVE'/.test(sql)) return { rows: [{ student_id: ANA }, { student_id: BEA }] };
+    if (/FROM canonical_concepts WHERE id = ANY\(\$1::uuid\[\]\) AND canonical_subject_id = \$2/.test(sql)) return { rows: params[1] === SUBJ_MATH ? (params[0] as string[]).filter((id) => id === CC_MATH).map((id) => ({ id })) : [] };
     return { rows: [] };
   });
 }
@@ -58,71 +76,79 @@ const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s
 
 beforeEach(() => {
   vi.clearAllMocks();
+  classSubject = SUBJ_MATH;
   scriptDb();
   vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: TEACHER } as any);
-  // The roster guard (canAccessClass) admits the class's Teacher AND its institution's admins.
   vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: ANA, name: 'Ana' }, { studentId: BEA, name: 'Bea' }]);
-  vi.mocked(examGapsFor).mockResolvedValue(GAPS as any);
-  vi.mocked(examGoalsFor).mockResolvedValue(GOALS as any);
+  vi.mocked(examGapsFor).mockResolvedValue(BRIDGE as any);
 });
 
-describe('TE-2 service: the class\'s Teacher only', () => {
-  it('the Teacher of the class gets per-Student gaps and goals, limited to the ACTIVE roster', async () => {
+describe('TE-2 service: the shared entry point, for the class\'s Teacher only', () => {
+  it('the Teacher of the class gets the roster and only the gaps of the class subject', async () => {
     const r = await getTeacherClassExamInsights(TEACHER, CLASS, { family: 'PISA' });
     expect(r.klass.id).toBe(CLASS);
     expect(r.students.map((s) => s.studentId)).toEqual([ANA, BEA]);
     expect(examGapsFor).toHaveBeenCalledWith([ANA, BEA], { families: ['PISA'], includePerStudent: true });
-    expect(examGoalsFor).toHaveBeenCalledWith([ANA, BEA], { includePerStudent: true });
+    // Mathematics only: the same Student's Reading gap is gone at every level, and so is the off-roster Student.
+    expect(r.gaps.byConcept.map((c) => c.canonicalConceptId)).toEqual([CC_MATH]);
+    expect(r.gaps.perStudent).toEqual([{ studentId: ANA, gaps: 1, concepts: [expect.objectContaining({ canonicalConceptId: CC_MATH })] }]);
+    expect(r.gaps.studentsWithResults).toBe(1);
+    const text = JSON.stringify(r.gaps);
+    for (const foreign of [CC_READ, 'Inference', 'Reading', OUTSIDER]) expect(text).not.toContain(foreign);
   });
 
-  it('a Coordinator (institution admin) is refused although the roster guard would admit them; nothing is read', async () => {
-    await expect(getTeacherClassExamInsights(COORDINATOR, CLASS)).rejects.toBeInstanceOf(TeacherExamInsightsAccessDeniedError);
-    expect(getTeacherClassRoster).not.toHaveBeenCalled();
-    expect(examGapsFor).not.toHaveBeenCalled();
+  it('what the entry point withholds stays withheld: no area / objective totals, no goals, no AICE, and none is fetched here', async () => {
+    const r = await getTeacherClassExamInsights(TEACHER, CLASS);
+    expect(r.gaps.byDomain).toEqual([]);
+    expect(r.gaps.byObjective).toEqual([]);
+    expect(r.goals).toEqual({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] });
+    expect(r.aice).toEqual([]);
+    expect([...r.withheld].sort()).toEqual(['AICE_ENTRIES', 'DOMAIN_AGGREGATES', 'EXAM_GOALS', 'OBJECTIVE_AGGREGATES']);
     expect(examGoalsFor).not.toHaveBeenCalled();
+    expect(query.mock.calls.some(([sql]) => /aice_/.test(String(sql)))).toBe(false);
   });
 
-  it('a Teacher of another class is refused; nothing is read', async () => {
-    await expect(getTeacherClassExamInsights(OTHER_TEACHER, CLASS)).rejects.toBeInstanceOf(TeacherExamInsightsAccessDeniedError);
+  it('a class with no linked subject shows no gaps and the bridge is not asked', async () => {
+    classSubject = null;
+    const r = await getTeacherClassExamInsights(TEACHER, CLASS);
+    expect(r.gaps.byConcept).toEqual([]);
+    expect(r.gaps.perStudent).toEqual([]);
+    expect(examGapsFor).not.toHaveBeenCalled();
+  });
+
+  it.each([['a Coordinator (institution admin)', COORDINATOR], ['a Teacher of another class', OTHER_TEACHER]])('%s is refused; no roster and no gaps are read', async (_who, actor) => {
+    await expect(getTeacherClassExamInsights(actor, CLASS)).rejects.toBeInstanceOf(TeacherExamInsightsAccessDeniedError);
     expect(getTeacherClassRoster).not.toHaveBeenCalled();
     expect(examGapsFor).not.toHaveBeenCalled();
   });
 
-  it('the roster guard still applies: if it refuses, the result is a denial and no gaps are read', async () => {
+  it('the roster guard still applies: if it refuses, the result is a denial', async () => {
     vi.mocked(getTeacherClassRoster).mockRejectedValue(new Error('denied'));
     await expect(getTeacherClassExamInsights(TEACHER, CLASS)).rejects.toBeInstanceOf(TeacherExamInsightsAccessDeniedError);
-    expect(examGapsFor).not.toHaveBeenCalled();
   });
 
-  it('an empty class reads no AICE plans', async () => {
-    vi.mocked(getTeacherClassRoster).mockResolvedValue([]);
+  it('names are returned only for the learners the scoped result is about', async () => {
+    vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: ANA, name: 'Ana' }, { studentId: OUTSIDER, name: 'Not on the scoped roster' }]);
     const r = await getTeacherClassExamInsights(TEACHER, CLASS);
-    expect(r.aice).toEqual([]);
-    expect(query.mock.calls.some(([sql]) => /aice_diploma_plans/.test(String(sql)))).toBe(false);
+    expect(r.students.map((s) => s.studentId)).toEqual([ANA]);
   });
 });
 
-describe('TE-2 route: GET /api/teacher/exam-insights', () => {
-  it('the class Teacher gets 200 with the same payload shape as before', async () => {
+describe('TE-2 route: GET /api/teacher/exam-insights (the L10 route, unchanged by L8)', () => {
+  it('the class Teacher gets 200, gaps in the class subject only, and is told what is withheld', async () => {
     const res = await get(`classId=${CLASS}`);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Object.keys(body.data).sort()).toEqual(['aice', 'classId', 'gaps', 'goals', 'students']);
-    expect(body.data.gaps.perStudent[0].studentId).toBe(ANA);
+    expect(Object.keys(body.data).sort()).toEqual(['aice', 'classId', 'gaps', 'goals', 'students', 'withheld']);
+    expect(body.data.gaps.perStudent.map((p: any) => p.studentId)).toEqual([ANA]);
+    expect(JSON.stringify(body.data)).not.toContain(CC_READ);
   });
 
-  it('a Coordinator gets 403 and no per-Student data is read', async () => {
-    vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: COORDINATOR } as any);
+  it.each([['a Coordinator', COORDINATOR], ['a Teacher of another class', OTHER_TEACHER]])('%s gets 403 and no per-Student data is read', async (_who, actor) => {
+    vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: actor } as any);
     const res = await get(`classId=${CLASS}`);
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
-    expect(getTeacherClassRoster).not.toHaveBeenCalled();
-    expect(examGapsFor).not.toHaveBeenCalled();
-  });
-
-  it('a Teacher of another class gets 403', async () => {
-    vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: OTHER_TEACHER } as any);
-    expect((await get(`classId=${CLASS}`)).status).toBe(403);
     expect(examGapsFor).not.toHaveBeenCalled();
   });
 
@@ -133,33 +159,20 @@ describe('TE-2 route: GET /api/teacher/exam-insights', () => {
     vi.mocked(requireActor).mockResolvedValue({ ok: false, status: 401, error: 'UNAUTHORIZED' } as any);
     expect((await get(`classId=${CLASS}`)).status).toBe(401);
   });
-
-  it('an unexpected failure is not reported as a denial', async () => {
-    vi.mocked(examGapsFor).mockRejectedValue(new Error('database down'));
-    await expect(get(`classId=${CLASS}`)).rejects.toThrow('database down');
-  });
 });
 
 describe('TE-2 view model: one row per roster Student', () => {
   const students = [{ studentId: BEA, name: 'Bea' }, { studentId: ANA, name: 'Ana' }];
-  it('joins gaps, goals and AICE entries by Student, most gaps first', () => {
-    const rows = examInsightsByStudent({
-      students,
-      gaps: GAPS as any,
-      goals: GOALS as any,
-      aice: [{ student_id: BEA, syllabus_code: '9709', level: 'AS', expected_series_year: 2027, expected_series_month: 6, readiness: null }],
-    });
-    expect(rows.map((r) => r.studentId)).toEqual([ANA, BEA]);
-    expect(rows[0]).toMatchObject({ gaps: 2, goals: [{ label: 'PISA' }], concepts: [{ canonicalConceptId: 'cc-1', name: 'Ratios' }], aice: [] });
-    expect(rows[1]).toMatchObject({ gaps: 0, goals: [], concepts: [], aice: [{ syllabusCode: '9709', level: 'AS', series: '2027-06' }] });
+  const gaps = (perStudent: any[]) => ({ perStudent }) as any;
+  it('joins the in-subject gaps by Student, most gaps first', () => {
+    const rows = examInsightsByStudent({ students, gaps: gaps([{ studentId: ANA, gaps: 1, concepts: [{ canonicalConceptId: CC_MATH, name: 'Ratios', studentConceptId: null }] }]) });
+    expect(rows).toEqual([
+      { studentId: ANA, name: 'Ana', gaps: 1, concepts: [{ canonicalConceptId: CC_MATH, name: 'Ratios' }] },
+      { studentId: BEA, name: 'Bea', gaps: 0, concepts: [] },
+    ]);
   });
-  it('a Student outside the roster never produces a row, whatever the aggregates contain', () => {
-    const rows = examInsightsByStudent({
-      students,
-      gaps: { ...GAPS, perStudent: [...GAPS.perStudent, { studentId: OUTSIDER, gaps: 9, concepts: [] }] } as any,
-      goals: { ...GOALS, perStudent: [{ studentId: OUTSIDER, goals: [{ objectiveKey: 'x', label: 'X', examDate: null }] }] } as any,
-      aice: [{ student_id: OUTSIDER, syllabus_code: '9700', level: 'A', expected_series_year: null, expected_series_month: null, readiness: null }],
-    });
+  it('a Student outside the roster never produces a row, whatever the aggregate contains', () => {
+    const rows = examInsightsByStudent({ students, gaps: gaps([{ studentId: OUTSIDER, gaps: 9, concepts: [{ canonicalConceptId: CC_READ, name: 'Inference', studentConceptId: null }] }]) });
     expect(rows.map((r) => r.studentId).sort()).toEqual([ANA, BEA].sort());
     expect(JSON.stringify(rows)).not.toContain(OUTSIDER);
   });
@@ -201,20 +214,28 @@ describe('TE-1: the individual practice form', () => {
 });
 
 describe('L8 surfaces: scope and wiring', () => {
-  it('the exam-insights page uses the teacher-only service and answers not-found on denial', () => {
+  it('the exam-insights page uses the L8 service, answers not-found on denial and says what is withheld', () => {
     const page = strip(read('src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx'));
-    expect(page).toMatch(/getTeacherClassExamInsights\(actor\.id, classId/);
+    expect(page).toMatch(/getTeacherClassExamInsights\(actor\.id, classId\)/);
     expect(page).toMatch(/error instanceof TeacherExamInsightsAccessDeniedError\) notFound\(\)/);
-    expect(page).not.toMatch(/canAccessClass|canAccessInstitution|getTeacherClassRoster|examGapsFor/);
-    // The family filter only ever takes a validated value.
-    expect(page).toMatch(/FAMILY_RE\.test\(requested\)/);
+    expect(page).not.toMatch(/canAccessClass|canAccessInstitution|getTeacherClassRoster|examGapsFor|examGoalsFor|byDomain|byObjective|aice/);
+    expect(page).toMatch(/withheld\.length > 0 && <p className="ta-msg">\{m\['l8\.exams\.withheld'\]\}/);
   });
 
-  it('the service gates on getTeacherClass before the roster, never on canAccessClass directly', () => {
+  it('the L8 service reads exam data only through the shared entry point', () => {
     const service = strip(read('src/lib/teacher/exam-insights.service.ts'));
-    expect(service).not.toMatch(/canAccessClass|canAccessInstitution/);
-    expect(service.indexOf('getTeacherClass(actorUserId, classId)')).toBeGreaterThan(-1);
-    expect(service.indexOf('getTeacherClass(actorUserId, classId)')).toBeLessThan(service.indexOf('getTeacherClassRoster(actorUserId, classId)'));
+    expect(service).toMatch(/import \{ getTeacherClassExamGaps, TeacherExamScopeDeniedError, type TeacherClassExamGaps \} from '@\/lib\/authorization\/teacher-exam-scope'/);
+    expect(service).toMatch(/getTeacherClassExamGaps\(actorUserId, classId, \{ family: opts\.family \}\)/);
+    expect(service).not.toMatch(/exam-gaps\.service|examGapsFor|examGoalsFor|aice_|canAccessClass|canAccessInstitution|db\.query/);
+    // Teacher gate first, then the entry point, then names.
+    expect(service.indexOf('getTeacherClass(actorUserId, classId)')).toBeLessThan(service.indexOf('getTeacherClassExamGaps(actorUserId, classId'));
+    expect(service.indexOf('getTeacherClassExamGaps(actorUserId, classId')).toBeLessThan(service.indexOf('getTeacherClassRoster(actorUserId, classId)'));
+  });
+
+  it('the route goes through the shared entry point and reads nothing else for itself', () => {
+    const route = strip(read('src/app/api/teacher/exam-insights/route.ts'));
+    expect(route).toMatch(/getTeacherClassExamGaps\(gate\.actorUserId, classId, \{ family \}\)/);
+    expect(route).not.toMatch(/exam-gaps\.service|examGapsFor|examGoalsFor|aice_|db\.query/);
   });
 
   it('the class sub-navigation links the view and every class page passes its locale', () => {

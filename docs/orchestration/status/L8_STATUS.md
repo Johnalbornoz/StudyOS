@@ -1,10 +1,10 @@
 LANE: L8_TEACHER
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T18:00Z
-BASE_SHA: 4fb45b0 (L8); 4ada891 (L8-R1)
-CURRENT_SHA: the commit on feat/l8-teacher-te1-te2 whose parent is 4ada891 (git rev-parse --short feat/l8-teacher-te1-te2)
+LAST_UPDATE: 2026-10-11T19:31Z
+BASE_SHA: 4fb45b0 (L8); 4ada891 (L8-R1); fb5fe70 (final micro-remediation)
+CURRENT_SHA: the commit on feat/l8-teacher-te1-te2 whose first parent is 26eef17 (merge of L10 79b7f50 into fb5fe70); git rev-parse --short feat/l8-teacher-te1-te2
 
-CURRENT_PHASE: STOP (L8-R1)
+CURRENT_PHASE: STOP (final micro-remediation)
 
 NOW_DOING: NONE -- lane stopped
 
@@ -17,11 +17,11 @@ COMPLETED:
 - L8-R1: teacher-only exam-practice options read, exam-practice form on the learner page, subject-scope check on POST /api/teacher/interventions for EXAM targets; existing EXAM_PRACTICE model reused, no schema
 
 CURRENT_FINDINGS:
-- Exam practice is now assignable from the Teacher UI through the existing teacher_interventions EXAM target; options are the learner's own definition-based profiles on a PUBLISHED version, limited to the class subject
-- Over HTTP a teacher can no longer assign FULL_MOCK, a mini mock of a multi-subject exam, or any EXAM target outside the class subject (400 EXAM_TARGET_OUT_OF_SCOPE); assignTeacherIntervention itself is unchanged
-- Objective-first profiles are not offered (the existing execution path cannot start them)
-- The teacher sees status but no score for an exam-practice task (listClassAssignments computes quiz results only); not changed
-- CR-L8-01 OPEN: exam gaps are not filtered by the class subject (examGapsFor, not L8)
+- The lane branch now contains L10 (merge 26eef17 of 79b7f50): required to compile and test against getTeacherClassExamGaps. Brings L10's files, including its three unapplied migration files; none edited by L8
+- Exam insights read only through getTeacherClassExamGaps; the view no longer shows area / objective totals, exam goals, AICE entries or the family filter (withheld by the entry point)
+- POST /api/teacher/interventions: a concept must belong to the subject of the class it is assigned through (400 CONCEPT_NOT_IN_CLASS_SUBJECT); fails closed for unmapped concepts and subject-less classes
+- SKILL / COMPETENCY targets on the same endpoint have no subject bound; unchanged, no UI sends them
+- CR-L8-01: L8 side closed; overall OPEN until L2's subject-aware aggregate patch
 
 FILES_READ: control plane docs; L3R1 and L4R1 reports; src/app/dashboard/teacher/**; src/app/api/teacher/{exam-insights,interventions}; src/lib/teacher/**; src/lib/authorization/index.ts; src/lib/exam-core/{exam-gaps.service,route-auth}.ts; src/lib/i18n/*; related tests
 
@@ -41,31 +41,32 @@ FILES_MODIFIED:
 - src/app/dashboard/teacher/classes/[classId]/assignments/page.tsx
 - src/app/dashboard/teacher/classes/[classId]/progress/page.tsx
 - tests/unit/aice-pisa-security.test.ts (fixture only)
+- Final: merge of L10 79b7f50 (all L10 files); src/lib/teacher/concept-assignment-scope.ts (new), src/lib/teacher/exam-insights.service.ts, src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx, src/app/api/teacher/interventions/route.ts, src/lib/i18n/teacher-l8-messages.ts, tests/unit/l8-teacher-te1-te2.test.ts, tests/unit/l8r1-teacher-exam-practice.test.ts, tests/unit/f11b-teacher-intervention-api-routes-security.test.ts (fixture only)
 - L8-R1: src/lib/teacher/exam-practice-options.service.ts (new), src/app/dashboard/teacher/students/AssignExamPracticeForm.tsx (new), tests/unit/l8r1-teacher-exam-practice.test.ts (new), src/app/api/teacher/interventions/route.ts, src/lib/i18n/teacher-l8-messages.ts
 - docs/orchestration/status/L8_STATUS.md, docs/orchestration/reports/L8_REPORT.md
 
 TESTS:
-- vitest tests/unit/l8r1-teacher-exam-practice.test.ts: 28 passed; with the route restored to 4ada891, 7 failed (out-of-scope targets accepted; title)
-- vitest tests/unit/l8-teacher-te1-te2.test.ts: 19 passed
-- vitest full suite (no database): 521 files, 9,338 tests passed (an earlier run had load-induced 5 s timeouts and one real failure, b2b2-legacy-blueprint-readers, fixed by using the existing blueprint readers)
+- vitest tests/unit/l8r1-teacher-exam-practice.test.ts: 36 passed; with the interventions route restored to fb5fe70, 3 failed (the subject-scope cases)
+- vitest tests/unit/l8-teacher-te1-te2.test.ts: 23 passed
+- L10 guards on the merged branch (l10-cr-l8-01, l10-r2-teacher-whole-learner-scope, aice-pisa-security): passed, unedited
+- vitest full suite (no database): 530 files, 9,546 tests passed
 - tsc --noEmit: exit 0
 - next build: exit 0
-- Browser / real database / HTTP E2E / Student-side start: NOT_RUN
+- Browser / real database / HTTP E2E: NOT_RUN
 
 BLOCKERS: NONE
 
 LOCK_REQUESTS: NONE
 
 CROSS_LANE_DEPENDENCIES:
-- CR-L8-01 (OPEN, hard dependency for Teacher E2E certification): L10_SHARED_FOUNDATION / learner-data-scope policy; subject restriction in examGapsFor, via L2 if Assessment Engine semantics are involved
-- CR-L8-02: ruled -- Coordinator 403 on GET /api/teacher/exam-insights stays; SF-4 is L10's
+- L10 79b7f50 is an ancestor of this branch: converge L10 first
+- CR-L8-01 OPEN with L2 (subject-aware domain / objective aggregates, goals, AICE); L8 side closed
+- CR-L10-03 (L8 uses the shared entry point, handles `withheld`): done
 
-NEXT: Orchestrator review of the L8-R1 commit; route CR-L8-01 to L10
+NEXT: Orchestrator review of the merge commit and the remediation commit
 
 PROGRESS:
-- TEACHER_CONCEPT_ASSIGNMENT: implemented, tests pass
-- TEACHER_EXAM_PRACTICE_ASSIGNMENT: implemented, tests pass (unit level)
-- TEACHER_CLASS_SCOPE: implemented, tests pass
-- COORDINATOR_TEACHER_ROUTE_BLOCK: implemented, tests pass
-- CR_L8_01_SUBJECT_GAPS: OPEN
-- 0 pushed, 0 merged
+- L8_SHARED_ENTRY_POINT: implemented, tests pass
+- TEACHER_INTERVENTION_SUBJECT_SCOPE: implemented for concept and exam targets, tests pass
+- L8_SIDE_CR_L8_01: closed on the L8 side; CR-L8-01 OPEN (L2)
+- 0 pushed, 0 merged into any integration branch

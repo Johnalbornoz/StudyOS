@@ -274,3 +274,126 @@ Merge the two L8 commits together after review. Before Stage certification, run 
 ## NEXT SAFE ACTION
 
 Orchestrator reviews the L8-R1 commit and routes CR-L8-01 to L10.
+
+---
+
+# L8 FINAL MICRO-REMEDIATION — 2026-10-11 (appended run)
+
+Follows the Orchestrator instruction "L8 final micro-remediation" on `feat/l8-teacher-te1-te2 @ fb5fe70`, with L10 complete at `79b7f50`.
+
+## LANE
+
+`L8_TEACHER` — worktree `/Users/jalbornoz/PROYECTOS/studyos-l8-teacher`, branch `feat/l8-teacher-te1-te2` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+| Gate | Result |
+|---|---|
+| L8_SHARED_ENTRY_POINT | PASS |
+| TEACHER_INTERVENTION_SUBJECT_SCOPE | PASS (concept and exam targets; see Finding 4 for skill / competency) |
+| L8_SIDE_CR_L8_01 | CLOSED on the L8 side. CR-L8-01 itself stays OPEN until L2's subject-aware aggregate patch |
+| L8_READY_FOR_FINAL_CONVERGENCE | YES |
+
+Unit level only: nothing ran against a real database or in a browser. These are the lane's results for review, not a certification.
+
+## BASE SHA
+
+`fb5fe70`.
+
+## FINAL SHA
+
+Two new commits on the lane branch: the merge of L10 (`26eef17`, parents `fb5fe70` and `79b7f50`), then the remediation commit on top of it. Run `git rev-parse feat/l8-teacher-te1-te2`.
+
+## FILES CHANGED
+
+**The lane branch now contains L10.** `getTeacherClassExamGaps` exists only on the L10 line, so L8 could not compile or be tested against it from `fb5fe70`. I merged `79b7f50` into the lane branch (not into any integration branch; nothing pushed). That brings every L10 file with it, including its three migration files `20261120_1000..1200`; L8 did not author, edit or apply them. Two conflicts, both resolved to the L10 version: `src/app/api/teacher/exam-insights/route.ts` and `tests/unit/aice-pisa-security.test.ts`.
+
+Remediation commit, new (1):
+
+- `src/lib/teacher/concept-assignment-scope.ts` — class-subject check for a concept assignment
+
+Remediation commit, modified (7):
+
+- `src/lib/teacher/exam-insights.service.ts` — reads exam data only through `getTeacherClassExamGaps`
+- `src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx` — shows what the entry point returns; says what is withheld
+- `src/app/api/teacher/interventions/route.ts` — concept subject check
+- `src/lib/i18n/teacher-l8-messages.ts` — one string added, twelve unused removed, four reworded
+- `tests/unit/l8-teacher-te1-te2.test.ts`, `tests/unit/l8r1-teacher-exam-practice.test.ts`
+- `tests/unit/f11b-teacher-intervention-api-routes-security.test.ts` — fixture only (mocks the new check)
+
+`src/app/api/teacher/exam-insights/route.ts` is L10's file, byte for byte. No L10 file was edited: not `src/lib/authorization/**`, not its tests.
+
+## LOCKS USED
+
+NONE. L10's shared helpers are called, not modified.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `vitest run tests/unit/l8r1-teacher-exam-practice.test.ts` | 36 passed |
+| Same file with `api/teacher/interventions/route.ts` restored to `fb5fe70` | 3 failed: different-subject concept accepted, Reading teacher able to assign the Mathematics concept, unmapped concept / subject-less class accepted. Route restored |
+| `vitest run tests/unit/l8-teacher-te1-te2.test.ts` | 23 passed |
+| L10's own guards on the merged branch: `l10-cr-l8-01-teacher-exam-subject-scope`, `l10-r2-teacher-whole-learner-scope`, `aice-pisa-security` | all passed, unedited. The three L10 guard tests that L10 reported as failing "until L8 switches" now pass |
+| Full suite (no database) | 530 files, 9,546 tests passed |
+| `npx tsc --noEmit -p .` | exit 0 |
+| `npx next build` | exit 0 |
+| Browser, real database, HTTP E2E | NOT_RUN |
+
+Requested regressions (all in `l8r1-teacher-exam-practice`, route + real `assignTeacherIntervention` + real L10 guards against a scripted database):
+
+| Case | Test | Result |
+|---|---|---|
+| same learner + matching class subject | "same learner + matching class subject => assigned…" | 200, row inserted |
+| same learner + different subject | "same learner + different subject => refused…" | 400 `CONCEPT_NOT_IN_CLASS_SUBJECT`, nothing inserted |
+| learner outside class | "learner outside the class => refused…" | 403, nothing inserted |
+| Coordinator | "Coordinator => refused" | 403, nothing inserted |
+
+Also covered: the Reading teacher can assign that Reading concept in the Reading class and cannot assign the Mathematics one; a teacher of another class gets 403; a concept with no confirmed subject and a class with no linked subject are refused; an in-subject concept that is not the learner's own is still refused by the existing ownership check. The exam-practice restrictions from L8-R1 are unchanged and their tests still pass.
+
+## FINDINGS
+
+### 1. Exam insights now go through the shared entry point
+
+- `getTeacherClassExamInsights` (page) calls `getTeacherClassExamGaps`; the route is L10's and calls it directly. No L8 file calls `examGapsFor` or `examGoalsFor` or reads the AICE tables any more.
+- Preserved: teacher-only access (the entry point's `resolveTeacherClassScope`, plus `getTeacherClass` for the page), Coordinator 403 on the route and not-found on the page, class scope (ACTIVE roster), subject scope (the entry point's cut to the class subject).
+
+### 2. What the Teacher sees changed as a consequence
+
+The entry point withholds area totals, objective totals, exam goals and AICE entries. So the "Exámenes" view now shows: active students, students with gaps, gaps by topic, and per student the number of gap topics and their names — all within the class subject. Gone from the view: "exams this class is preparing", gaps by area, gaps by objective, each student's exam goals and dates, AICE plan entries, and the exam-family filter (it was built from the area totals). The page states that these are not shown yet. A class with no linked subject shows the existing "no subject" notice.
+
+### 3. Concept reinforcement is bound to the class subject
+
+`POST /api/teacher/interventions` with a concept target now requires: the actor teaches the class (`resolveTeacherClassScope`, never an institution admin), the learner is ACTIVE in it, and the concept's canonical subject (through its matched catalogue mapping) equals the class's subject. Otherwise `403 FORBIDDEN` (not the teacher of that learner in that class) or `400 CONCEPT_NOT_IN_CLASS_SUBJECT`. It fails closed: a concept with no confirmed canonical match cannot be assigned through this endpoint, and neither can anything in a class with no linked subject. Ownership of the concept is still checked by `assignTeacherIntervention`.
+
+As with the exam rule in L8-R1, the check is at the endpoint, not inside `assignTeacherIntervention`, so the F11 certification scripts that call the service directly are unaffected. The class composer (`POST /api/teacher/classes/{id}/assignments`) already enforced the class subject.
+
+### 4. Not covered: skill and competency targets
+
+The same endpoint accepts `SKILL_PRACTICE` and `COMPETENCY_PRACTICE`. Those targets are catalogue rows, not learner concepts, and I found no subject bound for them; they are still accepted for any learner the teacher teaches. No UI sends them. The instruction covered concepts and exam practice only, so this is unchanged — say if it should be refused at the endpoint until a subject link exists.
+
+### 5. Merge note for convergence
+
+Because L10 is already an ancestor of this branch, converging L8 after L10 is a fast-forward-style merge with no conflict in the two files above. Converging L8 before L10 would bring L10 along with it.
+
+## BLOCKERS
+
+NONE for the lane.
+
+## CHANGE_REQUESTS
+
+| # | Owner | Status |
+|---|---|---|
+| CR-L8-01 | L10 (boundary) / L2 (exam-core aggregate) | **OPEN.** L8 side closed: L8 reads only through `getTeacherClassExamGaps`. Area and objective totals, exam goals and AICE entries stay withheld until L2's subject-aware patch lands; when it does, only L10's entry point and the L8 view change |
+| CR-L10-03 (L10 → L8: use the shared entry point; handle `withheld`) | L8 | Done in this run |
+| CR-L8-02 | L10 | Ruled earlier; Coordinator 403 kept |
+
+## MERGE RECOMMENDATION
+
+Converge L10 first, then this branch. Before Stage certification, run on a writable environment: class teacher opens "Exámenes"; assigns an in-subject concept; is refused an out-of-subject one; Coordinator is refused on both.
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the two new commits.
