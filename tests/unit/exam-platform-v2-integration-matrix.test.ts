@@ -148,6 +148,8 @@ describe('E12: one deterministic migration chain', () => {
     expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql', '20261104_1000_question_bank_review_assessment.sql', '20261105_1000_explain_defend_task_instances.sql', '20261105_1100_safety_signal_routing.sql', '20261106_1000_student_context_and_time_context.sql', '20261106_1100_exam_series_canonical.sql', '20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql',
       // + B2-B1: Question Bank content carriers and B2 persistence (20261110_1000..1700), additive.
       ...['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql'],
+      // + B5 line: assessment snapshot column (20261110_1800), additive; adopted byte-for-byte, already on DEV.
+      '20261110_1800_assessment_snapshot.sql',
       // + CURR-PAA: item version -> curriculum node (20261111_1000), additive.
       '20261111_1000_qb_item_curriculum_nodes.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);

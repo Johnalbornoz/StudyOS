@@ -19,7 +19,7 @@ export interface QuestionCoverageProvider {
 
 const pgArray = (v: unknown): string[] | null => (Array.isArray(v) ? (v as string[]) : null);
 
-type ContentCarrierFacts = Pick<ReviewedBankItemRow, 'itemConcepts' | 'itemRights' | 'stimulus' | 'assets'>;
+type ContentCarrierFacts = Pick<ReviewedBankItemRow, 'itemConcepts' | 'itemRights' | 'stimulus' | 'assets' | 'curriculumTrace'>;
 
 /**
  * Question Bank content-carrier facts of item versions: attribution, stimulus, assets and the rights of each
@@ -83,6 +83,31 @@ async function loadContentCarrierFacts(ids: readonly string[], client: DbExecuto
     };
   }
   for (const a of assets.rows as any[]) factsOf(a.approved_item_id).assets!.push({ assetId: a.asset_id, lifecycle: a.lifecycle_status, rights: rightsOf.get(`ASSET:${a.asset_id}`) ?? null });
+  // Curriculum traceability (migration 20261111_1000). Where that table is not applied, no item is traced.
+  const traceReady = await client.query(`SELECT to_regclass('public.question_bank_item_curriculum_nodes') IS NOT NULL AS ready`);
+  if (traceReady.rows[0]?.ready === true) {
+    const traces = await client.query(
+      `SELECT l.approved_item_id, t.id AS node_id, t.node_type, t.status AS node_status, t.source AS node_source, t.structure_version_id, sv.status AS version_status,
+              p.id AS parent_id, p.node_type AS parent_type, p.status AS parent_status, p.source AS parent_source,
+              (t.structure_version_id = on_.structure_version_id) AS in_objective_version
+         FROM question_bank_item_curriculum_nodes l
+         JOIN structure_nodes t ON t.id = l.structure_node_id
+         JOIN structure_versions sv ON sv.id = t.structure_version_id
+         LEFT JOIN structure_nodes p ON p.id = t.parent_id
+         JOIN approved_items ai ON ai.id = l.approved_item_id
+         JOIN learning_objectives lo ON lo.id = ai.learning_objective_id
+         JOIN structure_nodes on_ ON on_.id = lo.structure_node_id
+        WHERE l.approved_item_id = ANY($1::uuid[])`,
+      [ids]
+    );
+    for (const x of traces.rows as any[]) {
+      factsOf(x.approved_item_id).curriculumTrace = {
+        nodeId: x.node_id, nodeType: x.node_type, nodeStatus: x.node_status, nodeSource: x.node_source ?? null,
+        parent: x.parent_id ? { nodeId: x.parent_id, nodeType: x.parent_type, status: x.parent_status, source: x.parent_source ?? null } : null,
+        structureVersionId: x.structure_version_id, structureVersionStatus: x.version_status, inObjectiveStructureVersion: x.in_objective_version === true,
+      };
+    }
+  }
   return out;
 }
 

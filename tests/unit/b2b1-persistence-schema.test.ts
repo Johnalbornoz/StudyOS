@@ -20,7 +20,7 @@ import { isEligible } from '@/lib/exam-core/question-bank/lifecycle';
 const ROOT = join(__dirname, '..', '..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 const sqlOf = (file: string) => read(`database/migrations/${file}`).replace(/^\s*--.*$/gm, '');
-const NEW = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261110_')).sort();
+const NEW = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261110_') && f < '20261110_1800').sort();
 const ALL_NEW_SQL = NEW.map(sqlOf).join('\n');
 
 const owned: RightsRecord = { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true };

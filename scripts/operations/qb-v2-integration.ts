@@ -161,7 +161,7 @@ async function main() {
   const b1 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[1], examProfileId: await profile(students[1]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
   const a2 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
   // Minimum possible overlap per objective = max(0, need_first + need_second - eligible items).
-  const needs = (await db.query(`SELECT t.learning_objective_id lo, count(*)::int need FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 GROUP BY 1`, [paa.examVersionId])).rows;
+  const needs = (await db.query(`SELECT t.learning_objective_id lo, count(*)::int need FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND to_jsonb(b) ->> 'purpose' IS NULL GROUP BY 1`, [paa.examVersionId])).rows;
   const eligible = new Map<string, number>();
   for (const r of (await db.query(`SELECT ai.learning_objective_id lo, count(*)::int n FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('REDUCED_MOCK')} GROUP BY 1`)).rows) eligible.set(r.lo, r.n);
   const minOverlap = needs.reduce((s: number, r: any) => s + Math.max(0, 2 * r.need - (eligible.get(r.lo) ?? 0)), 0);

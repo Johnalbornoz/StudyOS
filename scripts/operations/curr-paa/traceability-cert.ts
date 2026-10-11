@@ -7,6 +7,8 @@ import { Client } from 'pg';
 import { loadItemCurriculumTraces } from '@/lib/curriculum/item-traceability.service';
 import { readPaaCurriculumHierarchy } from '@/lib/curriculum/paa/paa-hierarchy.service';
 import { PAA_DOMAINS, PAA_TOPICS } from '@/lib/curriculum/paa/paa-hierarchy';
+import { reviewedExamBankCoverageProvider } from '@/lib/assessment-foundation/question-coverage.service';
+import { curriculumTraceVerdict, evaluatePilotEligibility } from '@/lib/assessment-foundation/pilot-eligibility';
 
 const checks: string[] = [];
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -50,6 +52,19 @@ async function main() {
     check('objective placement is reported as it is (0 before re-parenting, 17 after)', underDomain === 0 || underDomain === 17, underDomain);
     const legacy = (await c.query(`SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' LIMIT 50`)).rows.map((r) => r.id as string);
     check('a legacy item has no trace and none is derived', legacy.length > 0 && (await loadItemCurriculumTraces(legacy, c as never)).size === 0);
+    // Q1-R0: condition 5 at runtime -- the eligibility reader decides it from the stored link.
+    const provider = reviewedExamBankCoverageProvider(c as never);
+    const coverage = await provider.load(traced);
+    const verdicts = coverage.map((cov) => curriculumTraceVerdict(cov));
+    const notCurrent = verdicts.filter((v) => !v.satisfied && v.reasons.length === 1 && v.reasons[0] === 'STRUCTURE_VERSION_NOT_CURRENT').length;
+    const satisfied = verdicts.filter((v) => v.satisfied).length;
+    check('every traced item satisfies condition 5, or fails it only because its structure version is not the published one', satisfied + notCurrent === 17 && satisfied >= 13, { satisfied, notCurrent });
+    check('a satisfied verdict names the stored Topic and Domain nodes', coverage.every((cov) => { const v = curriculumTraceVerdict(cov); const t = traces.get(cov.ref.id)!; return !v.satisfied || (v.topicNodeId === t.topic.nodeId && v.domainNodeId === t.domain.nodeId); }));
+    const legacyCoverage = await provider.load(legacy.slice(0, 20));
+    check('a legacy item fails condition 5 with TOPIC_LINK_MISSING, whatever its objective says', legacyCoverage.every((cov) => { const v = curriculumTraceVerdict(cov); return !v.satisfied && v.reasons.join() === 'TOPIC_LINK_MISSING'; }));
+    const pilot = evaluatePilotEligibility(coverage[0], { family: 'EXAM_PREPARATION', studentId: 'cert', examVersionId: (await one(`SELECT qi.exam_version_id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1`, [coverage[0].ref.id])).exam_version_id });
+    check('a traced item with no rights, review or attribution is still not pilot eligible, and the trace is not among the reasons', !pilot.evaluatedConditionsHold && pilot.reasons.includes('REUSE_RIGHTS_NOT_ESTABLISHED') && pilot.reasons.includes('PRIMARY_CONCEPT_MISSING') && !pilot.reasons.includes('TOPIC_LINK_MISSING'), pilot.reasons);
+    console.log(`CONDITION_5_RUNTIME: satisfied ${satisfied}/17, structure version not current ${notCurrent}/17`);
     console.log(`CURR_PAA_CONDITION_5 = ${checks.length} PASS (objectives under their Domain: ${underDomain}/17)`);
   } finally {
     await c.query('ROLLBACK').catch(() => undefined);

@@ -72,7 +72,7 @@ const SCOPE = ['src/lib/curriculum/curriculum-scope.ts', 'src/lib/curriculum/cur
 describe('B1 architecture -- the foundation holds contracts and reads only', () => {
   it('has the expected modules', () => {
     expect(FOUNDATION.map((f) => f.replace('src/lib/assessment-foundation/', '')).sort()).toEqual([
-      'blueprint-contract.ts', 'evidence-attribution.ts', 'exam-gap-candidate.ts', 'families.ts', 'generated-assessment.ts', 'index.ts', 'known.ts',
+      'blueprint-contract.ts', 'evidence-attribution.ts', 'exam-gap-candidate.ts', 'families.ts', 'generated-assessment.ts', 'index.ts', 'known.ts', 'pilot-eligibility.ts',
       'preparation-context.service.ts', 'preparation-context.ts', 'question-coverage.service.ts', 'question-coverage.ts', 'question-eligibility.ts',
       'student-assessment-context.service.ts', 'student-assessment-context.ts',
     ]);
