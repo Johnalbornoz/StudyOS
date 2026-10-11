@@ -38,7 +38,7 @@ export default async function AssessmentRunPage({ params }: { params: Promise<{ 
   const title = loaded.canonicalConceptIds.map((id) => loaded.conceptLabels[id]).filter(Boolean).join(' · ') || t['ax.setup.title'];
   return (
     <div className="xp-page">
-      <AssessmentRunner sessionId={sessionId} locale={locale} title={title} run={loaded.run} questions={loaded.questions} conceptLabels={loaded.conceptLabels} />
+      <AssessmentRunner sessionId={sessionId} locale={locale} title={title} run={loaded.run} questions={loaded.questions} conceptLabels={loaded.conceptLabels} savedAnswers={loaded.savedAnswers} />
     </div>
   );
 }

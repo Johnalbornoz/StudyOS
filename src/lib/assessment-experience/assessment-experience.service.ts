@@ -11,15 +11,16 @@
  */
 import { loadCurriculumScope } from '@/lib/curriculum/curriculum-scope.service';
 import { conceptsUnderNode } from '@/lib/curriculum/cross-curriculum';
-import { solveLearningForStudent } from '@/lib/assessment-blueprint/assessment-blueprint.service';
+import { evaluateExamVersionReadiness, solveLearningForStudent } from '@/lib/assessment-blueprint/assessment-blueprint.service';
 import { PRACTICE_DEPTHS, type PracticeDepth } from '@/lib/assessment-blueprint/policy/practice-depth';
 import type { BlueprintSolution } from '@/lib/assessment-blueprint/result';
 import type { AssessmentLaunchRequest } from './launch';
 import { db } from '@/lib/db';
 import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';
+import { loadDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';
 import { toClientQuestion } from '@/lib/quiz/client-question';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
-import { learningSetupView, runViewOf, singleSetupView, type AssessmentRunView, type AssessmentSetupView } from './views';
+import { examAttemptOptions, learningSetupView, runViewOf, singleSetupView, type AssessmentRunView, type AssessmentSetupView, type ExamAttemptOption } from './views';
 
 export type SetupUnavailable = 'CONTEXT_UNAVAILABLE' | 'SCOPE_NOT_FOUND' | 'NOTHING_TO_PRACTISE';
 
@@ -54,7 +55,11 @@ export async function learningSetupForStudent(studentId: string, request: Extrac
     byDepth[depth] = solved.solution;
   }
   const view = depths.length > 1 ? learningSetupView(byDepth) : singleSetupView(byDepth[depths[0]] as BlueprintSolution);
-  return { ok: true, view, canonicalConceptIds };
+  // B5-D: a scope given as the Student's own concepts is resolved by the Blueprint Core (B1 identity rule);
+  // the canonical targets it resolved are what the start will be asked for, so a resume finds the same assessment.
+  const resolved = new Set(canonicalConceptIds);
+  if (request.scope.learnerConceptIds.length > 0) for (const solution of Object.values(byDepth)) if (solution?.plan.mode === 'TARGETS') for (const target of solution.plan.targets) if (target.kind === 'CONCEPT') resolved.add(target.id);
+  return { ok: true, view, canonicalConceptIds: [...resolved].sort() };
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,7 +76,7 @@ export async function canonicalConceptLabels(canonicalConceptIds: readonly strin
 export type RunQuestion = ReturnType<typeof toClientQuestion> & { itemKey: string };
 
 export type LearningRunResult =
-  | { ok: true; status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED'; run: AssessmentRunView; questions: RunQuestion[]; conceptLabels: Record<string, string>; canonicalConceptIds: string[] }
+  | { ok: true; status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED'; run: AssessmentRunView; questions: RunQuestion[]; conceptLabels: Record<string, string>; canonicalConceptIds: string[]; /** Answers in progress, encoded, by item key. Not evidence. */ savedAnswers: Record<string, string> }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_CANONICAL' };
 
 /**
@@ -97,12 +102,45 @@ export async function learningRunForStudent(studentId: string, sessionId: string
     // the stored option order is kept, so a reload shows the same question the same way
     .map((q, index) => ({ ...toClientQuestion(q, index, { optionOrder: q.options?.map((o) => o.id) }), itemKey: q.assessmentItemKey as string }));
   const canonicalConceptIds = [...read.frozen.targets.canonicalConceptIds];
+  const status = row.status === 'active' ? (row.expired ? 'EXPIRED' : 'ACTIVE') : 'COMPLETED';
+  const savedAnswers = status === 'ACTIVE' ? await loadDraftAnswers(sessionId, studentId, stored) : {};
   return {
     ok: true,
-    status: row.status === 'active' ? (row.expired ? 'EXPIRED' : 'ACTIVE') : 'COMPLETED',
-    run: runViewOf(read.frozen, []),
+    status,
+    savedAnswers,
+    run: runViewOf(read.frozen, Object.keys(savedAnswers)),
     questions,
     conceptLabels: await canonicalConceptLabels(canonicalConceptIds),
     canonicalConceptIds,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* B5-D: canonical availability of exam attempts                        */
+/* ------------------------------------------------------------------ */
+
+export interface ExamAvailability {
+  options: ExamAttemptOption[];
+  /** Student-eligible reviewed questions for this exam version, as the Blueprint Core's readiness counts them. */
+  eligibleQuestions: number;
+  evaluated: boolean;
+}
+
+/**
+ * What the canonical feasibility says a Student can be offered for one exam version. Read-only. It starts
+ * nothing and fabricates nothing: with no student-eligible reviewed content every option is unavailable, and
+ * a mock is offered only when its official form has been shown buildable -- which this read does not
+ * establish, so a mock is never offered from here on content counts alone. A failed read is "unavailable",
+ * never a crash and never an optimistic default.
+ */
+export async function examAvailabilityForVersion(examVersionId: string | null, evaluate: typeof evaluateExamVersionReadiness = evaluateExamVersionReadiness): Promise<ExamAvailability> {
+  const none = (evaluated: boolean, eligibleQuestions = 0): ExamAvailability => ({ options: examAttemptOptions({ officialForm: null, fidelity: null, difficultyBandMet: null, practiceContentAvailable: false }), eligibleQuestions, evaluated });
+  if (!examVersionId) return none(false);
+  try {
+    const report = await evaluate(examVersionId);
+    if (report.eligibleQuestions === 0) return none(true);
+    return { options: examAttemptOptions({ officialForm: null, fidelity: null, difficultyBandMet: null, practiceContentAvailable: true }), eligibleQuestions: report.eligibleQuestions, evaluated: true };
+  } catch {
+    return none(false);
+  }
 }

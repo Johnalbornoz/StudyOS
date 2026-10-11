@@ -67,12 +67,3 @@ export function parseLaunchRequest(raw: unknown): { ok: true; request: Assessmen
   if (r.family === 'LEARNING' && r.scope.canonicalConceptIds.length === 0 && r.scope.learnerConceptIds.length === 0 && !r.scope.node) return { ok: false, issue: 'NO_SCOPE' };
   return { ok: true, request: r };
 }
-
-/**
- * Which execution path a launch takes. Today there is one: the existing runtime. The frozen-snapshot path
- * (Blueprint Core -> B3) is prepared and stays OFF until it is adopted as a separate, certified step;
- * there is deliberately no flag read here, so nothing can switch it on by configuration alone.
- */
-export const CANONICAL_EXECUTION_ENABLED = false as const;
-export type ExecutionPath = 'EXISTING_RUNTIME' | 'FROZEN_SNAPSHOT';
-export const executionPathFor = (_request: AssessmentLaunchRequest): ExecutionPath => (CANONICAL_EXECUTION_ENABLED ? 'FROZEN_SNAPSHOT' : 'EXISTING_RUNTIME');

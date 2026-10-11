@@ -21,7 +21,7 @@ import type { FormPosition } from '@/lib/exam-core/form-assembly';
 import { projectEvidenceNeeds, solveLearningBlueprint, solveOfficialBlueprint, type EvidenceCountPolicy } from '@/lib/assessment-blueprint';
 import type { BlueprintSolution } from '@/lib/assessment-blueprint/result';
 import { freezeAssessment, planEvidence, buildPostAssessmentState, type FrozenAssessment, type ScoredResponse, type PostAssessmentState } from '@/lib/assessment-execution';
-import { AssessmentLaunchRequestSchema, CANONICAL_EXECUTION_ENABLED, executionPathFor, parseLaunchRequest } from '@/lib/assessment-experience/launch';
+import { AssessmentLaunchRequestSchema, parseLaunchRequest } from '@/lib/assessment-experience/launch';
 import { examAttemptOptions, learningSetupView, previewOf, resultViewOf, runViewOf, singleSetupView, type AssessmentSetupView } from '@/lib/assessment-experience/views';
 import { continuationViewOf } from '@/lib/assessment-experience/continuation';
 import { learningSetupForStudent } from '@/lib/assessment-experience/assessment-experience.service';
@@ -95,11 +95,9 @@ describe('B4 launch contract -- a surface states intent, never content', () => {
     expect(JSON.stringify(AssessmentLaunchRequestSchema)).not.toMatch(/TECHNICAL_DEMO/);
   });
 
-  it('the frozen-snapshot execution path is OFF, by a constant no configuration can flip', () => {
-    expect(CANONICAL_EXECUTION_ENABLED).toBe(false);
-    const r = parseLaunchRequest(base);
-    expect(r.ok && executionPathFor(r.request)).toBe('EXISTING_RUNTIME');
-    expect(code('src/lib/assessment-experience/launch.ts')).not.toMatch(/process\.env|isCanonicalEngineV1Enabled|STUDENT_JOURNEY_V2/);
+  it('the launch contract holds no execution switch (B5-D: the one cutover authority is the server flag)', () => {
+    const src = code('src/lib/assessment-experience/launch.ts');
+    expect(src).not.toMatch(/CANONICAL_EXECUTION_ENABLED|executionPathFor|process\.env|isCanonicalEngineV1Enabled|STUDENT_JOURNEY_V2/);
   });
 });
 
@@ -461,7 +459,7 @@ describe('B4 authority guardrails', () => {
     // B5-R: the two mounted pages read the experience READ MODELS (setup, active run). Nothing under src/app
     // imports the Blueprint Core service or the execution service.
     expect(app.filter((f) => /assessment-execution\.service|assessment-blueprint\.service/.test(read(f)))).toEqual([]);
-    expect(app.filter((f) => /assessment-experience\.service/.test(read(f))).sort()).toEqual(['src/app/dashboard/assessment/[sessionId]/page.tsx', 'src/app/dashboard/assessment/page.tsx']);
+    expect(app.filter((f) => /assessment-experience\.service/.test(read(f))).sort()).toEqual(['src/app/dashboard/assessment/[sessionId]/page.tsx', 'src/app/dashboard/assessment/page.tsx', 'src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx']);
     expect(app.filter((f) => /persistAssessmentSnapshot|completeAssessmentEvidence|freezeAssessment|solveLearningForStudent/.test(read(f)))).toEqual([]);
     // the two existing evidence write sites are untouched
     expect(read('src/app/api/quizzes/generate-and-take/route.ts')).toMatch(/await updateMastery\(\{/);

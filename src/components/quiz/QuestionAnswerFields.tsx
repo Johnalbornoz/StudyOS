@@ -25,10 +25,13 @@ export function QuestionAnswerFields({
   question,
   staged,
   onChange,
+  textLabel,
 }: {
   question: ClientQuestionForInput;
   staged: unknown;
   onChange: (value: unknown) => void;
+  /** Accessible name of the free-text field, when the surface has no visible label for it. */
+  textLabel?: string;
 }) {
   const q = question;
 
@@ -64,7 +67,7 @@ export function QuestionAnswerFields({
   }
 
   if (q.answerFormat === 'text') {
-    return <textarea rows={4} value={(staged as string) || ''} onChange={(e) => onChange(e.target.value)} />;
+    return <textarea rows={4} aria-label={textLabel} value={(staged as string) || ''} onChange={(e) => onChange(e.target.value)} />;
   }
 
   if (q.answerFormat === 'matching' && q.matchingLeft && q.matchingRightShuffled) {

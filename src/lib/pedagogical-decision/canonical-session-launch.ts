@@ -37,6 +37,8 @@
 import type { CanonicalPedagogicalDecision, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import { resolveV1ActivityLaunchReadiness, type V1ActivityNotReadyReason } from './activity-launch-readiness';
 import { resolveCanonicalImplementation, type CanonicalQuizMode } from './canonical-implementation-registry';
+import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
+import { entryTargetFor } from '@/lib/assessment-experience/entry';
 
 export type CanonicalLaunchStatus = 'READY' | 'WAITING' | 'LOCKED' | 'CONSOLIDATED' | 'BLOCKED' | 'NOT_READY';
 
@@ -146,7 +148,10 @@ function buildPracticeLaunch(
   };
   if (itemCount) params.maxQuestions = itemCount;
   const qs = new URLSearchParams(params).toString();
-  return { launchStatus: 'READY', launchTarget: `/dashboard/quiz?${qs}`, launchParams: params, notReadyReason: null };
+  // B5-D: with canonical assessment execution ON, the same intent (this concept, this activity) enters the
+  // canonical setup instead; `launchParams` stay what the decision authorised. OFF -> the existing quiz flow.
+  const canonicalEntry = entryTargetFor('/dashboard/quiz', params, isSnapshotExecutionEnabled());
+  return { launchStatus: 'READY', launchTarget: canonicalEntry ?? `/dashboard/quiz?${qs}`, launchParams: params, notReadyReason: null };
 }
 
 /**

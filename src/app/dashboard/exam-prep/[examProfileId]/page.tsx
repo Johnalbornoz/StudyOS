@@ -45,6 +45,7 @@ import { runStudentExamJourneyShadow } from '@/lib/exam-journey/shadow.server';
 import { db } from '@/lib/db';
 import { getPreparationView, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { PreparationHome } from './PreparationHome';
+import { CanonicalExamAvailability } from './CanonicalExamAvailability';
 
 const DIMENSION_LABEL_KEY = {
   KNOWLEDGE_READINESS: 'examPrep.dimension.knowledge',
@@ -161,6 +162,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               </div>
             }
           />
+          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
           <ExamTargetOverview
             profileId={profile.id}
             resolution={resolution}
@@ -209,6 +211,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             </div>
           }
         />
+        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
         <PreparationHome
           view={view}
           labels={prepLabels}
@@ -289,6 +292,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
           </div>
         }
       />
+      <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
       <p className="ui-hint" style={{ margin: 0 }}>
         {[definition?.examFamily ? tr[`exam.family.${definition.examFamily}`] ?? definition.examFamily : null, examVersion ? `${t['examPrep.version']}: ${examVersion.versionLabel}` : null, sitting ? `${t['exam.sitting']}: ${sitting}` : null, contentStatus ? tr[`exam.contentStatus.${contentStatus}`] : null]
           .filter(Boolean)

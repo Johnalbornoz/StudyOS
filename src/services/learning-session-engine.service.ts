@@ -15,6 +15,8 @@
  * is needed here at all.
  */
 
+import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
+import { entryTargetFor } from '@/lib/assessment-experience/entry';
 import { db } from '@/lib/db';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import type { LearningDecision } from '@/lib/adaptive-learning-policy';
@@ -47,7 +49,9 @@ function buildUrl(path: string, params: Record<string, string>): string {
 }
 
 function ready(path: string, params: Record<string, string>): LaunchResolution {
-  return { launchStatus: 'READY', launchTarget: buildUrl(path, params), launchParams: params };
+  // B5-D: with canonical assessment execution ON, a practice / prove / retain launch enters the canonical
+  // setup with the same intent. Everything else, and everything when it is OFF, keeps its existing target.
+  return { launchStatus: 'READY', launchTarget: entryTargetFor(path, params, isSnapshotExecutionEnabled()) ?? buildUrl(path, params), launchParams: params };
 }
 
 function unavailable(reason: string): LaunchResolution {

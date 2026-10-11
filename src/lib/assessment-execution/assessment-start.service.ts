@@ -28,9 +28,10 @@ import { solveLearningForStudent, type LearningSelectionRequest } from '@/lib/as
 import { freezeAssessment, readFrozenAssessment, type FrozenAssessment } from './frozen-assessment';
 import { learningActivityFor } from './assessment-execution.service';
 
-/** Owner: the assessment runtime adoption (B5). Default OFF in every environment; set per environment, DEV first. */
-export const ASSESSMENT_SNAPSHOT_EXECUTION_FLAG = 'ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED' as const;
-export const isSnapshotExecutionEnabled = (): boolean => process.env[ASSESSMENT_SNAPSHOT_EXECUTION_FLAG] === 'true';
+import { isSnapshotExecutionEnabled } from './execution-flag';
+
+/** The one cutover authority lives in ./execution-flag (pure); re-exported for the callers that already import it here. */
+export { ASSESSMENT_SNAPSHOT_EXECUTION_FLAG, isSnapshotExecutionEnabled } from './execution-flag';
 
 export type ExecutionAuthority = 'LEGACY' | 'CANONICAL';
 

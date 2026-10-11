@@ -78,7 +78,9 @@ describe('B5 cutover flag', () => {
     expect(isSnapshotExecutionEnabled()).toBe(true);
     const src = code('src/lib/assessment-execution/assessment-start.service.ts');
     expect(src).not.toMatch(/CANONICAL_ENGINE_V1|isCanonicalEngineV1Enabled|EXAM_BLUEPRINT_V2|STUDENT_JOURNEY_V2/);
-    expect(src.match(/process\.env/g)).toHaveLength(1);
+    // B5-D: the environment is read in ONE pure module; the start service only re-exports it
+    expect(src).not.toMatch(/process\.env/);
+    expect(code('src/lib/assessment-execution/execution-flag.ts').match(/process\.env/g)).toHaveLength(1);
   });
 
   it('a start with the flag OFF does nothing at all: no query, no selection', async () => {

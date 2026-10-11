@@ -44,13 +44,15 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
   const setup = await learningSetupForStudent(studentId, request, new Date().toISOString());
   if (!setup.ok) return unavailable;
 
+  // from here on the intent names the canonical targets the Blueprint Core resolved (never a learner-local id)
+  const launch = setup.canonicalConceptIds.length > 0 ? { ...request, scope: { ...request.scope, canonicalConceptIds: setup.canonicalConceptIds, learnerConceptIds: [] } } : request;
   const labels = await canonicalConceptLabels(setup.canonicalConceptIds);
   const scopeLabel = setup.canonicalConceptIds.map((id) => labels[id]).filter(Boolean).join(' · ') || undefined;
   const chosen = setup.view.depthOptions.find((o) => o.depth === request.depth)?.preview ?? setup.view.preview;
 
   if (query.confirm === '1' && chosen?.canStart) {
     const effort = effortText(chosen.effort, t);
-    const setupHref = `/dashboard/assessment?${new URLSearchParams({ ...hiddenFieldsOf(request), confirm: '', depth: request.depth }).toString()}`;
+    const setupHref = `/dashboard/assessment?${new URLSearchParams({ ...hiddenFieldsOf(launch), confirm: '', depth: request.depth }).toString()}`;
     return (
       <div className="xp-page">
         <section className="card ax-setup" aria-labelledby="ax-preview-title" data-step="preview">
@@ -67,7 +69,7 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
           {effort && <p className="ax-single tabular">{effort}</p>}
           <AssessmentAvailability preview={chosen} t={t} />
           <StartAssessment
-            request={request}
+            request={launch}
             labels={{ start: t['ax.setup.start'], starting: t['ax.state.loading'], failed: t['ax.avail.UNAVAILABLE'], retry: t['ax.state.retry'], back: t['ax.setup.back'] }}
             backHref={setupHref}
           />
@@ -78,7 +80,7 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
 
   return (
     <div className="xp-page">
-      <AssessmentSetup view={setup.view} t={t} scopeLabel={scopeLabel} action="/dashboard/assessment" hidden={hiddenFieldsOf(request)} selectedDepth={request.depth} backHref={TODAY_HREF} />
+      <AssessmentSetup view={setup.view} t={t} scopeLabel={scopeLabel} action="/dashboard/assessment" hidden={hiddenFieldsOf(launch)} selectedDepth={request.depth} backHref={TODAY_HREF} />
     </div>
   );
 }

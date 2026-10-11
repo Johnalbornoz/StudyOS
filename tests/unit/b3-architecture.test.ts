@@ -21,7 +21,8 @@ function walk(dir: string, out: string[] = []): string[] {
 // b5-runtime-integration; the guards below keep describing the B3 evidence loop itself.
 const START = 'src/lib/assessment-execution/assessment-start.service.ts';
 // B5-R: the completion authority and the exam-side boundary (certified by b5r-runtime-closure).
-const B5_FILES = [START, 'src/lib/assessment-execution/assessment-completion.service.ts', 'src/lib/assessment-execution/assessment-exam.service.ts'];
+// B5-D: the one cutover flag (pure, the only reader of the environment) and the draft-answer store (certified by b5d-dev-cutover).
+const B5_FILES = [START, 'src/lib/assessment-execution/assessment-completion.service.ts', 'src/lib/assessment-execution/assessment-exam.service.ts', 'src/lib/assessment-execution/execution-flag.ts', 'src/lib/assessment-execution/assessment-draft.service.ts'];
 const B3 = walk('src/lib/assessment-execution').filter((f) => !B5_FILES.includes(f));
 const PURE = B3.filter((f) => !f.endsWith('.service.ts'));
 const SERVICE = 'src/lib/assessment-execution/assessment-execution.service.ts';
@@ -169,15 +170,20 @@ describe('B3 is not cut over', () => {
     // the snapshot store directly.
     const canonicalSites = ['src/app/api/assessments/learning/[sessionId]/complete/route.ts', 'src/app/api/assessments/learning/start/route.ts', 'src/lib/exam-core/exam-instance.service.ts', 'src/lib/exam-core/post-completion.ts'];
     // B5-R: the mounted setup page reads ONE thing -- whether the cutover flag is on (it does not exist otherwise).
-    const flagReaders = ['src/app/dashboard/assessment/page.tsx'];
-    expect(importers.filter((f) => !presentation(f)).sort()).toEqual([...legacySites, ...canonicalSites, ...flagReaders].sort());
-    for (const f of flagReaders) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual(["import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/assessment-start.service';"]);
+    // B5-D: plus the two server launch builders and Exam Prep's availability section -- each reads the flag and nothing else.
+    const flagReaders = ['src/app/dashboard/assessment/page.tsx', 'src/lib/pedagogical-decision/canonical-session-launch.ts', 'src/services/learning-session-engine.service.ts', 'src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx'];
+    // B5-D: the draft route calls the draft store only (answers in progress; not evidence).
+    const draftSites = ['src/app/api/assessments/learning/[sessionId]/answers/route.ts'];
+    expect(read(draftSites[0]).match(/^import [^;]*assessment-execution[^;]*;/gm)).toEqual(["import { saveDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';"]);
+    expect(importers.filter((f) => !presentation(f)).sort()).toEqual([...legacySites, ...canonicalSites, ...flagReaders, ...draftSites].sort());
+    for (const f of flagReaders) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual([expect.stringMatching(/^import \{ isSnapshotExecutionEnabled \} from '@\/lib\/assessment-execution\/(assessment-start\.service|execution-flag)';$/)]);
     for (const f of legacySites) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual([expect.stringMatching(/^import \{ executionAuthorityOf(QuizSession|ExamAttempt) \} from '@\/lib\/assessment-execution\/assessment-start\.service';$/)]);
     for (const f of canonicalSites) expect(read(f), f).not.toMatch(/completeAssessmentEvidence\(|persistAssessmentSnapshot\(|updateMastery\(|buildOperationKey\(|planEvidence\(/);
     // Presentation reads B3's TYPES. One value is allowed: the pure reader that verifies a stored snapshot
     // (the active shell serves a frozen assessment and must check it is one). No IO, no writer, no loop.
-    const pureReader = "import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';";
-    for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ') || line === pureReader), f).toBe(true);
+    // B5-D: and the draft reader, to restore answers in progress (read-only; not evidence).
+    const readers = ["import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';", "import { loadDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';"];
+    for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ') || readers.includes(line)), f).toBe(true);
   });
 
   it('the existing write sites are still the ones the runtime uses, and historical records read as before', () => {

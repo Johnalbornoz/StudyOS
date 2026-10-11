@@ -25,6 +25,7 @@ vi.mock('@/lib/db', () => ({
         return { rows: [], rowCount: 1 };
       }
       if (/^SELECT student_id, status, questions, assessment_snapshot, \(expires_at <= now\(\)\) AS expired FROM quiz_sessions/.test(s)) return { rows: sessions.has(params[0]) ? [sessions.get(params[0])] : [] };
+      if (/^SELECT question_index, student_answer FROM quiz_responses/.test(s)) return { rows: [] };
       if (/^SELECT id, name FROM canonical_concepts/.test(s)) return { rows: (params[0] as string[]).filter((id) => id !== 'C-unnamed').map((id) => ({ id, name: `Concept ${id}` })) };
       if (/^SELECT ei\.student_id, ei\.exam_profile_id/.test(s)) return { rows: instances.has(params[0]) ? [instances.get(params[0])] : [] };
       if (/^SELECT form FROM exam_instances/.test(s)) return { rows: instances.has(params[0]) ? [{ form: instances.get(params[0]).form }] : [] };
