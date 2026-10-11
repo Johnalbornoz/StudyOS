@@ -18,6 +18,10 @@ import {
   TeacherInterventionInvalidTargetError,
   TeacherInterventionExamProfileMismatchError,
 } from '@/lib/teacher/intervention.service';
+import { findTeacherExamPracticeOption, TeacherExamPracticeAccessDeniedError } from '@/lib/teacher/exam-practice-options.service';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
+import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 
 // F13: this schema was never extended when F11-C4 added the EXAM
@@ -70,8 +74,27 @@ async function handlePOST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
+  // L8-R1: an EXAM target must be one of the exam-practice options of THIS learner in THIS class (the learner's
+  // own preparation, within the class subject) -- never another learner's profile, another subject's objective
+  // or a whole-exam task of a multi-subject exam. The assignment itself, and its own authorization chain, are
+  // unchanged below; the title is derived here so the task is readable on the Teacher's and the Student's lists.
+  let title: string | undefined;
+  if (validated.target.targetType === 'EXAM') {
+    let option;
+    try {
+      option = await findTeacherExamPracticeOption(actor.id, validated.classId, validated.studentId, validated.target);
+    } catch (error) {
+      if (!(error instanceof TeacherExamPracticeAccessDeniedError)) throw error;
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    if (!option) return NextResponse.json({ error: 'EXAM_TARGET_OUT_OF_SCOPE' }, { status: 400 });
+    const m = getTeacherL8Messages(await getUserInterfaceLanguage(actor.id).catch(() => 'es'));
+    title = `${option.examName} · ${fillMessage(m[`l8.exam.kind.${option.kind}`], { target: option.targetLabel })}`.slice(0, 200);
+  }
+
   try {
-    const intervention = await assignTeacherIntervention(actor.id, validated);
+    const intervention = await assignTeacherIntervention(actor.id, title ? { ...validated, title } : validated);
     logPilotEvent('assignment_created', { route: '/api/teacher/interventions', studentId: validated.studentId, interventionType: validated.interventionType });
     return NextResponse.json({ success: true, data: { intervention } });
   } catch (error) {

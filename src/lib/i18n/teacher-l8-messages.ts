@@ -1,6 +1,6 @@
 /**
- * L8 (TE-1, TE-2) -- copy for the Teacher's individual practice form on the
- * learner page and for the class exam-insights view. A standalone catalogue:
+ * L8 (TE-1, TE-2, L8-R1) -- copy for the Teacher's individual practice and
+ * exam-practice forms on the learner page and for the class exam-insights view. A standalone catalogue:
  * read through getTeacherL8Messages, not merged into messages.ts. The
  * compiler requires every key in every locale.
  */
@@ -10,6 +10,8 @@ export type TeacherL8MessageKey =
   | 'l8.nav.exams'
   | 'l8.individual.title' | 'l8.individual.body' | 'l8.individual.concept' | 'l8.individual.none'
   | 'l8.individual.instructions' | 'l8.individual.submit' | 'l8.individual.done' | 'l8.individual.error'
+  | 'l8.exam.title' | 'l8.exam.body' | 'l8.exam.option' | 'l8.exam.none' | 'l8.exam.submit' | 'l8.exam.done' | 'l8.exam.error' | 'l8.exam.outOfScope'
+  | 'l8.exam.kind.TOPIC_EXAM' | 'l8.exam.kind.DOMAIN_EXAM' | 'l8.exam.kind.MINI_MOCK'
   | 'l8.exams.title' | 'l8.exams.scope' | 'l8.exams.filter' | 'l8.exams.filter.all'
   | 'l8.exams.noLearners' | 'l8.exams.noLearners.body' | 'l8.exams.noData' | 'l8.exams.noData.body'
   | 'l8.exams.summary.learners' | 'l8.exams.summary.preparing' | 'l8.exams.summary.withGaps'
@@ -32,6 +34,17 @@ const ES: TeacherL8Messages = {
   'l8.individual.submit': 'Asignar práctica',
   'l8.individual.done': 'Práctica asignada.',
   'l8.individual.error': 'No pudimos asignar la práctica. Inténtalo de nuevo.',
+  'l8.exam.title': 'Práctica de examen',
+  'l8.exam.body': 'Asigna a este estudiante una práctica de uno de los exámenes que prepara, dentro de la materia de esta clase. Solo la recibe este estudiante.',
+  'l8.exam.option': 'Práctica',
+  'l8.exam.none': 'Este estudiante no prepara ningún examen con práctica disponible para la materia de esta clase.',
+  'l8.exam.submit': 'Asignar práctica de examen',
+  'l8.exam.done': 'Práctica de examen asignada.',
+  'l8.exam.error': 'No pudimos asignar la práctica de examen. Inténtalo de nuevo.',
+  'l8.exam.outOfScope': 'Esa práctica ya no está disponible para este estudiante en esta clase. Actualiza la página.',
+  'l8.exam.kind.TOPIC_EXAM': 'Tema: {target}',
+  'l8.exam.kind.DOMAIN_EXAM': 'Área: {target}',
+  'l8.exam.kind.MINI_MOCK': 'Mini simulacro',
   'l8.exams.title': 'Dificultades en exámenes',
   'l8.exams.scope': 'Solo ves a los estudiantes activos de esta clase. Los datos salen del último intento calificado de cada estudiante en cada examen; nunca se muestran respuestas individuales.',
   'l8.exams.filter': 'Examen',
@@ -71,6 +84,17 @@ const EN: TeacherL8Messages = {
   'l8.individual.submit': 'Assign practice',
   'l8.individual.done': 'Practice assigned.',
   'l8.individual.error': 'We could not assign the practice. Try again.',
+  'l8.exam.title': 'Exam practice',
+  'l8.exam.body': 'Assign this student practice from one of the exams they are preparing, within this class’s subject. Only this student receives it.',
+  'l8.exam.option': 'Practice',
+  'l8.exam.none': 'This student is not preparing any exam with practice available for this class’s subject.',
+  'l8.exam.submit': 'Assign exam practice',
+  'l8.exam.done': 'Exam practice assigned.',
+  'l8.exam.error': 'We could not assign the exam practice. Try again.',
+  'l8.exam.outOfScope': 'That practice is no longer available for this student in this class. Refresh the page.',
+  'l8.exam.kind.TOPIC_EXAM': 'Topic: {target}',
+  'l8.exam.kind.DOMAIN_EXAM': 'Area: {target}',
+  'l8.exam.kind.MINI_MOCK': 'Mini mock',
   'l8.exams.title': 'Exam gaps',
   'l8.exams.scope': 'You only see the active students of this class. The data comes from each student’s latest scored attempt in each exam; individual answers are never shown.',
   'l8.exams.filter': 'Exam',
@@ -110,6 +134,17 @@ const DE: TeacherL8Messages = {
   'l8.individual.submit': 'Übung zuweisen',
   'l8.individual.done': 'Übung zugewiesen.',
   'l8.individual.error': 'Die Übung konnte nicht zugewiesen werden. Versuche es erneut.',
+  'l8.exam.title': 'Prüfungsübung',
+  'l8.exam.body': 'Weise dieser Person eine Übung aus einer Prüfung zu, die sie vorbereitet, innerhalb des Fachs dieser Klasse. Nur diese Person erhält sie.',
+  'l8.exam.option': 'Übung',
+  'l8.exam.none': 'Diese Person bereitet keine Prüfung vor, für die es im Fach dieser Klasse eine Übung gibt.',
+  'l8.exam.submit': 'Prüfungsübung zuweisen',
+  'l8.exam.done': 'Prüfungsübung zugewiesen.',
+  'l8.exam.error': 'Die Prüfungsübung konnte nicht zugewiesen werden. Versuche es erneut.',
+  'l8.exam.outOfScope': 'Diese Übung ist für diese Person in dieser Klasse nicht mehr verfügbar. Lade die Seite neu.',
+  'l8.exam.kind.TOPIC_EXAM': 'Thema: {target}',
+  'l8.exam.kind.DOMAIN_EXAM': 'Bereich: {target}',
+  'l8.exam.kind.MINI_MOCK': 'Mini-Probeprüfung',
   'l8.exams.title': 'Lücken in Prüfungen',
   'l8.exams.scope': 'Du siehst nur die aktiven Lernenden dieser Klasse. Die Daten stammen aus dem letzten bewerteten Versuch jeder Person pro Prüfung; einzelne Antworten werden nie angezeigt.',
   'l8.exams.filter': 'Prüfung',
@@ -149,6 +184,17 @@ const FR: TeacherL8Messages = {
   'l8.individual.submit': 'Attribuer la pratique',
   'l8.individual.done': 'Pratique attribuée.',
   'l8.individual.error': 'Impossible d’attribuer la pratique. Réessayez.',
+  'l8.exam.title': 'Pratique d’examen',
+  'l8.exam.body': 'Attribuez à cet élève une pratique tirée d’un des examens qu’il prépare, dans la matière de cette classe. Seul cet élève la reçoit.',
+  'l8.exam.option': 'Pratique',
+  'l8.exam.none': 'Cet élève ne prépare aucun examen proposant une pratique pour la matière de cette classe.',
+  'l8.exam.submit': 'Attribuer la pratique d’examen',
+  'l8.exam.done': 'Pratique d’examen attribuée.',
+  'l8.exam.error': 'Impossible d’attribuer la pratique d’examen. Réessayez.',
+  'l8.exam.outOfScope': 'Cette pratique n’est plus disponible pour cet élève dans cette classe. Actualisez la page.',
+  'l8.exam.kind.TOPIC_EXAM': 'Thème : {target}',
+  'l8.exam.kind.DOMAIN_EXAM': 'Domaine : {target}',
+  'l8.exam.kind.MINI_MOCK': 'Mini examen blanc',
   'l8.exams.title': 'Difficultés aux examens',
   'l8.exams.scope': 'Vous ne voyez que les élèves actifs de cette classe. Les données proviennent de la dernière tentative notée de chaque élève à chaque examen ; les réponses individuelles ne sont jamais affichées.',
   'l8.exams.filter': 'Examen',
@@ -188,6 +234,17 @@ const PT: TeacherL8Messages = {
   'l8.individual.submit': 'Atribuir prática',
   'l8.individual.done': 'Prática atribuída.',
   'l8.individual.error': 'Não foi possível atribuir a prática. Tenta de novo.',
+  'l8.exam.title': 'Prática de exame',
+  'l8.exam.body': 'Atribui a este estudante uma prática de um dos exames que prepara, dentro da disciplina desta turma. Só este estudante a recebe.',
+  'l8.exam.option': 'Prática',
+  'l8.exam.none': 'Este estudante não prepara nenhum exame com prática disponível para a disciplina desta turma.',
+  'l8.exam.submit': 'Atribuir prática de exame',
+  'l8.exam.done': 'Prática de exame atribuída.',
+  'l8.exam.error': 'Não foi possível atribuir a prática de exame. Tenta de novo.',
+  'l8.exam.outOfScope': 'Essa prática já não está disponível para este estudante nesta turma. Atualiza a página.',
+  'l8.exam.kind.TOPIC_EXAM': 'Tema: {target}',
+  'l8.exam.kind.DOMAIN_EXAM': 'Área: {target}',
+  'l8.exam.kind.MINI_MOCK': 'Mini simulado',
   'l8.exams.title': 'Dificuldades em exames',
   'l8.exams.scope': 'Só vês os estudantes ativos desta turma. Os dados vêm da última tentativa classificada de cada estudante em cada exame; nunca se mostram respostas individuais.',
   'l8.exams.filter': 'Exame',
