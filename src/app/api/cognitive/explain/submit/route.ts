@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess, verifyRemediationStepAccess } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canUseCapability } from '@/lib/entitlements';
+import { learningLicenceRequiredUnlessOpenAttemptForActor } from '@/lib/entitlements/learning-gate';
 import { clientRubricFieldsPresent, loadExplainTaskForSubmission, markExplainTaskConsumed } from '@/services/explain-defend-task.service';
 import { evaluateExplanation, rubricScorePercent } from '@/services/explain-defend.service';
 import { updateMastery, type MasteryUpdateInput } from '@/services/mastery.service';
@@ -63,19 +63,25 @@ async function handlePOST(request: NextRequest) {
       return NextResponse.json({ error: 'CLIENT_RUBRIC_REJECTED', fields: forbidden }, { status: 400 });
     }
 
-    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
-    const entitled = await canUseCapability(actor.id, validated.studentId, 'LEARNING_FULL_ACCESS');
-    if (!entitled) return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
-
-    if (validated.remediationStepId && !(await verifyRemediationStepAccess(validated.studentId, validated.remediationStepId))) {
-      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
-    }
-
     const loaded = await loadExplainTaskForSubmission(validated.activityId, {
       studentId: validated.studentId,
       subjectId: validated.subjectId,
       conceptId: validated.conceptId,
     });
+
+    // L11-R1 / D-8(c): the Student's own server-minted task, not expired and not yet answered,
+    // is an attempt started while the licence was valid (explain/generate requires it) and may
+    // be completed and graded without one. Anything else -- no such task, an expired one, one
+    // already answered -- still needs the licence, and is refused before the task is revealed.
+    const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
+    const openAttempt = loaded.ok && loaded.task.consumedAt === null;
+    const licenceRequired = await learningLicenceRequiredUnlessOpenAttemptForActor(actor.id, validated.studentId, openAttempt);
+    if (licenceRequired) return licenceRequired;
+
+    if (validated.remediationStepId && !(await verifyRemediationStepAccess(validated.studentId, validated.remediationStepId))) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+
     if (!loaded.ok) return NextResponse.json({ error: loaded.code }, { status: TASK_ERROR_STATUS[loaded.code] ?? 409 });
     const task = loaded.task;
 

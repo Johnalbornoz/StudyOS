@@ -20,7 +20,8 @@ import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { ownStudentId } from '@/lib/exam-core/route-auth';
-import { learningLicenceRequiredResponseForActor } from '@/lib/entitlements/learning-gate';
+import { learningLicenceRequiredUnlessOpenAttemptForActor } from '@/lib/entitlements/learning-gate';
+import { hasStartedTeacherInterventionExecution } from '@/lib/entitlements/open-attempt';
 import {
   startTeacherInterventionExecution,
   StudentInterventionAccessDeniedError,
@@ -54,7 +55,11 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     logPilotEvent('authorization_denied', { route: '/api/student/teacher-interventions/start', actorUserId: actor.id });
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
-  const licenceRequired = await learningLicenceRequiredResponseForActor(actor.id, learnerId);
+  // L11-R1 / D-8(c): "Continue" on a task the Student already started only recovers that same
+  // activity (the dispatcher returns RECOVERED and generates nothing), so it needs no licence.
+  // The dispatcher still decides ownership and whether the task can be opened at all.
+  const alreadyStarted = await hasStartedTeacherInterventionExecution(id, validated.idempotencyKey);
+  const licenceRequired = await learningLicenceRequiredUnlessOpenAttemptForActor(actor.id, learnerId, alreadyStarted);
   if (licenceRequired) return licenceRequired;
 
   try {

@@ -81,7 +81,8 @@ vi.mock('@/lib/observability/pilot-events', () => ({ logPilotEvent: vi.fn() }));
 // L11 / EN-2: the start route requires a Student account and its learning licence
 // (l11-unlicensed-policy.test.ts). Licensed Student here, so the dispatcher is reached.
 vi.mock('@/lib/exam-core/route-auth', () => ({ ownStudentId: vi.fn(async () => '11111111-1111-4111-8111-111111111111') }));
-vi.mock('@/lib/entitlements/learning-gate', () => ({ learningLicenceRequiredResponseForActor: vi.fn(async () => null) }));
+vi.mock('@/lib/entitlements/learning-gate', () => ({ learningLicenceRequiredUnlessOpenAttemptForActor: vi.fn(async () => null) }));
+vi.mock('@/lib/entitlements/open-attempt', () => ({ hasStartedTeacherInterventionExecution: vi.fn().mockResolvedValue(false) }));
 
 import { POST as childRequestPOST } from '@/app/api/parent/child-requests/route';
 import { POST as roleSelectPOST } from '@/app/api/identity/roles/select/route';

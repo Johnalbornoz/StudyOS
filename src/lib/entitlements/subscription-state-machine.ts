@@ -7,6 +7,7 @@ import type { SubscriptionStatus } from './types';
  * unrecognized transition through. `canceled` (the pre-existing
  * immediate-cancellation terminal) has no outgoing transitions here by
  * design -- it is not part of the new lifecycle's forward path.
+ * (`expired -> active` was added later by ruling; see the note on that edge.)
  */
 const ALLOWED_TRANSITIONS: ReadonlyArray<[SubscriptionStatus, SubscriptionStatus]> = [
   ['unpaid', 'active'],
@@ -43,6 +44,15 @@ const ALLOWED_TRANSITIONS: ReadonlyArray<[SubscriptionStatus, SubscriptionStatus
   ['active', 'expired'],
   ['past_due', 'expired'],
   ['reactivated', 'expired'],
+  // L11-R1 (Orchestrator ruling, 2026-10-11) -- renewal after EXPIRY. Expiry
+  // is not an administrator's suspension or revocation: an expired
+  // entitlement may become active again, but only as a NEW, explicitly
+  // authorized period -- an administrator's re-grant / manual approval
+  // (membership-admin.service.ts) or a provider-confirmed payment
+  // (provider-events.ts `decideConfirmedPayment`). Nothing else writes this
+  // edge: self-reactivation only ever leaves `suspended` / `past_due`
+  // (self-reactivation.ts), and `suspended` still has no edge to `active`.
+  ['expired', 'active'],
 ];
 
 export function isValidTransition(from: SubscriptionStatus, to: SubscriptionStatus): boolean {

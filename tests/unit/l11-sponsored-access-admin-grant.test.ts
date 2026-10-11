@@ -11,7 +11,9 @@
 import { describe, it, expect } from 'vitest';
 import { decideLearningAccess } from '@/lib/entitlements/learning-access';
 import { decideSelfReactivation } from '@/lib/entitlements/self-reactivation';
-import { decideProviderEvent, isPurchasable } from '@/lib/entitlements/provider-events';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { decideConfirmedPayment, decideProviderEvent, isPurchasable } from '@/lib/entitlements/provider-events';
 import { isValidTransition } from '@/lib/entitlements/subscription-state-machine';
 import type { SubscriptionRecord } from '@/lib/entitlements/types';
 
@@ -69,9 +71,21 @@ describe('operating the procedure', () => {
     // grantAdminLicense on an already-active row skips the transition and rewrites the expiry.
     expect(isValidTransition('active', 'active')).toBe(false);
   });
-  it('KNOWN LIMIT (reported, not changed by L11): after a grant has expired the state machine has no edge back to active', () => {
-    // Re-granting an expired Student through POST /api/admin/memberships/grant-license answers
-    // 409 INVALID_TRANSITION. Extend grants BEFORE they expire. See L11_REPORT.md, finding F-1.
-    expect(isValidTransition('expired', 'active')).toBe(false);
+  it('L11-R1: an EXPIRED grant can be granted again by an administrator (expired -> active), through the same gate as any grant', () => {
+    expect(isValidTransition('expired', 'active')).toBe(true);
+    const service = readFileSync(join(process.cwd(), 'src/services/membership-admin.service.ts'), 'utf-8');
+    const grantFn = service.slice(service.indexOf('export async function grantAdminLicense'), service.indexOf('export async function revokeLicenseGrant'));
+    expect(grantFn).toMatch(/isValidTransition\(before\.status, targetStatus\)/);
+    expect(grantFn).toMatch(/throw new InvalidMembershipTransitionError/);
+  });
+  it('L11-R1: expiry is not self-renewable -- the Student (or payer) cannot reactivate an expired entitlement', () => {
+    for (const manuallySetByAdmin of [true, false]) {
+      expect(decideSelfReactivation(grant({ status: 'expired', manuallySetByAdmin }), { lastSuspension: null, lastSucceededPaymentAt: '2026-10-11T11:00:00Z' }, NOW)).toEqual({ allowed: false, reason: 'NOT_REACTIVATABLE' });
+    }
+  });
+  it('L11-R1: a REVOKED or SUSPENDED grant has no renewal path: not re-grantable through the state machine, not purchasable, not payable', () => {
+    expect(isValidTransition('suspended', 'active')).toBe(false);
+    expect(isPurchasable({ status: 'suspended', manuallySetByAdmin: true })).toBe(false);
+    expect(decideConfirmedPayment({ status: 'suspended', manuallySetByAdmin: true }, { approvedAt: '2026-10-11T11:00:00Z', entitlementEndedAt: null })).toEqual({ action: 'NONE', reason: 'ADMIN_LIFECYCLE' });
   });
 });

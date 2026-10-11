@@ -205,3 +205,177 @@ Review the EN-2 behaviour change (demo Students lose concept explanations and gu
 ## NEXT SAFE ACTION
 
 Orchestrator rules D-8(c) and D-L11-1. Until D-L11-1 is ruled, the Human Operator extends each pilot grant before its expiry date.
+
+---
+
+# L11-R1 — 2026-10-11 (UTC), appended
+
+Continuation of the same lane after the Orchestrator ruling "L11 ACCEPTED WITH NARROW R1". `fe6ecf7` is the accepted base and was not amended. Sections above describe `fe6ecf7`; where this section differs, this section is current.
+
+## LANE
+
+`L11_ENTITLEMENTS`, run R1. Same worktree and branch (`/Users/jalbornoz/PROYECTOS/studyos-l11-entitlements`, `feat/l11-entitlements`).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+| Classification | Result |
+|---|---|
+| EN_1_SPONSORED_ACCESS | PASS |
+| EN_2_UNLICENSED_MODE | PASS |
+| EN_3_PAYMENT_SAFETY | PASS |
+| OPEN_ATTEMPT_CONTINUATION | PASS |
+| EXPIRED_RENEWAL | PASS |
+| ADMIN_SUSPENSION_PROTECTION | PASS |
+| GRANT_TO_PAID | PASS |
+| PAYMENTS_GO_LIVE_READY | NO |
+| PILOT_ENTITLEMENT_READY | YES |
+| L11_READY_FOR_CONVERGENCE | YES |
+
+These are the lane's own classifications against unit tests, a typecheck and a build. Nothing ran against a database, Clerk, Mercado Pago or a deployed environment. The decision is the Orchestrator's.
+
+## BASE SHA
+
+`fe6ecf7` (accepted L11 commit; parent `4fb45b0`).
+
+## FINAL SHA
+
+The single R1 commit on `feat/l11-entitlements` whose parent is `fe6ecf7`. Run `git rev-parse feat/l11-entitlements`.
+
+## FILES CHANGED
+
+New (2): `src/lib/entitlements/open-attempt.ts`, `tests/unit/l11-open-attempt-continuation.test.ts`.
+
+Modified application code (9):
+
+- `src/lib/entitlements/subscription-state-machine.ts` — one new edge, `expired → active`
+- `src/lib/entitlements/provider-events.ts` — expired-grant purchasability; `decideConfirmedPayment`
+- `src/lib/entitlements/learning-gate.ts` — `...UnlessOpenAttempt` forms
+- `src/lib/entitlements/unlicensed-policy.ts` — D-8(c) recorded; `PAID_UNLESS_OPEN_ATTEMPT`
+- `src/services/payment.service.ts` — renewal and grant-to-paid on a confirmed payment
+- `src/app/api/quizzes/session/[quizId]/check/route.ts` — licence check removed (continuation)
+- `src/app/api/cognitive/explain/submit/route.ts`, `src/app/api/cognitive/transfer/submit/route.ts`, `src/app/api/student/teacher-interventions/[id]/start/route.ts` — licence required unless the same attempt is already open
+
+Modified tests (8):
+
+- Assertions changed because the ruling changed the behaviour: `tests/unit/f3-subscription-state-machine.test.ts` (`expired → active` is now allowed; it pinned the opposite), `tests/unit/learn-check-feedback.test.ts` (answer check in an open quiz without a licence is now 200; it pinned 403)
+- Fixtures only: `tests/unit/f11c1-student-api-routes-security.test.ts`, `tests/unit/track-a-routes.test.ts` (mock names)
+- L11's own: `l11-provider-events`, `l11-payment-webhook`, `l11-sponsored-access-admin-grant`, `l11-unlicensed-policy`
+
+Documentation: `docs/implementation/f3/F3_UNLICENSED_MODE.md`, this report, `docs/orchestration/status/L11_STATUS.md`.
+
+No migration, schema, environment, flag or deployment change. Nothing pushed or merged.
+
+## LOCKS USED
+
+`ENTITLEMENTS_AND_PAYMENTS` only, as before. `SCHEMA_AND_MIGRATIONS` not used: none of the three rulings needed schema, so no portion was stopped and no `SCHEMA_CHANGE_REQUEST` is blocking. One optional schema request is recorded (CR-L11-06).
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit -p .` | exit 0, no output |
+| `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED -u POSTGRES_URL npx vitest run tests/unit/l11-*.test.ts` | 7 files, 168 tests passed |
+| Full suite, **default timeout**, load average 5 to 10 | **526 files, 9,460 tests passed**, exit 0, no timeout |
+| `npx next build` | exit 0; compiled; 228/228 static pages |
+| Mutation check: the 9 modified source files restored to `fe6ecf7`, then `l11-*`, `f3-subscription-state-machine` and `learn-check-feedback` | 41 of 207 failed in 7 of 9 files. Sources restored; 207 passed |
+| First full run after the R1 code change, before any test was touched | 8 files, 17 tests failed; all in files that exercise the changed behaviour, none by timeout |
+| HTTP E2E, DEV / Stage / Production, Mercado Pago sandbox | NOT_RUN |
+
+The R0 note about load-induced timeouts no longer applies to the final code: the default-timeout run passed in full.
+
+Regression coverage asked for:
+
+| Ruling | Tests |
+|---|---|
+| Continuation | `l11-open-attempt-continuation` (18): open quiz answered without a licence; completed quiz, expired session, foreign session refused; Explain task finished; answered / expired / foreign task refused; simulation routes keep ownership and inactivity expiry. `l11-unlicensed-policy` › "D-8(c): transfer submit" (3), "D-8(c): teacher-assigned task" (3), "D-8(c) never reaches a route that STARTS something" |
+| Expiry renewal | `l11-payment-webhook` › "EXPIRED RENEWAL" (9): checkout alone, `authorized` alone, pending / rejected payment renew nothing; confirmed payment renews; stale and duplicate payments do not. `l11-provider-events` › "decideConfirmedPayment" (10). `l11-sponsored-access-admin-grant` › admin re-grant after expiry; expiry not self-renewable. `f3-subscription-state-machine` › the new edge, and nothing else out of `expired` |
+| Suspension / revocation protection | `l11-payment-webhook` › "ADMIN SUSPENSION / REVOCATION stays fail-closed against every provider path" (4); `l11-provider-events` › `ADMIN PROTECTION` (4); `l11-sponsored-access-admin-grant` › "a REVOKED or SUSPENDED grant has no renewal path"; `l4r1-billing-self-reactivation` (16, unchanged) |
+| Grant → paid | `l11-payment-webhook` › "GRANT -> PAID" (6); `l11-provider-events` › `isPurchasable` grant cases |
+
+## FINDINGS
+
+### D-8(c) — continuation
+
+Rule implemented as ruled. Every route that starts an attempt requires the licence, so a server-side record of an open attempt owned by the Student is the proof that it was started while entitled.
+
+- **Already compliant, unchanged:** `simulation/attempts/[id]/*`, `exams/attempts/[id]`, `exams/instances/[id]` and its submissions, `quizzes/session/[quizId]`, `quizzes/verify`, and the submit branch of `quizzes/generate-and-take`. They only act on an existing attempt and keep ownership, status and inactivity-expiry checks.
+- **`quizzes/session/[quizId]/check` — licence check removed.** It refused an unlicensed Student, which blocked finishing: the LEARN_CHECK UI requires checking an answer before advancing (`tests/unit/learn-check-feedback.test.ts`, "LEARN_CHECK asks to check before advancing"). The route still requires ownership and an active, unexpired session, and creates nothing.
+- **`cognitive/explain/submit`** — no licence needed for the Student's own task that is not expired and not yet answered. An answered, expired or unknown task still needs the licence, and is refused before anything about the task is revealed.
+- **`cognitive/transfer/submit`** — no licence needed when the Student's own server-minted task exists and the submitted prompt matches it byte for byte (both existing checks). A submission with no server task still needs the licence.
+- **`student/teacher-interventions/[id]/start`** — no licence needed when an execution already exists for that task and idempotency key. The dispatcher then returns `RECOVERED` and generates nothing; it still decides ownership and refuses a completed, cancelled or past-due task. A first start still needs the licence, as ruled.
+- **Unchanged and still paid:** every start / generate route, the tutor, hints, guided practice, concept explanation, interactive formula, error-pattern guidance.
+
+**F-5 — a Transfer task has no expiry and no "answered" marker.** An unlicensed Student can submit again to an old Transfer task of their own. Mastery and evidence are idempotent for the same task (`operation_key`), so no new evidence is created; the AI grading call runs again. There is no existing validity rule to respect and I did not invent one. Closing it needs a marker on `transfer_task_instances` (CR-L11-06).
+
+### Expired renewal
+
+- **State machine:** one edge added, `expired → active`. Nothing else leaves `expired`. `suspended` still has only `suspended → reactivated`.
+- **Admin re-grant / renewal:** `grantAdminLicense` and `approveManualPayment` gate on `isValidTransition`, so `POST /api/admin/memberships/grant-license` on an expired Student now succeeds instead of `409 INVALID_TRANSITION`. That file is not this lane's and was not edited. F-1 is closed.
+- **Provider:** only a confirmed payment renews. `decideConfirmedPayment` requires an `approved` payment, re-fetched from the provider after a valid signature, whose `date_approved` is later than the moment the previous entitlement ended. A payment with no approval date, or approved before that moment, renews nothing. An `authorized` preapproval on an expired row is remembered (provider id) and changes no status.
+- **Not sufficient, each tested:** self-reactivation (`NOT_REACTIVATABLE`, unchanged code), checkout creation, `authorized` without payment, a webhook without a valid signature (R0 tests). A payer with no live relationship is not bound, as in R0.
+- **Persistence history:** preserved without schema. Each renewal writes a `subscription_events` row; the earlier grant and its expiry already have their own (`LICENSE_ACTIVATED`, `EXPIRED`), and the admin audit log is untouched.
+- A cancelled paid subscription past its paid period is reconciled to `expired` (the existing `cancelled_at_period_end → expired` edge) when a checkout or provider event next touches it, so it renews the same way.
+
+### Admin suspension / revocation
+
+Unchanged and re-tested against the new paths. A `suspended` row, whether a paid subscription suspended by an administrator or a revoked grant, also after its expiry date has passed: checkout is refused, an `authorized` preapproval changes nothing, a confirmed payment changes nothing (it is still recorded in `payments`), self-reactivation is denied. Only `reactivateMembership` (admin) restores it. A revoked grant can never be read as an expired one: revocation lands on `suspended`, which has no edge to `expired`, and the conversion statement is guarded to `status = 'expired'`.
+
+### Grant → paid — PASS, no schema
+
+- **Active grant:** checkout answers `409 SUBSCRIPTION_NOT_PURCHASABLE` before the provider is called.
+- **Expired grant:** purchasable. A grant past its expiry that nothing has reconciled yet is reconciled first. Checkout and `authorized` change nothing.
+- **Confirmed payment on an expired grant:** the row becomes a paid subscription (`manually_set_by_admin = false`, a payment `source`, a one-month `current_period_end`, the live payer bound).
+- **Provenance:** the sponsorship is not rewritten as paid.
+  - `grant_reason`, `grant_expires_at`, `granted_by_user_id` are never written by the payment service (source-guard test).
+  - The `PAYMENT_CONFIRMED` event that starts the paid period is written first and carries `previousSponsorship: { source, grantExpiresAt, grantReason, grantedByUserId }`. This also covers legacy grants that have no event of their own.
+  - `manually_set_by_admin` is cleared by exactly one statement, guarded by `manually_set_by_admin = true AND status = 'expired'`.
+
+What the Orchestrator should weigh on this PASS:
+
+1. `subscriptions.source` holds the current funding source, so it changes from the grant's source to the payment source. The old value survives in the event, not in the row.
+2. The steps are ordered to be safe to repeat, not wrapped in one database transaction (the existing `transitionSubscriptionStatus` takes no client). A failure between steps leaves an expired, unlicensed row and the provider's retry completes it; the retry can write a second `PAYMENT_CONFIRMED` event.
+3. `current_period_end` is the approval date plus one month, derived from the checkout's fixed monthly plan, not read from the provider.
+
+If any of these is not acceptable, the alternative is a separate grants / entitlement-period table, which is schema work for L10.
+
+**F-6 — manual payment approval on an expired grant does not give access.** `approveManualPayment` (`src/services/membership-admin.service.ts:285-310`) activates the row and sets `current_period_end`, but leaves `manually_set_by_admin = true` and the old `grant_expires_at`, so `decideLearningAccess` still answers `PERIOD_ENDED`. Before R1 this path failed earlier with `INVALID_TRANSITION`; the new edge makes it reachable. Admin re-grant is the working renewal path. Not this lane's file (CR-L11-05).
+
+### PAYMENTS_GO_LIVE_READY = NO
+
+The rules are implemented and unit-tested. Going live still needs:
+
+- a Mercado Pago sandbox run: the signature manifest, `date_approved`, `next_payment_date`, and whether a subscription charge carries the preapproval's `external_reference` are implemented from documentation and are `NOT_VERIFIED`;
+- `MERCADOPAGO_WEBHOOK_SECRET` set by the Human Operator;
+- CR-L11-05 (manual approval on an expired grant);
+- CR-L11-02 (licence state in the Student UI) and a purchase entry point for a Student whose grant expired;
+- the Orchestrator's view on the three points under "Grant → paid".
+
+### PILOT_ENTITLEMENT_READY = YES
+
+Payments stay off. Sponsored access is the per-student grant; an expired grant can now be granted again; revocation and suspension are final for everyone but an administrator; an attempt in progress when a grant lapses can be finished. Known rough edge for the pilot: CR-L11-02 (generic error on unlicensed instructional panels).
+
+## BLOCKERS
+
+NONE for this lane.
+
+## CHANGE_REQUESTS
+
+No blocking request. Current list (CR-L11-01, -03, -04 stand as written above):
+
+| # | Lock / owner | Files | Change needed | What this lane did instead |
+|---|---|---|---|---|
+| CR-L11-02 | **L6 Student UI** | `ConceptExplanationPanel.tsx`, `ConceptExplanationDisclosure.tsx`, `InteractiveFormulaWidget.tsx`, `quiz/TeachingIntro.tsx`, `learning-debt/ErrorPatternList.tsx`, `assignments/StartAssignmentButton.tsx`, and the Explain / Transfer submit screens | **Unlicensed instructional panels must translate `403 { error: 'ENTITLEMENT_REQUIRED' }` into a user-facing access / licence state, not a generic error.** The server contract is fixed: status 403, body `{ "error": "ENTITLEMENT_REQUIRED" }`, from the shared gate | Server enforcement only |
+| CR-L11-05 | `SHARED_FOUNDATION` / admin (L10) | `src/services/membership-admin.service.ts` (`approveManualPayment`) | On an administrator-set row, a manual payment approval must either clear the grant flag the way the provider path does (with the same provenance event) or be refused with a clear error | Recorded; admin re-grant works |
+| CR-L11-06 | `SCHEMA_AND_MIGRATIONS` (L10), optional | `transfer_task_instances` | Add `consumed_at` (and, if product wants one, `expires_at`) so a Transfer task can be marked answered, as `explain_defend_task_instances` already is | Continuation allowed on the existing ownership and exact-prompt checks; residual in F-5 |
+
+## MERGE RECOMMENDATION
+
+Merge `feat/l11-entitlements` (two commits: `fe6ecf7`, then R1) after `fix/security-p1-remediation`. It does not depend on L10. After L10 merges, re-run `tests/unit/l11-*.test.ts`, `tests/unit/f11c1-*.test.ts` and `tests/unit/track-a-routes.test.ts`: L10 changes `ownStudentId`, which the teacher-assigned start calls.
+
+Two existing tests now assert the opposite of what they did (state machine, answer check). Both changes follow this ruling; reviewers should confirm they read them the same way.
+
+## NEXT SAFE ACTION
+
+Orchestrator review of the R1 commit, in particular the three points under "Grant → paid".

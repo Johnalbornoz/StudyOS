@@ -15,7 +15,7 @@ import { loadTransferTaskInstance } from '@/services/transfer-task-instance.serv
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
-import { learningLicenceRequiredResponse } from '@/lib/entitlements/learning-gate';
+import { learningLicenceRequiredUnlessOpenAttempt } from '@/lib/entitlements/learning-gate';
 import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const Schema = z.object({
@@ -51,11 +51,6 @@ async function handlePOST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-
-    // L11 / EN-2 (D-8a): AI grading, mastery and evidence are part of the licence --
-    // refused before anything is graded or written (same rule as explain/submit).
-    const licenceRequired = await learningLicenceRequiredResponse(authContext, validated.studentId);
-    if (licenceRequired) return licenceRequired;
 
     // L4-R1: a remediation step named by the client must belong to THIS student's own
     // remediation path -- checked before anything is graded or written, so another
@@ -117,6 +112,15 @@ async function handlePOST(request: NextRequest) {
         context: { conceptId: validated.conceptId },
       });
     }
+
+    // L11 / EN-2 (D-8a): AI grading, mastery and evidence are part of the licence -- refused
+    // before anything is graded or written. L11-R1 / D-8(c): the one exception is finishing an
+    // attempt that was started while the licence was valid -- here, the Student's own
+    // server-minted task (transfer/generate requires the licence), answering the exact prompt
+    // the server generated (both verified just above). A submission with no server task is not
+    // the continuation of anything and still needs the licence.
+    const licenceRequired = await learningLicenceRequiredUnlessOpenAttempt(authContext, validated.studentId, taskInstance !== null);
+    if (licenceRequired) return licenceRequired;
 
     // Trusted distance -- the server's generated value when we have the
     // instance, the client's claim only as a legacy fallback.

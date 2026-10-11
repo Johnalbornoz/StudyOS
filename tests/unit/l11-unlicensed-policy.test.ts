@@ -14,7 +14,7 @@ import { join } from 'path';
 import { LEARNING_ROUTE_POLICY, rulesFor } from '@/lib/entitlements/unlicensed-policy';
 
 const API = join(process.cwd(), 'src/app/api');
-const ENFORCES = /LEARNING_FULL_ACCESS|learningLicenceRequiredResponse|entitled:\s*true/;
+const ENFORCES = /LEARNING_FULL_ACCESS|learningLicenceRequired\w*\(|entitled:\s*true/;
 const source = (route: string) => readFileSync(join(API, route, 'route.ts'), 'utf-8');
 
 function allRoutes(dir = API, out: string[] = []): string[] {
@@ -40,12 +40,25 @@ describe('the written definition (D-8) and the routes agree', () => {
     for (const p of rulesFor('PAID')) expect(source(p.route), `${p.route} must enforce`).toMatch(ENFORCES);
   });
 
+  it('every PAID_UNLESS_OPEN_ATTEMPT route enforces through the open-attempt form of the shared gate (D-8c)', () => {
+    expect(rulesFor('PAID_UNLESS_OPEN_ATTEMPT').map((p) => p.route).sort()).toEqual(['cognitive/explain/submit', 'cognitive/transfer/submit', 'student/teacher-interventions/[id]/start']);
+    for (const p of rulesFor('PAID_UNLESS_OPEN_ATTEMPT')) expect(source(p.route), `${p.route} must enforce unless an open attempt`).toMatch(/learningLicenceRequiredUnlessOpenAttempt(ForActor)?\(/);
+  });
+
+  it('D-8(c) never reaches a route that STARTS something: every start / generate route is still plainly PAID', () => {
+    const paid = rulesFor('PAID').map((p) => p.route);
+    for (const route of ['simulation/attempts', 'exams/instances', 'exams/instances/[id]/start', 'exams/instances/[id]/retake', 'quizzes/generate', 'quizzes/generate-and-take', 'learning/session/start', 'cognitive/explain/generate', 'cognitive/transfer/generate', 'cognitive/remediation/start', 'study-plan/generate', 'tutor/conversations', 'tutor/message', 'quizzes/hint']) {
+      expect(paid, route).toContain(route);
+      expect(source(route), route).not.toMatch(/UnlessOpenAttempt/);
+    }
+  });
+
   it('FREE_IN_DEMO (content setup) and CONTINUATION routes carry no licence check', () => {
     for (const p of [...rulesFor('FREE_IN_DEMO'), ...rulesFor('CONTINUATION')]) expect(source(p.route), `${p.route} must not enforce`).not.toMatch(ENFORCES);
   });
 
   it('no route enforces the licence without being in the definition', () => {
-    const listed = new Set(LEARNING_ROUTE_POLICY.filter((p) => p.rule === 'PAID' || p.rule === 'REPORTS_ONLY').map((p) => p.route));
+    const listed = new Set(LEARNING_ROUTE_POLICY.filter((p) => p.rule === 'PAID' || p.rule === 'PAID_UNLESS_OPEN_ATTEMPT' || p.rule === 'REPORTS_ONLY').map((p) => p.route));
     const unlisted = allRoutes().filter((route) => ENFORCES.test(source(route)) && !listed.has(route));
     expect(unlisted).toEqual([]);
   });
@@ -69,7 +82,7 @@ describe('the written definition (D-8) and the routes agree', () => {
       // Function bodies only: skip the import block.
       const src = source(route);
       const body = src.slice(src.indexOf('async function handle'));
-      const gate = body.search(/learningLicenceRequiredResponse(ForActor)?\(/);
+      const gate = body.search(/learningLicenceRequired\w*\(/);
       expect(gate, `${route} calls the shared gate`).toBeGreaterThan(-1);
       expect(body.search(before), `${route}: identity / ownership first`).toBeLessThan(gate);
       expect(gate, `${route}: gate before the work`).toBeLessThan(body.search(after));
@@ -116,6 +129,10 @@ vi.mock('@/services/concept-explanation.service', () => ({
 }));
 vi.mock('@/services/error-intelligence.service', () => ({ getErrorPatternGuidance: (...a: any[]) => work.guidance(...a) }));
 vi.mock('@/services/transfer.service', () => ({ evaluateTransferResponse: (...a: any[]) => work.grade(...a) }));
+const loadTransferTaskInstanceMock = vi.fn();
+vi.mock('@/services/transfer-task-instance.service', () => ({ loadTransferTaskInstance: (...a: any[]) => loadTransferTaskInstanceMock(...a) }));
+const hasStartedExecutionMock = vi.fn();
+vi.mock('@/lib/entitlements/open-attempt', () => ({ hasStartedTeacherInterventionExecution: (...a: any[]) => hasStartedExecutionMock(...a) }));
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({
   startTeacherInterventionExecution: (...a: any[]) => work.start(...a),
   StudentInterventionAccessDeniedError: class extends Error {},
@@ -144,7 +161,7 @@ const calls: Array<[string, () => Promise<Response>]> = [
   ['GET /api/learning-debt/error-guidance', () => guidanceGET(url(`studentId=${STUDENT}&subjectId=${SUBJECT}&errorType=CONCEPTUAL`))],
   [
     'POST /api/cognitive/transfer/submit',
-    () => transferSubmitPOST(json({ studentId: STUDENT, conceptId: CONCEPT, subjectId: SUBJECT, conceptLabel: 'Fractions', prompt: 'A recipe serves four…', studentResponse: 'I would halve it', distance: 'NEAR', language: 'en' })),
+    () => transferSubmitPOST(json({ studentId: STUDENT, conceptId: CONCEPT, subjectId: SUBJECT, conceptLabel: 'Fractions', prompt: 'A recipe serves four…', studentResponse: 'I would halve it', distance: 'NEAR', language: 'en', transferTaskId: '55555555-5555-4555-8555-555555555555' })),
   ],
   ['POST /api/student/teacher-interventions/[id]/start', () => interventionStartPOST(json({ idempotencyKey: 'k-1' }), idParams('44444444-4444-4444-8444-444444444444'))],
 ];
@@ -154,6 +171,8 @@ beforeEach(() => {
   work.assistanceLock.mockResolvedValue(null);
   dbQuery.mockReset().mockResolvedValue({ rows: [{ id: STUDENT }] });
   canUseCapabilityMock.mockReset().mockResolvedValue(false);
+  loadTransferTaskInstanceMock.mockReset().mockResolvedValue(null);
+  hasStartedExecutionMock.mockReset().mockResolvedValue(false);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -192,6 +211,73 @@ describe('the teacher-assigned start can never skip the licence check', () => {
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
     expect(work.start).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// L11-R1 / D-8(c): an attempt started while licensed may be finished.
+// ---------------------------------------------------------------------------
+
+describe('D-8(c): transfer submit', () => {
+  const PROMPT = 'A recipe serves four…';
+  const submit = (over: Record<string, unknown> = {}) =>
+    transferSubmitPOST(json({ studentId: STUDENT, conceptId: CONCEPT, subjectId: SUBJECT, conceptLabel: 'Fractions', prompt: PROMPT, studentResponse: 'I would halve it', transferTaskId: '55555555-5555-4555-8555-555555555555', ...over }));
+  const instance = async (over: Record<string, unknown> = {}) => {
+    const { computeTransferPromptExactHash } = await import('@/lib/transfer-task-identity');
+    return { id: '55555555-5555-4555-8555-555555555555', studentId: STUDENT, conceptId: CONCEPT, subjectId: SUBJECT, transferDistance: 'NEAR', transferModality: 'TEXT', noveltyDimensions: [], targetConceptIds: [], contextDomain: null, taskFamilyId: 'f', promptFingerprint: 'fp', promptExactHash: computeTransferPromptExactHash(PROMPT), generatorVersion: null, generatorPromptVersion: 'v', noveltyValidationPassed: true, createdAt: '2026-10-01T00:00:00Z', ...over };
+  };
+
+  it("unlicensed, the Student's own server-minted task and its exact prompt: the answer is graded (the attempt is finished)", async () => {
+    loadTransferTaskInstanceMock.mockResolvedValue(await instance());
+    work.grade.mockRejectedValue(new Error('stop after grading was reached'));
+    const res = await submit();
+    expect(work.grade).toHaveBeenCalledTimes(1);
+    expect((await res.json()).error).not.toBe('ENTITLEMENT_REQUIRED');
+    expect(canUseCapabilityMock).not.toHaveBeenCalled();
+  });
+
+  it('unlicensed, no server task (nothing was started): still 403 ENTITLEMENT_REQUIRED, nothing graded', async () => {
+    const res = await submit();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'ENTITLEMENT_REQUIRED' });
+    expect(work.grade).not.toHaveBeenCalled();
+  });
+
+  it("ownership is not weakened: another Student's task, or a different prompt, is refused before any grading", async () => {
+    loadTransferTaskInstanceMock.mockResolvedValue(await instance({ studentId: '99999999-9999-4999-8999-999999999999' }));
+    expect((await submit()).status).toBe(409);
+    loadTransferTaskInstanceMock.mockResolvedValue(await instance());
+    expect((await submit({ prompt: 'A different task the server never generated' })).status).toBe(409);
+    expect(work.grade).not.toHaveBeenCalled();
+  });
+});
+
+describe('D-8(c): teacher-assigned task', () => {
+  const start = () => calls[5][1]();
+
+  it('unlicensed, already started (an execution exists for this task and key): "Continue" recovers the same activity', async () => {
+    hasStartedExecutionMock.mockResolvedValue(true);
+    work.start.mockResolvedValue({ outcome: 'RECOVERED', executionId: 'e-1', executionReference: 'quiz-1' });
+    const res = await start();
+    expect(res.status).toBe(200);
+    expect(hasStartedExecutionMock).toHaveBeenCalledWith('44444444-4444-4444-8444-444444444444', 'k-1');
+    expect(work.start).toHaveBeenCalledWith('actor-1', '44444444-4444-4444-8444-444444444444', 'k-1');
+  });
+
+  it('unlicensed, never started: 403 ENTITLEMENT_REQUIRED, the dispatcher (which would generate) never runs', async () => {
+    const res = await start();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'ENTITLEMENT_REQUIRED' });
+    expect(work.start).not.toHaveBeenCalled();
+  });
+
+  it('the dispatcher still decides ownership and validity of a recovered task (completed / expired / not theirs)', async () => {
+    hasStartedExecutionMock.mockResolvedValue(true);
+    const { StudentInterventionNotStartableError, StudentInterventionAccessDeniedError } = await import('@/lib/student/teacher-intervention-execution.service');
+    work.start.mockRejectedValueOnce(new StudentInterventionNotStartableError('COMPLETED'));
+    expect((await start()).status).toBe(409);
+    work.start.mockRejectedValueOnce(new StudentInterventionAccessDeniedError('not owner'));
+    expect((await start()).status).toBe(403);
   });
 });
 

@@ -42,6 +42,9 @@ const ALLOWED: Array<[SubscriptionStatus, SubscriptionStatus]> = [
   ['active', 'expired'],
   ['past_due', 'expired'],
   ['reactivated', 'expired'],
+  // L11-R1 (Orchestrator ruling, 2026-10-11): renewal after expiry -- a new, explicitly
+  // authorized period (admin re-grant / approval, or a provider-confirmed payment).
+  ['expired', 'active'],
 ];
 
 describe('isValidTransition -- exactly the allowed set', () => {
@@ -70,8 +73,14 @@ describe('isValidTransition -- exactly the allowed set', () => {
     expect(isValidTransition('unpaid', 'suspended')).toBe(false);
   });
 
-  it('rejects reviving an expired subscription directly to active', () => {
-    expect(isValidTransition('expired', 'active')).toBe(false);
+  it('L11-R1: an expired subscription can be renewed to active, and to nothing else', () => {
+    expect(isValidTransition('expired', 'active')).toBe(true);
+    for (const to of ALL_STATUSES.filter((s) => s !== 'active')) expect(isValidTransition('expired', to)).toBe(false);
+  });
+
+  it('L11-R1: an administrator suspension still has no edge to active (only suspended -> reactivated)', () => {
+    expect(isValidTransition('suspended', 'active')).toBe(false);
+    expect(isValidTransition('suspended', 'expired')).toBe(false);
   });
 
   it('canceled (pre-existing immediate cancellation) has no outgoing transitions', () => {

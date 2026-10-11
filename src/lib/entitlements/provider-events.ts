@@ -10,9 +10,15 @@
  *    in `suspended`, `disputed`, `refunded` or `payment_under_review` stays
  *    where the administrator put it (same protection as self-reactivation.ts);
  *  - an administrator-set row (`manually_set_by_admin`: a grant, with its own
- *    expiry) is not governed by the provider: its status and its grant fields
- *    are left untouched, so the grant expiry keeps applying;
- *  - `authorized` activates through the state machine, never around it;
+ *    expiry) is not governed by the provider while the grant stands: its
+ *    status and its grant fields are left untouched, so the grant expiry
+ *    keeps applying, and no checkout is started (access is already sponsored);
+ *  - once a grant has EXPIRED the historical sponsorship no longer blocks a
+ *    purchase, and an expired entitlement of any source is renewed only by a
+ *    provider-CONFIRMED PAYMENT (`decideConfirmedPayment`) -- never by a
+ *    checkout being created or a preapproval being `authorized`;
+ *  - `authorized` activates a first purchase through the state machine, never
+ *    around it;
  *  - `paused` / `cancelled` only count for the preapproval the subscription
  *    is actually running on (an abandoned second checkout cannot cancel it);
  *  - a cancellation is honoured: `active` ends at the end of the paid period
@@ -62,6 +68,8 @@ export interface ProviderPreapproval {
 }
 
 export type ProviderEventSkip =
+  | 'PAYMENT_NOT_CONFIRMED'
+  | 'STALE_PAYMENT'
   | 'ADMIN_LIFECYCLE'
   | 'ADMIN_CONTROLLED'
   | 'NOT_CURRENT_PREAPPROVAL'
@@ -79,6 +87,16 @@ export type ProviderEventDecision =
       adoptProviderId: boolean;
     };
 
+/**
+ * An administrator-set row that still stands: anything but a grant that has
+ * run out. `expired` on an administrator-set row is only ever reached by the
+ * grant passing its own expiry (subscription.service.ts lazy reconciliation);
+ * a revocation or suspension lands on `suspended`, which is handled before this.
+ */
+function isStandingAdminRow(sub: Pick<ProviderSubscriptionView, 'status' | 'manuallySetByAdmin'>): boolean {
+  return sub.manuallySetByAdmin && sub.status !== 'expired';
+}
+
 const skip = (reason: ProviderEventSkip, adoptProviderId = false): ProviderEventDecision => ({ action: 'NONE', reason, adoptProviderId });
 
 function futureIso(value: string | null | undefined, now: Date): string | null {
@@ -89,9 +107,11 @@ function futureIso(value: string | null | undefined, now: Date): string | null {
 
 export function decideProviderEvent(sub: ProviderSubscriptionView, preapproval: ProviderPreapproval, now: Date = new Date()): ProviderEventDecision {
   if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status)) return skip('ADMIN_LIFECYCLE');
-  if (sub.manuallySetByAdmin) return skip('ADMIN_CONTROLLED');
+  if (isStandingAdminRow(sub)) return skip('ADMIN_CONTROLLED');
 
   if (preapproval.status === 'authorized') {
+    // Renewal after expiry needs a confirmed payment; the preapproval is only remembered.
+    if (sub.status === 'expired') return skip('PAYMENT_NOT_CONFIRMED', true);
     if (sub.status === 'active') return skip('ALREADY_APPLIED', true);
     if (!isValidTransition(sub.status, 'active')) return skip('INVALID_TRANSITION');
     return { action: 'TRANSITION', to: 'active', periodEnd: futureIso(preapproval.nextPaymentDate, now), adoptProviderId: true };
@@ -122,6 +142,41 @@ export function decideProviderEvent(sub: ProviderSubscriptionView, preapproval: 
  * be charged for a subscription the webhook is not allowed to move.
  */
 export function isPurchasable(sub: Pick<ProviderSubscriptionView, 'status' | 'manuallySetByAdmin'>): boolean {
-  if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status) || sub.manuallySetByAdmin) return false;
+  if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status) || isStandingAdminRow(sub)) return false;
   return isValidTransition(sub.status, 'active');
+}
+
+export type ConfirmedPaymentDecision =
+  | { action: 'NONE'; reason: ProviderEventSkip }
+  | {
+      action: 'ACTIVATE';
+      /** True when the row is an expired administrative grant: it becomes a paid subscription. */
+      fromExpiredGrant: boolean;
+    };
+
+/**
+ * What a provider-CONFIRMED (approved) payment may do. This is the only
+ * provider path that renews an expired entitlement or starts a paid period
+ * after an expired grant.
+ *
+ * `entitlementEndedAt` is when the previous entitlement ended (grant expiry,
+ * or the recorded expiry of the paid period). A payment approved before that
+ * moment paid for the period that already ended and renews nothing.
+ */
+export function decideConfirmedPayment(
+  sub: Pick<ProviderSubscriptionView, 'status' | 'manuallySetByAdmin'>,
+  facts: { approvedAt: string | null; entitlementEndedAt: string | null }
+): ConfirmedPaymentDecision {
+  if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status)) return { action: 'NONE', reason: 'ADMIN_LIFECYCLE' };
+  if (isStandingAdminRow(sub)) return { action: 'NONE', reason: 'ADMIN_CONTROLLED' };
+  if (sub.status === 'active') return { action: 'NONE', reason: 'ALREADY_APPLIED' };
+  if (!isValidTransition(sub.status, 'active')) return { action: 'NONE', reason: 'INVALID_TRANSITION' };
+
+  if (sub.status === 'expired') {
+    const approved = facts.approvedAt ? new Date(facts.approvedAt).getTime() : NaN;
+    if (!Number.isFinite(approved)) return { action: 'NONE', reason: 'PAYMENT_NOT_CONFIRMED' };
+    const ended = facts.entitlementEndedAt ? new Date(facts.entitlementEndedAt).getTime() : NaN;
+    if (Number.isFinite(ended) && approved <= ended) return { action: 'NONE', reason: 'STALE_PAYMENT' };
+  }
+  return { action: 'ACTIVATE', fromExpiredGrant: sub.manuallySetByAdmin };
 }

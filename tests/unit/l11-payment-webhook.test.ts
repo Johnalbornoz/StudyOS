@@ -64,8 +64,16 @@ vi.mock('@/lib/db', () => ({
         return { rows: [] };
       }
       if (/^UPDATE subscriptions SET provider = 'mercadopago', provider_subscription_id = \$2, provider_payer_email = \$3/.test(q)) {
-        if (state.sub && !state.sub.manually_set_by_admin) Object.assign(state.sub, { provider: 'mercadopago', provider_subscription_id: params[1], provider_payer_email: params[2] });
+        if (state.sub && (!state.sub.manually_set_by_admin || state.sub.status === 'expired')) Object.assign(state.sub, { provider: 'mercadopago', provider_subscription_id: params[1], provider_payer_email: params[2] });
         return { rows: [] };
+      }
+      if (/^UPDATE subscriptions SET manually_set_by_admin = false, source = 'INDIVIDUAL_PAYMENT'.* WHERE student_id = \$1 AND manually_set_by_admin = true AND status = 'expired'$/.test(q)) {
+        if (state.sub && state.sub.manually_set_by_admin && state.sub.status === 'expired') Object.assign(state.sub, { manually_set_by_admin: false, source: 'INDIVIDUAL_PAYMENT' });
+        return { rows: [] };
+      }
+      if (/^SELECT occurred_at FROM subscription_events .* new_status = 'expired'/.test(q)) {
+        const last = [...state.events].reverse().find((e) => e.to === 'expired');
+        return { rows: last ? [{ occurred_at: last.at }] : [] };
       }
       if (/^UPDATE subscriptions SET payer_user_id = \$2, source = \$3/.test(q)) {
         if (!state.sub || state.sub.manually_set_by_admin) return { rows: [] };
@@ -73,7 +81,11 @@ vi.mock('@/lib/db', () => ({
         return { rows: [{ id: state.sub.id }] };
       }
       if (/^INSERT INTO subscription_events/.test(q)) {
-        state.events.push({ type: params[1], from: params[2], to: params[3] });
+        const at = new Date().toISOString();
+        if (/'PAYMENT_CONFIRMED', \$2, 'active'/.test(q)) state.events.push({ type: 'PAYMENT_CONFIRMED', from: params[1], to: 'active', source: params[2], metadata: JSON.parse(params[3]), at });
+        else if (/'EXPIRED', \$2, 'expired'/.test(q)) state.events.push({ type: 'EXPIRED', from: params[1], to: 'expired', at });
+        else if (/'EXPIRED', 'cancelled_at_period_end', 'expired'/.test(q)) state.events.push({ type: 'EXPIRED', from: 'cancelled_at_period_end', to: 'expired', at });
+        else state.events.push({ type: params[1], from: params[2], to: params[3], at });
         return { rows: [] };
       }
       if (/^INSERT INTO payments/.test(q)) {
@@ -116,7 +128,7 @@ afterEach(() => {
 });
 
 describe('administrator grants and decisions are untouched by provider events', () => {
-  const GRANT = { status: 'active', manually_set_by_admin: true, grant_expires_at: '2026-10-25T00:00:00.000Z', grant_reason: 'Stage pilot', granted_by_user_id: 'admin-1', source: 'INSTITUTIONAL_LICENSE' };
+  const GRANT = { status: 'active', manually_set_by_admin: true, grant_expires_at: FUTURE, grant_reason: 'Stage pilot', granted_by_user_id: 'admin-1', source: 'INSTITUTIONAL_LICENSE' };
 
   it.each(['pending', 'authorized', 'paused', 'cancelled'])('a student on a time-limited grant: a %s preapproval leaves every field as the administrator set it', async (status) => {
     state.sub = newRow(GRANT);
@@ -127,11 +139,12 @@ describe('administrator grants and decisions are untouched by provider events', 
     expect(state.writes).toEqual([]);
   });
 
-  it('...so the grant expiry still applies', async () => {
+  it('...so the grant expiry still applies: starting a checkout or an authorized preapproval never extends a grant', async () => {
     state.sub = newRow({ ...GRANT, grant_expires_at: '2020-01-01T00:00:00.000Z' });
     provider(preapproval('authorized'));
     await event();
-    expect(access()).toMatchObject({ licensed: false, reason: 'PERIOD_ENDED' });
+    expect(state.sub).toMatchObject({ status: 'expired', manually_set_by_admin: true, grant_expires_at: '2020-01-01T00:00:00.000Z' });
+    expect(access().licensed).toBe(false);
   });
 
   it('an administrator suspension is not reversed by a later authorized preapproval or payment', async () => {
@@ -145,10 +158,12 @@ describe('administrator grants and decisions are untouched by provider events', 
     expect(state.events).toEqual([]);
   });
 
-  it('no statement in the payment service clears manually_set_by_admin or writes a grant field', () => {
+  it('the payment service never writes a grant field, and clears manually_set_by_admin in exactly one statement, guarded to an EXPIRED grant', () => {
     const src = readFileSync(join(process.cwd(), 'src/services/payment.service.ts'), 'utf-8');
-    expect(src).not.toMatch(/manually_set_by_admin\s*=\s*false\s*,/);
     expect(src).not.toMatch(/SET[^;`]*(grant_expires_at|grant_reason|granted_by_user_id)\s*=/);
+    const clears = src.match(/SET manually_set_by_admin = false[^`]*`/g) ?? [];
+    expect(clears).toHaveLength(1);
+    expect(clears[0]).toMatch(/WHERE student_id = \$1 AND manually_set_by_admin = true AND status = 'expired'/);
   });
 });
 
@@ -186,7 +201,8 @@ describe('payer binding: on payment, tied to a live relationship', () => {
     provider(preapproval('authorized'));
     await event();
     expect(state.sub).toMatchObject({ status: 'active', payer_user_id: PARENT_USER, source: 'PARENT_PAYMENT', provider_subscription_id: 'pre-1', current_period_end: FUTURE, manually_set_by_admin: false });
-    expect(state.events).toEqual([{ type: 'PAYMENT_CONFIRMED', from: 'unpaid', to: 'active' }]);
+    expect(state.events).toMatchObject([{ type: 'PAYMENT_CONFIRMED', from: 'unpaid', to: 'active' }]);
+    expect(state.events).toHaveLength(1);
   });
 
   it('the learner paying for themself is bound as an individual payment', async () => {
@@ -235,7 +251,8 @@ describe('provider cancellation is honoured', () => {
     await event();
     expect(state.sub).toMatchObject({ status: 'cancelled_at_period_end', current_period_end: FUTURE });
     expect(access().licensed).toBe(true);
-    expect(state.events).toEqual([{ type: 'CANCELLED', from: 'active', to: 'cancelled_at_period_end' }]);
+    expect(state.events).toMatchObject([{ type: 'CANCELLED', from: 'active', to: 'cancelled_at_period_end' }]);
+    expect(state.events).toHaveLength(1);
 
     state.sub!.current_period_end = '2020-01-01T00:00:00.000Z';
     expect(access()).toMatchObject({ licensed: false, reason: 'PERIOD_ENDED' });
@@ -272,5 +289,183 @@ describe('inert and malformed input', () => {
     await event();
     expect(state.sub).toBeNull();
     expect(state.writes).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// L11-R1 -- renewal after expiry, grant -> paid, and what stays closed.
+// ---------------------------------------------------------------------------
+
+const PAST = '2020-01-01T00:00:00.000Z';
+const approvedPayment = (over: Row = {}) => ({ id: 9100, status: 'approved', date_approved: new Date().toISOString(), transaction_amount: 50, currency_id: 'COP', external_reference: encodeExternalReference(STUDENT, STUDENT_USER), ...over });
+const pay = async (resource: Row) => {
+  provider(resource);
+  await event('payment', String(resource.id));
+};
+const checkout = (payer = STUDENT_USER) => {
+  provider({ id: 'pre-9', init_point: 'https://mp.example/checkout' });
+  return createMercadoPagoCheckout(STUDENT, 'p@test.com', 'https://studyus.test/dashboard', payer);
+};
+
+describe('EXPIRED RENEWAL: only a new, explicitly authorized period', () => {
+  const expiredPaid = () => newRow({ status: 'expired', source: 'INDIVIDUAL_PAYMENT', payer_user_id: STUDENT_USER, provider_subscription_id: 'pre-OLD', current_period_end: PAST });
+
+  it('an expired paid subscription can start a checkout again', async () => {
+    state.sub = expiredPaid();
+    await expect(checkout()).resolves.toEqual({ checkoutUrl: 'https://mp.example/checkout' });
+    expect(state.sub).toMatchObject({ status: 'expired' });
+  });
+
+  it('checkout creation alone renews nothing', async () => {
+    state.sub = expiredPaid();
+    await checkout();
+    expect(state.sub!.status).toBe('expired');
+    expect(access().licensed).toBe(false);
+  });
+
+  it('a provider "authorized" preapproval without a confirmed payment renews nothing', async () => {
+    state.sub = expiredPaid();
+    provider(preapproval('authorized', { id: 'pre-9', external_reference: encodeExternalReference(STUDENT, STUDENT_USER) }));
+    await event('subscription_preapproval', 'pre-9');
+    expect(state.sub).toMatchObject({ status: 'expired', provider_subscription_id: 'pre-9' });
+    expect(access().licensed).toBe(false);
+    expect(state.events).toEqual([]);
+  });
+
+  it('a pending or rejected payment renews nothing', async () => {
+    state.sub = expiredPaid();
+    await pay(approvedPayment({ id: 9101, status: 'in_process', date_approved: null }));
+    await pay(approvedPayment({ id: 9102, status: 'rejected', date_approved: null }));
+    expect(state.sub!.status).toBe('expired');
+    expect(state.payments.map((p) => p.status)).toEqual(['PENDING', 'FAILED']);
+  });
+
+  it('a CONFIRMED payment establishes a new paid period, and is recorded', async () => {
+    state.sub = expiredPaid();
+    await pay(approvedPayment());
+    expect(state.sub).toMatchObject({ status: 'active', manually_set_by_admin: false, payer_user_id: STUDENT_USER, source: 'INDIVIDUAL_PAYMENT' });
+    expect(new Date(state.sub!.current_period_end).getTime()).toBeGreaterThan(Date.now() + 27 * 86_400_000);
+    expect(access().licensed).toBe(true);
+    expect(state.events).toMatchObject([{ type: 'PAYMENT_CONFIRMED', from: 'expired', to: 'active', metadata: { paymentReference: '9100' } }]);
+    expect(state.events[0].metadata.previousSponsorship).toBeUndefined();
+  });
+
+  it('a payment approved BEFORE the entitlement expired (late or replayed notification) renews nothing', async () => {
+    state.sub = expiredPaid();
+    state.events.push({ type: 'EXPIRED', from: 'active', to: 'expired', at: '2026-10-01T00:00:00.000Z' });
+    await pay(approvedPayment({ date_approved: '2026-09-15T00:00:00.000Z' }));
+    expect(state.sub!.status).toBe('expired');
+    expect(access().licensed).toBe(false);
+  });
+
+  it('a duplicate delivery of the renewing payment changes nothing more', async () => {
+    state.sub = expiredPaid();
+    const resource = approvedPayment();
+    await pay(resource);
+    await pay(resource);
+    expect(state.payments).toHaveLength(1);
+    expect(state.events.filter((e) => e.type === 'PAYMENT_CONFIRMED')).toHaveLength(1);
+  });
+
+  it('a cancelled subscription past its paid period is reconciled to expired, then renewable the same way', async () => {
+    state.sub = newRow({ status: 'cancelled_at_period_end', current_period_end: PAST, provider_subscription_id: 'pre-OLD' });
+    await checkout();
+    expect(state.sub!.status).toBe('expired');
+    // The payment is confirmed after the checkout that reconciled the expiry.
+    await pay(approvedPayment({ date_approved: new Date(Date.now() + 60_000).toISOString() }));
+    expect(state.sub!.status).toBe('active');
+  });
+
+  it('a cancelled subscription still inside its paid period is not purchasable (already has access)', async () => {
+    state.sub = newRow({ status: 'cancelled_at_period_end', current_period_end: FUTURE });
+    await expect(checkout()).rejects.toThrow('SUBSCRIPTION_NOT_PURCHASABLE');
+  });
+});
+
+describe('GRANT -> PAID', () => {
+  const SPONSORSHIP = { manually_set_by_admin: true, source: 'INSTITUTIONAL_LICENSE', grant_reason: 'Colegio pilot 2026', granted_by_user_id: 'admin-1' };
+  const expiredGrant = () => newRow({ ...SPONSORSHIP, status: 'expired', grant_expires_at: PAST });
+
+  it('ACTIVE grant: checkout refuses to charge, the provider is never called', async () => {
+    state.sub = newRow({ ...SPONSORSHIP, status: 'active', grant_expires_at: FUTURE });
+    await expect(checkout()).rejects.toThrow('SUBSCRIPTION_NOT_PURCHASABLE');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a grant past its expiry but not yet reconciled is reconciled first, then purchasable', async () => {
+    state.sub = newRow({ ...SPONSORSHIP, status: 'active', grant_expires_at: PAST });
+    await expect(checkout()).resolves.toBeTruthy();
+    expect(state.sub).toMatchObject({ status: 'expired', manually_set_by_admin: true });
+  });
+
+  it('EXPIRED grant: historical sponsorship does not block checkout, and checkout alone changes nothing', async () => {
+    state.sub = expiredGrant();
+    const before = { ...state.sub };
+    await expect(checkout()).resolves.toBeTruthy();
+    expect(state.sub).toEqual(before);
+  });
+
+  it('EXPIRED grant + authorized preapproval only: still an expired grant, no access', async () => {
+    state.sub = expiredGrant();
+    provider(preapproval('authorized', { id: 'pre-9' }));
+    await event('subscription_preapproval', 'pre-9');
+    expect(state.sub).toMatchObject({ ...SPONSORSHIP, status: 'expired', grant_expires_at: PAST });
+    expect(access().licensed).toBe(false);
+  });
+
+  it('EXPIRED grant + CONFIRMED payment: a paid period, with the sponsorship kept as history, not rewritten as paid', async () => {
+    state.sub = expiredGrant();
+    await pay(approvedPayment({ external_reference: encodeExternalReference(STUDENT, PARENT_USER) }));
+
+    // The Student now has a paid entitlement period...
+    expect(state.sub).toMatchObject({ status: 'active', manually_set_by_admin: false, source: 'PARENT_PAYMENT', payer_user_id: PARENT_USER });
+    expect(access()).toMatchObject({ licensed: true, source: 'PAID' });
+    // ...the grant's own columns are untouched...
+    expect(state.sub).toMatchObject({ grant_expires_at: PAST, grant_reason: 'Colegio pilot 2026', granted_by_user_id: 'admin-1' });
+    // ...and the event that starts the paid period carries what it follows.
+    expect(state.events).toMatchObject([
+      {
+        type: 'PAYMENT_CONFIRMED',
+        from: 'expired',
+        to: 'active',
+        source: 'PARENT_PAYMENT',
+        metadata: { previousSponsorship: { source: 'INSTITUTIONAL_LICENSE', grantExpiresAt: PAST, grantReason: 'Colegio pilot 2026', grantedByUserId: 'admin-1' } },
+      },
+    ]);
+  });
+
+  it('a payment approved before the grant expired does not turn the grant into a paid subscription', async () => {
+    state.sub = newRow({ ...SPONSORSHIP, status: 'expired', grant_expires_at: '2026-10-01T00:00:00.000Z' });
+    await pay(approvedPayment({ date_approved: '2026-09-01T00:00:00.000Z' }));
+    expect(state.sub).toMatchObject({ status: 'expired', manually_set_by_admin: true });
+  });
+});
+
+describe('ADMIN SUSPENSION / REVOCATION stays fail-closed against every provider path', () => {
+  const cases: Array<[string, Row]> = [
+    ['an admin-suspended paid subscription', { status: 'suspended', provider_subscription_id: 'pre-1' }],
+    ['a revoked grant', { status: 'suspended', manually_set_by_admin: true, grant_expires_at: FUTURE, source: 'INSTITUTIONAL_LICENSE' }],
+    ['a revoked grant whose expiry date has since passed', { status: 'suspended', manually_set_by_admin: true, grant_expires_at: PAST, source: 'INSTITUTIONAL_LICENSE' }],
+  ];
+
+  it.each(cases)('%s: checkout refused; authorized preapproval and confirmed payment change nothing', async (_label, row) => {
+    state.sub = newRow(row);
+    const before = { ...state.sub };
+    await expect(checkout()).rejects.toThrow('SUBSCRIPTION_NOT_PURCHASABLE');
+    provider(preapproval('authorized'));
+    await event();
+    await pay(approvedPayment());
+    expect(state.sub).toEqual(before);
+    expect(access().licensed).toBe(false);
+    expect(state.events).toEqual([]);
+    // The payment itself is still recorded for reconciliation.
+    expect(state.payments).toHaveLength(1);
+  });
+
+  it('a standing grant is not converted by a confirmed payment either', async () => {
+    state.sub = newRow({ status: 'active', manually_set_by_admin: true, grant_expires_at: FUTURE, source: 'TRIAL' });
+    const before = { ...state.sub };
+    await pay(approvedPayment());
+    expect(state.sub).toEqual(before);
   });
 });

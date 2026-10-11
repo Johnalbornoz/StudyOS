@@ -5,7 +5,7 @@
  * subscription runs on can pause or cancel it.
  */
 import { describe, it, expect } from 'vitest';
-import { decideProviderEvent, encodeExternalReference, isPurchasable, parseExternalReference, type ProviderSubscriptionView } from '@/lib/entitlements/provider-events';
+import { decideConfirmedPayment, decideProviderEvent, encodeExternalReference, isPurchasable, parseExternalReference, type ProviderSubscriptionView } from '@/lib/entitlements/provider-events';
 
 const NOW = new Date('2026-10-11T12:00:00Z');
 const NEXT = '2026-11-11T12:00:00.000Z';
@@ -41,8 +41,8 @@ describe('administrator decisions are never changed by a provider event', () => 
     }
   });
 
-  it('an administrator-set grant is not governed by the provider: no transition, no provider id adopted', () => {
-    for (const status of ['active', 'unpaid', 'expired', 'past_due'] as const) {
+  it('a standing administrator-set grant is not governed by the provider: no transition, no provider id adopted', () => {
+    for (const status of ['active', 'unpaid', 'past_due', 'cancelled_at_period_end'] as const) {
       for (const providerStatus of ['authorized', 'paused', 'cancelled', 'pending']) {
         expect(decideProviderEvent(sub({ status, manuallySetByAdmin: true, providerSubscriptionId: 'pre-1' }), pre(providerStatus), NOW)).toEqual({
           action: 'NONE',
@@ -64,7 +64,11 @@ describe('authorized', () => {
   it('already active: nothing to transition', () => {
     expect(decideProviderEvent(sub({ status: 'active' }), pre('authorized'), NOW)).toEqual({ action: 'NONE', reason: 'ALREADY_APPLIED', adoptProviderId: true });
   });
-  it.each(['expired', 'canceled', 'cancelled_at_period_end'] as const)('%s has no path to active in the state machine: skipped, never forced', (status) => {
+  it('L11-R1: expired is NOT renewed by an authorized preapproval -- that needs a confirmed payment; the preapproval is only remembered', () => {
+    expect(decideProviderEvent(sub({ status: 'expired' }), pre('authorized'), NOW)).toEqual({ action: 'NONE', reason: 'PAYMENT_NOT_CONFIRMED', adoptProviderId: true });
+    expect(decideProviderEvent(sub({ status: 'expired', manuallySetByAdmin: true }), pre('authorized'), NOW)).toEqual({ action: 'NONE', reason: 'PAYMENT_NOT_CONFIRMED', adoptProviderId: true });
+  });
+  it.each(['canceled', 'cancelled_at_period_end'] as const)('%s has no path to active in the state machine: skipped, never forced', (status) => {
     expect(decideProviderEvent(sub({ status }), pre('authorized'), NOW)).toEqual({ action: 'NONE', reason: 'INVALID_TRANSITION', adoptProviderId: false });
   });
   it('a pending preapproval (checkout started, nothing paid) changes nothing', () => {
@@ -99,11 +103,49 @@ describe('isPurchasable: a checkout is only started when a payment could activat
     expect(isPurchasable({ status: 'unpaid', manuallySetByAdmin: false })).toBe(true);
     expect(isPurchasable({ status: 'past_due', manuallySetByAdmin: false })).toBe(true);
   });
-  it.each(['suspended', 'disputed', 'refunded', 'payment_under_review', 'active', 'expired', 'canceled', 'cancelled_at_period_end'] as const)('%s is not', (status) => {
+  it.each(['suspended', 'disputed', 'refunded', 'payment_under_review', 'active', 'canceled', 'cancelled_at_period_end'] as const)('%s is not', (status) => {
     expect(isPurchasable({ status, manuallySetByAdmin: false })).toBe(false);
   });
-  it('an administrator-set row is not, whatever its status', () => {
-    expect(isPurchasable({ status: 'unpaid', manuallySetByAdmin: true })).toBe(false);
-    expect(isPurchasable({ status: 'active', manuallySetByAdmin: true })).toBe(false);
+  it('L11-R1: an expired subscription is purchasable again', () => {
+    expect(isPurchasable({ status: 'expired', manuallySetByAdmin: false })).toBe(true);
+  });
+  it('GRANT -> PAID: a standing administrative grant refuses a checkout (access is already sponsored)', () => {
+    for (const status of ['active', 'unpaid', 'past_due', 'reactivated', 'cancelled_at_period_end'] as const) expect(isPurchasable({ status, manuallySetByAdmin: true })).toBe(false);
+  });
+  it('GRANT -> PAID: an EXPIRED grant does not block a checkout; a suspended / revoked one always does', () => {
+    expect(isPurchasable({ status: 'expired', manuallySetByAdmin: true })).toBe(true);
+    expect(isPurchasable({ status: 'suspended', manuallySetByAdmin: true })).toBe(false);
+  });
+});
+
+describe('L11-R1: decideConfirmedPayment -- the only provider path that renews', () => {
+  const ENDED = '2026-10-01T00:00:00.000Z';
+  const after = { approvedAt: '2026-10-11T10:00:00.000Z', entitlementEndedAt: ENDED };
+
+  it('expired paid subscription + payment approved after it ended -> a new paid period', () => {
+    expect(decideConfirmedPayment({ status: 'expired', manuallySetByAdmin: false }, after)).toEqual({ action: 'ACTIVATE', fromExpiredGrant: false });
+  });
+  it('expired grant + payment approved after the grant ended -> paid period, flagged as following a grant', () => {
+    expect(decideConfirmedPayment({ status: 'expired', manuallySetByAdmin: true }, after)).toEqual({ action: 'ACTIVATE', fromExpiredGrant: true });
+  });
+  it('a payment approved before (or exactly when) the entitlement ended paid for the old period: renews nothing', () => {
+    expect(decideConfirmedPayment({ status: 'expired', manuallySetByAdmin: false }, { approvedAt: '2026-09-15T00:00:00.000Z', entitlementEndedAt: ENDED })).toEqual({ action: 'NONE', reason: 'STALE_PAYMENT' });
+    expect(decideConfirmedPayment({ status: 'expired', manuallySetByAdmin: true }, { approvedAt: ENDED, entitlementEndedAt: ENDED })).toEqual({ action: 'NONE', reason: 'STALE_PAYMENT' });
+  });
+  it('no approval date -> not a confirmed payment for renewal', () => {
+    expect(decideConfirmedPayment({ status: 'expired', manuallySetByAdmin: false }, { approvedAt: null, entitlementEndedAt: ENDED })).toEqual({ action: 'NONE', reason: 'PAYMENT_NOT_CONFIRMED' });
+  });
+  it.each(['suspended', 'disputed', 'refunded', 'payment_under_review'] as const)('ADMIN PROTECTION: %s is never moved by a payment, admin-set or not', (status) => {
+    expect(decideConfirmedPayment({ status, manuallySetByAdmin: false }, after)).toEqual({ action: 'NONE', reason: 'ADMIN_LIFECYCLE' });
+    expect(decideConfirmedPayment({ status, manuallySetByAdmin: true }, after)).toEqual({ action: 'NONE', reason: 'ADMIN_LIFECYCLE' });
+  });
+  it('a standing grant is untouched by a payment', () => {
+    for (const status of ['active', 'unpaid', 'past_due'] as const) expect(decideConfirmedPayment({ status, manuallySetByAdmin: true }, after)).toEqual({ action: 'NONE', reason: 'ADMIN_CONTROLLED' });
+  });
+  it('first purchase and past_due are activated; active is already applied; cancelled states have no edge', () => {
+    expect(decideConfirmedPayment({ status: 'unpaid', manuallySetByAdmin: false }, after)).toMatchObject({ action: 'ACTIVATE' });
+    expect(decideConfirmedPayment({ status: 'past_due', manuallySetByAdmin: false }, after)).toMatchObject({ action: 'ACTIVATE' });
+    expect(decideConfirmedPayment({ status: 'active', manuallySetByAdmin: false }, after)).toEqual({ action: 'NONE', reason: 'ALREADY_APPLIED' });
+    expect(decideConfirmedPayment({ status: 'cancelled_at_period_end', manuallySetByAdmin: false }, after)).toEqual({ action: 'NONE', reason: 'INVALID_TRANSITION' });
   });
 });
