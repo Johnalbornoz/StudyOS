@@ -15,6 +15,7 @@ import { loadTransferTaskInstance, runTransferSubmissionExclusively } from '@/se
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { learningLicenceRequiredUnlessOpenAttempt } from '@/lib/entitlements/learning-gate';
 import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const Schema = z.object({
@@ -111,6 +112,15 @@ async function handlePOST(request: NextRequest) {
         context: { conceptId: validated.conceptId },
       });
     }
+
+    // L11 / EN-2 (D-8a): AI grading, mastery and evidence are part of the licence -- refused
+    // before anything is graded or written. L11-R1 / D-8(c): the one exception is finishing an
+    // attempt that was started while the licence was valid -- here, the Student's own
+    // server-minted task (transfer/generate requires the licence), answering the exact prompt
+    // the server generated (both verified just above). A submission with no server task is not
+    // the continuation of anything and still needs the licence.
+    const licenceRequired = await learningLicenceRequiredUnlessOpenAttempt(authContext, validated.studentId, taskInstance !== null);
+    if (licenceRequired) return licenceRequired;
 
     // Trusted distance -- the server's generated value when we have the
     // instance, the client's claim only as a legacy fallback.

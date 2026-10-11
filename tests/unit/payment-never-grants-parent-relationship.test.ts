@@ -37,7 +37,11 @@ function jsonReq(body: any) {
 
 beforeEach(() => {
   authMock.mockReset().mockResolvedValue({ userId: PAYER_CLERK_ID });
-  currentUserMock.mockReset().mockResolvedValue({ primaryEmailAddress: { emailAddress: 'parent@test.com' }, emailAddresses: [] });
+  // L11 / EN-3: the route reads the VERIFIED PRIMARY email (resolveVerifiedPrimaryEmail), never index 0.
+  currentUserMock.mockReset().mockResolvedValue({
+    primaryEmailAddressId: 'email-1',
+    emailAddresses: [{ id: 'email-1', emailAddress: 'parent@test.com', verification: { status: 'verified' } }],
+  });
   getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: PAYER_USER_ID });
   isActiveParentOfMock.mockReset().mockResolvedValue(false);
   requireStudentIdMock.mockReset().mockResolvedValue(null);

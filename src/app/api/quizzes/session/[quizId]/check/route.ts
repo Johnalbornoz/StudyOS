@@ -23,7 +23,6 @@ import { z } from 'zod';
 import { verifyAuth, checkRateLimit } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { isOwner } from '@/lib/authorization';
-import { canUseCapability } from '@/lib/entitlements';
 import { getQuizSession } from '@/services/quiz-persistence.service';
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
@@ -52,9 +51,10 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
 
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
   if (!(await isOwner(actor.id, body.studentId))) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-  if (!(await canUseCapability(actor.id, body.studentId, 'LEARNING_FULL_ACCESS'))) {
-    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
-  }
+  // L11-R1 / D-8(c): answering inside an OPEN quiz is the continuation of an attempt that was
+  // started while the licence was valid (every route that creates a quiz session requires the
+  // licence), so no licence is asked for here. Nothing new can be started from this route: a
+  // session that is not active, or past its own expiry, is refused below (SESSION_NOT_ACTIVE).
   if (!checkRateLimit(actor.id, 'quiz-answer-check', 30, 60)) {
     return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 });
   }
