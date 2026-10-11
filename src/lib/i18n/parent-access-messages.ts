@@ -12,7 +12,7 @@ export type ParentAccessMessageKey =
   | 'pa.revoke' | 'pa.revoke.confirm' | 'pa.revoke.yes' | 'pa.revoke.no' | 'pa.revoked'
   | 'pa.invite.label' | 'pa.invite.hint' | 'pa.invite.submit' | 'pa.invite.sent' | 'pa.invite.invalidEmail'
   | 'pa.sent.title' | 'pa.sent.pending' | 'pa.sent.declined' | 'pa.sent.cancel' | 'pa.sent.cancelled'
-  | 'pa.error.generic' | 'pa.error.notFound';
+  | 'pa.error.generic' | 'pa.error.notFound' | 'pa.error.ownEmail' | 'pa.error.alreadyLinked';
 
 export type ParentAccessMessages = Record<ParentAccessMessageKey, string>;
 
@@ -42,6 +42,8 @@ const ES: ParentAccessMessages = {
   'pa.sent.cancelled': 'Invitación cancelada.',
   'pa.error.generic': 'No pudimos completar la acción. Inténtalo de nuevo.',
   'pa.error.notFound': 'Esto ya no está disponible. Actualizamos la lista.',
+  'pa.error.ownEmail': 'No puedes invitarte con tu propio correo.',
+  'pa.error.alreadyLinked': 'Esa persona ya tiene acceso a tu progreso.',
 };
 
 const EN: ParentAccessMessages = {
@@ -70,6 +72,8 @@ const EN: ParentAccessMessages = {
   'pa.sent.cancelled': 'Invitation cancelled.',
   'pa.error.generic': 'We could not complete that. Please try again.',
   'pa.error.notFound': 'This is no longer available. The list has been refreshed.',
+  'pa.error.ownEmail': 'You cannot invite your own email address.',
+  'pa.error.alreadyLinked': 'That person already has access to your progress.',
 };
 
 const DE: ParentAccessMessages = {
@@ -98,6 +102,8 @@ const DE: ParentAccessMessages = {
   'pa.sent.cancelled': 'Einladung zurückgezogen.',
   'pa.error.generic': 'Das hat nicht geklappt. Bitte versuche es erneut.',
   'pa.error.notFound': 'Das ist nicht mehr verfügbar. Die Liste wurde aktualisiert.',
+  'pa.error.ownEmail': 'Du kannst dich nicht mit deiner eigenen E-Mail einladen.',
+  'pa.error.alreadyLinked': 'Diese Person hat bereits Zugriff auf deinen Fortschritt.',
 };
 
 const FR: ParentAccessMessages = {
@@ -126,6 +132,8 @@ const FR: ParentAccessMessages = {
   'pa.sent.cancelled': 'Invitation annulée.',
   'pa.error.generic': 'Impossible de terminer l’action. Réessaie.',
   'pa.error.notFound': 'Ce n’est plus disponible. La liste a été mise à jour.',
+  'pa.error.ownEmail': 'Tu ne peux pas t’inviter avec ta propre adresse e-mail.',
+  'pa.error.alreadyLinked': 'Cette personne a déjà accès à tes progrès.',
 };
 
 const PT: ParentAccessMessages = {
@@ -154,6 +162,8 @@ const PT: ParentAccessMessages = {
   'pa.sent.cancelled': 'Convite cancelado.',
   'pa.error.generic': 'Não foi possível concluir a ação. Tenta de novo.',
   'pa.error.notFound': 'Isto já não está disponível. Atualizámos a lista.',
+  'pa.error.ownEmail': 'Não podes convidar o teu próprio e-mail.',
+  'pa.error.alreadyLinked': 'Essa pessoa já tem acesso ao teu progresso.',
 };
 
 export const PARENT_ACCESS_MESSAGES: Record<Locale, ParentAccessMessages> = { es: ES, en: EN, de: DE, fr: FR, pt: PT };

@@ -55,6 +55,17 @@ export default function ParentAccessCard({ labels, locale }: { labels: ParentAcc
     refresh();
   }, [refresh]);
 
+  /** CR-L10-05: the invite route refuses the Student's own email and an email that already has access (409 + code). */
+  async function errorFor(res: Response): Promise<string> {
+    if (res.status === 404) return labels['pa.error.notFound'];
+    if (res.status === 409) {
+      const code = await res.json().then((b) => b?.error).catch(() => null);
+      if (code === 'OWN_EMAIL') return labels['pa.error.ownEmail'];
+      if (code === 'ALREADY_LINKED') return labels['pa.error.alreadyLinked'];
+    }
+    return labels['pa.error.generic'];
+  }
+
   /** Runs one mutation, then reloads both lists so the card always shows server state. */
   async function act(request: () => Promise<Response>, done: string): Promise<boolean> {
     setBusy(true);
@@ -65,7 +76,7 @@ export default function ParentAccessCard({ labels, locale }: { labels: ParentAcc
       const res = await request();
       ok = res.ok;
       if (ok) setNotice(done);
-      else setError(res.status === 404 ? labels['pa.error.notFound'] : labels['pa.error.generic']);
+      else setError(await errorFor(res));
     } catch {
       setError(labels['pa.error.generic']);
     }

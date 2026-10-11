@@ -1,52 +1,61 @@
 LANE: L7_PARENT
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T18:00Z
-BASE_SHA: 4fb45b0 (run 1); aa95a60 (run 2, CR-L9-01)
-CURRENT_SHA: tip of `feat/l7-parent-pa1` (`git rev-parse --short feat/l7-parent-pa1`); first-parent line 4fb45b0 -> aa95a60 (PA-1) -> 5307390 (merge of L9 ebe5d2f) -> tip (CR-L9-01)
+LAST_UPDATE: 2026-10-11T19:36Z
+BASE_SHA: 112c2da (run 3, L7-R1); earlier runs 4fb45b0, aa95a60
+CURRENT_SHA: tip of `feat/l7-parent-pa1` (`git rev-parse --short feat/l7-parent-pa1`); first-parent line ... 112c2da -> 881ef23 (merge L10 79b7f50) -> 31c6434 (merge L11 fd9dfa6) -> tip (PA-3, PA-4, PA-5)
 
 CURRENT_PHASE: STOP
 
 NOW_DOING: NONE. Lane stopped.
 
 COMPLETED:
-- Run 1: PA-1 (aa95a60).
-- Run 2: CR-L9-01. L9's `StudentClassMemberships` mounted in `profile/page.tsx` on the canonical layout and the first-time entry screen. Regression test added. Report section appended.
+- Run 1: PA-1. Run 2: CR-L9-01.
+- Run 3: PA-3 (released result summaries through L10's result scope), PA-4 (onboarding derived from the relationship), PA-5 (parent pays for a linked child), CR-L10-05 (invite refusal messages).
 
 CURRENT_FINDINGS:
-- The L9 component existed only on `feat/l9-institution-in1-in3`, so that branch (ebe5d2f) was merged into this lane branch locally. Merging this branch's tip brings L9 with it.
-- One L9 test assertion ("page.tsx does not mention StudentClassMemberships") was narrowed; CR-L9-01 makes it false by design.
-- The institution-defined layout already shows the control through `InstitutionalContextCard`; it is not mounted twice.
-- Browser behaviour and visual placement are NOT_VERIFIED.
-- Run 1 findings unchanged (see report).
+- L10 and L11 were merged into the lane branch locally. One conflict in `src/lib/institution/institution-operations.service.ts`; L10's hunk taken. It will conflict again with final L9 at convergence; take the converged L9/L10 version.
+- 10 tests fail on the merged base and at the tip, none in L7 code or tests: 1 L9xL10 (`enrollmentOf`), 9 L11 tests against L10's code. Cause of 8 of them NOT_VERIFIED.
+- SF-8 carrier does not exist (D-4). PA-4 stores nothing; "once" is derived from holding an accepted relationship.
+- PA-3 results are served from a new route, `/api/parent/learners/[studentId]/results`, not from `exam-prep`.
+- Nothing verified against a database, Clerk, a browser or a payment provider.
 
 FILES_READ:
-- Run 2: L9_REPORT.md, src/app/dashboard/profile/StudentClassMemberships.tsx, InstitutionalContextCard.tsx, src/lib/institution/student-class-membership.ts, src/app/api/student/class-enrollments/route.ts, tests/unit/l9-in3-student-leave-class.test.ts
-- Run 1: as recorded in the report
+- L3R1_REPORT.md, L10_REPORT.md, L11_REPORT.md
+- src/lib/authorization/** , src/lib/exam-core/history.service.ts, result-view.service.ts, results.service.ts, catalog.service.ts (read only)
+- src/app/api/payments/checkout/route.ts, src/app/api/billing/subscription/route.ts, src/services/payment.service.ts (read only)
+- src/lib/parent/read-model.service.ts, src/app/dashboard/parent/page.tsx, src/app/dashboard/billing/**
 
 FILES_MODIFIED:
-- Run 2: src/app/dashboard/profile/page.tsx (1 import, 2 mount lines); tests/unit/l7-cr-l9-01-profile-leave-class.test.ts (new); tests/unit/l9-in3-student-leave-class.test.ts (1 assertion); docs/orchestration/reports/L7_REPORT.md; docs/orchestration/status/L7_STATUS.md
-- Run 2, by merge, unmodified: the 19 files of L9 (7e2bc29, ebe5d2f)
-- Run 1: ParentAccessCard.tsx, parent-access.ts, parent-access-messages.ts, page.tsx, l7-pa1-student-parent-access.test.ts
+- src/lib/parent/read-model.service.ts
+- src/app/api/parent/learners/[studentId]/results/route.ts (new)
+- src/app/dashboard/parent/ParentResultsCard.tsx (new), ParentOnboarding.tsx (new), page.tsx
+- src/app/dashboard/billing/SubscribeButton.tsx
+- src/lib/i18n/parent-home-messages.ts (new), parent-access-messages.ts
+- src/app/dashboard/profile/ParentAccessCard.tsx
+- tests/unit/l7-r1-parent-completion.test.ts (new)
+- docs/orchestration/reports/L7_REPORT.md, docs/orchestration/status/L7_STATUS.md
+- By merge: all L10 and L11 files; one conflict hunk in institution-operations.service.ts
 
 TESTS:
-- `npx vitest run` (no database env): 523 files, 9,342 tests passed
-- `npx vitest run` on the three related files: 34 tests passed
+- `npx vitest run tests/unit/l7-r1-parent-completion.test.ts`: 27 passed
+- Focused Parent set: 7 files, 93 passed
+- `npx vitest run` (no database env): 540 files; 9,728 passed, 10 failed (same 10 as the merged base before L7-R1 changes)
 - `npx tsc --noEmit -p .`: no output
-- `npx next build` (no database env): exit 0
-- Browser / authenticated runtime: NOT_RUN
-- DEV, Stage, Production: NOT_RUN, not touched
+- `npx next build`: exit 0
+- Browser, database, Clerk, payment provider: NOT_RUN
 
-BLOCKERS: NONE
+BLOCKERS: NONE for L7
 
 LOCK_REQUESTS: NONE
 
 CROSS_LANE_DEPENDENCIES:
-- This branch now depends on L9 (`feat/l9-institution-in1-in3` @ ebe5d2f), which it contains.
-- PA-3 waits on D-1 and SF-4. PA-4 waits on SF-8. PA-5 waits on EN-3 and SF-7. None started.
+- This branch contains L9 (ebe5d2f), L10 (79b7f50) and L11 (fd9dfa6).
+- CR-L7-04: the 10 failing tests belong to L9 / L10 / L11.
+- Optional: CR-L7-02 (L10), CR-L7-03 (L11).
 
-NEXT: Orchestrator review. Human Operator browser check (steps in the report, both runs).
+NEXT: Orchestrator review.
 
 PROGRESS:
-- PA-1 actions implemented: 3/3
-- CR-L9-01: mount done, regression test done, recorded in report
-- Browser checks: 0/2 runs verified (Human Operator)
+- Parent work packages: PA-1, PA-3, PA-4, PA-5 implemented (4/4 launchable)
+- Change requests: CR-L7-01 closed on L10; CR-L9-01 closed; CR-L10-05 done
+- Required PA-3 regressions: 6/6 present and passing

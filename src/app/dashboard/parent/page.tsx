@@ -20,6 +20,10 @@ import { getMessages, type Locale, type MessageKey } from '@/lib/i18n/messages';
 import { fillMessage } from '@/lib/i18n/roles-messages';
 import { StatusBadge, toneForDimensionStatus } from '@/components/ui/StatusBadge';
 import { QUANTITY_FILL_CLASS } from '@/lib/experience/progress-tone';
+import { getParentHomeMessages } from '@/lib/i18n/parent-home-messages';
+import SubscribeButton from '@/app/dashboard/billing/SubscribeButton';
+import ParentResultsCard, { type ParentResultSummary } from './ParentResultsCard';
+import ParentOnboarding from './ParentOnboarding';
 
 interface Learner {
   studentId: string;
@@ -62,6 +66,7 @@ interface ChildData {
   activity: ActivityItem[];
   attention: AttentionArea[];
   examPrep: ExamPrep | null;
+  results: ParentResultSummary[];
 }
 
 async function getJson(url: string): Promise<any | null> {
@@ -92,7 +97,9 @@ function ParentPage() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
   const t = getMessages(locale);
+  const ph = getParentHomeMessages(locale);
 
   const selectedId = useMemo(() => {
     const requested = searchParams.get('child');
@@ -119,8 +126,8 @@ function ParentPage() {
     let cancelled = false;
     setChild(null);
     const base = `/api/parent/learners/${selectedId}`;
-    Promise.all([getJson(`${base}/overview`), getJson(`${base}/subjects`), getJson(`${base}/activity`), getJson(`${base}/attention`), getJson(`${base}/exam-prep`)]).then(
-      ([o, s, a, at, e]) => {
+    Promise.all([getJson(`${base}/overview`), getJson(`${base}/subjects`), getJson(`${base}/activity`), getJson(`${base}/attention`), getJson(`${base}/exam-prep`), getJson(`${base}/results`)]).then(
+      ([o, s, a, at, e, r]) => {
         if (cancelled) return;
         setChild({
           overview: o?.data ?? null,
@@ -128,6 +135,7 @@ function ParentPage() {
           activity: (a?.data?.activity ?? []).slice(0, 8),
           attention: at?.data?.areas ?? [],
           examPrep: e?.data ?? null,
+          results: r?.data?.results ?? [],
         });
       }
     );
@@ -149,6 +157,7 @@ function ParentPage() {
     else if (!res.ok) setMessage({ text: t['account.error.generic'], error: true });
     else {
       setEmail('');
+      setRequestSent(true);
       setMessage({ text: t['parentHome.addChild.sent'] });
     }
     setBusy(false);
@@ -231,10 +240,8 @@ function ParentPage() {
       {learners === null ? (
         <p className="ta-msg">{t['common.loading']}</p>
       ) : learners.length === 0 ? (
-        <div className="card empty-state">
-          <strong>{t['parentHome.empty.title']}</strong>
-          {t['parentHome.empty.body']}
-        </div>
+        // L7 PA-4: a Parent who follows nobody yet gets the onboarding steps, until a relationship is accepted.
+        <ParentOnboarding labels={ph} hasInvitation={invitations.length > 0} requestSent={requestSent} />
       ) : (
         selected && (
           <section aria-labelledby="child-name" className="ta-stack">
@@ -348,6 +355,9 @@ function ParentPage() {
                   )}
                 </section>
 
+                {/* L7 PA-3: released exam results, summary only. */}
+                <ParentResultsCard results={child.results} childName={selected.name} labels={ph} locale={locale} />
+
                 <section className="card ta-card" aria-labelledby="activity-title">
                   <h3 id="activity-title">{t['parentHome.activityTitle']}</h3>
                   {child.activity.length === 0 ? (
@@ -364,6 +374,19 @@ function ParentPage() {
                       ))}
                     </ul>
                   )}
+                </section>
+                {/* L7 PA-5: the Parent may pay for this linked child. The route re-checks the relationship. */}
+                <section className="card ta-card" aria-labelledby="pay-title" data-parent-pay>
+                  <h3 id="pay-title">{fillMessage(ph['ph.pay.title'], { name: selected.name })}</h3>
+                  <p className="ta-msg">{fillMessage(ph['ph.pay.body'], { name: selected.name })}</p>
+                  <SubscribeButton
+                    key={selected.studentId}
+                    studentId={selected.studentId}
+                    label={fillMessage(ph['ph.pay.button'], { name: selected.name })}
+                    notConfiguredMessage={t['billing.notConfigured']}
+                    errorMessage={t['billing.checkoutError']}
+                    unavailableMessage={fillMessage(ph['ph.pay.unavailable'], { name: selected.name })}
+                  />
                 </section>
               </>
             )}

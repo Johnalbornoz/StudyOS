@@ -238,3 +238,207 @@ Merge L9 (`feat/l9-institution-in1-in3`), then the tip of `feat/l7-parent-pa1`. 
 ## NEXT SAFE ACTION
 
 Human Operator, in addition to the run 1 steps: as a Student enrolled in a class, with `STUDENT_JOURNEY_V2` unset, open Profile; "leave class" is listed; leave and confirm; the teacher's roster no longer shows the student. Then as a Student with no class: nothing extra is shown.
+
+---
+
+# L7_PARENT — Run 3, 2026-10-11 (UTC): L7-R1 final Parent completion (PA-3, PA-4, PA-5)
+
+## LANE
+
+`L7_PARENT`, worktree `/Users/jalbornoz/PROYECTOS/studyos-l7-parent`, branch `feat/l7-parent-pa1` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+```
+PA_1 = PASS
+PA_3 = PASS
+PA_4 = PASS            (under D-4 as built by L10: derived from the relationship; no SF-8 carrier exists)
+PA_5 = PASS            (route and UI; a real provider checkout is NOT_VERIFIED)
+CR_L7_01 = CLOSED_EXTERNAL_L10
+CR_L9_01 = CLOSED
+
+PARENT_RELATIONSHIP_SCOPE = PASS
+PARENT_RELEASED_RESULTS = PASS
+PARENT_RAW_ITEM_PROTECTION = PASS
+
+TESTS = focused Parent set 7 files / 93 tests pass. Full suite 540 files: 9,728 pass, 10 FAIL in 4 files.
+        None of the 10 is in L7 code or L7 tests; all 10 fail identically on the merged base before any
+        L7-R1 change (Finding 2).
+TYPECHECK = PASS (tsc --noEmit, no output)
+BUILD = PASS (next build, exit 0)
+
+L7_READY_FOR_FINAL_CONVERGENCE = YES for L7's own work, with the two conditions in MERGE RECOMMENDATION
+```
+
+All verdicts rest on unit tests, typecheck and build. Nothing ran against a database, Clerk or a browser.
+
+## BASE SHA
+
+`112c2da` — the canonical tip named in the launch message, verified clean.
+
+## FINAL SHA
+
+Tip of `feat/l7-parent-pa1` (`git rev-parse feat/l7-parent-pa1`). First-parent line after `112c2da`:
+
+| Commit | Content |
+|---|---|
+| `881ef23` | Local merge of `feat/l10-shared-foundation` @ `79b7f50` (one conflict, Finding 1) |
+| `31c6434` | Local merge of `feat/l11-entitlements` @ `fd9dfa6` (clean) |
+| tip | PA-3, PA-4, PA-5, CR-L10-05, tests, this report |
+
+No earlier commit was removed or rewritten.
+
+## ACCEPTANCE CRITERIA RECOVERED FROM L3-R1
+
+Quoted from `L3R1_REPORT.md` section 3, table `L7_PARENT`. There is no `tasks/L7_PARENT.md`.
+
+| WP | Expected behavior | Acceptance test | Shared dependencies |
+|---|---|---|---|
+| PA-3 (P1-5) | "Parent sees the result scope D-1 rules" | "Linked parent sees the ruled result fields for a completed attempt; an unlinked parent gets 403; no question or response text is returned unless D-1 allows it" | D-1 and SF-4 |
+| PA-4 (P2-14, Parent UI) | "Parent onboarding screens on the SF-8 carrier" | "New Parent completes onboarding once and lands on the dashboard" | SF-8 |
+| PA-5 (P2-16) | "A Parent can start a checkout for a linked child" | "Linked parent starts a checkout for the child; an unlinked parent gets 403; the binding ends when the student unlinks" | EN-3 and SF-7 |
+
+Impacted files named by the plan: PA-3 `src/lib/parent/read-model.service.ts`, `api/parent/learners/[studentId]/exam-prep`, `dashboard/parent/page.tsx`; PA-4 `src/app/dashboard/parent/**`; PA-5 `src/app/dashboard/parent/**`, reuse of `dashboard/billing/SubscribeButton.tsx`.
+
+## FILES CHANGED
+
+By this lane, in the tip commit:
+
+- `src/lib/parent/read-model.service.ts` — `getParentReleasedResults`, `ParentReleasedResult` (PA-3)
+- `src/app/api/parent/learners/[studentId]/results/route.ts` (new, PA-3)
+- `src/app/dashboard/parent/ParentResultsCard.tsx` (new, PA-3)
+- `src/app/dashboard/parent/ParentOnboarding.tsx` (new, PA-4)
+- `src/app/dashboard/parent/page.tsx` — loads results; onboarding replaces the empty state; pay-for-child card (PA-3, PA-4, PA-5)
+- `src/app/dashboard/billing/SubscribeButton.tsx` — optional `studentId` and `unavailableMessage` props (PA-5)
+- `src/lib/i18n/parent-home-messages.ts` (new, 28 keys, five locales)
+- `src/app/dashboard/profile/ParentAccessCard.tsx`, `src/lib/i18n/parent-access-messages.ts` — CR-L10-05
+- `tests/unit/l7-r1-parent-completion.test.ts` (new, 27 tests)
+- `docs/orchestration/reports/L7_REPORT.md`, `docs/orchestration/status/L7_STATUS.md`
+
+Brought in by the two merges: every file of L10 (`c2bcae9`, `e094c5a`, `79b7f50`) and L11 (`fe6ecf7`, `fd9dfa6`), unmodified except the one conflict hunk in Finding 1.
+
+Not changed by this lane: any migration or schema, `src/lib/authorization/**`, `src/services/parent.service.ts`, `src/services/payment.service.ts`, `src/lib/entitlements/**`, `api/payments/checkout`, any guard, `messages.ts`, the leave-class mount and its component.
+
+## LOCKS USED
+
+NONE held. L10 and L11 code was read and called, not edited. See Finding 1 for the one hunk resolved inside a file neither L7 nor this run owns.
+
+## TESTS
+
+| Command (all with no database env) | Result |
+|---|---|
+| `npx vitest run tests/unit/l7-r1-parent-completion.test.ts` | 27 passed |
+| Focused Parent set: the above plus `l7-pa1-student-parent-access`, `l7-cr-l9-01-profile-leave-class`, `f10-parent-multi-role-isolation`, `f10-parent-identity-fix`, `l10-cr-l7-01-parent-invitation`, `l10-r1-learner-data-rulings` | 7 files, 93 passed |
+| `npx vitest run` on the merged base (`31c6434`), before any L7-R1 change | 539 files; 9,701 passed, **10 failed** |
+| `npx vitest run` at the tip | 540 files; 9,728 passed, **the same 10 failed** |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` | exit 0; `/api/parent/learners/[studentId]/results` is in the route table |
+| Browser, database, Clerk, payment provider | NOT_RUN (not required for this run) |
+
+Required PA-3 regressions, all in `l7-r1-parent-completion.test.ts`:
+
+| Required | Test |
+|---|---|
+| accepted Parent + Student-visible result => visible | "accepted Parent + Student-visible result => visible, as a summary" |
+| accepted Parent + removed/hidden result => not visible | "…result the Student removed from history => not visible (hidden attempt, and deleted exam instance)" |
+| pending/revoked Parent relationship => refused | "pending / declined / revoked Parent relationship => refused (403), nothing read" |
+| unrelated Parent => refused | "unrelated Parent => refused; a linked Parent => refused for another Student; no session => 401" |
+| invalidated but Student-visible result => summary visible with status | "invalidated but Student-visible result => summary visible, with its status…" |
+| no raw item responses exposed | "no raw item responses, rubric internals, provenance, hashes or invalidation reason are exposed" |
+
+Also covered: draft, paused, abandoned and not-yet-scored attempts are never listed; a Parent whose PARENT role is no longer ACTIVE is refused; only the linked child's attempts are considered.
+
+How the tests are built: real routes, real Parent read model and real Shared Foundation functions against an in-memory database that answers by statement text. The exam core's result-view assembly is stubbed and returns a full owner view **with** item review, rubric quote, provenance and hashes, so the leak test asserts on real output. This is not a substitute for a run against Postgres.
+
+## FINDINGS
+
+### 1. L10 and L11 had to be merged into the lane branch; one conflict resolved
+
+PA-3 must call L10's contracts and PA-5 depends on L11's EN-3. Neither branch was in this branch's ancestry, and neither is merged anywhere else. I merged both locally.
+
+- **L11:** clean.
+- **L10:** one conflict, in `src/lib/institution/institution-operations.service.ts` (`addStudentToClass`). L9 had refactored three lines to call its `enrollmentOf` helper; L10 replaced the same lines with the CR-L9-02 lifecycle (`getClassEnrollmentState`). I took **L10's hunk unchanged**. L7 owns nothing in that file.
+
+L9's worktree has an uncommitted patch to that same file (the "final enrollmentOf patch"). So at convergence this file will conflict again between final L9 and this branch. Resolve it by taking the converged L9/L10 version; nothing of L7's is in it.
+
+### 2. Ten tests fail on the merged base, none of them L7's
+
+They fail before any L7-R1 change and are unchanged by it.
+
+| Tests | File | What it is |
+|---|---|---|
+| 1 | `l10-cr-l9-02-enrollment-lifecycle` › "application code never reads 'the' enrolment…" | L10's repository-wide guard flags L9's `enrollmentOf`. This is what L9's pending final patch addresses |
+| 1 | `l11-open-attempt-continuation` › "simulation/attempts/[id]/result…" | Source assertion expects `canAccessLearner(actor.id, …)` in a route L10 rewrote to `resolveLearnerReadScope` |
+| 2 | `l11-payment-webhook` › payer binding | L11's in-memory database predates the role clause L10 added to `isOwner` / `isActiveParentOf` |
+| 6 | `l11-unlicensed-policy` | 403 `FORBIDDEN` where L11 expects `ENTITLEMENT_REQUIRED` / 200 on routes L10 also changed |
+
+The first two are read directly from the assertion. For the other eight the cause is my reading of the failure output, NOT_VERIFIED: they could be stale fixtures or a real ordering change between L10's guard and L11's gate on `teacher-interventions/[id]/start` and `transfer/submit`. That needs L10 or L11 to look. PA-5's own criterion ("binding ends when the student unlinks") is covered by my test against the real `isLiveBillingActor` and passes.
+
+### 3. PA-3 — how release is decided
+
+`getParentReleasedResults(actor, studentId)`:
+
+1. `requireAccess` → L10's `isActiveParentOf` (accepted relationship, ACTIVE account, ACTIVE PARENT role).
+2. Lists the child's most recent 12 attempts with no filter at all. No publication rule is written in the read model; a source test fails if `hidden_at`, `DELETED`, `COMPLETED`, `SCORED` or `INVALIDATED` appears in that function.
+3. For each, L10's `resolveResultViewContext` (which calls `isAttemptResultVisibleToStudent`) and then `shapeAttemptResultViewForScope`. A null from either means not released.
+4. Projects an explicit allow-list: exam name and version, type, status (`SCORED` / `INVALIDATED`), scoring status, date, raw and final score, completion counts, minutes, and counts of objectives by classification.
+
+Points to confirm:
+
+- **Scope is Parent-only.** The scope passed is the `PARENT` row of `LEARNER_READ_SCOPE`, not `resolveLearnerReadScope`'s union, so a Parent who is also the child's Teacher gets the Parent summary here. This keeps the existing F10 multi-role isolation rule.
+- **Not returned:** per-objective descriptions, section scores, `invalidationReason`, strict readiness. Gaps are within a Parent's scope under D-1, so objective names could be added; I kept to counts. Say if you want more.
+- **New route, not `exam-prep`.** The plan names `exam-prep`, but that route returns `data: null` when the child has no active exam profile, which would hide results from past profiles. Results are at `GET /api/parent/learners/[studentId]/results`.
+- **Limit of 12 candidates** is my choice, not a ruling.
+- **Cost:** up to 12 full result-view assemblies per page load. Fine for a pilot; a lighter summary read in the exam core would be better (fits CR-L10-08).
+
+### 4. PA-4 — onboarding without a carrier
+
+L3-R1 says "on the SF-8 carrier". L10 removed that carrier under D-4 ("no free-form JSON; onboarding from typed identity and relationships… Parent: account + relationship flow"; no completion marker). So PA-4 is built on that model, with no schema:
+
+- A Parent who follows nobody sees a three-step panel (account ready → connect with your child → follow progress) in place of the old empty box. Step 2 reflects a waiting invitation or a request just sent.
+- Accepting an invitation reloads the list and the page shows the dashboard.
+
+"Once" is therefore derived: the panel is gone while at least one relationship is accepted, and comes back if every relationship ends. If a stored "seen once" marker is wanted, that is a schema decision for L10 (CR-L7-02 below, optional).
+
+### 5. PA-5 — parent pays for a linked child
+
+- The Parent page has a "Subscription for {child}" card using the existing `SubscribeButton`, which now takes an optional `studentId`. The Student's own billing page is unchanged.
+- `POST /api/payments/checkout` was not edited. It already refuses anything but an accepted relationship (403) and, with L11, binds the payer only on a confirmed payment and only while the relationship is live.
+- The card is always shown for a linked child. A Parent who is not yet the payer cannot read the child's subscription (`GET /api/billing/subscription` is payer-or-owner only), so the page cannot know in advance whether the child already has access. If the checkout is refused as not purchasable (409) the button says so. Showing the child's licence state to a linked Parent would be an entitlement-semantics change (CR-L7-03 below, optional).
+- With `MERCADOPAGO_ACCESS_TOKEN` unset the button shows the existing "payments not configured" message. A real checkout is NOT_VERIFIED.
+
+### 6. CR-L10-05 done
+
+`ParentAccessCard` now shows a specific message for `409 OWN_EMAIL` and `409 ALREADY_LINKED` (two strings, five locales). CR-L7-01 itself was not reimplemented; L10's service and route are untouched.
+
+### 7. CR-L9-01 unchanged
+
+The leave-class mount in `profile/page.tsx` and its test are as accepted in run 2.
+
+## BLOCKERS
+
+NONE for L7.
+
+## CHANGE_REQUESTS
+
+| # | To | Status | Detail |
+|---|---|---|---|
+| CR-L7-01 | L10 | CLOSED_EXTERNAL_L10 | Not reimplemented here |
+| CR-L9-01 | L7 | CLOSED | Run 2 |
+| CR-L10-05 | L7 | DONE in this run | Finding 6 |
+| CR-L7-02 | L10 / product (optional) | OPEN | Only if "onboarding shown exactly once ever" is required: a stored marker needs schema. Not needed under D-4 as ruled |
+| CR-L7-03 | L11 (optional) | OPEN | `src/lib/entitlements/**`, `api/billing/subscription`: let a linked, not-yet-paying Parent read whether the child is licensed, so the pay card can be hidden when it is not needed |
+| CR-L7-04 | Orchestrator → L10 / L11 / L9 | OPEN | The ten failing tests in Finding 2 |
+
+## MERGE RECOMMENDATION
+
+Converge in the order already stated: final L9, then L10 and L11, then this branch. Two conditions:
+
+1. `src/lib/institution/institution-operations.service.ts`: take the converged L9/L10 version over this branch's copy.
+2. Route CR-L7-04 before treating the converged suite as green.
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the tip commit and rules on the three points in Finding 3 and on Finding 4's reading of "once".
