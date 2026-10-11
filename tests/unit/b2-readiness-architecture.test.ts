@@ -28,7 +28,7 @@ function bank(id: string, objective: string, over: Partial<ReviewedBankItemRow> 
     approvedItemId: id, learningObjectiveId: objective, questionType: 'multiple_choice', content: { difficulty: 3, marks: 1, language: 'es' }, status: 'PUBLISHED', bankLifecycleStatus: 'ACTIVE',
     usageEligibility: ['PRACTICE', 'REDUCED_MOCK', 'FULL_MOCK'], examAlignment: 'MOCK_READY', calibrationConfidence: 'INSUFFICIENT_DATA', contentOrigin: 'GENERATED', sourceIds: null,
     bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: id, retired: false, language: 'es' },
-    sourceLicenses: [], humanReviewDecisions: 1, scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' }, objectiveConcepts: [{ canonicalConceptId: `c-of-${objective}`, relationType: 'FULL' }], ...over,
+    sourceLicenses: [], itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, humanReviewDecisions: 1, scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' }, objectiveConcepts: [{ canonicalConceptId: `c-of-${objective}`, relationType: 'FULL' }], ...over,
   });
 }
 const cached = (id: string, concept: string, studentId = 'stu-1'): QuestionCoverage =>
@@ -258,10 +258,14 @@ describe('B2 architecture', () => {
     expect(read('src/lib/assessment-blueprint/assessment-blueprint.service.ts')).toMatch(/FROM mastery_policies/);
   });
 
-  it('B2 adds no migration: the chain still ends at the B1-E migration', () => {
+  it('the B2 core added no migration; B2-B1 adds exactly the eight persistence migrations after the B1-E one', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(71);
-    expect(migrations.at(-1)).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    expect(migrations).toHaveLength(79);
+    expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    expect(migrations.slice(71)).toEqual(['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql']);
+    // deferred by decision: answer reveal (migration 9) and the curriculum-node link (migration 10)
+    const all = migrations.slice(71).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
+    expect(all).not.toMatch(/exam_answer_reveals|question_bank_item_curriculum_nodes/);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {

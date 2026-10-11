@@ -13,7 +13,12 @@ import type { ContentOrigin } from '../content-origin';
 /* Provenance                                                           */
 /* ------------------------------------------------------------------ */
 
-export const PROVENANCES = ['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'FIXTURE'] as const;
+/**
+ * STUDYUS_AUTHORED  written by an identified person; carries no generation lineage.
+ * STUDYUS_GENERATED drafted by a model; it keeps its lineage and stays generated after a person edits it.
+ * FIXTURE           technical content; never eligible for a Student.
+ */
+export const PROVENANCES = ['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'STUDYUS_AUTHORED', 'FIXTURE'] as const;
 export type Provenance = (typeof PROVENANCES)[number];
 
 export function provenanceFromOrigin(origin: ContentOrigin | null | undefined): Provenance {
@@ -24,12 +29,17 @@ export function provenanceFromOrigin(origin: ContentOrigin | null | undefined): 
       return 'LICENSED';
     case 'FIXTURE':
       return 'FIXTURE';
+    case 'AUTHORED':
+      return 'STUDYUS_AUTHORED';
     default:
       return 'STUDYUS_GENERATED';
   }
 }
 
 /** Official content coverage counts only OFFICIAL / LICENSED items -- generated or fixture content never does. */
+/** StudyUs's own content, written or generated: it reaches a Student only after a human approval. */
+export const needsHumanApproval = (p: string | null | undefined): boolean => p === 'STUDYUS_GENERATED' || p === 'STUDYUS_AUTHORED';
+
 export const countsAsOfficial = (p: Provenance) => p === 'OFFICIAL' || p === 'LICENSED';
 
 /* ------------------------------------------------------------------ */

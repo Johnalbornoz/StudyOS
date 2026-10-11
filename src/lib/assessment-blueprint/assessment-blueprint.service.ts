@@ -17,6 +17,7 @@ import type { PracticeDepth } from './policy/practice-depth';
 import { solveLearningBlueprint, type ExposureIndex } from './pipeline';
 import type { BlueprintSolution } from './result';
 import { evaluateFeasibility, type FeasibilityReport } from './readiness/feasibility';
+import { LOGICAL_POOLS, type LogicalPool, type PoolAssignments } from './protected/pools';
 
 /** B2_SELECTION_POLICY: a question delivered within this many days counts as recently seen. */
 export const RECENT_EXPOSURE_DAYS = 14;
@@ -146,4 +147,33 @@ export async function loadReviewedBankExposure(studentId: string, asOf: string, 
     exposure.set(`REVIEWED_EXAM_BANK:${row.id}`, { seen: true, recent: last !== null && last >= recentFrom });
   }
   return exposure;
+}
+
+/**
+ * Pool membership of the current item versions of an exam version, as the Question Bank recorded it
+ * (`question_bank_pool_memberships`). An item bound to a stimulus is in its stimulus's pool; a standalone
+ * item is in its own. An item with no active membership is simply absent: it is in no pool, and a protected
+ * form cannot use it. Where the pool schema is not applied yet, nothing has a pool.
+ */
+export async function loadReviewedBankPoolAssignments(examVersionId: string, client: DbExecutor = db): Promise<PoolAssignments> {
+  const out = new Map<string, LogicalPool[]>();
+  const ready = await client.query(`SELECT to_regclass('public.question_bank_pool_memberships') IS NOT NULL AND to_regclass('public.question_bank_item_stimulus') IS NOT NULL AS ready`);
+  if (ready.rows[0]?.ready !== true) return out;
+  const r = await client.query(
+    `SELECT qi.current_version_id AS id, m.pool
+       FROM question_bank_items qi
+       LEFT JOIN question_bank_item_stimulus s ON s.approved_item_id = qi.current_version_id
+       LEFT JOIN question_bank_stimulus_versions v ON v.id = s.stimulus_version_id
+       JOIN question_bank_pool_memberships m
+         ON m.retired_at IS NULL AND ((s.approved_item_id IS NULL AND m.bank_item_id = qi.id) OR (s.approved_item_id IS NOT NULL AND m.stimulus_id = v.stimulus_id))
+      WHERE qi.exam_version_id = $1 AND qi.current_version_id IS NOT NULL
+      ORDER BY 1, 2`,
+    [examVersionId]
+  );
+  for (const row of r.rows as Array<{ id: string; pool: string }>) {
+    if (!(LOGICAL_POOLS as readonly string[]).includes(row.pool)) continue;
+    const key = `REVIEWED_EXAM_BANK:${row.id}`;
+    out.set(key, [...(out.get(key) ?? []), row.pool as LogicalPool]);
+  }
+  return out;
 }

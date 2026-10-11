@@ -29,6 +29,7 @@ const reviewedRow = (over: Partial<ReviewedBankItemRow> = {}): ReviewedBankItemR
   sourceIds: null,
   bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'item-1', retired: false, language: 'es' },
   sourceLicenses: [],
+  itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, 
   humanReviewDecisions: 1,
   scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' },
   objectiveConcepts: [{ canonicalConceptId: 'c-1', relationType: 'FULL' }],
@@ -214,12 +215,14 @@ describe('B1 QuestionEligibility -- family boundaries', () => {
     expect(reasons(coverageOfReviewedBankItem(reviewedRow({ objectiveConcepts: [] })), { ...prep, canonicalConceptIds: ['c-1'] })).toEqual(['CONCEPT_UNRESOLVED']);
   });
 
-  it('provenance / licensing: third-party content needs a known, deliverable licence', () => {
+  it('reuse rights: a licence status of a cited source grants nothing; only an established reuse right does', () => {
     const licensed = (over: Partial<ReviewedBankItemRow>) => coverageOfReviewedBankItem(reviewedRow({ contentOrigin: 'LICENSED', bankItem: { provenance: 'LICENSED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'item-1', retired: false, language: 'es' }, ...over }));
-    expect(reasons(licensed({ sourceIds: null }), prep)).toEqual(['LICENCE_UNKNOWN']);
-    expect(reasons(licensed({ sourceIds: ['s1'], sourceLicenses: ['INTERNAL'] }), prep)).toEqual(['LICENCE_NOT_PERMITTED']);
-    expect(reasons(licensed({ sourceIds: ['s1'], sourceLicenses: ['LICENSED'] }), prep)).toEqual([]);
-    // StudyUs-authored content carries no third-party licence and is not blocked by its absence.
+    // a PUBLIC or LICENSED source, with no rights record for the item: not deliverable
+    expect(reasons(licensed({ sourceIds: ['s1'], sourceLicenses: ['PUBLIC'], itemRights: null }), prep)).toEqual(['REUSE_RIGHTS_NOT_ESTABLISHED']);
+    expect(reasons(licensed({ sourceIds: ['s1'], sourceLicenses: ['LICENSED'], itemRights: null }), prep)).toEqual(['REUSE_RIGHTS_NOT_ESTABLISHED']);
+    expect(reasons(licensed({ sourceIds: ['s1'], sourceLicenses: ['LICENSED'], itemRights: { sourceAccess: 'LICENSED_SOURCE', reuseRights: 'LICENSED_FOR_USE', inForce: true } }), prep)).toEqual([]);
+    // StudyUs content is judged by the same rule: it needs its own rights record too
+    expect(reasons(coverageOfReviewedBankItem(reviewedRow({ sourceIds: null, itemRights: null })), prep)).toEqual(['REUSE_RIGHTS_NOT_ESTABLISHED']);
     expect(reasons(coverageOfReviewedBankItem(reviewedRow({ sourceIds: null })), prep)).toEqual([]);
   });
 

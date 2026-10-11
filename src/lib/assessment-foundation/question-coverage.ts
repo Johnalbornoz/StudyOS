@@ -44,15 +44,59 @@ export interface QuestionRef {
 export const questionRefKey = (ref: QuestionRef): string => `${ref.store}:${ref.id}`;
 
 /**
- * One provenance vocabulary over the stores. The first four are the reviewed bank's own
+ * One provenance vocabulary over the stores. The first five are the reviewed bank's own
  * (`question_bank_items.provenance`); GENERATED_UNREVIEWED is the learning cache's content class.
+ * STUDYUS_AUTHORED = written by an identified person; STUDYUS_GENERATED = drafted by a model, and it stays
+ * so after a person edits or reviews it.
  */
-export type QuestionProvenance = 'OFFICIAL' | 'LICENSED' | 'STUDYUS_GENERATED' | 'FIXTURE' | 'GENERATED_UNREVIEWED';
+export type QuestionProvenance = 'OFFICIAL' | 'LICENSED' | 'STUDYUS_GENERATED' | 'STUDYUS_AUTHORED' | 'FIXTURE' | 'GENERATED_UNREVIEWED';
+
+/**
+ * Reuse rights (`question_bank_content_rights.reuse_rights`). How a source can be READ (`source_access`,
+ * e.g. PUBLICLY_ACCESSIBLE) is a different fact and grants nothing: only an established reuse right does.
+ */
+export const REUSE_RIGHTS = ['STUDYUS_OWNED', 'LICENSED_FOR_USE', 'OFFICIALLY_AUTHORIZED', 'UNKNOWN', 'PROHIBITED'] as const;
+export type ReuseRights = (typeof REUSE_RIGHTS)[number];
+export const ESTABLISHED_REUSE_RIGHTS: ReadonlySet<ReuseRights> = new Set(['STUDYUS_OWNED', 'LICENSED_FOR_USE', 'OFFICIALLY_AUTHORIZED']);
+
+export type RightsContentType = 'ITEM_VERSION' | 'STIMULUS_VERSION' | 'ASSET';
+
+/** The current rights record of one piece of content. `reuseRights: null` = no record exists. */
+export interface ContentRightsFact {
+  contentType: RightsContentType;
+  contentId: string;
+  sourceAccess: string | null;
+  reuseRights: ReuseRights | null;
+  /** Inside the record's validity dates on the day it was read. */
+  inForce: boolean;
+}
+
+/** May content with this rights fact be reused today? */
+export const reuseEstablished = (f: Pick<ContentRightsFact, 'reuseRights' | 'inForce'>): boolean => f.reuseRights !== null && ESTABLISHED_REUSE_RIGHTS.has(f.reuseRights) && f.inForce;
+
+/** The stimulus version an item version is asked about (Question Bank fact). */
+export interface StimulusFact {
+  stimulusId: string;
+  stimulusVersionId: string;
+  /** Order of the question inside its group. */
+  position: number;
+  lifecycle: string;
+  /** An approving review of the stimulus version exists. */
+  humanApproved: boolean;
+  isCurrentVersion: boolean;
+  retired: boolean;
+}
+
+/** A figure / graph the item version depends on, directly or through its stimulus. */
+export interface AssetFact {
+  assetId: string;
+  lifecycle: string;
+}
 
 export type ConceptCoverageRole = 'PRIMARY' | 'SUPPORTING' | 'UNSPECIFIED';
 
 export type ConceptCoverageBasis =
-  /** Stated for THIS item (item-level attribution). Not produced by any source yet. */
+  /** Stated for THIS item version by a reviewer (`question_bank_item_concepts`). */
   | 'ITEM_ATTRIBUTION'
   /** Derived from the item's learning objective through the curriculum's objective <-> concept mapping. */
   | 'OBJECTIVE_MAPPING'
@@ -99,7 +143,15 @@ export interface QuestionCoverage {
   estimatedSeconds: Known<number>;
   language: Known<string>;
   provenance: QuestionProvenance;
+  /** Licence status of the sources the item cites. Descriptive only: it is not a right to reuse and no eligibility rule reads it. */
   licensing: Known<{ statuses: string[]; sourceIds: string[] }>;
+  /**
+   * Rights of the item version and of everything it depends on (its stimulus version, every asset).
+   * Reviewed bank: always starts with the ITEM_VERSION fact. Learning cache: empty.
+   */
+  rights: ContentRightsFact[];
+  stimulus: StimulusFact | null;
+  assets: AssetFact[];
   usage: Known<{ eligibility: string[] | null; examAlignment: string | null }>;
   review: {
     lifecycle: Known<string>;
@@ -138,7 +190,18 @@ export interface ReviewedBankItemRow {
   scope: CurriculumScopeRef | null;
   /** PUBLISHED objective <-> concept mappings of the item's objective. */
   objectiveConcepts: Array<{ canonicalConceptId: string; relationType: ObjectiveConceptRelation }>;
+  /** Item-level attribution of this version (`question_bank_item_concepts`). Absent / empty = unattributed (legacy). */
+  itemConcepts?: Array<{ canonicalConceptId: string; role: 'PRIMARY' | 'SUPPORTING' }>;
+  /** Current rights record of the version. null / absent = none exists. */
+  itemRights?: RightsRecord | null;
+  stimulus?: (StimulusFact & { rights: RightsRecord | null }) | null;
+  assets?: Array<AssetFact & { rights: RightsRecord | null }>;
 }
+
+export type RightsRecord = Pick<ContentRightsFact, 'sourceAccess' | 'reuseRights' | 'inForce'>;
+
+const NO_RIGHTS: RightsRecord = { sourceAccess: null, reuseRights: null, inForce: false };
+const rightsFact = (contentType: RightsContentType, contentId: string, r: RightsRecord | null | undefined): ContentRightsFact => ({ contentType, contentId, ...(r ?? NO_RIGHTS) });
 
 const numberIn = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
@@ -147,7 +210,7 @@ function reviewedProvenance(row: ReviewedBankItemRow): QuestionProvenance {
   const c = row.content ?? {};
   if (row.contentOrigin === 'FIXTURE' || c.contentOrigin === 'FIXTURE' || c.contentStatus === 'DEV_CERT_FIXTURE') return 'FIXTURE';
   const p = row.bankItem?.provenance;
-  return p === 'OFFICIAL' || p === 'LICENSED' || p === 'STUDYUS_GENERATED' ? p : 'FIXTURE';
+  return p === 'OFFICIAL' || p === 'LICENSED' || p === 'STUDYUS_GENERATED' || p === 'STUDYUS_AUTHORED' ? p : 'FIXTURE';
 }
 
 export function coverageOfReviewedBankItem(row: ReviewedBankItemRow): QuestionCoverage {
@@ -155,11 +218,25 @@ export function coverageOfReviewedBankItem(row: ReviewedBankItemRow): QuestionCo
   const content = row.content ?? {};
   const seen = new Set<string>();
   const concepts: ConceptCoverage[] = [];
-  for (const m of row.objectiveConcepts) {
+  // A reviewer's attribution of THIS version replaces what the objective mapping would only suggest.
+  const attributed = row.itemConcepts ?? [];
+  for (const a of [...attributed].sort((x, y) => (x.role === y.role ? 0 : x.role === 'PRIMARY' ? -1 : 1))) {
+    if (seen.has(a.canonicalConceptId)) continue;
+    seen.add(a.canonicalConceptId);
+    concepts.push({ canonicalConceptId: a.canonicalConceptId, role: a.role, basis: 'ITEM_ATTRIBUTION' });
+  }
+  if (attributed.length === 0) for (const m of row.objectiveConcepts) {
     if (seen.has(m.canonicalConceptId)) continue;
     seen.add(m.canonicalConceptId);
     concepts.push({ canonicalConceptId: m.canonicalConceptId, role: 'UNSPECIFIED', basis: 'OBJECTIVE_MAPPING', relationType: m.relationType });
   }
+  const stimulus = row.stimulus ?? null;
+  const assets = row.assets ?? [];
+  const rights: ContentRightsFact[] = [
+    rightsFact('ITEM_VERSION', row.approvedItemId, row.itemRights),
+    ...(stimulus ? [rightsFact('STIMULUS_VERSION', stimulus.stimulusVersionId, stimulus.rights)] : []),
+    ...assets.map((a) => rightsFact('ASSET', a.assetId, a.rights)),
+  ];
   const bankFacts: EligibilityFacts = {
     lifecycle: (row.bankLifecycleStatus as EligibilityFacts['lifecycle']) ?? null,
     usage: row.usageEligibility,
@@ -188,6 +265,9 @@ export function coverageOfReviewedBankItem(row: ReviewedBankItemRow): QuestionCo
     language: knownOrUnknown(row.bankItem?.language ?? (typeof content.language === 'string' ? content.language : null)),
     provenance,
     licensing: row.sourceIds && row.sourceIds.length > 0 ? known({ statuses: [...new Set(row.sourceLicenses)], sourceIds: [...row.sourceIds] }) : UNKNOWN,
+    rights,
+    stimulus: stimulus ? { stimulusId: stimulus.stimulusId, stimulusVersionId: stimulus.stimulusVersionId, position: stimulus.position, lifecycle: stimulus.lifecycle, humanApproved: stimulus.humanApproved, isCurrentVersion: stimulus.isCurrentVersion, retired: stimulus.retired } : null,
+    assets: assets.map((a) => ({ assetId: a.assetId, lifecycle: a.lifecycle })),
     usage: known({ eligibility: row.usageEligibility, examAlignment: row.examAlignment }),
     review: { lifecycle: knownOrUnknown(row.bankLifecycleStatus), humanReviewed: known(row.humanReviewDecisions > 0) },
     bankFacts,
@@ -238,6 +318,9 @@ export function coverageOfLearningCacheItem(row: LearningCacheItemRow): Question
     language: knownOrUnknown(row.language),
     provenance: 'GENERATED_UNREVIEWED',
     licensing: NOT_APPLICABLE,
+    rights: [],
+    stimulus: null,
+    assets: [],
     usage: NOT_APPLICABLE,
     review: { lifecycle: NOT_APPLICABLE, humanReviewed: known(false) },
     bankFacts: null,
@@ -253,6 +336,19 @@ export function coverageOfLearningCacheItem(row: LearningCacheItemRow): Question
 export const coveredConceptIds = (c: QuestionCoverage): string[] => c.concepts.map((x) => x.canonicalConceptId);
 
 export const isMultiConcept = (c: QuestionCoverage): boolean => c.concepts.length > 1;
+
+/**
+ * The one concept a correct answer to this question is DIRECT evidence of: its PRIMARY concept, stated for
+ * the item version. null for an unattributed (legacy) item -- a concept derived from the objective mapping
+ * is never direct -- and a SUPPORTING concept never is.
+ */
+export const directEvidenceConceptId = (c: QuestionCoverage): string | null => {
+  const primary = c.concepts.filter((x) => x.role === 'PRIMARY' && x.basis === 'ITEM_ATTRIBUTION');
+  return primary.length === 1 ? primary[0].canonicalConceptId : null;
+};
+
+/** Can this question satisfy a direct-evidence requirement for the concept? Only through its PRIMARY concept. */
+export const satisfiesDirectRequirement = (c: QuestionCoverage, canonicalConceptId: string): boolean => directEvidenceConceptId(c) === canonicalConceptId;
 
 export interface CoverageSummary {
   total: number;

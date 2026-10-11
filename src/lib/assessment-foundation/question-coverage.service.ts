@@ -9,7 +9,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { resolveConceptIdentities } from '@/lib/catalog/concept-identity.service';
 import type { ObjectiveConceptRelation } from '@/lib/curriculum/curriculum-scope';
-import { coverageOfLearningCacheItem, coverageOfReviewedBankItem, type QuestionCoverage, type QuestionRef, type QuestionStore, type ReviewedBankItemRow } from './question-coverage';
+import { coverageOfLearningCacheItem, coverageOfReviewedBankItem, REUSE_RIGHTS, type QuestionCoverage, type QuestionRef, type QuestionStore, type ReuseRights, type ReviewedBankItemRow, type RightsRecord } from './question-coverage';
 
 export interface QuestionCoverageProvider {
   readonly store: QuestionStore;
@@ -18,6 +18,69 @@ export interface QuestionCoverageProvider {
 }
 
 const pgArray = (v: unknown): string[] | null => (Array.isArray(v) ? (v as string[]) : null);
+
+type ContentCarrierFacts = Pick<ReviewedBankItemRow, 'itemConcepts' | 'itemRights' | 'stimulus' | 'assets'>;
+
+/**
+ * Question Bank content-carrier facts of item versions: attribution, stimulus, assets and the rights of each
+ * (migrations 20261110_1000..1500). Where that schema is not applied yet, no fact exists: every item is
+ * unattributed and has no rights record, which is the truth there.
+ */
+async function loadContentCarrierFacts(ids: readonly string[], client: DbExecutor): Promise<Map<string, ContentCarrierFacts>> {
+  const out = new Map<string, ContentCarrierFacts>();
+  const ready = await client.query(`SELECT to_regclass('public.question_bank_content_rights') IS NOT NULL AND to_regclass('public.question_bank_item_concepts') IS NOT NULL AND to_regclass('public.question_bank_stimulus_reviews') IS NOT NULL AS ready`);
+  if (ready.rows[0]?.ready !== true) return out;
+  const [concepts, stimuli, assets] = await Promise.all([
+    client.query(`SELECT approved_item_id, canonical_concept_id, role FROM question_bank_item_concepts WHERE approved_item_id = ANY($1::uuid[]) ORDER BY approved_item_id, role, canonical_concept_id`, [ids]),
+    client.query(
+      `SELECT s.approved_item_id, s.position, v.id AS stimulus_version_id, v.stimulus_id, v.lifecycle_status, (st.current_version_id = v.id) AS is_current, (st.retired_at IS NOT NULL) AS retired,
+              EXISTS (SELECT 1 FROM question_bank_stimulus_reviews r WHERE r.stimulus_version_id = v.id AND r.decision = 'APPROVED') AS approved
+         FROM question_bank_item_stimulus s
+         JOIN question_bank_stimulus_versions v ON v.id = s.stimulus_version_id
+         JOIN question_bank_stimuli st ON st.id = v.stimulus_id
+        WHERE s.approved_item_id = ANY($1::uuid[])`,
+      [ids]
+    ),
+    client.query(
+      `SELECT x.approved_item_id, a.id AS asset_id, a.lifecycle_status
+         FROM (SELECT ia.approved_item_id, ia.asset_id FROM question_bank_item_assets ia WHERE ia.approved_item_id = ANY($1::uuid[])
+               UNION
+               SELECT s.approved_item_id, p.asset_id FROM question_bank_item_stimulus s JOIN question_bank_stimulus_parts p ON p.stimulus_version_id = s.stimulus_version_id
+                WHERE s.approved_item_id = ANY($1::uuid[]) AND p.asset_id IS NOT NULL) x
+         JOIN question_bank_assets a ON a.id = x.asset_id
+        ORDER BY x.approved_item_id, a.id`,
+      [ids]
+    ),
+  ]);
+  const contentIds = [...new Set([...ids, ...stimuli.rows.map((r: any) => r.stimulus_version_id as string), ...assets.rows.map((r: any) => r.asset_id as string)])];
+  // The database decides whether a record is in force on the day; this module reads the answer.
+  const rights = await client.query(
+    `SELECT content_type, content_id, source_access, reuse_rights,
+            ((valid_from IS NULL OR valid_from <= current_date) AND (valid_to IS NULL OR valid_to >= current_date)) AS in_force
+       FROM question_bank_content_rights WHERE superseded_at IS NULL AND content_id = ANY($1::uuid[])`,
+    [contentIds]
+  );
+  const rightsOf = new Map<string, RightsRecord>();
+  for (const r of rights.rows as any[]) {
+    const reuse = (REUSE_RIGHTS as readonly string[]).includes(r.reuse_rights) ? (r.reuse_rights as ReuseRights) : 'UNKNOWN';
+    rightsOf.set(`${r.content_type}:${r.content_id}`, { sourceAccess: r.source_access ?? null, reuseRights: reuse, inForce: r.in_force === true });
+  }
+  const factsOf = (id: string): ContentCarrierFacts => {
+    let f = out.get(id);
+    if (!f) out.set(id, (f = { itemConcepts: [], itemRights: rightsOf.get(`ITEM_VERSION:${id}`) ?? null, stimulus: null, assets: [] }));
+    return f;
+  };
+  for (const id of ids) factsOf(id);
+  for (const c of concepts.rows as any[]) factsOf(c.approved_item_id).itemConcepts!.push({ canonicalConceptId: c.canonical_concept_id, role: c.role });
+  for (const s of stimuli.rows as any[]) {
+    factsOf(s.approved_item_id).stimulus = {
+      stimulusId: s.stimulus_id, stimulusVersionId: s.stimulus_version_id, position: Number(s.position), lifecycle: s.lifecycle_status,
+      humanApproved: s.approved === true, isCurrentVersion: s.is_current === true, retired: s.retired === true, rights: rightsOf.get(`STIMULUS_VERSION:${s.stimulus_version_id}`) ?? null,
+    };
+  }
+  for (const a of assets.rows as any[]) factsOf(a.approved_item_id).assets!.push({ assetId: a.asset_id, lifecycle: a.lifecycle_status, rights: rightsOf.get(`ASSET:${a.asset_id}`) ?? null });
+  return out;
+}
 
 export function reviewedExamBankCoverageProvider(client: DbExecutor = db): QuestionCoverageProvider {
   return {
@@ -40,6 +103,7 @@ export function reviewedExamBankCoverageProvider(client: DbExecutor = db): Quest
       );
       const objectiveIds = [...new Set(items.rows.map((r: any) => r.learning_objective_id as string).filter(Boolean))];
       const sourceIds = [...new Set(items.rows.flatMap((r: any) => pgArray(r.source_ids) ?? []))];
+      const carrier = await loadContentCarrierFacts(items.rows.map((r: any) => r.id as string), client);
       const [mappings, sources] = await Promise.all([
         objectiveIds.length
           ? client.query(`SELECT learning_objective_id, canonical_concept_id, relation_type FROM objective_concept_mappings WHERE learning_objective_id = ANY($1::uuid[]) AND status = 'PUBLISHED' ORDER BY learning_objective_id, canonical_concept_id`, [objectiveIds])
@@ -70,6 +134,7 @@ export function reviewedExamBankCoverageProvider(client: DbExecutor = db): Quest
           humanReviewDecisions: r.review_count ?? 0,
           scope: r.structure_version_id ? { structureVersionId: r.structure_version_id, academicSubjectId: r.academic_subject_id } : null,
           objectiveConcepts: conceptsByObjective.get(r.learning_objective_id) ?? [],
+          ...(carrier.get(r.id) ?? {}),
         };
         return coverageOfReviewedBankItem(row);
       });

@@ -57,6 +57,7 @@ function bank(id: string, objective: string, over: Partial<ReviewedBankItemRow> 
     sourceIds: null,
     bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: id, retired: false, language: 'es' },
     sourceLicenses: [],
+    itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, 
     humanReviewDecisions: 1,
     scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' },
     objectiveConcepts: [{ canonicalConceptId: `c-of-${objective}`, relationType: 'FULL' }],
@@ -290,10 +291,10 @@ describe('B2 EXAM_PREPARATION -- adapts emphasis, stays inside the exam, never b
     expect(s.eligibility.rejected.COMPONENT_MISMATCH).toBe(8);
   });
 
-  it('a gap never bypasses licensing, review or content class', () => {
+  it('a gap never bypasses reuse rights, review or content class', () => {
     const blocked = [
-      bank('unlicensed', 'lo-1', { bankItem: { provenance: 'OFFICIAL', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'unlicensed', retired: false, language: 'es' } }),
-      bank('restricted', 'lo-1', { sourceIds: ['src-1'], sourceLicenses: ['RESTRICTED'], bankItem: { provenance: 'LICENSED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'restricted', retired: false, language: 'es' } }),
+      bank('unlicensed', 'lo-1', { itemRights: null, bankItem: { provenance: 'OFFICIAL', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'unlicensed', retired: false, language: 'es' } }),
+      bank('restricted', 'lo-1', { sourceIds: ['src-1'], sourceLicenses: ['PUBLIC'], itemRights: { sourceAccess: 'PUBLICLY_ACCESSIBLE', reuseRights: 'PROHIBITED', inForce: true }, bankItem: { provenance: 'LICENSED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'restricted', retired: false, language: 'es' } }),
       bank('fixture', 'lo-1', { contentOrigin: 'FIXTURE' }),
       bank('draft', 'lo-1', { status: 'DRAFT' }),
       bank('retired', 'lo-1', { bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: 'retired', retired: true, language: 'es' } }),
@@ -301,7 +302,7 @@ describe('B2 EXAM_PREPARATION -- adapts emphasis, stays inside the exam, never b
     ];
     const s = prep({ objective: 'CLOSE_GAPS', gaps: [gap('lo-1', 0.0)] }, blocked);
     expect(s.outcome).toMatchObject({ status: 'INSUFFICIENT_COVERAGE', selected: [] });
-    expect(s.eligibility).toMatchObject({ eligible: 0, rejected: { LICENCE_UNKNOWN: 1, LICENCE_NOT_PERMITTED: 1, BANK_DELIVERY_RULE: 3, UNREVIEWED_CONTENT_NOT_ALLOWED: 1 } });
+    expect(s.eligibility).toMatchObject({ eligible: 0, rejected: { REUSE_RIGHTS_NOT_ESTABLISHED: 1, REUSE_RIGHTS_PROHIBITED: 1, BANK_DELIVERY_RULE: 3, UNREVIEWED_CONTENT_NOT_ALLOWED: 1 } });
     expect(s.outcome.unmet).toContainEqual({ subject: 'OBJECTIVE:lo-1', requirement: 'OPPORTUNITY', missing: 3, cause: 'NO_ELIGIBLE_CANDIDATE' });
   });
 

@@ -162,7 +162,18 @@ describe('B1 integration -- exam context resolution', () => {
     // eligibility for THIS target's exam version, per family
     const official = { family: 'OFFICIAL_EXAM' as const, studentId: 'stu-1', examVersionId: prep!.exam.versionIds[0], structureVersionIds: prep!.curriculumScopes.map((s) => s.structureVersionId) };
     const verdict = Object.fromEntries(coverage.map((c) => [c.ref.id, evaluateQuestionEligibility(c, official).eligible]));
-    expect(verdict).toEqual({ 'ai-approved': true, 'ai-pilot': false, 'ai-fixture': false, 'ai-unmapped': true });
+    // DEV shape: no item has a rights record, so nothing is deliverable to a Student -- whatever its review says
+    expect(verdict).toEqual({ 'ai-approved': false, 'ai-pilot': false, 'ai-fixture': false, 'ai-unmapped': false });
+    expect(evaluateQuestionEligibility(approved, official)).toEqual({ eligible: false, reasons: ['REUSE_RIGHTS_NOT_ESTABLISHED'] });
+    // once the Question Bank records an established reuse right, the same items are judged by the other rules
+    routes = [
+      ...routes,
+      [/to_regclass\('public\.question_bank_content_rights'\)/, () => [{ ready: true }]],
+      [/FROM question_bank_content_rights WHERE superseded_at IS NULL/, (p) => BANK_ITEMS.filter((i) => p[0].includes(i.id)).map((i) => ({ content_type: 'ITEM_VERSION', content_id: i.id, source_access: 'NOT_APPLICABLE', reuse_rights: i.id === 'ai-pilot' ? 'UNKNOWN' : 'STUDYUS_OWNED', in_force: true }))],
+    ];
+    const withRights = await reviewedExamBankCoverageProvider().load(BANK_ITEMS.map((i) => i.id));
+    expect(Object.fromEntries(withRights.map((c) => [c.ref.id, evaluateQuestionEligibility(c, official).eligible]))).toEqual({ 'ai-approved': true, 'ai-pilot': false, 'ai-fixture': false, 'ai-unmapped': true });
+    expect(withRights.find((c) => c.ref.id === 'ai-approved')!.rights).toEqual([{ contentType: 'ITEM_VERSION', contentId: 'ai-approved', sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }]);
     // the reviewed provider never reads the learning cache
     expect(log.some((q) => /question_bank_candidates|quiz_sessions/.test(q.sql))).toBe(false);
   });

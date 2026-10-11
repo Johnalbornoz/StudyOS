@@ -225,7 +225,7 @@ export async function ensureBankIdentities(outer?: PoolClient): Promise<number> 
              COALESCE(NULLIF(ai.content->>'key', ''), 'legacy') || CASE WHEN EXISTS (SELECT 1 FROM question_bank_items q WHERE q.learning_objective_id = ai.learning_objective_id AND q.item_key = ai.content->>'key') OR ai.content->>'key' IS NULL THEN '#' || ai.id::text ELSE '' END,
              origin.exam_version_id, origin.assessment_component_id, ai.learning_objective_id,
              CASE COALESCE(ai.content_origin, ai.content->>'contentOrigin', CASE ai.content->>'contentStatus' WHEN 'OFFICIAL_LICENSED' THEN 'LICENSED' WHEN 'DEV_CERT_FIXTURE' THEN 'FIXTURE' ELSE 'GENERATED' END)
-               WHEN 'OFFICIAL' THEN 'OFFICIAL' WHEN 'LICENSED' THEN 'LICENSED' WHEN 'FIXTURE' THEN 'FIXTURE' ELSE 'STUDYUS_GENERATED' END,
+               WHEN 'OFFICIAL' THEN 'OFFICIAL' WHEN 'LICENSED' THEN 'LICENSED' WHEN 'FIXTURE' THEN 'FIXTURE' WHEN 'AUTHORED' THEN 'STUDYUS_AUTHORED' ELSE 'STUDYUS_GENERATED' END,
              COALESCE(NULLIF(ai.content->>'language', ''), 'es'), ai.id, ai.created_at, ai.reviewed_at
         FROM approved_items ai
         LEFT JOIN LATERAL (

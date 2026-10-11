@@ -200,3 +200,10 @@ export function lifecycleSqlFor(use: DeliveryUse, policy: EligibilityPolicy = DE
   const content = audience === 'STUDENT' ? ` AND ${contentAudienceSql('STUDENT', 'ai')}` : '';
   return `((${legacy}ai.bank_lifecycle_status IN (${states})) AND (ai.usage_eligibility IS NULL OR '${usage}' = ANY(ai.usage_eligibility))${alignment}${content})`;
 }
+
+/**
+ * A stimulus version or an authored asset can be delivered only while ACTIVE. These are Question Bank
+ * lifecycle rules, kept here beside the item rule so no other module states a status list of its own.
+ */
+export const isStimulusVersionDeliverable = (lifecycle: string | null): boolean => lifecycle === 'ACTIVE';
+export const isAssetDeliverable = (lifecycle: string | null): boolean => lifecycle === 'ACTIVE';
