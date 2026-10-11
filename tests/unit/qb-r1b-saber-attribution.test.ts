@@ -90,7 +90,7 @@ describe('QB-R1B attribution writer -- one governed path', () => {
 });
 
 describe('QB-R1B production draft package -- the input to authoring, nothing more', () => {
-  const source = (over: Record<string, unknown> = {}) => ({ sourceKey: 'cb-paa-guia-2021', sourceType: 'OFFICIAL_SPECIFICATION', title: 'Guía de estudio PAA', publisher: 'College Board', locator: 'p. 35', sourceAccess: 'PUBLICLY_ACCESSIBLE', permittedUse: 'REFERENCE_ONLY', licenceReference: null, ...over });
+  const source = (over: Record<string, unknown> = {}) => ({ sourceKey: 'cb-paa-guia-2021', sourceType: 'OFFICIAL_SPECIFICATION', title: 'Guía de estudio PAA', publisher: 'College Board', locator: 'p. 35', sourceAccess: 'PUBLICLY_ACCESSIBLE', permittedUse: 'REFERENCE_ONLY', accessStatus: 'NOT_REQUIRED', referencedAt: '2026-10-10T12:00:00Z', licenceReference: null, ...over });
   const pack = (over: Record<string, unknown> = {}) => ({ v: 1, sources: [source()], facts: [{ kind: 'TYPICAL_TASK_FORM', statement: 'Los problemas de proporcionalidad suelen pedir un cuarto valor.', sourceKeys: ['cb-paa-guia-2021'], restatedInOwnWords: true }], containsCopiedProtectedExpression: false, ...over });
   const pkg = (over: Record<string, unknown> = {}) => ({
     v: 1, packageKey: 'paa.mat.aritmetica.0001', examFamily: 'PAA', examVersionId: U(10), canonicalSubjectId: U(11), domainNodeCode: 'paa.dom.matematicas.aritmetica', topicNodeCode: 'paa.topic.027',
@@ -131,11 +131,11 @@ describe('QB-R1B production draft package -- the input to authoring, nothing mor
   });
 
   it('an external pedagogical reference is reference-only, and teaches nothing until its access is validated', () => {
-    const external = (over: Record<string, unknown> = {}) => source({ sourceKey: 'ext-ref', sourceType: 'PEDAGOGICAL_REFERENCE', title: 'External reference', publisher: 'Third party', sourceAccess: 'LICENSED_SOURCE', ...over });
+    const external = (over: Record<string, unknown> = {}) => source({ sourceKey: 'ext-ref', sourceType: 'PEDAGOGICAL_REFERENCE', title: 'External reference', publisher: 'Third party', sourceAccess: 'LICENSED_SOURCE', accessStatus: 'VALIDATED', ...over });
     const msgs = (p: unknown) => ReferenceIntelligencePackSchema.safeParse(p).error?.issues.map((i) => i.message) ?? [];
     expect(msgs(pack({ sources: [source(), external()] }))).toEqual([]);
     expect(msgs(pack({ sources: [source(), external({ permittedUse: 'REPRODUCTION_LICENSED', licenceReference: 'L-1' })] }))).toEqual(['PEDAGOGICAL_REFERENCE_IS_REFERENCE_ONLY']);
-    const listedOnly = pack({ sources: [source(), external({ permittedUse: 'ACCESS_NOT_VALIDATED' })] });
+    const listedOnly = pack({ sources: [source(), external({ permittedUse: 'ACCESS_NOT_VALIDATED', accessStatus: 'NOT_VALIDATED', referencedAt: null })] });
     expect(msgs(listedOnly)).toEqual([]);
     expect(msgs({ ...listedOnly, facts: [{ kind: 'COMMON_MISCONCEPTION', statement: 'Un hecho pedagógico cualquiera.', sourceKeys: ['ext-ref'], restatedInOwnWords: true }] })).toEqual(['FACT_FROM_UNVALIDATED_SOURCE']);
   });
