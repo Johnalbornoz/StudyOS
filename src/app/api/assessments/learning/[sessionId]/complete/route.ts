@@ -10,7 +10,7 @@
 import { after, NextRequest, NextResponse } from 'next/server';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
-import { verifyAuth, getOrCreateStudentId } from '@/lib/auth';
+import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { completeLearningAssessment } from '@/lib/assessment-execution/assessment-completion.service';
 import { requestSupplyForSession } from '@/lib/assessment-experience/assessment-supply.service';
 
@@ -23,7 +23,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   const body = Schema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
 
-  const studentId = await getOrCreateStudentId(authContext.userId);
+  const studentId = await requireStudentId(authContext.userId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const result = await completeLearningAssessment({ studentId, sessionId, answers: body.data.answers });
   if (!result.ok) {
     const status = result.reason === 'NOT_FOUND' ? 404 : result.reason === 'GRADING_FAILED' ? 502 : 409;

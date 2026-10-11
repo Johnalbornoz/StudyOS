@@ -33,7 +33,8 @@ vi.mock('@/lib/db', () => {
   const students: Record<string, string> = { clerk_owner: '11111111-1111-4111-8111-111111111111', clerk_other: '22222222-2222-4222-8222-222222222222' };
   const q = async (sql: string, p: any[] = []) => {
     h.sql.push(sql);
-    if (/FROM students WHERE clerk_id = \$1 AND id = \$2/.test(sql)) {
+    // the ownership guard's read: the L6 form, and the shared foundation's form (joined to users, ACTIVE Student role)
+    if (/FROM students(?: s)?[\s\S]*WHERE (?:u\.)?clerk_id = \$1 AND (?:s\.)?id = \$2/.test(sql)) {
       const ok = students[p[0]] === p[1];
       return { rows: ok ? [{ ok: 1 }] : [], rowCount: ok ? 1 : 0 };
     }

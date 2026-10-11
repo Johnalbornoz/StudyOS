@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { getDiagnosisById } from '@/lib/diagnostics/diagnosis.service';
 import { explainDiagnosis } from '@/lib/diagnostics/explain.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -23,7 +23,8 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   const diagnosis = await getDiagnosisById(id);
   if (!diagnosis) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const allowed = await canAccessLearner(actor.id, diagnosis.studentId, 'LEARNER_PROGRESS_VIEW');
+  // L10-R2: one concept of the learner -- a Teacher reads it only inside a subject they are authorized for with this learner.
+  const allowed = await canReadLearnerRoute(actor.id, diagnosis.studentId, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: diagnosis.conceptId });
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const explanation = await explainDiagnosis(id);

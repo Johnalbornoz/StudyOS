@@ -370,7 +370,13 @@ const authMocks = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/auth', async (orig) => ({ ...(await orig<typeof import('@/lib/auth')>()), verifyAuth: () => authMocks.verifyAuth() }));
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: async () => ({ id: 'actor-a' }) }));
-vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: unknown[]) => authMocks.canAccessLearner(...a) }));
+vi.mock('@/lib/authorization', () => ({
+  canAccessLearner: (...a: unknown[]) => authMocks.canAccessLearner(...a),
+  // L10-R2: the learner-wide routes resolve the whole read scope (Teacher subject boundary). In this file the
+  // single allow/deny switch stands for "the owner" vs "no relationship at all".
+  resolveLearnerReadScope: async (actor: string, learner: string) =>
+    (await authMocks.canAccessLearner(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
+}));
 vi.mock('@/lib/db', () => ({ db: { query: (...a: unknown[]) => authMocks.dbQuery(...a), connect: vi.fn() }, query: (...a: unknown[]) => authMocks.dbQuery(...a) }));
 vi.mock('@/lib/readiness/readiness.service', () => ({
   computeReadinessSnapshot: (...a: unknown[]) => authMocks.compute(...a),

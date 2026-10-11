@@ -216,9 +216,13 @@ describe('enrollment lookup: an OPEN row always wins over closed history; else t
   });
 
   it('the lookup is one read with the canonical ordering, and no write', () => {
+    // Convergence: the lookup is the shared foundation's getClassEnrollmentState; this service keeps no copy of it.
     const svc = readFileSync(join(process.cwd(), 'src/lib/institution/institution-operations.service.ts'), 'utf-8');
-    const fn = svc.slice(svc.indexOf('async function enrollmentOf('), svc.indexOf('\n}\n', svc.indexOf('async function enrollmentOf(')));
-    expect(fn.replace(/\s+/g, ' ')).toContain("WHERE class_id = $1 AND student_id = $2 ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1");
+    expect(svc).not.toContain('enrollmentOf');
+    expect(svc.match(/await getClassEnrollmentState\(classId, student\.id\)/g)).toHaveLength(2); // the single add and the list
+    const shared = readFileSync(join(process.cwd(), 'src/services/institution.service.ts'), 'utf-8');
+    const fn = shared.slice(shared.indexOf('export async function getClassEnrollmentState('), shared.indexOf('\n}\n', shared.indexOf('export async function getClassEnrollmentState(')));
+    expect(fn.replace(/\s+/g, ' ')).toContain("WHERE class_id = $1 AND student_id = $2 ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC");
     expect(fn).not.toMatch(/INSERT INTO|UPDATE |DELETE FROM/);
   });
 });

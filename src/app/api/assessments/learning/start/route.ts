@@ -10,7 +10,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
-import { verifyAuth, getOrCreateStudentId } from '@/lib/auth';
+import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { parseLaunchRequest } from '@/lib/assessment-experience/launch';
 import { isSnapshotExecutionEnabled, startLearningAssessment } from '@/lib/assessment-execution/assessment-start.service';
@@ -24,8 +24,9 @@ async function handlePOST(request: NextRequest) {
   if (!parsed.ok) return NextResponse.json({ error: 'INVALID_INPUT', issue: parsed.issue }, { status: 400 });
   if (parsed.request.family !== 'LEARNING') return NextResponse.json({ error: 'UNSUPPORTED_FAMILY' }, { status: 400 });
 
-  // the Student is the signed-in one: a request cannot name another
-  const studentId = await getOrCreateStudentId(authContext.userId);
+  // the Student is the signed-in one: a request cannot name another; an account without an ACTIVE Student role is refused
+  const studentId = await requireStudentId(authContext.userId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const { intent, depth, scope, availableMinutes } = parsed.request;
   const language = await getInterfaceLanguage(studentId).catch(() => 'es');
   const started = await startLearningAssessment({ studentId, request: { intent, depth, canonicalConceptIds: scope.canonicalConceptIds, learnerConceptIds: scope.learnerConceptIds, availableMinutes }, asOf: new Date().toISOString(), language });

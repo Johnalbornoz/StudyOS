@@ -15,6 +15,7 @@
  * the generic canAccessLearner.
  */
 import { db } from '@/lib/db';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
 import { canAccessClass, canAccessInstitution, canTeacherManageIntervention } from '@/lib/authorization';
 import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import type { SimulationType } from '@/lib/simulation/types';
@@ -321,9 +322,15 @@ async function listTeacherClassIdsForActor(actorUserId: string): Promise<string[
     `SELECT DISTINCT c.id FROM teacher_assignments ta
      JOIN institution_memberships im ON im.id = ta.institution_membership_id
      JOIN classes c ON (c.id = ta.class_id OR (ta.class_id IS NULL AND ta.grade_id IS NOT NULL AND c.grade_id = ta.grade_id))
-     WHERE im.user_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED' AND ta.status = 'ACTIVE' AND c.institution_id = im.institution_id`,
+     JOIN institutions i ON i.id = im.institution_id AND i.status = 'ACTIVE'
+     WHERE im.user_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED' AND ta.status = 'ACTIVE' AND c.institution_id = im.institution_id
+       AND c.status = 'ACTIVE'
+       AND ${activeRoleSql('$1', 'TEACHER')}`,
     [actorUserId]
   );
+  // L10-R2: the same conditions as every other "classes this actor teaches" query (SF-1, SF-3): an ACTIVE
+  // institution, a class that is not archived, an ACTIVE account and TEACHER role. This copy had none of them,
+  // so a teacher of two institutions kept reading rows of the suspended one.
   return r.rows.map((row: any) => row.id);
 }
 

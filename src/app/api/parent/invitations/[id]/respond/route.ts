@@ -11,6 +11,7 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { getOrCreateParentId } from '@/lib/auth';
 import { getOrCreateCanonicalUser, assignSelfServiceRole } from '@/lib/identity';
+import { resolveVerifiedPrimaryEmail } from '@/lib/identity/verified-email';
 import { acceptParentInvitation, declineParentInvitation } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -22,8 +23,12 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress;
-  if (!email) return NextResponse.json({ error: 'NO_EMAIL' }, { status: 400 });
+  // L10 SF-6 (L4-21): an invitation is claimed only by the account whose
+  // VERIFIED PRIMARY email it was addressed to -- never an address the
+  // account merely added, never `emailAddresses[0]`. Refused before any
+  // role, profile or relationship row is written.
+  const email = resolveVerifiedPrimaryEmail(user);
+  if (!email) return NextResponse.json({ error: 'EMAIL_NOT_VERIFIED' }, { status: 403 });
 
   let validated;
   try {

@@ -41,7 +41,7 @@ export default async function TeacherClassStudentsPage({ params }: { params: Pro
 
   return (
     <div className="ta-stack">
-      <ClassChrome klass={klass} active="students" t={t} />
+      <ClassChrome klass={klass} active="students" t={t} locale={locale} />
       <section className="card ta-card" aria-labelledby="roster-title">
         <h2 id="roster-title">{t['teacher.roster.title']}</h2>
         <InviteStudentForm

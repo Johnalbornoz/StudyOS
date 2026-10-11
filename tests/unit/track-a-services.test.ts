@@ -144,7 +144,8 @@ describe('Consent-based class enrollment (A4)', () => {
     expect(await inviteStudentToClass('inst-A', 'class-1', 's@example.com', 'admin-1')).toEqual({ outcome: 'INVITED', enrollmentId: 'enr-1', studentUserId: 'u-stu' });
     const insert = sqls().find((s) => s.includes('INSERT INTO class_enrollments'))!;
     expect(insert).toMatch(/'PENDING'/);
-    expect(insert).toMatch(/WHERE class_enrollments\.status IN \('DECLINED', 'ENDED'\)/);
+    // CR-L9-02: a NEW row -- never an upsert that reopens a DECLINED or ENDED one.
+    expect(insert).not.toMatch(/ON CONFLICT|DO UPDATE/);
   });
 
   it('an ACTIVE enrollment is never re-invited or reset', async () => {

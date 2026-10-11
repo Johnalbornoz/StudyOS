@@ -9,6 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { resolveVerifiedPrimaryEmail } from '@/lib/identity/verified-email';
 import { listPendingInvitationsForEmail } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -17,7 +18,8 @@ async function handleGET() {
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress;
+  // L10 SF-6: invitations are matched on the VERIFIED PRIMARY email only.
+  const email = resolveVerifiedPrimaryEmail(user);
   if (!email) return NextResponse.json({ success: true, data: { invitations: [] } });
 
   const invitations = await listPendingInvitationsForEmail(email);

@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
-import { verifyAuth, getOrCreateStudentId } from '@/lib/auth';
+import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { saveDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';
 
 const Schema = z.strictObject({ answers: z.array(z.strictObject({ itemKey: z.string().min(1).max(200), answer: z.string().max(20_000) })).max(200) });
@@ -19,7 +19,8 @@ async function handlePUT(request: NextRequest, { params }: { params: Promise<{ s
   const { sessionId } = await params;
   const body = Schema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
-  const studentId = await getOrCreateStudentId(authContext.userId);
+  const studentId = await requireStudentId(authContext.userId);
+  if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const result = await saveDraftAnswers({ studentId, sessionId, answers: body.data.answers });
   if (!result.ok) return NextResponse.json({ success: false, reason: result.reason }, { status: result.reason === 'NOT_FOUND' ? 404 : 409 });
   return NextResponse.json({ success: true, data: { saved: result.saved, cleared: result.cleared } });

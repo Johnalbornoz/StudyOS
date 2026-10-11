@@ -261,7 +261,9 @@ describe('B5-R routes', () => {
     expect(start).toMatch(/parseLaunchRequest\(/);
     expect(start.match(/startLearningAssessment\(/g)).toHaveLength(1);
     // the Student is the signed-in one; nothing in the request names a Student, a question or a count
-    expect(start).toMatch(/const studentId = await getOrCreateStudentId\(authContext\.userId\);/);
+    // (convergence: resolved through the shared foundation's requireStudentId -- no ACTIVE Student role => 403)
+    expect(start).toMatch(/const studentId = await requireStudentId\(authContext\.userId\);\s*if \(!studentId\) return NextResponse\.json\(\{ error: 'FORBIDDEN' \}, \{ status: 403 \}\);/);
+    expect(start).not.toContain('getOrCreateStudentId');
     expect(start).not.toMatch(/studentId: (v|body|parsed)\.|questionIds|maxQuestions|solveLearning|freezeAssessment|storeQuiz|generate-and-take/);
   });
 

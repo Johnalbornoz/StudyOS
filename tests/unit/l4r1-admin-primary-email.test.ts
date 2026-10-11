@@ -150,8 +150,9 @@ describe('ADMIN_ROUTE_HELPER_COVERAGE', () => {
     const helper = adminRoutes.filter((f) => /isAllowlistedAdminUser\(/.test(code(f)));
     const uncovered = adminRoutes.filter((f) => !strong.includes(f) && !helper.includes(f)).map(rel);
     expect(uncovered).toEqual([]);
-    expect(adminRoutes.length).toBe(87);
-    expect(strong.length).toBe(51);
+    // L10 SF-7 added one route on the canonical guard (admin/parent-relationships/end): 52 + 36 = 88.
+    expect(adminRoutes.length).toBe(88);
+    expect(strong.length).toBe(52);
     expect(helper.length).toBe(36);
   });
 

@@ -71,7 +71,7 @@ export default async function TeacherClassAssignmentsPage({ params }: { params: 
 
   return (
     <div className="ta-stack">
-      <ClassChrome klass={klass} active="assignments" t={t} />
+      <ClassChrome klass={klass} active="assignments" t={t} locale={locale} />
       {!klass.subjectId && <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tc.noSubject.body']} />}
 
       {institutionTasks.length > 0 && (

@@ -192,6 +192,14 @@ const SURFACES: Array<{ name: string; file: string; classifier: RegExp; keepsErr
     keepsError: /setError\(err\.message \|\| t\['subjectDetail\.addConceptError'\]\)/,
     shows: /accessRequired && \(\s*<div[^>]*>\s*<AccessRequiredNotice/,
   },
+  {
+    // CR-L6-03: the subject concept list fetches the same explanation and shares the handling
+    name: 'Subject concept list (explanation)',
+    file: 'src/app/dashboard/subjects/[id]/ConceptList.tsx',
+    classifier: /isEntitlementRequired\(res\.status, body\)/,
+    keepsError: /setExplainErrorId\(conceptId\)/,
+    shows: /accessRequired=\{explainAccessId === c\.conceptId\}/,
+  },
 ];
 
 describe('every affected surface uses the shared handling', () => {

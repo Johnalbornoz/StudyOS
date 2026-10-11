@@ -38,7 +38,8 @@ vi.mock('@/lib/db', () => {
       'bbbbbbbb-0000-4000-8000-000000000003': [students.clerk_B, 'bbbbbbbb-0000-4000-8000-000000000001'],
     };
     const one = (ok: boolean) => ({ rows: ok ? [{ '?column?': 1 }] : [], rowCount: ok ? 1 : 0 });
-    if (/FROM students WHERE clerk_id = \$1 AND id = \$2/.test(sql)) return one(students[p[0]] === p[1]);
+    // L10 SF-1/SF-2: ownership + ACTIVE account + ACTIVE STUDENT role, in one query (both fixture students are active).
+    if (/FROM students s\s+JOIN users u[\s\S]*u\.clerk_id = \$1 AND s\.id = \$2/.test(sql)) return one(students[p[0]] === p[1]);
     if (/FROM subjects\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) return one(subjects[p[0]] === p[1]);
     if (/FROM content_sources\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) return one(sources[p[0]]?.[0] === p[1]);
     if (/FROM content_sources WHERE id = \$1 AND subject_id = \$2/.test(sql)) return one(sources[p[0]]?.[1] === p[1]);

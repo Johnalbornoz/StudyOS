@@ -24,7 +24,7 @@ import { recordGovernanceEvent } from './academic-governance';
 import { resolveDisplayIdentities } from '@/lib/identity/display-identity';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
 import { assignClassCurriculum, compatibleCurriculaForClass } from './curriculum-management.service';
-import { endClassEnrollment, getInstitutionById, inviteInstitutionAdmin, isActiveCanonicalSubject } from '@/services/institution.service';
+import { endClassEnrollment, enrollStudentDirectly, getClassEnrollmentState, getInstitutionById, inviteInstitutionAdmin, isActiveCanonicalSubject } from '@/services/institution.service';
 import { inviteToClassAndNotify } from './class-invitations';
 import { normalizeEmailList } from './email-list';
 
@@ -574,16 +574,18 @@ async function isInstitutionStudent(institutionId: string, studentId: string) {
   const r = await db.query(`SELECT 1 FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id WHERE ce.student_id = $1 AND c.institution_id = $2 AND ce.status = 'ACTIVE' LIMIT 1`, [studentId, institutionId]);
   return r.rows.length > 0;
 }
+/**
+ * CR-L9-02 (L10, on the Orchestrator's change request): direct ACTIVE
+ * enrolment goes through the canonical lifecycle in institution.service.ts.
+ * A learner who LEFT, was REMOVED from or DECLINED this class is never put
+ * back directly -- INVALID_STATE; the coordinator uses "add student", which
+ * sends an invitation the Student must accept. No closed row is reopened.
+ */
 async function enrollActive(classId: string, studentId: string, actorUserId: string) {
-  const r = await db.query(
-    `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) VALUES ($1, $2, 'ACTIVE', $3, now())
-     ON CONFLICT (class_id, student_id) DO UPDATE SET status = 'ACTIVE', ended_at = NULL, responded_at = now()
-       WHERE class_enrollments.status IN ('DECLINED', 'ENDED', 'PENDING')
-     RETURNING id`,
-    [classId, studentId, actorUserId]
-  );
-  if (!r.rows[0]) throw new InstitutionOpsError('ALREADY_ENROLLED');
-  return r.rows[0].id as string;
+  const result = await enrollStudentDirectly(classId, studentId, actorUserId);
+  if (result.outcome === 'REQUIRES_INVITATION') throw new InstitutionOpsError('INVALID_STATE');
+  if (result.outcome !== 'ENROLLED') throw new InstitutionOpsError('ALREADY_ENROLLED');
+  return result.enrollmentId;
 }
 
 async function studentByEmail(email: string): Promise<{ id: string } | undefined> {
@@ -593,22 +595,9 @@ async function studentByEmail(email: string): Promise<{ id: string } | undefined
   )).rows[0];
 }
 /**
- * Where this learner stands with this class. Never assumes one row per pair (a closed row is
- * history, a later invitation is a new row): the OPEN row (PENDING / ACTIVE) always wins; with
- * none, the most recent CLOSED row (DECLINED / ENDED) by created_at, then id. Same selection as
- * the canonical `getClassEnrollmentState` of the shared foundation.
- */
-async function enrollmentOf(classId: string, studentId: string): Promise<{ status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'ENDED' } | undefined> {
-  return (await db.query(
-    `SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2
-      ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1`,
-    [classId, studentId]
-  )).rows[0];
-}
-
-/**
  * "Añadir estudiante" by email to a class. Never creates a Student:
- *   - a student of THIS institution already -> enrolled ACTIVE directly in the class;
+ *   - a student of THIS institution already -> enrolled ACTIVE directly in the class,
+ *     unless they left, were removed from or declined THIS class before (CR-L9-02): then invited;
  *   - any other existing student -> invited (PENDING until they accept: consent);
  *   - no student account -> NO_STUDENT_ACCOUNT.
  */
@@ -616,9 +605,11 @@ export async function addStudentToClass(institutionId: string, classId: string, 
   const klass = await activeClassOf(institutionId, classId);
   const student = await studentByEmail(email);
   if (!student) throw new InstitutionOpsError('NO_STUDENT_ACCOUNT');
-  const existing = await enrollmentOf(classId, student.id);
-  if (existing?.status === 'ACTIVE' || existing?.status === 'PENDING') throw new InstitutionOpsError('ALREADY_ENROLLED');
-  if (await isInstitutionStudent(institutionId, student.id)) {
+  // CR-L9-02: a learner with a CLOSED enrolment in this class (left, removed or declined) is always
+  // INVITED again and must accept -- never enrolled directly, even while active elsewhere in the institution.
+  const state = await getClassEnrollmentState(classId, student.id);
+  if (state.open) throw new InstitutionOpsError('ALREADY_ENROLLED');
+  if (!state.lastClosed && (await isInstitutionStudent(institutionId, student.id))) {
     const enrollmentId = await enrollActive(classId, student.id, actorUserId);
     await audit(institutionId, actorUserId, 'ENROLLMENT', enrollmentId, 'STUDENT_ENROLLED', {}, { classId, studentId: student.id, via: 'INSTITUTION_STUDENT' });
     return { outcome: 'ENROLLED', studentId: student.id };
@@ -649,11 +640,12 @@ export async function bulkAddStudentsToClass(institutionId: string, classId: str
     let outcome: BulkStudentOutcome;
     try {
       const student = await studentByEmail(email);
-      const existing = student ? await enrollmentOf(classId, student.id) : undefined;
-      if (!student) outcome = 'NO_STUDENT_ACCOUNT';
-      else if (existing?.status === 'DECLINED') outcome = 'PREVIOUSLY_DECLINED';
-      else if (existing?.status === 'ENDED') outcome = 'PREVIOUSLY_ENDED';
-      else if (existing) outcome = 'ALREADY_ENROLLED';
+      // the canonical lifecycle resolver: an OPEN row wins; with none, the newest CLOSED row decides
+      const state = student ? await getClassEnrollmentState(classId, student.id) : null;
+      if (!student || !state) outcome = 'NO_STUDENT_ACCOUNT';
+      else if (state.open) outcome = 'ALREADY_ENROLLED';
+      else if (state.lastClosed?.status === 'DECLINED') outcome = 'PREVIOUSLY_DECLINED';
+      else if (state.lastClosed?.status === 'ENDED') outcome = 'PREVIOUSLY_ENDED';
       else outcome = (await addStudentToClass(institutionId, classId, email, actorUserId)).outcome;
     } catch (error) {
       if (error instanceof InstitutionOpsError && (error.code === 'NO_STUDENT_ACCOUNT' || error.code === 'ALREADY_ENROLLED')) outcome = error.code;

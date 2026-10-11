@@ -44,7 +44,7 @@ export default async function TeacherClassPage({ params }: { params: Promise<{ c
 
   return (
     <div className="ta-stack">
-      <ClassChrome klass={klass} active="overview" t={t} />
+      <ClassChrome klass={klass} active="overview" t={t} locale={locale} />
 
       {!klass.subjectId && <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tc.noSubject.body']} />}
 

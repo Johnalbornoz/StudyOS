@@ -22,6 +22,10 @@ const { TeacherInterventionAccessDeniedError, TeacherInterventionNotFoundError, 
   TeacherInterventionInvalidTargetError: class TeacherInterventionInvalidTargetError extends Error {},
 }));
 
+// L8 (final): the route checks the concept against the class subject before the domain service; that
+// check has its own tests (l8r1-teacher-exam-practice). Here it is in scope unless a test says otherwise.
+vi.mock('@/lib/teacher/concept-assignment-scope', () => ({ checkConceptAssignmentScope: vi.fn(async () => 'IN_SCOPE') }));
+
 const assignTeacherInterventionMock = vi.fn();
 const listTeacherInterventionsForStudentMock = vi.fn();
 const cancelTeacherInterventionMock = vi.fn();

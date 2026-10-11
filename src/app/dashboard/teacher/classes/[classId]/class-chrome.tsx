@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import type { getMessages } from '@/lib/i18n/messages';
+import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
 import type { TeacherClassContext } from '@/lib/teacher/class-assignment.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { TeacherClassSubNav, type TeacherClassTab } from './TeacherClassSubNav';
 
 /** Track A -- the shared header + tabs of every class page of the Teacher. */
-export function ClassChrome({ klass, active, t }: { klass: TeacherClassContext; active: TeacherClassTab; t: ReturnType<typeof getMessages> }) {
+export function ClassChrome({ klass, active, t, locale }: { klass: TeacherClassContext; active: TeacherClassTab; t: ReturnType<typeof getMessages>; locale: string }) {
   return (
     <>
       <PageHeader
@@ -16,7 +17,7 @@ export function ClassChrome({ klass, active, t }: { klass: TeacherClassContext; 
       <TeacherClassSubNav
         classId={klass.id}
         active={active}
-        labels={{ overview: t['tcp.nav.overview'], plan: t['tcp.nav.plan'], students: t['tcp.nav.students'], assignments: t['tcp.nav.assignments'], progress: t['tcp.nav.progress'] }}
+        labels={{ overview: t['tcp.nav.overview'], plan: t['tcp.nav.plan'], students: t['tcp.nav.students'], assignments: t['tcp.nav.assignments'], progress: t['tcp.nav.progress'], exams: getTeacherL8Messages(locale)['l8.nav.exams'] }}
       />
     </>
   );
