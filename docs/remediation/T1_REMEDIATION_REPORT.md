@@ -543,3 +543,69 @@ Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no data wr
 **Not changed (out of this path).** A concept the Student has already added to their own learning is labelled through the stored localization only (Home / Learn lists); for the 56 concepts above that still needs the seed to be run.
 
 Tests: **483 files / 8540 passing** (+1 focused test with the exact Cambridge recommendation shape); `tsc` clean; `next build` OK.
+
+---
+
+# T1 — Home and Learn concept labels through the shared resolver
+
+Status: TECH_PASS, deployed to DEV. T1 is **not** DONE. No migration, no seed, no data writes, T2 not started.
+
+**Change.** Home and Learn now resolve the label of a Student's concept with the same shared function family as Exam Prep (`learning-plan/labels.ts`):
+
+1. the catalogue's stored localized label (`canonical_concept_localizations`);
+2. the governed StudyUs concept-label list;
+3. the concept's own stored name.
+
+This applies only to concepts **linked to the catalogue**. A concept the Student typed is not linked, so it is always shown with its own stored label, exactly as written; the catalogue and the governed list are never consulted for it, even when its text happens to equal a catalogue name.
+
+- Home: the central concept-label loader (`loadConceptLabels`) gathers the facts and calls `resolveLearnerConceptLabel`. Previously the concept's own label came before the catalogue's, and the governed list was not used.
+- Learn: the catalogue overlay (`catalogLabelsForLearnerConcepts`) uses the same resolver and now also covers concepts that have only a governed label.
+
+**Checked read-only on real DEV data.** Linked concepts with no stored localization resolve through the governed list on both pages ("Differential equations" → "Ecuaciones diferenciales"; "Dinámica de la Tierra" → "Earth dynamics" in English). Unlinked concepts keep their own labels and receive no overlay.
+
+**Limit.** The governed list has Spanish and English. In other interface languages a linked concept without a stored localization shows its own stored name.
+
+Tests: **483 files / 8543 passing** (+3: Cambridge catalogue concept in Spanish, the same concept in English, Student free-text concept); `tsc` clean; `next build` OK. One earlier source guard updated for the new loader.
+
+---
+
+# T1 — Concept detail page localization
+
+Status: **T1_CONCEPT_DETAIL_LOCALIZATION = TECH_PASS / READY_FOR_VISUAL_CONFIRMATION**. T1 is **not** DONE. No migration, no seed, no DEV data writes, no new translation map, T2 not started.
+
+**Cause.** The concept detail page read the concept's own stored label directly (a copy of the catalogue's English name when the concept was added from the catalogue) and the subject's stored name, in two places: the page (mastery sentence) and the mission view (breadcrumb, title).
+
+**Fix.** The page resolves both names once and passes them on:
+- concept: `learnerConceptDisplayLabel` (new thin read in `learning-plan/labels.ts`) → the shared `resolveLearnerConceptLabel` (stored localization → governed list → stored name) for a concept linked to the catalogue; a concept the Student typed is not linked and is returned exactly as stored;
+- subject: the existing localized subject display label (`localizeSubjectName`);
+- the mastery sentence interpolates the resolved concept label; the mission view shows the two names it is given (`display`), and still falls back to the stored names when none is passed.
+
+Expected: Spanish "Matemáticas / Mecánica: energía, trabajo y potencia", title "Mecánica: energía, trabajo y potencia", "Entiende Mecánica: energía, trabajo y potencia y aplícalo…". English unchanged: "Mathematics / Mechanics: energy, work and power".
+
+Tests: **483 files / 8546 passing** (+3: catalogue concept ES, same concept EN, free-text concept unchanged); `tsc` clean; `next build` OK.
+
+---
+
+# T1 FINAL STATUS: PASS / DONE
+
+| | |
+|---|---|
+| Final status | **PASS / DONE** |
+| Freeze SHA | `a348a4a7b032b05f619865be6ab8df604873932c` (branch `remediation/t1-micro-delta`) |
+| DEV | `https://study-os-env-dev-study-so.vercel.app` serves the freeze SHA (`/api/version`) |
+| Closed by | Manual signed-in validation on DEV by the product owner, including the final IB Spanish and Cambridge English regression checks |
+| Automated state at the freeze SHA | 483 test files / 8546 tests passing · `tsc` clean · `next build` OK |
+| Accessibility tooling | none in the repository; never run, no result claimed |
+| Stage / Production | untouched throughout T1 |
+
+Every earlier section of this report that reads "T1 is not DONE", "TECH_PASS" or "READY_FOR_…" records the state at the time it was written and is superseded by this entry.
+
+T1 is frozen: no further T1 change unless a new regression is found. T2 has not been started.
+
+Carried forward, not part of the T1 closure:
+- The schema migrations applied to DEV during T1 (`20261106_1000`, `20261106_1100`, `20261107_1000`) have not been applied to Stage or Production; they go through the governed runner in those environments' own release.
+- The Spanish display labels written during T1 for Cambridge components, Cambridge requirement statements and catalogue concepts are StudyUs labels, not official translations, and have not had a subject-matter review.
+- Cambridge syllabuses that have only catalogue structure (for example Computer Science 9618) still show their paper names in English.
+- The governed concept labels cover Spanish and English only.
+- An assignment given to named students is not extended to students who join the class later (observed during M01; product behaviour, not changed).
+- Cambridge March remains fail-closed until per-syllabus availability is governed.

@@ -564,7 +564,7 @@ describe('G. catalogue labels follow the interface locale; stored values never d
     expect(gradeDisplayLabel('3° Preparatoria', 'es')).toBe('3° Preparatoria');
     // Concepts / topics: the catalogue's own localization (DB), never runtime translation.
     const loader = code('src/services/learning-os-snapshot.service.ts');
-    expect(loader).toMatch(/COALESCE\(own\.label, cat\.label,/);
+    expect(loader).toMatch(/resolveLearnerConceptLabel\(\{ canonicalName: row\.canonical_name, catalogLocalized: row\.catalog_localized/); // shared resolver
     expect(loader).toMatch(/canonical_concept_localizations l ON l\.canonical_concept_id = m\.canonical_concept_id AND l\.language = \$2/);
     const learn = code('src/app/dashboard/learn/page.tsx');
     expect(learn).toMatch(/t\['ln\.topicsTitle'\]\.replace\('\{subject\}', subjectLabel\)/); // "Temas de Física", not "Temas de Physics"

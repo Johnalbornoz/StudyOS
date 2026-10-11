@@ -116,6 +116,12 @@ export async function getConceptMissionView(
   locale: string,
   /** Pre-interpolated fallback goal copy (interface language), used only when the concept has no description. */
   goalFallbackText: string,
+  /**
+   * Display names already resolved by the page through the shared label resolvers (catalogue concept label,
+   * localized subject name). Presentation only: identity, state and decisions never depend on them.
+   * Omitted -> the stored names are shown.
+   */
+  display?: { conceptName?: string; subjectName?: string },
 ): Promise<ConceptMissionViewResult> {
   // LX-3P-R1: `concept_localizations` in the authoritative production
   // schema has only `label` (+ `concept_id` / `language`) -- NOT
@@ -174,9 +180,9 @@ export async function getConceptMissionView(
   }
 
   const view = buildConceptMissionView({
-    conceptName: row.label,
+    conceptName: display?.conceptName ?? row.label,
     subjectId,
-    subjectName: row.subject_name,
+    subjectName: display?.subjectName ?? row.subject_name,
     // LX-3P-R1: no canonical stored concept description in the
     // production schema -> always null here -> the approved name-based
     // goal fallback is used.

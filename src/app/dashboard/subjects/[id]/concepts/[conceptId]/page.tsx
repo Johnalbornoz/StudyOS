@@ -18,6 +18,8 @@ import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowl
 import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 import { getConceptMissionView } from '@/services/concept-mission-view.service';
+import { learnerConceptDisplayLabel } from '@/lib/learning-plan/labels';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 import ConceptMission from './ConceptMission';
 import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
@@ -110,10 +112,15 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const goalFallbackText = t['conceptMission.goalFallbackTemplate'].replace('{concept}', concept.label);
+  // T1 concept-detail localization: the concept name goes through the SAME shared resolver as Exam Prep / Home /
+  // Learn (stored localization -> governed list -> stored name, for concepts linked to the catalogue; a concept the
+  // Student typed is shown exactly as written). The subject uses the localized subject display label.
+  const conceptLabel = await learnerConceptDisplayLabel(conceptId, concept.label, locale);
+  const subjectLabel = localizeSubjectName(subject.name, locale);
+  const goalFallbackText = t['conceptMission.goalFallbackTemplate'].replace('{concept}', conceptLabel);
 
   const [missionResult, conceptView, evidence, activeDebt, history, transferDepth, knowledgeState] = await Promise.all([
-    getConceptMissionView(studentId, subjectId, conceptId, locale, goalFallbackText),
+    getConceptMissionView(studentId, subjectId, conceptId, locale, goalFallbackText, { conceptName: conceptLabel, subjectName: subjectLabel }),
     getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
