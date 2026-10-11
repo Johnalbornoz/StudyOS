@@ -1,23 +1,18 @@
 /**
- * QB-R1B -- the Question Production draft package: the INPUT to authoring or generation (pure contract, no IO).
+ * The Reference Intelligence Pack: what may be consulted while a question is written (pure contract, no IO).
  *
- *   Requirement Cell -> Reference Intelligence Pack -> Author / AI Generation -> ...
- *
- * A package says what question is wanted and what may be consulted while writing it. It is not a question, it
- * is not stored in the bank, and nothing becomes eligible because a package exists: every eligibility fact
- * (review, attribution, rights, originality, pool) is established later, on the ingested item version.
+ *   RequirementCell -> GenerationRequest (cell + this pack + policy) -> QuestionCandidate -> ...
  *
  * Three things are kept apart and none implies another:
  *   reference source     what was consulted (`ReferenceSource`)            -> never a right to reuse
- *   content provenance   who will write the item (`provenance`)            -> STUDYUS_AUTHORED or STUDYUS_GENERATED
+ *   content provenance   who writes the item (on the candidate)            -> STUDYUS_AUTHORED or STUDYUS_GENERATED
  *   reuse rights         whether StudyUs may deliver it                    -> a rights record, after review
- *
- * Identifiers are canonical ids / codes (structure-node codes, canonical concept ids). A name is never used to
- * find a Domain, a Topic or a concept.
+ * A pack carries facts restated by StudyUs. It never carries a question, a passage or any other protected
+ * expression of a source.
  */
 import { z } from 'zod';
 
-export const DRAFT_PACKAGE_VERSION = 1 as const;
+export const REFERENCE_PACK_VERSION = 1 as const;
 
 const ID = z.string().trim().min(1).max(200);
 const UUID = z.string().uuid();
@@ -80,7 +75,7 @@ export const PedagogicalFactSchema = z.strictObject({
 
 export const ReferenceIntelligencePackSchema = z
   .strictObject({
-    v: z.literal(DRAFT_PACKAGE_VERSION),
+    v: z.literal(REFERENCE_PACK_VERSION),
     sources: z.array(ReferenceSourceSchema).min(1),
     facts: z.array(PedagogicalFactSchema),
     /** The pack carries no copied question, passage or text of a source. Declared, and checked again at originality review. */
@@ -99,56 +94,3 @@ export const ReferenceIntelligencePackSchema = z
     });
   });
 export type ReferenceIntelligencePack = z.infer<typeof ReferenceIntelligencePackSchema>;
-
-export const DRAFT_PROVENANCES = ['STUDYUS_AUTHORED', 'STUDYUS_GENERATED'] as const;
-
-export const ProductionDraftPackageSchema = z
-  .strictObject({
-    v: z.literal(DRAFT_PACKAGE_VERSION),
-    packageKey: ID,
-    /** The requirement cell. */
-    examFamily: ID,
-    examVersionId: UUID,
-    canonicalSubjectId: UUID,
-    /** `structure_nodes.code` of the official Domain and of the certified Topic under it. */
-    domainNodeCode: ID,
-    topicNodeCode: ID,
-    learningObjectiveCode: ID,
-    targetPrimaryConceptId: UUID,
-    intendedSupportingConceptIds: z.array(UUID),
-    /** Not modelled yet for any exam: null until the Curriculum has Exam Skills. */
-    examSkill: ID.nullable(),
-    responseFormat: ID,
-    difficultyBand: z.enum(['FOUNDATIONAL', 'STANDARD', 'CHALLENGE']),
-    language: ID,
-    intendedPool: z.enum(['PRACTICE', 'DIAGNOSTIC', 'VERIFICATION', 'REDUCED_MOCK', 'FULL_MOCK_1', 'FULL_MOCK_2']),
-    stimulus: z.discriminatedUnion('required', [
-      z.strictObject({ required: z.literal(false) }),
-      z.strictObject({ required: z.literal(true), kind: z.enum(['PASSAGE', 'PAIRED_PASSAGE', 'POEM', 'NUMBERED_TEXT', 'DRAFT_PARAGRAPH', 'TABLE', 'GRAPH', 'FIGURE', 'DATA_SET', 'COMPOSITE']), stimulusKey: ID.nullable(), itemsInGroup: z.number().int().min(1).max(20) }),
-    ]),
-    assets: z.array(z.strictObject({ kind: z.enum(['DIAGRAM', 'GRAPH', 'CHART', 'IMAGE', 'DATA_VISUALISATION']), purpose: ID })),
-    /** Who will write the item. Fixed here and for ever on the bank item: generated content never becomes authored. */
-    provenance: z.enum(DRAFT_PROVENANCES),
-    authorship: z.discriminatedUnion('kind', [
-      z.strictObject({ kind: z.literal('HUMAN'), authorUserId: UUID }),
-      z.strictObject({ kind: z.literal('MODEL'), model: ID, promptVersion: ID, requestedByUserId: UUID }),
-    ]),
-    references: ReferenceIntelligencePackSchema,
-  })
-  .superRefine((p, ctx) => {
-    if ((p.provenance === 'STUDYUS_AUTHORED') !== (p.authorship.kind === 'HUMAN')) ctx.addIssue({ code: 'custom', path: ['authorship'], message: 'PROVENANCE_AUTHORSHIP_MISMATCH' });
-    if (p.intendedSupportingConceptIds.includes(p.targetPrimaryConceptId) || new Set(p.intendedSupportingConceptIds).size !== p.intendedSupportingConceptIds.length) ctx.addIssue({ code: 'custom', path: ['intendedSupportingConceptIds'], message: 'CONCEPT_LISTED_TWICE' });
-  });
-export type ProductionDraftPackage = z.infer<typeof ProductionDraftPackageSchema>;
-
-/**
- * What a package does NOT establish. Each is decided on the ingested item version, by its own owner; a field
- * named `target...` or `intended...` here is a request, never the reviewed fact.
- */
-export const NOT_ESTABLISHED_BY_A_PACKAGE = ['HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'TOPIC_LINK', 'REUSE_RIGHTS', 'ORIGINALITY', 'POOL_MEMBERSHIP', 'PILOT_ELIGIBILITY'] as const;
-
-export function validateDraftPackage(input: unknown): { ok: true; package: ProductionDraftPackage } | { ok: false; issues: string[] } {
-  const parsed = ProductionDraftPackageSchema.safeParse(input);
-  if (parsed.success) return { ok: true, package: parsed.data };
-  return { ok: false, issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) };
-}

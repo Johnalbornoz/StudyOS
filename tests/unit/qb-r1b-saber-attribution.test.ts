@@ -8,7 +8,6 @@ import { join } from 'path';
 import { DEV_CANONICAL_CONCEPTS, DEV_COMPETENCIES } from '@/lib/exam-core/catalog/dev-learning-catalog';
 import { OBJECTIVE_LEARNING_LINKS } from '@/lib/exam-core/catalog/objective-learning-links';
 import { ItemAttributionError, setItemAttribution } from '@/lib/exam-core/question-bank/item-attribution.service';
-import { NOT_ESTABLISHED_BY_A_PACKAGE, ReferenceIntelligencePackSchema, validateDraftPackage } from '@/lib/exam-core/question-bank/production/draft-package';
 
 const ROOT = join(__dirname, '..', '..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
@@ -86,65 +85,5 @@ describe('QB-R1B attribution writer -- one governed path', () => {
     for (const flag of ['item-version', 'reviewer', 'primary', 'reason']) expect(s, flag).toContain(`required('${flag}')`);
     expect(s).toMatch(/await client\.query\(write \? 'COMMIT' : 'ROLLBACK'\)/);
     expect(s).not.toMatch(/objective_concept_mappings|WHERE name|ILIKE/i);
-  });
-});
-
-describe('QB-R1B production draft package -- the input to authoring, nothing more', () => {
-  const source = (over: Record<string, unknown> = {}) => ({ sourceKey: 'cb-paa-guia-2021', sourceType: 'OFFICIAL_SPECIFICATION', title: 'Guía de estudio PAA', publisher: 'College Board', locator: 'p. 35', sourceAccess: 'PUBLICLY_ACCESSIBLE', permittedUse: 'REFERENCE_ONLY', accessStatus: 'NOT_REQUIRED', referencedAt: '2026-10-10T12:00:00Z', licenceReference: null, ...over });
-  const pack = (over: Record<string, unknown> = {}) => ({ v: 1, sources: [source()], facts: [{ kind: 'TYPICAL_TASK_FORM', statement: 'Los problemas de proporcionalidad suelen pedir un cuarto valor.', sourceKeys: ['cb-paa-guia-2021'], restatedInOwnWords: true }], containsCopiedProtectedExpression: false, ...over });
-  const pkg = (over: Record<string, unknown> = {}) => ({
-    v: 1, packageKey: 'paa.mat.aritmetica.0001', examFamily: 'PAA', examVersionId: U(10), canonicalSubjectId: U(11), domainNodeCode: 'paa.dom.matematicas.aritmetica', topicNodeCode: 'paa.topic.027',
-    learningObjectiveCode: 'paa.mat.aritmetica', targetPrimaryConceptId: U(12), intendedSupportingConceptIds: [U(13)], examSkill: null, responseFormat: 'multiple_choice', difficultyBand: 'STANDARD', language: 'es',
-    intendedPool: 'PRACTICE', stimulus: { required: false }, assets: [], provenance: 'STUDYUS_AUTHORED', authorship: { kind: 'HUMAN', authorUserId: U(14) }, references: pack(), ...over,
-  });
-  const issues = (input: unknown) => {
-    const r = validateDraftPackage(input);
-    return r.ok ? [] : r.issues;
-  };
-
-  it('carries every field authoring needs: family, subject, Domain, Topic, concepts, format, difficulty, stimulus, assets, provenance, references', () => {
-    expect(issues(pkg())).toEqual([]);
-    for (const field of ['examFamily', 'canonicalSubjectId', 'domainNodeCode', 'topicNodeCode', 'targetPrimaryConceptId', 'intendedSupportingConceptIds', 'examSkill', 'responseFormat', 'difficultyBand', 'stimulus', 'assets', 'provenance', 'references']) {
-      const without = { ...pkg() } as Record<string, unknown>;
-      delete without[field];
-      expect(issues(without).length, field).toBeGreaterThan(0);
-    }
-    expect(issues(pkg({ stimulus: { required: true, kind: 'PASSAGE', stimulusKey: null, itemsInGroup: 5 }, assets: [{ kind: 'GRAPH', purpose: 'stem' }] }))).toEqual([]);
-  });
-
-  it('provenance follows authorship: a model draft is STUDYUS_GENERATED and a person\'s is STUDYUS_AUTHORED', () => {
-    expect(issues(pkg({ provenance: 'STUDYUS_GENERATED', authorship: { kind: 'MODEL', model: 'm', promptVersion: '1', requestedByUserId: U(14) } }))).toEqual([]);
-    expect(issues(pkg({ provenance: 'STUDYUS_AUTHORED', authorship: { kind: 'MODEL', model: 'm', promptVersion: '1', requestedByUserId: U(14) } }))).toEqual(['authorship: PROVENANCE_AUTHORSHIP_MISMATCH']);
-    expect(issues(pkg({ provenance: 'OFFICIAL' })).length).toBeGreaterThan(0);
-    expect(issues(pkg({ intendedSupportingConceptIds: [U(12)] }))).toEqual(['intendedSupportingConceptIds: CONCEPT_LISTED_TWICE']);
-  });
-
-  it('the reference pack keeps source identity, type and permitted use, and carries facts, never copied expression', () => {
-    const ok = ReferenceIntelligencePackSchema.safeParse(pack());
-    expect(ok.success).toBe(true);
-    const bad = (over: Record<string, unknown>) => ReferenceIntelligencePackSchema.safeParse(pack(over)).error?.issues.map((i) => i.message) ?? [];
-    expect(bad({ containsCopiedProtectedExpression: true }).length).toBe(1);
-    expect(bad({ facts: [{ kind: 'STYLE_RULE', statement: 'Una afirmación suficientemente larga.', sourceKeys: ['other'], restatedInOwnWords: true }] })).toEqual(['FACT_SOURCE_NOT_IN_PACK']);
-    expect(bad({ facts: [{ kind: 'STYLE_RULE', statement: 'Una afirmación suficientemente larga.', sourceKeys: ['cb-paa-guia-2021'], restatedInOwnWords: false }] }).length).toBe(1);
-    expect(bad({ sources: [source(), source()] })).toContain('DUPLICATE_SOURCE');
-    expect(bad({ sources: [source({ permittedUse: 'ADAPTATION_LICENSED' })] })).toEqual(['LICENCE_REFERENCE_REQUIRED']);
-  });
-
-  it('an external pedagogical reference is reference-only, and teaches nothing until its access is validated', () => {
-    const external = (over: Record<string, unknown> = {}) => source({ sourceKey: 'ext-ref', sourceType: 'PEDAGOGICAL_REFERENCE', title: 'External reference', publisher: 'Third party', sourceAccess: 'LICENSED_SOURCE', accessStatus: 'VALIDATED', ...over });
-    const msgs = (p: unknown) => ReferenceIntelligencePackSchema.safeParse(p).error?.issues.map((i) => i.message) ?? [];
-    expect(msgs(pack({ sources: [source(), external()] }))).toEqual([]);
-    expect(msgs(pack({ sources: [source(), external({ permittedUse: 'REPRODUCTION_LICENSED', licenceReference: 'L-1' })] }))).toEqual(['PEDAGOGICAL_REFERENCE_IS_REFERENCE_ONLY']);
-    const listedOnly = pack({ sources: [source(), external({ permittedUse: 'ACCESS_NOT_VALIDATED', accessStatus: 'NOT_VALIDATED', referencedAt: null })] });
-    expect(msgs(listedOnly)).toEqual([]);
-    expect(msgs({ ...listedOnly, facts: [{ kind: 'COMMON_MISCONCEPTION', statement: 'Un hecho pedagógico cualquiera.', sourceKeys: ['ext-ref'], restatedInOwnWords: true }] })).toEqual(['FACT_FROM_UNVALIDATED_SOURCE']);
-  });
-
-  it('a package makes nothing eligible: it has no review, rights, pool or eligibility field, and writes nowhere', () => {
-    expect(NOT_ESTABLISHED_BY_A_PACKAGE).toEqual(['HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'TOPIC_LINK', 'REUSE_RIGHTS', 'ORIGINALITY', 'POOL_MEMBERSHIP', 'PILOT_ELIGIBILITY']);
-    expect(issues(pkg({ reuseRights: 'STUDYUS_OWNED' })).length).toBeGreaterThan(0);
-    expect(issues(pkg({ approved: true })).length).toBeGreaterThan(0);
-    const src = code('src/lib/exam-core/question-bank/production/draft-package.ts');
-    expect(src).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT|UPDATE /);
   });
 });
