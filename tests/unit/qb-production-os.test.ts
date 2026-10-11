@@ -48,7 +48,15 @@ const BINDING = { environmentFingerprint: 'test', examVersionId: U(1), topicNode
 describe('one authoring contract', () => {
   it('there is no second draft-package model: the flow is cell -> request -> candidate -> validated candidate -> review package', () => {
     const files = readdirSync(join(ROOT, PROD)).filter((f) => f.endsWith('.ts')).sort();
-    expect(files).toEqual(['generation-contract.ts', 'originality-gate.ts', 'paa-backlog-data.ts', 'paa-backlog.ts', 'paa-cells.ts', 'paa-concept-identity.ts', 'pilot-projection.ts', 'pool-assignment.ts', 'reference-pack.ts', 'requirement-cell.ts', 'review-package.ts', 'rights-gate.ts', 'structural-validation.ts', 'validated-candidate.ts']);
+    // QB-R2C adds the planning primitive (stimulus plan, PAA generation plan), the concept profiles, structured stimuli,
+    // answer normalisation with its evaluator, the calibration contract, the independent validators and the generator directory.
+    expect(files).toEqual([
+      'answer-normalization.ts', 'concept-profile.ts', 'difficulty-calibration.ts', 'expression-evaluator.ts', 'generation-contract.ts', 'independent-validators.ts', 'originality-gate.ts', 'paa-backlog-data.ts', 'paa-backlog.ts', 'paa-cells.ts',
+      'paa-concept-identity.ts', 'paa-concept-profiles.ts', 'paa-generation-plan.ts', 'pilot-projection.ts', 'pool-assignment.ts', 'reference-pack.ts', 'requirement-cell.ts', 'review-package.ts', 'rights-gate.ts', 'stimulus-plan.ts', 'stimulus-spec.ts',
+      'structural-validation.ts', 'validated-candidate.ts',
+    ]);
+    expect(readdirSync(join(ROOT, PROD), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)).toEqual(['generator']);
+    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'templates.ts']);
     expect(existsSync(join(ROOT, PROD, 'draft-package.ts'))).toBe(false);
     const all = files.map((f) => read(`${PROD}/${f}`)).join('\n');
     expect(all).not.toMatch(/ProductionDraftPackage|validateDraftPackage|GeneratedCandidate\b/);
@@ -56,12 +64,22 @@ describe('one authoring contract', () => {
   });
 
   it('planning and dry run write nowhere: no production module imports the database, runs a query or reads the environment', () => {
-    for (const f of readdirSync(join(ROOT, PROD)).filter((x) => x.endsWith('.ts'))) {
-      const src = read(`${PROD}/${f}`).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
-      expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|UPDATE \w+ SET|DELETE FROM|process\.env|fetch\(/);
-    }
     const walk = (d: string): string[] => readdirSync(join(ROOT, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : e.name.endsWith('.ts') || e.name.endsWith('.tsx') ? [`${d}/${e.name}`] : []));
+    // every production module, the generator directory included: no database, no query, no environment, no network, no file system
+    const production = walk(PROD);
+    expect(production.length).toBe(27);
+    for (const f of production) {
+      const src = read(f).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
+      expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|UPDATE \w+ SET|DELETE FROM|process\.env|fetch\(|from '(node:)?fs'|from 'pg'|@\/lib\/ai\/|\bDate\.now\(|new Date\(\)|Math\.random\(/);
+      expect(src, f).not.toMatch(/@\/lib\/assessment-blueprint/);
+    }
     expect(walk('src').filter((f) => !f.startsWith(PROD) && /question-bank\/production\//.test(read(f)))).toEqual([]);
+    // the QB-R2C scripts open no database and no network: they read and write files under docs/exams/question-bank only
+    for (const s of ['scripts/operations/qb-paa-generation-plan.ts', 'scripts/operations/qb-r2c/pilot-v2-run.ts', 'scripts/operations/qb-r2c/pilot-v2-pipeline.ts']) {
+      const src = read(s).replace(/\/\*[\s\S]*?\*\//g, '');
+      expect(src, s).not.toMatch(/from 'pg'|DATABASE_URL|process\.env|fetch\(|@\/lib\/ai\/|@\/lib\/db/);
+    }
+    expect(read('scripts/operations/qb-r2c/pilot-v2-pipeline.ts').replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/from '(node:)?fs'|writeFileSync|readFileSync/);
     // the scripts that touch a database open a session that refuses writes, and state no mutation
     for (const s of ['scripts/operations/qb-paa-requirement-cells.ts', 'scripts/operations/qb-r2b/pilot-evaluate.ts']) {
       const src = read(s);
@@ -436,13 +454,14 @@ describe('originality gate', () => {
 
 describe('rights gate', () => {
   const evidence = (over: Partial<RightsEvidence> = {}): RightsEvidence => ({
-    provenance: 'STUDYUS_GENERATED', authorshipTermsReference: 'model-terms-2026-01', sourceUsages: [{ sourceKey: 'cb-paa-guia-2021', sourceAccess: 'PUBLICLY_ACCESSIBLE', usage: 'REFERENCE_ONLY' }],
+    provenance: 'STUDYUS_AUTHORED', authorshipTermsReference: 'author-agreement-17', sourceUsages: [{ sourceKey: 'cb-paa-guia-2021', sourceAccess: 'PUBLICLY_ACCESSIBLE', usage: 'REFERENCE_ONLY' }],
     originality: { outcome: 'PASS_LOW_SIMILARITY', acceptedByHuman: false }, licenceReference: null, rightsHolder: null, permittedUse: null, dependencies: [], ...over,
   });
 
-  it('StudyUs content with authorship terms, consulted-only sources and accepted originality supports STUDYUS_OWNED', () => {
+  it('a person\'s own content with authorship terms, consulted-only sources and accepted originality supports STUDYUS_OWNED', () => {
     expect(evaluateRightsGate(evidence())).toMatchObject({ supportedReuseRights: 'STUDYUS_OWNED', deliverable: true, blockers: [], proposedRecord: { reuseRights: 'STUDYUS_OWNED', sourceAccess: 'NOT_APPLICABLE', rightsHolder: 'StudyUs' } });
-    expect(evaluateRightsGate(evidence({ provenance: 'STUDYUS_AUTHORED', authorshipTermsReference: 'author-agreement-17' })).deliverable).toBe(true);
+    // QB-R2C: a reference string is no longer evidence for a MODEL's output (see qb-r2c-rights-evidence.test.ts)
+    expect(evaluateRightsGate(evidence({ provenance: 'STUDYUS_GENERATED', authorshipTermsReference: 'model-terms-2026-01' }))).toMatchObject({ deliverable: false, supportedReuseRights: 'UNKNOWN', blockers: ['MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING'] });
   });
 
   it('a publicly accessible source is not a right: reading it gives nothing, adapting it without a licence blocks ownership', () => {
