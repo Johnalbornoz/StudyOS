@@ -343,3 +343,57 @@ B3_GO_WITH_CONDITIONS
 3. Evidence credit per concept is B3's decision; `contributes.strength` is an input to it, not a weight.
 4. Commit the B2 working tree (18 files) before B3 branches from it.
 5. Integrate `remediation/t1-micro-delta` (`41e9676`) downstream; it does not touch B2 files.
+
+---
+
+## V. B2-A — Blueprint Variants, Protected Pools & Hard Exposure
+
+Date: 2026-10-10 · Branch: `feat/assessment-b2-blueprint-core` (on top of `896987f`, which merged the Q1/B1 integrated line). Extends the module; the solver, the three policies, the pipeline and every B1 file are unchanged.
+
+```text
+B2-A_PASS   (contracts and pure selection; nothing persisted, nothing wired to a runtime, no migration)
+```
+
+### V.1 What was added (`src/lib/assessment-blueprint/protected/`)
+
+| File | Content |
+|---|---|
+| `blueprint-identity.ts` | Purpose `FULL` / `REDUCED` / `DIAGNOSTIC`; identity = exam version + purpose + form + revision (+ status); several variants and several forms per exam version; purpose vs verified fidelity vs stored attempt type may not contradict |
+| `authority.ts` | Every requirement tagged `OFFICIAL` (needs a source) or `STUDYUS_POLICY` (needs a policy reference); reduced size, pool, exposure and diagnostic depth can never be tagged official |
+| `pools.ts` | Six logical pools; pilot policy `ZERO_INTENTIONAL_OVERLAP` (one pool per item); sharing only for pairs a policy names; pool of each variant |
+| `exposure-policy.ts` | Rule per pool: `PREFER_UNSEEN` (Practice) or `HARD_EXCLUDE_IF_EXPOSED` (the five protected pools) |
+| `frozen-form.ts` | Frozen form: items, order, blueprint revision, purpose, pool, fidelity, digest; tamper check; disjointness; per-Student form eligibility |
+| `protected-selection.ts` | B1 eligibility → pool rule → exposure rule → the existing official pipeline → B1 fidelity decision vs purpose → frozen form or named cause |
+| `selection-unit.ts` | `ITEM` / `STIMULUS_GROUP` unit contract and validation (interface only) |
+| `diagnostic.ts` | Diagnostic target plan: dedicated DIRECT questions per target, depth supplied by a StudyUs policy |
+
+`assessment-blueprint.service.ts` gained one read-only loader, `loadReviewedBankExposure` (`exam_item_usage`; delivery of any version of a bank item exposes the item).
+
+### V.2 Decisions
+
+- **No schema.** Variants, pools and frozen forms are contracts in this phase. Persistence is needed only when real forms are assembled and when the Question Bank records an item's pool; both wait for content and for the Question Bank's schema. The migration chain still ends at `20261109_1000`.
+- **Fixed forms are assembled for a named subject (`FIXED_FORM_SUBJECT`), never a Student**, because B1's requirement contract always names a subject.
+- **A fixed form is not repaired per Student.** If any of its items was exposed to the Student, the form is ineligible for them and another form is offered.
+- **Shortage causes are found by re-running the same solver** on wider candidate sets (all eligible; pool only), so the reported cause is the binding one.
+
+### V.3 Deferred, stated as such
+
+| Item | Status |
+|---|---|
+| Stimulus-group selection at runtime | `DEFERRED_TO_QB_SCHEMA` — a blueprint that needs a group gets no form (`STIMULUS_GROUP_FACTS_MISSING`) |
+| Stimulus-group exposure | deferred with it (the interface rule exists: a group is exposed when any member is) |
+| Answer-reveal exposure | `DEFERRED` — no source records it; delivery already counts as exposure |
+| Q1 Diagnostic semantics (two independent PRIMARY observations) | `DEFERRED_TO_B3_AND_QB` |
+| Topic and Exam Skill dimensions | deferred to the Curriculum Authority |
+| Rights | unchanged: B2 consumes B1 eligibility. B1 still accepts a `PUBLIC` licence as deliverable; `PUBLICLY_ACCESSIBLE != REUSABLE` remains a B-track correction |
+
+### V.4 Tests
+
+`tests/unit/b2a-variants-pools-exposure.test.ts` (29 tests): scenarios A–H of the B2-A brief, purpose/fidelity contradictions, PAA Full (175 = 45+25+55+50) and Reduced (88 = 23+12+28+25) requirement **fixtures**, frozen-form integrity, unit contract, diagnostic hook, the exposure loader, and architecture guards.
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| Before B2-A (`896987f`) | 497 | 8,843 | 0 |
+| **After B2-A** | **498** | **8,872** | **0** |
+
+`npx tsc --noEmit`: clean. `npx next build`: exit 0, 228 static pages.

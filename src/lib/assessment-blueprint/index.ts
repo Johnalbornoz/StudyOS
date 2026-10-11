@@ -22,3 +22,12 @@ export * from './policy/official-exam';
 export * from './result';
 export * from './pipeline';
 export * from './readiness/feasibility';
+// B2-A: blueprint variants, authority tags, protected pools, hard exposure, frozen forms, selection-unit contract.
+export * from './protected/blueprint-identity';
+export * from './protected/authority';
+export * from './protected/pools';
+export * from './protected/exposure-policy';
+export * from './protected/selection-unit';
+export * from './protected/diagnostic';
+export * from './protected/frozen-form';
+export * from './protected/protected-selection';
