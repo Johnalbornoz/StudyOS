@@ -1,12 +1,12 @@
 LANE: L2 — ASSESSMENT ENGINE / QUESTION BANK (named L1_ASSESSMENT in the control-plane files this lane can see)
-STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11 (CR-L8-01 closed; QB-R2F offline remediation complete, freeze committed)
-BASE_SHA: 4b24816
+STATE: RUNNING
+LAST_UPDATE: 2026-10-11 (Question Factory Canary 250 — preparation)
+BASE_SHA: 738b0f5
 CURRENT_SHA: see `git log -1` on feat/ea1a-learning-approach (the commit carrying this file)
 
-CURRENT_PHASE: (1) CR-L8-01 assessment side — DONE, f54cc14 on feat/l2-cr-l8-01-subject-aggregates (base 4fb45b0), L2_RELEASE_DEPENDENCY = CLOSED. (2) QB-R2F offline generator remediation on feat/qb-r2f-offline-remediation — no live call.
+CURRENT_PHASE: Question Factory Canary 250 on feat/qb-canary-250. R2F_20_ITEM_RUN = SUPERSEDED_BY_QUESTION_FACTORY_CANARY_250. CR-L8-01 f54cc14 accepted; L2_RELEASE_DEPENDENCY = CLOSED.
 
-NOW_DOING: NONE — waiting for Orchestrator review (cap decision)
+NOW_DOING: Offline preparation: stratified 250-slot manifest, independent AI reviewer, calibration dataset structure, freeze, cost projection (cumulative cap USD 30). No provider call until the freeze commit.
 
 COMPLETED: CR-L8-01 assessment side f54cc14 (subject-aware exam-gap aggregates). QB-R2F: nine fixes in validators r4 / generator v3, defect fixtures from recorded responses, diagnostic, new freeze manifest. No provider call.
 
@@ -18,7 +18,7 @@ FILES_MODIFIED: see report
 
 TESTS: CR branch: 520 files / 9,297 tests, tsc 0, build 0, ephemeral cert 18/18. R2F branch: 522 files / 9,445 tests, tsc 0, build 0, five ephemeral DB certifications 0.
 
-BLOCKERS: Cap authorization for the QB-R2F live run (generator track only; not on the release path).
+BLOCKERS: NONE
 
 LOCK_REQUESTS: NONE (holding ASSESSMENT_ADAPTATION)
 
@@ -26,4 +26,4 @@ CROSS_LANE_DEPENDENCIES: PRE_CONTROL_PLANE_MERGE_EXCEPTION — EA-1 merged local
 
 NEXT: Orchestrator review
 
-PROGRESS: 100%
+PROGRESS: 5%
