@@ -196,6 +196,10 @@ function coverageOfFrozenItem(item: FrozenItem): QuestionCoverage {
     language: UNKNOWN,
     provenance: item.provenance,
     licensing: UNKNOWN,
+    // rights, stimulus and assets decide ELIGIBILITY, which was settled before the freeze; attribution reads none of them
+    rights: [],
+    stimulus: null,
+    assets: [],
     usage: UNKNOWN,
     review: { lifecycle: UNKNOWN, humanReviewed: UNKNOWN },
     bankFacts: null,

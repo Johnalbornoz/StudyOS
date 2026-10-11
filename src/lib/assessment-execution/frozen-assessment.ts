@@ -35,7 +35,7 @@ const FrozenItemSchema = z.strictObject({
   question: QuestionRefSchema,
   /** Official exam position; null elsewhere. */
   slotIndex: z.number().int().min(0).nullable(),
-  provenance: z.enum(['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'FIXTURE', 'GENERATED_UNREVIEWED']),
+  provenance: z.enum(['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'STUDYUS_AUTHORED', 'FIXTURE', 'GENERATED_UNREVIEWED']),
   learningObjectiveIds: z.array(ID),
   /** Coverage at selection time. Canonical identities only (B1): what attribution reads. */
   coverage: z.array(z.strictObject({ canonicalConceptId: ID, role: z.enum(['PRIMARY', 'SUPPORTING', 'UNSPECIFIED']), basis: z.enum(['ITEM_ATTRIBUTION', 'OBJECTIVE_MAPPING', 'LEARNER_CONCEPT_LINK']) })),

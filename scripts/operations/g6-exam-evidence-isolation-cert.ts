@@ -134,9 +134,17 @@ const check = (name: string, ok: boolean, detail?: string) => checks.push({ name
       [paaVersion, shared]
     )
   ).rows as Array<{ learning_objective_id: string; assessment_component_id: string }>;
+  // B1-E: a FULL_MOCK is never started directly -- only from a frozen MOCK exam instance. The direct path is refused
+  // before anything is read or written; the attempts below use the preparation-simulation contract (MINI_MOCK).
+  const directFullMock = await startSimulationAttempt({
+    studentId: student.id, examProfileId: paa.id, examVersionId: paaVersion, simulationType: 'FULL_MOCK', timingMode: 'UNTIMED', language: 'es',
+    learningObjectiveIds: paaTargets.map((t) => t.learning_objective_id),
+  }).then(() => 'STARTED', (e: unknown) => (e instanceof Error ? e.message : String(e)));
+  const attemptsAfterRefusal = (await db.query(`SELECT count(*)::int AS n FROM simulation_attempts WHERE student_id = $1`, [student.id])).rows[0].n;
+  check('3 a direct FULL_MOCK start is refused and writes nothing (B1-E)', /OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE/.test(directFullMock) && attemptsAfterRefusal === 0, `${directFullMock} / attempts ${attemptsAfterRefusal}`);
   const runAttempt = async (profileId: string, versionId: string, targets: typeof paaTargets, correctEvery: number) => {
     const { simulationAttempt, examAttempt } = await startSimulationAttempt({
-      studentId: student.id, examProfileId: profileId, examVersionId: versionId, simulationType: 'FULL_MOCK', timingMode: 'UNTIMED', language: 'es',
+      studentId: student.id, examProfileId: profileId, examVersionId: versionId, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'es',
       learningObjectiveIds: targets.map((t) => t.learning_objective_id),
     });
     let i = 0;

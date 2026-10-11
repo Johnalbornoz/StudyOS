@@ -233,7 +233,7 @@ describe('B5 integration guards', () => {
       coverageOfReviewedBankItem({
         approvedItemId: id, learningObjectiveId: objective, questionType: 'multiple_choice', content: { difficulty: 3, marks: 1 }, status: 'PUBLISHED', bankLifecycleStatus: 'ACTIVE', usageEligibility: ['PRACTICE', 'REDUCED_MOCK', 'FULL_MOCK'],
         examAlignment: 'MOCK_READY', calibrationConfidence: 'INSUFFICIENT_DATA', contentOrigin: 'GENERATED', sourceIds: null, bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-1', assessmentComponentId: 'comp-1', currentVersionId: id, retired: false, language: 'es' },
-        sourceLicenses: [], humanReviewDecisions: 1, scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' }, objectiveConcepts: [{ canonicalConceptId: `c-${objective}`, relationType: 'FULL' }],
+        sourceLicenses: [], itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, humanReviewDecisions: 1, scope: { structureVersionId: 'sv-1', academicSubjectId: 'subj-1' }, objectiveConcepts: [{ canonicalConceptId: `c-${objective}`, relationType: 'FULL' }],
       });
     const objectives = ['lo-1', 'lo-2', 'lo-3'];
     for (const bank of [[item('a', 'lo-1'), item('b', 'lo-2'), item('c', 'lo-3')], [item('a', 'lo-1'), item('b', 'lo-2')], [] as QuestionCoverage[]]) {
@@ -261,9 +261,11 @@ describe('B5 integration guards', () => {
     expect(script.indexOf('process.exit(2)')).toBeLessThan(script.indexOf("await import('@/lib/db')"));
   });
 
-  it('B5 adds no migration; the chain is the 72 files certified through B3', () => {
+  it('B5 adds no migration; the snapshot column is renumbered after the B2-B1 set', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(72);
-    expect(migrations.slice(-3)).toEqual(['20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql', '20261110_1000_assessment_snapshot.sql']);
+    expect(migrations).toHaveLength(80);
+    expect(migrations.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
+    // the eight B2-B1 migrations sit between B1's and the snapshot column, in the order DEV applied them
+    expect(migrations.slice(71, 79).every((f) => /^20261110_1[0-7]00_/.test(f))).toBe(true);
   });
 });

@@ -4,7 +4,13 @@
  * It extends the existing delivery rule rather than replacing it: a reviewed-bank item is still judged by
  * `isEligible` / `DEFAULT_ELIGIBILITY` (question-bank/lifecycle) -- the one Student delivery rule. This
  * module adds what that rule cannot see: the store, the assessment family, applicability to the request's
- * exam / curriculum / objectives / concepts, licensing, and ownership of per-student cached content.
+ * exam / curriculum / objectives / concepts, reuse rights, and ownership of per-student cached content.
+ *
+ * Reuse rights (hard, Student audience): a reviewed-bank item is deliverable only when a rights record in
+ * force establishes reuse -- STUDYUS_OWNED, LICENSED_FOR_USE or OFFICIALLY_AUTHORIZED -- for the item
+ * version AND for the stimulus version and every asset it depends on. No record, UNKNOWN and PROHIBITED all
+ * fail. That a source is publicly accessible is not a right to reuse it, and no licence status of a cited
+ * source is read here.
  *
  * Family boundaries (hard):
  *   OFFICIAL_EXAM      reviewed bank only, mock-eligible, for the request's exam version. Never a generated,
@@ -19,10 +25,10 @@
  * Eligibility PERMITS a candidate. It never ranks, combines or counts: B2 decides combinations, and no
  * question store decides how many questions a learner needs.
  */
-import { isEligible, DEFAULT_ELIGIBILITY, type DeliveryUse, type EligibilityPolicy } from '@/lib/exam-core/question-bank/lifecycle';
+import { isEligible, DEFAULT_ELIGIBILITY, isAssetDeliverable, isStimulusVersionDeliverable, type DeliveryUse, type EligibilityPolicy } from '@/lib/exam-core/question-bank/lifecycle';
 import type { ContentAudience } from '@/lib/exam-core/audience';
 import type { AssessmentFamily } from './families';
-import { coveredConceptIds, type QuestionCoverage } from './question-coverage';
+import { coveredConceptIds, reuseEstablished, type ContentRightsFact, type QuestionCoverage } from './question-coverage';
 
 export interface QuestionEligibilityRequest {
   family: AssessmentFamily;
@@ -62,13 +68,44 @@ export type IneligibilityReason =
   | 'CONCEPT_UNRESOLVED'
   | 'CONCEPT_MISMATCH'
   | 'QUESTION_TYPE_MISMATCH'
-  | 'LICENCE_UNKNOWN'
-  | 'LICENCE_NOT_PERMITTED';
+  /** No rights record in force establishes reuse of the item version (none, UNKNOWN, or outside its dates). */
+  | 'REUSE_RIGHTS_NOT_ESTABLISHED'
+  | 'REUSE_RIGHTS_PROHIBITED'
+  /** The stimulus version, or an asset, the item depends on has no established reuse right. */
+  | 'STIMULUS_RIGHTS_NOT_ESTABLISHED'
+  | 'ASSET_RIGHTS_NOT_ESTABLISHED'
+  /** The stimulus version is not an approved, active, current version of a live stimulus. */
+  | 'STIMULUS_NOT_ELIGIBLE'
+  | 'ASSET_NOT_ELIGIBLE';
 
 export type QuestionEligibility = { eligible: true; use: DeliveryUse | null } | { eligible: false; reasons: IneligibilityReason[] };
 
-/** Licence statuses (`assessment_sources.license_status`) under which third-party content may be delivered. */
-const DELIVERABLE_LICENCES = new Set(['PUBLIC', 'LICENSED']);
+const RIGHTS_REASON: Record<ContentRightsFact['contentType'], IneligibilityReason> = {
+  ITEM_VERSION: 'REUSE_RIGHTS_NOT_ESTABLISHED',
+  STIMULUS_VERSION: 'STIMULUS_RIGHTS_NOT_ESTABLISHED',
+  ASSET: 'ASSET_RIGHTS_NOT_ESTABLISHED',
+};
+
+/** Rights and dependency reasons of a reviewed-bank item. Empty = reuse is established for all of it. */
+export function rightsIneligibility(coverage: QuestionCoverage): IneligibilityReason[] {
+  const out: IneligibilityReason[] = [];
+  // An item with no rights fact at all has, by definition, no established right.
+  if (!coverage.rights.some((f) => f.contentType === 'ITEM_VERSION')) out.push('REUSE_RIGHTS_NOT_ESTABLISHED');
+  for (const f of coverage.rights) {
+    if (f.reuseRights === 'PROHIBITED') out.push('REUSE_RIGHTS_PROHIBITED');
+    else if (!reuseEstablished(f)) out.push(RIGHTS_REASON[f.contentType]);
+  }
+  const s = coverage.stimulus;
+  if (s) {
+    if (!isStimulusVersionDeliverable(s.lifecycle) || !s.humanApproved || !s.isCurrentVersion || s.retired) out.push('STIMULUS_NOT_ELIGIBLE');
+    if (!coverage.rights.some((f) => f.contentType === 'STIMULUS_VERSION' && f.contentId === s.stimulusVersionId)) out.push('STIMULUS_RIGHTS_NOT_ESTABLISHED');
+  }
+  for (const a of coverage.assets) {
+    if (!isAssetDeliverable(a.lifecycle)) out.push('ASSET_NOT_ELIGIBLE');
+    if (!coverage.rights.some((f) => f.contentType === 'ASSET' && f.contentId === a.assetId)) out.push('ASSET_RIGHTS_NOT_ESTABLISHED');
+  }
+  return [...new Set(out)];
+}
 
 const defaultUse = (family: AssessmentFamily): DeliveryUse => (family === 'OFFICIAL_EXAM' ? 'FULL_MOCK' : 'PRACTICE');
 
@@ -91,11 +128,9 @@ export function evaluateQuestionEligibility(coverage: QuestionCoverage, request:
     if (coverage.conceptResolution.status !== 'RESOLVED' && request.family !== 'LEARNING') reasons.push('CONCEPT_UNRESOLVED');
   } else {
     if (!coverage.bankFacts || !isEligible(coverage.bankFacts, use, request.policy?.bankPolicy ?? DEFAULT_ELIGIBILITY, audience)) reasons.push('BANK_DELIVERY_RULE');
-    // Third-party content needs a known, deliverable licence. StudyUs-authored content carries none.
-    if (coverage.provenance === 'OFFICIAL' || coverage.provenance === 'LICENSED') {
-      if (coverage.licensing.state !== 'KNOWN' || coverage.licensing.value.statuses.length === 0) reasons.push('LICENCE_UNKNOWN');
-      else if (!coverage.licensing.value.statuses.every((s) => DELIVERABLE_LICENCES.has(s))) reasons.push('LICENCE_NOT_PERMITTED');
-    }
+    // What reaches a Student needs an established reuse right, whoever wrote it, for the item and for
+    // everything it depends on. The technical-demo audience never reaches a Student and is not judged here.
+    if (audience === 'STUDENT') reasons.push(...rightsIneligibility(coverage));
   }
 
   /* ---- exam applicability ---- */

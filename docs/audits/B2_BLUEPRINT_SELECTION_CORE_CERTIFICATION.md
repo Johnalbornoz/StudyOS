@@ -404,3 +404,96 @@ B2-A_PASS   (contracts and pure selection; nothing persisted, nothing wired to a
 | **After B2-A** | **498** | **8,872** | **0** |
 
 `npx tsc --noEmit`: clean. `npx next build`: exit 0, 228 static pages.
+
+## W. B2-B1 — Question Bank & B2 Persistence Schema
+
+Implements migrations 1–8 of `B2B0_PERSISTENCE_AND_QUESTION_BANK_SCHEMA_DESIGN.md` under its six locked decisions, and corrects the B1 rights rule. Certified on an ephemeral database only. **Not applied to DEV.** No route, start path or existing reader uses the new schema.
+
+### W.1 Migrations (forward-only, additive)
+
+| # | File | Adds | Changes to existing data |
+|---|---|---|---|
+| 1 | `20261110_1000_qb_provenance_rights_content_sources` | provenance `STUDYUS_AUTHORED` (no generation lineage, human author, immutable); `assessment_sources.source_access`; `question_bank_content_rights`; `question_bank_content_sources` | backfill of `source_access` from `license_status` (`PUBLIC` → `PUBLICLY_ACCESSIBLE`), guarded: every row updated or the migration aborts |
+| 2 | `20261110_1100_qb_asset_registry` | `question_bank_assets` (provider-agnostic), `question_bank_item_assets` | none |
+| 3 | `20261110_1200_qb_stimuli` | stimuli, versions, ordered parts, item version → stimulus version | none (`content.stimulus.key` is not migrated) |
+| 4 | `20261110_1300_qb_item_concept_attribution` | `question_bank_item_concepts` (PRIMARY / SUPPORTING, one PRIMARY, no weight), `question_bank_item_context_tags` | none |
+| 5 | `20261110_1400_qb_pool_memberships` | `question_bank_pool_memberships` (six pools, one active per item or stimulus) | none |
+| 6 | `20261110_1500_qb_review_authority_originality` | reviewer qualifications, checklist key / version, stimulus reviews, originality checks, approval safeguards | none; **behaviour**: approvals are refused without a valid qualification |
+| 7 | `20261110_1600_assessment_blueprint_variants` | `purpose`, `form_number`, `revision`, `pool`; requirement and requirement-source tables | none; `UNIQUE (exam_version_id)` replaced by three narrower unique indexes |
+| 8 | `20261110_1700_assessment_frozen_forms` | frozen forms, ordered positions, `exam_instances.frozen_form_id` (nullable) | none |
+
+Not implemented, by decision: migration 9 (answer reveal) and migration 10 (curriculum-node link).
+
+Rights layout (D2): one table keyed by `content_type` + `content_id`. The schema already uses typed polymorphic references (`target_type`, `resource_type`) and has no rule against them; a trigger checks that the referenced row exists, the referenced rows cannot be deleted, and rights records are append-only (a correction supersedes).
+
+Two differences from the B2-B0 text: stimulus reviews live in `question_bank_stimulus_reviews` instead of a nullable column on `question_bank_reviews`; and legacy blueprints keep `form_number` and `revision` NULL (no default of 1), so nothing is implied about them.
+
+### W.2 Rights rule (B1)
+
+`evaluateQuestionEligibility`: for the Student audience a reviewed-bank item needs a rights record in force with `STUDYUS_OWNED`, `LICENSED_FOR_USE` or `OFFICIALLY_AUTHORIZED`, for the item version and for its stimulus version and every asset. No record, `UNKNOWN` and `PROHIBITED` fail. The licence status of a cited source is no longer read; `PUBLIC` grants nothing. The rule applies to every provenance class, StudyUs content included.
+
+Consequence on today's data: no item has a rights record, so no reviewed-bank item is eligible through B1 for a Student. B1 eligibility is consumed only by the B2 pipeline, which no runtime path calls, so nothing delivered today changes.
+
+Coverage now also carries item-level attribution (`ITEM_ATTRIBUTION`), the stimulus and asset facts, and rights. `loadReviewedBankPoolAssignments` reads pool membership for B2. Both loaders return "no fact" on a database without the schema.
+
+### W.3 Ephemeral certification
+
+`scripts/operations/b2b1-persistence-schema-cert.sh` (local temporary Postgres 18):
+
+| Check | Result |
+|---|---|
+| From zero: baseline + all 79 migrations through the governed runner | 80 applied, 0 pending, 0 drift |
+| DEV-equivalent: 71 migrations, seeds (410 fixtures, 80 blueprints, 167 concepts, 343 mappings, 99 sources), then the eight on populated data | applied; every legacy row identical before and after (hash comparison) |
+| Schema invariants (`b2b1/schema-invariants.sql`), each phase | 153 pass |
+| Loaders against the real database, schema absent / present | 4 / 15 pass |
+| Seeds re-run on the new schema | unchanged |
+| Second runner pass | nothing pending |
+| Rollback of the eight in reverse (`b2b1/rollback.sql`), then re-apply | legacy state restored; 0 pending |
+
+Limits of this certification: the ephemeral seed has 410 fixtures, no generated item, no review and no exam instance, where DEV has 477 fixtures, 19 generated items, 509 versions and real attempts. Read-only checks on DEV found no name collision, 122 sources all `PUBLIC`, one blueprint per version and 0 reviews. The pre-existing chain certification passes steps 1–9 on the new schema and stops at step 10 on a script that starts a `FULL_MOCK` directly, which application code has refused since B1-E; that failure does not involve this schema.
+
+### W.4 What the rollout changes for operators
+
+- Approving any item needs a reviewer qualification (canonical subject × exam family) for a person who is not the author. No qualification exists anywhere.
+- An item can be approved only when its subject is determinable: a PRIMARY concept, or a published concept mapping on its objective. On DEV, 3 of the 11 versions under review meet this (the PAA candidates); the 8 Saber candidates do not until they are attributed or their objectives are mapped.
+- `qb-v2-integration.ts`, `track-b-question-bank-migration-cert.sh` and `qb-pilot-saber11.ts` insert approving reviews and will need a qualification grant step.
+- Before the first variant blueprint is inserted, the 17 existing blueprint readers must filter `purpose IS NULL`.
+
+### W.5 Tests
+
+`tests/unit/b2b1-persistence-schema.test.ts` (25 tests). Seven existing files updated: helpers carry a rights record; licence-based cases became rights-based; migration-chain assertions name the eight new files.
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| Before (`5c69222`) | 498 | 8,872 | 0 |
+| **After B2-B1** | **499** | **8,897** | **0** |
+
+`npx tsc --noEmit`: clean. `npx next build`: exit 0.
+
+### W.6 Pre-rollout hardening (B2-B1R1)
+
+- **Review governance locked.** Migration 6 is not weakened: no bypass flag, no override, no legacy exemption, no automatic qualification. An item whose subject cannot be determined cannot be approved until its attribution or its objective mapping is repaired (`SABER_APPROVALS_WITHOUT_SUBJECT = BLOCKED_BY_DESIGN`).
+- **`STUDYUS_AUTHORED` propagated** to `policy.ts` (`PROVENANCES`, origin `AUTHORED`, `needsHumanApproval`), `health.ts`, `mock-certification.ts`, `content-origin.ts` and the identity backfill in `bank.service.ts`. Authored content is certifiable and counts as real content; like generated content it needs a human approval before it counts. Generated never becomes authored. Fixtures stay ineligible. No eligibility rule changed.
+- **Platform chain certification repaired.** The G6 script now asserts that a direct `FULL_MOCK` start is refused and writes nothing (B1-E), and runs its attempts as `MINI_MOCK`. Application behaviour is unchanged. Chain result: 12 of 12 steps, G6 35/35, Journey 29/29, Human Agency 26/26.
+- Re-certified after these changes: tsc clean; 499 files / 8,900 tests; schema certification unchanged (153 invariants per phase, loaders 4 / 15, rollback and re-apply); build exit 0.
+
+### W.7 DEV schema rollout (B2-B1R1, 2026-10-10)
+
+DEV only. Stage and Production were not touched.
+
+| Fact | Value |
+|---|---|
+| Implementation commit | `ae00fdc` |
+| DEV fingerprint | `2a29b99ee14a22b4` |
+| Migrations applied | `20261110_1000` … `20261110_1700` (8 of 8), governed runner (`npm run db:migrate`) after an exact dry-run |
+| Ledger | 80 applied, 0 pending, 0 drift (was 72, latest `20261109_1000`) |
+| Sources | 122 of 122 `PUBLIC` → `source_access = PUBLICLY_ACCESSIBLE` |
+| Rights records created | 0 — source access is not a right to reuse |
+| New content-carrier and B2 tables | all empty (rights, content sources, assets, stimuli, versions, parts, item links, item concepts, context tags, pool memberships, reviewer qualifications, stimulus reviews, originality checks, blueprint requirements, requirement sources, frozen forms, positions) |
+| Review governance | active: 0 qualifications, so no approving review can be recorded until qualifications are granted (`APPROVAL_CAPABILITY = LOCKED_UNTIL_QUALIFICATIONS_GRANTED`); `SABER_APPROVALS_WITHOUT_SUBJECT = BLOCKED_BY_DESIGN` |
+
+Legacy preservation, compared by hash before and after: 168 canonical concepts (224 labels; PAA 61 of 61 bilingual); 373 published and 5 retired objective→concept mappings; 496 items (477 fixture, 19 generated) and 509 versions; 11 versions under review unchanged (3 PAA, 8 Saber); 0 reviews; 92 blueprints, all with `purpose` NULL; 6 exam instances, 16 exam attempts, 12 simulation attempts, none with a frozen form.
+
+Rights rule evaluated read-only over the 496 current versions: 0 eligible for a Student, 0 with a rights record, all report `REUSE_RIGHTS_NOT_ESTABLISHED`.
+
+Open before the first variant row is inserted: the existing blueprint readers must filter `purpose IS NULL`.

@@ -207,7 +207,7 @@ async function main() {
     const c = coverageOfReviewedBankItem({
       approvedItemId: id, learningObjectiveId: objective, questionType: 'multiple_choice', content: { difficulty: 3, marks: 2, language: 'es' }, status: 'PUBLISHED', bankLifecycleStatus: 'ACTIVE',
       usageEligibility: ['PRACTICE', 'REDUCED_MOCK', 'FULL_MOCK'], examAlignment: 'MOCK_READY', calibrationConfidence: 'INSUFFICIENT_DATA', contentOrigin: 'GENERATED', sourceIds: null,
-      bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: version, assessmentComponentId: component, currentVersionId: id, retired: false, language: 'es' }, sourceLicenses: [], humanReviewDecisions: 1,
+      bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: version, assessmentComponentId: component, currentVersionId: id, retired: false, language: 'es' }, sourceLicenses: [], itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, humanReviewDecisions: 1,
       scope: { structureVersionId: 'sv-exam', academicSubjectId: 'subj-exam' }, objectiveConcepts: keys.map((k) => ({ canonicalConceptId: C(k), relationType: 'FULL' as const })),
     });
     return explicit ? { ...c, concepts: [{ canonicalConceptId: C(keys[0]), role: 'PRIMARY', basis: 'ITEM_ATTRIBUTION' }] } : c;

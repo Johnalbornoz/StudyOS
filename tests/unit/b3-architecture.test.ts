@@ -23,7 +23,7 @@ const START = 'src/lib/assessment-execution/assessment-start.service.ts';
 const B3 = walk('src/lib/assessment-execution').filter((f) => f !== START);
 const PURE = B3.filter((f) => !f.endsWith('.service.ts'));
 const SERVICE = 'src/lib/assessment-execution/assessment-execution.service.ts';
-const MIGRATION = 'database/migrations/20261110_1000_assessment_snapshot.sql';
+const MIGRATION = 'database/migrations/20261110_1800_assessment_snapshot.sql';
 
 describe('B3 has no second evidence, mastery or state authority', () => {
   it('evidence is written only by calling updateMastery; B3 contains no SQL against evidence, mastery or state tables', () => {
@@ -140,8 +140,9 @@ describe('B3 persistence is one additive migration on existing records', () => {
 
   it('is the only migration after B1, and the B1 migrations are untouched', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(72);
-    expect(migrations.slice(-3)).toEqual(['20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql', '20261110_1000_assessment_snapshot.sql']);
+    // B5-R: renumbered to follow the B2-B1 migrations already applied to DEV (same file, same content).
+    expect(migrations.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
+    expect(migrations.filter((f) => /assessment_snapshot/.test(f))).toHaveLength(1);
     expect(read('database/migrations/20261109_1000_simulation_type_challenge_reduced_mock.sql')).toMatch(/'EXAM_CHALLENGE', 'REDUCED_MOCK'/);
   });
 

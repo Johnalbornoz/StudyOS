@@ -189,7 +189,7 @@ export interface BankHealthInput {
   audience?: ContentAudience;
 }
 
-const ZERO_PROVENANCE = (): Record<Provenance, number> => ({ OFFICIAL: 0, LICENSED: 0, STUDYUS_GENERATED: 0, FIXTURE: 0 });
+const ZERO_PROVENANCE = (): Record<Provenance, number> => ({ OFFICIAL: 0, LICENSED: 0, STUDYUS_GENERATED: 0, STUDYUS_AUTHORED: 0, FIXTURE: 0 });
 
 export function itemMatchesCell(item: Pick<BankItemFact, 'learningObjectiveId' | 'questionType' | 'difficulty' | 'dimensions'>, cell: Pick<BlueprintCell, 'learningObjectiveId' | 'questionType' | 'difficultyRange' | 'constraints'>): boolean {
   if (constraintMismatches(cell.constraints, item.dimensions).length) return false;

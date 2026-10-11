@@ -278,7 +278,7 @@ describe('B0-U assessment: one question, five separate responsibilities', () => 
   const item = coverageOfReviewedBankItem({
     approvedItemId: 'item-0625-1', learningObjectiveId: 'cam-lo-force-supp', questionType: 'structured', content: { difficulty: 3, marks: 3, tags: { assessmentObjective: 'AO2' } }, status: 'PUBLISHED', bankLifecycleStatus: 'ACTIVE',
     usageEligibility: ['PRACTICE', 'REDUCED_MOCK', 'FULL_MOCK'], examAlignment: 'MOCK_READY', calibrationConfidence: 'INSUFFICIENT_DATA', contentOrigin: 'GENERATED', sourceIds: null,
-    bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-0625', assessmentComponentId: 'paper-4', currentVersionId: 'item-0625-1', retired: false, language: 'en' }, sourceLicenses: [], humanReviewDecisions: 1,
+    bankItem: { provenance: 'STUDYUS_GENERATED', examVersionId: 'ev-0625', assessmentComponentId: 'paper-4', currentVersionId: 'item-0625-1', retired: false, language: 'en' }, sourceLicenses: [], itemRights: { sourceAccess: 'NOT_APPLICABLE', reuseRights: 'STUDYUS_OWNED', inForce: true }, humanReviewDecisions: 1,
     scope: scopeRef(CAMBRIDGE.scope), objectiveConcepts: CAMBRIDGE.scope.objectiveConcepts.filter((m) => m.learningObjectiveId === 'cam-lo-force-supp').map((m) => ({ canonicalConceptId: m.canonicalConceptId, relationType: m.relationType })),
   });
   const content = { marks: 3, tags: { assessmentObjective: 'AO2' } };
@@ -365,7 +365,7 @@ describe('B0-U architecture guards', () => {
     const migrations = readdirSync(join(ROOT_DIR, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
     // The delta itself added none: position 71 is still the B1-E migration. What follows belongs to later blocks (B3).
     expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
-    expect(migrations.slice(71)).toEqual(['20261110_1000_assessment_snapshot.sql']);
+    expect(migrations.slice(71).every((f) => f.startsWith('20261110_'))).toBe(true);
   });
 
   it('nothing in the delivered runtime depends on the new modules yet', () => {

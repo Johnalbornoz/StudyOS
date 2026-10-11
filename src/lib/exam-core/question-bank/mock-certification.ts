@@ -23,6 +23,7 @@
  *   NONE -> PRACTICE_READY -> SECTION_FIDELITY -> ONE_MOCK_READY -> MULTI_MOCK_READY -> PRODUCTION_DEPTH
  * where mock depth is the number of item-disjoint complete certified forms.
  */
+import { needsHumanApproval } from './policy';
 import { blueprintAllocationProblems, constraintMismatches, constraintSignature, normalizeConstraints, type ItemDimensionValues, type SlotConstraint } from '../slot-constraints';
 import { isEligible, STUDENT_DELIVERABLE_STATES, type EligibilityFacts, type LifecycleState } from './lifecycle';
 import type { ExamAudience } from '../audience';
@@ -162,7 +163,7 @@ export interface CertificationOptions {
 }
 
 const FIXTURE_STATUSES = new Set(['DEV_CERT_FIXTURE']);
-const CERTIFIABLE_PROVENANCE = new Set(['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'ORIGINAL_HUMAN']);
+const CERTIFIABLE_PROVENANCE = new Set(['OFFICIAL', 'LICENSED', 'STUDYUS_GENERATED', 'STUDYUS_AUTHORED', 'ORIGINAL_HUMAN']);
 const isFixture = (i: Pick<BankItemFacts, 'contentStatus' | 'provenance'>) => (!!i.contentStatus && FIXTURE_STATUSES.has(i.contentStatus)) || i.provenance === 'FIXTURE';
 
 /** Why an item may not enter a form under a profile (empty = eligible). */
@@ -173,8 +174,8 @@ export function itemBlockers(item: BankItemFacts, profile: CertificationProfile)
     if (isFixture(item)) out.push('DEV_FIXTURE');
     else if (item.provenance && !CERTIFIABLE_PROVENANCE.has(item.provenance)) out.push('UNKNOWN_PROVENANCE');
     else if (!item.provenance) out.push('MISSING_PROVENANCE');
-    // Generated content enters a certified mock only after a HUMAN approval (ACTIVE / CALIBRATED; DB-enforced).
-    if (item.provenance === 'STUDYUS_GENERATED' && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
+    // Generated and authored content enters a certified mock only after a HUMAN approval (ACTIVE / CALIBRATED; DB-enforced).
+    if (needsHumanApproval(item.provenance) && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
     if (!isEligible(item, 'FULL_MOCK', undefined, 'STUDENT') && !isFixture(item)) out.push('NOT_FULL_MOCK_ELIGIBLE');
     if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
     if (item.placeholderSignals.length) out.push('PLACEHOLDER');
@@ -196,7 +197,7 @@ export function practiceBlockers(item: BankItemFacts): string[] {
   if (isFixture(item)) out.push('DEV_FIXTURE');
   if (!isEligible(item, 'PRACTICE', undefined, 'STUDENT')) out.push('NOT_PRACTICE_ELIGIBLE');
   // Why, for generated content: no human approval yet (PILOT / REVIEW_REQUIRED / ...). Same canonical rule.
-  if (item.provenance === 'STUDYUS_GENERATED' && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
+  if (needsHumanApproval(item.provenance) && !STUDENT_DELIVERABLE_STATES.includes((item.lifecycle ?? '') as LifecycleState)) out.push('NOT_HUMAN_APPROVED');
   if (item.structureProblems.length) out.push('STRUCTURE_INVALID');
   if (item.grading === 'UNKEYED') out.push('NOT_REPRODUCIBLY_GRADABLE');
   if (item.placeholderSignals.includes('PLACEHOLDER_TEXT')) out.push('PLACEHOLDER');

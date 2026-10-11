@@ -141,7 +141,7 @@ describe('B1 architecture -- the foundation holds contracts and reads only', () 
     expect(svc).not.toMatch(/'PILOT'|'ACTIVE'|'CALIBRATED'|bank_lifecycle_status IN/);
     expect(svc).not.toMatch(/examItemFromApproved|exam_item_usage/);
     const eligibility = code(read('src/lib/assessment-foundation/question-eligibility.ts'));
-    expect(eligibility).toMatch(/import \{ isEligible, DEFAULT_ELIGIBILITY/);
+    expect(eligibility).toMatch(/import \{ isEligible, DEFAULT_ELIGIBILITY, isAssetDeliverable, isStimulusVersionDeliverable/);
     expect(eligibility).toMatch(/isEligible\(coverage\.bankFacts, use, request\.policy\?\.bankPolicy \?\? DEFAULT_ELIGIBILITY, audience\)/);
     expect(eligibility).not.toMatch(/'PILOT'|'ACTIVE'|'CALIBRATED'/);
   });
@@ -164,10 +164,9 @@ describe('B1 architecture -- flags, Blueprint V2 and migrations', () => {
 
   it('B1 adds exactly two migrations (B1-D, B1-E): additive simulation-type widenings, right after the T1 final delta', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    // The chain as B1 left it: 71 files ending with its two widenings. Later blocks append after them
-    // (B3: the assessment snapshot column); none is inserted before or between.
-    expect(migrations.slice(68, 71)).toEqual(['20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql']);
-    expect(migrations.slice(71)).toEqual(['20261110_1000_assessment_snapshot.sql']);
+    // B2-B1 added eight Question Bank / B2 persistence migrations after them (20261110_*).
+    expect(migrations.filter((f) => f < '20261110').slice(-3)).toEqual(['20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql']);
+    expect(migrations.filter((f) => f < '20261110')).toHaveLength(71);
     const second = read('database/migrations/20261109_1000_simulation_type_challenge_reduced_mock.sql').replace(/^\s*--.*$/gm, '');
     expect(second.match(/ALTER TABLE public\.(\w+) ADD CONSTRAINT/g)).toEqual(['ALTER TABLE public.simulation_plans ADD CONSTRAINT', 'ALTER TABLE public.simulation_attempts ADD CONSTRAINT']);
     expect(second.match(/'TOPIC_EXAM', 'DOMAIN_EXAM', 'MINI_MOCK', 'FULL_MOCK', 'EXAM_PRACTICE', 'EXAM_CHALLENGE', 'REDUCED_MOCK'/g)).toHaveLength(2);
