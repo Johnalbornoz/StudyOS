@@ -162,9 +162,9 @@ describe('the Student\'s own class list', () => {
 
 describe('UI contract', () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
-  it('the control is mounted in the already-mounted institutional card; profile/page.tsx is not edited', () => {
+  it('the control is mounted in the institutional card; profile/page.tsx reuses it (CR-L9-01) and never calls the route itself', () => {
     expect(read('src/app/dashboard/profile/InstitutionalContextCard.tsx')).toMatch(/<StudentClassMemberships \/>/);
-    expect(read('src/app/dashboard/profile/page.tsx')).not.toMatch(/StudentClassMemberships|class-enrollments/);
+    expect(read('src/app/dashboard/profile/page.tsx')).not.toMatch(/class-enrollments/);
   });
   it('the card still renders on the server with its existing props (the class list loads in the browser)', () => {
     const context: any = { resolverVersion: 'x', status: 'COMPLETE', confidence: 'HIGH', institutions: [], pendingInstitutions: [], missingInformation: [], conflicts: [], provenanceSummary: {} };

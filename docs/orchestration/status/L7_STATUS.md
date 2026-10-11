@@ -1,43 +1,36 @@
 LANE: L7_PARENT
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T17:38Z
-BASE_SHA: 4fb45b0
-CURRENT_SHA: the single commit on `feat/l7-parent-pa1` whose parent is 4fb45b0 (`git rev-parse --short feat/l7-parent-pa1`)
+LAST_UPDATE: 2026-10-11T18:00Z
+BASE_SHA: 4fb45b0 (run 1); aa95a60 (run 2, CR-L9-01)
+CURRENT_SHA: tip of `feat/l7-parent-pa1` (`git rev-parse --short feat/l7-parent-pa1`); first-parent line 4fb45b0 -> aa95a60 (PA-1) -> 5307390 (merge of L9 ebe5d2f) -> tip (CR-L9-01)
 
 CURRENT_PHASE: STOP
 
 NOW_DOING: NONE. Lane stopped.
 
 COMPLETED:
-- READ TASK, VERIFY BASELINE (4fb45b0, clean), VERIFY OWNERSHIP.
-- PA-1 implemented: a "Family with access to your progress" card on `/dashboard/profile` with who-can-see-me, remove access (two-step confirm), invite a family member, and cancel a pending invitation.
-- Tests, typecheck and build run. Report written.
+- Run 1: PA-1 (aa95a60).
+- Run 2: CR-L9-01. L9's `StudentClassMemberships` mounted in `profile/page.tsx` on the canonical layout and the first-time entry screen. Regression test added. Report section appended.
 
 CURRENT_FINDINGS:
-- PA-1 needed no route, service, guard or schema change. The three existing routes were sufficient.
-- The mount is two lines, not one: `profile/page.tsx` has two rendered profile layouts (institution-defined path and the default). The first-time `EntryChoice` screen was left without the card on purpose.
-- An invitation still sends no email or in-app notice to the invitee (SF-7, L10). The card's copy says so.
-- `POST /api/student/parent-invitations` does not refuse the student's own email or an email that already has access (`src/services/parent.service.ts:325`, L10-owned). Reported, not changed.
-- Browser behaviour is NOT_VERIFIED: no authenticated environment is available to this lane.
+- The L9 component existed only on `feat/l9-institution-in1-in3`, so that branch (ebe5d2f) was merged into this lane branch locally. Merging this branch's tip brings L9 with it.
+- One L9 test assertion ("page.tsx does not mention StudentClassMemberships") was narrowed; CR-L9-01 makes it false by design.
+- The institution-defined layout already shows the control through `InstitutionalContextCard`; it is not mounted twice.
+- Browser behaviour and visual placement are NOT_VERIFIED.
+- Run 1 findings unchanged (see report).
 
 FILES_READ:
-- src/app/dashboard/profile/page.tsx, src/app/role-select/page.tsx
-- src/app/api/student/parent-invitations/route.ts, src/app/api/student/parents/route.ts, src/app/api/parent/relationships/revoke/route.ts, src/app/api/parent/learners/[studentId]/overview/route.ts
-- src/services/parent.service.ts, src/lib/auth.ts, src/lib/authorization/index.ts, src/lib/parent/read-model.service.ts (all read only)
-- src/lib/i18n/*, src/lib/lx/learner-navigation.ts, src/app/globals.css
+- Run 2: L9_REPORT.md, src/app/dashboard/profile/StudentClassMemberships.tsx, InstitutionalContextCard.tsx, src/lib/institution/student-class-membership.ts, src/app/api/student/class-enrollments/route.ts, tests/unit/l9-in3-student-leave-class.test.ts
+- Run 1: as recorded in the report
 
 FILES_MODIFIED:
-- src/app/dashboard/profile/ParentAccessCard.tsx (new)
-- src/app/dashboard/profile/parent-access.ts (new)
-- src/lib/i18n/parent-access-messages.ts (new)
-- src/app/dashboard/profile/page.tsx (2 imports, 2 mount lines)
-- tests/unit/l7-pa1-student-parent-access.test.ts (new)
-- docs/orchestration/status/L7_STATUS.md (new)
-- docs/orchestration/reports/L7_REPORT.md (new)
+- Run 2: src/app/dashboard/profile/page.tsx (1 import, 2 mount lines); tests/unit/l7-cr-l9-01-profile-leave-class.test.ts (new); tests/unit/l9-in3-student-leave-class.test.ts (1 assertion); docs/orchestration/reports/L7_REPORT.md; docs/orchestration/status/L7_STATUS.md
+- Run 2, by merge, unmodified: the 19 files of L9 (7e2bc29, ebe5d2f)
+- Run 1: ParentAccessCard.tsx, parent-access.ts, parent-access-messages.ts, page.tsx, l7-pa1-student-parent-access.test.ts
 
 TESTS:
-- `npx vitest run tests/unit/l7-pa1-student-parent-access.test.ts`: 1 file, 16 tests passed
-- `npx vitest run` (no database env): 520 files, 9,306 tests passed (base was 519 / 9,290)
+- `npx vitest run` (no database env): 523 files, 9,342 tests passed
+- `npx vitest run` on the three related files: 34 tests passed
 - `npx tsc --noEmit -p .`: no output
 - `npx next build` (no database env): exit 0
 - Browser / authenticated runtime: NOT_RUN
@@ -48,12 +41,12 @@ BLOCKERS: NONE
 LOCK_REQUESTS: NONE
 
 CROSS_LANE_DEPENDENCIES:
-- PA-3 waits on D-1 and SF-4 (L10). PA-4 waits on SF-8. PA-5 waits on EN-3 and SF-7. None started.
-- L9 owns `InstitutionalContextCard.tsx`; not touched. L7 is the only Wave 0 writer of `profile/page.tsx`.
+- This branch now depends on L9 (`feat/l9-institution-in1-in3` @ ebe5d2f), which it contains.
+- PA-3 waits on D-1 and SF-4. PA-4 waits on SF-8. PA-5 waits on EN-3 and SF-7. None started.
 
-NEXT: Orchestrator review. Human Operator browser check of the card (steps in the report).
+NEXT: Orchestrator review. Human Operator browser check (steps in the report, both runs).
 
 PROGRESS:
-- protocol steps: 8/8 complete
-- PA-1 actions implemented: 3/3 (invite-a-parent, who-can-see-me, revoke relationship)
-- PA-1 acceptance test: API half covered by automated tests; browser half pending the Human Operator
+- PA-1 actions implemented: 3/3
+- CR-L9-01: mount done, regression test done, recorded in report
+- Browser checks: 0/2 runs verified (Human Operator)

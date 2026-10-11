@@ -129,3 +129,112 @@ Human Operator, on an environment where a Student and a linked Parent can sign i
 3. As the Parent (that email), accept. As the Student, reload: the parent is listed under "Who can see your progress".
 4. Remove access and confirm. As the Parent, reload the parent dashboard: the learner is gone and its API returns 403.
 5. Check the card at 375 px width and with the keyboard only.
+
+---
+
+# L7_PARENT — Run 2, 2026-10-11 (UTC): CR-L9-01
+
+Scope: the Orchestrator's change request CR-L9-01 only. PA-1 (run 1, above) is unchanged.
+
+## LANE
+
+`L7_PARENT`, worktree `/Users/jalbornoz/PROYECTOS/studyos-l7-parent`, branch `feat/l7-parent-pa1` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+## BASE SHA
+
+`aa95a60` — the PA-1 commit, HEAD of this branch when the change request arrived (clean tree).
+
+## FINAL SHA
+
+The tip of `feat/l7-parent-pa1`: `git rev-parse feat/l7-parent-pa1`. The branch is now three commits past `4fb45b0` on its first-parent line:
+
+| Commit | Content |
+|---|---|
+| `aa95a60` | PA-1 (unchanged; still mergeable alone) |
+| `5307390` | Local merge of `feat/l9-institution-in1-in3` @ `ebe5d2f` into this lane branch |
+| tip | CR-L9-01 mount, test, this report |
+
+## FILES CHANGED
+
+By this lane, in the tip commit:
+
+- `src/app/dashboard/profile/page.tsx` — one import, two mount lines (`<StudentClassMemberships />`)
+- `tests/unit/l7-cr-l9-01-profile-leave-class.test.ts` (new)
+- `tests/unit/l9-in3-student-leave-class.test.ts` — one assertion (see Finding 3)
+- `docs/orchestration/reports/L7_REPORT.md`, `docs/orchestration/status/L7_STATUS.md`
+
+Brought in by the merge, unmodified: the 19 files of L9's `7e2bc29` and `ebe5d2f`.
+
+Not touched: `StudentClassMemberships.tsx`, `InstitutionalContextCard.tsx`, the two `class-enrollments` routes, `student-class-membership.ts`, any lifecycle function, any migration.
+
+## LOCKS USED
+
+NONE. `INTEGRATION_MERGE` covers `integration/*`, `release/*`, `preview/*`, `develop` and `main`; the merge here is into the lane's own feature branch (Finding 1).
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `npx vitest run tests/unit/l7-cr-l9-01-profile-leave-class.test.ts tests/unit/l9-in3-student-leave-class.test.ts tests/unit/l7-pa1-student-parent-access.test.ts` (no database env) | 3 files, 34 tests passed |
+| `npx vitest run` (full suite, no database env) | 523 files, 9,342 tests passed |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` (no database env) | exit 0 |
+| Browser check | NOT_RUN — same reason as run 1 |
+| DEV, Stage, Production | NOT_RUN, not touched |
+
+The new test is a source contract, as requested ("source/unit regression"). It does not render the page: the page is a server component behind Clerk and the database, and the control loads its data in the browser.
+
+## FINDINGS
+
+### 1. The lane branch now contains L9
+
+`StudentClassMemberships.tsx` exists only on `feat/l9-institution-in1-in3`, which is not merged into any other branch (`git branch -a --contains 7e2bc29`). Reusing it without copying it meant this branch had to contain it, so I merged L9's accepted tip `ebe5d2f` into `feat/l7-parent-pa1` (clean, no conflicts). Consequences for the Orchestrator:
+
+- Merging the tip of this branch brings L9 with it. Merging L9 first and then this branch gives the same result.
+- PA-1 alone is still `aa95a60`.
+- If you would rather have CR-L9-01 as a separate branch stacked on L9, the tip commit cherry-picks cleanly onto any line that has both `aa95a60` and `ebe5d2f`.
+
+### 2. Where the control is mounted
+
+`profile/page.tsx` has three layouts:
+
+| Layout | When | Leave control |
+|---|---|---|
+| Institution-defined | `STUDENT_JOURNEY_V2=UX` and a class with a subject | Already there, inside `InstitutionalContextCard` (L9). Not mounted again |
+| First-time entry choice | `STUDENT_JOURNEY_V2=UX`, no profile, no exam target | **New mount**, below the choice |
+| Canonical | everything else, including flag off | **New mount**, above the family-access card |
+
+The entry-choice mount goes one step past "canonical profile surface". Without it, an enrolled student with the flag on, a class that has no subject and no profile yet would still have no button. Say if it should come out; it is one line.
+
+The control renders nothing until it has loaded at least one ACTIVE enrolment of the caller's own (`StudentClassMemberships.tsx`: `if (enrollments.length === 0 && !msg) return null`; the list query filters `ce.status = 'ACTIVE'` on the session's student). Every ACTIVE enrolment is leavable under L9's rule, so "active" and "allowed to leave" are the same set today.
+
+### 3. One L9 assertion had to change
+
+`tests/unit/l9-in3-student-leave-class.test.ts` asserted that `profile/page.tsx` does not mention `StudentClassMemberships`. CR-L9-01 makes that false by design. I narrowed the assertion to "the page never calls the `class-enrollments` routes itself" and renamed the test. This is the only edit to a file L9 authored.
+
+### 4. Visual placement is NOT_VERIFIED
+
+On the canonical layout the control sits directly in the page column, not inside a card (it was styled for the inside of `InstitutionalContextCard`). Wrapping it in a card from the page would leave an empty card for students with no class, because only the component knows whether it has anything to show. If it looks bare in the browser, the fix belongs in the component (L9).
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+| # | Status | Detail |
+|---|---|---|
+| CR-L9-01 | **Implemented in this run** | Raised by L9 (`L9_REPORT.md`), assigned to L7 by the Orchestrator. `<StudentClassMemberships />` mounted in `profile/page.tsx` outside the `STUDENT_JOURNEY_V2=UX` branch. No component or route duplicated; no lifecycle change |
+| CR-L7-01 | Open (run 1) | Unchanged |
+
+## MERGE RECOMMENDATION
+
+Merge L9 (`feat/l9-institution-in1-in3`), then the tip of `feat/l7-parent-pa1`. Do not merge the tip of this branch before deciding to accept L9's code, since it carries it.
+
+## NEXT SAFE ACTION
+
+Human Operator, in addition to the run 1 steps: as a Student enrolled in a class, with `STUDENT_JOURNEY_V2` unset, open Profile; "leave class" is listed; leave and confirm; the teacher's roster no longer shows the student. Then as a Student with no class: nothing extra is shown.

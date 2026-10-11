@@ -18,6 +18,7 @@ import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/c
 import { formatTimeContext, storedTimeContext } from '@/lib/student/time-context';
 import { getParentAccessMessages } from '@/lib/i18n/parent-access-messages';
 import ParentAccessCard from './ParentAccessCard';
+import { StudentClassMemberships } from './StudentClassMemberships';
 
 /**
  * Student Academic Profile. Once saved it is shown as a summary (never asked again
@@ -96,6 +97,8 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
       return (
         <div className="acp-page">
           <EntryChoice labels={tr} />
+          {/* CR-L9-01: an enrolled Student can leave a class from here too (renders nothing without an active class). */}
+          <StudentClassMemberships />
         </div>
       );
     }
@@ -169,6 +172,10 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
         // REM-T1-06: first-time onboarding can be left through Cancel, back to the context choice.
         exitHref={completed ? null : STUDENT_CONTEXT_PATH}
       />
+
+      {/* CR-L9-01: L9's "leave class" control on the canonical profile, independent of STUDENT_JOURNEY_V2=UX.
+          The institution-defined layout above already shows it inside InstitutionalContextCard. */}
+      <StudentClassMemberships />
 
       {/* L7 PA-1: who can see my progress, invite a family member, remove access. */}
       <ParentAccessCard labels={getParentAccessMessages(locale)} locale={locale} />
