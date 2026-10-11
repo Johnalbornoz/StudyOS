@@ -4,7 +4,7 @@ Branch `feat/ea1-assessment-adaptation`, on the integration line after QB-R2C (`
 
 Everything authored in this phase is a draft: the ten task families are `DRAFT` / `UNREVIEWED`, the profiles are `PROVISIONAL_ILLUSTRATIVE` and `MIXED_AUTHORITY`, the mathematics policy is `PROVISIONAL`. They were written in-session by the model working on the phase. They test an architecture; they are not a catalogue to produce from and not a description of how any examination board works.
 
-The implementation-ready persistence design is a separate document: `EA1A_ADAPTATION_PERSISTENCE_DESIGN.md`.
+**Later phase.** EA-1A (`EA1A_LEARNING_APPROACH_PROFILES_AND_STEM_PLUS.md`) adds the learning-approach layer, locks several policy rulings (no dev-test content in protected mock pools; evidence-bearing content needs a certified assessment profile; component profiles bind to an exam / component version) and carries the current persistence design. Where this document and EA-1A differ, EA-1A is current. The persistence sketch written before EA-1A was specified is kept as `DRAFT_AUXILIARY_ADAPTATION_PERSISTENCE_SKETCH.md`: an auxiliary draft, not EA-1A, not certified.
 
 ## 0. Decisions (2026-10-11, by the user)
 
@@ -116,9 +116,9 @@ Evidence-bearing content requires: a REVIEWED + CERTIFIED family, a concrete com
 |---|---|---|---|
 | PRACTICE | dynamic or frozen | dynamic or frozen | user decision |
 | DIAGNOSTIC, VERIFICATION | frozen certified only | dynamic allowed | user decision |
-| REDUCED_MOCK, FULL_MOCK_1, FULL_MOCK_2 | frozen certified only | dynamic allowed | evidence-bearing: user decision; dev-test: **this module's reading**, flagged `READING_OF_DECISION` |
+| REDUCED_MOCK, FULL_MOCK_1, FULL_MOCK_2 | frozen certified only | **not accepted** | user decision (EA-1A locked ruling; it overrules the earlier reading that allowed dynamic dev-test content here) |
 | LOW_STAKES_REINFORCEMENT | dynamic or frozen | dynamic or frozen | brief |
-| BENCHMARK, CALIBRATION, PILOT_CERTIFICATION | frozen certified only | dynamic allowed | brief; dev-test: reading |
+| BENCHMARK, CALIBRATION, PILOT_CERTIFICATION | frozen certified only | **not accepted** | brief; dev-test: conservative reading of the EA-1A ruling, flagged |
 
 - `AdaptationLineage` (generated): family, system profile, component profile (nullable), policy, specification id, invariant hash, use class, run.
 - `AuthoredFamilyLineage` (human-authored): family, invariant hash, use class, and — when a specification was followed — its id and profiles. No generation field.
@@ -146,9 +146,9 @@ Evidence-bearing content requires: a REVIEWED + CERTIFIED family, a concrete com
 
 **Why applicability is owned by the shared assessment architecture and not by the Curriculum or the Question Bank.** The Curriculum owns the two things applicability is derived from — the concept and the mapping of an exam structure or objective to it — and must stay exam-independent about the concept itself. Applicability is a *decision rule over those mappings for an assessment scope* (system, local subject, component) under a threshold policy; the scope vocabulary (profiles, components) and the threshold belong to the assessment architecture. The Question Bank is a consumer: it must not be able to declare its own content applicable. So: the Curriculum authors and reviews mappings; the assessment architecture derives applicability from them and never writes a mapping; the Question Bank reads the result at generation and at its gates.
 
-## 4. Persistence design (summary; the full design is EA-1A)
+## 4. Persistence design (summary at the time of EA-1; superseded by the persistence section of EA-1A)
 
-Nothing is migrated. `EA1A_ADAPTATION_PERSISTENCE_DESIGN.md` gives the DDL sketch, triggers, migration split, certification plan and rollout.
+Nothing is migrated. The table below is the EA-1 summary; `DRAFT_AUXILIARY_ADAPTATION_PERSISTENCE_SKETCH.md` holds the auxiliary DDL sketch it was drawn from, and the EA-1A document revises both.
 
 | Entity | Table (proposed) | Key points |
 |---|---|---|
@@ -320,10 +320,10 @@ Decided: D1, D2, D3, D4, D5, D6, D9 (§0). Open:
 
 ## 12. Recommended sequence
 
-1. Review EA-1A; settle its open questions.
+1. EA-1A (learning approach profiles, locked rulings, revised persistence design); settle its open questions.
 2. Human review of the contracts by an assessment specialist and of two or three families by a mathematician; revise.
 3. Certify one system with all its components (PAA is closest).
-4. Migrations of EA-1A, in its order, DEV then Preview / Stage.
+4. Migrations, in the order the EA-1A persistence section proposes, DEV then Preview / Stage.
 5. One live-provider pilot from specifications for the two generable formats, with an instance-level invariant check as a new independent validator.
 6. Templates for constructed responses.
 7. B2 policy on families per form; then B3 (independence, the two family notions).

@@ -28,3 +28,5 @@ export * from './adapt';
 export * from './cell-bridge';
 export * from './math-poc-applicability';
 export * from './math-poc-matrix';
+export * from './school-stem-performance';
+export * from './learning-approach-poc';

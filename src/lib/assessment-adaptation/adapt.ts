@@ -29,15 +29,25 @@
  * Otherwise -- generic dev-test practice that needs nothing component-specific -- the system's common rules apply
  * and the specification says its component is null.
  *
+ * LEARNING APPROACH (EA-1A). Precedence: curriculum (entitlement) > learning approach (emphasis) > assessment profile
+ * (constraints) > task family (structure); the specification resolves them. In the engine that means: the profile,
+ * the family and the request fix the FEASIBLE SET of each dimension exactly as before, and the approach's
+ * preference only chooses inside it. An official assessment constraint therefore always wins; so does a profile
+ * rule of any other authority (StudyUs policy, flagged). A preference that could not be honoured is recorded as
+ * unmet with the rule that overrode it, and refuses the adaptation only when it is REQUIRED_OUTSIDE_EXAMS and the
+ * target is not an exam system. Under STANDARD, or with no approach, none of this code changes anything.
+ *
  * WHAT IT DOES NOT DO. It writes no question, selects nothing (B2), records no evidence (B3), establishes no
  * right, no review and no pool membership, and certifies nothing. A specification of a DRAFT family under a
  * PROVISIONAL profile says so in its own fields.
  */
 import { DEFAULT_TASK_FAMILY_REGISTRY } from '@/lib/exam-core/question-bank/task-families';
 import type { CalculatorPolicy, ContextKind, ElicitationFormat, SupportConstraint, TaskFamily, TaskFamilyRegistry, TaskFamilySpecialization } from '@/lib/exam-core/question-bank/task-families/task-family';
-import { ADAPTATION_ENGINE, ADAPTATION_SPECIFICATION_VERSION, AdaptationRequestSchema, invariantHashOf, PRODUCTION_FORMAT_OF, specificationIdOf, type AdaptationInvariants, type AdaptationRefusal, type AdaptationRefusalCode, type AdaptationRequest, type AdaptationSpecification, type FieldProvenance } from './adaptation-specification';
+import { ADAPTATION_ENGINE, ADAPTATION_SPECIFICATION_VERSION, AdaptationRequestSchema, invariantHashOf, PRODUCTION_FORMAT_OF, specificationIdOf, type AdaptationInvariants, type AdaptationRefusal, type AdaptationRefusalCode, type AdaptationRequest, type AdaptationSpecification, type FieldProvenance, type LearningApproachResolution } from './adaptation-specification';
 import { EA1_APPLICABILITY_THRESHOLD, ApplicabilityThresholdPolicySchema, applicabilityRegisterIssues, resolveApplicability, type AssessmentApplicabilityRecord } from './assessment-applicability';
-import { resolveProfile, type ProfileRules, type RuleOrigin, type StimulusMode } from './assessment-system-profile';
+import { profileMayFeedEvidenceBearingContent, resolveProfile, type ProfileRules, type RuleOrigin, type StimulusMode } from './assessment-system-profile';
+import { competencyCodeOf, evidenceYieldOf, isStandardApproach, LearningApproachProfileSchema, type ApproachDimension, type ApproachPreference, type LearningApproachProfile } from '@/lib/learning-approach/learning-approach-profile';
+import { CurriculumEntitlementRecordSchema, CurriculumProfileSchema, resolveEntitlement, type CurriculumEntitlementRecord, type CurriculumProfile } from '@/lib/learning-approach/institution-configuration';
 import { deepFreeze, sha256OfCanonicalJson } from './canonical-hash';
 import { DisciplineAdaptationPolicySchema, policyRuleId, type DisciplineAdaptationPolicy, type VariableDimension } from './discipline-policy';
 import { ADAPTATION_POOLS, instancePolicyFor, type AdaptationPool } from './instance-lineage';
@@ -53,6 +63,15 @@ export interface AdaptInput {
   applicability?: readonly unknown[];
   /** Defaults to the threshold EA-1 is decided under. */
   applicabilityPolicy?: unknown;
+  /**
+   * EA-1A. The learning approach in force (from the institution's configuration). Omitted, or STANDARD: no emphasis
+   * is applied and the specification is exactly the one produced before approaches existed.
+   */
+  learningApproach?: unknown;
+  /** EA-1A. The curriculum the content is for, by reference. Omitted: no curriculum context is recorded. */
+  curriculum?: unknown;
+  /** EA-1A. The curriculum-entitlement register to read. Omitted or empty = nothing is recorded: NOT_ESTABLISHED. */
+  entitlement?: readonly unknown[];
   disciplinePolicy: unknown;
   request: unknown;
   /** The specialisations the family may be of. Defaults to what the repository implements (mathematics). */
@@ -111,12 +130,49 @@ function build(input: AdaptInput): AdaptationSpecification {
   if (!requestParsed.success) return refuse('REQUEST_INVALID', requestParsed.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
   const request: AdaptationRequest = requestParsed.data;
   const rules = resolved.rules;
+  // EA-1A inputs. STANDARD and "no approach" are the same thing: no emphasis, nothing recorded.
+  let approach: LearningApproachProfile | null = null;
+  if (input.learningApproach !== undefined && input.learningApproach !== null) {
+    const a = LearningApproachProfileSchema.safeParse(input.learningApproach);
+    if (!a.success) return refuse('LEARNING_APPROACH_INVALID', a.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
+    approach = isStandardApproach(a.data) ? null : a.data;
+  }
+  let curriculum: CurriculumProfile | null = null;
+  if (input.curriculum !== undefined && input.curriculum !== null) {
+    const c = CurriculumProfileSchema.safeParse(input.curriculum);
+    if (!c.success) return refuse('CURRICULUM_PROFILE_INVALID', c.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
+    curriculum = c.data;
+  }
+  const entitlementRegister: CurriculumEntitlementRecord[] = [];
+  for (const r of input.entitlement ?? []) {
+    const e = CurriculumEntitlementRecordSchema.safeParse(r);
+    if (!e.success) return refuse('CURRICULUM_PROFILE_INVALID', `entitlement register: ${e.error.issues[0]?.message ?? 'invalid record'}`);
+    entitlementRegister.push(e.data);
+  }
   const facts = specialization.adaptationFacts(family.specialization);
 
   // 2 -- a retired family produces nothing
   if (family.lifecycle === 'RETIRED') refuse('FAMILY_RETIRED', family.familyId);
   // a DRAFT or UNREVIEWED family version produces DEV_TEST_CONTENT only: it never feeds evidence-bearing content
   if (request.contentUseClass === 'EVIDENCE_BEARING' && !familyMayFeedEvidenceBearingContent(family)) refuse('FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT', `${family.familyId}@${family.version} is ${family.lifecycle} / ${family.reviewStatus}; it may generate DEV_TEST_CONTENT only`);
+  // 2b (locked) -- a PROVISIONAL / ILLUSTRATIVE assessment profile generates DEV_TEST_CONTENT only
+  if (request.contentUseClass === 'EVIDENCE_BEARING') {
+    const uncertified = [...(profileMayFeedEvidenceBearingContent(profile) ? [] : [`${profile.profileId}@${profile.version} (${profile.status})`]), ...(component && !profileMayFeedEvidenceBearingContent(component) ? [`${component.componentId}@${component.version} (${component.status})`] : [])];
+    if (uncertified.length > 0) refuse('ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', `${uncertified.join(', ')}: evidence-bearing content requires a CERTIFIED assessment profile`);
+  }
+  // 2c (locked) -- some purposes do not accept dev-test content at all: a protected mock pool takes frozen certified content only
+  const instancePolicy = instancePolicyFor(request.purpose, request.contentUseClass);
+  if (!instancePolicy.permitted) refuse('DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE', `${request.purpose}: ${instancePolicy.reason}`);
+  // 2d -- participation: a collaborative activity needs an approach and a family that support it, is not how an exam
+  // system is sat, and is never evidence about an individual learner by itself
+  const participationMode = request.participationMode ?? 'INDIVIDUAL';
+  if (participationMode === 'COLLABORATIVE') {
+    if (!approach || !approach.participationModes.includes('COLLABORATIVE')) refuse('PARTICIPATION_MODE_NOT_ALLOWED', `the learning approach (${approach?.approachId ?? 'STANDARD'}) does not use collaborative work`);
+    if (!family.approachSupport?.participationModes.includes('COLLABORATIVE')) refuse('PARTICIPATION_MODE_NOT_ALLOWED', `${family.familyId} does not declare collaborative participation`);
+    if (profile.examFamilyCode !== null) refuse('PARTICIPATION_MODE_NOT_ALLOWED', `${profile.profileId} is an exam system: it is sat individually`);
+    if (request.contentUseClass === 'EVIDENCE_BEARING') refuse('COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE', 'a collaborative activity yields a group artefact; it is not evidence about an individual learner');
+  }
+
   // 3 -- a policy translates for its own family types and discipline; never by analogy
   if (!policy.familyTypes.includes(family.familyType) || policy.discipline !== specialization.discipline) refuse('DISCIPLINE_POLICY_NOT_FOR_FAMILY_TYPE', `${policy.policyId} (${policy.discipline}: ${policy.familyTypes.join(', ')}) / ${family.familyType} (${specialization.discipline})`);
 
@@ -151,6 +207,22 @@ function build(input: AdaptInput): AdaptationSpecification {
   // from another exam, or from the name of a subject. Evidence-bearing content requires it to be established.
   const applicability = resolveApplicability((input.applicability ?? []) as AssessmentApplicabilityRecord[], primaryConcept, { systemProfileId: profile.profileId, componentId: component?.componentId ?? null }, thresholdParsed.data);
   if ((request.contentUseClass === 'EVIDENCE_BEARING' || request.applicabilityRequirement === 'ESTABLISHED') && applicability.status !== 'ESTABLISHED') refuse('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED', `${primaryConcept.stableId} (${primaryConcept.canonicalSubject}) / ${component?.componentId ?? profile.profileId}: basis ${applicability.basis}`);
+  // 6b -- curriculum entitlement (precedence 1): the curriculum decides what a learner is entitled to be taught and
+  // assessed on. Read from the entitlement register; never inferred from a subject label or from another curriculum.
+  const entitlement = curriculum ? resolveEntitlement(entitlementRegister, primaryConcept, curriculum) : null;
+  if (entitlement && request.contentUseClass === 'EVIDENCE_BEARING' && entitlement.status !== 'ESTABLISHED') refuse('CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED', `${primaryConcept.stableId} (${primaryConcept.canonicalSubject}) / ${curriculum!.curriculumId}: ${entitlement.basis}, ${entitlement.structureStatus}`);
+
+  // the approach's preferences: each is looked at where its dimension is decided, and its fate is recorded
+  const preferenceOf = (d: ApproachDimension): ApproachPreference | null => approach?.preferences.find((x) => x.dimension === d) ?? null;
+  const honoured: LearningApproachResolution['honouredPreferences'] = [];
+  const unmet: LearningApproachResolution['unmetPreferences'] = [];
+  const settle = (p: ApproachPreference | null, decided: string, overriddenBy: () => FieldProvenance): boolean => {
+    if (!p) return false;
+    if (p.prefer.includes(decided)) { honoured.push({ preferenceId: p.preferenceId, dimension: p.dimension, decided }); return true; }
+    unmet.push({ preferenceId: p.preferenceId, dimension: p.dimension, strength: p.strength, wanted: [...p.prefer], decided, overriddenBy: overriddenBy() });
+    return false;
+  };
+  const approachProvenance = (p: ApproachPreference): FieldProvenance => ({ origin: 'LEARNING_APPROACH_PREFERENCE', ref: p.preferenceId, authority: 'STUDYUS_POLICY' });
 
   const provenance = {} as Record<VariableDimension, FieldProvenance[]>;
   // A misfit on a dimension that only a component settles is not a verdict on the system: without a component the
@@ -179,8 +251,14 @@ function build(input: AdaptInput): AdaptationSpecification {
     const open = both.filter((f) => !formatConstraint || formatConstraint.formats.includes(f));
     if (open.length === 0) violated('RESPONSE_FORMAT_ONLY', both.join(', '));
     // the discipline's preference decides among what is left; a format the policy does not rank comes last, in the profile's order
-    format = policy.formatPreference.find((f) => open.includes(f)) ?? profileFormats.find((f) => open.includes(f))!;
+    // the approach chooses first, but only among what is left; then the discipline's preference, as before
+    const wantedFormat = preferenceOf('responseFormat')?.prefer.find((f) => (open as string[]).includes(f)) as ElicitationFormat | undefined;
+    format = wantedFormat ?? policy.formatPreference.find((f) => open.includes(f)) ?? profileFormats.find((f) => open.includes(f))!;
     provenance.responseFormat = [ruleProvenance(rules, 'responseFormats'), familyProvenance('responseConstraints.allowedFormats'), policyProvenance(policy, 'formatPreference'), ...(formatConstraint ? [familyProvenance(`profileSupport.${profile.profileId}.RESPONSE_FORMAT_ONLY`)] : [])];
+  }
+  {
+    const p = preferenceOf('responseFormat');
+    if (settle(p, format, () => (request.responseFormat !== undefined ? requestProvenance('responseFormat') : !p!.prefer.some((f) => (profileFormats as string[]).includes(f)) ? ruleProvenance(rules, 'responseFormats') : !p!.prefer.some((f) => (familyFormats as string[]).includes(f)) ? familyProvenance('responseConstraints.allowedFormats') : familyProvenance(`profileSupport.${profile.profileId}.RESPONSE_FORMAT_ONLY`))) && request.responseFormat === undefined) provenance.responseFormat.push(approachProvenance(p!));
   }
 
   // 8 -- context: one the family supports and the profile offers
@@ -199,8 +277,12 @@ function build(input: AdaptInput): AdaptationSpecification {
     if (both.length === 0) refuseOn('contextExpectations', 'PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', `profile offers ${profileContexts.join(', ')}; family supports ${familyContexts.join(', ')}`);
     const open = both.filter((c) => !contextConstraint || contextConstraint.contexts.includes(c));
     if (open.length === 0) violated('CONTEXT_ONLY', both.join(', '));
-    context = open[0];
+    context = (preferenceOf('context')?.prefer.find((c) => (open as string[]).includes(c)) as ContextKind | undefined) ?? open[0];
     provenance.context = [ruleProvenance(rules, 'contextExpectations'), familyProvenance('supportedContexts'), ...(contextConstraint ? [familyProvenance(`profileSupport.${profile.profileId}.CONTEXT_ONLY`)] : [])];
+  }
+  {
+    const p = preferenceOf('context');
+    if (settle(p, context, () => (request.context !== undefined ? requestProvenance('context') : !p!.prefer.some((c) => (profileContexts as string[]).includes(c)) ? ruleProvenance(rules, 'contextExpectations') : !p!.prefer.some((c) => (familyContexts as string[]).includes(c)) ? familyProvenance('supportedContexts') : familyProvenance(`profileSupport.${profile.profileId}.CONTEXT_ONLY`))) && request.context === undefined) provenance.context.push(approachProvenance(p!));
   }
   const authenticity = rules.authenticityRequirements.value;
   if (authenticity === 'AUTHENTIC_CONTEXT_REQUIRED' && context === 'ABSTRACT') refuse('PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', 'the profile requires an authentic context and the task is asked without one');
@@ -231,8 +313,12 @@ function build(input: AdaptInput): AdaptationSpecification {
     if (fit.length === 0) refuseOn('calculatorPolicy', 'TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE', `the family requires a tool and the profile allows only ${allowedTools.join(', ')}`);
     const open = fit.filter((c) => !toolConstraint || toolConstraint.policies.includes(c));
     if (open.length === 0) violated('CALCULATOR_ONLY', fit.join(', '));
-    calculator = open[0];
+    calculator = (preferenceOf('toolPolicy')?.prefer.find((c) => (open as string[]).includes(c)) as CalculatorPolicy | undefined) ?? open[0];
     provenance.toolPolicy = [ruleProvenance(rules, 'calculatorPolicy'), ...(toolConstraint ? [familyProvenance(`profileSupport.${profile.profileId}.CALCULATOR_ONLY`)] : [])];
+  }
+  {
+    const p = preferenceOf('toolPolicy');
+    if (settle(p, calculator, () => (request.calculatorPolicy !== undefined ? requestProvenance('calculatorPolicy') : !p!.prefer.some((c) => (allowedTools as string[]).includes(c)) ? ruleProvenance(rules, 'calculatorPolicy') : familyProvenance(`profileSupport.${profile.profileId}.CALCULATOR_ONLY`))) && request.calculatorPolicy === undefined) provenance.toolPolicy.push(approachProvenance(p!));
   }
   provenance.toolPolicy.push(familyProvenance('specialization.toolDependency'));
   const numericProfile = policy.toolInteraction[calculator].numericProfile;
@@ -245,12 +331,17 @@ function build(input: AdaptInput): AdaptationSpecification {
   let stimulusMode: StimulusMode;
   if (need2 === 'REQUIRED') {
     if (withStimulus.length === 0) refuse('STIMULUS_REQUIRED_BY_FAMILY_NOT_OFFERED_BY_PROFILE', `the profile offers ${stimulusRule.allowed.join(', ')}`);
-    stimulusMode = withStimulus[0];
+    stimulusMode = (preferenceOf('stimulus')?.prefer.find((m) => (withStimulus as string[]).includes(m)) as StimulusMode | undefined) ?? withStimulus[0];
   } else if (need2 === 'NONE') {
     // the family is asked without a stimulus; a profile that offers no stimulus-free task still receives one, and says so in its rule
     stimulusMode = 'NONE';
-  } else stimulusMode = stimulusRule.whenOptional;
+  } else stimulusMode = (preferenceOf('stimulus')?.prefer.find((m) => (stimulusRule.allowed as string[]).includes(m)) as StimulusMode | undefined) ?? stimulusRule.whenOptional;
   provenance.stimulus = [familyProvenance('responseConstraints.stimulusNeed'), ruleProvenance(rules, 'stimulusExpectations')];
+  {
+    const p = preferenceOf('stimulus');
+    // `whenOptional` is the profile's default, not a constraint: the approach may choose another ALLOWED mode. What the family needs is not the approach's to change.
+    if (settle(p, stimulusMode, () => (need2 === 'NONE' ? familyProvenance('responseConstraints.stimulusNeed') : ruleProvenance(rules, 'stimulusExpectations'))) && need2 !== 'NONE') provenance.stimulus.push(approachProvenance(p!));
+  }
 
   // 12 -- command term: only from the profile's own vocabulary
   const vocabulary = rules.commandTerms.value;
@@ -277,6 +368,11 @@ function build(input: AdaptInput): AdaptationSpecification {
   const depth = CLOSED_FORMATS.has(format) ? rules.reasoningDepth.value.closedResponse : rules.reasoningDepth.value.constructedResponse;
   const depthMeaning = policy.reasoningDepth[depth];
   provenance.reasoningDepth = [ruleProvenance(rules, 'reasoningDepth'), policyProvenance(policy, `reasoningDepth.${depth}`)];
+  // the depth is the profile's rule for the kind of response: the approach cannot raise it, only see whether it got what it wanted
+  settle(preferenceOf('reasoningDepth'), depth, () => ruleProvenance(rules, 'reasoningDepth'));
+  // a preference marked REQUIRED_OUTSIDE_EXAMS refuses only where the target is not an exam system; against an exam it yields and is recorded
+  const blocking = unmet.filter((u) => u.strength === 'REQUIRED_OUTSIDE_EXAMS');
+  if (blocking.length > 0 && profile.examFamilyCode === null) refuse('LEARNING_APPROACH_REQUIREMENT_UNMET', blocking.map((u) => `${u.preferenceId}: wanted ${u.wanted.join(' / ')}, decided ${u.decided} (${u.overriddenBy.origin} ${u.overriddenBy.ref})`).join('; '));
 
   // time: the pace the system's published totals leave, when it publishes them
   const t = rules.timePressure.value;
@@ -297,7 +393,6 @@ function build(input: AdaptInput): AdaptationSpecification {
   provenance.language = [requestProvenance('language')];
 
   const invariants = invariantsOfFamily(family, specialization);
-  const instancePolicy = instancePolicyFor(request.purpose, request.contentUseClass);
   const pool = (ADAPTATION_POOLS as readonly string[]).includes(request.purpose) ? (request.purpose as AdaptationPool) : null;
   const content: Omit<AdaptationSpecification, 'specificationId' | 'adaptedAt'> = {
     v: ADAPTATION_SPECIFICATION_VERSION,
@@ -330,13 +425,25 @@ function build(input: AdaptInput): AdaptationSpecification {
       language: request.language,
     },
     parameterization: facts.parameterization,
-    purpose: { purpose: request.purpose, pool, allowedInstanceClasses: [...instancePolicy.allowedClasses], minimumInstanceClass: instancePolicy.minimumClass },
+    purpose: { purpose: request.purpose, pool, allowedInstanceClasses: [...instancePolicy.allowedClasses], minimumInstanceClass: instancePolicy.minimumClass! },
     blueprintRequirement: request.requirementCellKey ? { requirementCellKey: request.requirementCellKey } : null,
     provenance,
     lineage: { engine: { ...ADAPTATION_ENGINE }, familyContentHash: sha256OfCanonicalJson(family), systemProfileContentHash: sha256OfCanonicalJson(profile), componentProfileContentHash: component ? sha256OfCanonicalJson(component) : null, policyContentHash: sha256OfCanonicalJson(policy), requestHash: sha256OfCanonicalJson(request) },
   };
+  // EA-1A members exist ONLY when there is something to say: with no approach (or STANDARD) and no curriculum the
+  // content above is, byte for byte, what it was before, and so is its id.
+  const withApproach: typeof content & Pick<AdaptationSpecification, 'learningApproach' | 'curriculumContext'> = {
+    ...content,
+    ...(approach ? { learningApproach: {
+      approachId: approach.approachId, version: approach.version, status: approach.status, authority: approach.authority, contentHash: sha256OfCanonicalJson(approach),
+      transversalCompetencies: approach.transversalCompetencies.map((c) => ({ key: c.key, code: competencyCodeOf(c.reference), catalogueStatus: c.reference.catalogueStatus, servedByFamily: family.approachSupport?.transversalCompetencies.includes(competencyCodeOf(c.reference)) ?? false })),
+      participation: { mode: participationMode, evidenceYield: evidenceYieldOf(participationMode) },
+      honouredPreferences: honoured, unmetPreferences: unmet,
+    } } : {}),
+    ...(curriculum && entitlement ? { curriculumContext: { curriculumId: curriculum.curriculumId, country: curriculum.country, programmeName: curriculum.programmeName, programmeVersion: curriculum.programmeVersion, structureStatus: curriculum.structureStatus, entitlement: { status: entitlement.status, basis: entitlement.basis, evidenceReferences: entitlement.evidenceReferences } } } : {}),
+  };
   // a specification is detached from its inputs (no shared reference) and then frozen
-  const detached = JSON.parse(JSON.stringify(content)) as typeof content;
+  const detached = JSON.parse(JSON.stringify(withApproach)) as typeof withApproach;
   return deepFreeze({ ...detached, specificationId: specificationIdOf(detached), adaptedAt: input.adaptedAt ?? null });
 }
 

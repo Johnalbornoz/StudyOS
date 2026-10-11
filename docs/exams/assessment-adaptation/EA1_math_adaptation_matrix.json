@@ -106,7 +106,7 @@
     {
       "componentId": "PAA.MATEMATICAS",
       "systemProfileId": "PAA",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Matemáticas",
       "overrides": [
@@ -137,7 +137,7 @@
     {
       "componentId": "IB.MATH_AA_HL.P1",
       "systemProfileId": "IB",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Mathematics: analysis and approaches",
       "overrides": [
@@ -169,7 +169,7 @@
     {
       "componentId": "IB.MATH_AA_HL.P2",
       "systemProfileId": "IB",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Mathematics: analysis and approaches",
       "overrides": [
@@ -201,7 +201,7 @@
     {
       "componentId": "CAMBRIDGE.9709.P1",
       "systemProfileId": "CAMBRIDGE",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Mathematics (9709)",
       "overrides": [
@@ -231,7 +231,7 @@
     {
       "componentId": "PISA.MATHEMATICS",
       "systemProfileId": "PISA",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Matemáticas",
       "overrides": [
@@ -265,7 +265,7 @@
     {
       "componentId": "ICFES.SABER11_MATEMATICAS",
       "systemProfileId": "ICFES",
-      "version": "0.2.0-illustrative",
+      "version": "0.3.0-illustrative",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "localSubject": "Matemáticas",
       "overrides": [
@@ -472,7 +472,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "d11d123e0d4b7faf436beb512dd4ee1c95ec159300f7ce5dfd796fd08e131494",
+      "specificationId": "8f5370bdbbf3199077d35835e058a6a7f21871e5c9e9124b6677f5d7e14efe69",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -488,7 +488,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "709dbd54df01eca141a7a40e9d4f2b552975c6bf12e7f617dea3e447608d972c",
+      "specificationId": "2cc88ec7a7e010f725a172cf0ad51fccbd00d9021cc97a4431b6024bb85298d7",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -504,7 +504,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8e8f0feff1993017ee5f1c2828226c8db800ee5b4347a9eb056a58a6c37c40d8",
+      "specificationId": "ec6b86762f0e8357682c96261061558a1a4342d5512bf644005bfc9885b3a986",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -520,7 +520,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "a7daba4572eb076f33ece878a055b7ec6ef6d770e9f61e4c9dd285e0022b4ec3",
+      "specificationId": "534a17b965754bf8c623a93456d7179a166e42499f0de06821b3c7a03fe2f7e3",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -536,7 +536,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "835b3d3e15b47ba4e7bf5c2ff367831acbb3f3840f5017b1110d76ebf20cc598",
+      "specificationId": "d3eacf3d41401477f2ed8128a466de07c36b279ccedf5567a43f5f277679c261",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -552,7 +552,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7c65af1e0c72f6bbc49f3d70a4a5fcaeb5d58e5375cacdd1a2e27ec3aa38e6ec",
+      "specificationId": "0e733762ea40e9090ec1a7bdaaf29dce9d939e3dff2a5b6187e7ebe598bbce96",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -568,7 +568,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "80b32941015b0d28eba6bddb8d7be1d58309f9cc5aa8c3236ec471cbf7288821",
+      "specificationId": "3b5e8485eb0493aa8e8c293cc282ce5a06bc8756baad08dff48d96a20c718720",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -584,7 +584,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f2b74a52bad28bb459663bb1b81fdacc5aa5cb9db0c3efeb353c2b811170d03c",
+      "specificationId": "f871a57b5c533b2e3037335db6c3c455c8f4ee1f2892972082917d96b10c7fb7",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -619,7 +619,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "af39aafb396924fd429525436358df44c917ea87c534532f52241ecc973f70e2",
+      "specificationId": "a7a33b5fb77d4859df62865fb19f657fe9d421bed901b6b5426bc8b3960a473e",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -635,7 +635,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "c4f94a2c9e67b5f03668de1dae4721d2e65a64abe8a0dfcbd0b6c70abe0cf117",
+      "specificationId": "b4fec26a7c24ba45bb963f80c4b3f873144ec47cc0dbe178de146603012517bb",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -651,7 +651,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "12edffb8ed2b205c8fa9ac2ecd9487ed21921afbd6221e8f8096e7fe0dbb5c81",
+      "specificationId": "d14fc935e633881f5627956e2c4cd2b56da3c9328d4220cd1d22c19665251509",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -667,7 +667,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "39f089f7061c51028f4ac05f91561d554021f439b9f5f3555d6364895f29a205",
+      "specificationId": "db2e9d85e82768be0cb72b0ba048963b86bd49ca959650cb0a6fde2d2b91366c",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -683,7 +683,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "5bd8d6a0bda25b15109196a2ba0c8625f5ef23ce875990e5ce4d25cc89c4709d",
+      "specificationId": "d142ded13e4a98cb073d22ea63659900ff8b718a3c9a99578c7dea3ffe9fd113",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -699,7 +699,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7f4c9e8c6c667aca83e27ac16cccece7947a8edaed00d2c3d14fd5bef0187bc0",
+      "specificationId": "223825d5ed1ec4e142222fddc565c155516b63b45299ccdf15936701ee0581b9",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -715,7 +715,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "b218a1b6dca1b9908412e7ad60450f1689fbc3e1124b1b35a223440fac423810",
+      "specificationId": "bb2679f9d39ec31bb19310e07d5c5462b2683c117d82d7920a3063c8a379e1f9",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -731,7 +731,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7cca72b50466c52e31de4f294f14ae9d21d7ae0a8eb82b6970817d3b4272ece1",
+      "specificationId": "f4d60fb07dd930dd25a819d81106e04736eaf3567bbc42338c1bad4aabbfbc2a",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -747,7 +747,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "b0568ffc5f3284ec02a94d4130f86bc45679efda2d334de105588261652412c3",
+      "specificationId": "8f1df4a55e79b7c078ea6d6e39b1205e738e1afe9bc5da1bfe0be4fedfe6f4b4",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -782,7 +782,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "158d9b4af1869df35d9fe55e1963ef6eee22e748c52c25388912efae60f282b8",
+      "specificationId": "b135bb15ab6589e38eee3e7bb587876f2e393ac399485a6e98b6031b86ee973b",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -798,7 +798,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "1a320e48930953ee043b5f40ad1bff946beb15489a0c92651c4d38c9c90b439c",
+      "specificationId": "bd1cb6688ba48ec1452c5a3308a754e1f87141dc6bef5c6ca5130a0fddb7d91e",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -814,7 +814,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "3dbd7a6e6d6ea6202bd13f3d64867db608652ded72d255efee067664fecbbf6e",
+      "specificationId": "52ad5b78a0056e1299ba41570f9c3d65a96d5af84190b0158ebaf2cb05e0904b",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -830,7 +830,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "171f8154216a50ac191c8c90019efb7e724da37ec86e5696bd4e3b9fe9a78316",
+      "specificationId": "4aa090d24ad1aadb8a06f09efac9a20ed847a729f25367e63bef5a24396d7cf4",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -846,7 +846,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8098b26cefc8b8a120c6282c1c7d12a4ad533d91213656d07ee4139a88ea60eb",
+      "specificationId": "9831b9f6237d63c1bc072bb9d762555d8c6834e68e9898bc4d1c1b6350ccc3c2",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -862,7 +862,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "54d79be7d57590be7786ee157eb37e1a87c221e2876544315e03157bbcc9ebe7",
+      "specificationId": "5baa0f813a95a80c45642763ae87ec367a3b5630eac26a6f6a32910c7c1e47bd",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -878,7 +878,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8bf4e2e90128c8241088b272dde3912b07ea1a604b978d9cd515276c6dc63479",
+      "specificationId": "0c0809b66e071e28346508d3862e5de3dc170d03bbb84392e6058448c4b5452c",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -894,7 +894,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "b89d010ab24768a371821c1d9a3106f8ba139fd780ef4d3b9297350b73bfc6b3",
+      "specificationId": "c98fe328518be0bb6817434e9ced553ecd8f9f263873b67c828f2b8d4b69e145",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -910,7 +910,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f55fee637b9e64aa88b9f22542ff9e1bb645e8e9bb5ba80824b5f107840508f7",
+      "specificationId": "152df2f8ef3eb6607341b9a5de01726f5fd63d395ea4132d0b02ce8f6e19c365",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -926,7 +926,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "68fe4dbf76f93e8679924258bdc6c7cae04193fbc067b9ccf954b0f19f94abb5",
+      "specificationId": "7a499f66671adcb2378c5c6a4c1afe16455e5093bf37ac0101bfcf369051f66b",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -942,7 +942,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "28d8af42b3884759c4610a3e39670c6bf5a8e5a4fb603ba7767d994103982a18",
+      "specificationId": "43a887eecb82a617a96c9ea5ccd40fc0b6414f2c7a0e68bab5ab71921fd5b990",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -958,7 +958,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "286ac173c8c22aa452004f1a95a20895db837ce1383330fd53c1ff05e832e23b",
+      "specificationId": "fb8743f2411f3ac1942c622ac3f400992efbbeb870b88d44f5f94ed3a3a4bdea",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -974,7 +974,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "327393aec97158c83e0c20432d0bd46331d4f8130fcae10520f6158567e0f85b",
+      "specificationId": "13acb08f35d16a3d31bdd2dca22880d6d7cf15d1fd06f0f898bb3f188813b7b3",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -990,7 +990,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8f926485fb5996b4c64340a85ce45f9adee9f53d6e62efbf4144b3e69c535b20",
+      "specificationId": "280e7867fa4bd6ce0ee80705acdc3478ea1a98afdf47c51c5433c69c78f9f1fd",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1006,7 +1006,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2fbd2f51160c25faee1f01938963a044bccc849bcd787ab9962da984d6cc993b",
+      "specificationId": "6608221261251c0dd0afc51beb946428a8350204f7c9bd7d0c84b407cbcfc5a6",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1022,7 +1022,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "9f23465e7b1fb0c5e1fffaf01b851930f4028632062e2266925cddaed17033f9",
+      "specificationId": "76ab9918e08bbd1ec0ce93930a7d0d23ee058c4710befaee50f437c9f1d2e365",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -1038,7 +1038,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "be584ce198669edb52f9c5bf3865515bda09547dde7c95bdcc52e5fa8a2fc615",
+      "specificationId": "1f5de6b676415ae73a5fbd5599fb828c3b9eff4c072905790646c7c9fe9baf9c",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1054,7 +1054,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "179e4d7667f84351c2ee6d411a2a89badd318fce0c39bb45c91180cdb87cafd7",
+      "specificationId": "975cee36553ea608ec8586db25b9908e54f85ad47a2226dfd1956a4c611b6717",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1070,7 +1070,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "77e6d9be027c69fd3cebc38bad3be82abc4cf44131ab0aee7713b1080d283c9e",
+      "specificationId": "875780c74633ebc86f9eaeacce7b68477407b6ed72a2ea144af69def85a50255",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1086,7 +1086,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "bf51840b0228cc754da3996fc89d6bee91d77778cfd400a473af3620c54ae2d1",
+      "specificationId": "2ed6aff135177a54469e68e199a490ded41c8f3ce5b0cbe4366dda689bbe848f",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -1102,7 +1102,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "af66ac2bf74d879ccece76b9be7390c2ba09c296eec115a7e735ea4045c33558",
+      "specificationId": "84b8b408278cf336648be81f6a4f2a770d9f22b77c5a407add29501bb5d3bd9e",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1137,7 +1137,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "702707665644ffd7325e7be65460f01d0a8060e44830fa27fe6b1876a7414947",
+      "specificationId": "8be247e441db5702ac8021c1d4899789d36c6c8ea3c82648b29cd3028799323a",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1172,7 +1172,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2cbfc5456501fa28cc38ede4595fc80fd70e1e195873a78856e76a37aae327d5",
+      "specificationId": "7a130b7d09f3be8666d89933d281dbb444f038d076f966b880fc2d399901aa1a",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1207,7 +1207,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "1c53de5cebd5683a08e8ca318541f3dade3c9545eb0f16415d53b80576a3ccad",
+      "specificationId": "1e1840ea1b01a860d8c2ff1c5aa3e37e557f5d96b546394d5b63c43f764154e4",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1242,7 +1242,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "e6bfb64b03973e643872f0595ccb36e73fc75e1bde2366d0ee696fb67436fde2",
+      "specificationId": "0aa6cb50f024b5fa697bc13406e984cc6c5ac83691732a754727dddcd0cb8600",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1258,7 +1258,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "59516486a3648d39e65f476206ac1dfac6df62fb0bdea990ea2d9395f02b684e",
+      "specificationId": "7e419286d481dd211eeb826d3f5883a65b1f448aa6788d8edb78ffae7e382e77",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -1274,7 +1274,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "a97d193a5ea5fcf79b1602232f6aa03e2ac5b7edfb61df02537e5593fe57e2e0",
+      "specificationId": "a652a25924df13d2b514a7fe9a37c6d39cc2a26f5423b12531ac392bbd81cbf2",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1290,7 +1290,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "ff1ca36b06f480277b1543d885de2526d6faf40c4104e1579c34af9e95b69606",
+      "specificationId": "336d0edf1988be5db546642cf3de58d22394b4dd94a88a329d92451bbf3b4274",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -1306,7 +1306,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "cee121925e4bac856b778d895ee733b8a3353f3e9eca6464b1b1675c7769471b",
+      "specificationId": "fb9b3507435bc667a88e645c635a8330a5c3cd53926b4d480f4786d104c1264d",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1322,7 +1322,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7bc7210dd97683029ee69394717a675747a43a77d6afa49c5c39aef9b9587d42",
+      "specificationId": "4f7d7a3a25690aad2e697da0c3b11dda72f51375ff8de3ee9c909aae6f35e492",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1338,7 +1338,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "48063b0940b88c19756719c69e7da943088e9ee9a2342ff7aa7e517365a38436",
+      "specificationId": "6022cc46c2a44c10815c15268d2c08231dcce89aa5153f0d4de4390d466e08ef",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1392,7 +1392,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2b6a00986f4da1a3421097b8859747ae0af5f106beae10cfde50319458f16943",
+      "specificationId": "d05611827dc15c506dcd3dc8dfa250fe1e5bca36d579e41cf93dd7b4a593f860",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1408,7 +1408,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "afa72c12270f93a4df562d03dd8153d32b0c8d688943788ea6315e6d1140594a",
+      "specificationId": "99a1f9fb60107fb752d11d635901b1eec6adab8cadff2abb3b4d96c105f52093",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1443,7 +1443,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "d3aaf1f6c8e2008c7ebb94752e18b802acbddc183edf2b925de3c9ebb4b27343",
+      "specificationId": "ddf218d856ab9890baded979999c704c1683a85acfd69a63e1fb876e414ad354",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },

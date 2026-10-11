@@ -9,6 +9,7 @@ import { createTaskFamilyRegistry } from './task-family';
 export * from './task-family';
 export * from './math-problem';
 export * from './math-poc-families';
+export * from './math-poc-families-ea1a';
 export * from './family-demand';
 
 /** The specialisations this repository implements today: mathematics only. Extend with `.with(specialization)`. */

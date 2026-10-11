@@ -38,7 +38,10 @@ const NOT_RECORDED = 'The repository records nothing about this for the system. 
 const FALLBACK = 'System-level fallback of a component-dependent dimension, used by generic practice only. The recorded fact is on the component profile.';
 const NO_COMMON_TIME = { officialMinutes: null, officialItems: null, officialMarks: null };
 const system = (p: Omit<AssessmentSystemProfile, 'v' | 'version' | 'status' | 'certification'>): AssessmentSystemProfile => ({ v: ASSESSMENT_SYSTEM_PROFILE_CONTRACT_VERSION, version: EA1_PROFILE_VERSION, status: 'PROVISIONAL_ILLUSTRATIVE', certification: null, ...p });
-const component = (c: Omit<AssessmentComponentProfile, 'v' | 'version' | 'status' | 'certification'>): AssessmentComponentProfile => ({ v: ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION, version: EA1_PROFILE_VERSION, status: 'PROVISIONAL_ILLUSTRATIVE', certification: null, ...c });
+/** EA-1A: the component profiles gained their version binding, so their content changed and so did their version. The system profiles did not change. */
+export const EA1A_COMPONENT_PROFILE_VERSION = '0.3.0-illustrative' as const;
+const component = (c: Omit<AssessmentComponentProfile, 'v' | 'version' | 'status' | 'certification'>): AssessmentComponentProfile => ({ v: ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION, version: EA1A_COMPONENT_PROFILE_VERSION, status: 'PROVISIONAL_ILLUSTRATIVE', certification: null, ...c });
+const configuration = (configKey: string, versionLabel: string, componentKey: string) => ({ source: 'EXAM_VERTICAL_CONFIGURATION' as const, configKey, versionLabel, componentKey });
 const mixed = (recordedIn: string, componentName: string, sourceKeys: readonly string[], note: string) => ({ basis: 'MIXED_AUTHORITY' as const, records: [{ recordedIn, component: componentName, sourceKeys: [...sourceKeys] }], note });
 
 // ------------------------------------------------------------------------------------------------ PAA
@@ -68,6 +71,7 @@ export const PAA_SYSTEM_PROFILE = system({
 });
 export const PAA_MATEMATICAS_COMPONENT = component({
   componentId: 'PAA.MATEMATICAS', systemProfileId: 'PAA', displayName: 'PAA — Matemáticas', localSubject: 'Matemáticas',
+  versionBinding: configuration('v2.paa', 'V2.1 PAA revisada (guía 2021)', 'matematicas'), semanticComponentKey: 'paa.matematicas',
   specification: mixed('src/lib/exam-core/verticals/v2/paa.ts (PAA_V2)', 'sections[matematicas].definition', PAA_SRC, 'Overrides restate the component definition of the Matemáticas section.'),
   overrides: {
     responseFormats: official('paa.matematicas.response-formats', ['SELECTED_RESPONSE', 'NUMERIC_ENTRY'], `${PAA_DEF}.responseFormats`, ...PAA_SRC),
@@ -107,6 +111,7 @@ const ibPaper = (key: 'p1' | 'p2', name: string, calculator: 'NONE' | 'GDC_REQUI
   const id = `ib.math-aa-hl.${key}`;
   return component({
     componentId: `IB.MATH_AA_HL.${key.toUpperCase()}`, systemProfileId: 'IB', displayName: `IB DP Mathematics: analysis and approaches HL — ${name}`, localSubject: 'Mathematics: analysis and approaches',
+    versionBinding: configuration('v2.ib.math-aa-hl', 'V2 2021-2028', key), semanticComponentKey: `ib.math-aa-hl.${key}`,
     specification: mixed('src/lib/exam-core/verticals/v2/ib-math-aa-hl.ts (IB_MATH_AA_HL_V2)', `sections[${key}].definition`, IB_SRC, `Overrides restate the component definition of ${name}.`),
     overrides: {
       responseFormats: official(`${id}.response-formats`, IB_FORMATS, `${def}.responseFormats`, ...IB_SRC),
@@ -146,6 +151,7 @@ export const CAMBRIDGE_SYSTEM_PROFILE = system({
 });
 export const CAMBRIDGE_9709_P1_COMPONENT = component({
   componentId: 'CAMBRIDGE.9709.P1', systemProfileId: 'CAMBRIDGE', displayName: 'Cambridge 9709 — Pure Mathematics 1', localSubject: 'Mathematics (9709)',
+  versionBinding: { source: 'SYLLABUS_RECORD', configKey: '9709', versionLabel: '2026-2027', componentKey: 'p1' }, semanticComponentKey: 'cambridge.9709.p1',
   specification: mixed('src/lib/exam-core/aice/aice-syllabi.generated.ts (AICE_SYLLABI, code 9709)', 'components[p1]', CIE_SRC, 'Overrides restate the generated syllabus record of component 1.'),
   overrides: {
     timePressure: official('cambridge.9709.p1.time', { officialMinutes: 110, officialItems: null, officialMarks: 75 }, `${CIE_P1}.minutes / marks`, ...CIE_SRC),
@@ -180,6 +186,7 @@ export const PISA_SYSTEM_PROFILE = system({
 });
 export const PISA_MATHEMATICS_COMPONENT = component({
   componentId: 'PISA.MATHEMATICS', systemProfileId: 'PISA', displayName: 'PISA 2022 — Mathematics (computer-based)', localSubject: 'Matemáticas',
+  versionBinding: configuration('v2.pisa.math', 'V2 PISA 2022', 'math'), semanticComponentKey: 'pisa.mathematics',
   specification: mixed('src/lib/exam-core/verticals/v2/pisa-math.ts (PISA_MATH_V2)', 'sections[math].definition', PISA_SRC, 'Overrides restate the component definition of the mathematics test. The elicitation map is StudyUs policy.'),
   overrides: {
     responseFormats: official('pisa.mathematics.response-formats', ['SELECTED_RESPONSE', 'MULTI_SELECT', 'NUMERIC_ENTRY', 'MATH_EXPRESSION'], `${PISA_DEF}.responseFormats`, ...PISA_SRC),
@@ -218,6 +225,7 @@ export const ICFES_SYSTEM_PROFILE = system({
 });
 export const ICFES_SABER11_MATEMATICAS_COMPONENT = component({
   componentId: 'ICFES.SABER11_MATEMATICAS', systemProfileId: 'ICFES', displayName: 'Icfes Saber 11.° — Prueba de Matemáticas', localSubject: 'Matemáticas',
+  versionBinding: configuration('v2.saber11.math', 'V2.1 Saber 11 2026 · 50 posiciones', 'math'), semanticComponentKey: 'icfes.saber11.matematicas',
   specification: mixed('src/lib/exam-core/verticals/v2/saber11-math.ts (SABER11_MATH_V2)', 'sections[math].definition', ICFES_SRC, 'Overrides restate the component definition of the Prueba de Matemáticas. The elicitation map and the blueprint note are StudyUs policy.'),
   overrides: {
     responseFormats: official('icfes.saber11-matematicas.response-formats', ['SELECTED_RESPONSE'], `${ICFES_DEF}.responseFormats`, ...ICFES_SRC),
