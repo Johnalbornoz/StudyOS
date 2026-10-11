@@ -343,3 +343,12 @@ B3_GO_WITH_CONDITIONS
 3. Evidence credit per concept is B3's decision; `contributes.strength` is an input to it, not a weight.
 4. Commit the B2 working tree (18 files) before B3 branches from it.
 5. Integrate `remediation/t1-micro-delta` (`41e9676`) downstream; it does not touch B2 files.
+
+---
+
+## Certification Addendum (2026-10-10)
+
+The implementation certified in this report was subsequently preserved
+without source changes as commit `621b101`.
+
+`621b101` is the canonical B2 certified code snapshot.
