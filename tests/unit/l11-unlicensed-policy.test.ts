@@ -130,7 +130,17 @@ vi.mock('@/services/concept-explanation.service', () => ({
 vi.mock('@/services/error-intelligence.service', () => ({ getErrorPatternGuidance: (...a: any[]) => work.guidance(...a) }));
 vi.mock('@/services/transfer.service', () => ({ evaluateTransferResponse: (...a: any[]) => work.grade(...a) }));
 const loadTransferTaskInstanceMock = vi.fn();
-vi.mock('@/services/transfer-task-instance.service', () => ({ loadTransferTaskInstance: (...a: any[]) => loadTransferTaskInstanceMock(...a) }));
+vi.mock('@/services/transfer-task-instance.service', () => ({
+  loadTransferTaskInstance: (...a: any[]) => loadTransferTaskInstanceMock(...a),
+  // L10 (CR-L11-06) wraps grading in an exclusive, exactly-once claim. The task here is open and
+  // unclaimed, so the claim runs the grading step. (Exactly-once itself: l10-r1-l11-dependencies.)
+  runTransferSubmissionExclusively: async (_taskId: string, _conceptId: string, gradeAndRecord: () => Promise<unknown>) => ({ outcome: 'COMPLETED', value: await gradeAndRecord() }),
+}));
+// "The learner behind this account" is resolved by the shared guard (`ownStudentId`). It is mocked at
+// its contract, not through the SQL behind it: L10 SF-1/SF-2 changed that SQL and made it answer
+// null for a revoked STUDENT role or a non-ACTIVE account.
+const ownStudentIdMock = vi.fn();
+vi.mock('@/lib/exam-core/route-auth', () => ({ ownStudentId: (...a: any[]) => ownStudentIdMock(...a) }));
 const hasStartedExecutionMock = vi.fn();
 vi.mock('@/lib/entitlements/open-attempt', () => ({ hasStartedTeacherInterventionExecution: (...a: any[]) => hasStartedExecutionMock(...a) }));
 vi.mock('@/lib/student/teacher-intervention-execution.service', () => ({
@@ -172,6 +182,7 @@ beforeEach(() => {
   dbQuery.mockReset().mockResolvedValue({ rows: [{ id: STUDENT }] });
   canUseCapabilityMock.mockReset().mockResolvedValue(false);
   loadTransferTaskInstanceMock.mockReset().mockResolvedValue(null);
+  ownStudentIdMock.mockReset().mockResolvedValue(STUDENT);
   hasStartedExecutionMock.mockReset().mockResolvedValue(false);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -206,11 +217,43 @@ describe('a licensed Student passes the gate', () => {
 describe('the teacher-assigned start can never skip the licence check', () => {
   it('an actor with no Student account is refused before the dispatcher, licensed or not', async () => {
     canUseCapabilityMock.mockResolvedValue(true);
-    dbQuery.mockResolvedValue({ rows: [] });
+    ownStudentIdMock.mockResolvedValue(null);
     const res = await calls[5][1]();
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
     expect(work.start).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canonical ordering with the shared guards (L10): authorization first, then entitlement.
+// ---------------------------------------------------------------------------
+
+describe('ordering: an invalid / revoked identity fails AUTHORIZATION, before entitlement is ever asked', () => {
+  it.each(calls.slice(0, 5))('%s: the shared Student guard denies -> 403 FORBIDDEN, not ENTITLEMENT_REQUIRED', async (_name, call) => {
+    const { verifyStudentAccess } = await import('@/lib/auth');
+    vi.mocked(verifyStudentAccess).mockResolvedValueOnce(false);
+    const res = await call();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
+    expect(canUseCapabilityMock).not.toHaveBeenCalled();
+    for (const name of ['guided', 'explanation', 'formula', 'guidance', 'grade'] as const) expect(work[name], name).not.toHaveBeenCalled();
+  });
+
+  it('teacher-assigned start: a revoked STUDENT role (the guard resolves no learner) -> FORBIDDEN, even with an open attempt and no licence', async () => {
+    ownStudentIdMock.mockResolvedValue(null);
+    hasStartedExecutionMock.mockResolvedValue(true);
+    const res = await calls[5][1]();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
+    expect(canUseCapabilityMock).not.toHaveBeenCalled();
+    expect(hasStartedExecutionMock).not.toHaveBeenCalled();
+    expect(work.start).not.toHaveBeenCalled();
+  });
+
+  it('a valid active Student with no licence and nothing open -> ENTITLEMENT_REQUIRED (not FORBIDDEN)', async () => {
+    const res = await calls[5][1]();
+    expect(await res.json()).toEqual({ error: 'ENTITLEMENT_REQUIRED' });
   });
 });
 

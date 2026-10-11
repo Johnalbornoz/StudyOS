@@ -44,7 +44,10 @@ vi.mock('@/lib/db', () => ({
       const q = sql.replace(/\s+/g, ' ').trim();
       if (/^(INSERT|UPDATE|DELETE)/i.test(q)) state.writes.push(q);
 
-      if (/^SELECT 1 FROM students WHERE id = \$1 AND user_id = \$2/.test(q)) return { rows: params[0] === STUDENT && params[1] === STUDENT_USER ? [{}] : [] };
+      // `isOwner(actor, learner)` -- params [learnerId, actorUserId]. Matched by shape, not by text:
+      // L10 SF-1/SF-2 rewrote the query (ACTIVE account, ACTIVE STUDENT role, canonical owner match).
+      // The learner here is an active Student, which is what both versions answer for.
+      if (/^SELECT 1 FROM students\b/.test(q) && params.length === 2) return { rows: params[0] === STUDENT && params[1] === STUDENT_USER ? [{}] : [] };
       if (/^SELECT 1 FROM students WHERE id = \$1 LIMIT 1/.test(q)) return { rows: params[0] === STUDENT ? [{}] : [] };
       if (/^SELECT 1 FROM users WHERE id = \$1/.test(q)) return { rows: [STUDENT_USER, PARENT_USER].includes(params[0]) ? [{}] : [] };
       if (/FROM parent_student_relationships/.test(q)) return { rows: state.liveParents.has(params[0]) && params[1] === STUDENT ? [{}] : [] };

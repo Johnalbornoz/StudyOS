@@ -158,7 +158,10 @@ describe('routes that only ever act on an existing attempt keep their own guards
   it.each(['pause', 'resume', 'complete', 'abandon', 'result'])('simulation/attempts/[id]/%s loads the attempt and checks the actor against its Student', (name) => {
     const src = read(`src/app/api/simulation/attempts/[id]/${name}/route.ts`);
     expect(src).toMatch(/getSimulationAttempt\(/);
-    expect(src).toMatch(/canAccessLearner\(actor\.id, attempt\.studentId|isOwner\(actor\.id, attempt\.studentId/);
+    // The guard helper differs by route and by base: `canAccessLearner` / `isOwner`, or -- after
+    // L10 SF-4 -- `resolveLearnerReadScope` on the result route. Each binds the actor to the
+    // attempt's own Student.
+    expect(src).toMatch(/(canAccessLearner|isOwner|resolveLearnerReadScope)\(actor\.id, attempt\.studentId/);
   });
 
   it('a paused attempt idle beyond its expiry is never resumed', () => {
